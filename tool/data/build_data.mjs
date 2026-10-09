@@ -104,6 +104,9 @@ const rashiPath = (book, lang) => {
 //   {"n": note}           textual note (e.g. Ashkenazi/Sephardi scribal variant)
 //   {"big": x} / {"small": x} / {"sup": x}  large / small / raised letters
 //   {"alt": x}            (Onkelos) bracketed alternate reading or gloss
+//   {"gap": "P" | "S"}    a petuchah / setumah that falls inside a verse
+//                         (the Decalogue, Gen 35:22, ...); the verse goes on
+//                         after it, so the words on each side stay apart
 
 const SONG_GAP = ' '; // em space between hemistichs in the Torah's songs
 
@@ -122,29 +125,50 @@ function finalizeSegments(segs) {
       out.push(seg);
     }
   }
-  // Normalize whitespace inside strings.
+  // Normalize whitespace inside strings. A mid-verse gap carries its own
+  // spacing, so the text on either side of it is trimmed too.
+  const isGap = (seg) => seg !== undefined && typeof seg !== 'string' && 'gap' in seg;
   for (let i = 0; i < out.length; i++) {
     if (typeof out[i] === 'string') {
       out[i] = out[i].replace(/ {2,}/g, ' ');
-      if (i === 0) out[i] = out[i].replace(/^[ \u2003]+/, '');
-      if (i === out.length - 1) out[i] = out[i].replace(/[ \u2003]+$/, '');
+      if (i === 0 || isGap(out[i - 1])) out[i] = out[i].replace(/^[ \u2003]+/, '');
+      if (i === out.length - 1 || isGap(out[i + 1])) out[i] = out[i].replace(/[ \u2003]+$/, '');
     }
   }
   const cleaned = out.filter((s) => s !== '');
   for (const s of cleaned) {
     const str = typeof s === 'string' ? s : Object.values(s).join('');
-    if (/[<>&]/.test(str)) throw new Error(`Unparsed markup left in: ${str}`);
+    if (/[<>&\0]/.test(str)) throw new Error(`Unparsed markup left in: ${str}`);
   }
   if (cleaned.length === 1 && typeof cleaned[0] === 'string') return cleaned[0];
   return cleaned;
 }
 
+// A petuchah {פ} or setumah {ס} marker with the spacing MAM puts around it.
+const SECTION_MARKER = '(?:&nbsp;)*<span class="mam-spi-(pe|samekh)">\\{[פס]\\}</span>(?:<br>)?(?:&nbsp;)*';
+const FOOTNOTE = /<sup class="footnote-marker">\*<\/sup><i class="footnote">.*?<\/i>/g;
+// A marker with more of the verse after it: a section break inside the pasuk.
+// A footnote alone after the marker (Ex 33:23) does not count.
+const MID_VERSE_MARKER = new RegExp(
+  `${SECTION_MARKER}(?!(?:\\s|&nbsp;|<br>)*(?:<sup class="footnote-marker">|$))`,
+  'g',
+);
+// Stands in for a mid-verse marker until the verse is split into segments.
+const GAP_SENTINEL = /\0([PS])\0/;
+
+// Pushes plain text, turning gap sentinels into {"gap": ...} segments.
+function pushText(segs, text) {
+  const parts = text.split(GAP_SENTINEL); // odd indices are the captured kinds
+  for (let i = 0; i < parts.length; i++) segs.push(i % 2 ? {gap: parts[i]} : parts[i]);
+}
+
 function parseMamVerse(raw) {
-  let s = raw;
+  let s = raw.replace(MID_VERSE_MARKER, (_, kind) => `\0${kind === 'pe' ? 'P' : 'S'}\0`);
+  // Only a marker that ends the verse is a break between verses.
   let brk = null;
   if (s.includes('mam-spi-pe')) brk = 'P';
   else if (s.includes('mam-spi-samekh')) brk = 'S';
-  s = s.replace(/(?:&nbsp;)*<span class="mam-spi-(?:pe|samekh)">\{[פס]\}<\/span>(?:<br>)?(?:&nbsp;)*/g, '');
+  s = s.replace(new RegExp(SECTION_MARKER, 'g'), '');
   // Paseq / legarmeih: MAM distinguishes them visually; for readers a plain paseq suffices.
   s = s.replace(/&thinsp;<(small|b)>׀<\/\1>(?:&thinsp;)?/g, ' ׀ ');
   s = s.replace(/<span class="mam-spi-invnun">׆<\/span>(?:&nbsp;)?/g, '׆ ');
@@ -168,7 +192,7 @@ function parseMamVerse(raw) {
   );
   let last = 0;
   for (const m of s.matchAll(re)) {
-    segs.push(s.slice(last, m.index));
+    pushText(segs, s.slice(last, m.index));
     last = m.index + m[0].length;
     if (m[1]) {
       const parts = {[m[1]]: m[2], [m[3]]: m[4]};
@@ -186,8 +210,31 @@ function parseMamVerse(raw) {
       else segs.push({k: '', q: t.replace(/^\[|\]$/g, '')});
     }
   }
-  segs.push(s.slice(last));
+  pushText(segs, s.slice(last));
   return {verse: finalizeSegments(segs), brk};
+}
+
+// Build-time check that every section marker inside a verse became a gap
+// segment, counted independently of the parser: a marker is inside the verse
+// when any verse text (not just a footnote) follows it.
+const gapCheck = {total: 0, mismatches: []};
+
+function checkGaps(ref, raw, verse) {
+  const markers = [...raw.matchAll(new RegExp(SECTION_MARKER, 'g'))].filter((m) => {
+    const rest = raw.slice(m.index + m[0].length).replace(FOOTNOTE, '');
+    return stripTags(rest).replace(/&nbsp;|&thinsp;|\s/g, '') !== '';
+  }).length;
+  const gaps = Array.isArray(verse) ? verse.filter((seg) => typeof seg !== 'string' && 'gap' in seg).length : 0;
+  if (gaps !== markers) gapCheck.mismatches.push(`${ref} (${markers} markers, ${gaps} gaps)`);
+  gapCheck.total += gaps;
+  return verse;
+}
+
+// Called before writing, so a mis-parsed text never reaches the assets.
+function assertGaps() {
+  if (gapCheck.mismatches.length) {
+    throw new Error(`Mid-verse section markers not emitted as gaps:\n  ${gapCheck.mismatches.join('\n  ')}`);
+  }
 }
 
 function parseOnkelosVerse(raw) {
@@ -323,7 +370,7 @@ async function main() {
       ch.map((raw, vi) => {
         const {verse, brk} = parseMamVerse(raw);
         if (brk) breaks[`${ci + 1}:${vi + 1}`] = brk;
-        return verse;
+        return checkGaps(`${book} ${ci + 1}:${vi + 1}`, raw, verse);
       }),
     );
     mikraChapters[book] = chapters;
@@ -331,6 +378,7 @@ async function main() {
     if (counts(mam.text) !== counts(onk.text) || counts(mam.text) !== counts(jps.text)) {
       throw new Error(`Versification mismatch in ${book}`);
     }
+    assertGaps();
     writeJson(`assets/text/mikra/${lower(book)}.json`, {book, he: BOOK_HE[book], chapters, breaks});
     writeJson(`assets/text/onkelos/${lower(book)}.json`, {
       book,
@@ -413,17 +461,21 @@ async function main() {
     haftEn[book] = {};
     for (const r of needed[book]) {
       for (const ref of versesInRange(mam.text, r.b, r.e)) {
+        if (ref in haftHe[book]) continue; // shared by several haftarot
         const [c, v] = ref.split(':').map(Number);
-        haftHe[book][ref] = parseMamVerse(mam.text[c - 1][v - 1]).verse;
+        const raw = mam.text[c - 1][v - 1];
+        haftHe[book][ref] = checkGaps(`${book} ${ref}`, raw, parseMamVerse(raw).verse);
         haftEn[book][ref] = parseEnglishVerse(jps.text[c - 1][v - 1]);
       }
     }
   }
+  assertGaps();
   writeJson('assets/text/haftarot.json', {
     books: Object.fromEntries(Object.keys(needed).map((b) => [b, BOOK_HE[b]])),
     he: haftHe,
     en: haftEn,
   });
+  process.stdout.write(`Mid-verse section gaps: ${gapCheck.total}\n`);
   process.stdout.write('Done.\n');
 }
 
