@@ -151,6 +151,38 @@ void main() {
     expect(s.days.containsKey(d('2026-10-12')), isFalse);
   });
 
+  test('joining midweek: what was planned before joining is never expected', () {
+    // Joined on Wednesday of Noach, with the usual plan: Rishon to Shlishi
+    // fell before joining. Nothing on Wednesday, then Revi'i and Chamishi on
+    // Thursday: back on plan, as far as anything was planned since joining.
+    final log = Log(planner)..read('2026-10-12', [3, 4], '2026-10-15');
+    final s = engine.evaluate(progress: log.map, joinDate: d('2026-10-14'), today: d('2026-10-16'));
+    expect(s.days[d('2026-10-14')], DayStatus.caughtUp);
+    expect(s.days[d('2026-10-15')], DayStatus.kept);
+    expect(s.days[d('2026-10-16')], DayStatus.open);
+    expect(s.graceBalance, 2, reason: 'no grace day spent on the first day');
+    expect(s.daysOnTrack, 2);
+  });
+
+  test('joining midweek: reading what was planned since joining is on plan', () {
+    // Revi'i and Chamishi read on Wednesday, the day of joining: on plan
+    // through Thursday without reading more.
+    final log = Log(planner)..read('2026-10-12', [3, 4], '2026-10-14');
+    final s = engine.evaluate(progress: log.map, joinDate: d('2026-10-14'), today: d('2026-10-16'));
+    expect(s.days[d('2026-10-14')], DayStatus.kept);
+    expect(s.days[d('2026-10-15')], DayStatus.ahead);
+  });
+
+  test('only the week of joining discounts what was planned before', () {
+    // Joined on Wednesday of Noach; in Lech Lecha, the whole plan counts.
+    final log = Log(planner)
+      ..readAll('2026-10-12', '2026-10-14')
+      ..read('2026-10-19', [0, 1, 2], '2026-10-18');
+    final s = engine.evaluate(progress: log.map, joinDate: d('2026-10-14'), today: d('2026-10-23'));
+    expect(s.days[d('2026-10-20')], DayStatus.ahead, reason: 'three aliyot read, three planned by Tuesday');
+    expect(s.days[d('2026-10-21')], isNot(DayStatus.ahead), reason: 'four planned by Wednesday');
+  });
+
   group('plans', () {
     test('Shevi\'i on Shabbat leaves the 7th aliyah for Shabbat morning', () {
       const p = ReadingPlanner(schedule: diaspora, type: ReadingPlanType.sheviiOnShabbat);

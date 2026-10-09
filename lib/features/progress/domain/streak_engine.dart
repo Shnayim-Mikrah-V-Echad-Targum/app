@@ -223,6 +223,13 @@ class StreakEngine {
         for (final d in plan.days) (plan, d),
     ];
 
+    // Reading planned before the join date is never expected: in the week
+    // the reader joined, targets count only what was planned from then on.
+    final joinPlan = plans.first;
+    final preJoin = joinPlan.targetUnitsBy(joinDate.addDays(-1));
+    int sincePlanned(WeekPlan p, int units) => math.max(0, units - (identical(p, joinPlan) ? preJoin : 0));
+    int target(WeekPlan p, LocalDate d) => sincePlanned(p, p.targetUnitsBy(d));
+
     var grace = GraceRules.startingBalance;
     final restoreUsed = <String>{};
     final dayStatus = <LocalDate, DayStatus>{};
@@ -245,12 +252,12 @@ class StreakEngine {
           status = DayStatus.paused;
         } else if ((unitsByDay[d.rd] ?? 0) >= GraceRules.unitsForKeptDay) {
           status = DayStatus.kept;
-        } else if (wp.unitsBy(d) >= plan.targetUnitsBy(d)) {
+        } else if (wp.unitsBy(d) >= target(plan, d)) {
           status = DayStatus.ahead;
         } else {
           final caughtUp = next != null &&
               wp.unitsBy(next.$2.date) >=
-                  (next.$1 == plan ? plan.targetUnitsBy(next.$2.date) : kAliyot * 3);
+                  (next.$1 == plan ? target(plan, next.$2.date) : sincePlanned(plan, kAliyot * 3));
           if (caughtUp) {
             status = DayStatus.caughtUp;
           } else if (d == today || (next != null && today <= next.$2.date)) {
