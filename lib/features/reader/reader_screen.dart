@@ -744,15 +744,15 @@ class _Note extends StatelessWidget {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: scheme.tertiaryContainer,
+        color: scheme.secondaryContainer,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, color: scheme.onTertiaryContainer, size: 20),
+          Icon(Icons.info_outline, color: scheme.onSecondaryContainer, size: 20),
           const Gap(8),
-          Expanded(child: Text(text, style: TextStyle(color: scheme.onTertiaryContainer))),
+          Expanded(child: Text(text, style: TextStyle(color: scheme.onSecondaryContainer))),
         ],
       ),
     );

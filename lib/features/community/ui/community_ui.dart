@@ -142,13 +142,13 @@ class DemoBanner extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      color: scheme.tertiaryContainer,
+      color: scheme.secondaryContainer,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          Icon(Icons.science_outlined, color: scheme.onTertiaryContainer),
+          Icon(Icons.science_outlined, color: scheme.onSecondaryContainer),
           const SizedBox(width: 12),
-          Expanded(child: Text(context.l10n.demoModeBanner, style: TextStyle(color: scheme.onTertiaryContainer))),
+          Expanded(child: Text(context.l10n.demoModeBanner, style: TextStyle(color: scheme.onSecondaryContainer))),
         ],
       ),
     );

@@ -36,6 +36,7 @@ class ParshaRings extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final scheme = Theme.of(context).colorScheme;
+    final sefer = SeferColors.of(context);
     int count(ReadingPass p) => [for (var a = 0; a < kAliyot; a++) a].where((a) => progress.isUnitDone(a, p)).length;
     final label = [
       l.aliyotProgress(progress.completedAliyot, kAliyot),
@@ -52,8 +53,8 @@ class ParshaRings extends StatelessWidget {
           painter: _RingsPainter(
             progress: progress,
             weights: aliyahWeights,
-            done: [scheme.primary, scheme.primary.withValues(alpha: 0.8), scheme.tertiary],
-            track: scheme.surfaceContainerHighest,
+            done: [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum],
+            track: sefer.ringTrack,
             gapColor: scheme.surface,
           ),
           child: center == null ? null : Center(child: ExcludeSemantics(child: center!)),
@@ -198,8 +199,8 @@ extension DayDisplayX on DayDisplay {
       DayDisplay.today => Icon(Icons.adjust, size: size, color: scheme.primary),
       DayDisplay.missed => Icon(Icons.remove_circle_outline, size: size, color: status.neutral),
       DayDisplay.rest => ShabbatCandlesIcon(size: size, color: status.rest),
-      DayDisplay.upcoming => Icon(Icons.circle_outlined, size: size, color: scheme.outlineVariant),
-      DayDisplay.noReading => Icon(Icons.horizontal_rule, size: size, color: scheme.outlineVariant),
+      DayDisplay.upcoming => Icon(Icons.circle_outlined, size: size, color: scheme.outline),
+      DayDisplay.noReading => Icon(Icons.horizontal_rule, size: size, color: scheme.outline),
     };
   }
 }
@@ -336,7 +337,8 @@ class WeekStatusBadge extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return switch (s) {
       WeekStatus.onTime || WeekStatus.restored => c.done,
-      WeekStatus.late || WeekStatus.madeUp || WeekStatus.overdue => c.late,
+      WeekStatus.late || WeekStatus.madeUp => c.late,
+      WeekStatus.overdue => c.overdue,
       WeekStatus.missed || WeekStatus.transparent => c.neutral,
       WeekStatus.inProgress => scheme.primary,
     };

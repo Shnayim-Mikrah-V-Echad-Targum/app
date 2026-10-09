@@ -49,7 +49,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   - **High contrast**
   - **Low vision**
   - **Reset**
-- **Focus mode** dims everything except the current verse.
+- **Focus mode** dims everything except the current verse. Dimmed verses use their own ink, which still meets 4.5:1; the high-contrast themes don't dim at all.
 
 ### Motor and keyboard
 - All tap targets are at least 48×48 dp, which also meets Apple's 44 pt.
@@ -95,11 +95,12 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   - `labeledTapTargetGuideline`
   - `textContrastGuideline`
 - The same test also checks:
-  - contrast in four themes: light, dark, high-contrast light and high-contrast dark
+  - contrast in all five themes: light, dark, sepia, high-contrast light and high-contrast dark
   - no overflow at 200% text on the busiest screens
   - the Hebrew right-to-left layout
   - the desktop layout with a navigation rail
-- `test/app/reader_widget_test.dart` runs the guidelines on the reader and checks the verse labels.
+- `test/app/reader_widget_test.dart` runs the guidelines on the reader, checks the verse labels, and checks that focus mode's dimmed verses keep 4.5:1 in every theme.
+- `test/ui/palette_contrast_test.dart` computes the WCAG contrast of every text and graphics colour pair in the palette (docs/DESIGN_SYSTEM.md §3.5): 4.5:1 for text and 3:1 for graphics, 7:1 and 4.5:1 in the high-contrast themes, and 7:1 for scripture everywhere.
 - Unit tests check the spoken-label pipeline (`test/core/text/hebrew_text_test.dart`), including Divine Name substitution and stripping cantillation.
 
 ### Manual (before each release)

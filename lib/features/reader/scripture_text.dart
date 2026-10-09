@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/scripture.dart';
 import '../../ui/l10n.dart';
+import '../../ui/theme/sefer_colors.dart';
 import '../settings/app_settings.dart';
 
 /// Which kind of text is being rendered, for sizing and styling.
@@ -107,15 +108,15 @@ class ScriptureVerse extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    // Dimmed text uses its own ink, never a fade: it stays at 4.5:1 or more.
+    final dimInk = SeferColors.of(context).dimInk;
     final styles = ScriptureStyles(context, settings);
     final base = styles.style(
       kind,
-      color: dimmed
-          ? theme.colorScheme.onSurface.withValues(alpha: 0.55)
-          : (secondary ? theme.colorScheme.onSurfaceVariant : null),
+      color: dimmed ? dimInk : (secondary ? theme.colorScheme.onSurfaceVariant : null),
     );
     final muted = base.copyWith(
-      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: dimmed ? 0.55 : 1),
+      color: dimmed ? dimInk : theme.colorScheme.onSurfaceVariant,
       fontSize: base.fontSize! * 0.62,
     );
     final notes = <String>[];
@@ -126,7 +127,7 @@ class ScriptureVerse extends StatelessWidget {
         text: '${HebrewText.gematria(verse.ref.verse, punctuate: false)} ',
         style: base.copyWith(
           fontSize: base.fontSize! * 0.6,
-          color: theme.colorScheme.primary.withValues(alpha: dimmed ? 0.55 : 1),
+          color: dimmed ? dimInk : theme.colorScheme.primary,
           fontWeight: FontWeight.w700,
         ),
       ));
@@ -143,7 +144,7 @@ class ScriptureVerse extends StatelessWidget {
           }
         case TextNote(:final text):
           notes.add(text);
-          spans.add(TextSpan(text: '*', style: muted.copyWith(color: theme.colorScheme.primary)));
+          spans.add(TextSpan(text: '*', style: dimmed ? muted : muted.copyWith(color: theme.colorScheme.primary)));
         case SizedLetters(:final text, :final size):
           spans.add(TextSpan(
             text: displayHebrew(text, settings),
@@ -218,15 +219,19 @@ class TranslationVerse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dimInk = SeferColors.of(context).dimInk;
     final style = ScriptureStyles(context, settings).style(
       ScriptureKind.translation,
-      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: dimmed ? 0.55 : 1),
+      color: dimmed ? dimInk : theme.colorScheme.onSurfaceVariant,
     );
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Text.rich(
         TextSpan(children: [
-          TextSpan(text: '$number ', style: style.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.primary)),
+          TextSpan(
+            text: '$number ',
+            style: style.copyWith(fontWeight: FontWeight.w700, color: dimmed ? dimInk : theme.colorScheme.primary),
+          ),
           TextSpan(text: text),
         ]),
         style: style,

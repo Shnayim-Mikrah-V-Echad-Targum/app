@@ -3,6 +3,7 @@
 //
 //   CAPTURE=1 flutter test test/screens/capture_test.dart
 //   CAPTURE=1 SCREENS=today,reader flutter test test/screens/capture_test.dart
+//   CAPTURE=1 SCREENS=today MODES=sepia,hcl flutter test test/screens/capture_test.dart
 //
 // Skipped unless CAPTURE is set, so it never runs (or fails) in CI.
 @Tags(['screens'])
@@ -19,12 +20,14 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
 
 final _capture = Platform.environment['CAPTURE'] != null;
 final _only = Platform.environment['SCREENS']?.split(',').toSet();
+final _onlyModes = Platform.environment['MODES']?.split(',').toSet();
 
 /// Friday 9 Oct 2026 (28 Tishrei 5787), the week of Bereshit. Sunday was
 /// Simchat Torah in the Diaspora, so the reading week began on Monday.
@@ -49,6 +52,7 @@ const _screens = {
   'week': '/week/5787:1',
   'reader': '/read/5787:1/2',
   'reader_full': '/read/5787:1/2?mode=full',
+  'reader_focus': '/read/5787:1/2?mode=full',
   'haftarah': '/haftarah/5787:1',
   'progress': '/progress',
   'community': '/community',
@@ -66,6 +70,17 @@ const _screens = {
   'guide': '/guide',
 };
 
+/// Screens that need more than a route: extra settings, and a first tap once
+/// the screen has loaded.
+final _screenSettings = <String, AppSettings Function(AppSettings)>{
+  'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+};
+final _screenSetup = <String, Future<void> Function(WidgetTester)>{
+  // Focus the second verse (each verse is followed by its Targum), so there
+  // are dimmed verses above and below it.
+  'reader_focus': (tester) => tester.tap(find.byType(ScriptureVerse).at(2)),
+};
+
 class _Mode {
   const _Mode(this.tag, this.size, this.settings);
   final String tag;
@@ -79,6 +94,8 @@ final _modes = [
   _Mode('he', const Size(412, 915), (s) => s.copyWith(language: AppLanguage.hebrew)),
   _Mode('hc', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.highContrastDark)),
   _Mode('desktop', const Size(1366, 860), (s) => s),
+  _Mode('sepia', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.sepia)),
+  _Mode('hcl', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.highContrastLight)),
 ];
 
 Future<void> _loadFonts() async {
@@ -123,6 +140,7 @@ void main() {
   });
 
   for (final mode in _modes) {
+    if (!(_onlyModes?.contains(mode.tag) ?? true)) continue;
     for (final entry in _screens.entries) {
       if (mode.tag == 'desktop' && !const {'today', 'week', 'reader', 'reader_full', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
         continue;
@@ -133,10 +151,17 @@ void main() {
         tester.view.physicalSize = mode.size;
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
-        final base = AppSettings(onboardingComplete: entry.key != 'welcome', joinDate: _join);
+        final base = (_screenSettings[entry.key] ?? (s) => s)(
+          AppSettings(onboardingComplete: entry.key != 'welcome', joinDate: _join),
+        );
         final c = await pumpApp(tester, settings: mode.settings(base), now: _now, progress: _progress());
         if (entry.key != 'welcome') c.read(routerProvider).go(entry.value);
         await _settle(tester);
+        final setup = _screenSetup[entry.key];
+        if (setup != null) {
+          await setup(tester);
+          await _settle(tester);
+        }
         await _write(tester, '${mode.tag}_${entry.key}');
       }, skip: !_capture);
     }

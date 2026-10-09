@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
@@ -80,6 +81,34 @@ void main() {
     expect(find.text('Chapter 6'), findsOneWidget);
     expect(find.text('Mark this aliyah as read'), findsNothing, reason: 'the button is at the end of the list');
   });
+
+  // Focus mode dims every verse but the one tapped. The dimmed ink must still
+  // be readable (4.5:1), not a 55% alpha fade of the normal ink.
+  for (final theme in AppThemeMode.values.where((m) => m != AppThemeMode.system)) {
+    testWidgets('focus mode dims verses with readable ink: ${theme.name}', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, theme: theme, focusMode: true, showTranslation: true),
+        now: monday,
+      );
+      c.read(routerProvider).go('/read/5787:2/0?mode=full');
+      await loadTexts(tester);
+      await tester.tap(find.byType(ScriptureVerse).first);
+      await tester.pumpAndSettle();
+
+      final dimmed = find.byWidgetPredicate(
+        (w) => (w is ScriptureVerse && w.dimmed) || (w is TranslationVerse && w.dimmed),
+      );
+      expect(dimmed, findsWidgets);
+      await expectLater(
+        tester,
+        meetsGuideline(CustomMinimumContrastGuideline(finder: dimmed, minimumRatio: 4.5)),
+      );
+    });
+  }
 
   testWidgets('onboarding sets the join date and opens the reader', (tester) async {
     tester.view.physicalSize = const Size(412, 915);
