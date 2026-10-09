@@ -300,6 +300,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resume => 'Resume';
 
   @override
+  String readingDivergence(String israel, String diaspora) {
+    return 'In Israel this week: $israel. Outside Israel: $diaspora. Visitors from abroad usually read both; if you daven with a minyan reading $diaspora, read only that one.';
+  }
+
+  @override
+  String readingDivergenceOpen(String name) {
+    return 'Open $name';
+  }
+
+  @override
   String get discussThisWeek => 'Discuss this week\'s parsha';
 
   @override

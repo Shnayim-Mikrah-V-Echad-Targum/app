@@ -572,6 +572,18 @@ abstract class AppLocalizations {
   /// **'Resume'**
   String get resume;
 
+  /// Shown on Today when the reader hears the reading of one place but keeps the Yom Tov days of the other, in a week when Israel and the Diaspora read different portions.
+  ///
+  /// In en, this message translates to:
+  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Visitors from abroad usually read both; if you daven with a minyan reading {diaspora}, read only that one.'**
+  String readingDivergence(String israel, String diaspora);
+
+  /// Button on the divergence notice that opens the week page of the other place's portion.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String readingDivergenceOpen(String name);
+
   /// No description provided for @discussThisWeek.
   ///
   /// In en, this message translates to:

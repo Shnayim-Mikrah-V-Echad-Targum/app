@@ -161,3 +161,35 @@ final openPreviousWeekProvider = Provider<WeekContext?>((ref) {
   if (s == WeekStatus.inProgress || s == WeekStatus.overdue) return ctx;
   return null;
 });
+
+/// This week's portions in Israel and outside it, for a reader who hears
+/// one place's reading but keeps the other's days of Yom Tov (a visitor),
+/// in a week when the two differ, as they can for a few weeks after Pesach
+/// or Shavuot.
+class ReadingDivergence {
+  const ReadingDivergence({required this.israel, required this.diaspora, this.other});
+
+  final PortionId israel;
+  final PortionId diaspora;
+
+  /// The week, in the reader's own schedule, that holds the portion the
+  /// other place reads; null when that is this week.
+  final ReadingWeek? other;
+}
+
+final readingDivergenceProvider = Provider<ReadingDivergence?>((ref) {
+  if (!ref.watch(settingsProvider.select((s) => s.readingAndYomTovDiffer))) return null;
+  final today = ref.watch(todayProvider);
+  final israel = const ParshaSchedule(israel: true).weekFor(today);
+  final diaspora = const ParshaSchedule(israel: false).weekFor(today);
+  if (israel.portion == diaspora.portion) return null;
+  final schedule = ref.watch(scheduleProvider);
+  final elsewhere = schedule.israel ? diaspora : israel;
+  final other = findWeekById(schedule, weekIdFor(elsewhere.portion, elsewhere.occasion));
+  final current = ref.watch(currentWeekProvider);
+  return ReadingDivergence(
+    israel: israel.portion,
+    diaspora: diaspora.portion,
+    other: other == null || other.occasion == current.occasion ? null : other,
+  );
+});

@@ -301,6 +301,16 @@ class AppLocalizationsHe extends AppLocalizations {
   String get resume => 'חידוש';
 
   @override
+  String readingDivergence(String israel, String diaspora) {
+    return 'בארץ ישראל השבוע: $israel. בחוץ לארץ: $diaspora. מבקרים מחוץ לארץ נוהגים בדרך כלל לקרוא את שתיהן; אם מתפללים במניין שקורא את $diaspora, קוראים רק אותה.';
+  }
+
+  @override
+  String readingDivergenceOpen(String name) {
+    return 'לפרשת $name';
+  }
+
+  @override
   String get discussThisWeek => 'דיון על פרשת השבוע';
 
   @override

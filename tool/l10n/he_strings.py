@@ -80,6 +80,8 @@ HE = {
   "checkInPick": "בחירת עליות",
   "pausedBanner": "בהשהיה עד {date}. דבר אינו מתאפס בזמן השהיה.",
   "resume": "חידוש",
+  "readingDivergence": "בארץ ישראל השבוע: {israel}. בחוץ לארץ: {diaspora}. מבקרים מחוץ לארץ נוהגים בדרך כלל לקרוא את שתיהן; אם מתפללים במניין שקורא את {diaspora}, קוראים רק אותה.",
+  "readingDivergenceOpen": "לפרשת {name}",
   "discussThisWeek": "דיון על פרשת השבוע",
   "streakParsha": "רצף פרשות",
   "streakDays": "ימים לפי התוכנית",

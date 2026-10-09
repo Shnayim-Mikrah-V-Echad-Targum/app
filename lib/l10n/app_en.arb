@@ -206,6 +206,30 @@
     }
   },
   "resume": "Resume",
+  "readingDivergence": "In Israel this week: {israel}. Outside Israel: {diaspora}. Visitors from abroad usually read both; if you daven with a minyan reading {diaspora}, read only that one.",
+  "@readingDivergence": {
+    "description": "Shown on Today when the reader hears the reading of one place but keeps the Yom Tov days of the other, in a week when Israel and the Diaspora read different portions.",
+    "placeholders": {
+      "israel": {
+        "type": "String",
+        "example": "Korach"
+      },
+      "diaspora": {
+        "type": "String",
+        "example": "Shelach"
+      }
+    }
+  },
+  "readingDivergenceOpen": "Open {name}",
+  "@readingDivergenceOpen": {
+    "description": "Button on the divergence notice that opens the week page of the other place's portion.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Shelach"
+      }
+    }
+  },
   "discussThisWeek": "Discuss this week's parsha",
   "streakParsha": "Parsha streak",
   "streakDays": "Days on track",

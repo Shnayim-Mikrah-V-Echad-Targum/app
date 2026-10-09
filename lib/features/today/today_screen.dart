@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../core/calendar/jewish_holidays.dart';
 import '../../core/calendar/local_date.dart';
+import '../../core/calendar/parsha_schedule.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
@@ -30,6 +31,7 @@ class TodayScreen extends ConsumerWidget {
     final summary = ref.watch(streakSummaryProvider);
     final paused = ref.watch(isPausedProvider);
     final pauses = ref.watch(progressProvider.select((p) => p.pauses));
+    final divergence = ref.watch(readingDivergenceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -53,7 +55,7 @@ class TodayScreen extends ConsumerWidget {
       ),
       body: PageBody(
         children: [
-          if (paused)
+          if (paused) ...[
             NoticeBanner(
               icon: Icons.pause_circle_outline,
               text: l.pausedBanner(names.dateLong(pauses.firstWhere((p) => p.contains(today)).end)),
@@ -65,6 +67,12 @@ class TodayScreen extends ConsumerWidget {
                 child: Text(l.resume),
               ),
             ),
+            const Gap(12),
+          ],
+          if (divergence != null) ...[
+            _DivergenceBanner(divergence: divergence, settings: settings),
+            const Gap(12),
+          ],
           if (previous != null) ...[
             _OpenPreviousCard(previous: previous, current: ctx, today: today, summary: summary),
             const Gap(12),
@@ -105,6 +113,36 @@ class TodayScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Names both portions in a week when Israel and the Diaspora read
+/// different ones, for a reader who hears one place's reading but keeps the
+/// other's days of Yom Tov (a visitor).
+class _DivergenceBanner extends ConsumerWidget {
+  const _DivergenceBanner({required this.divergence, required this.settings});
+
+  final ReadingDivergence divergence;
+  final AppSettings settings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final names = Names(context);
+    final repo = ref.watch(parshaRepositoryProvider);
+    String name(PortionId p) => names.portion(repo.portion(p), ashkenazi: settings.ashkenaziNames);
+    final other = divergence.other;
+    return NoticeBanner(
+      icon: Icons.info_outline,
+      text: l.readingDivergence(name(divergence.israel), name(divergence.diaspora)),
+      actionBelow: true,
+      action: other == null
+          ? null
+          : TextButton(
+              onPressed: () => context.push('/week/${weekIdFor(other.portion, other.occasion)}'),
+              child: Text(l.readingDivergenceOpen(name(other.portion))),
+            ),
     );
   }
 }

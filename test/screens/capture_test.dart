@@ -48,6 +48,7 @@ ProgressState _progress() {
 const _screens = {
   'welcome': '/welcome',
   'today': '/today',
+  'today_divergence': '/today',
   'parsha': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
@@ -73,6 +74,16 @@ const _screens = {
   's_data_reset': '/settings/data',
   'about': '/settings/about',
   'guide': '/guide',
+};
+
+/// Screens shown on another day and with other settings: (now, settings).
+final _scenes = <String, (DateTime, AppSettings Function(AppSettings))>{
+  // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
+  // Israel is a parsha ahead, and both pairs of portions are read together.
+  'today_divergence': (
+    DateTime(2029, 4, 24, 11),
+    (s) => s.copyWith(readingSchedule: ReadingSchedule.israel, joinDate: LocalDate(2029, 4, 22)),
+  ),
 };
 
 /// Screens shown signed in with backup on, where a newer version of the app
@@ -170,7 +181,7 @@ void main() {
 
   for (final mode in _modes) {
     for (final entry in _screens.entries) {
-      if (mode.tag == 'desktop' && !const {'today', 'week', 'reader', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
+      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'week', 'reader', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
         continue;
       }
       final only = _only;
@@ -185,10 +196,11 @@ void main() {
           joinDate: _join,
           cloudSync: blocked || _backupOn.contains(entry.key),
         );
+        final scene = _scenes[entry.key];
         final c = await pumpApp(
           tester,
-          settings: mode.settings(base),
-          now: _now,
+          settings: mode.settings(scene?.$2(base) ?? base),
+          now: scene?.$1 ?? _now,
           progress: _progress(),
           forums: blocked ? await _accountWithNewerBackup() : null,
         );

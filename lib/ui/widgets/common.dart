@@ -96,25 +96,62 @@ class InfoCard extends StatelessWidget {
 
 /// A banner for important, non-blocking information.
 class NoticeBanner extends StatelessWidget {
-  const NoticeBanner({super.key, required this.icon, required this.text, this.action});
+  const NoticeBanner({super.key, required this.icon, required this.text, this.action, this.actionBelow = false});
 
   final IconData icon;
   final String text;
   final Widget? action;
 
+  /// Puts [action] beneath the text, at the end, rather than beside it: for
+  /// a text of more than a line or two, which would otherwise be squeezed.
+  final bool actionBelow;
+
+  /// [action] in the colour of interaction where that reads clearly on the
+  /// banner (WCAG AA), and otherwise, as in the high-contrast themes, in the
+  /// banner's own ink, with a focus ring to match.
+  Widget? _legible(BuildContext context) {
+    final action = this.action;
+    if (action == null) return null;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    double luminance(Color c) => c.computeLuminance() + 0.05;
+    final a = luminance(scheme.primary), b = luminance(scheme.secondaryContainer);
+    final color = (a > b ? a / b : b / a) >= 4.5 ? scheme.primary : scheme.onSecondaryContainer;
+    final style = TextButton.styleFrom(foregroundColor: color).copyWith(
+      side: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.focused) ? BorderSide(color: color, width: 3) : null,
+      ),
+    );
+    return TextButtonTheme(data: TextButtonThemeData(style: style.merge(theme.textButtonTheme.style)), child: action);
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final message = Text(text, style: TextStyle(color: scheme.onSecondaryContainer));
+    final action = _legible(context);
+    final below = actionBelow ? action : null;
     return Card(
       color: scheme.secondaryContainer,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        padding: EdgeInsetsDirectional.fromSTEB(16, 12, 8, below == null ? 12 : 4),
         child: Row(
+          crossAxisAlignment: below == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
           children: [
             Icon(icon, color: scheme.onSecondaryContainer),
             const Gap(12),
-            Expanded(child: Text(text, style: TextStyle(color: scheme.onSecondaryContainer))),
-            ?action,
+            Expanded(
+              child: below == null
+                  ? message
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: message),
+                        Align(alignment: AlignmentDirectional.centerEnd, child: below),
+                      ],
+                    ),
+            ),
+            if (below == null) ?action,
           ],
         ),
       ),
