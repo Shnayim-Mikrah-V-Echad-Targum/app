@@ -16,4 +16,6 @@ cantillation marks as empty glyphs.
 
 The Taamey Frank font is distributed as a separate, unmodified file alongside the
 app (mere aggregation). If you prefer to ship only OFL-licensed fonts, remove it
-from `pubspec.yaml` and `ScriptureFont` in `lib/ui/theme/fonts.dart`.
+from `pubspec.yaml`, `ScriptureFont` (`lib/features/settings/app_settings.dart`),
+the font picker (`lib/features/settings/screens/display_settings_screen.dart`) and the
+license registration in `lib/main.dart`.
