@@ -41,6 +41,7 @@ class WeekContext {
     required this.today,
     required this.status,
     required this.haftarah,
+    required this.aliyahVerses,
     this.joinDate,
   });
 
@@ -53,6 +54,9 @@ class WeekContext {
   /// Status from the streak engine, if this week was evaluated.
   final WeekStatus? status;
   final WeekHaftarah haftarah;
+
+  /// The number of verses in each aliyah, in order.
+  final List<int> aliyahVerses;
 
   /// When the user started; earlier days are never counted as behind.
   final LocalDate? joinDate;
@@ -72,11 +76,36 @@ class WeekContext {
     return null;
   }
 
-  /// Aliyot due since joining, by the end of yesterday, not yet read.
-  int behindBy() => [
-        for (final d in plan.days)
-          if (d.date < today && (joinDate == null || d.date >= joinDate!)) ...d.aliyot,
-      ].where((a) => !progress.isAliyahDone(a)).length;
+  /// Aliyot not yet read that were planned for today or earlier (and not
+  /// before joining), in order. Aliyot planned for Shabbat morning are due
+  /// once Shabbat has passed.
+  List<int> dueAliyot() => _unreadPlannedFor((d) => d <= today);
+
+  /// How many of [dueAliyot] were planned before today.
+  int behindBy() => _unreadPlannedFor((d) => d < today).length;
+
+  List<int> _unreadPlannedFor(bool Function(LocalDate date) due) {
+    final days = [...plan.days, PlanDay(week.occasion, plan.shabbatAliyot)];
+    return [
+      for (final d in days)
+        if (due(d.date) && (joinDate == null || d.date >= joinDate!))
+          for (final a in d.aliyot)
+            if (!progress.isAliyahDone(a)) a,
+    ]..sort();
+  }
+
+  /// About how many minutes it takes to finish [aliyot], counting only the
+  /// readings of each not yet done.
+  int remainingMinutes(Iterable<int> aliyot) {
+    var verseReadings = 0;
+    for (final a in aliyot) {
+      verseReadings += aliyahVerses[a] * progress.units[a].where((d) => d == null).length;
+    }
+    // kSecondsPerVerse covers all three readings of a verse. Rounded up in
+    // whole numbers, so that an exact minute stays exact.
+    const divisor = 3 * 60;
+    return (verseReadings * kSecondsPerVerse + divisor - 1) ~/ divisor;
+  }
 }
 
 final weekContextProvider = Provider.family<WeekContext?, String>((ref, id) {
@@ -91,6 +120,7 @@ final currentWeekContextProvider = Provider<WeekContext>((ref) => _contextFor(re
 WeekContext _contextFor(Ref ref, ReadingWeek week) {
   final plan = ref.watch(plannerProvider).planFor(week);
   final repo = ref.watch(parshaRepositoryProvider);
+  final info = repo.portion(week.portion);
   final settings = ref.watch(settingsProvider);
   final summary = ref.watch(streakSummaryProvider);
   WeekStatus? status;
@@ -100,11 +130,12 @@ WeekContext _contextFor(Ref ref, ReadingWeek week) {
   return WeekContext(
     week: week,
     plan: plan,
-    portion: repo.portion(week.portion),
+    portion: info,
     progress: ref.watch(progressProvider).week(plan.weekId),
     today: ref.watch(todayProvider),
     status: status,
     haftarah: repo.haftarahFor(week.portion, week.occasion, settings.nusach),
+    aliyahVerses: [for (var a = 0; a < kAliyot; a++) repo.aliyahVerseCount(info, a)],
     joinDate: settings.joinDate,
   );
 }

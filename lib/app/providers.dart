@@ -405,6 +405,10 @@ class ProgressController extends Notifier<ProgressState> {
   void markAliyah(String weekId, int aliyah, LocalDate? date) =>
       _updateWeek(weekId, (w) => w.withAliyah(aliyah, date));
 
+  /// Marks each of [aliyot] read on [date], as one change.
+  void markAliyot(String weekId, List<int> aliyot, LocalDate date) =>
+      _updateWeek(weekId, (w) => aliyot.fold(w, (w, a) => w.withAliyah(a, date)));
+
   void markWeek(String weekId, LocalDate date) => _updateWeek(weekId, (w) => w.withAll(date));
 
   void clearWeek(String weekId) => _updateWeek(weekId, (w) => w.cleared());

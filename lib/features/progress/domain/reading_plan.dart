@@ -4,6 +4,9 @@ import '../../../core/calendar/local_date.dart';
 import '../../../core/calendar/parsha_schedule.dart';
 import 'progress_models.dart';
 
+/// Seconds to read one verse twice and its Targum once, for time estimates.
+const kSecondsPerVerse = 25;
+
 /// How a user spreads the week's reading.
 enum ReadingPlanType {
   /// One aliyah a day, Sunday–Thursday, and the 6th and 7th on Friday

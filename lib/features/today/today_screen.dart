@@ -12,11 +12,9 @@ import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
+import '../progress/domain/reading_plan.dart';
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
-
-/// Seconds to read one verse twice and its Targum once, for time estimates.
-const kSecondsPerVerse = 25;
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
@@ -259,9 +257,7 @@ class _TodayCard extends ConsumerWidget {
                   onPressed: () async {
                     final date = await pickReadDate(context, week: ctx.week, today: ctx.today);
                     if (date == null || !context.mounted) return;
-                    for (final a in day.aliyot) {
-                      ref.read(progressProvider.notifier).markAliyah(ctx.id, a, date);
-                    }
+                    ref.read(progressProvider.notifier).markAliyot(ctx.id, day.aliyot, date);
                     hapticSuccess(ref);
                     showStatus(context, l.markedRead);
                   },
