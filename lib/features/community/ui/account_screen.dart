@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
@@ -147,6 +148,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       Align(
         alignment: AlignmentDirectional.centerStart,
         child: FilledButton.tonal(
+          style: AppButtons.tonal(context),
           onPressed: _busy
               ? null
               : () => _run(() async {
@@ -212,10 +214,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               actions: [
                 TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
                 FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    foregroundColor: Theme.of(context).colorScheme.onError,
-                  ),
+                  style: AppButtons.destructive(context),
                   onPressed: () => Navigator.pop(context, true),
                   child: Text(l.deleteAccount),
                 ),

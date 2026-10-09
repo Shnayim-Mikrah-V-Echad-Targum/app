@@ -205,6 +205,8 @@ extension DayDisplayX on DayDisplay {
   }
 }
 
+const _dayRadius = BorderRadius.all(Radius.circular(10));
+
 /// Sunday through Shabbat of a week, with the day's plan and status.
 class WeekStrip extends StatelessWidget {
   const WeekStrip({
@@ -256,10 +258,10 @@ class WeekStrip extends StatelessWidget {
                   if (aliyot.isNotEmpty) aliyot,
                 ].join('. ');
                 final chip = Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  constraints: const BoxConstraints(minHeight: 48),
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: _dayRadius,
                     border: isToday ? Border.all(color: theme.colorScheme.primary, width: 2) : null,
                     color: isToday ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35) : null,
                   ),
@@ -277,19 +279,19 @@ class WeekStrip extends StatelessWidget {
                     ],
                   ),
                 );
-                return Semantics(
-                  label: semantic,
-                  button: planned != null && onDayTap != null,
-                  excludeSemantics: true,
-                  child: Tooltip(
-                    message: semantic,
-                    child: planned != null && onDayTap != null
-                        ? InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () => onDayTap!(planned),
-                            child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: chip),
-                          )
-                        : ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: chip),
+                return Padding(
+                  // Outside the ink well, so its focus ring hugs the day.
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Semantics(
+                    label: semantic,
+                    button: planned != null && onDayTap != null,
+                    excludeSemantics: true,
+                    child: Tooltip(
+                      message: semantic,
+                      child: planned != null && onDayTap != null
+                          ? SeferInkWell(borderRadius: _dayRadius, onTap: () => onDayTap!(planned), child: chip)
+                          : chip,
+                    ),
                   ),
                 );
               }),

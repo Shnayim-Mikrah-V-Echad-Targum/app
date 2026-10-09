@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../ui/l10n.dart';
+import '../../ui/widgets/sefer_choice_chip.dart';
 import '../settings/app_settings.dart';
 
 /// Quick display controls available while reading.
@@ -120,7 +121,7 @@ class _DisplaySheet extends ConsumerWidget {
                     (AppThemeMode.highContrastLight, l.themeHcLight),
                     (AppThemeMode.highContrastDark, l.themeHcDark),
                   ])
-                    ChoiceChip(
+                    SeferChoiceChip(
                       label: Text(label),
                       selected: s.theme == mode,
                       onSelected: (_) => update((s) => s.copyWith(theme: mode)),

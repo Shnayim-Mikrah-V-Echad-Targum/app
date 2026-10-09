@@ -11,6 +11,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/progress_widgets.dart';
+import '../../ui/widgets/sefer_choice_chip.dart';
 import '../parsha/week_context.dart';
 import 'domain/milestones.dart';
 import 'domain/progress_models.dart';
@@ -224,6 +225,8 @@ class _BigStat extends StatelessWidget {
 
 enum _TileState { done, late, madeUp, missed, current, upcoming, untracked }
 
+const _tileRadius = BorderRadius.all(Radius.circular(6));
+
 class _TorahMap extends ConsumerWidget {
   const _TorahMap({required this.cycle, required this.summary, required this.done, required this.current});
 
@@ -287,8 +290,8 @@ class _TorahMap extends ConsumerWidget {
         excludeSemantics: true,
         child: Tooltip(
           message: '$name — ${label(s)}',
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
+          child: SeferInkWell(
+            borderRadius: _tileRadius,
             onTap: () => context.push('/week/$cycle:${p.id.number}'),
             child: Container(
               constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
@@ -296,7 +299,7 @@ class _TorahMap extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: fill,
                 border: Border.all(color: border, width: s == _TileState.current ? 2 : 1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: _tileRadius,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -400,7 +403,11 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
                 spacing: 8,
                 children: [
                   for (final d in const [1, 3, 7, 14, 30])
-                    ChoiceChip(label: Text(l.daysCount(d)), selected: days == d, onSelected: (_) => setState(() => days = d)),
+                    SeferChoiceChip(
+                      label: Text(l.daysCount(d)),
+                      selected: days == d,
+                      onSelected: (_) => setState(() => days = d),
+                    ),
                 ],
               ),
               const Gap(12),
@@ -409,7 +416,7 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
                 spacing: 8,
                 children: [
                   for (final b in const [0, 1, 2, 3])
-                    ChoiceChip(
+                    SeferChoiceChip(
                       label: Text(b == 0 ? l.whenToday : (b == 1 ? l.whenYesterday : names.dateShort(today.addDays(-b)))),
                       selected: backdate == b,
                       onSelected: (_) => setState(() => backdate = b),

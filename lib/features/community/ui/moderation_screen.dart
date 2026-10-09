@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../data/backend.dart';
 import '../data/models.dart';
@@ -72,6 +73,7 @@ class ModerationScreen extends ConsumerWidget {
                           children: [
                             if (r.postId != null)
                               FilledButton.tonal(
+                                style: AppButtons.tonal(context),
                                 onPressed: () => act(() async {
                                   await repo.moderate('hide_post', r.postId!);
                                   await repo.moderate('resolve_report', r.id);

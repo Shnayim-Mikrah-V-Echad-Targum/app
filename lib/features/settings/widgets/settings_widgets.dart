@@ -86,6 +86,7 @@ class LabeledSlider extends StatelessWidget {
   Widget build(BuildContext context) {
     final divisions = ((max - min) / step).round();
     double snap(double v) => (min + ((v - min) / step).round() * step).clamp(min, max);
+    final textTheme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Column(
@@ -93,8 +94,12 @@ class LabeledSlider extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(title, style: Theme.of(context).textTheme.bodyLarge)),
-              Text(format(value), style: Theme.of(context).textTheme.labelLarge),
+              Expanded(child: Text(title, style: textTheme.bodyLarge)),
+              // Tabular figures, so the value doesn't jiggle as it changes.
+              Text(
+                format(value),
+                style: textTheme.labelLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
             ],
           ),
           Row(

@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/providers.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -98,10 +99,7 @@ class DataSettingsScreen extends ConsumerWidget {
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
                   FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      foregroundColor: Theme.of(context).colorScheme.onError,
-                    ),
+                    style: AppButtons.destructive(context),
                     onPressed: () => Navigator.pop(context, true),
                     child: Text(l.resetProgress),
                   ),

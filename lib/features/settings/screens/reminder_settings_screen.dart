@@ -5,6 +5,7 @@ import '../../../app/providers.dart';
 import '../../../services/notifications.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/sefer_choice_chip.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -86,7 +87,7 @@ class ReminderSettingsScreen extends ConsumerWidget {
                     runSpacing: 4,
                     children: [
                       for (final a in anchors)
-                        ChoiceChip(
+                        SeferChoiceChip(
                           label: Text(a),
                           selected: s.habitAnchor == a,
                           onSelected: (sel) => update((s) => s.copyWith(habitAnchor: sel ? a : null)),

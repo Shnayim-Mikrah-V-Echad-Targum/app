@@ -485,7 +485,9 @@ Every ButtonStyle:
 
 This fixes D3: the ring paints on the surface, outside the fill (9.72:1 in light).
 
-Chips use `side: WidgetStateBorderSide.resolveWith` → focused gives `BorderSide(color: focus, width: 3, strokeAlign: BorderSide.strokeAlignOutside)`.
+Chips draw every border outside the chip (`strokeAlign: BorderSide.strokeAlignOutside`), so selecting or focusing one never resizes it. Their `shape` is a `WidgetStateOutlinedBorder` that resolves focused to `FocusRingBorder(borderRadius: 8, …)`, which starts its gap past an outside border. The selection border stays visible under focus, and in high contrast the ring is not confused with the 2 px outline. `SeferChoiceChip` also clears the chip's focus tint, which would read as a selection fill.
+
+Icon buttons keep Material's circle; focused, they take a `FocusRingBorder` of radius 24. The slider rings its thumb the same way (`FocusRingSliderOverlay`).
 
 `SeferInkWell` is used for cards, PaperRows, week cells, map tiles and ribbon tabs:
 - an InkWell with `onFocusChange`;
@@ -568,7 +570,7 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 - High contrast: icons on both states (keep the check/close thumbIcon, app_theme.dart:258).
 
 **Slider**
-- `year2023: false`; active track primary, inactive surfaceContainerHighest, height 4; thumb primary 20.
+- Active track primary, inactive surfaceContainerHighest, height 4; round thumb primary 20 (`RoundSliderThumbShape(enabledThumbRadius: 10)`). Every shape is named in the theme, so the deprecated `year2023` flag is left unset and neither Material slider generation shows through.
 - `tickMarkShape: SliderTickMarkShape.noTickMark`.
 - Value at the end in labelLarge with tabular figures; −/+ IconButtons 48.
 

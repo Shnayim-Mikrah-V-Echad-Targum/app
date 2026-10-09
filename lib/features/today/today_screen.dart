@@ -7,6 +7,7 @@ import '../../core/calendar/jewish_holidays.dart';
 import '../../core/calendar/local_date.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
@@ -249,6 +250,7 @@ class _TodayCard extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 FilledButton.tonalIcon(
+                  style: AppButtons.tonal(context),
                   icon: const Icon(Icons.play_arrow),
                   label: Text(l.readTodaysAliyah),
                   onPressed: () => context.push('/read/${ctx.id}/$first'),

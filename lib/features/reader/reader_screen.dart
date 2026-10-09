@@ -15,6 +15,7 @@ import '../../services/feedback.dart';
 import '../../services/tts.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/sefer_choice_chip.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../settings/app_settings.dart';
@@ -533,7 +534,7 @@ class _AliyahSelector extends StatelessWidget {
           for (var a = 0; a < kAliyot; a++)
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 8),
-              child: ChoiceChip(
+              child: SeferChoiceChip(
                 avatar: ctx.progress.isAliyahDone(a) ? const Icon(Icons.check, size: 18) : null,
                 label: Text(names.aliyah(a)),
                 selected: selected == a,

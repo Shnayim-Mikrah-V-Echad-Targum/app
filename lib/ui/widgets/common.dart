@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/focus.dart';
+
 /// Constrains page content to a readable width and centers it on wide
 /// screens, so lines never get uncomfortably long (WCAG 1.4.8).
 class PageBody extends StatelessWidget {
@@ -86,10 +88,17 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = Padding(padding: padding, child: child);
+    if (onTap == null) return Card(color: color, clipBehavior: Clip.antiAlias, child: content);
+    // The focus ring is drawn just outside the card, so the card mustn't clip
+    // it. The ink stays inside: the ink well clips it to the same corners.
+    final radius = switch (Theme.of(context).cardTheme.shape) {
+      RoundedRectangleBorder(:final borderRadius) => borderRadius.resolve(Directionality.of(context)),
+      _ => const BorderRadius.all(Radius.circular(12)),
+    };
     return Card(
       color: color,
-      clipBehavior: Clip.antiAlias,
-      child: onTap == null ? content : InkWell(onTap: onTap, child: content),
+      clipBehavior: Clip.none,
+      child: SeferInkWell(onTap: onTap, borderRadius: radius, child: content),
     );
   }
 }
