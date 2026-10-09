@@ -69,6 +69,24 @@ void main() {
     });
   });
 
+  group('WeekProgress', () {
+    test('un-marking a reading forgets how far into it the reader got', () {
+      final read = WeekProgress(weekId: noach).withAliyah(2, d1).withPosition(2, const [9, 9, 9]);
+      expect(read.withUnit(2, ReadingPass.mikra2, null).positions[2], [9, 0, 9]);
+      expect(read.withAliyah(2, null).positions[2], [0, 0, 0]);
+      expect(read.withAliyah(2, null).isStarted, isFalse);
+      expect(read.withUnit(2, ReadingPass.targum, d2).positions[2], [9, 9, 9], reason: 'marking keeps it');
+      final short = WeekProgress(weekId: noach, positions: {4: const [5]});
+      expect(short.withUnit(4, ReadingPass.targum, null).positions[4], [5, 0, 0]);
+    });
+
+    test('a week has started once anything is read or begun', () {
+      expect(WeekProgress(weekId: noach).isStarted, isFalse);
+      expect(WeekProgress(weekId: noach).withPosition(0, const [1, 0, 0]).isStarted, isTrue);
+      expect(WeekProgress(weekId: noach).withUnit(6, ReadingPass.targum, d1).isStarted, isTrue);
+    });
+  });
+
   group('ProgressController.replaceAll', () {
     late ProviderContainer container;
     late SharedPreferences prefs;

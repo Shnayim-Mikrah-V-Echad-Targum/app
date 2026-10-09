@@ -94,6 +94,9 @@ class WeekProgress {
 
   bool get isComplete => completedUnits == kAliyot * 3;
 
+  /// Whether any reading has been completed or begun.
+  bool get isStarted => completedUnits > 0 || positions.values.any((p) => p.any((n) => n > 0));
+
   /// Units completed on or before [date].
   int unitsBy(LocalDate date) =>
       units.fold(0, (n, row) => n + row.where((d) => d != null && d <= date).length);
@@ -121,18 +124,27 @@ class WeekProgress {
         positions: positions ?? this.positions,
       );
 
-  /// Marks one reading of one aliyah complete on [date] (if not already).
+  /// Marks one reading of one aliyah complete on [date] (if not already), or
+  /// with a null [date], not done. Un-marking also forgets how far into that
+  /// reading the reader got, so that it starts over rather than counting as
+  /// complete again at the next step.
   WeekProgress withUnit(int aliyah, ReadingPass pass, LocalDate? date) {
     final u = [for (final row in units) [...row]];
-    if (date == null) {
-      u[aliyah][pass.index] = null;
-    } else {
+    if (date != null) {
       u[aliyah][pass.index] ??= date;
+      return _copy(units: u);
     }
-    return _copy(units: u);
+    u[aliyah][pass.index] = null;
+    final pos = [...(positions[aliyah] ?? const [0, 0, 0])];
+    while (pos.length < 3) {
+      pos.add(0);
+    }
+    pos[pass.index] = 0;
+    return _copy(units: u, positions: {...positions, aliyah: List.unmodifiable(pos)});
   }
 
-  /// Marks all three readings of [aliyah] complete on [date].
+  /// Marks all three readings of [aliyah] complete on [date], or with a null
+  /// [date], not done.
   WeekProgress withAliyah(int aliyah, LocalDate? date) {
     var p = this;
     for (final pass in ReadingPass.values) {

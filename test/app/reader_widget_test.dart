@@ -51,7 +51,76 @@ void main() {
     await tester.tap(find.text('Mark this aliyah as read'));
     await tester.pumpAndSettle();
     expect(c.read(progressProvider).week('5787:2').isAliyahDone(0), isTrue);
+    expect(c.read(progressProvider).week('5787:2').positions[0], [14, 14, 14], reason: 'the real verse count');
     expect(find.textContaining('Rishon is complete'), findsWidgets);
+  });
+
+  for (final method in [ReadingMethod.verseByVerse, ReadingMethod.aliyahByAliyah]) {
+    testWidgets('after Mark as not read, the aliyah starts over (${method.name})', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, notificationPromptShown: true, method: method),
+        now: monday,
+      );
+      WeekProgress week() => c.read(progressProvider).week('5787:2');
+
+      c.read(routerProvider).go('/read/5787:2/0');
+      await loadTexts(tester);
+      for (var i = 0; i < 60 && !week().isAliyahDone(0); i++) {
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
+      }
+      expect(week().isAliyahDone(0), isTrue);
+      expect(week().positions[0], [14, 14, 14]);
+
+      c.read(routerProvider).go('/week/5787:2');
+      await tester.pumpAndSettle();
+      final rishon = find.ancestor(of: find.text('Rishon · aliyah 1'), matching: find.byType(ListTile));
+      await tester.tap(find.descendant(of: rishon, matching: find.byTooltip('More options')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mark as not read'));
+      await tester.pumpAndSettle();
+      expect(week().units[0], [null, null, null]);
+      expect(week().positions[0], [0, 0, 0]);
+      // Let the confirmation snack bar clear the reader's bottom bar.
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+
+      // Reopened, it resumes at the first reading, and one step credits only
+      // what that step actually read.
+      c.read(routerProvider).go('/read/5787:2/0');
+      await loadTexts(tester);
+      expect(find.text('Read the Hebrew'), findsOneWidget);
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      final firstChunkIsWholeAliyah = method == ReadingMethod.aliyahByAliyah;
+      expect(week().isUnitDone(0, ReadingPass.mikra1), firstChunkIsWholeAliyah);
+      expect(week().isUnitDone(0, ReadingPass.mikra2), isFalse);
+      expect(week().isUnitDone(0, ReadingPass.targum), isFalse);
+      expect(week().positions[0], [firstChunkIsWholeAliyah ? 14 : 1, 0, 0]);
+    });
+  }
+
+  testWidgets('a stale saved position credits no reading that is not done', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    // Counts at the end of the aliyah with nothing marked done, as a sync
+    // that predates Mark as not read clearing them could leave it.
+    final stale = ProgressState(weeks: {'5787:2': WeekProgress(weekId: '5787:2').withPosition(0, const [14, 14, 14])});
+    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday, progress: stale);
+    c.read(routerProvider).go('/read/5787:2/0');
+    await loadTexts(tester);
+    expect(find.text('Read the Hebrew'), findsOneWidget);
+    expect(find.text('Verse 1 of 14'), findsOneWidget);
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    final week = c.read(progressProvider).week('5787:2');
+    expect(week.completedUnits, 0);
+    expect(week.positions[0], [1, 0, 0]);
   });
 
   testWidgets('reader meets accessibility guidelines', (tester) async {

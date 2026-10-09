@@ -129,7 +129,7 @@ class _ParshaCard extends ConsumerWidget {
         ? l.readOnSimchatTorah(names.dateLong(occasion))
         : l.readOnShabbat(names.dateMonthDay(occasion));
     final next = ctx.nextAliyah;
-    final started = ctx.progress.completedUnits > 0 || ctx.progress.positions.isNotEmpty;
+    final started = ctx.progress.isStarted;
     final daysLeft = occasion.differenceInDays(ctx.today);
 
     return InfoCard(

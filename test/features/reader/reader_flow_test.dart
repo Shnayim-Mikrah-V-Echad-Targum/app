@@ -84,6 +84,13 @@ void main() {
     expect(f.resumeFrom([6, 6, 6]), (0, 0), reason: 'finished aliyah restarts for review');
   });
 
+  test('resume never skips a reading that was un-marked on its own', () {
+    final f = flow(method: ReadingMethod.aliyahByAliyah);
+    expect(f.resumeFrom([0, 6, 0]), (0, 0), reason: 'the first reading is not done');
+    expect(f.resumeFrom([6, 0, 0]), (0, 1));
+    expect(f.resumeFrom([6, 6, 0]), (0, 2));
+  });
+
   test('resume after switching from verse to section mode', () {
     final f = flow(method: ReadingMethod.sectionBySection);
     expect(f.resumeFrom([3, 3, 3]), (1, 0), reason: 'restart the section containing the next verse');
