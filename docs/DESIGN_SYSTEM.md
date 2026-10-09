@@ -97,7 +97,8 @@ New and changed files:
 - `lib/ui/widgets/common.dart`:
   - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5;
   - `SectionHeader` is restyled as an eyebrow (§6.4);
-  - `NoticeBanner` per §6.20.
+  - `NoticeBanner` per §6.20;
+  - `EmptyState` per §6.22.
 - `lib/features/reader/aliyah_ribbon.dart`, `pass_track.dart` and `reader_bottom_bar.dart`: extracted from reader_screen.dart.
 - `tool/fonts/build_fonts.sh` (§4.1) and `tool/branding/make_icon.py` (§7.8).
 - `test/ui/palette_contrast_test.dart` (§11).
@@ -515,8 +516,9 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 **PaperRow**
 - Min height 56 (one line) or 72 (two lines); padding start 16, end 12, vertical 12.
 - Leading icon 22 in onSurfaceVariant, in a 38 slot (icon then 16 gap).
-- Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max.
+- Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max. Once the system text is enlarged, the subtitle is never cut short (WCAG 1.4.4).
 - Trailing: an optional value in bodyMedium onSurfaceVariant, then `Icons.chevron_right` 20 in outline (mirrors in RTL automatically).
+  - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it.
 - Tap via SeferInkWell.
 
 **GroupHeader**

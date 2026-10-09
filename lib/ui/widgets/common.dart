@@ -2,9 +2,8 @@ import 'dart:ui' show SemanticsHitTestBehavior;
 
 import 'package:flutter/material.dart';
 
-import '../theme/focus.dart';
-import '../theme/motion.dart';
-import '../theme/sefer_colors.dart';
+import '../theme/app_theme.dart';
+import 'ornaments.dart';
 
 /// Screens narrower than this pad cards and sheets 16 instead of 20 or 24
 /// (docs/DESIGN_SYSTEM.md §5).
@@ -141,6 +140,44 @@ class NoticeBanner extends StatelessWidget {
             Expanded(child: Text(text, style: TextStyle(color: scheme.onSecondaryContainer))),
             ?action,
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// What a list shows while it has nothing in it (docs/DESIGN_SYSTEM.md
+/// §6.22): a divider, one gentle sentence, and the action that would fill it.
+/// Centred, at most 320 wide, 40 below whatever is above it.
+class EmptyState extends StatelessWidget {
+  const EmptyState({super.key, required this.message, this.actionLabel, this.onAction});
+
+  final String message;
+
+  /// A tonal button under the message, shown when both are given.
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      heightFactor: 1,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SeferDivider(),
+              const Gap(12),
+              Text(message, style: SeferType.of(context).marginalia, textAlign: TextAlign.center),
+              if (actionLabel != null && onAction != null) ...[
+                const Gap(16),
+                FilledButton.tonal(style: AppButtons.tonal(context), onPressed: onAction, child: Text(actionLabel!)),
+              ],
+            ],
+          ),
         ),
       ),
     );
