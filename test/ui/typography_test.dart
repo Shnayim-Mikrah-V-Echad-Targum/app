@@ -70,6 +70,7 @@ Map<String, TextStyle> _tokens(SeferType t) => {
       'longformHeading': t.longformHeading,
       'hebrewDisplay': t.hebrewDisplay,
       'ordinal': t.ordinal,
+      'wordmark': t.wordmark,
     };
 
 // docs/DESIGN_SYSTEM.md §4.3 and §4.4.
@@ -109,7 +110,8 @@ const _hebrew = {
   'labelSmall': 'NSH 12/16 500 0',
 };
 
-// §4.5, without hebrewDisplay (it has no size; checked on its own).
+// §4.5 and the rail's wordmark (§6.10), without hebrewDisplay (it has no size;
+// checked on its own).
 const _seferEnglish = {
   'eyebrow': 'EBG 18/22 600 0.8',
   'marginalia': 'EBG 19/28 500 0 italic',
@@ -118,6 +120,7 @@ const _seferEnglish = {
   'longformBody': 'EBG 20/32 500 0.1',
   'longformHeading': 'EBG 24/30 500 0',
   'ordinal': 'FRL 20/24 600 0',
+  'wordmark': 'EBG 20/24 500 0',
 };
 const _seferHebrew = {
   'eyebrow': 'FRL 16/20 600 0',
@@ -127,6 +130,7 @@ const _seferHebrew = {
   'longformBody': 'FRL 18/30 500 0',
   'longformHeading': 'FRL 22/30 600 0',
   'ordinal': 'FRL 20/24 600 0',
+  'wordmark': 'FRL 20/24 500 0',
 };
 const _seferEnglishHc = {
   'eyebrow': 'EBG 18/22 700 0.8',
@@ -136,6 +140,7 @@ const _seferEnglishHc = {
   'longformBody': 'EBG 20/32 600 0.1',
   'longformHeading': 'EBG 24/30 600 0',
   'ordinal': 'FRL 20/24 700 0',
+  'wordmark': 'EBG 20/24 600 0',
 };
 const _seferHebrewHc = {
   'eyebrow': 'FRL 16/20 700 0',
@@ -145,6 +150,7 @@ const _seferHebrewHc = {
   'longformBody': 'FRL 18/30 700 0',
   'longformHeading': 'FRL 22/30 700 0',
   'ordinal': 'FRL 20/24 700 0',
+  'wordmark': 'FRL 20/24 700 0',
 };
 const _seferLexendEnglish = {
   'eyebrow': 'Lexend 13/16 700 0.8',
@@ -154,6 +160,7 @@ const _seferLexendEnglish = {
   'longformBody': 'Lexend 18/30 400 0',
   'longformHeading': 'Lexend 24/30 700 0',
   'ordinal': 'Lexend 20/24 700 0',
+  'wordmark': 'Lexend 20/24 700 0',
 };
 const _seferLexendHebrew = {
   'eyebrow': 'Lexend 13/16 700 0',
@@ -163,6 +170,7 @@ const _seferLexendHebrew = {
   'longformBody': 'Lexend 18/30 400 0',
   'longformHeading': 'Lexend 22/30 700 0',
   'ordinal': 'Lexend 20/24 700 0',
+  'wordmark': 'Lexend 20/24 700 0',
 };
 
 /// The weights each family bundles (pubspec.yaml). The device font is
@@ -340,6 +348,7 @@ void main() {
       expect(t.ringNumeral.color, _scheme.onSurface);
       expect(t.longformHeading.color, _scheme.onSurface);
       expect(t.hebrewDisplay.color, _scheme.primary);
+      expect(t.wordmark.color, _scheme.onSurface);
       expect(_sefer(hebrewUi: true).eyebrow.color, _scheme.secondary);
     });
 
@@ -396,6 +405,8 @@ void main() {
       expect(a.lerp(null, 0.5), same(a));
       expect(a.copyWith(ordinal: b.ordinal).ordinal, b.ordinal);
       expect(a.copyWith(ordinal: b.ordinal).eyebrow, a.eyebrow);
+      expect(a.lerp(b, 1).wordmark, b.wordmark);
+      expect(a.copyWith(wordmark: b.wordmark).wordmark, b.wordmark);
     });
   });
 

@@ -146,6 +146,7 @@ abstract final class AppTypography {
       ordinal: accessible
           ? t.style(t.accessibleFace, 20, 24, FontWeight.w700, color: scheme.onSurface)
           : t.serif(_frl, 20, 24, FontWeight.w600, color: scheme.onSurface),
+      wordmark: t.display(20, 24, FontWeight.w500, color: scheme.onSurface),
       uppercaseEyebrows: accessible && !he,
     );
   }
@@ -255,6 +256,7 @@ class SeferType extends ThemeExtension<SeferType> {
     required this.longformHeading,
     required this.hebrewDisplay,
     required this.ordinal,
+    required this.wordmark,
     required this.uppercaseEyebrows,
   });
 
@@ -283,6 +285,10 @@ class SeferType extends ThemeExtension<SeferType> {
   /// The Hebrew aliyah letter, א to ז.
   final TextStyle ordinal;
 
+  /// The app's name beside its mark, at the head of the extended navigation
+  /// rail (§6.10).
+  final TextStyle wordmark;
+
   /// Whether [eyebrowText] uppercases: an accessibility font has no small
   /// caps, so the English UI sets eyebrows in capitals instead.
   final bool uppercaseEyebrows;
@@ -304,6 +310,7 @@ class SeferType extends ThemeExtension<SeferType> {
     TextStyle? longformHeading,
     TextStyle? hebrewDisplay,
     TextStyle? ordinal,
+    TextStyle? wordmark,
     bool? uppercaseEyebrows,
   }) =>
       SeferType(
@@ -315,6 +322,7 @@ class SeferType extends ThemeExtension<SeferType> {
         longformHeading: longformHeading ?? this.longformHeading,
         hebrewDisplay: hebrewDisplay ?? this.hebrewDisplay,
         ordinal: ordinal ?? this.ordinal,
+        wordmark: wordmark ?? this.wordmark,
         uppercaseEyebrows: uppercaseEyebrows ?? this.uppercaseEyebrows,
       );
 
@@ -330,6 +338,7 @@ class SeferType extends ThemeExtension<SeferType> {
       longformHeading: TextStyle.lerp(longformHeading, other.longformHeading, t)!,
       hebrewDisplay: TextStyle.lerp(hebrewDisplay, other.hebrewDisplay, t)!,
       ordinal: TextStyle.lerp(ordinal, other.ordinal, t)!,
+      wordmark: TextStyle.lerp(wordmark, other.wordmark, t)!,
       // A flag can't be blended: switch halfway, as ThemeData does.
       uppercaseEyebrows: t < 0.5 ? uppercaseEyebrows : other.uppercaseEyebrows,
     );
