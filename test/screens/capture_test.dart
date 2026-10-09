@@ -21,6 +21,9 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/theme/focus.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
 
@@ -68,6 +71,15 @@ const _screens = {
   's_data': '/settings/data',
   'about': '/settings/about',
   'guide': '/guide',
+  // Keyboard focus on a control, to check the focus ring (§6.1).
+  'focus_button': '/today',
+  'focus_day': '/today',
+  'focus_card': '/today',
+  'focus_tile': '/progress',
+  'focus_slider': '/settings/display',
+  'focus_switch': '/settings/display',
+  'focus_field': '/community/account',
+  'focus_chip': '/read/5787:1/2',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -81,7 +93,42 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_focus': (tester) => tester.tap(find.byType(ScriptureVerse).at(2)),
   // The interface font choices, at the end of the Display page.
   's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),
+  'focus_button': (tester) => _keyboardFocus(tester, find.byType(FilledButton).first),
+  'focus_day': (tester) =>
+      _keyboardFocus(tester, find.descendant(of: find.byType(WeekStrip), matching: find.byType(SeferInkWell)).at(1)),
+  'focus_card': (tester) => _keyboardFocus(tester, find.byWidgetPredicate((w) => w is InfoCard && w.onTap != null).first),
+  // Noach: map tiles are the ink wells with 6 px corners.
+  'focus_tile': (tester) => _keyboardFocus(
+        tester,
+        find
+            .byWidgetPredicate((w) => w is SeferInkWell && w.borderRadius == const BorderRadius.all(Radius.circular(6)))
+            .at(1),
+      ),
+  'focus_slider': (tester) => _keyboardFocus(tester, find.byType(Slider).first),
+  'focus_switch': (tester) => _keyboardFocus(tester, find.byType(SwitchListTile).first),
+  'focus_field': (tester) => _keyboardFocus(tester, find.byType(TextField).first),
+  'focus_chip': (tester) => _keyboardFocus(tester, find.byType(ChoiceChip).at(1)),
 };
+
+/// Moves keyboard focus to [target], as Tab would, and shows it the way a
+/// keyboard user sees it.
+Future<void> _keyboardFocus(WidgetTester tester, Finder target) async {
+  FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+  addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+  // Centred, so the ring isn't cut off at the edge of the scroll view.
+  await Scrollable.ensureVisible(tester.element(target), alignment: 0.5);
+  await tester.pump();
+  // The control's own focus node: the first one inside it that Tab can reach.
+  final foci = find.descendant(of: target, matching: find.byType(Focus));
+  final nodes = [
+    for (var i = 0; i < foci.evaluate().length; i++)
+      Focus.of(
+        tester.element(find.descendant(of: foci.at(i), matching: find.byWidgetPredicate((_) => true)).first),
+        createDependency: false,
+      ),
+  ];
+  nodes.firstWhere((n) => n.canRequestFocus && !n.skipTraversal).requestFocus();
+}
 
 class _Mode {
   const _Mode(this.tag, this.size, this.settings);
@@ -99,7 +146,12 @@ final _modes = [
   _Mode('sepia', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.sepia)),
   _Mode('hcl', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.highContrastLight)),
   _Mode('lexend', const Size(412, 915), (s) => s.copyWith(uiFont: UiFont.lexend)),
+  // Long pages in full, for the screens in [_tallScreens].
+  _Mode('phonetall', const Size(412, 2600), (s) => s),
 ];
+
+const _desktopScreens = {'today', 'week', 'reader', 'reader_full', 'progress', 'thread', 'settings', 'welcome'};
+const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
 
 Future<void> _settle(WidgetTester tester) async {
   // Text assets load on real async I/O; spinners never "settle".
@@ -130,9 +182,8 @@ void main() {
   for (final mode in _modes) {
     if (!(_onlyModes?.contains(mode.tag) ?? true)) continue;
     for (final entry in _screens.entries) {
-      if (mode.tag == 'desktop' && !const {'today', 'week', 'reader', 'reader_full', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
-        continue;
-      }
+      if (mode.tag == 'desktop' && !_desktopScreens.contains(entry.key)) continue;
+      if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {
