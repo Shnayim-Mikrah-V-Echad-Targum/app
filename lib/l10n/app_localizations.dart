@@ -1409,7 +1409,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsReadingDesc.
   ///
   /// In en, this message translates to:
-  /// **'Location, plan, Targum or Rashi, haftarah'**
+  /// **'Israel or abroad, plan, Targum or Rashi, haftarah'**
   String get settingsReadingDesc;
 
   /// No description provided for @settingsDisplayDesc.

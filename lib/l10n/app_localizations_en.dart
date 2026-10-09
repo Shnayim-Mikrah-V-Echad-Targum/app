@@ -808,7 +808,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAbout => 'About';
 
   @override
-  String get settingsReadingDesc => 'Location, plan, Targum or Rashi, haftarah';
+  String get settingsReadingDesc =>
+      'Israel or abroad, plan, Targum or Rashi, haftarah';
 
   @override
   String get settingsDisplayDesc =>

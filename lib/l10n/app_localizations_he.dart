@@ -808,7 +808,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get settingsAbout => 'אודות';
 
   @override
-  String get settingsReadingDesc => 'מיקום, תוכנית, תרגום או רש״י, הפטרה';
+  String get settingsReadingDesc =>
+      'ארץ ישראל או חו״ל, תוכנית, תרגום או רש״י, הפטרה';
 
   @override
   String get settingsDisplayDesc =>
