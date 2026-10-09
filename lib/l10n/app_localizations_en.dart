@@ -942,6 +942,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cholHamoedQuiet => 'No reading planned on Chol HaMoed';
 
   @override
+  String get appliesFromThisWeek => 'Applies from this week on';
+
+  @override
   String get nameStyleLabel => 'Parsha names';
 
   @override

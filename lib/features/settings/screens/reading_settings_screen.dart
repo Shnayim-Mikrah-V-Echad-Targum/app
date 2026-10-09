@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../data/models/parsha.dart';
+import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../progress/domain/reading_plan.dart';
-import '../../progress/domain/streak_engine.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -16,7 +16,12 @@ class ReadingSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
-    void update(AppSettings Function(AppSettings) f) => ref.read(settingsProvider.notifier).update(f);
+    void update(AppSettings Function(AppSettings) f) {
+      final before = ref.read(settingsProvider).planSettings;
+      ref.read(settingsProvider.notifier).update(f);
+      // Weeks already planned and judged keep the settings they had.
+      if (!ref.read(settingsProvider).planSettings.sameSettingsAs(before)) showStatus(context, l.appliesFromThisWeek);
+    }
 
     return SettingsPage(
       title: l.settingsReading,

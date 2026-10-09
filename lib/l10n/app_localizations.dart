@@ -1664,6 +1664,12 @@ abstract class AppLocalizations {
   /// **'No reading planned on Chol HaMoed'**
   String get cholHamoedQuiet;
 
+  /// Status shown after changing the reading plan or a custom that decides how weeks are planned and judged; earlier weeks keep the settings they had.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies from this week on'**
+  String get appliesFromThisWeek;
+
   /// No description provided for @nameStyleLabel.
   ///
   /// In en, this message translates to:

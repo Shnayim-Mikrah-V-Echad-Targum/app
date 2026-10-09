@@ -18,10 +18,14 @@ LocalDate d(String iso) => LocalDate.parse(iso);
 /// Each planned day as "date [aliyot]", e.g. "2026-10-14 [0, 1]".
 List<String> daysOf(WeekPlan plan) => [for (final p in plan.days) '${p.date} ${p.aliyot}'];
 
+/// The plan settings in force on each day, from [entries] (oldest first).
+PlanSettingsEntry Function(LocalDate) settingsChanging(List<PlanSettingsEntry> entries) =>
+    (day) => entries.lastWhere((e) => e.from <= day, orElse: () => entries.first);
+
 void main() {
   const usual = ReadingPlanner(schedule: diaspora);
   ReadingPlanner joinedOn(String date, {ReadingPlanType type = ReadingPlanType.aliyahPerDay}) =>
-      ReadingPlanner(schedule: diaspora, type: type, starterFrom: d(date));
+      ReadingPlanner(schedule: diaspora, settingsAt: (_) => PlanSettingsEntry(plan: type), starterFrom: d(date));
 
   // Noach 5787: Sunday 11 Oct – Friday 16 Oct 2026, read Shabbat 17 Oct.
   final noach = diaspora.weekFor(d('2026-10-12'));
@@ -127,6 +131,106 @@ void main() {
     });
   });
 
+  group('a change of settings', () {
+    final wed = d('2026-10-14');
+    final thu = d('2026-10-15');
+    final fri = d('2026-10-16');
+    ReadingPlanner changing(List<PlanSettingsEntry> entries, {LocalDate? starterFrom}) =>
+        ReadingPlanner(schedule: diaspora, settingsAt: settingsChanging(entries), starterFrom: starterFrom);
+
+    test('to All on Friday midweek keeps the days already planned, and leaves the rest for Friday', () {
+      final p = changing([const PlanSettingsEntry(), PlanSettingsEntry(from: wed, plan: ReadingPlanType.erevShabbat)]);
+      expect(daysOf(p.planFor(noach)), [
+        '2026-10-11 [0]',
+        '2026-10-12 [1]',
+        '2026-10-13 [2]',
+        '2026-10-16 [3, 4, 5, 6]',
+      ]);
+    });
+
+    test('from All on Friday midweek spreads the portion over the days left', () {
+      final p = changing([
+        const PlanSettingsEntry(plan: ReadingPlanType.erevShabbat),
+        PlanSettingsEntry(from: wed, plan: ReadingPlanType.aliyahPerDay),
+      ]);
+      expect(daysOf(p.planFor(noach)), [
+        '2026-10-14 [0, 1]',
+        '2026-10-15 [2, 3]',
+        '2026-10-16 [4, 5, 6]',
+      ]);
+    });
+
+    test('to or from Shevi\'i on Shabbat moves the seventh aliyah', () {
+      var plan = changing([
+        const PlanSettingsEntry(),
+        PlanSettingsEntry(from: thu, plan: ReadingPlanType.sheviiOnShabbat),
+      ]).planFor(noach);
+      expect(daysOf(plan).sublist(4), ['2026-10-15 [4]', '2026-10-16 [5]']);
+      expect(plan.shabbatAliyot, [6]);
+
+      plan = changing([
+        const PlanSettingsEntry(plan: ReadingPlanType.sheviiOnShabbat),
+        PlanSettingsEntry(from: fri, plan: ReadingPlanType.aliyahPerDay),
+      ]).planFor(noach);
+      expect(daysOf(plan).sublist(4), ['2026-10-15 [4]', '2026-10-16 [5, 6]']);
+      expect(plan.shabbatAliyot, isEmpty);
+    });
+
+    test('plans the weeks before it by the old settings and the weeks after by the new', () {
+      final p = changing([
+        const PlanSettingsEntry(plan: ReadingPlanType.erevShabbat),
+        PlanSettingsEntry(from: wed, plan: ReadingPlanType.aliyahPerDay),
+      ]);
+      expect(daysOf(p.planFor(diaspora.previousWeek(noach))), ['2026-10-09 [0, 1, 2, 3, 4, 5, 6]']);
+      expect(daysOf(p.planFor(lechLecha)), daysOf(usual.planFor(lechLecha)));
+    });
+
+    test('made before the first planned day plans the whole week by the new settings', () {
+      final p = changing([
+        const PlanSettingsEntry(),
+        PlanSettingsEntry(from: noach.start.addDays(-1), plan: ReadingPlanType.erevShabbat),
+      ]);
+      expect(daysOf(p.planFor(noach)), ['2026-10-16 [0, 1, 2, 3, 4, 5, 6]']);
+    });
+
+    test('back to the same settings changes nothing', () {
+      final p = changing([const PlanSettingsEntry(), PlanSettingsEntry(from: wed)]);
+      expect(daysOf(p.planFor(noach)), daysOf(usual.planFor(noach)));
+    });
+
+    test('in the week of joining, keeps what the starter plan gave the days before', () {
+      final p = changing(
+        [const PlanSettingsEntry(), PlanSettingsEntry(from: thu, plan: ReadingPlanType.erevShabbat)],
+        starterFrom: wed,
+      );
+      expect(daysOf(p.planFor(noach)), ['2026-10-14 [0, 1]', '2026-10-16 [2, 3, 4, 5, 6]']);
+    });
+
+    test('quiet days follow the settings in force on the day', () {
+      // Tisha B'Av 5787 is Thursday 12 August 2027; it stops being a quiet
+      // day on Tuesday.
+      final week = diaspora.weekFor(d('2027-08-10'));
+      final p = changing([const PlanSettingsEntry(), PlanSettingsEntry(from: d('2027-08-10'), tishaBavQuiet: false)]);
+      expect(daysOf(usual.planFor(week)), [
+        '2027-08-08 [0]',
+        '2027-08-09 [1]',
+        '2027-08-10 [2]',
+        '2027-08-11 [3, 4]',
+        '2027-08-13 [5, 6]',
+      ]);
+      expect(daysOf(p.planFor(week)), [
+        '2027-08-08 [0]',
+        '2027-08-09 [1]',
+        '2027-08-10 [2]',
+        '2027-08-11 [3]',
+        '2027-08-12 [4]',
+        '2027-08-13 [5, 6]',
+      ]);
+      expect(p.isTransparentDay(d('2027-08-12')), isFalse);
+      expect(p.isTransparentDay(d('2026-07-23')), isTrue, reason: 'Tisha B\'Av 5786, before the change');
+    });
+  });
+
   group('plannerProvider', () {
     Future<ReadingPlanner> plannerFor(AppSettings settings) async {
       SharedPreferences.setMockInitialValues({SettingsController.storageKey: jsonEncode(settings.toJson())});
@@ -146,6 +250,15 @@ void main() {
       final planner = await plannerFor(AppSettings(joinDate: d('2026-10-14'), starterCatchUp: false));
       expect(planner.starterFrom, isNull);
       expect(daysOf(planner.planFor(noach)), daysOf(usual.planFor(noach)));
+    });
+
+    test('plans each week by the settings in force at the time', () async {
+      final before = AppSettings(joinDate: d('2026-09-01'), plan: ReadingPlanType.erevShabbat);
+      final after = before.copyWith(plan: ReadingPlanType.aliyahPerDay).recordingPlanChange(before, d('2026-10-14'));
+      final planner = await plannerFor(after);
+      expect(daysOf(planner.planFor(diaspora.previousWeek(noach))), ['2026-10-09 [0, 1, 2, 3, 4, 5, 6]']);
+      expect(daysOf(planner.planFor(noach)).first, '2026-10-14 [0, 1]');
+      expect(daysOf(planner.planFor(lechLecha)), daysOf(usual.planFor(lechLecha)));
     });
   });
 }

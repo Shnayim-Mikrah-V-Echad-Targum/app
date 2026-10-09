@@ -70,24 +70,6 @@ extension WeekStatusX on WeekStatus {
   bool get isComplete => counts || this == WeekStatus.madeUp;
 }
 
-/// How long after Shabbat a portion still counts as done (SA 285:4).
-enum LateWindow {
-  /// Until the end of Tuesday (the common reading of "until Wednesday").
-  tuesday,
-
-  /// Until the end of Wednesday.
-  wednesday,
-
-  /// No late window: only completion before Shabbat counts.
-  none;
-
-  int get daysAfterShabbat => switch (this) {
-        LateWindow.tuesday => 3,
-        LateWindow.wednesday => 4,
-        LateWindow.none => 0,
-      };
-}
-
 /// Rules for streak forgiveness.
 abstract final class GraceRules {
   static const startingBalance = 2;
@@ -154,23 +136,21 @@ class StreakSummary {
 /// inputs always produce the same result, so grace days are "refunded"
 /// automatically when a later entry fixes a day.
 class StreakEngine {
-  const StreakEngine({
-    required this.planner,
-    this.lateWindow = LateWindow.tuesday,
-    this.haftarahRequired = false,
-  });
+  const StreakEngine({required this.planner});
 
+  /// Plans each week, and holds the settings each is judged by.
   final ReadingPlanner planner;
-  final LateWindow lateWindow;
-
-  /// Whether the haftarah must be read for the week to count as complete.
-  final bool haftarahRequired;
 
   ParshaSchedule get _schedule => planner.schedule;
 
+  /// The settings [week] is judged by (its late window, and whether the
+  /// haftarah counts): those in force when it was read in synagogue, so that
+  /// a change made after that never judges it again.
+  PlanSettingsEntry settingsFor(ReadingWeek week) => planner.settingsAt(week.occasion);
+
   LocalDate lateDeadlineOf(ReadingWeek week) => week.portion.isVezotHaberakhah
       ? week.occasion
-      : week.occasion.addDays(lateWindow.daysAfterShabbat);
+      : week.occasion.addDays(settingsFor(week).lateWindow.daysAfterShabbat);
 
   LocalDate makeUpDeadlineOf(WeekPlan plan) => JewishHolidays.simchatTorah(
         cycleYearOf(plan.portion, plan.week.occasion) + 1,
@@ -212,7 +192,7 @@ class StreakEngine {
       final p = progressOf(plan);
       final done = p.completedOn;
       if (done == null) return null;
-      if (!haftarahRequired) return done;
+      if (!settingsFor(plan.week).haftarahRequired) return done;
       final h = p.haftarah;
       if (h == null) return null;
       return h > done ? h : done;

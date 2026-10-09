@@ -43,6 +43,7 @@ class WeekContext {
     required this.haftarah,
     required this.aliyahVerses,
     this.joinDate,
+    this.haftarahRequired = false,
   });
 
   final ReadingWeek week;
@@ -60,6 +61,11 @@ class WeekContext {
 
   /// When the user started; earlier days are never counted as behind.
   final LocalDate? joinDate;
+
+  /// Whether the haftarah counts toward finishing this week, by the settings
+  /// the week is judged by. It can be shown for a past week that still needs
+  /// it after the haftarah was turned off.
+  final bool haftarahRequired;
 
   String get id => plan.weekId;
 
@@ -137,6 +143,7 @@ WeekContext _contextFor(Ref ref, ReadingWeek week) {
     haftarah: repo.haftarahFor(week.portion, week.occasion, settings.nusach),
     aliyahVerses: [for (var a = 0; a < kAliyot; a++) repo.aliyahVerseCount(info, a)],
     joinDate: settings.joinDate,
+    haftarahRequired: ref.watch(streakEngineProvider).settingsFor(week).haftarahRequired,
   );
 }
 

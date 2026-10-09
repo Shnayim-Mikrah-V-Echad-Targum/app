@@ -92,7 +92,10 @@ A portion can end in one of these states:
 ### Join date
 Nothing before the day the reader started counts against them. In the week they join, only what was planned from that day on is expected (see [Onboarding](#6-onboarding)), and if that first week isn't finished it is transparent. Resetting all progress starts the reader again from the day of the reset, on every device the reset reaches.
 
-The engine is a pure function of (progress, join date, today, pauses). It is unit-tested against the worked examples in the research and recomputed on every change.
+### Changing the plan
+Changing the plan, the quiet days, the late window or whether the haftarah counts never rewrites the past. The app remembers the day each change was made, and every day is planned by the settings in force on it: a change midweek keeps what was planned for the days before and spreads the rest of the portion over the days left. Each week is judged by the late window and haftarah rule in force when it was read in synagogue. So a change can't spend a grace day or break a streak after the fact, and the settings screen says that it applies from this week on.
+
+The engine is a pure function of (progress, join date, today, pauses, and the plan settings over time). It is unit-tested against the worked examples in the research and recomputed on every change.
 
 **Syncing keeps every change, removals included.** Each reading, the haftarah, each saved place and each pause records when it last changed, and a removal keeps that time instead of disappearing. Merging two devices is commutative: where one device marked a reading as not read, cleared a week or ended a pause after the other last saw it, that change wins. Where both devices logged the same reading, the earliest date wins, so a sync never lowers a streak. With backup on, resetting all progress erases it everywhere, but keeps anything logged on another device after the reset.
 

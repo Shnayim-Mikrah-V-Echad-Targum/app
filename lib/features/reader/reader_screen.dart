@@ -879,7 +879,7 @@ class _FinishedPanel extends ConsumerWidget {
               const Gap(24),
               if (onNext != null && !complete)
                 FilledButton.icon(onPressed: onNext, icon: const Icon(Icons.arrow_forward), label: Text(l.nextAliyah)),
-              if (complete && settings.haftarahEnabled && week.haftarah == null)
+              if (complete && (settings.haftarahEnabled || ctx.haftarahRequired) && week.haftarah == null)
                 FilledButton.icon(
                   onPressed: () => context.pushReplacement('/haftarah/${ctx.id}'),
                   icon: const Icon(Icons.auto_stories),

@@ -1,5 +1,11 @@
+import 'dart:convert';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 void main() {
@@ -40,5 +46,147 @@ void main() {
   test('copyWith can clear nullable fields', () {
     final s = const AppSettings(habitAnchor: 'x').copyWith(habitAnchor: null);
     expect(s.habitAnchor, isNull);
+  });
+
+  group('plan history', () {
+    final joined = LocalDate(2026, 9, 1);
+    final wed = LocalDate(2026, 10, 14);
+    final thu = LocalDate(2026, 10, 15);
+    List<(LocalDate, ReadingPlanType)> plans(AppSettings s) => [for (final e in s.planHistory) (e.from, e.plan)];
+    AppSettings change(AppSettings before, LocalDate on, AppSettings Function(AppSettings) f) =>
+        f(before).recordingPlanChange(before, on);
+
+    test('settings saved before it existed apply to every day', () {
+      final s = AppSettings.fromJson({'plan': 'erevShabbat', 'lateWindow': 'wednesday', 'joinDate': joined.rd});
+      expect(s.planHistory, isEmpty);
+      for (final day in [PlanSettingsEntry.earliest, joined, wed]) {
+        expect(s.settingsAt(day).plan, ReadingPlanType.erevShabbat);
+        expect(s.settingsAt(day).lateWindow, LateWindow.wednesday);
+      }
+    });
+
+    test('the first change keeps the settings before it for the days before', () {
+      final before = AppSettings(joinDate: joined, plan: ReadingPlanType.erevShabbat);
+      final after = change(before, wed, (s) => s.copyWith(plan: ReadingPlanType.aliyahPerDay));
+      expect(plans(after), [(joined, ReadingPlanType.erevShabbat), (wed, ReadingPlanType.aliyahPerDay)]);
+      expect(after.settingsAt(wed.addDays(-1)).plan, ReadingPlanType.erevShabbat);
+      expect(after.settingsAt(LocalDate(2026, 1, 1)).plan, ReadingPlanType.erevShabbat,
+          reason: 'the earliest entry also covers the days before it');
+      expect(after.settingsAt(wed).plan, ReadingPlanType.aliyahPerDay);
+      expect(after.settingsAt(wed.addDays(100)).plan, ReadingPlanType.aliyahPerDay);
+    });
+
+    test('a later change adds an entry; another the same day replaces it', () {
+      var s = AppSettings(joinDate: joined);
+      s = change(s, wed, (s) => s.copyWith(plan: ReadingPlanType.erevShabbat));
+      s = change(s, thu, (s) => s.copyWith(plan: ReadingPlanType.sheviiOnShabbat));
+      s = change(s, thu, (s) => s.copyWith(lateWindow: LateWindow.none));
+      expect(plans(s), [
+        (joined, ReadingPlanType.aliyahPerDay),
+        (wed, ReadingPlanType.erevShabbat),
+        (thu, ReadingPlanType.sheviiOnShabbat),
+      ]);
+      expect(s.settingsAt(thu).lateWindow, LateWindow.none);
+      expect(s.settingsAt(wed).lateWindow, LateWindow.tuesday);
+    });
+
+    test('changing back the same day undoes the change', () {
+      final before = AppSettings(joinDate: joined, haftarahRequired: true);
+      var s = change(before, wed, (s) => s.copyWith(cholHamoedQuiet: true));
+      s = change(s, wed, (s) => s.copyWith(cholHamoedQuiet: false));
+      expect(s.planHistory, hasLength(1));
+      expect(s.settingsAt(wed).sameSettingsAs(before.planSettings), isTrue);
+    });
+
+    test('a change on the day of joining applies from the start', () {
+      final s = change(AppSettings(joinDate: wed), wed, (s) => s.copyWith(plan: ReadingPlanType.erevShabbat));
+      expect(plans(s), [(wed, ReadingPlanType.erevShabbat)]);
+      expect(s.settingsAt(joined).plan, ReadingPlanType.erevShabbat);
+    });
+
+    test('before joining, nothing is recorded', () {
+      final s = change(const AppSettings(), wed, (s) => s.copyWith(plan: ReadingPlanType.erevShabbat));
+      expect(s.planHistory, isEmpty);
+      expect(s.settingsAt(joined).plan, ReadingPlanType.erevShabbat);
+    });
+
+    test('the haftarah counts only while it is shown', () {
+      const s = AppSettings(haftarahRequired: true);
+      expect(s.planSettings.haftarahRequired, isTrue);
+      expect(s.copyWith(haftarahEnabled: false).planSettings.haftarahRequired, isFalse);
+      expect(s.copyWith(haftarahRequired: false).planSettings.haftarahRequired, isFalse);
+    });
+
+    test('round-trips through JSON, oldest first, skipping entries that cannot be read', () {
+      var s = AppSettings(joinDate: joined);
+      s = change(s, wed, (s) => s.copyWith(haftarahRequired: true, tishaBavQuiet: false));
+      final back = AppSettings.fromJson(s.toJson());
+      expect(back.toJson(), s.toJson());
+      expect(back.settingsAt(wed).haftarahRequired, isTrue);
+      expect(back.settingsAt(wed).tishaBavQuiet, isFalse);
+      expect(back.settingsAt(joined).haftarahRequired, isFalse);
+
+      final json = s.toJson();
+      final read = AppSettings.fromJson({
+        ...json,
+        'planHistory': [
+          (json['planHistory'] as List)[1],
+          {'plan': 'erevShabbat'}, // no day
+          'nonsense',
+          {...(json['planHistory'] as List)[0] as Map<String, dynamic>, 'lateWindow': 'friday'},
+        ],
+      });
+      expect(read.planHistory.map((e) => e.from), [joined, wed]);
+      expect(read.planHistory.first.lateWindow, LateWindow.tuesday, reason: 'an unknown value falls back');
+      expect(AppSettings.fromJson({...json, 'planHistory': 'nonsense'}).planHistory, isEmpty);
+    });
+  });
+
+  group('SettingsController', () {
+    final joined = LocalDate(2026, 9, 1);
+    final tue = LocalDate(2026, 10, 13);
+
+    Future<(ProviderContainer, SharedPreferences)> containerWith(AppSettings settings) async {
+      SharedPreferences.setMockInitialValues({SettingsController.storageKey: jsonEncode(settings.toJson())});
+      final prefs = await SharedPreferences.getInstance();
+      final clock = TodayController.now;
+      // Wednesday, at 2 a.m.: still Tuesday's reading day.
+      TodayController.now = () => DateTime(2026, 10, 14, 2);
+      final container = ProviderContainer(overrides: [sharedPreferencesProvider.overrideWithValue(prefs)]);
+      addTearDown(() {
+        container.dispose();
+        TodayController.now = clock;
+      });
+      return (container, prefs);
+    }
+
+    test('records a change to the plan settings from the reading day, and saves it', () async {
+      final (c, prefs) = await containerWith(AppSettings(joinDate: joined));
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(plan: ReadingPlanType.erevShabbat));
+      final s = c.read(settingsProvider);
+      expect(s.planHistory.map((e) => (e.from, e.plan)), [
+        (joined, ReadingPlanType.aliyahPerDay),
+        (tue, ReadingPlanType.erevShabbat),
+      ]);
+      final saved = jsonDecode(prefs.getString(SettingsController.storageKey)!) as Map<String, dynamic>;
+      expect(AppSettings.fromJson(saved).toJson(), s.toJson());
+    });
+
+    test('leaves the history alone for any other change', () async {
+      final (c, _) = await containerWith(AppSettings(joinDate: joined));
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(theme: AppThemeMode.dark, haftarahEnabled: false));
+      expect(c.read(settingsProvider).planHistory, isEmpty, reason: 'the haftarah was not required');
+    });
+
+    test('restoring a backup takes its history as it is', () async {
+      final (c, _) = await containerWith(AppSettings(joinDate: joined));
+      final backedUp = AppSettings(joinDate: joined, plan: ReadingPlanType.erevShabbat);
+      final backup = backedUp
+          .copyWith(plan: ReadingPlanType.sheviiOnShabbat)
+          .recordingPlanChange(backedUp, LocalDate(2026, 10, 1));
+      c.read(settingsProvider.notifier).replace(backup);
+      expect(c.read(settingsProvider).toJson(), backup.toJson());
+      expect(c.read(settingsProvider).settingsAt(joined).plan, ReadingPlanType.erevShabbat);
+    });
   });
 }

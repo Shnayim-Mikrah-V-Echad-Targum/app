@@ -45,12 +45,24 @@ class SettingsController extends Notifier<AppSettings> {
     }
   }
 
+  /// Applies [change]. A change to how weeks are planned and judged applies
+  /// from today on (see [AppSettings.recordingPlanChange]).
   void update(AppSettings Function(AppSettings s) change) {
-    state = change(state);
-    ref.read(sharedPreferencesProvider).setString(storageKey, jsonEncode(state.toJson()));
+    final next = change(state);
+    if (next.planSettings.sameSettingsAs(state.planSettings)) return _save(next);
+    // Today's reading day, as todayProvider has it (which depends on these
+    // settings, so can't be read here).
+    final today = effectiveReadingDay(TodayController.now(), israel: next.israel);
+    _save(next.recordingPlanChange(state, today));
   }
 
-  void replace(AppSettings settings) => update((_) => settings);
+  /// Replaces every setting, the plan history included (restoring a backup).
+  void replace(AppSettings settings) => _save(settings);
+
+  void _save(AppSettings settings) {
+    state = settings;
+    ref.read(sharedPreferencesProvider).setString(storageKey, jsonEncode(settings.toJson()));
+  }
 }
 
 final settingsProvider = NotifierProvider<SettingsController, AppSettings>(SettingsController.new);
@@ -117,25 +129,20 @@ final scheduleProvider = Provider<ParshaSchedule>(
   (ref) => ParshaSchedule(israel: ref.watch(settingsProvider.select((s) => s.israel))),
 );
 
+/// Plans every week by the plan settings in force at the time, so that a
+/// change applies from the day it is made on. (Switching between Israel and
+/// the Diaspora is not part of that history yet: it still rebuilds every
+/// week, past ones included, from the other schedule.)
 final plannerProvider = Provider<ReadingPlanner>((ref) {
   final s = ref.watch(settingsProvider);
   return ReadingPlanner(
     schedule: ref.watch(scheduleProvider),
-    type: s.plan,
-    tishaBavQuiet: s.tishaBavQuiet,
-    cholHamoedQuiet: s.cholHamoedQuiet,
+    settingsAt: s.settingsAt,
     starterFrom: s.starterCatchUp ? s.joinDate : null,
   );
 });
 
-final streakEngineProvider = Provider<StreakEngine>((ref) {
-  final s = ref.watch(settingsProvider);
-  return StreakEngine(
-    planner: ref.watch(plannerProvider),
-    lateWindow: s.lateWindow,
-    haftarahRequired: s.haftarahEnabled && s.haftarahRequired,
-  );
-});
+final streakEngineProvider = Provider<StreakEngine>((ref) => StreakEngine(planner: ref.watch(plannerProvider)));
 
 /// This week's reading.
 final currentWeekProvider = Provider<ReadingWeek>(

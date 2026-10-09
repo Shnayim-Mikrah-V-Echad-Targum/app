@@ -183,16 +183,122 @@ void main() {
     expect(s.days[d('2026-10-21')], isNot(DayStatus.ahead), reason: 'four planned by Wednesday');
   });
 
+  group('changing settings', () {
+    /// An engine whose plan settings changed as [entries] (oldest first) say.
+    StreakEngine engineWith(List<PlanSettingsEntry> entries) => StreakEngine(
+          planner: ReadingPlanner(
+            schedule: diaspora,
+            settingsAt: (day) => entries.lastWhere((e) => e.from <= day, orElse: () => entries.first),
+          ),
+        );
+    final joined = d('2026-10-11');
+
+    test('switching from All on Friday to An aliyah a day leaves the days before as they were', () {
+      // Noach and Lech Lecha read in full on their Fridays; the switch is on
+      // Tuesday of Vayera (25–30 October).
+      final log = Log(planner)
+        ..readAll('2026-10-12', '2026-10-16')
+        ..readAll('2026-10-19', '2026-10-23');
+      const erev = PlanSettingsEntry(plan: ReadingPlanType.erevShabbat);
+      final switchDay = d('2026-10-27');
+      final switched = engineWith([erev, PlanSettingsEntry(from: switchDay)]);
+      final unchanged = engineWith([erev]);
+
+      final before = unchanged.evaluate(progress: log.map, joinDate: joined, today: switchDay);
+      final after = switched.evaluate(progress: log.map, joinDate: joined, today: switchDay);
+      expect([for (final w in after.weeks) w.status], [WeekStatus.onTime, WeekStatus.onTime, WeekStatus.inProgress]);
+      expect([for (final w in after.weeks) w.status], [for (final w in before.weeks) w.status]);
+      expect({for (final e in after.days.entries) if (e.key < switchDay) e.key: e.value}, before.days);
+      expect(after.graceBalance, before.graceBalance);
+      expect(after.graceBalance, GraceRules.maxBalance);
+      expect(after.daysOnTrack, 2);
+      expect(after.days[switchDay], DayStatus.open, reason: 'from the switch on, the new plan applies');
+      expect(after.days.containsKey(d('2026-10-25')), isFalse,
+          reason: 'nothing was planned for Sunday of Vayera before the switch');
+
+      // Rebuilding the past with the new plan, as before, would have spent
+      // grace days and broken the run of days.
+      final rebuilt = engineWith([const PlanSettingsEntry()])
+          .evaluate(progress: log.map, joinDate: joined, today: switchDay);
+      expect(rebuilt.graceBalance, lessThan(after.graceBalance));
+      expect(rebuilt.days.values, contains(DayStatus.missed));
+
+      // Carrying on with the new plan: Rishon on Tuesday, then two a day.
+      log
+        ..read('2026-10-26', [0], '2026-10-27')
+        ..read('2026-10-26', [1, 2], '2026-10-28')
+        ..read('2026-10-26', [3, 4], '2026-10-29')
+        ..read('2026-10-26', [5, 6], '2026-10-30');
+      final later = switched.evaluate(progress: log.map, joinDate: joined, today: d('2026-11-01'));
+      expect(later.weeks[2].status, WeekStatus.onTime);
+      expect(later.daysOnTrack, 6);
+      expect(later.parshaStreak, 3);
+      expect(later.graceBalance, GraceRules.maxBalance);
+    });
+
+    test('requiring the haftarah does not turn weeks finished on time into missed ones', () {
+      // Required from Sunday 25 October: Noach and Lech Lecha were finished,
+      // without their haftarot, before then.
+      final log = Log(planner)
+        ..readAll('2026-10-12', '2026-10-16')
+        ..readAll('2026-10-19', '2026-10-23')
+        ..readAll('2026-10-26', '2026-10-30');
+      final vayera = log.idFor('2026-10-26');
+      final required = engineWith([
+        const PlanSettingsEntry(),
+        PlanSettingsEntry(from: d('2026-10-25'), haftarahRequired: true),
+      ]);
+
+      var s = required.evaluate(progress: log.map, joinDate: joined, today: d('2026-11-01'));
+      expect([for (final w in s.weeks) w.status],
+          [WeekStatus.onTime, WeekStatus.onTime, WeekStatus.inProgress, WeekStatus.inProgress]);
+      expect(s.weeks[2].completedOn, isNull, reason: 'Vayera needs its haftarah now');
+
+      log.map[vayera] = log.map[vayera]!.withHaftarah(d('2026-11-01'));
+      s = required.evaluate(progress: log.map, joinDate: joined, today: d('2026-11-08'));
+      expect(s.weeks[0].status, WeekStatus.onTime);
+      expect(s.weeks[1].status, WeekStatus.onTime);
+      expect(s.weeks[2].status, WeekStatus.late);
+      expect(s.parshaStreak, 3);
+
+      final always = engineWith([const PlanSettingsEntry(haftarahRequired: true)])
+          .evaluate(progress: log.map, joinDate: joined, today: d('2026-11-08'));
+      expect(always.weeks[0].status, WeekStatus.missed, reason: 'as requiring it of past weeks would have');
+    });
+
+    test('a shorter late window applies from the week it is changed in', () {
+      // No late window from Sunday 25 October; Lech Lecha, read on Shabbat
+      // the 24th, was finished on Monday within its Tuesday window.
+      final log = Log(planner)
+        ..readAll('2026-10-12', '2026-10-16')
+        ..readAll('2026-10-19', '2026-10-26');
+      final engine = engineWith([
+        const PlanSettingsEntry(),
+        PlanSettingsEntry(from: d('2026-10-25'), lateWindow: LateWindow.none),
+      ]);
+      final s = engine.evaluate(progress: log.map, joinDate: joined, today: d('2026-10-28'));
+      expect(s.weeks[1].status, WeekStatus.late);
+      expect(engine.lateDeadlineOf(diaspora.weekFor(d('2026-10-19'))), d('2026-10-27'));
+      expect(engine.lateDeadlineOf(diaspora.weekFor(d('2026-10-26'))), d('2026-10-31'));
+    });
+  });
+
   group('plans', () {
     test('Shevi\'i on Shabbat leaves the 7th aliyah for Shabbat morning', () {
-      const p = ReadingPlanner(schedule: diaspora, type: ReadingPlanType.sheviiOnShabbat);
+      final p = ReadingPlanner(
+        schedule: diaspora,
+        settingsAt: (_) => const PlanSettingsEntry(plan: ReadingPlanType.sheviiOnShabbat),
+      );
       final plan = p.planFor(diaspora.weekFor(d('2026-10-12')));
       expect(plan.days.map((x) => x.aliyot), [[0], [1], [2], [3], [4], [5]]);
       expect(plan.shabbatAliyot, [6]);
     });
 
     test('Erev Shabbat puts the whole portion on Friday', () {
-      const p = ReadingPlanner(schedule: diaspora, type: ReadingPlanType.erevShabbat);
+      final p = ReadingPlanner(
+        schedule: diaspora,
+        settingsAt: (_) => const PlanSettingsEntry(plan: ReadingPlanType.erevShabbat),
+      );
       final plan = p.planFor(diaspora.weekFor(d('2026-10-12')));
       expect(plan.days.single.date, d('2026-10-16'));
       expect(plan.days.single.aliyot, hasLength(7));

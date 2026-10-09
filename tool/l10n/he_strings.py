@@ -262,6 +262,7 @@ HE = {
   "lateWindowDesc": "קריאה שהושלמה אחרי שבת, עד מועד זה, עדיין נחשבת (שולחן ערוך או״ח רפה, ד).",
   "tishaBavQuiet": "ללא קריאה מתוכננת בתשעה באב",
   "cholHamoedQuiet": "ללא קריאה מתוכננת בחול המועד",
+  "appliesFromThisWeek": "חל מהשבוע הזה והלאה",
   "nameStyleLabel": "שמות הפרשות באנגלית",
   "nameSephardi": "ספרדי (Bereshit)",
   "nameAshkenazi": "אשכנזי (Bereishis)",

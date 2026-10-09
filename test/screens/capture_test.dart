@@ -22,6 +22,7 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
@@ -64,6 +65,7 @@ const _screens = {
   'account_sync': '/community/account',
   'settings': '/settings',
   's_reading': '/settings/reading',
+  's_reading_changed': '/settings/reading',
   's_display': '/settings/display',
   's_a11y': '/settings/accessibility',
   's_reminders': '/settings/reminders',
@@ -89,6 +91,13 @@ const _backupOn = {'s_data_reset'};
 
 /// Screens captured with a dialog open, by tapping the icon given.
 const _dialogs = {'s_data_reset': Icons.delete_forever_outlined};
+
+/// Screens captured just after tapping what the finder finds, to show the
+/// response.
+final _taps = {
+  // Choosing "All on Friday" says that it applies from this week on.
+  's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
+};
 
 /// Screens captured scrolled to the end of their main list.
 const _scrolledToEnd = {'reader_gaps'};
@@ -189,6 +198,12 @@ void main() {
         if (_dialogs[entry.key] case final icon?) {
           await tester.tap(find.byIcon(icon));
           await _settle(tester);
+        }
+        if (_taps[entry.key] case final target?) {
+          await tester.tap(target());
+          // Long enough for a snackbar to appear, not to leave again.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
         }
         await _write(tester, '${mode.tag}_${entry.key}');
       }, skip: !_capture);

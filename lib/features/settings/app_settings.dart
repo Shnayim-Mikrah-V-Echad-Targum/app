@@ -2,7 +2,6 @@ import '../../core/calendar/local_date.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart';
 import '../progress/domain/reading_plan.dart';
-import '../progress/domain/streak_engine.dart';
 
 enum AppThemeMode { system, light, dark, sepia, highContrastLight, highContrastDark }
 
@@ -125,6 +124,7 @@ class AppSettings {
     this.onboardingComplete = false,
     this.notificationPromptShown = false,
     this.joinDate,
+    this.planHistory = const [],
   });
 
   // Calendar and customs
@@ -214,6 +214,13 @@ class AppSettings {
   /// The day the user started; earlier days are never shown as missed.
   final LocalDate? joinDate;
 
+  /// The plan settings ([planSettings]) over time, oldest first, so that
+  /// each day is planned and judged by the settings in force then (see
+  /// [settingsAt]): a change applies from the day it was made on, never to
+  /// the days before (see [recordingPlanChange]). With no entries, the
+  /// settings as they are now have always applied.
+  final List<PlanSettingsEntry> planHistory;
+
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
   bool get usesRashi =>
@@ -223,6 +230,46 @@ class AppSettings {
 
   bool get usesOnkelos =>
       secondReading == SecondReading.onkelos || secondReading == SecondReading.onkelosAndRashi;
+
+  /// The settings that decide how weeks are planned and judged, as they are
+  /// now. The haftarah counts only while it is shown.
+  PlanSettingsEntry get planSettings => PlanSettingsEntry(
+        plan: plan,
+        tishaBavQuiet: tishaBavQuiet,
+        cholHamoedQuiet: cholHamoedQuiet,
+        lateWindow: lateWindow,
+        haftarahRequired: haftarahEnabled && haftarahRequired,
+      );
+
+  /// The plan settings in force on [day]: the latest entry of [planHistory]
+  /// from then or before. The earliest entry also covers the days before it.
+  PlanSettingsEntry settingsAt(LocalDate day) {
+    if (planHistory.isEmpty) return planSettings;
+    var found = planHistory.first;
+    for (final e in planHistory) {
+      if (e.from > day) break;
+      found = e;
+    }
+    return found;
+  }
+
+  /// These settings, changed from [before] on [today] in a way that changes
+  /// [planSettings]: [planHistory] records the change as applying from
+  /// [today] on, so that the days before stay planned and judged as they
+  /// were.
+  AppSettings recordingPlanChange(AppSettings before, LocalDate today) {
+    // Before the reader starts, nothing has been planned or judged.
+    final joined = before.joinDate;
+    if (joined == null) return this;
+    final history = [
+      // Until now, the settings before the change had always applied.
+      if (planHistory.isEmpty) before.planSettings.startingOn(joined) else ...planHistory,
+    ]..removeWhere((e) => e.from >= today); // superseded by this change
+    final now = planSettings;
+    // A change back to the settings in force before today needs no entry.
+    if (history.isEmpty || !history.last.sameSettingsAs(now)) history.add(now.startingOn(today));
+    return copyWith(planHistory: history);
+  }
 
   AppSettings copyWith({
     bool? israel,
@@ -274,6 +321,7 @@ class AppSettings {
     bool? onboardingComplete,
     bool? notificationPromptShown,
     Object? joinDate = _keep,
+    List<PlanSettingsEntry>? planHistory,
   }) =>
       AppSettings(
         israel: israel ?? this.israel,
@@ -325,6 +373,7 @@ class AppSettings {
         onboardingComplete: onboardingComplete ?? this.onboardingComplete,
         notificationPromptShown: notificationPromptShown ?? this.notificationPromptShown,
         joinDate: identical(joinDate, _keep) ? this.joinDate : joinDate as LocalDate?,
+        planHistory: planHistory ?? this.planHistory,
       );
 
   static const _keep = Object();
@@ -379,6 +428,7 @@ class AppSettings {
         'onboardingComplete': onboardingComplete,
         'notificationPromptShown': notificationPromptShown,
         'joinDate': joinDate?.rd,
+        'planHistory': [for (final e in planHistory) e.toJson()],
       };
 
   /// Reads settings, tolerating missing or unknown values so that older and
@@ -441,7 +491,24 @@ class AppSettings {
       onboardingComplete: b('onboardingComplete', d.onboardingComplete),
       notificationPromptShown: b('notificationPromptShown', d.notificationPromptShown),
       joinDate: j['joinDate'] is int ? LocalDate.fromRd(j['joinDate'] as int) : null,
+      planHistory: _readPlanHistory(j['planHistory']),
     );
+  }
+
+  /// Reads [planHistory], oldest first, skipping entries that can't be read.
+  /// Settings saved before it existed have none: the settings saved with
+  /// them apply throughout, as they did then.
+  static List<PlanSettingsEntry> _readPlanHistory(Object? raw) {
+    if (raw is! List) return const [];
+    final out = <PlanSettingsEntry>[];
+    for (final e in raw) {
+      try {
+        out.add(PlanSettingsEntry.fromJson(e as Map<String, dynamic>));
+      } catch (_) {
+        // Skipped: an unreadable entry can't say when it applied.
+      }
+    }
+    return out..sort((a, b) => a.from.compareTo(b.from));
   }
 }
 

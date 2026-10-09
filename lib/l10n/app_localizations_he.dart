@@ -941,6 +941,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get cholHamoedQuiet => 'ללא קריאה מתוכננת בחול המועד';
 
   @override
+  String get appliesFromThisWeek => 'חל מהשבוע הזה והלאה';
+
+  @override
   String get nameStyleLabel => 'שמות הפרשות באנגלית';
 
   @override

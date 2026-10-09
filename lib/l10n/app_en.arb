@@ -599,6 +599,10 @@
   "lateWindowDesc": "Reading finished after Shabbat, until this time, still counts (Shulchan Aruch OC 285:4).",
   "tishaBavQuiet": "No reading planned on Tisha B'Av",
   "cholHamoedQuiet": "No reading planned on Chol HaMoed",
+  "appliesFromThisWeek": "Applies from this week on",
+  "@appliesFromThisWeek": {
+    "description": "Status shown after changing the reading plan or a custom that decides how weeks are planned and judged; earlier weeks keep the settings they had."
+  },
   "nameStyleLabel": "Parsha names",
   "nameSephardi": "Sephardi (Bereshit)",
   "nameAshkenazi": "Ashkenazi (Bereishis)",
