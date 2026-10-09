@@ -193,8 +193,9 @@ class ProgressState {
 
   WeekProgress week(String id) => weeks[id] ?? WeekProgress(weekId: id);
 
-  /// Only the progress this version can read: what a backup file holds, so
-  /// that the file can always be imported again.
+  /// Only the progress this version can read: what a backup file holds as
+  /// its progress, so that the file can always be imported again (the rest
+  /// is kept apart in the file).
   ProgressState get readable => unknownWeeks.isEmpty && unknownPauses.isEmpty
       ? this
       : ProgressState(weeks: weeks, pauses: pauses, resetAt: resetAt);
@@ -213,14 +214,30 @@ class ProgressState {
     Map<String, WeekProgress>? weeks,
     List<Pause>? pauses,
     Map<String, Object?>? unknownWeeks,
+    List<Object?>? unknownPauses,
   }) =>
       ProgressState(
         weeks: weeks ?? this.weeks,
         pauses: pauses ?? this.pauses,
         resetAt: resetAt,
         unknownWeeks: unknownWeeks ?? this.unknownWeeks,
-        unknownPauses: unknownPauses,
+        unknownPauses: unknownPauses ?? this.unknownPauses,
       );
+
+  /// The entries of [unknownWeeks] and [unknownPauses] that [other] doesn't
+  /// hold exactly, as JSON (`{"weeks": {...}, "pauses": [...]}`), or null
+  /// if it holds them all.
+  Map<String, dynamic>? unknownMissingFrom(ProgressState other) {
+    String canon(Object? json) => jsonEncode(canonicalJson(json));
+    final weeks = {
+      for (final MapEntry(:key, :value) in unknownWeeks.entries)
+        if (!other.unknownWeeks.containsKey(key) || canon(other.unknownWeeks[key]) != canon(value)) key: value,
+    };
+    final kept = {for (final p in other.unknownPauses) canon(p)};
+    final pauses = [for (final p in unknownPauses) if (!kept.contains(canon(p))) p];
+    if (weeks.isEmpty && pauses.isEmpty) return null;
+    return {if (weeks.isNotEmpty) 'weeks': weeks, if (pauses.isNotEmpty) 'pauses': pauses};
+  }
 
   /// This progress changed to read exactly like [target] (a backup being
   /// restored). Whatever differs takes [target]'s value as a new change, so
@@ -302,7 +319,21 @@ class ProgressState {
   ///
   /// With [strict] (for importing a backup), anything that can't be read
   /// exactly, or a newer format, throws a [FormatException] instead.
-  factory ProgressState.fromJson(Map<String, dynamic> j, {bool strict = false}) {
+  factory ProgressState.fromJson(Map<String, dynamic> j, {bool strict = false}) => _read(j, strict: strict).$1;
+
+  /// Reads stored progress leniently, as [ProgressState.fromJson] does, and
+  /// says whether that meant fixing or dropping part of it (a week that
+  /// reads only once normalized, a reset time that can't be read, or a part
+  /// this version doesn't know), rather than reading it exactly or keeping
+  /// it aside untouched.
+  static (ProgressState, {bool repaired}) readLeniently(Map<String, dynamic> j) {
+    final (progress, repaired) = _read(j, strict: false);
+    return (progress, repaired: repaired);
+  }
+
+  static const _keys = {'version', 'resetAt', 'weeks', 'pauses'};
+
+  static (ProgressState, bool) _read(Map<String, dynamic> j, {required bool strict}) {
     final version = formatOf(j);
     if (strict && version > kProgressFormat) {
       throw FormatException('Progress format $version is newer than $kProgressFormat');
@@ -310,19 +341,29 @@ class ProgressState {
     final rawWeeks = j['weeks'] ?? const <String, dynamic>{};
     final rawPauses = j['pauses'] ?? const [];
     if (rawWeeks is! Map<String, dynamic> || rawPauses is! List) throw const FormatException('Unrecognized progress');
+    var repaired = !j.keys.every(_keys.contains);
+    if (strict && repaired) throw const FormatException('Unrecognized progress');
     // A reset that can't be read is ignored rather than dropping anything.
     final rawResetAt = j['resetAt'] ?? 0;
     final resetAt = rawResetAt is int && rawResetAt >= 0 ? rawResetAt : 0;
-    if (strict && resetAt != rawResetAt) throw FormatException('Unrecognized reset time $rawResetAt');
+    if (resetAt != rawResetAt) {
+      if (strict) throw FormatException('Unrecognized reset time $rawResetAt');
+      repaired = true;
+    }
 
     final weeks = <String, WeekProgress>{};
     final unknownWeeks = <String, Object?>{};
     for (final MapEntry(:key, :value) in rawWeeks.entries) {
       try {
-        weeks[key] = WeekProgress.fromJson(key, value as Map<String, dynamic>, strict: strict);
+        weeks[key] = WeekProgress.fromJson(key, value as Map<String, dynamic>, strict: true);
       } catch (_) {
         if (strict) throw FormatException('Unreadable progress for week $key');
-        unknownWeeks[key] = value;
+        try {
+          weeks[key] = WeekProgress.fromJson(key, value as Map<String, dynamic>);
+          repaired = true;
+        } catch (_) {
+          unknownWeeks[key] = value;
+        }
       }
     }
     final pauses = <Pause>[];
@@ -335,12 +376,15 @@ class ProgressState {
         unknownPauses.add(p);
       }
     }
-    return ProgressState(
-      weeks: weeks,
-      pauses: pauses,
-      resetAt: resetAt,
-      unknownWeeks: unknownWeeks,
-      unknownPauses: unknownPauses,
+    return (
+      ProgressState(
+        weeks: weeks,
+        pauses: pauses,
+        resetAt: resetAt,
+        unknownWeeks: unknownWeeks,
+        unknownPauses: unknownPauses,
+      ),
+      repaired,
     );
   }
 }
@@ -351,7 +395,7 @@ class ProgressController extends Notifier<ProgressState> {
   /// Prefixes of the keys under which stored progress is copied, with the
   /// time in milliseconds appended, before anything could overwrite it:
   /// progress written by a newer version of the app, and progress (or part of
-  /// it) this version can't read.
+  /// it) this version can't read exactly.
   static const newerBackupPrefix = 'progress.newer.';
   static const corruptBackupPrefix = 'progress.corrupt.';
 
@@ -366,7 +410,11 @@ class ProgressController extends Notifier<ProgressState> {
       version = ProgressState.formatOf(j);
       // Saving in this version's format would drop whatever it doesn't know.
       if (version > kProgressFormat) _backUp(prefs, newerBackupPrefix, raw);
-      return ProgressState.fromJson(j);
+      final (progress, :repaired) = ProgressState.readLeniently(j);
+      // Read only by fixing or dropping part of it, which the next save
+      // would make permanent.
+      if (repaired && version <= kProgressFormat) _backUp(prefs, corruptBackupPrefix, raw);
+      return progress;
     } catch (_) {
       // Unreadable, and the next save would replace it.
       if (version <= kProgressFormat) _backUp(prefs, corruptBackupPrefix, raw);
@@ -386,19 +434,23 @@ class ProgressController extends Notifier<ProgressState> {
     prefs.setString('$prefix$ms', raw);
   }
 
-  void _set(ProgressState s) {
+  /// Saves [s]. A week or pause this version couldn't read is never dropped
+  /// without a copy, unless [erasing] (a reset): neither one that a readable
+  /// week with the same id replaces (e.g. the user marked it again), nor one
+  /// that loses out in a merge.
+  void _set(ProgressState s, {bool erasing = false}) {
     final prefs = ref.read(sharedPreferencesProvider);
     final shadowed = s.shadowedWeeks.toSet();
-    if (shadowed.isNotEmpty) {
-      // A week this version couldn't read is about to be replaced by a
-      // readable one (e.g. the user marked it again): keep a copy.
-      _backUp(prefs, corruptBackupPrefix, jsonEncode({
-        'weeks': {for (final id in shadowed) id: s.unknownWeeks[id]},
-      }));
-      s = s.copyWith(unknownWeeks: {...s.unknownWeeks}..removeWhere((id, _) => shadowed.contains(id)));
+    final next = shadowed.isEmpty
+        ? s
+        : s.copyWith(unknownWeeks: {...s.unknownWeeks}..removeWhere((id, _) => shadowed.contains(id)));
+    if (!erasing) {
+      for (final from in [state, s]) {
+        if (from.unknownMissingFrom(next) case final lost?) _backUp(prefs, corruptBackupPrefix, jsonEncode(lost));
+      }
     }
-    state = s;
-    prefs.setString(storageKey, jsonEncode(s.toJson()));
+    state = next;
+    prefs.setString(storageKey, jsonEncode(next.toJson()));
   }
 
   /// Applies [change] to one week, stamping it after the last reset. A
@@ -486,14 +538,37 @@ class ProgressController extends Notifier<ProgressState> {
 
   /// Makes progress read exactly like [target] (an imported backup), as a
   /// new change that a sync carries to other devices rather than undoing.
-  void restore(ProgressState target) => replaceAll(state.restoredTo(target));
+  /// What this version couldn't read is kept, and so are [unknownWeeks] and
+  /// [unknownPauses]: what the backup held that the version that made it
+  /// couldn't read.
+  void restore(
+    ProgressState target, {
+    Map<String, Object?> unknownWeeks = const {},
+    List<Object?> unknownPauses = const [],
+  }) {
+    var restored = state.restoredTo(target);
+    final from = ProgressState(unknownWeeks: unknownWeeks, unknownPauses: unknownPauses);
+    if (from.unknownMissingFrom(restored) case final more?) {
+      restored = restored.copyWith(
+        // An entry already here for the same week stays.
+        unknownWeeks: {...?more['weeks'] as Map<String, Object?>?, ...restored.unknownWeeks},
+        unknownPauses: [...restored.unknownPauses, ...?more['pauses'] as List<Object?>?],
+      );
+      if (from.unknownMissingFrom(restored) case final lost?) {
+        _backUp(ref.read(sharedPreferencesProvider), corruptBackupPrefix, jsonEncode(lost));
+      }
+    }
+    replaceAll(restored);
+  }
 
   /// Erases all progress. With [everywhere] (when progress is backed up),
   /// the reset reaches the backup and the user's other devices too: syncing
   /// drops everything recorded before it. Otherwise the backup is untouched,
   /// and syncing later brings it back.
-  void reset({bool everywhere = false}) =>
-      _set(ProgressState(resetAt: everywhere ? ProgressClock.after(state.latestStamp) : state.resetAt));
+  void reset({bool everywhere = false}) => _set(
+        ProgressState(resetAt: everywhere ? ProgressClock.after(state.latestStamp) : state.resetAt),
+        erasing: true,
+      );
 
   /// Erases all progress as [reset] does, and starts the reader afresh on
   /// [today]: with the history gone, the weeks before it must not show as

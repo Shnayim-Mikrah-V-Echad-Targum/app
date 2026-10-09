@@ -9,6 +9,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/settings/screens/data_settings_screen.dart';
 
 import '../../helpers.dart';
 
@@ -328,6 +329,44 @@ void main() {
       expect(reopen().read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
     });
 
+    test('a week without a unit grid is kept aside untouched, not read as empty and overwritten', () async {
+      final units = [
+        for (var a = 0; a < kAliyot; a++) [_d1.rd, _d1.rd, _d1.rd],
+      ];
+      final c = await load(_stored('{"5787:1": {"units": ${jsonEncode(units)}}, "5787:2": {"u": ${_grid()}}}', version: 2));
+      expect(c.read(progressProvider).unknownWeeks.keys, ['5787:1']);
+      c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikra1, _d2);
+      expect((stored()['weeks'] as Map)['5787:1'], {'units': units});
+      expect(backups(ProgressController.corruptBackupPrefix), isEmpty, reason: 'nothing was lost');
+    });
+
+    test('progress read only by fixing part of it is backed up before the fix is saved', () async {
+      final raw = _stored(
+        '{"5787:1": {"u": [[${_d1.rd}, "2026-10-11", ${_d1.rd}]], "h": "yes"}, "5787:2": {"u": ${_grid()}}}',
+        version: 2,
+      );
+      final c = await load(raw);
+      expect(c.read(progressProvider).week('5787:1').units[0], [_d1, null, _d1]);
+      expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
+
+      c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikra1, _d2);
+      expect((stored()['weeks'] as Map)['5787:1']['u'][0], [_d1.rd, null, _d1.rd], reason: 'saved fixed');
+      expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
+      reopen().read(progressProvider);
+      expect(backups(ProgressController.corruptBackupPrefix), hasLength(1), reason: 'it reads exactly now');
+    });
+
+    test('progress with a reset time or a part this version does not know is backed up too', () async {
+      for (final raw in [
+        '{"version": 2, "resetAt": "yesterday", "weeks": {}, "pauses": []}',
+        '{"version": 2, "weeks": {}, "pauses": [], "goals": [1]}',
+      ]) {
+        await load(raw);
+        reopen().read(progressProvider);
+        expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
+      }
+    });
+
     test('an unknown week is kept through saves, and copied before a readable week replaces it', () async {
       const unknown = '{"u":"done"}';
       final c = await load(_stored('{"5787:1": {"u": ${_grid()}}, "5787:2": {"u": "done"}}'));
@@ -344,6 +383,48 @@ void main() {
       expect(c.read(progressProvider).unknownWeeks, isEmpty);
       expect(reopen().read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
     });
+
+    test('resetting all progress erases what could not be read too, as asked', () async {
+      final c = await load(_stored('{"5787:2": {"u": "done"}}', pauses: '[{"start": "2026-10-11"}]'));
+      c.read(progressProvider.notifier).reset();
+      expect(c.read(progressProvider), const ProgressState());
+      expect(backups(ProgressController.corruptBackupPrefix), isEmpty);
+    });
+  });
+
+  testWidgets('what this version cannot read is exported apart, and imported again with the rest', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const unknownWeeks = {
+      '5787:9': {'u': 'done'},
+    };
+    const unknownPauses = [
+      {'start': '2026-10-11'},
+    ];
+    final mine = ProgressState(
+      weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAliyah(3, _d1)},
+      unknownWeeks: unknownWeeks,
+      unknownPauses: unknownPauses,
+    );
+    var c = await pumpApp(tester, progress: mine, now: DateTime(2026, 10, 12, 10));
+    c.read(routerProvider).go('/settings/data');
+    await tester.pumpAndSettle();
+    WidgetRef ref() => tester.element(find.byType(DataSettingsScreen)) as WidgetRef;
+    final file = exportBackup(ref());
+    final json = jsonDecode(file) as Map<String, dynamic>;
+    expect(ProgressState.fromJson(json['progress'] as Map<String, dynamic>, strict: true), mine.readable);
+    expect(json['unreadableProgress'], {'weeks': unknownWeeks, 'pauses': unknownPauses});
+
+    // On a fresh install.
+    c = await pumpApp(tester, now: DateTime(2026, 10, 12, 10));
+    c.read(routerProvider).go('/settings/data');
+    await tester.pumpAndSettle();
+    expect(importBackup(ref(), file), isTrue);
+    final imported = c.read(progressProvider);
+    expect(imported.week('5787:1').isAliyahDone(3), isTrue);
+    expect(imported.unknownWeeks, unknownWeeks);
+    expect(imported.unknownPauses, unknownPauses);
   });
 
   group('importing a backup', () {

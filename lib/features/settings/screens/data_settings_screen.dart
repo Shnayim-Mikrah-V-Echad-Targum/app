@@ -11,13 +11,19 @@ import '../../../ui/l10n.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
-/// A backup contains both progress and settings, as JSON.
-String exportBackup(WidgetRef ref) => const JsonEncoder.withIndent('  ').convert({
-      'app': 'shnayim_mikra',
-      'exportedAt': DateTime.now().toUtc().toIso8601String(),
-      'progress': ref.read(progressProvider).readable.toJson(),
-      'settings': ref.read(settingsProvider).toJson(),
-    });
+/// A backup contains both progress and settings, as JSON. Progress this
+/// version couldn't read is kept apart, as `unreadableProgress`, so that the
+/// rest can always be imported again, and that part restored with it.
+String exportBackup(WidgetRef ref) {
+  final progress = ref.read(progressProvider);
+  return const JsonEncoder.withIndent('  ').convert({
+    'app': 'shnayim_mikra',
+    'exportedAt': DateTime.now().toUtc().toIso8601String(),
+    'progress': progress.readable.toJson(),
+    'unreadableProgress': ?progress.unknownMissingFrom(progress.readable),
+    'settings': ref.read(settingsProvider).toJson(),
+  });
+}
 
 /// Restores a backup made by [exportBackup]. A file with anything this
 /// version can't read exactly is rejected whole, rather than half imported.
@@ -26,10 +32,15 @@ bool importBackup(WidgetRef ref, String raw) {
     final j = jsonDecode(raw.trim()) as Map<String, dynamic>;
     if (j['app'] != 'shnayim_mikra') return false;
     final progress = ProgressState.fromJson(j['progress'] as Map<String, dynamic>, strict: true);
+    final unreadable = (j['unreadableProgress'] ?? const <String, dynamic>{}) as Map<String, dynamic>;
     final settings = j['settings'] is Map<String, dynamic>
         ? AppSettings.fromJson(j['settings'] as Map<String, dynamic>)
         : null;
-    ref.read(progressProvider.notifier).restore(progress);
+    ref.read(progressProvider.notifier).restore(
+          progress,
+          unknownWeeks: (unreadable['weeks'] ?? const <String, dynamic>{}) as Map<String, dynamic>,
+          unknownPauses: (unreadable['pauses'] ?? const []) as List,
+        );
     if (settings != null) {
       ref.read(settingsProvider.notifier).replace(settings.copyWith(onboardingComplete: true));
     }

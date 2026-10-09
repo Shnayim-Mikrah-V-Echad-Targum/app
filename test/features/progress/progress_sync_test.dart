@@ -591,6 +591,55 @@ void main() {
     });
   });
 
+  Map<String, String> corruptBackups() => {
+        for (final k in prefs.getKeys().where((k) => k.startsWith(ProgressController.corruptBackupPrefix)))
+          k: prefs.getString(k)!,
+      };
+
+  test('a week this version cannot read is copied before a readable one from the backup replaces it', () async {
+    await prefs.setString(
+      ProgressController.storageKey,
+      jsonEncode(const ProgressState(unknownWeeks: {
+        _week: {'u': 'x'},
+      }).toJson()),
+    );
+    final repo = _CountingRepo(user: _me, remote: _otherDevice());
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      async.elapse(const Duration(seconds: 120));
+      final local = container.read(progressProvider);
+      expect(local.week(_week).isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect(local.unknownWeeks, isEmpty);
+      expect(corruptBackups().values, ['{"weeks":{"$_week":{"u":"x"}}}']);
+      container.dispose();
+    });
+  });
+
+  test('of two different unreadable copies of one week, the one left out is copied', () async {
+    await prefs.setString(
+      ProgressController.storageKey,
+      jsonEncode(const ProgressState(unknownWeeks: {
+        '5787:3': {'u': 'x'},
+      }).toJson()),
+    );
+    final remote = _otherDevice();
+    remote['weeks'] = {
+      ...remote['weeks'] as Map<String, dynamic>,
+      '5787:3': {'u': 'a'},
+    };
+    final repo = _CountingRepo(user: _me, remote: remote);
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      async.elapse(const Duration(seconds: 120));
+      expect(container.read(progressProvider).unknownWeeks, {
+        '5787:3': {'u': 'a'},
+      });
+      expect(corruptBackups().values, ['{"weeks":{"5787:3":{"u":"x"}}}']);
+      expect(remoteOf(repo), container.read(progressProvider));
+      container.dispose();
+    });
+  });
+
   test('a backup from a newer version is neither merged nor overwritten', () {
     final newer = {..._otherDevice(), 'version': kProgressFormat + 1};
     final original = jsonEncode(newer);
