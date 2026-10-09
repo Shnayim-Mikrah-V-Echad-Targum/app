@@ -26,14 +26,14 @@ class ShnayimMikraApp extends ConsumerWidget {
       if (route != null) router.go(route);
     });
 
-    final platform = MediaQuery.platformBrightnessOf(context);
     final systemHighContrast = MediaQuery.highContrastOf(context);
     final reduceMotion = settings.reduceMotion || MediaQuery.disableAnimationsOf(context);
 
+    // [mode] is always a concrete theme: when following the system, MaterialApp
+    // picks among the light, dark and high-contrast themes built below.
     ThemeData themeFor(AppThemeMode mode) => AppTheme.build(
-          scheme: AppTheme.scheme(mode, platform),
+          mode: mode,
           uiFont: settings.uiFont,
-          highContrast: AppTheme.isHighContrast(mode),
           reduceMotion: reduceMotion,
         );
 

@@ -2,64 +2,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/settings/app_settings.dart';
+import 'palette.dart';
 
-/// Brand colors: techelet blue and a muted gold.
+export 'sefer_colors.dart';
+export 'status_colors.dart';
+
+/// Brand colors: techelet blue and gold ink (the light theme's primary and
+/// secondary).
 abstract final class Brand {
-  static const techelet = Color(0xFF1E4B8F);
-  static const gold = Color(0xFF8A5A00);
+  static const techelet = Color(0xFF1D3F75);
+  static const gold = Color(0xFF7A5712);
 }
 
-/// Semantic colors for progress states. Never red: missed days are shown in
-/// neutral grey, and every state also has its own icon and label so color is
-/// never the only signal (WCAG 1.4.1).
-@immutable
-class StatusColors extends ThemeExtension<StatusColors> {
-  const StatusColors({
-    required this.done,
-    required this.onDone,
-    required this.late,
-    required this.onLate,
-    required this.grace,
-    required this.neutral,
-    required this.rest,
-  });
-
-  final Color done;
-  final Color onDone;
-  final Color late;
-  final Color onLate;
-  final Color grace;
-  final Color neutral;
-  final Color rest;
-
-  static StatusColors of(BuildContext context) => Theme.of(context).extension<StatusColors>()!;
-
-  @override
-  StatusColors copyWith({Color? done, Color? onDone, Color? late, Color? onLate, Color? grace, Color? neutral, Color? rest}) =>
-      StatusColors(
-        done: done ?? this.done,
-        onDone: onDone ?? this.onDone,
-        late: late ?? this.late,
-        onLate: onLate ?? this.onLate,
-        grace: grace ?? this.grace,
-        neutral: neutral ?? this.neutral,
-        rest: rest ?? this.rest,
-      );
-
-  @override
-  StatusColors lerp(StatusColors? other, double t) {
-    if (other == null) return this;
-    return StatusColors(
-      done: Color.lerp(done, other.done, t)!,
-      onDone: Color.lerp(onDone, other.onDone, t)!,
-      late: Color.lerp(late, other.late, t)!,
-      onLate: Color.lerp(onLate, other.onLate, t)!,
-      grace: Color.lerp(grace, other.grace, t)!,
-      neutral: Color.lerp(neutral, other.neutral, t)!,
-      rest: Color.lerp(rest, other.rest, t)!,
-    );
-  }
-}
+/// The colour tokens of one theme.
+typedef _Tokens = ({ColorScheme scheme, SeferColors sefer, StatusColors status});
 
 /// A page transition that does nothing, for Reduce Motion.
 class _NoTransitionsBuilder extends PageTransitionsBuilder {
@@ -72,103 +28,43 @@ class _NoTransitionsBuilder extends PageTransitionsBuilder {
 }
 
 abstract final class AppTheme {
-  static ColorScheme scheme(AppThemeMode mode, Brightness systemBrightness) {
-    switch (mode) {
-      case AppThemeMode.system:
-        return systemBrightness == Brightness.dark ? _dark : _light;
-      case AppThemeMode.light:
-        return _light;
-      case AppThemeMode.dark:
-        return _dark;
-      case AppThemeMode.sepia:
-        return _sepia;
-      case AppThemeMode.highContrastLight:
-        return _highContrastLight;
-      case AppThemeMode.highContrastDark:
-        return _highContrastDark;
-    }
-  }
+  /// The concrete theme to paint: `system` follows the platform brightness.
+  static AppThemeMode resolve(AppThemeMode mode, Brightness platformBrightness) => switch (mode) {
+        AppThemeMode.system => platformBrightness == Brightness.dark ? AppThemeMode.dark : AppThemeMode.light,
+        _ => mode,
+      };
 
-  static final _light = ColorScheme.fromSeed(seedColor: Brand.techelet, secondary: Brand.gold).copyWith(
-    surface: const Color(0xFFFBF9F5),
-  );
+  static ColorScheme scheme(AppThemeMode mode, Brightness platformBrightness) =>
+      _tokens(resolve(mode, platformBrightness)).scheme;
 
-  static final _dark = ColorScheme.fromSeed(seedColor: Brand.techelet, brightness: Brightness.dark);
-
-  static final _sepia = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF7A5A2B),
-    secondary: const Color(0xFF6B4A12),
-  ).copyWith(
-    surface: const Color(0xFFF4ECD8),
-    onSurface: const Color(0xFF33281A),
-    onSurfaceVariant: const Color(0xFF4E4130),
-    surfaceContainerLowest: const Color(0xFFFAF4E6),
-    surfaceContainerLow: const Color(0xFFEFE5CD),
-    surfaceContainer: const Color(0xFFEADFC4),
-    surfaceContainerHigh: const Color(0xFFE4D8BC),
-    surfaceContainerHighest: const Color(0xFFDDD0B2),
-  );
-
-  static final _highContrastLight = ColorScheme.fromSeed(
-    seedColor: Brand.techelet,
-    contrastLevel: 1.0,
-  ).copyWith(
-    primary: const Color(0xFF002B66),
-    onPrimary: Colors.white,
-    surface: Colors.white,
-    onSurface: Colors.black,
-    onSurfaceVariant: Colors.black,
-    outline: Colors.black,
-    outlineVariant: const Color(0xFF3D3D3D),
-  );
-
-  static final _highContrastDark = ColorScheme.fromSeed(
-    seedColor: Brand.techelet,
-    brightness: Brightness.dark,
-    contrastLevel: 1.0,
-  ).copyWith(
-    primary: const Color(0xFFFFE066),
-    onPrimary: Colors.black,
-    primaryContainer: const Color(0xFF3A3000),
-    onPrimaryContainer: const Color(0xFFFFF2B8),
-    secondary: const Color(0xFF9CD8FF),
-    onSecondary: Colors.black,
-    surface: Colors.black,
-    onSurface: Colors.white,
-    onSurfaceVariant: Colors.white,
-    surfaceContainerLowest: Colors.black,
-    surfaceContainerLow: const Color(0xFF0D0D0D),
-    surfaceContainer: const Color(0xFF141414),
-    surfaceContainerHigh: const Color(0xFF1C1C1C),
-    surfaceContainerHighest: const Color(0xFF262626),
-    outline: Colors.white,
-    outlineVariant: const Color(0xFFBDBDBD),
-  );
+  static _Tokens _tokens(AppThemeMode resolved) => switch (resolved) {
+        AppThemeMode.system || AppThemeMode.light =>
+          (scheme: Palettes.light, sefer: Palettes.seferLight, status: Palettes.statusLight),
+        AppThemeMode.dark => (scheme: Palettes.dark, sefer: Palettes.seferDark, status: Palettes.statusDark),
+        AppThemeMode.sepia => (scheme: Palettes.sepia, sefer: Palettes.seferSepia, status: Palettes.statusSepia),
+        AppThemeMode.highContrastLight =>
+          (scheme: Palettes.hcLight, sefer: Palettes.seferHcLight, status: Palettes.statusHcLight),
+        AppThemeMode.highContrastDark =>
+          (scheme: Palettes.hcDark, sefer: Palettes.seferHcDark, status: Palettes.statusHcDark),
+      };
 
   static bool isHighContrast(AppThemeMode m) =>
       m == AppThemeMode.highContrastLight || m == AppThemeMode.highContrastDark;
 
+  /// The theme for [mode], which must already be resolved (see [resolve]).
   static ThemeData build({
-    required ColorScheme scheme,
+    required AppThemeMode mode,
     required UiFont uiFont,
-    required bool highContrast,
     required bool reduceMotion,
   }) {
-    final dark = scheme.brightness == Brightness.dark;
+    assert(mode != AppThemeMode.system, 'Resolve the system theme first (AppTheme.resolve).');
+    final (:scheme, :sefer, :status) = _tokens(mode);
+    final highContrast = sefer.isHighContrast;
     final family = uiFont.family ?? (kIsWeb ? 'NotoSans' : null);
-    final status = StatusColors(
-      done: scheme.primary,
-      onDone: scheme.onPrimary,
-      late: dark ? const Color(0xFFFFB866) : const Color(0xFF9A5B00),
-      onLate: dark ? Colors.black : Colors.white,
-      grace: dark ? const Color(0xFF7FD6C2) : const Color(0xFF00695C),
-      neutral: scheme.outline,
-      rest: scheme.secondary,
-    );
 
     // A strong, visible focus ring for keyboard and switch users (WCAG 2.4.7,
     // 2.4.13): 3 px in a color that contrasts with the surface.
-    final focusSide = BorderSide(color: highContrast ? scheme.onSurface : scheme.primary, width: 3);
+    final focusSide = BorderSide(color: sefer.focus, width: 3);
     WidgetStateProperty<BorderSide?> focusOutline(BorderSide? normal) => WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.focused) ? focusSide : normal,
         );
@@ -182,7 +78,7 @@ abstract final class AppTheme {
       visualDensity: VisualDensity.standard,
       focusColor: scheme.primary.withValues(alpha: 0.24),
       scaffoldBackgroundColor: scheme.surface,
-      extensions: [status],
+      extensions: [status, sefer],
       pageTransitionsTheme: reduceMotion
           ? const PageTransitionsTheme(builders: {
               TargetPlatform.android: _NoTransitionsBuilder(),
