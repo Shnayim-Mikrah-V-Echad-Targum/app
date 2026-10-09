@@ -26,19 +26,34 @@ const _week = '5787:1';
 final _d1 = LocalDate(2026, 10, 11);
 final _d2 = LocalDate(2026, 10, 12);
 
-/// An account whose progress backup lives in memory, reordered the way
-/// Postgres jsonb stores it, and which counts every round trip.
+/// Accounts whose progress backups live in memory, reordered the way
+/// Postgres jsonb stores them, and which count every round trip.
 class _CountingRepo extends Fake implements ForumRepository {
-  _CountingRepo({this.user, this.remote});
+  _CountingRepo({this.user, Map<String, dynamic>? remote}) {
+    this.remote = remote;
+  }
 
   CommunityUser? user;
   final _users = StreamController<CommunityUser?>.broadcast();
 
-  /// The backed-up progress JSON.
-  Map<String, dynamic>? remote;
+  /// Each account's backed-up progress JSON, by user id.
+  final backups = <String, Map<String, dynamic>>{};
+
+  /// [_me]'s backed-up progress JSON.
+  Map<String, dynamic>? get remote => backups[_me.id];
+  set remote(Map<String, dynamic>? json) {
+    if (json == null) {
+      backups.remove(_me.id);
+    } else {
+      backups[_me.id] = json;
+    }
+  }
 
   /// When set, [loadProgress] waits for it, to hold a sync in flight.
   Completer<void>? gate;
+
+  /// When set, [saveProgress] waits for it before storing anything.
+  Completer<void>? saveGate;
 
   int loads = 0;
   int saves = 0;
@@ -65,17 +80,25 @@ class _CountingRepo extends Fake implements ForumRepository {
     return Profile(id: user!.id, displayName: 'Reader');
   }
 
+  // Like the real backend, each call is for whoever is signed in when it is
+  // made.
+
   @override
   Future<Map<String, dynamic>?> loadProgress() async {
     loads++;
+    final id = user!.id;
     await gate?.future;
-    return remote == null ? null : _jsonb(remote) as Map<String, dynamic>;
+    final json = backups[id];
+    return json == null ? null : _jsonb(json) as Map<String, dynamic>;
   }
 
   @override
   Future<void> saveProgress(Map<String, dynamic> data) async {
     saves++;
-    remote = _jsonb(jsonDecode(jsonEncode(data))) as Map<String, dynamic>;
+    final id = user!.id;
+    final json = _jsonb(jsonDecode(jsonEncode(data))) as Map<String, dynamic>;
+    await saveGate?.future;
+    backups[id] = json;
   }
 
   /// Postgres jsonb keeps object keys shortest first, then bytewise.
@@ -195,7 +218,7 @@ void main() {
     });
   });
 
-  test('calls made during a sync share it', () {
+  test('calls made during a sync share one more sync after it', () {
     final repo = _CountingRepo(user: _me, remote: _otherDevice());
     fakeAsync((async) {
       final container = containerFor(repo);
@@ -206,20 +229,120 @@ void main() {
       repo.gate = Completer<void>();
       final first = sync.syncNow();
       final second = sync.syncNow();
-      expect(identical(first, second), isTrue);
+      final third = sync.syncNow();
+      expect(identical(second, third), isTrue);
+      expect(identical(first, second), isFalse);
       async.flushMicrotasks();
-      expect(repo.loads, loads + 1);
+      expect(repo.loads, loads + 1, reason: 'one sync at a time');
 
       final results = <bool>[];
       first.then(results.add);
+      second.then(results.add);
       repo.gate!.complete();
       async.flushMicrotasks();
-      expect(results, [true]);
+      expect(results, [true, true]);
+      expect(repo.loads, loads + 2, reason: 'the calls made during the first sync ran one more');
 
-      // Once it is done, the next call starts a fresh sync.
+      // Once both are done, the next call starts a fresh sync.
       sync.syncNow();
       async.flushMicrotasks();
-      expect(repo.loads, loads + 2);
+      expect(repo.loads, loads + 3);
+      container.dispose();
+    });
+  });
+
+  test('a change made while a sync is saving is pushed after it', () {
+    final repo = _CountingRepo(user: _me, remote: _otherDevice());
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      final progress = container.read(progressProvider.notifier);
+      async.elapse(const Duration(seconds: 120));
+      final saves = repo.saves;
+
+      // On a slow network, the sync for this change stalls while saving...
+      repo.saveGate = Completer<void>();
+      progress.markUnit(_week, 2, ReadingPass.mikra1, _d2);
+      async.elapse(ProgressSync.pushDelay + const Duration(seconds: 1));
+      expect(repo.saves, saves + 1);
+
+      // ...and this one rests and asks to be pushed before that sync ends.
+      progress.markUnit(_week, 3, ReadingPass.mikra1, _d2);
+      async.elapse(ProgressSync.pushDelay + const Duration(seconds: 1));
+      repo.saveGate!.complete();
+      async.elapse(const Duration(seconds: 120));
+
+      expect(repo.saves, saves + 2);
+      expect(remoteOf(repo).week(_week).isUnitDone(3, ReadingPass.mikra1), isTrue);
+      expect(remoteOf(repo), container.read(progressProvider));
+      container.dispose();
+    });
+  });
+
+  test('another account signing in during a sync gets its own pull, and its backup is kept', () async {
+    const other = CommunityUser(id: 'other', email: 'other@example.com');
+    final otherBackup = ProgressState(weeks: {
+      _week: WeekProgress(weekId: _week).withUnit(3, ReadingPass.targum, _d2),
+    }).toJson();
+    await prefs.setString(
+      ProgressController.storageKey,
+      jsonEncode(ProgressState(weeks: {_week: WeekProgress(weekId: _week).withUnit(1, ReadingPass.mikra2, _d2)})
+          .toJson()),
+    );
+    final mine = _otherDevice();
+    final repo = _CountingRepo(user: _me, remote: mine)..backups[other.id] = otherBackup;
+    fakeAsync((async) {
+      repo.gate = Completer<void>();
+      final container = containerFor(repo);
+      async.elapse(const Duration(seconds: 1));
+      expect(repo.loads, 1, reason: "the first account's pull is in flight");
+
+      repo.announce(other);
+      async.elapse(const Duration(seconds: 1));
+      repo.gate!.complete();
+      async.elapse(const Duration(seconds: 120));
+
+      final local = container.read(progressProvider);
+      expect(local.week(_week).isUnitDone(1, ReadingPass.mikra2), isTrue, reason: 'kept from this device');
+      expect(local.week(_week).isUnitDone(3, ReadingPass.targum), isTrue, reason: "pulled from the new account");
+      expect(local.week(_week).isUnitDone(0, ReadingPass.mikra1), isFalse, reason: "the first account's stays out");
+      expect(ProgressState.fromJson(repo.backups[other.id]!), local, reason: 'merged into its own backup');
+      expect(remoteOf(repo), ProgressState.fromJson(mine), reason: "the first account's is untouched");
+      container.dispose();
+    });
+  });
+
+  test("an account's first backup uploads this device's progress", () {
+    final repo = _CountingRepo(user: _me);
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikra2, _d2);
+      async.elapse(const Duration(seconds: 120));
+
+      expect(repo.saves, 1);
+      expect(remoteOf(repo), container.read(progressProvider));
+      expect(remoteOf(repo).week(_week).isUnitDone(1, ReadingPass.mikra2), isTrue);
+      container.dispose();
+    });
+  });
+
+  test('turning backup off and on again pulls once more, and pushes what changed meanwhile', () {
+    final repo = _CountingRepo(user: _me, remote: _otherDevice());
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      async.elapse(const Duration(seconds: 120));
+      final (loads, saves) = (repo.loads, repo.saves);
+      final settings = container.read(settingsProvider.notifier);
+
+      settings.update((s) => s.copyWith(cloudSync: false));
+      container.read(progressProvider.notifier).markUnit(_week, 4, ReadingPass.targum, _d2);
+      async.elapse(const Duration(seconds: 120));
+      expect((repo.loads, repo.saves), (loads, saves), reason: 'backup is off');
+
+      settings.update((s) => s.copyWith(cloudSync: true));
+      async.elapse(const Duration(seconds: 120));
+      expect(repo.loads, loads + 1);
+      expect(repo.saves, saves + 1);
+      expect(remoteOf(repo).week(_week).isUnitDone(4, ReadingPass.targum), isTrue);
       container.dispose();
     });
   });
