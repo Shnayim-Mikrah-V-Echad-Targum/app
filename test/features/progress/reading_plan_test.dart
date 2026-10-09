@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +11,8 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+
+import '../../helpers.dart';
 
 const diaspora = ParshaSchedule(israel: false);
 
@@ -259,6 +262,68 @@ void main() {
       const abroad = ReadingPlanner(schedule: diaspora, oneDayYomTov: true);
       expect(datesOf(abroad), ['2027-04-25', '2027-04-26', '2027-04-27', '2027-04-29', '2027-04-30']);
       expect(datesOf(abroad), isNot(contains('2027-04-28')), reason: 'the seventh day is Yom Tov everywhere');
+    });
+  });
+
+  group('effectiveReadingDay', () {
+    // Pesach 5789: 15 Nisan is Shabbat 31 March 2029; 16 Nisan, Sunday
+    // 1 April, is Yom Tov only for those who keep two days.
+    test("rolls a visitor's second day of Yom Tov over to the next day", () {
+      expect(effectiveReadingDay(DateTime(2029, 4, 1, 10), oneDayYomTov: false), d('2029-04-02'));
+      expect(effectiveReadingDay(DateTime(2029, 4, 1, 10), oneDayYomTov: true), d('2029-04-01'));
+    });
+
+    test('rolls over at 3 a.m., and past every day of Yom Tov after Shabbat', () {
+      expect(effectiveReadingDay(DateTime(2029, 4, 2, 2), oneDayYomTov: true), d('2029-04-01'));
+      expect(effectiveReadingDay(DateTime(2029, 4, 2, 2), oneDayYomTov: false), d('2029-04-02'));
+      expect(effectiveReadingDay(DateTime(2029, 3, 31, 22), oneDayYomTov: false), d('2029-04-02'));
+      expect(effectiveReadingDay(DateTime(2029, 3, 31, 22), oneDayYomTov: true), d('2029-04-01'));
+    });
+  });
+
+  group('for a visitor to Israel, who keeps two days of Yom Tov,', () {
+    testWidgets('the week strip shows the second day of Yom Tov as a rest day', (tester) async {
+      // Acharon shel Pesach 5787, 22 Nisan: Thursday 29 April 2027.
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final visitor = AppSettings(
+        onboardingComplete: true,
+        joinDate: d('2027-04-25'),
+        readingSchedule: ReadingSchedule.israel,
+        oneDayYomTov: false,
+      );
+      await pumpApp(tester, settings: visitor, now: DateTime(2027, 4, 27, 10));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Thursday: Shabbat or Yom Tov'), findsOneWidget);
+
+      await pumpApp(tester, settings: visitor.copyWith(oneDayYomTov: true), now: DateTime(2027, 4, 27, 10));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Thursday: Shabbat or Yom Tov'), findsNothing);
+      expect(find.byTooltip(RegExp('^Thursday: ')), findsOneWidget, reason: 'a reading day in Israel');
+    });
+
+    testWidgets('the check-in after Shabbat comes on the first day they read', (tester) async {
+      // Shavuot 5789 is Sunday and Monday, 20 and 21 May 2029, after
+      // Bamidbar was read on Shabbat; Israel keeps only the Sunday.
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const checkIn = 'Shavua tov! Did you read on Shabbat?';
+      final visitor = AppSettings(
+        onboardingComplete: true,
+        joinDate: d('2029-05-01'),
+        readingSchedule: ReadingSchedule.israel,
+        oneDayYomTov: false,
+      );
+      await pumpApp(tester, settings: visitor, now: DateTime(2029, 5, 22, 10));
+      await tester.pumpAndSettle();
+      expect(find.text(checkIn), findsOneWidget, reason: 'Tuesday is their first reading day after Shabbat');
+
+      await pumpApp(tester, settings: visitor.copyWith(oneDayYomTov: true), now: DateTime(2029, 5, 22, 10));
+      await tester.pumpAndSettle();
+      expect(find.text(checkIn), findsNothing, reason: 'in Israel, that was Monday');
+      expect(find.text('Bamidbar is still open'), findsOneWidget);
     });
   });
 
