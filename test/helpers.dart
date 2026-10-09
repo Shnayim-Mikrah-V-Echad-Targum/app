@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +13,9 @@ import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 
 ParshaRepository? _repo;
 
@@ -91,3 +95,32 @@ Future<ProviderContainer> openRoute(
   await tester.pumpAndSettle();
   return container;
 }
+
+/// Pumps [child] on a page in the app's [theme], in English or Hebrew, as the
+/// app would show it, for widget tests that don't need the whole app.
+Future<void> pumpThemed(
+  WidgetTester tester,
+  Widget child, {
+  AppThemeMode theme = AppThemeMode.light,
+  bool hebrew = false,
+  UiFont uiFont = UiFont.standard,
+  double textScale = 1,
+}) =>
+    tester.pumpWidget(MaterialApp(
+      theme: AppTheme.build(mode: theme, uiFont: uiFont, hebrewUi: hebrew, reduceMotion: false),
+      // A test that pumps a second theme sees it at once.
+      themeAnimationDuration: Duration.zero,
+      locale: Locale(hebrew ? 'he' : 'en'),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      builder: (context, page) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: page!,
+      ),
+      home: Scaffold(body: child),
+    ));
