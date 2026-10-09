@@ -61,6 +61,8 @@ flutter:
   generate: true
 
   assets:
+    - assets/branding/icon.png
+    - assets/branding/mark_128.png
     - assets/data/
     - assets/text/
     - assets/text/mikra/
