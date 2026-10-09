@@ -50,3 +50,8 @@ app.*.map.json
 # Data-generation tooling
 /tool/data/node_modules/
 /tool/data/.cache/
+
+# Release signing (never commit)
+/android/key.properties
+/android/app/*.jks
+/android/app/*.keystore

@@ -1,12 +1,19 @@
 {
-    "name": "shnayim_mikra",
-    "short_name": "shnayim_mikra",
+    "name": "Shnayim Mikra · שניים מקרא",
+    "short_name": "Shnayim Mikra",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Shnayim Mikra v'Echad Targum — weekly parsha reader with streaks and community",
-    "orientation": "portrait-primary",
+    "background_color": "#FBF9F5",
+    "theme_color": "#1E4B8F",
+    "description": "Read the weekly parsha twice in Hebrew and once in Targum, with streaks, community and extensive accessibility options.",
+    "orientation": "any",
+    "lang": "en",
+    "dir": "auto",
+    "categories": [
+        "education",
+        "books",
+        "lifestyle"
+    ],
     "prefer_related_applications": false,
     "icons": [
         {

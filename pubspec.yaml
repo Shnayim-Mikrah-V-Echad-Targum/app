@@ -30,7 +30,25 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.4
   flutter_lints: ^6.0.0
+
+# Regenerate platform icons with: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: assets/branding/icon.png
+  android: true
+  adaptive_icon_background: "#1E4B8F"
+  adaptive_icon_foreground: assets/branding/icon_foreground.png
+  adaptive_icon_monochrome: assets/branding/icon_monochrome.png
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    background_color: "#FBF9F5"
+    theme_color: "#1E4B8F"
+  windows:
+    generate: true
+    icon_size: 256
 
 flutter:
   uses-material-design: true

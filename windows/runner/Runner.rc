@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "org.shnayimmikra" "\0"
-            VALUE "FileDescription", "shnayim_mikra" "\0"
+            VALUE "CompanyName", "Shnayim Mikra" "\0"
+            VALUE "FileDescription", "Shnayim Mikra v'Echad Targum" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "shnayim_mikra" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 org.shnayimmikra. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Shnayim Mikra contributors" "\0"
             VALUE "OriginalFilename", "shnayim_mikra.exe" "\0"
-            VALUE "ProductName", "shnayim_mikra" "\0"
+            VALUE "ProductName", "Shnayim Mikra" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
