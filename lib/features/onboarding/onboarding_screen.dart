@@ -31,7 +31,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _guessLocation();
   }
 
-  /// Pre-selects Israel for devices set to Israel time.
+  /// Pre-selects Israel, both its reading and one day of Yom Tov, for
+  /// devices set to Israel time: right for those who live there. The help
+  /// on the same page tells a visitor that the days of Yom Tov can be set
+  /// apart in Settings.
   Future<void> _guessLocation() async {
     try {
       final tz = kIsWeb ? DateTime.now().timeZoneName : (await FlutterTimezone.getLocalTimezone()).identifier;

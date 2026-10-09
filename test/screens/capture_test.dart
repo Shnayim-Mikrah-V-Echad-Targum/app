@@ -47,6 +47,7 @@ ProgressState _progress() {
 
 const _screens = {
   'welcome': '/welcome',
+  'welcome_location': '/welcome',
   'today': '/today',
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
@@ -133,6 +134,8 @@ const _dialogs = {'s_data_reset': Icons.delete_forever_outlined};
 final _taps = {
   // Choosing "All on Friday" says that it applies from this week on.
   's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
+  // The second page of onboarding: where the reader will be this Shabbat.
+  'welcome_location': () => find.byType(FilledButton).first,
 };
 
 /// Screens captured scrolled to the end of their main list.
@@ -217,7 +220,7 @@ void main() {
         addTearDown(tester.view.reset);
         final blocked = _syncBlocked.contains(entry.key);
         final base = AppSettings(
-          onboardingComplete: entry.key != 'welcome',
+          onboardingComplete: !entry.key.startsWith('welcome'),
           joinDate: _join,
           cloudSync: blocked || _backupOn.contains(entry.key),
         );
@@ -231,7 +234,7 @@ void main() {
               ? await _accountWithNewerBackup()
               : (_backupOn.contains(entry.key) ? await _signedIn() : null),
         );
-        if (entry.key != 'welcome') c.read(routerProvider).go(entry.value);
+        if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
         await _settle(tester);
         if (_scrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);
         if (_dialogs[entry.key] case final icon?) {

@@ -1451,7 +1451,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationHelp.
   ///
   /// In en, this message translates to:
-  /// **'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days.'**
+  /// **'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days. Visiting? You can set the days of Yom Tov you keep separately in Settings.'**
   String get locationHelp;
 
   /// No description provided for @readingScheduleLabel.

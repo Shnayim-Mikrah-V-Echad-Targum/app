@@ -833,7 +833,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationHelp =>
-      'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days.';
+      'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days. Visiting? You can set the days of Yom Tov you keep separately in Settings.';
 
   @override
   String get readingScheduleLabel =>

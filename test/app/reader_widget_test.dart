@@ -159,6 +159,7 @@ void main() {
     await tester.tap(find.text("Start this week's parsha"));
     await tester.pumpAndSettle();
     expect(find.text('Where will you be this Shabbat?'), findsOneWidget);
+    expect(find.textContaining('Visiting? You can set the days of Yom Tov you keep separately in Settings.'), findsOneWidget);
     await tester.tap(find.text('In Israel'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));

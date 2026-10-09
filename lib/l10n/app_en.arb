@@ -596,7 +596,7 @@
   "settingsDataDesc": "Back up, restore or reset your progress",
   "locationIsrael": "In Israel",
   "locationDiaspora": "Outside Israel",
-  "locationHelp": "Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days.",
+  "locationHelp": "Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days. Visiting? You can set the days of Yom Tov you keep separately in Settings.",
   "readingScheduleLabel": "Which Torah reading will you hear this Shabbat?",
   "readingScheduleHelp": "For a few weeks after Pesach or Shavuot, Israel can be a parsha ahead.",
   "yomTovDaysLabel": "How many days of Yom Tov do you keep?",

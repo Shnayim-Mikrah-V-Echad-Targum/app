@@ -832,7 +832,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get locationHelp =>
-      'בארץ ובחוץ לארץ קוראים לעתים פרשות שונות, ומספר ימי יום טוב שונה.';
+      'בארץ ובחוץ לארץ קוראים לעתים פרשות שונות, ומספר ימי יום טוב שונה. בביקור? בהגדרות אפשר לקבוע בנפרד כמה ימי יום טוב שומרים.';
 
   @override
   String get readingScheduleLabel =>
