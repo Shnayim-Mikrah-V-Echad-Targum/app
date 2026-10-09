@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../progress/domain/progress_merge.dart';
+import '../../progress/domain/progress_models.dart';
 import 'backend.dart';
 import 'models.dart';
 
@@ -82,6 +83,11 @@ class ProgressSync extends Notifier<DateTime?> {
       if (repo.currentUser == null) return false;
       final remoteJson = await repo.loadProgress();
       if (!ref.mounted) return false;
+      // A newer version of the app has backed up progress in a format this
+      // one can't fully read: merging and pushing could lose some of it.
+      final blocked = remoteJson != null && ProgressState.formatOf(remoteJson) > kProgressFormat;
+      ref.read(syncBlockedByNewerFormatProvider.notifier).set(blocked);
+      if (blocked) return false;
       final remote = remoteJson == null ? null : ProgressState.fromJson(remoteJson);
       final local = ref.read(progressProvider);
       final merged = remote == null ? local : mergeProgress(local, remote);
@@ -108,3 +114,20 @@ class ProgressSync extends Notifier<DateTime?> {
 }
 
 final progressSyncProvider = NotifierProvider<ProgressSync, DateTime?>(ProgressSync.new);
+
+/// Whether syncing has stopped because the account's backup was written by a
+/// newer version of the app. It clears when the setting or the account
+/// changes, or when a later sync finds a backup this version can read.
+class SyncBlockedByNewerFormat extends Notifier<bool> {
+  @override
+  bool build() {
+    ref.watch(settingsProvider.select((s) => s.cloudSync));
+    ref.watch(communityUserProvider.select((u) => u.value?.id));
+    return false;
+  }
+
+  void set(bool blocked) => state = blocked;
+}
+
+final syncBlockedByNewerFormatProvider =
+    NotifierProvider<SyncBlockedByNewerFormat, bool>(SyncBlockedByNewerFormat.new);

@@ -1493,6 +1493,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncFailed => 'Couldn\'t sync right now. We\'ll try again later.';
 
   @override
+  String get syncNeedsUpdate =>
+      'Your backup was saved by a newer version of the app. Update the app to keep syncing.';
+
+  @override
   String lastSynced(String time) {
     return 'Last synced $time';
   }

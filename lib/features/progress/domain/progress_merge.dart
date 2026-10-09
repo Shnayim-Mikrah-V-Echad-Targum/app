@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import '../../../app/providers.dart';
@@ -42,8 +43,29 @@ ProgressState mergeProgress(ProgressState a, ProgressState b) {
     pauses['${p.start.rd}-${p.end.rd}'] = p;
   }
   final sortedPauses = pauses.values.toList()..sort((p, q) => p.start.compareTo(q.start));
-  return ProgressState(weeks: weeks, pauses: sortedPauses);
+
+  // Entries neither side could read are carried along untouched. Where both
+  // sides hold a different one for the same week, the choice must not depend
+  // on the argument order.
+  final unknownWeeks = <String, Object?>{};
+  for (final id in {...a.unknownWeeks.keys, ...b.unknownWeeks.keys}) {
+    final x = a.unknownWeeks.containsKey(id) ? _canonical(a.unknownWeeks[id]) : null;
+    final y = b.unknownWeeks.containsKey(id) ? _canonical(b.unknownWeeks[id]) : null;
+    final xFirst = y == null || (x != null && x.compareTo(y) <= 0);
+    unknownWeeks[id] = xFirst ? a.unknownWeeks[id] : b.unknownWeeks[id];
+  }
+  final unknownPauses = {
+    for (final p in [...a.unknownPauses, ...b.unknownPauses]) _canonical(p): p,
+  };
+  return ProgressState(
+    weeks: weeks,
+    pauses: sortedPauses,
+    unknownWeeks: unknownWeeks,
+    unknownPauses: [for (final k in unknownPauses.keys.toList()..sort()) unknownPauses[k]],
+  );
 }
+
+String _canonical(Object? json) => jsonEncode(ProgressState.canonicalJson(json));
 
 LocalDate? _earliest(LocalDate? a, LocalDate? b) {
   if (a == null) return b;

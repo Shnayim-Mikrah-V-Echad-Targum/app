@@ -873,6 +873,7 @@
   "syncNow": "Sync now",
   "syncDone": "Progress synced.",
   "syncFailed": "Couldn't sync right now. We'll try again later.",
+  "syncNeedsUpdate": "Your backup was saved by a newer version of the app. Update the app to keep syncing.",
   "lastSynced": "Last synced {time}",
   "@lastSynced": {
     "placeholders": {

@@ -2666,6 +2666,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t sync right now. We\'ll try again later.'**
   String get syncFailed;
 
+  /// No description provided for @syncNeedsUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Your backup was saved by a newer version of the app. Update the app to keep syncing.'**
+  String get syncNeedsUpdate;
+
   /// No description provided for @lastSynced.
   ///
   /// In en, this message translates to:

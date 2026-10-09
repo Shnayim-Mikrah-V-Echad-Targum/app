@@ -15,19 +15,23 @@ import '../widgets/settings_widgets.dart';
 String exportBackup(WidgetRef ref) => const JsonEncoder.withIndent('  ').convert({
       'app': 'shnayim_mikra',
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
-      'progress': ref.read(progressProvider).toJson(),
+      'progress': ref.read(progressProvider).readable.toJson(),
       'settings': ref.read(settingsProvider).toJson(),
     });
 
+/// Restores a backup made by [exportBackup]. A file with anything this
+/// version can't read exactly is rejected whole, rather than half imported.
 bool importBackup(WidgetRef ref, String raw) {
   try {
     final j = jsonDecode(raw.trim()) as Map<String, dynamic>;
     if (j['app'] != 'shnayim_mikra') return false;
-    final progress = ProgressState.fromJson(j['progress'] as Map<String, dynamic>);
+    final progress = ProgressState.fromJson(j['progress'] as Map<String, dynamic>, strict: true);
+    final settings = j['settings'] is Map<String, dynamic>
+        ? AppSettings.fromJson(j['settings'] as Map<String, dynamic>)
+        : null;
     ref.read(progressProvider.notifier).replaceAll(progress);
-    if (j['settings'] is Map<String, dynamic>) {
-      final imported = AppSettings.fromJson(j['settings'] as Map<String, dynamic>);
-      ref.read(settingsProvider.notifier).replace(imported.copyWith(onboardingComplete: true));
+    if (settings != null) {
+      ref.read(settingsProvider.notifier).replace(settings.copyWith(onboardingComplete: true));
     }
     return true;
   } catch (_) {

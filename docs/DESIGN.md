@@ -159,7 +159,7 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md). The key decisions:
 
 - **Pure-Dart core.** Calendar, plans, streaks and the reminder planner have no Flutter imports and are tested exhaustively.
 - **Riverpod providers** connect settings, today's date, the schedule, progress and the streak summary. Everything else is derived from those.
-- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. Export and import are available in settings. Cloud backup is optional and merges rather than overwrites.
+- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. A week or pause that can't be read is kept untouched rather than dropped, and stored progress that can't be read, or that a newer version wrote, is copied aside before anything can overwrite it. Export and import are available in settings; an import is all or nothing. Cloud backup is optional and merges rather than overwrites, and it pauses (asking for an update) if a newer version of the app wrote the backup.
 - **Bundled texts.** About 9 MB of JSON, loaded per book on demand.
 - **Localization.** English is the source language. The Hebrew ARB is generated from a dictionary, and the build fails if any key is missing.
 

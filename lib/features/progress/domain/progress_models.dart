@@ -17,6 +17,10 @@ enum ReadingPass {
 /// Number of aliyot in every weekly portion.
 const kAliyot = 7;
 
+/// The version of the stored progress format that this build reads and
+/// writes. Data written by a newer build is kept, never merged blindly.
+const kProgressFormat = 1;
+
 /// A stable identifier for one weekly portion within one annual cycle,
 /// e.g. `"5787:22-23"`. Keyed by portion rather than date so that switching
 /// between the Israel and Diaspora schedules never orphans progress.
@@ -47,20 +51,49 @@ class WeekProgress {
   })  : units = units ?? List.generate(kAliyot, (_) => List<LocalDate?>.filled(3, null)),
         positions = positions ?? const {};
 
-  factory WeekProgress.fromJson(String weekId, Map<String, dynamic> j) {
-    final u = (j['u'] as List?)
-        ?.map((row) => (row as List).map((d) => d == null ? null : LocalDate.fromRd(d as int)).toList())
-        .toList();
-    final pos = <int, List<int>>{
-      for (final e in ((j['p'] as Map<String, dynamic>?) ?? const {}).entries)
-        int.parse(e.key): (e.value as List).cast<int>(),
-    };
-    return WeekProgress(
-      weekId: weekId,
-      units: u,
-      haftarah: j['h'] == null ? null : LocalDate.fromRd(j['h'] as int),
-      positions: pos,
-    );
+  /// Reads a stored week leniently: the unit grid is normalized to 7 × 3 (a
+  /// missing row or cell, or one that isn't a day number, reads as not done)
+  /// and malformed positions are dropped. With [strict], anything that would
+  /// need fixing or dropping throws a [FormatException] instead. A week whose
+  /// shape isn't recognized at all always throws.
+  factory WeekProgress.fromJson(String weekId, Map<String, dynamic> j, {bool strict = false}) {
+    final rawUnits = j['u'];
+    final rawPositions = j['p'];
+    if ((rawUnits != null && rawUnits is! List) || (rawPositions != null && rawPositions is! Map)) {
+      throw FormatException('Unrecognized progress for week $weekId');
+    }
+    var clean = j.keys.every(const {'u', 'h', 'p'}.contains);
+
+    LocalDate? day(Object? rd) {
+      if (rd is int) return LocalDate.fromRd(rd);
+      if (rd != null) clean = false;
+      return null;
+    }
+
+    List<LocalDate?> row(Object? cells) {
+      if (cells is! List || cells.length != 3) clean = false;
+      final list = cells is List ? cells : const [];
+      return [for (var p = 0; p < 3; p++) p < list.length ? day(list[p]) : null];
+    }
+
+    final rows = (rawUnits as List?) ?? const [];
+    if (rows.length != kAliyot) clean = false;
+    final units = [for (var a = 0; a < kAliyot; a++) row(a < rows.length ? rows[a] : null)];
+
+    final positions = <int, List<int>>{};
+    for (final MapEntry(:key, :value) in ((rawPositions as Map?) ?? const {}).entries) {
+      final a = int.tryParse('$key');
+      if (a == null || a < 0 || a >= kAliyot || value is! List || !value.every((n) => n is int && n >= 0)) {
+        clean = false;
+        continue;
+      }
+      if (value.length != 3 || '$a' != key) clean = false;
+      positions[a] = List<int>.unmodifiable([for (var i = 0; i < 3; i++) i < value.length ? value[i] as int : 0]);
+    }
+
+    final haftarah = day(j['h']);
+    if (strict && !clean) throw FormatException('Malformed progress for week $weekId');
+    return WeekProgress(weekId: weekId, units: units, haftarah: haftarah, positions: positions);
   }
 
   final String weekId;

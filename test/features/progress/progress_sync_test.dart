@@ -8,9 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/app.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/community_providers.dart';
+import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
@@ -228,6 +230,85 @@ void main() {
       expect(result, isFalse);
       expect(repo.saves, 0);
     });
+  });
+
+  test('a week this version cannot read survives a sync untouched', () {
+    final remote = _otherDevice();
+    remote['weeks'] = {...remote['weeks'] as Map<String, dynamic>, '5787:9': {'u': 'done'}};
+    final repo = _CountingRepo(user: _me, remote: remote);
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikra2, _d2);
+      async.elapse(const Duration(seconds: 120));
+
+      expect(repo.loads, 1);
+      expect(repo.saves, 1);
+      expect((repo.remote!['weeks'] as Map)['5787:9'], {'u': 'done'});
+      final local = container.read(progressProvider);
+      expect(local.unknownWeeks, {'5787:9': {'u': 'done'}});
+      expect(local.week(_week).isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect(remoteOf(repo), local);
+      container.dispose();
+    });
+  });
+
+  test('a backup from a newer version is neither merged nor overwritten', () {
+    final newer = {..._otherDevice(), 'version': kProgressFormat + 1};
+    final original = jsonEncode(newer);
+    final repo = _CountingRepo(user: _me, remote: newer);
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      async.elapse(const Duration(seconds: 120));
+      expect(repo.loads, 1);
+      expect(repo.saves, 0);
+      expect(container.read(progressProvider), const ProgressState(), reason: 'nothing was merged');
+      expect(container.read(syncBlockedByNewerFormatProvider), isTrue);
+      expect(container.read(progressSyncProvider), isNull, reason: 'it never synced');
+
+      // Changes made here are kept here, and not pushed over the backup.
+      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikra2, _d2);
+      async.elapse(const Duration(seconds: 120));
+      expect(repo.loads, 2);
+      bool? result;
+      container.read(progressSyncProvider.notifier).syncNow().then((ok) => result = ok);
+      async.flushMicrotasks();
+      expect(result, isFalse);
+      expect(repo.saves, 0);
+      expect(jsonEncode(repo.remote), original);
+      expect(container.read(progressProvider).week(_week).isUnitDone(1, ReadingPass.mikra2), isTrue);
+
+      // Once the backup is in a format this version reads, syncing resumes.
+      repo.remote = _otherDevice();
+      container.read(progressSyncProvider.notifier).syncNow().then((ok) => result = ok);
+      async.flushMicrotasks();
+      expect(result, isTrue);
+      expect(container.read(syncBlockedByNewerFormatProvider), isFalse);
+      expect(repo.saves, 1);
+      container.dispose();
+    });
+  });
+
+  testWidgets('the account screen asks for an update when the backup is newer', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const message = 'Your backup was saved by a newer version of the app. Update the app to keep syncing.';
+    final demo = DemoForumRepository();
+    await demo.verifyCode(_me.email!, '123456');
+    await demo.saveProgress({..._otherDevice(), 'version': kProgressFormat + 1});
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(onboardingComplete: true, cloudSync: true),
+      forums: demo,
+    );
+    c.read(routerProvider).go('/community/account');
+    await tester.pumpAndSettle();
+    expect(find.text(message), findsOneWidget);
+
+    await tester.tap(find.text('Sync now'));
+    await tester.pumpAndSettle();
+    expect(find.text(message), findsNWidgets(2), reason: 'the notice, and the reply to Sync now');
+    expect(c.read(progressProvider), const ProgressState());
   });
 
   testWidgets('a sync does not rebuild the app', (tester) async {

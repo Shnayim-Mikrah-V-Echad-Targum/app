@@ -150,12 +150,46 @@ final currentPlanProvider = Provider<WeekPlan>(
 /// All of the user's reading progress. Treat as immutable: equality is by
 /// value and is cached per instance.
 class ProgressState {
-  const ProgressState({this.weeks = const {}, this.pauses = const []});
+  const ProgressState({
+    this.weeks = const {},
+    this.pauses = const [],
+    this.unknownWeeks = const {},
+    this.unknownPauses = const [],
+  });
 
   final Map<String, WeekProgress> weeks;
   final List<Pause> pauses;
 
+  /// Stored weeks this version couldn't read (damaged, or written by a newer
+  /// version), kept exactly as they were and written back out unchanged so
+  /// that they are never lost. A readable week with the same id takes
+  /// precedence.
+  final Map<String, Object?> unknownWeeks;
+
+  /// Stored pauses this version couldn't read, kept like [unknownWeeks].
+  final List<Object?> unknownPauses;
+
   WeekProgress week(String id) => weeks[id] ?? WeekProgress(weekId: id);
+
+  /// Only the progress this version can read: what a backup file holds, so
+  /// that the file can always be imported again.
+  ProgressState get readable =>
+      unknownWeeks.isEmpty && unknownPauses.isEmpty ? this : ProgressState(weeks: weeks, pauses: pauses);
+
+  /// Ids of [unknownWeeks] hidden behind a readable week of the same id.
+  Iterable<String> get shadowedWeeks => unknownWeeks.keys.where(weeks.containsKey);
+
+  ProgressState copyWith({
+    Map<String, WeekProgress>? weeks,
+    List<Pause>? pauses,
+    Map<String, Object?>? unknownWeeks,
+  }) =>
+      ProgressState(
+        weeks: weeks ?? this.weeks,
+        pauses: pauses ?? this.pauses,
+        unknownWeeks: unknownWeeks ?? this.unknownWeeks,
+        unknownPauses: unknownPauses,
+      );
 
   /// Equal progress compares equal whatever order its maps and lists are in,
   /// so a sync that changes nothing doesn't look like a change. ([toJson]
@@ -173,50 +207,132 @@ class ProgressState {
   String get _canon => _canonCache[this] ??= jsonEncode({
         'weeks': {for (final id in weeks.keys.toList()..sort()) id: weeks[id]!.toJson()},
         'pauses': [for (final p in [...pauses]..sort(_byDates)) p.toJson()],
+        if (unknownWeeks.isNotEmpty) 'unknownWeeks': canonicalJson(unknownWeeks),
+        if (unknownPauses.isNotEmpty)
+          'unknownPauses': [for (final p in unknownPauses) jsonEncode(canonicalJson(p))]..sort(),
       });
 
   static int _byDates(Pause p, Pause q) => p.start != q.start ? p.start.compareTo(q.start) : p.end.compareTo(q.end);
 
-  Map<String, dynamic> toJson() => {
-        'version': 1,
-        'weeks': {for (final e in weeks.entries) e.key: e.value.toJson()},
-        'pauses': [for (final p in pauses) p.toJson()],
+  /// [json] with every object's keys sorted, so that equal JSON encodes
+  /// identically.
+  static Object? canonicalJson(Object? json) => switch (json) {
+        Map() => {for (final k in json.keys.map((k) => '$k').toList()..sort()) k: canonicalJson(json[k])},
+        List() => [for (final e in json) canonicalJson(e)],
+        _ => json,
       };
 
-  factory ProgressState.fromJson(Map<String, dynamic> j) => ProgressState(
-        weeks: {
-          for (final e in ((j['weeks'] as Map<String, dynamic>?) ?? const {}).entries)
-            e.key: WeekProgress.fromJson(e.key, e.value as Map<String, dynamic>),
-        },
-        pauses: [
-          for (final p in ((j['pauses'] as List?) ?? const [])) Pause.fromJson(p as Map<String, dynamic>),
-        ],
-      );
+  /// The format version of stored progress [json].
+  static int formatOf(Map<String, dynamic> json) => switch (json['version']) {
+        null => 1,
+        final int v => v,
+        final v => throw FormatException('Unrecognized progress version $v'),
+      };
+
+  Map<String, dynamic> toJson() => {
+        'version': kProgressFormat,
+        'weeks': {...unknownWeeks, for (final e in weeks.entries) e.key: e.value.toJson()},
+        'pauses': [for (final p in pauses) p.toJson(), ...unknownPauses],
+      };
+
+  /// Reads stored progress leniently: each week and pause is read on its own,
+  /// and one that can't be read is kept aside in [unknownWeeks] or
+  /// [unknownPauses] rather than losing the rest. Throws only if the overall
+  /// shape is wrong.
+  ///
+  /// With [strict] (for importing a backup), anything that can't be read
+  /// exactly, or a newer format, throws a [FormatException] instead.
+  factory ProgressState.fromJson(Map<String, dynamic> j, {bool strict = false}) {
+    final version = formatOf(j);
+    if (strict && version > kProgressFormat) {
+      throw FormatException('Progress format $version is newer than $kProgressFormat');
+    }
+    final rawWeeks = j['weeks'] ?? const <String, dynamic>{};
+    final rawPauses = j['pauses'] ?? const [];
+    if (rawWeeks is! Map<String, dynamic> || rawPauses is! List) throw const FormatException('Unrecognized progress');
+
+    final weeks = <String, WeekProgress>{};
+    final unknownWeeks = <String, Object?>{};
+    for (final MapEntry(:key, :value) in rawWeeks.entries) {
+      try {
+        weeks[key] = WeekProgress.fromJson(key, value as Map<String, dynamic>, strict: strict);
+      } catch (_) {
+        if (strict) throw FormatException('Unreadable progress for week $key');
+        unknownWeeks[key] = value;
+      }
+    }
+    final pauses = <Pause>[];
+    final unknownPauses = <Object?>[];
+    for (final p in rawPauses) {
+      try {
+        pauses.add(Pause.fromJson(p as Map<String, dynamic>));
+      } catch (_) {
+        if (strict) throw FormatException('Unreadable pause $p');
+        unknownPauses.add(p);
+      }
+    }
+    return ProgressState(weeks: weeks, pauses: pauses, unknownWeeks: unknownWeeks, unknownPauses: unknownPauses);
+  }
 }
 
 class ProgressController extends Notifier<ProgressState> {
   static const storageKey = 'progress.v1';
 
+  /// Prefixes of the keys under which stored progress is copied, with the
+  /// time in milliseconds appended, before anything could overwrite it:
+  /// progress written by a newer version of the app, and progress (or part of
+  /// it) this version can't read.
+  static const newerBackupPrefix = 'progress.newer.';
+  static const corruptBackupPrefix = 'progress.corrupt.';
+
   @override
   ProgressState build() {
-    final raw = ref.read(sharedPreferencesProvider).getString(storageKey);
+    final prefs = ref.read(sharedPreferencesProvider);
+    final raw = prefs.getString(storageKey);
     if (raw == null) return const ProgressState();
+    var version = kProgressFormat;
     try {
-      return ProgressState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      version = ProgressState.formatOf(j);
+      // Saving in this version's format would drop whatever it doesn't know.
+      if (version > kProgressFormat) _backUp(prefs, newerBackupPrefix, raw);
+      return ProgressState.fromJson(j);
     } catch (_) {
+      // Unreadable, and the next save would replace it.
+      if (version <= kProgressFormat) _backUp(prefs, corruptBackupPrefix, raw);
       return const ProgressState();
     }
   }
 
-  void _set(ProgressState s) {
-    state = s;
-    ref.read(sharedPreferencesProvider).setString(storageKey, jsonEncode(s.toJson()));
+  /// Copies [raw] to a new key starting with [prefix], unless an identical
+  /// copy is already there.
+  static void _backUp(SharedPreferences prefs, String prefix, String raw) {
+    final keys = prefs.getKeys().where((k) => k.startsWith(prefix));
+    if (keys.any((k) => prefs.get(k) == raw)) return;
+    var ms = DateTime.now().millisecondsSinceEpoch;
+    while (prefs.containsKey('$prefix$ms')) {
+      ms++;
+    }
+    prefs.setString('$prefix$ms', raw);
   }
 
-  void _updateWeek(String weekId, WeekProgress Function(WeekProgress w) change) {
-    final weeks = {...state.weeks, weekId: change(state.week(weekId))};
-    _set(ProgressState(weeks: weeks, pauses: state.pauses));
+  void _set(ProgressState s) {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final shadowed = s.shadowedWeeks.toSet();
+    if (shadowed.isNotEmpty) {
+      // A week this version couldn't read is about to be replaced by a
+      // readable one (e.g. the user marked it again): keep a copy.
+      _backUp(prefs, corruptBackupPrefix, jsonEncode({
+        'weeks': {for (final id in shadowed) id: s.unknownWeeks[id]},
+      }));
+      s = s.copyWith(unknownWeeks: {...s.unknownWeeks}..removeWhere((id, _) => shadowed.contains(id)));
+    }
+    state = s;
+    prefs.setString(storageKey, jsonEncode(s.toJson()));
   }
+
+  void _updateWeek(String weekId, WeekProgress Function(WeekProgress w) change) =>
+      _set(state.copyWith(weeks: {...state.weeks, weekId: change(state.week(weekId))}));
 
   void markUnit(String weekId, int aliyah, ReadingPass pass, LocalDate? date) =>
       _updateWeek(weekId, (w) => w.withUnit(aliyah, pass, date));
@@ -233,12 +349,10 @@ class ProgressController extends Notifier<ProgressState> {
   void savePosition(String weekId, int aliyah, List<int> versesDone) =>
       _updateWeek(weekId, (w) => w.withPosition(aliyah, versesDone));
 
-  void addPause(Pause pause) =>
-      _set(ProgressState(weeks: state.weeks, pauses: [...state.pauses, pause]));
+  void addPause(Pause pause) => _set(state.copyWith(pauses: [...state.pauses, pause]));
 
   /// Ends any pause covering [today] as of yesterday.
-  void endPause(LocalDate today) => _set(ProgressState(
-        weeks: state.weeks,
+  void endPause(LocalDate today) => _set(state.copyWith(
         pauses: [
           for (final p in state.pauses)
             if (!p.contains(today)) p else if (p.start < today) Pause(p.start, today.addDays(-1)),

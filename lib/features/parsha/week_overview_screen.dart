@@ -76,9 +76,7 @@ class WeekOverview extends ConsumerWidget {
               label: l.actionUndo,
               onPressed: () {
                 final state = ref.read(progressProvider);
-                ref.read(progressProvider.notifier).replaceAll(
-                      ProgressState(weeks: {...state.weeks, ctx.id: before}, pauses: state.pauses),
-                    );
+                ref.read(progressProvider.notifier).replaceAll(state.copyWith(weeks: {...state.weeks, ctx.id: before}));
               },
             ),
           );

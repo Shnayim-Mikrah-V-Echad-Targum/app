@@ -19,6 +19,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
@@ -59,6 +61,7 @@ const _screens = {
   'thread': '/community/thread/1',
   'compose': '/community/new',
   'account': '/community/account',
+  'account_sync': '/community/account',
   'settings': '/settings',
   's_reading': '/settings/reading',
   's_display': '/settings/display',
@@ -68,6 +71,17 @@ const _screens = {
   'about': '/settings/about',
   'guide': '/guide',
 };
+
+/// Screens shown signed in with backup on, where a newer version of the app
+/// has written the backup, so syncing has stopped.
+const _syncBlocked = {'account_sync'};
+
+Future<ForumRepository> _accountWithNewerBackup() async {
+  final repo = DemoForumRepository();
+  await repo.verifyCode('reader@example.org', '123456');
+  await repo.saveProgress({..._progress().toJson(), 'version': kProgressFormat + 1});
+  return repo;
+}
 
 /// Screens captured scrolled to the end of their main list.
 const _scrolledToEnd = {'reader_gaps'};
@@ -149,8 +163,15 @@ void main() {
         tester.view.physicalSize = mode.size;
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
-        final base = AppSettings(onboardingComplete: entry.key != 'welcome', joinDate: _join);
-        final c = await pumpApp(tester, settings: mode.settings(base), now: _now, progress: _progress());
+        final blocked = _syncBlocked.contains(entry.key);
+        final base = AppSettings(onboardingComplete: entry.key != 'welcome', joinDate: _join, cloudSync: blocked);
+        final c = await pumpApp(
+          tester,
+          settings: mode.settings(base),
+          now: _now,
+          progress: _progress(),
+          forums: blocked ? await _accountWithNewerBackup() : null,
+        );
         if (entry.key != 'welcome') c.read(routerProvider).go(entry.value);
         await _settle(tester);
         if (_scrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);

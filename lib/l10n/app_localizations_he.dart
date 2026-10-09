@@ -1487,6 +1487,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get syncFailed => 'לא ניתן לסנכרן כעת. ננסה שוב מאוחר יותר.';
 
   @override
+  String get syncNeedsUpdate =>
+      'הגיבוי נשמר בגרסה חדשה יותר של האפליקציה. יש לעדכן את האפליקציה כדי להמשיך לסנכרן.';
+
+  @override
   String lastSynced(String time) {
     return 'סונכרן לאחרונה $time';
   }
