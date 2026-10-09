@@ -1,0 +1,3 @@
+# Python dependencies for tool/fonts/build_fonts.sh. The exact fontTools
+# version keeps the generated fonts byte-for-byte reproducible.
+fonttools==4.66.1
