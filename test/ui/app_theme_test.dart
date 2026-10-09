@@ -156,7 +156,7 @@ List<String> _mismatches(Map<String, String> table, Map<String, Color> actual, i
 void main() {
   for (final (column, mode) in _modes.indexed) {
     test('${mode.name}: the theme carries the palette and both extensions', () {
-      final theme = AppTheme.build(mode: mode, uiFont: UiFont.standard, reduceMotion: false);
+      final theme = AppTheme.build(mode: mode, uiFont: UiFont.standard, hebrewUi: false, reduceMotion: false);
       final sefer = theme.extension<SeferColors>()!;
       final status = theme.extension<StatusColors>()!;
 

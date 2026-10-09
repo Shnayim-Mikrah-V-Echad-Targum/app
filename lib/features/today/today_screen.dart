@@ -147,7 +147,7 @@ class _ParshaCard extends ConsumerWidget {
                       headingLevel: 1,
                       child: Text(
                         l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
-                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+                        style: theme.textTheme.headlineSmall,
                       ),
                     ),
                     Text(

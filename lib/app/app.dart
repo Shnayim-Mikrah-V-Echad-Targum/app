@@ -10,11 +10,44 @@ import '../ui/theme/app_theme.dart';
 import 'providers.dart';
 import 'router.dart';
 
-class ShnayimMikraApp extends ConsumerWidget {
+class ShnayimMikraApp extends ConsumerStatefulWidget {
   const ShnayimMikraApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ShnayimMikraApp> createState() => _ShnayimMikraAppState();
+}
+
+class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // The text theme follows the platform's language when the app does.
+  @override
+  void didChangeLocales(List<Locale>? locales) => setState(() {});
+
+  /// Whether the app shows in Hebrew, resolved the way MaterialApp resolves
+  /// its locale.
+  bool _hebrewUi(AppLanguage language) => switch (language) {
+        AppLanguage.english => false,
+        AppLanguage.hebrew => true,
+        AppLanguage.system => basicLocaleListResolution(
+                  WidgetsBinding.instance.platformDispatcher.locales,
+                  AppLocalizations.supportedLocales,
+                ).languageCode ==
+                'he',
+      };
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final router = ref.watch(routerProvider);
     // Keep scheduled reminders in sync with settings and progress, and the
@@ -29,11 +62,14 @@ class ShnayimMikraApp extends ConsumerWidget {
     final systemHighContrast = MediaQuery.highContrastOf(context);
     final reduceMotion = settings.reduceMotion || MediaQuery.disableAnimationsOf(context);
 
+    final hebrewUi = _hebrewUi(settings.language);
+
     // [mode] is always a concrete theme: when following the system, MaterialApp
     // picks among the light, dark and high-contrast themes built below.
     ThemeData themeFor(AppThemeMode mode) => AppTheme.build(
           mode: mode,
           uiFont: settings.uiFont,
+          hebrewUi: hebrewUi,
           reduceMotion: reduceMotion,
         );
 

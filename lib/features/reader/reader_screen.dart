@@ -718,7 +718,7 @@ class _StepHeader extends StatelessWidget {
                     Text(title,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         )),
                     Text(l.stepOf(stepNumber, totalSteps),
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer)),

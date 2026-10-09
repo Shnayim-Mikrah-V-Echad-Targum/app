@@ -1,11 +1,12 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/settings/app_settings.dart';
 import 'palette.dart';
+import 'typography.dart';
 
 export 'sefer_colors.dart';
 export 'status_colors.dart';
+export 'typography.dart';
 
 /// Brand colors: techelet blue and gold ink (the light theme's primary and
 /// secondary).
@@ -52,15 +53,21 @@ abstract final class AppTheme {
       m == AppThemeMode.highContrastLight || m == AppThemeMode.highContrastDark;
 
   /// The theme for [mode], which must already be resolved (see [resolve]).
+  /// [hebrewUi] picks the Hebrew text theme; it must match the locale the app
+  /// is shown in.
   static ThemeData build({
     required AppThemeMode mode,
     required UiFont uiFont,
+    required bool hebrewUi,
     required bool reduceMotion,
   }) {
     assert(mode != AppThemeMode.system, 'Resolve the system theme first (AppTheme.resolve).');
     final (:scheme, :sefer, :status) = _tokens(mode);
     final highContrast = sefer.isHighContrast;
-    final family = uiFont.family ?? (kIsWeb ? 'NotoSans' : null);
+    final textTheme =
+        AppTypography.textTheme(scheme: scheme, uiFont: uiFont, hebrewUi: hebrewUi, highContrast: highContrast);
+    final seferType =
+        AppTypography.sefer(scheme: scheme, uiFont: uiFont, hebrewUi: hebrewUi, highContrast: highContrast);
 
     // A strong, visible focus ring for keyboard and switch users (WCAG 2.4.7,
     // 2.4.13): 3 px in a color that contrasts with the surface.
@@ -72,13 +79,14 @@ abstract final class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      fontFamily: family,
-      fontFamilyFallback: const ['NotoSansHebrew', 'NotoSerifHebrew'],
+      // Every role names its own family and fallbacks, so none is set here.
+      textTheme: textTheme,
+      primaryTextTheme: textTheme.apply(bodyColor: scheme.onPrimary, displayColor: scheme.onPrimary),
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
       focusColor: scheme.primary.withValues(alpha: 0.24),
       scaffoldBackgroundColor: scheme.surface,
-      extensions: [status, sefer],
+      extensions: [status, sefer, seferType],
       pageTransitionsTheme: reduceMotion
           ? const PageTransitionsTheme(builders: {
               TargetPlatform.android: _NoTransitionsBuilder(),
@@ -114,7 +122,6 @@ abstract final class AppTheme {
         style: ButtonStyle(
           minimumSize: const WidgetStatePropertyAll(Size(64, 48)),
           side: focusOutline(outlineSide),
-          textStyle: WidgetStatePropertyAll(base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
