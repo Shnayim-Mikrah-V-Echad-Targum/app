@@ -1269,6 +1269,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This erases your reading history and streaks on this device. It can\'t be undone.';
 
   @override
+  String get resetProgressConfirmSynced =>
+      'This erases your reading history and streaks on this device, in your backup, and on your other devices when they next sync. It can\'t be undone.';
+
+  @override
   String get resetDone => 'Progress reset.';
 
   @override

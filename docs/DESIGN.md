@@ -92,7 +92,9 @@ A portion can end in one of these states:
 ### Join date
 Nothing before the day the reader started counts against them. A partial first week is transparent.
 
-The engine is a pure function of (progress, join date, today, pauses). It is unit-tested against the worked examples in the research and recomputed on every change. Merging progress between devices is commutative, with the earliest date winning, so sync can never lower a streak.
+The engine is a pure function of (progress, join date, today, pauses). It is unit-tested against the worked examples in the research and recomputed on every change.
+
+**Syncing keeps every change, removals included.** Each reading, the haftarah, each saved place and each pause records when it last changed, and a removal keeps that time instead of disappearing. Merging two devices is commutative: where one device marked a reading as not read, cleared a week or ended a pause after the other last saw it, that change wins. Where both devices logged the same reading, the earliest date wins, so a sync never lowers a streak. With backup on, resetting all progress erases it everywhere, but keeps anything logged on another device after the reset.
 
 ## 5. Notifications
 
@@ -159,7 +161,7 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md). The key decisions:
 
 - **Pure-Dart core.** Calendar, plans, streaks and the reminder planner have no Flutter imports and are tested exhaustively.
 - **Riverpod providers** connect settings, today's date, the schedule, progress and the streak summary. Everything else is derived from those.
-- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. A week or pause that can't be read is kept untouched rather than dropped, and stored progress that can't be read, or that a newer version wrote, is copied aside before anything can overwrite it. Export and import are available in settings; an import is all or nothing. Cloud backup is optional and merges rather than overwrites, and it pauses (asking for an update) if a newer version of the app wrote the backup.
+- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. A week or pause that can't be read is kept untouched rather than dropped, and stored progress that can't be read, or that a newer version wrote, is copied aside before anything can overwrite it. Export and import are available in settings; an import is all or nothing, and counts as a new change, so the next sync keeps it. Cloud backup is optional and merges rather than overwrites (see [Streaks](#4-streaks)), and it pauses (asking for an update) if a newer version of the app wrote the backup.
 - **Bundled texts.** About 9 MB of JSON, loaded per book on demand.
 - **Localization.** English is the source language. The Hebrew ARB is generated from a dictionary, and the build fails if any key is missing.
 

@@ -74,10 +74,7 @@ class WeekOverview extends ConsumerWidget {
             l.markedUnread,
             action: SnackBarAction(
               label: l.actionUndo,
-              onPressed: () {
-                final state = ref.read(progressProvider);
-                ref.read(progressProvider.notifier).replaceAll(state.copyWith(weeks: {...state.weeks, ctx.id: before}));
-              },
+              onPressed: () => ref.read(progressProvider.notifier).restoreWeek(ctx.id, before),
             ),
           );
         }

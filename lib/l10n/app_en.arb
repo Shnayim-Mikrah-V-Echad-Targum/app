@@ -746,6 +746,7 @@
   "exportCopied": "Backup copied to the clipboard.",
   "resetProgress": "Reset all progress",
   "resetProgressConfirm": "This erases your reading history and streaks on this device. It can't be undone.",
+  "resetProgressConfirmSynced": "This erases your reading history and streaks on this device, in your backup, and on your other devices when they next sync. It can't be undone.",
   "resetDone": "Progress reset.",
   "languageSystem": "Device language",
   "languageEnglish": "English",

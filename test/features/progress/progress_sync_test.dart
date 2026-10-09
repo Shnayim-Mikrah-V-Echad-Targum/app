@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -231,6 +231,141 @@ void main() {
       expect(repo.saves, 0);
     });
   });
+
+  test('removals stay removed through syncing', () {
+    final repo = _CountingRepo(user: _me, remote: _otherDevice());
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      final progress = container.read(progressProvider.notifier);
+      ProgressState local() => container.read(progressProvider);
+      WeekProgress week() => local().week(_week);
+      void settle() {
+        async.elapse(const Duration(seconds: 10));
+        expect(remoteOf(repo), local(), reason: 'synced');
+      }
+
+      settle();
+      expect(week().isUnitDone(0, ReadingPass.mikra1), isTrue, reason: 'pulled from the other device');
+
+      progress.markUnit(_week, 0, ReadingPass.mikra1, null);
+      settle();
+      expect(week().isUnitDone(0, ReadingPass.mikra1), isFalse, reason: 'marked as not read');
+
+      progress.markHaftarah(_week, _d1);
+      settle();
+      progress.markHaftarah(_week, null);
+      settle();
+      expect(week().haftarah, isNull, reason: 'the haftarah marked as not read');
+
+      progress.markAliyah(_week, 2, _d2);
+      settle();
+      final before = week();
+      progress.clearWeek(_week);
+      settle();
+      expect(week().isStarted, isFalse, reason: 'cleared');
+      progress.restoreWeek(_week, before);
+      settle();
+      expect(week().isAliyahDone(2), isTrue, reason: 'the clear undone, after it had synced');
+
+      progress.addPause(_d1, _d1.addDays(9));
+      settle();
+      progress.endPause(_d2);
+      settle();
+      expect(local().pauses.single.end, _d1, reason: 'ended early');
+
+      progress.reset(everywhere: true);
+      settle();
+      expect(local().weeks, isEmpty, reason: 'reset');
+      expect(local().pauses, isEmpty);
+      container.dispose();
+    });
+  });
+
+  testWidgets('with the demo backend, a cleared week stays cleared, and so does its undo', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final demo = DemoForumRepository();
+    await demo.verifyCode(_me.email!, '123456');
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(onboardingComplete: true, cloudSync: true),
+      progress: ProgressState(weeks: {_week: WeekProgress(weekId: _week).withAliyah(0, _d1).withAliyah(1, _d2)}),
+      now: DateTime(2026, 10, 12, 10),
+      forums: demo,
+    );
+    c.read(routerProvider).go('/week/$_week');
+    await tester.pumpAndSettle();
+    WeekProgress week() => c.read(progressProvider).week(_week);
+    Future<WeekProgress> backedUp() async => ProgressState.fromJson((await demo.loadProgress())!).week(_week);
+    expect((await backedUp()).isAliyahDone(1), isTrue, reason: 'backed up when the app started');
+
+    Future<void> clearWeek() async {
+      await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byTooltip('More options')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text("Clear this week's progress"));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, "Clear this week's progress"));
+      await tester.pumpAndSettle();
+    }
+
+    await clearWeek();
+    expect(week().isStarted, isFalse);
+    await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(week().isAliyahDone(1), isTrue, reason: 'undone');
+    expect((await backedUp()).isAliyahDone(1), isTrue);
+
+    await clearWeek();
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(week().isStarted, isFalse, reason: 'still cleared after syncing');
+    expect((await backedUp()).isStarted, isFalse);
+  });
+
+  for (final backup in [true, false]) {
+    testWidgets('resetting all progress with backup ${backup ? 'on reaches the backup' : 'off stays on this device'}',
+        (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final demo = DemoForumRepository();
+      await demo.verifyCode(_me.email!, '123456');
+      await demo.saveProgress(_otherDevice());
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, cloudSync: backup),
+        progress: ProgressState(weeks: {_week: WeekProgress(weekId: _week).withAliyah(1, _d2)}),
+        forums: demo,
+      );
+      c.read(routerProvider).go('/settings/data');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Reset all progress'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(backup
+            ? 'This erases your reading history and streaks on this device, in your backup, and on your other '
+                'devices when they next sync. It can\'t be undone.'
+            : "This erases your reading history and streaks on this device. It can't be undone."),
+        findsOneWidget,
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Reset all progress'));
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+
+      final local = c.read(progressProvider);
+      expect(local.weeks, isEmpty);
+      final backedUp = ProgressState.fromJson((await demo.loadProgress())!);
+      if (backup) {
+        expect(local.resetAt, greaterThan(0));
+        expect(backedUp, local);
+      } else {
+        expect(local.resetAt, 0, reason: 'nothing marks the reset for other devices');
+        expect(backedUp.week(_week).isUnitDone(0, ReadingPass.mikra1), isTrue, reason: 'the backup is untouched');
+      }
+    });
+  }
 
   test('a week this version cannot read survives a sync untouched', () {
     final remote = _otherDevice();

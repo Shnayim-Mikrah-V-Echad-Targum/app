@@ -29,7 +29,7 @@ bool importBackup(WidgetRef ref, String raw) {
     final settings = j['settings'] is Map<String, dynamic>
         ? AppSettings.fromJson(j['settings'] as Map<String, dynamic>)
         : null;
-    ref.read(progressProvider.notifier).replaceAll(progress);
+    ref.read(progressProvider.notifier).restore(progress);
     if (settings != null) {
       ref.read(settingsProvider.notifier).replace(settings.copyWith(onboardingComplete: true));
     }
@@ -94,11 +94,13 @@ class DataSettingsScreen extends ConsumerWidget {
           leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
           title: Text(l.resetProgress),
           onTap: () async {
+            // With backup on, the reset reaches the backup and other devices.
+            final everywhere = ref.read(settingsProvider).cloudSync;
             final ok = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
                 title: Text(l.resetProgress),
-                content: Text(l.resetProgressConfirm),
+                content: Text(everywhere ? l.resetProgressConfirmSynced : l.resetProgressConfirm),
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
                   FilledButton(
@@ -113,7 +115,7 @@ class DataSettingsScreen extends ConsumerWidget {
               ),
             );
             if (ok != true || !context.mounted) return;
-            ref.read(progressProvider.notifier).reset();
+            ref.read(progressProvider.notifier).reset(everywhere: everywhere);
             showStatus(context, l.resetDone);
           },
         ),

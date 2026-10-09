@@ -1265,6 +1265,10 @@ class AppLocalizationsHe extends AppLocalizations {
       'פעולה זו מוחקת את היסטוריית הקריאה והרצפים במכשיר זה. אי אפשר לבטל אותה.';
 
   @override
+  String get resetProgressConfirmSynced =>
+      'פעולה זו מוחקת את היסטוריית הקריאה והרצפים במכשיר זה, בגיבוי, ובמכשירים האחרים שלך בסנכרון הבא שלהם. אי אפשר לבטל אותה.';
+
+  @override
   String get resetDone => 'ההתקדמות אופסה.';
 
   @override

@@ -2276,6 +2276,12 @@ abstract class AppLocalizations {
   /// **'This erases your reading history and streaks on this device. It can\'t be undone.'**
   String get resetProgressConfirm;
 
+  /// No description provided for @resetProgressConfirmSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'This erases your reading history and streaks on this device, in your backup, and on your other devices when they next sync. It can\'t be undone.'**
+  String get resetProgressConfirmSynced;
+
   /// No description provided for @resetDone.
   ///
   /// In en, this message translates to:

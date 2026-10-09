@@ -12,9 +12,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
@@ -68,6 +68,7 @@ const _screens = {
   's_a11y': '/settings/accessibility',
   's_reminders': '/settings/reminders',
   's_data': '/settings/data',
+  's_data_reset': '/settings/data',
   'about': '/settings/about',
   'guide': '/guide',
 };
@@ -82,6 +83,12 @@ Future<ForumRepository> _accountWithNewerBackup() async {
   await repo.saveProgress({..._progress().toJson(), 'version': kProgressFormat + 1});
   return repo;
 }
+
+/// Screens shown with backup on (but not signed in).
+const _backupOn = {'s_data_reset'};
+
+/// Screens captured with a dialog open, by tapping the icon given.
+const _dialogs = {'s_data_reset': Icons.delete_forever_outlined};
 
 /// Screens captured scrolled to the end of their main list.
 const _scrolledToEnd = {'reader_gaps'};
@@ -164,7 +171,11 @@ void main() {
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
         final blocked = _syncBlocked.contains(entry.key);
-        final base = AppSettings(onboardingComplete: entry.key != 'welcome', joinDate: _join, cloudSync: blocked);
+        final base = AppSettings(
+          onboardingComplete: entry.key != 'welcome',
+          joinDate: _join,
+          cloudSync: blocked || _backupOn.contains(entry.key),
+        );
         final c = await pumpApp(
           tester,
           settings: mode.settings(base),
@@ -175,6 +186,10 @@ void main() {
         if (entry.key != 'welcome') c.read(routerProvider).go(entry.value);
         await _settle(tester);
         if (_scrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);
+        if (_dialogs[entry.key] case final icon?) {
+          await tester.tap(find.byIcon(icon));
+          await _settle(tester);
+        }
         await _write(tester, '${mode.tag}_${entry.key}');
       }, skip: !_capture);
     }

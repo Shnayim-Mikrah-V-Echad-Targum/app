@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -153,12 +154,21 @@ class ProgressState {
   const ProgressState({
     this.weeks = const {},
     this.pauses = const [],
+    this.resetAt = 0,
     this.unknownWeeks = const {},
     this.unknownPauses = const [],
   });
 
   final Map<String, WeekProgress> weeks;
+
+  /// Every pause, including cancelled ones (which cover no days), kept so
+  /// that the cancellation reaches other devices.
   final List<Pause> pauses;
+
+  /// When all progress was last reset everywhere (see
+  /// [ProgressController.reset]), from [ProgressClock]; 0 if never. Merging
+  /// drops anything stamped before it.
+  final int resetAt;
 
   /// Stored weeks this version couldn't read (damaged, or written by a newer
   /// version), kept exactly as they were and written back out unchanged so
@@ -173,11 +183,19 @@ class ProgressState {
 
   /// Only the progress this version can read: what a backup file holds, so
   /// that the file can always be imported again.
-  ProgressState get readable =>
-      unknownWeeks.isEmpty && unknownPauses.isEmpty ? this : ProgressState(weeks: weeks, pauses: pauses);
+  ProgressState get readable => unknownWeeks.isEmpty && unknownPauses.isEmpty
+      ? this
+      : ProgressState(weeks: weeks, pauses: pauses, resetAt: resetAt);
 
   /// Ids of [unknownWeeks] hidden behind a readable week of the same id.
   Iterable<String> get shadowedWeeks => unknownWeeks.keys.where(weeks.containsKey);
+
+  /// The latest stamp anywhere in this progress, or 0.
+  int get latestStamp => [
+        resetAt,
+        for (final w in weeks.values) w.latestStamp,
+        for (final p in pauses) p.updatedAt,
+      ].fold(0, max);
 
   ProgressState copyWith({
     Map<String, WeekProgress>? weeks,
@@ -187,9 +205,39 @@ class ProgressState {
       ProgressState(
         weeks: weeks ?? this.weeks,
         pauses: pauses ?? this.pauses,
+        resetAt: resetAt,
         unknownWeeks: unknownWeeks ?? this.unknownWeeks,
         unknownPauses: unknownPauses,
       );
+
+  /// This progress changed to read exactly like [target] (a backup being
+  /// restored). Whatever differs takes [target]'s value as a new change, so
+  /// that a sync carries it to other devices instead of undoing it: what
+  /// [target] lacks is removed, and [target]'s own stamps and reset don't
+  /// matter. Entries this version couldn't read are kept.
+  ProgressState restoredTo(ProgressState target) => ProgressClock.above(resetAt, () {
+        final weeks = <String, WeekProgress>{};
+        for (final id in {...this.weeks.keys, ...target.weeks.keys}) {
+          final w = week(id).restoredTo(target.week(id));
+          if (!w.isBlank) weeks[id] = w;
+        }
+        final wanted = {for (final p in target.pauses) p.id: p};
+        final had = {for (final p in this.pauses) p.id};
+        final pauses = [
+          for (final p in this.pauses)
+            if (wanted[p.id] case final t?) p.restoredTo(t) else if (p.deleted) p else p.cancelled(),
+          for (final t in wanted.values)
+            if (!t.deleted && !had.contains(t.id))
+              Pause(t.start, t.end, id: t.id, updatedAt: ProgressClock.after(t.updatedAt)),
+        ];
+        return ProgressState(
+          weeks: weeks,
+          pauses: pauses,
+          resetAt: resetAt,
+          unknownWeeks: unknownWeeks,
+          unknownPauses: unknownPauses,
+        );
+      });
 
   /// Equal progress compares equal whatever order its maps and lists are in,
   /// so a sync that changes nothing doesn't look like a change. ([toJson]
@@ -206,13 +254,12 @@ class ProgressState {
 
   String get _canon => _canonCache[this] ??= jsonEncode({
         'weeks': {for (final id in weeks.keys.toList()..sort()) id: weeks[id]!.toJson()},
-        'pauses': [for (final p in [...pauses]..sort(_byDates)) p.toJson()],
+        'pauses': [for (final p in pauses) jsonEncode(p.toJson())]..sort(),
+        if (resetAt != 0) 'resetAt': resetAt,
         if (unknownWeeks.isNotEmpty) 'unknownWeeks': canonicalJson(unknownWeeks),
         if (unknownPauses.isNotEmpty)
           'unknownPauses': [for (final p in unknownPauses) jsonEncode(canonicalJson(p))]..sort(),
       });
-
-  static int _byDates(Pause p, Pause q) => p.start != q.start ? p.start.compareTo(q.start) : p.end.compareTo(q.end);
 
   /// [json] with every object's keys sorted, so that equal JSON encodes
   /// identically.
@@ -231,6 +278,7 @@ class ProgressState {
 
   Map<String, dynamic> toJson() => {
         'version': kProgressFormat,
+        if (resetAt != 0) 'resetAt': resetAt,
         'weeks': {...unknownWeeks, for (final e in weeks.entries) e.key: e.value.toJson()},
         'pauses': [for (final p in pauses) p.toJson(), ...unknownPauses],
       };
@@ -250,6 +298,10 @@ class ProgressState {
     final rawWeeks = j['weeks'] ?? const <String, dynamic>{};
     final rawPauses = j['pauses'] ?? const [];
     if (rawWeeks is! Map<String, dynamic> || rawPauses is! List) throw const FormatException('Unrecognized progress');
+    // A reset that can't be read is ignored rather than dropping anything.
+    final rawResetAt = j['resetAt'] ?? 0;
+    final resetAt = rawResetAt is int && rawResetAt >= 0 ? rawResetAt : 0;
+    if (strict && resetAt != rawResetAt) throw FormatException('Unrecognized reset time $rawResetAt');
 
     final weeks = <String, WeekProgress>{};
     final unknownWeeks = <String, Object?>{};
@@ -271,7 +323,13 @@ class ProgressState {
         unknownPauses.add(p);
       }
     }
-    return ProgressState(weeks: weeks, pauses: pauses, unknownWeeks: unknownWeeks, unknownPauses: unknownPauses);
+    return ProgressState(
+      weeks: weeks,
+      pauses: pauses,
+      resetAt: resetAt,
+      unknownWeeks: unknownWeeks,
+      unknownPauses: unknownPauses,
+    );
   }
 }
 
@@ -331,8 +389,14 @@ class ProgressController extends Notifier<ProgressState> {
     prefs.setString(storageKey, jsonEncode(s.toJson()));
   }
 
-  void _updateWeek(String weekId, WeekProgress Function(WeekProgress w) change) =>
-      _set(state.copyWith(weeks: {...state.weeks, weekId: change(state.week(weekId))}));
+  /// Applies [change] to one week, stamping it after the last reset. A
+  /// change that changes nothing saves nothing.
+  void _updateWeek(String weekId, WeekProgress Function(WeekProgress w) change) {
+    final before = state.week(weekId);
+    final after = ProgressClock.above(state.resetAt, () => change(before));
+    if (identical(after, before)) return;
+    _set(state.copyWith(weeks: {...state.weeks, weekId: after}));
+  }
 
   void markUnit(String weekId, int aliyah, ReadingPass pass, LocalDate? date) =>
       _updateWeek(weekId, (w) => w.withUnit(aliyah, pass, date));
@@ -342,31 +406,62 @@ class ProgressController extends Notifier<ProgressState> {
 
   void markWeek(String weekId, LocalDate date) => _updateWeek(weekId, (w) => w.withAll(date));
 
-  void clearWeek(String weekId) => _updateWeek(weekId, (w) => WeekProgress(weekId: weekId));
+  void clearWeek(String weekId) => _updateWeek(weekId, (w) => w.cleared());
+
+  /// Puts a week back the way it was in [before] (undoing a clear), as a new
+  /// change that a sync won't undo.
+  void restoreWeek(String weekId, WeekProgress before) => _updateWeek(weekId, (w) => w.restoredTo(before));
 
   void markHaftarah(String weekId, LocalDate? date) => _updateWeek(weekId, (w) => w.withHaftarah(date));
 
   void savePosition(String weekId, int aliyah, List<int> versesDone) =>
       _updateWeek(weekId, (w) => w.withPosition(aliyah, versesDone));
 
-  void addPause(Pause pause) => _set(state.copyWith(pauses: [...state.pauses, pause]));
+  /// Pauses streaks from [start] to [end]. The new pause is identified by
+  /// the time it was created.
+  void addPause(LocalDate start, LocalDate end) => ProgressClock.above(state.resetAt, () {
+        final created = ProgressClock.after(0);
+        var id = created;
+        while (state.pauses.any((p) => p.id == '$id')) {
+          id++;
+        }
+        _set(state.copyWith(pauses: [...state.pauses, Pause(start, end, id: '$id', updatedAt: created)]));
+      });
 
-  /// Ends any pause covering [today] as of yesterday.
-  void endPause(LocalDate today) => _set(state.copyWith(
-        pauses: [
-          for (final p in state.pauses)
-            if (!p.contains(today)) p else if (p.start < today) Pause(p.start, today.addDays(-1)),
-        ],
-      ));
+  /// Ends any pause covering [today] as of yesterday, cancelling one that
+  /// began today.
+  void endPause(LocalDate today) => ProgressClock.above(state.resetAt, () {
+        if (!state.pauses.any((p) => p.contains(today))) return;
+        _set(state.copyWith(
+          pauses: [
+            for (final p in state.pauses)
+              if (!p.contains(today))
+                p
+              else if (p.start < today)
+                p.endingOn(today.addDays(-1))
+              else
+                p.cancelled(),
+          ],
+        ));
+      });
 
-  /// Replaces all progress (an import, an undo or a cloud merge). Equal
-  /// progress is ignored, so listeners only hear about real changes.
+  /// Replaces all progress with a cloud merge. Equal progress is ignored, so
+  /// listeners only hear about real changes.
   void replaceAll(ProgressState s) {
     if (s == state) return;
     _set(s);
   }
 
-  void reset() => _set(const ProgressState());
+  /// Makes progress read exactly like [target] (an imported backup), as a
+  /// new change that a sync carries to other devices rather than undoing.
+  void restore(ProgressState target) => replaceAll(state.restoredTo(target));
+
+  /// Erases all progress. With [everywhere] (when progress is backed up),
+  /// the reset reaches the backup and the user's other devices too: syncing
+  /// drops everything recorded before it. Otherwise the backup is untouched,
+  /// and syncing later brings it back.
+  void reset({bool everywhere = false}) =>
+      _set(ProgressState(resetAt: everywhere ? ProgressClock.after(state.latestStamp) : state.resetAt));
 }
 
 final progressProvider = NotifierProvider<ProgressController, ProgressState>(ProgressController.new);

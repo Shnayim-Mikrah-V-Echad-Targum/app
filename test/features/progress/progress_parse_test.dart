@@ -36,8 +36,23 @@ final _bad = {
   'a string inside a position': _stored('{"5787:2": {"u": ${_grid()}, "p": {"0": [1, "2", 3]}}}'),
   'an unknown week shape': _stored('{"5787:2": {"u": "done"}}'),
   'an unknown pause shape': _stored('{}', pauses: '[{"start": "2026-10-11"}]'),
+  'a pause id that is not text': _stored('{}', pauses: '[{"id": 7, "s": ${_d1.rd}, "e": ${_d2.rd}}]'),
+  'a short stamp grid': _stored('{"5787:2": {"u": ${_grid()}, "t": [[1, 2, 3]]}}', version: 2),
+  'a reset time that is not a time': '{"version": 2, "resetAt": "yesterday", "weeks": {}, "pauses": []}',
   'a newer format': _stored('{"5787:2": {"u": ${_grid()}}}', version: 99),
 };
+
+/// What the reader sees of [s]: the readings, saved places and pauses, but
+/// not when they changed.
+String _visible(ProgressState s) => jsonEncode({
+      for (final id in s.weeks.keys.toList()..sort())
+        if (s.weeks[id]!.isStarted || s.weeks[id]!.haftarah != null)
+          id: {for (final k in const ['u', 'h', 'p']) k: s.weeks[id]!.toJson()[k]},
+      'pauses': [
+        for (final p in s.pauses)
+          if (!p.deleted) [p.start.rd, p.end.rd],
+      ],
+    });
 
 void main() {
   group('WeekProgress.fromJson', () {
@@ -79,6 +94,29 @@ void main() {
       }
     });
 
+    test('stamps that are not times read as 0, and a short stamp grid is padded', () {
+      final json = {
+        'u': jsonDecode(_grid()),
+        't': [
+          [5, -1, 'x'],
+          [7],
+        ],
+        'ht': 'later',
+        'pt': {'0': 9, '1': -3, '8': 4, 'x': 1, '2': 0},
+      };
+      final week = WeekProgress.fromJson('5787:2', json);
+      expect(week.stamps, hasLength(kAliyot));
+      expect(week.stamps[0], [5, 0, 0]);
+      expect(week.stamps[1], [7, 0, 0]);
+      expect(week.stamps[6], [0, 0, 0]);
+      expect(week.haftarahStamp, 0);
+      expect(week.positionStamps, {0: 9});
+      expect(week.units[0], [_d1, _d1, _d1], reason: 'the readings are kept');
+      expect(() => WeekProgress.fromJson('5787:2', json, strict: true), throwsFormatException);
+      expect(() => WeekProgress.fromJson('5787:2', {'u': jsonDecode(_grid()), 't': 'now'}), throwsFormatException);
+      expect(() => WeekProgress.fromJson('5787:2', {'u': jsonDecode(_grid()), 'pt': [1]}), throwsFormatException);
+    });
+
     test('a well-formed week reads back exactly, even strictly', () {
       final week = WeekProgress(weekId: '5787:2')
           .withAliyah(0, _d1)
@@ -92,6 +130,42 @@ void main() {
   });
 
   group('ProgressState.fromJson', () {
+    test('version 1 progress reads as version 2, stamped at time 0', () {
+      final v1 = _stored(
+        '{"5787:2": {"u": ${_grid()}, "h": ${_d2.rd}, "p": {"0": [3, 3, 3]}}}',
+        pauses: '[{"s": ${_d1.rd}, "e": ${_d2.rd}}]',
+      );
+      final s = _parse(v1, strict: true);
+      final week = s.week('5787:2');
+      expect(week.isAliyahDone(0), isTrue);
+      expect(week.stamps.expand((row) => row), everyElement(0));
+      expect(week.haftarahStamp, 0);
+      expect(week.positionStamps, isEmpty);
+      expect(s.resetAt, 0);
+      expect((s.pauses.single.id, s.pauses.single.updatedAt), ('${_d1.rd}-${_d2.rd}', 0));
+
+      final json = _roundTrip(s);
+      expect(json['version'], 2);
+      expect(json.containsKey('resetAt'), isFalse);
+      expect((json['weeks'] as Map)['5787:2'], {
+        'u': jsonDecode(_grid()),
+        'h': _d2.rd,
+        'p': {
+          '0': [3, 3, 3],
+        },
+      });
+      expect(json['pauses'], [
+        {'id': '${_d1.rd}-${_d2.rd}', 's': _d1.rd, 'e': _d2.rd},
+      ]);
+      expect(ProgressState.fromJson(json, strict: true), s);
+    });
+
+    test('a reset time that is not a time is ignored', () {
+      expect(_parse('{"resetAt": -5, "weeks": {}}').resetAt, 0);
+      expect(_parse('{"resetAt": "yesterday", "weeks": {}}').resetAt, 0);
+      expect(_parse('{"version": 2, "resetAt": 1234, "weeks": {}}', strict: true).resetAt, 1234);
+    });
+
     const unknownWeek = '{"u": "done", "note": {"b": 1, "a": [2, null]}}';
     const unknownPause = '{"start": "2026-10-11"}';
     String withUnknowns() => _stored(
@@ -208,7 +282,7 @@ void main() {
       final progress = c.read(progressProvider.notifier);
 
       progress.markUnit('5787:1', 1, ReadingPass.mikra1, _d2);
-      progress.addPause(Pause(_d1, _d2));
+      progress.addPause(_d1, _d2);
       expect(jsonEncode((stored()['weeks'] as Map)['5787:2']), unknown);
       expect(backups(ProgressController.corruptBackupPrefix), isEmpty, reason: 'nothing was at risk yet');
 
@@ -246,14 +320,31 @@ void main() {
       });
     }
 
-    testWidgets('a good file is imported', (tester) async {
+    testWidgets('a good file is imported, as a change that a sync keeps', (tester) async {
+      final wallClock = ProgressClock.nowMs;
+      addTearDown(() => ProgressClock.nowMs = wallClock);
+      var now = DateTime.utc(2026, 10, 1).millisecondsSinceEpoch;
+      ProgressClock.nowMs = () => now;
+
       final theirs = ProgressState(
         weeks: {'5787:2': WeekProgress(weekId: '5787:2').withAll(_d2)},
         pauses: [Pause(_d1, _d1)],
       );
+      // Since the file was saved, progress was reset everywhere, and then
+      // Revi'i of Bereshit read and backed up.
+      now += 1000;
+      final resetAt = now;
+      now += 1000;
       final c = await import(tester, _roundTrip(theirs));
+      final backup = ProgressState(
+        weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAliyah(3, _d1)},
+        resetAt: resetAt,
+      );
       expect(find.text('Progress imported.'), findsOneWidget);
-      expect(c.read(progressProvider), theirs);
+      final imported = c.read(progressProvider);
+      expect(_visible(imported), _visible(theirs));
+      expect(imported.week('5787:1').isStarted, isFalse, reason: 'what the file lacks is removed');
+      expect(_visible(mergeProgress(imported, backup)), _visible(theirs), reason: 'syncing keeps the import');
     });
   });
 }
