@@ -226,8 +226,12 @@ void main() {
         '2027-08-12 [4]',
         '2027-08-13 [5, 6]',
       ]);
-      expect(p.isTransparentDay(d('2027-08-12')), isFalse);
-      expect(p.isTransparentDay(d('2026-07-23')), isTrue, reason: 'Tisha B\'Av 5786, before the change');
+      final tishaBav5786 = d('2026-07-23');
+      expect(
+        [for (final day in p.planFor(diaspora.weekFor(tishaBav5786)).days) day.date],
+        isNot(contains(tishaBav5786)),
+        reason: 'Tisha B\'Av 5786, before the change, is still quiet',
+      );
     });
   });
 
@@ -249,14 +253,12 @@ void main() {
       const visitor = ReadingPlanner(schedule: israel, oneDayYomTov: false);
       expect(visitor.planFor(israel.weekFor(acharon)).portion, israel.weekFor(acharon).portion);
       expect(datesOf(visitor), ['2027-04-25', '2027-04-26', '2027-04-27', '2027-04-30']);
-      expect(visitor.isTransparentDay(acharon), isTrue);
     });
 
     test('an Israeli abroad reads the Diaspora\'s portion, with reading planned on the day after Pesach in Israel', () {
       const abroad = ReadingPlanner(schedule: diaspora, oneDayYomTov: true);
       expect(datesOf(abroad), ['2027-04-25', '2027-04-26', '2027-04-27', '2027-04-29', '2027-04-30']);
-      expect(abroad.isTransparentDay(acharon), isFalse);
-      expect(abroad.isTransparentDay(d('2027-04-28')), isTrue, reason: 'the seventh day is Yom Tov everywhere');
+      expect(datesOf(abroad), isNot(contains('2027-04-28')), reason: 'the seventh day is Yom Tov everywhere');
     });
   });
 

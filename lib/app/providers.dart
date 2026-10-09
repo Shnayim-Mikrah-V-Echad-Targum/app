@@ -46,14 +46,17 @@ class SettingsController extends Notifier<AppSettings> {
   }
 
   /// Applies [change]. A change to how weeks are planned and judged applies
-  /// from today on (see [AppSettings.recordingPlanChange]).
+  /// from today on (see [AppSettings.recordingPlanChange]), or once reading
+  /// has been logged today, from tomorrow: planning today again could leave
+  /// it no reading, and so take away the day that reading counted for.
   void update(AppSettings Function(AppSettings s) change) {
     final next = change(state);
     if (next.planSettings.sameSettingsAs(state.planSettings)) return _save(next);
     // Today's reading day, as todayProvider has it (which depends on these
     // settings, so can't be read here).
     final today = effectiveReadingDay(TodayController.now(), oneDayYomTov: next.oneDayYomTov);
-    _save(next.recordingPlanChange(state, today));
+    final readToday = ref.read(progressProvider).weeks.values.any((w) => w.unitsOn(today) > 0);
+    _save(next.recordingPlanChange(state, readToday ? today.addDays(1) : today));
   }
 
   /// Replaces every setting, the plan history included (restoring a backup).

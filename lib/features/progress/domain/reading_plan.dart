@@ -200,9 +200,8 @@ class ReadingPlanner {
   /// (see [planFor]); null plans that week like any other.
   final LocalDate? starterFrom;
 
-  /// Shabbat, Yom Tov, or a day the user has chosen to keep free.
-  bool isTransparentDay(LocalDate d) => _isTransparent(d, settingsAt(d));
-
+  /// Whether [d] takes no reading under [settings]: Shabbat, Yom Tov, or a
+  /// day the user has chosen to keep free.
   bool _isTransparent(LocalDate d, PlanSettingsEntry settings) {
     if (JewishHolidays.isRestDay(d, israel: oneDayYomTov)) return true;
     if (settings.tishaBavQuiet && JewishHolidays.isTishaBav(d)) return true;

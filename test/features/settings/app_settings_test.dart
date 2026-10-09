@@ -5,8 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+
+class _FixedToday extends TodayController {
+  _FixedToday(this.day);
+  final LocalDate day;
+
+  @override
+  LocalDate build() => day;
+}
 
 void main() {
   test('settings round-trip through JSON', () {
@@ -215,6 +225,53 @@ void main() {
       ]);
       final saved = jsonDecode(prefs.getString(SettingsController.storageKey)!) as Map<String, dynamic>;
       expect(AppSettings.fromJson(saved).toJson(), s.toJson());
+    });
+
+    test('records a change made after reading today from tomorrow, so that today keeps its plan', () async {
+      final (c, _) = await containerWith(AppSettings(joinDate: joined));
+      c.read(progressProvider.notifier).markAliyah('5787:2', 2, tue);
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(plan: ReadingPlanType.erevShabbat));
+      expect(c.read(settingsProvider).planHistory.map((e) => (e.from, e.plan)), [
+        (joined, ReadingPlanType.aliyahPerDay),
+        (tue.addDays(1), ReadingPlanType.erevShabbat),
+      ]);
+    });
+
+    test('a change made after reading today takes nothing from the days on track', () async {
+      // Noach 5787, an aliyah a day from Sunday; read through Tuesday.
+      final sunday = LocalDate(2026, 10, 11);
+      var noach = WeekProgress(weekId: '5787:2');
+      for (var a = 0; a < 3; a++) {
+        noach = noach.withAliyah(a, sunday.addDays(a));
+      }
+      SharedPreferences.setMockInitialValues({
+        SettingsController.storageKey: jsonEncode(AppSettings(joinDate: sunday).toJson()),
+        ProgressController.storageKey: jsonEncode(ProgressState(weeks: {'5787:2': noach}).toJson()),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final clock = TodayController.now;
+      TodayController.now = () => DateTime(2026, 10, 13, 21);
+      final c = ProviderContainer(overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        todayProvider.overrideWith(() => _FixedToday(tue)),
+      ]);
+      addTearDown(() {
+        c.dispose();
+        TodayController.now = clock;
+      });
+      expect(c.read(streakSummaryProvider).daysOnTrack, 3);
+
+      // On Tuesday evening, everything moves to Friday.
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(plan: ReadingPlanType.erevShabbat));
+      final summary = c.read(streakSummaryProvider);
+      expect(summary.days[tue], DayStatus.kept, reason: 'Tuesday keeps the aliyah it was read by');
+      expect(summary.daysOnTrack, 3);
+      expect(c.read(plannerProvider).planFor(c.read(currentWeekProvider)).days.map((p) => '${p.date} ${p.aliyot}'), [
+        '2026-10-11 [0]',
+        '2026-10-12 [1]',
+        '2026-10-13 [2]',
+        '2026-10-16 [3, 4, 5, 6]',
+      ]);
     });
 
     test('leaves the history alone for any other change', () async {
