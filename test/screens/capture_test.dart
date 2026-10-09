@@ -9,6 +9,7 @@
 @Tags(['screens'])
 library;
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -23,9 +24,11 @@ import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
+import 'galleries.dart';
 
 final _capture = Platform.environment['CAPTURE'] != null;
 final _only = Platform.environment['SCREENS']?.split(',').toSet();
@@ -90,6 +93,10 @@ const _screens = {
   'dialog_date': '/week/5787:1',
   'sheet_display': '/read/5787:1/2',
   'scrolled': '/progress',
+  // Shared widgets on pages of their own (galleries.dart), opened over Today.
+  'kit_ornaments': '/today',
+  'kit_rows': '/today',
+  'kit_focus': '/today',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -150,7 +157,25 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'sheet_display': (tester) => tester.tap(find.byIcon(Icons.text_format)),
   'scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -400)),
+  'kit_ornaments': (tester) => _showGallery(tester, const OrnamentsGallery()),
+  'kit_rows': (tester) => _showGallery(tester, const RowsGallery()),
+  // The middle row of a paper group: its ring must clear the hairlines.
+  'kit_focus': (tester) async {
+    await _showGallery(tester, const RowsGallery());
+    await _settle(tester);
+    await _keyboardFocus(
+      tester,
+      find.descendant(of: find.byType(PaperGroup).first, matching: find.byType(SeferInkWell)).at(1),
+    );
+  },
 };
+
+/// Opens [gallery] as a page over the current route.
+Future<void> _showGallery(WidgetTester tester, Widget gallery) async {
+  unawaited(tester.state<NavigatorState>(find.byType(Navigator).first).push(
+    MaterialPageRoute<void>(builder: (_) => gallery),
+  ));
+}
 
 /// Opens the week overview's menu, and picks its [item] if one is given.
 Future<void> _openWeekMenu(WidgetTester tester, {int? item}) async {
@@ -183,10 +208,13 @@ Future<void> _keyboardFocus(WidgetTester tester, Finder target) async {
 }
 
 class _Mode {
-  const _Mode(this.tag, this.size, this.settings);
+  const _Mode(this.tag, this.size, this.settings, {this.textScale = 1});
   final String tag;
   final Size size;
   final AppSettings Function(AppSettings) settings;
+
+  /// The system text size.
+  final double textScale;
 }
 
 final _modes = [
@@ -204,6 +232,9 @@ final _modes = [
   _Mode('lexend', const Size(412, 915), (s) => s.copyWith(uiFont: UiFont.lexend)),
   // Long pages in full, for the screens in [_tallScreens].
   _Mode('phonetall', const Size(412, 2600), (s) => s),
+  // System text at 200%, tall, for the screens in [_bigTextScreens].
+  _Mode('big', const Size(412, 2600), (s) => s, textScale: 2),
+  _Mode('bighe', const Size(412, 2600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 2),
 ];
 
 const _desktopScreens = {
@@ -218,10 +249,14 @@ const _desktopScreens = {
   'dialog',
   'sheet_display',
   'focus_nav',
+  'kit_ornaments',
+  'kit_rows',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
+const _bigTextModes = {'big', 'bighe'};
+const _bigTextScreens = {'today', 'progress', 'reader', 'kit_ornaments', 'kit_rows'};
 
 Future<void> _settle(WidgetTester tester) async {
   // Text assets load on real async I/O; spinners never "settle".
@@ -254,12 +289,15 @@ void main() {
     for (final entry in _screens.entries) {
       if (_wideModes.contains(mode.tag) && !_desktopScreens.contains(entry.key)) continue;
       if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
+      if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {
         tester.view.physicalSize = mode.size;
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
+        tester.platformDispatcher.textScaleFactorTestValue = mode.textScale;
+        addTearDown(tester.platformDispatcher.clearAllTestValues);
         // Soft shadows, as a device draws them; tests otherwise draw them as
         // solid lines. Restored before the test ends, as the binding checks.
         debugDisableShadows = false;
