@@ -74,12 +74,14 @@ class WeekProgress {
   /// `positions[aliyah]` = verses completed in each of the three readings.
   final Map<int, List<int>> positions;
 
+  /// Positions are written in aliyah order so that equal progress always
+  /// encodes identically (`ProgressState` equality relies on this).
   Map<String, dynamic> toJson() => {
         'u': [
           for (final row in units) [for (final d in row) d?.rd],
         ],
         if (haftarah != null) 'h': haftarah!.rd,
-        if (positions.isNotEmpty) 'p': {for (final e in positions.entries) '${e.key}': e.value},
+        if (positions.isNotEmpty) 'p': {for (final a in positions.keys.toList()..sort()) '$a': positions[a]},
       };
 
   bool isUnitDone(int aliyah, ReadingPass pass) => units[aliyah][pass.index] != null;

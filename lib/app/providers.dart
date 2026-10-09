@@ -147,6 +147,8 @@ final currentPlanProvider = Provider<WeekPlan>(
 // ---------------------------------------------------------------------------
 // Progress
 
+/// All of the user's reading progress. Treat as immutable: equality is by
+/// value and is cached per instance.
 class ProgressState {
   const ProgressState({this.weeks = const {}, this.pauses = const []});
 
@@ -154,6 +156,26 @@ class ProgressState {
   final List<Pause> pauses;
 
   WeekProgress week(String id) => weeks[id] ?? WeekProgress(weekId: id);
+
+  /// Equal progress compares equal whatever order its maps and lists are in,
+  /// so a sync that changes nothing doesn't look like a change. ([toJson]
+  /// can't be compared directly: merging and the server's jsonb storage both
+  /// reorder keys.)
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is ProgressState && other._canon == _canon;
+
+  @override
+  int get hashCode => _canon.hashCode;
+
+  // An Expando rather than a late field, which a const class can't have.
+  static final _canonCache = Expando<String>('ProgressState.canon');
+
+  String get _canon => _canonCache[this] ??= jsonEncode({
+        'weeks': {for (final id in weeks.keys.toList()..sort()) id: weeks[id]!.toJson()},
+        'pauses': [for (final p in [...pauses]..sort(_byDates)) p.toJson()],
+      });
+
+  static int _byDates(Pause p, Pause q) => p.start != q.start ? p.start.compareTo(q.start) : p.end.compareTo(q.end);
 
   Map<String, dynamic> toJson() => {
         'version': 1,
@@ -223,7 +245,12 @@ class ProgressController extends Notifier<ProgressState> {
         ],
       ));
 
-  void replaceAll(ProgressState s) => _set(s);
+  /// Replaces all progress (an import, an undo or a cloud merge). Equal
+  /// progress is ignored, so listeners only hear about real changes.
+  void replaceAll(ProgressState s) {
+    if (s == state) return;
+    _set(s);
+  }
 
   void reset() => _set(const ProgressState());
 }
