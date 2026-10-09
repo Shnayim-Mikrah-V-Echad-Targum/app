@@ -118,6 +118,13 @@ class ScriptureVerse extends StatelessWidget {
       color: theme.colorScheme.onSurfaceVariant.withValues(alpha: dimmed ? 0.55 : 1),
       fontSize: base.fontSize! * 0.62,
     );
+    // Petuchah and setumah marks are rubrics, drawn like SectionBreakMark
+    // (DESIGN_SYSTEM.md §7.3) so that marks inside and between verses match.
+    final rubric = base.copyWith(
+      color: theme.colorScheme.secondary.withValues(alpha: dimmed ? 0.55 : 1),
+      fontSize: base.fontSize! * 0.55,
+      fontWeight: FontWeight.w600,
+    );
     final notes = <String>[];
     final spans = <InlineSpan>[];
 
@@ -153,6 +160,20 @@ class ScriptureVerse extends StatelessWidget {
           ));
         case AlternateReading(:final text):
           spans.add(TextSpan(text: ' (${displayHebrew(text, settings)}) ', style: muted));
+        case PisqaGap(:final kind):
+          // A section break inside the verse, marked as printed Chumashim
+          // mark the scroll's gap: a small letter between full word spaces.
+          // The no-break space keeps the mark with the words before it, so
+          // it never begins a line. The text engine widens only spaces where
+          // a line may break (not this one, nor a space before a word
+          // joiner), so this space carries the reader's word spacing as
+          // letter spacing. A justified line still stretches only the space
+          // after the mark.
+          spans.add(TextSpan(children: [
+            TextSpan(text: '\u00A0', style: TextStyle(letterSpacing: settings.letterSpacing + settings.wordSpacing)),
+            TextSpan(text: kind == SectionBreak.open ? 'פ' : 'ס', style: rubric),
+            const TextSpan(text: ' '),
+          ]));
       }
     }
 

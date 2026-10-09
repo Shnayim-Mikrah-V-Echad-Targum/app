@@ -211,7 +211,7 @@ class WeekStrip extends StatelessWidget {
     required this.plan,
     required this.today,
     required this.statuses,
-    required this.israel,
+    required this.oneDayYomTov,
     this.onDayTap,
     this.joinDate,
   });
@@ -219,7 +219,9 @@ class WeekStrip extends StatelessWidget {
   final WeekPlan plan;
   final LocalDate today;
   final Map<LocalDate, DayStatus> statuses;
-  final bool israel;
+
+  /// The reader's custom for Yom Tov, which decides the rest days shown.
+  final bool oneDayYomTov;
   final LocalDate? joinDate;
   final void Function(PlanDay day)? onDayTap;
 
@@ -239,7 +241,7 @@ class WeekStrip extends StatelessWidget {
             Expanded(
               child: Builder(builder: (context) {
                 final planned = plan.dayFor(d);
-                final rest = JewishHolidays.isRestDay(d, israel: israel);
+                final rest = JewishHolidays.isRestDay(d, israel: oneDayYomTov);
                 final display = dayDisplayFor(
                   date: d,
                   today: today,

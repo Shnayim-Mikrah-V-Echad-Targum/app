@@ -131,11 +131,26 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   // --- Recording progress ---------------------------------------------------
 
+  /// The saved verse counts of each reading of this aliyah. A count that
+  /// claims a reading is complete when it isn't marked done (say, one that a
+  /// sync restored after "Mark as not read") is stale: that reading starts
+  /// over.
+  List<int> _savedPositions(WeekProgress week, ReaderFlow flow) {
+    final saved = week.positions[_aliyah] ?? const <int>[];
+    return [
+      for (final pass in ReadingPass.values)
+        switch (pass.index < saved.length ? saved[pass.index] : 0) {
+          final n when n >= flow.verses.length && !week.isUnitDone(_aliyah, pass) => 0,
+          final n => n,
+        },
+    ];
+  }
+
   void _record(WeekContext ctx, ReaderFlow flow, int chunk, int step) {
     if (!ctx.isOpen) return; // Preview of a future portion: no credit yet.
     final progress = ref.read(progressProvider.notifier);
     final current = ref.read(progressProvider).week(ctx.id);
-    final positions = flow.positionsAfter(chunk, step, current.positions[_aliyah] ?? const [0, 0, 0]);
+    final positions = flow.positionsAfter(chunk, step, _savedPositions(current, flow));
     progress.savePosition(ctx.id, _aliyah, positions);
     final today = ref.read(todayProvider);
     for (final pass in ReadingPass.values) {
@@ -315,7 +330,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       data: (texts) {
         final flow = _flowFor(ctx, texts, s);
         if (!_positioned) {
-          final saved = ctx.progress.isAliyahDone(_aliyah) ? null : ctx.progress.positions[_aliyah];
+          final saved = ctx.progress.isAliyahDone(_aliyah) ? null : _savedPositions(ctx.progress, flow);
           final (c, st) = flow.resumeFrom(saved);
           _chunk = c.clamp(0, flow.chunks.length - 1);
           _step = st.clamp(0, flow.stepsFor(_chunk).length - 1);
@@ -471,7 +486,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void _markAliyahRead(WeekContext ctx) {
     final today = ref.read(todayProvider);
     ref.read(progressProvider.notifier).markAliyah(ctx.id, _aliyah, today);
-    ref.read(progressProvider.notifier).savePosition(ctx.id, _aliyah, const [9999, 9999, 9999]);
+    final verses = ref.read(parshaRepositoryProvider).aliyahVerseCount(ctx.portion, _aliyah);
+    ref.read(progressProvider.notifier).savePosition(ctx.id, _aliyah, [verses, verses, verses]);
     hapticSuccess(ref);
     showStatus(context, context.l10n.markedRead);
     setState(() => _finished = true);
@@ -863,7 +879,7 @@ class _FinishedPanel extends ConsumerWidget {
               const Gap(24),
               if (onNext != null && !complete)
                 FilledButton.icon(onPressed: onNext, icon: const Icon(Icons.arrow_forward), label: Text(l.nextAliyah)),
-              if (complete && settings.haftarahEnabled && week.haftarah == null)
+              if (complete && (settings.haftarahEnabled || ctx.haftarahRequired) && week.haftarah == null)
                 FilledButton.icon(
                   onPressed: () => context.pushReplacement('/haftarah/${ctx.id}'),
                   icon: const Icon(Icons.auto_stories),
@@ -986,10 +1002,12 @@ class _FullText extends StatelessWidget {
                     ExcludeSemantics(
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: brk == SectionBreak.open ? 16 : 8),
+                        // A rubric, like the marks inside a verse
+                        // (DESIGN_SYSTEM.md §3.1).
                         child: Text(
                           brk == SectionBreak.open ? 'פ' : 'ס',
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.outline),
+                          style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary),
                         ),
                       ),
                     )

@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../data/models/parsha.dart';
+import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../progress/domain/reading_plan.dart';
-import '../../progress/domain/streak_engine.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -16,17 +16,32 @@ class ReadingSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
-    void update(AppSettings Function(AppSettings) f) => ref.read(settingsProvider.notifier).update(f);
+    void update(AppSettings Function(AppSettings) f) {
+      final before = ref.read(settingsProvider).planSettings;
+      ref.read(settingsProvider.notifier).update(f);
+      // Weeks already planned and judged keep the settings they had.
+      if (!ref.read(settingsProvider).planSettings.sameSettingsAs(before)) showStatus(context, l.appliesFromThisWeek);
+    }
 
     return SettingsPage(
       title: l.settingsReading,
       children: [
+        ChoiceGroup<ReadingSchedule>(
+          title: l.readingScheduleLabel,
+          help: l.readingScheduleHelp,
+          value: s.readingSchedule,
+          choices: [
+            Choice(ReadingSchedule.israel, l.locationIsrael),
+            Choice(ReadingSchedule.diaspora, l.locationDiaspora),
+          ],
+          onChanged: (v) => update((s) => s.copyWith(readingSchedule: v)),
+        ),
         ChoiceGroup<bool>(
-          title: l.locationLabel,
-          help: l.locationHelp,
-          value: s.israel,
-          choices: [Choice(false, l.locationDiaspora), Choice(true, l.locationIsrael)],
-          onChanged: (v) => update((s) => s.copyWith(israel: v)),
+          title: l.yomTovDaysLabel,
+          help: l.yomTovDaysHelp,
+          value: s.oneDayYomTov,
+          choices: [Choice(true, l.yomTovDaysOne), Choice(false, l.yomTovDaysTwo)],
+          onChanged: (v) => update((s) => s.copyWith(oneDayYomTov: v)),
         ),
         ChoiceGroup<ReadingPlanType>(
           title: l.planLabel,

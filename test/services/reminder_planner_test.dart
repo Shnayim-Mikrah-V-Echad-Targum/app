@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
 import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
@@ -78,6 +79,73 @@ void main() {
   test('no reminders during a pause', () {
     final reminders = plan(pauses: [Pause(LocalDate(2026, 10, 11), LocalDate(2026, 10, 20))]);
     expect(reminders.where((r) => r.date <= LocalDate(2026, 10, 20)), isEmpty);
+  });
+
+  test('in the week of joining, daily reminders follow the starter plan', () {
+    // Joined on Wednesday of Noach: the whole portion is spread over
+    // Wednesday to Friday, and Friday's reminder is the Erev Shabbat one.
+    final wed = LocalDate(2026, 10, 14);
+    final now = DateTime(2026, 10, 14, 8);
+    final reminders = planReminders(
+      prefs: all,
+      planner: ReadingPlanner(schedule: planner.schedule, starterFrom: wed),
+      progressOf: empty,
+      now: now,
+      today: wed,
+      days: 2,
+    );
+    expect([for (final r in reminders.where((r) => r.date <= wed.addDays(2))) (r.date, r.kind, r.aliyot.join(','))], [
+      (wed, ReminderKind.daily, '0,1'),
+      (wed.addDays(1), ReminderKind.daily, '2,3'),
+      (wed.addDays(2), ReminderKind.erevShabbat, ''),
+    ]);
+  });
+
+  group('hearing the reading in Israel but keeping two days of Yom Tov', () {
+    const israel = ParshaSchedule(israel: true);
+    const visitor = ReadingPlanner(schedule: israel, oneDayYomTov: false);
+    const resident = ReadingPlanner(schedule: israel);
+
+    List<PlannedReminder> remind(ReadingPlanner planner, DateTime now) => planReminders(
+          prefs: all,
+          planner: planner,
+          progressOf: empty,
+          now: now,
+          today: LocalDate.fromDateTime(now),
+          days: 21,
+        );
+    List<LocalDate> planned(ReadingPlanner planner, LocalDate day) =>
+        [for (final p in planner.planFor(israel.weekFor(day)).days) p.date];
+
+    test('no plan day and no reminder on 22 Nisan when Acharon shel Pesach falls on Shabbat outside Israel', () {
+      // Pesach 5789 begins and ends on Shabbat outside Israel. Israel reads
+      // Shemini on 22 Nisan, so its week runs through Chol HaMoed, from the
+      // second day of Yom Tov, 16 Nisan.
+      final secondDay = LocalDate(2029, 4, 1);
+      final acharon = LocalDate(2029, 4, 7);
+      expect((HebrewDate.fromLocalDate(secondDay).day, HebrewDate.fromLocalDate(acharon).day), (16, 22));
+      expect(israel.weekFor(secondDay).occasion, acharon);
+
+      expect(planned(visitor, secondDay), isNot(anyOf(contains(secondDay), contains(acharon))));
+      final reminders = remind(visitor, DateTime(2029, 3, 26, 8));
+      expect(reminders.where((r) => r.date == secondDay || r.date == acharon), isEmpty);
+      for (final r in reminders) {
+        expect(JewishHolidays.isRestDay(r.date, israel: false), isFalse, reason: '$r');
+      }
+
+      // In Israel, 16 Nisan is Chol HaMoed.
+      expect(planned(resident, secondDay), contains(secondDay));
+      expect(remind(resident, DateTime(2029, 3, 26, 8)).where((r) => r.date == secondDay), isNotEmpty);
+    });
+
+    test('no plan day and no reminder on 22 Nisan when it falls on a weekday', () {
+      final acharon = LocalDate(2027, 4, 29); // Thursday
+      expect(planned(visitor, acharon), isNot(contains(acharon)));
+      expect(remind(visitor, DateTime(2027, 4, 18, 8)).where((r) => r.date == acharon), isEmpty);
+
+      expect(planned(resident, acharon), contains(acharon));
+      expect(remind(resident, DateTime(2027, 4, 18, 8)).where((r) => r.date == acharon), isNotEmpty);
+    });
   });
 
   test('ids are unique', () {

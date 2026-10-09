@@ -5,6 +5,14 @@ class CommunityUser {
   const CommunityUser({required this.id, required this.email});
   final String id;
   final String? email;
+
+  // Value equality, so the same account announced again (as on every token
+  // refresh) is not a change that refetches everything keyed on the user.
+  @override
+  bool operator ==(Object other) => other is CommunityUser && other.id == id && other.email == email;
+
+  @override
+  int get hashCode => Object.hash(id, email);
 }
 
 class Profile {

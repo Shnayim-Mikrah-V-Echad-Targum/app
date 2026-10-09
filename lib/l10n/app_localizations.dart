@@ -536,6 +536,12 @@ abstract class AppLocalizations {
   /// **'Finish {name} and {next} by Shabbat to keep your streak — one double-up per book.'**
   String openWeekRestore(String name, String next);
 
+  /// No description provided for @openWeekHaftarahLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the haftarah is left.'**
+  String get openWeekHaftarahLeft;
+
   /// No description provided for @checkInTitle.
   ///
   /// In en, this message translates to:
@@ -571,6 +577,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resume'**
   String get resume;
+
+  /// Shown on Today when the reader hears Israel's reading but keeps two days of Yom Tov (a visitor to Israel), in a week when Israel and the Diaspora read different portions.
+  ///
+  /// In en, this message translates to:
+  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Visitors from abroad usually read both. If you daven with a minyan reading {diaspora}, read only that one, and set the reading you\'ll hear to Outside Israel in Settings.'**
+  String readingDivergence(String israel, String diaspora);
+
+  /// Shown on Today when the reader hears the reading outside Israel but keeps one day of Yom Tov (an Israeli abroad), in a week when Israel reads the next portion.
+  ///
+  /// In en, this message translates to:
+  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Israel is a parsha ahead, so you\'ll read {israel} next week.'**
+  String readingDivergenceAhead(String israel, String diaspora);
+
+  /// Button on the divergence notice that opens the week page of the Diaspora's portion, read in Israel the week before.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String readingDivergenceOpen(String name);
 
   /// No description provided for @discussThisWeek.
   ///
@@ -1385,7 +1409,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsReadingDesc.
   ///
   /// In en, this message translates to:
-  /// **'Location, plan, Targum or Rashi, haftarah'**
+  /// **'Israel or abroad, plan, Targum or Rashi, haftarah'**
   String get settingsReadingDesc;
 
   /// No description provided for @settingsDisplayDesc.
@@ -1412,12 +1436,6 @@ abstract class AppLocalizations {
   /// **'Back up, restore or reset your progress'**
   String get settingsDataDesc;
 
-  /// No description provided for @locationLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'This Shabbat I\'ll be'**
-  String get locationLabel;
-
   /// No description provided for @locationIsrael.
   ///
   /// In en, this message translates to:
@@ -1433,8 +1451,44 @@ abstract class AppLocalizations {
   /// No description provided for @locationHelp.
   ///
   /// In en, this message translates to:
-  /// **'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days.'**
+  /// **'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days. Visiting? You can set the days of Yom Tov you keep separately in Settings.'**
   String get locationHelp;
+
+  /// No description provided for @readingScheduleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Which Torah reading will you hear this Shabbat?'**
+  String get readingScheduleLabel;
+
+  /// No description provided for @readingScheduleHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'For a few weeks after Pesach or Shavuot, Israel can be a parsha ahead.'**
+  String get readingScheduleHelp;
+
+  /// No description provided for @yomTovDaysLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How many days of Yom Tov do you keep?'**
+  String get yomTovDaysLabel;
+
+  /// No description provided for @yomTovDaysOne.
+  ///
+  /// In en, this message translates to:
+  /// **'One, as in Israel'**
+  String get yomTovDaysOne;
+
+  /// No description provided for @yomTovDaysTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'Two, as outside Israel'**
+  String get yomTovDaysTwo;
+
+  /// No description provided for @yomTovDaysHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Visitors usually keep their home custom. Ask your rav.'**
+  String get yomTovDaysHelp;
 
   /// No description provided for @planLabel.
   ///
@@ -1663,6 +1717,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No reading planned on Chol HaMoed'**
   String get cholHamoedQuiet;
+
+  /// Status shown after changing the reading plan or a custom that decides how weeks are planned and judged; earlier weeks keep the settings they had.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies from this week on'**
+  String get appliesFromThisWeek;
 
   /// No description provided for @nameStyleLabel.
   ///
@@ -2276,6 +2336,12 @@ abstract class AppLocalizations {
   /// **'This erases your reading history and streaks on this device. It can\'t be undone.'**
   String get resetProgressConfirm;
 
+  /// No description provided for @resetProgressConfirmSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'This erases your reading history and streaks on this device, in your backup, and on your other devices when they next sync. It can\'t be undone.'**
+  String get resetProgressConfirmSynced;
+
   /// No description provided for @resetDone.
   ///
   /// In en, this message translates to:
@@ -2665,6 +2731,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t sync right now. We\'ll try again later.'**
   String get syncFailed;
+
+  /// No description provided for @syncNeedsUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Your backup was saved by a newer version of the app. Update the app to keep syncing.'**
+  String get syncNeedsUpdate;
 
   /// No description provided for @lastSynced.
   ///

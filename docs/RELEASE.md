@@ -56,7 +56,7 @@
   - report and block
   - process a report as a moderator
   - delete an account
-- [ ] Cloud backup: sign in on two devices and confirm progress merges both ways.
+- [ ] Cloud backup: sign in on two devices and confirm progress merges both ways, and that marking an aliyah as not read, clearing a week, ending a pause and resetting all progress reach the other device.
 - [ ] Data export and import round-trip.
 
 ### Accessibility

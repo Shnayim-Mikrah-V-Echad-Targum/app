@@ -45,6 +45,10 @@ void main() {
       expect(s, 'עַל פְּנֵי תְהוֹם.');
     });
 
+    test('a sof pasuq is always followed by a space', () {
+      expect(HebrewSpeech.spoken('לֹ֥א תִּרְצָ֖ח׃לֹ֣א תִּנְאָ֑ף׃'), 'לֹא תִּרְצָח. לֹא תִּנְאָף.');
+    });
+
     test('consonants-only output', () {
       expect(HebrewSpeech.spoken(genesis11, keepNikud: false, divineName: DivineNameSpeech.hashem),
           'בראשית ברא אלהים את השמים ואת הארץ.');

@@ -126,7 +126,7 @@ class ProgressScreen extends ConsumerWidget {
               plan: current.plan,
               today: current.today,
               statuses: summary.days,
-              israel: settings.israel,
+              oneDayYomTov: settings.oneDayYomTov,
               joinDate: settings.joinDate,
               onDayTap: (d) => context.push('/read/${current.id}/${d.aliyot.first}'),
             ),
@@ -429,6 +429,6 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
   if (ok != true) return;
   final start = today.addDays(-backdate);
   final end = start.addDays(days - 1);
-  ref.read(progressProvider.notifier).addPause(Pause(start, end));
+  ref.read(progressProvider.notifier).addPause(start, end);
   if (context.mounted) showStatus(context, l.pauseStarted(names.dateLong(end)));
 }

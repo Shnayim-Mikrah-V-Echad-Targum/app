@@ -279,6 +279,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get openWeekHaftarahLeft => 'Only the haftarah is left.';
+
+  @override
   String get checkInTitle => 'Shavua tov! Did you read on Shabbat?';
 
   @override
@@ -298,6 +301,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resume => 'Resume';
+
+  @override
+  String readingDivergence(String israel, String diaspora) {
+    return 'In Israel this week: $israel. Outside Israel: $diaspora. Visitors from abroad usually read both. If you daven with a minyan reading $diaspora, read only that one, and set the reading you\'ll hear to Outside Israel in Settings.';
+  }
+
+  @override
+  String readingDivergenceAhead(String israel, String diaspora) {
+    return 'In Israel this week: $israel. Outside Israel: $diaspora. Israel is a parsha ahead, so you\'ll read $israel next week.';
+  }
+
+  @override
+  String readingDivergenceOpen(String name) {
+    return 'Open $name';
+  }
 
   @override
   String get discussThisWeek => 'Discuss this week\'s parsha';
@@ -790,7 +808,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAbout => 'About';
 
   @override
-  String get settingsReadingDesc => 'Location, plan, Targum or Rashi, haftarah';
+  String get settingsReadingDesc =>
+      'Israel or abroad, plan, Targum or Rashi, haftarah';
 
   @override
   String get settingsDisplayDesc =>
@@ -808,9 +827,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDataDesc => 'Back up, restore or reset your progress';
 
   @override
-  String get locationLabel => 'This Shabbat I\'ll be';
-
-  @override
   String get locationIsrael => 'In Israel';
 
   @override
@@ -818,7 +834,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationHelp =>
-      'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days.';
+      'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days. Visiting? You can set the days of Yom Tov you keep separately in Settings.';
+
+  @override
+  String get readingScheduleLabel =>
+      'Which Torah reading will you hear this Shabbat?';
+
+  @override
+  String get readingScheduleHelp =>
+      'For a few weeks after Pesach or Shavuot, Israel can be a parsha ahead.';
+
+  @override
+  String get yomTovDaysLabel => 'How many days of Yom Tov do you keep?';
+
+  @override
+  String get yomTovDaysOne => 'One, as in Israel';
+
+  @override
+  String get yomTovDaysTwo => 'Two, as outside Israel';
+
+  @override
+  String get yomTovDaysHelp =>
+      'Visitors usually keep their home custom. Ask your rav.';
 
   @override
   String get planLabel => 'Weekly plan';
@@ -940,6 +977,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cholHamoedQuiet => 'No reading planned on Chol HaMoed';
+
+  @override
+  String get appliesFromThisWeek => 'Applies from this week on';
 
   @override
   String get nameStyleLabel => 'Parsha names';
@@ -1269,6 +1309,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This erases your reading history and streaks on this device. It can\'t be undone.';
 
   @override
+  String get resetProgressConfirmSynced =>
+      'This erases your reading history and streaks on this device, in your backup, and on your other devices when they next sync. It can\'t be undone.';
+
+  @override
   String get resetDone => 'Progress reset.';
 
   @override
@@ -1491,6 +1535,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncFailed => 'Couldn\'t sync right now. We\'ll try again later.';
+
+  @override
+  String get syncNeedsUpdate =>
+      'Your backup was saved by a newer version of the app. Update the app to keep syncing.';
 
   @override
   String lastSynced(String time) {
