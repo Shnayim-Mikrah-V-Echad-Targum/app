@@ -1880,6 +1880,12 @@ abstract class AppLocalizations {
   /// **'OpenDyslexic'**
   String get uiFontOpenDyslexic;
 
+  /// No description provided for @uiFontSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Device font'**
+  String get uiFontSystem;
+
   /// No description provided for @boldText.
   ///
   /// In en, this message translates to:

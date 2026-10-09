@@ -1051,6 +1051,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get uiFontOpenDyslexic => 'OpenDyslexic';
 
   @override
+  String get uiFontSystem => 'גופן המכשיר';
+
+  @override
   String get boldText => 'טקסט מודגש';
 
   @override

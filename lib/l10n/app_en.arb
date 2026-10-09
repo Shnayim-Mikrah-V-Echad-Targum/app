@@ -642,6 +642,7 @@
   "uiFontAtkinson": "Atkinson Hyperlegible",
   "uiFontLexend": "Lexend",
   "uiFontOpenDyslexic": "OpenDyslexic",
+  "uiFontSystem": "Device font",
   "boldText": "Bold text",
   "focusMode": "Focus mode",
   "focusModeDesc": "Highlight the current verse and dim the rest",

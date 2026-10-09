@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
@@ -509,5 +510,17 @@ void main() {
       expect(buttonLabel(tester).fontFamily, platformFamily);
       expect(Theme.of(page(tester)).textTheme.titleLarge!.fontFamily, 'EBGaramond');
     }, variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.windows}));
+
+    testWidgets('Display settings offers the device font', (tester) async {
+      final container = await openRoute(tester, '/settings/display', now: friday);
+      final option = find.text('Device font');
+      await tester.ensureVisible(option);
+      await tester.pumpAndSettle();
+      await tester.tap(option);
+      await tester.pumpAndSettle();
+      expect(container.read(settingsProvider).uiFont, UiFont.system);
+      expect(Theme.of(page(tester)).textTheme.bodyMedium!.fontFamily, 'Roboto');
+      expect(Theme.of(page(tester)).textTheme.titleLarge!.fontFamily, 'EBGaramond');
+    });
   });
 }

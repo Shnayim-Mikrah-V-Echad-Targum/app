@@ -12,6 +12,7 @@ library;
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -61,6 +62,7 @@ const _screens = {
   'settings': '/settings',
   's_reading': '/settings/reading',
   's_display': '/settings/display',
+  's_fonts': '/settings/display',
   's_a11y': '/settings/accessibility',
   's_reminders': '/settings/reminders',
   's_data': '/settings/data',
@@ -77,6 +79,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // Focus the second verse (each verse is followed by its Targum), so there
   // are dimmed verses above and below it.
   'reader_focus': (tester) => tester.tap(find.byType(ScriptureVerse).at(2)),
+  // The interface font choices, at the end of the Display page.
+  's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),
 };
 
 class _Mode {
@@ -94,6 +98,7 @@ final _modes = [
   _Mode('desktop', const Size(1366, 860), (s) => s),
   _Mode('sepia', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.sepia)),
   _Mode('hcl', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.highContrastLight)),
+  _Mode('lexend', const Size(412, 915), (s) => s.copyWith(uiFont: UiFont.lexend)),
 ];
 
 Future<void> _settle(WidgetTester tester) async {

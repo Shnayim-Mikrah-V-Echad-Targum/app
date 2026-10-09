@@ -298,6 +298,7 @@ HE = {
   "uiFontAtkinson": "Atkinson Hyperlegible",
   "uiFontLexend": "Lexend",
   "uiFontOpenDyslexic": "OpenDyslexic",
+  "uiFontSystem": "גופן המכשיר",
   "boldText": "טקסט מודגש",
   "focusMode": "מצב מיקוד",
   "focusModeDesc": "הדגשת הפסוק הנוכחי ועמעום השאר",

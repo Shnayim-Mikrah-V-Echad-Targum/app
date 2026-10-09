@@ -1052,6 +1052,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uiFontOpenDyslexic => 'OpenDyslexic';
 
   @override
+  String get uiFontSystem => 'Device font';
+
+  @override
   String get boldText => 'Bold text';
 
   @override
