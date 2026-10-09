@@ -9,12 +9,10 @@
 @Tags(['screens'])
 library;
 
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
@@ -98,21 +96,6 @@ final _modes = [
   _Mode('hcl', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.highContrastLight)),
 ];
 
-Future<void> _loadFonts() async {
-  final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
-  for (final family in manifest.cast<Map<String, dynamic>>()) {
-    final name = family['family'] as String;
-    final assets = [for (final f in (family['fonts'] as List).cast<Map<String, dynamic>>()) f['asset'] as String];
-    for (final alias in [name, if (name == 'NotoSans') 'Roboto']) {
-      final loader = FontLoader(alias);
-      for (final a in assets) {
-        loader.addFont(rootBundle.load(a));
-      }
-      await loader.load();
-    }
-  }
-}
-
 Future<void> _settle(WidgetTester tester) async {
   // Text assets load on real async I/O; spinners never "settle".
   for (var i = 0; i < 30; i++) {
@@ -136,7 +119,7 @@ Future<void> _write(WidgetTester tester, String name) async {
 
 void main() {
   setUpAll(() async {
-    if (_capture) await _loadFonts();
+    if (_capture) await loadBundledFonts();
   });
 
   for (final mode in _modes) {

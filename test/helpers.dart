@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/app.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
@@ -12,6 +14,30 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 
 ParshaRepository? _repo;
+
+Future<void>? _fonts;
+
+/// Registers every font in FontManifest.json, so widget tests lay text out
+/// with real glyph metrics instead of the test font's uniform squares. Call it
+/// from `setUpAll`; it loads the fonts only once per test file.
+///
+/// NotoSans is also registered as Roboto, the family Material's typography
+/// asks for when the theme names none, so text renders as it does on the web.
+Future<void> loadBundledFonts() => _fonts ??= () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
+      for (final entry in manifest.cast<Map<String, dynamic>>()) {
+        final family = entry['family'] as String;
+        final assets = [for (final font in (entry['fonts'] as List).cast<Map<String, dynamic>>()) font['asset'] as String];
+        for (final name in [family, if (family == 'NotoSans') 'Roboto']) {
+          final loader = FontLoader(name);
+          for (final asset in assets) {
+            loader.addFont(rootBundle.load(asset));
+          }
+          await loader.load();
+        }
+      }
+    }();
 
 Future<ParshaRepository> loadRepo() async => _repo ??= await ParshaRepository.load();
 
@@ -40,5 +66,28 @@ Future<ProviderContainer> pumpApp(
   await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const ShnayimMikraApp()));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
+  return container;
+}
+
+/// Pumps the app on [route] in a [size] view at [textScale], and waits for
+/// asset-backed content (text previews, for example) to load.
+Future<ProviderContainer> openRoute(
+  WidgetTester tester,
+  String route, {
+  AppSettings settings = const AppSettings(onboardingComplete: true),
+  DateTime? now,
+  Size size = const Size(412, 915),
+  double textScale = 1,
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  tester.platformDispatcher.textScaleFactorTestValue = textScale;
+  addTearDown(tester.view.reset);
+  addTearDown(tester.platformDispatcher.clearAllTestValues);
+  final container = await pumpApp(tester, settings: settings, now: now);
+  container.read(routerProvider).go(route);
+  await tester.pumpAndSettle();
+  await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+  await tester.pumpAndSettle();
   return container;
 }

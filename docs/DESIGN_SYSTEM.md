@@ -1161,11 +1161,11 @@ The literal "חֲזַק חֲזַק וְנִתְחַזֵּק" is not translated.
    - asserts every pair in §3.5 meets 4.5 (text) or 3.0 (UI) in light, dark and sepia;
    - asserts 7.0 (text) and 4.5 (UI) in both high-contrast themes;
    - asserts that no ColorScheme role equals a `fromSeed` default.
-2. **`test/accessibility/screens_a11y_test.dart`:**
+2. **`test/accessibility/screens_a11y_test.dart`** (and `text_contrast_test.dart` for contrast):
    - run `textContrastGuideline` for /today, the reader, /parsha, /progress, /community and /settings/display in all five themes;
    - add 200%-text-scale overflow tests for the Hebrew locale on /today, /progress and the reader;
    - add a focus-traversal test asserting that a focused FilledButton paints `FocusRingBorder`.
-3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family.
+3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family. Pixel-sampled contrast checks (`textContrastGuideline`) stay on the test font: with real glyphs, anti-aliased edge pixels can outnumber the text colour (test/accessibility/text_contrast_test.dart).
 4. **Goldens** (`matchesGoldenFile`): Today, Reader guided, Parsha, Progress and Community × 5 themes × {en, he}. Plus the mixed headings "Revi'i · רביעי" and "בְּרֵאשִׁית" in titleLarge and hebrewDisplay (catches fallback tofu).
 5. **Update tests that depend on removed visuals:**
    - reader_widget_test.dart:39 expects 'Targum Onkelos' (the removed LayerLabel). Change it to expect the PassTrack label '3 · Targum'.
