@@ -14,7 +14,11 @@ import 'community_ui.dart';
 
 /// Sign in with a 6-digit email code; manage profile, backup and account.
 class AccountScreen extends ConsumerStatefulWidget {
-  const AccountScreen({super.key});
+  const AccountScreen({super.key, this.returnWhenSignedIn = false});
+
+  /// Opened to sign in before an action (e.g. posting): go back to it once
+  /// signed in.
+  final bool returnWhenSignedIn;
 
   @override
   ConsumerState<AccountScreen> createState() => _AccountScreenState();
@@ -116,7 +120,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Future<void> _verify() => _run(() async {
         await ref.read(forumRepositoryProvider).verifyCode(_email.text.trim(), _code.text.trim());
         ref.invalidate(myProfileProvider);
-        if (mounted && context.canPop()) context.pop();
+        _code.clear();
+        _codeSent = false;
+        if (mounted && widget.returnWhenSignedIn && context.canPop()) context.pop();
       });
 
   List<Widget> _signedIn(BuildContext context, Profile? profile) {

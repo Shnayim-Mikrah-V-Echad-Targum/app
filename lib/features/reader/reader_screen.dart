@@ -77,9 +77,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   int? _focusedVerse;
   final _scroll = ScrollController();
 
+  // Kept for dispose(), when ref can no longer be used.
+  late final TtsService _tts;
+
   @override
   void initState() {
     super.initState();
+    _tts = ref.read(ttsProvider);
     if (ref.read(settingsProvider).keepScreenOn) {
       WakelockPlus.enable().catchError((_) {});
     }
@@ -88,7 +92,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   @override
   void dispose() {
     WakelockPlus.disable().catchError((_) {});
-    ref.read(ttsProvider).stop();
+    _tts.stop();
     _scroll.dispose();
     super.dispose();
   }

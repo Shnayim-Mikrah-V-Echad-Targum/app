@@ -73,7 +73,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     forumSlug: s.uri.queryParameters['forum'],
                     parshaKey: s.uri.queryParameters['parsha'],
                   )),
-              _route('account', (_) => const AccountScreen()),
+              _route('account', (s) => AccountScreen(returnWhenSignedIn: s.uri.queryParameters['then'] == 'back')),
               _route('moderation', (_) => const ModerationScreen()),
             ]),
           ]),

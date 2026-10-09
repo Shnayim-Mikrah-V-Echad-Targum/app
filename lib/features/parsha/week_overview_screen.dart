@@ -222,12 +222,12 @@ class _AliyahTile extends ConsumerWidget {
               Text(subtitle),
               const Gap(6),
               ExcludeSemantics(
-                child: Row(
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
                   children: [
-                    for (final p in ReadingPass.values) ...[
+                    for (final p in ReadingPass.values)
                       _PassDot(done: ctx.progress.isUnitDone(aliyah, p), label: p == ReadingPass.targum ? secondName : l.passShortMikra),
-                      const Gap(6),
-                    ],
                   ],
                 ),
               ),
@@ -279,7 +279,7 @@ class _PassDot extends StatelessWidget {
         children: [
           Icon(done ? Icons.check : Icons.circle_outlined, size: 12, color: color),
           const SizedBox(width: 4),
-          Text(label, style: theme.textTheme.labelSmall),
+          Flexible(child: Text(label, style: theme.textTheme.labelSmall)),
         ],
       ),
     );

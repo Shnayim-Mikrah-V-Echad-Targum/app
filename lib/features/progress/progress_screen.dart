@@ -302,7 +302,7 @@ class _TorahMap extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[Icon(icon, size: 14, color: onFill), const SizedBox(width: 4)],
-                  Text(name, style: theme.textTheme.labelMedium?.copyWith(color: onFill)),
+                  Flexible(child: Text(name, style: theme.textTheme.labelMedium?.copyWith(color: onFill))),
                 ],
               ),
             ),

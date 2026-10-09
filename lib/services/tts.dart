@@ -8,7 +8,9 @@ import 'package:flutter_tts/flutter_tts.dart';
 /// reading). Hebrew voices are used for both the Hebrew and the Aramaic.
 class TtsService {
   TtsService() {
-    _tts.setStartHandler(() => speaking.value = true);
+    _tts.setStartHandler(() {
+      if (!_disposed) speaking.value = true;
+    });
     _tts.setCompletionHandler(_done);
     _tts.setCancelHandler(_done);
     _tts.setErrorHandler((_) => _done());
@@ -18,9 +20,10 @@ class TtsService {
   final ValueNotifier<bool> speaking = ValueNotifier(false);
   Completer<void>? _utterance;
   bool? _hebrewAvailable;
+  bool _disposed = false;
 
   void _done() {
-    speaking.value = false;
+    if (!_disposed) speaking.value = false;
     _utterance?.complete();
     _utterance = null;
   }
@@ -45,24 +48,35 @@ class TtsService {
   /// Speaks [text] and completes when finished or stopped.
   Future<void> speak(String text, {required String language, double rate = 0.45}) async {
     await stop();
-    await _tts.setLanguage(language);
-    await _tts.setSpeechRate(rate);
-    if (!kIsWeb) await _tts.awaitSpeakCompletion(false);
     final c = _utterance = Completer<void>();
-    speaking.value = true;
-    final result = await _tts.speak(text);
-    if (result != 1 && result != null && result != true) _done();
+    try {
+      await _tts.setLanguage(language);
+      await _tts.setSpeechRate(rate);
+      if (!kIsWeb) await _tts.awaitSpeakCompletion(false);
+      speaking.value = true;
+      final result = await _tts.speak(text);
+      if (result != 1 && result != null && result != true) _done();
+    } catch (_) {
+      _done();
+      rethrow;
+    }
     return c.future;
   }
 
+  /// Stops speech. Never throws: a platform without a speech engine has
+  /// nothing to stop.
   Future<void> stop() async {
-    await _tts.stop();
+    try {
+      await _tts.stop();
+    } catch (_) {}
     _done();
   }
 
   void dispose() {
-    _tts.stop();
-    speaking.dispose();
+    unawaited(stop().whenComplete(() {
+      _disposed = true;
+      speaking.dispose();
+    }));
   }
 }
 

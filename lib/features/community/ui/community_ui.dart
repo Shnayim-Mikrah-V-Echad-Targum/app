@@ -66,7 +66,7 @@ TextDirection autoDirection(String text) {
 /// Sends the user to sign in if needed. Returns whether they are signed in.
 Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref) async {
   if (ref.read(forumRepositoryProvider).currentUser != null) return true;
-  await context.push('/community/account');
+  await context.push('/community/account?then=back');
   return ref.read(forumRepositoryProvider).currentUser != null;
 }
 
