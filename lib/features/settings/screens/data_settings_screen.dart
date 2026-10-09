@@ -7,8 +7,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../app/providers.dart';
 import '../../../services/feedback.dart';
-import '../../community/data/backend.dart';
 import '../../../ui/l10n.dart';
+import '../../community/data/backend.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
