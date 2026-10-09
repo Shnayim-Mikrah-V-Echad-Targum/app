@@ -49,6 +49,7 @@ const _screens = {
   'welcome': '/welcome',
   'today': '/today',
   'today_divergence': '/today',
+  'today_haftarah_left': '/today',
   'parsha': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
@@ -87,6 +88,15 @@ final _scenes = <String, (DateTime, AppSettings Function(AppSettings))>{
   ),
   // The widest word spacing, justified: the spaces around a section mark.
   'reader_gaps_spaced': (_now, (s) => s.copyWith(wordSpacing: 16, justify: true)),
+  // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
+  'today_haftarah_left': (DateTime(2026, 10, 13, 11), (s) => s.copyWith(haftarahRequired: true)),
+};
+
+/// Screens shown with other progress than [_progress].
+final _sceneProgress = <String, ProgressState Function()>{
+  'today_haftarah_left': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
+      }),
 };
 
 /// Screens shown signed in with backup on, where a newer version of the app
@@ -190,7 +200,7 @@ void main() {
 
   for (final mode in _modes) {
     for (final entry in _screens.entries) {
-      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'week', 'reader', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
+      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'today_haftarah_left', 'week', 'reader', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
         continue;
       }
       final only = _only;
@@ -210,7 +220,7 @@ void main() {
           tester,
           settings: mode.settings(scene?.$2(base) ?? base),
           now: scene?.$1 ?? _now,
-          progress: _progress(),
+          progress: (_sceneProgress[entry.key] ?? _progress)(),
           forums: blocked
               ? await _accountWithNewerBackup()
               : (_backupOn.contains(entry.key) ? await _signedIn() : null),

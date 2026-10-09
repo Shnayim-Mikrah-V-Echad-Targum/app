@@ -279,6 +279,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get openWeekHaftarahLeft => 'Only the haftarah is left.';
+
+  @override
   String get checkInTitle => 'Shavua tov! Did you read on Shabbat?';
 
   @override

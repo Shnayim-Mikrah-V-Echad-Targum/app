@@ -1,12 +1,15 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../../helpers.dart';
@@ -81,6 +84,86 @@ void main() {
     expect(c.read(settingsProvider).haftarahEnabled, isFalse);
     expect(find.text(_applies), findsNothing, reason: 'the haftarah did not count toward completion');
     expect(c.read(settingsProvider).planHistory, isEmpty);
+  });
+
+  group('a past week that counted the haftarah, after the haftarah is turned off,', () {
+    final friday = LocalDate(2026, 10, 9);
+
+    /// Opens the app on [now] with Bereshit's aliyot read on Friday (all of
+    /// them, or all but the last), and its haftarah, which counted, not
+    /// read; then turns the haftarah off.
+    Future<void> turnHaftarahOff(WidgetTester tester, DateTime now, {int aliyotRead = 7}) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      var bereshit = WeekProgress(weekId: '5787:1');
+      var noach = WeekProgress(weekId: '5787:2');
+      for (var a = 0; a < aliyotRead; a++) {
+        bereshit = bereshit.withAliyah(a, friday);
+        noach = noach.withAliyah(a, _today);
+      }
+      c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: _joined, haftarahRequired: true),
+        progress: ProgressState(weeks: {'5787:1': bereshit, if (aliyotRead < kAliyot) '5787:2': noach}),
+        now: now,
+      );
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(haftarahEnabled: false));
+      await tester.pumpAndSettle();
+    }
+
+    /// Waits for texts to load from the bundle (spinners never settle).
+    Future<void> loadTexts(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      for (var i = 0; i < 20 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('is still open on Today, which leads to its haftarah', (tester) async {
+      await turnHaftarahOff(tester, _now);
+      expect(find.text('Bereshit is still open'), findsOneWidget);
+      expect(find.text('Only the haftarah is left.'), findsOneWidget);
+      await tester.tap(find.text('Bereshit is still open'));
+      await loadTexts(tester);
+      expect(find.byType(HaftarahScreen), findsOneWidget);
+    });
+
+    testWidgets('is finished, haftarah and all, by the check-in after Shabbat', (tester) async {
+      await turnHaftarahOff(tester, DateTime(2026, 10, 11, 10));
+      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsOneWidget);
+      await tester.tap(find.text('I finished it on Shabbat'));
+      await tester.pumpAndSettle();
+      expect(c.read(progressProvider).week('5787:1').haftarah, LocalDate(2026, 10, 10));
+      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsNothing);
+      expect(find.text('Bereshit is still open'), findsNothing);
+    });
+
+    testWidgets('offers its haftarah when its last aliyah is finished in the reader; a later week does not', (tester) async {
+      await turnHaftarahOff(tester, _now, aliyotRead: kAliyot - 1);
+      final haftarahButton = find.ancestor(of: find.text('Haftarah'), matching: find.bySubtype<FilledButton>());
+
+      Future<void> finishLastAliyah(String weekId) async {
+        c.read(routerProvider).go('/read/$weekId/${kAliyot - 1}');
+        await loadTexts(tester);
+        await tester.tap(find.byTooltip('More options'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Mark this aliyah as read'));
+        await tester.pumpAndSettle();
+        expect(c.read(progressProvider).week(weekId).isComplete, isTrue);
+      }
+
+      await finishLastAliyah('5787:1');
+      expect(find.text('Chazak! Parshat Bereshit is complete.'), findsOneWidget);
+      expect(haftarahButton, findsOneWidget, reason: 'Bereshit still needs its haftarah');
+
+      await finishLastAliyah('5787:2');
+      expect(find.text('Chazak! Parshat Noach is complete.'), findsOneWidget);
+      expect(haftarahButton, findsNothing, reason: 'Noach does not');
+    });
   });
 
   testWidgets('a past week that counted the haftarah still shows it after the haftarah is turned off', (tester) async {

@@ -193,6 +193,7 @@
       }
     }
   },
+  "openWeekHaftarahLeft": "Only the haftarah is left.",
   "checkInTitle": "Shavua tov! Did you read on Shabbat?",
   "checkInBody": "Log what you read from a printed Chumash — it counts just the same.",
   "checkInFinished": "I finished it on Shabbat",

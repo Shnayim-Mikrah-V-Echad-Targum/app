@@ -74,6 +74,12 @@ class WeekContext {
   /// Reading for this week can be credited (it has opened).
   bool get isOpen => week.start <= today;
 
+  /// Whether the haftarah counts toward finishing this week and is not read.
+  bool get haftarahDue => haftarahRequired && progress.haftarah == null;
+
+  /// Whether everything that counts toward finishing this week is read.
+  bool get isFinished => progress.isComplete && !haftarahDue;
+
   /// The first aliyah not yet fully read, in order; null when complete.
   int? get nextAliyah {
     for (var a = 0; a < kAliyot; a++) {
@@ -147,14 +153,15 @@ WeekContext _contextFor(Ref ref, ReadingWeek week) {
   );
 }
 
-/// The previous week, when it still needs attention: unfinished and either
-/// within its late window or restorable by doubling up.
+/// The previous week, when it still needs attention: unfinished (perhaps
+/// only its haftarah) and either within its late window or restorable by
+/// doubling up.
 final openPreviousWeekProvider = Provider<WeekContext?>((ref) {
   final current = ref.watch(currentWeekProvider);
   final schedule = ref.watch(scheduleProvider);
   final previous = schedule.previousWeek(current);
   final ctx = _contextFor(ref, previous);
-  if (ctx.progress.isComplete) return null;
+  if (ctx.isFinished) return null;
   final join = ref.watch(settingsProvider).joinDate;
   if (join != null && previous.occasion < join) return null;
   final s = ctx.status;

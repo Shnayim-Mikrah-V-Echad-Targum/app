@@ -536,6 +536,12 @@ abstract class AppLocalizations {
   /// **'Finish {name} and {next} by Shabbat to keep your streak — one double-up per book.'**
   String openWeekRestore(String name, String next);
 
+  /// No description provided for @openWeekHaftarahLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the haftarah is left.'**
+  String get openWeekHaftarahLeft;
+
   /// No description provided for @checkInTitle.
   ///
   /// In en, this message translates to:

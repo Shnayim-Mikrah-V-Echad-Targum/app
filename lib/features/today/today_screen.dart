@@ -433,7 +433,10 @@ class _OpenPreviousCard extends ConsumerWidget {
               children: [
                 FilledButton(
                   onPressed: () {
-                    ref.read(progressProvider.notifier).markWeek(previous.id, previous.week.occasion);
+                    final progress = ref.read(progressProvider.notifier);
+                    progress.markWeek(previous.id, previous.week.occasion);
+                    // Finishing it includes the haftarah, where that counts.
+                    if (previous.haftarahDue) progress.markHaftarah(previous.id, previous.week.occasion);
                     hapticSuccess(ref);
                     showStatus(context, l.parshaComplete(name));
                   },
@@ -452,9 +455,10 @@ class _OpenPreviousCard extends ConsumerWidget {
 
     final overdue = previous.status == WeekStatus.overdue;
     final nextName = names.portion(current.portion, ashkenazi: settings.ashkenaziNames);
+    final onlyHaftarah = previous.progress.isComplete;
     return InfoCard(
       color: Theme.of(context).colorScheme.secondaryContainer,
-      onTap: () => context.push('/week/${previous.id}'),
+      onTap: () => context.push(onlyHaftarah ? '/haftarah/${previous.id}' : '/week/${previous.id}'),
       child: Row(
         children: [
           const Icon(Icons.schedule),
@@ -464,6 +468,7 @@ class _OpenPreviousCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(l.openWeekTitle(name), style: Theme.of(context).textTheme.titleSmall),
+                if (onlyHaftarah) Text(l.openWeekHaftarahLeft),
                 Text(overdue
                     ? l.openWeekRestore(name, nextName)
                     : l.openWeekLate(names.dateLong(engine.lateDeadlineOf(previous.week)))),

@@ -73,6 +73,7 @@
   "openWeekTitle": "פרשת {name} עדיין פתוחה",
   "openWeekLate": "אם תסיים/י עד {date}, היא עדיין נחשבת.",
   "openWeekRestore": "סיום {name} ו{next} עד שבת ישמור על הרצף — השלמה כפולה אחת לכל חומש.",
+  "openWeekHaftarahLeft": "נשארה רק ההפטרה.",
   "checkInTitle": "שבוע טוב! קראת בשבת?",
   "checkInBody": "אפשר לרשום מה שקראת מתוך חומש מודפס — זה נחשב בדיוק אותו הדבר.",
   "checkInFinished": "סיימתי את הפרשה בשבת",

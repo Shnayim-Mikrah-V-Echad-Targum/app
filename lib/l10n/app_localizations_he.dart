@@ -280,6 +280,9 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get openWeekHaftarahLeft => 'נשארה רק ההפטרה.';
+
+  @override
   String get checkInTitle => 'שבוע טוב! קראת בשבת?';
 
   @override
