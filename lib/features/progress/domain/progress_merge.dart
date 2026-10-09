@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math';
 
 import '../../../app/providers.dart';
-import '../../../core/calendar/local_date.dart';
 import 'progress_models.dart';
 
 export '../../../app/providers.dart' show ProgressState;
@@ -17,13 +16,15 @@ const kPauseTombstoneLife = Duration(days: 60);
 /// stamped with its time (see [ProgressClock]):
 ///
 /// - A reset drops everything stamped before it, from both copies.
-/// - A reading logged on one device and removed on the other is whichever
-///   happened later; on a tie, it stays read. Where both devices logged it,
-///   the earliest day wins, so a sync never lowers a streak.
+/// - A reading (or the haftarah) marked as not read drops every mark made
+///   before that, on either device; on a tie, it stays read. Of the marks
+///   left, the earliest day wins, so a sync never lowers a streak, and a
+///   reading marked again on a later day keeps that day (see
+///   [ReadingRecord]).
 /// - The later saved place in an aliyah wins; on a tie, the furthest.
 /// - The later change to a pause wins; on a tie, a cancellation.
 ///
-/// The merge is commutative and idempotent.
+/// The merge is commutative, associative and idempotent.
 ProgressState mergeProgress(ProgressState a, ProgressState b) {
   final cut = max(a.resetAt, b.resetAt);
 
@@ -71,22 +72,11 @@ ProgressState mergeProgress(ProgressState a, ProgressState b) {
 }
 
 WeekProgress _mergeWeek(WeekProgress x, WeekProgress y, int cut) {
-  final units = List.generate(kAliyot, (_) => List<LocalDate?>.filled(3, null));
-  final stamps = List.generate(kAliyot, (_) => List<int>.filled(3, 0));
-  for (var a = 0; a < kAliyot; a++) {
-    for (var p = 0; p < 3; p++) {
-      final (date, stamp) = _mergeCell(
-        _Cell(x.units[a][p], x.stamps[a][p], cut),
-        _Cell(y.units[a][p], y.stamps[a][p], cut),
-      );
-      units[a][p] = date;
-      stamps[a][p] = stamp;
-    }
-  }
-  final (haftarah, haftarahStamp) = _mergeCell(
-    _Cell(x.haftarah, x.haftarahStamp, cut),
-    _Cell(y.haftarah, y.haftarahStamp, cut),
-  );
+  final records = [
+    for (var a = 0; a < kAliyot; a++)
+      [for (var p = 0; p < 3; p++) x.records[a][p].merge(y.records[a][p], cut: cut)],
+  ];
+  final haftarah = x.haftarahRecord.merge(y.haftarahRecord, cut: cut);
 
   final positions = <int, List<int>>{};
   final positionStamps = <int, int>{};
@@ -101,38 +91,13 @@ WeekProgress _mergeWeek(WeekProgress x, WeekProgress y, int cut) {
     if (max(xt, yt) > 0) positionStamps[a] = max(xt, yt);
   }
 
-  return WeekProgress(
+  return WeekProgress.fromRecords(
     weekId: x.weekId,
-    units: units,
-    stamps: stamps,
-    haftarah: haftarah,
-    haftarahStamp: haftarahStamp,
+    records: records,
+    haftarahRecord: haftarah,
     positions: positions,
     positionStamps: positionStamps,
   );
-}
-
-/// A reading (or the haftarah) as one copy has it: the day it was read, if
-/// it was, and when that last changed. Anything from before [cut] (a reset)
-/// counts as never recorded.
-class _Cell {
-  _Cell(LocalDate? date, int stamp, int cut)
-      : date = stamp < cut ? null : date,
-        stamp = stamp < cut ? 0 : stamp;
-
-  final LocalDate? date;
-  final int stamp;
-}
-
-(LocalDate?, int) _mergeCell(_Cell x, _Cell y) {
-  final stamp = max(x.stamp, y.stamp);
-  final (dx, dy) = (x.date, y.date);
-  if (dx != null && dy != null) return (dx <= dy ? dx : dy, stamp);
-  if (dx == null && dy == null) return (null, stamp);
-  // Read in one copy and not in the other: the later change wins, and on a
-  // tie the reading is kept.
-  final (read, other) = dx != null ? (x, y) : (y, x);
-  return (read.stamp >= other.stamp ? read.date : null, stamp);
 }
 
 /// The element-wise furthest of two saved places, either of which may be

@@ -101,7 +101,7 @@ Changing the plan, the quiet days, the late window or whether the haftarah count
 
 The engine is a pure function of (progress, join date, today, pauses, and the plan settings over time). It is unit-tested against the worked examples in the research and recomputed on every change.
 
-**Syncing keeps every change, removals included.** Each reading, the haftarah, each saved place and each pause records when it last changed, and a removal keeps that time instead of disappearing. Merging two devices is commutative: where one device marked a reading as not read, cleared a week or ended a pause after the other last saw it, that change wins. Where both devices logged the same reading, the earliest date wins, so a sync never lowers a streak. With backup on, resetting all progress erases it everywhere, but keeps anything logged on another device after the reset.
+**Syncing keeps every change, removals included.** Each reading, the haftarah, each saved place and each pause records when it last changed, and a removal keeps that time instead of disappearing. Merging two devices gives the same result in any order: where one device marked a reading as not read, cleared a week or ended a pause after the other last saw it, that change wins, and a reading marked again afterwards keeps its new day. Where both devices logged the same reading independently, the earliest date wins, so a sync never lowers a streak. With backup on, resetting all progress erases it everywhere, but keeps anything logged on another device after the reset.
 
 ## 5. Notifications
 

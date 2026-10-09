@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
@@ -189,6 +190,112 @@ void main() {
     );
     final m = mergeProgress(ProgressState(weeks: {id: removed}), ProgressState(weeks: {id: logged}));
     expect(m.week(id).units[0], [d1, null, null]);
+  });
+
+  group('a reading marked again on a later day keeps that day', () {
+    late ProgressState read, readAgain;
+    setUp(() {
+      read = edit(const ProgressState(), (w) => w.withAliyah(2, d1).withHaftarah(d1));
+      later();
+      final unread = edit(read, (w) => w.withAliyah(2, null).withHaftarah(null));
+      later();
+      readAgain = edit(unread, (w) => w.withAliyah(2, d2).withHaftarah(d2));
+    });
+
+    test('against a copy that still has the first day, in either order', () {
+      for (final m in [mergeProgress(read, readAgain), mergeProgress(readAgain, read)]) {
+        expect(m.week(id).units[2], [d2, d2, d2]);
+        expect(m.week(id).haftarah, d2);
+      }
+      expect(j(mergeProgress(read, readAgain)), j(mergeProgress(readAgain, read)));
+    });
+
+    test('through the cloud, when the other device syncs next', () {
+      var phone = sync(read);
+      var tablet = sync(const ProgressState());
+      expect(tablet.week(id).units[2], [d1, d1, d1]);
+
+      // Corrected on the phone, then synced; the tablet still has Sunday.
+      later();
+      phone = sync(edit(phone, (w) => w.withAliyah(2, null).withHaftarah(null)));
+      later();
+      phone = sync(edit(phone, (w) => w.withAliyah(2, d2).withHaftarah(d2)));
+      tablet = sync(tablet);
+      phone = sync(phone);
+      for (final s in [phone, tablet]) {
+        expect(s.week(id).units[2], [d2, d2, d2]);
+        expect(s.week(id).haftarah, d2);
+      }
+    });
+
+    test('when both changes reach the cloud together, still holding the first day', () {
+      var phone = sync(read);
+      later();
+      phone = edit(phone, (w) => w.withAliyah(2, null).withHaftarah(null));
+      later();
+      phone = sync(edit(phone, (w) => w.withAliyah(2, d2).withHaftarah(d2)));
+      expect(phone.week(id).units[2], [d2, d2, d2]);
+      expect(phone.week(id).haftarah, d2);
+    });
+
+    test("and a restored backup's day replaces the day there was", () {
+      final restored = edit(read, (w) => w.restoredTo(WeekProgress(weekId: id).withAliyah(2, d2)));
+      expect(mergeProgress(read, restored).week(id).units[2], [d2, d2, d2]);
+    });
+  });
+
+  test('readings logged independently stay logged when one copy is marked as not read', () {
+    // The phone logs Rishon on Sunday, and the tablet, not having heard,
+    // logs it on Monday. A third copy (another device) that had heard only
+    // of Sunday's then marks it as not read, before Monday's mark was made.
+    final sunday = edit(const ProgressState(), (w) => w.withAliyah(0, d1));
+    later();
+    final removed = edit(sunday, (w) => w.withAliyah(0, null));
+    later();
+    final monday = edit(const ProgressState(), (w) => w.withAliyah(0, d2));
+
+    final all = [sunday, removed, monday];
+    for (final (x, y, z) in [
+      (sunday, removed, monday),
+      (sunday, monday, removed),
+      (monday, removed, sunday),
+      (removed, monday, sunday),
+    ]) {
+      final m = mergeProgress(mergeProgress(x, y), z);
+      expect(m.week(id).units[0], [d2, d2, d2], reason: "Monday's mark came after the removal");
+      expect(m, mergeProgress(x, mergeProgress(y, z)));
+    }
+    // Before the removal is heard of, Sunday's still wins over Monday's.
+    expect(mergeProgress(sunday, monday).week(id).units[0], [d1, d1, d1]);
+    expect(all.reduce(mergeProgress).week(id).units[0], [d2, d2, d2]);
+  });
+
+  test('merging readings is associative, commutative and idempotent', () {
+    // Random histories of one reading: marks and removals on several
+    // devices, at times that often collide.
+    final random = Random(5787);
+    ReadingRecord history() {
+      var r = ReadingRecord.blank;
+      for (var i = random.nextInt(4); i > 0; i--) {
+        if (random.nextInt(3) == 0) {
+          r = ReadingRecord.of(r.marks, clearedAt: max(r.clearedAt, random.nextInt(8)));
+        } else {
+          r = ReadingRecord.of([...r.marks, ReadingMark(d1.addDays(random.nextInt(4)), random.nextInt(8))],
+              clearedAt: r.clearedAt);
+        }
+      }
+      return r;
+    }
+
+    String key(ReadingRecord r) => '${r.clearedAt} ${[for (final m in r.marks) '${m.day.rd}@${m.at}']}';
+    for (var i = 0; i < 2000; i++) {
+      final (a, b, c) = (history(), history(), history());
+      final cut = random.nextInt(3) == 0 ? random.nextInt(8) : 0;
+      ReadingRecord merge(ReadingRecord x, ReadingRecord y) => x.merge(y, cut: cut);
+      expect(key(merge(merge(a, b), c)), key(merge(a, merge(b, c))), reason: '${key(a)} | ${key(b)} | ${key(c)}');
+      expect(key(merge(a, b)), key(merge(b, a)));
+      expect(key(merge(merge(a, b), b)), key(merge(a, b)));
+    }
   });
 
   test('a change outranks what it replaces, even on a device whose clock is behind', () {

@@ -40,7 +40,22 @@ final _bad = {
   'a short stamp grid': _stored('{"5787:2": {"u": ${_grid()}, "t": [[1, 2, 3]]}}', version: 2),
   'a reset time that is not a time': '{"version": 2, "resetAt": "yesterday", "weeks": {}, "pauses": []}',
   'a newer format': _stored('{"5787:2": {"u": ${_grid()}}}', version: 99),
+  'a further mark that is not a day and a time':
+      _stored('{"5787:2": {"u": ${_grid()}, "t": ${_stampGrid()}, "x": [[0, 0, "x", 9]]}}', version: 2),
+  'a further mark on a reading that is not read':
+      _stored('{"5787:2": {"u": ${_grid()}, "t": ${_stampGrid()}, "x": [[1, 0, ${_d2.rd}, 9]]}}', version: 2),
+  'a mark from before the reading was marked as not read': _stored(
+      '{"5787:2": {"u": ${_grid()}, "t": ${_stampGrid()}, "c": ${_stampGrid(at: 7)}}}',
+      version: 2),
+  'a week without a unit grid': _stored('{"5787:2": {"units": ${_grid()}}}', version: 2),
+  'a key this version does not know': _stored('{"5787:2": {"u": ${_grid()}, "note": 1}}', version: 2),
 };
+
+/// A stamp grid with Rishon's readings marked at [at].
+String _stampGrid({int at = 5}) => jsonEncode([
+      [at, at, at],
+      for (var a = 1; a < kAliyot; a++) [0, 0, 0],
+    ]);
 
 /// What the reader sees of [s]: the readings, saved places and pauses, but
 /// not when they changed.
@@ -115,6 +130,43 @@ void main() {
       expect(() => WeekProgress.fromJson('5787:2', json, strict: true), throwsFormatException);
       expect(() => WeekProgress.fromJson('5787:2', {'u': jsonDecode(_grid()), 't': 'now'}), throwsFormatException);
       expect(() => WeekProgress.fromJson('5787:2', {'u': jsonDecode(_grid()), 'pt': [1]}), throwsFormatException);
+    });
+
+    test('a week without a unit grid, or with a key this version does not know, is not read', () {
+      expect(() => WeekProgress.fromJson('5787:2', {'units': jsonDecode(_grid())}), throwsFormatException);
+      expect(() => WeekProgress.fromJson('5787:2', {'x': 1}), throwsFormatException);
+      expect(() => WeekProgress.fromJson('5787:2', {'u': jsonDecode(_grid()), 'note': 1}), throwsFormatException);
+      expect(WeekProgress.fromJson('5787:2', const {}, strict: true).isBlank, isTrue);
+    });
+
+    test('every mark and removal reads back exactly, even strictly', () {
+      final wallClock = ProgressClock.nowMs;
+      addTearDown(() => ProgressClock.nowMs = wallClock);
+      var now = 1000;
+      ProgressClock.nowMs = () => now;
+      // Rishon logged independently on two devices, a day apart; Sheni and
+      // the haftarah marked as not read, then read again on another day.
+      final phone = WeekProgress(weekId: '5787:2').withAliyah(0, _d1).withAliyah(1, _d1).withHaftarah(_d1);
+      now += 1000;
+      final tablet = WeekProgress(weekId: '5787:2').withAliyah(0, _d2);
+      now += 1000;
+      final corrected = phone.withAliyah(1, null).withHaftarah(null);
+      now += 1000;
+      final week = mergeProgress(
+        ProgressState(weeks: {'5787:2': corrected.withAliyah(1, _d2).withHaftarah(_d2)}),
+        ProgressState(weeks: {'5787:2': tablet}),
+      ).week('5787:2');
+      expect(week.records[0][0].marks.map((m) => m.day), [_d1, _d2], reason: 'either could decide the day');
+      expect(week.units[0], [_d1, _d1, _d1]);
+      expect(week.units[1], [_d2, _d2, _d2]);
+      expect(week.haftarah, _d2);
+
+      final json = jsonDecode(jsonEncode(week.toJson())) as Map<String, dynamic>;
+      expect(json.keys, containsAll(['x', 'c', 'hc']));
+      final back = WeekProgress.fromJson('5787:2', json, strict: true);
+      expect(jsonEncode(back.toJson()), jsonEncode(week.toJson()));
+      expect(back.records[0][0].marks.map((m) => (m.day, m.at)), week.records[0][0].marks.map((m) => (m.day, m.at)));
+      expect(back.records[1][0].clearedAt, week.records[1][0].clearedAt);
     });
 
     test('a well-formed week reads back exactly, even strictly', () {

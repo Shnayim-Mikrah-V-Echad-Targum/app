@@ -15,6 +15,7 @@ import 'package:shnayim_mikra/features/community/data/community_providers.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -409,6 +410,37 @@ void main() {
       settle();
       expect(local().weeks, isEmpty, reason: 'reset');
       expect(local().pauses, isEmpty);
+      container.dispose();
+    });
+  });
+
+  test('a reading given a new day keeps it through syncing, against a device with the old day', () {
+    final tablet = _otherDevice();
+    final repo = _CountingRepo(user: _me, remote: tablet);
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      final progress = container.read(progressProvider.notifier);
+      WeekProgress week() => container.read(progressProvider).week(_week);
+      async.elapse(const Duration(seconds: 10));
+      expect(week().units[0][0], _d1, reason: 'pulled from the tablet');
+
+      // Corrected here before the change was pushed: the cloud still had
+      // the first day when the two met.
+      async.elapse(const Duration(seconds: 1));
+      progress.markUnit(_week, 0, ReadingPass.mikra1, null);
+      async.elapse(const Duration(seconds: 1));
+      progress.markUnit(_week, 0, ReadingPass.mikra1, _d2);
+      async.elapse(const Duration(seconds: 10));
+      expect(week().units[0][0], _d2);
+      expect(remoteOf(repo).week(_week).units[0][0], _d2);
+
+      // The tablet, still holding the first day, syncs next, and then this
+      // device again.
+      repo.remote = mergeProgress(ProgressState.fromJson(tablet), remoteOf(repo)).toJson();
+      expect(remoteOf(repo).week(_week).units[0][0], _d2, reason: 'the tablet takes the new day');
+      container.read(progressSyncProvider.notifier).syncNow();
+      async.elapse(const Duration(seconds: 10));
+      expect(week().units[0][0], _d2);
       container.dispose();
     });
   });

@@ -22,10 +22,11 @@ const kAliyot = 7;
 /// The version of the stored progress format that this build reads and
 /// writes. Data written by a newer build is kept, never merged blindly.
 ///
-/// Version 2 stamps every change with its time (see [ProgressClock]), so
-/// that a merge can tell a reading marked as not read from one that was
-/// never marked, and a removal survives syncing. Version 1 data reads as
-/// stamped at time 0, older than any change.
+/// Version 2 stamps every change with its time (see [ProgressClock]), and
+/// keeps when each reading was last marked as not read (see
+/// [ReadingRecord]), so that a merge can tell a reading marked as not read
+/// from one that was never marked, and a removal survives syncing. Version
+/// 1 data reads as stamped at time 0, older than any change.
 const kProgressFormat = 2;
 
 /// Stamps changes to progress with their time, in milliseconds since the
@@ -73,48 +74,162 @@ int cycleYearOf(PortionId portion, LocalDate occasion) {
   return h.year;
 }
 
+/// A day a reading was marked read, and when the mark was made (from
+/// [ProgressClock]).
+class ReadingMark {
+  const ReadingMark(this.day, this.at);
+
+  final LocalDate day;
+  final int at;
+}
+
+/// Whether one reading (or the haftarah) is done, and since which day: the
+/// marks that still count, and when it was last marked as not read.
+///
+/// Merging two copies keeps every mark and the later removal. A mark made
+/// before the removal no longer counts, and of the marks that do, the
+/// earliest day wins. So a reading marked again on a later day, after being
+/// marked as not read, keeps the new day even against a copy that still
+/// has the old one; and where two devices marked it independently, the
+/// earlier day wins, so a sync never lowers a streak.
+///
+/// A mark that can never decide the day is dropped: one whose day is no
+/// earlier than that of a mark made at the same time or later (which counts
+/// for at least as long). Usually a single mark is left.
+class ReadingRecord {
+  const ReadingRecord._(this.marks, this.clearedAt);
+
+  /// The record of [marks] and a removal at [clearedAt], keeping only the
+  /// marks that can decide the day. Anything from before [cut] (a reset)
+  /// counts as never recorded.
+  factory ReadingRecord.of(Iterable<ReadingMark> marks, {int clearedAt = 0, int cut = 0}) {
+    // A mark made at the same moment as the removal outranks it.
+    final live = marks.where((m) => m.at >= clearedAt && m.at >= cut).toList()
+      ..sort((a, b) => a.at != b.at ? b.at.compareTo(a.at) : a.day.compareTo(b.day));
+    final kept = <ReadingMark>[];
+    for (final m in live) {
+      if (kept.isEmpty || m.day < kept.last.day) kept.add(m);
+    }
+    return ReadingRecord._(List.unmodifiable(kept.reversed), clearedAt < cut ? 0 : clearedAt);
+  }
+
+  /// Never marked, nor marked as not read.
+  static const blank = ReadingRecord._([], 0);
+
+  /// Marked read on [day] at [stamp], or with a null [day], marked as not
+  /// read at [stamp] (or never, at 0).
+  factory ReadingRecord.single(LocalDate? day, int stamp) =>
+      day == null ? ReadingRecord._(const [], stamp) : ReadingRecord._([ReadingMark(day, stamp)], 0);
+
+  /// The marks that count, in the order they were made, and so also by day:
+  /// each is later than the one before.
+  final List<ReadingMark> marks;
+
+  /// When this reading was last marked as not read (or given another day);
+  /// 0 if never.
+  final int clearedAt;
+
+  /// The day this reading counts as done, if it does.
+  LocalDate? get day => marks.isEmpty ? null : marks.first.day;
+
+  /// When this record last changed; 0 if never.
+  int get stamp => marks.isEmpty ? clearedAt : max(clearedAt, marks.last.at);
+
+  bool get isBlank => marks.isEmpty && clearedAt == 0;
+
+  /// This reading marked read on [day], or with a null [day], not read, as a
+  /// change made now. A new day replaces the old one everywhere.
+  ReadingRecord changedTo(LocalDate? day) {
+    final at = ProgressClock.after(stamp);
+    if (day == null) return ReadingRecord._(const [], at);
+    return ReadingRecord._([ReadingMark(day, at)], this.day == null ? clearedAt : at);
+  }
+
+  /// This record merged with [other], another copy of it, dropping anything
+  /// from before [cut] (a reset).
+  ReadingRecord merge(ReadingRecord other, {int cut = 0}) =>
+      ReadingRecord.of([...marks, ...other.marks], clearedAt: max(clearedAt, other.clearedAt), cut: cut);
+}
+
 /// Progress through one week's portion.
 ///
 /// Each of the 7 × 3 "units" (aliyah × reading) records the day it was
 /// completed, which drives streaks. [positions] remembers how far into each
 /// unit the reader got, for resuming.
 ///
-/// Every value has a stamp (see [ProgressClock]) of when it last changed,
-/// and a removal keeps its stamp, so that merging with another device can
-/// tell "marked as not read" from "never marked".
+/// Every value records when it last changed (see [ProgressClock]), and a
+/// removal is recorded rather than forgotten, so that merging with another
+/// device can tell "marked as not read" from "never marked". The readings
+/// and the haftarah keep a [ReadingRecord] each.
 class WeekProgress {
+  /// A week whose readings are [units], each marked at the time in [stamps]
+  /// (or for one not read, marked as not read then, or never at 0), and
+  /// likewise the haftarah.
   WeekProgress({
-    required this.weekId,
+    required String weekId,
     List<List<LocalDate?>>? units,
     List<List<int>>? stamps,
-    this.haftarah,
-    this.haftarahStamp = 0,
+    LocalDate? haftarah,
+    int haftarahStamp = 0,
     Map<int, List<int>>? positions,
     Map<int, int>? positionStamps,
-  })  : units = units ?? List.generate(kAliyot, (_) => List<LocalDate?>.filled(3, null)),
-        stamps = stamps ?? List.generate(kAliyot, (_) => List<int>.filled(3, 0)),
+  }) : this.fromRecords(
+          weekId: weekId,
+          records: [
+            for (var a = 0; a < kAliyot; a++)
+              [for (var p = 0; p < 3; p++) ReadingRecord.single(units?[a][p], stamps?[a][p] ?? 0)],
+          ],
+          haftarahRecord: ReadingRecord.single(haftarah, haftarahStamp),
+          positions: positions,
+          positionStamps: positionStamps,
+        );
+
+  WeekProgress.fromRecords({
+    required this.weekId,
+    List<List<ReadingRecord>>? records,
+    this.haftarahRecord = ReadingRecord.blank,
+    Map<int, List<int>>? positions,
+    Map<int, int>? positionStamps,
+  })  : records = records ?? _blankRecords,
+        units = [
+          for (final row in records ?? _blankRecords) [for (final r in row) r.day],
+        ],
+        stamps = [
+          for (final row in records ?? _blankRecords) [for (final r in row) r.stamp],
+        ],
+        haftarah = haftarahRecord.day,
+        haftarahStamp = haftarahRecord.stamp,
         positions = positions ?? const {},
         positionStamps = positionStamps ?? const {};
 
-  /// Reads a stored week leniently: the unit and stamp grids are normalized
-  /// to 7 × 3 (a missing row or cell, or one that isn't a day number, reads
-  /// as not done; a stamp that isn't a time reads as 0) and malformed
+  static final _blankRecords = List<List<ReadingRecord>>.unmodifiable([
+    for (var a = 0; a < kAliyot; a++) List<ReadingRecord>.unmodifiable(List.filled(3, ReadingRecord.blank)),
+  ]);
+
+  /// The keys a stored week may have.
+  static const _keys = {'u', 't', 'c', 'x', 'h', 'ht', 'hc', 'hx', 'p', 'pt'};
+
+  /// Reads a stored week leniently: the grids are normalized to 7 × 3 (a
+  /// missing row or cell, or one that isn't a day number, reads as not done;
+  /// a stamp that isn't a time reads as 0), and malformed marks and
   /// positions are dropped. With [strict], anything that would need fixing
-  /// or dropping throws a [FormatException] instead. A week whose shape isn't
-  /// recognized at all always throws. Stamps missing from version 1 data
-  /// read as 0.
+  /// or dropping throws a [FormatException] instead. A week whose shape
+  /// isn't recognized at all always throws: one without a unit grid, with a
+  /// key this version doesn't know, or with a part of the wrong kind.
+  /// Stamps missing from version 1 data read as 0.
   factory WeekProgress.fromJson(String weekId, Map<String, dynamic> j, {bool strict = false}) {
     final rawUnits = j['u'];
-    final rawStamps = j['t'];
-    final rawPositions = j['p'];
-    final rawPositionStamps = j['pt'];
-    if ((rawUnits != null && rawUnits is! List) ||
-        (rawStamps != null && rawStamps is! List) ||
-        (rawPositions != null && rawPositions is! Map) ||
-        (rawPositionStamps != null && rawPositionStamps is! Map)) {
+    if ((j.isNotEmpty && rawUnits is! List) ||
+        !j.keys.every(_keys.contains) ||
+        (j['t'] != null && j['t'] is! List) ||
+        (j['c'] != null && j['c'] is! List) ||
+        (j['x'] != null && j['x'] is! List) ||
+        (j['hx'] != null && j['hx'] is! List) ||
+        (j['p'] != null && j['p'] is! Map) ||
+        (j['pt'] != null && j['pt'] is! Map)) {
       throw FormatException('Unrecognized progress for week $weekId');
     }
-    var clean = j.keys.every(const {'u', 't', 'h', 'ht', 'p', 'pt'}.contains);
+    var clean = true;
 
     LocalDate? day(Object? rd) {
       if (rd is int) return LocalDate.fromRd(rd);
@@ -134,13 +249,65 @@ class WeekProgress {
       return [for (var p = 0; p < 3; p++) p < list.length ? read(list[p]) : missing];
     }
 
-    List<List<T>> grid<T>(List<Object?> rows, T Function(Object?) read, T missing) {
-      if (rows.length != kAliyot) clean = false;
-      return [for (var a = 0; a < kAliyot; a++) row(a < rows.length ? rows[a] : null, read, missing)];
+    /// A 7 × 3 grid, or all [missing] where none was stored.
+    List<List<T>> grid<T>(Object? rows, T Function(Object?) read, T missing) {
+      if (rows == null) return [for (var a = 0; a < kAliyot; a++) List.filled(3, missing)];
+      final list = rows as List;
+      if (list.length != kAliyot) clean = false;
+      return [for (var a = 0; a < kAliyot; a++) row(a < list.length ? list[a] : null, read, missing)];
     }
 
-    final units = grid((rawUnits as List?) ?? const [], day, null);
-    final stamps = rawStamps == null ? null : grid(rawStamps as List, stamp, 0);
+    final units = grid(rawUnits, day, null);
+    final stamps = grid(j['t'], stamp, 0);
+    final cleared = grid(j['c'], stamp, 0);
+
+    /// A mark stored as [day, stamp] after the first, or null (and not
+    /// clean) if malformed.
+    ReadingMark? mark(Object? m) {
+      if (m is List && m.length == 2 && m[0] is int && m[1] is int && (m[1] as int) >= 0) {
+        return ReadingMark(LocalDate.fromRd(m[0] as int), m[1] as int);
+      }
+      clean = false;
+      return null;
+    }
+
+    final moreMarks = List.generate(kAliyot, (_) => List.generate(3, (_) => <ReadingMark>[]));
+    for (final m in (j['x'] as List?) ?? const []) {
+      // [aliyah, pass, day, stamp].
+      if (m is List && m.length == 4 && m[0] is int && m[1] is int) {
+        final (a, p) = (m[0] as int, m[1] as int);
+        if (a >= 0 && a < kAliyot && p >= 0 && p < 3) {
+          if (mark(m.sublist(2)) case final mark?) moreMarks[a][p].add(mark);
+          continue;
+        }
+      }
+      clean = false;
+    }
+
+    /// The record stored as [day] marked at [t] (or not read since [t]),
+    /// last marked as not read at [c], with further marks [more].
+    ReadingRecord record(LocalDate? day, int t, int c, List<ReadingMark> more) {
+      if (day == null) {
+        // Marks or a removal time beside a reading that isn't read.
+        if (c != 0 || more.isNotEmpty) clean = false;
+        return ReadingRecord.of(const [], clearedAt: max(t, c));
+      }
+      final r = ReadingRecord.of([ReadingMark(day, t), ...more], clearedAt: c);
+      // Every mark stored must still count.
+      if (r.day != day || r.marks.length != 1 + more.length) clean = false;
+      return r;
+    }
+
+    final records = [
+      for (var a = 0; a < kAliyot; a++)
+        [for (var p = 0; p < 3; p++) record(units[a][p], stamps[a][p], cleared[a][p], moreMarks[a][p])],
+    ];
+    final haftarahRecord = record(
+      day(j['h']),
+      j.containsKey('ht') ? stamp(j['ht']) : 0,
+      j.containsKey('hc') ? stamp(j['hc']) : 0,
+      [for (final m in (j['hx'] as List?) ?? const []) ?mark(m)],
+    );
 
     /// The aliyah a position key names, or null (and not clean) if none.
     int? aliyahOf(Object? key) {
@@ -154,7 +321,7 @@ class WeekProgress {
     }
 
     final positions = <int, List<int>>{};
-    for (final MapEntry(:key, :value) in ((rawPositions as Map?) ?? const {}).entries) {
+    for (final MapEntry(:key, :value) in ((j['p'] as Map?) ?? const {}).entries) {
       final a = aliyahOf(key);
       if (a == null || value is! List || !value.every((n) => n is int && n >= 0)) {
         clean = false;
@@ -165,27 +332,29 @@ class WeekProgress {
     }
 
     final positionStamps = <int, int>{};
-    for (final MapEntry(:key, :value) in ((rawPositionStamps as Map?) ?? const {}).entries) {
+    for (final MapEntry(:key, :value) in ((j['pt'] as Map?) ?? const {}).entries) {
       final a = aliyahOf(key);
       final t = stamp(value);
       if (a != null && t > 0) positionStamps[a] = t;
     }
 
-    final haftarah = day(j['h']);
-    final haftarahStamp = j.containsKey('ht') ? stamp(j['ht']) : 0;
     if (strict && !clean) throw FormatException('Malformed progress for week $weekId');
-    return WeekProgress(
+    return WeekProgress.fromRecords(
       weekId: weekId,
-      units: units,
-      stamps: stamps,
-      haftarah: haftarah,
-      haftarahStamp: haftarahStamp,
+      records: records,
+      haftarahRecord: haftarahRecord,
       positions: positions,
       positionStamps: positionStamps,
     );
   }
 
   final String weekId;
+
+  /// `records[aliyah][pass]`: when that reading was marked read and not.
+  final List<List<ReadingRecord>> records;
+
+  /// When the haftarah was marked read and not.
+  final ReadingRecord haftarahRecord;
 
   /// `units[aliyah][pass]`: the day that reading was completed.
   final List<List<LocalDate?>> units;
@@ -207,23 +376,45 @@ class WeekProgress {
   /// including when it was removed. Only stamps after 0 are kept.
   final Map<int, int> positionStamps;
 
-  /// Positions are written in aliyah order so that equal progress always
-  /// encodes identically (`ProgressState` equality relies on this). Stamps
-  /// that are all 0 (as in version 1) are left out.
-  Map<String, dynamic> toJson() => {
-        'u': [
-          for (final row in units) [for (final d in row) d?.rd],
+  /// Equal progress always encodes identically (`ProgressState` equality
+  /// relies on this): positions are written in aliyah order, and what is
+  /// all 0 or empty (as in version 1) is left out.
+  ///
+  /// `t` holds each reading's mark time (or, for one not read, the time it
+  /// was marked as not read), `c` when a reading that is read was last
+  /// marked as not read, and `x` any further marks as [aliyah, pass, day,
+  /// stamp]; `ht`, `hc` and `hx` likewise for the haftarah.
+  Map<String, dynamic> toJson() {
+    int t(ReadingRecord r) => r.marks.isEmpty ? r.clearedAt : r.marks.first.at;
+    int c(ReadingRecord r) => r.marks.isEmpty ? 0 : r.clearedAt;
+    bool any(int Function(ReadingRecord) f) => records.any((row) => row.any((r) => f(r) != 0));
+    return {
+      'u': [
+        for (final row in units) [for (final d in row) d?.rd],
+      ],
+      if (any(t))
+        't': [
+          for (final row in records) [for (final r in row) t(r)],
         ],
-        if (stamps.any((row) => row.any((t) => t != 0)))
-          't': [
-            for (final row in stamps) [...row],
-          ],
-        if (haftarah != null) 'h': haftarah!.rd,
-        if (haftarahStamp != 0) 'ht': haftarahStamp,
-        if (positions.isNotEmpty) 'p': {for (final a in positions.keys.toList()..sort()) '$a': positions[a]},
-        if (positionStamps.isNotEmpty)
-          'pt': {for (final a in positionStamps.keys.toList()..sort()) '$a': positionStamps[a]},
-      };
+      if (any(c))
+        'c': [
+          for (final row in records) [for (final r in row) c(r)],
+        ],
+      if (records.any((row) => row.any((r) => r.marks.length > 1)))
+        'x': [
+          for (var a = 0; a < kAliyot; a++)
+            for (var p = 0; p < 3; p++)
+              for (final m in records[a][p].marks.skip(1)) [a, p, m.day.rd, m.at],
+        ],
+      if (haftarah != null) 'h': haftarah!.rd,
+      if (t(haftarahRecord) != 0) 'ht': t(haftarahRecord),
+      if (c(haftarahRecord) != 0) 'hc': c(haftarahRecord),
+      if (haftarahRecord.marks.length > 1) 'hx': [for (final m in haftarahRecord.marks.skip(1)) [m.day.rd, m.at]],
+      if (positions.isNotEmpty) 'p': {for (final a in positions.keys.toList()..sort()) '$a': positions[a]},
+      if (positionStamps.isNotEmpty)
+        'pt': {for (final a in positionStamps.keys.toList()..sort()) '$a': positionStamps[a]},
+    };
+  }
 
   bool isUnitDone(int aliyah, ReadingPass pass) => units[aliyah][pass.index] != null;
 
@@ -239,14 +430,12 @@ class WeekProgress {
   bool get isStarted => completedUnits > 0 || positions.values.any((p) => p.any((n) => n > 0));
 
   /// Whether this week holds nothing at all: no reading, no saved place, and
-  /// no stamp of one having been removed.
+  /// no record of one having been removed.
   bool get isBlank =>
-      haftarah == null &&
-      haftarahStamp == 0 &&
+      haftarahRecord.isBlank &&
       positions.isEmpty &&
       positionStamps.isEmpty &&
-      units.every((row) => row.every((d) => d == null)) &&
-      stamps.every((row) => row.every((t) => t == 0));
+      records.every((row) => row.every((r) => r.isBlank));
 
   /// The latest stamp in this week, or 0.
   int get latestStamp => [
@@ -275,30 +464,24 @@ class WeekProgress {
   }
 
   WeekProgress _copy({
-    List<List<LocalDate?>>? units,
-    List<List<int>>? stamps,
-    Object? haftarah = _keep,
-    int? haftarahStamp,
+    List<List<ReadingRecord>>? records,
+    ReadingRecord? haftarahRecord,
     Map<int, List<int>>? positions,
     Map<int, int>? positionStamps,
   }) =>
-      WeekProgress(
+      WeekProgress.fromRecords(
         weekId: weekId,
-        units: units ?? this.units,
-        stamps: stamps ?? this.stamps,
-        haftarah: identical(haftarah, _keep) ? this.haftarah : haftarah as LocalDate?,
-        haftarahStamp: haftarahStamp ?? this.haftarahStamp,
+        records: records ?? this.records,
+        haftarahRecord: haftarahRecord ?? this.haftarahRecord,
         positions: positions ?? this.positions,
         positionStamps: positionStamps ?? this.positionStamps,
       );
 
-  /// One unit set to [date], stamped now.
+  /// One unit set to [date] (or not read), as a change made now.
   WeekProgress _withCell(int aliyah, int pass, LocalDate? date) {
-    final u = [for (final row in units) [...row]];
-    final t = [for (final row in stamps) [...row]];
-    u[aliyah][pass] = date;
-    t[aliyah][pass] = ProgressClock.after(t[aliyah][pass]);
-    return _copy(units: u, stamps: t);
+    final r = [for (final row in records) [...row]];
+    r[aliyah][pass] = r[aliyah][pass].changedTo(date);
+    return _copy(records: r);
   }
 
   /// Marks one reading of one aliyah complete on [date] (if not already), or
@@ -338,7 +521,7 @@ class WeekProgress {
   }
 
   WeekProgress withHaftarah(LocalDate? date) =>
-      date == haftarah ? this : _copy(haftarah: date, haftarahStamp: ProgressClock.after(haftarahStamp));
+      date == haftarah ? this : _copy(haftarahRecord: haftarahRecord.changedTo(date));
 
   WeekProgress withPosition(int aliyah, List<int> versesDone) {
     final current = positions[aliyah];
@@ -357,7 +540,8 @@ class WeekProgress {
         );
 
   /// This week with nothing read and no saved places. What was there is
-  /// removed with a new stamp, so that the removal reaches other devices.
+  /// removed as a change made now, so that the removal reaches other
+  /// devices.
   WeekProgress cleared() => restoredTo(WeekProgress(weekId: weekId));
 
   /// This week changed to read exactly like [target] (an undo, or a restored
@@ -386,8 +570,6 @@ class WeekProgress {
     }
     return true;
   }
-
-  static const _keep = Object();
 }
 
 /// A user-declared break ("Life happens"): streaks are frozen on these days.
