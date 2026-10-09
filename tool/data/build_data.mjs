@@ -7,12 +7,16 @@
 //     via the Sefaria public export bucket.
 //   * Targum Onkelos: Torat Emet edition (public domain), via Sefaria.
 //   * English: JPS 1917 (public domain), via Sefaria.
+//   * Rashi, Hebrew and English: Rosenbaum & Silbermann, London 1929–1934
+//     (public domain), via Sefaria.
 //   * Aliyah divisions & haftarah references: @hebcal/leyning (BSD-2-Clause).
 //
 // Output (all under the Flutter project):
 //   assets/text/mikra/<book>.json      structured Hebrew text with section breaks
 //   assets/text/onkelos/<book>.json    Aramaic text
 //   assets/text/english/<book>.json    English text
+//   assets/text/rashi/<book>.json      Rashi (Hebrew), per verse
+//   assets/text/rashi_en/<book>.json   Rashi (English), per verse
 //   assets/text/haftarot.json          only the Nevi'im verses any haftarah uses
 //   assets/data/parshiyot.json         parsha metadata, aliyot, haftarah refs
 
@@ -83,6 +87,12 @@ const mamPath = (book) => {
 };
 const jpsPath = (book) => `Tanakh/${TORAH.includes(book) ? 'Torah' : 'Prophets'}/${book}/English/The Holy Scriptures A New Translation JPS 1917.json`;
 const onkPath = (book) => `Tanakh/Targum/Onkelos/Torah/Onkelos ${book}/Hebrew/Onkelos ${book}.json`;
+const RASHI_VERSION = "Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934";
+const rashiPath = (book, lang) => {
+  // Sefaria titles the Numbers Hebrew edition by its corrected vocalization.
+  const version = book === 'Numbers' && lang === 'Hebrew' ? `${RASHI_VERSION.replace(', 1929-1934', '')} -- corrected vocalization` : RASHI_VERSION;
+  return `Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on ${book}/${lang}/${version}.json`;
+};
 
 // ---------------------------------------------------------------------------
 // Parsing
@@ -194,6 +204,33 @@ function parseOnkelosVerse(raw) {
   return finalizeSegments(segs);
 }
 
+// Rashi comments are "<b>dibbur hamatchil.</b> comment". Emitted as
+// {"d": heading, "t": text} or a plain string when there is no heading.
+function parseRashiComment(raw) {
+  const s = raw.replace(/<\/?small>/g, '').replace(/\s+/g, ' ').trim();
+  const m = s.match(/^<b>(.*?)<\/b>\s*(.*)$/);
+  const clean = (x) => {
+    const out = x.replace(/<\/?(b|i)>/g, '').trim();
+    if (/[<>]/.test(out)) throw new Error(`Unparsed Rashi markup: ${out}`);
+    return out;
+  };
+  return m ? {d: clean(m[1]), t: clean(m[2])} : clean(s);
+}
+
+function parseRashiEnglish(raw) {
+  const out = raw.replace(/<\/?(i|b|small)>/g, '').replace(/<br\s*\/?>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (/[<>]/.test(out)) throw new Error(`Unparsed Rashi markup: ${out}`);
+  return out;
+}
+
+// Pads/truncates a commentary (chapter → verse → comments) to the verse
+// structure of the Torah text so indices line up.
+function alignCommentary(text, chapters, parse) {
+  return chapters.map((ch, ci) =>
+    ch.map((_, vi) => ((text[ci] || [])[vi] || []).filter((c) => c && c.trim()).map(parse)),
+  );
+}
+
 function parseEnglishVerse(raw) {
   return raw.replace(/<br>/g, ' ').replace(/<\/?small>/g, '').replace(/\s+/g, ' ').trim();
 }
@@ -303,6 +340,18 @@ async function main() {
       book,
       chapters: jps.text.map((ch) => ch.map(parseEnglishVerse)),
     });
+
+    const rashiHe = await fetchSource(rashiPath(book, 'Hebrew'));
+    const rashiEn = await fetchSource(rashiPath(book, 'English'));
+    if (rashiHe.license !== 'Public Domain' || rashiEn.license !== 'Public Domain') throw new Error(`Rashi license ${book}`);
+    writeJson(`assets/text/rashi/${lower(book)}.json`, {
+      book,
+      chapters: alignCommentary(rashiHe.text, mam.text, parseRashiComment),
+    });
+    writeJson(`assets/text/rashi_en/${lower(book)}.json`, {
+      book,
+      chapters: alignCommentary(rashiEn.text, mam.text, parseRashiEnglish),
+    });
   }
 
   process.stdout.write('Parsha metadata\n');
@@ -348,7 +397,8 @@ async function main() {
     }
   }
 
-  writeJson('assets/data/parshiyot.json', {parshiyot, combined, specialHaftarot: special});
+  const chapterLengths = Object.fromEntries(TORAH.map((b) => [b, mikraChapters[b].map((c) => c.length)]));
+  writeJson('assets/data/parshiyot.json', {parshiyot, combined, specialHaftarot: special, chapterLengths});
 
   process.stdout.write('Haftarot\n');
   const haftHe = {};

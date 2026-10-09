@@ -9,7 +9,6 @@ abstract final class _P {
   static const pinchas = 41;
   static const masei = 43;
   static const matot = 42;
-  static const reeh = 47;
   static const kiTeitzei = 49;
   static const vayeilech = 52;
   static const haazinu = 53;

@@ -38,6 +38,22 @@ abstract final class JewishHolidays {
     return false;
   }
 
+  /// Tisha B'Av, including when it is postponed from Shabbat to Sunday.
+  static bool isTishaBav(LocalDate date) {
+    final h = HebrewDate.fromLocalDate(date);
+    if (h.month != HebrewMonth.av) return false;
+    return (h.day == 9 && !date.isShabbat) || (h.day == 10 && date.weekday == 0);
+  }
+
+  /// Chol HaMoed of Pesach or Sukkot (including Hoshana Rabbah).
+  static bool isCholHamoed(HebrewDate date, {required bool israel}) {
+    final d = date.day;
+    final first = israel ? 16 : 17;
+    if (date.month == HebrewMonth.nisan) return d >= first && d <= 20;
+    if (date.month == HebrewMonth.tishrei) return d >= first && d <= 21;
+    return false;
+  }
+
   /// The day the Torah reading cycle is completed (Vezot HaBerakhah is read).
   static LocalDate simchatTorah(int hebrewYear, {required bool israel}) =>
       HebrewDate(hebrewYear, HebrewMonth.tishrei, israel ? 22 : 23).toLocalDate();
