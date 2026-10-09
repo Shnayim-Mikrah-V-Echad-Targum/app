@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/fallbacks.dart';
 
 class _Source {
   const _Source(this.title, this.description, this.license, this.url);
@@ -59,7 +60,7 @@ class SourcesScreen extends StatelessWidget {
       ),
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(l.sourcesTitle)),
+      appBar: AppBar(leading: homeLeading(context), title: Text(l.sourcesTitle)),
       body: PageBody(
         children: [
           for (final s in sources)

@@ -5,6 +5,7 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/services/reminder_planner.dart';
 
 void main() {
@@ -146,6 +147,16 @@ void main() {
       expect(planned(resident, acharon), contains(acharon));
       expect(remind(resident, DateTime(2027, 4, 18, 8)).where((r) => r.date == acharon), isNotEmpty);
     });
+  });
+
+  test('Erev Shabbat opens the week; the daily reading and the check-in open Today', () {
+    final reminders = plan();
+    for (final kind in ReminderKind.values) {
+      expect(reminders.where((r) => r.kind == kind), isNotEmpty, reason: '$kind');
+    }
+    for (final r in reminders) {
+      expect(reminderRoute(r), r.kind == ReminderKind.erevShabbat ? '/week/${r.plan.weekId}' : '/today', reason: '$r');
+    }
   });
 
   test('ids are unique', () {

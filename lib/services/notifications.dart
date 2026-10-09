@@ -62,7 +62,7 @@ class NotificationService {
             guid: '7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57',
           ),
         ),
-        onDidReceiveNotificationResponse: (r) => service._taps.add(r.payload ?? '/today'),
+        onDidReceiveNotificationResponse: (r) => service.handleTap(r.payload),
       );
       final launch = await plugin.getNotificationAppLaunchDetails();
       if (launch?.didNotificationLaunchApp == true) service.launchRoute = launch?.notificationResponse?.payload;
@@ -83,6 +83,10 @@ class NotificationService {
 
   /// Routes to open when the user taps a notification.
   Stream<String> get taps => _taps.stream;
+
+  /// Reports a tap on a notification carrying [payload], its route.
+  @visibleForTesting
+  void handleTap(String? payload) => _taps.add(payload ?? '/today');
 
   /// Asks the OS for permission. Call only after the user has said yes in
   /// the app's own explanation screen.
@@ -139,7 +143,7 @@ class NotificationService {
             windows: const WindowsNotificationDetails(),
           ),
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: r.kind == ReminderKind.daily ? '/today' : '/week/${r.plan.weekId}',
+          payload: reminderRoute(r),
         );
       }
     } catch (e) {
@@ -150,10 +154,14 @@ class NotificationService {
   Future<void> cancelAll() async => _plugin?.cancelAll();
 }
 
-final notificationServiceProvider = Provider<NotificationService>((ref) => NotificationService.disabled());
+/// The page a reminder opens: the week, for Erev Shabbat, to finish it; Today
+/// for the others, where the day's reading and the check-in card are.
+String reminderRoute(PlannedReminder r) => switch (r.kind) {
+      ReminderKind.erevShabbat => '/week/${r.plan.weekId}',
+      ReminderKind.daily || ReminderKind.checkIn => '/today',
+    };
 
-/// Routes from tapped notifications.
-final notificationTapsProvider = StreamProvider<String>((ref) => ref.watch(notificationServiceProvider).taps);
+final notificationServiceProvider = Provider<NotificationService>((ref) => NotificationService.disabled());
 
 /// Recomputes and reschedules reminders whenever settings, progress or the
 /// date change.

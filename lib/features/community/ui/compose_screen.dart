@@ -162,7 +162,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: TextButton(
-                      onPressed: () => context.push('/settings/about/legal/guidelines'),
+                      onPressed: () => context.push('/legal/guidelines'),
                       child: Text(l.readGuidelines),
                     ),
                   ),

@@ -109,6 +109,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get errorGeneric => 'משהו השתבש. נא לנסות שוב.';
 
   @override
+  String get notFoundTitle => 'הדף לא נמצא';
+
+  @override
+  String get notFoundBody => 'הקישור הזה אינו מוביל לשום מקום באפליקציה.';
+
+  @override
+  String get goToToday => 'מעבר למסך היום';
+
+  @override
   String get aliyah1 => 'ראשון';
 
   @override
@@ -1451,6 +1460,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get forumsHeading => 'פורומים';
+
+  @override
+  String get forumNotFound => 'הפורום לא נמצא. ייתכן שהועבר או נסגר.';
+
+  @override
+  String get allForums => 'כל הפורומים';
 
   @override
   String thisWeeksThread(String name) {

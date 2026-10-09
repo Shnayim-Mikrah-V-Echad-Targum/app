@@ -296,6 +296,24 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get errorGeneric;
 
+  /// No description provided for @notFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Page not found'**
+  String get notFoundTitle;
+
+  /// No description provided for @notFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This link doesn\'t lead anywhere in the app.'**
+  String get notFoundBody;
+
+  /// No description provided for @goToToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Today'**
+  String get goToToday;
+
   /// No description provided for @aliyah1.
   ///
   /// In en, this message translates to:
@@ -2593,6 +2611,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Forums'**
   String get forumsHeading;
+
+  /// No description provided for @forumNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This forum couldn\'t be found. It may have moved or closed.'**
+  String get forumNotFound;
+
+  /// No description provided for @allForums.
+  ///
+  /// In en, this message translates to:
+  /// **'All forums'**
+  String get allForums;
 
   /// No description provided for @thisWeeksThread.
   ///

@@ -15,6 +15,7 @@ import '../../services/feedback.dart';
 import '../../services/tts.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/fallbacks.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../settings/app_settings.dart';
@@ -293,7 +294,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final l = context.l10n;
     final ctx = ref.watch(weekContextProvider(widget.weekId));
     if (ctx == null) {
-      return Scaffold(appBar: AppBar(), body: Center(child: Text(l.errorGeneric)));
+      return Scaffold(appBar: AppBar(leading: homeLeading(context)), body: Center(child: Text(l.errorGeneric)));
     }
     final s = ref.watch(settingsProvider);
     final names = Names(context);
@@ -308,11 +309,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
     return textsAsync.when(
       loading: () => Scaffold(
-        appBar: AppBar(title: Text(title)),
+        appBar: AppBar(leading: homeLeading(context), title: Text(title)),
         body: Center(child: Semantics(label: l.loading, child: const CircularProgressIndicator())),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(title: Text(title)),
+        appBar: AppBar(leading: homeLeading(context), title: Text(title)),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -379,6 +380,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         autofocus: true,
         child: Scaffold(
           appBar: AppBar(
+            leading: homeLeading(context),
             title: Text(title, overflow: TextOverflow.ellipsis),
             actions: [
               ValueListenableBuilder<bool>(

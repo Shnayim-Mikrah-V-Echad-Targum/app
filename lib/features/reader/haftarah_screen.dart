@@ -8,6 +8,7 @@ import '../../services/feedback.dart';
 import '../../services/tts.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/fallbacks.dart';
 import '../parsha/week_context.dart';
 import 'display_sheet.dart';
 import 'scripture_text.dart';
@@ -31,13 +32,16 @@ class HaftarahScreen extends ConsumerWidget {
     final ctx = ref.watch(weekContextProvider(weekId));
     final settings = ref.watch(settingsProvider);
     final verses = ref.watch(haftarahTextProvider(weekId));
-    if (ctx == null) return Scaffold(appBar: AppBar(), body: Center(child: Text(l.errorGeneric)));
+    if (ctx == null) {
+      return Scaffold(appBar: AppBar(leading: homeLeading(context)), body: Center(child: Text(l.errorGeneric)));
+    }
     final styles = ScriptureStyles(context, settings);
     final done = ctx.progress.haftarah != null;
     final tts = ref.watch(ttsProvider);
 
     return Scaffold(
       appBar: AppBar(
+        leading: homeLeading(context),
         title: Text('${l.haftarahTitle} · ${names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)}'),
         actions: [
           ValueListenableBuilder<bool>(

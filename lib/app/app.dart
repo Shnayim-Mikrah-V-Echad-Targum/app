@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,11 +12,45 @@ import '../ui/theme/app_theme.dart';
 import 'providers.dart';
 import 'router.dart';
 
-class ShnayimMikraApp extends ConsumerWidget {
+class ShnayimMikraApp extends ConsumerStatefulWidget {
   const ShnayimMikraApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ShnayimMikraApp> createState() => _ShnayimMikraAppState();
+}
+
+class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> {
+  StreamSubscription<String>? _taps;
+
+  @override
+  void initState() {
+    super.initState();
+    final notifications = ref.read(notificationServiceProvider);
+    // Subscribed directly, so that a tap opening the same page as the last
+    // one still opens it.
+    _taps = notifications.taps.listen(_open);
+    // The app starts on Today; a notification that launched it opens over it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final route = notifications.launchRoute;
+      notifications.launchRoute = null;
+      if (route != null && route != '/today') _open(route);
+    });
+  }
+
+  @override
+  void dispose() {
+    _taps?.cancel();
+    super.dispose();
+  }
+
+  void _open(String route) {
+    // Reminders exist only after onboarding, which must come first anyway.
+    if (!mounted || !ref.read(settingsProvider).onboardingComplete) return;
+    openFromOutside(ref.read(routerProvider), route);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final router = ref.watch(routerProvider);
     // Keep scheduled reminders in sync with settings and progress, and the
@@ -22,10 +58,6 @@ class ShnayimMikraApp extends ConsumerWidget {
     // alive (listened to, not watched): its timestamp must not rebuild the app.
     ref.watch(reminderSchedulerProvider);
     ref.listen(progressSyncProvider, (_, _) {});
-    ref.listen(notificationTapsProvider, (_, next) {
-      final route = next.value;
-      if (route != null) router.go(route);
-    });
 
     final platform = MediaQuery.platformBrightnessOf(context);
     final systemHighContrast = MediaQuery.highContrastOf(context);

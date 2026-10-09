@@ -7,6 +7,7 @@ import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
 import '../progress/domain/progress_models.dart';
@@ -23,16 +24,19 @@ class WeekOverviewScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ctx = ref.watch(weekContextProvider(weekId));
     if (ctx == null) {
-      return Scaffold(appBar: AppBar(), body: Center(child: Text(context.l10n.errorGeneric)));
+      return Scaffold(appBar: AppBar(leading: homeLeading(context)), body: Center(child: Text(context.l10n.errorGeneric)));
     }
-    return WeekOverview(ctx: ctx);
+    return WeekOverview(ctx: ctx, leading: homeLeading(context));
   }
 }
 
 class WeekOverview extends ConsumerWidget {
-  const WeekOverview({super.key, required this.ctx, this.actions = const []});
+  const WeekOverview({super.key, required this.ctx, this.leading, this.actions = const []});
 
   final WeekContext ctx;
+
+  /// The app bar's leading button, if not the usual one.
+  final Widget? leading;
   final List<Widget> actions;
 
   @override
@@ -83,6 +87,7 @@ class WeekOverview extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: leading,
         title: Text(l.parshaLabel(name)),
         actions: [
           ...actions,

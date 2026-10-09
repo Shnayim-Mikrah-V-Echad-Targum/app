@@ -15,12 +15,13 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final settings = ref.watch(settingsProvider);
-    Widget item(IconData icon, String title, String? subtitle, String route) => ListTile(
+    // [push] for a page outside the Settings tab that should come back here.
+    Widget item(IconData icon, String title, String? subtitle, String route, {bool push = false}) => ListTile(
           leading: Icon(icon),
           title: Text(title),
           subtitle: subtitle == null ? null : Text(subtitle),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go(route),
+          onTap: () => push ? context.push(route) : context.go(route),
         );
     return Scaffold(
       appBar: AppBar(title: Text(l.settingsTitle)),
@@ -51,7 +52,7 @@ class SettingsScreen extends ConsumerWidget {
             onChanged: (v) => ref.read(settingsProvider.notifier).update((s) => s.copyWith(language: v)),
           ),
           const Divider(height: 32),
-          item(Icons.help_outline, l.guideTitle, null, '/guide'),
+          item(Icons.help_outline, l.guideTitle, null, '/guide', push: true),
           item(Icons.info_outline, l.settingsAbout, null, '/settings/about'),
         ],
       ),

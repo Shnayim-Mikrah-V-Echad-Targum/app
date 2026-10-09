@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/fallbacks.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -42,10 +43,26 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final he = context.isHebrewUi;
-    final forums = ref.watch(forumsProvider).value ?? const [];
-    final forum = forums.where((f) => f.slug == widget.slug).firstOrNull;
+    final forums = ref.watch(forumsProvider);
+    final forum = (forums.value ?? const []).where((f) => f.slug == widget.slug).firstOrNull;
     if (forum == null) {
-      return Scaffold(appBar: AppBar(), body: const Center(child: CircularProgressIndicator()));
+      // Spin only while the forums load: a link to a forum that doesn't
+      // exist, or one that can't load, says so.
+      final error = forums.error;
+      final missing = !forums.isLoading && error == null;
+      return Scaffold(
+        appBar: AppBar(title: missing ? Text(l.notFoundTitle) : null),
+        body: forums.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : CenteredMessage(
+                text: error != null ? communityError(l, error) : l.forumNotFound,
+                actions: [
+                  if (error != null)
+                    TextButton(onPressed: () => ref.invalidate(forumsProvider), child: Text(l.actionRetry)),
+                  TextButton(onPressed: () => context.go('/community'), child: Text(l.allForums)),
+                ],
+              ),
+      );
     }
     final threads = ref.watch(threadsProvider(forum.id));
     final profile = ref.watch(myProfileProvider).value;

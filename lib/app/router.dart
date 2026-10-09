@@ -26,7 +26,8 @@ import '../features/settings/screens/reading_settings_screen.dart';
 import '../features/settings/screens/reminder_settings_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/today/today_screen.dart';
-import '../services/notifications.dart';
+import '../ui/l10n.dart';
+import '../ui/widgets/fallbacks.dart';
 import 'providers.dart';
 import 'shell.dart';
 
@@ -44,11 +45,17 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(onboarded.dispose);
 
   return GoRouter(
-    initialLocation: ref.read(notificationServiceProvider).launchRoute ?? '/today',
+    // A notification that launched the app is opened over Today once it is
+    // up (see openFromOutside), so it always has somewhere to go back to.
+    initialLocation: '/today',
     refreshListenable: onboarded,
     redirect: (context, state) {
-      final atWelcome = state.uri.path == '/welcome';
-      if (!onboarded.value && !atWelcome) return '/welcome';
+      final path = state.uri.path;
+      final atWelcome = path == '/welcome';
+      // The guide, sources and policies are open before onboarding too: the
+      // stores require the privacy policy to be reachable on a first visit.
+      final isPublic = path == '/guide' || path == '/sources' || path.startsWith('/legal/');
+      if (!onboarded.value && !atWelcome && !isPublic) return '/welcome';
       if (onboarded.value && atWelcome) return '/today';
       return null;
     },
@@ -85,14 +92,17 @@ final routerProvider = Provider<GoRouter>((ref) {
               _route('reminders', (_) => const ReminderSettingsScreen()),
               _route('data', (_) => const DataSettingsScreen()),
               _route('about', (_) => const AboutScreen(), routes: [
-                _route('sources', (_) => const SourcesScreen()),
-                _route('legal/:doc', (s) => LegalScreen(doc: LegalDoc.fromSlug(s.pathParameters['doc']!))),
+                // Where these pages used to be, for old links.
+                GoRoute(path: 'sources', redirect: (_, _) => '/sources'),
+                GoRoute(path: 'legal/:doc', redirect: (_, s) => '/legal/${s.pathParameters['doc']}'),
               ]),
             ]),
           ]),
         ],
       ),
       _route('/guide', (_) => const GuideScreen()),
+      _route('/sources', (_) => const SourcesScreen()),
+      _route('/legal/:doc', (s) => LegalScreen(doc: LegalDoc.fromSlug(s.pathParameters['doc']!))),
       _route('/week/:id', (s) => WeekOverviewScreen(weekId: s.pathParameters['id']!)),
       _route('/read/:id/:aliyah', (s) => ReaderScreen(
             weekId: s.pathParameters['id']!,
@@ -104,14 +114,43 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// The roots of the navigation tabs.
+const _tabs = ['/today', '/parsha', '/progress', '/community', '/settings'];
+
+/// Opens [location] from outside the app's own navigation: a tapped
+/// notification, or one that launched the app. A tab, or a page within one,
+/// opens in its place; any other page opens over Today, so it has a back
+/// button that leads to the navigation bar rather than a dead end.
+void openFromOutside(GoRouter router, String location) {
+  final path = Uri.parse(location).path;
+  if (_tabs.any((tab) => path == tab || path.startsWith('$tab/'))) {
+    router.go(location);
+  } else {
+    router.go('/today');
+    router.push(location);
+  }
+}
+
+/// Where a link that leads nowhere in the app lands: a mistyped or outdated
+/// web address, say.
 class _NotFound extends StatelessWidget {
   const _NotFound();
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(),
-        body: Center(
-          child: FilledButton(onPressed: () => context.go('/today'), child: const Icon(Icons.home)),
-        ),
-      );
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.notFoundTitle)),
+      body: CenteredMessage(
+        text: l.notFoundBody,
+        actions: [
+          FilledButton.icon(
+            icon: const Icon(Icons.home_outlined),
+            label: Text(l.goToToday),
+            onPressed: () => context.go('/today'),
+          ),
+        ],
+      ),
+    );
+  }
 }

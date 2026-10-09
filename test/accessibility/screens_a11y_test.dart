@@ -23,6 +23,13 @@ void main() {
     '/settings/reminders',
     '/settings/about',
     '/guide',
+    '/sources',
+    '/legal/privacy',
+    // Opened directly, as on a web reload: with a home button.
+    '/week/5787:1',
+    // Links that lead nowhere.
+    '/nope',
+    '/community/forum/xyz',
   ];
 
   Future<void> open(WidgetTester tester, String route, {AppSettings? settings, Size size = const Size(412, 915), double textScale = 1}) async {
@@ -65,7 +72,7 @@ void main() {
     });
   }
 
-  for (final route in ['/today', '/parsha', '/progress', '/settings/display']) {
+  for (final route in ['/today', '/parsha', '/progress', '/settings/display', '/nope']) {
     testWidgets('no overflow at 200% text size: $route', (tester) async {
       await open(tester, route, textScale: 2);
       expect(tester.takeException(), isNull);

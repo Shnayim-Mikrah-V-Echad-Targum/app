@@ -17,13 +17,14 @@ ParshaRepository? _repo;
 Future<ParshaRepository> loadRepo() async => _repo ??= await ParshaRepository.load();
 
 /// Pumps the whole app with in-memory storage and the demo backend (or
-/// [forums], when given).
+/// [forums], when given), and notifications disabled (or [notifications]).
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   AppSettings settings = const AppSettings(onboardingComplete: true),
   DateTime? now,
   ProgressState? progress,
   ForumRepository? forums,
+  NotificationService? notifications,
 }) async {
   TodayController.autoRollover = false;
   if (now != null) TodayController.now = () => now;
@@ -37,7 +38,7 @@ Future<ProviderContainer> pumpApp(
     sharedPreferencesProvider.overrideWithValue(prefs),
     parshaRepositoryProvider.overrideWithValue(repo!),
     backendProvider.overrideWithValue(Backend(forums ?? DemoForumRepository())),
-    notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
+    notificationServiceProvider.overrideWithValue(notifications ?? NotificationService.disabled()),
   ]);
   addTearDown(container.dispose);
   await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const ShnayimMikraApp()));

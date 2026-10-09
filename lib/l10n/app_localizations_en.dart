@@ -109,6 +109,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorGeneric => 'Something went wrong. Please try again.';
 
   @override
+  String get notFoundTitle => 'Page not found';
+
+  @override
+  String get notFoundBody => 'This link doesn\'t lead anywhere in the app.';
+
+  @override
+  String get goToToday => 'Go to Today';
+
+  @override
   String get aliyah1 => 'Rishon';
 
   @override
@@ -1456,6 +1465,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forumsHeading => 'Forums';
+
+  @override
+  String get forumNotFound =>
+      'This forum couldn\'t be found. It may have moved or closed.';
+
+  @override
+  String get allForums => 'All forums';
 
   @override
   String thisWeeksThread(String name) {

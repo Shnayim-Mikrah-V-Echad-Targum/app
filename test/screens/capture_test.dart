@@ -78,6 +78,10 @@ const _screens = {
   's_data_reset': '/settings/data',
   'about': '/settings/about',
   'guide': '/guide',
+  'legal': '/legal/privacy',
+  // Links that lead nowhere: a mistyped address, and a forum that is gone.
+  'not_found': '/nope',
+  'forum_missing': '/community/forum/xyz',
 };
 
 /// Screens shown on another day and with other settings: (now, settings).

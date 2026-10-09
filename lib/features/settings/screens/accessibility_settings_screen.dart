@@ -116,7 +116,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           leading: const Icon(Icons.text_fields),
           title: Text(l.settingsDisplay),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/settings/display'),
+          onTap: () => context.push('/settings/display'),
         ),
         ChoiceGroup<ScreenReaderText>(
           title: l.screenReaderText,
@@ -148,13 +148,13 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           leading: const Icon(Icons.accessibility),
           title: Text(l.accessibilityStatement),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/settings/about/legal/accessibility'),
+          onTap: () => context.push('/legal/accessibility'),
         ),
         ListTile(
           leading: const Icon(Icons.feedback_outlined),
           title: Text(l.sendFeedback),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/settings/about'),
+          onTap: () => context.push('/settings/about'),
         ),
       ],
     );

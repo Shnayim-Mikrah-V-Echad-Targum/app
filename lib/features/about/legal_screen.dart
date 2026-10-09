@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/config.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/fallbacks.dart';
 
 enum LegalDoc {
   privacy,
@@ -33,7 +34,7 @@ class LegalScreen extends StatelessWidget {
     final sections = (he ? _he : _en)[doc]!;
     final contact = AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '${AppConfig.sourceUrl}/issues';
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(leading: homeLeading(context), title: Text(title)),
       body: PageBody(
         children: [
           for (final (heading, body) in sections) ...[

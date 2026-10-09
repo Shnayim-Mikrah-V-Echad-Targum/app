@@ -33,6 +33,9 @@
   "actionMore": "More options",
   "loading": "Loading…",
   "errorGeneric": "Something went wrong. Please try again.",
+  "notFoundTitle": "Page not found",
+  "notFoundBody": "This link doesn't lead anywhere in the app.",
+  "goToToday": "Go to Today",
   "aliyah1": "Rishon",
   "aliyah2": "Sheni",
   "aliyah3": "Shlishi",
@@ -866,6 +869,8 @@
   "communityTitle": "Community",
   "demoModeBanner": "Demo mode: posts stay on this device and reset when the app restarts.",
   "forumsHeading": "Forums",
+  "forumNotFound": "This forum couldn't be found. It may have moved or closed.",
+  "allForums": "All forums",
   "thisWeeksThread": "This week: Parshat {name}",
   "@thisWeeksThread": {
     "placeholders": {

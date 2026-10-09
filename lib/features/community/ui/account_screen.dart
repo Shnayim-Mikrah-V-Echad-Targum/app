@@ -108,7 +108,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         TextButton(onPressed: () => setState(() => _codeSent = false), child: Text(l.useDifferentEmail)),
       ],
       const Gap(24),
-      TextButton(onPressed: () => context.push('/settings/about/legal/privacy'), child: Text(l.privacyTitle)),
+      TextButton(onPressed: () => context.push('/legal/privacy'), child: Text(l.privacyTitle)),
     ];
   }
 
