@@ -1,0 +1,6 @@
+# Python dependencies for tool/branding/make_icon.py.
+# cairosvg also needs the system Cairo library (libcairo2 on Debian/Ubuntu).
+uharfbuzz==0.56.3
+fonttools==4.66.1
+cairosvg==2.9.1
+pillow==12.3.0
