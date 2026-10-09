@@ -115,7 +115,7 @@ class DataSettingsScreen extends ConsumerWidget {
               ),
             );
             if (ok != true || !context.mounted) return;
-            ref.read(progressProvider.notifier).reset(everywhere: everywhere);
+            ref.read(progressProvider.notifier).resetAll(ref.read(todayProvider), everywhere: everywhere);
             showStatus(context, l.resetDone);
           },
         ),

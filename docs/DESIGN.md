@@ -90,7 +90,7 @@ A portion can end in one of these states:
 "Life happens" is for illness, travel, mourning or a new baby. Days and weeks inside a pause are transparent. A pause can be ended early.
 
 ### Join date
-Nothing before the day the reader started counts against them. A partial first week is transparent.
+Nothing before the day the reader started counts against them. In the week they join, only what was planned from that day on is expected (see [Onboarding](#6-onboarding)), and if that first week isn't finished it is transparent. Resetting all progress starts the reader again from the day of the reset, on every device the reset reaches.
 
 The engine is a pure function of (progress, join date, today, pauses). It is unit-tested against the worked examples in the research and recomputed on every change.
 

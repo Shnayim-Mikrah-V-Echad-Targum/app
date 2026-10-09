@@ -447,10 +447,26 @@ class ProgressController extends Notifier<ProgressState> {
       });
 
   /// Replaces all progress with a cloud merge. Equal progress is ignored, so
-  /// listeners only hear about real changes.
+  /// listeners only hear about real changes. A reset made on another device
+  /// restarts the join date here too, as [resetAll] does there.
   void replaceAll(ProgressState s) {
     if (s == state) return;
+    final resetElsewhere = s.resetAt > state.resetAt;
     _set(s);
+    if (resetElsewhere) _joinNoEarlierThan(s.resetAt);
+  }
+
+  /// Moves the join date up to the reading day of [resetAt], if it was
+  /// earlier: what the reset erased must not show as missed.
+  void _joinNoEarlierThan(int resetAt) {
+    final settings = ref.read(settingsProvider);
+    final join = settings.joinDate;
+    if (join == null) return;
+    final today = ref.read(todayProvider);
+    final day = effectiveReadingDay(DateTime.fromMillisecondsSinceEpoch(resetAt), israel: settings.israel);
+    // A clock running ahead elsewhere must not start the reader in the future.
+    final start = day > today ? today : day;
+    if (join < start) ref.read(settingsProvider.notifier).update((s) => s.copyWith(joinDate: start));
   }
 
   /// Makes progress read exactly like [target] (an imported backup), as a
@@ -463,6 +479,14 @@ class ProgressController extends Notifier<ProgressState> {
   /// and syncing later brings it back.
   void reset({bool everywhere = false}) =>
       _set(ProgressState(resetAt: everywhere ? ProgressClock.after(state.latestStamp) : state.resetAt));
+
+  /// Erases all progress as [reset] does, and starts the reader afresh on
+  /// [today]: with the history gone, the weeks before it must not show as
+  /// missed.
+  void resetAll(LocalDate today, {bool everywhere = false}) {
+    reset(everywhere: everywhere);
+    ref.read(settingsProvider.notifier).update((s) => s.copyWith(joinDate: today));
+  }
 }
 
 final progressProvider = NotifierProvider<ProgressController, ProgressState>(ProgressController.new);

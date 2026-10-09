@@ -16,6 +16,7 @@ import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../../helpers.dart';
@@ -87,6 +88,14 @@ class _CountingRepo extends Fake implements ForumRepository {
         List() => [for (final e in v) _jsonb(e)],
         _ => v,
       };
+}
+
+class _FixedToday extends TodayController {
+  _FixedToday(this.day);
+  final LocalDate day;
+
+  @override
+  LocalDate build() => day;
 }
 
 /// Progress logged on another device and already backed up.
@@ -281,6 +290,41 @@ void main() {
     });
   });
 
+  test('a reset made on another device restarts the join date here', () async {
+    final joined = _d1.addDays(-90);
+    final reset = DateTime(2026, 10, 12, 9);
+    await prefs.setString(
+      SettingsController.storageKey,
+      jsonEncode(AppSettings(onboardingComplete: true, cloudSync: true, joinDate: joined).toJson()),
+    );
+    final wallClock = ProgressClock.nowMs;
+    addTearDown(() => ProgressClock.nowMs = wallClock);
+    // Read here in the summer, before the reset.
+    ProgressClock.nowMs = () => DateTime(2026, 7, 20).millisecondsSinceEpoch;
+    await prefs.setString(
+      ProgressController.storageKey,
+      jsonEncode(ProgressState(weeks: {'5786:44': WeekProgress(weekId: '5786:44').withAll(joined)}).toJson()),
+    );
+    ProgressClock.nowMs = () => reset.add(const Duration(days: 2)).millisecondsSinceEpoch;
+    final repo = _CountingRepo(user: _me, remote: ProgressState(resetAt: reset.millisecondsSinceEpoch).toJson());
+    fakeAsync((async) {
+      final container = ProviderContainer(overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        backendProvider.overrideWithValue(Backend(repo)),
+        todayProvider.overrideWith(() => _FixedToday(LocalDate(2026, 10, 14))),
+      ]);
+      container.listen(progressSyncProvider, (_, _) {});
+      async.elapse(const Duration(seconds: 120));
+
+      expect(container.read(progressProvider).weeks, isEmpty, reason: 'the reset reached this device');
+      expect(container.read(settingsProvider).joinDate, LocalDate(2026, 10, 12));
+      final summary = container.read(streakSummaryProvider);
+      expect(summary.weeks, hasLength(1));
+      expect(summary.weeks.where((w) => w.status == WeekStatus.missed), isEmpty);
+      container.dispose();
+    });
+  });
+
   testWidgets('with the demo backend, a cleared week stays cleared, and so does its undo', (tester) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
@@ -335,10 +379,12 @@ void main() {
       await demo.saveProgress(_otherDevice());
       final c = await pumpApp(
         tester,
-        settings: AppSettings(onboardingComplete: true, cloudSync: backup),
+        settings: AppSettings(onboardingComplete: true, cloudSync: backup, joinDate: _d1.addDays(-90)),
         progress: ProgressState(weeks: {_week: WeekProgress(weekId: _week).withAliyah(1, _d2)}),
+        now: DateTime(2026, 10, 12, 10),
         forums: demo,
       );
+      expect(c.read(streakSummaryProvider).weeks.where((w) => w.status == WeekStatus.missed), isNotEmpty);
       c.read(routerProvider).go('/settings/data');
       await tester.pumpAndSettle();
       await tester.tap(find.text('Reset all progress'));
@@ -356,6 +402,9 @@ void main() {
 
       final local = c.read(progressProvider);
       expect(local.weeks, isEmpty);
+      expect(c.read(settingsProvider).joinDate, _d2, reason: 'starting afresh today');
+      expect(c.read(streakSummaryProvider).weeks, hasLength(1));
+      expect(c.read(streakSummaryProvider).weeks.single.status, WeekStatus.inProgress);
       final backedUp = ProgressState.fromJson((await demo.loadProgress())!);
       if (backup) {
         expect(local.resetAt, greaterThan(0));
