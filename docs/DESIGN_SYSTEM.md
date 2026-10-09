@@ -738,6 +738,9 @@ Keep the keyboard shortcuts.
 **NoticeBanner**
 - Inset within gutters (never full-bleed); secondaryContainer; radius 12; no border (2 px outline in high contrast).
 - Padding 12/16; icon 20 in onSecondaryContainer; bodyMedium onSecondaryContainer; optional trailing TextButton.
+  - Beside or below a TextButton the end padding is 8: the button's own padding makes up the rest, and the text keeps 16.
+- **Action below** (`actionBelow`): for a text longer than a line or two, which a trailing button would squeeze. The icon and text align to the top, and the TextButton sits under the text at the end, with 4 bottom padding.
+- **Action ink:** the TextButton is `primary` where primary on secondaryContainer meets AA (4.5:1); otherwise, as in the high-contrast themes, it is `onSecondaryContainer`, with a 3 px focus ring in the same colour.
 
 **Demo notice** (community_ui.dart:139-155)
 - A NoticeBanner with `info_outline` (replaces the pink `tertiaryContainer` strip and the flask icon).
@@ -893,6 +896,10 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - The column holds a running head in bodySmall w500 onSurfaceVariant (`'${names.dateLong(today)} · ${names.hebrewDate(today)}'`), a 2 gap, and the masthead `appTitle` in headlineMedium.
    - The masthead is not a heading; the parsha name stays heading level 1.
 2. Paused banner and open-previous-week card: NoticeBanner style.
+   - After the paused banner, the **divergence notice**: a NoticeBanner with `info_outline` and the action below. It appears in a week when Israel and the Diaspora read different portions, for a reader whose reading and days of Yom Tov follow different places:
+     - a visitor to Israel (Israel's reading, two days of Yom Tov): `readingDivergence`, with a TextButton `readingDivergenceOpen` to the home portion's week (last week's in Israel);
+     - an Israeli abroad (the Diaspora's reading, one day): `readingDivergenceAhead`, with no action.
+   - The open-previous-week card also shows a week whose haftarah, which counts, is all that is left: it adds `openWeekHaftarahLeft` and opens the haftarah.
 3. **Hero card** (TitlePageFrame, padding 24, centred):
    - **Eyebrow:** `parshatHashavua` by default; `erevShabbat` on Friday at or after 12:00 local; "Simchat Torah" when the portion is Vezot Haberakhah.
    - 8 gap, then the Hebrew pointed name: new `Names.portionPointed(p)` = `HebrewText.forDisplay(p.nameHe, nikud: true, teamim: false)`, in hebrewDisplay 46/60 primary. Semantics header level 1 with label `parshaLabel(name)`.
@@ -922,7 +929,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - Haftarah row: `auto_stories_outlined`, title "Haftarah", subtitle the reference, plus a second subtitle line for a special haftarah.
    - Discuss row: `forum_outlined`, `discussThisWeek`.
    - These replace two separate cards.
-8. **Rest day** (`JewishHolidays.isRestDay(today, israel)`):
+8. **Rest day** (`JewishHolidays.isRestDay(today, israel: settings.oneDayYomTov)`, the reader's Yom Tov custom rather than the reading schedule):
    - The hero shows candles at 40, `shabbatShalom` or `chagSameach` in headlineMedium, the pointed parsha name in hebrewDisplay 32/44, and bodyMedium `restDayBody`.
    - No rings, CTAs, Today card or ledger; only a Text link "Open the parsha".
    - The wording goes to the rabbinic advisor (DESIGN.md §11).

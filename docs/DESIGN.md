@@ -24,7 +24,11 @@ This document summarizes the decisions behind the app and the reasons for them. 
 
 **The day rolls over at 3 a.m.** Reading done late at night counts for the evening it began. Using the app on Shabbat or Yom Tov (after Havdalah, for example) counts toward the next weekday.
 
-**Israel and the Diaspora are a per-user setting**, asked during onboarding as "Where will you be this Shabbat?". When the two schedules diverge after Pesach or Shavuot, the user sees their own schedule.
+**Israel and the Diaspora are a per-user setting**, asked during onboarding as "Where will you be this Shabbat?". The answer sets two things that Settings keeps apart:
+- **the reading** heard in synagogue, which decides each week's portion;
+- **the days of Yom Tov** kept, one or two, which decide the days without reading or reminders.
+
+A visitor usually hears the local reading but keeps their home custom for Yom Tov, so a visitor to Israel still has no reading and no reminder on the second day of Yom Tov. When the two schedules diverge after Pesach or Shavuot, the user sees the portion of the reading they hear. If their two settings follow different places, Today names both portions. A visitor to Israel is told that visitors usually read both, with a link to the home portion, and that someone who davens with a Diaspora minyan reads only that one and should set the reading they hear to match. Someone who hears the Diaspora's reading but keeps one day of Yom Tov is told that Israel is a parsha ahead.
 
 ## 3. Reading
 
@@ -90,9 +94,14 @@ A portion can end in one of these states:
 "Life happens" is for illness, travel, mourning or a new baby. Days and weeks inside a pause are transparent. A pause can be ended early.
 
 ### Join date
-Nothing before the day the reader started counts against them. A partial first week is transparent.
+Nothing before the day the reader started counts against them. In the week they join, only what was planned from that day on is expected (see [Onboarding](#6-onboarding)). If they joined after that week began and don't finish it, it is transparent; a week they joined on its first day counts like any other. Resetting all progress starts the reader again from the day of the reset, on every device the reset reaches.
 
-The engine is a pure function of (progress, join date, today, pauses). It is unit-tested against the worked examples in the research and recomputed on every change. Merging progress between devices is commutative, with the earliest date winning, so sync can never lower a streak.
+### Changing the plan
+Changing the plan, the quiet days, the late window or whether the haftarah counts never rewrites the past. The app remembers the day each change was made, and every day is planned by the settings in force on it: a change midweek keeps what was planned for the days before and spreads the rest of the portion over the days left. A change made after reading that day applies from the next day, so the day keeps the plan it was read by. Each week is judged by the late window and haftarah rule in force when it was read in synagogue. So a change can't spend a grace day or break a streak after the fact, and the settings screen says that it applies from this week on.
+
+The engine is a pure function of (progress, join date, today, pauses, and the plan settings over time). It is unit-tested against the worked examples in the research and recomputed on every change.
+
+**Syncing keeps every change, removals included.** Each reading, the haftarah, each saved place and each pause records when it last changed, and a removal keeps that time instead of disappearing. Merging two devices gives the same result in any order: where one device marked a reading as not read, cleared a week or ended a pause after the other last saw it, that change wins, and a reading marked again afterwards keeps its new day. Where both devices logged the same reading independently, the earliest date wins, so a sync never lowers a streak. With backup on and an account signed in, resetting all progress erases it everywhere, but keeps anything logged on another device after the reset. Signed out, a reset stays on the device, so it can't erase the backup of whoever signs in next.
 
 ## 5. Notifications
 
@@ -114,6 +123,8 @@ The goal is to reach the first verse in under a minute. Onboarding has four scre
 4. Plan, with the honor statement.
 
 It ends by opening the reader on today's aliyah. Everything else is a setting with a sensible default.
+
+**The first week starts on the day the reader does.** Most people join midweek. Rather than finding half the portion already due, they have the whole portion spread over the reading days left before it is read in synagogue: joining on Wednesday gives Rishon and Sheni that day, Shlishi and Revi'i on Thursday, and the rest on Friday. The first reading opens on Rishon, and the first week can still be finished on time. From the next week on, the usual plan applies.
 
 ## 7. Community
 
@@ -159,7 +170,7 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md). The key decisions:
 
 - **Pure-Dart core.** Calendar, plans, streaks and the reminder planner have no Flutter imports and are tested exhaustively.
 - **Riverpod providers** connect settings, today's date, the schedule, progress and the streak summary. Everything else is derived from those.
-- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. Export and import are available in settings. Cloud backup is optional and merges rather than overwrites.
+- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. A week or pause that can't be read is kept untouched rather than dropped, and copied aside before a readable copy or a merge replaces it. Stored progress that can only be read by fixing part of it, or that a newer version wrote, is copied aside before anything can overwrite it. Export and import are available in settings. An export keeps what this version can't read apart from the rest, so the file can always be imported, and an import restores that part too. An import is all or nothing, and counts as a new change, so the next sync keeps it. Cloud backup is optional and merges rather than overwrites (see [Streaks](#4-streaks)), and it pauses (asking for an update) if a newer version of the app wrote the backup.
 - **Bundled texts.** About 9 MB of JSON, loaded per book on demand.
 - **Localization.** English is the source language. The Hebrew ARB is generated from a dictionary, and the build fails if any key is missing.
 

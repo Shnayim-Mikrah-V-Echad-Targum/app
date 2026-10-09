@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../core/calendar/jewish_holidays.dart';
 import '../../core/calendar/local_date.dart';
+import '../../core/calendar/parsha_schedule.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
@@ -12,11 +13,9 @@ import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
+import '../progress/domain/reading_plan.dart';
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
-
-/// Seconds to read one verse twice and its Targum once, for time estimates.
-const kSecondsPerVerse = 25;
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
@@ -32,6 +31,7 @@ class TodayScreen extends ConsumerWidget {
     final summary = ref.watch(streakSummaryProvider);
     final paused = ref.watch(isPausedProvider);
     final pauses = ref.watch(progressProvider.select((p) => p.pauses));
+    final divergence = ref.watch(readingDivergenceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -55,7 +55,7 @@ class TodayScreen extends ConsumerWidget {
       ),
       body: PageBody(
         children: [
-          if (paused)
+          if (paused) ...[
             NoticeBanner(
               icon: Icons.pause_circle_outline,
               text: l.pausedBanner(names.dateLong(pauses.firstWhere((p) => p.contains(today)).end)),
@@ -67,6 +67,12 @@ class TodayScreen extends ConsumerWidget {
                 child: Text(l.resume),
               ),
             ),
+            const Gap(12),
+          ],
+          if (divergence != null) ...[
+            _DivergenceBanner(divergence: divergence, settings: settings),
+            const Gap(12),
+          ],
           if (previous != null) ...[
             _OpenPreviousCard(previous: previous, current: ctx, today: today, summary: summary),
             const Gap(12),
@@ -80,7 +86,7 @@ class TodayScreen extends ConsumerWidget {
               plan: ctx.plan,
               today: today,
               statuses: summary.days,
-              israel: settings.israel,
+              oneDayYomTov: settings.oneDayYomTov,
               joinDate: settings.joinDate,
               onDayTap: (day) => context.push('/read/${ctx.id}/${day.aliyot.first}'),
             ),
@@ -111,6 +117,40 @@ class TodayScreen extends ConsumerWidget {
   }
 }
 
+/// Names both portions in a week when Israel and the Diaspora read
+/// different ones, for a reader who hears one place's reading but keeps the
+/// other's days of Yom Tov. A visitor to Israel can open last week's portion
+/// in Israel, their home portion this week.
+class _DivergenceBanner extends ConsumerWidget {
+  const _DivergenceBanner({required this.divergence, required this.settings});
+
+  final ReadingDivergence divergence;
+  final AppSettings settings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final names = Names(context);
+    final repo = ref.watch(parshaRepositoryProvider);
+    String name(PortionId p) => names.portion(repo.portion(p), ashkenazi: settings.ashkenaziNames);
+    final (israel, diaspora) = (name(divergence.israel), name(divergence.diaspora));
+    final previous = divergence.previous;
+    return NoticeBanner(
+      icon: Icons.info_outline,
+      text: divergence.hearsIsrael
+          ? l.readingDivergence(israel, diaspora)
+          : l.readingDivergenceAhead(israel, diaspora),
+      actionBelow: true,
+      action: previous == null
+          ? null
+          : TextButton(
+              onPressed: () => context.push('/week/${weekIdFor(previous.portion, previous.occasion)}'),
+              child: Text(l.readingDivergenceOpen(name(previous.portion))),
+            ),
+    );
+  }
+}
+
 class _ParshaCard extends ConsumerWidget {
   const _ParshaCard({required this.ctx, required this.settings});
 
@@ -129,7 +169,7 @@ class _ParshaCard extends ConsumerWidget {
         ? l.readOnSimchatTorah(names.dateLong(occasion))
         : l.readOnShabbat(names.dateMonthDay(occasion));
     final next = ctx.nextAliyah;
-    final started = ctx.progress.completedUnits > 0 || ctx.progress.positions.isNotEmpty;
+    final started = ctx.progress.isStarted;
     final daysLeft = occasion.differenceInDays(ctx.today);
 
     return InfoCard(
@@ -259,9 +299,7 @@ class _TodayCard extends ConsumerWidget {
                   onPressed: () async {
                     final date = await pickReadDate(context, week: ctx.week, today: ctx.today);
                     if (date == null || !context.mounted) return;
-                    for (final a in day.aliyot) {
-                      ref.read(progressProvider.notifier).markAliyah(ctx.id, a, date);
-                    }
+                    ref.read(progressProvider.notifier).markAliyot(ctx.id, day.aliyot, date);
                     hapticSuccess(ref);
                     showStatus(context, l.markedRead);
                   },
@@ -380,7 +418,7 @@ class _OpenPreviousCard extends ConsumerWidget {
     final engine = ref.watch(streakEngineProvider);
     // On the first reading day after Shabbat, ask about reading done on Shabbat.
     var firstDayAfter = previous.week.occasion.addDays(1);
-    while (JewishHolidays.isRestDay(firstDayAfter, israel: settings.israel)) {
+    while (JewishHolidays.isRestDay(firstDayAfter, israel: settings.oneDayYomTov)) {
       firstDayAfter = firstDayAfter.addDays(1);
     }
     if (today == firstDayAfter && previous.week.occasion.isShabbat) {
@@ -399,7 +437,10 @@ class _OpenPreviousCard extends ConsumerWidget {
               children: [
                 FilledButton(
                   onPressed: () {
-                    ref.read(progressProvider.notifier).markWeek(previous.id, previous.week.occasion);
+                    final progress = ref.read(progressProvider.notifier);
+                    progress.markWeek(previous.id, previous.week.occasion);
+                    // Finishing it includes the haftarah, where that counts.
+                    if (previous.haftarahDue) progress.markHaftarah(previous.id, previous.week.occasion);
                     hapticSuccess(ref);
                     showStatus(context, l.parshaComplete(name));
                   },
@@ -418,9 +459,10 @@ class _OpenPreviousCard extends ConsumerWidget {
 
     final overdue = previous.status == WeekStatus.overdue;
     final nextName = names.portion(current.portion, ashkenazi: settings.ashkenaziNames);
+    final onlyHaftarah = previous.progress.isComplete;
     return InfoCard(
       color: Theme.of(context).colorScheme.secondaryContainer,
-      onTap: () => context.push('/week/${previous.id}'),
+      onTap: () => context.push(onlyHaftarah ? '/haftarah/${previous.id}' : '/week/${previous.id}'),
       child: Row(
         children: [
           const Icon(Icons.schedule),
@@ -430,6 +472,7 @@ class _OpenPreviousCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(l.openWeekTitle(name), style: Theme.of(context).textTheme.titleSmall),
+                if (onlyHaftarah) Text(l.openWeekHaftarahLeft),
                 Text(overdue
                     ? l.openWeekRestore(name, nextName)
                     : l.openWeekLate(names.dateLong(engine.lateDeadlineOf(previous.week)))),

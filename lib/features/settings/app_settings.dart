@@ -2,7 +2,6 @@ import '../../core/calendar/local_date.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart';
 import '../progress/domain/reading_plan.dart';
-import '../progress/domain/streak_engine.dart';
 
 enum AppThemeMode { system, light, dark, sepia, highContrastLight, highContrastDark }
 
@@ -73,10 +72,17 @@ enum UiFont {
 
 enum LineWidth { narrow, medium, wide }
 
+/// Whose public Torah reading the weeks follow. For a few weeks after Pesach
+/// or Shavuot, Israel can be a parsha ahead: when the last day of the
+/// festival outside Israel falls on Shabbat, Israel already reads the next
+/// portion.
+enum ReadingSchedule { israel, diaspora }
+
 /// Every user preference, persisted as JSON.
 class AppSettings {
   const AppSettings({
-    this.israel = false,
+    this.readingSchedule = ReadingSchedule.diaspora,
+    this.oneDayYomTov = false,
     this.nusach = HaftarahNusach.ashkenazi,
     this.plan = ReadingPlanType.aliyahPerDay,
     this.lateWindow = LateWindow.tuesday,
@@ -84,6 +90,7 @@ class AppSettings {
     this.haftarahRequired = false,
     this.tishaBavQuiet = true,
     this.cholHamoedQuiet = false,
+    this.starterCatchUp = true,
     this.method = ReadingMethod.verseByVerse,
     this.secondReading = SecondReading.onkelos,
     this.repeatLastVerse = true,
@@ -124,10 +131,19 @@ class AppSettings {
     this.onboardingComplete = false,
     this.notificationPromptShown = false,
     this.joinDate,
+    this.planHistory = const [],
   });
 
   // Calendar and customs
-  final bool israel;
+
+  /// The reading heard in synagogue, which decides each week's portion.
+  final ReadingSchedule readingSchedule;
+
+  /// Whether Yom Tov is kept for one day, as in Israel, rather than two.
+  /// This decides which days are free of reading and reminders, apart from
+  /// [readingSchedule]: a visitor usually keeps their home custom wherever
+  /// they hear the reading.
+  final bool oneDayYomTov;
   final HaftarahNusach nusach;
   final ReadingPlanType plan;
   final LateWindow lateWindow;
@@ -135,6 +151,10 @@ class AppSettings {
   final bool haftarahRequired;
   final bool tishaBavQuiet;
   final bool cholHamoedQuiet;
+
+  /// In the week the reader joins, spread the whole portion over the days
+  /// left rather than keeping the usual days (see [ReadingPlanner.planFor]).
+  final bool starterCatchUp;
 
   // Reading
   final ReadingMethod method;
@@ -209,7 +229,23 @@ class AppSettings {
   /// The day the user started; earlier days are never shown as missed.
   final LocalDate? joinDate;
 
+  /// The plan settings ([planSettings]) over time, oldest first, so that
+  /// each day is planned and judged by the settings in force then (see
+  /// [settingsAt]): a change applies from the day it was made on, never to
+  /// the days before (see [recordingPlanChange]). With no entries, the
+  /// settings as they are now have always applied.
+  final List<PlanSettingsEntry> planHistory;
+
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
+
+  /// Whether the reading heard and the days of Yom Tov kept are those of
+  /// different places, as for a visitor to or from Israel.
+  bool get readingAndYomTovDiffer => (readingSchedule == ReadingSchedule.israel) != oneDayYomTov;
+
+  /// These settings for someone spending Shabbat in [place], who hears its
+  /// reading and keeps its days of Yom Tov.
+  AppSettings locatedIn(ReadingSchedule place) =>
+      copyWith(readingSchedule: place, oneDayYomTov: place == ReadingSchedule.israel);
 
   bool get usesRashi =>
       secondReading == SecondReading.rashi ||
@@ -219,8 +255,49 @@ class AppSettings {
   bool get usesOnkelos =>
       secondReading == SecondReading.onkelos || secondReading == SecondReading.onkelosAndRashi;
 
+  /// The settings that decide how weeks are planned and judged, as they are
+  /// now. The haftarah counts only while it is shown.
+  PlanSettingsEntry get planSettings => PlanSettingsEntry(
+        plan: plan,
+        tishaBavQuiet: tishaBavQuiet,
+        cholHamoedQuiet: cholHamoedQuiet,
+        lateWindow: lateWindow,
+        haftarahRequired: haftarahEnabled && haftarahRequired,
+      );
+
+  /// The plan settings in force on [day]: the latest entry of [planHistory]
+  /// from then or before. The earliest entry also covers the days before it.
+  PlanSettingsEntry settingsAt(LocalDate day) {
+    if (planHistory.isEmpty) return planSettings;
+    var found = planHistory.first;
+    for (final e in planHistory) {
+      if (e.from > day) break;
+      found = e;
+    }
+    return found;
+  }
+
+  /// These settings, changed from [before] on [today] in a way that changes
+  /// [planSettings]: [planHistory] records the change as applying from
+  /// [today] on, so that the days before stay planned and judged as they
+  /// were.
+  AppSettings recordingPlanChange(AppSettings before, LocalDate today) {
+    // Before the reader starts, nothing has been planned or judged.
+    final joined = before.joinDate;
+    if (joined == null) return this;
+    final history = [
+      // Until now, the settings before the change had always applied.
+      if (planHistory.isEmpty) before.planSettings.startingOn(joined) else ...planHistory,
+    ]..removeWhere((e) => e.from >= today); // superseded by this change
+    final now = planSettings;
+    // A change back to the settings in force before today needs no entry.
+    if (history.isEmpty || !history.last.sameSettingsAs(now)) history.add(now.startingOn(today));
+    return copyWith(planHistory: history);
+  }
+
   AppSettings copyWith({
-    bool? israel,
+    ReadingSchedule? readingSchedule,
+    bool? oneDayYomTov,
     HaftarahNusach? nusach,
     ReadingPlanType? plan,
     LateWindow? lateWindow,
@@ -228,6 +305,7 @@ class AppSettings {
     bool? haftarahRequired,
     bool? tishaBavQuiet,
     bool? cholHamoedQuiet,
+    bool? starterCatchUp,
     ReadingMethod? method,
     SecondReading? secondReading,
     bool? repeatLastVerse,
@@ -268,9 +346,11 @@ class AppSettings {
     bool? onboardingComplete,
     bool? notificationPromptShown,
     Object? joinDate = _keep,
+    List<PlanSettingsEntry>? planHistory,
   }) =>
       AppSettings(
-        israel: israel ?? this.israel,
+        readingSchedule: readingSchedule ?? this.readingSchedule,
+        oneDayYomTov: oneDayYomTov ?? this.oneDayYomTov,
         nusach: nusach ?? this.nusach,
         plan: plan ?? this.plan,
         lateWindow: lateWindow ?? this.lateWindow,
@@ -278,6 +358,7 @@ class AppSettings {
         haftarahRequired: haftarahRequired ?? this.haftarahRequired,
         tishaBavQuiet: tishaBavQuiet ?? this.tishaBavQuiet,
         cholHamoedQuiet: cholHamoedQuiet ?? this.cholHamoedQuiet,
+        starterCatchUp: starterCatchUp ?? this.starterCatchUp,
         method: method ?? this.method,
         secondReading: secondReading ?? this.secondReading,
         repeatLastVerse: repeatLastVerse ?? this.repeatLastVerse,
@@ -318,12 +399,17 @@ class AppSettings {
         onboardingComplete: onboardingComplete ?? this.onboardingComplete,
         notificationPromptShown: notificationPromptShown ?? this.notificationPromptShown,
         joinDate: identical(joinDate, _keep) ? this.joinDate : joinDate as LocalDate?,
+        planHistory: planHistory ?? this.planHistory,
       );
 
   static const _keep = Object();
 
   Map<String, dynamic> toJson() => {
-        'israel': israel,
+        'readingSchedule': readingSchedule.name,
+        'oneDayYomTov': oneDayYomTov,
+        // For versions from before the two were separate, which read this
+        // one setting for both.
+        'israel': readingSchedule == ReadingSchedule.israel,
         'nusach': nusach.name,
         'plan': plan.name,
         'lateWindow': lateWindow.name,
@@ -331,6 +417,7 @@ class AppSettings {
         'haftarahRequired': haftarahRequired,
         'tishaBavQuiet': tishaBavQuiet,
         'cholHamoedQuiet': cholHamoedQuiet,
+        'starterCatchUp': starterCatchUp,
         'method': method.name,
         'secondReading': secondReading.name,
         'repeatLastVerse': repeatLastVerse,
@@ -371,6 +458,7 @@ class AppSettings {
         'onboardingComplete': onboardingComplete,
         'notificationPromptShown': notificationPromptShown,
         'joinDate': joinDate?.rd,
+        'planHistory': [for (final e in planHistory) e.toJson()],
       };
 
   /// Reads settings, tolerating missing or unknown values so that older and
@@ -383,8 +471,16 @@ class AppSettings {
     double n(String k, double fallback, double min, double max) =>
         j[k] is num ? (j[k] as num).toDouble().clamp(min, max) : fallback;
     int i(String k, int fallback) => j[k] is int ? j[k] as int : fallback;
+    // Settings saved before the reading and the days of Yom Tov were
+    // separate have one 'israel' setting, which decided both.
+    final located = switch (j['israel']) {
+      true => d.locatedIn(ReadingSchedule.israel),
+      false => d.locatedIn(ReadingSchedule.diaspora),
+      _ => d,
+    };
     return AppSettings(
-      israel: b('israel', d.israel),
+      readingSchedule: e(ReadingSchedule.values, j['readingSchedule'], located.readingSchedule),
+      oneDayYomTov: b('oneDayYomTov', located.oneDayYomTov),
       nusach: e(HaftarahNusach.values, j['nusach'], d.nusach),
       plan: e(ReadingPlanType.values, j['plan'], d.plan),
       lateWindow: e(LateWindow.values, j['lateWindow'], d.lateWindow),
@@ -392,6 +488,7 @@ class AppSettings {
       haftarahRequired: b('haftarahRequired', d.haftarahRequired),
       tishaBavQuiet: b('tishaBavQuiet', d.tishaBavQuiet),
       cholHamoedQuiet: b('cholHamoedQuiet', d.cholHamoedQuiet),
+      starterCatchUp: b('starterCatchUp', d.starterCatchUp),
       method: e(ReadingMethod.values, j['method'], d.method),
       secondReading: e(SecondReading.values, j['secondReading'], d.secondReading),
       repeatLastVerse: b('repeatLastVerse', d.repeatLastVerse),
@@ -432,7 +529,24 @@ class AppSettings {
       onboardingComplete: b('onboardingComplete', d.onboardingComplete),
       notificationPromptShown: b('notificationPromptShown', d.notificationPromptShown),
       joinDate: j['joinDate'] is int ? LocalDate.fromRd(j['joinDate'] as int) : null,
+      planHistory: _readPlanHistory(j['planHistory']),
     );
+  }
+
+  /// Reads [planHistory], oldest first, skipping entries that can't be read.
+  /// Settings saved before it existed have none: the settings saved with
+  /// them apply throughout, as they did then.
+  static List<PlanSettingsEntry> _readPlanHistory(Object? raw) {
+    if (raw is! List) return const [];
+    final out = <PlanSettingsEntry>[];
+    for (final e in raw) {
+      try {
+        out.add(PlanSettingsEntry.fromJson(e as Map<String, dynamic>));
+      } catch (_) {
+        // Skipped: an unreadable entry can't say when it applied.
+      }
+    }
+    return out..sort((a, b) => a.from.compareTo(b.from));
   }
 }
 

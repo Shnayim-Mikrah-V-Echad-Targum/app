@@ -90,6 +90,8 @@ class ReaderFlow {
       case ReadingMethod.aliyahByAliyah:
         return [Chunk(0, verses.length)];
       case ReadingMethod.sectionBySection:
+        // Only breaks between verses count: a pasuk is never split, so a
+        // PisqaGap inside a verse does not end a section.
         final out = <Chunk>[];
         var start = 0;
         for (var i = 0; i < verses.length; i++) {
@@ -159,7 +161,9 @@ class ReaderFlow {
     if (ci < 0) ci = 0;
     final c = chunks[ci];
     final steps = stepsFor(ci);
-    if (positions[1] >= c.end) {
+    // A reading can be un-marked on its own, so check that the earlier ones
+    // really are done.
+    if (positions[0] >= c.end && positions[1] >= c.end) {
       final i = steps.indexOf(StepKind.mikra2) + 1;
       return (ci, math.min(i, steps.length - 1));
     }

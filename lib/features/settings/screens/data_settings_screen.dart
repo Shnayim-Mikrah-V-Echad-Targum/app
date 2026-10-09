@@ -8,26 +8,42 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/providers.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../community/data/backend.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
-/// A backup contains both progress and settings, as JSON.
-String exportBackup(WidgetRef ref) => const JsonEncoder.withIndent('  ').convert({
-      'app': 'shnayim_mikra',
-      'exportedAt': DateTime.now().toUtc().toIso8601String(),
-      'progress': ref.read(progressProvider).toJson(),
-      'settings': ref.read(settingsProvider).toJson(),
-    });
+/// A backup contains both progress and settings, as JSON. Progress this
+/// version couldn't read is kept apart, as `unreadableProgress`, so that the
+/// rest can always be imported again, and that part restored with it.
+String exportBackup(WidgetRef ref) {
+  final progress = ref.read(progressProvider);
+  return const JsonEncoder.withIndent('  ').convert({
+    'app': 'shnayim_mikra',
+    'exportedAt': DateTime.now().toUtc().toIso8601String(),
+    'progress': progress.readable.toJson(),
+    'unreadableProgress': ?progress.unknownMissingFrom(progress.readable),
+    'settings': ref.read(settingsProvider).toJson(),
+  });
+}
 
+/// Restores a backup made by [exportBackup]. A file with anything this
+/// version can't read exactly is rejected whole, rather than half imported.
 bool importBackup(WidgetRef ref, String raw) {
   try {
     final j = jsonDecode(raw.trim()) as Map<String, dynamic>;
     if (j['app'] != 'shnayim_mikra') return false;
-    final progress = ProgressState.fromJson(j['progress'] as Map<String, dynamic>);
-    ref.read(progressProvider.notifier).replaceAll(progress);
-    if (j['settings'] is Map<String, dynamic>) {
-      final imported = AppSettings.fromJson(j['settings'] as Map<String, dynamic>);
-      ref.read(settingsProvider.notifier).replace(imported.copyWith(onboardingComplete: true));
+    final progress = ProgressState.fromJson(j['progress'] as Map<String, dynamic>, strict: true);
+    final unreadable = (j['unreadableProgress'] ?? const <String, dynamic>{}) as Map<String, dynamic>;
+    final settings = j['settings'] is Map<String, dynamic>
+        ? AppSettings.fromJson(j['settings'] as Map<String, dynamic>)
+        : null;
+    ref.read(progressProvider.notifier).restore(
+          progress,
+          unknownWeeks: (unreadable['weeks'] ?? const <String, dynamic>{}) as Map<String, dynamic>,
+          unknownPauses: (unreadable['pauses'] ?? const []) as List,
+        );
+    if (settings != null) {
+      ref.read(settingsProvider.notifier).replace(settings.copyWith(onboardingComplete: true));
     }
     return true;
   } catch (_) {
@@ -90,11 +106,16 @@ class DataSettingsScreen extends ConsumerWidget {
           leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
           title: Text(l.resetProgress),
           onTap: () async {
+            // With backup on, the reset reaches the backup and other devices,
+            // but only for the account signed in now: a reset made signed out
+            // must not erase the backup of whoever signs in next.
+            final everywhere =
+                ref.read(settingsProvider).cloudSync && ref.read(forumRepositoryProvider).currentUser != null;
             final ok = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
                 title: Text(l.resetProgress),
-                content: Text(l.resetProgressConfirm),
+                content: Text(everywhere ? l.resetProgressConfirmSynced : l.resetProgressConfirm),
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
                   FilledButton(
@@ -109,7 +130,7 @@ class DataSettingsScreen extends ConsumerWidget {
               ),
             );
             if (ok != true || !context.mounted) return;
-            ref.read(progressProvider.notifier).reset();
+            ref.read(progressProvider.notifier).resetAll(ref.read(todayProvider), everywhere: everywhere);
             showStatus(context, l.resetDone);
           },
         ),

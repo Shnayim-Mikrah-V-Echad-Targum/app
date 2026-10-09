@@ -88,7 +88,9 @@ abstract final class HebrewSpeech {
     bool keepNikud = true,
     DivineNameSpeech divineName = DivineNameSpeech.adonai,
   }) {
-    final cleaned = HebrewText.stripTeamim(text).replaceAll('׃', '.');
+    // A sof pasuq ends a sentence: speak it as a full stop, always followed
+    // by a space so the next word is never run into it.
+    final cleaned = HebrewText.stripTeamim(text).replaceAll('׃', '. ');
     final parts = cleaned.split(_wordSplit);
     final seps = _wordSplit.allMatches(cleaned).map((m) => m.group(0)!).toList();
     final out = StringBuffer();

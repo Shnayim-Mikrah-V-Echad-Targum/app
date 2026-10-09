@@ -1,52 +1,118 @@
+import 'dart:convert';
 import 'dart:math';
 
 import '../../../app/providers.dart';
-import '../../../core/calendar/local_date.dart';
 import 'progress_models.dart';
 
 export '../../../app/providers.dart' show ProgressState;
 
-/// Merges two copies of a user's progress (e.g. this device and the cloud).
-/// For every reading, the earliest recorded completion wins, so nothing read
-/// on either device is lost and streaks are computed from the true dates.
-/// The merge is commutative and idempotent.
+/// How long a cancelled pause is remembered, so that the cancellation can
+/// reach devices that still have the pause. A device that hasn't synced for
+/// longer than this may bring it back.
+const kPauseTombstoneLife = Duration(days: 60);
+
+/// Merges two copies of a user's progress (e.g. this device and the cloud),
+/// keeping every change made on either, removals included. Every change is
+/// stamped with its time (see [ProgressClock]):
+///
+/// - A reset drops everything stamped before it, from both copies.
+/// - A reading (or the haftarah) marked as not read drops every mark made
+///   before that, on either device; on a tie, it stays read. Of the marks
+///   left, the earliest day wins, so a sync never lowers a streak, and a
+///   reading marked again on a later day keeps that day (see
+///   [ReadingRecord]).
+/// - The later saved place in an aliyah wins; on a tie, the furthest.
+/// - The later change to a pause wins; on a tie, a cancellation.
+///
+/// The merge is commutative, associative and idempotent.
 ProgressState mergeProgress(ProgressState a, ProgressState b) {
+  final cut = max(a.resetAt, b.resetAt);
+
   final weeks = <String, WeekProgress>{};
   for (final id in {...a.weeks.keys, ...b.weeks.keys}) {
-    final x = a.weeks[id];
-    final y = b.weeks[id];
-    if (x == null || y == null) {
-      weeks[id] = (x ?? y)!;
-      continue;
-    }
-    final units = [
-      for (var i = 0; i < kAliyot; i++)
-        [
-          for (var p = 0; p < 3; p++) _earliest(x.units[i][p], y.units[i][p]),
-        ],
-    ];
-    int at(List<int>? list, int i) => list != null && i < list.length ? list[i] : 0;
-    final positions = <int, List<int>>{
-      for (final k in {...x.positions.keys, ...y.positions.keys})
-        k: [for (var i = 0; i < 3; i++) max(at(x.positions[k], i), at(y.positions[k], i))],
-    };
-    weeks[id] = WeekProgress(
-      weekId: id,
-      units: units,
-      haftarah: _earliest(x.haftarah, y.haftarah),
-      positions: positions,
-    );
+    final week = _mergeWeek(a.week(id), b.week(id), cut);
+    if (!week.isBlank) weeks[id] = week;
   }
+
+  final expired = ProgressClock.nowMs() - kPauseTombstoneLife.inMilliseconds;
   final pauses = <String, Pause>{};
   for (final p in [...a.pauses, ...b.pauses]) {
-    pauses['${p.start.rd}-${p.end.rd}'] = p;
+    if (p.updatedAt < cut) continue;
+    final q = pauses[p.id];
+    if (q == null || _outranks(p, q)) pauses[p.id] = p;
   }
-  final sortedPauses = pauses.values.toList()..sort((p, q) => p.start.compareTo(q.start));
-  return ProgressState(weeks: weeks, pauses: sortedPauses);
+  pauses.removeWhere((_, p) => p.deleted && p.updatedAt < expired);
+  final sortedPauses = pauses.values.toList()
+    ..sort((p, q) => p.start != q.start ? p.start.compareTo(q.start) : p.id.compareTo(q.id));
+
+  // Entries neither side could read are carried along untouched, except
+  // from a side that hasn't seen the latest reset. Where both sides hold a
+  // different one for the same week, the choice must not depend on the
+  // argument order.
+  final sides = [a, b].where((s) => s.resetAt == cut).toList();
+  final unknownWeeks = <String, Object?>{};
+  for (final side in sides) {
+    for (final MapEntry(:key, :value) in side.unknownWeeks.entries) {
+      if (!unknownWeeks.containsKey(key) || _canonical(value).compareTo(_canonical(unknownWeeks[key])) < 0) {
+        unknownWeeks[key] = value;
+      }
+    }
+  }
+  final unknownPauses = {
+    for (final side in sides)
+      for (final p in side.unknownPauses) _canonical(p): p,
+  };
+  return ProgressState(
+    weeks: weeks,
+    pauses: sortedPauses,
+    resetAt: cut,
+    unknownWeeks: unknownWeeks,
+    unknownPauses: [for (final k in unknownPauses.keys.toList()..sort()) unknownPauses[k]],
+  );
 }
 
-LocalDate? _earliest(LocalDate? a, LocalDate? b) {
-  if (a == null) return b;
-  if (b == null) return a;
-  return a <= b ? a : b;
+WeekProgress _mergeWeek(WeekProgress x, WeekProgress y, int cut) {
+  final records = [
+    for (var a = 0; a < kAliyot; a++)
+      [for (var p = 0; p < 3; p++) x.records[a][p].merge(y.records[a][p], cut: cut)],
+  ];
+  final haftarah = x.haftarahRecord.merge(y.haftarahRecord, cut: cut);
+
+  final positions = <int, List<int>>{};
+  final positionStamps = <int, int>{};
+  final aliyot = {...x.positions.keys, ...x.positionStamps.keys, ...y.positions.keys, ...y.positionStamps.keys};
+  for (final a in aliyot) {
+    var (xp, xt) = (x.positions[a], x.positionStamps[a] ?? 0);
+    var (yp, yt) = (y.positions[a], y.positionStamps[a] ?? 0);
+    if (xt < cut) (xp, xt) = (null, 0);
+    if (yt < cut) (yp, yt) = (null, 0);
+    final position = xt != yt ? (xt > yt ? xp : yp) : _furthest(xp, yp);
+    if (position != null) positions[a] = List.unmodifiable(position);
+    if (max(xt, yt) > 0) positionStamps[a] = max(xt, yt);
+  }
+
+  return WeekProgress.fromRecords(
+    weekId: x.weekId,
+    records: records,
+    haftarahRecord: haftarah,
+    positions: positions,
+    positionStamps: positionStamps,
+  );
 }
+
+/// The element-wise furthest of two saved places, either of which may be
+/// missing.
+List<int>? _furthest(List<int>? x, List<int>? y) {
+  if (x == null || y == null) return x ?? y;
+  int at(List<int> list, int i) => i < list.length ? list[i] : 0;
+  return [for (var i = 0; i < 3; i++) max(at(x, i), at(y, i))];
+}
+
+/// Whether [p] replaces [q], another copy of the same pause.
+bool _outranks(Pause p, Pause q) {
+  if (p.updatedAt != q.updatedAt) return p.updatedAt > q.updatedAt;
+  if (p.deleted != q.deleted) return p.deleted;
+  return _canonical(p.toJson()).compareTo(_canonical(q.toJson())) < 0;
+}
+
+String _canonical(Object? json) => jsonEncode(ProgressState.canonicalJson(json));

@@ -1,8 +1,13 @@
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/data/models/scripture.dart';
+import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/data/text_repository.dart';
 
@@ -56,6 +61,87 @@ void main() {
     expect(v.segments.whereType<KetivQere>().single.ketiv, 'צביים');
     expect(v.readText, contains('צְבוֹיִ֔ם'));
     expect(v.readText, isNot(contains('צביים')));
+  });
+
+  group('section breaks inside a verse', () {
+    // Every verse of Mikra and of the haftarot, keyed "Book c:v".
+    Future<Map<String, Verse>> allHebrewVerses() async {
+      final out = <String, Verse>{};
+      for (final book in kTorahBooks) {
+        final mikra = await texts.book(TextLayer.mikra, book);
+        for (final ch in mikra.chapters) {
+          for (final v in ch) {
+            out['$book ${v.ref}'] = v;
+          }
+        }
+      }
+      final haftarot = jsonDecode(await rootBundle.loadString('assets/text/haftarot.json')) as Map<String, dynamic>;
+      (haftarot['he'] as Map<String, dynamic>).forEach((book, verses) {
+        (verses as Map<String, dynamic>).forEach((ref, json) {
+          out['$book $ref'] = Verse.fromJson(VerseRef.parse(ref), json as Object);
+        });
+      });
+      return out;
+    }
+
+    late Map<String, Verse> verses;
+    setUpAll(() async => verses = await allHebrewVerses());
+
+    test('no word runs into the next after a sof pasuq', () {
+      final fused = RegExp(r'׃\S');
+      for (final MapEntry(:key, value: v) in verses.entries) {
+        for (final seg in v.segments.whereType<PlainText>()) {
+          expect(fused.hasMatch(seg.text), isFalse, reason: '$key: ${seg.text}');
+        }
+      }
+    });
+
+    test('no word continues after a final letter', () {
+      // A final form (ך ם ן ף ץ), then any vowels or cantillation, then
+      // another letter: two words fused into one.
+      final fused = RegExp('[ךםןףץ][\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u034F]*[א-ת]');
+      final separators = RegExp(r'[\s־]+');
+      for (final MapEntry(:key, value: v) in verses.entries) {
+        for (final seg in v.segments.whereType<PlainText>()) {
+          for (final token in seg.text.split(separators)) {
+            expect(fused.hasMatch(token), isFalse, reason: '$key: $token');
+          }
+        }
+      }
+    });
+
+    test('are kept as gaps, and the words around them stay apart', () {
+      const withGaps = [
+        // Torah
+        'Genesis 35:22', 'Exodus 20:13', 'Exodus 20:14', 'Numbers 26:1', 'Deuteronomy 2:8',
+        'Deuteronomy 5:17', 'Deuteronomy 5:18',
+        // Haftarot
+        'I Samuel 20:27', 'II Samuel 6:20', 'II Samuel 7:4', 'II Samuel 7:5', 'I Kings 1:19', 'Ezekiel 43:27',
+      ];
+      for (final key in withGaps) {
+        expect(verses[key], isNotNull, reason: key);
+        expect(verses[key]!.segments.whereType<PisqaGap>(), isNotEmpty, reason: key);
+      }
+      final decalogue = verses['Exodus 20:13']!;
+      expect([for (final g in decalogue.segments.whereType<PisqaGap>()) g.kind], List.filled(3, SectionBreak.closed));
+      expect(HebrewText.consonantsOnly(decalogue.readText), 'לא תרצח׃ לא תנאף׃ לא תגנב׃ לא־תענה ברעך עד שקר׃');
+    });
+
+    test('do not end the verse as a section break', () async {
+      final genesis = await texts.book(TextLayer.mikra, 'Genesis');
+      final exodus = await texts.book(TextLayer.mikra, 'Exodus');
+      final numbers = await texts.book(TextLayer.mikra, 'Numbers');
+      final deuteronomy = await texts.book(TextLayer.mikra, 'Deuteronomy');
+      expect(genesis.breaks[const VerseRef(35, 22)], isNull);
+      expect(numbers.breaks[const VerseRef(26, 1)], isNull);
+      expect(deuteronomy.breaks[const VerseRef(2, 8)], isNull);
+      // A verse can hold gaps and still end with a break of its own.
+      expect(exodus.breaks[const VerseRef(20, 13)], SectionBreak.closed);
+      expect(exodus.breaks[const VerseRef(20, 14)], SectionBreak.open);
+      // Only a footnote follows this petuchah; it is still a break.
+      expect(exodus.breaks[const VerseRef(33, 23)], SectionBreak.open);
+      expect(exodus.verse(const VerseRef(33, 23)).segments.whereType<PisqaGap>(), isEmpty);
+    });
   });
 
   test('every regular and special haftarah resolves to text, for every custom', () async {

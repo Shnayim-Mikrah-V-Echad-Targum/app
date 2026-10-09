@@ -280,6 +280,9 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get openWeekHaftarahLeft => 'נשארה רק ההפטרה.';
+
+  @override
   String get checkInTitle => 'שבוע טוב! קראת בשבת?';
 
   @override
@@ -299,6 +302,21 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get resume => 'חידוש';
+
+  @override
+  String readingDivergence(String israel, String diaspora) {
+    return 'בארץ ישראל קוראים השבוע את פרשת $israel, ובחוץ לארץ את פרשת $diaspora. מבקרים מחוץ לארץ נוהגים בדרך כלל לקרוא את שתי הפרשות. כשמתפללים במניין שקורא את פרשת $diaspora, קוראים רק אותה, ובהגדרות בוחרים בקריאת התורה של חוץ לארץ.';
+  }
+
+  @override
+  String readingDivergenceAhead(String israel, String diaspora) {
+    return 'בארץ ישראל קוראים השבוע את פרשת $israel, ובחוץ לארץ את פרשת $diaspora. ארץ ישראל מקדימה בפרשה אחת, ואת פרשת $israel קוראים כאן בשבוע הבא.';
+  }
+
+  @override
+  String readingDivergenceOpen(String name) {
+    return 'לפרשת $name';
+  }
 
   @override
   String get discussThisWeek => 'דיון על פרשת השבוע';
@@ -790,7 +808,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get settingsAbout => 'אודות';
 
   @override
-  String get settingsReadingDesc => 'מיקום, תוכנית, תרגום או רש״י, הפטרה';
+  String get settingsReadingDesc =>
+      'ארץ ישראל או חו״ל, תוכנית, תרגום או רש״י, הפטרה';
 
   @override
   String get settingsDisplayDesc =>
@@ -807,9 +826,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get settingsDataDesc => 'גיבוי, שחזור או איפוס ההתקדמות';
 
   @override
-  String get locationLabel => 'בשבת הקרובה אהיה';
-
-  @override
   String get locationIsrael => 'בארץ ישראל';
 
   @override
@@ -817,7 +833,28 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get locationHelp =>
-      'בארץ ובחוץ לארץ קוראים לעתים פרשות שונות, ומספר ימי יום טוב שונה.';
+      'בארץ ובחוץ לארץ קוראים לעתים פרשות שונות, ומספר ימי יום טוב שונה. בביקור? בהגדרות אפשר לקבוע בנפרד כמה ימי יום טוב שומרים.';
+
+  @override
+  String get readingScheduleLabel =>
+      'איזו קריאת תורה תישמע בבית הכנסת שלך בשבת הקרובה?';
+
+  @override
+  String get readingScheduleHelp =>
+      'לפעמים, במשך כמה שבועות אחרי פסח או חג השבועות, בארץ ישראל מקדימים בפרשה אחת.';
+
+  @override
+  String get yomTovDaysLabel => 'כמה ימי יום טוב שומרים אצלך?';
+
+  @override
+  String get yomTovDaysOne => 'יום אחד, כמו בארץ ישראל';
+
+  @override
+  String get yomTovDaysTwo => 'יומיים, כמו בחוץ לארץ';
+
+  @override
+  String get yomTovDaysHelp =>
+      'מבקרים נוהגים בדרך כלל כמנהג מקומם הקבוע. יש לשאול רב.';
 
   @override
   String get planLabel => 'תוכנית שבועית';
@@ -939,6 +976,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get cholHamoedQuiet => 'ללא קריאה מתוכננת בחול המועד';
+
+  @override
+  String get appliesFromThisWeek => 'חל מהשבוע הזה והלאה';
 
   @override
   String get nameStyleLabel => 'שמות הפרשות באנגלית';
@@ -1265,6 +1305,10 @@ class AppLocalizationsHe extends AppLocalizations {
       'פעולה זו מוחקת את היסטוריית הקריאה והרצפים במכשיר זה. אי אפשר לבטל אותה.';
 
   @override
+  String get resetProgressConfirmSynced =>
+      'פעולה זו מוחקת את היסטוריית הקריאה והרצפים במכשיר זה, בגיבוי ובמכשירים האחרים שלך כשיסונכרנו בפעם הבאה. אי אפשר לבטל אותה.';
+
+  @override
   String get resetDone => 'ההתקדמות אופסה.';
 
   @override
@@ -1485,6 +1529,10 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get syncFailed => 'לא ניתן לסנכרן כעת. ננסה שוב מאוחר יותר.';
+
+  @override
+  String get syncNeedsUpdate =>
+      'הגיבוי נשמר בגרסה חדשה יותר של האפליקציה. יש לעדכן את האפליקציה כדי להמשיך לסנכרן.';
 
   @override
   String lastSynced(String time) {

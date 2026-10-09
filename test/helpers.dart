@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 
@@ -15,12 +16,14 @@ ParshaRepository? _repo;
 
 Future<ParshaRepository> loadRepo() async => _repo ??= await ParshaRepository.load();
 
-/// Pumps the whole app with in-memory storage and the demo backend.
+/// Pumps the whole app with in-memory storage and the demo backend (or
+/// [forums], when given).
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   AppSettings settings = const AppSettings(onboardingComplete: true),
   DateTime? now,
   ProgressState? progress,
+  ForumRepository? forums,
 }) async {
   TodayController.autoRollover = false;
   if (now != null) TodayController.now = () => now;
@@ -33,7 +36,7 @@ Future<ProviderContainer> pumpApp(
   final container = ProviderContainer(overrides: [
     sharedPreferencesProvider.overrideWithValue(prefs),
     parshaRepositoryProvider.overrideWithValue(repo!),
-    backendProvider.overrideWithValue(Backend(DemoForumRepository())),
+    backendProvider.overrideWithValue(Backend(forums ?? DemoForumRepository())),
     notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
   ]);
   addTearDown(container.dispose);

@@ -130,6 +130,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final repo = ref.read(forumRepositoryProvider);
     final settings = ref.watch(settingsProvider);
     final lastSync = ref.watch(progressSyncProvider);
+    final syncBlocked = ref.watch(syncBlockedByNewerFormatProvider);
     if (profile != null && _name.text.isEmpty && profile.hasChosenName) _name.text = profile.displayName;
     return [
       if (profile != null) ...[
@@ -172,13 +173,19 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               label: Text(l.syncNow),
               onPressed: () async {
                 final ok = await ref.read(progressSyncProvider.notifier).syncNow();
-                if (context.mounted) showStatus(context, ok ? l.syncDone : l.syncFailed);
+                if (!context.mounted) return;
+                final blocked = ref.read(syncBlockedByNewerFormatProvider);
+                showStatus(context, ok ? l.syncDone : (blocked ? l.syncNeedsUpdate : l.syncFailed));
               },
             ),
             const Gap(12),
             if (lastSync != null) Expanded(child: Text(l.lastSynced(relativeTime(context, lastSync)))),
           ],
         ),
+      if (settings.cloudSync && syncBlocked) ...[
+        const Gap(12),
+        NoticeBanner(icon: Icons.system_update_outlined, text: l.syncNeedsUpdate),
+      ],
       SectionHeader(l.blockedUsersTitle),
       const _BlockedList(),
       const Divider(height: 40),

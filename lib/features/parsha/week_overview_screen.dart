@@ -74,12 +74,7 @@ class WeekOverview extends ConsumerWidget {
             l.markedUnread,
             action: SnackBarAction(
               label: l.actionUndo,
-              onPressed: () {
-                final state = ref.read(progressProvider);
-                ref.read(progressProvider.notifier).replaceAll(
-                      ProgressState(weeks: {...state.weeks, ctx.id: before}, pauses: state.pauses),
-                    );
-              },
+              onPressed: () => ref.read(progressProvider.notifier).restoreWeek(ctx.id, before),
             ),
           );
         }
@@ -126,7 +121,7 @@ class WeekOverview extends ConsumerWidget {
           ],
           SectionHeader(l.aliyotProgress(ctx.progress.completedAliyot, kAliyot)),
           for (var a = 0; a < kAliyot; a++) _AliyahTile(ctx: ctx, aliyah: a),
-          if (settings.haftarahEnabled) ...[
+          if (settings.haftarahEnabled || ctx.haftarahRequired) ...[
             const Gap(8),
             ListTile(
               leading: Icon(ctx.progress.haftarah != null ? Icons.check_circle : Icons.auto_stories_outlined,
