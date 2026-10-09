@@ -143,7 +143,7 @@ lib/
     settings/     settings model and screens
     onboarding/   first-run flow
     about/        guide, sources, legal texts
-  services/       notifications, reminder planner, text-to-speech, feedback
+  services/       notifications, reminder planner, text-to-speech, feedback, optional fonts
   ui/             theme, localization helpers, shared widgets
   l10n/           ARB files (English source and generated Hebrew)
 assets/
@@ -154,6 +154,7 @@ supabase/         database migrations, local config, email template, SQL tests
 tool/
   data/           scripts that generate the text assets, calendar tables and test fixtures
   l10n/           Hebrew translations and the ARB builder
+  fonts/          builds static font instances from pinned google/fonts sources
 docs/             design notes, research, backend and release guides
 ```
 
@@ -171,6 +172,13 @@ python3 gen_supabase_reference.py             # forum categories and parashot re
 ```
 
 `@hebcal/core` is used only as a test oracle during generation. It is GPL-licensed and is not part of the app.
+
+EB Garamond, Frank Ruhl Libre, the Rashi script and Noto Sans Hebrew are bundled as static instances of variable fonts. Rebuild them, byte for byte, with:
+
+```sh
+pip install -r tool/fonts/requirements.txt
+bash tool/fonts/build_fonts.sh
+```
 
 ## Sources and licenses
 

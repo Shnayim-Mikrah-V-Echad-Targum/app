@@ -21,6 +21,11 @@
 
   <title>Shnayim Mikra · שניים מקרא</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Start downloading the two display fonts while the engine loads. The
+       engine reads font assets with fetch(), so as="fetch" (not "font") is
+       what lets it reuse these responses instead of downloading them twice. -->
+  <link rel="preload" href="assets/assets/fonts/EBGaramond-Medium.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="assets/assets/fonts/FrankRuhlLibre-Medium.ttf" as="fetch" crossorigin>
   <style>
     html, body { margin: 0; background: #FAF7F0; }
     @media (prefers-color-scheme: dark) { html, body { background: #14120F; } }

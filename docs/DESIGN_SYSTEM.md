@@ -1200,7 +1200,7 @@ The literal "חֲזַק חֲזַק וְנִתְחַזֵּק" is not translated.
 1. **Cross-script fallback.** A single TextStyle relies on `fontFamilyFallback` for mixed Latin and Hebrew, and for nikud on fallback letters. The fallback lists in §4.2 are mandatory; goldens (§11.4) guard them on CanvasKit, Android, iOS and Windows.
 2. **Variable fonts.** Never drive the wght axis; ship the static instances. A missing weight silently snaps to the nearest one, which is the current w600 → Bold bug.
 3. **EB Garamond x-height (0.40 em).** The floors in §4.5 are mandatory. Test the ribbon and two-line map tiles at 200% text scale.
-4. **Bundle size and web start-up.** About 571 KB is loaded eagerly; Rashi is lazy. Subset exactly as in §4.1. Add `<link rel="preload" as="font" crossorigin>` in web/index.html for EBGaramond-Medium and FrankRuhlLibre-Medium.
+4. **Bundle size and web start-up.** About 571 KB is loaded eagerly; Rashi is lazy. Subset exactly as in §4.1. Add `<link rel="preload" as="fetch" crossorigin>` in web/index.html for EBGaramond-Medium and FrankRuhlLibre-Medium. The engine reads fonts with `fetch()`, so `as="font"` would not match and the files would download twice.
 5. **User-chosen fonts must win.** Every serif role maps to Atkinson, Lexend or OpenDyslexic when one is selected (§4.5).
 6. **Departing from M3 defaults.** Every ColorScheme role is explicit (§3.2) so stock widgets don't pull seeded lavender. Button `animationDuration` is zero for the focus ring.
 7. **High-contrast dark primary.** It moves from yellow to light techelet (13.24:1, AAA) to keep one meaning per colour across themes. Gold-yellow #FFD970 remains for the rubric. Collect feedback from low-vision testers.
