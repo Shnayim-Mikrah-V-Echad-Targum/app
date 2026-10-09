@@ -20,11 +20,13 @@ Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   AppSettings settings = const AppSettings(onboardingComplete: true),
   DateTime? now,
+  ProgressState? progress,
 }) async {
   TodayController.autoRollover = false;
   if (now != null) TodayController.now = () => now;
   SharedPreferences.setMockInitialValues({
     'flutter.settings.v1': jsonEncode(settings.toJson()),
+    if (progress != null) 'flutter.progress.v1': jsonEncode(progress.toJson()),
   });
   final prefs = await SharedPreferences.getInstance();
   final repo = await tester.runAsync(loadRepo);
