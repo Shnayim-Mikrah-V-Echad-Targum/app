@@ -150,6 +150,19 @@ void main() {
     expect(find.text('Mark this aliyah as read'), findsNothing, reason: 'the button is at the end of the list');
   });
 
+  testWidgets('a section mark between verses is a rubric, like one inside a verse', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
+    c.read(routerProvider).go('/read/5787:2/0?mode=full');
+    await loadTexts(tester);
+    // A setumah follows Genesis 6:12.
+    final mark = tester.widget<Text>(find.text('ס'));
+    final scheme = Theme.of(tester.element(find.text('ס'))).colorScheme;
+    expect(mark.style?.color, scheme.secondary);
+  });
+
   testWidgets('onboarding sets the join date and opens the reader', (tester) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;

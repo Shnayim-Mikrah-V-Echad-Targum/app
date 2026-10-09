@@ -1002,10 +1002,12 @@ class _FullText extends StatelessWidget {
                     ExcludeSemantics(
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: brk == SectionBreak.open ? 16 : 8),
+                        // A rubric, like the marks inside a verse
+                        // (DESIGN_SYSTEM.md §3.1).
                         child: Text(
                           brk == SectionBreak.open ? 'פ' : 'ס',
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.outline),
+                          style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary),
                         ),
                       ),
                     )
