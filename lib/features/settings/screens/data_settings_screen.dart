@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../app/providers.dart';
 import '../../../services/feedback.dart';
+import '../../community/data/backend.dart';
 import '../../../ui/l10n.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
@@ -105,8 +106,11 @@ class DataSettingsScreen extends ConsumerWidget {
           leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
           title: Text(l.resetProgress),
           onTap: () async {
-            // With backup on, the reset reaches the backup and other devices.
-            final everywhere = ref.read(settingsProvider).cloudSync;
+            // With backup on, the reset reaches the backup and other devices,
+            // but only for the account signed in now: a reset made signed out
+            // must not erase the backup of whoever signs in next.
+            final everywhere =
+                ref.read(settingsProvider).cloudSync && ref.read(forumRepositoryProvider).currentUser != null;
             final ok = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(

@@ -100,8 +100,14 @@ Future<ForumRepository> _accountWithNewerBackup() async {
   return repo;
 }
 
-/// Screens shown with backup on (but not signed in).
+/// Screens shown signed in with backup on.
 const _backupOn = {'s_data_reset'};
+
+Future<ForumRepository> _signedIn() async {
+  final repo = DemoForumRepository();
+  await repo.verifyCode('reader@example.org', '123456');
+  return repo;
+}
 
 /// Screens captured with a dialog open, by tapping the icon given.
 const _dialogs = {'s_data_reset': Icons.delete_forever_outlined};
@@ -205,7 +211,9 @@ void main() {
           settings: mode.settings(scene?.$2(base) ?? base),
           now: scene?.$1 ?? _now,
           progress: _progress(),
-          forums: blocked ? await _accountWithNewerBackup() : null,
+          forums: blocked
+              ? await _accountWithNewerBackup()
+              : (_backupOn.contains(entry.key) ? await _signedIn() : null),
         );
         if (entry.key != 'welcome') c.read(routerProvider).go(entry.value);
         await _settle(tester);

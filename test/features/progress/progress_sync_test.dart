@@ -523,8 +523,10 @@ void main() {
     expect((await backedUp()).isStarted, isFalse);
   });
 
-  for (final backup in [true, false]) {
-    testWidgets('resetting all progress with backup ${backup ? 'on reaches the backup' : 'off stays on this device'}',
+  for (final (backup, signedIn) in [(true, true), (false, true), (true, false)]) {
+    final everywhere = backup && signedIn;
+    final setup = !backup ? 'off' : (signedIn ? 'on' : 'on but signed out');
+    testWidgets('resetting all progress with backup $setup ${everywhere ? 'reaches the backup' : 'stays on this device'}',
         (tester) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
@@ -532,6 +534,7 @@ void main() {
       final demo = DemoForumRepository();
       await demo.verifyCode(_me.email!, '123456');
       await demo.saveProgress(_otherDevice());
+      if (!signedIn) await demo.signOut();
       final c = await pumpApp(
         tester,
         settings: AppSettings(onboardingComplete: true, cloudSync: backup, joinDate: _d1.addDays(-90)),
@@ -545,7 +548,7 @@ void main() {
       await tester.tap(find.text('Reset all progress'));
       await tester.pumpAndSettle();
       expect(
-        find.text(backup
+        find.text(everywhere
             ? 'This erases your reading history and streaks on this device, in your backup, and on your other '
                 'devices when they next sync. It can\'t be undone.'
             : "This erases your reading history and streaks on this device. It can't be undone."),
@@ -560,8 +563,12 @@ void main() {
       expect(c.read(settingsProvider).joinDate, _d2, reason: 'starting afresh today');
       expect(c.read(streakSummaryProvider).weeks, hasLength(1));
       expect(c.read(streakSummaryProvider).weeks.single.status, WeekStatus.inProgress);
+      if (!signedIn) {
+        expect(local.resetAt, 0, reason: "the reset can't reach a backup no one is signed in to");
+        await demo.verifyCode(_me.email!, '123456');
+      }
       final backedUp = ProgressState.fromJson((await demo.loadProgress())!);
-      if (backup) {
+      if (everywhere) {
         expect(local.resetAt, greaterThan(0));
         expect(backedUp, local);
       } else {
