@@ -84,6 +84,7 @@ class AppSettings {
     this.haftarahRequired = false,
     this.tishaBavQuiet = true,
     this.cholHamoedQuiet = false,
+    this.starterCatchUp = true,
     this.method = ReadingMethod.verseByVerse,
     this.secondReading = SecondReading.onkelos,
     this.repeatLastVerse = true,
@@ -135,6 +136,10 @@ class AppSettings {
   final bool haftarahRequired;
   final bool tishaBavQuiet;
   final bool cholHamoedQuiet;
+
+  /// In the week the reader joins, spread the whole portion over the days
+  /// left rather than keeping the usual days (see [ReadingPlanner.planFor]).
+  final bool starterCatchUp;
 
   // Reading
   final ReadingMethod method;
@@ -228,6 +233,7 @@ class AppSettings {
     bool? haftarahRequired,
     bool? tishaBavQuiet,
     bool? cholHamoedQuiet,
+    bool? starterCatchUp,
     ReadingMethod? method,
     SecondReading? secondReading,
     bool? repeatLastVerse,
@@ -278,6 +284,7 @@ class AppSettings {
         haftarahRequired: haftarahRequired ?? this.haftarahRequired,
         tishaBavQuiet: tishaBavQuiet ?? this.tishaBavQuiet,
         cholHamoedQuiet: cholHamoedQuiet ?? this.cholHamoedQuiet,
+        starterCatchUp: starterCatchUp ?? this.starterCatchUp,
         method: method ?? this.method,
         secondReading: secondReading ?? this.secondReading,
         repeatLastVerse: repeatLastVerse ?? this.repeatLastVerse,
@@ -331,6 +338,7 @@ class AppSettings {
         'haftarahRequired': haftarahRequired,
         'tishaBavQuiet': tishaBavQuiet,
         'cholHamoedQuiet': cholHamoedQuiet,
+        'starterCatchUp': starterCatchUp,
         'method': method.name,
         'secondReading': secondReading.name,
         'repeatLastVerse': repeatLastVerse,
@@ -392,6 +400,7 @@ class AppSettings {
       haftarahRequired: b('haftarahRequired', d.haftarahRequired),
       tishaBavQuiet: b('tishaBavQuiet', d.tishaBavQuiet),
       cholHamoedQuiet: b('cholHamoedQuiet', d.cholHamoedQuiet),
+      starterCatchUp: b('starterCatchUp', d.starterCatchUp),
       method: e(ReadingMethod.values, j['method'], d.method),
       secondReading: e(SecondReading.values, j['secondReading'], d.secondReading),
       repeatLastVerse: b('repeatLastVerse', d.repeatLastVerse),

@@ -80,6 +80,26 @@ void main() {
     expect(reminders.where((r) => r.date <= LocalDate(2026, 10, 20)), isEmpty);
   });
 
+  test('in the week of joining, daily reminders follow the starter plan', () {
+    // Joined on Wednesday of Noach: the whole portion is spread over
+    // Wednesday to Friday, and Friday's reminder is the Erev Shabbat one.
+    final wed = LocalDate(2026, 10, 14);
+    final now = DateTime(2026, 10, 14, 8);
+    final reminders = planReminders(
+      prefs: all,
+      planner: ReadingPlanner(schedule: planner.schedule, starterFrom: wed),
+      progressOf: empty,
+      now: now,
+      today: wed,
+      days: 2,
+    );
+    expect([for (final r in reminders.where((r) => r.date <= wed.addDays(2))) (r.date, r.kind, r.aliyot.join(','))], [
+      (wed, ReminderKind.daily, '0,1'),
+      (wed.addDays(1), ReminderKind.daily, '2,3'),
+      (wed.addDays(2), ReminderKind.erevShabbat, ''),
+    ]);
+  });
+
   test('ids are unique', () {
     final ids = plan(days: 120).map((r) => r.id).toList();
     expect(ids.toSet().length, ids.length);

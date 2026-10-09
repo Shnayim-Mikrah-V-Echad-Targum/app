@@ -117,6 +117,8 @@ The goal is to reach the first verse in under a minute. Onboarding has four scre
 
 It ends by opening the reader on today's aliyah. Everything else is a setting with a sensible default.
 
+**The first week starts on the day the reader does.** Most people join midweek. Rather than finding half the portion already due, they have the whole portion spread over the reading days left before it is read in synagogue: joining on Wednesday gives Rishon and Sheni that day, Shlishi and Revi'i on Thursday, and the rest on Friday. The first reading opens on Rishon, and the first week can still be finished on time. From the next week on, the usual plan applies.
+
 ## 7. Community
 
 **Weekly threads per parsha (the 929 model).** Each week's thread is created on demand by a security-definer function, and its title is built on the server from reference data. Clients can't create duplicate threads or spoof their titles. There are general forums for questions, the haftarah, accessibility, and announcements (moderator-only).

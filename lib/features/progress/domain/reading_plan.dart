@@ -71,6 +71,7 @@ class ReadingPlanner {
     this.type = ReadingPlanType.aliyahPerDay,
     this.tishaBavQuiet = true,
     this.cholHamoedQuiet = false,
+    this.starterFrom,
   });
 
   final ParshaSchedule schedule;
@@ -82,6 +83,10 @@ class ReadingPlanner {
   /// Chol HaMoed days have no reading assigned.
   final bool cholHamoedQuiet;
 
+  /// The day the reader started, to plan their first week from that day on
+  /// (see [planFor]); null plans that week like any other.
+  final LocalDate? starterFrom;
+
   bool get israel => schedule.israel;
 
   /// Shabbat, Yom Tov, or a day the user has chosen to keep free.
@@ -92,6 +97,11 @@ class ReadingPlanner {
     return false;
   }
 
+  /// The plan for [week]: its aliyot spread over the reading days among the
+  /// six before its public reading. In the week containing [starterFrom],
+  /// only the days from then on are used, so that a reader who starts
+  /// midweek finds the whole portion still ahead of them rather than half
+  /// of it already due.
   WeekPlan planFor(ReadingWeek week) {
     final id = weekIdFor(week.portion, week.occasion);
     final available = <LocalDate>[];
@@ -101,9 +111,10 @@ class ReadingPlanner {
     } else {
       var first = week.occasion.addDays(-6);
       if (first < week.start) first = week.start;
-      for (var d = first; d < week.occasion; d = d.addDays(1)) {
-        if (!isTransparentDay(d)) available.add(d);
-      }
+      final from = starterFrom;
+      if (from != null && from > first && week.contains(from)) available.addAll(_readingDays(from, week.occasion));
+      // With no reading day left after the start, plan the usual days.
+      if (available.isEmpty) available.addAll(_readingDays(first, week.occasion));
       if (available.isEmpty) available.add(week.plan.last.date);
     }
 
@@ -124,6 +135,13 @@ class ReadingPlanner {
       );
     }
     return WeekPlan(week: week, weekId: id, days: divide(available, kAliyot), shabbatAliyot: const []);
+  }
+
+  /// The days from [first] up to (not including) [end] that can take reading.
+  Iterable<LocalDate> _readingDays(LocalDate first, LocalDate end) sync* {
+    for (var d = first; d < end; d = d.addDays(1)) {
+      if (!isTransparentDay(d)) yield d;
+    }
   }
 
   /// Spreads aliyot 0..count-1 over [days] in order. With as many days as

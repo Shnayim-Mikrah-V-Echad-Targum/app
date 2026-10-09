@@ -124,6 +124,7 @@ final plannerProvider = Provider<ReadingPlanner>((ref) {
     type: s.plan,
     tishaBavQuiet: s.tishaBavQuiet,
     cholHamoedQuiet: s.cholHamoedQuiet,
+    starterFrom: s.starterCatchUp ? s.joinDate : null,
   );
 });
 

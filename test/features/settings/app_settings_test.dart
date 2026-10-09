@@ -10,10 +10,18 @@ void main() {
       readingScale: 2.5,
       secondReading: SecondReading.onkelosAndRashi,
       joinDate: LocalDate(2026, 10, 9),
+      starterCatchUp: false,
       habitAnchor: 'finish Shacharit',
     );
     final back = AppSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
+    expect(back.starterCatchUp, isFalse);
+  });
+
+  test('settings saved before the starter plan existed turn it on', () {
+    final s = AppSettings.fromJson({'joinDate': LocalDate(2026, 10, 9).rd});
+    expect(s.starterCatchUp, isTrue);
+    expect(s.joinDate, LocalDate(2026, 10, 9));
   });
 
   test('unknown or out-of-range values fall back safely', () {
