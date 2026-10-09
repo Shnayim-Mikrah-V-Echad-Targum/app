@@ -153,6 +153,16 @@ class ScriptureVerse extends StatelessWidget {
           ));
         case AlternateReading(:final text):
           spans.add(TextSpan(text: ' (${displayHebrew(text, settings)}) ', style: muted));
+        case PisqaGap(:final kind):
+          // A section break inside the verse, marked as printed Chumashim
+          // mark the scroll's gap: a small letter between full word spaces.
+          // The no-break space keeps the mark with the words before it, so
+          // it never begins a line.
+          spans.add(TextSpan(children: [
+            const TextSpan(text: '\u00A0'),
+            TextSpan(text: kind == SectionBreak.open ? 'פ' : 'ס', style: muted),
+            const TextSpan(text: ' '),
+          ]));
       }
     }
 

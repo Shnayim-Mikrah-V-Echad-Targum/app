@@ -14,6 +14,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
@@ -49,6 +50,8 @@ const _screens = {
   'week': '/week/5787:1',
   'reader': '/read/5787:1/2',
   'reader_full': '/read/5787:1/2?mode=full',
+  // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
+  'reader_gaps': '/read/5787:17/5?mode=full',
   'haftarah': '/haftarah/5787:1',
   'progress': '/progress',
   'community': '/community',
@@ -65,6 +68,19 @@ const _screens = {
   'about': '/settings/about',
   'guide': '/guide',
 };
+
+/// Screens captured scrolled to the end of their main list.
+const _scrolledToEnd = {'reader_gaps'};
+
+Future<void> _scrollToEnd(WidgetTester tester) async {
+  // A lazily built list only learns its full extent as it scrolls.
+  for (var i = 0; i < 8; i++) {
+    for (final s in tester.stateList<ScrollableState>(find.byType(Scrollable))) {
+      if (s.position.axis == Axis.vertical) s.position.jumpTo(s.position.maxScrollExtent);
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
 
 class _Mode {
   const _Mode(this.tag, this.size, this.settings);
@@ -124,7 +140,7 @@ void main() {
 
   for (final mode in _modes) {
     for (final entry in _screens.entries) {
-      if (mode.tag == 'desktop' && !const {'today', 'week', 'reader', 'reader_full', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
+      if (mode.tag == 'desktop' && !const {'today', 'week', 'reader', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
         continue;
       }
       final only = _only;
@@ -137,6 +153,7 @@ void main() {
         final c = await pumpApp(tester, settings: mode.settings(base), now: _now, progress: _progress());
         if (entry.key != 'welcome') c.read(routerProvider).go(entry.value);
         await _settle(tester);
+        if (_scrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);
         await _write(tester, '${mode.tag}_${entry.key}');
       }, skip: !_capture);
     }

@@ -13,6 +13,13 @@ sealed class Segment {
     if (m.containsKey('small')) return SizedLetters(m['small'] as String, LetterSize.small);
     if (m.containsKey('sup')) return SizedLetters(m['sup'] as String, LetterSize.raised);
     if (m.containsKey('alt')) return AlternateReading(m['alt'] as String);
+    if (m.containsKey('gap')) {
+      return PisqaGap(switch (m['gap']) {
+        'P' => SectionBreak.open,
+        'S' => SectionBreak.closed,
+        _ => throw FormatException('Unknown section gap $m'),
+      });
+    }
     throw FormatException('Unknown segment $m');
   }
 }
@@ -51,6 +58,14 @@ class AlternateReading extends Segment {
   final String text;
 }
 
+/// A petuchah or setumah that falls inside a verse (pisqa be'emtza pasuq),
+/// as between the commandments of the Decalogue. The verse continues after
+/// it; as text it is a word space.
+class PisqaGap extends Segment {
+  const PisqaGap(this.kind);
+  final SectionBreak kind;
+}
+
 /// One verse as a list of segments.
 class Verse {
   const Verse(this.ref, this.segments);
@@ -64,7 +79,7 @@ class Verse {
   final List<Segment> segments;
 
   /// The verse as it is read aloud: qere for ketiv/qere, without notes or
-  /// alternate readings.
+  /// alternate readings, and a word space for a section gap inside it.
   String get readText {
     final b = StringBuffer();
     for (final s in segments) {
@@ -75,6 +90,8 @@ class Verse {
           b.write(qere);
         case SizedLetters(:final text):
           b.write(text);
+        case PisqaGap():
+          b.write(' ');
         case TextNote():
         case AlternateReading():
           break;

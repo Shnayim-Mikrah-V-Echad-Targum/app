@@ -90,6 +90,8 @@ class ReaderFlow {
       case ReadingMethod.aliyahByAliyah:
         return [Chunk(0, verses.length)];
       case ReadingMethod.sectionBySection:
+        // Only breaks between verses count: a pasuk is never split, so a
+        // PisqaGap inside a verse does not end a section.
         final out = <Chunk>[];
         var start = 0;
         for (var i = 0; i < verses.length; i++) {
