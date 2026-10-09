@@ -611,7 +611,7 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 
 ### 6.12 LedgerCard (replaces the two streak cards, today_screen.dart:300-325)
 
-- One card with `IntrinsicHeight(Row([col, VerticalDivider(width: 1, color: hairline), col]))`.
+- One card with two equal columns and a full-height hairline between them. Lay it out as a `Table` with a `verticalInside` hairline border rather than `IntrinsicHeight(Row(...))`, so the labels still line up when a sentence in place of a count wraps.
 - Each column: padding 16; ledgerNumeral (the count), then bodySmall label (`streakParsha`, `streakDays`); on Progress, an extra bodySmall "Longest: …".
 - When the value is 0, the numeral slot shows titleMedium text instead:
   - parsha streak: `streakBeginsWith(name)` = "Begins with Bereshit";

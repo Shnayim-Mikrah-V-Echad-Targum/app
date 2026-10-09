@@ -334,6 +334,14 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String streakBeginsWith(String name) {
+    return 'יתחיל בפרשת $name';
+  }
+
+  @override
+  String get daysBeginToday => 'יתחיל בקריאה של היום';
+
+  @override
   String get graceDays => 'ימי חסד';
 
   @override

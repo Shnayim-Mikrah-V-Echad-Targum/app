@@ -84,6 +84,8 @@
   "streakDays": "ימים לפי התוכנית",
   "weeksCount": "{count, plural, =1{שבוע אחד} =2{שבועיים} other{{count} שבועות}}",
   "daysCount": "{count, plural, =1{יום אחד} =2{יומיים} other{{count} ימים}}",
+  "streakBeginsWith": "יתחיל בפרשת {name}",
+  "daysBeginToday": "יתחיל בקריאה של היום",
   "graceDays": "ימי חסד",
   "graceDaysAvailable": "{count, plural, =0{אין זמינים} =1{אחד זמין} other{{count} זמינים}}",
   "dayKept": "נקרא",

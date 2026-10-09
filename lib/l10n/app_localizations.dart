@@ -602,6 +602,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 day} other{{count} days}}'**
   String daysCount(int count);
 
+  /// On the streak card, in place of a parsha streak of 0: the streak starts when this parsha is finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Begins with {name}'**
+  String streakBeginsWith(String name);
+
+  /// On the streak card, in place of 0 days on track.
+  ///
+  /// In en, this message translates to:
+  /// **'Begins with today\'s reading'**
+  String get daysBeginToday;
+
   /// No description provided for @graceDays.
   ///
   /// In en, this message translates to:

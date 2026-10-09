@@ -225,6 +225,20 @@
       }
     }
   },
+  "streakBeginsWith": "Begins with {name}",
+  "@streakBeginsWith": {
+    "description": "On the streak card, in place of a parsha streak of 0: the streak starts when this parsha is finished.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
+      }
+    }
+  },
+  "daysBeginToday": "Begins with today's reading",
+  "@daysBeginToday": {
+    "description": "On the streak card, in place of 0 days on track."
+  },
   "graceDays": "Grace days",
   "graceDaysAvailable": "{count, plural, =0{none available} =1{1 available} other{{count} available}}",
   "@graceDaysAvailable": {

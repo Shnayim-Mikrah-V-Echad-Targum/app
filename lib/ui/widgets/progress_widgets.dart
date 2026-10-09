@@ -101,7 +101,9 @@ class _RingsPainter extends CustomPainter {
       old.progress != progress || old.done != done || old.track != track || old.weights != weights;
 }
 
-/// Two Shabbat candles, drawn so there's an unmistakable rest-day symbol.
+/// Two Shabbat candles, the rest-day symbol (docs/DESIGN_SYSTEM.md §7.6),
+/// drawn on a 24 grid and scaled to [size]. In the rest colour unless given
+/// another.
 class ShabbatCandlesIcon extends StatelessWidget {
   const ShabbatCandlesIcon({super.key, this.size = 24, this.color});
   final double size;
@@ -110,7 +112,14 @@ class ShabbatCandlesIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox.square(
         dimension: size,
-        child: CustomPaint(painter: _CandlesPainter(color ?? IconTheme.of(context).color ?? Colors.black)),
+        child: CustomPaint(
+          painter: _CandlesPainter(
+            color ??
+                Theme.of(context).extension<StatusColors>()?.rest ??
+                IconTheme.of(context).color ??
+                Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
       );
 }
 
@@ -121,19 +130,24 @@ class _CandlesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size s) {
     final p = Paint()..color = color;
-    final w = s.width;
-    for (final cx in [w * 0.32, w * 0.68]) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(Rect.fromLTWH(cx - w * 0.08, s.height * 0.42, w * 0.16, s.height * 0.5), Radius.circular(w * 0.03)),
-        p,
-      );
-      final flame = Path()
-        ..moveTo(cx, s.height * 0.08)
-        ..quadraticBezierTo(cx + w * 0.11, s.height * 0.24, cx, s.height * 0.36)
-        ..quadraticBezierTo(cx - w * 0.11, s.height * 0.24, cx, s.height * 0.08)
-        ..close();
-      canvas.drawPath(flame, p);
+    canvas
+      ..save()
+      ..scale(s.width / 24, s.height / 24);
+    // Each body is 3.5 wide, with its flame centred over it.
+    for (final x in [6.5, 14.0]) {
+      final cx = x + 1.75;
+      canvas
+        ..drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(x, 11, 3.5, 10), const Radius.circular(0.8)), p)
+        ..drawPath(
+          Path()
+            ..moveTo(cx, 3)
+            ..cubicTo(cx + 2.6, 5.6, cx + 2.2, 9.5, cx, 9.5)
+            ..cubicTo(cx - 2.2, 9.5, cx - 2.6, 5.6, cx, 3)
+            ..close(),
+          p,
+        );
     }
+    canvas.restore();
   }
 
   @override
