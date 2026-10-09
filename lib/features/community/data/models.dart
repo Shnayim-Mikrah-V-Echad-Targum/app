@@ -21,7 +21,7 @@ class Profile {
   final bool acceptedTerms;
 
   /// Auto-generated names look like "user_1a2b3c4d" until the user picks one.
-  bool get hasChosenName => !RegExp(r'^user_[0-9a-f]{8}$').hasMatch(displayName);
+  bool get hasChosenName => !RegExp(r'^user_[0-9a-f]{8,32}$').hasMatch(displayName);
 }
 
 class Forum {

@@ -188,10 +188,10 @@ class SupabaseForumRepository implements ForumRepository {
   @override
   Future<String> weeklyThread({required int parshaNumber, required int hebrewYear, required String title}) =>
       _call(() async {
+        // The server builds the title from its own reference data.
         final id = await _db.rpc('ensure_weekly_thread', params: {
           'p_parasha_id': parshaNumber,
           'p_hebrew_year': hebrewYear,
-          'p_title': title,
         });
         return '$id';
       });
