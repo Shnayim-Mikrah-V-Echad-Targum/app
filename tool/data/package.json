@@ -1,0 +1,14 @@
+{
+  "name": "shnayim-mikra-data-tools",
+  "private": true,
+  "type": "module",
+  "description": "Build-time scripts that generate the bundled text/calendar assets and test fixtures. Nothing here ships in the app.",
+  "scripts": {
+    "build": "node build_data.mjs",
+    "fixtures": "node gen_fixtures.mjs"
+  },
+  "devDependencies": {
+    "@hebcal/core": "6.14.1",
+    "@hebcal/leyning": "10.1.0"
+  }
+}

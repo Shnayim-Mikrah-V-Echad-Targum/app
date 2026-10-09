@@ -1,0 +1,1037 @@
+{
+  "@@locale": "en",
+  "appTitle": "Shnayim Mikra",
+  "appTitleFull": "Shnayim Mikra v'Echad Targum",
+  "navToday": "Today",
+  "navParsha": "Parsha",
+  "navProgress": "Progress",
+  "navCommunity": "Community",
+  "navSettings": "Settings",
+  "actionContinue": "Continue",
+  "actionNext": "Next",
+  "actionBack": "Back",
+  "actionDone": "Done",
+  "actionCancel": "Cancel",
+  "actionSave": "Save",
+  "actionClose": "Close",
+  "actionUndo": "Undo",
+  "actionRetry": "Try again",
+  "actionOk": "OK",
+  "actionShare": "Share",
+  "actionLearnMore": "Learn more",
+  "actionMarkRead": "Mark as read",
+  "actionMarkUnread": "Mark as not read",
+  "actionStart": "Start",
+  "actionSkip": "Skip",
+  "actionNotNow": "Not now",
+  "actionEdit": "Edit",
+  "actionDelete": "Delete",
+  "actionReport": "Report",
+  "actionSend": "Send",
+  "actionSignIn": "Sign in",
+  "actionSignOut": "Sign out",
+  "actionMore": "More options",
+  "loading": "Loading…",
+  "errorGeneric": "Something went wrong. Please try again.",
+  "aliyah1": "Rishon",
+  "aliyah2": "Sheni",
+  "aliyah3": "Shlishi",
+  "aliyah4": "Revi'i",
+  "aliyah5": "Chamishi",
+  "aliyah6": "Shishi",
+  "aliyah7": "Shevi'i",
+  "aliyahNumbered": "Aliyah {number}",
+  "@aliyahNumbered": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "aliyahWithName": "{name} · aliyah {number}",
+  "@aliyahWithName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "andJoiner": "{first} and {second}",
+  "@andJoiner": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "passMikra1": "First reading",
+  "passMikra2": "Second reading",
+  "passTargum": "Targum",
+  "passRashi": "Rashi",
+  "passShortMikra": "Mikra",
+  "passSemantics": "{pass}: {state}",
+  "@passSemantics": {
+    "placeholders": {
+      "pass": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "stateDone": "done",
+  "stateNotDone": "not done",
+  "versesCount": "{count, plural, =1{1 verse} other{{count} verses}}",
+  "@versesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesEstimate": "about {minutes} min",
+  "@minutesEstimate": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "aliyotProgress": "{done} of {total} aliyot",
+  "@aliyotProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "readOnShabbat": "Read on Shabbat, {date}",
+  "@readOnShabbat": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "readOnSimchatTorah": "Read on Simchat Torah, {date}",
+  "@readOnSimchatTorah": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shabbatInDays": "{count, plural, =0{Shabbat is today} =1{Shabbat is tomorrow} other{Shabbat in {count} days}}",
+  "@shabbatInDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "parshaLabel": "Parshat {name}",
+  "@parshaLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "todayReadingTitle": "Today's reading",
+  "todayDone": "Today's reading is done",
+  "todayAhead": "You're ahead of plan. Well done!",
+  "todayNothingPlanned": "No reading is planned for today. A good day to catch up or read ahead.",
+  "todayBehind": "{count, plural, =1{1 aliyah behind — very normal midweek.} other{{count} aliyot behind — very normal midweek.}}",
+  "@todayBehind": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "readTodaysAliyah": "Read today's reading",
+  "continueReading": "Continue reading",
+  "startReading": "Start reading",
+  "readFromBook": "I read it from a book",
+  "weekComplete": "This week's parsha is complete. Yasher koach!",
+  "haftarahLabel": "Haftarah",
+  "haftarahRead": "Haftarah read",
+  "openWeekTitle": "{name} is still open",
+  "@openWeekTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "openWeekLate": "Finish by {date} and it still counts.",
+  "@openWeekLate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "openWeekRestore": "Finish {name} and {next} by Shabbat to keep your streak — one double-up per book.",
+  "@openWeekRestore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "checkInTitle": "Shavua tov! Did you read on Shabbat?",
+  "checkInBody": "Log what you read from a printed Chumash — it counts just the same.",
+  "checkInFinished": "I finished it on Shabbat",
+  "checkInPick": "Choose aliyot",
+  "pausedBanner": "Paused until {date}. Nothing resets while paused.",
+  "@pausedBanner": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "resume": "Resume",
+  "discussThisWeek": "Discuss this week's parsha",
+  "streakParsha": "Parsha streak",
+  "streakDays": "Days on track",
+  "weeksCount": "{count, plural, =1{1 week} other{{count} weeks}}",
+  "@weeksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "daysCount": "{count, plural, =1{1 day} other{{count} days}}",
+  "@daysCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "graceDays": "Grace days",
+  "graceDaysAvailable": "{count, plural, =0{none available} =1{1 available} other{{count} available}}",
+  "@graceDaysAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayKept": "Read",
+  "dayAhead": "Ahead of plan",
+  "dayCaughtUp": "Caught up",
+  "dayGrace": "Covered by a grace day",
+  "dayPaused": "Paused",
+  "dayOpen": "Not yet",
+  "dayMissed": "Not read",
+  "dayRest": "Shabbat or Yom Tov",
+  "dayUpcoming": "Upcoming",
+  "dayNoReading": "No reading planned",
+  "dayChipLabel": "{day}: {status}",
+  "@dayChipLabel": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "weekStripLabel": "This week's plan",
+  "weekOnTime": "On time",
+  "weekLate": "After Shabbat — still counts",
+  "weekRestored": "Doubled up",
+  "weekMadeUp": "Made up",
+  "weekMissed": "Not completed",
+  "weekTransparent": "Not counted",
+  "weekOverdue": "Can still be restored",
+  "weekInProgress": "In progress",
+  "plannedFor": "Planned for {day}",
+  "@plannedFor": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "plannedForShabbat": "Shabbat morning — log it after Shabbat",
+  "markWholeWeek": "Mark the whole parsha as read",
+  "clearWeek": "Clear this week's progress",
+  "clearWeekConfirm": "Clear all progress for {name}?",
+  "@clearWeekConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "whenDidYouRead": "When did you read it?",
+  "whenToday": "Today",
+  "whenYesterday": "Yesterday",
+  "whenOnShabbat": "On Shabbat",
+  "whenPickDate": "Choose a date",
+  "markedRead": "Marked as read",
+  "markedUnread": "Marked as not read",
+  "aliyahNote": "Note: {note}",
+  "@aliyahNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "browseAll": "All parshiyot",
+  "browseTitle": "The Torah",
+  "previewNotOpen": "Preview — this parsha opens for credit on {date}.",
+  "@previewNotOpen": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "stepMikra1": "Read the Hebrew",
+  "stepMikra2": "Read the Hebrew again",
+  "stepTargum": "Read the Targum",
+  "stepRashi": "Read Rashi",
+  "stepThirdHebrew": "Read the Hebrew a third time",
+  "stepRepeatLast": "End with Mikra: read the last verse once more",
+  "stepOf": "Reading {step} of {total}",
+  "@stepOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "verseOf": "Verse {current} of {total}",
+  "@verseOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "sectionOf": "Section {current} of {total}",
+  "@sectionOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "verseLabel": "Verse {number}",
+  "@verseLabel": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "chapterLabel": "Chapter {number}",
+  "@chapterLabel": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "noTargumNote": "Many read this verse a third time in Hebrew in place of the Targum (Shulchan Aruch OC 285:2).",
+  "noRashiNote": "Rashi does not comment on this verse. Some read it a third time in Hebrew (Mishnah Berurah 285:5).",
+  "ketivQereLabel": "Written {ketiv}, read {qere}",
+  "@ketivQereLabel": {
+    "placeholders": {
+      "ketiv": {
+        "type": "String"
+      },
+      "qere": {
+        "type": "String"
+      }
+    }
+  },
+  "ketivOnlyLabel": "Written {ketiv}, not read",
+  "@ketivOnlyLabel": {
+    "placeholders": {
+      "ketiv": {
+        "type": "String"
+      }
+    }
+  },
+  "qereOnlyLabel": "Read {qere}, not written",
+  "@qereOnlyLabel": {
+    "placeholders": {
+      "qere": {
+        "type": "String"
+      }
+    }
+  },
+  "noteLabel": "Note: {text}",
+  "@noteLabel": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "aliyahComplete": "Yasher koach! {aliyah} is complete.",
+  "@aliyahComplete": {
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "parshaComplete": "Chazak! Parshat {name} is complete.",
+  "@parshaComplete": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "firstAliyahDone": "Yasher koach! Your first aliyah is done — {verses}, twice, with Targum.",
+  "@firstAliyahDone": {
+    "placeholders": {
+      "verses": {
+        "type": "String"
+      }
+    }
+  },
+  "nextAliyah": "Next aliyah",
+  "backToWeek": "Back to the week",
+  "displaySettings": "Display settings",
+  "textSize": "Text size",
+  "textSmaller": "Smaller text",
+  "textLarger": "Larger text",
+  "listen": "Listen",
+  "stopListening": "Stop",
+  "ttsUnavailable": "Text-to-speech isn't available on this device.",
+  "ttsNoHebrewVoice": "No Hebrew voice is installed. You can add one in your device's speech settings.",
+  "guidedMode": "Guided reading",
+  "fullTextMode": "Full text",
+  "markAliyahRead": "Mark this aliyah as read",
+  "keyboardShortcuts": "Keyboard shortcuts",
+  "translationDisclaimer": "A translation is a study aid. It does not take the place of the Targum.",
+  "mikraLabel": "Torah",
+  "targumLabel": "Targum Onkelos",
+  "rashiLabel": "Rashi",
+  "translationLabel": "Translation (JPS 1917)",
+  "haftarahTitle": "Haftarah",
+  "markHaftarahRead": "Mark the haftarah as read",
+  "specialHaftarah": "Special haftarah: {reason}",
+  "@specialHaftarah": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "readerFinished": "You've finished this aliyah.",
+  "shortcutNext": "Next step",
+  "shortcutBack": "Previous step",
+  "shortcutLarger": "Larger text",
+  "shortcutSmaller": "Smaller text",
+  "shortcutTeamim": "Show or hide cantillation",
+  "shortcutNikud": "Show or hide vowels",
+  "shortcutListen": "Listen / stop",
+  "shortcutHelp": "Show shortcuts",
+  "progressTitle": "Progress",
+  "longest": "Longest: {value}",
+  "@longest": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "thisCycle": "This year: {done} of 54 parshiyot",
+  "@thisCycle": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      }
+    }
+  },
+  "versesRead": "{count} verses read twice with Targum",
+  "@versesRead": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "torahMap": "Torah map",
+  "torahMapHelp": "Each tile is one parsha of this year's cycle.",
+  "recentWeeks": "Recent weeks",
+  "makeUpTitle": "Make up before Simchat Torah",
+  "makeUpBody": "Optional. Make-ups count toward this year's siyum.",
+  "pauseTitle": "Life happens",
+  "pauseBody": "Pause for up to 30 days — nothing resets while paused. Illness, travel, mourning, a new baby: life comes first.",
+  "pauseAction": "Pause streaks",
+  "pauseFor": "Pause for",
+  "pauseStarting": "Starting",
+  "pauseStarted": "Paused until {date}.",
+  "@pauseStarted": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pauseEnded": "Welcome back! Your place is saved.",
+  "streaksHidden": "Streak numbers are hidden. Your progress is still saved.",
+  "milestonesTitle": "Milestones",
+  "graceExplainer": "Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.",
+  "streakExplainer": "Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.",
+  "statusLegend": "Legend",
+  "noHistory": "Your weeks will appear here as you read.",
+  "milestoneFirstAliyah": "First aliyah",
+  "milestoneFirstParsha": "First parsha",
+  "milestonePerfectWeek": "Perfect week",
+  "milestoneParshaStreak": "{count}-week parsha streak",
+  "@milestoneParshaStreak": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "milestoneDaysOnTrack": "{count} days on track",
+  "@milestoneDaysOnTrack": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "milestoneSefer": "Sefer {book} complete — Chazak!",
+  "@milestoneSefer": {
+    "placeholders": {
+      "book": {
+        "type": "String"
+      }
+    }
+  },
+  "milestoneSiyum": "Siyum HaTorah",
+  "milestoneComeback": "Welcome back",
+  "milestoneLocked": "Not yet reached",
+  "settingsTitle": "Settings",
+  "settingsReading": "Reading & customs",
+  "settingsDisplay": "Display",
+  "settingsAccessibility": "Accessibility",
+  "settingsReminders": "Reminders",
+  "settingsStreaks": "Streaks",
+  "settingsAccount": "Account & community",
+  "settingsData": "Your data",
+  "settingsLanguage": "Language",
+  "settingsAbout": "About",
+  "settingsReadingDesc": "Location, plan, Targum or Rashi, haftarah",
+  "settingsDisplayDesc": "Theme, fonts, text size, vowels and cantillation",
+  "settingsAccessibilityDesc": "Motion, screen readers, speech, quick setups",
+  "settingsRemindersDesc": "Gentle reminders, never on Shabbat or Yom Tov",
+  "settingsDataDesc": "Back up, restore or reset your progress",
+  "locationLabel": "This Shabbat I'll be",
+  "locationIsrael": "In Israel",
+  "locationDiaspora": "Outside Israel",
+  "locationHelp": "Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days.",
+  "planLabel": "Weekly plan",
+  "planAliyahPerDay": "An aliyah a day",
+  "planAliyahPerDayDesc": "One aliyah Sunday–Thursday; the 6th and 7th on Friday",
+  "planShevii": "Shevi'i on Shabbat morning",
+  "planSheviiDesc": "Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal",
+  "planErevShabbat": "All on Friday",
+  "planErevShabbatDesc": "The whole parsha on Erev Shabbat (Arizal; Shulchan Aruch HaRav)",
+  "methodLabel": "Reading method",
+  "methodVerse": "Verse by verse",
+  "methodVerseDesc": "Each verse twice, then its Targum",
+  "methodSection": "Section by section",
+  "methodSectionDesc": "Each paragraph twice, then its Targum",
+  "methodAliyah": "Aliyah by aliyah",
+  "methodAliyahDesc": "The whole aliyah twice, then its Targum",
+  "secondLabel": "Targum",
+  "secondOnkelos": "Targum Onkelos",
+  "secondRashi": "Rashi",
+  "secondBoth": "Onkelos and Rashi",
+  "secondRashiEnglish": "Rashi in English",
+  "secondHelp": "The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both. A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.",
+  "repeatLastVerse": "End with Mikra",
+  "repeatLastVerseDesc": "Repeat the parsha's last verse in Hebrew after its Targum",
+  "thirdReading": "Third-reading prompts",
+  "thirdReadingDesc": "Where there is no Targum or Rashi, suggest reading the Hebrew a third time",
+  "haftarahEnabled": "Haftarah",
+  "haftarahEnabledDesc": "Read the week's haftarah once",
+  "nusachLabel": "Haftarah custom",
+  "nusachAshkenazi": "Ashkenazi",
+  "nusachSephardi": "Sephardi",
+  "nusachChabad": "Chabad",
+  "haftarahRequired": "Count the haftarah toward completion",
+  "lateWindowLabel": "After-Shabbat window",
+  "lateTuesday": "Until Tuesday night",
+  "lateWednesday": "Until Wednesday night",
+  "lateNone": "No window",
+  "lateWindowDesc": "Reading finished after Shabbat, until this time, still counts (Shulchan Aruch OC 285:4).",
+  "tishaBavQuiet": "No reading planned on Tisha B'Av",
+  "cholHamoedQuiet": "No reading planned on Chol HaMoed",
+  "nameStyleLabel": "Parsha names",
+  "nameSephardi": "Sephardi (Bereshit)",
+  "nameAshkenazi": "Ashkenazi (Bereishis)",
+  "themeLabel": "Theme",
+  "themeSystem": "Match device",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "themeSepia": "Sepia",
+  "themeHcLight": "High contrast — light",
+  "themeHcDark": "High contrast — dark",
+  "scriptureFontLabel": "Scripture font",
+  "fontNotoSerif": "Noto Serif Hebrew",
+  "fontTaamey": "Taamey Frank (classic Chumash)",
+  "fontEzra": "Ezra SIL",
+  "fontNotoSans": "Noto Sans Hebrew (sans-serif)",
+  "readingSize": "Reading size",
+  "readingSizeValue": "{percent}%",
+  "@readingSizeValue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "lineSpacing": "Line spacing",
+  "wordSpacing": "Word spacing",
+  "letterSpacing": "Letter spacing",
+  "showNikud": "Vowels (nikud)",
+  "showTeamim": "Cantillation (ta'amim)",
+  "showKetiv": "Show ketiv (as written)",
+  "showVerseNumbers": "Verse numbers",
+  "justifyText": "Justify text",
+  "lineWidthLabel": "Line width",
+  "lineNarrow": "Narrow",
+  "lineMedium": "Medium",
+  "lineWide": "Wide",
+  "showTranslation": "English translation (study aid)",
+  "showRashi": "Show Rashi alongside",
+  "uiFontLabel": "Interface font",
+  "uiFontStandard": "Standard",
+  "uiFontAtkinson": "Atkinson Hyperlegible",
+  "uiFontLexend": "Lexend",
+  "uiFontOpenDyslexic": "OpenDyslexic",
+  "boldText": "Bold text",
+  "focusMode": "Focus mode",
+  "focusModeDesc": "Highlight the current verse and dim the rest",
+  "keepScreenOn": "Keep the screen on while reading",
+  "previewLabel": "Preview",
+  "reduceMotion": "Reduce motion",
+  "reduceMotionDesc": "Turn off animations and moving celebrations",
+  "haptics": "Haptic feedback",
+  "screenReaderText": "Screen reader text",
+  "srSimplified": "Vowels, no cantillation (recommended)",
+  "srConsonants": "Letters only",
+  "srAllMarks": "All marks (for braille displays)",
+  "divineNameLabel": "Speaking the Divine Name",
+  "divineAdonai": "Adonai",
+  "divineHashem": "HaShem",
+  "speechRate": "Speech rate",
+  "presetsTitle": "Quick setups",
+  "presetLargePrint": "Large print",
+  "presetDyslexia": "Dyslexia-friendly",
+  "presetHighContrast": "High contrast",
+  "presetLowVision": "Low vision",
+  "presetReset": "Reset display",
+  "presetApplied": "{name} applied",
+  "@presetApplied": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accessibilityStatement": "Accessibility statement",
+  "sendFeedback": "Send feedback",
+  "dailyReminder": "Daily reminder",
+  "dailyReminderDesc": "A gentle nudge at your chosen time",
+  "reminderTime": "Time",
+  "fridayReminder": "Erev Shabbat reminder",
+  "fridayReminderDesc": "Friday morning, only if the parsha isn't finished",
+  "checkInReminder": "After-Shabbat check-in",
+  "checkInReminderDesc": "Sunday morning, to log what you read on Shabbat",
+  "remindersShabbatNote": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.",
+  "habitAnchorLabel": "After I…",
+  "habitAnchorPrompt": "Tie your reading to something you already do every day.",
+  "anchorShacharit": "finish Shacharit",
+  "anchorBreakfast": "eat breakfast",
+  "anchorCommute": "start my commute",
+  "anchorDinner": "finish dinner",
+  "anchorBed": "get ready for bed",
+  "notificationsUnsupported": "Reminders aren't available in the web version. Install the app on your phone or computer to get them.",
+  "notificationsDenied": "Notifications are turned off for this app in your device settings.",
+  "primingTitle": "Want a gentle daily nudge?",
+  "primingBody": "At {time}. Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.",
+  "@primingBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "primingYes": "Yes, remind me",
+  "notifChannelDaily": "Daily reading",
+  "notifChannelFriday": "Erev Shabbat",
+  "notifChannelCheckIn": "After Shabbat",
+  "notifDailyTitle": "Today: {aliyah}",
+  "@notifDailyTitle": {
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "notifDailyBody": "Parshat {parsha} · {verses}",
+  "@notifDailyBody": {
+    "placeholders": {
+      "parsha": {
+        "type": "String"
+      },
+      "verses": {
+        "type": "String"
+      }
+    }
+  },
+  "notifFridayTitle": "Erev Shabbat · Parshat {parsha}",
+  "@notifFridayTitle": {
+    "placeholders": {
+      "parsha": {
+        "type": "String"
+      }
+    }
+  },
+  "notifFridayBody": "If you haven't finished, there's still time — or finish Shabbat morning from your Chumash and log it after Shabbat.",
+  "notifCheckInTitle": "Shavua tov!",
+  "notifCheckInBody": "Did you read on Shabbat? Tap to log it.",
+  "showStreaks": "Show streak numbers",
+  "showStreaksDesc": "Hide them if you'd rather focus on the learning itself",
+  "exportData": "Export my progress",
+  "exportDataDesc": "Save a backup you can restore later",
+  "importData": "Import progress",
+  "importDataDesc": "Restore from a backup",
+  "importPrompt": "Paste the contents of your backup file.",
+  "importSuccess": "Progress imported.",
+  "importFailed": "That backup couldn't be read.",
+  "exportCopied": "Backup copied to the clipboard.",
+  "resetProgress": "Reset all progress",
+  "resetProgressConfirm": "This erases your reading history and streaks on this device. It can't be undone.",
+  "resetDone": "Progress reset.",
+  "languageSystem": "Device language",
+  "languageEnglish": "English",
+  "languageHebrew": "עברית",
+  "aboutTitle": "About",
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "sourcesTitle": "Texts & sources",
+  "licensesTitle": "Open-source licenses",
+  "privacyTitle": "Privacy",
+  "termsTitle": "Terms of use",
+  "guidelinesTitle": "Community guidelines",
+  "contactTitle": "Contact us",
+  "guideTitle": "About Shnayim Mikra",
+  "disclaimer": "Customs vary. For practical questions, ask your rav.",
+  "onbWelcomeBody": "Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.",
+  "onbStart": "Start this week's parsha",
+  "onbLocationTitle": "Where will you be this Shabbat?",
+  "onbMethodTitle": "How do you read?",
+  "onbPlanTitle": "Your plan this week",
+  "onbHonor": "Shnayim Mikra runs on the honor system. Log what you read, wherever you read it — a Chumash in shul counts just as much as this app.",
+  "onbChangeAnytime": "You can change this anytime in Settings.",
+  "onbStep": "Step {current} of {total}",
+  "@onbStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "onbWhyAsk": "Why we ask",
+  "guideWhatTitle": "What is Shnayim Mikra?",
+  "guideWhatBody": "The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.",
+  "guideWhenTitle": "When",
+  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon, after the community reads the next portion at Mincha). Ideally finish before the Shabbat meal. If not, it may still be completed until Tuesday night (\"until Wednesday\", SA 285:4), and missed portions may be made up until Simchat Torah.",
+  "guideHowTitle": "How",
+  "guideHowBody": "Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.",
+  "guideTargumTitle": "Targum or Rashi",
+  "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum.",
+  "guideSpecialTitle": "Special cases",
+  "guideSpecialBody": "Some verses have no separate Targum, such as \"Atarot v'Divon\" (Numbers 32:3); many read them a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once.",
+  "guideShabbatTitle": "Shabbat and Yom Tov",
+  "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
+  "guideSourcesTitle": "Sources",
+  "guideSourcesBody": "Berakhot 8a–b · Shulchan Aruch, Orach Chaim 285 · Mishnah Berurah 285 · Kitzur Shulchan Aruch 72 · Shulchan Aruch HaRav 285",
+  "hebrewDateLabel": "Hebrew date: {date}",
+  "@hebrewDateLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "bookOfTorah": "Sefer {book}",
+  "@bookOfTorah": {
+    "placeholders": {
+      "book": {
+        "type": "String"
+      }
+    }
+  },
+  "communityTitle": "Community",
+  "demoModeBanner": "Demo mode: posts stay on this device and reset when the app restarts.",
+  "forumsHeading": "Forums",
+  "thisWeeksThread": "This week: Parshat {name}",
+  "@thisWeeksThread": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "weeklyThreadTitle": "Parshat {name} {year}",
+  "@weeklyThreadTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "openDiscussion": "Open the discussion",
+  "signInPrompt": "Sign in to post, say thanks or report.",
+  "signInTitle": "Sign in",
+  "signInBody": "We'll email you a 6-digit code — no password needed.",
+  "emailLabel": "Email address",
+  "sendCodeAction": "Email me a code",
+  "codeSentTo": "We sent a 6-digit code to {email}.",
+  "@codeSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "codeLabel": "6-digit code",
+  "verifyAction": "Sign in",
+  "useDifferentEmail": "Use a different email",
+  "demoCodeHint": "Demo mode: any 6 digits will work.",
+  "signedInAs": "Signed in as {name}",
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "displayNameLabel": "Display name",
+  "displayNameHelp": "Shown with your posts. 2–40 characters.",
+  "saveName": "Save name",
+  "nameSaved": "Name saved.",
+  "syncProgress": "Back up my progress",
+  "syncProgressDesc": "Keep your reading progress with your account and restore it on other devices.",
+  "syncNow": "Sync now",
+  "syncDone": "Progress synced.",
+  "syncFailed": "Couldn't sync right now. We'll try again later.",
+  "lastSynced": "Last synced {time}",
+  "@lastSynced": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccount": "Delete my account",
+  "deleteAccountConfirm": "This permanently deletes your account, your profile and everything you've posted. Your reading progress on this device is kept. This can't be undone.",
+  "accountDeleted": "Your account was deleted.",
+  "newThread": "New discussion",
+  "threadTitleLabel": "Title",
+  "threadBodyLabel": "Your message",
+  "forumLabel": "Forum",
+  "postAction": "Post",
+  "replyLabel": "Write a reply",
+  "replyAction": "Reply",
+  "replyingTo": "Replying to {name}",
+  "@replyingTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "todahCount": "{count, plural, =0{Say thanks} =1{1 thanks} other{{count} thanks}}",
+  "@todahCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todahSemantics": "Say thanks to {name}",
+  "@todahSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reportTitle": "Report this post",
+  "reportReasonLabel": "What's wrong?",
+  "reasonSpam": "Spam or advertising",
+  "reasonLashonHara": "Lashon hara or gossip",
+  "reasonDisrespect": "Disrespectful or abusive",
+  "reasonMisinformation": "Misleading about halacha or sources",
+  "reasonOffTopic": "Off topic",
+  "reasonOther": "Something else",
+  "reportDetails": "Details (optional)",
+  "reportSent": "Thank you. A moderator will review it.",
+  "blockUser": "Block {name}",
+  "@blockUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "blockConfirm": "You won't see posts from {name}. They won't be notified.",
+  "@blockConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "blockedDone": "Blocked.",
+  "unblock": "Unblock",
+  "blockedUsersTitle": "Blocked members",
+  "edited": "edited",
+  "editPostTitle": "Edit post",
+  "deletePostConfirm": "Delete this post?",
+  "postDeleted": "Post deleted.",
+  "posted": "Posted.",
+  "pendingReview": "Hidden — waiting for a moderator",
+  "lockedThread": "This discussion is locked.",
+  "pinnedLabel": "Pinned",
+  "lockedLabel": "Locked",
+  "lockThread": "Lock discussion",
+  "unlockThread": "Unlock discussion",
+  "pinThread": "Pin to top",
+  "unpinThread": "Unpin",
+  "hidePost": "Hide post",
+  "moderationQueue": "Reports to review",
+  "noReports": "No open reports.",
+  "removePost": "Remove post",
+  "dismissReport": "Dismiss",
+  "guidelinesAccept": "I'll follow the community guidelines",
+  "guidelinesPrompt": "Before your first post, please read the community guidelines.",
+  "readGuidelines": "Read the guidelines",
+  "noThreads": "No discussions yet. Start the first one!",
+  "loadMore": "Load more",
+  "postsCount": "{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}",
+  "@postsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeJustNow": "just now",
+  "timeMinutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@timeMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@timeHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "postedBy": "{name}, {time}",
+  "@postedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "anonymousMember": "Former member",
+  "errRateLimited": "You're posting quickly — please wait a few seconds.",
+  "errThreadLocked": "This discussion is locked.",
+  "errTerms": "Please accept the community guidelines first.",
+  "errBanned": "Your account can't post.",
+  "errSilenced": "Posting is paused for your account for now.",
+  "errContent": "That message can't be posted. Please review the community guidelines.",
+  "errDuplicate": "You already posted that.",
+  "errLinks": "New members can include at most 2 links.",
+  "errDailyLimit": "New members can post a limited amount each day. Please try again tomorrow.",
+  "errNameTaken": "That name is taken.",
+  "errInvalidName": "Names must be 2–40 characters.",
+  "errInvalidCode": "That code didn't work. Check it and try again.",
+  "errInvalidEmail": "Please enter a valid email address.",
+  "errNotSignedIn": "Please sign in first.",
+  "errForbidden": "You don't have permission to do that.",
+  "errShabbat": "Posting is closed for Shabbat.",
+  "errTooShort": "Please write a little more.",
+  "errTitleTooShort": "The title needs at least 5 characters.",
+  "errNetwork": "Couldn't reach the server. Check your connection and try again.",
+  "moderatorBadge": "Moderator",
+  "draftRestored": "Your draft was restored.",
+  "discardDraft": "Discard draft",
+  "charactersLeft": "{count} characters left",
+  "@charactersLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

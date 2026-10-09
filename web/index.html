@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Shnayim Mikra v'Echad Targum: read the weekly parsha twice in Hebrew and once in Targum, with daily and weekly streaks, community forums and extensive accessibility options.">
+  <meta name="theme-color" content="#1E4B8F">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Shnayim Mikra">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Shnayim Mikra · שניים מקרא</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    html, body { margin: 0; background: #FBF9F5; }
+    @media (prefers-color-scheme: dark) { html, body { background: #111318; } }
+    #loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+      font: 18px/1.5 system-ui, sans-serif; color: #1E4B8F;
+    }
+    @media (prefers-color-scheme: dark) { #loading { color: #AFC6FF; } }
+    #loading .he { font-size: 32px; }
+  </style>
+</head>
+<body>
+  <div id="loading" role="status" aria-live="polite">
+    <div class="he" lang="he" dir="rtl">שניים מקרא ואחד תרגום</div>
+    <div>Loading…</div>
+  </div>
+  <noscript>Shnayim Mikra needs JavaScript to run in the browser.</noscript>
+  <script>
+    // Remove the loading message once Flutter has rendered its first frame.
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('loading');
+      if (el) el.remove();
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

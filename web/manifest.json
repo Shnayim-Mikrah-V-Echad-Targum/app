@@ -1,0 +1,42 @@
+{
+    "name": "Shnayim Mikra · שניים מקרא",
+    "short_name": "Shnayim Mikra",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#FBF9F5",
+    "theme_color": "#1E4B8F",
+    "description": "Read the weekly parsha twice in Hebrew and once in Targum, with streaks, community and extensive accessibility options.",
+    "orientation": "any",
+    "lang": "en",
+    "dir": "auto",
+    "categories": [
+        "education",
+        "books",
+        "lifestyle"
+    ],
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

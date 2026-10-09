@@ -1,0 +1,145 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../app/providers.dart';
+import '../../ui/l10n.dart';
+import '../settings/app_settings.dart';
+
+/// Quick display controls available while reading.
+Future<void> showDisplaySheet(BuildContext context) => showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => const _DisplaySheet(),
+    );
+
+void changeReadingScale(WidgetRef ref, double delta) {
+  ref.read(settingsProvider.notifier).update(
+        (s) => s.copyWith(readingScale: (s.readingScale + delta).clamp(kMinReadingScale, kMaxReadingScale)),
+      );
+}
+
+class _DisplaySheet extends ConsumerWidget {
+  const _DisplaySheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final s = ref.watch(settingsProvider);
+    final update = ref.read(settingsProvider.notifier).update;
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.95,
+      builder: (context, controller) => ListView(
+        controller: controller,
+        padding: const EdgeInsets.only(bottom: 24),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: Semantics(
+              header: true,
+              headingLevel: 2,
+              child: Text(l.displaySettings, style: Theme.of(context).textTheme.titleLarge),
+            ),
+          ),
+          ListTile(
+            title: Text(l.textSize),
+            subtitle: Text(l.readingSizeValue((s.readingScale * 100).round())),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton.outlined(
+                  tooltip: l.textSmaller,
+                  icon: const Icon(Icons.text_decrease),
+                  onPressed: s.readingScale > kMinReadingScale ? () => changeReadingScale(ref, -0.1) : null,
+                ),
+                const SizedBox(width: 8),
+                IconButton.outlined(
+                  tooltip: l.textLarger,
+                  icon: const Icon(Icons.text_increase),
+                  onPressed: s.readingScale < kMaxReadingScale ? () => changeReadingScale(ref, 0.1) : null,
+                ),
+              ],
+            ),
+          ),
+          SwitchListTile(
+            title: Text(l.showNikud),
+            value: s.showNikud,
+            onChanged: (v) => update((s) => s.copyWith(showNikud: v)),
+          ),
+          SwitchListTile(
+            title: Text(l.showTeamim),
+            value: s.showTeamim,
+            onChanged: (v) => update((s) => s.copyWith(showTeamim: v)),
+          ),
+          SwitchListTile(
+            title: Text(l.showTranslation),
+            subtitle: Text(l.translationDisclaimer),
+            value: s.showTranslation,
+            onChanged: (v) => update((s) => s.copyWith(showTranslation: v)),
+          ),
+          SwitchListTile(
+            title: Text(l.showRashi),
+            value: s.showRashi,
+            onChanged: (v) => update((s) => s.copyWith(showRashi: v)),
+          ),
+          SwitchListTile(
+            title: Text(l.focusMode),
+            subtitle: Text(l.focusModeDesc),
+            value: s.focusMode,
+            onChanged: (v) => update((s) => s.copyWith(focusMode: v)),
+          ),
+          ListTile(
+            title: Text(l.lineSpacing),
+            subtitle: Slider(
+              value: s.lineHeight,
+              min: 1.5,
+              max: 3.0,
+              divisions: 15,
+              label: s.lineHeight.toStringAsFixed(1),
+              semanticFormatterCallback: (v) => v.toStringAsFixed(1),
+              onChanged: (v) => update((s) => s.copyWith(lineHeight: v)),
+            ),
+          ),
+          ListTile(
+            title: Text(l.themeLabel),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final (mode, label) in [
+                    (AppThemeMode.system, l.themeSystem),
+                    (AppThemeMode.light, l.themeLight),
+                    (AppThemeMode.sepia, l.themeSepia),
+                    (AppThemeMode.dark, l.themeDark),
+                    (AppThemeMode.highContrastLight, l.themeHcLight),
+                    (AppThemeMode.highContrastDark, l.themeHcDark),
+                  ])
+                    ChoiceChip(
+                      label: Text(label),
+                      selected: s.theme == mode,
+                      onSelected: (_) => update((s) => s.copyWith(theme: mode)),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.tune),
+            title: Text(l.settingsDisplay),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.pop(context);
+              context.push('/settings/display');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
