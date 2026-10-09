@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/text/hebrew_text.dart';
 import '../../../data/models/parsha.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/widgets/common.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -78,7 +80,7 @@ Future<bool> ensureGuidelines(BuildContext context, WidgetRef ref) async {
   if (!context.mounted) return false;
   final l = context.l10n;
   var checked = false;
-  final ok = await showDialog<bool>(
+  final ok = await showAppDialog<bool>(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
@@ -127,9 +129,7 @@ Future<void> openWeeklyThread(BuildContext context, WidgetRef ref, PortionInfo p
     if (!context.mounted) return;
     replace ? context.pushReplacement('/community/thread/$id') : context.push('/community/thread/$id');
   } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(communityError(l, e))));
-    }
+    if (context.mounted) showStatus(context, communityError(l, e));
   }
 }
 

@@ -1,6 +1,16 @@
+import 'dart:ui' show SemanticsHitTestBehavior;
+
 import 'package:flutter/material.dart';
 
 import '../theme/focus.dart';
+import '../theme/motion.dart';
+import '../theme/sefer_colors.dart';
+
+/// Screens narrower than this pad cards and sheets 16 instead of 20 or 24
+/// (docs/DESIGN_SYSTEM.md §5).
+const kNarrowScreenWidth = 360.0;
+
+bool _isNarrow(BuildContext context) => MediaQuery.sizeOf(context).width < kNarrowScreenWidth;
 
 /// Constrains page content to a readable width and centers it on wide
 /// screens, so lines never get uncomfortably long (WCAG 1.4.8).
@@ -76,21 +86,22 @@ class Gap extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(width: size, height: size);
 }
 
-/// A card with consistent padding.
+/// A card with consistent padding: 20, or 16 on a narrow screen (§6.3).
 class InfoCard extends StatelessWidget {
-  const InfoCard({super.key, required this.child, this.color, this.padding = const EdgeInsets.all(16), this.onTap});
+  const InfoCard({super.key, required this.child, this.color, this.padding, this.onTap});
 
   final Widget child;
   final Color? color;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final content = Padding(padding: padding, child: child);
-    if (onTap == null) return Card(color: color, clipBehavior: Clip.antiAlias, child: content);
-    // The focus ring is drawn just outside the card, so the card mustn't clip
-    // it. The ink stays inside: the ink well clips it to the same corners.
+    final content = Padding(padding: padding ?? EdgeInsets.all(_isNarrow(context) ? 16 : 20), child: child);
+    if (onTap == null) return Card(color: color, child: content);
+    // The focus ring is drawn just outside the card, so this card mustn't clip
+    // it as cards do. The ink stays inside: the ink well clips it to the same
+    // corners.
     final radius = switch (Theme.of(context).cardTheme.shape) {
       RoundedRectangleBorder(:final borderRadius) => borderRadius.resolve(Directionality.of(context)),
       _ => const BorderRadius.all(Radius.circular(12)),
@@ -116,8 +127,13 @@ class NoticeBanner extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Card(
       color: scheme.secondaryContainer,
+      // The fill sets it apart; only high contrast outlines it (§6.20).
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        side: SeferColors.of(context).isHighContrast ? BorderSide(color: scheme.outline, width: 2) : BorderSide.none,
+      ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 12),
         child: Row(
           children: [
             Icon(icon, color: scheme.onSecondaryContainer),
@@ -126,6 +142,92 @@ class NoticeBanner extends StatelessWidget {
             ?action,
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Shows a dialog in the app's style (docs/DESIGN_SYSTEM.md §6.19): it fades
+/// in while growing from 98% over [Motion.short], or is simply there while
+/// motion is reduced. Use it instead of [showDialog], which it otherwise
+/// matches: the barrier dismisses it, it keeps the caller's theme, stays in
+/// the safe area, and keeps keyboard focus inside until it closes.
+Future<T?> showAppDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+}) {
+  final navigator = Navigator.of(context, rootNavigator: true);
+  final themes = InheritedTheme.capture(from: context, to: navigator.context);
+  // The route showGeneralDialog pushes, plus showDialog's focus trap.
+  return navigator.push<T>(RawDialogRoute<T>(
+    barrierDismissible: barrierDismissible,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: DialogTheme.of(context).barrierColor ?? Colors.black54,
+    transitionDuration: Motion.of(context).d(Motion.short),
+    traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+    pageBuilder: (context, animation, secondaryAnimation) => Semantics(
+      // Taps on the dialog never reach the barrier behind it.
+      hitTestBehavior: SemanticsHitTestBehavior.opaque,
+      child: SafeArea(child: themes.wrap(Builder(builder: builder))),
+    ),
+    transitionBuilder: _dialogTransition,
+  ));
+}
+
+final _dialogCurve = CurveTween(curve: Motion.decelerate);
+final _dialogScale = Tween<double>(begin: 0.98, end: 1).chain(_dialogCurve);
+
+Widget _dialogTransition(
+        BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) =>
+    FadeTransition(
+      opacity: animation.drive(_dialogCurve),
+      child: ScaleTransition(scale: animation.drive(_dialogScale), child: child),
+    );
+
+/// The padding inside a sheet: 24, or 16 on a narrow screen (§6.19).
+double sheetPadding(BuildContext context) => _isNarrow(context) ? 16 : 24;
+
+/// Shows a modal bottom sheet in the app's style (docs/DESIGN_SYSTEM.md
+/// §6.19): paper with a drag handle, at most 640 wide, in the safe area, and
+/// with no slide while motion is reduced. Use it instead of
+/// [showModalBottomSheet]. List tiles in the sheet line up with its
+/// [SheetTitle].
+Future<T?> showAppSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool isScrollControlled = false,
+}) =>
+    showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: isScrollControlled,
+      useSafeArea: true,
+      sheetAnimationStyle: Motion.of(context).style,
+      builder: (context) {
+        final padding = sheetPadding(context);
+        return ListTileTheme.merge(
+          contentPadding: EdgeInsetsDirectional.symmetric(horizontal: padding),
+          child: Builder(builder: builder),
+        );
+      },
+    );
+
+/// A sheet's title, under its drag handle: titleLarge, and a heading for
+/// screen readers.
+class SheetTitle extends StatelessWidget {
+  const SheetTitle(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = sheetPadding(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(padding, 0, padding, 8),
+      child: Semantics(
+        header: true,
+        headingLevel: 2,
+        child: Text(text, style: Theme.of(context).textTheme.titleLarge),
       ),
     );
   }

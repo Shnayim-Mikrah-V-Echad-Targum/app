@@ -9,6 +9,7 @@ import '../../../app/providers.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
+import '../../../ui/widgets/common.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -67,7 +68,7 @@ class DataSettingsScreen extends ConsumerWidget {
           subtitle: Text(l.importDataDesc),
           onTap: () async {
             final controller = TextEditingController();
-            final ok = await showDialog<bool>(
+            final ok = await showAppDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
                 title: Text(l.importData),
@@ -91,7 +92,7 @@ class DataSettingsScreen extends ConsumerWidget {
           leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
           title: Text(l.resetProgress),
           onTap: () async {
-            final ok = await showDialog<bool>(
+            final ok = await showAppDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
                 title: Text(l.resetProgress),

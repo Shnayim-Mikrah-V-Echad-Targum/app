@@ -55,7 +55,7 @@ class WeekOverview extends ConsumerWidget {
     }
 
     Future<void> clearWeek() async {
-      final ok = await showDialog<bool>(
+      final ok = await showAppDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           content: Text(l.clearWeekConfirm(name)),
@@ -93,6 +93,7 @@ class WeekOverview extends ConsumerWidget {
           ...actions,
           PopupMenuButton<String>(
             tooltip: l.actionMore,
+            popUpAnimationStyle: Motion.of(context).style,
             onSelected: (v) => switch (v) {
               'all' => markWeek(),
               'clear' => clearWeek(),
@@ -209,7 +210,8 @@ class _AliyahTile extends ConsumerWidget {
         // Expose the reading state of all three passes in the tile's label.
         value: passStates.join(', '),
         child: ListTile(
-          contentPadding: const EdgeInsetsDirectional.only(start: 12, end: 4),
+          // Room at the end for the menu button's focus ring: the card clips.
+          contentPadding: const EdgeInsetsDirectional.only(start: 12, end: 8),
           leading: CircleAvatar(
             backgroundColor: done ? StatusColors.of(context).done : theme.colorScheme.surfaceContainerHighest,
             foregroundColor: done ? StatusColors.of(context).onDone : theme.colorScheme.onSurface,
@@ -237,6 +239,7 @@ class _AliyahTile extends ConsumerWidget {
           onTap: () => context.push('/read/${ctx.id}/$aliyah'),
           trailing: PopupMenuButton<String>(
             tooltip: l.actionMore,
+            popUpAnimationStyle: Motion.of(context).style,
             onSelected: (v) {
               if (v == 'read') markRead();
               if (v == 'unread') {

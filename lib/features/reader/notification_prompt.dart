@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../services/notifications.dart';
 import '../../ui/l10n.dart';
+import '../../ui/widgets/common.dart';
 
 /// After the first aliyah: celebrate, and — only now, never on first launch —
 /// offer a gentle daily reminder before the OS permission prompt.
@@ -14,7 +15,7 @@ Future<void> maybeOfferReminders(BuildContext context, WidgetRef ref, {required 
   ref.read(settingsProvider.notifier).update((s) => s.copyWith(notificationPromptShown: true));
   final time = Names(context).time(settings.dailyReminderMinutes);
 
-  final yes = await showDialog<bool>(
+  final yes = await showAppDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       icon: const Icon(Icons.celebration_outlined),

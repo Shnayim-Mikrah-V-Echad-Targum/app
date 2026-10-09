@@ -24,7 +24,7 @@ class ReminderSettingsScreen extends ConsumerWidget {
       final granted = await service.requestPermission();
       if (!granted) {
         if (context.mounted) {
-          await showDialog<void>(
+          await showAppDialog<void>(
             context: context,
             builder: (context) => AlertDialog(
               content: Text(l.notificationsDenied),
@@ -38,10 +38,14 @@ class ReminderSettingsScreen extends ConsumerWidget {
     }
 
     Future<void> pickTime(int current, void Function(int) onPicked) async {
-      final t = await showTimePicker(
+      // showTimePicker's dialog, shown the app's way (instantly under Reduce
+      // Motion).
+      final t = await showAppDialog<TimeOfDay>(
         context: context,
-        initialTime: TimeOfDay(hour: current ~/ 60, minute: current % 60),
-        initialEntryMode: TimePickerEntryMode.inputOnly,
+        builder: (_) => TimePickerDialog(
+          initialTime: TimeOfDay(hour: current ~/ 60, minute: current % 60),
+          initialEntryMode: TimePickerEntryMode.inputOnly,
+        ),
       );
       if (t != null) onPicked(t.hour * 60 + t.minute);
     }

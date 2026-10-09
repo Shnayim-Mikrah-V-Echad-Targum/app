@@ -735,6 +735,10 @@ Keep the keyboard shortcuts.
 
 **Tooltip:** inverseSurface, radius 6, bodySmall in onInverseSurface; waitDuration 400 ms (existing).
 
+**High contrast:** paper and surface are the same colour there, so sheets and dialogs (including the date and time pickers) also take a 2 px outline, and the drag handle, which is also a dismiss button, is drawn in full `outline`.
+
+**Code:** open dialogs with `showAppDialog` and sheets with `showAppSheet` (common.dart; a sheet's heading is `SheetTitle`), and status messages with `showStatus` (feedback.dart). They carry the timing and Reduce Motion; test/ui/motion_usage_test.dart fails on a direct `showDialog`, `showModalBottomSheet`, picker or `showSnackBar`.
+
 ### 6.20 NoticeBanner (common.dart) and the demo notice
 
 **NoticeBanner**
@@ -864,6 +868,9 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - iOS and macOS: Cupertino.
 - Web, Windows and Linux: fade-through. Incoming page opacity 0→1 over 250 ms (decelerate) with a rise of 8 px; no zoom.
 - Reduce Motion keeps `_NoTransitionsBuilder`.
+- The Android slides mirror in RTL, as Android's own do: in Hebrew the next page arrives from the left (`FadeForwardsDirectionalPageTransitionsBuilder`).
+
+**Reduce Motion everywhere:** dialogs, sheets, snackbars and every `PopupMenuButton` (`popUpAnimationStyle: Motion.of(context).style`) appear at once, and `ThemeData.splashFactory` is `NoSplash`.
 
 **Reader**
 - Step and verse change: `AnimatedSwitcher`, 180 ms, opacity only, keyed by (chunk, step). No horizontal slides.

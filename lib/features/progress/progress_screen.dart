@@ -386,7 +386,7 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
   final today = ref.read(todayProvider);
   var days = 7;
   var backdate = 0;
-  final ok = await showDialog<bool>(
+  final ok = await showAppDialog<bool>(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(

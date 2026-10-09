@@ -80,6 +80,15 @@ const _screens = {
   'focus_switch': '/settings/display',
   'focus_field': '/community/account',
   'focus_chip': '/read/5787:1/2',
+  'focus_menu': '/week/5787:1',
+  // Overlays (§6.19) and the app bar with content scrolled under it (§6.2).
+  'menu': '/week/5787:1',
+  'dialog': '/week/5787:1',
+  'snackbar': '/week/5787:1',
+  'sheet_date': '/week/5787:1',
+  'dialog_date': '/week/5787:1',
+  'sheet_display': '/read/5787:1/2',
+  'scrolled': '/progress',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -108,7 +117,36 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'focus_switch': (tester) => _keyboardFocus(tester, find.byType(SwitchListTile).first),
   'focus_field': (tester) => _keyboardFocus(tester, find.byType(TextField).first),
   'focus_chip': (tester) => _keyboardFocus(tester, find.byType(ChoiceChip).at(1)),
+  // A menu button inside a card, which clips: the ring must still show.
+  'focus_menu': (tester) => _keyboardFocus(
+        tester,
+        find.descendant(of: find.byType(Card), matching: find.byType(PopupMenuButton<String>)).first,
+      ),
+  'menu': (tester) => _openWeekMenu(tester),
+  // The week menu: full text, mark the whole parsha, clear the week.
+  'dialog': (tester) => _openWeekMenu(tester, item: 2),
+  'snackbar': (tester) async {
+    await _openWeekMenu(tester, item: 2);
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
+  },
+  'sheet_date': (tester) => _openWeekMenu(tester, item: 1),
+  'dialog_date': (tester) async {
+    await _openWeekMenu(tester, item: 1);
+    await tester.tap(find.byIcon(Icons.edit_calendar));
+  },
+  'sheet_display': (tester) => tester.tap(find.byIcon(Icons.text_format)),
+  'scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -400)),
 };
+
+/// Opens the week overview's menu, and picks its [item] if one is given.
+Future<void> _openWeekMenu(WidgetTester tester, {int? item}) async {
+  await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)));
+  await tester.pumpAndSettle();
+  if (item != null) {
+    await tester.tap(find.byType(PopupMenuItem<String>).at(item));
+    await tester.pumpAndSettle();
+  }
+}
 
 /// Moves keyboard focus to [target], as Tab would, and shows it the way a
 /// keyboard user sees it.
@@ -150,7 +188,18 @@ final _modes = [
   _Mode('phonetall', const Size(412, 2600), (s) => s),
 ];
 
-const _desktopScreens = {'today', 'week', 'reader', 'reader_full', 'progress', 'thread', 'settings', 'welcome'};
+const _desktopScreens = {
+  'today',
+  'week',
+  'reader',
+  'reader_full',
+  'progress',
+  'thread',
+  'settings',
+  'welcome',
+  'dialog',
+  'sheet_display',
+};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
 
 Future<void> _settle(WidgetTester tester) async {
@@ -190,6 +239,9 @@ void main() {
         tester.view.physicalSize = mode.size;
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
+        // Soft shadows, as a device draws them; tests otherwise draw them as
+        // solid lines. Restored before the test ends, as the binding checks.
+        debugDisableShadows = false;
         final base = (_screenSettings[entry.key] ?? (s) => s)(
           AppSettings(onboardingComplete: entry.key != 'welcome', joinDate: _join),
         );
@@ -202,6 +254,7 @@ void main() {
           await _settle(tester);
         }
         await _write(tester, '${mode.tag}_${entry.key}');
+        debugDisableShadows = true;
       }, skip: !_capture);
     }
   }

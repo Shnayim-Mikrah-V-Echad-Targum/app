@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../features/settings/app_settings.dart';
 import 'focus.dart';
+import 'motion.dart';
 import 'palette.dart';
 import 'typography.dart';
 
 export 'focus.dart';
+export 'motion.dart';
 export 'sefer_colors.dart';
 export 'status_colors.dart';
 export 'typography.dart';
@@ -71,16 +73,6 @@ abstract final class AppButtons {
       overlayColor: _overlay(scheme.onError),
     );
   }
-}
-
-/// A page transition that does nothing, for Reduce Motion.
-class _NoTransitionsBuilder extends PageTransitionsBuilder {
-  const _NoTransitionsBuilder();
-
-  @override
-  Widget buildTransitions<T>(PageRoute<T> route, BuildContext context, Animation<double> animation,
-          Animation<double> secondaryAnimation, Widget child) =>
-      child;
 }
 
 abstract final class AppTheme {
@@ -150,41 +142,90 @@ abstract final class AppTheme {
       // items. Controls draw the ring instead.
       focusColor: scheme.onSurface.withValues(alpha: 0.24),
       scaffoldBackgroundColor: scheme.surface,
-      extensions: [status, sefer, seferType],
-      pageTransitionsTheme: reduceMotion
-          ? const PageTransitionsTheme(builders: {
-              TargetPlatform.android: _NoTransitionsBuilder(),
-              TargetPlatform.iOS: _NoTransitionsBuilder(),
-              TargetPlatform.windows: _NoTransitionsBuilder(),
-              TargetPlatform.macOS: _NoTransitionsBuilder(),
-              TargetPlatform.linux: _NoTransitionsBuilder(),
-              TargetPlatform.fuchsia: _NoTransitionsBuilder(),
-            })
-          : const PageTransitionsTheme(),
+      cardColor: sefer.paper,
+      shadowColor: scheme.shadow,
+      extensions: [status, sefer, seferType, Motion(reduced: reduceMotion)],
+      // §8: each platform's transition, or none while motion is reduced, when
+      // ink doesn't spread either (pressed controls still show their wash).
+      pageTransitionsTheme: AppPageTransitions.theme(reduced: reduceMotion),
+      splashFactory: reduceMotion ? NoSplash.splashFactory : null,
     );
 
     // ThemeData has filled in what the text theme leaves to the platform (the
     // device font's family), so component styles start from its copy.
     final text = base.textTheme;
     final labelLarge = text.labelLarge!;
+    final onSurfaceVariantIcons = IconThemeData(color: scheme.onSurfaceVariant, size: 24);
+    // Paper surfaces (§3.1, §5): no elevation and no tint. Cards and menus
+    // keep their hairline (a 2 px outline in high contrast). Sheets and
+    // dialogs are set off by their scrim, and in high contrast by a 2 px
+    // outline as well, since there paper and surface are the same colour.
+    final hairline = BorderSide(color: sefer.hairline, width: sefer.hairlineWidth);
+    final floatingEdge = highContrast ? BorderSide(color: scheme.outline, width: 2) : BorderSide.none;
     return base.copyWith(
+      // §6.2. Scrolled content slips under a hairline-thin shadow in
+      // outlineVariant; in high contrast the bar has a 2 px rule instead.
       appBarTheme: AppBarTheme(
+        toolbarHeight: 64,
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
-        scrolledUnderElevation: highContrast ? 0 : 2,
-        shape: highContrast ? Border(bottom: BorderSide(color: scheme.outline)) : null,
+        elevation: 0,
+        scrolledUnderElevation: highContrast ? 0 : 1,
+        shadowColor: scheme.outlineVariant,
+        shape: highContrast ? Border(bottom: BorderSide(color: scheme.outline, width: 2)) : null,
         centerTitle: false,
+        titleTextStyle: text.titleLarge!.copyWith(color: scheme.onSurface),
+        iconTheme: onSurfaceVariantIcons,
+        actionsIconTheme: onSurfaceVariantIcons,
       ),
+      // §6.3: paper with a full-strength hairline (2 px outline in high
+      // contrast). Cards clip, so a list tile's ink stays inside the corners.
       cardTheme: CardThemeData(
         elevation: 0,
-        color: scheme.surfaceContainerLow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: highContrast ? BorderSide(color: scheme.outline, width: 2) : BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
-        ),
+        color: sefer.paper,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: const BorderRadius.all(Radius.circular(12)), side: hairline),
+        clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.zero,
       ),
+      // Menus and the FAB are the only things that float on a shadow (§5).
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primaryContainer,
+        foregroundColor: scheme.onPrimaryContainer,
+        elevation: 2,
+        focusElevation: 2,
+        hoverElevation: 2,
+        highlightElevation: 2,
+        disabledElevation: 0,
+        // The pale fill alone barely shows on a high-contrast surface.
+        shape: RoundedRectangleBorder(borderRadius: const BorderRadius.all(Radius.circular(16)), side: floatingEdge),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: sefer.paper,
+        surfaceTintColor: Colors.transparent,
+        elevation: 2,
+        shadowColor: scheme.shadow,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+          side: hairline,
+        ),
+        labelTextStyle: WidgetStatePropertyAll(text.bodyLarge!.copyWith(color: scheme.onSurface)),
+      ),
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(sefer.paper),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          elevation: const WidgetStatePropertyAll(2),
+          shadowColor: WidgetStatePropertyAll(scheme.shadow),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+            borderRadius: const BorderRadius.all(Radius.circular(12)),
+            side: hairline,
+          )),
+        ),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary, linearTrackColor: sefer.ringTrack),
       // Buttons (§6.5): radius 10, never a stadium. Each switches to the
       // focus ring shape while keyboard focus is shown, with no animation:
       // Material's shape tween would blend the ring away.
@@ -370,14 +411,76 @@ abstract final class AppTheme {
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         indicatorColor: scheme.primaryContainer,
         backgroundColor: scheme.surfaceContainer,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
       ),
       navigationRailTheme: NavigationRailThemeData(
         labelType: NavigationRailLabelType.all,
         indicatorColor: scheme.primaryContainer,
         backgroundColor: scheme.surfaceContainer,
+        elevation: 0,
       ),
-      snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
-      tooltipTheme: const TooltipThemeData(waitDuration: Duration(milliseconds: 400)),
+      // §6.19: sheets are paper with 20 px top corners and a drag handle, at
+      // most 640 wide (centred on wider screens).
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: sefer.paper,
+        modalBackgroundColor: sefer.paper,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        modalElevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          side: floatingEdge,
+        ),
+        clipBehavior: Clip.antiAlias,
+        showDragHandle: true,
+        // The handle is also a dismiss button, so high contrast draws it in
+        // full.
+        dragHandleColor: highContrast ? scheme.outline : scheme.outline.withValues(alpha: 0.4),
+        dragHandleSize: const Size(36, 4),
+        constraints: const BoxConstraints(maxWidth: 640),
+      ),
+      // Dialogs: paper, radius 16, a serif title over quieter body text.
+      // AlertDialog already pads 24 and ends its actions.
+      dialogTheme: DialogThemeData(
+        backgroundColor: sefer.paper,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: const BorderRadius.all(Radius.circular(16)), side: floatingEdge),
+        titleTextStyle: text.titleLarge!.copyWith(color: scheme.onSurface),
+        contentTextStyle: text.bodyMedium!.copyWith(color: scheme.onSurfaceVariant),
+      ),
+      // The date and time pickers are dialogs too.
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: sefer.paper,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: const BorderRadius.all(Radius.circular(16)), side: floatingEdge),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: sefer.paper,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: const BorderRadius.all(Radius.circular(16)), side: floatingEdge),
+      ),
+      // Status messages float in the inverse colours (12.55:1 in light), the
+      // action in inversePrimary. showStatus sets the timing.
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: scheme.inverseSurface,
+        contentTextStyle: text.bodyMedium!.copyWith(color: scheme.onInverseSurface),
+        actionTextColor: scheme.inversePrimary,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+        insetPadding: const EdgeInsets.all(16),
+      ),
+      tooltipTheme: TooltipThemeData(
+        waitDuration: const Duration(milliseconds: 400),
+        decoration: BoxDecoration(
+          color: scheme.inverseSurface,
+          borderRadius: const BorderRadius.all(Radius.circular(6)),
+        ),
+        textStyle: text.bodySmall!.copyWith(color: scheme.onInverseSurface),
+      ),
     );
   }
 }

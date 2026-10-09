@@ -206,7 +206,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
         title: Text(l.deleteAccount),
         onTap: () async {
-          final ok = await showDialog<bool>(
+          final ok = await showAppDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
               title: Text(l.deleteAccount),

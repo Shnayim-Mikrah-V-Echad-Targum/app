@@ -14,6 +14,7 @@ import '../../data/text_repository.dart';
 import '../../services/feedback.dart';
 import '../../services/tts.dart';
 import '../../ui/l10n.dart';
+import '../../ui/theme/motion.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/sefer_choice_chip.dart';
 import '../parsha/week_context.dart';
@@ -382,6 +383,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               ),
               PopupMenuButton<String>(
                 tooltip: l.actionMore,
+                popUpAnimationStyle: Motion.of(context).style,
                 onSelected: (v) {
                   switch (v) {
                     case 'mode':
@@ -491,7 +493,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ('$mod + Shift + L', l.shortcutListen),
       ('F1 · $mod + /', l.shortcutHelp),
     ];
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l.keyboardShortcuts),
