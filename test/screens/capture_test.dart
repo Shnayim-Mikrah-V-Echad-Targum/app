@@ -56,6 +56,7 @@ const _screens = {
   'reader_full': '/read/5787:1/2?mode=full',
   // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
   'reader_gaps': '/read/5787:17/5?mode=full',
+  'reader_gaps_spaced': '/read/5787:17/5?mode=full',
   'haftarah': '/haftarah/5787:1',
   'progress': '/progress',
   'community': '/community',
@@ -84,6 +85,8 @@ final _scenes = <String, (DateTime, AppSettings Function(AppSettings))>{
     DateTime(2029, 4, 24, 11),
     (s) => s.copyWith(readingSchedule: ReadingSchedule.israel, joinDate: LocalDate(2029, 4, 22)),
   ),
+  // The widest word spacing, justified: the spaces around a section mark.
+  'reader_gaps_spaced': (_now, (s) => s.copyWith(wordSpacing: 16, justify: true)),
 };
 
 /// Screens shown signed in with backup on, where a newer version of the app
@@ -111,7 +114,7 @@ final _taps = {
 };
 
 /// Screens captured scrolled to the end of their main list.
-const _scrolledToEnd = {'reader_gaps'};
+const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced'};
 
 Future<void> _scrollToEnd(WidgetTester tester) async {
   // A lazily built list only learns its full extent as it scrolls.
