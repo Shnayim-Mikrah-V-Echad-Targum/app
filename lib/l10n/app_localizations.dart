@@ -578,13 +578,19 @@ abstract class AppLocalizations {
   /// **'Resume'**
   String get resume;
 
-  /// Shown on Today when the reader hears the reading of one place but keeps the Yom Tov days of the other, in a week when Israel and the Diaspora read different portions.
+  /// Shown on Today when the reader hears Israel's reading but keeps two days of Yom Tov (a visitor to Israel), in a week when Israel and the Diaspora read different portions.
   ///
   /// In en, this message translates to:
-  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Visitors from abroad usually read both; if you daven with a minyan reading {diaspora}, read only that one.'**
+  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Visitors from abroad usually read both. If you daven with a minyan reading {diaspora}, read only that one, and set the reading you\'ll hear to Outside Israel in Settings.'**
   String readingDivergence(String israel, String diaspora);
 
-  /// Button on the divergence notice that opens the week page of the other place's portion.
+  /// Shown on Today when the reader hears the reading outside Israel but keeps one day of Yom Tov (an Israeli abroad), in a week when Israel reads the next portion.
+  ///
+  /// In en, this message translates to:
+  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Israel is a parsha ahead, so you\'ll read {israel} next week.'**
+  String readingDivergenceAhead(String israel, String diaspora);
+
+  /// Button on the divergence notice that opens the week page of the Diaspora's portion, read in Israel the week before.
   ///
   /// In en, this message translates to:
   /// **'Open {name}'**

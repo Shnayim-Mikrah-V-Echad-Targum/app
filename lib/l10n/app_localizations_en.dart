@@ -304,7 +304,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String readingDivergence(String israel, String diaspora) {
-    return 'In Israel this week: $israel. Outside Israel: $diaspora. Visitors from abroad usually read both; if you daven with a minyan reading $diaspora, read only that one.';
+    return 'In Israel this week: $israel. Outside Israel: $diaspora. Visitors from abroad usually read both. If you daven with a minyan reading $diaspora, read only that one, and set the reading you\'ll hear to Outside Israel in Settings.';
+  }
+
+  @override
+  String readingDivergenceAhead(String israel, String diaspora) {
+    return 'In Israel this week: $israel. Outside Israel: $diaspora. Israel is a parsha ahead, so you\'ll read $israel next week.';
   }
 
   @override

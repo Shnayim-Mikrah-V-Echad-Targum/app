@@ -170,18 +170,24 @@ final openPreviousWeekProvider = Provider<WeekContext?>((ref) {
 });
 
 /// This week's portions in Israel and outside it, for a reader who hears
-/// one place's reading but keeps the other's days of Yom Tov (a visitor),
-/// in a week when the two differ, as they can for a few weeks after Pesach
-/// or Shavuot.
+/// one place's reading but keeps the other's days of Yom Tov, in a week when
+/// the two differ, as they can for a few weeks after Pesach or Shavuot.
+/// Israel is then a parsha ahead.
 class ReadingDivergence {
-  const ReadingDivergence({required this.israel, required this.diaspora, this.other});
+  const ReadingDivergence({required this.israel, required this.diaspora, required this.hearsIsrael, this.previous});
 
   final PortionId israel;
   final PortionId diaspora;
 
-  /// The week, in the reader's own schedule, that holds the portion the
-  /// other place reads; null when that is this week.
-  final ReadingWeek? other;
+  /// Whether the reader hears Israel's reading (a visitor to Israel), whose
+  /// home portion this week was read in Israel last week. Otherwise (an
+  /// Israeli abroad) Israel's portion is next week's in their own schedule.
+  final bool hearsIsrael;
+
+  /// For a visitor to Israel, the week in their own schedule that holds the
+  /// Diaspora's portion (last week), which they can still read; null when
+  /// this week holds it.
+  final ReadingWeek? previous;
 }
 
 final readingDivergenceProvider = Provider<ReadingDivergence?>((ref) {
@@ -190,13 +196,21 @@ final readingDivergenceProvider = Provider<ReadingDivergence?>((ref) {
   final israel = const ParshaSchedule(israel: true).weekFor(today);
   final diaspora = const ParshaSchedule(israel: false).weekFor(today);
   if (israel.portion == diaspora.portion) return null;
+  // On the Diaspora's Simchat Torah, Israel has begun Bereshit a day early:
+  // the same week's reading, not two.
+  if (israel.portion.isVezotHaberakhah || diaspora.portion.isVezotHaberakhah) return null;
   final schedule = ref.watch(scheduleProvider);
-  final elsewhere = schedule.israel ? diaspora : israel;
-  final other = findWeekById(schedule, weekIdFor(elsewhere.portion, elsewhere.occasion));
   final current = ref.watch(currentWeekProvider);
+  final elsewhere = schedule.israel ? diaspora : israel;
+  var other = findWeekById(schedule, weekIdFor(elsewhere.portion, elsewhere.occasion));
+  if (other != null && other.occasion == current.occasion) other = null;
+  // Hearing the Diaspora's reading, a week that also holds Israel's portion
+  // (the two read together) differs in nothing that matters.
+  if (!schedule.israel && other == null) return null;
   return ReadingDivergence(
     israel: israel.portion,
     diaspora: diaspora.portion,
-    other: other == null || other.occasion == current.occasion ? null : other,
+    hearsIsrael: schedule.israel,
+    previous: schedule.israel ? other : null,
   );
 });

@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../../helpers.dart';
@@ -23,8 +24,15 @@ final _visitor = AppSettings(
   readingSchedule: ReadingSchedule.israel,
 );
 
-const _notice = "In Israel this week: Sh'lach. Outside Israel: Beha'alotcha. Visitors from abroad usually read both; "
-    "if you daven with a minyan reading Beha'alotcha, read only that one.";
+/// An Israeli abroad: the reading outside Israel, one day of Yom Tov.
+final _abroad = _visitor.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true);
+
+const _notice = "In Israel this week: Sh'lach. Outside Israel: Beha'alotcha. Visitors from abroad usually read both. "
+    "If you daven with a minyan reading Beha'alotcha, read only that one, and set the reading you'll hear to "
+    'Outside Israel in Settings.';
+
+const _aheadNotice = "In Israel this week: Sh'lach. Outside Israel: Beha'alotcha. Israel is a parsha ahead, so you'll "
+    "read Sh'lach next week.";
 
 void main() {
   group('on Today', () {
@@ -48,11 +56,12 @@ void main() {
       expect(find.text('Mark the whole parsha as read'), findsOneWidget, reason: "last week's portion in Israel is open");
     });
 
-    testWidgets('an Israeli abroad sees them too', (tester) async {
-      await openToday(tester, _visitor.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true));
-      expect(find.text(_notice), findsOneWidget);
+    testWidgets('an Israeli abroad is told that Israel is a parsha ahead, with nothing to open', (tester) async {
+      await openToday(tester, _abroad);
+      expect(find.text(_aheadNotice), findsOneWidget);
       expect(find.text("Parshat Beha'alotcha"), findsOneWidget);
-      expect(find.widgetWithText(TextButton, "Open Sh'lach"), findsOneWidget);
+      // Sh'lach is next week's reading for them, not open yet.
+      expect(find.textContaining('Open '), findsNothing);
     });
 
     for (final theme in [AppThemeMode.light, AppThemeMode.dark, AppThemeMode.highContrastLight, AppThemeMode.highContrastDark]) {
@@ -75,7 +84,11 @@ void main() {
       expect(tester.takeException(), isNull);
 
       await openToday(tester, _visitor.copyWith(language: AppLanguage.hebrew));
-      expect(find.textContaining('בארץ ישראל השבוע'), findsOneWidget);
+      expect(find.textContaining('בארץ ישראל קוראים השבוע את פרשת שלח'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await openToday(tester, _abroad.copyWith(language: AppLanguage.hebrew));
+      expect(find.textContaining('ארץ ישראל מקדימה בפרשה אחת'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -107,24 +120,52 @@ void main() {
       return container.read(readingDivergenceProvider);
     }
 
-    test("names each place's portion, and the week of the other in the reader's schedule", () async {
+    test("names each place's portion, and for a visitor, the home portion's week in Israel", () async {
       final visitor = await divergenceOn(_tuesday, _visitor);
       expect((visitor!.israel, visitor.diaspora), (const PortionId(37), const PortionId(36)));
-      expect(visitor.other!.portion, const PortionId(36));
-      expect(visitor.other!.occasion, LocalDate(2027, 6, 19), reason: "last week's reading in Israel");
+      expect(visitor.hearsIsrael, isTrue);
+      expect(visitor.previous!.portion, const PortionId(36));
+      expect(visitor.previous!.occasion, LocalDate(2027, 6, 19), reason: "last week's reading in Israel");
 
-      final abroad = await divergenceOn(_tuesday, _visitor.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true));
-      expect(abroad!.other!.portion, const PortionId(37));
-      expect(abroad.other!.occasion, LocalDate(2027, 7, 3), reason: "next week's reading outside Israel");
+      final abroad = await divergenceOn(_tuesday, _abroad);
+      expect((abroad!.israel, abroad.diaspora), (const PortionId(37), const PortionId(36)));
+      expect(abroad.hearsIsrael, isFalse);
+      expect(abroad.previous, isNull, reason: "Israel's portion is next week's, which hasn't opened");
     });
 
-    test('offers no other week when the reader\'s own week holds it', () async {
+    test('says nothing to an Israeli abroad in a week that holds both portions', () async {
       // Outside Israel, Chukat and Balak are read together on 17 July 2027,
       // when Israel reads Balak: the two schedules meet again.
-      final abroad = _visitor.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true);
-      final d = await divergenceOn(DateTime(2027, 7, 13, 10), abroad);
-      expect((d!.israel, d.diaspora), (const PortionId(40), const PortionId(39, combined: true)));
-      expect(d.other, isNull);
+      expect(await divergenceOn(DateTime(2027, 7, 13, 10), _abroad), isNull);
+      final visitor = await divergenceOn(DateTime(2027, 7, 13, 10), _visitor);
+      expect((visitor!.israel, visitor.diaspora), (const PortionId(40), const PortionId(39, combined: true)));
+      expect(visitor.previous!.portion, const PortionId(39), reason: 'Chukat, read in Israel last week');
     });
+
+    test("says nothing on the Diaspora's Simchat Torah, when Israel has begun Bereshit", () async {
+      // Sunday 4 October 2026, 23 Tishrei 5787: an ordinary day for someone
+      // who keeps one day of Yom Tov.
+      final simchatTorah = DateTime(2026, 10, 4, 10);
+      expect(await divergenceOn(simchatTorah, _abroad), isNull);
+      expect(await divergenceOn(simchatTorah, _visitor), isNull);
+    });
+  });
+
+  test('Israel is never more than a parsha ahead, so the notices hold every year', () {
+    const israel = ParshaSchedule(israel: true);
+    const diaspora = ParshaSchedule(israel: false);
+    var divergentWeeks = 0;
+    for (var day = LocalDate(2025, 9, 23); day < LocalDate(2040, 9, 1); day = day.addDays(1)) {
+      final (i, d) = (israel.weekFor(day), diaspora.weekFor(day));
+      if (i.portion == d.portion || i.portion.isVezotHaberakhah || d.portion.isVezotHaberakhah) continue;
+      divergentWeeks++;
+      // A visitor's home portion is last week's in Israel...
+      final home = findWeekById(israel, weekIdFor(d.portion, d.occasion))!;
+      expect(home.occasion == i.occasion || home.occasion == israel.previousWeek(i).occasion, isTrue, reason: '$day');
+      // ...and Israel's portion is this week's or next week's outside it.
+      final ahead = findWeekById(diaspora, weekIdFor(i.portion, i.occasion))!;
+      expect(ahead.occasion == d.occasion || ahead.occasion == diaspora.nextWeek(d).occasion, isTrue, reason: '$day');
+    }
+    expect(divergentWeeks, greaterThan(100));
   });
 }

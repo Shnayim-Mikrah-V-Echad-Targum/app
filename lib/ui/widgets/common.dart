@@ -134,11 +134,12 @@ class NoticeBanner extends StatelessWidget {
     return Card(
       color: scheme.secondaryContainer,
       child: Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(16, 12, 8, below == null ? 12 : 4),
+        // A trailing button's own padding makes up the end padding beside it.
+        padding: EdgeInsetsDirectional.fromSTEB(16, 12, action == null ? 16 : 8, below == null ? 12 : 4),
         child: Row(
           crossAxisAlignment: below == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: scheme.onSecondaryContainer),
+            Icon(icon, size: 20, color: scheme.onSecondaryContainer),
             const Gap(12),
             Expanded(
               child: below == null

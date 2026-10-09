@@ -119,7 +119,8 @@ class TodayScreen extends ConsumerWidget {
 
 /// Names both portions in a week when Israel and the Diaspora read
 /// different ones, for a reader who hears one place's reading but keeps the
-/// other's days of Yom Tov (a visitor).
+/// other's days of Yom Tov. A visitor to Israel can open last week's portion
+/// in Israel, their home portion this week.
 class _DivergenceBanner extends ConsumerWidget {
   const _DivergenceBanner({required this.divergence, required this.settings});
 
@@ -132,16 +133,19 @@ class _DivergenceBanner extends ConsumerWidget {
     final names = Names(context);
     final repo = ref.watch(parshaRepositoryProvider);
     String name(PortionId p) => names.portion(repo.portion(p), ashkenazi: settings.ashkenaziNames);
-    final other = divergence.other;
+    final (israel, diaspora) = (name(divergence.israel), name(divergence.diaspora));
+    final previous = divergence.previous;
     return NoticeBanner(
       icon: Icons.info_outline,
-      text: l.readingDivergence(name(divergence.israel), name(divergence.diaspora)),
+      text: divergence.hearsIsrael
+          ? l.readingDivergence(israel, diaspora)
+          : l.readingDivergenceAhead(israel, diaspora),
       actionBelow: true,
-      action: other == null
+      action: previous == null
           ? null
           : TextButton(
-              onPressed: () => context.push('/week/${weekIdFor(other.portion, other.occasion)}'),
-              child: Text(l.readingDivergenceOpen(name(other.portion))),
+              onPressed: () => context.push('/week/${weekIdFor(previous.portion, previous.occasion)}'),
+              child: Text(l.readingDivergenceOpen(name(previous.portion))),
             ),
     );
   }

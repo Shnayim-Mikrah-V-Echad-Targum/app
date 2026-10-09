@@ -49,6 +49,7 @@ const _screens = {
   'welcome': '/welcome',
   'today': '/today',
   'today_divergence': '/today',
+  'today_divergence_abroad': '/today',
   'today_haftarah_left': '/today',
   'parsha': '/parsha',
   'browse': '/parsha/browse',
@@ -85,6 +86,11 @@ final _scenes = <String, (DateTime, AppSettings Function(AppSettings))>{
   'today_divergence': (
     DateTime(2029, 4, 24, 11),
     (s) => s.copyWith(readingSchedule: ReadingSchedule.israel, joinDate: LocalDate(2029, 4, 22)),
+  ),
+  // An Israeli abroad, the same day: Israel is a parsha ahead.
+  'today_divergence_abroad': (
+    DateTime(2029, 4, 24, 11),
+    (s) => s.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true, joinDate: LocalDate(2029, 4, 22)),
   ),
   // The widest word spacing, justified: the spaces around a section mark.
   'reader_gaps_spaced': (_now, (s) => s.copyWith(wordSpacing: 16, justify: true)),

@@ -305,7 +305,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String readingDivergence(String israel, String diaspora) {
-    return 'בארץ ישראל השבוע: $israel. בחוץ לארץ: $diaspora. מבקרים מחוץ לארץ נוהגים בדרך כלל לקרוא את שתיהן; אם מתפללים במניין שקורא את $diaspora, קוראים רק אותה.';
+    return 'בארץ ישראל קוראים השבוע את פרשת $israel, ובחוץ לארץ את פרשת $diaspora. מבקרים מחוץ לארץ נוהגים בדרך כלל לקרוא את שתי הפרשות. כשמתפללים במניין שקורא את פרשת $diaspora, קוראים רק אותה, ובהגדרות בוחרים בקריאת התורה של חוץ לארץ.';
+  }
+
+  @override
+  String readingDivergenceAhead(String israel, String diaspora) {
+    return 'בארץ ישראל קוראים השבוע את פרשת $israel, ובחוץ לארץ את פרשת $diaspora. ארץ ישראל מקדימה בפרשה אחת, ואת פרשת $israel קוראים כאן בשבוע הבא.';
   }
 
   @override

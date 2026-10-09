@@ -28,7 +28,7 @@ This document summarizes the decisions behind the app and the reasons for them. 
 - **the reading** heard in synagogue, which decides each week's portion;
 - **the days of Yom Tov** kept, one or two, which decide the days without reading or reminders.
 
-A visitor usually hears the local reading but keeps their home custom for Yom Tov, so a visitor to Israel still has no reading and no reminder on the second day of Yom Tov. When the two schedules diverge after Pesach or Shavuot, the user sees the portion of the reading they hear. If their two settings follow different places, Today names both portions, notes that visitors usually read both, and links to the other one.
+A visitor usually hears the local reading but keeps their home custom for Yom Tov, so a visitor to Israel still has no reading and no reminder on the second day of Yom Tov. When the two schedules diverge after Pesach or Shavuot, the user sees the portion of the reading they hear. If their two settings follow different places, Today names both portions. A visitor to Israel is told that visitors usually read both, with a link to the home portion, and that someone who davens with a Diaspora minyan reads only that one and should set the reading they hear to match. Someone who hears the Diaspora's reading but keeps one day of Yom Tov is told that Israel is a parsha ahead.
 
 ## 3. Reading
 
