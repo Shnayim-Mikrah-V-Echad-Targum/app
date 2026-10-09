@@ -43,39 +43,63 @@ final blockedUsersProvider = FutureProvider<Set<String>>((ref) async {
 /// Keeps reading progress backed up to the user's account (when they have
 /// opted in): pulls and merges on sign-in, pushes a few seconds after any
 /// change. Merging never loses reading logged on either device.
+///
+/// The state is the time of the last successful sync.
 class ProgressSync extends Notifier<DateTime?> {
+  /// How long progress must rest unchanged before it is pushed.
+  static const pushDelay = Duration(seconds: 5);
+
   Timer? _debounce;
-  String? _syncedUser;
-  DateTime? _lastSync;
+  Future<bool>? _inFlight;
+  bool _applyingMerge = false;
 
   @override
   DateTime? build() {
     ref.onDispose(() => _debounce?.cancel());
     final enabled = ref.watch(settingsProvider.select((s) => s.cloudSync));
-    final user = ref.watch(communityUserProvider).value;
-    if (!enabled || user == null) return null;
-    if (_syncedUser != user.id) {
-      _syncedUser = user.id;
-      Future.microtask(syncNow);
-    }
+    // Only the account matters: a token refresh announces the same user again
+    // and must not trigger another pull.
+    final userId = ref.watch(communityUserProvider.select((u) => u.value?.id));
+    if (!enabled || userId == null) return null;
+    Future.microtask(syncNow);
     ref.listen(progressProvider, (_, _) {
+      // The sync's own merge is pushed by that same sync.
+      if (_applyingMerge) return;
       _debounce?.cancel();
-      _debounce = Timer(const Duration(seconds: 5), syncNow);
+      _debounce = Timer(pushDelay, syncNow);
     });
-    return _lastSync;
+    return null;
   }
 
-  /// Pulls, merges and pushes. Returns normally even when offline.
-  Future<bool> syncNow() async {
-    final repo = ref.read(forumRepositoryProvider);
-    if (repo.currentUser == null) return false;
+  /// Pulls, merges and pushes. Returns normally (with false) when offline or
+  /// signed out. Calls made while a sync is running share its result.
+  Future<bool> syncNow() => _inFlight ??= _sync().whenComplete(() => _inFlight = null);
+
+  Future<bool> _sync() async {
     try {
-      final remote = await repo.loadProgress();
+      if (!ref.mounted) return false;
+      final repo = ref.read(forumRepositoryProvider);
+      if (repo.currentUser == null) return false;
+      final remoteJson = await repo.loadProgress();
+      if (!ref.mounted) return false;
+      final remote = remoteJson == null ? null : ProgressState.fromJson(remoteJson);
       final local = ref.read(progressProvider);
-      final merged = remote == null ? local : mergeProgress(local, ProgressState.fromJson(remote));
-      if (remote != null) ref.read(progressProvider.notifier).replaceAll(merged);
-      await repo.saveProgress(merged.toJson());
-      state = _lastSync = DateTime.now();
+      final merged = remote == null ? local : mergeProgress(local, remote);
+      // Apply and upload only real changes: a no-op that looked like a change
+      // would wake the progress listener above and sync again, forever.
+      if (merged != local) {
+        _applyingMerge = true;
+        try {
+          ref.read(progressProvider.notifier).replaceAll(merged);
+        } finally {
+          _applyingMerge = false;
+        }
+      }
+      if (remote == null || merged != remote) {
+        await repo.saveProgress(merged.toJson());
+        if (!ref.mounted) return false;
+      }
+      state = DateTime.now();
       return true;
     } catch (_) {
       return false;

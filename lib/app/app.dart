@@ -18,9 +18,10 @@ class ShnayimMikraApp extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final router = ref.watch(routerProvider);
     // Keep scheduled reminders in sync with settings and progress, and the
-    // cloud backup (if enabled) in sync with progress.
+    // cloud backup (if enabled) in sync with progress. The sync is only kept
+    // alive (listened to, not watched): its timestamp must not rebuild the app.
     ref.watch(reminderSchedulerProvider);
-    ref.watch(progressSyncProvider);
+    ref.listen(progressSyncProvider, (_, _) {});
     ref.listen(notificationTapsProvider, (_, next) {
       final route = next.value;
       if (route != null) router.go(route);
