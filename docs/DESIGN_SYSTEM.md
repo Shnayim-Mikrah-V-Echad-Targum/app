@@ -922,7 +922,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - Haftarah row: `auto_stories_outlined`, title "Haftarah", subtitle the reference, plus a second subtitle line for a special haftarah.
    - Discuss row: `forum_outlined`, `discussThisWeek`.
    - These replace two separate cards.
-8. **Rest day** (`JewishHolidays.isRestDay(today, israel)`):
+8. **Rest day** (`JewishHolidays.isRestDay(today, israel: settings.oneDayYomTov)`, the reader's Yom Tov custom rather than the reading schedule):
    - The hero shows candles at 40, `shabbatShalom` or `chagSameach` in headlineMedium, the pointed parsha name in hebrewDisplay 32/44, and bodyMedium `restDayBody`.
    - No rings, CTAs, Today card or ledger; only a Text link "Open the parsha".
    - The wording goes to the rabbinic advisor (DESIGN.md §11).

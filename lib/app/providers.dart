@@ -52,7 +52,7 @@ class SettingsController extends Notifier<AppSettings> {
     if (next.planSettings.sameSettingsAs(state.planSettings)) return _save(next);
     // Today's reading day, as todayProvider has it (which depends on these
     // settings, so can't be read here).
-    final today = effectiveReadingDay(TodayController.now(), israel: next.israel);
+    final today = effectiveReadingDay(TodayController.now(), oneDayYomTov: next.oneDayYomTov);
     _save(next.recordingPlanChange(state, today));
   }
 
@@ -73,10 +73,11 @@ final settingsProvider = NotifierProvider<SettingsController, AppSettings>(Setti
 /// The current "reading day". The day rolls over at 3 a.m. so late-night
 /// reading counts for the evening it began; and because no one reads on a
 /// device on Shabbat or Yom Tov, use on those civil dates (i.e. after
-/// Havdalah) counts toward the next day.
-LocalDate effectiveReadingDay(DateTime now, {required bool israel}) {
+/// Havdalah) counts toward the next day. [oneDayYomTov] is the reader's
+/// custom (see [AppSettings.oneDayYomTov]).
+LocalDate effectiveReadingDay(DateTime now, {required bool oneDayYomTov}) {
   var d = LocalDate.fromDateTime(now.subtract(const Duration(hours: 3)));
-  while (JewishHolidays.isRestDay(d, israel: israel)) {
+  while (JewishHolidays.isRestDay(d, israel: oneDayYomTov)) {
     d = d.addDays(1);
   }
   return d;
@@ -95,7 +96,7 @@ class TodayController extends Notifier<LocalDate> {
 
   @override
   LocalDate build() {
-    final israel = ref.watch(settingsProvider.select((s) => s.israel));
+    final oneDayYomTov = ref.watch(settingsProvider.select((s) => s.oneDayYomTov));
     _lifecycle ??= AppLifecycleListener(onResume: _refresh);
     ref.onDispose(() {
       _timer?.cancel();
@@ -103,7 +104,7 @@ class TodayController extends Notifier<LocalDate> {
       _lifecycle = null;
     });
     _schedule();
-    return effectiveReadingDay(now(), israel: israel);
+    return effectiveReadingDay(now(), oneDayYomTov: oneDayYomTov);
   }
 
   void _schedule() {
@@ -116,8 +117,7 @@ class TodayController extends Notifier<LocalDate> {
   }
 
   void _refresh() {
-    final israel = ref.read(settingsProvider).israel;
-    final today = effectiveReadingDay(now(), israel: israel);
+    final today = effectiveReadingDay(now(), oneDayYomTov: ref.read(settingsProvider).oneDayYomTov);
     if (today != state) state = today;
     _schedule();
   }
@@ -125,18 +125,22 @@ class TodayController extends Notifier<LocalDate> {
 
 final todayProvider = NotifierProvider<TodayController, LocalDate>(TodayController.new);
 
+/// The reading the user hears in synagogue.
 final scheduleProvider = Provider<ParshaSchedule>(
-  (ref) => ParshaSchedule(israel: ref.watch(settingsProvider.select((s) => s.israel))),
+  (ref) => ParshaSchedule(
+    israel: ref.watch(settingsProvider.select((s) => s.readingSchedule)) == ReadingSchedule.israel,
+  ),
 );
 
 /// Plans every week by the plan settings in force at the time, so that a
-/// change applies from the day it is made on. (Switching between Israel and
-/// the Diaspora is not part of that history yet: it still rebuilds every
-/// week, past ones included, from the other schedule.)
+/// change applies from the day it is made on. (The reading schedule and the
+/// days of Yom Tov are not part of that history yet: switching either still
+/// plans every week, past ones included, by the new setting.)
 final plannerProvider = Provider<ReadingPlanner>((ref) {
   final s = ref.watch(settingsProvider);
   return ReadingPlanner(
     schedule: ref.watch(scheduleProvider),
+    oneDayYomTov: s.oneDayYomTov,
     settingsAt: s.settingsAt,
     starterFrom: s.starterCatchUp ? s.joinDate : null,
   );
@@ -474,7 +478,7 @@ class ProgressController extends Notifier<ProgressState> {
     final join = settings.joinDate;
     if (join == null) return;
     final today = ref.read(todayProvider);
-    final day = effectiveReadingDay(DateTime.fromMillisecondsSinceEpoch(resetAt), israel: settings.israel);
+    final day = effectiveReadingDay(DateTime.fromMillisecondsSinceEpoch(resetAt), oneDayYomTov: settings.oneDayYomTov);
     // A clock running ahead elsewhere must not start the reader in the future.
     final start = day > today ? today : day;
     if (join < start) ref.read(settingsProvider.notifier).update((s) => s.copyWith(joinDate: start));

@@ -36,7 +36,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       final tz = kIsWeb ? DateTime.now().timeZoneName : (await FlutterTimezone.getLocalTimezone()).identifier;
       final israel = tz == 'Asia/Jerusalem' || tz == 'Asia/Tel_Aviv' || tz == 'IST' || tz == 'IDT';
-      if (israel && mounted) ref.read(settingsProvider.notifier).update((s) => s.copyWith(israel: true));
+      if (israel && mounted) _update((s) => s.locatedIn(ReadingSchedule.israel));
     } catch (_) {
       // Keep the default.
     }
@@ -61,12 +61,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     final Widget body = switch (_page) {
       0 => _Welcome(onStart: () => setState(() => _page = 1)),
-      1 => ChoiceGroup<bool>(
+      1 => ChoiceGroup<ReadingSchedule>(
           title: l.onbLocationTitle,
           help: l.locationHelp,
-          value: s.israel,
-          choices: [Choice(false, l.locationDiaspora), Choice(true, l.locationIsrael)],
-          onChanged: (v) => _update((s) => s.copyWith(israel: v)),
+          value: s.readingSchedule,
+          choices: [
+            Choice(ReadingSchedule.diaspora, l.locationDiaspora),
+            Choice(ReadingSchedule.israel, l.locationIsrael),
+          ],
+          // Both the reading and the days of Yom Tov; a visitor can set them
+          // apart in Settings.
+          onChanged: (v) => _update((s) => s.locatedIn(v)),
         ),
       2 => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

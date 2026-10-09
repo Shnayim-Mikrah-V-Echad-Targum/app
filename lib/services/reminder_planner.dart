@@ -77,8 +77,7 @@ List<PlannedReminder> planReminders({
   List<Pause> pauses = const [],
   int days = 14,
 }) {
-  final israel = planner.israel;
-  bool rest(LocalDate d) => JewishHolidays.isRestDay(d, israel: israel);
+  bool rest(LocalDate d) => JewishHolidays.isRestDay(d, israel: planner.oneDayYomTov);
   bool paused(LocalDate d) => pauses.any((p) => p.contains(d));
   final nowMinutes = now.hour * 60 + now.minute;
   final civilToday = LocalDate.fromDateTime(now);

@@ -175,11 +175,20 @@ PlanSettingsEntry _defaultSettings(LocalDate day) => const PlanSettingsEntry();
 class ReadingPlanner {
   const ReadingPlanner({
     required this.schedule,
+    this._oneDayYomTov,
     this.settingsAt = _defaultSettings,
     this.starterFrom,
   });
 
+  /// Which portion is read when: the reading heard in synagogue.
   final ParshaSchedule schedule;
+
+  final bool? _oneDayYomTov;
+
+  /// Whether Yom Tov is kept for one day, as in Israel, which decides the
+  /// days that take no reading. It can differ from [schedule] (a visitor
+  /// keeps their home custom); by default it follows it.
+  bool get oneDayYomTov => _oneDayYomTov ?? schedule.israel;
 
   /// The plan settings in force on a day; by default, the default settings
   /// on every day. Each part of a week is planned by the settings in force
@@ -191,15 +200,13 @@ class ReadingPlanner {
   /// (see [planFor]); null plans that week like any other.
   final LocalDate? starterFrom;
 
-  bool get israel => schedule.israel;
-
   /// Shabbat, Yom Tov, or a day the user has chosen to keep free.
   bool isTransparentDay(LocalDate d) => _isTransparent(d, settingsAt(d));
 
   bool _isTransparent(LocalDate d, PlanSettingsEntry settings) {
-    if (JewishHolidays.isRestDay(d, israel: israel)) return true;
+    if (JewishHolidays.isRestDay(d, israel: oneDayYomTov)) return true;
     if (settings.tishaBavQuiet && JewishHolidays.isTishaBav(d)) return true;
-    if (settings.cholHamoedQuiet && JewishHolidays.isCholHamoed(HebrewDate.fromLocalDate(d), israel: israel)) {
+    if (settings.cholHamoedQuiet && JewishHolidays.isCholHamoed(HebrewDate.fromLocalDate(d), israel: oneDayYomTov)) {
       return true;
     }
     return false;

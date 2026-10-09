@@ -1412,12 +1412,6 @@ abstract class AppLocalizations {
   /// **'Back up, restore or reset your progress'**
   String get settingsDataDesc;
 
-  /// No description provided for @locationLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'This Shabbat I\'ll be'**
-  String get locationLabel;
-
   /// No description provided for @locationIsrael.
   ///
   /// In en, this message translates to:
@@ -1435,6 +1429,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days.'**
   String get locationHelp;
+
+  /// No description provided for @readingScheduleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Which Torah reading will you hear this Shabbat?'**
+  String get readingScheduleLabel;
+
+  /// No description provided for @readingScheduleHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'For a few weeks after Pesach or Shavuot, Israel can be a parsha ahead.'**
+  String get readingScheduleHelp;
+
+  /// No description provided for @yomTovDaysLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How many days of Yom Tov do you keep?'**
+  String get yomTovDaysLabel;
+
+  /// No description provided for @yomTovDaysOne.
+  ///
+  /// In en, this message translates to:
+  /// **'One, as in Israel'**
+  String get yomTovDaysOne;
+
+  /// No description provided for @yomTovDaysTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'Two, as outside Israel'**
+  String get yomTovDaysTwo;
+
+  /// No description provided for @yomTovDaysHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Visitors usually keep their home custom. Ask your rav.'**
+  String get yomTovDaysHelp;
 
   /// No description provided for @planLabel.
   ///

@@ -170,7 +170,8 @@ void main() {
     await loadTexts(tester);
     final s = c.read(settingsProvider);
     expect(s.onboardingComplete, isTrue);
-    expect(s.israel, isTrue);
+    expect(s.readingSchedule, ReadingSchedule.israel);
+    expect(s.oneDayYomTov, isTrue, reason: 'the location sets the days of Yom Tov too');
     expect(s.joinDate, isNotNull);
     expect(find.text('Read the Hebrew'), findsOneWidget);
     expect(kAliyot, 7);

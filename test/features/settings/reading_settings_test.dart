@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
@@ -44,6 +47,30 @@ void main() {
     final s = c.read(settingsProvider);
     expect(s.settingsAt(_today).plan, ReadingPlanType.erevShabbat);
     expect(s.settingsAt(_today.addDays(-1)).plan, ReadingPlanType.aliyahPerDay);
+  });
+
+  testWidgets('the reading heard and the days of Yom Tov kept are set apart, and saved', (tester) async {
+    await openReadingSettings(tester);
+    expect(find.text('Which Torah reading will you hear this Shabbat?'), findsOneWidget);
+    expect(find.text('How many days of Yom Tov do you keep?'), findsOneWidget);
+    expect(find.text('Visitors usually keep their home custom. Ask your rav.'), findsOneWidget);
+
+    // A visitor from abroad: Israel's reading, two days of Yom Tov.
+    await tapText(tester, 'In Israel');
+    var s = c.read(settingsProvider);
+    expect((s.readingSchedule, s.oneDayYomTov), (ReadingSchedule.israel, false));
+
+    await tapText(tester, 'One, as in Israel');
+    s = c.read(settingsProvider);
+    expect((s.readingSchedule, s.oneDayYomTov), (ReadingSchedule.israel, true));
+
+    await tapText(tester, 'Outside Israel');
+    final prefs = await SharedPreferences.getInstance();
+    final saved = AppSettings.fromJson(
+      jsonDecode(prefs.getString(SettingsController.storageKey)!) as Map<String, dynamic>,
+    );
+    expect((saved.readingSchedule, saved.oneDayYomTov), (ReadingSchedule.diaspora, true));
+    expect(find.text(_applies), findsNothing);
   });
 
   testWidgets('changes that don\'t affect how weeks are planned or judged say nothing', (tester) async {

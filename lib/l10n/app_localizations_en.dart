@@ -808,9 +808,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDataDesc => 'Back up, restore or reset your progress';
 
   @override
-  String get locationLabel => 'This Shabbat I\'ll be';
-
-  @override
   String get locationIsrael => 'In Israel';
 
   @override
@@ -819,6 +816,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get locationHelp =>
       'Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days.';
+
+  @override
+  String get readingScheduleLabel =>
+      'Which Torah reading will you hear this Shabbat?';
+
+  @override
+  String get readingScheduleHelp =>
+      'For a few weeks after Pesach or Shavuot, Israel can be a parsha ahead.';
+
+  @override
+  String get yomTovDaysLabel => 'How many days of Yom Tov do you keep?';
+
+  @override
+  String get yomTovDaysOne => 'One, as in Israel';
+
+  @override
+  String get yomTovDaysTwo => 'Two, as outside Israel';
+
+  @override
+  String get yomTovDaysHelp =>
+      'Visitors usually keep their home custom. Ask your rav.';
 
   @override
   String get planLabel => 'Weekly plan';

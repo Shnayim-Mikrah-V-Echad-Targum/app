@@ -72,10 +72,17 @@ enum UiFont {
 
 enum LineWidth { narrow, medium, wide }
 
+/// Whose public Torah reading the weeks follow. For a few weeks after Pesach
+/// or Shavuot, Israel can be a parsha ahead: when the last day of the
+/// festival outside Israel falls on Shabbat, Israel already reads the next
+/// portion.
+enum ReadingSchedule { israel, diaspora }
+
 /// Every user preference, persisted as JSON.
 class AppSettings {
   const AppSettings({
-    this.israel = false,
+    this.readingSchedule = ReadingSchedule.diaspora,
+    this.oneDayYomTov = false,
     this.nusach = HaftarahNusach.ashkenazi,
     this.plan = ReadingPlanType.aliyahPerDay,
     this.lateWindow = LateWindow.tuesday,
@@ -128,7 +135,15 @@ class AppSettings {
   });
 
   // Calendar and customs
-  final bool israel;
+
+  /// The reading heard in synagogue, which decides each week's portion.
+  final ReadingSchedule readingSchedule;
+
+  /// Whether Yom Tov is kept for one day, as in Israel, rather than two.
+  /// This decides which days are free of reading and reminders, apart from
+  /// [readingSchedule]: a visitor usually keeps their home custom wherever
+  /// they hear the reading.
+  final bool oneDayYomTov;
   final HaftarahNusach nusach;
   final ReadingPlanType plan;
   final LateWindow lateWindow;
@@ -223,6 +238,15 @@ class AppSettings {
 
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
+  /// Whether the reading heard and the days of Yom Tov kept are those of
+  /// different places, as for a visitor to or from Israel.
+  bool get readingAndYomTovDiffer => (readingSchedule == ReadingSchedule.israel) != oneDayYomTov;
+
+  /// These settings for someone spending Shabbat in [place], who hears its
+  /// reading and keeps its days of Yom Tov.
+  AppSettings locatedIn(ReadingSchedule place) =>
+      copyWith(readingSchedule: place, oneDayYomTov: place == ReadingSchedule.israel);
+
   bool get usesRashi =>
       secondReading == SecondReading.rashi ||
       secondReading == SecondReading.rashiEnglish ||
@@ -272,7 +296,8 @@ class AppSettings {
   }
 
   AppSettings copyWith({
-    bool? israel,
+    ReadingSchedule? readingSchedule,
+    bool? oneDayYomTov,
     HaftarahNusach? nusach,
     ReadingPlanType? plan,
     LateWindow? lateWindow,
@@ -324,7 +349,8 @@ class AppSettings {
     List<PlanSettingsEntry>? planHistory,
   }) =>
       AppSettings(
-        israel: israel ?? this.israel,
+        readingSchedule: readingSchedule ?? this.readingSchedule,
+        oneDayYomTov: oneDayYomTov ?? this.oneDayYomTov,
         nusach: nusach ?? this.nusach,
         plan: plan ?? this.plan,
         lateWindow: lateWindow ?? this.lateWindow,
@@ -379,7 +405,11 @@ class AppSettings {
   static const _keep = Object();
 
   Map<String, dynamic> toJson() => {
-        'israel': israel,
+        'readingSchedule': readingSchedule.name,
+        'oneDayYomTov': oneDayYomTov,
+        // For versions from before the two were separate, which read this
+        // one setting for both.
+        'israel': readingSchedule == ReadingSchedule.israel,
         'nusach': nusach.name,
         'plan': plan.name,
         'lateWindow': lateWindow.name,
@@ -441,8 +471,16 @@ class AppSettings {
     double n(String k, double fallback, double min, double max) =>
         j[k] is num ? (j[k] as num).toDouble().clamp(min, max) : fallback;
     int i(String k, int fallback) => j[k] is int ? j[k] as int : fallback;
+    // Settings saved before the reading and the days of Yom Tov were
+    // separate have one 'israel' setting, which decided both.
+    final located = switch (j['israel']) {
+      true => d.locatedIn(ReadingSchedule.israel),
+      false => d.locatedIn(ReadingSchedule.diaspora),
+      _ => d,
+    };
     return AppSettings(
-      israel: b('israel', d.israel),
+      readingSchedule: e(ReadingSchedule.values, j['readingSchedule'], located.readingSchedule),
+      oneDayYomTov: b('oneDayYomTov', located.oneDayYomTov),
       nusach: e(HaftarahNusach.values, j['nusach'], d.nusach),
       plan: e(ReadingPlanType.values, j['plan'], d.plan),
       lateWindow: e(LateWindow.values, j['lateWindow'], d.lateWindow),

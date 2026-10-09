@@ -101,9 +101,11 @@ void main() {
     });
 
     test('leaves the rest of the settings alone', () {
-      container.read(settingsProvider.notifier).update((s) => s.copyWith(israel: true, starterCatchUp: false));
+      container
+          .read(settingsProvider.notifier)
+          .update((s) => s.copyWith(readingSchedule: ReadingSchedule.israel, starterCatchUp: false));
       progress().resetAll(_today);
-      expect(settings().israel, isTrue);
+      expect(settings().readingSchedule, ReadingSchedule.israel);
       expect(settings().starterCatchUp, isFalse);
       expect(settings().onboardingComplete, isTrue);
     });

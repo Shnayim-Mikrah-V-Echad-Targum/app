@@ -26,12 +26,22 @@ class ReadingSettingsScreen extends ConsumerWidget {
     return SettingsPage(
       title: l.settingsReading,
       children: [
+        ChoiceGroup<ReadingSchedule>(
+          title: l.readingScheduleLabel,
+          help: l.readingScheduleHelp,
+          value: s.readingSchedule,
+          choices: [
+            Choice(ReadingSchedule.israel, l.locationIsrael),
+            Choice(ReadingSchedule.diaspora, l.locationDiaspora),
+          ],
+          onChanged: (v) => update((s) => s.copyWith(readingSchedule: v)),
+        ),
         ChoiceGroup<bool>(
-          title: l.locationLabel,
-          help: l.locationHelp,
-          value: s.israel,
-          choices: [Choice(false, l.locationDiaspora), Choice(true, l.locationIsrael)],
-          onChanged: (v) => update((s) => s.copyWith(israel: v)),
+          title: l.yomTovDaysLabel,
+          help: l.yomTovDaysHelp,
+          value: s.oneDayYomTov,
+          choices: [Choice(true, l.yomTovDaysOne), Choice(false, l.yomTovDaysTwo)],
+          onChanged: (v) => update((s) => s.copyWith(oneDayYomTov: v)),
         ),
         ChoiceGroup<ReadingPlanType>(
           title: l.planLabel,

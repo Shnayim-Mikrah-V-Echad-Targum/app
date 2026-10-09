@@ -24,7 +24,11 @@ This document summarizes the decisions behind the app and the reasons for them. 
 
 **The day rolls over at 3 a.m.** Reading done late at night counts for the evening it began. Using the app on Shabbat or Yom Tov (after Havdalah, for example) counts toward the next weekday.
 
-**Israel and the Diaspora are a per-user setting**, asked during onboarding as "Where will you be this Shabbat?". When the two schedules diverge after Pesach or Shavuot, the user sees their own schedule.
+**Israel and the Diaspora are a per-user setting**, asked during onboarding as "Where will you be this Shabbat?". The answer sets two things that Settings keeps apart:
+- **the reading** heard in synagogue, which decides each week's portion;
+- **the days of Yom Tov** kept, one or two, which decide the days without reading or reminders.
+
+A visitor usually hears the local reading but keeps their home custom for Yom Tov, so a visitor to Israel still has no reading and no reminder on the second day of Yom Tov. When the two schedules diverge after Pesach or Shavuot, the user sees the portion of the reading they hear.
 
 ## 3. Reading
 

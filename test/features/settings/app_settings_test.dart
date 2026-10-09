@@ -11,7 +11,8 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 void main() {
   test('settings round-trip through JSON', () {
     final s = const AppSettings().copyWith(
-      israel: true,
+      readingSchedule: ReadingSchedule.israel,
+      oneDayYomTov: false,
       theme: AppThemeMode.highContrastDark,
       readingScale: 2.5,
       secondReading: SecondReading.onkelosAndRashi,
@@ -22,6 +23,49 @@ void main() {
     final back = AppSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
     expect(back.starterCatchUp, isFalse);
+    expect(back.readingSchedule, ReadingSchedule.israel);
+    expect(back.oneDayYomTov, isFalse);
+  });
+
+  group('reading schedule and days of Yom Tov', () {
+    test('settings saved with one Israel setting set both from it', () {
+      final israel = AppSettings.fromJson({'israel': true});
+      expect(israel.readingSchedule, ReadingSchedule.israel);
+      expect(israel.oneDayYomTov, isTrue);
+      final diaspora = AppSettings.fromJson({'israel': false});
+      expect(diaspora.readingSchedule, ReadingSchedule.diaspora);
+      expect(diaspora.oneDayYomTov, isFalse);
+      final neither = AppSettings.fromJson({});
+      expect(neither.readingSchedule, ReadingSchedule.diaspora);
+      expect(neither.oneDayYomTov, isFalse);
+    });
+
+    test('the two settings take precedence over the old one', () {
+      final s = AppSettings.fromJson({'readingSchedule': 'israel', 'oneDayYomTov': false, 'israel': false});
+      expect(s.readingSchedule, ReadingSchedule.israel);
+      expect(s.oneDayYomTov, isFalse);
+      final unknown = AppSettings.fromJson({'readingSchedule': 'mars', 'oneDayYomTov': 'yes', 'israel': true});
+      expect(unknown.readingSchedule, ReadingSchedule.israel, reason: 'an unknown value falls back to the old setting');
+      expect(unknown.oneDayYomTov, isTrue);
+    });
+
+    test('older versions still find the reading schedule', () {
+      final json = const AppSettings(readingSchedule: ReadingSchedule.israel).toJson();
+      expect(json['israel'], isTrue);
+      expect(const AppSettings(oneDayYomTov: true).toJson()['israel'], isFalse);
+    });
+
+    test('a location sets both; a visitor keeps them apart', () {
+      const s = AppSettings();
+      final israel = s.locatedIn(ReadingSchedule.israel);
+      expect((israel.readingSchedule, israel.oneDayYomTov), (ReadingSchedule.israel, true));
+      expect(israel.readingAndYomTovDiffer, isFalse);
+      final diaspora = israel.locatedIn(ReadingSchedule.diaspora);
+      expect((diaspora.readingSchedule, diaspora.oneDayYomTov), (ReadingSchedule.diaspora, false));
+      expect(diaspora.readingAndYomTovDiffer, isFalse);
+      expect(s.copyWith(readingSchedule: ReadingSchedule.israel).readingAndYomTovDiffer, isTrue);
+      expect(s.copyWith(oneDayYomTov: true).readingAndYomTovDiffer, isTrue);
+    });
   });
 
   test('settings saved before the starter plan existed turn it on', () {
@@ -39,7 +83,8 @@ void main() {
     });
     expect(s.theme, AppThemeMode.system);
     expect(s.readingScale, kMaxReadingScale);
-    expect(s.israel, isFalse);
+    expect(s.readingSchedule, ReadingSchedule.diaspora);
+    expect(s.oneDayYomTov, isFalse);
     expect(s.method, ReadingMethod.verseByVerse);
   });
 

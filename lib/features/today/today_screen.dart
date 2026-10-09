@@ -78,7 +78,7 @@ class TodayScreen extends ConsumerWidget {
               plan: ctx.plan,
               today: today,
               statuses: summary.days,
-              israel: settings.israel,
+              oneDayYomTov: settings.oneDayYomTov,
               joinDate: settings.joinDate,
               onDayTap: (day) => context.push('/read/${ctx.id}/${day.aliyot.first}'),
             ),
@@ -376,7 +376,7 @@ class _OpenPreviousCard extends ConsumerWidget {
     final engine = ref.watch(streakEngineProvider);
     // On the first reading day after Shabbat, ask about reading done on Shabbat.
     var firstDayAfter = previous.week.occasion.addDays(1);
-    while (JewishHolidays.isRestDay(firstDayAfter, israel: settings.israel)) {
+    while (JewishHolidays.isRestDay(firstDayAfter, israel: settings.oneDayYomTov)) {
       firstDayAfter = firstDayAfter.addDays(1);
     }
     if (today == firstDayAfter && previous.week.occasion.isShabbat) {

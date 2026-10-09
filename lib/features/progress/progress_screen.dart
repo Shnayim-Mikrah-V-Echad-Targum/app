@@ -126,7 +126,7 @@ class ProgressScreen extends ConsumerWidget {
               plan: current.plan,
               today: current.today,
               statuses: summary.days,
-              israel: settings.israel,
+              oneDayYomTov: settings.oneDayYomTov,
               joinDate: settings.joinDate,
               onDayTap: (d) => context.push('/read/${current.id}/${d.aliyot.first}'),
             ),

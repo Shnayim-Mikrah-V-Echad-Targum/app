@@ -231,6 +231,35 @@ void main() {
     });
   });
 
+  group('the days of Yom Tov', () {
+    // Pesach 5787: Acharon shel Pesach, 22 Nisan, is Thursday 29 April 2027,
+    // a Yom Tov only outside Israel. Acharei Mot is read on Shabbat 1 May.
+    const israel = ParshaSchedule(israel: true);
+    final acharon = d('2027-04-29');
+    List<String> datesOf(ReadingPlanner p) => [for (final day in p.planFor(p.schedule.weekFor(acharon)).days) '${day.date}'];
+
+    test('follow the reading schedule by default', () {
+      expect(const ReadingPlanner(schedule: israel).oneDayYomTov, isTrue);
+      expect(usual.oneDayYomTov, isFalse);
+      expect(datesOf(const ReadingPlanner(schedule: israel)), contains('$acharon'));
+      expect(datesOf(usual), isNot(contains('$acharon')));
+    });
+
+    test('a visitor to Israel reads Israel\'s portion, with nothing planned on the second day of Yom Tov', () {
+      const visitor = ReadingPlanner(schedule: israel, oneDayYomTov: false);
+      expect(visitor.planFor(israel.weekFor(acharon)).portion, israel.weekFor(acharon).portion);
+      expect(datesOf(visitor), ['2027-04-25', '2027-04-26', '2027-04-27', '2027-04-30']);
+      expect(visitor.isTransparentDay(acharon), isTrue);
+    });
+
+    test('an Israeli abroad reads the Diaspora\'s portion, with reading planned on the day after Pesach in Israel', () {
+      const abroad = ReadingPlanner(schedule: diaspora, oneDayYomTov: true);
+      expect(datesOf(abroad), ['2027-04-25', '2027-04-26', '2027-04-27', '2027-04-29', '2027-04-30']);
+      expect(abroad.isTransparentDay(acharon), isFalse);
+      expect(abroad.isTransparentDay(d('2027-04-28')), isTrue, reason: 'the seventh day is Yom Tov everywhere');
+    });
+  });
+
   group('plannerProvider', () {
     Future<ReadingPlanner> plannerFor(AppSettings settings) async {
       SharedPreferences.setMockInitialValues({SettingsController.storageKey: jsonEncode(settings.toJson())});
@@ -244,6 +273,14 @@ void main() {
       final planner = await plannerFor(AppSettings(joinDate: d('2026-10-14')));
       expect(planner.starterFrom, d('2026-10-14'));
       expect(planner.planFor(noach).days.first.date, d('2026-10-14'));
+    });
+
+    test('follows the reading schedule and keeps the days of Yom Tov set apart from it', () async {
+      final planner = await plannerFor(
+        const AppSettings(readingSchedule: ReadingSchedule.israel, oneDayYomTov: false),
+      );
+      expect(planner.schedule.israel, isTrue);
+      expect(planner.oneDayYomTov, isFalse);
     });
 
     test('keeps the usual plan when the starter plan is off', () async {

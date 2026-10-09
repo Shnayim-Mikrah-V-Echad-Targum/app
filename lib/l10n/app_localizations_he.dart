@@ -807,9 +807,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get settingsDataDesc => 'גיבוי, שחזור או איפוס ההתקדמות';
 
   @override
-  String get locationLabel => 'בשבת הקרובה אהיה';
-
-  @override
   String get locationIsrael => 'בארץ ישראל';
 
   @override
@@ -818,6 +815,27 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get locationHelp =>
       'בארץ ובחוץ לארץ קוראים לעתים פרשות שונות, ומספר ימי יום טוב שונה.';
+
+  @override
+  String get readingScheduleLabel =>
+      'איזו קריאת תורה תישמע בבית הכנסת שלך בשבת הקרובה?';
+
+  @override
+  String get readingScheduleHelp =>
+      'לפעמים, במשך כמה שבועות אחרי פסח או חג השבועות, בארץ ישראל מקדימים בפרשה אחת.';
+
+  @override
+  String get yomTovDaysLabel => 'כמה ימי יום טוב שומרים אצלך?';
+
+  @override
+  String get yomTovDaysOne => 'יום אחד, כמו בארץ ישראל';
+
+  @override
+  String get yomTovDaysTwo => 'יומיים, כמו בחוץ לארץ';
+
+  @override
+  String get yomTovDaysHelp =>
+      'מבקרים נוהגים בדרך כלל כמנהג מקומם הקבוע. יש לשאול רב.';
 
   @override
   String get planLabel => 'תוכנית שבועית';
