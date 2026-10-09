@@ -162,6 +162,9 @@ abstract final class AppTheme {
     // outline as well, since there paper and surface are the same colour.
     final hairline = BorderSide(color: sefer.hairline, width: sefer.hairlineWidth);
     final floatingEdge = highContrast ? BorderSide(color: scheme.outline, width: 2) : BorderSide.none;
+    // The navigation indicator's pale fill barely shows on a high-contrast
+    // bar or rail, so there it is outlined too, as tonal buttons are.
+    final indicatorEdge = floatingEdge;
     return base.copyWith(
       // §6.2. Scrolled content slips under a hairline-thin shadow in
       // outlineVariant; in high contrast the bar has a 2 px rule instead.
@@ -407,18 +410,53 @@ abstract final class AppTheme {
         counterStyle: _tabular(text.bodySmall!.copyWith(color: scheme.onSurfaceVariant)),
       ),
       dividerTheme: DividerThemeData(color: highContrast ? scheme.outline : scheme.outlineVariant),
+      // §6.9: a cool bar under a hairline (AppShell draws it). The selected
+      // tab is marked three ways: the stadium, a filled icon and a bold label.
+      // Its icon is in the indicator's own ink: Material's default,
+      // onSecondaryContainer, is gold here.
       navigationBarTheme: NavigationBarThemeData(
+        height: 72,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         indicatorColor: scheme.primaryContainer,
+        indicatorShape: StadiumBorder(side: indicatorEdge),
         backgroundColor: scheme.surfaceContainer,
         surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         elevation: 0,
+        iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+              size: 24,
+              color: states.contains(WidgetState.selected) ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+            )),
+        // labelSmall's own weight when unselected: 500, or 400 in an
+        // accessibility font, which has no 500.
+        labelTextStyle: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected)
+            ? text.labelSmall!.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w700)
+            : text.labelSmall!.copyWith(color: scheme.onSurfaceVariant)),
+        // The bar draws no focus ring, so keyboard focus is a strong wash over
+        // the indicator's stadium.
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) return scheme.onSurface.withValues(alpha: 0.10);
+          if (states.contains(WidgetState.focused)) return scheme.onSurface.withValues(alpha: 0.32);
+          if (states.contains(WidgetState.hovered)) return scheme.onSurface.withValues(alpha: 0.06);
+          return null;
+        }),
       ),
+      // §6.10: the rail lies on the page's own surface, set off by a hairline
+      // (AppShell draws it), with a rounded indicator. Icons and labels are
+      // the bar's; beside the icons, AppShell sets the labels larger.
       navigationRailTheme: NavigationRailThemeData(
         labelType: NavigationRailLabelType.all,
         indicatorColor: scheme.primaryContainer,
-        backgroundColor: scheme.surfaceContainer,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+          side: indicatorEdge,
+        ),
+        backgroundColor: scheme.surface,
         elevation: 0,
+        selectedIconTheme: IconThemeData(size: 24, color: scheme.onPrimaryContainer),
+        unselectedIconTheme: IconThemeData(size: 24, color: scheme.onSurfaceVariant),
+        selectedLabelTextStyle: text.labelSmall!.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w700),
+        unselectedLabelTextStyle: text.labelSmall!.copyWith(color: scheme.onSurfaceVariant),
       ),
       // §6.19: sheets are paper with 20 px top corners and a drag handle, at
       // most 640 wide (centred on wider screens).

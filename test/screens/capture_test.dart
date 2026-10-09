@@ -81,6 +81,7 @@ const _screens = {
   'focus_field': '/community/account',
   'focus_chip': '/read/5787:1/2',
   'focus_menu': '/week/5787:1',
+  'focus_nav': '/today',
   // Overlays (§6.19) and the app bar with content scrolled under it (§6.2).
   'menu': '/week/5787:1',
   'dialog': '/week/5787:1',
@@ -121,6 +122,19 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'focus_menu': (tester) => _keyboardFocus(
         tester,
         find.descendant(of: find.byType(Card), matching: find.byType(PopupMenuButton<String>)).first,
+      ),
+  // The Parsha tab of the navigation bar or rail.
+  'focus_nav': (tester) => _keyboardFocus(
+        tester,
+        find
+            .ancestor(
+              of: find.descendant(
+                of: find.byWidgetPredicate((w) => w is NavigationBar || w is NavigationRail),
+                matching: find.byIcon(Icons.menu_book_outlined),
+              ),
+              matching: find.byWidgetPredicate((w) => w is InkResponse),
+            )
+            .first,
       ),
   'menu': (tester) => _openWeekMenu(tester),
   // The week menu: full text, mark the whole parsha, clear the week.
@@ -181,6 +195,10 @@ final _modes = [
   _Mode('he', const Size(412, 915), (s) => s.copyWith(language: AppLanguage.hebrew)),
   _Mode('hc', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.highContrastDark)),
   _Mode('desktop', const Size(1366, 860), (s) => s),
+  // The compact rail, and the extended rail in Hebrew and in high contrast.
+  _Mode('tablet', const Size(800, 1180), (s) => s),
+  _Mode('deskhe', const Size(1366, 860), (s) => s.copyWith(language: AppLanguage.hebrew)),
+  _Mode('deskhc', const Size(1366, 860), (s) => s.copyWith(theme: AppThemeMode.highContrastDark)),
   _Mode('sepia', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.sepia)),
   _Mode('hcl', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.highContrastLight)),
   _Mode('lexend', const Size(412, 915), (s) => s.copyWith(uiFont: UiFont.lexend)),
@@ -199,7 +217,10 @@ const _desktopScreens = {
   'welcome',
   'dialog',
   'sheet_display',
+  'focus_nav',
 };
+// The wide modes render only the screens above.
+const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
 
 Future<void> _settle(WidgetTester tester) async {
@@ -231,7 +252,7 @@ void main() {
   for (final mode in _modes) {
     if (!(_onlyModes?.contains(mode.tag) ?? true)) continue;
     for (final entry in _screens.entries) {
-      if (mode.tag == 'desktop' && !_desktopScreens.contains(entry.key)) continue;
+      if (_wideModes.contains(mode.tag) && !_desktopScreens.contains(entry.key)) continue;
       if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
