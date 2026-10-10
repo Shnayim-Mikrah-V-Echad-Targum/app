@@ -247,7 +247,8 @@ void main() {
     await tester.tap(find.text('Continue with Shlishi'));
     await tester.pumpAndSettle();
     expect(find.text('Noach · Shlishi'), findsOneWidget);
-    expect(find.text('Read the Hebrew'), findsOneWidget);
+    // Its first reading is marked done, so it opens at the second.
+    expect(find.text('Read the Hebrew again'), findsOneWidget);
 
     // Once every aliyah is read, there is nothing to continue with.
     await tester.tap(find.byTooltip('More options'));
