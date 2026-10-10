@@ -29,6 +29,7 @@ import '../features/today/today_screen.dart';
 import '../ui/l10n.dart';
 import '../ui/widgets/fallbacks.dart';
 import 'providers.dart';
+import 'routes.dart';
 import 'shell.dart';
 
 /// Every page uses the app's (Material) theme transitions, which become
@@ -38,6 +39,16 @@ Page<void> _page(GoRouterState state, Widget child) =>
 
 GoRoute _route(String path, Widget Function(GoRouterState s) build, {List<RouteBase> routes = const []}) =>
     GoRoute(path: path, pageBuilder: (context, state) => _page(state, build(state)), routes: routes);
+
+GoRoute _week(String path) => _route(path, (s) => WeekOverviewScreen(weekId: s.pathParameters['id']!));
+GoRoute _haftarah(String path) => _route(path, (s) => HaftarahScreen(weekId: s.pathParameters['id']!));
+
+/// A week and its haftarah within each of the [weekTabs], so the navigation
+/// bar stays.
+List<RouteBase> _weekPages() => [_week('week/:id'), _haftarah('haftarah/:id')];
+
+/// The account page, in Community and in Settings: each tab keeps its own.
+AccountScreen _account(GoRouterState s) => AccountScreen(returnWhenSignedIn: s.uri.queryParameters['then'] == 'back');
 
 final routerProvider = Provider<GoRouter>((ref) {
   final onboarded = ValueNotifier<bool>(ref.read(settingsProvider).onboardingComplete);
@@ -65,13 +76,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         pageBuilder: (context, state, shell) => _page(state, AppShell(shell: shell)),
         branches: [
-          StatefulShellBranch(routes: [_route('/today', (_) => const TodayScreen())]),
+          StatefulShellBranch(routes: [_route('/today', (_) => const TodayScreen(), routes: _weekPages())]),
           StatefulShellBranch(routes: [
             _route('/parsha', (_) => const ParshaTab(), routes: [
               _route('browse', (_) => const BrowseScreen()),
+              ..._weekPages(),
             ]),
           ]),
-          StatefulShellBranch(routes: [_route('/progress', (_) => const ProgressScreen())]),
+          StatefulShellBranch(routes: [_route('/progress', (_) => const ProgressScreen(), routes: _weekPages())]),
           StatefulShellBranch(routes: [
             _route('/community', (_) => const CommunityScreen(), routes: [
               _route('forum/:slug', (s) => ForumScreen(slug: s.pathParameters['slug']!)),
@@ -80,7 +92,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     forumSlug: s.uri.queryParameters['forum'],
                     parshaKey: s.uri.queryParameters['parsha'],
                   )),
-              _route('account', (s) => AccountScreen(returnWhenSignedIn: s.uri.queryParameters['then'] == 'back')),
+              _route('account', _account),
               _route('moderation', (_) => const ModerationScreen()),
             ]),
           ]),
@@ -91,6 +103,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               _route('accessibility', (_) => const AccessibilitySettingsScreen()),
               _route('reminders', (_) => const ReminderSettingsScreen()),
               _route('data', (_) => const DataSettingsScreen()),
+              _route('account', _account),
               _route('about', (_) => const AboutScreen(), routes: [
                 // Where these pages used to be, for old links.
                 GoRoute(path: 'sources', redirect: (_, _) => '/sources'),
@@ -103,13 +116,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       _route('/guide', (_) => const GuideScreen()),
       _route('/sources', (_) => const SourcesScreen()),
       _route('/legal/:doc', (s) => LegalScreen(doc: LegalDoc.fromSlug(s.pathParameters['doc']!))),
-      _route('/week/:id', (s) => WeekOverviewScreen(weekId: s.pathParameters['id']!)),
+      // A week and its haftarah on their own, for links and notifications.
+      _week('/week/:id'),
+      _haftarah('/haftarah/:id'),
+      // The reader always fills the screen.
       _route('/read/:id/:aliyah', (s) => ReaderScreen(
             weekId: s.pathParameters['id']!,
             aliyah: int.tryParse(s.pathParameters['aliyah']!) ?? 0,
             fullText: s.uri.queryParameters['mode'] == 'full',
+            fromWeek: s.uri.queryParameters['from'] == 'week',
           )),
-      _route('/haftarah/:id', (s) => HaftarahScreen(weekId: s.pathParameters['id']!)),
     ],
   );
 });

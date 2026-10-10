@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../ui/l10n.dart';
 import '../settings/app_settings.dart';
+import '../settings/screens/display_settings_screen.dart';
 
 /// Quick display controls available while reading.
 Future<void> showDisplaySheet(BuildContext context) => showModalBottomSheet<void>(
@@ -134,8 +134,11 @@ class _DisplaySheet extends ConsumerWidget {
             title: Text(l.settingsDisplay),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.pop(context);
-              context.push('/settings/display');
+              // Over the page that opened the sheet, which it goes back to.
+              // The reader is shown over the tabs, so the Settings tab's own
+              // page can't open above it.
+              final navigator = Navigator.of(context)..pop();
+              navigator.push(MaterialPageRoute<void>(builder: (_) => const DisplaySettingsScreen()));
             },
           ),
         ],

@@ -144,7 +144,7 @@ class _DivergenceBanner extends ConsumerWidget {
       action: previous == null
           ? null
           : TextButton(
-              onPressed: () => context.push('/week/${weekIdFor(previous.portion, previous.occasion)}'),
+              onPressed: () => context.push('/today/week/${weekIdFor(previous.portion, previous.occasion)}'),
               child: Text(l.readingDivergenceOpen(name(previous.portion))),
             ),
     );
@@ -231,7 +231,7 @@ class _ParshaCard extends ConsumerWidget {
             ),
           const Gap(8),
           OutlinedButton(
-            onPressed: () => context.push('/week/${ctx.id}'),
+            onPressed: () => context.push('/today/week/${ctx.id}'),
             child: Text(l.aliyotProgress(ctx.progress.completedAliyot, kAliyot)),
           ),
         ],
@@ -378,7 +378,7 @@ class _HaftarahTile extends ConsumerWidget {
         .join(' · ');
     final done = ctx.progress.haftarah != null;
     return InfoCard(
-      onTap: () => context.push('/haftarah/${ctx.id}'),
+      onTap: () => context.push('/today/haftarah/${ctx.id}'),
       child: Row(
         children: [
           Icon(done ? Icons.check_circle : Icons.auto_stories_outlined,
@@ -447,7 +447,7 @@ class _OpenPreviousCard extends ConsumerWidget {
                   child: Text(l.checkInFinished),
                 ),
                 OutlinedButton(
-                  onPressed: () => context.push('/week/${previous.id}'),
+                  onPressed: () => context.push('/today/week/${previous.id}'),
                   child: Text(l.checkInPick),
                 ),
               ],
@@ -462,7 +462,7 @@ class _OpenPreviousCard extends ConsumerWidget {
     final onlyHaftarah = previous.progress.isComplete;
     return InfoCard(
       color: Theme.of(context).colorScheme.secondaryContainer,
-      onTap: () => context.push(onlyHaftarah ? '/haftarah/${previous.id}' : '/week/${previous.id}'),
+      onTap: () => context.push(onlyHaftarah ? '/today/haftarah/${previous.id}' : '/today/week/${previous.id}'),
       child: Row(
         children: [
           const Icon(Icons.schedule),

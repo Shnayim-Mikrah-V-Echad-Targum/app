@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/app/routes.dart';
+import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/about/about_screen.dart';
 import 'package:shnayim_mikra/features/about/guide_screen.dart';
 import 'package:shnayim_mikra/features/about/legal_screen.dart';
@@ -12,9 +15,16 @@ import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/community_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
+import 'package:shnayim_mikra/features/community/ui/moderation_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
+import 'package:shnayim_mikra/features/parsha/browse_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/progress_screen.dart';
+import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
+import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/accessibility_settings_screen.dart';
+import 'package:shnayim_mikra/features/settings/screens/display_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
@@ -34,13 +44,29 @@ class _Offline extends DemoForumRepository {
 final _home = find.widgetWithIcon(IconButton, Icons.home_outlined);
 
 /// The app on a phone, for its navigation bar, on [_now].
-Future<GoRouter> _pump(WidgetTester tester, {NotificationService? notifications, ForumRepository? forums}) async {
+Future<GoRouter> _pump(
+  WidgetTester tester, {
+  NotificationService? notifications,
+  ForumRepository? forums,
+  ProgressState? progress,
+}) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final c = await pumpApp(tester, now: _now, notifications: notifications, forums: forums);
+  final c = await pumpApp(tester, now: _now, notifications: notifications, forums: forums, progress: progress);
   await tester.pumpAndSettle();
   return c.read(routerProvider);
+}
+
+/// Settles a page that loads its texts from assets, which takes real time.
+Future<void> _loadTexts(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump();
+  for (var i = 0; i < 20 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+  }
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -258,6 +284,197 @@ void main() {
     });
   });
 
+  group('a week', () {
+    String location(GoRouter router) => router.state.uri.toString();
+
+    testWidgets('opened from Today stays in the Today tab, and so does its haftarah', (tester) async {
+      final router = await _pump(tester);
+      await tester.tap(find.widgetWithText(OutlinedButton, '0 of 7 aliyot'));
+      await tester.pumpAndSettle();
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+      expect(location(router), '/today/week/5787:1');
+      expect(selectedTab(tester), 0);
+      expect(find.byType(BackButton), findsOneWidget);
+
+      final haftarah = find.widgetWithText(ListTile, 'Haftarah');
+      await tester.ensureVisible(haftarah);
+      await tester.pumpAndSettle();
+      await tester.tap(haftarah);
+      await _loadTexts(tester);
+      expect(find.byType(HaftarahScreen), findsOneWidget);
+      expect(location(router), '/today/haftarah/5787:1');
+      expect(selectedTab(tester), 0);
+
+      await goBack(tester);
+      await goBack(tester);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+
+    testWidgets('opened from Browse stays in the Parsha tab', (tester) async {
+      final router = await _pump(tester);
+      router.go('/parsha/browse');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, 'Noach'));
+      await tester.pumpAndSettle();
+      expect(find.text('Parshat Noach'), findsOneWidget);
+      expect(selectedTab(tester), 1);
+
+      await goBack(tester);
+      expect(find.byType(BrowseScreen), findsOneWidget);
+    });
+
+    testWidgets('opened from Progress stays in the Progress tab', (tester) async {
+      final router = await _pump(tester);
+      router.go('/progress');
+      await tester.pumpAndSettle();
+      final noach = find.byTooltip(RegExp('^Noach'));
+      await tester.ensureVisible(noach);
+      await tester.pumpAndSettle();
+      await tester.tap(noach);
+      await tester.pumpAndSettle();
+      expect(find.text('Parshat Noach'), findsOneWidget);
+      expect(selectedTab(tester), 2);
+
+      await goBack(tester);
+      expect(find.byType(ProgressScreen), findsOneWidget);
+    });
+
+    testWidgets('opened within a tab goes to its discussion and back', (tester) async {
+      final router = await _pump(tester);
+      router.go('/parsha/week/5787:2');
+      await tester.pumpAndSettle();
+      final discuss = find.text("Discuss this week's parsha");
+      await tester.ensureVisible(discuss);
+      await tester.pumpAndSettle();
+      await tester.tap(discuss);
+      await tester.pumpAndSettle();
+      expect(find.byType(ThreadScreen), findsOneWidget);
+      expect(selectedTab(tester), 1);
+
+      await goBack(tester);
+      expect(find.text('Parshat Noach'), findsOneWidget);
+    });
+
+    testWidgets('opened from a notification goes to its discussion in the Community tab', (tester) async {
+      final notifications = NotificationService.disabled();
+      await _pump(tester, notifications: notifications);
+      notifications.handleTap(_week);
+      await tester.pumpAndSettle();
+      final discuss = find.text("Discuss this week's parsha");
+      await tester.ensureVisible(discuss);
+      await tester.pumpAndSettle();
+      await tester.tap(discuss);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ThreadScreen), findsOneWidget);
+      expect(selectedTab(tester), 3);
+    });
+
+    testWidgets('and its haftarah have their own page in just the tabs that open weeks', (tester) async {
+      final router = await _pump(tester);
+      for (final (i, tab) in ['/today', '/parsha', '/progress', '/community', '/settings'].indexed) {
+        for (final (page, screen) in [('week', WeekOverviewScreen), ('haftarah', HaftarahScreen)]) {
+          router.go('$tab/$page/5787:1');
+          await _loadTexts(tester);
+          final inTab = weekTabs.contains(tab);
+          expect(find.byType(screen), inTab ? findsOneWidget : findsNothing, reason: '$tab/$page');
+          if (inTab) expect(selectedTab(tester), i);
+        }
+      }
+    });
+  });
+
+  group('the reader', () {
+    Future<void> backToTheWeek(WidgetTester tester) async {
+      await tester.tap(find.byTooltip('More options'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Back to the week'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('goes back to the week it was opened from, rather than opening it again', (tester) async {
+      await _pump(tester);
+      await tester.tap(find.widgetWithText(OutlinedButton, '0 of 7 aliyot'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Rishon · aliyah 1'));
+      await _loadTexts(tester);
+      expect(find.byType(ReaderScreen), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+
+      await backToTheWeek(tester);
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+      expect(selectedTab(tester), 0);
+      await goBack(tester);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+
+    testWidgets('opened from Today shows the week in its place, within Today', (tester) async {
+      await _pump(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Start reading'));
+      await _loadTexts(tester);
+      expect(find.byType(ReaderScreen), findsOneWidget);
+
+      await backToTheWeek(tester);
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+      expect(selectedTab(tester), 0);
+      await goBack(tester);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+
+    testWidgets('opens the display settings over itself, which go back to it', (tester) async {
+      final router = await _pump(tester);
+      router.push('/read/5787:1/0');
+      await _loadTexts(tester);
+      await tester.tap(find.byTooltip('Display settings'));
+      await tester.pumpAndSettle();
+      final display = find.widgetWithText(ListTile, 'Display');
+      await tester.scrollUntilVisible(display, 200,
+          scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
+      await tester.tap(display);
+      await _loadTexts(tester);
+      expect(tester.takeException(), isNull);
+      expect(find.byType(DisplaySettingsScreen), findsOneWidget);
+
+      await goBack(tester);
+      expect(find.byType(ReaderScreen), findsOneWidget);
+    });
+
+    testWidgets('finishing the parsha opens the haftarah in its place, within Today', (tester) async {
+      var week = WeekProgress(weekId: '5787:1');
+      for (var a = 0; a < 6; a++) {
+        for (final p in ReadingPass.values) {
+          week = week.withUnit(a, p, LocalDate(2026, 10, 5));
+        }
+      }
+      await _pump(tester, progress: ProgressState(weeks: {'5787:1': week}));
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue reading'));
+      await _loadTexts(tester);
+      await tester.tap(find.byTooltip('More options'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mark this aliyah as read'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Haftarah'));
+      await _loadTexts(tester);
+      expect(find.byType(HaftarahScreen), findsOneWidget);
+      expect(selectedTab(tester), 0);
+      await goBack(tester);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+
+    testWidgets('opened from a link shows the week within Today, with a way back to it', (tester) async {
+      final router = await _pump(tester);
+      router.go('/read/5787:1/0?from=week');
+      await _loadTexts(tester);
+
+      await backToTheWeek(tester);
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+      expect(selectedTab(tester), 0);
+      await goBack(tester);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+  });
+
   testWidgets('a thread goes back to its forum', (tester) async {
     final router = await _pump(tester);
     router.go('/community');
@@ -299,6 +516,37 @@ void main() {
   });
 
   group('in Settings', () {
+    testWidgets('the account opens within the Settings tab', (tester) async {
+      final router = await _pump(tester);
+      router.go('/settings');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Account & community'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AccountScreen), findsOneWidget);
+      expect(selectedTab(tester), 4);
+
+      await goBack(tester);
+      expect(find.byType(SettingsScreen), findsOneWidget);
+    });
+
+    testWidgets('the reports to review open from the account and go back to it', (tester) async {
+      final forums = DemoForumRepository();
+      await forums.verifyCode('reader@example.org', '123456');
+      final router = await _pump(tester, forums: forums);
+      router.go('/settings/account');
+      await tester.pumpAndSettle();
+      final reports = find.text('Reports to review');
+      await tester.ensureVisible(reports);
+      await tester.pumpAndSettle();
+      await tester.tap(reports);
+      await tester.pumpAndSettle();
+      expect(find.byType(ModerationScreen), findsOneWidget);
+      expect(selectedTab(tester), 4);
+
+      await goBack(tester);
+      expect(find.byType(AccountScreen), findsOneWidget);
+    });
+
     testWidgets('feedback, with no address to email, goes to the feedback forum and back', (tester) async {
       final router = await _pump(tester);
       router.go('/settings/accessibility');

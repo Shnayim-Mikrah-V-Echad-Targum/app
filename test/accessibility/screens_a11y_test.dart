@@ -22,9 +22,12 @@ void main() {
     '/settings/accessibility',
     '/settings/reminders',
     '/settings/about',
+    '/settings/account',
     '/guide',
     '/sources',
     '/legal/privacy',
+    // A week within a tab, under its navigation bar.
+    '/parsha/week/5787:2',
     // Opened directly, as on a web reload: with a home button.
     '/week/5787:1',
     // Links that lead nowhere.

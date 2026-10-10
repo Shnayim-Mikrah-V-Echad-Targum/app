@@ -145,7 +145,7 @@ class ProgressScreen extends ConsumerWidget {
                   title: Text(names.portion(repo.portion(e.plan.portion), ashkenazi: settings.ashkenaziNames)),
                   subtitle: Text(names.dateLong(e.plan.week.occasion)),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/week/${e.plan.weekId}'),
+                  onTap: () => context.push('/progress/week/${e.plan.weekId}'),
                 ),
               ),
           ],
@@ -163,7 +163,7 @@ class ProgressScreen extends ConsumerWidget {
                     child: Align(alignment: AlignmentDirectional.centerStart, child: WeekStatusBadge(e.status, dense: true)),
                   ),
                   trailing: Text(names.dateShort(e.plan.week.occasion)),
-                  onTap: () => context.push('/week/${e.plan.weekId}'),
+                  onTap: () => context.push('/progress/week/${e.plan.weekId}'),
                 ),
               ),
           SectionHeader(l.pauseTitle),
@@ -289,7 +289,7 @@ class _TorahMap extends ConsumerWidget {
           message: '$name — ${label(s)}',
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () => context.push('/week/$cycle:${p.id.number}'),
+            onTap: () => context.push('/progress/week/$cycle:${p.id.number}'),
             child: Container(
               constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),

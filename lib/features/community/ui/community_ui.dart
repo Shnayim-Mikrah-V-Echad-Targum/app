@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/routes.dart';
 import '../../../core/text/hebrew_text.dart';
 import '../../../data/models/parsha.dart';
 import '../../../l10n/app_localizations.dart';
@@ -129,7 +130,7 @@ Future<void> openWeeklyThread(BuildContext context, WidgetRef ref, PortionInfo p
           title: title,
         );
     if (!context.mounted) return;
-    replace ? context.pushReplacement('/community/thread/$id') : context.push('/community/thread/$id');
+    replace ? context.pushReplacement('/community/thread/$id') : openTabPage(context, '/community/thread/$id');
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(communityError(l, e))));

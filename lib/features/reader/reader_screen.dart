@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../app/providers.dart';
+import '../../app/routes.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/scripture.dart';
 import '../../data/models/verse_ref.dart';
@@ -58,11 +59,20 @@ final readerTextsProvider = FutureProvider.family<ReaderTexts, (String, bool, bo
 });
 
 class ReaderScreen extends ConsumerStatefulWidget {
-  const ReaderScreen({super.key, required this.weekId, required this.aliyah, this.fullText = false});
+  const ReaderScreen({
+    super.key,
+    required this.weekId,
+    required this.aliyah,
+    this.fullText = false,
+    this.fromWeek = false,
+  });
 
   final String weekId;
   final int aliyah;
   final bool fullText;
+
+  /// Opened from the week's own page, which "Back to the week" returns to.
+  final bool fromWeek;
 
   @override
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
@@ -405,7 +415,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     case 'mark':
                       _markAliyahRead(ctx);
                     case 'week':
-                      context.push('/week/${ctx.id}');
+                      // The week's page beneath, or in place of the reader:
+                      // never a second copy of it.
+                      if (widget.fromWeek && context.canPop()) {
+                        context.pop();
+                      } else {
+                        replaceWithWeekPage(context, 'week/${ctx.id}');
+                      }
                     case 'keys':
                       _showShortcuts(context, isMac);
                   }
@@ -883,7 +899,7 @@ class _FinishedPanel extends ConsumerWidget {
                 FilledButton.icon(onPressed: onNext, icon: const Icon(Icons.arrow_forward), label: Text(l.nextAliyah)),
               if (complete && (settings.haftarahEnabled || ctx.haftarahRequired) && week.haftarah == null)
                 FilledButton.icon(
-                  onPressed: () => context.pushReplacement('/haftarah/${ctx.id}'),
+                  onPressed: () => replaceWithWeekPage(context, 'haftarah/${ctx.id}'),
                   icon: const Icon(Icons.auto_stories),
                   label: Text(l.haftarahTitle),
                 ),

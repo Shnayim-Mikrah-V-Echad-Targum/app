@@ -55,6 +55,9 @@ const _screens = {
   'parsha': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
+  // A week and its haftarah opened within a tab, under its navigation bar.
+  'week_tab': '/today/week/5787:1',
+  'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
   'reader_full': '/read/5787:1/2?mode=full',
   // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
@@ -67,6 +70,7 @@ const _screens = {
   'thread': '/community/thread/1',
   'compose': '/community/new',
   'account': '/community/account',
+  'account_settings': '/settings/account',
   'account_sync': '/community/account',
   'settings': '/settings',
   's_reading': '/settings/reading',
@@ -213,7 +217,7 @@ void main() {
 
   for (final mode in _modes) {
     for (final entry in _screens.entries) {
-      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'today_haftarah_left', 'week', 'reader', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
+      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'today_haftarah_left', 'week', 'week_tab', 'haftarah_tab', 'reader', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
         continue;
       }
       final only = _only;

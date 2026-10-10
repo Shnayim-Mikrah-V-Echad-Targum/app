@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../app/routes.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
@@ -96,7 +97,7 @@ class WeekOverview extends ConsumerWidget {
             onSelected: (v) => switch (v) {
               'all' => markWeek(),
               'clear' => clearWeek(),
-              'full' => context.push('/read/${ctx.id}/0?mode=full'),
+              'full' => context.push('/read/${ctx.id}/0?mode=full&from=week'),
               _ => null,
             },
             itemBuilder: (context) => [
@@ -139,7 +140,7 @@ class WeekOverview extends ConsumerWidget {
                 if (ctx.haftarah.specialKey != null) l.specialHaftarah(names.specialHaftarah(ctx.haftarah.specialKey!)),
               ].join('\n')),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/haftarah/${ctx.id}'),
+              onTap: () => context.push(haftarahPath(context, ctx.id)),
             ),
           ],
           const Gap(16),
@@ -153,7 +154,7 @@ class WeekOverview extends ConsumerWidget {
           OutlinedButton.icon(
             icon: const Icon(Icons.forum_outlined),
             label: Text(l.discussThisWeek),
-            onPressed: () => context.push('/community/new?parsha=${Uri.encodeComponent(portion.key)}'),
+            onPressed: () => openTabPage(context, '/community/new?parsha=${Uri.encodeComponent(portion.key)}'),
           ),
         ],
       ),
@@ -234,7 +235,7 @@ class _AliyahTile extends ConsumerWidget {
             ],
           ),
           isThreeLine: true,
-          onTap: () => context.push('/read/${ctx.id}/$aliyah'),
+          onTap: () => context.push('/read/${ctx.id}/$aliyah?from=week'),
           trailing: PopupMenuButton<String>(
             tooltip: l.actionMore,
             onSelected: (v) {
@@ -243,7 +244,7 @@ class _AliyahTile extends ConsumerWidget {
                 ref.read(progressProvider.notifier).markAliyah(ctx.id, aliyah, null);
                 showStatus(context, l.markedUnread);
               }
-              if (v == 'full') context.push('/read/${ctx.id}/$aliyah?mode=full');
+              if (v == 'full') context.push('/read/${ctx.id}/$aliyah?mode=full&from=week');
             },
             itemBuilder: (context) => [
               PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),
