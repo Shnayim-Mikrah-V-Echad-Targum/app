@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../helpers.dart';
 
@@ -19,6 +21,12 @@ const _london = City(
 
 final _settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 9, 1), city: _london);
 
+/// A device keeping the clock of the IANA time zone [name].
+Duration Function(LocalDate) _clockOf(String name) {
+  final location = Zmanim.timeZone(name)!;
+  return (d) => tz.TZDateTime(location, d.year, d.month, d.day, 12).timeZoneOffset;
+}
+
 /// Friday of Noach 5787, 16 October 2026: candles are lit at 17:47 in London.
 final _friday = DateTime(2026, 10, 16, 10);
 
@@ -27,11 +35,14 @@ void main() {
   // report.
   setUpAll(() => Zmanim.timeZone('UTC'));
 
-  Future<void> openToday(WidgetTester tester, AppSettings settings, DateTime now) async {
+  /// Opens Today on a device keeping London's clock, or [clock]'s.
+  Future<void> openToday(WidgetTester tester, AppSettings settings, DateTime now, {String clock = 'Europe/London'}) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await pumpApp(tester, settings: settings, now: now);
+    await pumpApp(tester, settings: settings, now: now, overrides: [
+      deviceClockProvider.overrideWithValue(_clockOf(clock)),
+    ]);
     await tester.pumpAndSettle();
   }
 
@@ -72,6 +83,19 @@ void main() {
     await openToday(tester, _settings.copyWith(city: null), _friday);
     expect(find.text('Shabbat is tomorrow'), findsOneWidget);
     expect(find.textContaining('Candle-lighting'), findsNothing);
+  });
+
+  testWidgets("on a device keeping another clock, the countdown stays: the city's time would read as local",
+      (tester) async {
+    // Travelling in New York, with London still chosen: candles there are
+    // lit at 17:47 London time, 12:47 in New York.
+    await openToday(tester, _settings, _friday, clock: 'America/New_York');
+    expect(find.text('Shabbat is tomorrow'), findsOneWidget);
+    expect(find.textContaining('Candle-lighting'), findsNothing);
+
+    // Back home, once the clocks agree, it shows again.
+    await openToday(tester, _settings, _friday, clock: 'Europe/London');
+    expect(text('Candle-lighting 5:47 PM'), findsOneWidget);
   });
 
   testWidgets('it fits at 200% text', (tester) async {

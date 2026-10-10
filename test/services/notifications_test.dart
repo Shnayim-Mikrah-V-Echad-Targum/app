@@ -24,7 +24,13 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../helpers.dart';
 
-typedef _Scheduled = ({String? title, String? body, NotificationDetails details, String? payload});
+typedef _Scheduled = ({
+  String? title,
+  String? body,
+  NotificationDetails details,
+  String? payload,
+  AndroidScheduleMode mode,
+});
 
 /// Records what is scheduled. Every call yields to the event loop first, as
 /// a platform channel does, so overlapping calls interleave.
@@ -59,7 +65,13 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
       throw Exception('platform failure');
     }
     schedules++;
-    scheduled[id] = (title: title, body: body, details: notificationDetails, payload: payload);
+    scheduled[id] = (
+      title: title,
+      body: body,
+      details: notificationDetails,
+      payload: payload,
+      mode: androidScheduleMode,
+    );
   }
 
   @override
@@ -69,6 +81,18 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
 
 class _FakeAndroid extends Fake implements AndroidFlutterLocalNotificationsPlugin {
   final channels = <String, AndroidNotificationChannel>{};
+
+  /// What the device answers when asked whether exact alarms are allowed:
+  /// yes before Android 12, and from it no, the permission not being
+  /// declared. Null throws, as a platform that can't say.
+  bool? exact = false;
+  int exactAsked = 0;
+
+  @override
+  Future<bool?> canScheduleExactNotifications() async {
+    exactAsked++;
+    return exact ?? (throw PlatformException(code: 'unavailable'));
+  }
 
   @override
   Future<void> createNotificationChannel(AndroidNotificationChannel notificationChannel) async {
@@ -80,17 +104,25 @@ class _FakeAndroid extends Fake implements AndroidFlutterLocalNotificationsPlugi
 /// setUpAll) need no loading.
 NotificationService _service(_FakePlugin plugin) => NotificationService.forTesting(plugin, loadTimeZones: () async {});
 
-/// A service that counts how often reminders are handed to it.
+/// A service that counts how often reminders are handed to it, and keeps
+/// the last of them, how they were worded and what it scheduled.
 class _CountingService extends NotificationService {
-  _CountingService() : super.forTesting(_FakePlugin(), loadTimeZones: () async => tz.setLocalLocation(tz.UTC));
+  _CountingService._(this.plugin) : super.forTesting(plugin, loadTimeZones: () async => tz.setLocalLocation(tz.UTC));
+  _CountingService() : this._(_FakePlugin());
 
+  final _FakePlugin plugin;
   int reschedules = 0;
+  List<PlannedReminder> reminders = const [];
+  ReminderCopy Function(PlannedReminder)? describe;
+  Future<void> done = Future.value();
 
   @override
   Future<void> reschedule(
       List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) {
     reschedules++;
-    return super.reschedule(reminders, l, describe);
+    this.reminders = reminders;
+    this.describe = describe;
+    return done = super.reschedule(reminders, l, describe);
   }
 }
 
@@ -248,6 +280,35 @@ void main() {
     });
   });
 
+  group('on Android, reminders are scheduled', () {
+    test('exactly where exact alarms need no permission, before Android 12', () async {
+      final plugin = _FakePlugin()..android.exact = true;
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      await _service(plugin).reschedule(plan, en, copyIn(en));
+      expect({for (final s in plugin.scheduled.values) s.mode}, {AndroidScheduleMode.exactAllowWhileIdle});
+    });
+
+    test('inexactly from Android 12, where they need one, and the planner allows for an hour late', () async {
+      final plugin = _FakePlugin()..android.exact = false;
+      final service = _service(plugin);
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      await service.reschedule(plan, en, copyIn(en));
+      expect({for (final s in plugin.scheduled.values) s.mode}, {AndroidScheduleMode.inexactAllowWhileIdle});
+
+      // Asked once.
+      await service.reschedule(plan, he, copyIn(he));
+      expect(plugin.android.exactAsked, 1);
+    });
+
+    test('inexactly where the device can\'t say', () async {
+      final plugin = _FakePlugin()..android.exact = null;
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      await _service(plugin).reschedule(plan, en, copyIn(en));
+      expect(plugin.scheduled, hasLength(plan.length));
+      expect({for (final s in plugin.scheduled.values) s.mode}, {AndroidScheduleMode.inexactAllowWhileIdle});
+    });
+  });
+
   group("the device's notification settings", () {
     const channel = MethodChannel('com.spencerccf.app_settings/methods');
     tearDown(() {
@@ -369,6 +430,32 @@ void main() {
       c.read(progressProvider.notifier).markUnit('5787:2', 0, ReadingPass.mikra1, _monday);
       c.read(reminderSchedulerProvider);
       expect(service.reschedules, 2);
+    });
+
+    test("names the reader's routine in the daily reminders it schedules, and leaves it out once cleared", () async {
+      /// The bodies of the daily reminders scheduled, and of [day]'s worded
+      /// as the scheduler words them, whatever the clock says is past.
+      Future<List<String?>> bodies() async {
+        await service.done;
+        final scheduled = [
+          for (final r in service.reminders)
+            if (r.kind == ReminderKind.daily) service.plugin.scheduled[r.id]!.body,
+        ];
+        final week = planner.planFor(planner.schedule.weekFor(_monday));
+        final day = PlannedReminder(kind: ReminderKind.daily, date: _monday, minutes: 20 * 60, plan: week, aliyot: [0]);
+        return [...scheduled, service.describe!(day).body];
+      }
+
+      change((s) => s.copyWith(habitAnchor: HabitAnchor.dinner));
+      expect(await bodies(), everyElement(endsWith(" · After dinner — it's yours.")));
+
+      change((s) => s.copyWith(language: AppLanguage.hebrew));
+      expect(await bodies(), everyElement(endsWith(' · אחרי ארוחת הערב — זה הזמן שלך.')));
+
+      change((s) => s.copyWith(habitAnchor: null, language: AppLanguage.english));
+      final cleared = await bodies();
+      expect(cleared, everyElement(isNot(contains('it\'s yours'))));
+      expect(cleared.last, endsWith(' min'));
     });
 
     test('plans again when a reminder setting or the language changes', () {

@@ -1329,7 +1329,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get dailyReminderDescCity =>
-      'תזכורת עדינה בשעה שבחרת, או לפני הדלקת הנרות בערב שבת או חג';
+      'תזכורת עדינה בשעה שבחרת, או לפני הדלקת הנרות בערב שבת או יום טוב';
 
   @override
   String get dailyReminderTime => 'שעת התזכורת היומית';
@@ -1372,6 +1372,10 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get reminderCityChoose => 'בחירת עיר';
+
+  @override
+  String get remindersOnCityOffer =>
+      'התזכורות פועלות. בחירת עיר תתאים אותן לזמני השבת שלה.';
 
   @override
   String get habitAnchorLabel => 'אחרי ש…';

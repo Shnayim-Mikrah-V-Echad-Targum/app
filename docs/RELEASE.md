@@ -51,7 +51,8 @@
   - The daily reminder arrives.
   - The Erev Shabbat reminder arrives before midday.
   - Nothing fires on Shabbat.
-  - With the city for Shabbat times set to where the device is: a daily reminder set for the evening arrives on Friday an hour and a half before candle-lighting, Today shows candle-lighting that Friday, and the check-in arrives on Motzaei Shabbat an hour after Shabbat ends.
+  - With the city for Shabbat times set to where the device is: a daily reminder set for the evening arrives on Friday between two and a half hours and an hour and a half before candle-lighting (Android may deliver it up to an hour late), never later, Today shows candle-lighting that Friday, and the check-in arrives on Motzaei Shabbat an hour after Shabbat ends.
+  - With the city set elsewhere, as when travelling, Today shows the countdown to Shabbat rather than candle-lighting, and reminders keep to midday.
   - Tapping a reminder, with the app running and with it closed, opens Today. The Erev Shabbat reminder opens the week instead, and going back from it leads to Today.
   - Reminders survive a reboot (Android).
   - On Android, the status-bar icon is the three rules of the mark (two long over a shorter one), not a white square or a menu icon, and the Erev Shabbat reminder expands to show its whole message.
@@ -115,7 +116,7 @@
 - [ ] **Permissions:**
   - Notifications: requested in context, after the first reading.
   - Boot completed: so reminders survive a reboot.
-  - No exact alarms: reminders use inexact scheduling, so no special declaration is needed.
+  - No exact-alarm permission: from Android 12 reminders use inexact scheduling, which the planner allows an hour for, and before it exact alarms, which need no permission there. No special declaration is needed.
 - [ ] **Store listing:**
   - screenshots in English and Hebrew, for phone and tablet
   - feature graphic

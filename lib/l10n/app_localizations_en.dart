@@ -1378,6 +1378,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reminderCityChoose => 'Choose a city';
 
   @override
+  String get remindersOnCityOffer =>
+      'Reminders are on. Choose your city, and they\'ll follow its Shabbat times.';
+
+  @override
   String get habitAnchorLabel => 'After I…';
 
   @override

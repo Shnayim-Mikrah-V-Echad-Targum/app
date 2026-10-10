@@ -163,15 +163,17 @@ class NotificationService {
   }
 
   /// Whether [openSystemSettings] can take the reader to the device's
-  /// notification settings for the app. Windows never refuses permission.
+  /// notification settings: the app's own on Android and iOS, and on macOS
+  /// (which has no build yet) the system's Notifications settings, where
+  /// the app is listed. Windows never refuses permission.
   bool get canOpenSystemSettings =>
       supported &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS ||
           defaultTargetPlatform == TargetPlatform.macOS);
 
-  /// Opens the device's notification settings for the app, where
-  /// notifications once refused can be allowed again.
+  /// Opens the device's notification settings (see [canOpenSystemSettings]),
+  /// where notifications once refused can be allowed again.
   Future<void> openSystemSettings() async {
     try {
       await system.AppSettings.openAppSettings(type: system.AppSettingsType.notification);
@@ -183,6 +185,25 @@ class NotificationService {
   String _lastSignature = '';
   Future<void> _queue = Future.value();
   int _latest = 0;
+
+  /// Whether Android lets the app schedule exact alarms, asked once.
+  bool? _exact;
+
+  /// How reminders are scheduled on Android. Before Android 12 an inexact
+  /// alarm may come as late as three quarters of the time until it is due,
+  /// so one planned days ahead could come on Shabbat; exact alarms there need
+  /// no permission. From Android 12 they need one the app doesn't ask for,
+  /// and inexact alarms come within the hour, which the planner allows for
+  /// ([kMaxDeliveryDelay]).
+  Future<AndroidScheduleMode> _scheduleMode(AndroidFlutterLocalNotificationsPlugin? android) async {
+    if (android == null) return AndroidScheduleMode.inexactAllowWhileIdle;
+    try {
+      _exact ??= await android.canScheduleExactNotifications() ?? false;
+    } catch (_) {
+      _exact = false;
+    }
+    return _exact! ? AndroidScheduleMode.exactAllowWhileIdle : AndroidScheduleMode.inexactAllowWhileIdle;
+  }
 
   /// Replaces all scheduled reminders with [reminders], worded by [describe].
   ///
@@ -218,6 +239,7 @@ class NotificationService {
     }
     try {
       final android = p.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      final mode = await _scheduleMode(android);
       if (android != null) {
         // Creating a channel that exists updates its name and description,
         // so they follow the app's language.
@@ -252,7 +274,7 @@ class NotificationService {
             macOS: const DarwinNotificationDetails(threadIdentifier: _thread),
             windows: const WindowsNotificationDetails(),
           ),
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          androidScheduleMode: mode,
           payload: reminderRoute(r),
         );
       }
@@ -392,7 +414,7 @@ final reminderSchedulerProvider = Provider<void>((ref) {
           now: DateTime.now(),
           today: today,
           pauses: progress.pauses,
-          zmanim: city == null ? null : reminderZmanim(city),
+          zmanim: city == null ? null : reminderZmanim(city, deviceOffset: ref.watch(deviceClockProvider)),
         )
       : const <PlannedReminder>[];
 

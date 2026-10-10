@@ -12,6 +12,8 @@ import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/city_directory.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/city_picker_screen.dart';
+import 'package:shnayim_mikra/services/reminder_planner.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/sefer_choice_chip.dart';
 
 import '../../helpers.dart';
@@ -85,6 +87,43 @@ void main() {
     expect(selected(tester), isEmpty);
   });
 
+  testWidgets('a routine chosen moves a time that is only a suggestion to its usual time', (tester) async {
+    final c = await openReminders(
+      tester,
+      _Notifications(),
+      settings: const AppSettings(onboardingComplete: true, dailyReminder: true),
+    );
+    int minutes() => c.read(settingsProvider).dailyReminderMinutes;
+    expect(minutes(), 20 * 60);
+    final handle = tester.ensureSemantics();
+    expect(tester.getSemantics(find.text('Daily reminder time')), isSemantics(isLiveRegion: false));
+
+    // A morning routine at the default 8 PM would contradict its time.
+    await tester.tap(find.text('finish Shacharit'));
+    await tester.pumpAndSettle();
+    expect(minutes(), 7 * 60 + 30);
+    expect(
+      tester.getSemantics(find.text('Daily reminder time')),
+      isSemantics(isLiveRegion: true),
+      reason: 'the time it shows is read out as it changes',
+    );
+    await tester.tap(find.text('start my commute'));
+    await tester.pumpAndSettle();
+    expect(minutes(), 8 * 60);
+    // Cleared, the time stays.
+    await tester.tap(find.text('start my commute'));
+    await tester.pumpAndSettle();
+    expect(minutes(), 8 * 60);
+
+    // A time of the reader's own stays.
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(dailyReminderMinutes: 6 * 60 + 45));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('finish dinner'));
+    await tester.pumpAndSettle();
+    expect(minutes(), 6 * 60 + 45);
+    handle.dispose();
+  });
+
   testWidgets('one chosen by an earlier version, saved as its label, shows as chosen', (tester) async {
     await openReminders(
       tester,
@@ -156,15 +195,82 @@ void main() {
     }
 
     testWidgets('is offered when the first reminder is turned on without one, and can be put aside', (tester) async {
-      await openReminders(tester, _Notifications());
+      final c = await openReminders(tester, _Notifications());
       expect(find.text(offer), findsNothing);
 
       await tapText(tester, 'Daily reminder');
       expect(find.text(offer), findsOneWidget);
       await tapText(tester, 'Not now');
       expect(find.text(offer), findsNothing);
+      expect(c.read(settingsProvider).cityOfferAnswered, isTrue);
 
-      // Not again for the next reminder turned on.
+      // Not again for the next reminder turned on, nor on coming back.
+      await tapText(tester, 'Erev Shabbat reminder');
+      expect(find.text(offer), findsNothing);
+      c.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      c.read(routerProvider).go('/settings/reminders');
+      await tester.pumpAndSettle();
+      expect(find.text(offer), findsNothing);
+    });
+
+    group('appearing below the screen, it is scrolled into view and read out', () {
+      /// Turns the daily reminder on in a [height] high view at [scale],
+      /// which opens its time and routines above the offer, and returns
+      /// where the offer and the screen are.
+      Future<(Rect, Rect)> turnOn(WidgetTester tester, {required double height, required double scale}) async {
+        tester.view.physicalSize = Size(412, height);
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearAllTestValues);
+        await openReminders(tester, _Notifications());
+        await tester.tap(find.text('Daily reminder'));
+        await tester.pumpAndSettle();
+        expect(tester.getSemantics(find.text(offer)), isSemantics(label: offer, isLiveRegion: true));
+        final banner = find.ancestor(of: find.text(offer), matching: find.byType(NoticeBanner));
+        return (tester.getRect(banner), tester.getRect(find.byType(Scrollable).last));
+      }
+
+      testWidgets('whole, on a short screen', (tester) async {
+        final handle = tester.ensureSemantics();
+        final (banner, screen) = await turnOn(tester, height: 640, scale: 1);
+        expect(banner.bottom, lessThanOrEqualTo(screen.bottom));
+        expect(banner.top, greaterThanOrEqualTo(screen.top));
+        handle.dispose();
+      });
+
+      testWidgets('from its start, at 200% text, where it is taller than the screen', (tester) async {
+        final handle = tester.ensureSemantics();
+        final (banner, screen) = await turnOn(tester, height: 915, scale: 2);
+        expect(banner.height, greaterThan(screen.height));
+        expect(banner.top, inInclusiveRange(screen.top, screen.top + 16));
+        handle.dispose();
+      });
+    });
+
+    testWidgets('is offered while reminders are on without one, however they were turned on, and not read out',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      // As by the offer after the first aliyah.
+      await openReminders(tester, _Notifications(),
+          settings: const AppSettings(onboardingComplete: true, dailyReminder: true, fridayReminder: true));
+      expect(find.text(offer), findsOneWidget);
+      expect(tester.getSemantics(find.text(offer)), isSemantics(isLiveRegion: false));
+      expect(tester.state<ScrollableState>(find.byType(Scrollable).last).position.pixels, 0, reason: 'nothing moves');
+
+      // Not once every reminder is off.
+      await tapText(tester, 'Daily reminder');
+      expect(find.text(offer), findsOneWidget);
+      await tapText(tester, 'Erev Shabbat reminder');
+      expect(find.text(offer), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('once answered, is not offered again', (tester) async {
+      await openReminders(tester, _Notifications(),
+          settings: const AppSettings(onboardingComplete: true, dailyReminder: true, cityOfferAnswered: true));
+      expect(find.text(offer), findsNothing);
       await tapText(tester, 'Erev Shabbat reminder');
       expect(find.text(offer), findsNothing);
     });
@@ -199,6 +305,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(c.read(settingsProvider).city, jerusalem());
+      expect(c.read(settingsProvider).cityOfferAnswered, isTrue, reason: 'not offered again without one');
       expect(c.read(routerProvider).state.uri.path, '/settings/reminders');
       expect(find.text(offer), findsNothing);
       expect(
@@ -210,13 +317,6 @@ void main() {
         find.text('An hour after Shabbat ends, or Sunday morning when it ends late, to log what you read on Shabbat'),
         findsOneWidget,
       );
-    });
-
-    testWidgets('is not offered once a reminder is on', (tester) async {
-      await openReminders(tester, _Notifications(),
-          settings: const AppSettings(onboardingComplete: true, dailyReminder: true));
-      await tapText(tester, 'Erev Shabbat reminder');
-      expect(find.text(offer), findsNothing);
     });
 
     testWidgets('is not offered with a city chosen', (tester) async {
@@ -255,6 +355,35 @@ void main() {
       expect(find.text('A gentle nudge at your chosen time'), findsNothing);
       expect(find.text("Friday morning, only if the parsha isn't finished"), findsNothing);
       expect(find.text('Sunday morning, to log what you read on Shabbat'), findsNothing);
+    });
+
+    group('the Erev Shabbat time picked', () {
+      /// Picks 2:00 PM for the Erev Shabbat reminder, now at 10:00 AM.
+      Future<void> pickTwoPm(WidgetTester tester) async {
+        await tapText(tester, 'Erev Shabbat reminder time');
+        final fields = find.descendant(of: find.byType(TimePickerDialog), matching: find.byType(TextField));
+        await tester.enterText(fields.at(0), '2');
+        await tester.enterText(fields.at(1), '00');
+        await tester.tap(find.text('PM'));
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+      }
+
+      const friday = AppSettings(onboardingComplete: true, fridayReminder: true);
+
+      testWidgets('is kept as it is with a city', (tester) async {
+        final c = await openReminders(tester, _Notifications(), settings: friday.copyWith(city: jerusalem()));
+        await pickTwoPm(tester);
+        expect(c.read(settingsProvider).fridayReminderMinutes, 14 * 60);
+        expect(text('2:00 PM'), findsOneWidget);
+      });
+
+      testWidgets('comes before midday without one', (tester) async {
+        final c = await openReminders(tester, _Notifications(), settings: friday);
+        await pickTwoPm(tester);
+        expect(c.read(settingsProvider).fridayReminderMinutes, kErevShabbatLatestMinutes);
+        expect(text('11:30 AM'), findsOneWidget);
+      });
     });
 
     testWidgets('the Erev Shabbat reminder may be set for the afternoon only with a city', (tester) async {

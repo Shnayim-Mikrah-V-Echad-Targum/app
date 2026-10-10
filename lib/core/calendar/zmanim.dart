@@ -90,6 +90,17 @@ class Zmanim {
     }
   }
 
+  /// Whether [city]'s clock reads as a clock [offset] from UTC at noon on
+  /// [date] does, such as the device's ([deviceNoonOffset]): clocks change at
+  /// night, so noon tells the day's offset. When it doesn't, as for a
+  /// traveller who has left the city behind, the city's times are not the
+  /// device's, and given on its clock they would mislead. False in a time
+  /// zone the device doesn't know.
+  static bool keepsClock(City city, LocalDate date, Duration offset) {
+    final location = timeZone(city.timeZone);
+    return location != null && tz.TZDateTime(location, date.year, date.month, date.day, 12).timeZoneOffset == offset;
+  }
+
   /// The Julian day at the midnight (UT) that begins [date].
   static double _julianDay(LocalDate date) => date.rd + 1721424.5;
 
@@ -106,6 +117,9 @@ class Zmanim {
     return tz.TZDateTime.fromMillisecondsSinceEpoch(time.location, ms - into + (up ? 60000 : 0));
   }
 }
+
+/// The device clock's offset from UTC at noon on [date].
+Duration deviceNoonOffset(LocalDate date) => DateTime(date.year, date.month, date.day, 12).timeZoneOffset;
 
 /// The sun's position and times by the formulas of NOAA's Solar Calculator
 /// (after Meeus, Astronomical Algorithms), which are in the public domain.

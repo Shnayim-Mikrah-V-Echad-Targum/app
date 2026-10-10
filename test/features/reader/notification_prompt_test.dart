@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/data/city_directory.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/screens/city_picker_screen.dart';
 import 'package:shnayim_mikra/ui/widgets/sefer_choice_chip.dart';
 
 import '../../helpers.dart';
@@ -26,6 +31,9 @@ class _AskingNotifications extends PhoneNotifications {
 /// to read after and the time, kept when the reader says yes.
 void main() {
   final monday = DateTime(2026, 10, 12, 10); // week of Noach, 5787
+  late CityDirectory directory;
+  setUpAll(() => directory = CityDirectory.parse(File('assets/data/cities.json').readAsStringSync()));
+  const cityOffer = "Reminders are on. Choose your city, and they'll follow its Shabbat times.";
 
   /// Finishes Rishon of Noach, the reader's first aliyah, read by aliyah, so
   /// that reminders are offered.
@@ -34,7 +42,13 @@ void main() {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final c = await pumpApp(tester, settings: settings, now: monday, notifications: service);
+    final c = await pumpApp(
+      tester,
+      settings: settings,
+      now: monday,
+      notifications: service,
+      overrides: [cityDirectoryProvider.overrideWith((ref) => directory)],
+    );
     c.read(routerProvider).go('/read/5787:2/0');
     await tester.pump();
     await tester.pump();
@@ -103,14 +117,94 @@ void main() {
     final c = await finishFirstAliyah(tester, service);
 
     await tester.tap(find.text('finish Shacharit'));
-    await changeTime(tester, from: '8:00 PM', hour: 6, minute: 30);
+    await tester.pumpAndSettle();
+    await changeTime(tester, from: '7:30 AM', hour: 6, minute: 30);
     await tester.tap(find.text('Yes, remind me'));
     await tester.pumpAndSettle();
 
     final s = c.read(settingsProvider);
     expect(s.habitAnchor, HabitAnchor.shacharit);
-    expect(s.dailyReminderMinutes, 18 * 60 + 30);
+    expect(s.dailyReminderMinutes, 6 * 60 + 30);
     expect((s.dailyReminder, s.fridayReminder, s.checkInReminder), (false, false, false));
+    expect(find.text(cityOffer), findsNothing, reason: 'no reminders to time');
+  });
+
+  testWidgets('a routine chosen proposes its usual time, which is read out, until the reader picks one',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    final c = await finishFirstAliyah(tester, _AskingNotifications(allows: true));
+    expect(at('8:00 PM'), findsOneWidget);
+    expect(tester.getSemantics(at('8:00 PM')), isSemantics(isLiveRegion: false, isButton: true));
+
+    // A morning routine at 8 PM would be a cue that contradicts its time.
+    await tester.tap(find.text('finish Shacharit'));
+    await tester.pumpAndSettle();
+    expect(at('7:30 AM'), findsOneWidget);
+    expect(tester.getSemantics(at('7:30 AM')), isSemantics(isLiveRegion: true, isButton: true));
+    await tester.tap(find.text('get ready for bed'));
+    await tester.pumpAndSettle();
+    expect(at('9:30 PM'), findsOneWidget);
+    // Cleared, the time stays.
+    await tester.tap(find.text('get ready for bed'));
+    await tester.pumpAndSettle();
+    expect(at('9:30 PM'), findsOneWidget);
+
+    // A time picked stays, even the default, whatever routine is chosen.
+    await changeTime(tester, from: '9:30 PM', hour: 8, minute: 0);
+    await tester.tap(find.text('eat breakfast'));
+    await tester.pumpAndSettle();
+    expect(at('8:00 PM'), findsOneWidget);
+
+    await tester.tap(find.text('Yes, remind me'));
+    await tester.pumpAndSettle();
+    final s = c.read(settingsProvider);
+    expect((s.habitAnchor, s.dailyReminderMinutes), (HabitAnchor.breakfast, 20 * 60));
+    handle.dispose();
+  });
+
+  testWidgets('once reminders are on without a city, the list of cities is offered, and leads back to the reader',
+      (tester) async {
+    final c = await finishFirstAliyah(tester, _AskingNotifications(allows: true));
+    await tester.tap(find.text('Yes, remind me'));
+    await tester.pumpAndSettle();
+    expect(find.text(cityOffer), findsOneWidget);
+
+    await tester.tap(find.text('Choose a city'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CityPickerScreen), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Jerusalem');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Jerusalem').last);
+    await tester.pumpAndSettle();
+
+    final s = c.read(settingsProvider);
+    expect(s.city?.nameEn, 'Jerusalem');
+    expect(s.cityOfferAnswered, isTrue, reason: 'Reminders offers it no more');
+    expect(c.read(routerProvider).state.uri.path, '/read/5787:2/0');
+  });
+
+  testWidgets('with a city chosen, or the offer of one answered, no city is offered', (tester) async {
+    for (final settings in [
+      AppSettings(
+        onboardingComplete: true,
+        method: ReadingMethod.aliyahByAliyah,
+        city: directory.cities.firstWhere((c) => c.nameEn == 'London'),
+      ),
+      const AppSettings(onboardingComplete: true, method: ReadingMethod.aliyahByAliyah, cityOfferAnswered: true),
+    ]) {
+      final c = await finishFirstAliyah(tester, _AskingNotifications(allows: true), settings: settings);
+      await tester.tap(find.text('Yes, remind me'));
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).dailyReminder, isTrue);
+      expect(find.text(cityOffer), findsNothing);
+    }
+  });
+
+  testWidgets('the offer is about notifications, with their icon', (tester) async {
+    await finishFirstAliyah(tester, _AskingNotifications(allows: true));
+    expect(find.descendant(of: find.byType(AlertDialog), matching: find.byIcon(Icons.notifications_outlined)),
+        findsOneWidget);
+    expect(find.byIcon(Icons.celebration_outlined), findsNothing);
   });
 
   testWidgets('Not now keeps nothing chosen in the offer, and it is not made again', (tester) async {

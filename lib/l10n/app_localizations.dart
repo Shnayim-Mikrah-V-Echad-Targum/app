@@ -2337,7 +2337,7 @@ abstract class AppLocalizations {
   /// **'A gentle nudge at your chosen time'**
   String get dailyReminderDesc;
 
-  /// In place of dailyReminderDesc when a city is chosen for Shabbat times: a daily reminder set for later than an hour and a half before candle-lighting comes then instead.
+  /// In place of dailyReminderDesc when a city is chosen for Shabbat times: a daily reminder set for later than two and a half hours before candle-lighting comes then instead.
   ///
   /// In en, this message translates to:
   /// **'A gentle nudge at your chosen time, or before candle-lighting on the eve of Shabbat or Yom Tov'**
@@ -2403,17 +2403,23 @@ abstract class AppLocalizations {
   /// **'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in {city}.'**
   String remindersShabbatNoteCity(String city);
 
-  /// Offered under the reminders when the first of them is turned on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow.
+  /// Offered under the reminders while any of them is on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow.
   ///
   /// In en, this message translates to:
   /// **'Choose your city, and reminders will follow its Shabbat times: before candle-lighting on Friday, and after Shabbat ends.'**
   String get reminderCityOffer;
 
-  /// Button: opens the list of cities for Shabbat times (see reminderCityOffer).
+  /// Button: opens the list of cities for Shabbat times (see reminderCityOffer and remindersOnCityOffer).
   ///
   /// In en, this message translates to:
   /// **'Choose a city'**
   String get reminderCityChoose;
+
+  /// Status message, with the action reminderCityChoose, once the reader has turned reminders on in the offer after their first aliyah and no city is chosen for Shabbat times.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders are on. Choose your city, and they\'ll follow its Shabbat times.'**
+  String get remindersOnCityOffer;
 
   /// No description provided for @habitAnchorLabel.
   ///

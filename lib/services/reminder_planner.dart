@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:timezone/timezone.dart' as tz;
-
 import '../core/calendar/city.dart';
 import '../core/calendar/jewish_holidays.dart';
 import '../core/calendar/local_date.dart';
@@ -69,10 +67,11 @@ class ReminderPrefs {
   final int checkInMinutes;
 }
 
-/// No reminder on Erev Shabbat or Erev Yom Tov after this time when
+/// No reminder on Erev Shabbat or Erev Yom Tov due after this time when
 /// candle-lighting isn't known (no city is chosen), nor on Erev Tisha B'Av.
 /// Conservative on purpose: a reminder must never arrive on Shabbat or Yom
-/// Tov.
+/// Tov. The hours between midday and Shabbat leave ample room for one
+/// delivered late ([kMaxDeliveryDelay]).
 const kErevCutoffMinutes = 12 * 60;
 
 /// The latest the Erev Shabbat reminder comes when candle-lighting isn't
@@ -86,14 +85,29 @@ const kErevShabbatLatestMinutes = kErevCutoffMinutes - 30;
 /// day the device's clock isn't the city's (see [reminderZmanim]).
 typedef ReminderZmanim = ({int? candles, int? havdalah});
 
-/// With candle-lighting known, nothing on the eve of Shabbat or Yom Tov from
-/// this many minutes before it.
+/// With candle-lighting known, nothing arrives on the eve of Shabbat or Yom
+/// Tov from this many minutes before it.
 const kCutoffBeforeCandles = 60;
 
+/// How late a reminder may arrive after the time it is due. Android delivers
+/// the inexact alarms reminders are scheduled with (from Android 12, where
+/// exact ones need a permission the app doesn't ask for) up to an hour late;
+/// before Android 12 the app schedules exact ones, which need none (see
+/// NotificationService). iOS and Windows deliver them on time.
+///
+/// With candle-lighting known, nothing is due from [kCutoffBeforeCandles]
+/// plus this before it, so that a reminder an hour late still arrives in
+/// time. On Android 9 to 11, an app the reader hardly opens can have even an
+/// exact alarm held for up to two hours, and the reminders due latest on the
+/// eve, [kDailyBeforeCandles] before candle-lighting, still arrive before it.
+const kMaxDeliveryDelay = 60;
+
 /// With candle-lighting known, the daily reminder on the eve of Shabbat or
-/// Yom Tov comes this many minutes before it at the latest: half an hour
-/// before the cutoff, as the Erev Shabbat reminder without a city.
-const kDailyBeforeCandles = 90;
+/// Yom Tov is due this many minutes before it at the latest: half an hour
+/// before the last time one may be due ([kCutoffBeforeCandles] and
+/// [kMaxDeliveryDelay] before it), as the Erev Shabbat reminder without a
+/// city comes half an hour before midday.
+const kDailyBeforeCandles = kCutoffBeforeCandles + kMaxDeliveryDelay + 30;
 
 /// With candle-lighting known, the Erev Shabbat reminder comes this many
 /// minutes before it at the latest, with time left to finish.
@@ -114,15 +128,10 @@ const kCheckInLatestMinutes = 22 * 60 + 30;
 /// UTC on a day, for tests.
 ///
 /// Needs the time-zone database, which it loads if no one has.
-ReminderZmanim Function(LocalDate) reminderZmanim(City city, {Duration Function(LocalDate date)? deviceOffset}) {
-  final location = Zmanim.timeZone(city.timeZone);
-  final offset = deviceOffset ?? (d) => DateTime(d.year, d.month, d.day, 12).timeZoneOffset;
+ReminderZmanim Function(LocalDate) reminderZmanim(City city,
+    {Duration Function(LocalDate date) deviceOffset = deviceNoonOffset}) {
   return (date) {
-    // Clocks change at night, so noon tells the day's offset.
-    if (location == null ||
-        tz.TZDateTime(location, date.year, date.month, date.day, 12).timeZoneOffset != offset(date)) {
-      return (candles: null, havdalah: null);
-    }
+    if (!Zmanim.keepsClock(city, date, deviceOffset(date))) return (candles: null, havdalah: null);
     final z = Zmanim.of(city, date);
     return (candles: z.minutesOf(z.candleLighting), havdalah: z.minutesOf(z.havdalah));
   };
@@ -130,6 +139,9 @@ ReminderZmanim Function(LocalDate) reminderZmanim(City city, {Duration Function(
 
 /// Plans the reminders for the next [days] days. Pure: depends only on its
 /// inputs, so it's easy to test and to recompute whenever anything changes.
+///
+/// Times are when a reminder is due; it may arrive up to
+/// [kMaxDeliveryDelay] later.
 ///
 /// Rules (see docs/research/streaks_ux.md §10.10):
 ///  * never on Shabbat or Yom Tov, nor on their eve after midday;
@@ -143,7 +155,8 @@ ReminderZmanim Function(LocalDate) reminderZmanim(City city, {Duration Function(
 ///
 /// With the Shabbat times of the reader's city, [zmanim], the eve's rules
 /// follow candle-lighting rather than midday:
-///  * nothing from [kCutoffBeforeCandles] before it;
+///  * nothing arrives from [kCutoffBeforeCandles] before it, even
+///    [kMaxDeliveryDelay] late;
 ///  * a daily reminder set later comes [kDailyBeforeCandles] before it;
 ///  * the Erev Shabbat reminder comes [kErevShabbatBeforeCandles] before it
 ///    at the latest;
@@ -173,10 +186,12 @@ List<PlannedReminder> planReminders({
   /// time is known.
   int? candlesOn(LocalDate d) => rest(d.addDays(1)) ? timesOf(d)?.candles : null;
 
-  /// The time from which nothing comes on [d], the eve of Shabbat or Yom Tov.
+  /// The time from which nothing is due on [d], the eve of Shabbat or Yom
+  /// Tov: with candle-lighting known, early enough for a reminder delivered
+  /// late to arrive before the cutoff.
   int cutoffOn(LocalDate d) {
     final candles = candlesOn(d);
-    return candles == null ? kErevCutoffMinutes : candles - kCutoffBeforeCandles;
+    return candles == null ? kErevCutoffMinutes : candles - kCutoffBeforeCandles - kMaxDeliveryDelay;
   }
 
   /// Whether the calendar has room for a reminder at [minutes] on [date].

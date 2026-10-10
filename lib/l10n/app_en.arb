@@ -935,7 +935,7 @@
   "dailyReminderDesc": "A gentle nudge at your chosen time",
   "dailyReminderDescCity": "A gentle nudge at your chosen time, or before candle-lighting on the eve of Shabbat or Yom Tov",
   "@dailyReminderDescCity": {
-    "description": "In place of dailyReminderDesc when a city is chosen for Shabbat times: a daily reminder set for later than an hour and a half before candle-lighting comes then instead."
+    "description": "In place of dailyReminderDesc when a city is chosen for Shabbat times: a daily reminder set for later than two and a half hours before candle-lighting comes then instead."
   },
   "dailyReminderTime": "Daily reminder time",
   "fridayReminder": "Erev Shabbat reminder",
@@ -963,11 +963,15 @@
   },
   "reminderCityOffer": "Choose your city, and reminders will follow its Shabbat times: before candle-lighting on Friday, and after Shabbat ends.",
   "@reminderCityOffer": {
-    "description": "Offered under the reminders when the first of them is turned on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow."
+    "description": "Offered under the reminders while any of them is on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow."
   },
   "reminderCityChoose": "Choose a city",
   "@reminderCityChoose": {
-    "description": "Button: opens the list of cities for Shabbat times (see reminderCityOffer)."
+    "description": "Button: opens the list of cities for Shabbat times (see reminderCityOffer and remindersOnCityOffer)."
+  },
+  "remindersOnCityOffer": "Reminders are on. Choose your city, and they'll follow its Shabbat times.",
+  "@remindersOnCityOffer": {
+    "description": "Status message, with the action reminderCityChoose, once the reader has turned reminders on in the offer after their first aliyah and no city is chosen for Shabbat times."
   },
   "habitAnchorLabel": "After I…",
   "habitAnchorPrompt": "Tie your reading to something you already do every day.",

@@ -32,6 +32,7 @@ void main() {
       starterCatchUp: false,
       habitAnchor: HabitAnchor.shacharit,
       singleKeyShortcuts: false,
+      cityOfferAnswered: true,
     );
     final back = AppSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
@@ -41,6 +42,8 @@ void main() {
     expect(back.readingSchedule, ReadingSchedule.israel);
     expect(back.oneDayYomTov, isFalse);
     expect(back.habitAnchor, HabitAnchor.shacharit);
+    expect(back.cityOfferAnswered, isTrue);
+    expect(AppSettings.fromJson({}).cityOfferAnswered, isFalse, reason: 'offered until answered');
   });
 
   group('habit anchor', () {
@@ -68,6 +71,33 @@ void main() {
       expect(read('אתכונן לשינה').habitAnchor, HabitAnchor.bed);
       // And saved again by name.
       expect(read('finish Shacharit').toJson()['habitAnchor'], 'shacharit');
+    });
+
+    test('suggests a time of day that fits it', () {
+      expect({for (final a in HabitAnchor.values) a: a.usualMinutes}, {
+        HabitAnchor.shacharit: 7 * 60 + 30,
+        HabitAnchor.breakfast: 7 * 60 + 30,
+        HabitAnchor.commute: 8 * 60,
+        HabitAnchor.dinner: 20 * 60,
+        HabitAnchor.bed: 21 * 60 + 30,
+      });
+    });
+
+    test("moves the daily reminder's time only while that is a suggestion", () {
+      int move(int minutes, HabitAnchor? previous, HabitAnchor? next) =>
+          HabitAnchor.reminderMinutes(minutes, previous: previous, next: next);
+      const byDefault = 20 * 60;
+      expect(const AppSettings().dailyReminderMinutes, byDefault);
+      // The default, or the routine's own time, follows the routine chosen.
+      expect(move(byDefault, null, HabitAnchor.shacharit), 7 * 60 + 30);
+      expect(move(7 * 60 + 30, HabitAnchor.shacharit, HabitAnchor.bed), 21 * 60 + 30);
+      expect(move(byDefault, HabitAnchor.bed, HabitAnchor.commute), 8 * 60);
+      // A time of the reader's own stays.
+      expect(move(6 * 60, null, HabitAnchor.dinner), 6 * 60);
+      expect(move(6 * 60, HabitAnchor.shacharit, HabitAnchor.dinner), 6 * 60);
+      expect(move(7 * 60 + 30, HabitAnchor.commute, HabitAnchor.bed), 7 * 60 + 30);
+      // Cleared, the time stays.
+      expect(move(7 * 60 + 30, HabitAnchor.shacharit, null), 7 * 60 + 30);
     });
 
     test('anything else is no anchor', () {
