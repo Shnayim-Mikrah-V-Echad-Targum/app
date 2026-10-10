@@ -112,18 +112,19 @@ void main() {
     // week, and read nothing of it.
     expect(find.textContaining(RegExp('^Vezot')), findsNothing);
     expect(find.text(en.weekTransparent), findsNothing);
-    for (final name in ['Toldot', 'Chayei Sara', 'Vayera', 'Lech-Lecha', 'Noach', 'Bereshit']) {
-      expect(
-        find.descendant(of: find.byType(PaperGroup), matching: find.text(name)),
-        findsWidgets,
-        reason: name,
-      );
-    }
+    // Every week since, the current one first.
+    final group = find.ancestor(of: find.text('Toldot'), matching: find.byType(PaperGroup)).first;
+    final tops = [
+      for (final name in ['Toldot', 'Vayera', 'Noach', 'Bereshit'])
+        tester.getTopLeft(find.descendant(of: group, matching: find.text(name))).dy,
+    ];
+    expect(tops, orderedEquals([...tops]..sort()));
   });
 
   testWidgets('ten weeks are shown, and the rest in place on "Show all"', (tester) async {
     await openSecondYear(tester);
-    final weeks = find.ancestor(of: find.text('Vezot Haberakhah'), matching: find.byType(PaperGroup)).first;
+    // The group of recent weeks: the only one with this week's parsha in it.
+    final weeks = find.ancestor(of: find.text('Bereshit'), matching: find.byType(PaperGroup)).first;
     int rows() => tester.widget<PaperGroup>(weeks).children.length;
     expect(rows(), 10);
     final all = await shown(tester, find.textContaining(RegExp(r'^Show all \(\d+\)$')));
