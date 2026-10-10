@@ -1266,6 +1266,18 @@ class AppLocalizationsHe extends AppLocalizations {
   String get notifChannelCheckIn => 'אחרי שבת';
 
   @override
+  String get notifChannelDailyDesc =>
+      'הקריאה של היום בשעה שבחרת, לעולם לא בשבת וביום טוב';
+
+  @override
+  String get notifChannelErevShabbatDesc =>
+      'ביום שישי בבוקר, רק אם הפרשה לא הושלמה';
+
+  @override
+  String get notifChannelCheckInDesc =>
+      'אחרי שבת, לרשום מה שקראת, וההודעה כשהתזכורות מושהות';
+
+  @override
   String notifDailyTitle(String aliyah) {
     return 'היום: $aliyah';
   }
@@ -1289,6 +1301,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notifCheckInBody => 'קראת בשבת? אפשר לרשום זאת כאן.';
+
+  @override
+  String get notifPausedTitle => 'התזכורות הושהו';
+
+  @override
+  String notifPausedBody(String parsha) {
+    return 'נשהה את התזכורות לעת עתה. המקום שלך בפרשת $parsha שמור — אפשר לחזור בכל עת.';
+  }
 
   @override
   String get showStreaks => 'הצגת מספרי הרצף';

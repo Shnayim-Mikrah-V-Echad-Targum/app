@@ -3,7 +3,15 @@ import '../core/calendar/local_date.dart';
 import '../features/progress/domain/progress_models.dart';
 import '../features/progress/domain/reading_plan.dart';
 
-enum ReminderKind { daily, erevShabbat, checkIn }
+enum ReminderKind {
+  daily,
+  erevShabbat,
+  checkIn,
+
+  /// The last message when the app hasn't been opened for the whole planning
+  /// horizon: reminders stop until it is opened again.
+  paused,
+}
 
 /// A reminder to be scheduled on the device.
 class PlannedReminder {
@@ -65,9 +73,12 @@ const kErevCutoffMinutes = 12 * 60;
 ///
 /// Rules (see docs/research/streaks_ux.md §10.10):
 ///  * never on Shabbat or Yom Tov, nor on their eve after midday;
+///  * nothing after midday on Erev Tisha B'Av, when Torah study stops;
 ///  * at most one a day — Erev Shabbat > after-Shabbat check-in > daily;
 ///  * daily reminders only on planned days whose reading isn't done yet;
-///  * nothing during a pause.
+///  * nothing during a pause;
+///  * after the last of them, one message that reminders have paused. Every
+///    app open plans again, so only someone away for [days] days sees it.
 List<PlannedReminder> planReminders({
   required ReminderPrefs prefs,
   required ReadingPlanner planner,
@@ -82,11 +93,17 @@ List<PlannedReminder> planReminders({
   final nowMinutes = now.hour * 60 + now.minute;
   final civilToday = LocalDate.fromDateTime(now);
 
+  bool allowed(LocalDate date, int minutes) {
+    if (rest(date) || paused(date)) return false;
+    if (date < civilToday || (date == civilToday && minutes <= nowMinutes)) return false;
+    final afternoon = minutes >= kErevCutoffMinutes;
+    if (afternoon && (rest(date.addDays(1)) || JewishHolidays.isTishaBav(date.addDays(1)))) return false;
+    return true;
+  }
+
   final byDay = <LocalDate, PlannedReminder>{};
   void offer(PlannedReminder r) {
-    if (rest(r.date) || paused(r.date)) return;
-    if (r.date < civilToday || (r.date == civilToday && r.minutes <= nowMinutes)) return;
-    if (rest(r.date.addDays(1)) && r.minutes >= kErevCutoffMinutes) return;
+    if (!allowed(r.date, r.minutes)) return;
     final existing = byDay[r.date];
     if (existing == null || _priority(r.kind) > _priority(existing.kind)) byDay[r.date] = r;
   }
@@ -135,6 +152,21 @@ List<PlannedReminder> planReminders({
     week = planner.schedule.nextWeek(week);
   }
 
+  if (prefs.daily || prefs.erevShabbat || prefs.checkIn) {
+    // After the horizon and after every other reminder (an Erev Shabbat or
+    // check-in can fall just past the horizon), so that it is the last.
+    var date = byDay.keys.fold(end, (LocalDate last, d) => d > last ? d : last).addDays(1);
+    while (!allowed(date, prefs.dailyMinutes)) {
+      date = date.addDays(1);
+    }
+    offer(PlannedReminder(
+      kind: ReminderKind.paused,
+      date: date,
+      minutes: prefs.dailyMinutes,
+      plan: planner.planFor(planner.schedule.weekFor(today)),
+    ));
+  }
+
   return byDay.values.toList()..sort((a, b) => a.localDateTime.compareTo(b.localDateTime));
 }
 
@@ -142,4 +174,5 @@ int _priority(ReminderKind k) => switch (k) {
       ReminderKind.erevShabbat => 3,
       ReminderKind.checkIn => 2,
       ReminderKind.daily => 1,
+      ReminderKind.paused => 0,
     };

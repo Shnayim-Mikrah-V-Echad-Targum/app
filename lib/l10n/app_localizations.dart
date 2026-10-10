@@ -2270,6 +2270,24 @@ abstract class AppLocalizations {
   /// **'After Shabbat'**
   String get notifChannelCheckIn;
 
+  /// Android notification channel description, shown in the system's notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day\'s reading at the time you choose, never on Shabbat or Yom Tov'**
+  String get notifChannelDailyDesc;
+
+  /// Android notification channel description, shown in the system's notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday morning, only if the parsha isn\'t finished'**
+  String get notifChannelErevShabbatDesc;
+
+  /// Android notification channel description, shown in the system's notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'After Shabbat, to log what you read, and the note when reminders pause'**
+  String get notifChannelCheckInDesc;
+
   /// No description provided for @notifDailyTitle.
   ///
   /// In en, this message translates to:
@@ -2305,6 +2323,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Did you read on Shabbat? Tap to log it.'**
   String get notifCheckInBody;
+
+  /// The last notification, sent when the app has not been opened for two weeks; none follow until it is opened again.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders paused'**
+  String get notifPausedTitle;
+
+  /// No description provided for @notifPausedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll pause reminders for now. Your place in Parshat {parsha} is saved — come back anytime.'**
+  String notifPausedBody(String parsha);
 
   /// No description provided for @showStreaks.
   ///

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show File, Platform;
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -10,9 +11,13 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../app/providers.dart';
 import '../core/text/hebrew_text.dart';
+import '../data/parsha_repository.dart';
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'reminder_planner.dart';
+
+/// What a reminder says.
+typedef ReminderCopy = ({String title, String body});
 
 /// Local notifications on Android, iOS, macOS and Windows. Scheduled
 /// notifications aren't available in browsers, so the web build has none.
@@ -23,6 +28,10 @@ class NotificationService {
   NotificationService.disabled()
       : _plugin = null,
         supported = false;
+
+  /// A service that schedules through [plugin], for tests.
+  @visibleForTesting
+  NotificationService.withPlugin(FlutterLocalNotificationsPlugin plugin) : this._(plugin, supported: true);
 
   static Future<NotificationService> create() async {
     final supported = !kIsWeb &&
@@ -43,15 +52,15 @@ class NotificationService {
       final plugin = FlutterLocalNotificationsPlugin();
       final service = NotificationService._(plugin, supported: true);
       await plugin.initialize(
-        settings: const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        settings: InitializationSettings(
+          android: const AndroidInitializationSettings(_statusBarIcon),
           // Permission is requested later, after the user opts in.
-          iOS: DarwinInitializationSettings(
+          iOS: const DarwinInitializationSettings(
             requestAlertPermission: false,
             requestBadgePermission: false,
             requestSoundPermission: false,
           ),
-          macOS: DarwinInitializationSettings(
+          macOS: const DarwinInitializationSettings(
             requestAlertPermission: false,
             requestBadgePermission: false,
             requestSoundPermission: false,
@@ -60,6 +69,7 @@ class NotificationService {
             appName: 'Shnayim Mikra',
             appUserModelId: 'ShnayimMikra.App',
             guid: '7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57',
+            iconPath: defaultTargetPlatform == TargetPlatform.windows ? _windowsIconPath() : null,
           ),
         ),
         onDidReceiveNotificationResponse: (r) => service.handleTap(r.payload),
@@ -115,51 +125,141 @@ class NotificationService {
   }
 
   String _lastSignature = '';
+  Future<void> _queue = Future.value();
+  int _latest = 0;
 
-  /// Replaces all scheduled reminders.
-  Future<void> reschedule(List<PlannedReminder> reminders, AppLocalizations l, String Function(PlannedReminder) describe) async {
+  /// Replaces all scheduled reminders with [reminders], worded by [describe].
+  ///
+  /// Each call waits for the one before it to finish, and a call that a
+  /// newer one has already superseded is skipped, so a quick succession of
+  /// changes leaves exactly the last plan scheduled.
+  Future<void> reschedule(
+      List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) {
+    final call = ++_latest;
+    return _queue = _queue.then((_) async {
+      if (call == _latest) await _reschedule(reminders, l, describe);
+    }).catchError((Object _) {});
+  }
+
+  Future<void> _reschedule(
+      List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) async {
     final p = _plugin;
     if (p == null) return;
-    final signature = reminders.map((r) => '${r.id}@${r.localDateTime}:${describe(r)}').join('|');
+    final copy = [for (final r in reminders) describe(r)];
+    // The language is part of it so that a change renames the channels.
+    final signature = [
+      l.localeName,
+      for (final (i, r) in reminders.indexed) '${r.id}@${r.localDateTime}:${copy[i].title}|${copy[i].body}',
+    ].join('\n');
     if (signature == _lastSignature) return;
-    _lastSignature = signature;
     try {
+      final android = p.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (android != null) {
+        // Creating a channel that exists updates its name and description,
+        // so they follow the app's language.
+        for (final kind in [ReminderKind.daily, ReminderKind.erevShabbat, ReminderKind.checkIn]) {
+          final (id, name, description) = _channel(kind, l);
+          await android.createNotificationChannel(AndroidNotificationChannel(id, name, description: description));
+        }
+      }
       await p.cancelAll();
-      for (final r in reminders) {
-        final (title, body, channel, channelName) = switch (r.kind) {
-          ReminderKind.daily => (describe(r), null, 'daily', l.notifChannelDaily),
-          ReminderKind.erevShabbat => (describe(r), l.notifFridayBody, 'erev_shabbat', l.notifChannelFriday),
-          ReminderKind.checkIn => (l.notifCheckInTitle, l.notifCheckInBody, 'check_in', l.notifChannelCheckIn),
-        };
+      for (final (i, r) in reminders.indexed) {
+        final (:title, :body) = copy[i];
+        final (channelId, channelName, channelDescription) = _channel(r.kind, l);
         await p.zonedSchedule(
           id: r.id,
           title: title,
           body: body,
           scheduledDate: tz.TZDateTime.from(r.localDateTime, tz.local),
           notificationDetails: NotificationDetails(
-            android: AndroidNotificationDetails(channel, channelName, importance: Importance.defaultImportance),
-            iOS: const DarwinNotificationDetails(),
-            macOS: const DarwinNotificationDetails(),
+            android: AndroidNotificationDetails(
+              channelId,
+              channelName,
+              channelDescription: channelDescription,
+              importance: Importance.defaultImportance,
+              category: AndroidNotificationCategory.reminder,
+              icon: _statusBarIcon,
+              color: const Color(0xFF1D3F75),
+              // Shows the whole message when expanded, not one truncated line.
+              styleInformation: BigTextStyleInformation(body),
+            ),
+            iOS: const DarwinNotificationDetails(threadIdentifier: _thread),
+            macOS: const DarwinNotificationDetails(threadIdentifier: _thread),
             windows: const WindowsNotificationDetails(),
           ),
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           payload: reminderRoute(r),
         );
       }
+      _lastSignature = signature;
     } catch (e) {
       debugPrint('Could not schedule reminders: $e');
     }
   }
 
+  /// The id, name and description of the Android channel a reminder of
+  /// [kind] is posted to. The final "reminders paused" message shares the
+  /// check-in's.
+  static (String, String, String) _channel(ReminderKind kind, AppLocalizations l) => switch (kind) {
+        ReminderKind.daily => ('daily', l.notifChannelDaily, l.notifChannelDailyDesc),
+        ReminderKind.erevShabbat => ('erev_shabbat', l.notifChannelFriday, l.notifChannelErevShabbatDesc),
+        ReminderKind.checkIn || ReminderKind.paused => ('check_in', l.notifChannelCheckIn, l.notifChannelCheckInDesc),
+      };
+
   Future<void> cancelAll() async => _plugin?.cancelAll();
+}
+
+/// The white glyph in android/app/src/main/res/drawable, kept from resource
+/// shrinking by res/raw/keep.xml.
+const _statusBarIcon = 'ic_stat_reminder';
+
+/// Groups the app's reminders together in the iOS and macOS Notification
+/// Center.
+const _thread = 'reminders';
+
+/// The toast icon that windows/CMakeLists.txt installs beside the executable,
+/// or null (the default icon) if it is missing.
+String? _windowsIconPath() {
+  final path = [File(Platform.resolvedExecutable).parent.path, 'data', 'notification.png'].join(Platform.pathSeparator);
+  return File(path).existsSync() ? path : null;
 }
 
 /// The page a reminder opens: the week, for Erev Shabbat, to finish it; Today
 /// for the others, where the day's reading and the check-in card are.
 String reminderRoute(PlannedReminder r) => switch (r.kind) {
       ReminderKind.erevShabbat => '/week/${r.plan.weekId}',
-      ReminderKind.daily || ReminderKind.checkIn => '/today',
+      ReminderKind.daily || ReminderKind.checkIn || ReminderKind.paused => '/today',
     };
+
+/// The words of reminder [r] in [l]'s language: for the daily reading, the
+/// aliyot due as the title and the portion and length as the body.
+ReminderCopy reminderCopy(
+  PlannedReminder r, {
+  required AppLocalizations l,
+  required ParshaRepository repo,
+  required bool ashkenaziNames,
+}) {
+  final info = repo.portion(r.plan.portion);
+  final parsha =
+      l.localeName.startsWith('he') ? HebrewText.stripNikud(info.nameHe) : info.displayName(ashkenazi: ashkenaziNames);
+  switch (r.kind) {
+    case ReminderKind.daily:
+      final verses = l.versesCount(r.aliyot.fold<int>(0, (n, a) => n + repo.aliyahVerseCount(info, a)));
+      // The whole portion in one day: named once, in the title.
+      if (r.aliyot.length == 7) return (title: l.notifDailyTitle(l.parshaLabel(parsha)), body: verses);
+      final names = [l.aliyah1, l.aliyah2, l.aliyah3, l.aliyah4, l.aliyah5, l.aliyah6, l.aliyah7];
+      return (
+        title: l.notifDailyTitle(r.aliyot.map((a) => names[a]).join(', ')),
+        body: l.notifDailyBody(parsha, verses),
+      );
+    case ReminderKind.erevShabbat:
+      return (title: l.notifFridayTitle(parsha), body: l.notifFridayBody);
+    case ReminderKind.checkIn:
+      return (title: l.notifCheckInTitle, body: l.notifCheckInBody);
+    case ReminderKind.paused:
+      return (title: l.notifPausedTitle, body: l.notifPausedBody(parsha));
+  }
+}
 
 final notificationServiceProvider = Provider<NotificationService>((ref) => NotificationService.disabled());
 
@@ -200,27 +300,10 @@ final reminderSchedulerProvider = Provider<void>((ref) {
   final l = lookupAppLocalizations(
     AppLocalizations.supportedLocales.any((s) => s.languageCode == locale.languageCode) ? locale : const Locale('en'),
   );
-  final he = l.localeName.startsWith('he');
 
-  String parshaName(PlannedReminder r) {
-    final info = repo.portion(r.plan.portion);
-    return he ? HebrewText.stripNikud(info.nameHe) : info.displayName(ashkenazi: settings.ashkenaziNames);
-  }
-
-  String describe(PlannedReminder r) {
-    switch (r.kind) {
-      case ReminderKind.daily:
-        final names = [l.aliyah1, l.aliyah2, l.aliyah3, l.aliyah4, l.aliyah5, l.aliyah6, l.aliyah7];
-        final aliyot = r.aliyot.length == 7 ? l.parshaLabel(parshaName(r)) : r.aliyot.map((a) => names[a]).join(', ');
-        final info = repo.portion(r.plan.portion);
-        final verses = r.aliyot.fold<int>(0, (n, a) => n + repo.aliyahVerseCount(info, a));
-        return '${l.notifDailyTitle(aliyot)} · ${l.notifDailyBody(parshaName(r), l.versesCount(verses))}';
-      case ReminderKind.erevShabbat:
-        return l.notifFridayTitle(parshaName(r));
-      case ReminderKind.checkIn:
-        return l.notifCheckInTitle;
-    }
-  }
-
-  service.reschedule(reminders, l, describe);
+  unawaited(service.reschedule(
+    reminders,
+    l,
+    (r) => reminderCopy(r, l: l, repo: repo, ashkenaziNames: settings.ashkenaziNames),
+  ));
 });

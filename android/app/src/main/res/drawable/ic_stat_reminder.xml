@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon for reminders: the app mark's three rules (two readings
+     of the Mikra and one of the Targum). Android draws it as a white
+     silhouette, so a white-filled glyph with no wordmark reads at 24dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4.35,5.7h15.3a1.35,1.35 0,0 1,0 2.7h-15.3a1.35,1.35 0,0 1,0 -2.7z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4.35,10.65h15.3a1.35,1.35 0,0 1,0 2.7h-15.3a1.35,1.35 0,0 1,0 -2.7z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4.35,15.6h15.3a1.35,1.35 0,0 1,0 2.7h-15.3a1.35,1.35 0,0 1,0 -2.7z" />
+</vector>

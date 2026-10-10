@@ -50,6 +50,7 @@
   - Nothing fires on Shabbat.
   - Tapping a reminder, with the app running and with it closed, opens Today. The Erev Shabbat reminder opens the week instead, and going back from it leads to Today.
   - Reminders survive a reboot (Android).
+  - On Android, the status-bar icon is the three rules of the mark, not a white square, and the Erev Shabbat reminder expands to show its whole message.
 - [ ] Offline: reading, logging and streaks all work in airplane mode.
 - [ ] Community against the production backend:
   - sign in with a code
@@ -146,6 +147,7 @@
 - [ ] Package it as MSIX for the Microsoft Store or for sideloading (for example with the `msix` package), or wrap it in an installer.
 - [ ] Sign it with a code-signing certificate; unsigned apps trigger SmartScreen warnings. Store submissions are signed by Microsoft.
 - [ ] Check with Narrator and NVDA, using the keyboard only, at 200% display scaling.
+- [ ] A reminder toast carries the three-rule mark as its icon.
 
 ## Web
 

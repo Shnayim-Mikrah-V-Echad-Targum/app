@@ -1269,6 +1269,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifChannelCheckIn => 'After Shabbat';
 
   @override
+  String get notifChannelDailyDesc =>
+      'Your day\'s reading at the time you choose, never on Shabbat or Yom Tov';
+
+  @override
+  String get notifChannelErevShabbatDesc =>
+      'Friday morning, only if the parsha isn\'t finished';
+
+  @override
+  String get notifChannelCheckInDesc =>
+      'After Shabbat, to log what you read, and the note when reminders pause';
+
+  @override
   String notifDailyTitle(String aliyah) {
     return 'Today: $aliyah';
   }
@@ -1292,6 +1304,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifCheckInBody => 'Did you read on Shabbat? Tap to log it.';
+
+  @override
+  String get notifPausedTitle => 'Reminders paused';
+
+  @override
+  String notifPausedBody(String parsha) {
+    return 'We\'ll pause reminders for now. Your place in Parshat $parsha is saved — come back anytime.';
+  }
 
   @override
   String get showStreaks => 'Show streak numbers';
