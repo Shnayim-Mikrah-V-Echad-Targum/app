@@ -280,6 +280,7 @@ HE = {
   "searchResultsAnnounced": "{count, plural, =0{לא נמצאו פסוקים} =1{נמצא פסוק אחד} other{נמצאו {count} פסוקים}}",
   "goToVerseLabel": "פסוק, מילה או ביטוי",
   "goToVerseHint": "{book} כח, יב",
+  "goToVerseHelp": "אפשר לכתוב ספר או פרשה ואחריהם פרק ופסוק, למשל {example}, או מילים לחיפוש.",
   "goToVerseSearch": "חיפוש ״{query}״",
   "goToVerseChapters": "בספר {book} {count, plural, =1{פרק אחד} other{{count} פרקים}}.",
   "goToVerseVerses": "בפרק {chapter} בספר {book} {count, plural, =1{פסוק אחד} other{{count} פסוקים}}.",

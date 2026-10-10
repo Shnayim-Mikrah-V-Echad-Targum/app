@@ -1055,6 +1055,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String goToVerseHelp(String example) {
+    return 'אפשר לכתוב ספר או פרשה ואחריהם פרק ופסוק, למשל $example, או מילים לחיפוש.';
+  }
+
+  @override
   String goToVerseSearch(String query) {
     return 'חיפוש ״$query״';
   }

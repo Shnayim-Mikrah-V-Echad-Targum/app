@@ -851,11 +851,12 @@ When a sefer is complete: a one-time full-screen panel. SeferDivider, then "חֲ
 ### 6.26 Go to verse (lib/features/search/go_to_verse_sheet.dart)
 
 The Parsha tab's search button, and Ctrl+K (⌘K) on any tab, open one sheet (§6.19) over the whole window, the navigation too:
-- `SheetTitle` `searchTitle`, then the field as in §6.7 at the sheet's width: label `goToVerseLabel` ("A verse, word or phrase"), hint `goToVerseHint` ("Bereshit 28:12" with the reader's spelling of parsha names, "בראשית כח, יב" in Hebrew), `search` leading and a clear button once there is text, focused as the sheet opens. Hebrew in it runs right to left in either UI.
+- `SheetTitle` `searchTitle`, then the field as in §6.7 at the sheet's width: label `goToVerseLabel` ("A verse, word or phrase"), hint `goToVerseHint` ("Bereshit 28:12" with the reader's spelling of parsha names, "בראשית כח, יב" in Hebrew), `search` leading and a clear button once there is text, focused as the sheet opens. Hebrew in it runs right to left and English left to right, in either UI.
 - 16 below the field, one PaperGroup (§6.3) of what the text leads to, in order:
   - **A verse** the text names (§3 of DESIGN.md): `menu_book_outlined`, the reference as Names.reference writes it, and the week of this year's cycle that reads it and its aliyah ("Vayetzei · Rishon") as subtitle. It opens the reader at the verse (§4.7).
-  - **Or why there is none**, for numbers past the end of a book or chapter: `info_outline` and `goToVerseChapters` ("Genesis has 50 chapters.") or `goToVerseVerses` ("Genesis 28 has 22 verses."), with no tap.
-  - **A search** of the text, `search` and `goToVerseSearch` ("Search for “ladder”", the query isolated in its own direction), for words worth searching: not for a reference by its numbers, which the text has none of, but for a parsha's name alone (ויצא), which is also a word. It opens the Search page (§6.25) with the query.
+  - **Or why there is none**, for numbers past the end of a book or chapter that are plainly numbers: `info_outline` and `goToVerseChapters` ("Genesis has 50 chapters.") or `goToVerseVerses` ("Genesis 28 has 22 verses."), with no tap.
+  - **A search** of the text, `search` and `goToVerseSearch` ("Search for “ladder”", the query isolated in its own direction), for words worth searching: not for a reference by its numbers, which the text has none of, but for a parsha's name alone (ויצא), which is also a word, and for a reference that rests on unmarked Hebrew words that are also numerals (דבר נא, שלח לו), which may be a phrase. It opens the Search page (§6.25) with the query.
+  - **Or, with nothing else to offer** (a number alone, say), `info_outline` and `goToVerseHelp`, which says what the sheet takes, with no tap.
 - Enter takes the first row that leads somewhere; with none, the field keeps the focus.
 - Once typing pauses, the first row is announced where the platform takes announcements.
 

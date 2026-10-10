@@ -1056,6 +1056,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String goToVerseHelp(String example) {
+    return 'Type a book or parsha, then a chapter and verse, as in $example; or words to search for.';
+  }
+
+  @override
   String goToVerseSearch(String query) {
     return 'Search for “$query”';
   }

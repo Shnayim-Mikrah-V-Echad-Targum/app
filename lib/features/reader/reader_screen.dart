@@ -89,6 +89,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   // aliyah. It is not focus mode's verse: it shows with focus mode off too.
   late VerseRef? _targetVerse = widget.targetVerse;
 
+  // In focus mode, the verse focused for the one opened at, whose highlight
+  // is held off until focus moves, so that nothing moves when the mark goes.
+  int? _quietFocus;
+
   // One per verse of the full text, for scrolling a verse into view.
   final _verseKeys = <GlobalKey>[];
 
@@ -140,6 +144,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _positioned = false;
       _finished = false;
       _focusedVerse = null;
+      _quietFocus = null;
       _targetVerse = null;
     });
     if (_scroll.hasClients) _scroll.jumpTo(0);
@@ -389,7 +394,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               _targetVerse = null;
             } else {
               // Focus mode reads around it, rather than around nothing.
-              if (s.focusMode) _focusedVerse = i;
+              if (s.focusMode) _focusedVerse = _quietFocus = i;
               _revealTarget(i, flow.book, target);
             }
           }
@@ -505,9 +510,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           scroll: _scroll,
                           verseKey: _verseKey,
                           focusedVerse: _focusedVerse,
+                          quietFocus: _quietFocus,
                           targetVerse: _targetVerse,
                           onTap: _targetVerse == null ? null : () => setState(() => _targetVerse = null),
-                          onVerseTap: (i) => setState(() => _focusedVerse = _focusedVerse == i ? null : i),
+                          onVerseTap: (i) => setState(() {
+                            _focusedVerse = _focusedVerse == i ? null : i;
+                            _quietFocus = null;
+                          }),
                           footer: ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah)
                               ? FilledButton.icon(
                                   icon: const Icon(Icons.check),
@@ -972,6 +981,7 @@ class _FullText extends StatelessWidget {
     required this.scroll,
     required this.verseKey,
     required this.focusedVerse,
+    this.quietFocus,
     required this.targetVerse,
     required this.onTap,
     required this.onVerseTap,
@@ -986,6 +996,10 @@ class _FullText extends StatelessWidget {
   /// The key of each verse's block, by index, for scrolling it into view.
   final GlobalKey Function(int) verseKey;
   final int? focusedVerse;
+
+  /// The focused verse that shows no highlight: the one opened at, until
+  /// focus moves.
+  final int? quietFocus;
 
   /// The verse the reader was opened at, which is marked.
   final VerseRef? targetVerse;
@@ -1006,8 +1020,9 @@ class _FullText extends StatelessWidget {
       final r = flow.verses[i];
       final targeted = r == targetVerse;
       final dimmed = settings.focusMode && focusedVerse != null && focusedVerse != i;
-      // The mark of the verse opened at stands in for focus mode's own.
-      final highlighted = settings.focusMode && focusedVerse == i && !targeted;
+      // The mark of the verse opened at stands in for focus mode's own, which
+      // stays off after the mark goes, until focus moves.
+      final highlighted = settings.focusMode && focusedVerse == i && !targeted && quietFocus != i;
       final brk = texts.mikra.breaks[r];
       return Center(
         key: verseKey(i),

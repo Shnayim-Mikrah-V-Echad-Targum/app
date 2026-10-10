@@ -77,14 +77,15 @@ class _Choices {
 
   /// Whether the query is worth a search of the text: words, not a
   /// reference by its numbers (which the text has none of), though a name
-  /// alone, such as ויצא, may be a word.
+  /// alone, such as ויצא, may be a word, and so may a short Hebrew word
+  /// that happens to be a numeral, such as נא in "דבר נא".
   bool get canSearch =>
       isSearchable(query) &&
       !query.contains(_digit) &&
       switch (reference) {
         null => true,
-        VerseReference(:final byName) => byName,
-        MissingVerse() => false,
+        VerseReference(:final byName, :final plainNumbers) => byName || !plainNumbers,
+        MissingVerse(:final plainNumbers) => !plainNumbers,
       };
 
   static final _digit = RegExp(r'\d');
@@ -166,7 +167,7 @@ class _GoToVerseSheetState extends ConsumerState<GoToVerseSheet> {
     final names = Names(context);
     final ashkenazi = ref.read(settingsProvider).ashkenaziNames;
     final repo = ref.read(parshaRepositoryProvider);
-    return [
+    final rows = [
       switch ((c.reference, c.location)) {
         (final VerseReference r, final at?) => _Row(
             icon: Icons.menu_book_outlined,
@@ -175,11 +176,13 @@ class _GoToVerseSheetState extends ConsumerState<GoToVerseSheet> {
                 ' · ${names.aliyah(at.aliyah)}',
             onTap: () => _openVerse(r, at),
           ),
-        (MissingVerse(:final book, :final chapter, verses: final verses?), _) => _Row(
+        // Numbers past the end say how long the book or chapter is, unless
+        // they may be words, which are searched for instead.
+        (MissingVerse(:final book, :final chapter, verses: final verses?, plainNumbers: true), _) => _Row(
             icon: Icons.info_outline,
             title: l.goToVerseVerses(names.book(book), names.verseNumber(chapter), verses),
           ),
-        (MissingVerse(:final book, :final chapters), _) => _Row(
+        (MissingVerse(:final book, :final chapters, plainNumbers: true), _) => _Row(
             icon: Icons.info_outline,
             title: l.goToVerseChapters(names.book(book), chapters),
           ),
@@ -189,6 +192,19 @@ class _GoToVerseSheetState extends ConsumerState<GoToVerseSheet> {
       if (c.canSearch)
         _Row(icon: Icons.search, title: l.goToVerseSearch('\u2068${c.query}\u2069'), onTap: () => _search(c.query)),
     ].nonNulls.toList();
+    // Something typed that leads nowhere (a number alone, say) is told what
+    // the sheet takes.
+    if (rows.isEmpty && c.query.isNotEmpty) {
+      rows.add(_Row(icon: Icons.info_outline, title: l.goToVerseHelp(_example())));
+    }
+    return rows;
+  }
+
+  /// The example reference the field's hint shows.
+  String _example() {
+    final ashkenazi = ref.read(settingsProvider).ashkenaziNames;
+    return context.l10n
+        .goToVerseHint(Names(context).portion(ref.read(parshaRepositoryProvider).byNumber(1), ashkenazi: ashkenazi));
   }
 
   @override

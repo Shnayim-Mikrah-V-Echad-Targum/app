@@ -76,6 +76,27 @@ void main() {
       expect(parse('Gen 28:12–29:3'), verse('Genesis', 28, 12));
       expect(parse('בראשית ז, יז–ח, יד'), verse('Genesis', 7, 17));
       expect(parse('לך-לך יב, א-ה'), verse('Genesis', 12, 1));
+      // With spaces around the hyphen.
+      expect(parse('Gen 28:12 - 15'), verse('Genesis', 28, 12));
+      expect(parse('Gen 28:12 -15'), verse('Genesis', 28, 12));
+      expect(parse('בראשית כח יב - טו'), verse('Genesis', 28, 12));
+      // A chapter range in unmarked numerals.
+      expect(parse('בראשית כח-ל'), verse('Genesis', 28, 1));
+    });
+
+    // שלח is 338 in Hebrew numerals, but here it begins the parsha's name.
+    test('a hyphen in a name is not a range', () {
+      expect(parse('שלח-לך טו, לח'), verse('Numbers', 15, 38));
+      expect(parse('לך-לך יב, א'), verse('Genesis', 12, 1));
+    });
+
+    test('says whether its numbers are plainly numbers', () {
+      for (final s in ['Gen 28:12', 'בראשית כ״ח, י״ב', 'בראשית כח, יב', 'בראשית כח:יב', 'בראשית פרק כח פסוק יב', 'Gen 28']) {
+        expect(parse(s)!.plainNumbers, isTrue, reason: s);
+      }
+      for (final s in ['בראשית כח יב', 'בראשית כח', 'שלח לו', 'דבר כה']) {
+        expect(parse(s)!.plainNumbers, isFalse, reason: s);
+      }
     });
 
     test('reads every reference the app writes, in either language', () {
@@ -135,6 +156,13 @@ void main() {
         ('שלח לך', "Sh'lach"),
         ('וישלח', 'Vayishlach'),
         ('וזאת הברכה', 'Vezot Haberakhah'),
+        ('קורח', 'Korach'),
+        ('קרח', 'Korach'),
+        ('שפטים', 'Shoftim'),
+        ('שופטים', 'Shoftim'),
+        ('כי תבא', 'Ki Tavo'),
+        ('כי תבוא', 'Ki Tavo'),
+        ('בחוקתי', 'Bechukotai'),
       ]) {
         final p = repo.all.firstWhere((p) => p.key == key);
         expect(parse(spelling), VerseReference(p.book, p.range.start), reason: spelling);
@@ -195,6 +223,17 @@ void main() {
       expect(parse('כח יב', currentBook: 'Genesis'), isNull);
     });
 
+    test('each of them', () {
+      expect(parse('ג׳ כב', currentBook: 'Genesis'), isNull);
+      // A parsha's name, then a marked numeral: not two numbers in this book.
+      expect(parse('שלח ל״ו', currentBook: 'Genesis'), verse('Numbers', 36, 1));
+    });
+
+    test('unless they are called chapter and verse', () {
+      expect(parse('פרק ג פסוק כב', currentBook: 'Genesis'), verse('Genesis', 3, 22));
+      expect(parse('chapter 3 verse 22', currentBook: 'Genesis'), verse('Genesis', 3, 22));
+    });
+
     test('and nothing without a current book', () {
       expect(parse('3:22'), isNull);
     });
@@ -216,6 +255,33 @@ void main() {
     test('a verse the chapter doesn’t have', () {
       expect(parse('Gen 28:23'), const MissingVerse('Genesis', 28, chapters: 50, verses: 22));
       expect(parse('9:99', currentBook: 'Exodus'), const MissingVerse('Exodus', 9, chapters: 40, verses: 35));
+    });
+  });
+
+  // A name followed by one short Hebrew word that happens to be a numeral:
+  // all phrases of the Torah (Exodus 11:2, Genesis 16:2, Numbers 36:1).
+  group('a name and a word that is also a numeral', () {
+    test('is read as a reference whose numbers may be words', () {
+      expect(parse('דבר נא'), const MissingVerse('Deuteronomy', 51, chapters: 34));
+      expect(parse('דבר נא')!.plainNumbers, isFalse);
+      expect(parse('בא נא'), const MissingVerse('Exodus', 51, chapters: 40));
+      expect(parse('בא נא')!.plainNumbers, isFalse);
+      expect(parse('שלח לו'), verse('Numbers', 36, 1));
+      expect(parse('שלח לו')!.plainNumbers, isFalse);
+    });
+  });
+
+  group('combined weeks', () {
+    test('stand for the first parsha’s book, by any of their names', () {
+      expect(parse('Chukat-Balak 22:2'), verse('Numbers', 22, 2));
+      expect(parse('Chukas-Balak 22:2'), verse('Numbers', 22, 2));
+      expect(parse('חקת-בלק כב, ב'), verse('Numbers', 22, 2));
+      expect(parse('Vayakhel-Pekudei 38:21'), verse('Exodus', 38, 21));
+      expect(parse('Vayakhel Pekudei 38:21'), verse('Exodus', 38, 21));
+      expect(parse('ויקהל פקודי לח, כא'), verse('Exodus', 38, 21));
+      expect(parse('Nitzavim-Vayeilech 30:1'), verse('Deuteronomy', 30, 1));
+      // Alone, at the first parsha's first verse.
+      expect(parse('Matot-Masei'), VerseReference('Numbers', repo.byNumber(42).range.start, byName: true));
     });
   });
 

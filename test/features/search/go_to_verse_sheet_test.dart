@@ -102,7 +102,9 @@ void main() {
     await goTo(tester, 'בראשית כח יב');
     expect(find.text('Genesis 28:12'), findsOneWidget);
     expect(find.text('Vayetzei · Rishon'), findsOneWidget);
-    expect(find.textContaining('Search for'), findsNothing, reason: 'the text has no numbers to search for');
+    // Unmarked, כח and יב are words too: the search is offered after the verse.
+    expect(find.textContaining('Search for'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Genesis 28:12')).dy, lessThan(tester.getTopLeft(find.textContaining('Search for')).dy));
 
     await tester.tap(find.text('Genesis 28:12'));
     await untilRead(tester);
@@ -187,8 +189,50 @@ void main() {
     expect(row('ויצא · ראשון'), findsOneWidget);
     await goTo(tester, 'בראשית כח, ל');
     expect(row('בפרק כח בספר בראשית 22 פסוקים.'), findsOneWidget);
-    await goTo(tester, 'דברים לה');
+    await goTo(tester, 'דברים ל״ה');
     expect(row('בספר דברים 34 פרקים.'), findsOneWidget);
+    // Unmarked, לה may be a word: "דברים לה".
+    await goTo(tester, 'דברים לה');
+    expect(row('בספר דברים 34 פרקים.'), findsNothing);
+    expect(row('חיפוש ״\u2068דברים לה\u2069״'), findsOneWidget);
+    await goTo(tester, '28');
+    expect(row('אפשר לכתוב ספר או פרשה ואחריהם פרק ופסוק, למשל בראשית כח, יב, או מילים לחיפוש.'), findsOneWidget);
+  });
+
+  // Phrases of the Torah: Exodus 11:2, Genesis 16:2, Numbers 36:1 and
+  // Deuteronomy 25:1 has none but reads as one. Each is a name and a short
+  // word that is also a numeral.
+  testWidgets('a name and a word that is also a numeral may be a phrase: it can be searched for', (tester) async {
+    await open(tester);
+    for (final (query, length) in [('דבר נא', 'Deuteronomy has 34 chapters.'), ('בא נא', 'Exodus has 40 chapters.')]) {
+      await goTo(tester, query);
+      expect(row(length), findsNothing, reason: query);
+      expect(row('Search for “\u2068$query\u2069”'), findsOneWidget, reason: query);
+    }
+    // A verse it could be is offered too, first, for Enter.
+    await goTo(tester, 'שלח לו');
+    expect(row('Numbers 36:1'), findsOneWidget);
+    expect(row('Search for “\u2068שלח לו\u2069”'), findsOneWidget);
+    expect(
+      tester.getTopLeft(row('Numbers 36:1')).dy,
+      lessThan(tester.getTopLeft(row('Search for “\u2068שלח לו\u2069”')).dy),
+    );
+    // Marked as numerals, they are only numbers.
+    await goTo(tester, 'שלח ל״ו');
+    expect(row('Numbers 36:1'), findsOneWidget);
+    expect(find.textContaining('Search for'), findsNothing);
+  });
+
+  testWidgets('says what it takes when what was typed leads nowhere', (tester) async {
+    await open(tester);
+    await goTo(tester, '28');
+    expect(row('Type a book or parsha, then a chapter and verse, as in Bereshit 28:12; or words to search for.'), findsOneWidget);
+    await tester.testTextInput.receiveAction(TextInputAction.go);
+    await tester.pumpAndSettle();
+    expect(find.byType(GoToVerseSheet), findsOneWidget);
+    // A range with a spaced hyphen is a reference.
+    await goTo(tester, 'Gen 28:12 - 15');
+    expect(row('Genesis 28:12'), findsOneWidget);
   });
 
   testWidgets('says what it found, once typing pauses', (tester) async {

@@ -85,6 +85,37 @@ void main() {
     expect(tester.getRect(verse), before);
   });
 
+  // Focus mode reads around the verse opened at, and its own highlight (a
+  // fill and padding) stays off once the mark goes, until focus moves.
+  testWidgets('in focus mode too, nothing moves when the mark goes', (tester) async {
+    await open(tester, '$_shlishi?verse=3:8', settings: const AppSettings(onboardingComplete: true, focusMode: true));
+    ScriptureVerse mikra(int verse) => tester.widget<ScriptureVerse>(
+          find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == VerseRef(3, verse) && !w.secondary).first,
+        );
+    final verse = find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == const VerseRef(3, 8)).first;
+    expect(mikra(8).dimmed, isFalse);
+    expect(mikra(9).dimmed, isTrue, reason: 'focus mode reads around the verse opened at');
+    final before = tester.getRect(verse);
+
+    // A tap on the text that lands on no verse (whose tap would move the
+    // focus): in the margin beside them.
+    await tester.tapAt(tester.getRect(text()).centerLeft + const Offset(6, 0));
+    await tester.pump();
+    expect(marked(), findsNothing);
+    expect(tester.getRect(verse), before);
+    expect(mikra(8).highlighted, isFalse);
+    expect(mikra(9).dimmed, isTrue, reason: 'still focused');
+
+    // Focus that moves shows its highlight as ever.
+    final nine = find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == const VerseRef(3, 9)).first;
+    await tester.ensureVisible(nine);
+    await tester.pumpAndSettle();
+    await tester.tap(nine);
+    await tester.pump();
+    expect(mikra(9).highlighted, isTrue);
+    expect(mikra(8).dimmed, isTrue);
+  });
+
   testWidgets('a scroll keeps the mark, the next tap clears it', (tester) async {
     await open(tester, '$_shlishi?verse=3:8');
     await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -200));

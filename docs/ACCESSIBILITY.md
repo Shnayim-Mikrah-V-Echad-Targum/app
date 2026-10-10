@@ -68,8 +68,8 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   | Ctrl+Shift+N | Show or hide vowels |
   | Ctrl+Shift+L | Listen / stop |
   | F1, or Ctrl+/ | Show shortcuts |
-  | Ctrl+K, on any tab | Search, or go to a verse |
 
+- On any of the five tabs, Ctrl+K (⌘K on macOS) opens Search, where a verse is reached by its reference or words are searched for. It is not bound in the reader, whose own shortcuts take the keyboard there.
 - No action needs a swipe, drag or multi-finger gesture. Everything is a tap, click or key press, and nothing has a time limit.
 - The screen can be kept on while reading, which is on by default.
 

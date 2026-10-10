@@ -1772,6 +1772,12 @@ abstract class AppLocalizations {
   /// **'{book} 28:12'**
   String goToVerseHint(String book);
 
+  /// Shown in the go-to-verse sheet when what was typed is neither a reference nor words to search for, such as a number alone. example is a sample reference, such as Bereshit 28:12 (in Hebrew, בראשית כח, יב).
+  ///
+  /// In en, this message translates to:
+  /// **'Type a book or parsha, then a chapter and verse, as in {example}; or words to search for.'**
+  String goToVerseHelp(String example);
+
   /// A row in the go-to-verse sheet that opens the Torah search for what was typed.
   ///
   /// In en, this message translates to:

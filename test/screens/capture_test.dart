@@ -125,6 +125,8 @@ const _screens = {
   'goto_verse': '/parsha',
   'goto_missing': '/parsha',
   'goto_words': '/parsha',
+  'goto_phrase': '/parsha',
+  'goto_help': '/parsha',
   'reader_verse': '/read/5787:1/2?verse=3:8',
   'reader_verse_focus': '/read/5787:1/2?verse=3:8',
   // Keyboard focus on a control, to check the focus ring (§6.1).
@@ -419,6 +421,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'goto_verse': (tester) => _goTo(tester, 'בראשית כח יב'),
   'goto_missing': (tester) => _goTo(tester, 'Gen 28:30'),
   'goto_words': (tester) => _goTo(tester, 'ladder'),
+  // A name and a word that is also a numeral: the verse, and the search.
+  'goto_phrase': (tester) => _goTo(tester, 'שלח לו'),
+  // Nothing to go to or search for: what the sheet takes.
+  'goto_help': (tester) => _goTo(tester, '28'),
   // The week strip, in the middle of the page.
   'today_yomtov_oneday': _showWeekStrip,
   'today_yomtov_twoday': _showWeekStrip,
