@@ -18,7 +18,7 @@ This document summarizes the decisions behind the app and the reasons for them. 
 
 ## 2. The calendar
 
-**The portion is computed on the device and never fetched.** A pure-Dart Hebrew calendar uses fixed-day arithmetic. The parsha schedule comes from 28 tables, one for each combination of year type and Israel or Diaspora. Each table was generated from hebcal and validated for every year from 5700 to 5900. The app works fully offline and does not depend on a server staying online.
+**The portion is computed on the device and never fetched.** A pure-Dart Hebrew calendar uses fixed-day arithmetic. The parsha schedule comes from 28 tables, one for each combination of year type and Israel or Diaspora. Each table was generated from hebcal and validated for every year from 5700 to 5900. The app works fully offline, the web version too once it has been opened, and does not depend on a server staying online.
 
 **A reading week runs from the day after the previous public reading through the next one.** That makes the week the halachic window for the obligation. When a holiday displaces Shabbat, the week is simply longer. A double portion is one week of seven aliyot spanning both portions, following the standard leyning divisions.
 

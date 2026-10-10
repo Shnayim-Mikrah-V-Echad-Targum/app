@@ -182,8 +182,9 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 
 ## Web
 
-- [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /<path>/`. The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
-- [ ] Serve it over HTTPS. Cache `canvaskit/` and fonts for a long time. Don't cache `index.html`, `flutter_bootstrap.js` or `flutter_service_worker.js`.
+- [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /<path>/`, then `node tool/legal/build_html.mjs build/web` for the static pages and, last, `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` for the offline service worker (`sw.js`). The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
+- [ ] Serve it over HTTPS. Cache `canvaskit/` and fonts for a long time. Don't cache `index.html`, `flutter_bootstrap.js`, `sw.js` or `flutter_service_worker.js` (the browsers of earlier visitors still check it, and Flutter's version now unregisters itself).
+- [ ] Offline: install the app, open a book, then in DevTools (*Network → Offline*) reload. The app opens, and so does that book.
 - [ ] If you use a Content-Security-Policy, allow:
   - `'wasm-unsafe-eval'` for CanvasKit
   - your Supabase URL in `connect-src`

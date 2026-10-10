@@ -105,7 +105,7 @@ Setting up the backend is covered in [docs/BACKEND.md](docs/BACKEND.md).
 |---|---|---|
 | Android | `flutter build appbundle` | Release signing reads `android/key.properties` if present (see [docs/RELEASE.md](docs/RELEASE.md)). |
 | iOS | `flutter build ipa` | Needs Xcode and an Apple developer team. Bundle id `org.shnayimmikra.app`. |
-| Web | `flutter build web --no-web-resources-cdn` | Always pass `--no-web-resources-cdn`. Without it, every visitor's browser fetches the rendering engine from Google's CDN. With it, the engine is served from your own host, which is better for privacy and works on restricted networks. |
+| Web | `flutter build web --no-web-resources-cdn` | Always pass `--no-web-resources-cdn`. Without it, every visitor's browser fetches the rendering engine from Google's CDN. With it, the engine is served from your own host, which is better for privacy and works on restricted networks. Then `node tool/legal/build_html.mjs build/web` writes the static policy pages, and `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` the service worker that keeps the app working offline (see [docs/RELEASE.md](docs/RELEASE.md#web)). |
 | Windows | `flutter build windows` | Output in `build/windows/x64/runner/Release`. `bash tool/windows/make_msix.sh` then packages it as an MSIX installer (see [docs/RELEASE.md](docs/RELEASE.md#windows)). |
 
 CI (`.github/workflows/ci.yml`) runs analysis and every test, then builds all four platforms on each pull request. On `main` it can also deploy the web build to GitHub Pages: set the repository variable `DEPLOY_WEB=true`, and set `WEB_BASE_HREF` if the site isn't served from the root.
