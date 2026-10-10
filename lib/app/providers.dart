@@ -138,6 +138,12 @@ class TodayController extends Notifier<LocalDate> {
     if (today != state) state = today;
     _schedule();
   }
+
+  /// Brings the reading day up to date now, for something about to act on it
+  /// that can arrive before the app hears it has resumed: a shortcut on the
+  /// app's icon, for one. (The 3 a.m. timer doesn't run while the device
+  /// sleeps or the app is frozen in the background.)
+  void refresh() => _refresh();
 }
 
 final todayProvider = NotifierProvider<TodayController, LocalDate>(TodayController.new);

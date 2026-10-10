@@ -120,7 +120,7 @@ The copy is informational ("Revi'i is today's reading"), never guilt-based.
 
 Permission is requested in context, after the reader finishes their first aliyah, not at launch.
 
-**Shortcuts on the app's icon** (Android and iOS) are a calm way in: long-pressing the icon offers Continue reading, Log reading from a book and This week's parsha, once onboarding is done. The platform keeps them while the app isn't running, so each names a page rather than a week, and opens the current week as it is when it is chosen. A shortcut's page opens over Today, so back leads to the navigation bar.
+**Shortcuts on the app's icon** (Android and iOS) are a calm way in: long-pressing the icon offers Continue reading, Log reading from a book and This week's parsha, once onboarding is done. The platform keeps them while the app isn't running, so each names a page rather than a week, and opens the current week as it is when it is chosen, even before the app hears it has resumed. From Shabbat through the first reading day after it, the current week is already the next parsha, so Log reading from a book opens the week just read while it is unfinished: the week a reading from a printed Chumash on Shabbat belongs to, as Today's check-in asks. A shortcut's page opens over Today, so back leads to the navigation bar.
 
 ## 6. Onboarding
 

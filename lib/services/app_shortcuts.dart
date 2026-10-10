@@ -1,12 +1,14 @@
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart' show basicLocaleListResolution;
+import 'package:flutter/widgets.dart' show WidgetsBinding, basicLocaleListResolution;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quick_actions/quick_actions.dart';
 
 import '../app/providers.dart';
+import '../core/calendar/jewish_holidays.dart';
 import '../features/parsha/week_context.dart';
+import '../features/progress/domain/progress_models.dart' show weekIdFor;
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 
@@ -45,13 +47,34 @@ enum AppShortcut {
         thisWeek => l.shortcutThisWeek,
       };
 
-  /// The page this shortcut opens, in the week [week].
-  String route(WeekContext week) => switch (this) {
+  /// The page this shortcut opens, in the current week [week]. A log from a
+  /// book opens [justRead] instead, when given: the week just read in
+  /// synagogue, still unfinished (see [weekJustReadProvider]).
+  String route(WeekContext week, {WeekContext? justRead}) => switch (this) {
         continueReading => '/read/${week.id}/${week.nextAliyah ?? 0}',
-        logFromBook => '/week/${week.id}',
+        logFromBook => '/week/${(justRead ?? week).id}',
         thisWeek => '/parsha',
       };
 }
+
+/// The week just read in synagogue, from its Shabbat (or Yom Tov) through
+/// the first reading day after it, while it is unfinished: the week that a
+/// reading from a printed Chumash on Shabbat belongs to, and the one Today
+/// asks about then, though the current week has already moved on to the next
+/// parsha. Otherwise null, as for a week read before the reader joined.
+final weekJustReadProvider = Provider<WeekContext?>((ref) {
+  final schedule = ref.watch(scheduleProvider);
+  final previous = schedule.previousWeek(ref.watch(currentWeekProvider));
+  final settings = ref.watch(settingsProvider.select((s) => (israel: s.oneDayYomTov, joinDate: s.joinDate)));
+  if (settings.joinDate != null && previous.occasion < settings.joinDate!) return null;
+  var firstDayAfter = previous.occasion.addDays(1);
+  while (JewishHolidays.isRestDay(firstDayAfter, israel: settings.israel)) {
+    firstDayAfter = firstDayAfter.addDays(1);
+  }
+  if (ref.watch(todayProvider) != firstDayAfter) return null;
+  final week = ref.watch(weekContextProvider(weekIdFor(previous.portion, previous.occasion)));
+  return week == null || week.isFinished ? null : week;
+});
 
 /// The app's shortcuts on its icon. Only Android and iOS have them.
 class AppShortcutsService {
@@ -103,10 +126,6 @@ class AppShortcutsService {
     _waiting = null;
     if (waiting != null) open(waiting);
   }
-
-  /// Takes the shortcut the platform reports, by its [type].
-  @visibleForTesting
-  void choose(String type) => _choose(type);
 
   void _choose(String type) {
     final shortcut = AppShortcut.fromType(type);
@@ -169,7 +188,7 @@ final appShortcutsProvider = Provider<void>((ref) {
     AppLanguage.english => const Locale('en'),
     AppLanguage.hebrew => const Locale('he'),
     AppLanguage.system => basicLocaleListResolution(
-        PlatformDispatcher.instance.locales,
+        WidgetsBinding.instance.platformDispatcher.locales,
         AppLocalizations.supportedLocales,
       ),
   });

@@ -174,6 +174,27 @@ void main() {
       expect(plugin.updates, 1);
     });
 
+    // The app invalidates the provider when the device's language changes.
+    testWidgets("follow the device's language when the app does", (tester) async {
+      addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+      final plugin = FakeQuickActions();
+      final service = await AppShortcutsService.create(plugin: plugin);
+      await pumpApp(
+        tester,
+        settings: const AppSettings(onboardingComplete: true, language: AppLanguage.system),
+        overrides: [appShortcutsServiceProvider.overrideWithValue(service)],
+      );
+      expect(plugin.items!.first.localizedTitle, 'Continue reading');
+
+      tester.platformDispatcher.localesTestValue = const [Locale('he', 'IL')];
+      await tester.pump();
+      expect([for (final i in plugin.items!) i.localizedTitle], ['המשך קריאה', 'רישום קריאה מתוך ספר', 'פרשת השבוע']);
+
+      tester.platformDispatcher.localesTestValue = const [Locale('en', 'US')];
+      await tester.pump();
+      expect(plugin.items!.first.localizedTitle, 'Continue reading');
+    });
+
     test('wait for onboarding, and go if it starts again', () async {
       final (container, plugin) = await start(const AppSettings());
       expect(plugin.items, isEmpty);
@@ -192,6 +213,7 @@ void main() {
     // Monday 12 October 2026, in the week of Noach.
     final monday = DateTime(2026, 10, 12, 10);
     const noach = '5787:2';
+    const lechLecha = '5787:3';
 
     final mondayDate = LocalDate.fromDateTime(monday);
 
@@ -235,10 +257,16 @@ void main() {
     /// The page on top.
     String location(GoRouter router) => router.state.uri.toString();
 
+    /// The week page on top, by its week. (Its path depends on whether week
+    /// pages open within the Today tab, so the tests don't name it.)
+    void expectWeekPage(WidgetTester tester, String weekId) {
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+      expect(tester.widget<WeekOverviewScreen>(find.byType(WeekOverviewScreen)).weekId, weekId);
+    }
+
     /// Goes back from the page on top, as its back button does, to Today
     /// with the navigation bar.
     Future<void> expectBackToToday(WidgetTester tester, GoRouter router) async {
-      expect(find.byType(NavigationBar), findsNothing);
       await tester.tap(find.byType(BackButton));
       await settle(tester);
       expect(location(router), '/today');
@@ -267,9 +295,54 @@ void main() {
       final (router, plugin) = await pump(tester);
       plugin.handler!('log_from_book');
       await settle(tester);
-      expect(location(router), '/week/$noach');
-      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+      expectWeekPage(tester, noach);
       await expectBackToToday(tester, router);
+    });
+
+    // A week later the app is still suspended, and hears of the shortcut
+    // before it hears it has resumed: the shortcut opens the new week.
+    testWidgets('opens the week of the day it is chosen, without waiting for a resume', (tester) async {
+      final (router, plugin) = await pump(tester, progress: twoRead());
+      TodayController.now = () => monday.add(const Duration(days: 7));
+      plugin.handler!('continue_reading');
+      await settle(tester);
+      expect(location(router), '/read/$lechLecha/0');
+      expect(tester.widget<ReaderScreen>(find.byType(ReaderScreen)).weekId, lechLecha);
+    });
+
+    // From Shabbat through the day after it, the current week is already the
+    // next parsha; what was read from a Chumash on Shabbat is the last one's.
+    group('Log reading from a book after Shabbat', () {
+      final motzeiShabbat = DateTime(2026, 10, 17, 21);
+      final sunday = DateTime(2026, 10, 18, 10);
+
+      for (final (moment, now) in [('on Motzei Shabbat', motzeiShabbat), ('on Sunday', sunday)]) {
+        testWidgets("opens the week just read while it isn't finished, $moment", (tester) async {
+          final (router, plugin) = await pump(tester, progress: twoRead());
+          TodayController.now = () => now;
+          plugin.handler!('log_from_book');
+          await settle(tester);
+          expectWeekPage(tester, noach);
+          await expectBackToToday(tester, router);
+        });
+      }
+
+      testWidgets('opens the new week once the last is finished', (tester) async {
+        final finished = WeekProgress(weekId: noach).withAll(LocalDate(2026, 10, 16));
+        final (_, plugin) = await pump(tester, progress: ProgressState(weeks: {noach: finished}));
+        TodayController.now = () => motzeiShabbat;
+        plugin.handler!('log_from_book');
+        await settle(tester);
+        expectWeekPage(tester, lechLecha);
+      });
+
+      testWidgets('opens the new week from the second day after Shabbat', (tester) async {
+        final (_, plugin) = await pump(tester, progress: twoRead());
+        TodayController.now = () => DateTime(2026, 10, 19, 10);
+        plugin.handler!('log_from_book');
+        await settle(tester);
+        expectWeekPage(tester, lechLecha);
+      });
     });
 
     testWidgets("This week's parsha opens the Parsha tab, from wherever the app was", (tester) async {
@@ -287,8 +360,9 @@ void main() {
       // Android may report it twice as the app starts.
       final (router, _) = await pump(tester, launchedWith: ['log_from_book', 'log_from_book']);
       await settle(tester);
-      expect(location(router), '/week/$noach');
+      expectWeekPage(tester, noach);
       await expectBackToToday(tester, router);
+      expect(find.byType(WeekOverviewScreen), findsNothing);
     });
 
     testWidgets('waits for onboarding', (tester) async {

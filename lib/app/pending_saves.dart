@@ -30,14 +30,18 @@ class PendingSaves {
   late final AppLifecycleListener _lifecycle;
 
   /// Writes whatever is waiting now.
-  Future<void> flush() => Future.wait([
-        container.read(settingsProvider.notifier).flush(),
-        container.read(progressProvider.notifier).flush(),
-      ]);
+  Future<void> flush() async {
+    await Future.wait([
+      container.read(settingsProvider.notifier).flush(),
+      container.read(progressProvider.notifier).flush(),
+    ]);
+  }
 
-  /// Stops following the app's lifecycle, writing whatever is waiting.
+  /// Stops following the app's lifecycle, writing whatever is waiting. (A
+  /// container disposed first, as a failed test leaves its own, wrote its
+  /// saves as it went, and can't be read.)
   void dispose() {
     _lifecycle.dispose();
-    unawaited(flush());
+    unawaited(flush().catchError((Object e) => debugPrint('Could not save: $e')));
   }
 }

@@ -66,7 +66,11 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
   void _openShortcut(AppShortcut shortcut) {
     // Shortcuts are offered only after onboarding, which must come first.
     if (!mounted || !ref.read(settingsProvider).onboardingComplete) return;
-    openFromOutside(ref.read(routerProvider), shortcut.route(ref.read(currentWeekContextProvider)));
+    // The platform can hand over a shortcut before the app hears it has
+    // resumed, perhaps days after it last ran.
+    ref.read(todayProvider.notifier).refresh();
+    final route = shortcut.route(ref.read(currentWeekContextProvider), justRead: ref.read(weekJustReadProvider));
+    openFromOutside(ref.read(routerProvider), route);
   }
 
   /// Whether the app shows in Hebrew, resolved the way MaterialApp resolves
