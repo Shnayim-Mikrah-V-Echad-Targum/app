@@ -21,9 +21,11 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/models.dart';
+import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
+import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
@@ -65,19 +67,55 @@ const _screens = {
   'parsha': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
+  // A week and its haftarah opened within a tab, under its navigation bar.
+  'week_tab': '/today/week/5787:1',
+  'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
+  // Revi'i open after Rishon and Sheni, with Shlishi under way.
+  'reader_chips': '/read/5787:1/3',
+  // Shlishi of Matot-Masei (Numbers 32:1–19) read by section: the Targum
+  // step of 32:1–4, with the third reading of 32:3.
+  'reader_third': '/read/5787:42-43/2',
+  // Shevi'i just finished, with Shlishi still under way.
+  'reader_finished': '/read/5787:1/6',
   'reader_full': '/read/5787:1/2?mode=full',
+  // The keyboard shortcuts, in the app and on the web.
+  'reader_keys': '/read/5787:1/2',
+  'reader_keys_web': '/read/5787:1/2',
+  // The display sheet, scrolled to its line spacing.
+  'reader_display': '/read/5787:1/2',
   // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
   'reader_gaps': '/read/5787:17/5?mode=full',
   'reader_gaps_spaced': '/read/5787:17/5?mode=full',
+  // Focus mode, opened on the reader's place in Shlishi.
   'reader_focus': '/read/5787:1/2?mode=full',
+  // Shlishi of Vayishlach with cantillation hidden: the dots written over
+  // וישקהו (Genesis 33:4) stay.
+  'reader_dots': '/read/5787:8/2?mode=full',
   'haftarah': '/haftarah/5787:1',
   'progress': '/progress',
   'community': '/community',
   'forum': '/community/forum/parsha',
   'thread': '/community/thread/1',
+  // An empty weekly thread, and the forum that lists it.
+  'thread_weekly': '/community/thread/1000',
+  'forum_weekly': '/community/forum/parsha',
+  // Reporting a post, before a reason is chosen.
+  'thread_report': '/community/thread/1',
+  // A thread of 250 posts, open on its latest hundred, and at its end.
+  'thread_long': '/community/thread/5000',
+  'thread_long_end': '/community/thread/5000',
+  // The week's Discuss button while its discussion opens.
+  'week_discuss': '/week/5787:1',
+  // Asked to confirm clearing the week's progress.
+  'week_clear': '/week/5787:1',
+  // Just refreshed from the app bar.
+  'thread_refreshed': '/community/thread/1',
   'compose': '/community/new',
   'account': '/community/account',
+  // Just after "Email me a code".
+  'account_code': '/community/account',
+  'account_settings': '/settings/account',
   'account_sync': '/community/account',
   'settings': '/settings',
   's_reading': '/settings/reading',
@@ -85,11 +123,18 @@ const _screens = {
   's_display': '/settings/display',
   's_fonts': '/settings/display',
   's_a11y': '/settings/accessibility',
+  's_a11y_web': '/settings/accessibility',
   's_reminders': '/settings/reminders',
+  // As on a phone, where reminders can be scheduled, with all three on.
+  's_reminders_on': '/settings/reminders',
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
   'about': '/settings/about',
   'guide': '/guide',
+  'legal': '/legal/privacy',
+  // Links that lead nowhere: a mistyped address, and a forum that is gone.
+  'not_found': '/nope',
+  'forum_missing': '/community/forum/xyz',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
   'focus_day': '/today',
@@ -128,6 +173,12 @@ const _screens = {
 /// the screen has loaded.
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  'reader_dots': (s) => s.copyWith(showTeamim: false),
+  's_reminders_on': (s) => s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true),
+  // Reading by section, so that 32:3 is read with the verses around it.
+  'reader_third': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
+  // Reading by aliyah, so that one step finishes Shevi'i.
+  'reader_finished': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, repeatLastVerse: false),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
   // Israel is a parsha ahead, and both pairs of portions are read together.
@@ -158,6 +209,8 @@ final _screenNow = <String, DateTime>{
   'today_haftarah_left': DateTime(2026, 10, 13, 11),
   'today_yomtov_oneday': DateTime(2029, 5, 22, 11),
   'today_yomtov_twoday': DateTime(2029, 5, 22, 11),
+  // Tuesday of Matot-Masei 5787.
+  'reader_third': DateTime(2027, 7, 27, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
@@ -165,7 +218,34 @@ final _screenProgress = <String, ProgressState Function()>{
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
   'today_joined_midweek': () => ProgressState(weeks: {}),
+  // All three readings of Shlishi (from Genesis 2:20) have reached 3:1,
+  // its seventh verse, where the guided reader resumes and focus mode opens.
+  'reader_focus': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 6]),
+      }),
+  // Both Hebrew readings of 32:1–4 done: the Targum is next.
+  'reader_third': () => ProgressState(weeks: {
+        '5787:42-43': WeekProgress(weekId: '5787:42-43').withPosition(2, const [4, 4, 0]),
+      }),
+  // All but Shlishi (two readings) and Shevi'i (all but the Targum) read.
+  'reader_finished': () {
+    final day = LocalDate(2026, 10, 8);
+    var w = WeekProgress(weekId: '5787:1');
+    for (final a in [0, 1, 3, 4, 5]) {
+      w = w.withAliyah(a, day);
+    }
+    for (final a in [2, 6]) {
+      w = w.withUnit(a, ReadingPass.mikra1, day).withUnit(a, ReadingPass.mikra2, day);
+    }
+    return ProgressState(weeks: {'5787:1': w.withPosition(6, const [16, 16, 0])});
+  },
 };
+
+/// Screens shown as on the web, where the reader takes single keys.
+const _webKeys = {'reader_keys_web', 's_a11y_web'};
+
+/// Screens captured after typing into their only text field.
+const _typed = {'account_code': 'reader@example.org'};
 
 /// Screens shown signed in with backup on, where a newer version of the app
 /// has written the backup, so syncing has stopped.
@@ -181,10 +261,78 @@ Future<ForumRepository> _accountWithNewerBackup() async {
 /// Screens shown signed in with backup on.
 const _backupOn = {'s_data_reset'};
 
+/// Screens shown where reminders are available.
+const _remindersSupported = {'s_reminders_on'};
+
 Future<ForumRepository> _signedIn() async {
   final repo = DemoForumRepository();
   await repo.verifyCode('reader@example.org', '123456');
   return repo;
+}
+
+/// Screens shown with another community than the plain demo.
+final _communities = <String, Future<ForumRepository> Function()>{
+  'thread_weekly': _withWeeklyThread,
+  'forum_weekly': _withWeeklyThread,
+  'thread_report': _signedIn,
+  'thread_long': _withLongThread,
+  'thread_long_end': _withLongThread,
+  'week_discuss': () async => _OpeningForever(),
+};
+
+/// The demo with a thread of 250 posts in Divrei Torah, thread 5000.
+Future<ForumRepository> _withLongThread() async {
+  const names = ['Avraham', 'Rivka', 'Yosef', 'Miriam', 'Shmuel'];
+  const bodies = [
+    'Rashi reads the verse as a promise rather than a command.',
+    'Onkelos translates it the same way here as in the previous chapter.',
+    'רמב״ן מקשה על כך מן הפסוק הבא.',
+    'Thank you — I had never noticed that before.',
+    'Which edition of the Targum are you reading from?',
+  ];
+  // On the clock that posts' relative times are told by.
+  final now = DateTime.now();
+  final start = now.subtract(const Duration(days: 20));
+  return DemoForumRepository()
+    ..seed(
+      threads: [
+        ThreadSummary(
+          id: '5000',
+          forumId: 3,
+          title: 'The order of the blessings in Vayechi',
+          kind: ThreadKind.discussion,
+          authorName: names.first,
+          postCount: 250,
+          lastPostAt: now.subtract(const Duration(minutes: 20)),
+          createdAt: start,
+        ),
+      ],
+      posts: [
+        for (var i = 0; i < 250; i++)
+          Post(
+            id: '${i + 1}',
+            threadId: '5000',
+            authorId: 'demo-${i % names.length}',
+            authorName: names[i % names.length],
+            body: bodies[i % bodies.length],
+            createdAt: i == 249 ? now.subtract(const Duration(minutes: 20)) : start.add(Duration(hours: i)),
+          ),
+      ],
+    );
+}
+
+/// The demo with the weekly thread of Bereshit 5787, thread 1000.
+Future<ForumRepository> _withWeeklyThread() async {
+  final repo = DemoForumRepository();
+  await repo.weeklyThread(parshaNumber: 1, hebrewYear: 5787, title: 'Bereshit · בראשית · 5787');
+  return repo;
+}
+
+/// A community whose weekly threads never finish opening.
+class _OpeningForever extends DemoForumRepository {
+  @override
+  Future<String> weeklyThread({required int parshaNumber, required int hebrewYear, required String title}) =>
+      Completer<String>().future;
 }
 
 /// Screens captured just after tapping what the finder finds, to show the
@@ -194,7 +342,25 @@ final _taps = {
   's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
   // The second page of onboarding: where the reader will be this Shabbat.
   'welcome_location': () => find.byType(FilledButton).first,
+  // Next, on the last step of Shevi'i.
+  'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
+  'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
+  'thread_refreshed': () => find.byIcon(Icons.refresh),
+  'account_code': () => find.byType(FilledButton).first,
 };
+
+/// Taps what each finder finds in turn, settling after each.
+Future<void> Function(WidgetTester) _tapInTurn(List<Finder Function()> steps) => (tester) async {
+      for (final step in steps) {
+        await tester.tap(step());
+        await _settle(tester);
+      }
+    };
+
+final _openShortcuts = _tapInTurn([
+  () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
+  () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'keys'),
+]);
 
 Future<void> _showWeekStrip(WidgetTester tester) =>
     Scrollable.ensureVisible(tester.element(find.byType(WeekStrip)), alignment: 0.5);
@@ -210,9 +376,29 @@ Future<void> _scrollToEnd(WidgetTester tester) async {
 }
 
 final _screenSetup = <String, Future<void> Function(WidgetTester)>{
-  // Focus the second verse (each verse is followed by its Targum), so there
-  // are dimmed verses above and below it.
-  'reader_focus': (tester) => tester.tap(find.byType(ScriptureVerse).at(2)),
+  // The last post's menu, then Report.
+  'thread_report': _tapInTurn([
+    () => find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)),
+    () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'report'),
+  ]),
+  // The reader's menu, then Keyboard shortcuts.
+  'reader_keys': _openShortcuts,
+  'reader_keys_web': _openShortcuts,
+  // The week's menu, then Clear.
+  'week_clear': _tapInTurn([
+    () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
+    () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'clear'),
+  ]),
+  // The display sheet, scrolled to its end.
+  'reader_display': (tester) async {
+    await tester.tap(find.byIcon(Icons.text_format));
+    await _settle(tester);
+    await _scrollToEnd(tester);
+  },
+  'reader_dots': _scrollToEnd,
+  'reader_third': _scrollToEnd,
+  'thread_long_end': _scrollToEnd,
+  'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
   's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),
   'focus_button': (tester) => _keyboardFocus(tester, find.byType(FilledButton).first),
@@ -381,11 +567,21 @@ const _desktopScreens = {
   'today_haftarah_left',
   'today_yomtov_oneday',
   'week',
+  'week_tab',
+  'haftarah_tab',
   'reader',
+  'reader_third',
+  'reader_finished',
   'reader_full',
+  'reader_focus',
+  'reader_keys',
+  'reader_keys_web',
   'reader_gaps',
   'progress',
   'thread',
+  'thread_long',
+  'legal',
+  'not_found',
   'settings',
   'welcome',
   'dialog',
@@ -454,41 +650,55 @@ void main() {
         addTearDown(tester.view.reset);
         tester.platformDispatcher.textScaleFactorTestValue = mode.textScale;
         addTearDown(tester.platformDispatcher.clearAllTestValues);
+        if (_webKeys.contains(entry.key)) {
+          ReaderScreen.singleKeyPlatform = true;
+          addTearDown(() => ReaderScreen.singleKeyPlatform = false);
+        }
         // Soft shadows, as a device draws them; tests otherwise draw them as
         // solid lines. Restored before the test ends, as the binding checks.
         debugDisableShadows = false;
-        final blocked = _syncBlocked.contains(entry.key);
-        final base = (_screenSettings[entry.key] ?? (s) => s)(
-          AppSettings(
-            onboardingComplete: !entry.key.startsWith('welcome'),
-            joinDate: _join,
-            cloudSync: blocked || _backupOn.contains(entry.key),
-          ),
-        );
-        final c = await pumpApp(
-          tester,
-          settings: mode.settings(base),
-          now: _screenNow[entry.key] ?? _now,
-          progress: (_screenProgress[entry.key] ?? _progress)(),
-          forums: blocked
-              ? await _accountWithNewerBackup()
-              : (_backupOn.contains(entry.key) ? await _signedIn() : null),
-        );
-        if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
-        await _settle(tester);
-        final setup = _screenSetup[entry.key];
-        if (setup != null) {
-          await setup(tester);
+        try {
+          final blocked = _syncBlocked.contains(entry.key);
+          final base = (_screenSettings[entry.key] ?? (s) => s)(
+            AppSettings(
+              onboardingComplete: !entry.key.startsWith('welcome'),
+              joinDate: _join,
+              cloudSync: blocked || _backupOn.contains(entry.key),
+            ),
+          );
+          final c = await pumpApp(
+            tester,
+            settings: mode.settings(base),
+            now: _screenNow[entry.key] ?? _now,
+            progress: (_screenProgress[entry.key] ?? _progress)(),
+            forums: blocked
+                ? await _accountWithNewerBackup()
+                : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
+            notifications: _remindersSupported.contains(entry.key) ? PhoneNotifications() : null,
+          );
+          if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
           await _settle(tester);
+          final setup = _screenSetup[entry.key];
+          if (setup != null) {
+            await setup(tester);
+            await _settle(tester);
+          }
+          if (_typed[entry.key] case final text?) {
+            await tester.enterText(find.byType(TextField), text);
+            await tester.pump();
+          }
+          if (_taps[entry.key] case final target?) {
+            await tester.tap(target());
+            // Long enough for a snackbar to appear, not to leave again, and
+            // for the focus to move where it is moved after a frame.
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 500));
+            await tester.pump(const Duration(milliseconds: 200));
+          }
+          await _write(tester, '${mode.tag}_${entry.key}');
+        } finally {
+          debugDisableShadows = true;
         }
-        if (_taps[entry.key] case final target?) {
-          await tester.tap(target());
-          // Long enough for a snackbar to appear, not to leave again.
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 500));
-        }
-        await _write(tester, '${mode.tag}_${entry.key}');
-        debugDisableShadows = true;
       }, skip: !_capture);
     }
   }

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/sefer_choice_chip.dart';
 import '../settings/app_settings.dart';
+import '../settings/screens/display_settings_screen.dart';
+import '../settings/widgets/settings_widgets.dart';
 
-/// Quick display controls available while reading.
+/// Quick display controls available while reading. The sheet and its scrim
+/// cover the whole screen, the navigation bar too when the page (the
+/// haftarah, say) is shown within a tab.
 Future<void> showDisplaySheet(BuildContext context) => showAppSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       builder: (_) => const _DisplaySheet(),
     );
@@ -85,17 +89,14 @@ class _DisplaySheet extends ConsumerWidget {
             value: s.focusMode,
             onChanged: (v) => update((s) => s.copyWith(focusMode: v)),
           ),
-          ListTile(
-            title: Text(l.lineSpacing),
-            subtitle: Slider(
-              value: s.lineHeight,
-              min: 1.5,
-              max: 3.0,
-              divisions: 15,
-              label: s.lineHeight.toStringAsFixed(1),
-              semanticFormatterCallback: (v) => v.toStringAsFixed(1),
-              onChanged: (v) => update((s) => s.copyWith(lineHeight: v)),
-            ),
+          LabeledSlider(
+            title: l.lineSpacing,
+            value: s.lineHeight,
+            min: 1.5,
+            max: 3.0,
+            step: 0.1,
+            format: (v) => v.toStringAsFixed(1),
+            onChanged: (v) => update((s) => s.copyWith(lineHeight: v)),
           ),
           ListTile(
             title: Text(l.themeLabel),
@@ -127,8 +128,11 @@ class _DisplaySheet extends ConsumerWidget {
             title: Text(l.settingsDisplay),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.pop(context);
-              context.push('/settings/display');
+              // Over the page that opened the sheet, which it goes back to,
+              // and over the navigation bar like the sheet: the Settings
+              // tab's own page would leave the reader or the haftarah.
+              final navigator = Navigator.of(context)..pop();
+              navigator.push(MaterialPageRoute<void>(builder: (_) => const DisplaySettingsScreen()));
             },
           ),
         ],

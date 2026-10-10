@@ -151,7 +151,7 @@ class ProgressScreen extends ConsumerWidget {
                   title: Text(names.portion(repo.portion(e.plan.portion), ashkenazi: settings.ashkenaziNames)),
                   subtitle: Text(names.dateLong(e.plan.week.occasion)),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/week/${e.plan.weekId}'),
+                  onTap: () => context.push('/progress/week/${e.plan.weekId}'),
                 ),
               ),
           ],
@@ -169,7 +169,7 @@ class ProgressScreen extends ConsumerWidget {
                     child: Align(alignment: AlignmentDirectional.centerStart, child: WeekStatusBadge(e.status, dense: true)),
                   ),
                   trailing: Text(names.dateShort(e.plan.week.occasion)),
-                  onTap: () => context.push('/week/${e.plan.weekId}'),
+                  onTap: () => context.push('/progress/week/${e.plan.weekId}'),
                 ),
               ),
           SectionHeader(l.pauseTitle),
@@ -469,7 +469,7 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
         excludeFromSemantics: true,
         child: _TileFace(
           state: state,
-          onTap: () => context.push('/week/${widget.cycle}:${p.id.number}'),
+          onTap: () => context.push('/progress/week/${widget.cycle}:${p.id.number}'),
           name: name,
           stacked: look.icon != null && word > room - _tileIcon - _tileIconGap,
           // A hair under, so rounding never wraps the word after all.

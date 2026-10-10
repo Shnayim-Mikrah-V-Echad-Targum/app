@@ -49,7 +49,7 @@ class BrowseScreen extends ConsumerWidget {
                   ),
                   selected: current.portion.parshiyot.contains(p.id.number),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/week/$cycle:${p.id.number}'),
+                  onTap: () => context.push('/parsha/week/$cycle:${p.id.number}'),
                 ),
               ),
           ],

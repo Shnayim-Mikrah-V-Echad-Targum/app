@@ -48,8 +48,8 @@ Verse by verse is the default because it is the easiest to follow on a phone.
 The JPS translation is offered only as a study aid and is labelled so. It never counts as the Targum.
 
 **Edge cases from the research are handled explicitly:**
-- **Bamidbar 32:3** has no Targum. The reader prompts a third Mikra reading instead.
-- **Verses with no Rashi** get the same treatment when Rashi replaces the Targum.
+- **Bamidbar 32:3:** Onkelos is mostly names, so the reader suggests a third Mikra reading after the Targum, in every reading method.
+- **Verses with no Rashi** get a third Mikra reading too when Rashi replaces the Targum. Both suggestions can be turned off.
 - **The last verse of the parsha** can optionally be repeated so the reading ends with Mikra.
 - **Ketiv/qere:** the qere is read and the ketiv is shown on request.
 
@@ -107,8 +107,9 @@ The engine is a pure function of (progress, join date, today, pauses, and the pl
 
 The planner is a pure function. Its rules come from the research:
 - never on Shabbat or Yom Tov
-- nothing after midday on the eve of Shabbat or Yom Tov
+- nothing after midday on the eve of Shabbat or Yom Tov, or on Erev Tisha B'Av
 - at most one notification a day, chosen by priority: Erev Shabbat, then check-in, then daily
+- after two weeks without the app opened, one last message that reminders have paused, and then nothing until it is opened again; a "Life happens" pause longer than that is followed by two weeks of reminders before the message
 
 The copy is informational ("Revi'i is today's reading"), never guilt-based.
 
@@ -128,13 +129,17 @@ It ends by opening the reader on today's aliyah. Everything else is a setting wi
 
 ## 7. Community
 
-**Weekly threads per parsha (the 929 model).** Each week's thread is created on demand by a security-definer function, and its title is built on the server from reference data. Clients can't create duplicate threads or spoof their titles. There are general forums for questions, the haftarah, accessibility, and announcements (moderator-only).
+**Weekly threads per parsha (the 929 model).** Each week's thread is created on demand by a security-definer function, and its title is built on the server from reference data. Clients can't create duplicate threads or spoof their titles. A week's thread belongs to the year its cycle began, and a double portion shares its first parsha's thread. The app names each weekly thread in the reader's language and spelling ("פרשת בראשית תשפ״ז"); the server's title stays the one searched and moderated. There are general forums for questions, the haftarah, accessibility, and announcements (moderator-only).
+
+**Weekly threads are not pinned.** The "This week" card on the Community screen opens the current one. Pinned, a year of past weeks would crowd every other discussion off the first page of the Parsha forum. Moderators can still pin any thread by hand.
+
+**Long lists come a page at a time.** A forum lists its pinned threads, then 30 others at a time, newest activity first. A thread opens on its latest 100 posts, so the newest reply is never cut off, and earlier posts are a tap away. Each post comes with the post it answers, so a reply quotes it even when it is on a page not loaded. Pages follow on from the last row shown (keyset paging), at the exact time the server gave, with ties broken by id, so none repeats or skips a row. A thread's post count leaves out deleted posts. While earlier posts are not loaded, the thread shows that count and numbers its posts within it; once all are, it counts those shown, since the server's count includes posts the reader can't see, such as a blocked member's.
 
 **Sign-in is a six-digit email code.** It needs no password and no deep links, which matters on Windows and in desktop browsers. The code arrives through Supabase's magic-link template, edited to show `{{ .Token }}`.
 
 **Safety follows Apple guideline 1.2 and Google Play's user-generated-content (UGC) policy:**
 - guidelines to accept before the first post
-- reporting with reasons
+- reporting with a reason the reporter chooses, once per post
 - blocking, and a list of blocked users
 - auto-hide after 3 reports
 - a moderation queue with logged actions
@@ -152,11 +157,13 @@ It ends by opening the reader on today's aliyah. Everything else is a setting wi
 
 See [ACCESSIBILITY.md](ACCESSIBILITY.md). The key decisions:
 
-- **Verse labels for screen readers.** Each verse is exposed as one node with a curated label: "Verse 9." followed by the Hebrew with cantillation removed and tagged `he`. Screen readers read raw cantillation marks badly or skip the words. Users can switch to letters only, or to every mark for braille displays. The Divine Name is spoken as "Adonai" or "Hashem", as the user chooses.
+- **Verse labels for screen readers.** Each verse is exposed as one node with a curated label: "Verse 9." (or "Targum, verse 9.") followed by the Hebrew with cantillation removed and tagged `he`. Screen readers read raw cantillation marks badly or skip the words. Users can switch to letters only, or to every mark for braille displays. The Divine Name is spoken as "Adonai" or "Hashem", as the user chooses, in the Torah, Onkelos' יְיָ and Rashi's ה'.
+- **Language tagging that each platform can use.** TalkBack and VoiceOver switch voice partway through a label, so there only the Hebrew span is tagged and "Verse 9." stays in the interface language. The web engine reads only a node's own language (its `lang` attribute), so on the web the whole label is in Hebrew ("פסוק 9.") and the node is tagged. Rashi's comments are tagged the same way, and the English translation is tagged `en`. Flutter's Windows bridge passes no language at all, so Narrator and NVDA read with the voice they are set to; there the label is as on Android and iOS, so that "Verse 9." is read in the interface language.
+- **The extraordinary points stay on the page.** The dots written over some words in the scroll are part of the text, not cantillation, so hiding cantillation keeps them. Speech leaves them out.
 - **Reading size multiplies the system text size**, up to 5× for scripture only. The interface follows the system setting alone, so layouts stay usable.
 - **Five display themes:** light, dark, sepia, and high-contrast light and dark. They can follow the system or be set manually. Colour is never the only signal: statuses also have icons and text.
 - **Line height of at least 1.6, split evenly above and below.** Lower vowels and cantillation marks must never be clipped. Typography details: a non-breaking space before a paseq, and a word joiner after a maqaf.
-- **Desktop keyboard shortcuts** for every reader action, with a visible focus ring everywhere.
+- **Keyboard shortcuts** for every reader action, with a visible focus ring everywhere: Ctrl chords in the app, and on the web single keys that can be turned off, because the browser keeps the chords. The text scrolls by keyboard, and the focus is never lost when a page changes in place.
 
 ## 9. Typography
 

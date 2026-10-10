@@ -254,6 +254,12 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get actionDelete;
 
+  /// No description provided for @actionClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get actionClear;
+
   /// No description provided for @actionReport.
   ///
   /// In en, this message translates to:
@@ -284,6 +290,24 @@ abstract class AppLocalizations {
   /// **'More options'**
   String get actionMore;
 
+  /// No description provided for @moreOptionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'More options for {name}'**
+  String moreOptionsFor(String name);
+
+  /// No description provided for @actionRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get actionRefresh;
+
+  /// No description provided for @refreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get refreshed;
+
   /// No description provided for @loading.
   ///
   /// In en, this message translates to:
@@ -295,6 +319,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong. Please try again.'**
   String get errorGeneric;
+
+  /// No description provided for @notFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Page not found'**
+  String get notFoundTitle;
+
+  /// No description provided for @notFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This link leads nowhere in the app.'**
+  String get notFoundBody;
+
+  /// No description provided for @goToToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Today'**
+  String get goToToday;
 
   /// No description provided for @aliyah1.
   ///
@@ -386,11 +428,11 @@ abstract class AppLocalizations {
   /// **'aliyot'**
   String get aliyotWord;
 
-  /// A count against its total, e.g. readings done out of the seven aliyot.
+  /// No description provided for @countOfTotal.
   ///
   /// In en, this message translates to:
-  /// **'{done} of {total}'**
-  String countOfTotal(int done, int total);
+  /// **'{count} of {total}'**
+  String countOfTotal(int count, int total);
 
   /// No description provided for @passShortMikra.
   ///
@@ -950,6 +992,12 @@ abstract class AppLocalizations {
   /// **'Verse {number}'**
   String verseLabel(String number);
 
+  /// Spoken by screen readers before the Aramaic of a verse of Targum Onkelos.
+  ///
+  /// In en, this message translates to:
+  /// **'Targum, verse {number}'**
+  String targumVerseLabel(String number);
+
   /// No description provided for @chapterLabel.
   ///
   /// In en, this message translates to:
@@ -959,7 +1007,7 @@ abstract class AppLocalizations {
   /// No description provided for @noTargumNote.
   ///
   /// In en, this message translates to:
-  /// **'Many read this verse a third time in Hebrew in place of the Targum (Shulchan Aruch OC 285:2).'**
+  /// **'Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berakhot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).'**
   String get noTargumNote;
 
   /// No description provided for @noRashiNote.
@@ -967,6 +1015,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rashi does not comment on this verse. Some read it a third time in Hebrew (Mishnah Berurah 285:5).'**
   String get noRashiNote;
+
+  /// No description provided for @noRashiComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Rashi does not comment on this verse.'**
+  String get noRashiComment;
 
   /// No description provided for @ketivQereLabel.
   ///
@@ -1010,11 +1064,29 @@ abstract class AppLocalizations {
   /// **'Yasher koach! Your first aliyah is done — {verses}, twice, with Targum.'**
   String firstAliyahDone(String verses);
 
-  /// No description provided for @nextAliyah.
+  /// No description provided for @continueWithAliyah.
   ///
   /// In en, this message translates to:
-  /// **'Next aliyah'**
-  String get nextAliyah;
+  /// **'Continue with {aliyah}'**
+  String continueWithAliyah(String aliyah);
+
+  /// Spoken after an aliyah's name on its chip in the reader, e.g. "Rishon, read".
+  ///
+  /// In en, this message translates to:
+  /// **'read'**
+  String get aliyahStatusRead;
+
+  /// Spoken after an aliyah's name on its chip in the reader: some of its readings are done.
+  ///
+  /// In en, this message translates to:
+  /// **'in progress'**
+  String get aliyahStatusPartial;
+
+  /// Spoken after an aliyah's name on its chip in the reader: none of its readings are done.
+  ///
+  /// In en, this message translates to:
+  /// **'not started'**
+  String get aliyahStatusUnread;
 
   /// No description provided for @backToWeek.
   ///
@@ -1195,6 +1267,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show shortcuts'**
   String get shortcutHelp;
+
+  /// No description provided for @shortcutScroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll the text'**
+  String get shortcutScroll;
+
+  /// No description provided for @shortcutPageDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Down a page, then the next step'**
+  String get shortcutPageDown;
+
+  /// No description provided for @shortcutPageUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Up a page, then the previous step'**
+  String get shortcutPageUp;
+
+  /// No description provided for @shortcutFocusVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Full text in focus mode: previous or next verse'**
+  String get shortcutFocusVerse;
+
+  /// No description provided for @keyUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Up arrow'**
+  String get keyUp;
+
+  /// No description provided for @keyDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Down arrow'**
+  String get keyDown;
+
+  /// No description provided for @keySpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Space'**
+  String get keySpace;
 
   /// No description provided for @progressTitle.
   ///
@@ -1715,7 +1829,7 @@ abstract class AppLocalizations {
   /// No description provided for @thirdReadingDesc.
   ///
   /// In en, this message translates to:
-  /// **'Where there is no Targum or Rashi, suggest reading the Hebrew a third time'**
+  /// **'Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent'**
   String get thirdReadingDesc;
 
   /// No description provided for @haftarahEnabled.
@@ -1910,18 +2024,6 @@ abstract class AppLocalizations {
   /// **'{percent}%'**
   String readingSizeValue(int percent);
 
-  /// Tooltip and spoken name of the minus button beside a settings slider. title is the slider's name, such as 'Reading size'.
-  ///
-  /// In en, this message translates to:
-  /// **'{title}: decrease'**
-  String sliderDecrease(String title);
-
-  /// Tooltip and spoken name of the plus button beside a settings slider. title is the slider's name, such as 'Reading size'.
-  ///
-  /// In en, this message translates to:
-  /// **'{title}: increase'**
-  String sliderIncrease(String title);
-
   /// No description provided for @lineSpacing.
   ///
   /// In en, this message translates to:
@@ -1939,6 +2041,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Letter spacing'**
   String get letterSpacing;
+
+  /// Tooltip and spoken name of the minus button beside a settings slider. name is the slider's name, such as 'Reading size'.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease {name}'**
+  String decreaseSetting(String name);
+
+  /// Tooltip and spoken name of the plus button beside a settings slider. name is the slider's name, such as 'Reading size'.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase {name}'**
+  String increaseSetting(String name);
 
   /// No description provided for @showNikud.
   ///
@@ -2090,6 +2204,18 @@ abstract class AppLocalizations {
   /// **'Haptic feedback'**
   String get haptics;
 
+  /// No description provided for @singleKeyShortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Single-key shortcuts'**
+  String get singleKeyShortcuts;
+
+  /// No description provided for @singleKeyShortcutsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'While reading, T, N, L, + and − work on their own, without Ctrl. Turn this off if you use speech input or screen-reader quick keys.'**
+  String get singleKeyShortcutsDesc;
+
   /// No description provided for @screenReaderText.
   ///
   /// In en, this message translates to:
@@ -2204,11 +2330,11 @@ abstract class AppLocalizations {
   /// **'A gentle nudge at your chosen time'**
   String get dailyReminderDesc;
 
-  /// No description provided for @reminderTime.
+  /// No description provided for @dailyReminderTime.
   ///
   /// In en, this message translates to:
-  /// **'Time'**
-  String get reminderTime;
+  /// **'Daily reminder time'**
+  String get dailyReminderTime;
 
   /// No description provided for @fridayReminder.
   ///
@@ -2221,6 +2347,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Friday morning, only if the parsha isn\'t finished'**
   String get fridayReminderDesc;
+
+  /// No description provided for @fridayReminderTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Erev Shabbat reminder time'**
+  String get fridayReminderTime;
 
   /// No description provided for @checkInReminder.
   ///
@@ -2294,6 +2426,12 @@ abstract class AppLocalizations {
   /// **'Notifications are turned off for this app in your device settings.'**
   String get notificationsDenied;
 
+  /// No description provided for @notificationsDeniedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off'**
+  String get notificationsDeniedTitle;
+
   /// No description provided for @primingTitle.
   ///
   /// In en, this message translates to:
@@ -2330,6 +2468,24 @@ abstract class AppLocalizations {
   /// **'After Shabbat'**
   String get notifChannelCheckIn;
 
+  /// Android notification channel description, shown in the system's notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day\'s reading at the time you choose, never on Shabbat or Yom Tov'**
+  String get notifChannelDailyDesc;
+
+  /// Android notification channel description, shown in the system's notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'The morning before Shabbat or Yom Tov, only if the parsha isn\'t finished'**
+  String get notifChannelErevShabbatDesc;
+
+  /// Android notification channel description, shown in the system's notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'After Shabbat, a reminder to log what you read; also the note when reminders stop'**
+  String get notifChannelCheckInDesc;
+
   /// No description provided for @notifDailyTitle.
   ///
   /// In en, this message translates to:
@@ -2365,6 +2521,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Did you read on Shabbat? Tap to log it.'**
   String get notifCheckInBody;
+
+  /// The last notification, sent when the app has not been opened for two weeks; none follow until it is opened again.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders paused'**
+  String get notifPausedTitle;
+
+  /// No description provided for @notifPausedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll pause reminders for now. Your place in Parshat {parsha} is saved — come back anytime.'**
+  String notifPausedBody(String parsha);
 
   /// No description provided for @showStreaks.
   ///
@@ -2639,7 +2807,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideSpecialBody.
   ///
   /// In en, this message translates to:
-  /// **'Some verses have no separate Targum, such as \"Atarot v\'Divon\" (Numbers 32:3); many read them a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.'**
+  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.
@@ -2695,6 +2863,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Forums'**
   String get forumsHeading;
+
+  /// No description provided for @forumNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This forum couldn\'t be found. It may have moved or closed.'**
+  String get forumNotFound;
+
+  /// No description provided for @allForums.
+  ///
+  /// In en, this message translates to:
+  /// **'All forums'**
+  String get allForums;
 
   /// No description provided for @thisWeeksThread.
   ///
@@ -2924,6 +3104,12 @@ abstract class AppLocalizations {
   /// **'Say thanks to {name}'**
   String todahSemantics(String name);
 
+  /// No description provided for @todahRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove your thanks to {name}'**
+  String todahRemove(String name);
+
   /// No description provided for @reportTitle.
   ///
   /// In en, this message translates to:
@@ -3146,11 +3332,35 @@ abstract class AppLocalizations {
   /// **'No discussions yet. Start the first one!'**
   String get noThreads;
 
+  /// An empty weekly thread. {name} is the parsha; a no-break space keeps it with "Parshat".
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet — share a thought on Parshat {name}.'**
+  String noPostsYet(String name);
+
+  /// No description provided for @noReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'No replies yet.'**
+  String get noReplies;
+
   /// No description provided for @loadMore.
   ///
   /// In en, this message translates to:
   /// **'Load more'**
   String get loadMore;
+
+  /// No description provided for @loadedMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Loaded 1 more discussion} other{Loaded {count} more discussions}}'**
+  String loadedMore(int count);
+
+  /// Above the first post shown in a long thread, which opens on its latest posts: loads the posts before it.
+  ///
+  /// In en, this message translates to:
+  /// **'Show earlier posts'**
+  String get showEarlierPosts;
 
   /// No description provided for @postsCount.
   ///
@@ -3181,6 +3391,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name}, {time}'**
   String postedBy(String name, String time);
+
+  /// No description provided for @postNofM.
+  ///
+  /// In en, this message translates to:
+  /// **'Post {n} of {total}'**
+  String postNofM(int n, int total);
 
   /// No description provided for @anonymousMember.
   ///
@@ -3247,6 +3463,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That name is taken.'**
   String get errNameTaken;
+
+  /// No description provided for @errAlreadyReported.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve already reported this post.'**
+  String get errAlreadyReported;
 
   /// No description provided for @errInvalidName.
   ///

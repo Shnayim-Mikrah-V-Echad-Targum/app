@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/fallbacks.dart';
 
 /// A short, sourced explanation of the practice and how the app supports it.
 class GuideScreen extends StatelessWidget {
@@ -20,7 +21,7 @@ class GuideScreen extends StatelessWidget {
       (l.guideSourcesTitle, l.guideSourcesBody),
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(l.guideTitle)),
+      appBar: AppBar(leading: homeLeading(context), title: Text(l.guideTitle)),
       body: PageBody(
         children: [
           for (final (title, body) in sections) ...[

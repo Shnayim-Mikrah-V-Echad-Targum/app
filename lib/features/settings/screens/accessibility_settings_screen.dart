@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/text/hebrew_text.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
+import '../../about/about_screen.dart';
+import '../../community/data/backend.dart';
+import '../../reader/reader_screen.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -64,6 +68,22 @@ AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPrefe
 class AccessibilitySettingsScreen extends ConsumerWidget {
   const AccessibilitySettingsScreen({super.key});
 
+  /// By email where the build names an address for it. Otherwise (or with
+  /// no mail app to send it) in the feedback forum, where there is a
+  /// community server for it to reach, and else, as from About, on the
+  /// issue tracker: the on-device demo forum reaches no one.
+  static Future<void> _sendFeedback(BuildContext context, WidgetRef ref) async {
+    final email = supportEmailUri(context.l10n);
+    final forum = !ref.read(forumRepositoryProvider).isDemo;
+    if (email != null && await launchUrl(email).catchError((_) => false)) return;
+    if (!context.mounted) return;
+    if (forum) {
+      await context.push('/community/forum/feedback');
+    } else {
+      await launchUrl(issueTrackerUri).catchError((_) => false);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -112,11 +132,20 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           value: s.haptics,
           onChanged: (v) => update((s) => s.copyWith(haptics: v)),
         ),
+        // Only where the reader takes single keys: elsewhere its shortcuts
+        // all need Ctrl or ⌘ (WCAG 2.1.4).
+        if (ReaderScreen.singleKeyPlatform)
+          SwitchListTile(
+            title: Text(l.singleKeyShortcuts),
+            subtitle: Text(l.singleKeyShortcutsDesc),
+            value: s.singleKeyShortcuts,
+            onChanged: (v) => update((s) => s.copyWith(singleKeyShortcuts: v)),
+          ),
         ListTile(
           leading: const Icon(Icons.text_fields),
           title: Text(l.settingsDisplay),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/settings/display'),
+          onTap: () => context.push('/settings/display'),
         ),
         ChoiceGroup<ScreenReaderText>(
           title: l.screenReaderText,
@@ -148,13 +177,13 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           leading: const Icon(Icons.accessibility),
           title: Text(l.accessibilityStatement),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/settings/about/legal/accessibility'),
+          onTap: () => context.push('/legal/accessibility'),
         ),
         ListTile(
           leading: const Icon(Icons.feedback_outlined),
           title: Text(l.sendFeedback),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/settings/about'),
+          onTap: () => _sendFeedback(context, ref),
         ),
       ],
     );

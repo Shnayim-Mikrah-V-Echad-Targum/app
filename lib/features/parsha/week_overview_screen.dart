@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../app/routes.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
+import '../community/ui/community_ui.dart';
 import '../progress/domain/progress_models.dart';
 import 'week_context.dart';
 
@@ -22,17 +25,19 @@ class WeekOverviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ctx = ref.watch(weekContextProvider(weekId));
-    if (ctx == null) {
-      return Scaffold(appBar: AppBar(), body: Center(child: Text(context.l10n.errorGeneric)));
-    }
-    return WeekOverview(ctx: ctx);
+    // A link to a week that doesn't exist.
+    if (ctx == null) return const NotFoundPage();
+    return WeekOverview(ctx: ctx, leading: homeLeading(context));
   }
 }
 
 class WeekOverview extends ConsumerWidget {
-  const WeekOverview({super.key, required this.ctx, this.actions = const []});
+  const WeekOverview({super.key, required this.ctx, this.leading, this.actions = const []});
 
   final WeekContext ctx;
+
+  /// The app bar's leading button, if not the usual one.
+  final Widget? leading;
   final List<Widget> actions;
 
   @override
@@ -58,31 +63,32 @@ class WeekOverview extends ConsumerWidget {
       final ok = await showAppDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          content: Text(l.clearWeekConfirm(name)),
+          title: Text(l.clearWeekConfirm(name)),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.clearWeek)),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.actionClear)),
           ],
         ),
       );
-      if (ok == true) {
+      if (ok == true && context.mounted) {
         final before = ref.read(progressProvider).week(ctx.id);
         ref.read(progressProvider.notifier).clearWeek(ctx.id);
-        if (context.mounted) {
-          showStatus(
-            context,
-            l.markedUnread,
-            action: SnackBarAction(
-              label: l.actionUndo,
-              onPressed: () => ref.read(progressProvider.notifier).restoreWeek(ctx.id, before),
-            ),
-          );
-        }
+        // The snackbar outlives this page, and its ref with it.
+        final container = ProviderScope.containerOf(context, listen: false);
+        showStatus(
+          context,
+          l.markedUnread,
+          action: SnackBarAction(
+            label: l.actionUndo,
+            onPressed: () => container.read(progressProvider.notifier).restoreWeek(ctx.id, before),
+          ),
+        );
       }
     }
 
     return Scaffold(
       appBar: AppBar(
+        leading: leading,
         title: Text(l.parshaLabel(name)),
         actions: [
           ...actions,
@@ -92,7 +98,7 @@ class WeekOverview extends ConsumerWidget {
             onSelected: (v) => switch (v) {
               'all' => markWeek(),
               'clear' => clearWeek(),
-              'full' => context.push('/read/${ctx.id}/0?mode=full'),
+              'full' => context.push('/read/${ctx.id}/0?mode=full&from=week'),
               _ => null,
             },
             itemBuilder: (context) => [
@@ -126,7 +132,8 @@ class WeekOverview extends ConsumerWidget {
             const Gap(8),
             ListTile(
               leading: Icon(ctx.progress.haftarah != null ? Icons.check_circle : Icons.auto_stories_outlined,
-                  color: ctx.progress.haftarah != null ? theme.colorScheme.primary : null),
+                  color: ctx.progress.haftarah != null ? theme.colorScheme.primary : null,
+                  semanticLabel: ctx.progress.haftarah != null ? l.stateDone : null),
               title: Text(l.haftarahTitle),
               subtitle: Text([
                 ctx.haftarah.parts
@@ -135,7 +142,7 @@ class WeekOverview extends ConsumerWidget {
                 if (ctx.haftarah.specialKey != null) l.specialHaftarah(names.specialHaftarah(ctx.haftarah.specialKey!)),
               ].join('\n')),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.push('/haftarah/${ctx.id}'),
+              onTap: () => context.push(haftarahPath(context, ctx.id)),
             ),
           ],
           const Gap(16),
@@ -146,10 +153,14 @@ class WeekOverview extends ConsumerWidget {
               onPressed: markWeek,
             ),
           const Gap(8),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.forum_outlined),
-            label: Text(l.discussThisWeek),
-            onPressed: () => context.push('/community/new?parsha=${Uri.encodeComponent(portion.key)}'),
+          WeeklyThreadOpener(
+            portion: portion,
+            hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
+            builder: (context, progress, open) => OutlinedButton.icon(
+              icon: progress ?? const Icon(Icons.forum_outlined),
+              label: Text(l.discussThisWeek),
+              onPressed: open,
+            ),
           ),
         ],
       ),
@@ -231,9 +242,9 @@ class _AliyahTile extends ConsumerWidget {
             ],
           ),
           isThreeLine: true,
-          onTap: () => context.push('/read/${ctx.id}/$aliyah'),
+          onTap: () => context.push('/read/${ctx.id}/$aliyah?from=week'),
           trailing: PopupMenuButton<String>(
-            tooltip: l.actionMore,
+            tooltip: l.moreOptionsFor(names.aliyah(aliyah)),
             popUpAnimationStyle: Motion.of(context).style,
             onSelected: (v) {
               if (v == 'read') markRead();
@@ -241,7 +252,7 @@ class _AliyahTile extends ConsumerWidget {
                 ref.read(progressProvider.notifier).markAliyah(ctx.id, aliyah, null);
                 showStatus(context, l.markedUnread);
               }
-              if (v == 'full') context.push('/read/${ctx.id}/$aliyah?mode=full');
+              if (v == 'full') context.push('/read/${ctx.id}/$aliyah?mode=full&from=week');
             },
             itemBuilder: (context) => [
               PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),

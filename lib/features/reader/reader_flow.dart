@@ -19,7 +19,9 @@ enum StepKind {
   /// Rashi (in place of, or in addition to, the Targum).
   rashi,
 
-  /// The Hebrew a third time, where there is no Targum or Rashi.
+  /// The Hebrew a third time, as a step of its own, for a single verse: one
+  /// listed in [kThirdReadingVerses], or one Rashi is silent on when Rashi is
+  /// the second reading.
   thirdHebrew,
 
   /// The final verse once more, to end with Mikra.
@@ -43,8 +45,8 @@ class Chunk {
   String toString() => 'Chunk($start-$end)';
 }
 
-/// Verses for which a third Hebrew reading is customary in place of (or in
-/// addition to) the Targum (SA OC 285:2).
+/// Verses many also read a third time in Hebrew after the Targum, whose
+/// Onkelos is mostly place names (SA OC 285:1; Rashi, Berakhot 8b).
 const kThirdReadingVerses = {'Numbers 32:3'};
 
 /// The guided reading sequence for one aliyah.
@@ -105,8 +107,38 @@ class ReaderFlow {
     }
   }
 
-  bool _needsThirdHebrew(Chunk c) =>
-      thirdReadingPrompts && c.length == 1 && kThirdReadingVerses.contains('$book ${verses[c.start]}');
+  bool get _readsTargum => second == SecondReading.onkelos || second == SecondReading.onkelosAndRashi;
+
+  /// The verses of [c] listed in [kThirdReadingVerses].
+  List<VerseRef> thirdReadingRefs(Chunk c) => [
+        for (final r in verses.sublist(c.start, c.end))
+          if (kThirdReadingVerses.contains('$book $r')) r,
+      ];
+
+  /// Whether [r] is read a third time in Hebrew after its Targum. A verse
+  /// read on its own gets a [StepKind.thirdHebrew] step; in a longer chunk the
+  /// Targum step shows it again inline, after its Onkelos.
+  bool needsThirdHebrewAfterTargum(VerseRef r) =>
+      _readsTargum && thirdReadingPrompts && kThirdReadingVerses.contains('$book $r');
+
+  bool _needsThirdHebrewStep(Chunk c) => c.length == 1 && needsThirdHebrewAfterTargum(verses[c.start]);
+
+  /// Whether the Targum step of chunk [chunkIndex] shows the Hebrew of [r]
+  /// again after its Onkelos, since the chunk has no step of its own for it.
+  bool thirdHebrewInTargum(int chunkIndex, VerseRef r) =>
+      chunks[chunkIndex].length > 1 && needsThirdHebrewAfterTargum(r);
+
+  /// The verses shown at [kind] of chunk [chunkIndex].
+  List<VerseRef> stepVerses(int chunkIndex, StepKind kind) {
+    final c = chunks[chunkIndex];
+    return switch (kind) {
+      StepKind.repeatLast => [verses.last],
+      // After the Targum, only the verses listed for a third reading. In
+      // Rashi's place, the one verse of the chunk that Rashi is silent on.
+      StepKind.thirdHebrew when _readsTargum => thirdReadingRefs(c),
+      _ => verses.sublist(c.start, c.end),
+    };
+  }
 
   /// The steps for a chunk, in order.
   List<StepKind> stepsFor(int chunkIndex) {
@@ -116,14 +148,14 @@ class ReaderFlow {
     switch (second) {
       case SecondReading.onkelos:
         steps.add(StepKind.targum);
-        if (_needsThirdHebrew(c)) steps.add(StepKind.thirdHebrew);
+        if (_needsThirdHebrewStep(c)) steps.add(StepKind.thirdHebrew);
       case SecondReading.rashi:
       case SecondReading.rashiEnglish:
-        steps.add(noRashi && c.length == 1 ? StepKind.thirdHebrew : StepKind.rashi);
+        steps.add(noRashi && c.length == 1 && thirdReadingPrompts ? StepKind.thirdHebrew : StepKind.rashi);
       case SecondReading.onkelosAndRashi:
         steps.add(StepKind.targum);
         if (!noRashi) steps.add(StepKind.rashi);
-        if (_needsThirdHebrew(c)) steps.add(StepKind.thirdHebrew);
+        if (_needsThirdHebrewStep(c)) steps.add(StepKind.thirdHebrew);
     }
     if (repeatLastVerse && chunkIndex == chunks.length - 1) steps.add(StepKind.repeatLast);
     return steps;

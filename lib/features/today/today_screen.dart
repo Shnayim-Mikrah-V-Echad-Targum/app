@@ -9,9 +9,11 @@ import '../../core/calendar/parsha_schedule.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
+import '../../ui/widgets/app_icon.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
+import '../community/ui/community_ui.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/reading_plan.dart';
@@ -49,7 +51,7 @@ class TodayScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: l.guideTitle,
-            icon: const Icon(Icons.help_outline),
+            icon: const AppIcon(Icons.help_outline),
             onPressed: () => context.push('/guide'),
           ),
         ],
@@ -102,15 +104,19 @@ class TodayScreen extends ConsumerWidget {
             _HaftarahTile(ctx: ctx),
           ],
           const Gap(12),
-          InfoCard(
-            onTap: () => context.go('/community'),
-            child: Row(
-              children: [
-                const Icon(Icons.forum_outlined),
-                const Gap(12),
-                Expanded(child: Text(l.discussThisWeek)),
-                const Icon(Icons.chevron_right),
-              ],
+          WeeklyThreadOpener(
+            portion: ctx.portion,
+            hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
+            builder: (context, progress, open) => InfoCard(
+              onTap: open,
+              child: Row(
+                children: [
+                  SizedBox.square(dimension: 24, child: Center(child: progress ?? const Icon(Icons.forum_outlined))),
+                  const Gap(12),
+                  Expanded(child: Text(l.discussThisWeek)),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
             ),
           ),
         ],
@@ -146,7 +152,7 @@ class _DivergenceBanner extends ConsumerWidget {
       action: previous == null
           ? null
           : TextButton(
-              onPressed: () => context.push('/week/${weekIdFor(previous.portion, previous.occasion)}'),
+              onPressed: () => context.push('/today/week/${weekIdFor(previous.portion, previous.occasion)}'),
               child: Text(l.readingDivergenceOpen(name(previous.portion))),
             ),
     );
@@ -178,26 +184,31 @@ class _ParshaCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Semantics(
-                header: true,
-                headingLevel: 1,
-                child: Text(
-                  l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
-                  style: theme.textTheme.headlineSmall,
+          // Read through before the rings below it.
+          Semantics(
+            container: true,
+            explicitChildNodes: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  header: true,
+                  headingLevel: 1,
+                  child: Text(
+                    l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
+                    style: theme.textTheme.headlineSmall,
+                  ),
                 ),
-              ),
-              Text(
-                names.portionAlt(ctx.portion, ashkenazi: settings.ashkenaziNames),
-                style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-              const Gap(8),
-              Text(readOn, style: theme.textTheme.bodyMedium),
-              if (daysLeft >= 0 && !ctx.progress.isComplete)
-                Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
-            ],
+                Text(
+                  names.portionAlt(ctx.portion, ashkenazi: settings.ashkenaziNames),
+                  style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                const Gap(8),
+                Text(readOn, style: theme.textTheme.bodyMedium),
+                if (daysLeft >= 0 && !ctx.progress.isComplete)
+                  Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
+              ],
+            ),
           ),
           const Gap(20),
           RingsWithLegend(
@@ -222,7 +233,7 @@ class _ParshaCard extends ConsumerWidget {
             ),
           const Gap(8),
           OutlinedButton(
-            onPressed: () => context.push('/week/${ctx.id}'),
+            onPressed: () => context.push('/today/week/${ctx.id}'),
             child: Text(l.aliyotProgress(ctx.progress.completedAliyot, kAliyot)),
           ),
         ],
@@ -370,7 +381,7 @@ class _HaftarahTile extends ConsumerWidget {
         .join(' · ');
     final done = ctx.progress.haftarah != null;
     return InfoCard(
-      onTap: () => context.push('/haftarah/${ctx.id}'),
+      onTap: () => context.push('/today/haftarah/${ctx.id}'),
       child: Row(
         children: [
           Icon(done ? Icons.check_circle : Icons.auto_stories_outlined,
@@ -439,7 +450,7 @@ class _OpenPreviousCard extends ConsumerWidget {
                   child: Text(l.checkInFinished),
                 ),
                 OutlinedButton(
-                  onPressed: () => context.push('/week/${previous.id}'),
+                  onPressed: () => context.push('/today/week/${previous.id}'),
                   child: Text(l.checkInPick),
                 ),
               ],
@@ -454,7 +465,7 @@ class _OpenPreviousCard extends ConsumerWidget {
     final onlyHaftarah = previous.progress.isComplete;
     return InfoCard(
       color: Theme.of(context).colorScheme.secondaryContainer,
-      onTap: () => context.push(onlyHaftarah ? '/haftarah/${previous.id}' : '/week/${previous.id}'),
+      onTap: () => context.push(onlyHaftarah ? '/today/haftarah/${previous.id}' : '/today/week/${previous.id}'),
       child: Row(
         children: [
           const Icon(Icons.schedule),

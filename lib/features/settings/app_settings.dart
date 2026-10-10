@@ -125,6 +125,7 @@ class AppSettings {
     this.keepScreenOn = true,
     this.reduceMotion = false,
     this.haptics = true,
+    this.singleKeyShortcuts = true,
     this.screenReaderText = ScreenReaderText.simplified,
     this.divineName = DivineNameSpeech.adonai,
     this.speechRate = 0.45,
@@ -172,8 +173,9 @@ class AppSettings {
   /// Repeat the final verse in Hebrew after its Targum, to end with Mikra.
   final bool repeatLastVerse;
 
-  /// Prompt a third Hebrew reading where there is no Targum/Rashi
-  /// (e.g. Numbers 32:3; verses Rashi does not comment on, MB 285:5).
+  /// Suggest a third Hebrew reading where Onkelos is mostly names (Numbers
+  /// 32:3) or, when Rashi replaces the Targum, where Rashi is silent (MB
+  /// 285:5).
   final bool thirdReadingPrompts;
 
   /// Show the JPS 1917 English translation as a study aid.
@@ -208,6 +210,12 @@ class AppSettings {
   // Accessibility
   final bool reduceMotion;
   final bool haptics;
+
+  /// On the web, where the browser keeps the reader's Ctrl chords for
+  /// itself, the reader takes single keys instead (T, N, L, + and −). They
+  /// can be turned off for speech input and screen-reader quick keys
+  /// (WCAG 2.1.4).
+  final bool singleKeyShortcuts;
   final ScreenReaderText screenReaderText;
   final DivineNameSpeech divineName;
   final double speechRate;
@@ -340,6 +348,7 @@ class AppSettings {
     bool? keepScreenOn,
     bool? reduceMotion,
     bool? haptics,
+    bool? singleKeyShortcuts,
     ScreenReaderText? screenReaderText,
     DivineNameSpeech? divineName,
     double? speechRate,
@@ -393,6 +402,7 @@ class AppSettings {
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
         reduceMotion: reduceMotion ?? this.reduceMotion,
         haptics: haptics ?? this.haptics,
+        singleKeyShortcuts: singleKeyShortcuts ?? this.singleKeyShortcuts,
         screenReaderText: screenReaderText ?? this.screenReaderText,
         divineName: divineName ?? this.divineName,
         speechRate: speechRate ?? this.speechRate,
@@ -452,6 +462,7 @@ class AppSettings {
         'keepScreenOn': keepScreenOn,
         'reduceMotion': reduceMotion,
         'haptics': haptics,
+        'singleKeyShortcuts': singleKeyShortcuts,
         'screenReaderText': screenReaderText.name,
         'divineName': divineName.name,
         'speechRate': speechRate,
@@ -523,6 +534,7 @@ class AppSettings {
       keepScreenOn: b('keepScreenOn', d.keepScreenOn),
       reduceMotion: b('reduceMotion', d.reduceMotion),
       haptics: b('haptics', d.haptics),
+      singleKeyShortcuts: b('singleKeyShortcuts', d.singleKeyShortcuts),
       screenReaderText: e(ScreenReaderText.values, j['screenReaderText'], d.screenReaderText),
       divineName: e(DivineNameSpeech.values, j['divineName'], d.divineName),
       speechRate: n('speechRate', d.speechRate, 0.1, 1.0),

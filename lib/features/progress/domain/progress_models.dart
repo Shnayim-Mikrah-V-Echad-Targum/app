@@ -429,6 +429,26 @@ class WeekProgress {
   /// Whether any reading has been completed or begun.
   bool get isStarted => completedUnits > 0 || positions.values.any((p) => p.any((n) => n > 0));
 
+  /// The verses read so far in each reading of [aliyah], which has
+  /// [verseCount] verses. A count that claims a reading is complete when it
+  /// isn't marked done (say, one that a sync restored after "Mark as not
+  /// read") is stale, and reads as 0: that reading starts over.
+  List<int> savedPositions(int aliyah, int verseCount) {
+    final saved = positions[aliyah] ?? const <int>[];
+    return [
+      for (final pass in ReadingPass.values)
+        switch (pass.index < saved.length ? saved[pass.index] : 0) {
+          final n when n >= verseCount && !isUnitDone(aliyah, pass) => 0,
+          final n => n,
+        },
+    ];
+  }
+
+  /// Whether any reading of [aliyah], which has [verseCount] verses, is done
+  /// or under way, by the same rule as [savedPositions].
+  bool isAliyahStarted(int aliyah, int verseCount) =>
+      units[aliyah].any((d) => d != null) || savedPositions(aliyah, verseCount).any((n) => n > 0);
+
   /// Whether this week holds nothing at all: no reading, no saved place, and
   /// no record of one having been removed.
   bool get isBlank =>

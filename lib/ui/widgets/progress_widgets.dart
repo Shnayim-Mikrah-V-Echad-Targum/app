@@ -256,7 +256,8 @@ class _ParshaRingsState extends State<ParshaRings> with SingleTickerProviderStat
         '${e.label}: ${l.countOfTotal(e.done, kAliyot)}',
     ].join('. ');
     return Semantics(
-      // An item of its own, never merged into a card or row around it.
+      // An item of its own, never merged into a card, a row, or a heading or
+      // text beside it.
       container: true,
       label: label,
       image: true,

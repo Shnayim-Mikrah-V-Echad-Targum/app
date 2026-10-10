@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
@@ -19,9 +20,14 @@ import 'routes.dart';
 /// 3.9:1). So, unlike screens_a11y_test.dart, this file never loads them. The
 /// colour pairs themselves are checked in test/ui/palette_contrast_test.dart.
 void main() {
-  Future<void> expectReadableText(WidgetTester tester, String route, {AppSettings settings = a11ySettings}) async {
+  Future<void> expectReadableText(
+    WidgetTester tester,
+    String route, {
+    AppSettings settings = a11ySettings,
+    NotificationService? notifications,
+  }) async {
     final handle = tester.ensureSemantics();
-    await openRoute(tester, route, settings: settings, now: a11yMonday);
+    await openRoute(tester, route, settings: settings, now: a11yMonday, notifications: notifications);
     await expectLater(tester, meetsGuideline(textContrastGuideline));
     handle.dispose();
   }
@@ -29,6 +35,11 @@ void main() {
   for (final route in a11yRoutes) {
     testWidgets('text contrast: $route', (tester) => expectReadableText(tester, route));
   }
+
+  testWidgets('text contrast: reminders, where they can be scheduled, with all of them on', (tester) async {
+    await expectReadableText(tester, '/settings/reminders', settings: a11yRemindersOn, notifications: PhoneNotifications());
+    expect(find.text('Daily reminder time'), findsOneWidget);
+  });
 
   for (final theme in [AppThemeMode.dark, AppThemeMode.sepia, AppThemeMode.highContrastLight, AppThemeMode.highContrastDark]) {
     testWidgets('text contrast in the ${theme.name} theme', (tester) async {

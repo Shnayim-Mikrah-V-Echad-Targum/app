@@ -14,25 +14,77 @@ bool _isNarrow(BuildContext context) => MediaQuery.sizeOf(context).width < kNarr
 /// Constrains page content to a readable width and centers it on wide
 /// screens, so lines never get uncomfortably long (WCAG 1.4.8).
 class PageBody extends StatelessWidget {
-  const PageBody({super.key, required this.children, this.maxWidth = 760, this.padding, this.controller});
+  const PageBody({super.key, required this.children, this.maxWidth = 760, this.padding, this.controller})
+      : header = const [],
+        itemCount = 0,
+        itemBuilder = null;
+
+  /// A page of [header] and then [itemCount] items, each built by
+  /// [itemBuilder] only as it scrolls into view: for lists that may grow
+  /// long, such as a forum's threads or a thread's posts.
+  const PageBody.builder({
+    super.key,
+    required this.itemCount,
+    required IndexedWidgetBuilder this.itemBuilder,
+    this.header = const [],
+    this.maxWidth = 760,
+    this.padding,
+    this.controller,
+  }) : children = const [];
 
   final List<Widget> children;
+  final List<Widget> header;
+  final int itemCount;
+  final IndexedWidgetBuilder? itemBuilder;
   final double maxWidth;
   final EdgeInsetsGeometry? padding;
   final ScrollController? controller;
 
+  static const _defaultPadding = EdgeInsets.fromLTRB(16, 8, 16, 32);
+
   @override
   Widget build(BuildContext context) {
+    final itemBuilder = this.itemBuilder;
+    if (itemBuilder != null) {
+      final p = (padding ?? _defaultPadding).resolve(Directionality.of(context));
+      return ListView.builder(
+        controller: controller,
+        // Scrollable even when it fits, as it is without a controller of its
+        // own: so that it can be pulled to refresh.
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.only(top: p.top, bottom: p.bottom),
+        itemCount: header.length + itemCount,
+        itemBuilder: (context, i) => Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Padding(
+              padding: EdgeInsets.only(left: p.left, right: p.right),
+              // Full width, as in a stretched column.
+              child: SizedBox(
+                width: double.infinity,
+                child: i < header.length ? header[i] : itemBuilder(context, i - header.length),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return ListView(
       controller: controller,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       children: [
         Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Padding(
-              padding: padding ?? const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              padding: padding ?? _defaultPadding,
+              // The page is one item of its list. Its headings, texts and
+              // controls are each a node of their own, never merged into one.
+              child: Semantics(
+                explicitChildNodes: true,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              ),
             ),
           ),
         ),
@@ -86,6 +138,9 @@ class Gap extends StatelessWidget {
 }
 
 /// A card with consistent padding: 20, or 16 on a narrow screen (§6.3).
+/// A card with [onTap] is one node for assistive technology, read out as a
+/// whole; any other keeps its heading, text and controls apart, so that each
+/// can be found and used on its own.
 class InfoCard extends StatelessWidget {
   const InfoCard({super.key, required this.child, this.color, this.padding, this.onTap});
 
@@ -97,7 +152,7 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = Padding(padding: padding ?? EdgeInsets.all(_isNarrow(context) ? 16 : 20), child: child);
-    if (onTap == null) return Card(color: color, child: content);
+    if (onTap == null) return Card(color: color, semanticContainer: false, child: content);
     // The focus ring is drawn just outside the card, so this card mustn't clip
     // it as cards do. The ink stays inside: the ink well clips it to the same
     // corners.
@@ -278,14 +333,20 @@ double sheetPadding(BuildContext context) => _isNarrow(context) ? 16 : 24;
 /// with no slide while motion is reduced. Use it instead of
 /// [showModalBottomSheet]. List tiles in the sheet line up with its
 /// [SheetTitle].
+///
+/// [useRootNavigator] puts the sheet and its scrim over the whole screen,
+/// the navigation bar too, when the page that opens it is shown within a
+/// tab.
 Future<T?> showAppSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool isScrollControlled = false,
+  bool useRootNavigator = false,
 }) =>
     showModalBottomSheet<T>(
       context: context,
       isScrollControlled: isScrollControlled,
+      useRootNavigator: useRootNavigator,
       useSafeArea: true,
       sheetAnimationStyle: Motion.of(context).style,
       builder: (context) {

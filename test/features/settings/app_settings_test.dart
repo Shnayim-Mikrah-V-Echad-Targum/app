@@ -29,10 +29,13 @@ void main() {
       joinDate: LocalDate(2026, 10, 9),
       starterCatchUp: false,
       habitAnchor: 'finish Shacharit',
+      singleKeyShortcuts: false,
     );
     final back = AppSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
     expect(back.starterCatchUp, isFalse);
+    expect(back.singleKeyShortcuts, isFalse);
+    expect(AppSettings.fromJson({}).singleKeyShortcuts, isTrue, reason: 'on unless turned off');
     expect(back.readingSchedule, ReadingSchedule.israel);
     expect(back.oneDayYomTov, isFalse);
   });
