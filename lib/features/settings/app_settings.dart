@@ -164,8 +164,9 @@ class AppSettings {
   /// Repeat the final verse in Hebrew after its Targum, to end with Mikra.
   final bool repeatLastVerse;
 
-  /// Prompt a third Hebrew reading where there is no Targum/Rashi
-  /// (e.g. Numbers 32:3; verses Rashi does not comment on, MB 285:5).
+  /// Suggest a third Hebrew reading where Onkelos is mostly names (Numbers
+  /// 32:3) or, when Rashi replaces the Targum, where Rashi is silent (MB
+  /// 285:5).
   final bool thirdReadingPrompts;
 
   /// Show the JPS 1917 English translation as a study aid.

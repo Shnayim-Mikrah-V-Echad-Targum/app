@@ -16,8 +16,8 @@ Accessibility is a core requirement, not an add-on. See [docs/ACCESSIBILITY.md](
   - aliyah by aliyah
 - Full-text mode with the Torah and Targum interleaved.
 - The reader handles the special cases:
-  - verses with no Targum (Bamidbar 32:3)
-  - verses with no Rashi when Rashi replaces Targum
+  - Bamidbar 32:3, where Onkelos is mostly place names (a third Mikra reading)
+  - verses Rashi is silent on, when Rashi replaces the Targum (a third Mikra reading)
   - repeating the last verse
   - ketiv/qere
   - large and small letters

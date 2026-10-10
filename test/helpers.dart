@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/app.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -11,13 +14,15 @@ import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/services/tts.dart';
 
 ParshaRepository? _repo;
 
 Future<ParshaRepository> loadRepo() async => _repo ??= await ParshaRepository.load();
 
 /// Pumps the whole app with in-memory storage and the demo backend (or
-/// [forums], when given), and notifications disabled (or [notifications]).
+/// [forums], when given), and notifications disabled (or [notifications]),
+/// and any further [overrides].
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   AppSettings settings = const AppSettings(onboardingComplete: true),
@@ -25,6 +30,7 @@ Future<ProviderContainer> pumpApp(
   ProgressState? progress,
   ForumRepository? forums,
   NotificationService? notifications,
+  List<Override> overrides = const [],
 }) async {
   TodayController.autoRollover = false;
   if (now != null) TodayController.now = () => now;
@@ -39,10 +45,39 @@ Future<ProviderContainer> pumpApp(
     parshaRepositoryProvider.overrideWithValue(repo!),
     backendProvider.overrideWithValue(Backend(forums ?? DemoForumRepository())),
     notificationServiceProvider.overrideWithValue(notifications ?? NotificationService.disabled()),
+    ...overrides,
   ]);
   addTearDown(container.dispose);
   await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const ShnayimMikraApp()));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
   return container;
+}
+
+/// Text-to-speech that records what it is asked to say, and says nothing.
+/// Override [ttsProvider] with it.
+class RecordingTts extends TtsService {
+  RecordingTts() : super(engine: _SilentEngine());
+
+  /// Each text asked for, with its language.
+  final spoken = <(String, String)>[];
+
+  @override
+  Future<bool?> hasHebrewVoice() async => true;
+
+  @override
+  Future<void> speak(String text, {required String language, double rate = 0.45}) async => spoken.add((text, language));
+}
+
+class _SilentEngine extends Fake implements FlutterTts {
+  @override
+  void setStartHandler(VoidCallback callback) {}
+  @override
+  void setCompletionHandler(VoidCallback callback) {}
+  @override
+  void setCancelHandler(VoidCallback callback) {}
+  @override
+  void setErrorHandler(ErrorHandler handler) {}
+  @override
+  Future<dynamic> stop() async => 1;
 }

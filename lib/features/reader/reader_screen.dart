@@ -178,20 +178,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   // --- Recording progress ---------------------------------------------------
 
-  /// The saved verse counts of each reading of this aliyah. A count that
-  /// claims a reading is complete when it isn't marked done (say, one that a
-  /// sync restored after "Mark as not read") is stale: that reading starts
-  /// over.
-  List<int> _savedPositions(WeekProgress week, ReaderFlow flow) {
-    final saved = week.positions[_aliyah] ?? const <int>[];
-    return [
-      for (final pass in ReadingPass.values)
-        switch (pass.index < saved.length ? saved[pass.index] : 0) {
-          final n when n >= flow.verses.length && !week.isUnitDone(_aliyah, pass) => 0,
-          final n => n,
-        },
-    ];
-  }
+  /// The saved verse counts of each reading of this aliyah, stale ones read
+  /// as 0 (see [WeekProgress.savedPositions]).
+  List<int> _savedPositions(WeekProgress week, ReaderFlow flow) => week.savedPositions(_aliyah, flow.verses.length);
 
   void _record(WeekContext ctx, ReaderFlow flow, int chunk, int step) {
     if (!ctx.isOpen) return; // Preview of a future portion: no credit yet.
@@ -382,9 +371,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final l = context.l10n;
     final hasHebrew = await tts.hasHebrewVoice();
     if (!mounted) return;
-    final english = _currentKind(flow) == StepKind.rashi && s.secondReading == SecondReading.rashiEnglish;
+    final (text, :english) = _speechText(texts, flow, s);
     if (hasHebrew == false && !english) showStatus(context, l.ttsNoHebrewVoice);
-    final text = _speechText(texts, flow, s);
     try {
       await tts.speak(text, language: english ? 'en-US' : 'he-IL', rate: s.speechRate);
     } catch (_) {
@@ -394,26 +382,46 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   StepKind _currentKind(ReaderFlow flow) => _fullText || _finished ? StepKind.mikra1 : flow.stepsFor(_chunk)[_step];
 
-  String _speechText(ReaderTexts texts, ReaderFlow flow, AppSettings s) {
+  /// What Listen reads of the step shown, and whether it is English (Rashi
+  /// in English) rather than Hebrew.
+  (String, {bool english}) _speechText(ReaderTexts texts, ReaderFlow flow, AppSettings s) {
     final kind = _currentKind(flow);
     final refs = _fullText || _finished ? flow.verses : flow.stepVerses(_chunk, kind);
     String hebrew(Verse v, {bool targum = false}) =>
         HebrewSpeech.spoken(v.readText, divineName: s.divineName, targum: targum);
-    return switch (kind) {
-      StepKind.targum => refs
-          .expand((r) => [
-                hebrew(texts.onkelos!.verse(r), targum: true),
-                if (flow.thirdHebrewInTargum(_chunk, r)) hebrew(texts.mikra.verse(r)),
-              ])
-          .join(' '),
-      StepKind.rashi => refs
-          .expand((r) => texts.rashi!.on(r))
-          .map((c) => s.secondReading == SecondReading.rashiEnglish
-              ? '${c.heading ?? ''} ${c.text}'
-              : HebrewSpeech.spoken('${c.heading ?? ''} ${c.text}', divineName: s.divineName, rashi: true))
-          .join(' '),
-      _ => refs.map((r) => hebrew(texts.mikra.verse(r))).join(' '),
-    };
+    switch (kind) {
+      case StepKind.targum:
+        // With the Hebrew of a verse read a third time among the Targum.
+        final text = refs
+            .expand((r) => [
+                  hebrew(texts.onkelos!.verse(r), targum: true),
+                  if (flow.thirdHebrewInTargum(_chunk, r)) hebrew(texts.mikra.verse(r)),
+                ])
+            .join(' ');
+        return (text, english: false);
+      case StepKind.rashi:
+        final english = s.secondReading == SecondReading.rashiEnglish;
+        final comments = [for (final r in refs) texts.rashi!.on(r)];
+        if (english) {
+          // One voice reads it all: the comments in English, or, where Rashi
+          // is silent on the whole step, its verses in Hebrew.
+          final text = comments.expand((c) => c).map((c) => '${c.heading ?? ''} ${c.text}').join(' ');
+          if (text.trim().isNotEmpty) return (text, english: true);
+          return (refs.map((r) => hebrew(texts.mikra.verse(r))).join(' '), english: false);
+        }
+        // A verse Rashi is silent on is read in Hebrew, as the step shows it.
+        final text = [
+          for (final (i, r) in refs.indexed)
+            if (comments[i].isEmpty)
+              hebrew(texts.mikra.verse(r))
+            else
+              for (final c in comments[i])
+                HebrewSpeech.spoken('${c.heading ?? ''} ${c.text}', divineName: s.divineName, rashi: true),
+        ].join(' ');
+        return (text, english: false);
+      case StepKind.mikra1 || StepKind.mikra2 || StepKind.thirdHebrew || StepKind.repeatLast:
+        return (refs.map((r) => hebrew(texts.mikra.verse(r))).join(' '), english: false);
+    }
   }
 
   // --- Build ------------------------------------------------------------------
@@ -893,10 +901,6 @@ class _AliyahSelectorState extends State<_AliyahSelector> {
     });
   }
 
-  /// Whether any reading of [aliyah] is done or under way.
-  static bool _started(WeekProgress week, int aliyah) =>
-      week.units[aliyah].any((d) => d != null) || (week.positions[aliyah]?.any((n) => n > 0) ?? false);
-
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -904,13 +908,6 @@ class _AliyahSelectorState extends State<_AliyahSelector> {
     final scheme = Theme.of(context).colorScheme;
     final doneColor = StatusColors.of(context).done;
     final week = widget.ctx.progress;
-    final side = WidgetStateBorderSide.resolveWith((states) {
-      if (states.contains(WidgetState.focused)) {
-        return BorderSide(color: scheme.primary, width: 3, strokeAlign: BorderSide.strokeAlignOutside);
-      }
-      if (states.contains(WidgetState.selected)) return BorderSide(color: scheme.primary, width: 1.5);
-      return null;
-    });
     return SizedBox(
       height: 60,
       // Seven chips at most, all built, so that any of them can be revealed.
@@ -926,7 +923,7 @@ class _AliyahSelectorState extends State<_AliyahSelector> {
                 child: Builder(builder: (context) {
                   final name = names.aliyah(a);
                   final done = week.isAliyahDone(a);
-                  final partial = !done && _started(week, a);
+                  final partial = !done && week.isAliyahStarted(a, widget.ctx.aliyahVerses[a]);
                   final isSelected = widget.selected == a;
                   return ChoiceChip(
                     showCheckmark: false,
@@ -941,7 +938,6 @@ class _AliyahSelectorState extends State<_AliyahSelector> {
                     labelStyle:
                         isSelected ? TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w700) : null,
                     selectedColor: scheme.primaryContainer,
-                    side: side,
                     selected: isSelected,
                     onSelected: (_) => widget.onSelected(a),
                   );
@@ -1008,15 +1004,35 @@ class _GuidedStep extends StatelessWidget {
           final targum = ScriptureVerse(verse: texts.onkelos!.verse(r), kind: ScriptureKind.targum, settings: settings);
           if (!flow.thirdHebrewInTargum(chunk, r)) return targum;
           // Read with others, the verse has no step of its own for its third
-          // reading: the Hebrew follows its Onkelos here instead, labelled
-          // like the Rashi shown beneath a verse.
+          // reading: the Hebrew follows its Onkelos here instead, set apart
+          // in a block of its own so that it can't be taken for Targum, nor
+          // the Targum after it for Torah, which is labelled again.
+          final scheme = theme.colorScheme;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               targum,
-              LayerLabel(l.mikraLabel, icon: Icons.menu_book),
-              ScriptureVerse(verse: texts.mikra.verse(r), kind: ScriptureKind.mikra, settings: settings),
-              _Note(text: l.noTargumNote),
+              Container(
+                margin: const EdgeInsets.only(top: 8, bottom: 4),
+                padding: const EdgeInsetsDirectional.only(start: 12),
+                decoration: BoxDecoration(
+                  border: BorderDirectional(start: BorderSide(color: scheme.outline, width: 3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    LayerLabel(l.mikraLabel, icon: Icons.menu_book),
+                    ScriptureVerse(verse: texts.mikra.verse(r), kind: ScriptureKind.mikra, settings: settings),
+                    if (settings.showTranslation && texts.english != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: TranslationVerse(text: texts.english!.verse(r).readText, number: r.verse, settings: settings),
+                      ),
+                    _Note(text: l.noTargumNote),
+                  ],
+                ),
+              ),
+              if (r != refs.last) LayerLabel(l.targumLabel, icon: Icons.translate),
             ],
           );
         case StepKind.rashi:

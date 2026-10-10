@@ -246,7 +246,19 @@ abstract final class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        side: highContrast ? BorderSide(color: scheme.outline, width: 1.5) : null,
+        // The focus ring of every other control. A selected chip has a
+        // wider border than one that isn't, in every theme: the width, not
+        // only the colour, says which is chosen (DESIGN_SYSTEM.md §6.6).
+        side: WidgetStateBorderSide.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return null;
+          if (states.contains(WidgetState.focused)) {
+            return focusSide.copyWith(strokeAlign: BorderSide.strokeAlignOutside);
+          }
+          if (states.contains(WidgetState.selected)) {
+            return BorderSide(color: scheme.primary, width: highContrast ? 2.5 : 1.5);
+          }
+          return BorderSide(color: scheme.outline, width: highContrast ? 1.5 : 1);
+        }),
       ),
       listTileTheme: ListTileThemeData(
         minVerticalPadding: 12,

@@ -11,6 +11,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/services/tts.dart';
 
 import '../helpers.dart';
 
@@ -168,6 +169,55 @@ void main() {
     handle.dispose();
   });
 
+  for (final hebrew in [false, true]) {
+    testWidgets('the open aliyah chip is scrolled into view on a phone${hebrew ? ', right to left' : ''}', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.english),
+        now: monday,
+      );
+      // Shevi'i, the last, begins beyond the edge of a phone before it is
+      // scrolled to: the right edge, or the left in Hebrew.
+      c.read(routerProvider).go('/read/5787:2/6');
+      await loadTexts(tester);
+      final chip = find.ancestor(of: find.text(hebrew ? 'שביעי' : "Shevi'i"), matching: find.byType(ChoiceChip));
+      expect(tester.widget<ChoiceChip>(chip).selected, isTrue);
+      final open = tester.getRect(chip);
+      expect(open.left, greaterThanOrEqualTo(0));
+      expect(open.right, lessThanOrEqualTo(412));
+    });
+  }
+
+  testWidgets('a chip whose saved place is stale is not under way, as the reader starts it over', (tester) async {
+    final handle = tester.ensureSemantics();
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    // Counts at or past the end of Sheni with none of its readings marked
+    // done, as a sync that predates Mark as not read could leave them.
+    final week = WeekProgress(weekId: '5787:2').withPosition(1, const [99, 99, 99]);
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(onboardingComplete: true),
+      now: monday,
+      progress: ProgressState(weeks: {'5787:2': week}),
+    );
+    c.read(routerProvider).go('/read/5787:2/0');
+    await loadTexts(tester);
+    final sheni = find.ancestor(of: find.text('Sheni'), matching: find.byType(ChoiceChip));
+    expect(find.descendant(of: sheni, matching: find.byIcon(Icons.timelapse)), findsNothing);
+    expect(find.bySemanticsLabel(RegExp(r'^Sheni, not started')), findsOneWidget);
+
+    await tester.tap(sheni);
+    await tester.pumpAndSettle();
+    expect(find.text('Read the Hebrew'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^Verse 1 of ')), findsOneWidget);
+    handle.dispose();
+  });
+
   testWidgets('finishing an aliyah offers the next one not yet read', (tester) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
@@ -229,6 +279,38 @@ void main() {
     expect(find.text('Torah'), findsOneWidget, reason: 'the Hebrew is labelled among the Targum');
   });
 
+  testWidgets('read by aliyah, the Targum after the Hebrew of Numbers 32:3 is labelled Targum again', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(onboardingComplete: true, method: ReadingMethod.aliyahByAliyah, showTranslation: true),
+      now: DateTime(2027, 7, 26, 10), // Matot-Masei 5787; Shlishi is 32:1–19
+    );
+    c.read(routerProvider).go('/read/5787:42-43/2');
+    await loadTexts(tester);
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Read the Targum'), findsOneWidget);
+    // Laid out in reading order: the step's label, the Onkelos of 32:1–3,
+    // the Hebrew of 32:3 in a block of its own, then the label again
+    // before the Onkelos of 32:4–19.
+    final scroll = find.byType(SingleChildScrollView).last;
+    final targumLabels = find.descendant(of: scroll, matching: find.text('Targum Onkelos'));
+    expect(targumLabels, findsNWidgets(2));
+    final torah = find.descendant(of: scroll, matching: find.text('Torah'));
+    expect(torah, findsOneWidget);
+    final note = find.textContaining('Onkelos here gives mostly the Aramaic forms of the place names');
+    expect(tester.getTopLeft(targumLabels.first).dy, lessThan(tester.getTopLeft(torah).dy));
+    expect(tester.getTopLeft(torah).dy, lessThan(tester.getTopLeft(note).dy));
+    expect(tester.getTopLeft(note).dy, lessThan(tester.getTopLeft(targumLabels.last).dy));
+    // With the translation shown, as the third reading's own step shows it.
+    expect(find.descendant(of: scroll, matching: find.byType(TranslationVerse)), findsOneWidget);
+  });
+
   for (final prompts in [true, false]) {
     testWidgets('a verse Rashi is silent on ${prompts ? 'suggests' : 'does not suggest'} a third reading', (tester) async {
       tester.view.physicalSize = const Size(412, 915);
@@ -256,6 +338,118 @@ void main() {
       expect(find.text('Rashi does not comment on this verse.'), prompts ? findsNothing : findsOneWidget);
     });
   }
+
+  testWidgets('a verse Rashi is silent on suggests no third reading when the Targum is read too', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(
+        onboardingComplete: true,
+        method: ReadingMethod.sectionBySection,
+        secondReading: SecondReading.onkelosAndRashi,
+        thirdReadingPrompts: true,
+      ),
+      now: monday,
+    );
+    c.read(routerProvider).go('/read/5787:2/0');
+    await loadTexts(tester);
+    for (var i = 0; i < 4 && find.text('Read Rashi').evaluate().isEmpty; i++) {
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Read Rashi'), findsOneWidget);
+    expect(find.text('Rashi does not comment on this verse.'), findsOneWidget);
+    expect(find.textContaining('Some read it a third time in Hebrew'), findsNothing);
+  });
+
+  group('Listen reads', () {
+    Future<RecordingTts> open(WidgetTester tester, String path, AppSettings settings, {DateTime? now, int steps = 0}) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final tts = RecordingTts();
+      final c = await pumpApp(tester, settings: settings, now: now ?? monday, overrides: [ttsProvider.overrideWithValue(tts)]);
+      c.read(routerProvider).go(path);
+      await loadTexts(tester);
+      for (var i = 0; i < steps; i++) {
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pumpAndSettle();
+      return tts;
+    }
+
+    testWidgets('the Hebrew of Numbers 32:3 after its Onkelos, read by section', (tester) async {
+      final tts = await open(
+        tester,
+        '/read/5787:42-43/2',
+        const AppSettings(onboardingComplete: true, method: ReadingMethod.sectionBySection),
+        now: DateTime(2027, 7, 26, 10),
+        steps: 2,
+      );
+      expect(find.text('Read the Targum'), findsOneWidget);
+      final (text, language) = tts.spoken.single;
+      expect(language, 'he-IL');
+      final plain = HebrewText.consonantsOnly(text);
+      // Onkelos of 32:3, then its Hebrew, then the Onkelos of 32:4.
+      final targum = plain.indexOf('מכללתא ומלבשתא');
+      final hebrew = plain.indexOf('עטרות ודיבן ויעזר ונמרה');
+      final next = plain.indexOf('ארעא די מחא');
+      expect(targum, greaterThanOrEqualTo(0));
+      expect(hebrew, greaterThan(targum));
+      expect(next, greaterThan(hebrew));
+    });
+
+    testWidgets('a verse Rashi is silent on in Hebrew', (tester) async {
+      // Genesis 6:10 read verse by verse, with Rashi in place of the Targum.
+      final tts = await open(
+        tester,
+        '/read/5787:2/0',
+        const AppSettings(onboardingComplete: true, secondReading: SecondReading.rashi, thirdReadingPrompts: false),
+        steps: 5,
+      );
+      expect(find.text('Read Rashi'), findsOneWidget);
+      expect(find.text('Rashi does not comment on this verse.'), findsOneWidget);
+      final (text, language) = tts.spoken.single;
+      expect(language, 'he-IL');
+      expect(HebrewText.consonantsOnly(text), startsWith('ויולד נח שלשה בנים'));
+    });
+
+    testWidgets('the Name in the Targum as chosen', (tester) async {
+      final tts = await open(
+        tester,
+        '/read/5787:2/0',
+        const AppSettings(onboardingComplete: true, divineName: DivineNameSpeech.hashem),
+        steps: 2,
+      );
+      expect(find.text('Read the Targum'), findsOneWidget);
+      final plain = HebrewText.consonantsOnly(tts.spoken.single.$1);
+      expect(plain, contains('דהשם'));
+      expect(plain, isNot(contains('יי')));
+    });
+
+    testWidgets("the Name in Rashi as chosen, written ה'", (tester) async {
+      // Rashi on Genesis 7:16, in Sheni, writes the Name ה'.
+      final tts = await open(
+        tester,
+        '/read/5787:2/1',
+        const AppSettings(
+          onboardingComplete: true,
+          method: ReadingMethod.aliyahByAliyah,
+          secondReading: SecondReading.rashi,
+          divineName: DivineNameSpeech.hashem,
+        ),
+        steps: 2,
+      );
+      expect(find.text('Read Rashi'), findsOneWidget);
+      final plain = HebrewText.consonantsOnly(tts.spoken.single.$1);
+      expect(plain, contains('ויסגור השם בעדו'));
+      expect(plain, isNot(contains("ויסגור ה'")));
+    });
+  });
 
   testWidgets('reader meets accessibility guidelines', (tester) async {
     final handle = tester.ensureSemantics();
