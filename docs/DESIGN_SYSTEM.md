@@ -1097,21 +1097,26 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 In order:
 1. **LedgerCard** with "Longest" lines.
 2. **Grace PaperRow:** `shield_outlined` in grace, `graceAvailable(n)` = "1 grace day available", trailing TextButton `aboutStreaks`. That opens a sheet holding the two explanatory paragraphs, which leave the page.
-3. **This year:**
+3. **This year**, a card:
    - Eyebrow `thisYear`;
+   - when the log holds more than one cycle, ChoiceChips (§6.6) of their years ("5786", "תשפ״ו" in the Hebrew UI) choose the year this card and the Torah map show; for an earlier one the eyebrow reads `earlierYear`, the year bar names its year to screen readers, and nothing in the map is current or still to come. The chips sit here rather than over the map, so the first thing they change is under them;
    - headlineSmall `parshiyotOfYear(0, 54)`;
-   - bodySmall "5787 · 50 verses read twice with Targum";
+   - bodySmall "5787 · 50 verses read twice with Targum", the verses of the year shown;
    - YearBar.
 4. **This week's plan:** WeekStrip card.
 5. **Torah map** (§6.14), keeping the info button.
-6. **Make-up list:** unchanged content, as a PaperGroup.
-7. **Recent weeks:** a PaperGroup. Rows show the name in titleMedium, a status icon plus label in bodySmall, and the date end-aligned in bodySmall with tabular figures.
-8. **"Life happens":** a PaperRow with a pause icon that opens the existing pause flow. Its ChoiceChips follow §6.6.
+6. **Make-up list:** unchanged content, as a PaperGroup, for this year's weeks only.
+7. **Recent weeks:** a PaperGroup. Rows show the name in titleMedium, a status icon plus label in bodySmall, and the date end-aligned in bodySmall with tabular figures (with the year for a week of another year), then a chevron.
+   - A week before the join date with nothing read is left out (the Vezot HaBerakhah of a reader who joined on Simchat Torah).
+   - Ten rows, then a centred TextButton `showAllWeeks` ("Show all (45)") that shows the rest in place, passing the keyboard's focus to the first week it adds.
+8. **"Life happens":** a PaperRow with a pause icon and `pauseRowBody` that opens the existing pause flow. Its ChoiceChips follow §6.6. While a pause covers today, the row says `pausedBanner` under its title, over a Tonal `endPause` and a Text `extendPause`, which asks how many days more (1, 3, 7 or 14, as long as the pause then ends within 30 days of today) and shows the new end as the choice changes.
 9. **Record** (replaces Milestones, progress_screen.dart:337-376):
    - GroupHeader `recordTitle`;
-   - achieved items only, newest first;
-   - each row: an 8 px lozenge, the title in bodyLarge, the date in bodySmall;
+   - achieved items only, newest first (on the same day, a siyum before the book that completed it), dated by the day each was first reached and never stored (DESIGN.md §4);
+   - each row: an 8 px lozenge where a row's icon sits, the title in bodyLarge, the date in bodySmall; hairlines inset 54;
    - a completed sefer adds "חֲזַק חֲזַק וְנִתְחַזֵּק" in FRL 500 17 in `secondary` under its row;
+   - a reader who joined partway through a year has `milestoneSiyumFrom`, "Siyum from Parshat Vayera";
+   - with streak numbers hidden, the streak lengths are left out;
    - no locked items, trophies or counts of what remains.
 
 ### Community (community_screen.dart, forum_screen.dart, thread_screen.dart, compose_screen.dart, account_screen.dart)

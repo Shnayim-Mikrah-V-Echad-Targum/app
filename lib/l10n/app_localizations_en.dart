@@ -388,21 +388,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get daysBeginToday => 'Begins with today\'s reading';
 
   @override
-  String get graceDays => 'Grace days';
-
-  @override
-  String graceDaysAvailable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count available',
-      one: '1 available',
-      zero: 'none available',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get dayKept => 'Read';
 
   @override
@@ -926,6 +911,66 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aboutStreaks => 'About streaks';
+
+  @override
+  String graceAvailable(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count grace days available',
+      one: '1 grace day available',
+      zero: 'No grace days available',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get thisYear => 'This year';
+
+  @override
+  String get earlierYear => 'An earlier year';
+
+  @override
+  String parshiyotOfYear(int done, int total) {
+    return '$done of $total parshiyot';
+  }
+
+  @override
+  String yearBarSemanticsYear(String year, int done, int total) {
+    return '$year: $done of $total parshiyot complete';
+  }
+
+  @override
+  String showAllWeeks(int count) {
+    return 'Show all ($count)';
+  }
+
+  @override
+  String get pauseRowBody =>
+      'Pause for up to 30 days. Nothing resets while paused.';
+
+  @override
+  String get endPause => 'End pause';
+
+  @override
+  String get extendPause => 'Extend';
+
+  @override
+  String get extendPauseTitle => 'Extend the pause';
+
+  @override
+  String get extendPauseBy => 'Extend by';
+
+  @override
+  String get recordTitle => 'Finished so far';
+
+  @override
+  String milestoneSiyumFrom(String name) {
+    return 'Siyum from Parshat $name';
+  }
+
+  @override
   String get recentWeeks => 'Recent weeks';
 
   @override
@@ -962,9 +1007,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get streaksHidden =>
       'Streak numbers are hidden. Your progress is still saved.';
-
-  @override
-  String get milestonesTitle => 'Milestones';
 
   @override
   String get graceExplainer =>
@@ -1009,9 +1051,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get milestoneComeback => 'Welcome back';
-
-  @override
-  String get milestoneLocked => 'Not yet reached';
 
   @override
   String get settingsTitle => 'Settings';

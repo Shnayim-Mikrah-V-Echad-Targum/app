@@ -34,11 +34,13 @@ import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterH
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikra/ui/widgets/sefer_choice_chip.dart';
 
 import '../helpers.dart';
 import 'galleries.dart';
@@ -239,6 +241,16 @@ const _screens = {
   'legend_week': '/progress',
   'legend_map': '/progress',
   'progress_map': '/progress',
+  // Progress paused, and asked how long to extend the pause.
+  'progress_paused': '/progress',
+  'progress_extend': '/progress',
+  // The sheet behind the grace row's "About streaks".
+  'progress_about': '/progress',
+  // A reader in their second year (see [_secondYear]): the year chips, last
+  // year chosen, and what they have finished so far at the page's end.
+  'progress_years': '/progress',
+  'progress_past': '/progress',
+  'progress_record': '/progress',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -281,6 +293,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: false, joinDate: LocalDate(2029, 5, 1)),
   // Joined on the Wednesday of Bereshit: the days before have no reading.
   'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
+  for (final screen in ['progress_years', 'progress_past', 'progress_record'])
+    screen: (s) => s.copyWith(joinDate: secondYearJoinDate),
   's_reading_city': (s) => s.copyWith(city: _jerusalem),
   'city': (s) => s.copyWith(city: _jerusalem),
   'city_search': (s) => s.copyWith(city: _jerusalem),
@@ -331,6 +345,10 @@ final _screenProgress = <String, ProgressState Function()>{
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
   'today_joined_midweek': () => ProgressState(weeks: {}),
+  // Paused from Wednesday to the Friday after next.
+  for (final screen in ['progress_paused', 'progress_extend'])
+    screen: () => _progress().copyWith(pauses: [Pause(LocalDate(2026, 10, 7), LocalDate(2026, 10, 16))]),
+  for (final screen in ['progress_years', 'progress_past', 'progress_record']) screen: _secondYear,
   // All three readings of Shlishi (from Genesis 2:20) have reached 3:1,
   // its seventh verse, where the guided reader resumes and focus mode opens.
   'reader_focus': () => ProgressState(weeks: {
@@ -368,6 +386,9 @@ final _screenProgress = <String, ProgressState Function()>{
   'reader_finished_erev': () => _readThrough(4, partly: 5),
   'reader_finished_week': () => _readThrough(5, partly: 6),
 };
+
+/// A reader in their second year, with Bereshit 5787 as in [_progress].
+ProgressState _secondYear() => ProgressState(weeks: {...secondYearProgress(), ..._progress().weeks});
 
 /// Bereshit with every aliyah up to [last] read on its planned day, and the
 /// Hebrew of aliyah [partly] read twice on [on], so that the guided reader
@@ -647,6 +668,20 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   // The map's section heading at the top of the page.
   'progress_map': (tester) => Scrollable.ensureVisible(tester.element(find.byIcon(Icons.info_outline).last)),
+  'progress_paused': _scrollToEnd,
+  'progress_extend': (tester) async {
+    await tester.ensureVisible(find.text(_l10n(tester).extendPause));
+    await tester.pump();
+    await tester.tap(find.text(_l10n(tester).extendPause));
+  },
+  'progress_about': (tester) => tester.tap(find.text(_l10n(tester).aboutStreaks)),
+  'progress_past': (tester) async {
+    final chip = find.byType(SeferChoiceChip).first;
+    await tester.tap(chip);
+    await _settle(tester);
+    await Scrollable.ensureVisible(tester.element(chip), alignment: 0.1);
+  },
+  'progress_record': _scrollToEnd,
   // The middle row of a paper group: its ring must clear the hairlines.
   'kit_focus': (tester) async {
     await _showGallery(tester, const RowsGallery());
@@ -697,6 +732,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'today_yomtov_twoday': _showWeekStrip,
   'today_joined_midweek': _showWeekStrip,
 };
+
+/// The app's strings, in the language of the mode.
+AppLocalizations _l10n(WidgetTester tester) => tester.element(find.byType(Scaffold).first).l10n;
 
 /// Opens [gallery] as a page over the current route.
 Future<void> _showGallery(WidgetTester tester, Widget gallery) async {
@@ -792,6 +830,7 @@ const _desktopScreens = {
   'reader_keys_web',
   'reader_gaps',
   'progress',
+  'progress_years',
   'thread',
   'thread_long',
   'legal',
@@ -820,9 +859,9 @@ const _desktopScreens = {
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
-const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display', 'sources'};
+const _tallScreens = {'today', 'parsha', 'week', 'progress', 'progress_years', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week', 'reader'};
+const _narrowScreens = {'today', 'progress', 'progress_map', 'progress_years', 'kit_week', 'reader'};
 const _bigTextScreens = {
   'today',
   'reader_finished_day',
@@ -838,6 +877,7 @@ const _bigTextScreens = {
   's_reading_city',
   'city',
   'progress',
+  'progress_years',
   'reader',
   'reader_focus',
   'kit_ornaments',

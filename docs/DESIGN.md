@@ -109,6 +109,9 @@ The engine is a pure function of (progress, join date, today, pauses, and the pl
 
 **Syncing keeps every change, removals included.** Each reading, the haftarah, each saved place and each pause records when it last changed, and a removal keeps that time instead of disappearing. Merging two devices gives the same result in any order: where one device marked a reading as not read, cleared a week or ended a pause after the other last saw it, that change wins, and a reading marked again afterwards keeps its new day. Where both devices logged the same reading independently, the earliest date wins, so a sync never lowers a streak. With backup on and an account signed in, resetting all progress erases it everywhere, but keeps anything logged on another device after the reset. Signed out, a reset stays on the device, so it can't erase the backup of whoever signs in next.
 
+### What has been finished
+Progress lists what the reader has finished so far, newest first, each with the day it was first reached: the first aliyah and parsha, lengths of each streak, each book of the Torah and the siyum. Like the streaks, the list is worked out from the reading log every time and never stored, so a book or a siyum finished in one year stays finished when the next begins. A reader who joined partway through a year and then finished every parsha from the first they read through Vezot HaBerakhah has a siyum from that parsha, as long as it was before Deuteronomy: from there it would be one book or less, which its own entry marks. Nothing is shown as locked or still to reach.
+
 ## 5. Notifications
 
 The planner is a pure function. Its rules come from the research:

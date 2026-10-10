@@ -692,18 +692,6 @@ abstract class AppLocalizations {
   /// **'Begins with today\'s reading'**
   String get daysBeginToday;
 
-  /// No description provided for @graceDays.
-  ///
-  /// In en, this message translates to:
-  /// **'Grace days'**
-  String get graceDays;
-
-  /// No description provided for @graceDaysAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{none available} =1{1 available} other{{count} available}}'**
-  String graceDaysAvailable(int count);
-
   /// No description provided for @dayKept.
   ///
   /// In en, this message translates to:
@@ -1526,6 +1514,90 @@ abstract class AppLocalizations {
   /// **'{book}: {done} of {total} parshiyot'**
   String torahMapBook(String book, int done, int total);
 
+  /// On Progress, beside the grace days: opens a sheet explaining grace days and the parsha streak.
+  ///
+  /// In en, this message translates to:
+  /// **'About streaks'**
+  String get aboutStreaks;
+
+  /// No description provided for @graceAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No grace days available} =1{1 grace day available} other{{count} grace days available}}'**
+  String graceAvailable(int count);
+
+  /// Heading on Progress over this year's count of parshiyot and the year bar.
+  ///
+  /// In en, this message translates to:
+  /// **'This year'**
+  String get thisYear;
+
+  /// The same heading while the reader looks at the parshiyot of a cycle before this one.
+  ///
+  /// In en, this message translates to:
+  /// **'An earlier year'**
+  String get earlierYear;
+
+  /// The parshiyot finished in a year's cycle, out of all of them.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} parshiyot'**
+  String parshiyotOfYear(int done, int total);
+
+  /// Screen-reader label of the year bar for a cycle before this one; year is its Hebrew year (5786).
+  ///
+  /// In en, this message translates to:
+  /// **'{year}: {done} of {total} parshiyot complete'**
+  String yearBarSemanticsYear(String year, int done, int total);
+
+  /// Under the recent weeks on Progress: shows the rest of them in place.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all ({count})'**
+  String showAllWeeks(int count);
+
+  /// No description provided for @pauseRowBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause for up to 30 days. Nothing resets while paused.'**
+  String get pauseRowBody;
+
+  /// No description provided for @endPause.
+  ///
+  /// In en, this message translates to:
+  /// **'End pause'**
+  String get endPause;
+
+  /// On Progress while streaks are paused: makes the pause longer.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend'**
+  String get extendPause;
+
+  /// No description provided for @extendPauseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend the pause'**
+  String get extendPauseTitle;
+
+  /// Over choices of 1, 3, 7 or 14 days.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend by'**
+  String get extendPauseBy;
+
+  /// Heading on Progress over what the reader has done: first aliyah, books finished, the siyum.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished so far'**
+  String get recordTitle;
+
+  /// In the Record: a reader who joined partway through the year finished every parsha from the one they began with to the end of the Torah.
+  ///
+  /// In en, this message translates to:
+  /// **'Siyum from Parshat {name}'**
+  String milestoneSiyumFrom(String name);
+
   /// No description provided for @recentWeeks.
   ///
   /// In en, this message translates to:
@@ -1591,12 +1663,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Streak numbers are hidden. Your progress is still saved.'**
   String get streaksHidden;
-
-  /// No description provided for @milestonesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Milestones'**
-  String get milestonesTitle;
 
   /// No description provided for @graceExplainer.
   ///
@@ -1669,12 +1735,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Welcome back'**
   String get milestoneComeback;
-
-  /// No description provided for @milestoneLocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Not yet reached'**
-  String get milestoneLocked;
 
   /// No description provided for @settingsTitle.
   ///

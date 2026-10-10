@@ -6,26 +6,46 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
+import '../../core/calendar/local_date.dart';
 import '../../core/calendar/parsha_schedule.dart';
+import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart';
+import '../../data/parsha_repository.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fonts_change_scope.dart';
+import '../../ui/widgets/lang.dart';
+import '../../ui/widgets/ledger.dart';
+import '../../ui/widgets/ornaments.dart';
+import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/sefer_choice_chip.dart';
+import '../../ui/widgets/year_bar.dart';
 import '../parsha/week_context.dart';
+import '../reader/sefer_complete_screen.dart';
 import 'domain/milestones.dart';
 import 'domain/parsha_standing.dart';
 import 'domain/progress_models.dart';
 import 'domain/streak_engine.dart';
 
-class ProgressScreen extends ConsumerWidget {
+/// Progress (docs/DESIGN_SYSTEM.md §9): the streaks, the year, this week's
+/// plan, the Torah map, the weeks gone by, a pause, and what the reader has
+/// finished so far.
+class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProgressScreen> createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState extends ConsumerState<ProgressScreen> {
+  /// The cycle chosen to look back on, or null for this year's.
+  int? _chosenCycle;
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final names = Names(context);
     final summary = ref.watch(streakSummaryProvider);
@@ -33,78 +53,66 @@ class ProgressScreen extends ConsumerWidget {
     final progress = ref.watch(progressProvider);
     final current = ref.watch(currentWeekContextProvider);
     final repo = ref.watch(parshaRepositoryProvider);
-    final cycle = cycleYearOf(current.week.portion, current.week.occasion);
-    final doneThisCycle = parshiyotDoneInCycle(progress.weeks, cycle);
-    final milestones = computeMilestones(summary: summary, progress: progress.weeks, parshiyotDoneThisCycle: doneThisCycle);
+    String name(PortionId id) => names.portion(repo.portion(id), ashkenazi: settings.ashkenaziNames);
+    final theme = Theme.of(context);
+    TextStyle? muted(TextStyle? style) => style?.copyWith(color: theme.colorScheme.onSurfaceVariant);
 
-    var versesRead = 0;
-    for (final e in progress.weeks.entries) {
-      final colon = e.key.indexOf(':');
-      if (colon < 0) continue;
-      final PortionInfo info;
-      try {
-        info = repo.portion(PortionId.parse(e.key.substring(colon + 1)));
-      } catch (_) {
-        continue;
-      }
-      for (var a = 0; a < kAliyot; a++) {
-        if (e.value.isAliyahDone(a)) versesRead += repo.aliyahVerseCount(info, a);
-      }
-    }
+    final live = cycleYearOf(current.week.portion, current.week.occasion);
+    final doneByCycle = parshiyotDoneByCycle(progress.weeks);
+    final cycles = {...doneByCycle.keys, live}.toList()..sort();
+    final cycle = cycles.contains(_chosenCycle) ? _chosenCycle! : live;
+    final done = doneByCycle[cycle] ?? const <int>{};
 
+    // Make-ups are offered for this year's weeks only.
     final missedThisCycle = summary.weeks
-        .where((e) => e.status == WeekStatus.missed && cycleYearOf(e.plan.portion, e.plan.week.occasion) == cycle)
+        .where((e) => e.status == WeekStatus.missed && cycleYearOf(e.plan.portion, e.plan.week.occasion) == live)
         .toList();
+
+    // A week before the reader joined, with nothing read in it, is no part of
+    // their history (the Vezot HaBerakhah of a reader who joined on Simchat
+    // Torah, say).
+    final joinDate = settings.joinDate ?? current.today;
+    final recent = [
+      for (final e in summary.weeks.reversed)
+        if (!(e.status == WeekStatus.transparent &&
+            e.plan.week.start < joinDate &&
+            (progress.weeks[e.plan.weekId]?.completedUnits ?? 0) == 0))
+          e,
+    ];
+
+    final record = [
+      for (final m in computeMilestones(summary: summary, progress: progress.weeks, doneByCycle: doneByCycle))
+        // While streak numbers are hidden, so are the milestones that count them.
+        if (m.achieved &&
+            (settings.showStreaks || (m.kind != MilestoneKind.parshaStreak && m.kind != MilestoneKind.daysOnTrack)))
+          m,
+    ]..sort((a, b) => switch ((b.achievedOn?.rd ?? 0).compareTo(a.achievedOn?.rd ?? 0)) {
+        0 => _recordRank(b.kind).compareTo(_recordRank(a.kind)),
+        final order => order,
+      });
 
     return PageScaffold(
       titleText: l.progressTitle,
       body: PageBody(
         children: [
           if (settings.showStreaks) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            LedgerCard(
+              parshaStreak: summary.parshaStreak,
+              daysOnTrack: summary.daysOnTrack,
+              beginsWith: name(current.week.portion),
+              longestParshaStreak: summary.longestParshaStreak,
+              longestDaysOnTrack: summary.longestDaysOnTrack,
+            ),
+            const Gap(Rhythm.cardGap),
+            PaperGroup(
               children: [
-                Expanded(
-                  child: _BigStat(
-                    icon: Icons.auto_stories_outlined,
-                    label: l.streakParsha,
-                    value: l.weeksCount(summary.parshaStreak),
-                    detail: l.longest(l.weeksCount(summary.longestParshaStreak)),
-                  ),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: _BigStat(
-                    icon: Icons.event_available_outlined,
-                    label: l.streakDays,
-                    value: l.daysCount(summary.daysOnTrack),
-                    detail: l.longest(l.daysCount(summary.longestDaysOnTrack)),
-                  ),
+                PaperRow(
+                  icon: Icons.shield_outlined,
+                  iconColor: StatusColors.of(context).grace,
+                  title: l.graceAvailable(summary.graceBalance),
+                  trailing: TextButton(onPressed: () => _showAboutStreaks(context), child: Text(l.aboutStreaks)),
                 ),
               ],
-            ),
-            const Gap(12),
-            InfoCard(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.shield_outlined, color: StatusColors.of(context).grace),
-                  const Gap(12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${l.graceDays}: ${l.graceDaysAvailable(summary.graceBalance)}',
-                            style: Theme.of(context).textTheme.titleSmall),
-                        const Gap(4),
-                        Text(l.graceExplainer, style: Theme.of(context).textTheme.bodySmall),
-                        const Gap(4),
-                        Text(l.streakExplainer, style: Theme.of(context).textTheme.bodySmall),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ),
           ] else
             NoticeBanner(
@@ -115,15 +123,21 @@ class ProgressScreen extends ConsumerWidget {
                 child: Text(l.showStreaks),
               ),
             ),
-          const Gap(12),
-          InfoCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l.thisCycle(doneThisCycle.length), style: Theme.of(context).textTheme.titleMedium),
-                Text(l.versesRead(NumberFormat.decimalPattern(context.localeName).format(versesRead))),
-              ],
+          const Gap(Rhythm.sectionGap),
+          _ThisYear(
+            cycle: cycle,
+            live: live,
+            cycles: cycles,
+            onCycle: (c) => setState(() => _chosenCycle = c),
+            done: done,
+            segments: YearBar.segmentsFor(
+              weeks: summary.weeks,
+              cycle: cycle,
+              done: done,
+              current: cycle == live ? current.week.portion : null,
             ),
+            currentName: name(current.week.portion),
+            verses: _versesRead(repo, progress.weeks, cycle),
           ),
           SectionHeader(l.weekStripLabel, trailing: const WeekStripLegendButton()),
           InfoCard(
@@ -138,90 +152,589 @@ class ProgressScreen extends ConsumerWidget {
             ),
           ),
           SectionHeader(l.torahMap, trailing: const _TorahMapHelpButton()),
-          _TorahMap(cycle: cycle, summary: summary, done: doneThisCycle, current: current),
+          _TorahMap(cycle: cycle, summary: summary, done: done, current: current, live: cycle == live),
           if (missedThisCycle.isNotEmpty) ...[
-            SectionHeader(l.makeUpTitle),
-            Text(l.makeUpBody, style: Theme.of(context).textTheme.bodySmall),
-            const Gap(8),
-            for (final e in missedThisCycle)
-              Card(
-                margin: const EdgeInsets.only(bottom: 6),
-                child: ListTile(
-                  leading: const Icon(Icons.history),
-                  title: Text(names.portion(repo.portion(e.plan.portion), ashkenazi: settings.ashkenaziNames)),
-                  subtitle: Text(names.dateLong(e.plan.week.occasion)),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/progress/week/${e.plan.weekId}'),
-                ),
-              ),
-          ],
-          SectionHeader(l.recentWeeks),
-          if (summary.weeks.isEmpty)
-            Text(l.noHistory)
-          else
-            for (final e in summary.weeks.reversed.take(10))
-              Card(
-                margin: const EdgeInsets.only(bottom: 6),
-                child: ListTile(
-                  title: Text(names.portion(repo.portion(e.plan.portion), ashkenazi: settings.ashkenaziNames)),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Align(alignment: AlignmentDirectional.centerStart, child: WeekStatusBadge(e.status, dense: true)),
+            GroupHeader(l.makeUpTitle),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 4, bottom: Space.sm),
+              child: Text(l.makeUpBody, style: muted(theme.textTheme.bodySmall)),
+            ),
+            PaperGroup(
+              children: [
+                for (final e in missedThisCycle)
+                  PaperRow(
+                    icon: Icons.history,
+                    title: name(e.plan.portion),
+                    subtitle: names.dateLong(e.plan.week.occasion),
+                    onTap: () => context.push('/progress/week/${e.plan.weekId}'),
                   ),
-                  trailing: Text(names.dateShort(e.plan.week.occasion)),
-                  onTap: () => context.push('/progress/week/${e.plan.weekId}'),
-                ),
-              ),
-          SectionHeader(l.pauseTitle),
-          InfoCard(
+              ],
+            ),
+          ],
+          GroupHeader(l.recentWeeks),
+          if (recent.isEmpty)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 4),
+              child: Text(l.noHistory, style: muted(theme.textTheme.bodyMedium)),
+            )
+          else
+            _RecentWeeks(weeks: recent, today: current.today, name: name),
+          const Gap(Rhythm.sectionGap),
+          const _LifeHappens(),
+          if (record.isNotEmpty) ...[
+            GroupHeader(l.recordTitle),
+            _Record(milestones: record, name: name),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// The verses of [cycle] read in all three readings.
+  static int _versesRead(ParshaRepository repo, Map<String, WeekProgress> weeks, int cycle) {
+    var verses = 0;
+    for (final e in weeks.entries) {
+      final colon = e.key.indexOf(':');
+      if (colon < 0 || e.key.substring(0, colon) != '$cycle') continue;
+      final PortionInfo info;
+      try {
+        info = repo.portion(PortionId.parse(e.key.substring(colon + 1)));
+      } catch (_) {
+        continue;
+      }
+      for (var a = 0; a < kAliyot; a++) {
+        if (e.value.isAliyahDone(a)) verses += repo.aliyahVerseCount(info, a);
+      }
+    }
+    return verses;
+  }
+}
+
+/// The order of milestones reached on the same day, the last reached first:
+/// the siyum above the book that completed it, and a book above the parsha.
+int _recordRank(MilestoneKind kind) => switch (kind) {
+      MilestoneKind.siyum => 7,
+      MilestoneKind.sefer => 6,
+      MilestoneKind.parshaStreak => 5,
+      MilestoneKind.perfectWeek => 4,
+      MilestoneKind.firstParsha => 3,
+      MilestoneKind.daysOnTrack => 2,
+      MilestoneKind.firstAliyah => 1,
+      MilestoneKind.comeback => 0,
+    };
+
+/// The two paragraphs on how grace days and the parsha streak work, behind
+/// the grace row's "About streaks".
+Future<void> _showAboutStreaks(BuildContext context) => showAppSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        final l = context.l10n;
+        final theme = Theme.of(context);
+        final padding = sheetPadding(context);
+        final body = theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface);
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: Space.xxl),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(l.pauseBody),
-                const Gap(12),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.pause_circle_outline),
-                    label: Text(l.pauseAction),
-                    onPressed: () => showPauseDialog(context, ref),
+                SheetTitle(l.aboutStreaks),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: padding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(l.graceExplainer, style: body),
+                      const Gap(Space.md),
+                      Text(l.streakExplainer, style: body),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          SectionHeader(l.milestonesTitle),
-          _Milestones(milestones: milestones),
+        );
+      },
+    );
+
+/// "This year": how many of the year's parshiyot are finished, the verses
+/// read, and the year bar. With more than one year in the log, chips choose
+/// which year it shows, and the Torah map below follows.
+class _ThisYear extends StatelessWidget {
+  const _ThisYear({
+    required this.cycle,
+    required this.live,
+    required this.cycles,
+    required this.onCycle,
+    required this.done,
+    required this.segments,
+    required this.currentName,
+    required this.verses,
+  });
+
+  final int cycle;
+  final int live;
+  final List<int> cycles;
+  final ValueChanged<int> onCycle;
+  final Set<int> done;
+  final List<YearSegment> segments;
+  final String currentName;
+  final int verses;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final names = Names(context);
+    final theme = Theme.of(context);
+    final isLive = cycle == live;
+    final versesCount = NumberFormat.decimalPattern(context.localeName).format(verses);
+    return InfoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(header: true, headingLevel: 2, child: Eyebrow(isLive ? l.thisYear : l.earlierYear)),
+          if (cycles.length > 1) ...[
+            const Gap(Space.sm),
+            Wrap(
+              spacing: Space.sm,
+              runSpacing: Space.sm,
+              children: [
+                for (final c in cycles)
+                  SeferChoiceChip(
+                    label: Text(names.hebrewYear(c)),
+                    selected: c == cycle,
+                    onSelected: (_) => onCycle(c),
+                  ),
+              ],
+            ),
+            const Gap(Space.xs),
+          ],
+          const Gap(Space.sm),
+          Text(l.parshiyotOfYear(done.length, kParshaCount), style: theme.textTheme.headlineSmall),
+          const Gap(2),
+          Text(
+            '${names.hebrewYear(cycle)} · ${l.versesRead(versesCount)}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const Gap(Space.lg),
+          YearBar(
+            segments: segments,
+            currentName: isLive ? currentName : null,
+            year: isLive ? null : names.hebrewYear(cycle),
+          ),
         ],
       ),
     );
   }
 }
 
-class _BigStat extends StatelessWidget {
-  const _BigStat({required this.icon, required this.label, required this.value, required this.detail});
+/// The weeks gone by, newest first: ten, and the rest a tap away.
+class _RecentWeeks extends StatefulWidget {
+  const _RecentWeeks({required this.weeks, required this.today, required this.name});
 
-  final IconData icon;
-  final String label;
-  final String value;
-  final String detail;
+  final List<WeekEvaluation> weeks;
+  final LocalDate today;
+  final String Function(PortionId) name;
+
+  /// Shown before "Show all".
+  static const shown = 10;
+
+  @override
+  State<_RecentWeeks> createState() => _RecentWeeksState();
+}
+
+class _RecentWeeksState extends State<_RecentWeeks> {
+  bool _all = false;
+  final _showAll = FocusNode(debugLabel: 'Show all weeks');
+
+  /// The first week "Show all" adds, which takes the focus from it.
+  final _firstAdded = FocusNode(debugLabel: 'First week added');
+
+  @override
+  void dispose() {
+    _showAll.dispose();
+    _firstAdded.dispose();
+    super.dispose();
+  }
+
+  void _expand() {
+    final hadFocus = _showAll.hasFocus;
+    setState(() => _all = true);
+    // The button goes, so the keyboard's place goes on to what it showed.
+    if (hadFocus) WidgetsBinding.instance.addPostFrameCallback((_) => _firstAdded.requestFocus());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final weeks = widget.weeks;
+    final more = !_all && weeks.length > _RecentWeeks.shown;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PaperGroup(
+          children: [
+            for (final (i, e) in (more ? weeks.take(_RecentWeeks.shown) : weeks).indexed)
+              _WeekRow(
+                name: widget.name(e.plan.portion),
+                status: e.status,
+                occasion: e.plan.week.occasion,
+                today: widget.today,
+                focusNode: i == _RecentWeeks.shown ? _firstAdded : null,
+                onTap: () => context.push('/progress/week/${e.plan.weekId}'),
+              ),
+          ],
+        ),
+        if (more)
+          Padding(
+            padding: const EdgeInsets.only(top: Space.xs),
+            child: Center(
+              child: TextButton(
+                focusNode: _showAll,
+                onPressed: _expand,
+                child: Text(context.l10n.showAllWeeks(weeks.length)),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// One week gone by: its parsha in titleMedium, how it ended (an icon and a
+/// word, never colour alone), and its Shabbat at the end.
+class _WeekRow extends StatelessWidget {
+  const _WeekRow({
+    required this.name,
+    required this.status,
+    required this.occasion,
+    required this.today,
+    required this.onTap,
+    this.focusNode,
+  });
+
+  final String name;
+  final WeekStatus status;
+  final LocalDate occasion;
+  final LocalDate today;
+  final VoidCallback onTap;
+  final FocusNode? focusNode;
+
+  @override
+  Widget build(BuildContext context) {
+    final names = Names(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final meta = theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
+    // The year only for a week of another one.
+    final date = occasion.year == today.year ? names.dateShort(occasion) : names.dateShortWithYear(occasion);
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 72),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 12, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: theme.textTheme.titleMedium),
+                  const Gap(2),
+                  Row(
+                    children: [
+                      Icon(WeekStatusBadge.icon(status), size: 16, color: WeekStatusBadge.color(context, status)),
+                      const Gap(6),
+                      Flexible(child: Text(WeekStatusBadge.label(context, status), style: meta)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Gap(Space.md),
+            Text(date, style: meta?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
+            const Gap(Space.xs),
+            Icon(Icons.chevron_right, size: 20, color: scheme.outline),
+          ],
+        ),
+      ),
+    );
+    return Semantics(
+      container: true,
+      button: true,
+      child: SeferInkWell(
+        focusNode: focusNode,
+        onTap: onTap,
+        borderRadius: PaperGroup.rowCorners(context),
+        child: content,
+      ),
+    );
+  }
+}
+
+/// "Life happens": a pause for illness, travel, mourning or a new baby. While
+/// one covers today, it says until when, and offers to end or extend it.
+class _LifeHappens extends ConsumerWidget {
+  const _LifeHappens();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final paused = ref.watch(isPausedProvider);
+    if (!paused) {
+      return PaperGroup(
+        children: [
+          PaperRow(
+            icon: Icons.pause_circle_outline,
+            title: l.pauseTitle,
+            subtitle: l.pauseRowBody,
+            onTap: () => showPauseDialog(context, ref),
+          ),
+        ],
+      );
+    }
+    final names = Names(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final today = ref.watch(todayProvider);
+    final pause = ref.watch(progressProvider.select((p) => p.pauses)).firstWhere((p) => p.contains(today));
+    final canExtend = _extensions(today, pause.end).isNotEmpty;
+    return PaperGroup(
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 12, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 38,
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Icon(Icons.pause_circle_outline, size: 22, color: scheme.onSurfaceVariant),
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.pauseTitle, style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurface)),
+                    Text(
+                      l.pausedBanner(names.dateLong(pause.end)),
+                      style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                    const Gap(Space.md),
+                    Wrap(
+                      spacing: Space.sm,
+                      runSpacing: Space.sm,
+                      children: [
+                        FilledButton.tonal(
+                          style: AppButtons.tonal(context),
+                          onPressed: () {
+                            ref.read(progressProvider.notifier).endPause(today);
+                            showStatus(context, l.pauseEnded);
+                          },
+                          child: Text(l.endPause),
+                        ),
+                        if (canExtend)
+                          TextButton(
+                            onPressed: () => _showExtendPauseDialog(context, ref, pause.end),
+                            child: Text(l.extendPause),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The days a pause ending on [end] may be extended by, as of [today]: a
+/// pause reaches no further than 30 days ahead, as a new one may.
+List<int> _extensions(LocalDate today, LocalDate end) =>
+    [for (final d in const [1, 3, 7, 14]) if (end.addDays(d) <= today.addDays(_maxPauseDays - 1)) d];
+
+/// The longest pause, counted from its first day.
+const _maxPauseDays = 30;
+
+Future<void> _showExtendPauseDialog(BuildContext context, WidgetRef ref, LocalDate end) async {
+  final l = context.l10n;
+  final names = Names(context);
+  final today = ref.read(todayProvider);
+  final choices = _extensions(today, end);
+  if (choices.isEmpty) return;
+  var days = choices.first;
+  final ok = await showAppDialog<bool>(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          title: Text(l.extendPauseTitle),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.extendPauseBy, style: theme.textTheme.titleSmall),
+                const Gap(Space.sm),
+                Wrap(
+                  spacing: Space.sm,
+                  runSpacing: Space.sm,
+                  children: [
+                    for (final d in choices)
+                      SeferChoiceChip(
+                        label: Text(l.daysCount(d)),
+                        selected: days == d,
+                        onSelected: (_) => setState(() => days = d),
+                      ),
+                  ],
+                ),
+                const Gap(Space.lg),
+                Text(
+                  l.pauseStarted(names.dateLong(end.addDays(days))),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.extendPause)),
+          ],
+        );
+      },
+    ),
+  );
+  if (ok != true) return;
+  final until = end.addDays(days);
+  ref.read(progressProvider.notifier).extendPause(today, until);
+  if (context.mounted) showStatus(context, l.pauseStarted(names.dateLong(until)));
+}
+
+/// What the reader has finished so far, newest first (§9 Progress): only
+/// what is done, never what is left. A finished book adds the words said as
+/// one is.
+class _Record extends StatelessWidget {
+  const _Record({required this.milestones, required this.name});
+
+  final List<Milestone> milestones;
+  final String Function(PortionId) name;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final names = Names(context);
+    String title(Milestone m) => switch (m.kind) {
+          MilestoneKind.firstAliyah => l.milestoneFirstAliyah,
+          MilestoneKind.firstParsha => l.milestoneFirstParsha,
+          MilestoneKind.perfectWeek => l.milestonePerfectWeek,
+          MilestoneKind.parshaStreak => l.milestoneParshaStreak(m.value),
+          MilestoneKind.daysOnTrack => l.milestoneDaysOnTrack(m.value),
+          MilestoneKind.sefer => l.seferDoneTitle(names.book(kTorahBooks[m.value])),
+          MilestoneKind.siyum => switch (m.fromParsha) {
+              final from? => l.milestoneSiyumFrom(name(PortionId(from))),
+              null => l.milestoneSiyum,
+            },
+          MilestoneKind.comeback => l.milestoneComeback,
+        };
+    return PaperGroup(
+      ruleInset: PaperGroup.iconInset,
+      children: [
+        for (final m in milestones)
+          _RecordRow(
+            title: title(m),
+            date: m.achievedOn == null ? null : names.dateShortWithYear(m.achievedOn!),
+            chazak: m.kind == MilestoneKind.sefer,
+          ),
+      ],
+    );
+  }
+}
+
+class _RecordRow extends StatelessWidget {
+  const _RecordRow({required this.title, required this.date, required this.chazak});
+
+  final String title;
+  final String? date;
+
+  /// Whether the row is a finished book, which "חֲזַק חֲזַק וְנִתְחַזֵּק" follows.
+  final bool chazak;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InfoCard(
-      child: Semantics(
-        label: '$label: $value. $detail',
-        excludeSemantics: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: theme.colorScheme.primary),
-            const Gap(8),
-            Text(value, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-            Text(label, style: theme.textTheme.titleSmall),
-            Text(detail, style: theme.textTheme.bodySmall),
-          ],
+    final scheme = theme.colorScheme;
+    final sefer = SeferColors.of(context);
+    final titleStyle = theme.textTheme.bodyLarge!.copyWith(color: scheme.onSurface);
+    final titleLine = MediaQuery.textScalerOf(context).scale(titleStyle.fontSize!) * titleStyle.height!;
+    return Semantics(
+      container: true,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: date == null ? 56 : 72),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 12, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // The lozenge sits where a row's icon would, on the title's line.
+              SizedBox(
+                width: PaperGroup.iconInset - 16,
+                height: titleLine,
+                child: const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.only(start: 7),
+                    child: Lozenge(),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: titleStyle),
+                    if (date case final date?)
+                      Text(
+                        date,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    if (chazak)
+                      Padding(
+                        padding: const EdgeInsets.only(top: Space.xs),
+                        child: Lang(
+                          const Locale('he'),
+                          child: Text(
+                            SeferCompleteScreen.chazak,
+                            // Read from its letters, as screen readers read verses.
+                            semanticsLabel: HebrewText.stripNikud(SeferCompleteScreen.chazak),
+                            locale: const Locale('he'),
+                            style: SeferType.of(context).hebrewDisplay.copyWith(
+                                  fontSize: 17,
+                                  height: 26 / 17,
+                                  // Frank Ruhl Libre is set heavier in high contrast.
+                                  fontWeight: sefer.isHighContrast ? FontWeight.w700 : FontWeight.w500,
+                                  color: scheme.secondary,
+                                ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -310,12 +823,22 @@ const double _tileIconGap = 4;
 /// (docs/DESIGN_SYSTEM.md §6.14). Each book has a header that folds it away;
 /// only the book being read starts open.
 class _TorahMap extends ConsumerStatefulWidget {
-  const _TorahMap({required this.cycle, required this.summary, required this.done, required this.current});
+  const _TorahMap({
+    required this.cycle,
+    required this.summary,
+    required this.done,
+    required this.current,
+    required this.live,
+  });
 
   final int cycle;
   final StreakSummary summary;
   final Set<int> done;
   final WeekContext current;
+
+  /// Whether [cycle] is this year's, whose current week is in progress. A
+  /// year gone by has none.
+  final bool live;
 
   @override
   ConsumerState<_TorahMap> createState() => _TorahMapState();
@@ -385,7 +908,7 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
       weeks: widget.summary.weeks,
       cycle: widget.cycle,
       done: widget.done,
-      current: widget.current.week.portion,
+      current: widget.live ? widget.current.week.portion : null,
     );
 
     // Tiles paint their fills as ink, so a press shows on them; this keeps
@@ -787,48 +1310,6 @@ Future<void> _showTorahMapLegend(BuildContext context) => showAppSheet<void>(
       },
     );
 
-class _Milestones extends StatelessWidget {
-  const _Milestones({required this.milestones});
-  final List<Milestone> milestones;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final names = Names(context);
-    final theme = Theme.of(context);
-    String title(Milestone m) => switch (m.kind) {
-          MilestoneKind.firstAliyah => l.milestoneFirstAliyah,
-          MilestoneKind.firstParsha => l.milestoneFirstParsha,
-          MilestoneKind.perfectWeek => l.milestonePerfectWeek,
-          MilestoneKind.parshaStreak => l.milestoneParshaStreak(m.value),
-          MilestoneKind.daysOnTrack => l.milestoneDaysOnTrack(m.value),
-          MilestoneKind.sefer => l.milestoneSefer(names.book(kTorahBooks[m.value])),
-          MilestoneKind.siyum => l.milestoneSiyum,
-          MilestoneKind.comeback => l.milestoneComeback,
-        };
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final m in milestones)
-          Semantics(
-            label: '${title(m)}: ${m.achieved ? l.stateDone : l.milestoneLocked}',
-            excludeSemantics: true,
-            child: Chip(
-              avatar: Icon(
-                m.achieved ? Icons.emoji_events : Icons.lock_outline,
-                size: 18,
-                color: m.achieved ? theme.colorScheme.primary : theme.colorScheme.outline,
-              ),
-              label: Text(title(m)),
-              backgroundColor: m.achieved ? theme.colorScheme.primaryContainer : null,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 /// "Life happens": pause streaks for up to 30 days, backdated up to 3 days.
 Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
   final l = context.l10n;
@@ -851,6 +1332,7 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
               Text(l.pauseFor, style: Theme.of(context).textTheme.titleSmall),
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: [
                   for (final d in const [1, 3, 7, 14, 30])
                     SeferChoiceChip(
@@ -864,6 +1346,7 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
               Text(l.pauseStarting, style: Theme.of(context).textTheme.titleSmall),
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: [
                   for (final b in const [0, 1, 2, 3])
                     SeferChoiceChip(

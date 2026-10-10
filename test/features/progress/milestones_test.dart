@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/features/progress/domain/milestones.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 
 void main() {
   /// Weeks [ids] read whole on [on].
@@ -38,6 +41,90 @@ void main() {
       expect(seferCompletions(progress, 5787), isEmpty);
       progress['5787:54'] = WeekProgress(weekId: '5787:54').withAll(LocalDate(2027, 10, 22));
       expect(seferCompletions(progress, 5787), {4: LocalDate(2027, 10, 22)});
+    });
+  });
+
+  group('computeMilestones', () {
+    /// The milestones of [progress], with no weeks evaluated.
+    List<Milestone> milestonesOf(Map<String, WeekProgress> progress, {StreakSummary summary = StreakSummary.empty}) =>
+        computeMilestones(summary: summary, progress: progress, doneByCycle: parshiyotDoneByCycle(progress));
+    List<Milestone> achieved(List<Milestone> all, MilestoneKind kind) =>
+        all.where((m) => m.kind == kind && m.achieved).toList();
+
+    /// Every parsha of [cycle] from [from] on, each read whole a week after
+    /// the one before, from [start].
+    Map<String, WeekProgress> yearFrom(int cycle, int from, LocalDate start) => {
+          for (var n = from; n <= kParshaCount; n++)
+            '$cycle:$n': WeekProgress(weekId: '$cycle:$n').withAll(start.addDays(7 * (n - from))),
+        };
+
+    test('a year read through stays a siyum, with its books, once the next year begins', () {
+      final start = LocalDate(2025, 10, 17);
+      final progress = {
+        ...yearFrom(5786, 1, start),
+        // The new year begun, with nothing finished in it yet.
+        '5787:1': WeekProgress(weekId: '5787:1').withUnit(0, ReadingPass.mikra1, LocalDate(2026, 10, 5)),
+      };
+      final all = milestonesOf(progress);
+      final siyum = achieved(all, MilestoneKind.siyum).single;
+      expect(siyum.fromParsha, isNull, reason: 'the whole Torah');
+      expect(siyum.achievedOn, start.addDays(7 * 53), reason: 'the day the last parsha was finished');
+      expect(achieved(all, MilestoneKind.sefer).map((m) => m.value), [0, 1, 2, 3, 4]);
+      expect(achieved(all, MilestoneKind.sefer).first.achievedOn, start.addDays(7 * 11), reason: 'Vayechi');
+    });
+
+    test('a reader who joined at Vayera completes the Torah from Vayera', () {
+      final all = milestonesOf(yearFrom(5786, 4, LocalDate(2025, 11, 7)));
+      final siyum = achieved(all, MilestoneKind.siyum).single;
+      expect(siyum.fromParsha, 4);
+      expect(siyum.achievedOn, LocalDate(2025, 11, 7).addDays(7 * 50));
+      expect(achieved(all, MilestoneKind.sefer).map((m) => m.value), [1, 2, 3, 4], reason: 'Genesis was begun late');
+    });
+
+    test('a year with any parsha unfinished, or begun in Deuteronomy, is no siyum', () {
+      final gap = yearFrom(5786, 4, LocalDate(2025, 11, 7))..remove('5786:30');
+      expect(achieved(milestonesOf(gap), MilestoneKind.siyum), isEmpty);
+      final deuteronomy = yearFrom(5786, 45, LocalDate(2026, 8, 1));
+      expect(achieved(milestonesOf(deuteronomy), MilestoneKind.siyum), isEmpty);
+    });
+
+    test('a year begun partway is no siyum of its own after the whole Torah was completed', () {
+      final progress = {...yearFrom(5786, 1, LocalDate(2025, 10, 17)), ...yearFrom(5787, 2, LocalDate(2026, 10, 16))};
+      final siyum = achieved(milestonesOf(progress), MilestoneKind.siyum);
+      expect(siyum.map((m) => m.fromParsha), [null]);
+      expect(siyum.single.achievedOn, LocalDate(2025, 10, 17).addDays(7 * 53), reason: 'the first time');
+    });
+
+    test('streaks are dated by the day each length was first reached', () {
+      const planner = ReadingPlanner(schedule: ParshaSchedule(israel: false));
+      const engine = StreakEngine(planner: planner);
+      // Each aliyah of Bereshit to Vayera 5787 on its planned day.
+      final progress = <String, WeekProgress>{};
+      var week = planner.schedule.weekFor(LocalDate(2026, 10, 5));
+      for (var i = 0; i < 4; i++, week = planner.schedule.nextWeek(week)) {
+        final plan = planner.planFor(week);
+        var w = WeekProgress(weekId: plan.weekId);
+        for (final day in plan.days) {
+          for (final a in day.aliyot) {
+            w = w.withAliyah(a, day.date);
+          }
+        }
+        progress[plan.weekId] = w;
+      }
+      final summary =
+          engine.evaluate(progress: progress, joinDate: LocalDate(2026, 10, 4), today: LocalDate(2026, 11, 8));
+      final all = milestonesOf(progress, summary: summary);
+      final fourWeeks = all.singleWhere((m) => m.kind == MilestoneKind.parshaStreak && m.value == 4);
+      expect(fourWeeks.achieved, isTrue);
+      // Vayera, the fourth week read: the reader joined in the week of Vezot
+      // HaBerakhah, on Simchat Torah, which doesn't count.
+      expect(fourWeeks.achievedOn, LocalDate(2026, 10, 30));
+      expect(summary.weeks.where((e) => e.status.counts).elementAt(3).plan.weekId, '5787:4');
+      final sevenDays = all.singleWhere((m) => m.kind == MilestoneKind.daysOnTrack && m.value == 7);
+      final kept = summary.days.keys.where((d) => summary.days[d]!.counts).toList()..sort();
+      expect(sevenDays.achievedOn, kept[6], reason: 'the seventh day on track');
+      expect(all.singleWhere((m) => m.kind == MilestoneKind.firstAliyah).achievedOn, LocalDate(2026, 10, 5));
+      expect(all.where((m) => m.kind == MilestoneKind.parshaStreak && m.value == 13).single.achieved, isFalse);
     });
   });
 

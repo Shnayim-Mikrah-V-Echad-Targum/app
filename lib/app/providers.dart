@@ -588,6 +588,14 @@ class ProgressController extends Notifier<ProgressState> {
         ));
       });
 
+  /// Moves the end of any pause covering [today] out to [end]. A pause that
+  /// already lasts that long is left as it is.
+  void extendPause(LocalDate today, LocalDate end) => ProgressClock.above(state.resetAt, () {
+        bool lengthens(Pause p) => p.contains(today) && p.end < end;
+        if (!state.pauses.any(lengthens)) return;
+        _set(state.copyWith(pauses: [for (final p in state.pauses) lengthens(p) ? p.endingOn(end) : p]));
+      });
+
   /// Replaces all progress with a cloud merge. Equal progress is ignored, so
   /// listeners only hear about real changes. A reset made on another device
   /// restarts the join date here too, as [resetAll] does there.

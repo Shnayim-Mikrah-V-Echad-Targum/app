@@ -305,15 +305,6 @@
   "@daysBeginToday": {
     "description": "On the streak card, in place of 0 days on track."
   },
-  "graceDays": "Grace days",
-  "graceDaysAvailable": "{count, plural, =0{none available} =1{1 available} other{{count} available}}",
-  "@graceDaysAvailable": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "dayKept": "Read",
   "dayAhead": "Ahead of plan",
   "dayCaughtUp": "Caught up",
@@ -823,6 +814,87 @@
       }
     }
   },
+  "aboutStreaks": "About streaks",
+  "@aboutStreaks": {
+    "description": "On Progress, beside the grace days: opens a sheet explaining grace days and the parsha streak."
+  },
+  "graceAvailable": "{count, plural, =0{No grace days available} =1{1 grace day available} other{{count} grace days available}}",
+  "@graceAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "thisYear": "This year",
+  "@thisYear": {
+    "description": "Heading on Progress over this year's count of parshiyot and the year bar."
+  },
+  "earlierYear": "An earlier year",
+  "@earlierYear": {
+    "description": "The same heading while the reader looks at the parshiyot of a cycle before this one."
+  },
+  "parshiyotOfYear": "{done} of {total} parshiyot",
+  "@parshiyotOfYear": {
+    "description": "The parshiyot finished in a year's cycle, out of all of them.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "yearBarSemanticsYear": "{year}: {done} of {total} parshiyot complete",
+  "@yearBarSemanticsYear": {
+    "description": "Screen-reader label of the year bar for a cycle before this one; year is its Hebrew year (5786).",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "showAllWeeks": "Show all ({count})",
+  "@showAllWeeks": {
+    "description": "Under the recent weeks on Progress: shows the rest of them in place.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pauseRowBody": "Pause for up to 30 days. Nothing resets while paused.",
+  "endPause": "End pause",
+  "extendPause": "Extend",
+  "@extendPause": {
+    "description": "On Progress while streaks are paused: makes the pause longer."
+  },
+  "extendPauseTitle": "Extend the pause",
+  "extendPauseBy": "Extend by",
+  "@extendPauseBy": {
+    "description": "Over choices of 1, 3, 7 or 14 days."
+  },
+  "recordTitle": "Finished so far",
+  "@recordTitle": {
+    "description": "Heading on Progress over what the reader has done: first aliyah, books finished, the siyum."
+  },
+  "milestoneSiyumFrom": "Siyum from Parshat {name}",
+  "@milestoneSiyumFrom": {
+    "description": "In the Record: a reader who joined partway through the year finished every parsha from the one they began with to the end of the Torah.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Vayera"
+      }
+    }
+  },
   "recentWeeks": "Recent weeks",
   "makeUpTitle": "Make up before Simchat Torah",
   "makeUpBody": "Optional. Make-ups count toward this year's siyum.",
@@ -841,7 +913,6 @@
   },
   "pauseEnded": "Welcome back! Your place is saved.",
   "streaksHidden": "Streak numbers are hidden. Your progress is still saved.",
-  "milestonesTitle": "Milestones",
   "graceExplainer": "Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.",
   "streakExplainer": "Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.",
   "statusLegend": "Legend",
@@ -875,7 +946,6 @@
   },
   "milestoneSiyum": "Siyum HaTorah",
   "milestoneComeback": "Welcome back",
-  "milestoneLocked": "Not yet reached",
   "settingsTitle": "Settings",
   "settingsReading": "Reading & customs",
   "settingsDisplay": "Display",

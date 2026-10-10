@@ -391,21 +391,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get daysBeginToday => 'יתחיל בקריאה של היום';
 
   @override
-  String get graceDays => 'ימי חסד';
-
-  @override
-  String graceDaysAvailable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count זמינים',
-      one: 'אחד זמין',
-      zero: 'אין זמינים',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get dayKept => 'נקרא';
 
   @override
@@ -926,6 +911,66 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get aboutStreaks => 'על הרצפים';
+
+  @override
+  String graceAvailable(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ימי חסד זמינים',
+      one: 'יום חסד אחד זמין',
+      zero: 'אין ימי חסד זמינים',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get thisYear => 'השנה';
+
+  @override
+  String get earlierYear => 'שנה קודמת';
+
+  @override
+  String parshiyotOfYear(int done, int total) {
+    return '$done מתוך $total פרשות';
+  }
+
+  @override
+  String yearBarSemanticsYear(String year, int done, int total) {
+    return '$year: הושלמו $done מתוך $total פרשות';
+  }
+
+  @override
+  String showAllWeeks(int count) {
+    return 'הצגת הכול ($count)';
+  }
+
+  @override
+  String get pauseRowBody =>
+      'אפשר להשהות עד 30 יום. דבר אינו מתאפס בזמן השהיה.';
+
+  @override
+  String get endPause => 'סיום ההשהיה';
+
+  @override
+  String get extendPause => 'הארכה';
+
+  @override
+  String get extendPauseTitle => 'הארכת ההשהיה';
+
+  @override
+  String get extendPauseBy => 'הארכה בעוד';
+
+  @override
+  String get recordTitle => 'הושלם עד כה';
+
+  @override
+  String milestoneSiyumFrom(String name) {
+    return 'סיום מפרשת $name';
+  }
+
+  @override
   String get recentWeeks => 'שבועות אחרונים';
 
   @override
@@ -960,9 +1005,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get streaksHidden => 'מספרי הרצף מוסתרים. ההתקדמות שלך עדיין נשמרת.';
-
-  @override
-  String get milestonesTitle => 'ציוני דרך';
 
   @override
   String get graceExplainer =>
@@ -1007,9 +1049,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get milestoneComeback => 'ברוך שובך';
-
-  @override
-  String get milestoneLocked => 'טרם הושג';
 
   @override
   String get settingsTitle => 'הגדרות';

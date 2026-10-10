@@ -36,7 +36,7 @@ enum YearSegment {
 /// Screen readers hear one sentence: how many parshiyot are complete, and
 /// which is being read now.
 class YearBar extends StatelessWidget {
-  const YearBar({super.key, required this.segments, this.currentName});
+  const YearBar({super.key, required this.segments, this.currentName, this.year});
 
   /// The state of each parsha, from Bereshit to Vezot HaBerakhah.
   final List<YearSegment> segments;
@@ -44,6 +44,10 @@ class YearBar extends StatelessWidget {
   /// This week's parsha in the UI language, named to screen readers while
   /// it is [YearSegment.current].
   final String? currentName;
+
+  /// For a cycle before this one, its Hebrew year ("5786"), which screen
+  /// readers then hear in place of "This year".
+  final String? year;
 
   static const double height = 8;
   static const double radius = 1.5;
@@ -60,12 +64,12 @@ class YearBar extends StatelessWidget {
   /// The segments for [cycle], by the same rules as the Torah map
   /// ([parshaStandings]): how each week of it ended in [weeks], the
   /// parshiyot finished at any time ([done], as `parshiyotDoneInCycle` gives
-  /// them), and the [current] portion.
+  /// them), and the [current] portion (null for a year gone by).
   static List<YearSegment> segmentsFor({
     required Iterable<WeekEvaluation> weeks,
     required int cycle,
     required Set<int> done,
-    required PortionId current,
+    required PortionId? current,
   }) =>
       [
         for (final standing in parshaStandings(weeks: weeks, cycle: cycle, done: done, current: current))
@@ -94,9 +98,12 @@ class YearBar extends StatelessWidget {
     return Semantics(
       container: true,
       excludeSemantics: true,
-      label: name != null && segments.contains(YearSegment.current)
-          ? l.yearBarSemanticsCurrent(complete, kParshaCount, name)
-          : l.yearBarSemantics(complete, kParshaCount),
+      label: switch (year) {
+        final year? => l.yearBarSemanticsYear(year, complete, kParshaCount),
+        _ when name != null && segments.contains(YearSegment.current) =>
+          l.yearBarSemanticsCurrent(complete, kParshaCount, name),
+        _ => l.yearBarSemantics(complete, kParshaCount),
+      },
       child: RepaintBoundary(
         child: LayoutBuilder(
           builder: (context, constraints) {

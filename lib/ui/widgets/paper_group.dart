@@ -9,12 +9,14 @@ import 'ornaments.dart';
 /// cards and list tiles.
 ///
 /// A hairline starts where the text of the row above it does: 54 in under a
-/// [PaperRow] with an icon, 16 under any other row. It runs to the card's end
-/// edge.
+/// [PaperRow] with an icon, 16 under any other row, or [ruleInset] where
+/// given, for rows of another kind with something before their text. It runs
+/// to the card's end edge.
 class PaperGroup extends StatelessWidget {
-  const PaperGroup({super.key, required this.children});
+  const PaperGroup({super.key, required this.children, this.ruleInset});
 
   final List<Widget> children;
+  final double? ruleInset;
 
   static const double iconInset = PaperRow._start + PaperRow._iconSlot;
   static const double plainInset = PaperRow._start;
@@ -52,7 +54,7 @@ class PaperGroup extends StatelessWidget {
                       painter: _RowRule(
                         color: sefer.hairline,
                         width: sefer.hairlineWidth,
-                        inset: child is PaperRow && child.icon != null ? iconInset : plainInset,
+                        inset: ruleInset ?? (child is PaperRow && child.icon != null ? iconInset : plainInset),
                         direction: direction,
                       ),
                       child: child,
@@ -116,6 +118,7 @@ class PaperRow extends StatelessWidget {
   const PaperRow({
     super.key,
     this.icon,
+    this.iconColor,
     required this.title,
     this.subtitle,
     this.value,
@@ -127,6 +130,9 @@ class PaperRow extends StatelessWidget {
   }) : chevron = chevron ?? onTap != null;
 
   final IconData? icon;
+
+  /// onSurfaceVariant unless given: the grace shield is in its own colour.
+  final Color? iconColor;
   final String title;
 
   /// At most two lines, unless the text is enlarged.
@@ -190,7 +196,7 @@ class PaperRow extends StatelessWidget {
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     heightFactor: 1,
-                    child: Icon(icon, size: 22, color: scheme.onSurfaceVariant),
+                    child: Icon(icon, size: 22, color: iconColor ?? scheme.onSurfaceVariant),
                   ),
                   AlignmentDirectional.centerStart,
                 ),

@@ -98,6 +98,9 @@ class Names {
 
   String verseNumber(int n) => _he ? HebrewText.gematria(n, punctuate: false) : '$n';
 
+  /// A Hebrew year: "5787", or in the Hebrew UI "תשפ״ז".
+  String hebrewYear(int year) => _he ? HebrewText.gematria(year % 1000) : '$year';
+
   String weekday(LocalDate d) => DateFormat.EEEE(context.localeName).format(d.toDateTime());
 
   String weekdayShort(LocalDate d) {
@@ -113,6 +116,9 @@ class Names {
 
   /// "11 Oct".
   String dateShort(LocalDate d) => DateFormat.MMMd(context.localeName).format(d.toDateTime());
+
+  /// "Oct 11, 2026".
+  String dateShortWithYear(LocalDate d) => DateFormat.yMMMd(context.localeName).format(d.toDateTime());
 
   String time(int minutesSinceMidnight) => DateFormat.jm(context.localeName)
       .format(DateTime(2000, 1, 1, minutesSinceMidnight ~/ 60, minutesSinceMidnight % 60));
