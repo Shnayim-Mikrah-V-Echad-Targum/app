@@ -51,8 +51,10 @@ MSYS_NO_PATHCONV=1 "$makepri" new /cf "$(win windows/msix/priconfig.xml)" /pr "$
   /mn "$(win "$release/AppxManifest.xml")" /of "$(win "$release/resources.pri")" /o
 MSYS_NO_PATHCONV=1 "$makepri" dump /if "$(win "$release/resources.pri")" /of "$(win "$out/resources.xml")" \
   /dt detailed /o
-# The dump may be UTF-16.
-if ! tr -d '\000' < "$out/resources.xml" | grep -qi 'language-he'; then
+# The dump may be UTF-16. MakePri writes a candidate's language either in its
+# qualifiers attribute (Language-HE-IL) or as <Qualifier name="Language"
+# value="HE-IL">, so look for the language tag itself.
+if ! tr -d '\000' < "$out/resources.xml" | grep -qiE 'language-he(-il)?|"he(-il)?"'; then
   echo "make_msix: resources.pri has no Hebrew name for the app (see $out/resources.xml)" >&2
   exit 1
 fi
