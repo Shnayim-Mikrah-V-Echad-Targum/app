@@ -981,7 +981,8 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 
 1. **TodayHeader** (12 top):
    - Row of `Expanded(Column)` and a help IconButton (help_outline, tooltip `guideTitle`).
-   - The column holds a running head in bodySmall w500 onSurfaceVariant (`'${names.dateLong(today)} · ${names.hebrewDate(today)}'`), a 2 gap, and the masthead `appTitle` in headlineMedium.
+   - The column holds a running head in bodySmall w500 onSurfaceVariant (`'${names.dateLong(today)} · ${names.hebrewDate(today)}'`; in the Hebrew UI the Hebrew date first, `'${names.weekday(today)}, ${names.hebrewDate(today)} · ${names.dateMonthDay(today)}'`), a 2 gap, and the masthead `appTitle` in headlineMedium.
+   - A line of parts between middle dots (the running head, and the hero's reference and reading day) stays one line where it fits, and otherwise sets each part on a line of its own, so it never breaks inside a part ("October / 10").
    - The masthead is not a heading; the parsha name stays heading level 1.
 2. Paused banner and open-previous-week card: NoticeBanner style.
    - After the paused banner, the **divergence notice**: a NoticeBanner with `info_outline` and the action below. It appears in a week when Israel and the Diaspora read different portions, for a reader whose reading and days of Yom Tov follow different places:
@@ -992,7 +993,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - **Eyebrow:** `parshatHashavua` by default; `erevShabbat` on Friday at or after 12:00 local; "Simchat Torah" when the portion is Vezot HaBerachah.
    - 8 gap, then the Hebrew pointed name: new `Names.portionPointed(p)` = `HebrewText.forDisplay(p.nameHe, nikud: true, teamim: false)`, in hebrewDisplay 46/60 primary. Semantics header level 1 with label `parshaLabel(name)`.
    - English UI: the Latin name in headlineLarge onSurface. Hebrew UI: the Latin name in bodyMedium onSurfaceVariant.
-   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`; on Erev Shabbat and Erev Yom Tov, with a city chosen for Shabbat times and the device on the city's clock, `todayCandleLighting` ("Candle-lighting 4:12 PM") in its place.
+   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`, or on Friday `shabbatBeginsTonight` ("Shabbat begins this evening"); on Erev Shabbat and Erev Yom Tov, with a city chosen for Shabbat times and the device on the city's clock, `todayCandleLighting` ("Candle-lighting 4:12 PM") in its place.
    - 16 gap, SeferDivider, 16 gap.
    - Row of ParshaRings 104, a 20 gap, and `Expanded(RingLegend)`. Under the legend, an end-aligned TextButton `allAliyot` ("All aliyot") with a chevron, to /today/week/{id} (within the Today tab). Under 360 dp the rings sit centred above the legend.
    - 20 gap, then a full-width Filled button (52) with `menu_book` and a label naming the destination. Let `next = ctx.nextAliyah` and `p` = the first ReadingPass of `next` that is not done:
@@ -1004,10 +1005,13 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - **Complete state:** the rings and CTA are replaced by the animated frame (§8), titleLarge `weekComplete`, and a marginalia line. Add a Tonal "Read the haftarah" if enabled and not yet read, and a Text "Discuss the parsha".
 4. **Today card** (start-aligned):
    - Eyebrow `todayReadingTitle`, then headlineSmall `names.aliyot(day.aliyot)`, then bodyMedium onSurfaceVariant verses and minutes.
-   - If behind and not done: marginalia with the new `todayBehind` copy (§10).
+   - **Catching up** (aliyot planned for earlier days unread, and not paused): Eyebrow `todayCatchUpTitle`, then headlineSmall every aliyah due (`ctx.dueAliyot()`): a run of three or more as `Names.aliyahRange` ("Shlishi – Shevi'i"), otherwise by name; then bodyMedium "5 aliyot · 96 verses · about 33 min", the minutes counting only the readings not done (`remainingMinutes`); then a marginalia line honest about the day (§10), never "midweek" after Wednesday:
+     - Sunday to Wednesday: `todayBehind`, counting the aliyot planned before today;
+     - Thursday: `todayBehindThursday`, that two days remain before Shabbat;
+     - Erev Shabbat or Erev Yom Tov (by the reader's days of Yom Tov): `todayLastDayShabbat` or `todayLastDayYomTov`, counting every aliyah due before it, with the Chumash as the calm alternative.
    - 16 gap, then actions:
-     - a Tonal `readAliyah(firstUnreadToday)` = "Read Shishi", ONLY when `firstUnreadToday != next`;
-     - a TextButton.icon `import_contacts` `readFromBook`, always.
+     - a Tonal `readAliyah(firstUnreadToday)` = "Read Shishi", ONLY when `firstUnreadToday != next` (catching up, the first aliyah due, only when it is not `next`: the hero's button already starts the backlog);
+     - a TextButton.icon `import_contacts` `readFromBook`, always. It opens a sheet (`readFromBookTitle`) of the aliyot due, each a checked CheckboxListTile, then `pickReadDate`, and marks the checked ones in one change. Where it starts a line, it moves by its padding so its icon sits on the text's edge.
      - Never two Filled buttons; never two unlabelled CTAs to different places.
    - Done: a check_circle 20 in primary with titleSmall `todayDone`.
    - No reading today: bodyMedium onSurfaceVariant `todayNothingPlanned`.
@@ -1244,9 +1248,14 @@ In order:
 | rashiScript | Rashi script | כתב רש״י |
 
 **Changed values**
-- `todayBehind`:
+- `todayBehind` (Sunday to Wednesday only):
   - English: "{count, plural, =1{One aliyah to catch up — very normal midweek.} other{{count} aliyot to catch up — very normal midweek.}}"
   - Hebrew: "{count, plural, =1{עוד עלייה אחת להשלים — רגיל לגמרי באמצע השבוע.} other{עוד {count} עליות להשלים — רגיל לגמרי באמצע השבוע.}}"
+- On the other days the line is honest about the day (§9 Today, 4):
+  - `todayBehindThursday`: "{count} aliyot to catch up — and there are still two days before Shabbat." / "עוד {count} עליות להשלים — ויש עוד יומיים עד שבת."
+  - `todayLastDayShabbat`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת."
+  - `todayLastDayYomTov`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג."
+  - Each has a singular form ("One aliyah…" / "עוד עלייה אחת…").
 - `guideTitle`: "How it works" / "איך זה עובד".
 - `settingsAbout`: "About this app" / "אודות האפליקציה".
 

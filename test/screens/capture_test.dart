@@ -102,6 +102,14 @@ const _screens = {
   'today_three_weeks': '/today',
   // Paused over the end of Bereshit, with its button to end the pause.
   'today_paused': '/today',
+  // Friday afternoon: Erev Shabbat heads the title page.
+  'today_afternoon': '/today',
+  // Behind on the Thursday of Noach, and on Erev Rosh Hashanah 5789: the
+  // catch-up line says so, rather than "midweek".
+  'today_thursday': '/today',
+  'today_erev_yomtov': '/today',
+  // Logging from a Chumash: the aliyot due, each checked.
+  'today_book': '/today',
   'parsha': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
@@ -328,6 +336,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_simchat_torah': (s) =>
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true, joinDate: LocalDate(2026, 9, 20)),
   'today_three_weeks': (s) => s.copyWith(joinDate: LocalDate(2027, 7, 18)),
+  'today_erev_yomtov': (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
   'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   's_reading_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   'haftarah_chabad_regular': (s) => s.withNusach(HaftarahNusach.chabad),
@@ -383,6 +392,10 @@ final _screenNow = <String, DateTime>{
   'today_simchat_torah': DateTime(2026, 10, 2, 11),
   // Tuesday of Pinchas 5787, read on 24 July 2027.
   'today_three_weeks': DateTime(2027, 7, 20, 11),
+  'today_afternoon': DateTime(2026, 10, 9, 14),
+  'today_thursday': DateTime(2026, 10, 15, 11),
+  // Wednesday 20 September 2028, before Rosh Hashanah and Haazinu's Shabbat.
+  'today_erev_yomtov': DateTime(2028, 9, 20, 11),
   // Tuesday of Matot-Masei 5787.
   'reader_third': DateTime(2027, 7, 27, 11),
   // The Wednesday of Bereshit, which began on Monday.
@@ -398,6 +411,11 @@ final _screenProgress = <String, ProgressState Function()>{
   'today_joined_midweek': () => ProgressState(weeks: {}),
   'today_simchat_torah': () => ProgressState(weeks: {}),
   'today_three_weeks': () => ProgressState(weeks: {}),
+  // Bereshit finished; nothing of Noach read.
+  'today_thursday': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
+      }),
+  'today_erev_yomtov': () => ProgressState(weeks: {}),
   // Nothing read yet: Rishon is the first aliyah ever finished.
   'reader_offer': () => ProgressState(weeks: {}),
   'reader_offer_city': () => ProgressState(weeks: {}),
@@ -677,6 +695,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_third': _scrollToEnd,
   // The haftarah, near the end of Today.
   'today_three_weeks': _scrollToEnd,
+  'today_book': (tester) async {
+    await tester.ensureVisible(find.byIcon(Icons.import_contacts));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.import_contacts));
+  },
   'guide_end': _scrollToEnd,
   // The regular haftarah's heading, with the special one's end above it.
   'haftarah_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.6),
@@ -958,9 +981,10 @@ const _desktopScreens = {
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'today_paused', 'progress', 'progress_map', 'kit_week', 's_data_import'};
+const _narrowScreens = {'today', 'today_book', 'today_paused', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
   'today',
+  'today_book',
   'reader_offer',
   'reader_offer_city',
   's_reminders_on',

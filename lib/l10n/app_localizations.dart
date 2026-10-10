@@ -507,6 +507,60 @@ abstract class AppLocalizations {
   /// **'Parshat {name}'**
   String parshaLabel(String name);
 
+  /// The eyebrow over the parsha's name in the Today hero, on most days.
+  ///
+  /// In en, this message translates to:
+  /// **'Parshat HaShavua'**
+  String get parshatHashavua;
+
+  /// The eyebrow over the parsha's name in the Today hero on Friday afternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Erev Shabbat'**
+  String get erevShabbat;
+
+  /// The eyebrow over the parsha's name in the Today hero in the week of Vezot HaBerachah, which is read on Simchat Torah.
+  ///
+  /// In en, this message translates to:
+  /// **'Simchat Torah'**
+  String get simchatTorahEyebrow;
+
+  /// In the Today hero on Friday, in place of the countdown to Shabbat (shabbatInDays).
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat begins this evening'**
+  String get shabbatBeginsTonight;
+
+  /// A link under the rings in the Today hero to the week's page, which lists its seven aliyot.
+  ///
+  /// In en, this message translates to:
+  /// **'All aliyot'**
+  String get allAliyot;
+
+  /// The Today hero's button when nothing of the week is read yet. aliyah is the aliyah it opens, such as Rishon.
+  ///
+  /// In en, this message translates to:
+  /// **'Start · {aliyah}'**
+  String startAt(String aliyah);
+
+  /// The Today hero's button: aliyah is the first aliyah not yet read, such as Shlishi.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue · {aliyah}'**
+  String continueAt(String aliyah);
+
+  /// The Today hero's button when some readings of the next aliyah are done: pass is the reading it resumes at, such as Targum.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue · {aliyah}, {pass}'**
+  String continueAtPass(String aliyah, String pass);
+
+  /// A button on Today's reading card that opens the aliyah named, such as Shishi.
+  ///
+  /// In en, this message translates to:
+  /// **'Read {aliyah}'**
+  String readAliyah(String aliyah);
+
   /// No description provided for @todayReadingTitle.
   ///
   /// In en, this message translates to:
@@ -531,11 +585,41 @@ abstract class AppLocalizations {
   /// **'No reading is planned for today. A good day to catch up or read ahead.'**
   String get todayNothingPlanned;
 
-  /// No description provided for @todayBehind.
+  /// The eyebrow of Today's reading card while aliyot planned for earlier days are still to read.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 aliyah behind — very normal midweek.} other{{count} aliyot behind — very normal midweek.}}'**
+  /// **'Catching up'**
+  String get todayCatchUpTitle;
+
+  /// No description provided for @aliyotCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 aliyah} other{{count} aliyot}}'**
+  String aliyotCount(int count);
+
+  /// On Today's reading card, under the aliyot to catch up, from Sunday to Wednesday. count is how many aliyot planned for earlier days are still to read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah to catch up — very normal midweek.} other{{count} aliyot to catch up — very normal midweek.}}'**
   String todayBehind(int count);
+
+  /// As todayBehind, on Thursday, when Thursday and Friday are left for reading before Shabbat.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah to catch up — and there are still two days before Shabbat.} other{{count} aliyot to catch up — and there are still two days before Shabbat.}}'**
+  String todayBehindThursday(int count);
+
+  /// As todayBehind, on Erev Shabbat. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.}}'**
+  String todayLastDayShabbat(int count);
+
+  /// As todayBehind, on Erev Yom Tov. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.}}'**
+  String todayLastDayYomTov(int count);
 
   /// No description provided for @readTodaysAliyah.
   ///
@@ -560,6 +644,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I read it in a Chumash'**
   String get readFromBook;
+
+  /// The title of the sheet that logs reading done from a printed Chumash, over the aliyot to log, each checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Which aliyot did you read?'**
+  String get readFromBookTitle;
 
   /// No description provided for @weekComplete.
   ///
@@ -602,6 +692,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only the haftarah is left.'**
   String get openWeekHaftarahLeft;
+
+  /// The button of the notice on Today that last week's parsha is still open: name is the parsha.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String openWeekOpen(String name);
+
+  /// A button that opens the week's haftarah.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the haftarah'**
+  String get readTheHaftarah;
 
   /// No description provided for @checkInTitle.
   ///
@@ -662,6 +764,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discuss this week\'s parsha'**
   String get discussThisWeek;
+
+  /// The heading over the haftarah and the discussion on Today.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get thisWeek;
 
   /// No description provided for @streakParsha.
   ///

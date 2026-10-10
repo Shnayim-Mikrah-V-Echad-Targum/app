@@ -352,7 +352,7 @@ void main() {
 
     testWidgets('opened from Today stays in the Today tab, and so does its haftarah', (tester) async {
       final router = await _pump(tester);
-      await tester.tap(find.widgetWithText(OutlinedButton, '0 of 7 aliyot'));
+      await tester.tap(find.widgetWithText(TextButton, 'All aliyot'));
       await tester.pumpAndSettle();
       expect(find.byType(WeekOverviewScreen), findsOneWidget);
       expect(location(router), '/today/week/5787:1');
@@ -523,7 +523,7 @@ void main() {
 
     testWidgets('goes back to the week it was opened from, rather than opening it again', (tester) async {
       await _pump(tester);
-      await tester.tap(find.widgetWithText(OutlinedButton, '0 of 7 aliyot'));
+      await tester.tap(find.widgetWithText(TextButton, 'All aliyot'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Rishon · aliyah 1'));
       await _loadTexts(tester);
@@ -539,7 +539,7 @@ void main() {
 
     testWidgets('opened from Today shows the week in its place, within Today', (tester) async {
       await _pump(tester);
-      await tester.tap(find.widgetWithText(FilledButton, 'Start reading'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Start · Rishon'));
       await _loadTexts(tester);
       expect(find.byType(ReaderScreen), findsOneWidget);
 
@@ -576,7 +576,7 @@ void main() {
         }
       }
       await _pump(tester, progress: ProgressState(weeks: {'5787:1': week}));
-      await tester.tap(find.widgetWithText(FilledButton, 'Continue reading'));
+      await tester.tap(find.widgetWithText(FilledButton, "Continue · Shevi'i"));
       await _loadTexts(tester);
       await tester.tap(find.byTooltip('More options'));
       await tester.pumpAndSettle();

@@ -7,6 +7,7 @@ import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
@@ -131,6 +132,31 @@ void main() {
 
     context = await _page(tester, hebrew: true);
     expect(context.l10n.bookOfTorah(Names(context).book(kTorahBooks.first)), 'ספר בראשית');
+  });
+
+  testWidgets('aliyot to read are spanned when three or more run on, and named otherwise', (tester) async {
+    var names = Names(await _page(tester, hebrew: false));
+    expect(names.aliyotSpan([2, 3, 4, 5, 6]), "Shlishi – Shevi'i");
+    expect(names.aliyotSpan([0, 1, 2]), 'Rishon – Shlishi');
+    expect(names.aliyotSpan([4, 5]), 'Chamishi and Shishi');
+    expect(names.aliyotSpan([3]), "Revi'i");
+    // Not a run: Revi'i was read ahead.
+    expect(names.aliyotSpan([2, 4, 5]), 'Shlishi, Chamishi and Shishi');
+    expect(names.aliyotSpan([0, 1, 2, 3, 4, 5, 6]), 'The whole parsha');
+
+    names = Names(await _page(tester, hebrew: true));
+    expect(names.aliyotSpan([2, 3, 4, 5, 6]), 'שלישי – שביעי');
+  });
+
+  testWidgets('a reading of an aliyah is named as the rings\' legend names it', (tester) async {
+    var names = Names(await _page(tester, hebrew: false));
+    expect(
+      [for (final p in ReadingPass.values) names.readingPass(p)],
+      ['First reading', 'Second reading', 'Targum'],
+    );
+    expect(names.readingPass(ReadingPass.targum, rashi: true), 'Rashi');
+    names = Names(await _page(tester, hebrew: true));
+    expect(names.readingPass(ReadingPass.targum), 'תרגום');
   });
 
   testWidgets('the second reading is named as the setting says', (tester) async {

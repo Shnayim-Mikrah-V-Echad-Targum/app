@@ -258,6 +258,41 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get parshatHashavua => 'פרשת השבוע';
+
+  @override
+  String get erevShabbat => 'ערב שבת';
+
+  @override
+  String get simchatTorahEyebrow => 'שמחת תורה';
+
+  @override
+  String get shabbatBeginsTonight => 'שבת נכנסת הערב';
+
+  @override
+  String get allAliyot => 'כל העליות';
+
+  @override
+  String startAt(String aliyah) {
+    return 'התחלה · $aliyah';
+  }
+
+  @override
+  String continueAt(String aliyah) {
+    return 'המשך · $aliyah';
+  }
+
+  @override
+  String continueAtPass(String aliyah, String pass) {
+    return 'המשך · $aliyah, $pass';
+  }
+
+  @override
+  String readAliyah(String aliyah) {
+    return 'לקריאת $aliyah';
+  }
+
+  @override
   String get todayReadingTitle => 'הקריאה של היום';
 
   @override
@@ -271,12 +306,61 @@ class AppLocalizationsHe extends AppLocalizations {
       'לא מתוכננת קריאה להיום. זמן טוב להשלים או להקדים.';
 
   @override
+  String get todayCatchUpTitle => 'משלימים';
+
+  @override
+  String aliyotCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count עליות',
+      one: 'עלייה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String todayBehind(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count עליות בפיגור — רגיל לגמרי באמצע השבוע.',
-      one: 'עלייה אחת בפיגור — רגיל לגמרי באמצע השבוע.',
+      other: 'עוד $count עליות להשלים — רגיל לגמרי באמצע השבוע.',
+      one: 'עוד עלייה אחת להשלים — רגיל לגמרי באמצע השבוע.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayBehindThursday(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'עוד $count עליות להשלים — ויש עוד יומיים עד שבת.',
+      one: 'עוד עלייה אחת להשלים — ויש עוד יומיים עד שבת.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayShabbat(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'עוד $count עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.',
+      one: 'עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomTov(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'עוד $count עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג.',
+      one: 'עוד עלייה אחת לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג.',
     );
     return '$_temp0';
   }
@@ -292,6 +376,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get readFromBook => 'קראתי בחומש';
+
+  @override
+  String get readFromBookTitle => 'אילו עליות נקראו?';
 
   @override
   String get weekComplete => 'הפרשה של השבוע הושלמה. יישר כוח!';
@@ -319,6 +406,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get openWeekHaftarahLeft => 'נשארה רק ההפטרה.';
+
+  @override
+  String openWeekOpen(String name) {
+    return 'לפרשת $name';
+  }
+
+  @override
+  String get readTheHaftarah => 'לקריאת ההפטרה';
 
   @override
   String get checkInTitle => 'שבוע טוב! קראת בשבת?';
@@ -358,6 +453,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get discussThisWeek => 'דיון על פרשת השבוע';
+
+  @override
+  String get thisWeek => 'השבוע';
 
   @override
   String get streakParsha => 'רצף פרשות';

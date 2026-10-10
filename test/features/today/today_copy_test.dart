@@ -60,7 +60,8 @@ void main() {
   testWidgets('a special haftarah is named in words, not by its key in the data', (tester) async {
     // Tuesday of Pinchas 5787, read on 24 July 2027, after 17 Tammuz.
     await openToday(tester, _diaspora.copyWith(joinDate: LocalDate(2027, 7, 18)), DateTime(2027, 7, 20, 10));
-    expect(find.text('Special haftarah: First haftarah of the Three Weeks'), findsOneWidget);
+    // A line of its own under the haftarah's reference.
+    expect(find.textContaining('\nSpecial haftarah: First haftarah of the Three Weeks'), findsOneWidget);
   });
 
   group('dates', () {
@@ -68,10 +69,14 @@ void main() {
     // read on Shabbat the 10th, 29 Tishrei.
     final wednesday = DateTime(2026, 10, 7, 10);
 
+    // The running head and the hero's line each set their parts on one line
+    // between middle dots where they fit, and on lines of their own where
+    // they don't: so each part is found as part of a text.
     testWidgets('in English, are Gregorian, with the Hebrew date beside them', (tester) async {
       final c = await openToday(tester, _diaspora, wednesday);
-      expect(find.text('Wednesday, October 7 · 26 Tishrei 5787'), findsOneWidget);
-      expect(find.text('Read on Shabbat, October 10'), findsOneWidget);
+      expect(find.textContaining(RegExp(r'^Wednesday, October 7( · 26 Tishrei 5787)?$')), findsOneWidget);
+      expect(find.textContaining(RegExp(r'^(Wednesday, October 7 · )?26 Tishrei 5787$')), findsOneWidget);
+      expect(find.textContaining('Read on Shabbat, October 10'), findsOneWidget);
 
       c.read(routerProvider).go('/week/5787:1');
       await tester.pumpAndSettle();
@@ -81,8 +86,10 @@ void main() {
 
     testWidgets('in Hebrew, take ב before the month, and the week page gives the Gregorian date', (tester) async {
       final c = await openToday(tester, _diaspora.copyWith(language: AppLanguage.hebrew), wednesday);
-      expect(find.text('יום רביעי, 7 באוקטובר · כ״ו בתשרי תשפ״ז'), findsOneWidget);
-      expect(find.text('נקראת בשבת, כ״ט בתשרי'), findsOneWidget);
+      // The Hebrew date first, in the Hebrew UI.
+      expect(find.textContaining(RegExp(r'^יום רביעי, כ״ו בתשרי תשפ״ז( · 7 באוקטובר)?$')), findsOneWidget);
+      expect(find.textContaining(RegExp(r'^(יום רביעי, כ״ו בתשרי תשפ״ז · )?7 באוקטובר$')), findsOneWidget);
+      expect(find.textContaining('נקראת בשבת, כ״ט בתשרי'), findsOneWidget);
 
       c.read(routerProvider).go('/week/5787:1');
       await tester.pumpAndSettle();
@@ -93,6 +100,6 @@ void main() {
 
   testWidgets('reading from a printed Chumash can be logged', (tester) async {
     await openToday(tester, _diaspora, DateTime(2026, 10, 13, 10));
-    expect(find.widgetWithText(OutlinedButton, 'I read it in a Chumash'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'I read it in a Chumash'), findsOneWidget);
   });
 }

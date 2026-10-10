@@ -6,6 +6,7 @@ import '../core/calendar/local_date.dart';
 import '../core/calendar/parsha_schedule.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/models/parsha.dart';
+import '../features/progress/domain/progress_models.dart';
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 
@@ -48,6 +49,18 @@ class Names {
         _ => _l.aliyah7,
       };
 
+  /// A run of aliyot, from [first] to [last]: "Shlishi – Shevi'i".
+  String aliyahRange(int first, int last) => '${aliyah(first)} – ${aliyah(last)}';
+
+  /// The aliyot to read, by name: one alone, a run of three or more from its
+  /// first to its last ([aliyahRange]), or else each of them ([aliyot]).
+  String aliyotSpan(List<int> indices) {
+    if (indices.length > 2 && indices.length < 7 && indices.last - indices.first == indices.length - 1) {
+      return aliyahRange(indices.first, indices.last);
+    }
+    return aliyot(indices);
+  }
+
   /// "Revi'i" or "Chamishi and Shishi".
   String aliyot(List<int> indices) {
     if (indices.isEmpty) return '';
@@ -65,6 +78,15 @@ class Names {
         SecondReading.onkelosAndRashi => _l.secondBoth,
       };
 
+  /// The name of reading [pass] of an aliyah, as the rings' legend gives it:
+  /// "First reading", "Second reading", and then "Targum", or "Rashi" for a
+  /// reader whose second reading is Rashi alone ([rashi]).
+  String readingPass(ReadingPass pass, {bool rashi = false}) => switch (pass) {
+        ReadingPass.mikra1 => _l.passMikra1,
+        ReadingPass.mikra2 => _l.passMikra2,
+        ReadingPass.targum => rashi ? _l.passRashi : _l.passTargum,
+      };
+
   /// The routine [anchor] as it completes "After I…": "finish Shacharit".
   String habitAnchor(HabitAnchor anchor) => switch (anchor) {
         HabitAnchor.shacharit => _l.anchorShacharit,
@@ -78,6 +100,10 @@ class Names {
   /// vowels; in English, the transliteration in the chosen style.
   String portion(PortionInfo p, {required bool ashkenazi}) =>
       _he ? HebrewText.stripNikud(p.nameHe) : p.displayName(ashkenazi: ashkenazi);
+
+  /// The parsha's Hebrew name with its vowels, without cantillation:
+  /// "בְּרֵאשִׁית", as a title sets it.
+  String portionPointed(PortionInfo p) => HebrewText.forDisplay(p.nameHe, nikud: true, teamim: false);
 
   /// Secondary name: the other language.
   String portionAlt(PortionInfo p, {required bool ashkenazi}) =>

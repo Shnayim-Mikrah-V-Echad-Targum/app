@@ -172,8 +172,8 @@ void main() {
     testWidgets('is still open on Today, which leads to its haftarah', (tester) async {
       await turnHaftarahOff(tester, _now);
       expect(find.text('Bereshit is still open'), findsOneWidget);
-      expect(find.text('Only the haftarah is left.'), findsOneWidget);
-      await tester.tap(find.text('Bereshit is still open'));
+      expect(find.textContaining('Only the haftarah is left.'), findsOneWidget);
+      await tester.tap(find.text('Read the haftarah'));
       await loadTexts(tester);
       expect(find.byType(HaftarahScreen), findsOneWidget);
     });

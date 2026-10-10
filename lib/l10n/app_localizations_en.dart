@@ -257,6 +257,41 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get parshatHashavua => 'Parshat HaShavua';
+
+  @override
+  String get erevShabbat => 'Erev Shabbat';
+
+  @override
+  String get simchatTorahEyebrow => 'Simchat Torah';
+
+  @override
+  String get shabbatBeginsTonight => 'Shabbat begins this evening';
+
+  @override
+  String get allAliyot => 'All aliyot';
+
+  @override
+  String startAt(String aliyah) {
+    return 'Start · $aliyah';
+  }
+
+  @override
+  String continueAt(String aliyah) {
+    return 'Continue · $aliyah';
+  }
+
+  @override
+  String continueAtPass(String aliyah, String pass) {
+    return 'Continue · $aliyah, $pass';
+  }
+
+  @override
+  String readAliyah(String aliyah) {
+    return 'Read $aliyah';
+  }
+
+  @override
   String get todayReadingTitle => 'Today\'s reading';
 
   @override
@@ -270,12 +305,62 @@ class AppLocalizationsEn extends AppLocalizations {
       'No reading is planned for today. A good day to catch up or read ahead.';
 
   @override
+  String get todayCatchUpTitle => 'Catching up';
+
+  @override
+  String aliyotCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aliyot',
+      one: '1 aliyah',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String todayBehind(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count aliyot behind — very normal midweek.',
-      one: '1 aliyah behind — very normal midweek.',
+      other: '$count aliyot to catch up — very normal midweek.',
+      one: 'One aliyah to catch up — very normal midweek.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayBehindThursday(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot to catch up — and there are still two days before Shabbat.',
+      one: 'One aliyah to catch up — and there are still two days before Shabbat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayShabbat(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.',
+      one: 'One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomTov(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.',
+      one: 'One aliyah left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.',
     );
     return '$_temp0';
   }
@@ -291,6 +376,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readFromBook => 'I read it in a Chumash';
+
+  @override
+  String get readFromBookTitle => 'Which aliyot did you read?';
 
   @override
   String get weekComplete => 'This week\'s parsha is complete. Yasher koach!';
@@ -318,6 +406,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openWeekHaftarahLeft => 'Only the haftarah is left.';
+
+  @override
+  String openWeekOpen(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String get readTheHaftarah => 'Read the haftarah';
 
   @override
   String get checkInTitle => 'Shavua tov! Did you read on Shabbat?';
@@ -357,6 +453,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discussThisWeek => 'Discuss this week\'s parsha';
+
+  @override
+  String get thisWeek => 'This week';
 
   @override
   String get streakParsha => 'Parsha streak';

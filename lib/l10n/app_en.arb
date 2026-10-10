@@ -185,12 +185,111 @@
       }
     }
   },
+  "parshatHashavua": "Parshat HaShavua",
+  "@parshatHashavua": {
+    "description": "The eyebrow over the parsha's name in the Today hero, on most days."
+  },
+  "erevShabbat": "Erev Shabbat",
+  "@erevShabbat": {
+    "description": "The eyebrow over the parsha's name in the Today hero on Friday afternoon."
+  },
+  "simchatTorahEyebrow": "Simchat Torah",
+  "@simchatTorahEyebrow": {
+    "description": "The eyebrow over the parsha's name in the Today hero in the week of Vezot HaBerachah, which is read on Simchat Torah."
+  },
+  "shabbatBeginsTonight": "Shabbat begins this evening",
+  "@shabbatBeginsTonight": {
+    "description": "In the Today hero on Friday, in place of the countdown to Shabbat (shabbatInDays)."
+  },
+  "allAliyot": "All aliyot",
+  "@allAliyot": {
+    "description": "A link under the rings in the Today hero to the week's page, which lists its seven aliyot."
+  },
+  "startAt": "Start · {aliyah}",
+  "@startAt": {
+    "description": "The Today hero's button when nothing of the week is read yet. aliyah is the aliyah it opens, such as Rishon.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "continueAt": "Continue · {aliyah}",
+  "@continueAt": {
+    "description": "The Today hero's button: aliyah is the first aliyah not yet read, such as Shlishi.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "continueAtPass": "Continue · {aliyah}, {pass}",
+  "@continueAtPass": {
+    "description": "The Today hero's button when some readings of the next aliyah are done: pass is the reading it resumes at, such as Targum.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      },
+      "pass": {
+        "type": "String"
+      }
+    }
+  },
+  "readAliyah": "Read {aliyah}",
+  "@readAliyah": {
+    "description": "A button on Today's reading card that opens the aliyah named, such as Shishi.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
   "todayReadingTitle": "Today's reading",
   "todayDone": "Today's reading is done",
   "todayAhead": "You're ahead of plan. Well done!",
   "todayNothingPlanned": "No reading is planned for today. A good day to catch up or read ahead.",
-  "todayBehind": "{count, plural, =1{1 aliyah behind — very normal midweek.} other{{count} aliyot behind — very normal midweek.}}",
+  "todayCatchUpTitle": "Catching up",
+  "@todayCatchUpTitle": {
+    "description": "The eyebrow of Today's reading card while aliyot planned for earlier days are still to read."
+  },
+  "aliyotCount": "{count, plural, =1{1 aliyah} other{{count} aliyot}}",
+  "@aliyotCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayBehind": "{count, plural, =1{One aliyah to catch up — very normal midweek.} other{{count} aliyot to catch up — very normal midweek.}}",
   "@todayBehind": {
+    "description": "On Today's reading card, under the aliyot to catch up, from Sunday to Wednesday. count is how many aliyot planned for earlier days are still to read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayBehindThursday": "{count, plural, =1{One aliyah to catch up — and there are still two days before Shabbat.} other{{count} aliyot to catch up — and there are still two days before Shabbat.}}",
+  "@todayBehindThursday": {
+    "description": "As todayBehind, on Thursday, when Thursday and Friday are left for reading before Shabbat.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayLastDayShabbat": "{count, plural, =1{One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.}}",
+  "@todayLastDayShabbat": {
+    "description": "As todayBehind, on Erev Shabbat. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayLastDayYomTov": "{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.}}",
+  "@todayLastDayYomTov": {
+    "description": "As todayBehind, on Erev Yom Tov. count is every aliyah planned up to today and not yet read.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -201,6 +300,10 @@
   "continueReading": "Continue reading",
   "startReading": "Start reading",
   "readFromBook": "I read it in a Chumash",
+  "readFromBookTitle": "Which aliyot did you read?",
+  "@readFromBookTitle": {
+    "description": "The title of the sheet that logs reading done from a printed Chumash, over the aliyot to log, each checked."
+  },
   "weekComplete": "This week's parsha is complete. Yasher koach!",
   "haftarahLabel": "Haftarah",
   "haftarahRead": "Haftarah read",
@@ -232,6 +335,19 @@
     }
   },
   "openWeekHaftarahLeft": "Only the haftarah is left.",
+  "openWeekOpen": "Open {name}",
+  "@openWeekOpen": {
+    "description": "The button of the notice on Today that last week's parsha is still open: name is the parsha.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "readTheHaftarah": "Read the haftarah",
+  "@readTheHaftarah": {
+    "description": "A button that opens the week's haftarah."
+  },
   "checkInTitle": "Shavua tov! Did you read on Shabbat?",
   "checkInBody": "Log what you read from a printed Chumash — it counts just the same.",
   "checkInFinished": "I finished it on Shabbat",
@@ -282,6 +398,10 @@
     }
   },
   "discussThisWeek": "Discuss this week's parsha",
+  "thisWeek": "This week",
+  "@thisWeek": {
+    "description": "The heading over the haftarah and the discussion on Today."
+  },
   "streakParsha": "Parsha streak",
   "streakDays": "Days on track",
   "weeksCount": "{count, plural, =1{1 week} other{{count} weeks}}",
