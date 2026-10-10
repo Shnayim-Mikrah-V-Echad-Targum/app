@@ -21,6 +21,20 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
   }
 }
 
+/// A status message said to screen readers without being shown, for a
+/// moment when a SnackBar would cover what the user has come back to, such
+/// as the reply box they signed in for; any message still shown goes too.
+/// Where the platform takes no announcements (Android), it is shown after
+/// all: its live region is the only way to say it.
+void announceStatus(BuildContext context, String message) {
+  if (MediaQuery.supportsAnnounceOf(context)) {
+    ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
+    SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
+  } else {
+    showStatus(context, message);
+  }
+}
+
 /// Light haptic feedback, if the user hasn't turned it off.
 void hapticTap(WidgetRef ref) {
   if (ref.read(settingsProvider).haptics) HapticFeedback.lightImpact();

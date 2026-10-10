@@ -310,6 +310,45 @@ void main() {
     expect(find.text('3 posts'), findsOneWidget);
   });
 
+  testWidgets('signing in to send a reply goes back to it with nothing over it, and says as whom', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(supportsAnnounce: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    final c = await _pump(tester);
+    c.read(routerProvider).go('/community/thread/1');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Write a reply'), 'Thank you.');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Reply'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AccountScreen), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.tap(find.text('Email me a code'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '123456');
+    tester.takeAnnouncements();
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ThreadScreen), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing, reason: 'nothing covers the reply box');
+    expect([for (final a in tester.takeAnnouncements()) a.message], [startsWith('Signed in as ')]);
+    // The reply goes on: a first post asks to accept the guidelines.
+    expect(find.text("I'll follow the community guidelines"), findsOneWidget);
+  });
+
+  testWidgets('"Use a different email" gives the email field the focus', (tester) async {
+    final c = await _pump(tester);
+    c.read(routerProvider).go('/community/account');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.tap(find.text('Email me a code'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Use a different email'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(find.byType(TextField)).decoration?.labelText, 'Email address');
+    expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isTrue);
+  });
+
   group('the weekly discussion', () {
     testWidgets('of a combined week opens from its page, named for both portions', (tester) async {
       final forums = _Threads();

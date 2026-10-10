@@ -1253,7 +1253,7 @@ abstract class AppLocalizations {
   /// No description provided for @shortcutFocusVerse.
   ///
   /// In en, this message translates to:
-  /// **'Focus mode: previous or next verse'**
+  /// **'Full text in focus mode: previous or next verse'**
   String get shortcutFocusVerse;
 
   /// No description provided for @keyUp.
@@ -2123,7 +2123,7 @@ abstract class AppLocalizations {
   /// No description provided for @singleKeyShortcutsDesc.
   ///
   /// In en, this message translates to:
-  /// **'While reading, T, N, L, + and − work on their own. Turn this off if you use speech input or screen-reader quick keys.'**
+  /// **'While reading, T, N, L, + and − work on their own, without Ctrl. Turn this off if you use speech input or screen-reader quick keys.'**
   String get singleKeyShortcutsDesc;
 
   /// No description provided for @screenReaderText.

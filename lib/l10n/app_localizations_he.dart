@@ -721,7 +721,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shortcutPageUp => 'עמוד למעלה, ואז השלב הקודם';
 
   @override
-  String get shortcutFocusVerse => 'מצב מיקוד: הפסוק הקודם או הבא';
+  String get shortcutFocusVerse => 'טקסט מלא במצב מיקוד: הפסוק הקודם או הבא';
 
   @override
   String get keyUp => 'חץ למעלה';
@@ -1194,7 +1194,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get singleKeyShortcutsDesc =>
-      'בזמן הקריאה המקשים T,‏ N,‏ L,‏ + ו־− פועלים לבדם. כדאי לכבות אם משתמשים בקלט קולי או במקשים המהירים של קורא מסך.';
+      'בזמן הקריאה, המקשים T,‏ N,‏ L,‏ + ומינוס פועלים בלחיצה אחת, בלי Ctrl. כדאי לכבות את האפשרות אם משתמשים בקלט קולי או במקשים המהירים של קורא מסך.';
 
   @override
   String get screenReaderText => 'טקסט לקורא מסך';

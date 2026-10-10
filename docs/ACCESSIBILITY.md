@@ -63,7 +63,8 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - All tap targets are at least 48×48 dp, which also meets Apple's 44 pt.
 - Every action can be done with the keyboard, with a visible focus ring. Tab order follows reading order and mirrors in Hebrew.
 - The focus is never lost when the page changes in place:
-  - When an aliyah is finished, the panel's first button (the next aliyah, else the haftarah, else Done) takes it. On Android, where announcements aren't taken, the panel's heading is a live region.
+  - When an aliyah is finished, the panel's first button (the next aliyah, else the haftarah, else Done) takes it. On Android, where announcements aren't taken, the panel's heading is a live region. After the first aliyah ever, the reminders offered keep it until they are answered, and then the panel's first button takes it.
+  - *Mark this aliyah as read* at the end of the full text goes once pressed, and the reader itself takes the focus: its keys keep working, and Tab goes on from the top.
   - Continuing from the panel, leaving it with Back, or reaching the first step, where Back is disabled, gives it to Next.
   - After *Email me a code*, the code field takes it, and a status message says where the code went.
   - *Load more* keeps it while it loads. Then the first discussion loaded, in the button's place, takes it, and a status message says how many came.
@@ -84,7 +85,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   | Listen / stop | Ctrl+Shift+L | L |
   | Show shortcuts | F1, or Ctrl+/ | ?, F1, or Ctrl+/ |
 
-  Page Down and Page Up scroll a step that is longer than the screen before they move on, so nothing is skipped at a large reading size. In focus mode, the full text opens on the reader's place, and the verse that ↓ or ↑ moves to is scrolled into view, nearer the top of the screen than the bottom. Verses are not Tab stops of their own, so Tab reaches *Mark this aliyah as read* at the end of the text.
+  Page Down and Page Up scroll a step that is longer than the screen before they move on, so nothing is skipped at a large reading size. In focus mode, the full text opens on the reader's place, the first verse of the step the guided reader would resume at, and the verse that ↓ or ↑ moves to is scrolled into view, nearer the top of the screen than the bottom. The shortcuts list shows ↑ and ↓ for focus mode only while it is on. Verses are not Tab stops of their own, so Tab reaches *Mark this aliyah as read* at the end of the text.
 
 - In the community, F5 or Ctrl+R (⌘R on macOS) refreshes the forums, a forum, a thread or the moderation queue. On the web those keys stay the browser's. Each of these pages also has a Refresh button.
 - No action needs a swipe, drag or multi-finger gesture. Pull to refresh has a Refresh button beside it. Everything is a tap, click or key press, and nothing has a time limit.

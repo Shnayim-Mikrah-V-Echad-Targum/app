@@ -156,9 +156,10 @@ final _sceneProgress = <String, ProgressState Function()>{
   'today_haftarah_left': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
-  // Shlishi's first reading has reached Genesis 2:10.
+  // All three readings of Shlishi (from Genesis 2:20) have reached 3:1,
+  // its seventh verse, where the guided reader resumes.
   'reader_focus': () => ProgressState(weeks: {
-        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 0]),
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 6]),
       }),
   // Both Hebrew readings of 32:1–4 done: the Targum is next.
   'reader_third': () => ProgressState(weeks: {

@@ -820,6 +820,91 @@ void main() {
       });
     }
 
+    testWidgets('the first aliyah ever finished offers reminders, which keep the focus until they are answered', (tester) async {
+      await open(
+        tester,
+        '/read/5787:2/0',
+        settings: const AppSettings(onboardingComplete: true, method: ReadingMethod.aliyahByAliyah),
+      );
+      Focus.of(tester.element(find.text('Next'))).requestFocus();
+      await tester.pump();
+      for (var i = 0; i < 3; i++) {
+        await press(tester, LogicalKeyboardKey.enter);
+      }
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(Focus.of(tester.element(find.text('Continue with Sheni'))).hasFocus, isFalse,
+          reason: 'nothing behind the dialog has the focus');
+      // Enter answers the dialog, rather than continuing behind it.
+      final answer = find.descendant(of: find.byType(AlertDialog), matching: find.bySubtype<ButtonStyleButton>()).first;
+      Focus.of(tester.element(find.descendant(of: answer, matching: find.byType(Text)))).requestFocus();
+      await tester.pump();
+      await press(tester, LogicalKeyboardKey.enter);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Noach · Rishon'), findsOneWidget);
+      expect(focused(tester, 'Continue with Sheni'), isTrue, reason: "the panel's first button takes the focus back");
+    });
+
+    testWidgets("marking the aliyah read from the menu gives the panel's first button the focus", (tester) async {
+      await open(tester, '/read/5787:2/0');
+      await tester.tap(find.byTooltip('More options'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mark this aliyah as read'));
+      await tester.pumpAndSettle();
+      expect(focused(tester, 'Continue with Sheni'), isTrue);
+    });
+
+    for (final (name, key, holding) in [
+      ('Page Up', LogicalKeyboardKey.pageUp, <LogicalKeyboardKey>[]),
+      ('Alt+↑', LogicalKeyboardKey.arrowUp, [LogicalKeyboardKey.altLeft]),
+    ]) {
+      testWidgets('leaving the finished panel with $name gives Next the focus', (tester) async {
+        await open(
+          tester,
+          '/read/5787:2/0',
+          settings: const AppSettings(onboardingComplete: true, notificationPromptShown: true, method: ReadingMethod.aliyahByAliyah),
+        );
+        for (var i = 0; i < 3; i++) {
+          await tester.tap(find.text('Next'));
+          await tester.pumpAndSettle();
+        }
+        expect(focused(tester, 'Continue with Sheni'), isTrue);
+        await press(tester, key, holding: holding);
+        expect(find.text('Read the Targum'), findsOneWidget);
+        expect(focused(tester, 'Next'), isTrue);
+      });
+    }
+
+    testWidgets('marking the aliyah read at the end of the full text keeps the focus in the reader', (tester) async {
+      await open(tester, '/read/5787:2/0?mode=full');
+      for (var i = 0; i < 30 && !focused(tester, 'Mark this aliyah as read'); i++) {
+        await press(tester, LogicalKeyboardKey.tab);
+      }
+      await press(tester, LogicalKeyboardKey.enter);
+      expect(find.text('Mark this aliyah as read'), findsNothing);
+      final reader = Focus.of(tester.element(find.byType(Scaffold).last));
+      expect(reader.hasPrimaryFocus, isTrue, reason: "the reader's own focus, not a control out of view");
+      // Its keys still work.
+      await press(tester, LogicalKeyboardKey.pageDown);
+      expect(text(tester).pixels, greaterThan(0));
+    });
+
+    testWidgets("in focus mode, the full text opens on the verse the guided reader resumes at, read by aliyah", (tester) async {
+      // The first reading of Rishon is done: the guided reader resumes at
+      // its second reading, from Genesis 6:9.
+      final day = LocalDate(2026, 10, 12);
+      final progress = ProgressState(weeks: {
+        '5787:2': WeekProgress(weekId: '5787:2').withUnit(0, ReadingPass.mikra1, day).withPosition(0, const [14, 0, 0]),
+      });
+      await open(
+        tester,
+        '/read/5787:2/0?mode=full',
+        settings: const AppSettings(onboardingComplete: true, focusMode: true, method: ReadingMethod.aliyahByAliyah),
+        progress: progress,
+      );
+      final current = find.byWidgetPredicate((w) => w is ScriptureVerse && w.highlighted);
+      expect(tester.widget<ScriptureVerse>(current).verse.ref.verse, 9);
+    });
+
     testWidgets('in focus mode, ↓ and ↑ move the verse read and keep it in view', (tester) async {
       // The first reading has reached Genesis 6:15, the seventh verse.
       final progress = ProgressState(weeks: {'5787:2': WeekProgress(weekId: '5787:2').withPosition(0, const [6, 6, 6])});
@@ -862,6 +947,19 @@ void main() {
       expect(s().showNikud, isFalse);
       await press(tester, LogicalKeyboardKey.equal);
       expect(s().readingScale, closeTo(1.1, 1e-9));
+      await press(tester, LogicalKeyboardKey.minus);
+      expect(s().readingScale, closeTo(1.0, 1e-9));
+      // The numpad's + comes with the character "+", and counts once.
+      await tester.sendKeyEvent(LogicalKeyboardKey.numpadAdd, character: '+');
+      await tester.pumpAndSettle();
+      expect(s().readingScale, closeTo(1.1, 1e-9));
+      // So does "+" typed with Shift, as the browser reports it.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.add, physicalKey: PhysicalKeyboardKey.equal, character: '+');
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+      expect(s().readingScale, closeTo(1.2, 1e-9));
+      await press(tester, LogicalKeyboardKey.numpadSubtract);
       await press(tester, LogicalKeyboardKey.minus);
       expect(s().readingScale, closeTo(1.0, 1e-9));
       // Ctrl+Shift+T stays the browser's.
@@ -913,7 +1011,15 @@ void main() {
       expect(find.bySemanticsLabel('Down a page, then the next step\nPage Down'), findsOneWidget);
       expect(find.bySemanticsLabel('Show or hide cantillation\nCtrl + Shift + T'), findsOneWidget);
       expect(find.bySemanticsLabel('Show shortcuts\nF1, Ctrl + /'), findsOneWidget);
+      expect(find.textContaining('focus mode'), findsNothing, reason: '↑ and ↓ move between verses only in focus mode');
       handle.dispose();
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(focusMode: true));
+      await tester.pumpAndSettle();
+      await press(tester, LogicalKeyboardKey.f1);
+      expect(find.text('Full text in focus mode: previous or next verse'), findsOneWidget);
       await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
 

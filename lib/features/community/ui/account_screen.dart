@@ -148,20 +148,26 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   /// Signs in, and says as whom.
   Future<void> _verify() => _run(() async {
         final email = _email.text.trim();
-        final repo = ref.read(forumRepositoryProvider);
-        await repo.verifyCode(email, _code.text.trim());
+        await ref.read(forumRepositoryProvider).verifyCode(email, _code.text.trim());
         ref.invalidate(myProfileProvider);
         _code.clear();
         _codeSent = false;
-        // Signed in, whether or not the profile loads: by its name, or else
-        // the email.
+        // By the profile's name, as fetched for the page anyway, or else the
+        // email: signed in either way, and a slow connection doesn't hold
+        // up the way back.
         String? name;
         try {
-          name = (await repo.myProfile())?.displayName;
+          name = (await ref.read(myProfileProvider.future).timeout(const Duration(seconds: 2)))?.displayName;
         } catch (_) {}
         if (!mounted) return;
-        showStatus(context, context.l10n.signedInAs(name ?? email));
-        if (widget.returnWhenSignedIn && context.canPop()) context.pop();
+        final message = context.l10n.signedInAs(name ?? email);
+        if (widget.returnWhenSignedIn && context.canPop()) {
+          // Back to what they signed in for, with nothing over it.
+          announceStatus(context, message);
+          context.pop();
+        } else {
+          showStatus(context, message);
+        }
       });
 
   List<Widget> _signedIn(BuildContext context, Profile? profile) {

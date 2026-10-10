@@ -109,6 +109,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   final _finishFocus = FocusNode();
   // Has the focus while any of the finished panel's buttons does.
   final _panelFocus = FocusNode(canRequestFocus: false, skipTraversal: true);
+  // The reader's own, which takes the focus when the control that had it
+  // goes with nothing in its place: its keys keep working, and Tab goes on
+  // from the top.
+  final _readerFocus = FocusNode(skipTraversal: true);
 
   // One per verse of the full text, for scrolling a verse into view.
   final _verseKeys = <GlobalKey>[];
@@ -130,7 +134,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     WakelockPlus.disable().catchError((_) {});
     _tts.stop();
     _scroll.dispose();
-    for (final node in [_nextFocus, _backFocus, _finishFocus, _panelFocus]) {
+    for (final node in [_nextFocus, _backFocus, _finishFocus, _panelFocus, _readerFocus]) {
       node.dispose();
     }
     super.dispose();
@@ -219,9 +223,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       }
     });
     if (_finished) {
-      // Next goes with the bottom bar: the panel's first button takes over.
-      _focusAfterFrame(_finishFocus);
-      _onFinished(ctx, firstEver: !hadCompletedBefore);
+      // Next goes with the bottom bar: the panel's first button takes over,
+      // once the reminders offered after a first aliyah, which take the
+      // focus while they are open, are answered.
+      final offer = _offersReminders(ctx, firstEver: !hadCompletedBefore);
+      if (!offer) _focusAfterFrame(_finishFocus);
+      _onFinished(ctx, offerReminders: offer);
     } else {
       _announceStep(flow);
     }
@@ -335,7 +342,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
   }
 
-  Future<void> _onFinished(WeekContext ctx, {required bool firstEver}) async {
+  /// Whether finishing an aliyah now offers reminders: after the first
+  /// aliyah ever, of a portion open for reading, if they were never offered.
+  bool _offersReminders(WeekContext ctx, {required bool firstEver}) =>
+      firstEver && ctx.isOpen && !ref.read(settingsProvider).notificationPromptShown;
+
+  Future<void> _onFinished(WeekContext ctx, {required bool offerReminders}) async {
     final l = context.l10n;
     final names = Names(context);
     hapticSuccess(ref);
@@ -346,9 +358,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (MediaQuery.supportsAnnounceOf(context)) {
       SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
     }
-    if (firstEver && ctx.isOpen && !settings.notificationPromptShown) {
+    if (offerReminders) {
       final verses = ref.read(parshaRepositoryProvider).aliyahVerseCount(ctx.portion, _aliyah);
       await maybeOfferReminders(context, ref, celebration: l.firstAliyahDone(l.versesCount(verses)));
+      if (mounted && _finished && !_fullText) _focusAfterFrame(_finishFocus);
     }
   }
 
@@ -481,10 +494,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             WidgetsBinding.instance.addPostFrameCallback((_) => _announceStep(flow));
           }
           _announceWhenPositioned = false;
-          // Focus mode opens on the reader's place, where the guided reader
-          // would resume, not on nothing.
+          // Focus mode opens on the reader's place, the first verse of the
+          // step the guided reader resumes at, as switching to the full text
+          // does: not on nothing.
           if (s.focusMode && _focusedVerse == null) {
-            final verse = (saved?.first ?? 0).clamp(0, flow.verses.length - 1);
+            final verse = flow.chunks[_chunk].start;
             _focusedVerse = verse;
             if (_fullText) _revealVerse(verse, animate: false);
           }
@@ -537,10 +551,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         const SingleActivator(LogicalKeyboardKey.keyT, includeRepeats: false): teamim,
         const SingleActivator(LogicalKeyboardKey.keyN, includeRepeats: false): nikud,
         const SingleActivator(LogicalKeyboardKey.keyL, includeRepeats: false): listen,
-        // "+" is Shift+= on many layouts, and a key of its own on others.
+        // "+" however it is typed (Shift+=, a key of its own, or the
+        // numpad), and "=" on its own. The browser gives the numpad's key the
+        // character "+" too, so a key binding for it as well would apply
+        // each press twice.
         const SingleActivator(LogicalKeyboardKey.equal): larger,
-        const SingleActivator(LogicalKeyboardKey.equal, shift: true): larger,
-        const SingleActivator(LogicalKeyboardKey.numpadAdd): larger,
         const CharacterActivator('+'): larger,
         const SingleActivator(LogicalKeyboardKey.minus): smaller,
         const SingleActivator(LogicalKeyboardKey.numpadSubtract): smaller,
@@ -559,6 +574,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       child: CallbackShortcuts(
         bindings: shortcuts,
         child: Focus(
+          focusNode: _readerFocus,
           autofocus: true,
           child: Scaffold(
             appBar: AppBar(
@@ -695,8 +711,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     hapticSuccess(ref);
     showStatus(context, context.l10n.markedRead);
     setState(() => _finished = true);
-    // The guided reader shows the finished panel in place of the step.
-    if (!_fullText) _focusAfterFrame(_finishFocus);
+    // The guided reader shows the finished panel in place of the step. The
+    // full text stays, without the button that was pressed.
+    _focusAfterFrame(_fullText ? _readerFocus : _finishFocus);
   }
 
   /// The reader's keys, as this platform binds them.
@@ -720,7 +737,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       (const [[_Key('Page Up')]], l.shortcutPageUp),
       ([[alt, down]], l.shortcutNext),
       ([[alt, up]], l.shortcutBack),
-      ([[up], [down]], l.shortcutFocusVerse),
+      if (settings.focusMode) ([[up], [down]], l.shortcutFocusVerse),
       if (!web) ...[
         ([[mod, const _Key('=')]], l.shortcutLarger),
         ([[mod, const _Key('−')]], l.shortcutSmaller),

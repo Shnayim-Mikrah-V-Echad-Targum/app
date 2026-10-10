@@ -193,7 +193,7 @@ HE = {
   "shortcutScroll": "גלילת הטקסט",
   "shortcutPageDown": "עמוד למטה, ואז השלב הבא",
   "shortcutPageUp": "עמוד למעלה, ואז השלב הקודם",
-  "shortcutFocusVerse": "מצב מיקוד: הפסוק הקודם או הבא",
+  "shortcutFocusVerse": "טקסט מלא במצב מיקוד: הפסוק הקודם או הבא",
   "keyUp": "חץ למעלה",
   "keyDown": "חץ למטה",
   "keySpace": "רווח",
@@ -340,7 +340,7 @@ HE = {
   "singleKeyShortcuts": "קיצורי מקש יחיד",
   # A right-to-left mark after each comma keeps the Latin keys in Hebrew
   # reading order: T first, at the right.
-  "singleKeyShortcutsDesc": "בזמן הקריאה המקשים T,\u200f N,\u200f L,\u200f + ו־− פועלים לבדם. כדאי לכבות אם משתמשים בקלט קולי או במקשים המהירים של קורא מסך.",
+  "singleKeyShortcutsDesc": "בזמן הקריאה, המקשים T,\u200f N,\u200f L,\u200f + ומינוס פועלים בלחיצה אחת, בלי Ctrl. כדאי לכבות את האפשרות אם משתמשים בקלט קולי או במקשים המהירים של קורא מסך.",
   "screenReaderText": "טקסט לקורא מסך",
   "srSimplified": "עם ניקוד, בלי טעמים (מומלץ)",
   "srConsonants": "אותיות בלבד",

@@ -719,7 +719,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutPageUp => 'Up a page, then the previous step';
 
   @override
-  String get shortcutFocusVerse => 'Focus mode: previous or next verse';
+  String get shortcutFocusVerse =>
+      'Full text in focus mode: previous or next verse';
 
   @override
   String get keyUp => 'Up arrow';
@@ -1195,7 +1196,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get singleKeyShortcutsDesc =>
-      'While reading, T, N, L, + and − work on their own. Turn this off if you use speech input or screen-reader quick keys.';
+      'While reading, T, N, L, + and − work on their own, without Ctrl. Turn this off if you use speech input or screen-reader quick keys.';
 
   @override
   String get screenReaderText => 'Screen reader text';
