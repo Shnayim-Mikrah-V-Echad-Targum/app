@@ -667,6 +667,29 @@
   },
   "browseAll": "All parshiyot",
   "browseTitle": "The Torah",
+  "browseBookParshiyot": "{count, plural, =1{1 parsha} other{{count} parshiyot}}",
+  "@browseBookParshiyot": {
+    "description": "Beside a book's name on the page of every parsha (The Torah): how many parshiyot the book has.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "browseThisWeek": "This week",
+  "@browseThisWeek": {
+    "description": "Eyebrow over the name of this week's parsha in the list of every parsha (The Torah)."
+  },
+  "browseReadWith": "Read with {name}",
+  "@browseReadWith": {
+    "description": "Under a parsha in the list of every parsha, when this year it is read together with the parsha before or after it on one Shabbat. The name is that other parsha's, in the UI's language: 'Read with Pekudei'.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Pekudei"
+      }
+    }
+  },
   "previewNotOpen": "Preview — this parsha opens for credit on {date}.",
   "@previewNotOpen": {
     "description": "The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.",
@@ -1432,14 +1455,6 @@
   "@hebrewDateLabel": {
     "placeholders": {
       "date": {
-        "type": "String"
-      }
-    }
-  },
-  "bookOfTorah": "{book}",
-  "@bookOfTorah": {
-    "placeholders": {
-      "book": {
         "type": "String"
       }
     }

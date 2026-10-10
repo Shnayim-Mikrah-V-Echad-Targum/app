@@ -1185,6 +1185,24 @@ abstract class AppLocalizations {
   /// **'The Torah'**
   String get browseTitle;
 
+  /// Beside a book's name on the page of every parsha (The Torah): how many parshiyot the book has.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 parsha} other{{count} parshiyot}}'**
+  String browseBookParshiyot(int count);
+
+  /// Eyebrow over the name of this week's parsha in the list of every parsha (The Torah).
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get browseThisWeek;
+
+  /// Under a parsha in the list of every parsha, when this year it is read together with the parsha before or after it on one Shabbat. The name is that other parsha's, in the UI's language: 'Read with Pekudei'.
+  ///
+  /// In en, this message translates to:
+  /// **'Read with {name}'**
+  String browseReadWith(String name);
+
   /// The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.
   ///
   /// In en, this message translates to:
@@ -3188,12 +3206,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hebrew date: {date}'**
   String hebrewDateLabel(String date);
-
-  /// No description provided for @bookOfTorah.
-  ///
-  /// In en, this message translates to:
-  /// **'{book}'**
-  String bookOfTorah(String book);
 
   /// No description provided for @communityTitle.
   ///

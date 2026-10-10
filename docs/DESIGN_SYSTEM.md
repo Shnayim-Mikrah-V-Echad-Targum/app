@@ -1060,16 +1060,19 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 4. **Second PaperGroup**, 28 below: Haftarah and Discuss rows, as on Today (`HaftarahRow`, `DiscussRow`).
 5. **Footer:** a centred TextButton "Mark the whole parsha as read", while the week is open and unfinished.
 
-**Browse** (browse_screen.dart):
-- One PaperGroup per book under a book header ("בראשית" FRL 600 20 + "Genesis" titleSmall).
-- Rows:
-  - leading: a 28 px column with the ordinal in labelMedium onSurfaceVariant with tabular figures;
-  - title: the Latin name in EBG 500 20/26;
-  - Hebrew name FRL 500 18 end-aligned;
-  - subtitle: the reference in bodySmall.
-  - The `menu_book` icon is removed.
-- The current parsha row has a 3 px primary start rule and the Eyebrow "This week" above its title.
-- In the Hebrew UI, the Hebrew name is the title and the Latin name is end-aligned in bodySmall.
+**Browse** (browse_screen.dart; phone_browse, phonetall_browse, phone_browse_summer):
+- One PaperGroup per book, its hairlines inset 54, under a book header inset 4 (12 above the first, 28 above the rest, 8 below): "בראשית" in FRL 600 20 `secondary`, then "Genesis" in titleSmall onSurfaceVariant (English UI only), and at its end `browseBookParshiyot` ("12 parshiyot") in labelSmall onSurfaceVariant with tabular figures. A level-2 heading named in the UI's language.
+- Rows (padding start 16, end 16, or 12 before a chevron; vertical 12):
+  - leading: a 28 px column, 10 before the text, with the parsha's number in the Torah (1–54) in labelMedium onSurfaceVariant with tabular figures, set on the title's baseline. Read this year (every reading of its week): `check_circle` 18 in primary instead; begun: `timelapse` 18 in primary. Both grow with the text to 1.5× at most;
+  - title: the Latin name in EBG 500 20/26 onSurface, with the Hebrew name in FRL 500 18 onSurfaceVariant at the end of its line, on its baseline. When the two don't fit side by side (large text), the Hebrew name goes under the title;
+  - subtitle bodySmall onSurfaceVariant, a DotLine: the reference, then the day it is read in this year's cycle (`dateMonthDay`; the Hebrew date without the year in the Hebrew UI). A parsha read together with another this year says so first: "Numbers 19:1–22:1 · Read with Balak · July 17" (`browseReadWith`);
+  - a chevron only at 600 dp and wider, centred on the title and subtitle;
+  - the `menu_book` icon is removed.
+- Tap opens the week within the Parsha tab, by the week's own id (`/parsha/week/5787:39-40`).
+- The row is one button; how far the parsha is read is its value (`stateDone`, `weekInProgress`). The number, and the Hebrew name in the English UI, are not read.
+- This week's row has a 3 px primary start rule, inside the sheet's hairline and clipped to its corners, and the Eyebrow `browseThisWeek` ("This week") above its title. Two parshiyot read together share one continuous rule and one eyebrow, over the first; the second is still read as this week's.
+- The page opens with this week's row in view: after the first frame, unless it already shows whole, `Scrollable.ensureVisible` at alignment 0.3 over `Motion.medium` (at once under Reduce Motion).
+- In the Hebrew UI, the Hebrew name is the title (FRL 500 20/28 onSurface) and the Latin name is end-aligned in bodySmall, inside Lang(en).
 
 ### Reader, guided (reader_screen.dart; phone_reader, he_reader, dark_reader, desktop_reader)
 

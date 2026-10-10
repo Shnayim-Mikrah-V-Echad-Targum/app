@@ -719,6 +719,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get browseTitle => 'The Torah';
 
   @override
+  String browseBookParshiyot(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count parshiyot',
+      one: '1 parsha',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get browseThisWeek => 'This week';
+
+  @override
+  String browseReadWith(String name) {
+    return 'Read with $name';
+  }
+
+  @override
   String previewNotOpen(String date) {
     return 'Preview — this parsha opens for credit on $date.';
   }
@@ -1866,11 +1885,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String hebrewDateLabel(String date) {
     return 'Hebrew date: $date';
-  }
-
-  @override
-  String bookOfTorah(String book) {
-    return '$book';
   }
 
   @override

@@ -23,12 +23,14 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
+import 'package:shnayim_mikra/features/parsha/week_context.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
@@ -68,6 +70,24 @@ ProgressState _progress() {
   }
   w = w.withUnit(2, ReadingPass.mikra1, mon.addDays(2)).withUnit(2, ReadingPass.mikra2, mon.addDays(2));
   return ProgressState(weeks: {'5787:1': w});
+}
+
+/// 5787 up to the week of Chukat and Balak: most parshiyot read in their
+/// weeks, two begun and left, three not opened, and this week begun.
+ProgressState _yearRead() {
+  final weeks = cycleWeeks(const ParshaSchedule(israel: false), 5787);
+  final read = <String, WeekProgress>{};
+  for (var n = 1; n <= 40; n++) {
+    final week = weeks[n]!;
+    final id = weekIdFor(week.portion, week.occasion);
+    if (const {9, 17, 30}.contains(n) || read.containsKey(id)) continue;
+    final day = week.occasion.addDays(-1);
+    final begun = const {21, 33}.contains(n) || n >= 39;
+    read[id] = begun
+        ? WeekProgress(weekId: id).withAliyah(0, week.start).withAliyah(1, week.start.addDays(1))
+        : WeekProgress(weekId: id).withAll(day);
+  }
+  return ProgressState(weeks: read);
 }
 
 /// Week [id], whose first reading day is [first], read an aliyah a day,
@@ -146,6 +166,9 @@ const _screens = {
   // Scrolled past its head: the app bar names the parsha.
   'parsha_scrolled': '/parsha',
   'browse': '/parsha/browse',
+  // The Wednesday of Chukat and Balak, read together, most of the year read:
+  // opened with this week in view.
+  'browse_summer': '/parsha/browse',
   'week': '/week/5787:1',
   // Next week's, not yet open: a preview.
   'week_next': '/week/5787:2',
@@ -446,6 +469,7 @@ final _screenNow = <String, DateTime>{
   'today_erev_tisha_bav': DateTime(2027, 8, 11, 11),
   // Tuesday of Matot-Masei 5787.
   'reader_third': DateTime(2027, 7, 27, 11),
+  'browse_summer': DateTime(2027, 7, 14, 11),
   // The Wednesday of Bereshit, which began on Monday.
   'welcome_plan_midweek': DateTime(2026, 10, 7, 11),
   // Thursday 12 August 2027, 9 Av 5787.
@@ -453,6 +477,7 @@ final _screenNow = <String, DateTime>{
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
+  'browse_summer': _yearRead,
   'today_haftarah_left': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
@@ -1055,6 +1080,7 @@ const _desktopScreens = {
   'forum',
   'account',
   'browse',
+  'browse_summer',
   'guide',
   'welcome',
   'welcome_plan',
@@ -1074,11 +1100,12 @@ const _desktopScreens = {
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
-const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display', 'sources'};
+const _tallScreens = {'today', 'parsha', 'week', 'browse', 'progress', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'parsha', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
+const _narrowScreens = {'parsha', 'browse', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
   'parsha',
+  'browse',
   'week_combined',
   'today',
   'today_book',

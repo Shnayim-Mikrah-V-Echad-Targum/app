@@ -32,6 +32,30 @@ ReadingWeek? findWeekById(ParshaSchedule schedule, String id) {
   return null;
 }
 
+/// The weeks of the cycle that began in [cycle], Bereshit through Vezot
+/// HaBerachah, by the number of each parsha read in them: a week of two
+/// parshiyot read together is under both.
+Map<int, ReadingWeek> cycleWeeks(ParshaSchedule schedule, int cycle) {
+  final weeks = <int, ReadingWeek>{};
+  var week = findWeekById(schedule, '$cycle:1');
+  // A cycle has a week for each portion at most; the bound only keeps a
+  // schedule gone wrong from looping.
+  for (var i = 0; week != null && i < kParshaCount; i++) {
+    for (final n in week.portion.parshiyot) {
+      weeks[n] = week;
+    }
+    if (week.portion.isVezotHaberakhah) break;
+    week = schedule.nextWeek(week);
+  }
+  return weeks;
+}
+
+/// [cycleWeeks] for the cycle of the current week, the one Browse lists.
+final currentCycleWeeksProvider = Provider<Map<int, ReadingWeek>>((ref) {
+  final current = ref.watch(currentWeekProvider);
+  return cycleWeeks(ref.watch(scheduleProvider), cycleYearOf(current.portion, current.occasion));
+});
+
 /// Where verse [r] of [book] is read in the cycle that began in [cycle]: the
 /// id of the week whose portion holds it, and the aliyah of that week's
 /// portion that holds it. A combined week divides its aliyot differently from

@@ -126,12 +126,14 @@ void main() {
     });
   });
 
-  testWidgets('a book of the Torah is headed by its name: Genesis, and ספר בראשית', (tester) async {
+  testWidgets("a book's parshiyot are counted beside its name: 12 parshiyot, and 12 פרשות", (tester) async {
     var context = await _page(tester, hebrew: false);
-    expect(context.l10n.bookOfTorah(Names(context).book(kTorahBooks.first)), 'Genesis');
+    expect(context.l10n.browseBookParshiyot(12), '12 parshiyot');
+    expect(context.l10n.browseBookParshiyot(1), '1 parsha');
 
     context = await _page(tester, hebrew: true);
-    expect(context.l10n.bookOfTorah(Names(context).book(kTorahBooks.first)), 'ספר בראשית');
+    expect(context.l10n.browseBookParshiyot(12), '12 פרשות');
+    expect(context.l10n.browseBookParshiyot(1), 'פרשה אחת');
   });
 
   testWidgets('aliyot to read are spanned when three or more run on, and named otherwise', (tester) async {

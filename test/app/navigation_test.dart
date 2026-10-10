@@ -378,7 +378,7 @@ void main() {
       final router = await _pump(tester);
       router.go('/parsha/browse');
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ListTile, 'Noach'));
+      await tester.tap(find.text('Noach'));
       await tester.pumpAndSettle();
       expect(find.text('Parshat Noach'), findsOneWidget);
       expect(selectedTab(tester), 1);
