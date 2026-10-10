@@ -563,7 +563,11 @@ class _Welcome extends ConsumerWidget {
           Text(l.onbWelcomeBody, textAlign: TextAlign.center, style: theme.textTheme.bodyLarge),
           const Gap(48),
           // Centred like the text around them, also when large text wraps them.
-          FilledButton(onPressed: onStart, child: Text(l.onbStart, textAlign: TextAlign.center)),
+          FilledButton(
+            style: _roomy(context, (24, 12, 6)),
+            onPressed: onStart,
+            child: Text(l.onbStart, textAlign: TextAlign.center),
+          ),
           const Gap(8),
           if (restoring)
             // In the button's place, as tall, until the backup is in.
@@ -588,11 +592,32 @@ class _Welcome extends ConsumerWidget {
               ),
             )
           else
-            TextButton(onPressed: onRestore, child: Text(l.onbRestore, textAlign: TextAlign.center)),
+            TextButton(
+              style: _roomy(context, (12, 8, 4), vertical: 8),
+              onPressed: onRestore,
+              child: Text(l.onbRestore, textAlign: TextAlign.center),
+            ),
           const Gap(16),
           Text(l.disclaimer, textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
         ],
       ),
+    );
+  }
+
+  /// Material's padding for a button: [sides] at each side at 1×, 2× and
+  /// 3× the usual text size, as its own narrows when text grows, and
+  /// [vertical] above and below at the usual size. Where Material's leaves
+  /// nothing above and below large text, this keeps 8, so a label wrapped
+  /// onto two lines doesn't run into the button's edges.
+  static ButtonStyle _roomy(BuildContext context, (double, double, double) sides, {double vertical = 0}) {
+    final size = Theme.of(context).textTheme.labelLarge?.fontSize ?? 14;
+    return ButtonStyle(
+      padding: WidgetStatePropertyAll(ButtonStyleButton.scaledPadding(
+        EdgeInsets.symmetric(horizontal: sides.$1, vertical: vertical),
+        EdgeInsets.symmetric(horizontal: sides.$2, vertical: 8),
+        EdgeInsets.symmetric(horizontal: sides.$3, vertical: 8),
+        MediaQuery.textScalerOf(context).scale(size) / 14,
+      )),
     );
   }
 }
