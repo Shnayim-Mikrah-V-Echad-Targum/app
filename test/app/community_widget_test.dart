@@ -1061,6 +1061,51 @@ void main() {
     expect(tester.widget<Text>(title).textDirection, TextDirection.rtl);
   });
 
+  for (final language in [AppLanguage.hebrew, AppLanguage.english]) {
+    testWidgets('a post header and a notice keep their inset from the start edge, ${language.name} UI', (tester) async {
+      final forums = DemoForumRepository()
+        ..seed(
+          threads: [
+            ThreadSummary(
+              id: '7000',
+              forumId: 3,
+              title: 'שאלה על התרגום',
+              kind: ThreadKind.discussion,
+              authorName: 'רבקה',
+              postCount: 1,
+              lastPostAt: DateTime(2026, 10, 1),
+              createdAt: DateTime(2026, 10, 1),
+              locked: true,
+            ),
+          ],
+          posts: [
+            Post(id: '1', threadId: '7000', authorName: 'רבקה', body: 'למה דווקא אונקלוס?', createdAt: DateTime(2026, 10, 1)),
+          ],
+        );
+      final c = await _pump(tester, forums: forums, settings: AppSettings(onboardingComplete: true, language: language));
+      c.read(routerProvider).go('/community/thread/7000');
+      await tester.pumpAndSettle();
+
+      // How far [inner] is in from the start edge of [outer]: its right edge
+      // in Hebrew.
+      final rtl = language == AppLanguage.hebrew;
+      double inset(Finder outer, Finder inner) {
+        final (o, i) = (tester.getRect(outer), tester.getRect(inner));
+        return rtl ? o.right - i.right : i.left - o.left;
+      }
+
+      final post = find.byType(PostCard);
+      final header = find.descendant(of: post, matching: find.textContaining('רבקה,'));
+      expect(header, findsOneWidget);
+      expect(inset(find.descendant(of: post, matching: find.byType(Card)), header), greaterThanOrEqualTo(12));
+
+      final notice = find.byType(NoticeBanner);
+      expect(notice, findsOneWidget, reason: 'the thread is locked');
+      final icon = find.descendant(of: notice, matching: find.byIcon(Icons.lock_outline));
+      expect(inset(find.descendant(of: notice, matching: find.byType(Card)), icon), greaterThanOrEqualTo(12));
+    });
+  }
+
   testWidgets('an empty thread that is not weekly says it has no replies yet', (tester) async {
     final forums = DemoForumRepository()..seed(threads: [_thread(6000, posts: 0)]);
     final c = await _pump(tester, forums: forums);
