@@ -1604,6 +1604,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sourcesTitle => 'Texts & sources';
 
   @override
+  String get sourcesMamDescription =>
+      'Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. In the Torah, where Ashkenazi and Sephardi scrolls differ from the Aleppo Codex, the text follows the scrolls, with the Codex\'s reading in a note. Otherwise it is converted to a structured format without changing the text.';
+
+  @override
   String get licensesTitle => 'Open-source licenses';
 
   @override

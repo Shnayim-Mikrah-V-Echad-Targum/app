@@ -6,6 +6,7 @@
   - the defaults and copy listed in [DESIGN.md §11](DESIGN.md#11-things-for-the-rabbinic-advisor)
   - the in-app guide (*Settings → How it works*)
   - the halachic notes shown in settings
+  - the places where the Torah text departs from MAM to follow Ashkenazi and Sephardi scrolls, and the notes that give the Aleppo Codex's reading there ("The scribal tradition" in `tool/data/build_data.mjs`)
 - [ ] **License for the app's source code.** No license has been chosen yet; choose one and add a `LICENSE` file. The bundled texts keep their own licenses:
   - The MAM Hebrew text is CC BY-SA 4.0. Its attribution is shown under *About → Texts & sources*, and changes to that text must stay under the same license.
   - Taamey Frank is GPL-2.0 with a font exception. It is shipped as an unmodified separate file. If you'd rather ship only OFL fonts, remove it; [assets/fonts/licenses/README.md](../assets/fonts/licenses/README.md) lists every place to change.

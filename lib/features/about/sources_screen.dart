@@ -24,9 +24,7 @@ class SourcesScreen extends StatelessWidget {
     final sources = [
       _Source(
         he ? 'מקרא על פי המסורה' : 'Miqra according to the Masorah (MAM)',
-        he
-            ? 'נוסח התורה וההפטרות, על פי כתר ארם צובה וכתבי יד קרובים, בעריכת אבי קדיש וחבריו בוויקיטקסט העברי, דרך ספריא. הותאם לתצוגה מובנית ללא שינוי בנוסח.'
-            : 'Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. Converted to a structured format without changing the text.',
+        l.sourcesMamDescription,
         'CC BY-SA 4.0',
         'https://he.wikisource.org/wiki/%D7%9E%D7%A9%D7%AA%D7%9E%D7%A9:Dovi/%D7%9E%D7%A7%D7%A8%D7%90_%D7%A2%D7%9C_%D7%A4%D7%99_%D7%94%D7%9E%D7%A1%D7%95%D7%A8%D7%94',
       ),

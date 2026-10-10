@@ -2757,6 +2757,12 @@ abstract class AppLocalizations {
   /// **'Texts & sources'**
   String get sourcesTitle;
 
+  /// About the Miqra according to the Masorah edition, on the Texts & sources page. Its license (CC BY-SA) requires saying how the text was changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. In the Torah, where Ashkenazi and Sephardi scrolls differ from the Aleppo Codex, the text follows the scrolls, with the Codex\'s reading in a note. Otherwise it is converted to a structured format without changing the text.'**
+  String get sourcesMamDescription;
+
   /// No description provided for @licensesTitle.
   ///
   /// In en, this message translates to:

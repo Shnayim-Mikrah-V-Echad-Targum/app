@@ -4,7 +4,9 @@
 //
 // Sources (downloaded into tool/data/.cache on first run):
 //   * Torah & haftarah Hebrew: "Miqra according to the Masorah" (MAM), CC BY-SA 4.0,
-//     via the Sefaria public export bucket.
+//     via the Sefaria public export bucket. In the Torah, the text follows the
+//     Ashkenazi and Sephardi scrolls where they differ from it (see "The
+//     scribal tradition" below).
 //   * Targum Onkelos: Torat Emet edition (public domain), via Sefaria.
 //   * English: JPS 1917 (public domain), via Sefaria.
 //   * Rashi, Hebrew and English: Rosenbaum & Silbermann, London 1929–1934
@@ -101,7 +103,8 @@ const rashiPath = (book, lang) => {
 // features, as a list of segments:
 //   "text"                plain text
 //   {"k": K, "q": Q}      ketiv (as written, unvocalized) / qere (as read)
-//   {"n": note}           textual note (e.g. Ashkenazi/Sephardi scribal variant)
+//   {"n": note}           textual note (e.g. the Aleppo Codex's reading where the
+//                         scrolls differ)
 //   {"big": x} / {"small": x} / {"sup": x}  large / small / raised letters
 //   {"alt": x}            (Onkelos) bracketed alternate reading or gloss
 //   {"gap": "P" | "S"}    a petuchah / setumah that falls inside a verse
@@ -237,6 +240,124 @@ function assertGaps() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// The scribal tradition
+//
+// MAM follows the Aleppo Codex, and notes the places where the Torah scrolls
+// of Ashkenazim and Sephardim differ from it. Those scrolls are what the
+// reader hears in synagogue, so in the Torah the text follows them, and the
+// note keeps the Codex's reading instead, which Yemenite scrolls share.
+//
+// Each change is listed here, and the build fails if the source no longer
+// matches, so that any new difference is reviewed before it reaches the text.
+
+// A note giving the scrolls' spelling of the word before it. Where only most
+// Ashkenazi scrolls have it (Deut 23:2), the rest share the Codex's.
+const SCRIBAL_VARIANT = /^בספרי ספרד (ורוב ספרי אשכנז|ואשכנז) (\S+)$/;
+const SCRIBAL_VARIANT_REFS = [
+  'Genesis 4:13', 'Genesis 7:11', 'Genesis 9:29', 'Exodus 25:31', 'Exodus 28:26',
+  'Numbers 1:17', 'Numbers 10:10', 'Numbers 22:5', 'Deuteronomy 23:2',
+];
+
+const isNote = (seg) => typeof seg !== 'string' && 'n' in seg;
+
+function expectSegments(ref, actual, expected) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${ref}: the source no longer matches its scribal fix: ${JSON.stringify(actual)}`);
+  }
+}
+
+// Notes that describe the scroll rather than spell a word, by verse.
+const SCRIBAL_FIXES = {
+  // The scrolls write the yod of Pinchas small.
+  'Numbers 25:11': (ref, segs) => {
+    const [word, note] = segs;
+    expectSegments(ref, note, {n: `בספרי ספרד ואשכנז נהוג לכתוב ${word} ביו״ד זעירא`});
+    const yod = word.indexOf('י');
+    return [word.slice(0, yod), {small: 'י'}, word.slice(yod + 1), ...segs.slice(2)];
+  },
+  // ...and the vav of shalom broken, which the text can't show.
+  'Numbers 25:12': (ref, segs) => {
+    const i = segs.findIndex(isNote);
+    expectSegments(ref, segs[i], {n: 'בספרי ספרד ואשכנז וי״ו קטיעא'});
+    return segs.with(i, {n: 'בספר תורה נכתבת וי״ו קטיעא במילה שלום'});
+  },
+  // A section break in the Codex that the scrolls don't have
+  // (SCRIBAL_BREAKS): the note gives the Codex's reading, as elsewhere.
+  'Leviticus 7:21': (ref, segs) => {
+    const i = segs.findIndex(isNote);
+    expectSegments(ref, segs[i], {n: 'אין פרשה בספרי ספרד ואשכנז'});
+    return segs.with(i, {n: 'בכתר ארם צובה: פרשה פתוחה'});
+  },
+};
+
+// Section breaks after a verse where the scrolls differ from the Codex: the
+// break they have, or null for none.
+const SCRIBAL_BREAKS = {
+  'Leviticus 7:21': null,
+  // Doubtful in the Codex. The scrolls have a setumah here, as after every
+  // other curse from 27:15 on.
+  'Deuteronomy 27:19': 'S',
+};
+
+const scribalDone = [];
+
+function followScribalTradition(ref, verse) {
+  if (!Array.isArray(verse)) return verse;
+  let segs = [...verse];
+  for (let i = 0; i < segs.length; i++) {
+    const m = isNote(segs[i]) && segs[i].n.match(SCRIBAL_VARIANT);
+    if (!m) continue;
+    // The word is the last in the text before the note: after its last
+    // space or maqaf.
+    const before = segs[i - 1];
+    if (typeof before !== 'string' || /\s$/.test(before)) throw new Error(`${ref}: no word before the scribal note`);
+    const start = Math.max(before.lastIndexOf(' '), before.lastIndexOf('־')) + 1;
+    const codex = m[1] === 'ואשכנז' ? 'בכתר ארם צובה ובספרי תימן' : 'בכתר ארם צובה, בספרי תימן ובמקצת ספרי אשכנז';
+    segs[i - 1] = before.slice(0, start) + m[2];
+    segs[i] = {n: `${codex}: ${before.slice(start)}`};
+    scribalDone.push(ref);
+  }
+  if (SCRIBAL_FIXES[ref]) {
+    segs = SCRIBAL_FIXES[ref](ref, segs);
+    scribalDone.push(ref);
+  }
+  return finalizeSegments(segs);
+}
+
+function followScribalBreaks(book, breaks) {
+  for (const [ref, kind] of Object.entries(SCRIBAL_BREAKS)) {
+    const [b, cv] = ref.split(' ');
+    if (b !== book) continue;
+    // The Codex has the break the scrolls don't, or lacks the one they have.
+    if ((breaks[cv] === undefined) !== (kind !== null)) throw new Error(`${ref}: the source's section break changed`);
+    if (kind) breaks[cv] = kind;
+    else delete breaks[cv];
+    scribalDone.push(`${ref} break`);
+  }
+}
+
+// Called once the whole Torah is built.
+function assertScribalTradition(chapters) {
+  const expected = [
+    ...SCRIBAL_VARIANT_REFS,
+    ...Object.keys(SCRIBAL_FIXES),
+    ...Object.keys(SCRIBAL_BREAKS).map((ref) => `${ref} break`),
+  ];
+  if (scribalDone.toSorted().join() !== expected.toSorted().join()) {
+    throw new Error(`Scribal changes differ from those listed:\n  done ${scribalDone.join(', ')}`);
+  }
+  for (const [book, chs] of Object.entries(chapters)) {
+    chs.forEach((ch, ci) => ch.forEach((verse, vi) => {
+      for (const seg of Array.isArray(verse) ? verse : []) {
+        if (isNote(seg) && seg.n.startsWith('בספרי ספרד')) {
+          throw new Error(`${book} ${ci + 1}:${vi + 1}: a scribal note not followed: ${seg.n}`);
+        }
+      }
+    }));
+  }
+}
+
 function parseOnkelosVerse(raw) {
   let s = raw.replace(/‎/g, '').replace(/''/g, '״').replace(/\s+/g, ' ').trim();
   s = s.replace(/\s*:$/, '');
@@ -368,11 +489,13 @@ async function main() {
     const breaks = {};
     const chapters = mam.text.map((ch, ci) =>
       ch.map((raw, vi) => {
+        const ref = `${book} ${ci + 1}:${vi + 1}`;
         const {verse, brk} = parseMamVerse(raw);
         if (brk) breaks[`${ci + 1}:${vi + 1}`] = brk;
-        return checkGaps(`${book} ${ci + 1}:${vi + 1}`, raw, verse);
+        return followScribalTradition(ref, checkGaps(ref, raw, verse));
       }),
     );
+    followScribalBreaks(book, breaks);
     mikraChapters[book] = chapters;
     const counts = (t) => t.map((c) => c.length).join(',');
     if (counts(mam.text) !== counts(onk.text) || counts(mam.text) !== counts(jps.text)) {
@@ -401,6 +524,8 @@ async function main() {
       chapters: alignCommentary(rashiEn.text, mam.text, parseRashiEnglish),
     });
   }
+
+  assertScribalTradition(mikraChapters);
 
   process.stdout.write('Parsha metadata\n');
   const keys = Object.keys(ASHKENAZI);

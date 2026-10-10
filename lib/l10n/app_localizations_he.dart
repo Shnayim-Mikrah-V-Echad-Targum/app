@@ -1605,6 +1605,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get sourcesTitle => 'טקסטים ומקורות';
 
   @override
+  String get sourcesMamDescription =>
+      'נוסח התורה וההפטרות, על פי כתר ארם צובה וכתבי יד קרובים, בעריכת אבי קדיש וחבריו בוויקיטקסט העברי, דרך ספריא. בתורה, במקומות שבהם ספרי התורה של אשכנז וספרד שונים מכתר ארם צובה, הנוסח הוא כספרי התורה, ונוסח הכתר מובא בהערה. מלבד זאת הותאם לתצוגה מובנית ללא שינוי בנוסח.';
+
+  @override
   String get licensesTitle => 'רישיונות קוד פתוח';
 
   @override

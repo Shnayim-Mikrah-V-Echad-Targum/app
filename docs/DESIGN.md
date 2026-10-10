@@ -34,7 +34,7 @@ A visitor usually hears the local reading but keeps their home custom for Yom To
 
 **Three methods**, with sources shown in the app:
 - verse by verse (Arizal, Magen Avraham)
-- section by section, between the MAM parasha breaks (Shelah, Gra)
+- section by section, between the parasha breaks of the Torah scroll (Shelah, Gra)
 - aliyah by aliyah
 
 Verse by verse is the default because it is the easiest to follow on a phone.
@@ -52,6 +52,7 @@ The JPS translation is offered only as a study aid and is labelled so. It never 
 - **Verses with no Rashi** get a third Mikra reading too when Rashi replaces the Targum. Both suggestions can be turned off.
 - **The last verse of the parsha** can optionally be repeated so the reading ends with Mikra. It is on by default, except for Chabad, whose custom is not to repeat it; until the reader sets it, the switch follows the haftarah custom.
 - **Ketiv/qere:** the qere is read and the ketiv is shown on request.
+- **The scroll's text:** the Hebrew is Miqra according to the Masorah, which follows the Aleppo Codex. Where Ashkenazi and Sephardi Torah scrolls differ from it, the Torah follows the scrolls the reader hears in synagogue: nine words, two section breaks and the small yod of Pinchas. A note at each word and break gives the Codex's reading.
 
 **The haftarah follows the reader's custom:** Ashkenazi, Sephardi or Chabad. Special haftarot differ by custom too: when Re'eh falls on Rosh Chodesh Elul, Sephardim and Chabad read Re'eh's own haftarah with the first and last verses of the Rosh Chodesh haftarah, and Ki Teitzei's alone two weeks later, and they read Kedoshim's own haftarah after a special Shabbat. When a special haftarah displaces the portion's own, the haftarah page offers the regular one too, folded, or open for Chabad, whose custom is to read both. Where a Chabad haftarah has not yet been sourced, the page shows the Ashkenazi one and says so.
 

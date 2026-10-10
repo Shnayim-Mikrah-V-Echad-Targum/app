@@ -116,6 +116,9 @@ const _screens = {
   // Shlishi of Vayishlach with cantillation hidden: the dots written over
   // וישקהו (Genesis 33:4) stay.
   'reader_dots': '/read/5787:8/2?mode=full',
+  // Rishon of Pinchas, as the scrolls write it: the small yod of פינחס
+  // (Numbers 25:11), and the note on the broken vav of shalom.
+  'reader_pinchas': '/read/5787:41/0?mode=full',
   'haftarah': '/haftarah/5787:1',
   // Bereshit's own haftarah after Machar Chodesh's: folded, and for Chabad
   // open, under the note that Chabad's haftarot are being verified.
