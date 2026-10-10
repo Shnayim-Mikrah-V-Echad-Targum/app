@@ -32,7 +32,7 @@ Accessibility is a core requirement, not an add-on. See [docs/ACCESSIBILITY.md](
   - Israel and Diaspora
   - double portions
   - holidays that displace Shabbat
-  - Vezot HaBerakhah on Simchat Torah
+  - Vezot HaBerachah on Simchat Torah
 - A reading week runs from the day after the previous public reading through Shabbat.
 - The "day" rolls over at 3 a.m., and Shabbat and Yom Tov never count against you.
 

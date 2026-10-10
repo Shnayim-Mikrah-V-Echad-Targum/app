@@ -3,12 +3,16 @@ import 'jewish_holidays.dart';
 import 'local_date.dart';
 import 'parsha_schedule.dart';
 
+/// Which tradition's haftarah to read.
+enum HaftarahNusach { ashkenazi, sephardi, chabad }
+
 /// Parsha numbers referenced by the rules below.
 abstract final class _P {
   static const kedoshim = 30;
   static const pinchas = 41;
   static const masei = 43;
   static const matot = 42;
+  static const reeh = 47;
   static const kiTeitzei = 49;
   static const vayeilech = 52;
   static const haazinu = 53;
@@ -18,9 +22,11 @@ abstract final class _P {
 ///
 /// Returns a key into `specialHaftarot` in assets/data/parshiyot.json, or
 /// null when the portion's own haftarah is read. The precedence follows the
-/// common Ashkenazi/Sephardi practice (Shulchan Aruch OC 425, 428, 684–685;
-/// Mishnah Berurah ibid.).
-String? specialHaftarahKey(LocalDate shabbat, PortionId portion) {
+/// common practice (Shulchan Aruch OC 425, 428, 684–685; Mishnah Berurah
+/// ibid.). Sephardim and Chabad differ from Ashkenazim around Rosh Chodesh
+/// Elul, and Sephardim in Kedoshim, as noted below.
+String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required HaftarahNusach nusach}) {
+  final ashkenazi = nusach == HaftarahNusach.ashkenazi;
   final h = HebrewDate.fromLocalDate(shabbat);
   final y = h.year;
   final rd = shabbat.rd;
@@ -64,6 +70,11 @@ String? specialHaftarahKey(LocalDate shabbat, PortionId portion) {
       if (portion.number == _P.masei && !portion.combined) return 'Masei on Shabbat Rosh Chodesh';
       if (portion.number == _P.matot && portion.combined) return 'Matot-Masei on Shabbat Rosh Chodesh';
     }
+    // Re'eh on Rosh Chodesh Elul: Sephardim and Chabad read its own
+    // haftarah, the third of consolation (Shulchan Aruch OC 425:1), adding
+    // the first and last verses of the Rosh Chodesh haftarah. Ashkenazim read
+    // the Rosh Chodesh haftarah (Rema ibid.), and Re'eh's with Ki Tetze's.
+    if (portion.number == _P.reeh && !ashkenazi) return "Re'eh on Shabbat Rosh Chodesh";
     return 'Shabbat Rosh Chodesh';
   }
 
@@ -84,25 +95,29 @@ String? specialHaftarahKey(LocalDate shabbat, PortionId portion) {
     return 'Pinchas occurring after 17 Tammuz';
   }
 
-  // When Re'eh fell on Rosh Chodesh Elul, its haftarah (the third of
-  // consolation) is joined to Ki Teitzei's, which continues it in Isaiah 54.
-  if (portion.number == _P.kiTeitzei) {
+  // When Re'eh fell on Rosh Chodesh Elul, Ashkenazim join its haftarah (the
+  // third of consolation) to Ki Tetze's, which continues it in Isaiah 54.
+  if (portion.number == _P.kiTeitzei && ashkenazi) {
     final reeh = HebrewDate.fromRd(rd - 14);
     if (JewishHolidays.isRoshChodesh(reeh)) {
       return 'Ki Teitzei with 3rd Haftarah of Consolation';
     }
   }
 
-  // When Acharei Mot's haftarah was displaced by a special one, Kedoshim
-  // takes Acharei Mot's haftarah (Ashkenazim) / its own alternate (Sephardim).
-  if (portion.number == _P.kedoshim && !portion.combined) {
+  // When Acharei Mot's haftarah was displaced by a special one, Ashkenazim
+  // read it for Kedoshim. Sephardim read Kedoshim's own, which is the same
+  // reading in their custom (Ezekiel 20:2-20). Chabad, whose haftarah for
+  // Acharei Mot is the Ashkenazi one (Amos 9:7-15), keeps the Ashkenazi rule
+  // until a Chabad source is found: the data has no Chabad haftarah for
+  // Kedoshim to read instead.
+  if (portion.number == _P.kedoshim && !portion.combined && nusach != HaftarahNusach.sephardi) {
     // Acharei Mot was read last week, or two weeks ago if Pesach intervened.
     var previous = shabbat.addDays(-7);
     final ph = HebrewDate.fromLocalDate(previous);
     if (ph.month == HebrewMonth.nisan && ph.day >= 15 && ph.day <= 22) {
       previous = previous.addDays(-7);
     }
-    if (specialHaftarahKey(previous, const PortionId(_P.kedoshim - 1)) != null) {
+    if (specialHaftarahKey(previous, const PortionId(_P.kedoshim - 1), nusach: nusach) != null) {
       return 'Kedoshim following Special Shabbat';
     }
   }

@@ -1,3 +1,4 @@
+// ignore_for_file: text_direction_code_point_in_literal
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -551,7 +552,7 @@ abstract class AppLocalizations {
   /// No description provided for @readFromBook.
   ///
   /// In en, this message translates to:
-  /// **'I read it from a book'**
+  /// **'I read it in a Chumash'**
   String get readFromBook;
 
   /// No description provided for @weekComplete.
@@ -926,7 +927,7 @@ abstract class AppLocalizations {
   /// **'The Torah'**
   String get browseTitle;
 
-  /// No description provided for @previewNotOpen.
+  /// The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.
   ///
   /// In en, this message translates to:
   /// **'Preview — this parsha opens for credit on {date}.'**
@@ -1061,8 +1062,8 @@ abstract class AppLocalizations {
   /// No description provided for @firstAliyahDone.
   ///
   /// In en, this message translates to:
-  /// **'Yasher koach! Your first aliyah is done — {verses}, twice, with Targum.'**
-  String firstAliyahDone(String verses);
+  /// **'Yasher koach! Your first aliyah is done — {verses}, twice, with {second}.'**
+  String firstAliyahDone(String verses, String second);
 
   /// No description provided for @continueWithAliyah.
   ///
@@ -1175,7 +1176,7 @@ abstract class AppLocalizations {
   /// No description provided for @mikraLabel.
   ///
   /// In en, this message translates to:
-  /// **'Torah'**
+  /// **'Mikra'**
   String get mikraLabel;
 
   /// No description provided for @targumLabel.
@@ -1331,8 +1332,8 @@ abstract class AppLocalizations {
   /// No description provided for @versesRead.
   ///
   /// In en, this message translates to:
-  /// **'{count} verses read twice with Targum'**
-  String versesRead(String count);
+  /// **'{count} verses read twice with {second}'**
+  String versesRead(String count, String second);
 
   /// Screen-reader label of the bar of the year's parshiyot, when none is being read now.
   ///
@@ -1472,11 +1473,11 @@ abstract class AppLocalizations {
   /// **'Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.'**
   String get graceExplainer;
 
-  /// No description provided for @streakExplainer.
+  /// On Progress. The deadline is the reader's after-Shabbat window (lateWindowLabel): tuesday, wednesday or none.
   ///
   /// In en, this message translates to:
-  /// **'Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.'**
-  String get streakExplainer;
+  /// **'Your parsha streak counts portions finished before Shabbat{deadline, select, tuesday{ — or by Tuesday night, which still counts} wednesday{ — or by the end of Wednesday, which still counts} other{}}. Shabbat and Yom Tov never break a streak.'**
+  String streakExplainer(String deadline);
 
   /// No description provided for @statusLegend.
   ///
@@ -1523,7 +1524,7 @@ abstract class AppLocalizations {
   /// No description provided for @milestoneSefer.
   ///
   /// In en, this message translates to:
-  /// **'Sefer {book} complete — Chazak!'**
+  /// **'{book} complete — Chazak!'**
   String milestoneSefer(String book);
 
   /// No description provided for @milestoneSiyum.
@@ -1601,7 +1602,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAbout.
   ///
   /// In en, this message translates to:
-  /// **'About'**
+  /// **'About this app'**
   String get settingsAbout;
 
   /// No description provided for @settingsReadingDesc.
@@ -1703,7 +1704,7 @@ abstract class AppLocalizations {
   /// No description provided for @planAliyahPerDayDesc.
   ///
   /// In en, this message translates to:
-  /// **'One aliyah Sunday–Thursday; the 6th and 7th on Friday'**
+  /// **'One aliyah a day; two on the last day before Shabbat'**
   String get planAliyahPerDayDesc;
 
   /// No description provided for @planShevii.
@@ -1715,7 +1716,7 @@ abstract class AppLocalizations {
   /// No description provided for @planSheviiDesc.
   ///
   /// In en, this message translates to:
-  /// **'Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal'**
+  /// **'Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal (Vilna Gaon, MB 285:8)'**
   String get planSheviiDesc;
 
   /// No description provided for @planErevShabbat.
@@ -1727,7 +1728,7 @@ abstract class AppLocalizations {
   /// No description provided for @planErevShabbatDesc.
   ///
   /// In en, this message translates to:
-  /// **'The whole parsha on Erev Shabbat (Arizal; Shulchan Aruch HaRav)'**
+  /// **'The whole parsha on Erev Shabbat — after Shacharit (Arizal) or after midday (Shelah; Shulchan Aruch HaRav)'**
   String get planErevShabbatDesc;
 
   /// No description provided for @methodLabel.
@@ -1742,11 +1743,11 @@ abstract class AppLocalizations {
   /// **'Verse by verse'**
   String get methodVerse;
 
-  /// No description provided for @methodVerseDesc.
+  /// {second} is the reading after the Torah's two, as the reader set it: Targum, Rashi, or Onkelos and Rashi.
   ///
   /// In en, this message translates to:
-  /// **'Each verse twice, then its Targum'**
-  String get methodVerseDesc;
+  /// **'Each verse twice, then its {second}'**
+  String methodVerseDesc(String second);
 
   /// No description provided for @methodSection.
   ///
@@ -1754,11 +1755,11 @@ abstract class AppLocalizations {
   /// **'Section by section'**
   String get methodSection;
 
-  /// No description provided for @methodSectionDesc.
+  /// As methodVerseDesc.
   ///
   /// In en, this message translates to:
-  /// **'Each paragraph twice, then its Targum'**
-  String get methodSectionDesc;
+  /// **'Each paragraph twice, then its {second}'**
+  String methodSectionDesc(String second);
 
   /// No description provided for @methodAliyah.
   ///
@@ -1766,16 +1767,16 @@ abstract class AppLocalizations {
   /// **'Aliyah by aliyah'**
   String get methodAliyah;
 
-  /// No description provided for @methodAliyahDesc.
+  /// As methodVerseDesc.
   ///
   /// In en, this message translates to:
-  /// **'The whole aliyah twice, then its Targum'**
-  String get methodAliyahDesc;
+  /// **'The whole aliyah twice, then its {second}'**
+  String methodAliyahDesc(String second);
 
   /// No description provided for @secondLabel.
   ///
   /// In en, this message translates to:
-  /// **'Targum'**
+  /// **'Targum or Rashi'**
   String get secondLabel;
 
   /// No description provided for @secondOnkelos.
@@ -1889,7 +1890,7 @@ abstract class AppLocalizations {
   /// No description provided for @lateWednesday.
   ///
   /// In en, this message translates to:
-  /// **'Until Wednesday night'**
+  /// **'Until the end of Wednesday'**
   String get lateWednesday;
 
   /// No description provided for @lateNone.
@@ -2249,7 +2250,7 @@ abstract class AppLocalizations {
   /// No description provided for @divineAdonai.
   ///
   /// In en, this message translates to:
-  /// **'Adonai'**
+  /// **'Ado-nai'**
   String get divineAdonai;
 
   /// No description provided for @divineHashem.
@@ -2567,7 +2568,7 @@ abstract class AppLocalizations {
   /// No description provided for @importDataDesc.
   ///
   /// In en, this message translates to:
-  /// **'Restore from a backup'**
+  /// **'Restore from a backup file'**
   String get importDataDesc;
 
   /// No description provided for @importPrompt.
@@ -2687,7 +2688,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideTitle.
   ///
   /// In en, this message translates to:
-  /// **'About Shnayim Mikra'**
+  /// **'How it works'**
   String get guideTitle;
 
   /// No description provided for @disclaimer.
@@ -2723,7 +2724,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbPlanTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your plan this week'**
+  /// **'Your weekly plan'**
   String get onbPlanTitle;
 
   /// No description provided for @onbHonor.
@@ -2771,7 +2772,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhenBody.
   ///
   /// In en, this message translates to:
-  /// **'You may begin on Sunday (some say from Shabbat afternoon, after the community reads the next portion at Mincha). Ideally finish before the Shabbat meal. If not, it may still be completed until Tuesday night (\"until Wednesday\", SA 285:4), and missed portions may be made up until Simchat Torah.'**
+  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
   String get guideWhenBody;
 
   /// No description provided for @guideHowTitle.
@@ -2795,7 +2796,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideTargumBody.
   ///
   /// In en, this message translates to:
-  /// **'Rashi\'s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum.'**
+  /// **'Rashi\'s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn\'t understand Rashi\'s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.'**
   String get guideTargumBody;
 
   /// No description provided for @guideSpecialTitle.
@@ -2807,7 +2808,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideSpecialBody.
   ///
   /// In en, this message translates to:
-  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.'**
+  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.
@@ -2843,7 +2844,7 @@ abstract class AppLocalizations {
   /// No description provided for @bookOfTorah.
   ///
   /// In en, this message translates to:
-  /// **'Sefer {book}'**
+  /// **'{book}'**
   String bookOfTorah(String book);
 
   /// No description provided for @communityTitle.
@@ -2954,7 +2955,7 @@ abstract class AppLocalizations {
   /// **'Demo mode: any 6 digits will work.'**
   String get demoCodeHint;
 
-  /// No description provided for @signedInAs.
+  /// The heading of the account page, naming the member signed in.
   ///
   /// In en, this message translates to:
   /// **'Signed in as {name}'**
@@ -3787,6 +3788,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This week\'s parsha'**
   String get shortcutThisWeek;
+
+  /// On Today, in place of shabbatInDays in the week of Vezot HaBerachah, which is read on Simchat Torah: the days left until then.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Simchat Torah is today} =1{Simchat Torah is tomorrow} other{Simchat Torah in {count} days}}'**
+  String simchatTorahInDays(int count);
+
+  /// Heads the portion's own haftarah, shown after the special haftarah that displaces it this week.
+  ///
+  /// In en, this message translates to:
+  /// **'Also: the regular haftarah of {portion}'**
+  String regularHaftarahOf(String portion);
+
+  /// A line under a special haftarah on Today: the haftarah page also has the portion's own haftarah.
+  ///
+  /// In en, this message translates to:
+  /// **'Also the regular haftarah'**
+  String get alsoRegularHaftarah;
+
+  /// No description provided for @chabadFallbackNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Chabad haftarot are being verified; showing the Ashkenazi reading.'**
+  String get chabadFallbackNote;
+
+  /// No description provided for @repeatLastVerseDescChabad.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat the parsha\'s last verse in Hebrew after its Targum (Chabad custom: not repeated)'**
+  String get repeatLastVerseDescChabad;
+
+  /// Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves.
+  ///
+  /// In en, this message translates to:
+  /// **'\"End with Mikra\" is now off, following the Chabad custom.'**
+  String get repeatLastVerseFollowsChabad;
+
+  /// Said when choosing another haftarah custom than Chabad turns repeatLastVerse back on.
+  ///
+  /// In en, this message translates to:
+  /// **'\"End with Mikra\" is on again.'**
+  String get repeatLastVerseBackOn;
+
+  /// What screen readers say for divineAdonai, which is written with a hyphen out of respect, and would be spelled out letter by letter as written.
+  ///
+  /// In en, this message translates to:
+  /// **'Adonai'**
+  String get divineAdonaiSpoken;
+
+  /// The label of the field a backup is pasted into; importPrompt is its helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup text'**
+  String get importBackupText;
+
+  /// Under the backup text field, when 'Paste from clipboard' finds no text, or the browser won't let the app read the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t paste from the clipboard. Paste into the field instead.'**
+  String get importPasteFailed;
+
+  /// No description provided for @exportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved.'**
+  String get exportSaved;
+
+  /// No description provided for @importPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste backup text'**
+  String get importPaste;
+
+  /// No description provided for @importPasteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'For a backup copied as text'**
+  String get importPasteDesc;
+
+  /// No description provided for @pasteFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from clipboard'**
+  String get pasteFromClipboard;
+
+  /// What a backup holds, as importCounts says it, and the day it was made.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup from {date}: {weeks, plural, =0{nothing logged} =1{1 week logged} other{{weeks} weeks logged}}, {pauses, plural, =0{no pauses} =1{1 pause} other{{pauses} pauses}}.'**
+  String importSummary(String date, int weeks, int pauses);
+
+  /// What a backup holds: the weeks with reading logged, and the pauses ("Life happens"). Each number is joined to its noun by a no-break space.
+  ///
+  /// In en, this message translates to:
+  /// **'{weeks, plural, =0{Nothing logged} =1{1 week logged} other{{weeks} weeks logged}}, {pauses, plural, =0{no pauses} =1{1 pause} other{{pauses} pauses}}.'**
+  String importCounts(int weeks, int pauses);
+
+  /// No description provided for @importMergeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge this backup with the progress on this device? Merging keeps everything from both.'**
+  String get importMergeBody;
+
+  /// No description provided for @importAlsoSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Also restore settings'**
+  String get importAlsoSettings;
+
+  /// No description provided for @importMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get importMerge;
+
+  /// No description provided for @importReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace instead'**
+  String get importReplace;
+
+  /// No description provided for @importReplaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the progress here?'**
+  String get importReplaceTitle;
+
+  /// No description provided for @importReplaceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This erases the reading history and streaks on this device, and keeps only what the backup holds. It can\'t be undone.'**
+  String get importReplaceConfirm;
+
+  /// No description provided for @importReplaceConfirmSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'This erases the reading history and streaks on this device, in your cloud backup, and on your other devices when they next sync, and keeps only what this backup holds. It can\'t be undone.'**
+  String get importReplaceConfirmSynced;
+
+  /// No description provided for @importReplaceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get importReplaceAction;
+
+  /// After importing a backup whose settings had reminders on, when the device refused the app's notifications. Shown with a 'Reminders' action that opens their settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress imported. Reminders are off, since notifications aren\'t allowed for this app.'**
+  String get importSuccessRemindersOff;
+
+  /// No description provided for @cloudBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud backup'**
+  String get cloudBackup;
+
+  /// About the Miqra according to the Masorah edition, on the Texts & sources page. Its license (CC BY-SA) requires saying how the text was changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. In the Torah, where Ashkenazi and Sephardi scrolls differ from the Aleppo Codex, the text follows the scrolls, with the Codex\'s reading in a note. Otherwise it is converted to a structured format without changing the text.'**
+  String get sourcesMamDescription;
+
+  /// No description provided for @onbStarterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get onbStarterTitle;
+
+  /// No description provided for @onbStarterCatchUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the whole parsha by Shabbat'**
+  String get onbStarterCatchUp;
+
+  /// The whole parsha spread over the days left in the week the reader joins: its length, its reading time, and the number of days with reading. One day is always today; a single day that isn't takes onbStarterCatchUpOn.
+  ///
+  /// In en, this message translates to:
+  /// **'{verses} verses · about {minutes} min {days, plural, =1{today} other{over {days} days}}'**
+  String onbStarterCatchUpDesc(int verses, int minutes, int days);
+
+  /// As onbStarterCatchUpDesc, when the one day left with reading is not today (the reader joins on a day without reading, such as Tisha B'Av): its weekday, such as 'Friday'.
+  ///
+  /// In en, this message translates to:
+  /// **'{verses} verses · about {minutes} min on {day}'**
+  String onbStarterCatchUpOn(int verses, int minutes, String day);
+
+  /// No description provided for @onbStarterToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with today\'s reading'**
+  String get onbStarterToday;
+
+  /// No description provided for @onbStarterTodayDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Full plan from next week'**
+  String get onbStarterTodayDesc;
+
+  /// No description provided for @onbRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'I already use Shnayim Mikra'**
+  String get onbRestore;
+
+  /// No description provided for @onbRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore your progress'**
+  String get onbRestoreTitle;
+
+  /// No description provided for @onbRestoreSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to restore'**
+  String get onbRestoreSignIn;
+
+  /// No description provided for @onbRestoreSignInDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'From the backup kept with your account'**
+  String get onbRestoreSignInDesc;
+
+  /// No description provided for @onbRestoreFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from a backup file'**
+  String get onbRestoreFile;
+
+  /// No description provided for @onbRestoreFileDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'A backup exported from Settings'**
+  String get onbRestoreFileDesc;
+
+  /// No description provided for @onbRestoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring your progress…'**
+  String get onbRestoring;
+
+  /// No description provided for @onbRestoreDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Your progress is restored.'**
+  String get onbRestoreDone;
+
+  /// As importSuccessRemindersOff, after restoring a backup during onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Your progress is restored. Reminders are off, since notifications aren\'t allowed for this app.'**
+  String get onbRestoreDoneRemindersOff;
+
+  /// No description provided for @onbRestoreNone.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has no backup yet. Let\'s set up your reading.'**
+  String get onbRestoreNone;
+
+  /// The message once the email code is accepted, confirming the sign-in worked; also announced to screen readers on the page signed in for.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String signedInNow(String name);
 }
 
 class _AppLocalizationsDelegate

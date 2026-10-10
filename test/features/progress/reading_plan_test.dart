@@ -72,11 +72,31 @@ void main() {
       expect(daysOf(usual.planFor(lechLecha)).first, '2026-10-18 [0]');
     });
 
+    test('startingFrom plans the week of joining from another day, by the same calendar and settings', () {
+      final planner = ReadingPlanner(
+        schedule: diaspora,
+        oneDayYomTov: true,
+        settingsAt: (_) => const PlanSettingsEntry(plan: ReadingPlanType.sheviiOnShabbat),
+        starterFrom: d('2026-10-14'),
+      );
+      final fromFriday = planner.startingFrom(d('2026-10-16'));
+      expect(fromFriday.starterFrom, d('2026-10-16'));
+      expect(fromFriday.schedule, same(diaspora));
+      expect(fromFriday.oneDayYomTov, isTrue);
+      final plan = fromFriday.planFor(noach);
+      expect(daysOf(plan), ['2026-10-16 [0, 1, 2, 3, 4, 5]']);
+      expect(plan.shabbatAliyot, [6]);
+
+      final asUsual = planner.startingFrom(null);
+      expect(asUsual.starterFrom, isNull);
+      expect(daysOf(asUsual.planFor(noach)).first, '2026-10-11 [0]');
+    });
+
     test('with no reading day left before the portion is read, the usual days are planned', () {
       expect(daysOf(joinedOn('2026-10-17').planFor(noach)), daysOf(usual.planFor(noach)));
     });
 
-    test('joining on Simchat Torah leaves Bereshit, and Vezot HaBerakhah, as usual', () {
+    test('joining on Simchat Torah leaves Bereshit, and Vezot HaBerachah, as usual', () {
       // 4 Oct 2026 is Simchat Torah in the Diaspora, so Bereshit's week
       // begins the next day.
       final bereshit = diaspora.weekFor(d('2026-10-09'));

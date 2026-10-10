@@ -82,12 +82,14 @@ final historyJoinDate = LocalDate(2026, 10, 4);
 
 /// Pumps the whole app with in-memory storage and the demo backend (or
 /// [forums], when given), and notifications disabled (or [notifications]),
-/// and any further [overrides].
+/// and any further [overrides]. Storage holds [settings], [progress] and
+/// anything else in [stored], by key.
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   AppSettings settings = const AppSettings(onboardingComplete: true),
   DateTime? now,
   ProgressState? progress,
+  Map<String, Object> stored = const {},
   ForumRepository? forums,
   NotificationService? notifications,
   List<Override> overrides = const [],
@@ -97,6 +99,7 @@ Future<ProviderContainer> pumpApp(
   SharedPreferences.setMockInitialValues({
     'flutter.settings.v1': jsonEncode(settings.toJson()),
     if (progress != null) 'flutter.progress.v1': jsonEncode(progress.toJson()),
+    for (final MapEntry(:key, :value) in stored.entries) 'flutter.$key': value,
   });
   final prefs = await SharedPreferences.getInstance();
   final repo = await tester.runAsync(loadRepo);

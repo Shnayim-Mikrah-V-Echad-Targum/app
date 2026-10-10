@@ -101,7 +101,7 @@ void main() {
     await open(tester);
     await goTo(tester, 'בראשית כח יב');
     expect(find.text('Genesis 28:12'), findsOneWidget);
-    expect(find.text('Vayetzei · Rishon'), findsOneWidget);
+    expect(find.text('Vayetze · Rishon'), findsOneWidget);
     // Unmarked, כח and יב are words too: the search is offered after the verse.
     expect(find.textContaining('Search for'), findsOneWidget);
     expect(tester.getTopLeft(find.text('Genesis 28:12')).dy, lessThan(tester.getTopLeft(find.textContaining('Search for')).dy));
@@ -241,7 +241,7 @@ void main() {
     await goTo(tester, 'Gen 28:12');
     tester.takeAnnouncements();
     await tester.pump(const Duration(seconds: 1));
-    expect(tester.takeAnnouncements().map((a) => a.message), ['Genesis 28:12, Vayetzei · Rishon']);
+    expect(tester.takeAnnouncements().map((a) => a.message), ['Genesis 28:12, Vayetze · Rishon']);
   });
 
   group('Ctrl+K', () {

@@ -199,7 +199,7 @@ class ThreadTile extends ConsumerWidget {
       child: ListTile(
         focusNode: focusNode,
         leading: Icon(thread.pinned ? Icons.push_pin_outlined : (thread.locked ? Icons.lock_outline : Icons.chat_bubble_outline)),
-        title: Text(title, textDirection: autoDirection(title)),
+        title: Text(title, textDirection: autoDirection(title, fallback: Directionality.of(context))),
         subtitle: Text(meta, style: theme.textTheme.bodySmall),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/community/thread/${thread.id}'),

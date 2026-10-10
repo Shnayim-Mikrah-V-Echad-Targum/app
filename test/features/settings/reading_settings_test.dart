@@ -77,6 +77,51 @@ void main() {
     expect(find.text(_applies), findsNothing);
   });
 
+  testWidgets("the last verse's repeat follows the Chabad custom until the reader sets it", (tester) async {
+    const desc = "Repeat the parsha's last verse in Hebrew after its Targum";
+    const chabadDesc = "Repeat the parsha's last verse in Hebrew after its Targum (Chabad custom: not repeated)";
+    bool repeat() => c.read(settingsProvider).repeatLastVerse;
+    await openReadingSettings(tester);
+    expect(find.text(desc), findsOneWidget);
+    expect(repeat(), isTrue);
+
+    await tapText(tester, 'Chabad');
+    expect(repeat(), isFalse, reason: "Chabad's custom");
+    expect(find.text(chabadDesc), findsOneWidget);
+    expect(find.text(desc), findsNothing);
+    // The switch is further up the page, so the change is said.
+    expect(find.text('"End with Mikra" is now off, following the Chabad custom.'), findsOneWidget);
+    await tapText(tester, 'Ashkenazi');
+    expect(repeat(), isTrue);
+    expect(find.text(desc), findsOneWidget);
+    expect(find.text('"End with Mikra" is on again.'), findsOneWidget);
+    // Between two customs that both repeat it, nothing changes, and nothing
+    // is said.
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'Sephardi');
+    expect(find.byType(SnackBar), findsNothing);
+
+    // Once set by the reader, it stays as set.
+    await tapText(tester, 'Chabad');
+    await tapText(tester, chabadDesc);
+    expect(repeat(), isTrue);
+    expect(c.read(settingsProvider).repeatLastVerseTouched, isTrue);
+    await tapText(tester, 'Sephardi');
+    await tapText(tester, 'Chabad');
+    expect(repeat(), isTrue);
+    expect(find.text(_applies), findsNothing);
+  });
+
+  testWidgets("each method's description names the reading after the Torah's two", (tester) async {
+    await openReadingSettings(tester);
+    expect(find.text('Each verse twice, then its Targum'), findsOneWidget);
+    await tapText(tester, 'Rashi');
+    expect(find.text('Each verse twice, then its Rashi'), findsOneWidget);
+    expect(find.text('The whole aliyah twice, then its Rashi'), findsOneWidget);
+    expect(find.textContaining('then its Targum'), findsNothing);
+  });
+
   testWidgets('changes that don\'t affect how weeks are planned or judged say nothing', (tester) async {
     await openReadingSettings(tester);
     await tapText(tester, 'Section by section');

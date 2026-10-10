@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
@@ -183,6 +184,40 @@ void main() {
     expect(s.days[d('2026-10-21')], isNot(DayStatus.ahead), reason: 'four planned by Wednesday');
   });
 
+  test('a new device that restores the backup keeps the streak, by the join date that comes with it', () {
+    // Joined on Simchat Torah, Sunday 4 October, and read every portion on
+    // its Friday, Bereshit to Chayei Sara; today is the Wednesday of Toldot.
+    final log = Log(planner);
+    for (final friday in ['2026-10-09', '2026-10-16', '2026-10-23', '2026-10-30', '2026-11-06']) {
+      log.readAll(friday, friday);
+    }
+    final today = d('2026-11-11');
+    final original = engine.evaluate(progress: log.map, joinDate: d('2026-10-04'), today: today);
+    expect(original.parshaStreak, 5);
+
+    // A new phone, set up on Monday: by its own join date, none of that
+    // history would count.
+    final setUp = d('2026-11-09');
+    expect(engine.evaluate(progress: log.map, joinDate: setUp, today: today).parshaStreak, 0);
+
+    final backup = ProgressState(weeks: log.map);
+    final merged = mergeSyncPayload(const ProgressState(), setUp, syncPayload(backup, d('2026-10-04')));
+    expect(merged.joinDate, d('2026-10-04'));
+    final restored = engine.evaluate(progress: merged.progress.weeks, joinDate: merged.joinDate!, today: today);
+    expect(restored.parshaStreak, original.parshaStreak);
+    expect(restored.daysOnTrack, original.daysOnTrack);
+    expect(restored.graceBalance, original.graceBalance);
+
+    // A backup saved by an earlier version holds no join date: the reader
+    // joined by their first reading, at the latest.
+    final legacy = mergeSyncPayload(const ProgressState(), setUp, backup.toJson());
+    expect(legacy.joinDate, d('2026-10-09'));
+    expect(
+      engine.evaluate(progress: legacy.progress.weeks, joinDate: legacy.joinDate!, today: today).parshaStreak,
+      original.parshaStreak,
+    );
+  });
+
   group('changing settings', () {
     /// An engine whose plan settings changed as [entries] (oldest first) say.
     StreakEngine engineWith(List<PlanSettingsEntry> entries) => StreakEngine(
@@ -319,7 +354,7 @@ void main() {
       expect(weekIdFor(a.portion, a.occasion), '5787:2');
     });
 
-    test('Vezot HaBerakhah belongs to the cycle that is ending', () {
+    test('Vezot HaBerachah belongs to the cycle that is ending', () {
       final w = diaspora.weekFor(d('2026-09-30'));
       expect(weekIdFor(w.portion, w.occasion), '5786:54');
     });

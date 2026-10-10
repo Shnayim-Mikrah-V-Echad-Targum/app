@@ -205,7 +205,9 @@ final reportedPostIdsProvider = NotifierProvider<ReportedPostIds, Set<String>>(R
 /// Keeps reading progress backed up to the user's account (when they have
 /// opted in): pulls and merges on sign-in, pushes a few seconds after any
 /// change. Merging keeps every change made on either device, removals
-/// included (see [mergeProgress]).
+/// included (see [mergeProgress]). The join date goes with the progress,
+/// and the earliest wins, so that a new device counts the history it
+/// restores (see [mergeSyncPayload]).
 ///
 /// The state is the time of the last successful sync.
 class ProgressSync extends Notifier<DateTime?> {
@@ -228,12 +230,15 @@ class ProgressSync extends Notifier<DateTime?> {
     final userId = ref.watch(communityUserProvider.select((u) => u.value?.id));
     if (!enabled || userId == null) return null;
     Future.microtask(syncNow);
-    ref.listen(progressProvider, (_, _) {
+    void changed() {
       // The sync's own merge is pushed by that same sync.
       if (_applyingMerge) return;
       _debounce?.cancel();
       _debounce = Timer(pushDelay, syncNow);
-    });
+    }
+
+    ref.listen(progressProvider, (_, _) => changed());
+    ref.listen(settingsProvider.select((s) => s.joinDate), (_, _) => changed());
     return null;
   }
 
@@ -278,19 +283,27 @@ class ProgressSync extends Notifier<DateTime?> {
       if (blocked) return false;
       final remote = remoteJson == null ? null : ProgressState.fromJson(remoteJson);
       final local = syncRef.read(progressProvider);
-      final merged = remote == null ? local : mergeProgress(local, remote);
+      final localJoin = syncRef.read(settingsProvider).joinDate;
+      final (progress: merged, joinDate: mergedJoin) = remoteJson == null
+          ? (progress: local, joinDate: localJoin)
+          : mergeSyncPayload(local, localJoin, remoteJson);
+      // With no join date to give, this device keeps its own, which a reset
+      // made elsewhere moves up (see ProgressController.replaceAll).
+      final join = mergedJoin ?? localJoin;
       // Apply and upload only real changes: a no-op that looked like a change
-      // would wake the progress listener above and sync again, forever.
-      if (merged != local) {
+      // would wake the listeners above and sync again, forever.
+      if (merged != local || join != localJoin) {
         _applyingMerge = true;
         try {
+          if (join != localJoin) syncRef.read(settingsProvider.notifier).update((s) => s.copyWith(joinDate: join));
           syncRef.read(progressProvider.notifier).replaceAll(merged);
         } finally {
           _applyingMerge = false;
         }
       }
-      if (remote == null || merged != remote) {
-        await repo.saveProgress(merged.toJson());
+      final joinDate = syncRef.read(settingsProvider).joinDate;
+      if (remoteJson == null || merged != remote || joinDate != syncPayloadJoinDate(remoteJson)) {
+        await repo.saveProgress(syncPayload(merged, joinDate));
         if (stale()) return false;
       }
       state = DateTime.now();

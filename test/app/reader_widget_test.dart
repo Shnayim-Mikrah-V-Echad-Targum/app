@@ -258,6 +258,35 @@ void main() {
     expect(find.textContaining('Continue with'), findsNothing);
   });
 
+  for (final (second, name) in [
+    (SecondReading.onkelos, 'Targum'),
+    (SecondReading.rashi, 'Rashi'),
+    (SecondReading.onkelosAndRashi, 'Onkelos and Rashi'),
+  ]) {
+    testWidgets('the first aliyah ever is celebrated as read with $name', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(
+          onboardingComplete: true,
+          method: ReadingMethod.aliyahByAliyah,
+          secondReading: second,
+          thirdReadingPrompts: false,
+        ),
+        now: monday,
+      );
+      c.read(routerProvider).go('/read/5787:2/0');
+      await loadTexts(tester);
+      for (var i = 0; i < 6 && find.byType(AlertDialog).evaluate().isEmpty; i++) {
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Yasher koach! Your first aliyah is done — 14 verses, twice, with $name.'), findsOneWidget);
+    });
+  }
+
   testWidgets('read by section, the Targum of Numbers 32:3 is followed by its Hebrew', (tester) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
@@ -277,7 +306,7 @@ void main() {
     expect(find.text('Read the Targum'), findsOneWidget);
     expect(find.text('Reading 3 of 3'), findsOneWidget, reason: 'no separate step for the third reading');
     expect(find.textContaining('Onkelos here gives mostly the Aramaic forms of the place names'), findsOneWidget);
-    expect(find.text('Torah'), findsOneWidget, reason: 'the Hebrew is labelled among the Targum');
+    expect(find.text('Mikra'), findsOneWidget, reason: 'the Hebrew is labelled among the Targum');
   });
 
   testWidgets('read by aliyah, the Targum after the Hebrew of Numbers 32:3 is labelled Targum again', (tester) async {
@@ -302,7 +331,7 @@ void main() {
     final scroll = find.byType(SingleChildScrollView).last;
     final targumLabels = find.descendant(of: scroll, matching: find.text('Targum Onkelos'));
     expect(targumLabels, findsNWidgets(2));
-    final torah = find.descendant(of: scroll, matching: find.text('Torah'));
+    final torah = find.descendant(of: scroll, matching: find.text('Mikra'));
     expect(torah, findsOneWidget);
     final note = find.textContaining('Onkelos here gives mostly the Aramaic forms of the place names');
     expect(tester.getTopLeft(targumLabels.first).dy, lessThan(tester.getTopLeft(torah).dy));
@@ -1082,14 +1111,22 @@ void main() {
     await tester.tap(find.text("Start this week's parsha"));
     await tester.pumpAndSettle();
     expect(find.text('Where will you be this Shabbat?'), findsOneWidget);
-    expect(find.textContaining('Visiting? You can set the days of Yom Tov you keep separately in Settings.'), findsOneWidget);
+    // Why it is asked, and what a visitor can do, is a tap away.
+    final help = find.textContaining('Visiting? You can set the days of Yom Tov you keep separately in Settings.');
+    expect(help, findsNothing);
+    await tester.tap(find.text('Why we ask'));
+    await tester.pumpAndSettle();
+    expect(help, findsOneWidget);
     await tester.tap(find.text('In Israel'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
-    expect(find.text('Your plan this week'), findsOneWidget);
+    expect(find.text('Your weekly plan'), findsOneWidget);
+    // Below the choice for the week of joining.
+    await tester.ensureVisible(find.text('Start reading'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Start reading'));
     await loadTexts(tester);
     final s = c.read(settingsProvider);

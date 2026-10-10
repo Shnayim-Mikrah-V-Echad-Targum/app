@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
+
 import '../../../app/providers.dart';
+import '../../../core/calendar/local_date.dart';
 import 'progress_models.dart';
 
 export '../../../app/providers.dart' show ProgressState;
@@ -69,6 +72,93 @@ ProgressState mergeProgress(ProgressState a, ProgressState b) {
     unknownWeeks: unknownWeeks,
     unknownPauses: [for (final k in unknownPauses.keys.toList()..sort()) unknownPauses[k]],
   );
+}
+
+/// This device's progress, [local], with a backup file's, [imported],
+/// merged in at the reader's request: what either holds is kept, merged as
+/// [mergeProgress] merges two devices' copies, except that neither side's
+/// reset erases the other's progress. A sync applies a reset to the copies
+/// it reaches, but a reader merging a backup made before one, or a backup
+/// made after a reset elsewhere into progress from before it, is asking to
+/// keep both.
+///
+/// Restore the result with [ProgressController.restore], so that what the
+/// backup adds counts as a new change, which a sync keeps.
+ProgressState mergeBackup(ProgressState local, ProgressState imported) =>
+    mergeProgress(_withoutReset(local), _withoutReset(imported));
+
+/// [s] as if never reset. All it holds is from after its reset, so nothing
+/// comes back; only the other side's progress is no longer cut.
+ProgressState _withoutReset(ProgressState s) => ProgressState(
+      weeks: s.weeks,
+      pauses: s.pauses,
+      unknownWeeks: s.unknownWeeks,
+      unknownPauses: s.unknownPauses,
+    );
+
+/// What a sync saves to the reader's account: their [progress], and the day
+/// they joined (see [mergeSyncPayload]). Earlier versions saved the
+/// progress alone, and read past the join date.
+Map<String, dynamic> syncPayload(ProgressState progress, LocalDate? joinDate) =>
+    {...progress.toJson(), 'joinDate': ?joinDate?.rd};
+
+/// The join date a sync [payload] holds, if any.
+LocalDate? syncPayloadJoinDate(Map<String, dynamic> payload) =>
+    payload['joinDate'] is int ? LocalDate.fromRd(payload['joinDate'] as int) : null;
+
+/// Merges this device's progress, [local], and the day the reader joined
+/// here, [localJoin], with the account's backup, [remote], as [syncPayload]
+/// wrote it.
+///
+/// The progress merges as [mergeProgress] does, and the earliest join date
+/// wins, so that a new device counts the history it restores: keeping the
+/// day it was set up would leave out every week before, and the streaks
+/// would start again from 0, when a sync must never lower one. A backup
+/// saved without a join date (by an earlier version) counts as joined on
+/// the day of the earliest reading it brings that this device doesn't
+/// already hold. Readings this device logged itself, and an earlier version
+/// backed up, are no history to restore: one logged for a day before
+/// joining must not move the join date, and with it turn the first week
+/// from one that can't be missed into one already behind. A side that
+/// hasn't seen the latest reset has no say, since the reset started the
+/// reader again; nor does a reading logged for a day before the reset.
+///
+/// The join date is null when neither side has one to give.
+({ProgressState progress, LocalDate? joinDate}) mergeSyncPayload(
+  ProgressState local,
+  LocalDate? localJoin,
+  Map<String, dynamic> remote,
+) {
+  final theirs = ProgressState.fromJson(remote);
+  final progress = mergeProgress(local, theirs);
+  final cut = progress.resetAt;
+  final restart = cut == 0 ? null : rolloverDate(DateTime.fromMillisecondsSinceEpoch(cut));
+  final theirJoin = syncPayloadJoinDate(remote) ?? earliestReadDate(progress, from: restart, except: local);
+  final joins = [
+    if (local.resetAt == cut) localJoin,
+    if (theirs.resetAt == cut) theirJoin,
+  ];
+  return (progress: progress, joinDate: joins.nonNulls.minOrNull);
+}
+
+/// The earliest day on which a reading or the haftarah in [progress] counts
+/// as done, of those from [from] on, leaving out any that [except] holds
+/// done on the same day; null if there is none.
+LocalDate? earliestReadDate(ProgressState progress, {LocalDate? from, ProgressState? except}) {
+  LocalDate? earliest;
+  for (final MapEntry(key: id, value: week) in progress.weeks.entries) {
+    final held = except?.week(id);
+    final days = [
+      for (var a = 0; a < kAliyot; a++)
+        for (var p = 0; p < 3; p++) (week.units[a][p], held?.units[a][p]),
+      (week.haftarah, held?.haftarah),
+    ];
+    for (final (day, heldDay) in days) {
+      if (day == null || day == heldDay || (from != null && day < from)) continue;
+      if (earliest == null || day < earliest) earliest = day;
+    }
+  }
+  return earliest;
 }
 
 WeekProgress _mergeWeek(WeekProgress x, WeekProgress y, int cut) {

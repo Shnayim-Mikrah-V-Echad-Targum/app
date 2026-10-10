@@ -5,10 +5,14 @@ import '../../../ui/widgets/common.dart';
 
 /// One option in a [ChoiceGroup].
 class Choice<T> {
-  const Choice(this.value, this.title, {this.subtitle});
+  const Choice(this.value, this.title, {this.subtitle, this.semanticsLabel});
   final T value;
   final String title;
   final String? subtitle;
+
+  /// What screen readers say for [title], where it would be read badly as
+  /// written.
+  final String? semanticsLabel;
 }
 
 /// A labeled group of radio options. Uses RadioGroup so assistive technology
@@ -50,7 +54,7 @@ class ChoiceGroup<T> extends StatelessWidget {
               for (final c in choices)
                 RadioListTile<T>(
                   value: c.value,
-                  title: Text(c.title),
+                  title: Text(c.title, semanticsLabel: c.semanticsLabel),
                   subtitle: c.subtitle == null ? null : Text(c.subtitle!),
                 ),
             ],

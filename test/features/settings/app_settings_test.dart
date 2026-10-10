@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
@@ -100,6 +101,52 @@ void main() {
     expect(s.readingSchedule, ReadingSchedule.diaspora);
     expect(s.oneDayYomTov, isFalse);
     expect(s.method, ReadingMethod.verseByVerse);
+  });
+
+  group('repeating the last verse', () {
+    test('follows the custom until the reader sets it: Chabad does not repeat it', () {
+      const s = AppSettings();
+      expect(s.repeatLastVerse, isTrue);
+      final chabad = s.withNusach(HaftarahNusach.chabad);
+      expect((chabad.nusach, chabad.repeatLastVerse), (HaftarahNusach.chabad, false));
+      expect(chabad.repeatLastVerseTouched, isFalse);
+      expect(chabad.withNusach(HaftarahNusach.sephardi).repeatLastVerse, isTrue);
+      expect(s.withNusach(HaftarahNusach.sephardi).repeatLastVerse, isTrue);
+    });
+
+    test("once the reader sets it, keeps the reader's choice whatever the custom", () {
+      final on = const AppSettings().withNusach(HaftarahNusach.chabad).withRepeatLastVerse(true);
+      expect((on.repeatLastVerse, on.repeatLastVerseTouched), (true, true));
+      expect(on.withNusach(HaftarahNusach.ashkenazi).withNusach(HaftarahNusach.chabad).repeatLastVerse, isTrue);
+      final off = const AppSettings().withRepeatLastVerse(false);
+      expect(off.withNusach(HaftarahNusach.chabad).withNusach(HaftarahNusach.ashkenazi).repeatLastVerse, isFalse);
+    });
+
+    test('remembers whether the reader set it', () {
+      final touched = const AppSettings().withRepeatLastVerse(true);
+      expect(AppSettings.fromJson(touched.toJson()).repeatLastVerseTouched, isTrue);
+      expect(AppSettings.fromJson(const AppSettings().toJson()).repeatLastVerseTouched, isFalse);
+      // Saved before this was kept: off was the reader's doing, on the default.
+      expect(AppSettings.fromJson({'repeatLastVerse': false}).repeatLastVerseTouched, isTrue);
+      expect(AppSettings.fromJson({'repeatLastVerse': true}).repeatLastVerseTouched, isFalse);
+      expect(AppSettings.fromJson({}).repeatLastVerseTouched, isFalse);
+    });
+
+    test('saved for Chabad before it was kept, follows the custom', () {
+      // On only because that was the default: Chabad's custom is not to.
+      final chabad = AppSettings.fromJson({'nusach': 'chabad', 'repeatLastVerse': true});
+      expect(chabad.repeatLastVerse, isFalse);
+      expect(chabad.repeatLastVerseTouched, isFalse);
+      // Set by the reader, it stays as set.
+      final set = AppSettings.fromJson({'nusach': 'chabad', 'repeatLastVerse': true, 'repeatLastVerseTouched': true});
+      expect(set.repeatLastVerse, isTrue);
+      final off = AppSettings.fromJson({'nusach': 'ashkenazi', 'repeatLastVerse': false});
+      expect((off.repeatLastVerse, off.repeatLastVerseTouched), (false, true));
+      // And the round trip keeps either.
+      for (final s in [const AppSettings().withNusach(HaftarahNusach.chabad), set, off]) {
+        expect(AppSettings.fromJson(s.toJson()).repeatLastVerse, s.repeatLastVerse);
+      }
+    });
   });
 
   test('copyWith can clear nullable fields', () {

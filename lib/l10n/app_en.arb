@@ -191,7 +191,7 @@
   "readTodaysAliyah": "Read today's reading",
   "continueReading": "Continue reading",
   "startReading": "Start reading",
-  "readFromBook": "I read it from a book",
+  "readFromBook": "I read it in a Chumash",
   "weekComplete": "This week's parsha is complete. Yasher koach!",
   "haftarahLabel": "Haftarah",
   "haftarahRead": "Haftarah read",
@@ -390,6 +390,7 @@
   "browseTitle": "The Torah",
   "previewNotOpen": "Preview — this parsha opens for credit on {date}.",
   "@previewNotOpen": {
+    "description": "The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.",
     "placeholders": {
       "date": {
         "type": "String"
@@ -514,11 +515,15 @@
       }
     }
   },
-  "firstAliyahDone": "Yasher koach! Your first aliyah is done — {verses}, twice, with Targum.",
+  "firstAliyahDone": "Yasher koach! Your first aliyah is done — {verses}, twice, with {second}.",
   "@firstAliyahDone": {
     "placeholders": {
       "verses": {
         "type": "String"
+      },
+      "second": {
+        "type": "String",
+        "description": "What the reader reads after the two readings, as their setting says: passTargum, passRashi or secondBoth."
       }
     }
   },
@@ -556,7 +561,7 @@
   "markAliyahRead": "Mark this aliyah as read",
   "keyboardShortcuts": "Keyboard shortcuts",
   "translationDisclaimer": "A translation is a study aid. It does not take the place of the Targum.",
-  "mikraLabel": "Torah",
+  "mikraLabel": "Mikra",
   "targumLabel": "Targum Onkelos",
   "rashiLabel": "Rashi",
   "translationLabel": "Translation (JPS 1917)",
@@ -603,11 +608,15 @@
       }
     }
   },
-  "versesRead": "{count} verses read twice with Targum",
+  "versesRead": "{count} verses read twice with {second}",
   "@versesRead": {
     "placeholders": {
       "count": {
         "type": "String"
+      },
+      "second": {
+        "type": "String",
+        "description": "What the reader reads after the two readings, as their setting says: passTargum, passRashi or secondBoth."
       }
     }
   },
@@ -683,7 +692,15 @@
   "streaksHidden": "Streak numbers are hidden. Your progress is still saved.",
   "milestonesTitle": "Milestones",
   "graceExplainer": "Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.",
-  "streakExplainer": "Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.",
+  "streakExplainer": "Your parsha streak counts portions finished before Shabbat{deadline, select, tuesday{ — or by Tuesday night, which still counts} wednesday{ — or by the end of Wednesday, which still counts} other{}}. Shabbat and Yom Tov never break a streak.",
+  "@streakExplainer": {
+    "description": "On Progress. The deadline is the reader's after-Shabbat window (lateWindowLabel): tuesday, wednesday or none.",
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
   "statusLegend": "Legend",
   "noHistory": "Your weeks will appear here as you read.",
   "milestoneFirstAliyah": "First aliyah",
@@ -705,7 +722,7 @@
       }
     }
   },
-  "milestoneSefer": "Sefer {book} complete — Chazak!",
+  "milestoneSefer": "{book} complete — Chazak!",
   "@milestoneSefer": {
     "placeholders": {
       "book": {
@@ -725,7 +742,7 @@
   "settingsAccount": "Account & community",
   "settingsData": "Your data",
   "settingsLanguage": "Language",
-  "settingsAbout": "About",
+  "settingsAbout": "About this app",
   "settingsReadingDesc": "Israel or abroad, Shabbat times, plan, Targum or Rashi, haftarah",
   "settingsDisplayDesc": "Theme, fonts, text size, vowels and cantillation",
   "settingsAccessibilityDesc": "Motion, screen readers, speech, quick setups",
@@ -742,19 +759,46 @@
   "yomTovDaysHelp": "Visitors usually keep their home custom. Ask your rav.",
   "planLabel": "Weekly plan",
   "planAliyahPerDay": "An aliyah a day",
-  "planAliyahPerDayDesc": "One aliyah Sunday–Thursday; the 6th and 7th on Friday",
+  "planAliyahPerDayDesc": "One aliyah a day; two on the last day before Shabbat",
   "planShevii": "Shevi'i on Shabbat morning",
-  "planSheviiDesc": "Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal",
+  "planSheviiDesc": "Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal (Vilna Gaon, MB 285:8)",
   "planErevShabbat": "All on Friday",
-  "planErevShabbatDesc": "The whole parsha on Erev Shabbat (Arizal; Shulchan Aruch HaRav)",
+  "planErevShabbatDesc": "The whole parsha on Erev Shabbat — after Shacharit (Arizal) or after midday (Shelah; Shulchan Aruch HaRav)",
   "methodLabel": "Reading method",
   "methodVerse": "Verse by verse",
-  "methodVerseDesc": "Each verse twice, then its Targum",
+  "methodVerseDesc": "Each verse twice, then its {second}",
+  "@methodVerseDesc": {
+    "description": "{second} is the reading after the Torah's two, as the reader set it: Targum, Rashi, or Onkelos and Rashi.",
+    "placeholders": {
+      "second": {
+        "type": "String",
+        "example": "Targum"
+      }
+    }
+  },
   "methodSection": "Section by section",
-  "methodSectionDesc": "Each paragraph twice, then its Targum",
+  "methodSectionDesc": "Each paragraph twice, then its {second}",
+  "@methodSectionDesc": {
+    "description": "As methodVerseDesc.",
+    "placeholders": {
+      "second": {
+        "type": "String",
+        "example": "Targum"
+      }
+    }
+  },
   "methodAliyah": "Aliyah by aliyah",
-  "methodAliyahDesc": "The whole aliyah twice, then its Targum",
-  "secondLabel": "Targum",
+  "methodAliyahDesc": "The whole aliyah twice, then its {second}",
+  "@methodAliyahDesc": {
+    "description": "As methodVerseDesc.",
+    "placeholders": {
+      "second": {
+        "type": "String",
+        "example": "Targum"
+      }
+    }
+  },
+  "secondLabel": "Targum or Rashi",
   "secondOnkelos": "Targum Onkelos",
   "secondRashi": "Rashi",
   "secondBoth": "Onkelos and Rashi",
@@ -773,7 +817,7 @@
   "haftarahRequired": "Count the haftarah toward completion",
   "lateWindowLabel": "After-Shabbat window",
   "lateTuesday": "Until Tuesday night",
-  "lateWednesday": "Until Wednesday night",
+  "lateWednesday": "Until the end of Wednesday",
   "lateNone": "No window",
   "lateWindowDesc": "Reading finished after Shabbat, until this time, still counts (Shulchan Aruch OC 285:4).",
   "tishaBavQuiet": "No reading planned on Tisha B'Av",
@@ -859,7 +903,7 @@
   "srConsonants": "Letters only",
   "srAllMarks": "All marks (for braille displays)",
   "divineNameLabel": "Speaking the Divine Name",
-  "divineAdonai": "Adonai",
+  "divineAdonai": "Ado-nai",
   "divineHashem": "HaShem",
   "speechRate": "Speech rate",
   "presetsTitle": "Quick setups",
@@ -969,7 +1013,7 @@
   "exportData": "Export my progress",
   "exportDataDesc": "Save a backup you can restore later",
   "importData": "Import progress",
-  "importDataDesc": "Restore from a backup",
+  "importDataDesc": "Restore from a backup file",
   "importPrompt": "Paste the contents of your backup file.",
   "importSuccess": "Progress imported.",
   "importFailed": "That backup couldn't be read.",
@@ -996,13 +1040,13 @@
   "termsTitle": "Terms of use",
   "guidelinesTitle": "Community guidelines",
   "contactTitle": "Contact us",
-  "guideTitle": "About Shnayim Mikra",
+  "guideTitle": "How it works",
   "disclaimer": "Customs vary. For practical questions, ask your rav.",
   "onbWelcomeBody": "Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.",
   "onbStart": "Start this week's parsha",
   "onbLocationTitle": "Where will you be this Shabbat?",
   "onbMethodTitle": "How do you read?",
-  "onbPlanTitle": "Your plan this week",
+  "onbPlanTitle": "Your weekly plan",
   "onbHonor": "Shnayim Mikra runs on the honor system. Log what you read, wherever you read it — a Chumash in shul counts just as much as this app.",
   "onbChangeAnytime": "You can change this anytime in Settings.",
   "onbStep": "Step {current} of {total}",
@@ -1020,13 +1064,13 @@
   "guideWhatTitle": "What is Shnayim Mikra?",
   "guideWhatBody": "The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.",
   "guideWhenTitle": "When",
-  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon, after the community reads the next portion at Mincha). Ideally finish before the Shabbat meal. If not, it may still be completed until Tuesday night (\"until Wednesday\", SA 285:4), and missed portions may be made up until Simchat Torah.",
+  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
   "guideHowTitle": "How",
   "guideHowBody": "Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.",
   "guideTargumTitle": "Targum or Rashi",
-  "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum.",
+  "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn't understand Rashi's Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.",
   "guideSpecialTitle": "Special cases",
-  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once.",
+  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once. Reading quietly along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
   "guideShabbatTitle": "Shabbat and Yom Tov",
   "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
   "guideSourcesTitle": "Sources",
@@ -1039,7 +1083,7 @@
       }
     }
   },
-  "bookOfTorah": "Sefer {book}",
+  "bookOfTorah": "{book}",
   "@bookOfTorah": {
     "placeholders": {
       "book": {
@@ -1091,6 +1135,7 @@
   "demoCodeHint": "Demo mode: any 6 digits will work.",
   "signedInAs": "Signed in as {name}",
   "@signedInAs": {
+    "description": "The heading of the account page, naming the member signed in.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -1506,5 +1551,155 @@
   "shortcutThisWeek": "This week's parsha",
   "@shortcutThisWeek": {
     "description": "Shortcut shown when the app's icon is long-pressed; opens the Parsha tab. Keep it under 25 characters."
+  },
+  "simchatTorahInDays": "{count, plural, =0{Simchat Torah is today} =1{Simchat Torah is tomorrow} other{Simchat Torah in {count} days}}",
+  "@simchatTorahInDays": {
+    "description": "On Today, in place of shabbatInDays in the week of Vezot HaBerachah, which is read on Simchat Torah: the days left until then.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "regularHaftarahOf": "Also: the regular haftarah of {portion}",
+  "@regularHaftarahOf": {
+    "description": "Heads the portion's own haftarah, shown after the special haftarah that displaces it this week.",
+    "placeholders": {
+      "portion": {
+        "type": "String"
+      }
+    }
+  },
+  "alsoRegularHaftarah": "Also the regular haftarah",
+  "@alsoRegularHaftarah": {
+    "description": "A line under a special haftarah on Today: the haftarah page also has the portion's own haftarah."
+  },
+  "chabadFallbackNote": "Chabad haftarot are being verified; showing the Ashkenazi reading.",
+  "repeatLastVerseDescChabad": "Repeat the parsha's last verse in Hebrew after its Targum (Chabad custom: not repeated)",
+  "repeatLastVerseFollowsChabad": "\"End with Mikra\" is now off, following the Chabad custom.",
+  "@repeatLastVerseFollowsChabad": {
+    "description": "Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves."
+  },
+  "repeatLastVerseBackOn": "\"End with Mikra\" is on again.",
+  "@repeatLastVerseBackOn": {
+    "description": "Said when choosing another haftarah custom than Chabad turns repeatLastVerse back on."
+  },
+  "divineAdonaiSpoken": "Adonai",
+  "@divineAdonaiSpoken": {
+    "description": "What screen readers say for divineAdonai, which is written with a hyphen out of respect, and would be spelled out letter by letter as written."
+  },
+  "importBackupText": "Backup text",
+  "@importBackupText": {
+    "description": "The label of the field a backup is pasted into; importPrompt is its helper text."
+  },
+  "importPasteFailed": "Couldn't paste from the clipboard. Paste into the field instead.",
+  "@importPasteFailed": {
+    "description": "Under the backup text field, when 'Paste from clipboard' finds no text, or the browser won't let the app read the clipboard."
+  },
+  "exportSaved": "Backup saved.",
+  "importPaste": "Paste backup text",
+  "importPasteDesc": "For a backup copied as text",
+  "pasteFromClipboard": "Paste from clipboard",
+  "importSummary": "Backup from {date}: {weeks, plural, =0{nothing logged} =1{1 week logged} other{{weeks} weeks logged}}, {pauses, plural, =0{no pauses} =1{1 pause} other{{pauses} pauses}}.",
+  "@importSummary": {
+    "description": "What a backup holds, as importCounts says it, and the day it was made.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "weeks": {
+        "type": "int"
+      },
+      "pauses": {
+        "type": "int"
+      }
+    }
+  },
+  "importCounts": "{weeks, plural, =0{Nothing logged} =1{1 week logged} other{{weeks} weeks logged}}, {pauses, plural, =0{no pauses} =1{1 pause} other{{pauses} pauses}}.",
+  "@importCounts": {
+    "description": "What a backup holds: the weeks with reading logged, and the pauses (\"Life happens\"). Each number is joined to its noun by a no-break space.",
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      },
+      "pauses": {
+        "type": "int"
+      }
+    }
+  },
+  "importMergeBody": "Merge this backup with the progress on this device? Merging keeps everything from both.",
+  "importAlsoSettings": "Also restore settings",
+  "importMerge": "Merge",
+  "importReplace": "Replace instead",
+  "importReplaceTitle": "Replace the progress here?",
+  "importReplaceConfirm": "This erases the reading history and streaks on this device, and keeps only what the backup holds. It can't be undone.",
+  "importReplaceConfirmSynced": "This erases the reading history and streaks on this device, in your cloud backup, and on your other devices when they next sync, and keeps only what this backup holds. It can't be undone.",
+  "importReplaceAction": "Replace",
+  "importSuccessRemindersOff": "Progress imported. Reminders are off, since notifications aren't allowed for this app.",
+  "@importSuccessRemindersOff": {
+    "description": "After importing a backup whose settings had reminders on, when the device refused the app's notifications. Shown with a 'Reminders' action that opens their settings."
+  },
+  "cloudBackup": "Cloud backup",
+  "sourcesMamDescription": "Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. In the Torah, where Ashkenazi and Sephardi scrolls differ from the Aleppo Codex, the text follows the scrolls, with the Codex's reading in a note. Otherwise it is converted to a structured format without changing the text.",
+  "@sourcesMamDescription": {
+    "description": "About the Miqra according to the Masorah edition, on the Texts & sources page. Its license (CC BY-SA) requires saying how the text was changed."
+  },
+  "onbStarterTitle": "This week",
+  "onbStarterCatchUp": "Read the whole parsha by Shabbat",
+  "onbStarterCatchUpDesc": "{verses} verses · about {minutes} min {days, plural, =1{today} other{over {days} days}}",
+  "@onbStarterCatchUpDesc": {
+    "description": "The whole parsha spread over the days left in the week the reader joins: its length, its reading time, and the number of days with reading. One day is always today; a single day that isn't takes onbStarterCatchUpOn.",
+    "placeholders": {
+      "verses": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "onbStarterCatchUpOn": "{verses} verses · about {minutes} min on {day}",
+  "@onbStarterCatchUpOn": {
+    "description": "As onbStarterCatchUpDesc, when the one day left with reading is not today (the reader joins on a day without reading, such as Tisha B'Av): its weekday, such as 'Friday'.",
+    "placeholders": {
+      "verses": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      },
+      "day": {
+        "type": "String",
+        "example": "Friday"
+      }
+    }
+  },
+  "onbStarterToday": "Start with today's reading",
+  "onbStarterTodayDesc": "Full plan from next week",
+  "onbRestore": "I already use Shnayim Mikra",
+  "onbRestoreTitle": "Restore your progress",
+  "onbRestoreSignIn": "Sign in to restore",
+  "onbRestoreSignInDesc": "From the backup kept with your account",
+  "onbRestoreFile": "Restore from a backup file",
+  "onbRestoreFileDesc": "A backup exported from Settings",
+  "onbRestoring": "Restoring your progress…",
+  "onbRestoreDone": "Your progress is restored.",
+  "onbRestoreDoneRemindersOff": "Your progress is restored. Reminders are off, since notifications aren't allowed for this app.",
+  "@onbRestoreDoneRemindersOff": {
+    "description": "As importSuccessRemindersOff, after restoring a backup during onboarding."
+  },
+  "onbRestoreNone": "This account has no backup yet. Let's set up your reading.",
+  "signedInNow": "Signed in as {name}",
+  "@signedInNow": {
+    "description": "The message once the email code is accepted, confirming the sign-in worked; also announced to screen readers on the page signed in for.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Rivka"
+      }
+    }
   }
 }

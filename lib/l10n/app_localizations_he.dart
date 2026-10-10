@@ -1,3 +1,5 @@
+// ignore_for_file: text_direction_code_point_in_literal
+
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
 
@@ -159,7 +161,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String aliyahWithName(String name, int number) {
-    return '$name · עלייה $number';
+    return '$name';
   }
 
   @override
@@ -257,7 +259,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get todayDone => 'הקריאה של היום הושלמה';
 
   @override
-  String get todayAhead => 'את/ה מקדים/ה את התוכנית. כל הכבוד!';
+  String get todayAhead => 'מקדימים את התוכנית. כל הכבוד!';
 
   @override
   String get todayNothingPlanned =>
@@ -284,7 +286,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get startReading => 'התחלת קריאה';
 
   @override
-  String get readFromBook => 'קראתי מתוך ספר';
+  String get readFromBook => 'קראתי בחומש';
 
   @override
   String get weekComplete => 'הפרשה של השבוע הושלמה. יישר כוח!';
@@ -302,7 +304,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String openWeekLate(String date) {
-    return 'אם תסיים/י עד $date, היא עדיין נחשבת.';
+    return 'סיום עד $date עדיין נחשב.';
   }
 
   @override
@@ -328,11 +330,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String pausedBanner(String date) {
-    return 'בהשהיה עד $date. דבר אינו מתאפס בזמן השהיה.';
+    return 'בהשהיה עד $date. דבר אינו מתאפס בזמן ההשהיה.';
   }
 
   @override
-  String get resume => 'חידוש';
+  String get resume => 'סיום ההשהיה';
 
   @override
   String readingDivergence(String israel, String diaspora) {
@@ -398,9 +400,9 @@ class AppLocalizationsHe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count זמינים',
-      one: 'אחד זמין',
-      zero: 'אין זמינים',
+      other: 'נותרו $count',
+      one: 'נותר יום אחד',
+      zero: 'לא נותרו',
     );
     return '$_temp0';
   }
@@ -456,7 +458,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get weekLate => 'אחרי שבת — עדיין נחשב';
 
   @override
-  String get weekRestored => 'הושלם בכפל';
+  String get weekRestored => 'הושלם עם הפרשה הבאה';
 
   @override
   String get weekMadeUp => 'הושלם מאוחר';
@@ -526,7 +528,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String previewNotOpen(String date) {
-    return 'תצוגה מקדימה — הפרשה נפתחת לרישום ב־$date.';
+    return 'תצוגה מקדימה — הפרשה נפתחת לרישום ב$date.';
   }
 
   @override
@@ -619,8 +621,8 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String firstAliyahDone(String verses) {
-    return 'יישר כוח! העלייה הראשונה שלך הושלמה — $verses, שניים מקרא ואחד תרגום.';
+  String firstAliyahDone(String verses, String second) {
+    return 'יישר כוח! העלייה הראשונה שלך הושלמה — $verses, שניים מקרא ו$second.';
   }
 
   @override
@@ -766,8 +768,8 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String versesRead(String count) {
-    return '$count פסוקים בשניים מקרא ואחד תרגום';
+  String versesRead(String count, String second) {
+    return '$count פסוקים בשניים מקרא ו$second';
   }
 
   @override
@@ -816,11 +818,11 @@ class AppLocalizationsHe extends AppLocalizations {
   String get makeUpBody => 'לא חובה. השלמות נחשבות לסיום התורה של השנה.';
 
   @override
-  String get pauseTitle => 'החיים קורים';
+  String get pauseTitle => 'הפסקה זמנית';
 
   @override
   String get pauseBody =>
-      'אפשר להשהות עד 30 יום — דבר אינו מתאפס בזמן השהיה. מחלה, נסיעה, אבלות, תינוק חדש: החיים קודמים.';
+      'אפשר להשהות עד 30 יום — דבר אינו מתאפס בזמן ההשהיה. מחלה, נסיעה, אבלות, תינוק חדש: החיים קודמים.';
 
   @override
   String get pauseAction => 'השהיית רצפים';
@@ -837,7 +839,7 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get pauseEnded => 'ברוך שובך! המקום שלך שמור.';
+  String get pauseEnded => 'ברוכים השבים! המקום שלך שמור.';
 
   @override
   String get streaksHidden => 'מספרי הרצף מוסתרים. ההתקדמות שלך עדיין נשמרת.';
@@ -850,14 +852,20 @@ class AppLocalizationsHe extends AppLocalizations {
       'ימי חסד מכסים אוטומטית יום מתוכנן שהוחמץ. מתחילים עם 2, מקבלים 1 בכל פעם שמסיימים פרשה לפני שבת (עד 3), ומשתמשים לכל היותר ב־2 בשבוע. אי אפשר לקנות אותם.';
 
   @override
-  String get streakExplainer =>
-      'רצף הפרשות סופר פרשות שהושלמו לפני שבת — או עד ליל רביעי, שגם זה נחשב. שבת ויום טוב לעולם אינם שוברים רצף.';
+  String streakExplainer(String deadline) {
+    String _temp0 = intl.Intl.selectLogic(deadline, {
+      'tuesday': ' — או עד ליל רביעי, שגם זה נחשב',
+      'wednesday': ' — או עד סוף יום רביעי, שגם זה נחשב',
+      'other': '',
+    });
+    return 'רצף הפרשות סופר פרשות שהושלמו לפני שבת$_temp0. שבת ויום טוב לעולם אינם שוברים רצף.';
+  }
 
   @override
   String get statusLegend => 'מקרא';
 
   @override
-  String get noHistory => 'השבועות שלך יופיעו כאן כשתקרא/י.';
+  String get noHistory => 'השבועות יופיעו כאן עם תחילת הקריאה.';
 
   @override
   String get milestoneFirstAliyah => 'עלייה ראשונה';
@@ -887,7 +895,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get milestoneSiyum => 'סיום התורה';
 
   @override
-  String get milestoneComeback => 'ברוך שובך';
+  String get milestoneComeback => 'ברוכים השבים';
 
   @override
   String get milestoneLocked => 'טרם הושג';
@@ -920,7 +928,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get settingsLanguage => 'שפה';
 
   @override
-  String get settingsAbout => 'אודות';
+  String get settingsAbout => 'אודות האפליקציה';
 
   @override
   String get settingsReadingDesc =>
@@ -979,20 +987,21 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get planAliyahPerDayDesc =>
-      'עלייה אחת בימים א׳–ה׳; שישי ושביעי ביום ו׳';
+      'עלייה אחת ביום; שתיים ביום האחרון שלפני שבת';
 
   @override
   String get planShevii => 'שביעי בשבת בבוקר';
 
   @override
-  String get planSheviiDesc => 'עליות 1–6 בימים א׳–ו׳; השביעית לפני סעודת שבת';
+  String get planSheviiDesc =>
+      'עליות ⁦1–6⁩ בימים א׳–ו׳; השביעית לפני סעודת שבת (הגר״א, מ״ב רפה, ח)';
 
   @override
   String get planErevShabbat => 'הכול ביום שישי';
 
   @override
   String get planErevShabbatDesc =>
-      'כל הפרשה בערב שבת (האריז״ל; שולחן ערוך הרב)';
+      'כל הפרשה בערב שבת — אחרי שחרית (האריז״ל) או אחרי חצות היום (השל״ה; שולחן ערוך הרב)';
 
   @override
   String get methodLabel => 'שיטת קריאה';
@@ -1001,23 +1010,28 @@ class AppLocalizationsHe extends AppLocalizations {
   String get methodVerse => 'פסוק פסוק';
 
   @override
-  String get methodVerseDesc => 'כל פסוק פעמיים ואחריו התרגום';
+  String methodVerseDesc(String second) {
+    return 'כל פסוק פעמיים, ואז $second';
+  }
 
   @override
   String get methodSection => 'פרשה פרשה';
 
   @override
-  String get methodSectionDesc =>
-      'כל פרשה (פתוחה או סתומה) פעמיים ואחריה התרגום';
+  String methodSectionDesc(String second) {
+    return 'כל פרשה (פתוחה או סתומה) פעמיים, ואז $second';
+  }
 
   @override
   String get methodAliyah => 'עלייה עלייה';
 
   @override
-  String get methodAliyahDesc => 'כל העלייה פעמיים ואחריה התרגום';
+  String methodAliyahDesc(String second) {
+    return 'כל העלייה פעמיים, ואז $second';
+  }
 
   @override
-  String get secondLabel => 'תרגום';
+  String get secondLabel => 'תרגום או רש״י';
 
   @override
   String get secondOnkelos => 'תרגום אונקלוס';
@@ -1265,7 +1279,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get divineNameLabel => 'הגיית השם';
 
   @override
-  String get divineAdonai => 'אדני';
+  String get divineAdonai => 'א-דני';
 
   @override
   String get divineHashem => 'השם';
@@ -1444,7 +1458,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get importData => 'ייבוא התקדמות';
 
   @override
-  String get importDataDesc => 'שחזור מגיבוי';
+  String get importDataDesc => 'שחזור מקובץ גיבוי';
 
   @override
   String get importPrompt => 'יש להדביק את תוכן קובץ הגיבוי.';
@@ -1508,7 +1522,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get contactTitle => 'יצירת קשר';
 
   @override
-  String get guideTitle => 'על שניים מקרא';
+  String get guideTitle => 'איך זה עובד';
 
   @override
   String get disclaimer => 'המנהגים שונים. בשאלות מעשיות יש לשאול רב.';
@@ -1521,13 +1535,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get onbStart => 'להתחיל את פרשת השבוע';
 
   @override
-  String get onbLocationTitle => 'איפה תהיה/י בשבת הקרובה?';
+  String get onbLocationTitle => 'היכן תהיו בשבת הקרובה?';
 
   @override
-  String get onbMethodTitle => 'איך את/ה קורא/ת?';
+  String get onbMethodTitle => 'איך לקרוא?';
 
   @override
-  String get onbPlanTitle => 'התוכנית שלך לשבוע';
+  String get onbPlanTitle => 'התוכנית השבועית שלך';
 
   @override
   String get onbHonor =>
@@ -1556,7 +1570,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideWhenBody =>
-      'אפשר להתחיל ביום ראשון (ויש אומרים כבר משבת אחר הצהריים, משקראו הציבור במנחה את הפרשה הבאה). לכתחילה יש לסיים לפני סעודת שבת. אם לא סיים, יכול להשלים עד ליל רביעי (״עד יום רביעי״, שו״ע רפה, ד), ופרשות שהוחמצו אפשר להשלים עד שמחת תורה.';
+      'אפשר להתחיל ביום ראשון (ויש אומרים כבר משבת אחר הצהריים). לכתחילה מסיימים לפני סעודת שחרית של שבת, ואם לא, אחרי הסעודה עד מנחה. אחר כך אפשר עדיין להשלים עד ליל רביעי (״עד יום רביעי״), ופרשות שהוחמצו אפשר להשלים עד שמחת תורה (שו״ע רפה, ד; מ״ב רפה, יב).';
 
   @override
   String get guideHowTitle => 'כיצד';
@@ -1570,21 +1584,21 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideTargumBody =>
-      'פירוש רש״י יכול לבוא במקום התרגום, מפני שהוא מפרש את המקרא; וירא שמים יקרא את שניהם (שו״ע רפה, ב). תרגום פשוט הוא עזר מועיל ללימוד, אך אינו תחליף לתרגום.';
+      'פירוש רש״י יכול לבוא במקום התרגום, מפני שהוא מפרש את המקרא; וירא שמים יקרא את שניהם (שו״ע רפה, ב). תרגום פשוט הוא עזר מועיל ללימוד, אך אינו תחליף לתרגום. אם לשונו של רש״י אינה מובנת, אפשר לקרוא את רש״י בשפה מובנת (מ״ב רפה, ה; הרב משה פיינשטיין). יש לשאול רב.';
 
   @override
   String get guideSpecialTitle => 'מקרים מיוחדים';
 
   @override
   String get guideSpecialBody =>
-      'בפסוק ״עטרות ודיבון״ (במדבר לב, ג) אונקלוס מביא בעיקר את שמות המקומות בארמית, ובעקבות רש״י (ברכות ח, ב) רבים קוראים אותו גם פעם שלישית בעברית. את פרשת וזאת הברכה קוראים לפני שמחת תורה, ובמיוחד בהושענא רבה. רבים קוראים גם את הפטרת השבוע פעם אחת.';
+      'בפסוק ״עטרות ודיבון״ (במדבר לב, ג) אונקלוס מביא בעיקר את שמות המקומות בארמית, ובעקבות רש״י (ברכות ח, ב) רבים קוראים אותו גם פעם שלישית בעברית. את פרשת וזאת הברכה קוראים לפני שמחת תורה, ובמיוחד בהושענא רבה. רבים קוראים גם את הפטרת השבוע פעם אחת. קריאה בלחש עם בעל הקורא, מילה במילה, נחשבת לאחת מקריאות המקרא (מ״ב רפה, יד). בשבוע שבו שתי פרשות מחוברות קוראים את שתיהן. כשבארץ ישראל ובחוץ לארץ קוראים פרשות שונות, הנוסעים נוהגים בדרך כלל לקרוא את שתיהן. אין מברכים על הקריאה. נשים וילדים שמקבלים על עצמם את המנהג עושים זאת כמצווה שאינה חובה.';
 
   @override
   String get guideShabbatTitle => 'שבת ויום טוב';
 
   @override
   String get guideShabbatBody =>
-      'האפליקציה לעולם אינה מבקשת שתפתח/י אותה בשבת וביום טוב. הרצפים מושהים בימים אלה, אין תזכורות, ואת מה שקראת מתוך חומש מודפס אפשר לרשום אחר כך.';
+      'האפליקציה לעולם אינה מבקשת לפתוח אותה בשבת וביום טוב. הרצפים מושהים בימים אלה, אין תזכורות, ואת מה שנקרא מתוך חומש מודפס אפשר לרשום אחר כך.';
 
   @override
   String get guideSourcesTitle => 'מקורות';
@@ -1666,14 +1680,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String signedInAs(String name) {
-    return 'מחובר/ת בשם $name';
+    return 'החשבון: $name';
   }
 
   @override
   String get displayNameLabel => 'שם תצוגה';
 
   @override
-  String get displayNameHelp => 'מוצג עם ההודעות שלך. 2–40 תווים.';
+  String get displayNameHelp => 'מוצג עם ההודעות שלך. ⁦2–40⁩ תווים.';
 
   @override
   String get saveName => 'שמירת השם';
@@ -1792,7 +1806,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get reportDetails => 'פרטים (לא חובה)';
 
   @override
-  String get reportSent => 'תודה. מנהל/ת יבדקו זאת.';
+  String get reportSent => 'תודה. צוות הניהול יבדוק את הדיווח.';
 
   @override
   String blockUser(String name) {
@@ -1801,7 +1815,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String blockConfirm(String name) {
-    return 'לא תראה/י הודעות של $name. הם לא יקבלו הודעה על כך.';
+    return 'ההודעות של $name לא יוצגו, ולא תישלח על כך התראה ל־$name.';
   }
 
   @override
@@ -1829,7 +1843,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get posted => 'פורסם.';
 
   @override
-  String get pendingReview => 'מוסתר — ממתין לבדיקת מנהל';
+  String get pendingReview => 'מוסתרת — ממתינה לבדיקת צוות הניהול';
 
   @override
   String get lockedThread => 'הדיון נעול.';
@@ -1954,10 +1968,10 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get anonymousMember => 'חבר/ה לשעבר';
+  String get anonymousMember => 'חשבון שנמחק';
 
   @override
-  String get errRateLimited => 'את/ה כותב/ת מהר — נא להמתין כמה שניות.';
+  String get errRateLimited => 'הודעות נשלחות מהר מדי — נא להמתין כמה שניות.';
 
   @override
   String get errThreadLocked => 'הדיון נעול.';
@@ -1990,7 +2004,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get errAlreadyReported => 'כבר דיווחת על ההודעה הזאת.';
 
   @override
-  String get errInvalidName => 'השם צריך להכיל 2–40 תווים.';
+  String get errInvalidName => 'השם צריך להכיל ⁦2–40⁩ תווים.';
 
   @override
   String get errInvalidCode => 'הקוד לא התקבל. נא לבדוק ולנסות שוב.';
@@ -2018,7 +2032,7 @@ class AppLocalizationsHe extends AppLocalizations {
       'לא ניתן להתחבר לשרת. נא לבדוק את החיבור ולנסות שוב.';
 
   @override
-  String get moderatorBadge => 'מנהל/ת';
+  String get moderatorBadge => 'צוות ניהול';
 
   @override
   String get draftRestored => 'הטיוטה שלך שוחזרה.';
@@ -2217,4 +2231,208 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get shortcutThisWeek => 'פרשת השבוע';
+
+  @override
+  String simchatTorahInDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'שמחת תורה בעוד $count ימים',
+      two: 'שמחת תורה בעוד יומיים',
+      one: 'שמחת תורה מחר',
+      zero: 'שמחת תורה היום',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String regularHaftarahOf(String portion) {
+    return 'וגם: ההפטרה הרגילה של פרשת $portion';
+  }
+
+  @override
+  String get alsoRegularHaftarah => 'וגם ההפטרה הרגילה';
+
+  @override
+  String get chabadFallbackNote =>
+      'הפטרות חב״ד עדיין בבדיקה, ולכן מוצגת ההפטרה לפי מנהג אשכנז.';
+
+  @override
+  String get repeatLastVerseDescChabad =>
+      'לחזור על הפסוק האחרון של הפרשה בעברית אחרי התרגום (במנהג חב״ד לא חוזרים עליו)';
+
+  @override
+  String get repeatLastVerseFollowsChabad =>
+      'האפשרות ״לסיים במקרא״ כבויה עכשיו, כמנהג חב״ד.';
+
+  @override
+  String get repeatLastVerseBackOn => 'האפשרות ״לסיים במקרא״ פועלת שוב.';
+
+  @override
+  String get divineAdonaiSpoken => 'שם אדנות';
+
+  @override
+  String get importBackupText => 'טקסט הגיבוי';
+
+  @override
+  String get importPasteFailed =>
+      'לא ניתן היה להדביק מהלוח. אפשר להדביק ישירות בשדה.';
+
+  @override
+  String get exportSaved => 'הגיבוי נשמר.';
+
+  @override
+  String get importPaste => 'הדבקת טקסט של גיבוי';
+
+  @override
+  String get importPasteDesc => 'לגיבוי שהועתק כטקסט';
+
+  @override
+  String get pasteFromClipboard => 'הדבקה מהלוח';
+
+  @override
+  String importSummary(String date, int weeks, int pauses) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: 'קריאה מתועדת ב־$weeks שבועות',
+      two: 'קריאה מתועדת בשבועיים',
+      one: 'קריאה מתועדת בשבוע אחד',
+      zero: 'אין קריאה מתועדת',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pauses,
+      locale: localeName,
+      other: '$pauses השהיות',
+      two: 'שתי השהיות',
+      one: 'השהיה אחת',
+      zero: 'ללא השהיות',
+    );
+    return 'גיבוי מ־$date: $_temp0, $_temp1.';
+  }
+
+  @override
+  String importCounts(int weeks, int pauses) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: 'קריאה מתועדת ב־$weeks שבועות',
+      two: 'קריאה מתועדת בשבועיים',
+      one: 'קריאה מתועדת בשבוע אחד',
+      zero: 'אין קריאה מתועדת',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pauses,
+      locale: localeName,
+      other: '$pauses השהיות',
+      two: 'שתי השהיות',
+      one: 'השהיה אחת',
+      zero: 'ללא השהיות',
+    );
+    return '$_temp0, $_temp1.';
+  }
+
+  @override
+  String get importMergeBody =>
+      'למזג את הגיבוי עם ההתקדמות שבמכשיר הזה? המיזוג שומר את כל מה שיש בשניהם.';
+
+  @override
+  String get importAlsoSettings => 'לשחזר גם את ההגדרות';
+
+  @override
+  String get importMerge => 'מיזוג';
+
+  @override
+  String get importReplace => 'החלפה במקום מיזוג';
+
+  @override
+  String get importReplaceTitle => 'להחליף את ההתקדמות שבמכשיר?';
+
+  @override
+  String get importReplaceConfirm =>
+      'פעולה זו מוחקת את היסטוריית הקריאה והרצפים במכשיר זה, ומשאירה רק את מה שבגיבוי. אי אפשר לבטל אותה.';
+
+  @override
+  String get importReplaceConfirmSynced =>
+      'פעולה זו מוחקת את היסטוריית הקריאה והרצפים במכשיר זה, בגיבוי בענן ובמכשירים האחרים שלך כשיסונכרנו בפעם הבאה, ומשאירה רק את מה שבגיבוי הזה. אי אפשר לבטל אותה.';
+
+  @override
+  String get importReplaceAction => 'החלפה';
+
+  @override
+  String get importSuccessRemindersOff =>
+      'ההתקדמות יובאה. התזכורות כבויות, כי לאפליקציה אין הרשאה לשלוח התראות.';
+
+  @override
+  String get cloudBackup => 'גיבוי בענן';
+
+  @override
+  String get sourcesMamDescription =>
+      'נוסח התורה וההפטרות, על פי כתר ארם צובה וכתבי יד קרובים, בעריכת אבי קדיש וחבריו בוויקיטקסט העברי, דרך ספריא. בתורה, במקומות שבהם ספרי התורה של אשכנז וספרד שונים מכתר ארם צובה, הנוסח הוא כספרי התורה, ונוסח הכתר מובא בהערה. מלבד זאת הותאם לתצוגה מובנית ללא שינוי בנוסח.';
+
+  @override
+  String get onbStarterTitle => 'השבוע';
+
+  @override
+  String get onbStarterCatchUp => 'לקרוא את כל הפרשה עד שבת';
+
+  @override
+  String onbStarterCatchUpDesc(int verses, int minutes, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'על פני $days ימים',
+      two: 'על פני יומיים',
+      one: 'היום',
+    );
+    return '$verses פסוקים · כ־$minutes דק׳ $_temp0';
+  }
+
+  @override
+  String onbStarterCatchUpOn(int verses, int minutes, String day) {
+    return '$verses פסוקים · כ־$minutes דק׳ ב$day';
+  }
+
+  @override
+  String get onbStarterToday => 'להתחיל מהקריאה של היום';
+
+  @override
+  String get onbStarterTodayDesc => 'התוכנית המלאה מהשבוע הבא';
+
+  @override
+  String get onbRestore => 'כבר יש לי נתונים באפליקציה';
+
+  @override
+  String get onbRestoreTitle => 'שחזור ההתקדמות';
+
+  @override
+  String get onbRestoreSignIn => 'כניסה לחשבון ושחזור';
+
+  @override
+  String get onbRestoreSignInDesc => 'מהגיבוי שנשמר בחשבון';
+
+  @override
+  String get onbRestoreFile => 'שחזור מקובץ גיבוי';
+
+  @override
+  String get onbRestoreFileDesc => 'קובץ גיבוי שנשמר מההגדרות';
+
+  @override
+  String get onbRestoring => 'משחזרים את ההתקדמות…';
+
+  @override
+  String get onbRestoreDone => 'ההתקדמות שוחזרה.';
+
+  @override
+  String get onbRestoreDoneRemindersOff =>
+      'ההתקדמות שוחזרה. התזכורות כבויות, כי לאפליקציה אין הרשאה לשלוח התראות.';
+
+  @override
+  String get onbRestoreNone =>
+      'לחשבון הזה אין עדיין גיבוי. נמשיך בהגדרת הקריאה.';
+
+  @override
+  String signedInNow(String name) {
+    return 'התחברת בשם $name';
+  }
 }

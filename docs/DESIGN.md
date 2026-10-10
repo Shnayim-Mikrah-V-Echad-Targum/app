@@ -36,7 +36,7 @@ A visitor usually hears the local reading but keeps their home custom for Yom To
 
 **Three methods**, with sources shown in the app:
 - verse by verse (Arizal, Magen Avraham)
-- section by section, between the MAM parasha breaks (Shelah, Gra)
+- section by section, between the parasha breaks of the Torah scroll (Shelah, Gra)
 - aliyah by aliyah
 
 Verse by verse is the default because it is the easiest to follow on a phone.
@@ -52,8 +52,11 @@ The JPS translation is offered only as a study aid and is labelled so. It never 
 **Edge cases from the research are handled explicitly:**
 - **Bamidbar 32:3:** Onkelos is mostly names, so the reader suggests a third Mikra reading after the Targum, in every reading method.
 - **Verses with no Rashi** get a third Mikra reading too when Rashi replaces the Targum. Both suggestions can be turned off.
-- **The last verse of the parsha** can optionally be repeated so the reading ends with Mikra.
+- **The last verse of the parsha** can optionally be repeated so the reading ends with Mikra. It is on by default, except for Chabad, whose custom is not to repeat it; until the reader sets it, the switch follows the haftarah custom.
 - **Ketiv/qere:** the qere is read and the ketiv is shown on request.
+- **The scroll's text:** the Hebrew is Miqra according to the Masorah, which follows the Aleppo Codex. Where Ashkenazi and Sephardi Torah scrolls differ from it, the Torah follows the scrolls the reader hears in synagogue: nine words, two section breaks and the small yod of Pinchas. A note at each word and break gives the Codex's reading.
+
+**The haftarah follows the reader's custom:** Ashkenazi, Sephardi or Chabad. Special haftarot differ by custom too: when Re'eh falls on Rosh Chodesh Elul, Sephardim and Chabad read Re'eh's own haftarah with the first and last verses of the Rosh Chodesh haftarah, and Ki Tetze's alone two weeks later. When a special Shabbat displaces Acharei Mot's haftarah, Ashkenazim read it for Kedoshim; Sephardim read Kedoshim's own, the same reading in their custom, and Chabad, whose Acharei Mot haftarah is the Ashkenazi one, keeps the Ashkenazi rule until a Chabad source is found. When a special haftarah displaces the portion's own, the haftarah page offers the regular one too, folded, or open for Chabad, whose custom is to read both. Where a Chabad haftarah has not yet been sourced, the page shows the Ashkenazi one and says so.
 
 **Search finds a word or phrase in the Mikra, Targum Onkelos and the translation**, on the device and offline. The first search of a session reads every verse of the three layers, about 3.5 MB, with a progress bar, and keeps them folded for comparison: Hebrew without vowels or cantillation, final letters as ordinary ones, and the maqaf, paseq and sof pasuq as word spaces. A Hebrew search reads the Mikra and the Targum and matches anywhere in a word, since prefixes (ו, ה, ב, ל…) are written as part of it; an English one reads the translation and matches only from the start of a word, so "ram" doesn't find Abram. Words are matched as the Torah spells them: a search for אהרון finds nothing, and the page suggests the Torah's spelling, which often leaves out ו and י, rather than guess at looser matches. Up to 200 verses are listed, in order under their parsha, each opening the reader in full text at that verse, in the week of this year's cycle that reads it. A verse found only in its Targum shows the verse above it, as the reader does.
 
@@ -62,9 +65,9 @@ The JPS translation is offered only as a study aid and is labelled so. It never 
 **Progress is stored per unit:** (aliyah × pass), plus the haftarah. The guided reader saves the reader's position within each pass. This makes resuming exact, and lets the streak engine see partial days.
 
 **Three default plans:**
-- an aliyah a day, with Friday doubled (Gra)
-- Shevi'i on Shabbat morning, logged afterwards
-- everything on Erev Shabbat (Arizal, Shulchan Aruch HaRav)
+- an aliyah a day, with two on the last day before Shabbat
+- an aliyah a day and Shevi'i on Shabbat morning, logged afterwards (Gra, MB 285:8)
+- everything on Erev Shabbat: after Shacharit (Arizal) or after midday (Shelah, Shulchan Aruch HaRav)
 
 Tisha B'Av is always a quiet day. Chol HaMoed can optionally be quiet.
 
@@ -102,6 +105,8 @@ A portion can end in one of these states:
 ### Join date
 Nothing before the day the reader started counts against them. In the week they join, only what was planned from that day on is expected (see [Onboarding](#6-onboarding)). If they joined after that week began and don't finish it, it is transparent; a week they joined on its first day counts like any other. Resetting all progress starts the reader again from the day of the reset, on every device the reset reaches.
 
+The join date is backed up with the progress, and syncing keeps the earliest, so a new phone counts the history it restores instead of starting the streaks again from the day it was set up. A backup saved by a version that didn't keep the join date counts from the earliest reading it brings that the device doesn't already have: a device's own readings, backed up before, don't move its join date. A join date from before the latest reset has no say, and nor does a reading logged for a day before it.
+
 ### Changing the plan
 Changing the plan, the quiet days, the late window or whether the haftarah counts never rewrites the past. The app remembers the day each change was made, and every day is planned by the settings in force on it: a change midweek keeps what was planned for the days before and spreads the rest of the portion over the days left. A change made after reading that day applies from the next day, so the day keeps the plan it was read by. Each week is judged by the late window and haftarah rule in force when it was read in synagogue. So a change can't spend a grace day or break a streak after the fact, and the settings screen says that it applies from this week on.
 
@@ -119,7 +124,7 @@ The planner is a pure function. Its rules come from the research:
 
 The copy is informational ("Revi'i is today's reading"), never guilt-based.
 
-Permission is requested in context, after the reader finishes their first aliyah, not at launch.
+Permission is requested in context, after the reader finishes their first aliyah, not at launch. Restoring a backup's settings with reminders on asks for it then, since the OS's permission doesn't come with the backup; refused, the reminders are turned off and the reader is told why.
 
 **Shortcuts on the app's icon** (Android and iOS) are a calm way in: long-pressing the icon offers Continue reading, Log reading from a book and This week's parsha, once onboarding is done. The platform keeps them while the app isn't running, so each names a page rather than a week, and opens the current week as it is when it is chosen, even before the app hears it has resumed. From Shabbat through the first reading day after it, the current week is already the next parsha, so Log reading from a book opens the week just read while it is unfinished: the week a reading from a printed Chumash on Shabbat belongs to, as Today's check-in asks. A shortcut's page opens over Today, so back leads to the navigation bar.
 
@@ -127,13 +132,19 @@ Permission is requested in context, after the reader finishes their first aliyah
 
 The goal is to reach the first verse in under a minute. Onboarding has four screens:
 1. Welcome, with a language toggle.
-2. Location: Israel or Diaspora, with the time zone guessed.
+2. Location: Israel or Diaspora, guessed from the device's time zone, with "Why we ask" a tap away.
 3. Reading method and second reading.
-4. Plan, with the honor statement.
+4. Plan, with the honor statement, and for a reader who joins midweek, how to read the first week.
 
-It ends by opening the reader on today's aliyah. Everything else is a setting with a sensible default.
+Each step after the welcome is a page of its own, so Back, the system's or the app bar's, returns a step rather than leaving the app, and screen readers announce each step as a new screen. Every choice is saved as it is made, so going back loses nothing. Everything else is a setting with a sensible default.
 
-**The first week starts on the day the reader does.** Most people join midweek. Rather than finding half the portion already due, they have the whole portion spread over the reading days left before it is read in synagogue: joining on Wednesday gives Rishon and Sheni that day, Shlishi and Revi'i on Thursday, and the rest on Friday. The first reading opens on Rishon, and the first week can still be finished on time. From the next week on, the usual plan applies.
+**A reader who already uses the app restores from the welcome** ("I already use Shnayim Mikra"), on a new phone say. Signing in turns on backup and syncs: with progress in the account, or only the day the reader joined, onboarding is done and Today shows the streaks as they were; with nothing, onboarding carries on, with backup on. A backup file can be restored instead, settings and all. Signing in is offered only with a real community backend: the demo keeps nothing from one run to the next.
+
+**Israel is guessed from the time zone's IANA name** (Asia/Jerusalem, or the older Asia/Tel_Aviv), which every platform gives, the web included. Abbreviations such as IST are not used: India and Ireland have one too. The guess is made on the welcome, and never overrides a choice the reader has made: once they choose, or go on past the question, it is not made again, even if the app is closed before onboarding ends. It is right for those who live in Israel; "Why we ask" tells a visitor that the days of Yom Tov they keep can be set apart in Settings.
+
+**The first week starts on the day the reader does.** Most people join midweek. Rather than finding half the portion already due, they have the whole portion spread over the reading days left before it is read in synagogue: joining on Wednesday gives Rishon and Sheni that day, Shlishi and Revi'i on Thursday, and the rest on Friday, and joining on Friday gives all seven aliyot that day. The plan step says how long that is ("153 verses · about 64 min over 3 days"). Onboarding then opens the reader on Rishon, and the first week can still be finished on time. From the next week on, the usual plan applies.
+
+A reader who would rather not can choose instead to start with today's reading: the usual plan applies from that day on, the aliyot planned before it are not expected, and onboarding opens the reader on today's aliyah. Joining on the week's first day of reading, or with a plan that reads everything on Friday, the two are the same, and the plan step doesn't ask.
 
 ## 7. Community
 
@@ -188,7 +199,7 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md). The key decisions:
 
 - **Pure-Dart core.** Calendar, plans, streaks and the reminder planner have no Flutter imports and are tested exhaustively.
 - **Riverpod providers** connect settings, today's date, the schedule, progress and the streak summary. Everything else is derived from those.
-- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. A week or pause that can't be read is kept untouched rather than dropped, and copied aside before a readable copy or a merge replaces it. Stored progress that can only be read by fixing part of it, or that a newer version wrote, is copied aside before anything can overwrite it. Export and import are available in settings. An export keeps what this version can't read apart from the rest, so the file can always be imported, and an import restores that part too. An import is all or nothing, and counts as a new change, so the next sync keeps it. Cloud backup is optional and merges rather than overwrites (see [Streaks](#4-streaks)), and it pauses (asking for an update) if a newer version of the app wrote the backup.
+- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. A week or pause that can't be read is kept untouched rather than dropped, and copied aside before a readable copy or a merge replaces it. Stored progress that can only be read by fixing part of it, or that a newer version wrote, is copied aside before anything can overwrite it. Export and import are available in settings. An export is a file, `shnayim-mikra-backup-YYYY-MM-DD.json`: shared through the share sheet on phones, downloaded in a browser, and saved where the reader chooses on Windows (copied to the clipboard if none of that works). An import opens such a file, or takes its text pasted, which is how earlier versions shared backups, and says what it holds (when it was made, the weeks logged, the pauses) before anything changes. By default it merges with the progress on the device, as a sync does, except that neither side's reset erases the other's progress, now or at the next sync, and the earlier join date wins; the reader can choose to replace instead, once told that this erases the progress on the device, and in the cloud backup if it is on. Its settings come too if the reader asks, which on a new install, with no settings of its own to keep, is the default. An export keeps what this version can't read apart from the rest, so the file can always be imported, and an import restores that part too. An import is all or nothing, and counts as a new change, so the next sync keeps it. Cloud backup is optional and merges rather than overwrites (see [Streaks](#4-streaks)), and it pauses (asking for an update) if a newer version of the app wrote the backup.
 - **Bundled texts.** About 9 MB of JSON, loaded per book on demand.
 - **Localization.** English is the source language. The Hebrew ARB is generated from a dictionary, and the build fails if any key is missing.
 

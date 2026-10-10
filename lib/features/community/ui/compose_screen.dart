@@ -139,7 +139,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   TextField(
                     controller: _title,
                     maxLength: 150,
-                    textDirection: autoDirection(_title.text),
+                    textDirection: autoDirection(_title.text, fallback: Directionality.of(context)),
                     decoration: InputDecoration(
                       labelText: l.threadTitleLabel,
                       errorText: _title.text.isNotEmpty && _title.text.trim().length < 5 ? l.errTitleTooShort : null,
@@ -151,7 +151,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     minLines: 6,
                     maxLines: 16,
                     maxLength: 10000,
-                    textDirection: autoDirection(_body.text),
+                    textDirection: autoDirection(_body.text, fallback: Directionality.of(context)),
                     keyboardType: TextInputType.multiline,
                     decoration: InputDecoration(labelText: l.threadBodyLabel, alignLabelWithHint: true),
                   ),

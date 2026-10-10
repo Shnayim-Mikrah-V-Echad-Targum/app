@@ -36,20 +36,40 @@ class LegalScreen extends StatelessWidget {
     };
     final sections = (he ? _he : _en)[doc]!;
     final contact = AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '$issueTrackerUri';
+    final style = Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6);
     return Scaffold(
       appBar: AppBar(leading: homeLeading(context), title: Text(title)),
       body: PageBody(
         children: [
           for (final (heading, body) in sections) ...[
             if (heading.isNotEmpty) SectionHeader(heading),
-            SelectableText(
-              body.replaceAll('{contact}', contact),
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
-            ),
+            ..._paragraph(context, body, contact, style),
           ],
         ],
       ),
     );
+  }
+
+  /// [body], with [contact] in place of `{contact}`. Where the address has a
+  /// line of its own, as in Hebrew, it is a paragraph of its own, left to
+  /// right at the start of the line: so it keeps its order, a hyphen where
+  /// it wraps isn't left against the Hebrew before it, and copied, it holds
+  /// no invisible direction marks to break it in a mail client or a
+  /// browser. Within a sentence it is isolated in Hebrew (see [ltrRun]).
+  static List<Widget> _paragraph(BuildContext context, String body, String contact, TextStyle? style) {
+    final own = body.split('\n{contact}');
+    if (own.length == 1) return [SelectableText(body.replaceAll('{contact}', context.ltrRun(contact)), style: style)];
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    return [
+      SelectableText(own.first, style: style),
+      SelectableText(
+        contact,
+        textDirection: TextDirection.ltr,
+        textAlign: rtl ? TextAlign.right : TextAlign.left,
+        style: style,
+      ),
+      if (own.last.trim().isNotEmpty) SelectableText(own.last.trimLeft(), style: style),
+    ];
   }
 }
 
@@ -118,10 +138,10 @@ const _he = <LegalDoc, List<(String, String)>>{
         'אם הגיבוי מופעל במכשיר, הוא יכול לכלול את ההגדרות ואת התקדמות הקריאה באפליקציה, כך שהן יחזרו כשמשחזרים את המכשיר או מגדירים מכשיר חדש. אם נכנסת לקהילה, הגיבוי יכול לכלול גם את הכניסה, עם כתובת הדוא״ל שלך, והודעה שהתחלת לכתוב ועוד לא שלחת. ב־Android הגיבוי נשמר בחשבון Google שלך, וב־iPhone או ב־iPad ב־iCloud או במחשב. אין לנו גישה אליו.'),
     ('ללא מעקב', 'אין באפליקציה פרסומות, אנליטיקה או מעקב של צד שלישי. איננו מוכרים או משתפים מידע.'),
     ('אם פתחת חשבון בקהילה',
-        'הכניסה לקהילה משתמשת בכתובת הדוא״ל שלך לצורך הכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. אם בחרת לסנכרן את ההתקדמות, היא נשמרת עם החשבון כדי שתוכל/י לשחזר אותה במכשיר אחר.'),
+        'הכניסה לקהילה משתמשת בכתובת הדוא״ל שלך לצורך הכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. אם בחרת לסנכרן את ההתקדמות, היא נשמרת עם החשבון, וכך אפשר לשחזר אותה במכשיר אחר.'),
     ('מחיקת המידע',
         'אפשר לאפס את ההתקדמות בכל עת בהגדרות, תחת ״הנתונים שלך״. אפשר למחוק את החשבון בהגדרות, תחת ״חשבון וקהילה״; פעולה זו מוחקת את הפרופיל, ההודעות וההתקדמות המסונכרנת. נושאים שפתחת ואחרים הגיבו בהם נשארים, בלי שמך, כדי שהתגובות שלהם יישארו מובנות.'),
-    ('יצירת קשר', 'שאלות ובקשות: {contact}'),
+    ('יצירת קשר', 'שאלות ובקשות:\n{contact}'),
   ],
   LegalDoc.terms: [
     ('', 'השימוש בשניים מקרא מהווה הסכמה לתנאים אלה.'),
@@ -155,6 +175,6 @@ const _he = <LegalDoc, List<(String, String)>>{
             '• הקראה קולית כשקיים קול בעברית'),
     ('מגבלות ידועות',
         'קולות העברית שונים בין מכשירים, וחלק מקוראי המסך אינם הוגים עברית מנוקדת באופן מושלם. ב־Windows, \u200fNarrator ו־NVDA אינם עוברים לקול עברי מעצמם, כי שם אין לאפליקציה דרך לציין להם את שפת הטקסט. כדי לשמוע את העברית בקול עברי, יש לבחור קול כזה בהגדרות קורא המסך. תזכורות אינן זמינות בגרסת הדפדפן.'),
-    ('משוב', 'אם משהו קשה לשימוש, נשמח לשמוע: {contact}. נשתדל להשיב תוך חמישה ימי עבודה.'),
+    ('משוב', 'אם משהו קשה לשימוש, נשמח לשמוע, ונשתדל להשיב תוך חמישה ימי עבודה. אפשר לכתוב לנו:\n{contact}'),
   ],
 };

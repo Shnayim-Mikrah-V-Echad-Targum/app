@@ -191,7 +191,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       builder: (context, refreshButton) => Scaffold(
         appBar: AppBar(
           // An English title in Hebrew UI, or the reverse, is cut at its own end.
-          title: Text(title, textDirection: autoDirection(title), overflow: TextOverflow.ellipsis),
+          title: Text(
+            title,
+            textDirection: autoDirection(title, fallback: Directionality.of(context)),
+            overflow: TextOverflow.ellipsis,
+          ),
           actions: [
             refreshButton,
             if (isMod && t != null)
@@ -240,7 +244,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           Semantics(
                             header: true,
                             headingLevel: 1,
-                            child: Text(title, textDirection: autoDirection(title), style: Theme.of(context).textTheme.headlineSmall),
+                            child: Text(
+                              title,
+                              textDirection: autoDirection(title, fallback: Directionality.of(context)),
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
                           ),
                           // An empty thread says so below.
                           if (list.isNotEmpty) ...[
@@ -366,7 +374,7 @@ class _Composer extends StatelessWidget {
                       maxLines: 6,
                       maxLength: 10000,
                       buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-                      textDirection: autoDirection(controller.text),
+                      textDirection: autoDirection(controller.text, fallback: Directionality.of(context)),
                       keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(labelText: l.replyLabel),
                     ),
@@ -458,7 +466,16 @@ class PostCard extends ConsumerWidget {
             context: context,
             builder: (context) => AlertDialog(
               title: Text(l.editPostTitle),
-              content: TextField(controller: controller, maxLines: 8, minLines: 3, textDirection: autoDirection(post.body)),
+              // Its direction follows the text as it is edited.
+              content: ListenableBuilder(
+                listenable: controller,
+                builder: (context, _) => TextField(
+                  controller: controller,
+                  maxLines: 8,
+                  minLines: 3,
+                  textDirection: autoDirection(controller.text, fallback: Directionality.of(context)),
+                ),
+              ),
               actions: [
                 TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
                 FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.actionSave)),
@@ -554,7 +571,7 @@ class PostCard extends ConsumerWidget {
                     '${quote.authorName.isEmpty ? l.anonymousMember : quote.authorName}: ${quote.body}',
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    textDirection: autoDirection(quote.body),
+                    textDirection: autoDirection(quote.body, fallback: Directionality.of(context)),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -562,7 +579,7 @@ class PostCard extends ConsumerWidget {
                 padding: const EdgeInsetsDirectional.only(end: 12),
                 child: SelectableText(
                   post.body,
-                  textDirection: autoDirection(post.body),
+                  textDirection: autoDirection(post.body, fallback: Directionality.of(context)),
                   style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
                 ),
               ),
@@ -741,7 +758,17 @@ Future<(ReportReason, String?)?> showReportDialog(BuildContext context) {
                   ],
                 ),
               ),
-              TextField(controller: details, maxLines: 3, maxLength: 1000, decoration: InputDecoration(labelText: l.reportDetails)),
+              // Its direction follows the details as they are typed.
+              ListenableBuilder(
+                listenable: details,
+                builder: (context, _) => TextField(
+                  controller: details,
+                  maxLines: 3,
+                  maxLength: 1000,
+                  textDirection: autoDirection(details.text, fallback: Directionality.of(context)),
+                  decoration: InputDecoration(labelText: l.reportDetails),
+                ),
+              ),
             ],
           ),
         ),

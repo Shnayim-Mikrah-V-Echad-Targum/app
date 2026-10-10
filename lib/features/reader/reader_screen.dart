@@ -407,7 +407,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
     if (offerReminders) {
       final verses = ref.read(parshaRepositoryProvider).aliyahVerseCount(ctx.portion, _aliyah);
-      await maybeOfferReminders(context, ref, celebration: l.firstAliyahDone(l.versesCount(verses)));
+      final second = names.secondReading(settings.secondReading);
+      await maybeOfferReminders(context, ref, celebration: l.firstAliyahDone(l.versesCount(verses), second));
       if (mounted && _finished && !_fullText) _focusAfterFrame(_finishFocus);
     }
   }

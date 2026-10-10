@@ -1,3 +1,5 @@
+// ignore_for_file: text_direction_code_point_in_literal
+
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
 
@@ -283,7 +285,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startReading => 'Start reading';
 
   @override
-  String get readFromBook => 'I read it from a book';
+  String get readFromBook => 'I read it in a Chumash';
 
   @override
   String get weekComplete => 'This week\'s parsha is complete. Yasher koach!';
@@ -616,8 +618,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String firstAliyahDone(String verses) {
-    return 'Yasher koach! Your first aliyah is done — $verses, twice, with Targum.';
+  String firstAliyahDone(String verses, String second) {
+    return 'Yasher koach! Your first aliyah is done — $verses, twice, with $second.';
   }
 
   @override
@@ -680,7 +682,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'A translation is a study aid. It does not take the place of the Targum.';
 
   @override
-  String get mikraLabel => 'Torah';
+  String get mikraLabel => 'Mikra';
 
   @override
   String get targumLabel => 'Targum Onkelos';
@@ -765,8 +767,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String versesRead(String count) {
-    return '$count verses read twice with Targum';
+  String versesRead(String count, String second) {
+    return '$count verses read twice with $second';
   }
 
   @override
@@ -851,8 +853,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.';
 
   @override
-  String get streakExplainer =>
-      'Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.';
+  String streakExplainer(String deadline) {
+    String _temp0 = intl.Intl.selectLogic(deadline, {
+      'tuesday': ' — or by Tuesday night, which still counts',
+      'wednesday': ' — or by the end of Wednesday, which still counts',
+      'other': '',
+    });
+    return 'Your parsha streak counts portions finished before Shabbat$_temp0. Shabbat and Yom Tov never break a streak.';
+  }
 
   @override
   String get statusLegend => 'Legend';
@@ -881,7 +889,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String milestoneSefer(String book) {
-    return 'Sefer $book complete — Chazak!';
+    return '$book complete — Chazak!';
   }
 
   @override
@@ -921,7 +929,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLanguage => 'Language';
 
   @override
-  String get settingsAbout => 'About';
+  String get settingsAbout => 'About this app';
 
   @override
   String get settingsReadingDesc =>
@@ -981,21 +989,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get planAliyahPerDayDesc =>
-      'One aliyah Sunday–Thursday; the 6th and 7th on Friday';
+      'One aliyah a day; two on the last day before Shabbat';
 
   @override
   String get planShevii => 'Shevi\'i on Shabbat morning';
 
   @override
   String get planSheviiDesc =>
-      'Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal';
+      'Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal (Vilna Gaon, MB 285:8)';
 
   @override
   String get planErevShabbat => 'All on Friday';
 
   @override
   String get planErevShabbatDesc =>
-      'The whole parsha on Erev Shabbat (Arizal; Shulchan Aruch HaRav)';
+      'The whole parsha on Erev Shabbat — after Shacharit (Arizal) or after midday (Shelah; Shulchan Aruch HaRav)';
 
   @override
   String get methodLabel => 'Reading method';
@@ -1004,22 +1012,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get methodVerse => 'Verse by verse';
 
   @override
-  String get methodVerseDesc => 'Each verse twice, then its Targum';
+  String methodVerseDesc(String second) {
+    return 'Each verse twice, then its $second';
+  }
 
   @override
   String get methodSection => 'Section by section';
 
   @override
-  String get methodSectionDesc => 'Each paragraph twice, then its Targum';
+  String methodSectionDesc(String second) {
+    return 'Each paragraph twice, then its $second';
+  }
 
   @override
   String get methodAliyah => 'Aliyah by aliyah';
 
   @override
-  String get methodAliyahDesc => 'The whole aliyah twice, then its Targum';
+  String methodAliyahDesc(String second) {
+    return 'The whole aliyah twice, then its $second';
+  }
 
   @override
-  String get secondLabel => 'Targum';
+  String get secondLabel => 'Targum or Rashi';
 
   @override
   String get secondOnkelos => 'Targum Onkelos';
@@ -1079,7 +1093,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lateTuesday => 'Until Tuesday night';
 
   @override
-  String get lateWednesday => 'Until Wednesday night';
+  String get lateWednesday => 'Until the end of Wednesday';
 
   @override
   String get lateNone => 'No window';
@@ -1267,7 +1281,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get divineNameLabel => 'Speaking the Divine Name';
 
   @override
-  String get divineAdonai => 'Adonai';
+  String get divineAdonai => 'Ado-nai';
 
   @override
   String get divineHashem => 'HaShem';
@@ -1449,7 +1463,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importData => 'Import progress';
 
   @override
-  String get importDataDesc => 'Restore from a backup';
+  String get importDataDesc => 'Restore from a backup file';
 
   @override
   String get importPrompt => 'Paste the contents of your backup file.';
@@ -1513,7 +1527,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactTitle => 'Contact us';
 
   @override
-  String get guideTitle => 'About Shnayim Mikra';
+  String get guideTitle => 'How it works';
 
   @override
   String get disclaimer =>
@@ -1533,7 +1547,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onbMethodTitle => 'How do you read?';
 
   @override
-  String get onbPlanTitle => 'Your plan this week';
+  String get onbPlanTitle => 'Your weekly plan';
 
   @override
   String get onbHonor =>
@@ -1562,7 +1576,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideWhenBody =>
-      'You may begin on Sunday (some say from Shabbat afternoon, after the community reads the next portion at Mincha). Ideally finish before the Shabbat meal. If not, it may still be completed until Tuesday night (\"until Wednesday\", SA 285:4), and missed portions may be made up until Simchat Torah.';
+      'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).';
 
   @override
   String get guideHowTitle => 'How';
@@ -1576,14 +1590,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideTargumBody =>
-      'Rashi\'s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum.';
+      'Rashi\'s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn\'t understand Rashi\'s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.';
 
   @override
   String get guideSpecialTitle => 'Special cases';
 
   @override
   String get guideSpecialBody =>
-      'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.';
+      'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.';
 
   @override
   String get guideShabbatTitle => 'Shabbat and Yom Tov';
@@ -1606,7 +1620,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String bookOfTorah(String book) {
-    return 'Sefer $book';
+    return '$book';
   }
 
   @override
@@ -2228,4 +2242,202 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutThisWeek => 'This week\'s parsha';
+
+  @override
+  String simchatTorahInDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Simchat Torah in $count days',
+      one: 'Simchat Torah is tomorrow',
+      zero: 'Simchat Torah is today',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String regularHaftarahOf(String portion) {
+    return 'Also: the regular haftarah of $portion';
+  }
+
+  @override
+  String get alsoRegularHaftarah => 'Also the regular haftarah';
+
+  @override
+  String get chabadFallbackNote =>
+      'Chabad haftarot are being verified; showing the Ashkenazi reading.';
+
+  @override
+  String get repeatLastVerseDescChabad =>
+      'Repeat the parsha\'s last verse in Hebrew after its Targum (Chabad custom: not repeated)';
+
+  @override
+  String get repeatLastVerseFollowsChabad =>
+      '\"End with Mikra\" is now off, following the Chabad custom.';
+
+  @override
+  String get repeatLastVerseBackOn => '\"End with Mikra\" is on again.';
+
+  @override
+  String get divineAdonaiSpoken => 'Adonai';
+
+  @override
+  String get importBackupText => 'Backup text';
+
+  @override
+  String get importPasteFailed =>
+      'Couldn\'t paste from the clipboard. Paste into the field instead.';
+
+  @override
+  String get exportSaved => 'Backup saved.';
+
+  @override
+  String get importPaste => 'Paste backup text';
+
+  @override
+  String get importPasteDesc => 'For a backup copied as text';
+
+  @override
+  String get pasteFromClipboard => 'Paste from clipboard';
+
+  @override
+  String importSummary(String date, int weeks, int pauses) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: '$weeks weeks logged',
+      one: '1 week logged',
+      zero: 'nothing logged',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pauses,
+      locale: localeName,
+      other: '$pauses pauses',
+      one: '1 pause',
+      zero: 'no pauses',
+    );
+    return 'Backup from $date: $_temp0, $_temp1.';
+  }
+
+  @override
+  String importCounts(int weeks, int pauses) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: '$weeks weeks logged',
+      one: '1 week logged',
+      zero: 'Nothing logged',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pauses,
+      locale: localeName,
+      other: '$pauses pauses',
+      one: '1 pause',
+      zero: 'no pauses',
+    );
+    return '$_temp0, $_temp1.';
+  }
+
+  @override
+  String get importMergeBody =>
+      'Merge this backup with the progress on this device? Merging keeps everything from both.';
+
+  @override
+  String get importAlsoSettings => 'Also restore settings';
+
+  @override
+  String get importMerge => 'Merge';
+
+  @override
+  String get importReplace => 'Replace instead';
+
+  @override
+  String get importReplaceTitle => 'Replace the progress here?';
+
+  @override
+  String get importReplaceConfirm =>
+      'This erases the reading history and streaks on this device, and keeps only what the backup holds. It can\'t be undone.';
+
+  @override
+  String get importReplaceConfirmSynced =>
+      'This erases the reading history and streaks on this device, in your cloud backup, and on your other devices when they next sync, and keeps only what this backup holds. It can\'t be undone.';
+
+  @override
+  String get importReplaceAction => 'Replace';
+
+  @override
+  String get importSuccessRemindersOff =>
+      'Progress imported. Reminders are off, since notifications aren\'t allowed for this app.';
+
+  @override
+  String get cloudBackup => 'Cloud backup';
+
+  @override
+  String get sourcesMamDescription =>
+      'Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. In the Torah, where Ashkenazi and Sephardi scrolls differ from the Aleppo Codex, the text follows the scrolls, with the Codex\'s reading in a note. Otherwise it is converted to a structured format without changing the text.';
+
+  @override
+  String get onbStarterTitle => 'This week';
+
+  @override
+  String get onbStarterCatchUp => 'Read the whole parsha by Shabbat';
+
+  @override
+  String onbStarterCatchUpDesc(int verses, int minutes, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'over $days days',
+      one: 'today',
+    );
+    return '$verses verses · about $minutes min $_temp0';
+  }
+
+  @override
+  String onbStarterCatchUpOn(int verses, int minutes, String day) {
+    return '$verses verses · about $minutes min on $day';
+  }
+
+  @override
+  String get onbStarterToday => 'Start with today\'s reading';
+
+  @override
+  String get onbStarterTodayDesc => 'Full plan from next week';
+
+  @override
+  String get onbRestore => 'I already use Shnayim Mikra';
+
+  @override
+  String get onbRestoreTitle => 'Restore your progress';
+
+  @override
+  String get onbRestoreSignIn => 'Sign in to restore';
+
+  @override
+  String get onbRestoreSignInDesc => 'From the backup kept with your account';
+
+  @override
+  String get onbRestoreFile => 'Restore from a backup file';
+
+  @override
+  String get onbRestoreFileDesc => 'A backup exported from Settings';
+
+  @override
+  String get onbRestoring => 'Restoring your progress…';
+
+  @override
+  String get onbRestoreDone => 'Your progress is restored.';
+
+  @override
+  String get onbRestoreDoneRemindersOff =>
+      'Your progress is restored. Reminders are off, since notifications aren\'t allowed for this app.';
+
+  @override
+  String get onbRestoreNone =>
+      'This account has no backup yet. Let\'s set up your reading.';
+
+  @override
+  String signedInNow(String name) {
+    return 'Signed in as $name';
+  }
 }

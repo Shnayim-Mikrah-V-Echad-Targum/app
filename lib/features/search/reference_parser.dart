@@ -304,7 +304,7 @@ class ReferenceParser {
     'Shoftim': ['Shofetim', 'שפטים'],
     'Ki Tavo': ['כי תבא'],
     'Nitzavim': ['ניצבים'],
-    'Vezot Haberakhah': ['Vezot Haberacha', "V'Zot HaBerachah", 'Zot Haberacha', 'זאת הברכה'],
+    'Vezot Haberakhah': ['Vezot Haberacha', "V'Zot HaBerachah", 'Zot Haberacha', 'Vezos Habrachah', 'זאת הברכה'],
   };
 
   static Map<String, _Name> _nameTable(List<PortionInfo> parshiyot, List<PortionInfo> combined) {
@@ -323,7 +323,7 @@ class ReferenceParser {
 
     for (final p in [...parshiyot, ...combined]) {
       final name = _Name(p.book, full: true, start: p.range.start);
-      for (final spelling in [p.key, p.nameAshkenazi, p.nameHe, ...?_parshaNames[p.key]]) {
+      for (final spelling in {p.key, p.nameEn, p.nameAshkenazi, p.nameHe, ...?_parshaNames[p.key]}) {
         add(spelling, name);
       }
     }

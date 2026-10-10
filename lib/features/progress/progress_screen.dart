@@ -100,7 +100,7 @@ class ProgressScreen extends ConsumerWidget {
                         const Gap(4),
                         Text(l.graceExplainer, style: Theme.of(context).textTheme.bodySmall),
                         const Gap(4),
-                        Text(l.streakExplainer, style: Theme.of(context).textTheme.bodySmall),
+                        Text(l.streakExplainer(settings.lateWindow.name), style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
                   ),
@@ -122,7 +122,10 @@ class ProgressScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(l.thisCycle(doneThisCycle.length), style: Theme.of(context).textTheme.titleMedium),
-                Text(l.versesRead(NumberFormat.decimalPattern(context.localeName).format(versesRead))),
+                Text(l.versesRead(
+                  NumberFormat.decimalPattern(context.localeName).format(versesRead),
+                  names.secondReading(settings.secondReading),
+                )),
               ],
             ),
           ),
@@ -492,7 +495,7 @@ class _WordWidths {
   final BuildContext context;
   final _widths = <(String, bool), double>{};
 
-  /// Where a name may wrap: at a space, or after a hyphen ("Lech-Lecha").
+  /// Where a name may wrap: at a space, or after a hyphen ("Vayakhel-Pekudei").
   static final _breaks = RegExp(r'(?<=-)|\s+');
 
   /// The width of the longest word in [name].

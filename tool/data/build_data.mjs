@@ -4,7 +4,9 @@
 //
 // Sources (downloaded into tool/data/.cache on first run):
 //   * Torah & haftarah Hebrew: "Miqra according to the Masorah" (MAM), CC BY-SA 4.0,
-//     via the Sefaria public export bucket.
+//     via the Sefaria public export bucket. In the Torah, the text follows the
+//     Ashkenazi and Sephardi scrolls where they differ from it (see "The
+//     scribal tradition" below).
 //   * Targum Onkelos: Torat Emet edition (public domain), via Sefaria.
 //   * English: JPS 1917 (public domain), via Sefaria.
 //   * Rashi, Hebrew and English: Rosenbaum & Silbermann, London 1929–1934
@@ -41,8 +43,35 @@ const BOOK_HE = {
   Haggai: 'חגי', Zechariah: 'זכריה', Malachi: 'מלאכי',
 };
 
-// Ashkenazi-pronunciation transliterations, keyed by the Sephardi-style keys
-// used throughout the app (which match @hebcal's parsha names).
+// The English names shown, in one style: words apart, never hyphenated; "ch"
+// for both ח and כ; a vowel the keys drop written out (Acharei, Shemini,
+// Shelach); an apostrophe between two vowels for an aleph or ayin; no doubled
+// letters; a final heh after a vowel; tsere as "e", as it is said in the
+// Sephardi pronunciation these names follow (Bereshit, Vayetze, Miketz,
+// Ekev, Ki Tetze), and "ei" only where a yod is written after it (Chayei,
+// Pekudei, Acharei, Masei); and otherwise the usual spellings.
+// Keyed by the stable keys used throughout the app and its data (@hebcal's
+// parsha names), which are never shown.
+const ENGLISH = {
+  'Bereshit': 'Bereshit', 'Noach': 'Noach', 'Lech-Lecha': 'Lech Lecha', 'Vayera': 'Vayera',
+  'Chayei Sara': 'Chayei Sarah', 'Toldot': 'Toldot', 'Vayetzei': 'Vayetze',
+  'Vayishlach': 'Vayishlach', 'Vayeshev': 'Vayeshev', 'Miketz': 'Miketz', 'Vayigash': 'Vayigash',
+  'Vayechi': 'Vayechi', 'Shemot': 'Shemot', 'Vaera': "Va'era", 'Bo': 'Bo', 'Beshalach': 'Beshalach',
+  'Yitro': 'Yitro', 'Mishpatim': 'Mishpatim', 'Terumah': 'Terumah', 'Tetzaveh': 'Tetzaveh',
+  'Ki Tisa': 'Ki Tisa', 'Vayakhel': 'Vayakhel', 'Pekudei': 'Pekudei', 'Vayikra': 'Vayikra',
+  'Tzav': 'Tzav', 'Shmini': 'Shemini', 'Tazria': 'Tazria', 'Metzora': 'Metzora',
+  'Achrei Mot': 'Acharei Mot', 'Kedoshim': 'Kedoshim', 'Emor': 'Emor', 'Behar': 'Behar',
+  'Bechukotai': 'Bechukotai', 'Bamidbar': 'Bamidbar', 'Nasso': 'Naso',
+  "Beha'alotcha": "Beha'alotcha", "Sh'lach": 'Shelach', 'Korach': 'Korach', 'Chukat': 'Chukat',
+  'Balak': 'Balak', 'Pinchas': 'Pinchas', 'Matot': 'Matot', 'Masei': 'Masei', 'Devarim': 'Devarim',
+  'Vaetchanan': "Va'etchanan", 'Eikev': 'Ekev', "Re'eh": "Re'eh", 'Shoftim': 'Shoftim',
+  'Ki Teitzei': 'Ki Tetze', 'Ki Tavo': 'Ki Tavo', 'Nitzavim': 'Nitzavim', 'Vayeilech': 'Vayelech',
+  "Ha'azinu": "Ha'azinu", 'Vezot Haberakhah': 'Vezot HaBerachah',
+};
+
+// The same names in Ashkenazi pronunciation and the same style, where tsere
+// is "ei" (Bereishis, Vayeitzei, Mikeitz, Eikev, Ki Seitzei); Re'eh keeps its
+// usual spelling.
 const ASHKENAZI = {
   'Bereshit': 'Bereishis', 'Noach': 'Noach', 'Lech-Lecha': 'Lech Lecha', 'Vayera': 'Vayeira',
   'Chayei Sara': 'Chayei Sarah', 'Toldot': 'Toldos', 'Vayetzei': 'Vayeitzei',
@@ -52,12 +81,12 @@ const ASHKENAZI = {
   'Ki Tisa': 'Ki Sisa', 'Vayakhel': 'Vayakhel', 'Pekudei': 'Pekudei', 'Vayikra': 'Vayikra',
   'Tzav': 'Tzav', 'Shmini': 'Shemini', 'Tazria': 'Tazria', 'Metzora': 'Metzora',
   'Achrei Mot': 'Acharei Mos', 'Kedoshim': 'Kedoshim', 'Emor': 'Emor', 'Behar': 'Behar',
-  'Bechukotai': 'Bechukosai', 'Bamidbar': 'Bamidbar', 'Nasso': 'Nasso',
+  'Bechukotai': 'Bechukosai', 'Bamidbar': 'Bamidbar', 'Nasso': 'Naso',
   "Beha'alotcha": "Beha'aloscha", "Sh'lach": 'Shelach', 'Korach': 'Korach', 'Chukat': 'Chukas',
   'Balak': 'Balak', 'Pinchas': 'Pinchas', 'Matot': 'Matos', 'Masei': 'Masei', 'Devarim': 'Devarim',
   'Vaetchanan': "Va'eschanan", 'Eikev': 'Eikev', "Re'eh": "Re'eh", 'Shoftim': 'Shoftim',
   'Ki Teitzei': 'Ki Seitzei', 'Ki Tavo': 'Ki Savo', 'Nitzavim': 'Nitzavim', 'Vayeilech': 'Vayeilech',
-  "Ha'azinu": "Ha'azinu", 'Vezot Haberakhah': 'Vezos Habrachah',
+  "Ha'azinu": "Ha'azinu", 'Vezot Haberakhah': 'Vezos HaBerachah',
 };
 
 const COMBINED = [
@@ -101,7 +130,8 @@ const rashiPath = (book, lang) => {
 // features, as a list of segments:
 //   "text"                plain text
 //   {"k": K, "q": Q}      ketiv (as written, unvocalized) / qere (as read)
-//   {"n": note}           textual note (e.g. Ashkenazi/Sephardi scribal variant)
+//   {"n": note}           textual note (e.g. the Aleppo Codex's reading where the
+//                         scrolls differ)
 //   {"big": x} / {"small": x} / {"sup": x}  large / small / raised letters
 //   {"alt": x}            (Onkelos) bracketed alternate reading or gloss
 //   {"gap": "P" | "S"}    a petuchah / setumah that falls inside a verse
@@ -237,6 +267,124 @@ function assertGaps() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// The scribal tradition
+//
+// MAM follows the Aleppo Codex, and notes the places where the Torah scrolls
+// of Ashkenazim and Sephardim differ from it. Those scrolls are what the
+// reader hears in synagogue, so in the Torah the text follows them, and the
+// note keeps the Codex's reading instead, which Yemenite scrolls share.
+//
+// Each change is listed here, and the build fails if the source no longer
+// matches, so that any new difference is reviewed before it reaches the text.
+
+// A note giving the scrolls' spelling of the word before it. Where only most
+// Ashkenazi scrolls have it (Deut 23:2), the rest share the Codex's.
+const SCRIBAL_VARIANT = /^בספרי ספרד (ורוב ספרי אשכנז|ואשכנז) (\S+)$/;
+const SCRIBAL_VARIANT_REFS = [
+  'Genesis 4:13', 'Genesis 7:11', 'Genesis 9:29', 'Exodus 25:31', 'Exodus 28:26',
+  'Numbers 1:17', 'Numbers 10:10', 'Numbers 22:5', 'Deuteronomy 23:2',
+];
+
+const isNote = (seg) => typeof seg !== 'string' && 'n' in seg;
+
+function expectSegments(ref, actual, expected) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${ref}: the source no longer matches its scribal fix: ${JSON.stringify(actual)}`);
+  }
+}
+
+// Notes that describe the scroll rather than spell a word, by verse.
+const SCRIBAL_FIXES = {
+  // The scrolls write the yod of Pinchas small.
+  'Numbers 25:11': (ref, segs) => {
+    const [word, note] = segs;
+    expectSegments(ref, note, {n: `בספרי ספרד ואשכנז נהוג לכתוב ${word} ביו״ד זעירא`});
+    const yod = word.indexOf('י');
+    return [word.slice(0, yod), {small: 'י'}, word.slice(yod + 1), ...segs.slice(2)];
+  },
+  // ...and the vav of shalom broken, which the text can't show.
+  'Numbers 25:12': (ref, segs) => {
+    const i = segs.findIndex(isNote);
+    expectSegments(ref, segs[i], {n: 'בספרי ספרד ואשכנז וי״ו קטיעא'});
+    return segs.with(i, {n: 'בספר תורה נכתבת וי״ו קטיעא במילה שלום'});
+  },
+  // A section break in the Codex that the scrolls don't have
+  // (SCRIBAL_BREAKS): the note gives the Codex's reading, as elsewhere.
+  'Leviticus 7:21': (ref, segs) => {
+    const i = segs.findIndex(isNote);
+    expectSegments(ref, segs[i], {n: 'אין פרשה בספרי ספרד ואשכנז'});
+    return segs.with(i, {n: 'בכתר ארם צובה: פרשה פתוחה'});
+  },
+};
+
+// Section breaks after a verse where the scrolls differ from the Codex: the
+// break they have, or null for none.
+const SCRIBAL_BREAKS = {
+  'Leviticus 7:21': null,
+  // Doubtful in the Codex. The scrolls have a setumah here, as after every
+  // other curse from 27:15 on.
+  'Deuteronomy 27:19': 'S',
+};
+
+const scribalDone = [];
+
+function followScribalTradition(ref, verse) {
+  if (!Array.isArray(verse)) return verse;
+  let segs = [...verse];
+  for (let i = 0; i < segs.length; i++) {
+    const m = isNote(segs[i]) && segs[i].n.match(SCRIBAL_VARIANT);
+    if (!m) continue;
+    // The word is the last in the text before the note: after its last
+    // space or maqaf.
+    const before = segs[i - 1];
+    if (typeof before !== 'string' || /\s$/.test(before)) throw new Error(`${ref}: no word before the scribal note`);
+    const start = Math.max(before.lastIndexOf(' '), before.lastIndexOf('־')) + 1;
+    const codex = m[1] === 'ואשכנז' ? 'בכתר ארם צובה ובספרי תימן' : 'בכתר ארם צובה, בספרי תימן ובמקצת ספרי אשכנז';
+    segs[i - 1] = before.slice(0, start) + m[2];
+    segs[i] = {n: `${codex}: ${before.slice(start)}`};
+    scribalDone.push(ref);
+  }
+  if (SCRIBAL_FIXES[ref]) {
+    segs = SCRIBAL_FIXES[ref](ref, segs);
+    scribalDone.push(ref);
+  }
+  return finalizeSegments(segs);
+}
+
+function followScribalBreaks(book, breaks) {
+  for (const [ref, kind] of Object.entries(SCRIBAL_BREAKS)) {
+    const [b, cv] = ref.split(' ');
+    if (b !== book) continue;
+    // The Codex has the break the scrolls don't, or lacks the one they have.
+    if ((breaks[cv] === undefined) !== (kind !== null)) throw new Error(`${ref}: the source's section break changed`);
+    if (kind) breaks[cv] = kind;
+    else delete breaks[cv];
+    scribalDone.push(`${ref} break`);
+  }
+}
+
+// Called once the whole Torah is built.
+function assertScribalTradition(chapters) {
+  const expected = [
+    ...SCRIBAL_VARIANT_REFS,
+    ...Object.keys(SCRIBAL_FIXES),
+    ...Object.keys(SCRIBAL_BREAKS).map((ref) => `${ref} break`),
+  ];
+  if (scribalDone.toSorted().join() !== expected.toSorted().join()) {
+    throw new Error(`Scribal changes differ from those listed:\n  done ${scribalDone.join(', ')}`);
+  }
+  for (const [book, chs] of Object.entries(chapters)) {
+    chs.forEach((ch, ci) => ch.forEach((verse, vi) => {
+      for (const seg of Array.isArray(verse) ? verse : []) {
+        if (isNote(seg) && seg.n.startsWith('בספרי ספרד')) {
+          throw new Error(`${book} ${ci + 1}:${vi + 1}: a scribal note not followed: ${seg.n}`);
+        }
+      }
+    }));
+  }
+}
+
 function parseOnkelosVerse(raw) {
   let s = raw.replace(/‎/g, '').replace(/''/g, '״').replace(/\s+/g, ' ').trim();
   s = s.replace(/\s*:$/, '');
@@ -368,11 +516,13 @@ async function main() {
     const breaks = {};
     const chapters = mam.text.map((ch, ci) =>
       ch.map((raw, vi) => {
+        const ref = `${book} ${ci + 1}:${vi + 1}`;
         const {verse, brk} = parseMamVerse(raw);
         if (brk) breaks[`${ci + 1}:${vi + 1}`] = brk;
-        return checkGaps(`${book} ${ci + 1}:${vi + 1}`, raw, verse);
+        return followScribalTradition(ref, checkGaps(ref, raw, verse));
       }),
     );
+    followScribalBreaks(book, breaks);
     mikraChapters[book] = chapters;
     const counts = (t) => t.map((c) => c.length).join(',');
     if (counts(mam.text) !== counts(onk.text) || counts(mam.text) !== counts(jps.text)) {
@@ -402,12 +552,20 @@ async function main() {
     });
   }
 
+  assertScribalTradition(mikraChapters);
+
   process.stdout.write('Parsha metadata\n');
-  const keys = Object.keys(ASHKENAZI);
-  const parshiyot = keys.map((key, i) => ({num: i + 1, ...leyningEntry(key), ashkenazi: ASHKENAZI[key]}));
+  const keys = Object.keys(ENGLISH);
+  if (keys.join() !== Object.keys(ASHKENAZI).join()) throw new Error('ENGLISH and ASHKENAZI keys differ');
+  const parshiyot = keys.map((key, i) => ({num: i + 1, ...leyningEntry(key), en: ENGLISH[key], ashkenazi: ASHKENAZI[key]}));
   const combined = COMBINED.map(([a, b]) => {
     const e = leyningEntry(`${a}-${b}`);
-    return {...e, ashkenazi: `${ASHKENAZI[a]}-${ASHKENAZI[b]}`, parts: [keys.indexOf(a) + 1, keys.indexOf(b) + 1]};
+    return {
+      ...e,
+      en: `${ENGLISH[a]}-${ENGLISH[b]}`,
+      ashkenazi: `${ASHKENAZI[a]}-${ASHKENAZI[b]}`,
+      parts: [keys.indexOf(a) + 1, keys.indexOf(b) + 1],
+    };
   });
 
   // Sanity: aliyot are contiguous and cover each parsha exactly.
@@ -443,6 +601,20 @@ async function main() {
       special[reason] = entry;
       allHaftarahRefs.push(...entry.ashkenazi, ...(entry.sephardi || []));
     }
+  }
+  // hebcal follows the Ashkenazi custom for Re'eh on Rosh Chodesh Elul (the
+  // Rosh Chodesh haftarah). Sephardim and Chabad read Re'eh's own, the third
+  // of consolation (Shulchan Aruch OC 425:1), adding the first and last
+  // verses of the Rosh Chodesh haftarah. Only they are given this key
+  // (lib/core/calendar/special_haftarah.dart), so every custom lists it.
+  {
+    const reeh = [
+      {k: 'Isaiah', b: '54:11', e: '55:5'},
+      {k: 'Isaiah', b: '66:1', e: '66:1'},
+      {k: 'Isaiah', b: '66:23', e: '66:23'},
+    ];
+    special["Re'eh on Shabbat Rosh Chodesh"] = {ashkenazi: reeh, sephardi: reeh, chabad: reeh};
+    allHaftarahRefs.push(...reeh);
   }
 
   const chapterLengths = Object.fromEntries(TORAH.map((b) => [b, mikraChapters[b].map((c) => c.length)]));

@@ -18,6 +18,7 @@ import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 
 import '../helpers.dart';
@@ -355,6 +356,89 @@ void main() {
     expect(find.widgetWithText(MenuItemButton, 'Divrei Torah'), findsOneWidget);
   });
 
+  for (final language in [AppLanguage.hebrew, AppLanguage.english]) {
+    testWidgets('new discussion: the empty fields run the way of the ${language.name} UI, and then of their text',
+        (tester) async {
+      final rtl = language == AppLanguage.hebrew;
+      final ui = rtl ? TextDirection.rtl : TextDirection.ltr;
+      final c = await _pump(tester, settings: AppSettings(onboardingComplete: true, language: language));
+      c.read(routerProvider).go('/community/new');
+      await tester.pumpAndSettle();
+      Finder field(int maxLength) => find.byWidgetPredicate((w) => w is TextField && w.maxLength == maxLength);
+      TextDirection direction(Finder field) =>
+          tester.widget<EditableText>(find.descendant(of: field, matching: find.byType(EditableText))).textDirection!;
+      final (title, body) = (field(150), field(10000));
+      expect(direction(title), ui);
+      expect(direction(body), ui);
+      // The decoration follows the UI, whatever the text's direction: the
+      // counter is at the field's end, on the left in Hebrew.
+      final counter = tester.getCenter(find.text('0/150')).dx;
+      expect(rtl ? counter < tester.getCenter(title).dx : counter > tester.getCenter(title).dx, isTrue);
+
+      await tester.enterText(title, rtl ? 'Shalom' : 'שלום');
+      await tester.enterText(body, '12345');
+      await tester.pump();
+      expect(direction(title), rtl ? TextDirection.ltr : TextDirection.rtl, reason: 'the way of its text');
+      expect(direction(body), ui, reason: 'digits alone have no direction of their own');
+      // Past the draft's save.
+      await tester.pump(const Duration(seconds: 1));
+    });
+  }
+
+  testWidgets('a reply starts right to left in the Hebrew UI, and runs the way of its text', (tester) async {
+    final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
+    c.read(routerProvider).go('/community/thread/1');
+    await tester.pumpAndSettle();
+    final reply = find.descendant(of: find.byType(TextField).last, matching: find.byType(EditableText));
+    expect(tester.widget<EditableText>(reply).textDirection, TextDirection.rtl);
+    await tester.enterText(reply, 'Thank you');
+    await tester.pump();
+    expect(tester.widget<EditableText>(reply).textDirection, TextDirection.ltr);
+    await tester.enterText(reply, '');
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.widget<EditableText>(reply).textDirection, TextDirection.rtl);
+  });
+
+  testWidgets('an edited post runs the way of its text as it is edited', (tester) async {
+    final forums = await _Member().signIn();
+    forums.seed(
+      threads: [_thread(7100)],
+      posts: [Post(id: '1', threadId: '7100', authorId: 'me', authorName: 'Me', body: 'שלום לכולם', createdAt: DateTime(2026, 10, 1))],
+    );
+    final c = await _pump(tester, forums: forums);
+    c.read(routerProvider).go('/community/thread/7100');
+    await tester.pumpAndSettle();
+    await _openPostMenu(tester, 0);
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    final field = find.descendant(of: find.byType(AlertDialog), matching: find.byType(EditableText));
+    TextDirection direction() => tester.widget<EditableText>(field).textDirection!;
+    expect(direction(), TextDirection.rtl);
+    await tester.enterText(field, 'Hello all');
+    await tester.pump();
+    expect(direction(), TextDirection.ltr);
+    await tester.enterText(field, 'שלום');
+    await tester.pump();
+    expect(direction(), TextDirection.rtl);
+    await tester.enterText(field, '');
+    await tester.pump();
+    expect(direction(), TextDirection.ltr, reason: "empty, the English UI's way");
+  });
+
+  testWidgets('in the Hebrew UI, the address a code went to keeps its own order', (tester) async {
+    final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
+    c.read(routerProvider).go('/community/account');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '1reader@example.org');
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    final sent = find.textContaining(ltr('1reader@example.org'));
+    expect(find.descendant(of: find.byType(PageBody), matching: sent), findsOneWidget);
+    expect(find.descendant(of: find.byType(SnackBar), matching: sent), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('signing in to send a reply goes back to it with nothing over it, and says as whom', (tester) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(supportsAnnounce: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
@@ -379,6 +463,26 @@ void main() {
     expect([for (final a in tester.takeAnnouncements()) a.message], [startsWith('Signed in as ')]);
     // The reply goes on: a first post asks to accept the guidelines.
     expect(find.text("I'll follow the community guidelines"), findsOneWidget);
+  });
+
+  testWidgets('in Hebrew, signing in says that it worked, and the page is headed by the account', (tester) async {
+    final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
+    c.read(routerProvider).go('/community/account');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    final status = find.textContaining(RegExp('^התחברת בשם '));
+    expect(find.descendant(of: find.byType(SnackBar), matching: status), findsOneWidget);
+    expect(find.descendant(of: find.byType(PageBody), matching: find.textContaining(RegExp('^החשבון: '))), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('"Use a different email" gives the email field the focus', (tester) async {
@@ -1061,6 +1165,51 @@ void main() {
     expect(tester.widget<Text>(title).textDirection, TextDirection.rtl);
   });
 
+  for (final language in [AppLanguage.hebrew, AppLanguage.english]) {
+    testWidgets('a post header and a notice keep their inset from the start edge, ${language.name} UI', (tester) async {
+      final forums = DemoForumRepository()
+        ..seed(
+          threads: [
+            ThreadSummary(
+              id: '7000',
+              forumId: 3,
+              title: 'שאלה על התרגום',
+              kind: ThreadKind.discussion,
+              authorName: 'רבקה',
+              postCount: 1,
+              lastPostAt: DateTime(2026, 10, 1),
+              createdAt: DateTime(2026, 10, 1),
+              locked: true,
+            ),
+          ],
+          posts: [
+            Post(id: '1', threadId: '7000', authorName: 'רבקה', body: 'למה דווקא אונקלוס?', createdAt: DateTime(2026, 10, 1)),
+          ],
+        );
+      final c = await _pump(tester, forums: forums, settings: AppSettings(onboardingComplete: true, language: language));
+      c.read(routerProvider).go('/community/thread/7000');
+      await tester.pumpAndSettle();
+
+      // How far [inner] is in from the start edge of [outer]: its right edge
+      // in Hebrew.
+      final rtl = language == AppLanguage.hebrew;
+      double inset(Finder outer, Finder inner) {
+        final (o, i) = (tester.getRect(outer), tester.getRect(inner));
+        return rtl ? o.right - i.right : i.left - o.left;
+      }
+
+      final post = find.byType(PostCard);
+      final header = find.descendant(of: post, matching: find.textContaining('רבקה,'));
+      expect(header, findsOneWidget);
+      expect(inset(find.descendant(of: post, matching: find.byType(Card)), header), greaterThanOrEqualTo(12));
+
+      final notice = find.byType(NoticeBanner);
+      expect(notice, findsOneWidget, reason: 'the thread is locked');
+      final icon = find.descendant(of: notice, matching: find.byIcon(Icons.lock_outline));
+      expect(inset(find.descendant(of: notice, matching: find.byType(Card)), icon), greaterThanOrEqualTo(12));
+    });
+  }
+
   testWidgets('an empty thread that is not weekly says it has no replies yet', (tester) async {
     final forums = DemoForumRepository()..seed(threads: [_thread(6000, posts: 0)]);
     final c = await _pump(tester, forums: forums);
@@ -1092,7 +1241,82 @@ void main() {
     expect(prefs.getString('draft.newThread'), isNull);
   });
 
+  testWidgets('the display name starts right to left in the Hebrew UI, and runs the way of the name', (tester) async {
+    // A member who hasn't chosen a name yet, so the field starts empty.
+    final forums = await _Member().signIn();
+    final c = await _pump(
+      tester,
+      forums: forums,
+      settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew),
+    );
+    c.read(routerProvider).go('/community/account');
+    await tester.pumpAndSettle();
+    final field = find.descendant(
+      of: find.byWidgetPredicate((w) => w is TextField && w.maxLength == 40),
+      matching: find.byType(EditableText),
+    );
+    TextDirection direction() => tester.widget<EditableText>(field).textDirection!;
+    expect(tester.widget<EditableText>(field).controller.text, isEmpty);
+    expect(direction(), TextDirection.rtl);
+    await tester.enterText(field, 'Rivka');
+    await tester.pump();
+    expect(direction(), TextDirection.ltr);
+    await tester.enterText(field, '');
+    await tester.pump();
+    expect(direction(), TextDirection.rtl);
+  });
+
+  testWidgets('a post with no letters, such as "+1", runs the way of the Hebrew UI', (tester) async {
+    final forums = await _Member().signIn();
+    forums.seed(
+      threads: [_thread(7200)],
+      posts: [
+        for (final (i, body) in ['שלום לכולם', '+1', 'Привет!'].indexed)
+          Post(
+            id: '${i + 1}',
+            threadId: '7200',
+            authorId: 'member$i',
+            authorName: 'Member $i',
+            body: body,
+            createdAt: DateTime(2026, 10, i + 1),
+          ),
+      ],
+    );
+    final c = await _pump(
+      tester,
+      forums: forums,
+      settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew),
+    );
+    c.read(routerProvider).go('/community/thread/7200');
+    await tester.pumpAndSettle();
+    TextDirection bodyDirection(String body) => tester
+        .widget<SelectableText>(find.byWidgetPredicate((w) => w is SelectableText && w.data == body))
+        .textDirection!;
+    expect(bodyDirection('+1'), TextDirection.rtl, reason: 'no strong character: the UI direction');
+    expect(bodyDirection('Привет!'), TextDirection.ltr, reason: 'Cyrillic runs left to right');
+    expect(bodyDirection('שלום לכולם'), TextDirection.rtl);
+  });
+
   group('a report', () {
+    testWidgets('has details that run the way of their text', (tester) async {
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await _openPostMenu(tester, 1);
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      final field = find.descendant(of: find.byType(AlertDialog), matching: find.byType(EditableText));
+      TextDirection direction() => tester.widget<EditableText>(field).textDirection!;
+      expect(direction(), TextDirection.ltr, reason: "empty, the English UI's way");
+      await tester.enterText(field, 'לשון הרע על אדם אחר');
+      await tester.pump();
+      expect(direction(), TextDirection.rtl);
+      await tester.enterText(field, '');
+      await tester.pump();
+      expect(direction(), TextDirection.ltr);
+    });
+
     testWidgets('needs a reason, and is made once', (tester) async {
       final forums = await _Member().signIn();
       final c = await _pump(tester, forums: forums);

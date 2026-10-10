@@ -22,6 +22,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
@@ -33,11 +34,14 @@ import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
+import 'package:shnayim_mikra/features/settings/backup.dart';
+import 'package:shnayim_mikra/services/backup_files.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
+import '../fake_backup_files.dart';
 import '../helpers.dart';
 import 'galleries.dart';
 
@@ -61,8 +65,24 @@ ProgressState _progress() {
 }
 
 const _screens = {
+  // A new reader's onboarding, with no join date or progress yet, on the
+  // Friday of Bereshit; its plan step on the Wednesday too.
   'welcome': '/welcome',
-  'welcome_location': '/welcome',
+  'welcome_location': '/welcome/location',
+  // "Why we ask" open under the question.
+  'welcome_why': '/welcome/location',
+  'welcome_method': '/welcome/method',
+  'welcome_plan': '/welcome/plan',
+  'welcome_plan_midweek': '/welcome/plan',
+  // Joining on Tisha B'Av 5787, a quiet day: only Friday is left.
+  'welcome_plan_tisha_bav': '/welcome/plan',
+  // "I already use Shnayim Mikra": the ways to restore, with an account's
+  // backup to sign in to.
+  'welcome_restore': '/welcome',
+  // Signed in, while the account's backup comes in.
+  'welcome_restoring': '/welcome',
+  // A backup file chosen: what it holds, with nothing here to merge with.
+  'welcome_import': '/welcome',
   'today': '/today',
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
@@ -70,6 +90,12 @@ const _screens = {
   'today_yomtov_oneday': '/today',
   'today_yomtov_twoday': '/today',
   'today_joined_midweek': '/today',
+  // Hoshana Rabbah in Israel, counting down to Simchat Torah.
+  'today_simchat_torah': '/today',
+  // The week of Pinchas after 17 Tammuz, with its special haftarah.
+  'today_three_weeks': '/today',
+  // Paused over the end of Bereshit, with its button to end the pause.
+  'today_paused': '/today',
   'parsha': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
@@ -101,7 +127,15 @@ const _screens = {
   // The opt-in scripture fonts, which load on demand.
   'reader_taamey': '/read/5787:1/2?mode=full',
   'reader_ezra': '/read/5787:1/2?mode=full',
+  // Rishon of Pinchas, as the scrolls write it: the small yod of פינחס
+  // (Numbers 25:11), and the note on the broken vav of shalom.
+  'reader_pinchas': '/read/5787:41/0?mode=full',
   'haftarah': '/haftarah/5787:1',
+  // Bereshit's own haftarah after Machar Chodesh's: folded, and for Chabad
+  // open, under the note that Chabad's haftarot are being verified.
+  'haftarah_regular': '/haftarah/5787:1',
+  'haftarah_chabad': '/haftarah/5787:1',
+  'haftarah_chabad_regular': '/haftarah/5787:1',
   'progress': '/progress',
   'community': '/community',
   'forum': '/community/forum/parsha',
@@ -121,6 +155,8 @@ const _screens = {
   // Just refreshed from the app bar.
   'thread_refreshed': '/community/thread/1',
   'compose': '/community/new',
+  // Its empty title field focused: the caret at the start of the UI's direction.
+  'compose_focused': '/community/new',
   'account': '/community/account',
   // Just after "Email me a code".
   'account_code': '/community/account',
@@ -136,6 +172,10 @@ const _screens = {
   'city_search': '/settings/reading/city',
   'city_many': '/settings/reading/city',
   'city_none': '/settings/reading/city',
+  // Its customs: the second reading, the haftarah and the late window.
+  's_reading_customs': '/settings/reading',
+  // For Chabad: the last verse isn't repeated, as the switch says.
+  's_reading_chabad': '/settings/reading',
   's_display': '/settings/display',
   's_fonts': '/settings/display',
   's_a11y': '/settings/accessibility',
@@ -145,11 +185,23 @@ const _screens = {
   's_reminders_on': '/settings/reminders',
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
+  // A backup file chosen: what it holds, and whether to merge it.
+  's_data_import': '/settings/data',
+  // Pasting a backup, which can't be read.
+  's_data_paste': '/settings/data',
+  // The paste dialog as it opens: the field's label and instruction.
+  's_data_paste_open': '/settings/data',
+  // Choosing to replace the progress here with a backup: the confirm
+  // dialog, with backup on.
+  's_data_replace': '/settings/data',
   'about': '/settings/about',
   'sources': '/sources',
   'guide': '/guide',
+  // The special cases, Shabbat and the sources, at its end.
+  'guide_end': '/guide',
   // The privacy policy, open to every visitor.
   'legal': '/legal/privacy',
+  'legal_a11y': '/legal/accessibility',
   // Links that lead nowhere: a mistyped address, and a forum that is gone.
   'not_found': '/nope',
   'forum_missing': '/community/forum/xyz',
@@ -217,7 +269,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   // Reading by section, so that 32:3 is read with the verses around it.
   'reader_third': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   // Reading by aliyah, so that one step finishes Shevi'i.
-  'reader_finished': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, repeatLastVerse: false),
+  // Set as the reader sets it: untouched, it follows the haftarah custom.
+  'reader_finished': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
@@ -244,6 +297,12 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'city': (s) => s.copyWith(city: _jerusalem),
   'city_search': (s) => s.copyWith(city: _jerusalem),
   'city_many': (s) => s.copyWith(city: _jerusalem),
+  'today_simchat_torah': (s) =>
+      s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true, joinDate: LocalDate(2026, 9, 20)),
+  'today_three_weeks': (s) => s.copyWith(joinDate: LocalDate(2027, 7, 18)),
+  'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
+  's_reading_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
+  'haftarah_chabad_regular': (s) => s.withNusach(HaftarahNusach.chabad),
 };
 
 const _jerusalem = City(
@@ -280,8 +339,16 @@ final _screenNow = <String, DateTime>{
   'today_haftarah_left': DateTime(2026, 10, 13, 11),
   'today_yomtov_oneday': DateTime(2029, 5, 22, 11),
   'today_yomtov_twoday': DateTime(2029, 5, 22, 11),
+  // Hoshana Rabbah 5787; Simchat Torah is on Shabbat in Israel.
+  'today_simchat_torah': DateTime(2026, 10, 2, 11),
+  // Tuesday of Pinchas 5787, read on 24 July 2027.
+  'today_three_weeks': DateTime(2027, 7, 20, 11),
   // Tuesday of Matot-Masei 5787.
   'reader_third': DateTime(2027, 7, 27, 11),
+  // The Wednesday of Bereshit, which began on Monday.
+  'welcome_plan_midweek': DateTime(2026, 10, 7, 11),
+  // Thursday 12 August 2027, 9 Av 5787.
+  'welcome_plan_tisha_bav': DateTime(2027, 8, 12, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
@@ -289,6 +356,12 @@ final _screenProgress = <String, ProgressState Function()>{
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
   'today_joined_midweek': () => ProgressState(weeks: {}),
+  'today_simchat_torah': () => ProgressState(weeks: {}),
+  'today_three_weeks': () => ProgressState(weeks: {}),
+  'today_paused': () => ProgressState(
+        weeks: _progress().weeks,
+        pauses: [Pause(LocalDate(2026, 10, 8), LocalDate(2026, 10, 18), id: 'travel')],
+      ),
   // All three readings of Shlishi (from Genesis 2:20) have reached 3:1,
   // its seventh verse, where the guided reader resumes and focus mode opens.
   'reader_focus': () => ProgressState(weeks: {
@@ -330,7 +403,27 @@ Future<ForumRepository> _accountWithNewerBackup() async {
 }
 
 /// Screens shown signed in with backup on.
-const _backupOn = {'s_data_reset'};
+const _backupOn = {'s_data_reset', 's_data_replace'};
+
+/// Screens where the reader chooses [_backupFile] to restore.
+const _choosesBackup = {'s_data_import', 's_data_replace', 'welcome_import'};
+
+/// A backup made on another phone on the Thursday of Bereshit: the last
+/// eleven weeks of 5786 read, and a pause over Sukkot.
+String _backupFile() {
+  final first = LocalDate(2026, 7, 24);
+  return encodeBackup(
+    ProgressState(
+      weeks: {
+        for (var i = 0; i < 11; i++)
+          '5786:${44 + i}': WeekProgress(weekId: '5786:${44 + i}').withAll(first.addDays(7 * i)),
+      },
+      pauses: [Pause(LocalDate(2026, 9, 27), LocalDate(2026, 10, 3), id: 'sukkot')],
+    ),
+    AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 7, 20)),
+    now: DateTime(2026, 10, 8, 21),
+  );
+}
 
 /// Screens shown where reminders are available.
 const _remindersSupported = {'s_reminders_on'};
@@ -349,6 +442,12 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
   'week_discuss': () async => _OpeningForever(),
+  'welcome_restore': () async => _Cloud(),
+  'welcome_restoring': () async {
+    final repo = _CloudForever();
+    await repo.verifyCode('reader@example.org', '123456');
+    return repo;
+  },
 };
 
 /// The demo with a thread of 250 posts in Divrei Torah, thread 5000.
@@ -399,6 +498,18 @@ Future<ForumRepository> _withWeeklyThread() async {
   return repo;
 }
 
+/// The demo, standing in for a real community, which keeps backups.
+class _Cloud extends DemoForumRepository {
+  @override
+  bool get isDemo => false;
+}
+
+/// A community whose backups never finish coming in.
+class _CloudForever extends _Cloud {
+  @override
+  Future<Map<String, dynamic>?> loadProgress() => Completer<Map<String, dynamic>?>().future;
+}
+
 /// A community whose weekly threads never finish opening.
 class _OpeningForever extends DemoForumRepository {
   @override
@@ -411,8 +522,7 @@ class _OpeningForever extends DemoForumRepository {
 final _taps = {
   // Choosing "All on Friday" says that it applies from this week on.
   's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
-  // The second page of onboarding: where the reader will be this Shabbat.
-  'welcome_location': () => find.byType(FilledButton).first,
+  'welcome_why': () => find.byIcon(Icons.expand_more),
   // Next, on the last step of Shevi'i.
   'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
@@ -493,6 +603,16 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'reader_dots': _scrollToEnd,
   'reader_third': _scrollToEnd,
+  // The haftarah, near the end of Today.
+  'today_three_weeks': _scrollToEnd,
+  'guide_end': _scrollToEnd,
+  // The regular haftarah's heading, with the special one's end above it.
+  'haftarah_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.6),
+  'haftarah_chabad_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.3),
+  's_reading_customs': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(RadioListTile<ReadingMethod>).last)),
+  's_reading_chabad': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(SwitchListTile).first), alignment: 0.3),
   'thread_long_end': _scrollToEnd,
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
@@ -511,6 +631,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'focus_slider': (tester) => _keyboardFocus(tester, find.byType(Slider).first),
   'focus_switch': (tester) => _keyboardFocus(tester, find.byType(SwitchListTile).first),
   'focus_field': (tester) => _keyboardFocus(tester, find.byType(TextField).first),
+  'compose_focused': (tester) => _keyboardFocus(tester, find.byWidgetPredicate((w) => w is TextField && w.maxLength == 150)),
   'focus_chip': (tester) => _keyboardFocus(tester, find.byType(ChoiceChip).at(1)),
   // A menu button inside a card, which clips: the ring must still show.
   'focus_menu': (tester) => _keyboardFocus(
@@ -578,6 +699,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The end of the main list: the spaces around section marks.
   'reader_gaps': _scrollToEnd,
   'reader_gaps_spaced': _scrollToEnd,
+  // The restore sheet: the welcome's last text button.
+  'welcome_restore': (tester) => tester.tap(find.byType(TextButton).last),
+  'welcome_restoring': _tapInTurn([() => find.byType(TextButton).last, () => find.byType(ListTile).first]),
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.byIcon(Icons.delete_forever_outlined)),
   's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
@@ -611,11 +735,32 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'goto_phrase': (tester) => _goTo(tester, 'שלח לו'),
   // Nothing to go to or search for: what the sheet takes.
   'goto_help': (tester) => _goTo(tester, '28'),
+  's_data_import': (tester) => tester.tap(find.byIcon(Icons.download)),
+  's_data_paste': _tapInTurn([
+    () => find.byIcon(Icons.content_paste),
+    () => find.byType(FilledButton),
+  ]),
+  's_data_paste_open': (tester) => tester.tap(find.byIcon(Icons.content_paste)),
+  's_data_replace': _tapInTurn([
+    () => find.byIcon(Icons.download),
+    // "Replace instead", the dialog's last text button.
+    () => find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextButton)).last,
+  ]),
+  'welcome_import': _tapInTurn([
+    () => find.byType(TextButton).last,
+    () => find.byIcon(Icons.restore_page_outlined),
+  ]),
   // The week strip, in the middle of the page.
   'today_yomtov_oneday': _showWeekStrip,
   'today_yomtov_twoday': _showWeekStrip,
   'today_joined_midweek': _showWeekStrip,
 };
+
+/// Scrolls the haftarah page's regular haftarah heading to [alignment].
+Future<void> _showRegularHaftarah(WidgetTester tester, {required double alignment}) => Scrollable.ensureVisible(
+      tester.element(find.descendant(of: find.byType(ExpansionTile), matching: find.byType(ListTile))),
+      alignment: alignment,
+    );
 
 /// Opens [gallery] as a page over the current route.
 Future<void> _showGallery(WidgetTester tester, Widget gallery) async {
@@ -696,6 +841,7 @@ const _desktopScreens = {
   'week',
   'week_tab',
   'haftarah_tab',
+  'haftarah_regular',
   'reader',
   'reader_third',
   'reader_finished',
@@ -711,6 +857,8 @@ const _desktopScreens = {
   'not_found',
   'settings',
   'welcome',
+  'welcome_plan',
+  'welcome_restore',
   'dialog',
   'sheet_display',
   'focus_nav',
@@ -728,7 +876,7 @@ const _desktopScreens = {
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week'};
+const _narrowScreens = {'today', 'today_paused', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
   'today',
   'goto_verse',
@@ -738,8 +886,14 @@ const _bigTextScreens = {
   'search_none',
   's_reading_city',
   'city',
+  'today_paused',
+  'welcome',
+  'welcome_restore',
+  's_data',
+  's_data_import',
   'progress',
   'reader',
+  'haftarah_regular',
   'kit_ornaments',
   'kit_rows',
   'kit_progress',
@@ -797,10 +951,11 @@ void main() {
         debugDisableShadows = false;
         try {
           final blocked = _syncBlocked.contains(entry.key);
+          final onboarding = entry.key.startsWith('welcome');
           final base = (_screenSettings[entry.key] ?? (s) => s)(
             AppSettings(
-              onboardingComplete: !entry.key.startsWith('welcome'),
-              joinDate: _join,
+              onboardingComplete: !onboarding,
+              joinDate: onboarding ? null : _join,
               cloudSync: blocked || _backupOn.contains(entry.key),
             ),
           );
@@ -808,14 +963,18 @@ void main() {
             tester,
             settings: mode.settings(base),
             now: _screenNow[entry.key] ?? _now,
-            progress: (_screenProgress[entry.key] ?? _progress)(),
+            progress: onboarding ? const ProgressState() : (_screenProgress[entry.key] ?? _progress)(),
             forums: blocked
                 ? await _accountWithNewerBackup()
                 : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
             notifications: _remindersSupported.contains(entry.key) ? PhoneNotifications() : null,
-            overrides: _screenOverrides[entry.key] ?? const [],
+            overrides: [
+              ...?_screenOverrides[entry.key],
+              if (_choosesBackup.contains(entry.key))
+                backupFilesProvider.overrideWithValue(FakeBackupFiles(file: _backupFile())),
+            ],
           );
-          if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
+          c.read(routerProvider).go(entry.value);
           await _settle(tester);
           final setup = _screenSetup[entry.key];
           if (setup != null) {
