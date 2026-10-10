@@ -165,7 +165,7 @@ WeekContext _contextFor(Ref ref, ReadingWeek week) {
   final plan = ref.watch(plannerProvider).planFor(week);
   final repo = ref.watch(parshaRepositoryProvider);
   final info = repo.portion(week.portion);
-  final settings = ref.watch(settingsProvider);
+  final settings = ref.watch(settingsProvider.select((s) => (nusach: s.nusach, joinDate: s.joinDate)));
   final summary = ref.watch(streakSummaryProvider);
   WeekStatus? status;
   for (final e in summary.weeks) {
@@ -194,7 +194,7 @@ final openPreviousWeekProvider = Provider<WeekContext?>((ref) {
   final previous = schedule.previousWeek(current);
   final ctx = _contextFor(ref, previous);
   if (ctx.isFinished) return null;
-  final join = ref.watch(settingsProvider).joinDate;
+  final join = ref.watch(settingsProvider.select((s) => s.joinDate));
   if (join != null && previous.occasion < join) return null;
   final s = ctx.status;
   if (s == WeekStatus.inProgress || s == WeekStatus.overdue) return ctx;

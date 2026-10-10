@@ -281,26 +281,48 @@ void main() {
 
   group('ProgressController', () {
     late SharedPreferences prefs;
+    final open = <ProviderContainer>[];
 
-    /// A fresh start of the app on the same storage.
-    ProviderContainer reopen() {
+    /// Writes the progress each app opened so far is waiting to save, as it
+    /// does before it can be closed.
+    Future<void> saved() async {
+      for (final c in open) {
+        await c.read(progressProvider.notifier).flush();
+      }
+    }
+
+    ProviderContainer start() {
       final c = ProviderContainer(overrides: [sharedPreferencesProvider.overrideWithValue(prefs)]);
-      addTearDown(c.dispose);
+      open.add(c);
+      addTearDown(() {
+        open.remove(c);
+        c.dispose();
+      });
       return c;
+    }
+
+    /// A fresh start of the app on the same storage, once what the last one
+    /// was waiting to save is saved.
+    Future<ProviderContainer> reopen() async {
+      await saved();
+      return start();
     }
 
     Future<ProviderContainer> load(String raw) async {
       SharedPreferences.setMockInitialValues({ProgressController.storageKey: raw});
       prefs = await SharedPreferences.getInstance();
-      return reopen();
+      return start();
     }
 
     Map<String, String> backups(String prefix) => {
           for (final k in prefs.getKeys().where((k) => k.startsWith(prefix))) k: prefs.getString(k)!,
         };
 
-    Map<String, dynamic> stored() =>
-        jsonDecode(prefs.getString(ProgressController.storageKey)!) as Map<String, dynamic>;
+    /// The progress in storage, once what is waiting to be saved is.
+    Future<Map<String, dynamic>> stored() async {
+      await saved();
+      return jsonDecode(prefs.getString(ProgressController.storageKey)!) as Map<String, dynamic>;
+    }
 
     test('progress from a newer version is backed up before anything is saved', () async {
       final raw = _stored('{"5787:2": {"u": ${_grid()}, "t": [[1, 2, 3]]}}', version: 99);
@@ -309,11 +331,11 @@ void main() {
       expect(backups(ProgressController.newerBackupPrefix).values, [raw]);
 
       // Opening it again before anything changed makes no second copy.
-      reopen().read(progressProvider);
+      (await reopen()).read(progressProvider);
       expect(backups(ProgressController.newerBackupPrefix), hasLength(1));
 
       c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikra1, _d2);
-      expect(stored()['version'], kProgressFormat);
+      expect((await stored())['version'], kProgressFormat);
       expect(backups(ProgressController.newerBackupPrefix).values, [raw]);
       expect(backups(ProgressController.corruptBackupPrefix), isEmpty);
     });
@@ -326,7 +348,7 @@ void main() {
 
       c.read(progressProvider.notifier).markUnit('5787:2', 0, ReadingPass.mikra1, _d1);
       expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
-      expect(reopen().read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect((await reopen()).read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
     });
 
     test('a week without a unit grid is kept aside untouched, not read as empty and overwritten', () async {
@@ -336,7 +358,7 @@ void main() {
       final c = await load(_stored('{"5787:1": {"units": ${jsonEncode(units)}}, "5787:2": {"u": ${_grid()}}}', version: 2));
       expect(c.read(progressProvider).unknownWeeks.keys, ['5787:1']);
       c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikra1, _d2);
-      expect((stored()['weeks'] as Map)['5787:1'], {'units': units});
+      expect(((await stored())['weeks'] as Map)['5787:1'], {'units': units});
       expect(backups(ProgressController.corruptBackupPrefix), isEmpty, reason: 'nothing was lost');
     });
 
@@ -350,9 +372,9 @@ void main() {
       expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
 
       c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikra1, _d2);
-      expect((stored()['weeks'] as Map)['5787:1']['u'][0], [_d1.rd, null, _d1.rd], reason: 'saved fixed');
+      expect(((await stored())['weeks'] as Map)['5787:1']['u'][0], [_d1.rd, null, _d1.rd], reason: 'saved fixed');
       expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
-      reopen().read(progressProvider);
+      (await reopen()).read(progressProvider);
       expect(backups(ProgressController.corruptBackupPrefix), hasLength(1), reason: 'it reads exactly now');
     });
 
@@ -362,7 +384,7 @@ void main() {
         '{"version": 2, "weeks": {}, "pauses": [], "goals": [1]}',
       ]) {
         await load(raw);
-        reopen().read(progressProvider);
+        (await reopen()).read(progressProvider);
         expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
       }
     });
@@ -374,14 +396,14 @@ void main() {
 
       progress.markUnit('5787:1', 1, ReadingPass.mikra1, _d2);
       progress.addPause(_d1, _d2);
-      expect(jsonEncode((stored()['weeks'] as Map)['5787:2']), unknown);
+      expect(jsonEncode(((await stored())['weeks'] as Map)['5787:2']), unknown);
       expect(backups(ProgressController.corruptBackupPrefix), isEmpty, reason: 'nothing was at risk yet');
 
       // Reading in that week replaces the entry this version couldn't read.
       progress.markUnit('5787:2', 0, ReadingPass.mikra1, _d2);
       expect(backups(ProgressController.corruptBackupPrefix).values, ['{"weeks":{"5787:2":$unknown}}']);
       expect(c.read(progressProvider).unknownWeeks, isEmpty);
-      expect(reopen().read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect((await reopen()).read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
     });
 
     test('resetting all progress erases what could not be read too, as asked', () async {

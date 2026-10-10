@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../services/app_shortcuts.dart';
 import '../services/notifications.dart';
 import '../ui/theme/app_theme.dart';
+import 'pending_saves.dart';
 import 'providers.dart';
 import 'router.dart';
 import 'system_bars.dart';
@@ -22,6 +23,8 @@ class ShnayimMikraApp extends ConsumerStatefulWidget {
 }
 
 class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsBindingObserver {
+  PendingSaves? _pendingSaves;
+
   @override
   void initState() {
     super.initState();
@@ -34,8 +37,20 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The saves of the settings and progress in use (only tests swap them).
+    final container = ProviderScope.containerOf(context);
+    if (_pendingSaves?.container != container) {
+      _pendingSaves?.dispose();
+      _pendingSaves = PendingSaves(container);
+    }
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _pendingSaves?.dispose();
     super.dispose();
   }
 
@@ -67,7 +82,15 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider);
+    // Only what the app as a whole is built from: its themes are costly to
+    // build, and every other setting is watched where it is used.
+    final settings = ref.watch(settingsProvider.select((s) => (
+          theme: s.theme,
+          uiFont: s.uiFont,
+          reduceMotion: s.reduceMotion,
+          boldText: s.boldText,
+          language: s.language,
+        )));
     final router = ref.watch(routerProvider);
     // Keep scheduled reminders in sync with settings and progress, the icon's
     // shortcuts in the app's language, and the cloud backup (if enabled) in

@@ -15,6 +15,7 @@ import '../features/progress/domain/progress_models.dart';
 import '../features/progress/domain/reading_plan.dart';
 import '../features/progress/domain/streak_engine.dart';
 import '../features/settings/app_settings.dart';
+import 'delayed_save.dart';
 
 /// Provided at startup (see main.dart).
 final sharedPreferencesProvider = Provider<SharedPreferences>(
@@ -34,9 +35,11 @@ final textRepositoryProvider = Provider<TextRepository>((ref) => TextRepository(
 class SettingsController extends Notifier<AppSettings> {
   static const storageKey = 'settings.v1';
 
-  @override
-  AppSettings build() {
-    final raw = ref.read(sharedPreferencesProvider).getString(storageKey);
+  late DelayedSave _storage;
+
+  /// The settings stored in [prefs], or the defaults.
+  static AppSettings readStored(SharedPreferences prefs) {
+    final raw = prefs.getString(storageKey);
     if (raw == null) return const AppSettings();
     try {
       return AppSettings.fromJson(jsonDecode(raw) as Map<String, dynamic>);
@@ -44,6 +47,17 @@ class SettingsController extends Notifier<AppSettings> {
       return const AppSettings();
     }
   }
+
+  @override
+  AppSettings build() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    _storage = DelayedSave(prefs, storageKey);
+    ref.onDispose(_storage.flush);
+    return readStored(prefs);
+  }
+
+  /// Writes a change still waiting to be saved now (see [DelayedSave]).
+  Future<void> flush() => _storage.flush();
 
   /// Applies [change]. A change to how weeks are planned and judged applies
   /// from today on (see [AppSettings.recordingPlanChange]), or once reading
@@ -64,7 +78,7 @@ class SettingsController extends Notifier<AppSettings> {
 
   void _save(AppSettings settings) {
     state = settings;
-    ref.read(sharedPreferencesProvider).setString(storageKey, jsonEncode(settings.toJson()));
+    _storage.save(settings.toJson);
   }
 }
 
@@ -140,7 +154,22 @@ final scheduleProvider = Provider<ParshaSchedule>(
 /// days of Yom Tov are not part of that history yet: switching either still
 /// plans every week, past ones included, by the new setting.)
 final plannerProvider = Provider<ReadingPlanner>((ref) {
-  final s = ref.watch(settingsProvider);
+  // Only the settings that plan and judge weeks, so that changing any other
+  // setting doesn't evaluate every week again. The streak engine judges by
+  // the planner's [ReadingPlanner.settingsAt], so the late window and the
+  // haftarah are among them.
+  ref.watch(settingsProvider.select((s) => (
+        s.plan,
+        s.tishaBavQuiet,
+        s.cholHamoedQuiet,
+        s.lateWindow,
+        s.haftarahEnabled && s.haftarahRequired,
+        s.oneDayYomTov,
+        s.starterCatchUp,
+        s.joinDate,
+        s.planHistory,
+      )));
+  final s = ref.read(settingsProvider);
   return ReadingPlanner(
     schedule: ref.watch(scheduleProvider),
     oneDayYomTov: s.oneDayYomTov,
@@ -172,6 +201,7 @@ class ProgressState {
     this.resetAt = 0,
     this.unknownWeeks = const {},
     this.unknownPauses = const [],
+    this.logRevision = 0,
   });
 
   final Map<String, WeekProgress> weeks;
@@ -193,6 +223,13 @@ class ProgressState {
 
   /// Stored pauses this version couldn't read, kept like [unknownWeeks].
   final List<Object?> unknownPauses;
+
+  /// A number that changes with every change to what was read or paused,
+  /// but not with the place saved in an aliyah: what judges the reading log
+  /// (streaks, reminders) watches this rather than the whole progress, so
+  /// that a step through the reader doesn't evaluate every week again. Kept
+  /// in memory only: it is neither stored nor compared.
+  final int logRevision;
 
   WeekProgress week(String id) => weeks[id] ?? WeekProgress(weekId: id);
 
@@ -218,6 +255,7 @@ class ProgressState {
     List<Pause>? pauses,
     Map<String, Object?>? unknownWeeks,
     List<Object?>? unknownPauses,
+    int? logRevision,
   }) =>
       ProgressState(
         weeks: weeks ?? this.weeks,
@@ -225,6 +263,7 @@ class ProgressState {
         resetAt: resetAt,
         unknownWeeks: unknownWeeks ?? this.unknownWeeks,
         unknownPauses: unknownPauses ?? this.unknownPauses,
+        logRevision: logRevision ?? this.logRevision,
       );
 
   /// The entries of [unknownWeeks] and [unknownPauses] that [other] doesn't
@@ -274,7 +313,7 @@ class ProgressState {
   /// Equal progress compares equal whatever order its maps and lists are in,
   /// so a sync that changes nothing doesn't look like a change. ([toJson]
   /// can't be compared directly: merging and the server's jsonb storage both
-  /// reorder keys.)
+  /// reorder keys.) [logRevision] doesn't count.
   @override
   bool operator ==(Object other) => identical(this, other) || other is ProgressState && other._canon == _canon;
 
@@ -402,9 +441,31 @@ class ProgressController extends Notifier<ProgressState> {
   static const newerBackupPrefix = 'progress.newer.';
   static const corruptBackupPrefix = 'progress.corrupt.';
 
+  /// The last [ProgressState.logRevision] given out, by any controller, so
+  /// that progress read afresh never reuses one.
+  static int _revisions = 0;
+
+  late DelayedSave _storage;
+
   @override
   ProgressState build() {
     final prefs = ref.read(sharedPreferencesProvider);
+    _storage = DelayedSave(prefs, storageKey);
+    ref.onDispose(_storage.flush);
+    return _read(prefs).copyWith(logRevision: ++_revisions);
+  }
+
+  /// Writes a change still waiting to be saved now (see [DelayedSave]).
+  Future<void> flush() => _storage.flush();
+
+  /// Every change made here changes something (one that would change nothing
+  /// returns before setting the state, and [replaceAll] ignores equal
+  /// progress), so a new state is enough to notify: comparing by value would
+  /// encode all of the progress on every step through the reader.
+  @override
+  bool updateShouldNotify(ProgressState previous, ProgressState next) => !identical(previous, next);
+
+  ProgressState _read(SharedPreferences prefs) {
     final raw = prefs.getString(storageKey);
     if (raw == null) return const ProgressState();
     var version = kProgressFormat;
@@ -440,8 +501,10 @@ class ProgressController extends Notifier<ProgressState> {
   /// Saves [s]. A week or pause this version couldn't read is never dropped
   /// without a copy, unless [erasing] (a reset): neither one that a readable
   /// week with the same id replaces (e.g. the user marked it again), nor one
-  /// that loses out in a merge.
-  void _set(ProgressState s, {bool erasing = false}) {
+  /// that loses out in a merge. Unless [placeOnly] (only a saved place in an
+  /// aliyah changed), the reading log has changed (see
+  /// [ProgressState.logRevision]).
+  void _set(ProgressState s, {bool erasing = false, bool placeOnly = false}) {
     final prefs = ref.read(sharedPreferencesProvider);
     final shadowed = s.shadowedWeeks.toSet();
     final next = shadowed.isEmpty
@@ -452,17 +515,18 @@ class ProgressController extends Notifier<ProgressState> {
         if (from.unknownMissingFrom(next) case final lost?) _backUp(prefs, corruptBackupPrefix, jsonEncode(lost));
       }
     }
-    state = next;
-    prefs.setString(storageKey, jsonEncode(next.toJson()));
+    final saved = next.copyWith(logRevision: placeOnly ? state.logRevision : ++_revisions);
+    state = saved;
+    _storage.save(saved.toJson);
   }
 
   /// Applies [change] to one week, stamping it after the last reset. A
-  /// change that changes nothing saves nothing.
-  void _updateWeek(String weekId, WeekProgress Function(WeekProgress w) change) {
+  /// change that changes nothing saves nothing. [placeOnly] is as for [_set].
+  void _updateWeek(String weekId, WeekProgress Function(WeekProgress w) change, {bool placeOnly = false}) {
     final before = state.week(weekId);
     final after = ProgressClock.above(state.resetAt, () => change(before));
     if (identical(after, before)) return;
-    _set(state.copyWith(weeks: {...state.weeks, weekId: after}));
+    _set(state.copyWith(weeks: {...state.weeks, weekId: after}), placeOnly: placeOnly);
   }
 
   void markUnit(String weekId, int aliyah, ReadingPass pass, LocalDate? date) =>
@@ -485,8 +549,10 @@ class ProgressController extends Notifier<ProgressState> {
 
   void markHaftarah(String weekId, LocalDate? date) => _updateWeek(weekId, (w) => w.withHaftarah(date));
 
+  /// Saves the place reached in each reading of [aliyah]. Only marking a
+  /// reading done changes the reading log.
   void savePosition(String weekId, int aliyah, List<int> versesDone) =>
-      _updateWeek(weekId, (w) => w.withPosition(aliyah, versesDone));
+      _updateWeek(weekId, (w) => w.withPosition(aliyah, versesDone), placeOnly: true);
 
   /// Pauses streaks from [start] to [end]. The new pause is identified by
   /// the time it was created.
@@ -586,7 +652,10 @@ final progressProvider = NotifierProvider<ProgressController, ProgressState>(Pro
 
 final streakSummaryProvider = Provider<StreakSummary>((ref) {
   final engine = ref.watch(streakEngineProvider);
-  final progress = ref.watch(progressProvider);
+  // Evaluated again only when the reading log changes, not as the reader
+  // saves its place.
+  ref.watch(progressProvider.select((p) => p.logRevision));
+  final progress = ref.read(progressProvider);
   final today = ref.watch(todayProvider);
   final joinDate = ref.watch(settingsProvider.select((s) => s.joinDate)) ?? today;
   return engine.evaluate(
@@ -600,5 +669,5 @@ final streakSummaryProvider = Provider<StreakSummary>((ref) {
 /// Whether a pause covers today.
 final isPausedProvider = Provider<bool>((ref) {
   final today = ref.watch(todayProvider);
-  return ref.watch(progressProvider).pauses.any((p) => p.contains(today));
+  return ref.watch(progressProvider.select((p) => p.pauses)).any((p) => p.contains(today));
 });

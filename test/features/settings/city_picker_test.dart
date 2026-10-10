@@ -111,6 +111,7 @@ void main() {
       // Hebcal: 5:56 PM and 6:53 PM.
       expect(text('Candle-lighting 5:56 PM\nShabbat ends 6:54 PM'), findsOneWidget);
       // Saved, whole.
+      await c.read(settingsProvider.notifier).flush();
       final prefs = await SharedPreferences.getInstance();
       final saved = AppSettings.fromJson(
         jsonDecode(prefs.getString(SettingsController.storageKey)!) as Map<String, dynamic>,

@@ -62,11 +62,14 @@ void main() {
   StreakSummary summary() => container.read(streakSummaryProvider);
   ProgressController progress() => container.read(progressProvider.notifier);
   AppSettings settings() => container.read(settingsProvider);
-  AppSettings savedSettings() =>
-      AppSettings.fromJson(jsonDecode(prefs.getString(SettingsController.storageKey)!) as Map<String, dynamic>);
+  /// The settings in storage, once the change waiting to be saved is.
+  Future<AppSettings> savedSettings() async {
+    await container.read(settingsProvider.notifier).flush();
+    return AppSettings.fromJson(jsonDecode(prefs.getString(SettingsController.storageKey)!) as Map<String, dynamic>);
+  }
 
   group('resetting all progress', () {
-    test('starts the reader afresh today, with no missed weeks behind them', () {
+    test('starts the reader afresh today, with no missed weeks behind them', () async {
       expect(summary().weeks.length, greaterThan(10));
       expect(summary().weeks.where((w) => w.status == WeekStatus.missed), isNotEmpty, reason: 'before the reset');
 
@@ -75,7 +78,7 @@ void main() {
       expect(container.read(progressProvider).weeks, isEmpty);
       expect(container.read(progressProvider).pauses, isEmpty);
       expect(settings().joinDate, _today);
-      expect(savedSettings().joinDate, _today, reason: 'saved');
+      expect((await savedSettings()).joinDate, _today, reason: 'saved');
       final s = summary();
       expect(s.weeks, hasLength(1));
       expect(s.weeks.single.status, WeekStatus.inProgress);
@@ -114,10 +117,10 @@ void main() {
   group('a reset arriving from another device', () {
     int at(int month, int day) => DateTime(2026, month, day, 9).millisecondsSinceEpoch;
 
-    test('starts the reader afresh from the day of the reset', () {
+    test('starts the reader afresh from the day of the reset', () async {
       progress().replaceAll(ProgressState(resetAt: at(10, 12)));
       expect(settings().joinDate, LocalDate(2026, 10, 12));
-      expect(savedSettings().joinDate, LocalDate(2026, 10, 12));
+      expect((await savedSettings()).joinDate, LocalDate(2026, 10, 12));
       expect(summary().weeks, hasLength(1));
       expect(summary().weeks.single.status, WeekStatus.inProgress);
       expect(summary().days.keys.first, LocalDate(2026, 10, 12), reason: 'judged from the day of the reset');

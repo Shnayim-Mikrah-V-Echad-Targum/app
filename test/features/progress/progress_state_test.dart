@@ -197,14 +197,16 @@ void main() {
           .replaceAll(ProgressState(weeks: {noach: noachWeek(), vayakhel: vayakhelWeek()}, pauses: [Pause(d1, d2)]));
       expect(notifications, 0);
       expect(identical(container.read(progressProvider), before), isTrue);
+      await container.read(progressProvider.notifier).flush();
       expect(prefs.getString(ProgressController.storageKey), isNull, reason: 'nothing should be rewritten');
     });
 
-    test('applies and saves different progress', () {
+    test('applies and saves different progress', () async {
       final next = ProgressState(weeks: {vayakhel: vayakhelWeek().withAll(d3)});
       container.read(progressProvider.notifier).replaceAll(next);
       expect(notifications, 1);
       expect(container.read(progressProvider), next);
+      await container.read(progressProvider.notifier).flush();
       expect(prefs.getString(ProgressController.storageKey), jsonEncode(next.toJson()));
     });
   });
@@ -231,6 +233,7 @@ void main() {
       progress().savePosition(vayakhel, 4, const [2, 1, 0]);
       expect(identical(state(), before), isTrue);
       expect(state().weeks.keys, isNot(contains('5787:9')), reason: 'no empty week is added');
+      await progress().flush();
       expect(prefs.getString(ProgressController.storageKey), isNull);
     });
 
@@ -273,7 +276,7 @@ void main() {
       expect(state().pauses.any((p) => p.contains(d2)), isFalse, reason: 'today is no longer paused');
     });
 
-    test('a reset stays on this device unless it is to reach everywhere', () {
+    test('a reset stays on this device unless it is to reach everywhere', () async {
       final latest = state().latestStamp;
       progress().reset();
       expect(state(), const ProgressState(), reason: 'nothing marks it for other devices');
@@ -287,6 +290,7 @@ void main() {
 
       progress().markUnit(noach, 0, ReadingPass.mikra1, d1);
       expect(state().week(noach).stamps[0][0], latest + 2, reason: 'stamped after the reset');
+      await progress().flush();
       expect(ProgressState.fromJson(jsonDecode(prefs.getString(ProgressController.storageKey)!)).resetAt, latest + 1);
     });
   });

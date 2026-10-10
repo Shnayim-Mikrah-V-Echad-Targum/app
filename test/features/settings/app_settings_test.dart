@@ -260,6 +260,7 @@ void main() {
         (joined, ReadingPlanType.aliyahPerDay),
         (tue, ReadingPlanType.erevShabbat),
       ]);
+      await c.read(settingsProvider.notifier).flush();
       final saved = jsonDecode(prefs.getString(SettingsController.storageKey)!) as Map<String, dynamic>;
       expect(AppSettings.fromJson(saved).toJson(), s.toJson());
     });

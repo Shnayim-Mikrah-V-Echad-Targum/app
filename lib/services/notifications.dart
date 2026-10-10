@@ -155,13 +155,23 @@ final notificationServiceProvider = Provider<NotificationService>((ref) => Notif
 /// Routes from tapped notifications.
 final notificationTapsProvider = StreamProvider<String>((ref) => ref.watch(notificationServiceProvider).taps);
 
-/// Recomputes and reschedules reminders whenever settings, progress or the
-/// date change.
+/// Recomputes and reschedules reminders whenever the reminder settings, the
+/// reading log or the date change.
 final reminderSchedulerProvider = Provider<void>((ref) {
   final service = ref.watch(notificationServiceProvider);
   if (!service.supported) return;
-  final settings = ref.watch(settingsProvider);
-  final progress = ref.watch(progressProvider);
+  final settings = ref.watch(settingsProvider.select((s) => (
+        dailyReminder: s.dailyReminder,
+        dailyReminderMinutes: s.dailyReminderMinutes,
+        fridayReminder: s.fridayReminder,
+        fridayReminderMinutes: s.fridayReminderMinutes,
+        checkInReminder: s.checkInReminder,
+        language: s.language,
+        ashkenaziNames: s.ashkenaziNames,
+      )));
+  // The reading log, not the place saved in it (see ProgressState.logRevision).
+  ref.watch(progressProvider.select((p) => p.logRevision));
+  final progress = ref.read(progressProvider);
   final today = ref.watch(todayProvider);
   final planner = ref.watch(plannerProvider);
   final repo = ref.watch(parshaRepositoryProvider);
