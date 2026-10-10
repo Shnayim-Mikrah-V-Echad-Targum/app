@@ -3,6 +3,8 @@
 #include <dwmapi.h>
 #include <flutter_windows.h>
 
+#include <algorithm>
+
 #include "resource.h"
 
 namespace {
@@ -29,6 +31,14 @@ constexpr const wchar_t kGetPreferredBrightnessRegValue[] = L"AppsUseLightTheme"
 // The number of Win32Window objects that currently exist.
 static int g_active_window_count = 0;
 
+// The smallest window, in logical pixels: the app keeps its phone layout's
+// width, and room for a screen's heading and a few rows.
+constexpr int kMinWidth = 380;
+constexpr int kMinHeight = 560;
+
+// The most of its monitor's work area the window opens at.
+constexpr double kMaxWorkAreaShare = 0.9;
+
 using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 
 // Scale helper to convert logical scaler values to physical using passed in
@@ -51,6 +61,51 @@ void EnableFullDpiSupportIfAvailable(HWND hwnd) {
     enable_non_client_dpi_scaling(hwnd);
   }
   FreeLibrary(user32_module);
+}
+
+// Sizes |window| to |size| logical pixels for its monitor, no larger than
+// kMaxWorkAreaShare of the monitor's work area, and centres it there.
+// Coordinates are physical pixels.
+void CentreInWorkArea(HWND window, const Win32Window::Size& size) {
+  HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
+  MONITORINFO monitor_info{};
+  monitor_info.cbSize = sizeof(monitor_info);
+  if (!GetMonitorInfo(monitor, &monitor_info)) {
+    return;
+  }
+  const double scale_factor = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
+  const RECT& work = monitor_info.rcWork;
+  const int work_width = static_cast<int>(work.right - work.left);
+  const int work_height = static_cast<int>(work.bottom - work.top);
+  // The minimum size wins over the work area, as WM_GETMINMAXINFO would
+  // have it win anyway.
+  const int width =
+      std::max(std::min(Scale(size.width, scale_factor),
+                        static_cast<int>(work_width * kMaxWorkAreaShare)),
+               Scale(kMinWidth, scale_factor));
+  const int height =
+      std::max(std::min(Scale(size.height, scale_factor),
+                        static_cast<int>(work_height * kMaxWorkAreaShare)),
+               Scale(kMinHeight, scale_factor));
+  // A window larger than the work area keeps its title bar on screen.
+  const int left =
+      static_cast<int>(work.left) + std::max(0, (work_width - width) / 2);
+  const int top =
+      static_cast<int>(work.top) + std::max(0, (work_height - height) / 2);
+  SetWindowPos(window, nullptr, left, top, width, height,
+               SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
+// Whether Windows repaints a title bar as soon as its theme changes, as
+// Windows 11 (build 22000) and later do. The manifest declares Windows 10
+// support, so the version check sees the real build.
+bool RepaintsTitleBarOnThemeChange() {
+  OSVERSIONINFOEXW version{};
+  version.dwOSVersionInfoSize = sizeof(version);
+  version.dwBuildNumber = 22000;
+  const DWORDLONG condition =
+      VerSetConditionMask(0, VER_BUILDNUMBER, VER_GREATER_EQUAL);
+  return VerifyVersionInfoW(&version, VER_BUILDNUMBER, condition) != FALSE;
 }
 
 }  // namespace
@@ -120,30 +175,24 @@ Win32Window::~Win32Window() {
   Destroy();
 }
 
-bool Win32Window::Create(const std::wstring& title,
-                         const Point& origin,
-                         const Size& size) {
+bool Win32Window::Create(const std::wstring& title, const Size& size) {
   Destroy();
 
   const wchar_t* window_class =
       WindowClassRegistrar::GetInstance()->GetWindowClass();
 
-  const POINT target_point = {static_cast<LONG>(origin.x),
-                              static_cast<LONG>(origin.y)};
-  HMONITOR monitor = MonitorFromPoint(target_point, MONITOR_DEFAULTTONEAREST);
-  UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
-  double scale_factor = dpi / 96.0;
-
+  // Windows picks the position, and with it the monitor; the window is then
+  // sized for that monitor and centred on it, before it is shown.
   HWND window = CreateWindow(
-      window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
-      Scale(origin.x, scale_factor), Scale(origin.y, scale_factor),
-      Scale(size.width, scale_factor), Scale(size.height, scale_factor),
-      nullptr, nullptr, GetModuleHandle(nullptr), this);
+      window_class, title.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr,
+      GetModuleHandle(nullptr), this);
 
   if (!window) {
     return false;
   }
 
+  CentreInWorkArea(window, size);
   UpdateTheme(window);
 
   return OnCreate();
@@ -197,6 +246,13 @@ Win32Window::MessageHandler(HWND hwnd,
 
       return 0;
     }
+    case WM_GETMINMAXINFO: {
+      const double scale_factor = FlutterDesktopGetDpiForHWND(hwnd) / 96.0;
+      auto min_max_info = reinterpret_cast<MINMAXINFO*>(lparam);
+      min_max_info->ptMinTrackSize.x = Scale(kMinWidth, scale_factor);
+      min_max_info->ptMinTrackSize.y = Scale(kMinHeight, scale_factor);
+      return 0;
+    }
     case WM_SIZE: {
       RECT rect = GetClientArea();
       if (child_content_ != nullptr) {
@@ -211,10 +267,6 @@ Win32Window::MessageHandler(HWND hwnd,
       if (child_content_ != nullptr) {
         SetFocus(child_content_);
       }
-      return 0;
-
-    case WM_DWMCOLORIZATIONCOLORCHANGED:
-      UpdateTheme(hwnd);
       return 0;
   }
 
@@ -259,6 +311,12 @@ HWND Win32Window::GetHandle() {
   return window_handle_;
 }
 
+void Win32Window::SetDarkTitleBar(bool dark) {
+  if (window_handle_) {
+    ApplyDarkTitleBar(window_handle_, dark);
+  }
+}
+
 void Win32Window::SetQuitOnClose(bool quit_on_close) {
   quit_on_close_ = quit_on_close;
 }
@@ -281,8 +339,21 @@ void Win32Window::UpdateTheme(HWND const window) {
                                &light_mode_size);
 
   if (result == ERROR_SUCCESS) {
-    BOOL enable_dark_mode = light_mode == 0;
-    DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE,
-                          &enable_dark_mode, sizeof(enable_dark_mode));
+    ApplyDarkTitleBar(window, light_mode == 0);
+  }
+}
+
+void Win32Window::ApplyDarkTitleBar(HWND const window, bool dark) {
+  BOOL enable_dark_mode = dark;
+  DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE,
+                        &enable_dark_mode, sizeof(enable_dark_mode));
+
+  // Windows 10 repaints the title bar only when the window is next activated
+  // or deactivated, so draw it inactive and back (or the reverse), ending in
+  // its real state.
+  if (IsWindowVisible(window) && !RepaintsTitleBarOnThemeChange()) {
+    const bool active = GetActiveWindow() == window;
+    SendMessage(window, WM_NCACTIVATE, !active, 0);
+    SendMessage(window, WM_NCACTIVATE, active, 0);
   }
 }

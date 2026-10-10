@@ -10,6 +10,7 @@ import '../ui/theme/app_theme.dart';
 import 'providers.dart';
 import 'router.dart';
 import 'system_bars.dart';
+import 'window_title_bar.dart';
 
 class ShnayimMikraApp extends ConsumerStatefulWidget {
   const ShnayimMikraApp({super.key});
@@ -119,7 +120,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
             disableAnimations: reduceMotion,
             highContrast: systemHighContrast || AppTheme.isHighContrast(settings.theme),
           ),
-          child: SystemBars(child: FocusHighlightScope(child: child!)),
+          child: SystemBars(child: WindowTitleBar(child: FocusHighlightScope(child: child!))),
         );
       },
     );

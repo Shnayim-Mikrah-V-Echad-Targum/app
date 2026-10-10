@@ -23,6 +23,10 @@ class FlutterWindow : public Win32Window {
                          LPARAM const lparam) noexcept override;
 
  private:
+  // Lets the app set the title bar's theme ("shnayim/window" in
+  // lib/app/window_title_bar.dart).
+  void RegisterWindowChannel();
+
   // The project to run.
   flutter::DartProject project_;
 
