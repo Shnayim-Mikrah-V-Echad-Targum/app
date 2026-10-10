@@ -38,8 +38,10 @@ class TodayScreen extends ConsumerWidget {
     final pauses = ref.watch(progressProvider.select((p) => p.pauses));
     final divergence = ref.watch(readingDivergenceProvider);
 
-    return Scaffold(
+    final page = Scaffold(
       appBar: AppBar(
+        // On the content's edge, as on every page's app bar.
+        titleSpacing: Gutter.of(context),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -124,6 +126,7 @@ class TodayScreen extends ConsumerWidget {
         ],
       ),
     );
+    return DocumentTitle(title: l.navToday, child: page);
   }
 }
 

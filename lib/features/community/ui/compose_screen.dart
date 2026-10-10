@@ -98,16 +98,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     _forumId ??= available.where((f) => f.slug == widget.forumSlug).firstOrNull?.id ?? available.firstOrNull?.id;
     final canPost = _forumId != null && _title.text.trim().length >= 5 && _body.text.trim().length >= 2 && !_sending;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l.newThread),
-        actions: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 8),
-            child: FilledButton(onPressed: canPost ? _post : null, child: Text(l.postAction)),
-          ),
-        ],
-      ),
+    return PageScaffold(
+      titleText: l.newThread,
+      actions: [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: 8),
+          child: FilledButton(onPressed: canPost ? _post : null, child: Text(l.postAction)),
+        ),
+      ],
       body: Column(
         children: [
           const DemoBanner(),

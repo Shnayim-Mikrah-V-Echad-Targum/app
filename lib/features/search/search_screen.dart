@@ -164,9 +164,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       body = _Results(results: results, onOpen: () => _field.unfocus());
     }
 
-    return Scaffold(
+    return PageScaffold(
       // Opened from a link or a web reload, with nothing beneath: a way home.
-      appBar: AppBar(leading: homeLeading(context), title: Text(l.searchTitle)),
+      leading: homeLeading(context),
+      titleText: l.searchTitle,
       body: Column(
         children: [
           _Width(

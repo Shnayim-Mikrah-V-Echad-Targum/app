@@ -76,8 +76,10 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
       // while they are tried again.
       final missing = forums.hasValue;
       final error = missing ? null : forums.error;
-      return Scaffold(
-        appBar: AppBar(title: missing ? Text(l.notFoundTitle) : null),
+      return PageScaffold(
+        // No title while the forums load, or can't.
+        titleText: missing ? l.notFoundTitle : l.communityTitle,
+        showTitle: missing,
         body: !missing && error == null
             ? const Center(child: CircularProgressIndicator())
             : CenteredMessage(
@@ -105,8 +107,9 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
 
     return RefreshablePage(
       refresh: refresh,
-      builder: (context, refreshButton) => Scaffold(
-        appBar: AppBar(title: Text(forum.name(he)), actions: [refreshButton]),
+      builder: (context, refreshButton) => PageScaffold(
+        titleText: forum.name(he),
+        actions: [refreshButton],
         floatingActionButton: canStart
             ? FloatingActionButton.extended(
                 onPressed: () => context.push('/community/new?forum=${forum.slug}'),

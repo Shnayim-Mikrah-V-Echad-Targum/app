@@ -710,6 +710,13 @@ const _desktopScreens = {
   'legal',
   'not_found',
   'settings',
+  // The app bar's title on the column's edge (§5), over pages of each kind.
+  's_display',
+  'community',
+  'forum',
+  'account',
+  'browse',
+  'guide',
   'welcome',
   'dialog',
   'sheet_display',

@@ -38,35 +38,34 @@ class HaftarahScreen extends ConsumerWidget {
     final done = ctx.progress.haftarah != null;
     final tts = ref.watch(ttsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: homeLeading(context),
-        title: Text('${l.haftarahTitle} · ${names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)}'),
-        actions: [
-          ValueListenableBuilder<bool>(
-            valueListenable: tts.speaking,
-            builder: (context, speaking, _) => IconButton(
-              tooltip: speaking ? l.stopListening : l.listen,
-              icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
-              onPressed: () async {
-                if (speaking) return tts.stop();
-                final list = verses.value ?? const [];
-                final text = list.map((v) => HebrewSpeech.spoken(v.hebrew.readText, divineName: settings.divineName)).join(' ');
-                try {
-                  await tts.speak(text, language: 'he-IL', rate: settings.speechRate);
-                } catch (_) {
-                  if (context.mounted) showStatus(context, l.ttsUnavailable);
-                }
-              },
-            ),
+    return PageScaffold(
+      leading: homeLeading(context),
+      titleText: '${l.haftarahTitle} · ${names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)}',
+      contentMaxWidth: styles.maxLineWidth,
+      actions: [
+        ValueListenableBuilder<bool>(
+          valueListenable: tts.speaking,
+          builder: (context, speaking, _) => IconButton(
+            tooltip: speaking ? l.stopListening : l.listen,
+            icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
+            onPressed: () async {
+              if (speaking) return tts.stop();
+              final list = verses.value ?? const [];
+              final text = list.map((v) => HebrewSpeech.spoken(v.hebrew.readText, divineName: settings.divineName)).join(' ');
+              try {
+                await tts.speak(text, language: 'he-IL', rate: settings.speechRate);
+              } catch (_) {
+                if (context.mounted) showStatus(context, l.ttsUnavailable);
+              }
+            },
           ),
-          IconButton(
-            tooltip: l.displaySettings,
-            icon: const Icon(Icons.text_format),
-            onPressed: () => showDisplaySheet(context),
-          ),
-        ],
-      ),
+        ),
+        IconButton(
+          tooltip: l.displaySettings,
+          icon: const Icon(Icons.text_format),
+          onPressed: () => showDisplaySheet(context),
+        ),
+      ],
       body: verses.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(l.errorGeneric)),
@@ -84,7 +83,7 @@ class HaftarahScreen extends ConsumerWidget {
             const Gap(12),
             for (var i = 0; i < list.length; i++) ...[
               if (i == 0 || list[i].book != list[i - 1].book)
-                SectionHeader(names.book(list[i].book), level: 3),
+                SectionHeader(names.book(list[i].book)),
               ScriptureVerse(verse: list[i].hebrew, kind: ScriptureKind.mikra, settings: settings),
               if (settings.showTranslation)
                 TranslationVerse(text: list[i].english, number: list[i].hebrew.ref.verse, settings: settings),

@@ -29,10 +29,10 @@ class AboutScreen extends StatelessWidget {
     final theme = Theme.of(context);
     Widget link(IconData icon, String title, VoidCallback onTap) =>
         ListTile(leading: AppIcon(icon), title: Text(title), trailing: const Icon(Icons.chevron_right), onTap: onTap);
-    return Scaffold(
-      appBar: AppBar(title: Text(l.aboutTitle)),
+    return PageScaffold(
+      titleText: l.aboutTitle,
       body: PageBody(
-        padding: const EdgeInsets.only(bottom: 32),
+        padding: PageBody.tilePadding(context),
         children: [
           Padding(
             padding: const EdgeInsets.all(24),

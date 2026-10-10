@@ -32,18 +32,16 @@ class CommunityScreen extends ConsumerWidget {
 
     return RefreshablePage(
       refresh: refresh,
-      builder: (context, refreshButton) => Scaffold(
-        appBar: AppBar(
-          title: Text(l.communityTitle),
-          actions: [
-            refreshButton,
-            IconButton(
-              tooltip: user == null ? l.signInTitle : l.settingsAccount,
-              icon: Icon(user == null ? Icons.login : Icons.account_circle_outlined),
-              onPressed: () => context.push('/community/account'),
-            ),
-          ],
-        ),
+      builder: (context, refreshButton) => PageScaffold(
+        titleText: l.communityTitle,
+        actions: [
+          refreshButton,
+          IconButton(
+            tooltip: user == null ? l.signInTitle : l.settingsAccount,
+            icon: Icon(user == null ? Icons.login : Icons.account_circle_outlined),
+            onPressed: () => context.push('/community/account'),
+          ),
+        ],
         body: Column(
           children: [
             const DemoBanner(),

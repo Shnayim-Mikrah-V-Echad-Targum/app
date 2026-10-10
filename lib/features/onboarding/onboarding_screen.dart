@@ -131,7 +131,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
     };
 
-    return Scaffold(
+    final page = Scaffold(
       appBar: _page == 0
           ? null
           : AppBar(
@@ -161,6 +161,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
       ),
     );
+    // Welcome is the app's name alone.
+    return DocumentTitle(title: _page == 0 ? '' : l.onbStep(_page, _pages - 1), child: page);
   }
 }
 

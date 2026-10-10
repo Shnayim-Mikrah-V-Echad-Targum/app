@@ -64,8 +64,8 @@ class _CityPickerScreenState extends ConsumerState<CityPickerScreen> {
     final directory = ref.watch(cityDirectoryProvider);
     final loaded = directory.value;
     final g = Gutter.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l.cityPickerTitle)),
+    return PageScaffold(
+      titleText: l.cityPickerTitle,
       body: Column(
         children: [
           Center(

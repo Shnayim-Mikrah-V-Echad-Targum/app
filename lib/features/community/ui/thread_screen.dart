@@ -188,24 +188,23 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
     final content = RefreshablePage(
       refresh: _refresh,
-      builder: (context, refreshButton) => Scaffold(
-        appBar: AppBar(
-          // An English title in Hebrew UI, or the reverse, is cut at its own end.
-          title: Text(title, textDirection: autoDirection(title), overflow: TextOverflow.ellipsis),
-          actions: [
-            refreshButton,
-            if (isMod && t != null)
-              PopupMenuButton<String>(
-                tooltip: l.actionMore,
-                popUpAnimationStyle: Motion.of(context).style,
-                onSelected: _moderate,
-                itemBuilder: (context) => [
-                  PopupMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
-                  PopupMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
-                ],
-              ),
-          ],
-        ),
+      builder: (context, refreshButton) => PageScaffold(
+        titleText: title,
+        // An English title in Hebrew UI, or the reverse, is cut at its own end.
+        title: Text(title, textDirection: autoDirection(title), overflow: TextOverflow.ellipsis),
+        actions: [
+          refreshButton,
+          if (isMod && t != null)
+            PopupMenuButton<String>(
+              tooltip: l.actionMore,
+              popUpAnimationStyle: Motion.of(context).style,
+              onSelected: _moderate,
+              itemBuilder: (context) => [
+                PopupMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
+                PopupMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
+              ],
+            ),
+        ],
         body: Column(
           children: [
             const DemoBanner(),

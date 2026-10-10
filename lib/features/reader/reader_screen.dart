@@ -508,64 +508,68 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
     final title = '${names.portion(ctx.portion, ashkenazi: s.ashkenaziNames)} · ${names.aliyah(_aliyah)}';
 
-    return textsAsync.when(
-      loading: () => Scaffold(
-        appBar: AppBar(leading: homeLeading(context), title: Text(title)),
-        body: Center(child: Semantics(label: l.loading, child: const CircularProgressIndicator())),
-      ),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(leading: homeLeading(context), title: Text(title)),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(l.errorGeneric),
-              const Gap(12),
-              FilledButton(
-                onPressed: () => ref.invalidate(readerTextsProvider),
-                child: Text(l.actionRetry),
-              ),
-            ],
+    // An app bar of its own, but the tab named as every page names it.
+    return DocumentTitle(
+      title: title,
+      child: textsAsync.when(
+        loading: () => Scaffold(
+          appBar: AppBar(leading: homeLeading(context), title: Text(title)),
+          body: Center(child: Semantics(label: l.loading, child: const CircularProgressIndicator())),
+        ),
+        error: (e, _) => Scaffold(
+          appBar: AppBar(leading: homeLeading(context), title: Text(title)),
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l.errorGeneric),
+                const Gap(12),
+                FilledButton(
+                  onPressed: () => ref.invalidate(readerTextsProvider),
+                  child: Text(l.actionRetry),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      data: (texts) {
-        final flow = _flowFor(ctx, texts, s);
-        if (!_positioned) {
-          final saved = ctx.progress.isAliyahDone(_aliyah) ? null : _savedPositions(ctx.progress, flow);
-          final (c, st) = flow.resumeFrom(saved);
-          _chunk = c.clamp(0, flow.chunks.length - 1);
-          _step = st.clamp(0, flow.stepsFor(_chunk).length - 1);
-          _positioned = true;
-          if (_announceWhenPositioned && !_fullText) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => _announceStep(flow));
-          }
-          _announceWhenPositioned = false;
-          if (_targetVerse case final target?) {
-            final i = flow.verses.indexOf(target);
-            if (i < 0) {
-              // Not in this aliyah (an old link, say): it opens as usual.
-              _targetVerse = null;
-            } else {
-              // Focus mode reads around it, rather than around nothing.
-              if (s.focusMode) _focusedVerse = _quietFocus = i;
-              _revealTarget(i, flow.book, target);
+        data: (texts) {
+          final flow = _flowFor(ctx, texts, s);
+          if (!_positioned) {
+            final saved = ctx.progress.isAliyahDone(_aliyah) ? null : _savedPositions(ctx.progress, flow);
+            final (c, st) = flow.resumeFrom(saved);
+            _chunk = c.clamp(0, flow.chunks.length - 1);
+            _step = st.clamp(0, flow.stepsFor(_chunk).length - 1);
+            _positioned = true;
+            if (_announceWhenPositioned && !_fullText) {
+              WidgetsBinding.instance.addPostFrameCallback((_) => _announceStep(flow));
+            }
+            _announceWhenPositioned = false;
+            if (_targetVerse case final target?) {
+              final i = flow.verses.indexOf(target);
+              if (i < 0) {
+                // Not in this aliyah (an old link, say): it opens as usual.
+                _targetVerse = null;
+              } else {
+                // Focus mode reads around it, rather than around nothing.
+                if (s.focusMode) _focusedVerse = _quietFocus = i;
+                _revealTarget(i, flow.book, target);
+              }
+            }
+            // Focus mode opens on the reader's place, the first verse of the
+            // step the guided reader resumes at, as switching to the full text
+            // does: not on nothing. The verse opened at is revealed instead.
+            if (s.focusMode && _focusedVerse == null) {
+              final verse = flow.chunks[_chunk].start;
+              _focusedVerse = verse;
+              if (_fullText && _targetVerse == null) _revealVerse(verse, animate: false);
             }
           }
-          // Focus mode opens on the reader's place, the first verse of the
-          // step the guided reader resumes at, as switching to the full text
-          // does: not on nothing. The verse opened at is revealed instead.
-          if (s.focusMode && _focusedVerse == null) {
-            final verse = flow.chunks[_chunk].start;
-            _focusedVerse = verse;
-            if (_fullText && _targetVerse == null) _revealVerse(verse, animate: false);
-          }
-        }
-        // Settings changes can reshape the flow; keep indices in range.
-        if (_chunk >= flow.chunks.length) _chunk = flow.chunks.length - 1;
-        if (_step >= flow.stepsFor(_chunk).length) _step = flow.stepsFor(_chunk).length - 1;
-        return _buildReader(context, ctx, texts, flow, s, title);
-      },
+          // Settings changes can reshape the flow; keep indices in range.
+          if (_chunk >= flow.chunks.length) _chunk = flow.chunks.length - 1;
+          if (_step >= flow.stepsFor(_chunk).length) _step = flow.stepsFor(_chunk).length - 1;
+          return _buildReader(context, ctx, texts, flow, s, title);
+        },
+      ),
     );
   }
 
@@ -1515,7 +1519,7 @@ class _FullText extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8, bottom: 4),
                   child: Semantics(
                     header: true,
-                    headingLevel: 3,
+                    headingLevel: 2,
                     child: Text(
                       l.chapterLabel(context.isHebrewUi ? HebrewText.gematria(r.chapter, punctuate: false) : '${r.chapter}'),
                       style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),

@@ -97,6 +97,7 @@ New and changed files:
 - `lib/ui/theme/layout.dart`: the layout tokens of §5 (`Space`, `Breakpoints`, `Gutter`, `ContentWidth`, `Rhythm`).
 - `lib/ui/widgets/common.dart`:
   - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5, plus the safe area below, so a page over the whole screen clears the gesture bar;
+  - `PageScaffold`, the scaffold of every routed page, and `DocumentTitle` (§5);
   - `SectionHeader` is restyled as an eyebrow (§6.4);
   - `NoticeBanner` per §6.20;
   - `EmptyState` per §6.22.
@@ -484,7 +485,8 @@ Rules:
   - sheets 20 (top only);
   - the nav indicator is the only stadium shape.
 - **Elevation:** 0 everywhere. Separation comes from paper on surface plus a 1 px hairline. FAB and menus are 2, with `shadowColor` = shadow token.
-- **App bar title alignment on wide screens:** `PageScaffold` computes `titleSpacing = max(gutter, (MediaQuery.sizeOf(context).width - railWidth - 1 - contentMaxWidth) / 2 + gutter)` and the same value for `actionsPadding` at the end. railWidth is 0, 80, or 256 when extended. This puts the title edge on the content edge, fixing D11.
+- **App bar title alignment on wide screens:** `PageScaffold` reads the pane's width with a `LayoutBuilder` (the window less the rail and its hairline) and computes `inset = max(gutter, (paneWidth - contentMaxWidth) / 2 + gutter)`, where the column's content starts. `titleSpacing` is `inset`, or `max(gutter, inset - 56)` after a back or home button, and `actionsPadding` ends `inset - gutter` from the pane's end, at the column's edge, as a phone's end at the screen's. This puts the title edge on the content edge, fixing D11. The title is a level-1 heading. Pages of list tiles pad the column `gutter - 16` at the sides (`PageBody.tilePadding`), so the tiles' own 16 brings their text to the same edge.
+- **Document title:** on the web, the page on show names the browser's tab, its history and bookmarks: "Settings · Shnayim Mikra" (`DocumentTitle`, which `PageScaffold` applies; the reader, Today and Welcome apply it themselves). A page names it again whenever it comes back into view, as the page over it closes or its tab is chosen again. Its colour is the app's (`MaterialApp.color`, the surface), since the web takes it for the theme-color (§3.6). Elsewhere the platform keeps the app's name.
 
 ## 6. Components
 

@@ -56,8 +56,8 @@ class ProgressScreen extends ConsumerWidget {
         .where((e) => e.status == WeekStatus.missed && cycleYearOf(e.plan.portion, e.plan.week.occasion) == cycle)
         .toList();
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l.progressTitle)),
+    return PageScaffold(
+      titleText: l.progressTitle,
       body: PageBody(
         children: [
           if (settings.showStreaks) ...[

@@ -1,7 +1,11 @@
+import 'dart:math' as math;
 import 'dart:ui' show SemanticsHitTestBehavior;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../l10n.dart';
 import '../theme/app_theme.dart';
 import 'ornaments.dart';
 
@@ -52,6 +56,17 @@ class PageBody extends StatelessWidget {
     return EdgeInsets.fromLTRB(g, Space.sm, g, Space.s40);
   }
 
+  /// The padding of a page of list tiles, which pad themselves 16 at the
+  /// sides: the rest of the gutter, so that their text starts where the app
+  /// bar's title and every other page's content do.
+  static EdgeInsets tilePadding(BuildContext context) {
+    final side = Gutter.of(context) - _tileInset;
+    return EdgeInsets.fromLTRB(side, Space.sm, side, Space.s40);
+  }
+
+  /// A list tile's own padding at its start.
+  static const _tileInset = Space.lg;
+
   @override
   Widget build(BuildContext context) {
     final p = (padding ?? defaultPadding(context)).resolve(Directionality.of(context)) +
@@ -101,6 +116,136 @@ class PageBody extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// A page of the app (docs/DESIGN_SYSTEM.md §5): a [Scaffold] whose app bar
+/// lines up with the page's column, however wide the window. Its title starts
+/// where the column's content does, and its actions end where the column
+/// does, rather than at the window's edges; and the page names the browser's
+/// tab ([DocumentTitle]).
+///
+/// [contentMaxWidth] is the width of the page's column, as given to its
+/// [PageBody]. The title is the page's heading, of level 1: [titleText], or
+/// [title] where it shows the same some other way. [titleText] also names
+/// the tab; [showTitle] false leaves the app bar without a title.
+class PageScaffold extends StatelessWidget {
+  const PageScaffold({
+    super.key,
+    required this.titleText,
+    this.title,
+    this.showTitle = true,
+    this.actions,
+    this.leading,
+    required this.body,
+    this.contentMaxWidth = ContentWidth.list,
+    this.floatingActionButton,
+    this.bottomNavigationBar,
+    this.bottom,
+    this.showAppBar = true,
+  });
+
+  final String titleText;
+  final Widget? title;
+  final bool showTitle;
+  final List<Widget>? actions;
+
+  /// The app bar's leading button, if not the back button it adds itself.
+  final Widget? leading;
+  final Widget body;
+  final double contentMaxWidth;
+  final Widget? floatingActionButton;
+  final Widget? bottomNavigationBar;
+  final PreferredSizeWidget? bottom;
+  final bool showAppBar;
+
+  /// The width of the app bar's leading button.
+  static const _leadingWidth = 56.0;
+
+  @override
+  Widget build(BuildContext context) => DocumentTitle(
+        title: titleText,
+        // The pane's width, which leaves out the navigation rail beside it.
+        child: LayoutBuilder(builder: (context, constraints) {
+          final g = Gutter.of(context);
+          // Where the column's content starts, from the pane's edge: as in a
+          // PageBody of this width.
+          final inset = math.max(g, (constraints.maxWidth - contentMaxWidth) / 2 + g);
+          // A back button, where the app bar adds one: the test it makes, but
+          // for local history entries, which pages don't use.
+          final hasLeading = leading != null || (ModalRoute.canPopOf(context) ?? false);
+          return Scaffold(
+            appBar: showAppBar
+                ? AppBar(
+                    leading: leading,
+                    titleSpacing: hasLeading ? math.max(g, inset - _leadingWidth) : inset,
+                    actionsPadding: EdgeInsetsDirectional.only(end: inset - g),
+                    // The app bar makes it a heading; this gives its level.
+                    title: showTitle ? Semantics(headingLevel: 1, child: title ?? Text(titleText)) : null,
+                    actions: actions,
+                    bottom: bottom,
+                  )
+                : null,
+            body: body,
+            floatingActionButton: floatingActionButton,
+            bottomNavigationBar: bottomNavigationBar,
+          );
+        }),
+      );
+}
+
+/// Names the page in the browser: its tab, history and bookmarks ("Settings
+/// · Shnayim Mikra"). Only the page on show names it, the one on top in the
+/// tab on show, and it names it again whenever it is shown again: when the
+/// page over it closes, or its tab is chosen.
+class DocumentTitle extends StatefulWidget {
+  const DocumentTitle({super.key, required this.title, required this.child});
+
+  /// The page's own title, before the app's name; empty for the app's name
+  /// alone.
+  final String title;
+  final Widget child;
+
+  /// Whether pages name the document: on the web, where it is the tab's
+  /// title. Elsewhere the platform keeps the app's name, where it shows one
+  /// (Android's recent apps, for one).
+  @visibleForTesting
+  static bool enabled = kIsWeb;
+
+  @override
+  State<DocumentTitle> createState() => _DocumentTitleState();
+}
+
+class _DocumentTitleState extends State<DocumentTitle> {
+  /// What this page last gave the document while on show, or null while it
+  /// isn't.
+  ({String label, Color color})? _given;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!DocumentTitle.enabled) return widget.child;
+    // Each depends on what it reads, so the page builds this again when it
+    // comes into view or leaves it. A page beneath an opaque route has its
+    // tickers off, as does every page of a tab not on show.
+    final shown = (ModalRoute.isCurrentOf(context) ?? true) && TickerMode.valuesOf(context).enabled;
+    if (!shown) {
+      _given = null;
+      return widget.child;
+    }
+    final app = context.l10n.appTitle;
+    final label = widget.title.isEmpty || widget.title == app ? app : '${widget.title} · $app';
+    // The colour the app gives the platform (MaterialApp.color): on the web
+    // the browser's theme-color, which the app's own title sets again when
+    // the theme changes.
+    final color = Theme.of(context).colorScheme.surface;
+    final given = (label: label, color: color);
+    if (given != _given) {
+      _given = given;
+      SystemChrome.setApplicationSwitcherDescription(
+        ApplicationSwitcherDescription(label: label, primaryColor: color.toARGB32()),
+      );
+    }
+    return widget.child;
   }
 }
 
