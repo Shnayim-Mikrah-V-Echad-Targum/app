@@ -227,7 +227,10 @@ void main() {
       (const Size(360, 2600), 1.0, 3, true),
       // Android's "Large" font: still three columns.
       (const Size(360, 2600), 1.15, 3, true),
-      (const Size(412, 2600), 1.0, 3, false),
+      // Between the page's 20 dp gutters, a 412 dp phone's tiles are a
+      // little too narrow for it beside the icon; a 430 dp phone's are not.
+      (const Size(412, 2600), 1.0, 3, true),
+      (const Size(430, 2600), 1.0, 3, false),
       (const Size(1366, 1600), 1.0, 6, true),
       (const Size(412, 4000), 2.0, 2, true),
     ]) {

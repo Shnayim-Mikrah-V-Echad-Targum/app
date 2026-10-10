@@ -24,10 +24,10 @@ class SettingsScreen extends ConsumerWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push(route),
         );
-    return Scaffold(
-      appBar: AppBar(title: Text(l.settingsTitle)),
+    return PageScaffold(
+      titleText: l.settingsTitle,
       body: PageBody(
-        padding: const EdgeInsets.only(bottom: 32),
+        padding: PageBody.tilePadding(context),
         children: [
           item(Icons.menu_book_outlined, l.settingsReading, l.settingsReadingDesc, '/settings/reading'),
           item(Icons.text_fields, l.settingsDisplay, l.settingsDisplayDesc, '/settings/display'),

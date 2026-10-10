@@ -10,6 +10,7 @@ import '../../../app/providers.dart';
 import '../../../core/calendar/city.dart';
 import '../../../data/city_directory.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/layout.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../../search/query_direction.dart';
@@ -64,15 +65,16 @@ class _CityPickerScreenState extends ConsumerState<CityPickerScreen> {
     final l = context.l10n;
     final directory = ref.watch(cityDirectoryProvider);
     final loaded = directory.value;
-    return Scaffold(
-      appBar: AppBar(title: Text(l.cityPickerTitle)),
+    final g = Gutter.of(context);
+    return PageScaffold(
+      titleText: l.cityPickerTitle,
       body: Column(
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
+              constraints: const BoxConstraints(maxWidth: ContentWidth.list),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                padding: EdgeInsets.fromLTRB(g, 8, g, 0),
                 child: TextField(
                   controller: _query,
                   textInputAction: TextInputAction.search,

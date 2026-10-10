@@ -175,7 +175,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final page = Scaffold(
       body: SafeArea(
         child: PageBody(
           padding: const EdgeInsets.only(bottom: 24),
@@ -189,6 +189,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
       ),
     );
+    // Welcome is the app's name alone; each step names itself (PageScaffold).
+    return DocumentTitle(title: '', child: page);
   }
 }
 
@@ -247,11 +249,13 @@ class OnboardingStepScreen extends ConsumerWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final next = step.next;
-    return Scaffold(
-      appBar: AppBar(title: Text(l.onbStep(step.number, OnboardingStep.values.length))),
+    return PageScaffold(
+      titleText: l.onbStep(step.number, OnboardingStep.values.length),
       body: SafeArea(
         child: PageBody(
-          padding: const EdgeInsets.only(bottom: 24),
+          // Its questions are list tiles, as on a Settings page: their text,
+          // and the rest of the page's, starts on the gutter, under the title.
+          padding: PageBody.tilePadding(context),
           children: [
             switch (step) {
               OnboardingStep.location => const _LocationStep(),

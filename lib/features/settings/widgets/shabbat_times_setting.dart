@@ -31,7 +31,6 @@ class ShabbatTimesSetting extends ConsumerWidget {
       children: [
         SectionHeader(
           l.shabbatTimesLabel,
-          level: 3,
           padding: const EdgeInsetsDirectional.only(top: 16, bottom: 4, start: 16, end: 16),
         ),
         Padding(

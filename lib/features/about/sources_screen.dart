@@ -74,8 +74,9 @@ class SourcesScreen extends StatelessWidget {
         'https://gml.noaa.gov/grad/solcalc/',
       ),
     ];
-    return Scaffold(
-      appBar: AppBar(leading: homeLeading(context), title: Text(l.sourcesTitle)),
+    return PageScaffold(
+      leading: homeLeading(context),
+      titleText: l.sourcesTitle,
       body: PageBody(
         children: [
           for (final s in sources)

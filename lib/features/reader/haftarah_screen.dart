@@ -54,35 +54,34 @@ class HaftarahScreen extends ConsumerWidget {
     final done = ctx.progress.haftarah != null;
     final tts = ref.watch(ttsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: homeLeading(context),
-        title: Text('${l.haftarahTitle} · ${names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)}'),
-        actions: [
-          ValueListenableBuilder<bool>(
-            valueListenable: tts.speaking,
-            builder: (context, speaking, _) => IconButton(
-              tooltip: speaking ? l.stopListening : l.listen,
-              icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
-              onPressed: () async {
-                if (speaking) return tts.stop();
-                final list = verses.value ?? const [];
-                final text = list.map((v) => HebrewSpeech.spoken(v.hebrew.readText, divineName: settings.divineName)).join(' ');
-                try {
-                  await tts.speak(text, language: 'he-IL', rate: settings.speechRate);
-                } catch (_) {
-                  if (context.mounted) showStatus(context, l.ttsUnavailable);
-                }
-              },
-            ),
+    return PageScaffold(
+      leading: homeLeading(context),
+      titleText: '${l.haftarahTitle} · ${names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)}',
+      contentMaxWidth: styles.maxLineWidth,
+      actions: [
+        ValueListenableBuilder<bool>(
+          valueListenable: tts.speaking,
+          builder: (context, speaking, _) => IconButton(
+            tooltip: speaking ? l.stopListening : l.listen,
+            icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
+            onPressed: () async {
+              if (speaking) return tts.stop();
+              final list = verses.value ?? const [];
+              final text = list.map((v) => HebrewSpeech.spoken(v.hebrew.readText, divineName: settings.divineName)).join(' ');
+              try {
+                await tts.speak(text, language: 'he-IL', rate: settings.speechRate);
+              } catch (_) {
+                if (context.mounted) showStatus(context, l.ttsUnavailable);
+              }
+            },
           ),
-          IconButton(
-            tooltip: l.displaySettings,
-            icon: const Icon(Icons.text_format),
-            onPressed: () => showDisplaySheet(context),
-          ),
-        ],
-      ),
+        ),
+        IconButton(
+          tooltip: l.displaySettings,
+          icon: const Icon(Icons.text_format),
+          onPressed: () => showDisplaySheet(context),
+        ),
+      ],
       body: verses.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(l.errorGeneric)),
@@ -97,7 +96,7 @@ class HaftarahScreen extends ConsumerWidget {
               NoticeBanner(icon: Icons.info_outline, text: l.chabadFallbackNote),
             ],
             const Gap(12),
-            ..._verses(names, settings, list),
+            ..._verses(names, settings, list, level: 2),
             if (ctx.haftarah.regular != null) ...[
               const Gap(8),
               _RegularHaftarah(ctx: ctx),
@@ -126,10 +125,12 @@ class HaftarahScreen extends ConsumerWidget {
   }
 }
 
-/// A haftarah's verses, under the name of each book they come from.
-List<Widget> _verses(Names names, AppSettings settings, List<HaftarahVerse> list) => [
+/// A haftarah's verses, under the name of each book they come from: headings
+/// of [level], 2 beneath the page's title, or 3 beneath the regular
+/// haftarah's own heading.
+List<Widget> _verses(Names names, AppSettings settings, List<HaftarahVerse> list, {required int level}) => [
       for (var i = 0; i < list.length; i++) ...[
-        if (i == 0 || list[i].book != list[i - 1].book) SectionHeader(names.book(list[i].book), level: 3),
+        if (i == 0 || list[i].book != list[i - 1].book) SectionHeader(names.book(list[i].book), level: level),
         ScriptureVerse(verse: list[i].hebrew, kind: ScriptureKind.mikra, settings: settings),
         if (settings.showTranslation)
           TranslationVerse(text: list[i].english, number: list[i].hebrew.ref.verse, settings: settings),
@@ -195,7 +196,7 @@ class _RegularVerses extends ConsumerWidget {
           error: (e, _) => Text(context.l10n.errorGeneric),
           data: (list) => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: _verses(Names(context), settings, list),
+            children: _verses(Names(context), settings, list, level: 3),
           ),
         );
   }

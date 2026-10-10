@@ -71,8 +71,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final repo = ref.watch(forumRepositoryProvider);
     final user = ref.watch(communityUserProvider).value;
     final profile = ref.watch(myProfileProvider).value;
-    return Scaffold(
-      appBar: AppBar(title: Text(user == null ? l.signInTitle : l.settingsAccount)),
+    return PageScaffold(
+      titleText: user == null ? l.signInTitle : l.settingsAccount,
       body: Column(
         children: [
           const DemoBanner(),

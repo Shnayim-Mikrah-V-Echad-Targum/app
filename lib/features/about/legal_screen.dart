@@ -37,8 +37,9 @@ class LegalScreen extends StatelessWidget {
     final sections = (he ? _he : _en)[doc]!;
     final contact = AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '$issueTrackerUri';
     final style = Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6);
-    return Scaffold(
-      appBar: AppBar(leading: homeLeading(context), title: Text(title)),
+    return PageScaffold(
+      leading: homeLeading(context),
+      titleText: title,
       body: PageBody(
         children: [
           for (final (heading, body) in sections) ...[

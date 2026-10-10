@@ -86,29 +86,27 @@ class WeekOverview extends ConsumerWidget {
       }
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: leading,
-        title: Text(l.parshaLabel(name)),
-        actions: [
-          ...actions,
-          PopupMenuButton<String>(
-            tooltip: l.actionMore,
-            popUpAnimationStyle: Motion.of(context).style,
-            onSelected: (v) => switch (v) {
-              'all' => markWeek(),
-              'clear' => clearWeek(),
-              'full' => context.push('/read/${ctx.id}/0?mode=full&from=week'),
-              _ => null,
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),
-              if (ctx.isOpen && !ctx.progress.isComplete) PopupMenuItem(value: 'all', child: Text(l.markWholeWeek)),
-              if (ctx.progress.completedUnits > 0) PopupMenuItem(value: 'clear', child: Text(l.clearWeek)),
-            ],
-          ),
-        ],
-      ),
+    return PageScaffold(
+      leading: leading,
+      titleText: l.parshaLabel(name),
+      actions: [
+        ...actions,
+        PopupMenuButton<String>(
+          tooltip: l.actionMore,
+          popUpAnimationStyle: Motion.of(context).style,
+          onSelected: (v) => switch (v) {
+            'all' => markWeek(),
+            'clear' => clearWeek(),
+            'full' => context.push('/read/${ctx.id}/0?mode=full&from=week'),
+            _ => null,
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),
+            if (ctx.isOpen && !ctx.progress.isComplete) PopupMenuItem(value: 'all', child: Text(l.markWholeWeek)),
+            if (ctx.progress.completedUnits > 0) PopupMenuItem(value: 'clear', child: Text(l.clearWeek)),
+          ],
+        ),
+      ],
       body: PageBody(
         children: [
           Text(names.portionAlt(portion, ashkenazi: settings.ashkenaziNames),
@@ -127,7 +125,8 @@ class WeekOverview extends ConsumerWidget {
             const Gap(12),
             NoticeBanner(icon: Icons.visibility_outlined, text: l.previewNotOpen(names.dateLong(ctx.week.start))),
           ],
-          SectionHeader(l.aliyotProgress(ctx.progress.completedAliyot, kAliyot)),
+          // Digits, which an eyebrow never holds.
+          SectionHeader.plain(l.aliyotProgress(ctx.progress.completedAliyot, kAliyot)),
           for (var a = 0; a < kAliyot; a++) _AliyahTile(ctx: ctx, aliyah: a),
           if (settings.haftarahEnabled || ctx.haftarahRequired) ...[
             const Gap(8),

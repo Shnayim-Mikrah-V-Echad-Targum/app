@@ -45,8 +45,9 @@ class ModerationScreen extends ConsumerWidget {
 
     return RefreshablePage(
       refresh: refresh,
-      builder: (context, refreshButton) => Scaffold(
-        appBar: AppBar(title: Text(l.moderationQueue), actions: [refreshButton]),
+      builder: (context, refreshButton) => PageScaffold(
+        titleText: l.moderationQueue,
+        actions: [refreshButton],
         body: reports.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text(communityError(l, e))),

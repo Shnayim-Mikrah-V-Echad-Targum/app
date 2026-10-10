@@ -67,8 +67,8 @@ class NotFoundPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return Scaffold(
-      appBar: AppBar(title: Text(l.notFoundTitle)),
+    return PageScaffold(
+      titleText: l.notFoundTitle,
       body: CenteredMessage(
         text: l.notFoundBody,
         actions: [

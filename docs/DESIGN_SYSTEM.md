@@ -94,8 +94,10 @@ New and changed files:
 - `lib/ui/widgets/ledger.dart`: `LedgerCard`.
 - `lib/ui/widgets/year_bar.dart`: `YearBar`.
 - `lib/ui/widgets/progress_widgets.dart`: ParshaRings, the new `RingLegend`, WeekStrip and the candles, per §6.
+- `lib/ui/theme/layout.dart`: the layout tokens of §5 (`Space`, `Breakpoints`, `Gutter`, `ContentWidth`, `Rhythm`).
 - `lib/ui/widgets/common.dart`:
-  - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5;
+  - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5, plus the safe area below, so a page over the whole screen clears the gesture bar;
+  - `PageScaffold`, the scaffold of every routed page, and `DocumentTitle` (§5);
   - `SectionHeader` is restyled as an eyebrow (§6.4);
   - `NoticeBanner` per §6.20;
   - `EmptyState` per §6.22.
@@ -483,7 +485,8 @@ Rules:
   - sheets 20 (top only);
   - the nav indicator is the only stadium shape.
 - **Elevation:** 0 everywhere. Separation comes from paper on surface plus a 1 px hairline. FAB and menus are 2, with `shadowColor` = shadow token.
-- **App bar title alignment on wide screens:** `PageScaffold` computes `titleSpacing = max(gutter, (MediaQuery.sizeOf(context).width - railWidth - 1 - contentMaxWidth) / 2 + gutter)` and the same value for `actionsPadding` at the end. railWidth is 0, 80, or 256 when extended. This puts the title edge on the content edge, fixing D11.
+- **App bar title alignment on wide screens:** `PageScaffold` reads the pane's width with a `LayoutBuilder` (the window less the rail and its hairline) and computes `inset = max(gutter, (paneWidth - contentMaxWidth) / 2 + gutter)`, where the column's content starts. `titleSpacing` is `inset`, or `max(gutter, inset - 56)` after a back or home button, and `actionsPadding` ends `inset - gutter` from the pane's end, at the column's edge, as a phone's end at the screen's. This puts the title edge on the content edge, fixing D11. The title is a level-1 heading. Pages of list tiles pad the column `gutter - 16` at the sides (`PageBody.tilePadding`), so the tiles' own 16 brings their text to the same edge.
+- **Document title:** on the web, the page on show names the browser's tab, its history and bookmarks: "Settings · Shnayim Mikra" (`DocumentTitle`, which `PageScaffold` applies; the reader, Today and Welcome apply it themselves). A page names it again whenever it comes back into view, as the page over it closes or its tab is chosen again. Its colour is the app's (`MaterialApp.color`, the surface), since the web takes it for the theme-color (§3.6). Elsewhere the platform keeps the app's name.
 
 ## 6. Components
 
@@ -545,8 +548,10 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 ### 6.4 SectionHeader (common.dart)
 
-- Restyle as an Eyebrow in `secondary` (was titleMedium in blue w600).
+- Restyle as an Eyebrow in `secondary` (was titleMedium in blue w600), 28 above and 8 below.
 - Keep the `header`/`headingLevel` semantics and the trailing slot.
+- A header with digits in it ("2 of 7 aliyot") is `SectionHeader.plain`, titleSmall in onSurfaceVariant: eyebrows never hold digits (§4.5).
+- An eyebrow set in capitals (an accessibility font, §4.5) is read as written.
 
 ### 6.5 Buttons (all radius 10; never a stadium)
 
@@ -669,7 +674,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 **Layout**
 - Fixed grid: 3 columns under 600, 4 at 600 and up, 6 at 1200 and up; gap 6.
-- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha'alotcha on a 360 dp phone or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
+- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha'alotcha on a 360 or 412 dp phone, or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, measured at the size it is set (letter spacing doesn't shrink with the text), and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
 - Build each row as `IntrinsicHeight(Row([Expanded(tile) …]))` so tiles grow with text scale. No GridView aspect ratio.
 
 **Tile**

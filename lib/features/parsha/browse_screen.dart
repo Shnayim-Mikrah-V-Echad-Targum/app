@@ -29,8 +29,8 @@ class BrowseScreen extends ConsumerWidget {
             e.value.isComplete &&
             e.key.substring(e.key.indexOf(':') + 1).split('-').contains('${p.id.number}'));
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l.browseTitle)),
+    return PageScaffold(
+      titleText: l.browseTitle,
       body: PageBody(
         children: [
           for (var b = 0; b < kTorahBooks.length; b++) ...[

@@ -20,8 +20,9 @@ class GuideScreen extends StatelessWidget {
       (l.guideShabbatTitle, l.guideShabbatBody),
       (l.guideSourcesTitle, l.guideSourcesBody),
     ];
-    return Scaffold(
-      appBar: AppBar(leading: homeLeading(context), title: Text(l.guideTitle)),
+    return PageScaffold(
+      leading: homeLeading(context),
+      titleText: l.guideTitle,
       body: PageBody(
         children: [
           for (final (title, body) in sections) ...[
