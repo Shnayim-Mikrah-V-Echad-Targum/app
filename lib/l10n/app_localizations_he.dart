@@ -1679,6 +1679,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String onbStarterCatchUpOn(int verses, int minutes, String day) {
+    return '$verses פסוקים · כ־$minutes דק׳ ב$day';
+  }
+
+  @override
   String get onbStarterToday => 'להתחיל מהקריאה של היום';
 
   @override

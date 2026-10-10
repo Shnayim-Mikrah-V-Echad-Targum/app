@@ -111,6 +111,20 @@ void main() {
     expect(find.byType(RadioGroup<bool>), findsNothing);
   });
 
+  testWidgets("joining on Tisha B'Av, a quiet day, the whole parsha is read on Friday, not today", (tester) async {
+    // Thursday 12 August 2027, 9 Av 5787, in the week of Va'etchanan.
+    final c = await openPlanStep(tester, DateTime(2027, 8, 12, 10));
+    expect(find.text('Read the whole parsha by Shabbat'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^\d+ verses · about \d+ min on Friday$')), findsOneWidget);
+    expect(find.textContaining(RegExp(r'min today$')), findsNothing);
+
+    await startReading(tester);
+    final plan = c.read(currentPlanProvider);
+    expect(plan.days, hasLength(1));
+    expect(plan.days.single.date, LocalDate(2027, 8, 13));
+    expect(plan.days.single.aliyot, [0, 1, 2, 3, 4, 5, 6]);
+  });
+
   testWidgets("joining on the week's first day asks nothing about it", (tester) async {
     final c = await openPlanStep(tester, sunday);
     expect(find.text('This week'), findsNothing);

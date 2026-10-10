@@ -2871,11 +2871,17 @@ abstract class AppLocalizations {
   /// **'Read the whole parsha by Shabbat'**
   String get onbStarterCatchUp;
 
-  /// The whole parsha spread over the days left in the week the reader joins: its length, its reading time, and the number of days with reading.
+  /// The whole parsha spread over the days left in the week the reader joins: its length, its reading time, and the number of days with reading. One day is always today; a single day that isn't takes onbStarterCatchUpOn.
   ///
   /// In en, this message translates to:
   /// **'{verses} verses · about {minutes} min {days, plural, =1{today} other{over {days} days}}'**
   String onbStarterCatchUpDesc(int verses, int minutes, int days);
+
+  /// As onbStarterCatchUpDesc, when the one day left with reading is not today (the reader joins on a day without reading, such as Tisha B'Av): its weekday, such as 'Friday'.
+  ///
+  /// In en, this message translates to:
+  /// **'{verses} verses · about {minutes} min on {day}'**
+  String onbStarterCatchUpOn(int verses, int minutes, String day);
 
   /// No description provided for @onbStarterToday.
   ///

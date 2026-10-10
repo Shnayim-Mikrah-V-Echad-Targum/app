@@ -1678,6 +1678,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String onbStarterCatchUpOn(int verses, int minutes, String day) {
+    return '$verses verses · about $minutes min on $day';
+  }
+
+  @override
   String get onbStarterToday => 'Start with today\'s reading';
 
   @override

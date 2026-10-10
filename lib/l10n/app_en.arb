@@ -1114,7 +1114,7 @@
   "onbStarterCatchUp": "Read the whole parsha by Shabbat",
   "onbStarterCatchUpDesc": "{verses} verses · about {minutes} min {days, plural, =1{today} other{over {days} days}}",
   "@onbStarterCatchUpDesc": {
-    "description": "The whole parsha spread over the days left in the week the reader joins: its length, its reading time, and the number of days with reading.",
+    "description": "The whole parsha spread over the days left in the week the reader joins: its length, its reading time, and the number of days with reading. One day is always today; a single day that isn't takes onbStarterCatchUpOn.",
     "placeholders": {
       "verses": {
         "type": "int"
@@ -1124,6 +1124,22 @@
       },
       "days": {
         "type": "int"
+      }
+    }
+  },
+  "onbStarterCatchUpOn": "{verses} verses · about {minutes} min on {day}",
+  "@onbStarterCatchUpOn": {
+    "description": "As onbStarterCatchUpDesc, when the one day left with reading is not today (the reader joins on a day without reading, such as Tisha B'Av): its weekday, such as 'Friday'.",
+    "placeholders": {
+      "verses": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      },
+      "day": {
+        "type": "String",
+        "example": "Friday"
       }
     }
   },

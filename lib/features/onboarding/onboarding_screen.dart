@@ -36,16 +36,21 @@ enum OnboardingStep {
   OnboardingStep? get next => index + 1 < values.length ? values[index + 1] : null;
 }
 
-/// Whether the reader has chosen where they will be this Shabbat in this run
-/// of the app. The time-zone guess, which can arrive late, never overrides
-/// their choice.
-final _locationTouchedProvider = NotifierProvider<_LocationTouched, bool>(_LocationTouched.new);
+/// Whether the reader has chosen where they will be this Shabbat, or gone
+/// on past the question. It is kept across launches, as the choice itself
+/// is: the time-zone guess, which can arrive late, or come again when the
+/// app is opened again before onboarding ends, never overrides it.
+final _locationChosenProvider = NotifierProvider<_LocationChosen, bool>(_LocationChosen.new);
 
-class _LocationTouched extends Notifier<bool> {
+class _LocationChosen extends Notifier<bool> {
   @override
-  bool build() => false;
+  bool build() => ref.read(sharedPreferencesProvider).getBool(OnboardingScreen.locationChosenKey) ?? false;
 
-  void touch() => state = true;
+  void choose() {
+    if (state) return;
+    state = true;
+    ref.read(sharedPreferencesProvider).setBool(OnboardingScreen.locationChosenKey, true);
+  }
 }
 
 void _update(WidgetRef ref, AppSettings Function(AppSettings) f) => ref.read(settingsProvider.notifier).update(f);
@@ -54,6 +59,10 @@ void _update(WidgetRef ref, AppSettings Function(AppSettings) f) => ref.read(set
 /// No account is needed.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
+
+  /// Where it is stored that the reader has chosen their location (see
+  /// [_locationChosenProvider]).
+  static const locationChosenKey = 'onboarding.locationChosen';
 
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -86,7 +95,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // timeZoneName is no use there: it is a localized long name such as
       // "Israel Daylight Time".
       final tz = (await FlutterTimezone.getLocalTimezone()).identifier;
-      if (!mounted || ref.read(_locationTouchedProvider)) return;
+      if (!mounted || ref.read(_locationChosenProvider)) return;
       if (tz == 'Asia/Jerusalem' || tz == 'Asia/Tel_Aviv') _update(ref, (s) => s.locatedIn(ReadingSchedule.israel));
     } catch (_) {
       // Keep the default.
@@ -254,7 +263,7 @@ class OnboardingStepScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: FilledButton(
-                onPressed: next == null ? () => _finish(context, ref) : () => context.push(next.path),
+                onPressed: next == null ? () => _finish(context, ref) : () => _continue(context, ref, next),
                 child: Text(next == null ? l.startReading : l.actionContinue),
               ),
             ),
@@ -262,6 +271,13 @@ class OnboardingStepScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Goes on to [next]. Going on past the location step keeps what it
+  /// shows, guessed or not, as the reader's choice.
+  void _continue(BuildContext context, WidgetRef ref, OnboardingStep next) {
+    if (step == OnboardingStep.location) ref.read(_locationChosenProvider.notifier).choose();
+    context.push(next.path);
   }
 
   /// Ends onboarding on the reader. Reading the whole parsha this week, it
@@ -317,7 +333,7 @@ class _LocationStepState extends ConsumerState<_LocationStep> {
           // Both the reading and the days of Yom Tov; a visitor can set them
           // apart in Settings.
           onChanged: (v) {
-            ref.read(_locationTouchedProvider.notifier).touch();
+            ref.read(_locationChosenProvider.notifier).choose();
             _update(ref, (s) => s.locatedIn(v));
           },
         ),
@@ -398,10 +414,11 @@ class _MethodStep extends ConsumerWidget {
 }
 
 /// What reading the whole parsha in the week of joining asks of a reader
-/// who starts on [start]: its verses, about how many minutes they take, and
-/// the days with reading. Null when that week is planned the same either
-/// way: they start on its first day of reading, or after its last.
-({int verses, int minutes, int days})? _catchUp(WidgetRef ref, LocalDate start) {
+/// who starts on [start]: its verses, about how many minutes they take, the
+/// days with reading, and when they are a single day, that day. Null when
+/// that week is planned the same either way: they start on its first day
+/// of reading, or after its last.
+({int verses, int minutes, int days, LocalDate? only})? _catchUp(WidgetRef ref, LocalDate start) {
   final ctx = ref.watch(currentWeekContextProvider);
   final planner = ref.watch(plannerProvider);
   final usual = planner.startingFrom(null).planFor(ctx.week);
@@ -409,11 +426,15 @@ class _MethodStep extends ConsumerWidget {
   final catchUp = planner.startingFrom(start).planFor(ctx.week);
   // With no day of reading left, the planner keeps the usual days.
   if (catchUp.days.isEmpty || catchUp.days.first.date < start) return null;
+  // Shevi'i on Shabbat morning is a day of reading too.
+  final days = catchUp.days.length + (catchUp.shabbatAliyot.isEmpty ? 0 : 1);
   return (
     verses: ctx.aliyahVerses.fold(0, (n, v) => n + v),
     minutes: ctx.remainingMinutes([for (var a = 0; a < kAliyot; a++) a]),
-    // Shevi'i on Shabbat morning is a day of reading too.
-    days: catchUp.days.length + (catchUp.shabbatAliyot.isEmpty ? 0 : 1),
+    days: days,
+    // Not necessarily the day they start: joining on Tisha B'Av, a quiet
+    // day, leaves only Friday.
+    only: days == 1 ? catchUp.days.single.date : null,
   );
 }
 
@@ -426,7 +447,8 @@ class _PlanStep extends ConsumerWidget {
     final theme = Theme.of(context);
     final s = ref.watch(settingsProvider);
     // The reader starts today, as onboarding ends (see _finish).
-    final catchUp = _catchUp(ref, s.joinDate ?? ref.watch(todayProvider));
+    final LocalDate start = s.joinDate ?? ref.watch(todayProvider);
+    final catchUp = _catchUp(ref, start);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -450,7 +472,11 @@ class _PlanStep extends ConsumerWidget {
               Choice(
                 true,
                 l.onbStarterCatchUp,
-                subtitle: l.onbStarterCatchUpDesc(catchUp.verses, catchUp.minutes, catchUp.days),
+                subtitle: switch (catchUp.only) {
+                  final day? when day != start =>
+                    l.onbStarterCatchUpOn(catchUp.verses, catchUp.minutes, Names(context).weekday(day)),
+                  _ => l.onbStarterCatchUpDesc(catchUp.verses, catchUp.minutes, catchUp.days),
+                },
               ),
               Choice(false, l.onbStarterToday, subtitle: l.onbStarterTodayDesc),
             ],

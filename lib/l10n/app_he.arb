@@ -463,6 +463,7 @@
   "onbStarterTitle": "השבוע",
   "onbStarterCatchUp": "לקרוא את כל הפרשה עד שבת",
   "onbStarterCatchUpDesc": "{verses} פסוקים · כ־{minutes} דק׳ {days, plural, =1{היום} =2{על פני יומיים} other{על פני {days} ימים}}",
+  "onbStarterCatchUpOn": "{verses} פסוקים · כ־{minutes} דק׳ ב{day}",
   "onbStarterToday": "להתחיל מהקריאה של היום",
   "onbStarterTodayDesc": "התוכנית המלאה מהשבוע הבא",
   "onbRestore": "כבר יש לי נתונים באפליקציה",

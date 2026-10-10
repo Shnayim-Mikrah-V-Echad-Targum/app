@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
@@ -84,6 +85,51 @@ void main() {
     await tester.pumpAndSettle();
     expect(selected(tester), ReadingSchedule.diaspora);
     expect(c.read(settingsProvider).readingSchedule, ReadingSchedule.diaspora);
+  });
+
+  testWidgets('a late guess never overrides the location the reader went on with', (tester) async {
+    final zone = Completer<String>();
+    deviceIn(tester, zone.future);
+    final c = await pumpApp(tester, settings: const AppSettings());
+    await tester.pumpAndSettle();
+    await openLocationStep(tester);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('How do you read?'), findsOneWidget);
+
+    zone.complete('Asia/Jerusalem');
+    await tester.pumpAndSettle();
+    expect(c.read(settingsProvider).readingSchedule, ReadingSchedule.diaspora);
+    expect(c.read(settingsProvider).oneDayYomTov, isFalse);
+  });
+
+  testWidgets('a choice made before the app was closed outlasts the guess when it opens again', (tester) async {
+    // Outside Israel, chosen and saved; then the app was closed before the
+    // end of onboarding, on a phone that has since moved to Israel time.
+    deviceIn(tester, 'Asia/Jerusalem');
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings().locatedIn(ReadingSchedule.diaspora),
+      stored: {OnboardingScreen.locationChosenKey: true},
+    );
+    await tester.pumpAndSettle();
+    await openLocationStep(tester);
+    expect(selected(tester), ReadingSchedule.diaspora);
+    final s = c.read(settingsProvider);
+    expect(s.readingSchedule, ReadingSchedule.diaspora);
+    expect(s.oneDayYomTov, isFalse);
+  });
+
+  testWidgets('choosing is remembered for the next time the app opens', (tester) async {
+    deviceIn(tester, 'Asia/Jerusalem');
+    final c = await pumpApp(tester, settings: const AppSettings());
+    await tester.pumpAndSettle();
+    final prefs = c.read(sharedPreferencesProvider);
+    expect(prefs.getBool(OnboardingScreen.locationChosenKey), isNull, reason: 'the guess is no choice');
+    await openLocationStep(tester);
+    await tester.tap(find.text('Outside Israel'));
+    await tester.pumpAndSettle();
+    expect(prefs.getBool(OnboardingScreen.locationChosenKey), isTrue);
   });
 
   testWidgets('the guess is made once: going back to the welcome keeps the choice', (tester) async {
