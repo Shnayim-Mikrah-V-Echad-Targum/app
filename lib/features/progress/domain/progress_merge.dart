@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
+
 import '../../../app/providers.dart';
+import '../../../core/calendar/local_date.dart';
 import 'progress_models.dart';
 
 export '../../../app/providers.dart' show ProgressState;
@@ -69,6 +72,60 @@ ProgressState mergeProgress(ProgressState a, ProgressState b) {
     unknownWeeks: unknownWeeks,
     unknownPauses: [for (final k in unknownPauses.keys.toList()..sort()) unknownPauses[k]],
   );
+}
+
+/// What a sync saves to the reader's account: their [progress], and the day
+/// they joined (see [mergeSyncPayload]). Earlier versions saved the
+/// progress alone, and read past the join date.
+Map<String, dynamic> syncPayload(ProgressState progress, LocalDate? joinDate) =>
+    {...progress.toJson(), 'joinDate': ?joinDate?.rd};
+
+/// The join date a sync [payload] holds, if any.
+LocalDate? syncPayloadJoinDate(Map<String, dynamic> payload) =>
+    payload['joinDate'] is int ? LocalDate.fromRd(payload['joinDate'] as int) : null;
+
+/// Merges this device's progress, [local], and the day the reader joined
+/// here, [localJoin], with the account's backup, [remote], as [syncPayload]
+/// wrote it.
+///
+/// The progress merges as [mergeProgress] does, and the earliest join date
+/// wins, so that a new device counts the history it restores: keeping the
+/// day it was set up would leave out every week before, and the streaks
+/// would start again from 0, when a sync must never lower one. A backup
+/// saved without a join date (by an earlier version) counts as joined on
+/// the day of its earliest reading. A side that hasn't seen the latest
+/// reset has no say, since the reset started the reader again; nor does a
+/// reading logged for a day before the reset.
+///
+/// The join date is null when neither side has one to give.
+({ProgressState progress, LocalDate? joinDate}) mergeSyncPayload(
+  ProgressState local,
+  LocalDate? localJoin,
+  Map<String, dynamic> remote,
+) {
+  final theirs = ProgressState.fromJson(remote);
+  final progress = mergeProgress(local, theirs);
+  final cut = progress.resetAt;
+  final restart = cut == 0 ? null : rolloverDate(DateTime.fromMillisecondsSinceEpoch(cut));
+  final theirJoin = syncPayloadJoinDate(remote) ?? earliestReadDate(theirs, from: restart);
+  final joins = [
+    if (local.resetAt == cut) localJoin,
+    if (theirs.resetAt == cut) theirJoin,
+  ];
+  return (progress: progress, joinDate: joins.nonNulls.minOrNull);
+}
+
+/// The earliest day on which a reading or the haftarah in [progress] counts
+/// as done, of those from [from] on; null if there is none.
+LocalDate? earliestReadDate(ProgressState progress, {LocalDate? from}) {
+  LocalDate? earliest;
+  for (final week in progress.weeks.values) {
+    for (final day in [for (final unit in week.units) ...unit, week.haftarah]) {
+      if (day == null || (from != null && day < from)) continue;
+      if (earliest == null || day < earliest) earliest = day;
+    }
+  }
+  return earliest;
 }
 
 WeekProgress _mergeWeek(WeekProgress x, WeekProgress y, int cut) {

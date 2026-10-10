@@ -96,6 +96,8 @@ A portion can end in one of these states:
 ### Join date
 Nothing before the day the reader started counts against them. In the week they join, only what was planned from that day on is expected (see [Onboarding](#6-onboarding)). If they joined after that week began and don't finish it, it is transparent; a week they joined on its first day counts like any other. Resetting all progress starts the reader again from the day of the reset, on every device the reset reaches.
 
+The join date is backed up with the progress, and syncing keeps the earliest, so a new phone counts the history it restores instead of starting the streaks again from the day it was set up. A backup saved by a version that didn't keep the join date counts from its earliest reading. A join date from before the latest reset has no say, and nor does a reading logged for a day before it.
+
 ### Changing the plan
 Changing the plan, the quiet days, the late window or whether the haftarah counts never rewrites the past. The app remembers the day each change was made, and every day is planned by the settings in force on it: a change midweek keeps what was planned for the days before and spreads the rest of the portion over the days left. A change made after reading that day applies from the next day, so the day keeps the plan it was read by. Each week is judged by the late window and haftarah rule in force when it was read in synagogue. So a change can't spend a grace day or break a streak after the fact, and the settings screen says that it applies from this week on.
 

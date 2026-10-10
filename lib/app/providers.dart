@@ -73,13 +73,16 @@ final settingsProvider = NotifierProvider<SettingsController, AppSettings>(Setti
 // ---------------------------------------------------------------------------
 // Calendar
 
-/// The current "reading day". The day rolls over at 3 a.m. so late-night
-/// reading counts for the evening it began; and because no one reads on a
-/// device on Shabbat or Yom Tov, use on those civil dates (i.e. after
-/// Havdalah) counts toward the next day. [oneDayYomTov] is the reader's
-/// custom (see [AppSettings.oneDayYomTov]).
+/// The civil date [time] counts for: the day rolls over at 3 a.m., so
+/// late-night reading counts for the evening it began.
+LocalDate rolloverDate(DateTime time) => LocalDate.fromDateTime(time.subtract(const Duration(hours: 3)));
+
+/// The current "reading day": the [rolloverDate] of [now], except that
+/// because no one reads on a device on Shabbat or Yom Tov, use on those
+/// civil dates (i.e. after Havdalah) counts toward the next day.
+/// [oneDayYomTov] is the reader's custom (see [AppSettings.oneDayYomTov]).
 LocalDate effectiveReadingDay(DateTime now, {required bool oneDayYomTov}) {
-  var d = LocalDate.fromDateTime(now.subtract(const Duration(hours: 3)));
+  var d = rolloverDate(now);
   while (JewishHolidays.isRestDay(d, israel: oneDayYomTov)) {
     d = d.addDays(1);
   }

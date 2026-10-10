@@ -371,4 +371,75 @@ void main() {
       expect(mergeProgress(m, x), m, reason: 'merging in a copy already included changes nothing');
     }
   });
+
+  group('the join date syncs with the progress:', () {
+    final oct4 = LocalDate(2026, 10, 4);
+    final oct20 = LocalDate(2026, 10, 20);
+    // Noach, read on its Friday.
+    final noach = ProgressState(weeks: {id: WeekProgress(weekId: id).withAll(LocalDate(2026, 10, 16))});
+
+    test('the earlier one wins, on either side', () {
+      // A new phone, set up on the 20th, and the backup of a reader who
+      // joined on the 4th.
+      expect(mergeSyncPayload(noach, oct20, syncPayload(noach, oct4)).joinDate, oct4);
+      expect(mergeSyncPayload(noach, oct4, syncPayload(noach, oct20)).joinDate, oct4);
+    });
+
+    test("a backup without one keeps this device's", () {
+      expect(mergeSyncPayload(noach, oct4, syncPayload(noach, null)).joinDate, oct4);
+      expect(mergeSyncPayload(const ProgressState(), oct20, syncPayload(const ProgressState(), null)).joinDate, oct20);
+      expect(mergeSyncPayload(const ProgressState(), null, syncPayload(const ProgressState(), null)).joinDate, isNull);
+    });
+
+    test('a backup saved by an earlier version, without one, counts from its earliest reading', () {
+      final history = ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withAliyah(0, LocalDate(2026, 10, 5)),
+        id: noach.week(id),
+      });
+      final merged = mergeSyncPayload(const ProgressState(), oct20, history.toJson());
+      expect(merged.joinDate, LocalDate(2026, 10, 5));
+      expect(merged.progress, history);
+      // A reading this device logged for a day before it joined, never yet
+      // backed up, is no reason to move its join date.
+      final backfilled = edit(const ProgressState(), (w) => w.withAliyah(0, LocalDate(2026, 10, 11)));
+      expect(mergeSyncPayload(backfilled, oct20, noach.toJson()).joinDate, LocalDate(2026, 10, 16));
+    });
+
+    test('the earliest reading includes the haftarah, and can be limited to the days from one on', () {
+      expect(earliestReadDate(const ProgressState()), isNull);
+      final p = ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withUnit(3, ReadingPass.targum, LocalDate(2026, 10, 8)),
+        id: WeekProgress(weekId: id).withAliyah(0, LocalDate(2026, 10, 12)).withHaftarah(LocalDate(2026, 10, 6)),
+      });
+      expect(earliestReadDate(p), LocalDate(2026, 10, 6));
+      expect(earliestReadDate(p, from: LocalDate(2026, 10, 7)), LocalDate(2026, 10, 8));
+      expect(earliestReadDate(p, from: LocalDate(2026, 10, 13)), isNull);
+    });
+
+    test('after a reset everywhere, a join date from before it has no say', () {
+      final before = edit(const ProgressState(), (w) => w.withAliyah(0, d1));
+      later();
+      // On the 12th (the clock's day).
+      final reset = resetEverywhere(before);
+      final restart = LocalDate(2026, 10, 12);
+      later();
+      expect(mergeSyncPayload(before, oct4, syncPayload(reset, restart)).joinDate, restart);
+      expect(mergeSyncPayload(reset, restart, syncPayload(before, oct4)).joinDate, restart);
+
+      // Reset by an earlier version, which synced no join date, and read
+      // there since: once for a day before the reset, and once after.
+      final since = reset.copyWith(weeks: {
+        id: WeekProgress(weekId: id).withAliyah(1, LocalDate(2026, 10, 5)).withAliyah(2, oct20),
+      });
+      expect(mergeSyncPayload(before, oct4, since.toJson()).joinDate, oct20);
+    });
+
+    test('the payload holds the progress as earlier versions read it, and the join date beside it', () {
+      final payload = syncPayload(noach, oct4);
+      expect(syncPayloadJoinDate(payload), oct4);
+      expect(ProgressState.fromJson(payload), noach);
+      expect(syncPayload(noach, null).containsKey('joinDate'), isFalse);
+      expect(syncPayloadJoinDate(noach.toJson()), isNull);
+    });
+  });
 }
