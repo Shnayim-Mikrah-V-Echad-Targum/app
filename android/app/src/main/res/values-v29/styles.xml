@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 10 and later: no translucent scrim behind three-button
+         navigation, so the bars stay the colour of the surface beneath them,
+         and no forced dark mode: the app has dark themes of its own. -->
+    <style name="EdgeToEdge.V29" parent="EdgeToEdge.V27">
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

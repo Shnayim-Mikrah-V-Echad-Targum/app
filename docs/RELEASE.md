@@ -51,6 +51,9 @@
   - Nothing fires on Shabbat.
   - Reminders survive a reboot (Android).
 - [ ] Offline: reading, logging and streaks all work in airplane mode.
+- [ ] Launch and system bars, from a cold start, in light and dark mode: iOS, Android 11, and Android 14 or later.
+  - The launch screen is the mark's tile on cream (light) or lamplight brown (dark), with no white flash before or after it.
+  - The status and navigation bars are the colour of the screen beneath them, and their icons are legible: dark on Welcome's cream. Check three-button navigation on Android 9 and 10, gesture navigation on Android 14 or later, and an app theme that differs from the system's.
 - [ ] Community against the production backend:
   - sign in with a code
   - post, edit and delete

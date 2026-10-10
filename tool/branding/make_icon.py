@@ -11,7 +11,9 @@ From the repository root:
     pip install -r tool/branding/requirements.txt
     python3 tool/branding/make_icon.py          # assets/branding/*
     dart run flutter_launcher_icons             # Android, iOS and web icons
-    python3 tool/branding/make_icon.py --post   # maskable, favicons, Windows
+    dart run flutter_native_splash:create       # Android and iOS launch screens
+    python3 tool/branding/make_icon.py --post   # maskable, favicons, Windows,
+                                                # launch screens' system bars
 
 A Hebrew reader checks the results by eye before every release.
 """
@@ -40,6 +42,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 BRANDING = ROOT / 'assets' / 'branding'
+ANDROID_RES = ROOT / 'android' / 'app' / 'src' / 'main' / 'res'
 
 BUNDLED_FONT = ROOT / 'assets' / 'fonts' / 'FrankRuhlLibre-Bold.ttf'
 FONT_URL = ('https://raw.githubusercontent.com/google/fonts/'
@@ -73,10 +76,16 @@ FOREGROUND_SAFE_RADIUS = 300
 # Web maskable icons: the safe zone is a circle of radius 40%.
 MASKABLE_SCALE = 0.90
 MASKABLE_SAFE_RADIUS = 0.40 * CANVAS
-MARK_RADIUS = 0.22  # the in-app mark (mark_128.png)
+MARK_RADIUS = 0.22  # the in-app mark (mark_128.png) and the launch screens
 # Every favicon and Windows .ico entry, whatever its size, so the tile keeps
 # one shape as Windows switches entries between views and DPI settings.
 TILE_RADIUS = 0.1875
+# Launch screens: flutter_native_splash reads the logo at 4× (1152 px for
+# 288 dp or pt). Android 12 and later show only the central 768 px circle
+# (192 dp), so the tile's rounded corners must stay inside it.
+SPLASH_CANVAS = 1152
+SPLASH_SAFE_RADIUS = 384
+SPLASH_TILE = 576  # 144 dp or pt
 
 
 def fail(message: str) -> NoReturn:
@@ -238,24 +247,29 @@ def group(mark: Mark, *, scale: float = 1.0, colour: str | None = None) -> str:
     return f'<g{transform}>\n' + '\n'.join(shapes) + '\n</g>'
 
 
+GRADIENT = 'url(#bg)'
+GRADIENT_DEFS = ('<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">'
+                 f'<stop offset="0" stop-color="{GRADIENT_TOP}"/>'
+                 f'<stop offset="1" stop-color="{GRADIENT_BOTTOM}"/>'
+                 '</linearGradient></defs>\n')
+
+
 def document(body: str, *, background: str | None, radius: float = 0,
              size: int = CANVAS) -> str:
     """An SVG of [size]² user units. [background] is 'gradient', 'black' or
-    None (transparent); [radius] rounds the background's corners."""
-    defs = ''
+    None (transparent); [radius] rounds the background's corners. The
+    gradient is defined whenever a layer (the body included) fills with it."""
     layers = []
     if background == 'gradient':
-        defs = ('<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">'
-                f'<stop offset="0" stop-color="{GRADIENT_TOP}"/>'
-                f'<stop offset="1" stop-color="{GRADIENT_BOTTOM}"/>'
-                '</linearGradient></defs>\n')
-        layers.append(rounded_rect(0, 0, size, size, radius, 'url(#bg)'))
+        layers.append(rounded_rect(0, 0, size, size, radius, GRADIENT))
     elif background == 'black':
         layers.append(rounded_rect(0, 0, size, size, radius, '#000000'))
     layers.append(body)
+    content = '\n'.join(layers)
+    defs = GRADIENT_DEFS if GRADIENT in content else ''
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" '
             f'height="{size}" viewBox="0 0 {size} {size}">\n'
-            + defs + '\n'.join(layers) + '\n</svg>\n')
+            + defs + content + '\n</svg>\n')
 
 
 def small_mark(size: int) -> str:
@@ -271,6 +285,25 @@ def small_mark(size: int) -> str:
              for i, (_, fill) in enumerate(RULES)]
     return document('\n'.join(rules), background='gradient',
                     radius=TILE_RADIUS * size, size=size)
+
+
+def rounded_square_reach(side: float, radius: float) -> float:
+    """How far a rounded square's outline reaches from its centre: the
+    middle of a corner arc."""
+    return (side / 2 - radius) * math.sqrt(2) + radius
+
+
+def splash_logo(mark: Mark) -> str:
+    """The launch screens' logo: the in-app mark's tile (the master's art on
+    the gradient, with its rounded corners), SPLASH_TILE px wide in the
+    middle of a transparent SPLASH_CANVAS. The screen's own colour shows
+    around it, cream in light mode and lamplight brown in dark."""
+    offset = (SPLASH_CANVAS - SPLASH_TILE) / 2
+    tile = (f'<g transform="translate({num(offset)} {num(offset)}) '
+            f'scale({num(SPLASH_TILE / CANVAS)})">\n'
+            + rounded_rect(0, 0, CANVAS, CANVAS, MARK_RADIUS * CANVAS, GRADIENT)
+            + '\n' + group(mark) + '\n</g>')
+    return document(tile, background=None, size=SPLASH_CANVAS)
 
 
 # Raster output ------------------------------------------------------------
@@ -335,10 +368,32 @@ def write_sources(mark: Mark) -> None:
     write_png(BRANDING / 'mark_128.png', render(
         document(group(mark), background='gradient', radius=MARK_RADIUS * CANVAS),
         128))
+    # flutter_native_splash reads this for the Android and iOS launch screens.
+    write_png(BRANDING / 'splash_logo.png',
+              render(splash_logo(mark), SPLASH_CANVAS))
+
+
+# flutter_native_splash writes this into every LaunchTheme unless the splash
+# is full screen. Android then paints the system bars black around the launch
+# screen, whatever the themes say; edge to edge, the window must draw them.
+SPLASH_BARS_FALSE = ('<item name="android:windowDrawsSystemBarBackgrounds">'
+                     'false</item>')
+SPLASH_BARS_TRUE = SPLASH_BARS_FALSE.replace('false', 'true')
+
+
+def fix_launch_themes() -> None:
+    """Lets every LaunchTheme draw its own, transparent, system bars."""
+    for path in sorted(ANDROID_RES.glob('values*/styles.xml')):
+        text = path.read_text(encoding='utf-8')
+        if SPLASH_BARS_FALSE in text:
+            path.write_text(text.replace(SPLASH_BARS_FALSE, SPLASH_BARS_TRUE),
+                            encoding='utf-8')
+            report(path, 'LaunchTheme draws its system bars')
 
 
 def write_post(mark: Mark) -> None:
-    """Outputs flutter_launcher_icons cannot make; run after it."""
+    """Outputs flutter_launcher_icons cannot make, and the launch themes'
+    system bars after flutter_native_splash; run after both."""
     master = document(group(mark), background='gradient')
     # The larger tiles: the master's art, with the small tiles' corners.
     tile = document(group(mark), background='gradient',
@@ -357,14 +412,17 @@ def write_post(mark: Mark) -> None:
     write_ico(ROOT / 'windows' / 'runner' / 'resources' / 'app_icon.ico',
               [render(small_mark(s), s) for s in (16, 20, 24, 32)]
               + [render(tile, s) for s in (40, 48, 64, 256)])
+    fix_launch_themes()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     parser.add_argument(
         '--post', action='store_true',
-        help='write the web maskable icons, favicons and Windows .ico; '
-             'run after `dart run flutter_launcher_icons`')
+        help='write the web maskable icons, favicons and Windows .ico, and '
+             'fix the launch themes\' system bars; run after '
+             '`dart run flutter_launcher_icons` and '
+             '`dart run flutter_native_splash:create`')
     args = parser.parse_args()
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -379,6 +437,9 @@ def main() -> None:
         fail('the adaptive foreground leaves the safe circle')
     if mark.radius(MASKABLE_SCALE) > MASKABLE_SAFE_RADIUS:
         fail('the maskable icon leaves the safe zone')
+    if (rounded_square_reach(SPLASH_TILE, MARK_RADIUS * SPLASH_TILE)
+            > SPLASH_SAFE_RADIUS):
+        fail("the launch screen's tile leaves the Android 12 icon circle")
 
     print(f'Wordmark: letters {mark.letter_height:.0f} px tall, ink '
           f'{mark.word_width:.0f} px wide ({mark.advance_width:.0f} px of '

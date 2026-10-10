@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 8.1 and later: a transparent navigation bar too, its icons
+         following the status bar's: dark in the light theme, light in the
+         dark one (values-night). -->
+    <style name="EdgeToEdge.V27" parent="EdgeToEdge">
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightNavigationBar">?android:attr/windowLightStatusBar</item>
+    </style>
+</resources>

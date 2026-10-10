@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'app/providers.dart';
+import 'app/system_bars.dart';
 import 'data/parsha_repository.dart';
 import 'features/community/data/backend.dart';
 import 'services/notifications.dart';
@@ -14,6 +17,7 @@ import 'services/notifications.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _registerFontLicenses();
+  unawaited(enableEdgeToEdge());
 
   final prefs = await SharedPreferences.getInstance();
   final parshiyot = await ParshaRepository.load();
