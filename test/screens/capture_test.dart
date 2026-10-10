@@ -231,7 +231,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   // Reading by section, so that 32:3 is read with the verses around it.
   'reader_third': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   // Reading by aliyah, so that one step finishes Shevi'i.
-  'reader_finished': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, repeatLastVerse: false),
+  // Set as the reader sets it: untouched, it follows the haftarah custom.
+  'reader_finished': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
   // Israel is a parsha ahead, and both pairs of portions are read together.
