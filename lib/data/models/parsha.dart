@@ -73,6 +73,7 @@ class PortionInfo {
     required this.id,
     required this.key,
     required this.nameHe,
+    required this.nameEn,
     required this.nameAshkenazi,
     required this.book,
     required this.aliyot,
@@ -94,6 +95,7 @@ class PortionInfo {
       id: id,
       key: j['key'] as String,
       nameHe: j['he'] as String,
+      nameEn: j['en'] as String,
       nameAshkenazi: j['ashkenazi'] as String,
       book: book,
       aliyot: aliyot,
@@ -104,9 +106,15 @@ class PortionInfo {
 
   final PortionId id;
 
-  /// Sephardi-style transliteration, also the stable data key (e.g. "Lech-Lecha").
+  /// The stable data key, @hebcal's name (e.g. "Lech-Lecha"). Progress and
+  /// other data are keyed by it, so it never changes; it is never shown.
   final String key;
   final String nameHe;
+
+  /// The English name in Sephardi (Israeli) pronunciation, e.g. "Lech Lecha".
+  final String nameEn;
+
+  /// The English name in Ashkenazi pronunciation, e.g. "Bereishis".
   final String nameAshkenazi;
 
   /// English book name, e.g. "Genesis".
@@ -125,7 +133,7 @@ class PortionInfo {
   /// Index of the book in the Torah, 0 (Genesis) – 4 (Deuteronomy).
   int get bookIndex => kTorahBooks.indexOf(book);
 
-  String displayName({required bool ashkenazi}) => ashkenazi ? nameAshkenazi : key;
+  String displayName({required bool ashkenazi}) => ashkenazi ? nameAshkenazi : nameEn;
 }
 
 const kTorahBooks = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'];

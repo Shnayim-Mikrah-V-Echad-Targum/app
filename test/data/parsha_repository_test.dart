@@ -90,4 +90,40 @@ void main() {
     expect(bereshit.fallsBack(HaftarahNusach.ashkenazi), isFalse);
     expect(repo.portion(const PortionId(25)).haftarah.fallsBack(HaftarahNusach.chabad), isFalse, reason: 'Tzav');
   });
+
+  group('parsha names', () {
+    const combined = [22, 27, 29, 32, 39, 42, 51];
+
+    test('are spelt in one style, in either pronunciation', () {
+      for (final p in repo.all) {
+        for (final name in [p.displayName(ashkenazi: false), p.displayName(ashkenazi: true)]) {
+          expect(name, isNot(contains('-')), reason: '$name: words apart, not hyphenated');
+          // The k and h of Vayakhel are two letters, ק and ה.
+          expect(name.replaceFirst('Vayakhel', ''), isNot(contains('kh')), reason: '$name: "ch" for both ח and כ');
+          expect(name, isNot(contains(RegExp(r"[^aeiou]'|'[^aeiou]"))), reason: '$name: an apostrophe only between vowels');
+          expect(name, isNot(contains(RegExp(r'([a-z])\1'))), reason: '$name: no doubled letters');
+        }
+      }
+      expect([for (final n in [3, 5, 26, 29, 35, 37, 54]) repo.byNumber(n).displayName(ashkenazi: false)],
+          ['Lech Lecha', 'Chayei Sarah', 'Shemini', 'Acharei Mot', 'Naso', 'Shelach', 'Vezot HaBerachah']);
+      expect(repo.byNumber(54).displayName(ashkenazi: true), 'Vezos HaBerachah');
+    });
+
+    test('of a combined portion join its parts with a hyphen', () {
+      for (final n in combined) {
+        final pair = repo.portion(PortionId(n, combined: true));
+        for (final ashkenazi in [false, true]) {
+          final parts = [for (final part in [n, n + 1]) repo.byNumber(part).displayName(ashkenazi: ashkenazi)];
+          expect(pair.displayName(ashkenazi: ashkenazi), parts.join('-'));
+        }
+      }
+      expect(repo.portion(const PortionId(29, combined: true)).displayName(ashkenazi: false), 'Acharei Mot-Kedoshim');
+    });
+
+    test('leave the data keys as they were', () {
+      // Progress, backups and the forum are keyed by these.
+      expect([for (final n in [3, 37, 54]) repo.byNumber(n).key], ['Lech-Lecha', "Sh'lach", 'Vezot Haberakhah']);
+      expect(repo.portion(const PortionId(29, combined: true)).key, 'Achrei Mot-Kedoshim');
+    });
+  });
 }

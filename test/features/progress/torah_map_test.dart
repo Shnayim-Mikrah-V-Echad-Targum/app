@@ -70,9 +70,9 @@ void main() {
     for (final (label, fill, border, icon, iconColor) in [
       ('Bereshit: On time', status.done, null, Icons.check, status.onDone),
       ('Noach: After Shabbat — still counts', status.late, null, Icons.check_circle_outline, status.onLate),
-      ('Lech-Lecha: Not completed', sefer.paper, BorderSide(color: scheme.outline), Icons.remove, status.neutral),
+      ('Lech Lecha: Not completed', sefer.paper, BorderSide(color: scheme.outline), Icons.remove, status.neutral),
       ('Vayera: Made up', sefer.paper, BorderSide(color: status.late, width: 1.5), Icons.history, status.late),
-      ('Chayei Sara: On time', status.done, null, Icons.check, status.onDone),
+      ('Chayei Sarah: On time', status.done, null, Icons.check, status.onDone),
       ('Toldot: In progress', scheme.primaryContainer, BorderSide(color: scheme.primary, width: 2), Icons.timelapse,
           scheme.onPrimaryContainer),
       ('Vayetzei: Upcoming', sefer.paper, BorderSide(color: sefer.hairline), null, null),
@@ -104,7 +104,7 @@ void main() {
     await openProgress(tester);
     expect(tileOf('Noach'), findsOneWidget);
     expect(tileOf('Shemot'), findsNothing);
-    expect(tileOf('Vezot Haberakhah'), findsNothing);
+    expect(tileOf('Vezot HaBerachah'), findsNothing);
     expect(
       tester.getSemantics(headerOf('Genesis')),
       isSemantics(
@@ -195,7 +195,7 @@ void main() {
       return names.takeWhile((n) => tester.getRect(tileOf(n)).top == top).length;
     }
 
-    const genesis = ['Bereshit', 'Noach', 'Lech-Lecha', 'Vayera', 'Chayei Sara', 'Toldot', 'Vayetzei'];
+    const genesis = ['Bereshit', 'Noach', 'Lech Lecha', 'Vayera', 'Chayei Sarah', 'Toldot', 'Vayetzei'];
 
     testWidgets('three columns on a phone, each row as tall as its tallest tile', (tester) async {
       await openProgress(tester);
@@ -222,7 +222,7 @@ void main() {
     // away, and only in that book. In the week of Beha'alotcha (the longest
     // word), its tile has the bold and the icon of the current parsha, and
     // the unread parshiyot before it have icons too.
-    const numbers = ['Bamidbar', 'Nasso', "Beha'alotcha", "Sh'lach", 'Korach', 'Chukat', 'Balak', 'Pinchas'];
+    const numbers = ['Bamidbar', 'Naso', "Beha'alotcha", 'Shelach', 'Korach', 'Chukat', 'Balak', 'Pinchas'];
     for (final (size, scale, columns, stacked) in [
       (const Size(360, 2600), 1.0, 3, true),
       // Android's "Large" font: still three columns.
@@ -250,7 +250,7 @@ void main() {
           await tester.tap(headerOf(book));
           await tester.pumpAndSettle();
         }
-        for (final name in ["Beha'alotcha", 'Vayishlach', 'Mishpatim', 'Bechukotai', 'Vaetchanan', 'Nitzavim']) {
+        for (final name in ["Beha'alotcha", 'Vayishlach', 'Mishpatim', 'Bechukotai', "Va'etchanan", 'Nitzavim']) {
           final text = find.descendant(
             of: find.descendant(of: tileOf(name), matching: find.text(name)),
             matching: find.byType(RichText),

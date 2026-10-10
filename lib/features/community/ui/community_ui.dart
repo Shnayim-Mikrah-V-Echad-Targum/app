@@ -144,7 +144,7 @@ Future<bool> ensureGuidelines(BuildContext context, WidgetRef ref) async {
 Future<void> openWeeklyThread(BuildContext context, WidgetRef ref, PortionInfo portion, int hebrewYear) async {
   final l = context.l10n;
   // Only a fallback: the server builds the title from its own reference data.
-  final title = '${portion.key} · ${HebrewText.stripNikud(portion.nameHe)} · $hebrewYear';
+  final title = '${portion.nameEn} · ${HebrewText.stripNikud(portion.nameHe)} · $hebrewYear';
   try {
     final id = await ref.read(forumRepositoryProvider).weeklyThread(
           parshaNumber: portion.id.number,

@@ -491,7 +491,7 @@ class _WordWidths {
   final BuildContext context;
   final _widths = <(String, bool), double>{};
 
-  /// Where a name may wrap: at a space, or after a hyphen ("Lech-Lecha").
+  /// Where a name may wrap: at a space, or after a hyphen ("Vayakhel-Pekudei").
   static final _breaks = RegExp(r'(?<=-)|\s+');
 
   /// The width of the longest word in [name].

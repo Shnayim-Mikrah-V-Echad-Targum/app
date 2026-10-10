@@ -43,8 +43,30 @@ const BOOK_HE = {
   Haggai: 'חגי', Zechariah: 'זכריה', Malachi: 'מלאכי',
 };
 
-// Ashkenazi-pronunciation transliterations, keyed by the Sephardi-style keys
-// used throughout the app (which match @hebcal's parsha names).
+// The English names shown, in one style: words apart, never hyphenated; "ch"
+// for both ח and כ; a vowel the keys drop written out (Acharei, Shemini,
+// Shelach); an apostrophe between two vowels for an aleph or ayin; no doubled
+// letters; a final heh after a vowel; and otherwise the usual spellings.
+// Keyed by the stable keys used throughout the app and its data (@hebcal's
+// parsha names), which are never shown.
+const ENGLISH = {
+  'Bereshit': 'Bereshit', 'Noach': 'Noach', 'Lech-Lecha': 'Lech Lecha', 'Vayera': 'Vayera',
+  'Chayei Sara': 'Chayei Sarah', 'Toldot': 'Toldot', 'Vayetzei': 'Vayetzei',
+  'Vayishlach': 'Vayishlach', 'Vayeshev': 'Vayeshev', 'Miketz': 'Miketz', 'Vayigash': 'Vayigash',
+  'Vayechi': 'Vayechi', 'Shemot': 'Shemot', 'Vaera': "Va'era", 'Bo': 'Bo', 'Beshalach': 'Beshalach',
+  'Yitro': 'Yitro', 'Mishpatim': 'Mishpatim', 'Terumah': 'Terumah', 'Tetzaveh': 'Tetzaveh',
+  'Ki Tisa': 'Ki Tisa', 'Vayakhel': 'Vayakhel', 'Pekudei': 'Pekudei', 'Vayikra': 'Vayikra',
+  'Tzav': 'Tzav', 'Shmini': 'Shemini', 'Tazria': 'Tazria', 'Metzora': 'Metzora',
+  'Achrei Mot': 'Acharei Mot', 'Kedoshim': 'Kedoshim', 'Emor': 'Emor', 'Behar': 'Behar',
+  'Bechukotai': 'Bechukotai', 'Bamidbar': 'Bamidbar', 'Nasso': 'Naso',
+  "Beha'alotcha": "Beha'alotcha", "Sh'lach": 'Shelach', 'Korach': 'Korach', 'Chukat': 'Chukat',
+  'Balak': 'Balak', 'Pinchas': 'Pinchas', 'Matot': 'Matot', 'Masei': 'Masei', 'Devarim': 'Devarim',
+  'Vaetchanan': "Va'etchanan", 'Eikev': 'Eikev', "Re'eh": "Re'eh", 'Shoftim': 'Shoftim',
+  'Ki Teitzei': 'Ki Teitzei', 'Ki Tavo': 'Ki Tavo', 'Nitzavim': 'Nitzavim', 'Vayeilech': 'Vayeilech',
+  "Ha'azinu": "Ha'azinu", 'Vezot Haberakhah': 'Vezot HaBerachah',
+};
+
+// The same names in Ashkenazi pronunciation and the same style.
 const ASHKENAZI = {
   'Bereshit': 'Bereishis', 'Noach': 'Noach', 'Lech-Lecha': 'Lech Lecha', 'Vayera': 'Vayeira',
   'Chayei Sara': 'Chayei Sarah', 'Toldot': 'Toldos', 'Vayetzei': 'Vayeitzei',
@@ -54,12 +76,12 @@ const ASHKENAZI = {
   'Ki Tisa': 'Ki Sisa', 'Vayakhel': 'Vayakhel', 'Pekudei': 'Pekudei', 'Vayikra': 'Vayikra',
   'Tzav': 'Tzav', 'Shmini': 'Shemini', 'Tazria': 'Tazria', 'Metzora': 'Metzora',
   'Achrei Mot': 'Acharei Mos', 'Kedoshim': 'Kedoshim', 'Emor': 'Emor', 'Behar': 'Behar',
-  'Bechukotai': 'Bechukosai', 'Bamidbar': 'Bamidbar', 'Nasso': 'Nasso',
+  'Bechukotai': 'Bechukosai', 'Bamidbar': 'Bamidbar', 'Nasso': 'Naso',
   "Beha'alotcha": "Beha'aloscha", "Sh'lach": 'Shelach', 'Korach': 'Korach', 'Chukat': 'Chukas',
   'Balak': 'Balak', 'Pinchas': 'Pinchas', 'Matot': 'Matos', 'Masei': 'Masei', 'Devarim': 'Devarim',
   'Vaetchanan': "Va'eschanan", 'Eikev': 'Eikev', "Re'eh": "Re'eh", 'Shoftim': 'Shoftim',
   'Ki Teitzei': 'Ki Seitzei', 'Ki Tavo': 'Ki Savo', 'Nitzavim': 'Nitzavim', 'Vayeilech': 'Vayeilech',
-  "Ha'azinu": "Ha'azinu", 'Vezot Haberakhah': 'Vezos Habrachah',
+  "Ha'azinu": "Ha'azinu", 'Vezot Haberakhah': 'Vezos HaBerachah',
 };
 
 const COMBINED = [
@@ -528,11 +550,17 @@ async function main() {
   assertScribalTradition(mikraChapters);
 
   process.stdout.write('Parsha metadata\n');
-  const keys = Object.keys(ASHKENAZI);
-  const parshiyot = keys.map((key, i) => ({num: i + 1, ...leyningEntry(key), ashkenazi: ASHKENAZI[key]}));
+  const keys = Object.keys(ENGLISH);
+  if (keys.join() !== Object.keys(ASHKENAZI).join()) throw new Error('ENGLISH and ASHKENAZI keys differ');
+  const parshiyot = keys.map((key, i) => ({num: i + 1, ...leyningEntry(key), en: ENGLISH[key], ashkenazi: ASHKENAZI[key]}));
   const combined = COMBINED.map(([a, b]) => {
     const e = leyningEntry(`${a}-${b}`);
-    return {...e, ashkenazi: `${ASHKENAZI[a]}-${ASHKENAZI[b]}`, parts: [keys.indexOf(a) + 1, keys.indexOf(b) + 1]};
+    return {
+      ...e,
+      en: `${ENGLISH[a]}-${ENGLISH[b]}`,
+      ashkenazi: `${ASHKENAZI[a]}-${ASHKENAZI[b]}`,
+      parts: [keys.indexOf(a) + 1, keys.indexOf(b) + 1],
+    };
   });
 
   // Sanity: aliyot are contiguous and cover each parsha exactly.

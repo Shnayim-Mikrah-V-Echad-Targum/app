@@ -84,7 +84,7 @@ void main() {
       for (final label in [
         'Bereshit: On time',
         'Noach: After Shabbat — still counts',
-        'Lech-Lecha: Not completed',
+        'Lech Lecha: Not completed',
         'Vayera: Made up',
         'Toldot: In progress',
         'Vayetzei: Upcoming',

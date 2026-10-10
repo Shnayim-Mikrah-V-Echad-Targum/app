@@ -676,7 +676,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 | upcoming | paper | hairline | onSurfaceVariant | none |
 | untracked | paper | hairline | onSurfaceVariant | pause_circle_outline |
 
-A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled up", "Lech-Lecha: Can still be restored").
+A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled up", "Lech Lecha: Can still be restored").
 
 **Book header row**
 - Hebrew book name (FRL 600 18), a 8 gap, the Latin name (titleSmall), and "3 of 12" end-aligned in bodySmall with tabular figures, then an `expand_more` chevron that turns over `Motion.short`. The two names are one paragraph, so with large text the Latin name wraps under the Hebrew one.
@@ -941,7 +941,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
      - an Israeli abroad (the Diaspora's reading, one day): `readingDivergenceAhead`, with no action.
    - The open-previous-week card also shows a week whose haftarah, which counts, is all that is left: it adds `openWeekHaftarahLeft` and opens the haftarah.
 3. **Hero card** (TitlePageFrame, padding 24, centred):
-   - **Eyebrow:** `parshatHashavua` by default; `erevShabbat` on Friday at or after 12:00 local; "Simchat Torah" when the portion is Vezot Haberakhah.
+   - **Eyebrow:** `parshatHashavua` by default; `erevShabbat` on Friday at or after 12:00 local; "Simchat Torah" when the portion is Vezot HaBerachah.
    - 8 gap, then the Hebrew pointed name: new `Names.portionPointed(p)` = `HebrewText.forDisplay(p.nameHe, nikud: true, teamim: false)`, in hebrewDisplay 46/60 primary. Semantics header level 1 with label `parshaLabel(name)`.
    - English UI: the Latin name in headlineLarge onSurface. Hebrew UI: the Latin name in bodyMedium onSurfaceVariant.
    - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`.
