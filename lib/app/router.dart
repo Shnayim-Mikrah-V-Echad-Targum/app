@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/models/verse_ref.dart';
 import '../features/about/about_screen.dart';
 import '../features/about/guide_screen.dart';
 import '../features/about/legal_screen.dart';
@@ -99,10 +100,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       _route('/guide', (_) => const GuideScreen()),
       _route('/search', (s) => SearchScreen(initialQuery: s.uri.queryParameters['q'] ?? '')),
       _route('/week/:id', (s) => WeekOverviewScreen(weekId: s.pathParameters['id']!)),
+      // ?verse=28:12 opens the full text at that verse.
       _route('/read/:id/:aliyah', (s) => ReaderScreen(
             weekId: s.pathParameters['id']!,
             aliyah: int.tryParse(s.pathParameters['aliyah']!) ?? 0,
             fullText: s.uri.queryParameters['mode'] == 'full',
+            targetVerse: VerseRef.tryParse(s.uri.queryParameters['verse']),
           )),
       _route('/haftarah/:id', (s) => HaftarahScreen(weekId: s.pathParameters['id']!)),
     ],

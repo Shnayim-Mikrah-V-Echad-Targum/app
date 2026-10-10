@@ -56,6 +56,11 @@ final _textPairs = <String, _Pair>{
   'secondary / paper': (t) => (t.scheme.secondary, t.sefer.paper),
   'secondary / restWash': (t) => (t.scheme.secondary, t.sefer.restWash),
   'onSecondaryContainer / secondaryContainer': (t) => (t.scheme.onSecondaryContainer, t.scheme.secondaryContainer),
+  // A verse the reader opened at, on its wash: the Targum and translation,
+  // the verse number, and the note marks.
+  'onSurfaceVariant / secondaryContainer': (t) => (t.scheme.onSurfaceVariant, t.scheme.secondaryContainer),
+  'secondary / secondaryContainer': (t) => (t.scheme.secondary, t.scheme.secondaryContainer),
+  'primary / secondaryContainer': (t) => (t.scheme.primary, t.scheme.secondaryContainer),
   'tertiary / paper': (t) => (t.scheme.tertiary, t.sefer.paper),
   'onLate / late': (t) => (t.status.onLate, t.status.late),
   'late / paper': (t) => (t.status.late, t.sefer.paper),
@@ -163,6 +168,10 @@ void main() {
 
       test('scripture (onSurface / surface) reaches 7:1', () {
         expect(contrast(t.scheme.onSurface, t.scheme.surface), greaterThanOrEqualTo(7));
+      });
+
+      test('scripture on a verse the reader opened at (onSurface / secondaryContainer) reaches 7:1', () {
+        expect(contrast(t.scheme.onSurface, t.scheme.secondaryContainer), greaterThanOrEqualTo(7));
       });
 
       test('UI pairs reach $ui:1', () {

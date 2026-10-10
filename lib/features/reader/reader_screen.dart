@@ -24,6 +24,7 @@ import 'display_sheet.dart';
 import 'notification_prompt.dart';
 import 'reader_flow.dart';
 import 'scripture_text.dart';
+import 'verse_anchor.dart';
 
 final bookTextProvider = FutureProvider.family<BookText, (TextLayer, String)>(
   (ref, args) => ref.watch(textRepositoryProvider).book(args.$1, args.$2),
@@ -59,11 +60,16 @@ final readerTextsProvider = FutureProvider.family<ReaderTexts, (String, bool, bo
 });
 
 class ReaderScreen extends ConsumerStatefulWidget {
-  const ReaderScreen({super.key, required this.weekId, required this.aliyah, this.fullText = false});
+  const ReaderScreen({super.key, required this.weekId, required this.aliyah, this.fullText = false, this.targetVerse});
 
   final String weekId;
   final int aliyah;
   final bool fullText;
+
+  /// A verse of the aliyah to open at, from a search result, Go to verse or
+  /// a link: the full text opens scrolled to it, and marks it until the next
+  /// tap.
+  final VerseRef? targetVerse;
 
   @override
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
@@ -71,13 +77,20 @@ class ReaderScreen extends ConsumerStatefulWidget {
 
 class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   late int _aliyah = widget.aliyah.clamp(0, kAliyot - 1);
-  late bool _fullText = widget.fullText;
+  late bool _fullText = widget.fullText || widget.targetVerse != null;
   int _chunk = 0;
   int _step = 0;
   bool _finished = false;
   bool _positioned = false;
   int? _focusedVerse;
   final _scroll = ScrollController();
+
+  // The verse the reader was opened at, marked until the next tap or another
+  // aliyah. It is not focus mode's verse: it shows with focus mode off too.
+  late VerseRef? _targetVerse = widget.targetVerse;
+
+  // One per verse of the full text, for scrolling a verse into view.
+  final _verseKeys = <GlobalKey>[];
 
   // Kept for dispose(), when ref can no longer be used.
   late final TtsService _tts;
@@ -127,8 +140,40 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _positioned = false;
       _finished = false;
       _focusedVerse = null;
+      _targetVerse = null;
     });
     if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
+
+  // --- The verse opened at ---------------------------------------------------
+
+  GlobalKey _verseKey(int i) {
+    while (_verseKeys.length <= i) {
+      _verseKeys.add(GlobalKey());
+    }
+    return _verseKeys[i];
+  }
+
+  /// Scrolls verse [i] of the full text, the one the reader was opened at, a
+  /// fifth of the way down the screen once this frame has laid it out, and
+  /// then says which verse it is where the platform takes announcements.
+  void _revealTarget(int i, String book, VerseRef verse) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final target = i < _verseKeys.length ? _verseKeys[i].currentContext : null;
+      if (!mounted || target == null) return;
+      await Scrollable.ensureVisible(
+        target,
+        alignment: 0.2,
+        duration: Motion.of(context).d(const Duration(milliseconds: 300)),
+        curve: Motion.standard,
+      );
+      if (!mounted || !MediaQuery.supportsAnnounceOf(context)) return;
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        Names(context).reference(book, verse.chapter, verse.verse),
+        Directionality.of(context),
+      );
+    });
   }
 
   // --- Recording progress ---------------------------------------------------
@@ -337,6 +382,17 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           _chunk = c.clamp(0, flow.chunks.length - 1);
           _step = st.clamp(0, flow.stepsFor(_chunk).length - 1);
           _positioned = true;
+          if (_targetVerse case final target?) {
+            final i = flow.verses.indexOf(target);
+            if (i < 0) {
+              // Not in this aliyah (an old link, say): it opens as usual.
+              _targetVerse = null;
+            } else {
+              // Focus mode reads around it, rather than around nothing.
+              if (s.focusMode) _focusedVerse = i;
+              _revealTarget(i, flow.book, target);
+            }
+          }
         }
         // Settings changes can reshape the flow; keep indices in range.
         if (_chunk >= flow.chunks.length) _chunk = flow.chunks.length - 1;
@@ -402,7 +458,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 onSelected: (v) {
                   switch (v) {
                     case 'mode':
-                      setState(() => _fullText = !_fullText);
+                      setState(() {
+                        _fullText = !_fullText;
+                        _targetVerse = null;
+                      });
                     case 'mark':
                       _markAliyahRead(ctx);
                     case 'week':
@@ -444,7 +503,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           texts: texts,
                           settings: s,
                           scroll: _scroll,
+                          verseKey: _verseKey,
                           focusedVerse: _focusedVerse,
+                          targetVerse: _targetVerse,
+                          onTap: _targetVerse == null ? null : () => setState(() => _targetVerse = null),
                           onVerseTap: (i) => setState(() => _focusedVerse = _focusedVerse == i ? null : i),
                           footer: ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah)
                               ? FilledButton.icon(
@@ -908,7 +970,10 @@ class _FullText extends StatelessWidget {
     required this.texts,
     required this.settings,
     required this.scroll,
+    required this.verseKey,
     required this.focusedVerse,
+    required this.targetVerse,
+    required this.onTap,
     required this.onVerseTap,
     this.footer,
   });
@@ -917,7 +982,16 @@ class _FullText extends StatelessWidget {
   final ReaderTexts texts;
   final AppSettings settings;
   final ScrollController scroll;
+
+  /// The key of each verse's block, by index, for scrolling it into view.
+  final GlobalKey Function(int) verseKey;
   final int? focusedVerse;
+
+  /// The verse the reader was opened at, which is marked.
+  final VerseRef? targetVerse;
+
+  /// Called on any tap on the text, wherever it lands.
+  final VoidCallback? onTap;
   final ValueChanged<int> onVerseTap;
   final Widget? footer;
 
@@ -927,100 +1001,113 @@ class _FullText extends StatelessWidget {
     final theme = Theme.of(context);
     final styles = ScriptureStyles(context, settings);
     final englishRashi = settings.secondReading == SecondReading.rashiEnglish;
-    return Scrollbar(
-      controller: scroll,
-      child: ListView.builder(
-        controller: scroll,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        itemCount: flow.verses.length + 1,
-        itemBuilder: (context, i) {
-          if (i == flow.verses.length) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Center(child: footer ?? const SizedBox.shrink()),
-            );
-          }
-          final r = flow.verses[i];
-          final dimmed = settings.focusMode && focusedVerse != null && focusedVerse != i;
-          final highlighted = settings.focusMode && focusedVerse == i;
-          final brk = texts.mikra.breaks[r];
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: styles.maxLineWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (r.verse == 1 || i == 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 4),
-                      child: Semantics(
-                        header: true,
-                        headingLevel: 3,
-                        child: Text(
-                          l.chapterLabel(context.isHebrewUi ? HebrewText.gematria(r.chapter, punctuate: false) : '${r.chapter}'),
-                          style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
-                        ),
-                      ),
-                    ),
-                  InkWell(
-                    onTap: settings.focusMode ? () => onVerseTap(i) : null,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ScriptureVerse(
-                          verse: texts.mikra.verse(r),
-                          kind: ScriptureKind.mikra,
-                          settings: settings,
-                          dimmed: dimmed,
-                          highlighted: highlighted,
-                        ),
-                        if (texts.onkelos != null)
-                          ScriptureVerse(
-                            verse: texts.onkelos!.verse(r),
-                            kind: ScriptureKind.targum,
-                            settings: settings,
-                            dimmed: dimmed,
-                            secondary: true,
-                          ),
-                        if (settings.showTranslation && texts.english != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: TranslationVerse(
-                              text: texts.english!.verse(r).readText,
-                              number: r.verse,
-                              settings: settings,
-                              dimmed: dimmed,
-                            ),
-                          ),
-                        if ((settings.showRashi || settings.usesRashi) && texts.rashi != null && texts.rashi!.on(r).isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
-                          ),
-                      ],
+
+    Widget verse(int i) {
+      final r = flow.verses[i];
+      final targeted = r == targetVerse;
+      final dimmed = settings.focusMode && focusedVerse != null && focusedVerse != i;
+      // The mark of the verse opened at stands in for focus mode's own.
+      final highlighted = settings.focusMode && focusedVerse == i && !targeted;
+      final brk = texts.mikra.breaks[r];
+      return Center(
+        key: verseKey(i),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: styles.maxLineWidth),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (r.verse == 1 || i == 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                  child: Semantics(
+                    header: true,
+                    headingLevel: 3,
+                    child: Text(
+                      l.chapterLabel(context.isHebrewUi ? HebrewText.gematria(r.chapter, punctuate: false) : '${r.chapter}'),
+                      style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
                     ),
                   ),
-                  if (brk != null)
-                    ExcludeSemantics(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: brk == SectionBreak.open ? 16 : 8),
-                        // A rubric, like the marks inside a verse
-                        // (DESIGN_SYSTEM.md §3.1).
-                        child: Text(
-                          brk == SectionBreak.open ? 'פ' : 'ס',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary),
-                        ),
+                ),
+              TargetVerseMark(
+                active: targeted,
+                child: InkWell(
+                  onTap: settings.focusMode ? () => onVerseTap(i) : null,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ScriptureVerse(
+                        verse: texts.mikra.verse(r),
+                        kind: ScriptureKind.mikra,
+                        settings: settings,
+                        dimmed: dimmed,
+                        highlighted: highlighted,
                       ),
-                    )
-                  else
-                    const Gap(10),
-                ],
+                      if (texts.onkelos != null)
+                        ScriptureVerse(
+                          verse: texts.onkelos!.verse(r),
+                          kind: ScriptureKind.targum,
+                          settings: settings,
+                          dimmed: dimmed,
+                          secondary: true,
+                        ),
+                      if (settings.showTranslation && texts.english != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: TranslationVerse(
+                            text: texts.english!.verse(r).readText,
+                            number: r.verse,
+                            settings: settings,
+                            dimmed: dimmed,
+                          ),
+                        ),
+                      if ((settings.showRashi || settings.usesRashi) && texts.rashi != null && texts.rashi!.on(r).isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          );
-        },
+              if (brk != null)
+                ExcludeSemantics(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: brk == SectionBreak.open ? 16 : 8),
+                    // A rubric, like the marks inside a verse
+                    // (DESIGN_SYSTEM.md §3.1).
+                    child: Text(
+                      brk == SectionBreak.open ? 'פ' : 'ס',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary),
+                    ),
+                  ),
+                )
+              else
+                const Gap(10),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return TapObserver(
+      onTap: onTap,
+      child: Scrollbar(
+        controller: scroll,
+        // Every verse is built (an aliyah has 72 at most), so that any of them
+        // can be scrolled to.
+        child: SingleChildScrollView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < flow.verses.length; i++) verse(i),
+              if (footer case final footer?) Padding(padding: const EdgeInsets.only(top: 16), child: Center(child: footer)),
+            ],
+          ),
+        ),
       ),
     );
   }

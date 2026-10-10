@@ -227,6 +227,10 @@ Targets:
 | secondary / paper | 6.46 | 9.36 | 7.17 | 11.40 | 15.41 |
 | secondary / restWash (candles) | 5.34 | 5.88 | 5.77 | 10.04 | 9.70 |
 | onSecondaryContainer / secondaryContainer (notices) | 11.24 | 8.79 | 10.20 | 18.50 | 13.21 |
+| onSurface / secondaryContainer (the verse opened at) | 14.07 | 8.85 | 11.49 | 18.50 | 13.21 |
+| onSurfaceVariant / secondaryContainer (its Targum and translation) | 6.47 | 5.73 | 6.74 | 14.52 | 11.08 |
+| secondary / secondaryContainer (its verse numbers, and the rule) | 5.34 | 5.88 | 5.77 | 10.04 | 9.70 |
+| primary / secondaryContainer (its note marks) | 8.46 | 6.36 | 7.54 | 12.28 | 8.33 |
 | tertiary (grace) / paper | 6.24 | 9.89 | 6.32 | 10.84 | 13.67 |
 | onLate / late (map tile) | 5.49 | 5.32 | 6.20 | 8.20 | 9.64 |
 | late / paper | 5.40 | 6.09 | 5.61 | 8.20 | 9.64 |
@@ -448,6 +452,12 @@ Rules:
 - The current verse gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`. No radius: Flutter forbids a radius with non-uniform borders.
 - Padding: start 12, vertical 4.
 - All other verses, including their numbers and ketiv, use `dimInk`. Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
+
+**The verse opened at** (`TargetVerseMark`, lib/features/reader/verse_anchor.dart)
+- A verse the reader opens at, from a search result, Go to verse (§6.26) or a link (`/read/{week}/{aliyah}?verse=28:12`), opens the full text and is scrolled to a fifth of the way down the text's viewport (`Scrollable.ensureVisible`, alignment 0.2, 300 ms on `Motion.standard`, at once under Reduce Motion).
+- It is marked until the next tap on the text, another aliyah or a change of mode: its whole block (Mikra, Targum, translation, Rashi) on a `secondaryContainer` wash, the gold wash search marks matches with, with radius 8, painted 8 px past the text at each side and 4 above and below, so nothing moves when it goes; and a 3 px `secondary` rule at its right edge, where the verse and its number begin, clipped to the wash's corners. The rule is the cue in high contrast, where the wash is close to the paper. Scripture on the wash keeps 7:1 in every theme (§3.5).
+- It is not focus mode's verse and shows with focus mode off. With focus mode on, it is also the focused verse, so the others dim around it, and focus mode's own highlight yields to the mark.
+- Where the platform takes announcements, its reference is said once the scroll ends ("Genesis 28:12").
 
 **Line widths:** `LineWidth.narrow` 560, `medium` 680 (default), `wide` 880 (was 1040, about 80 characters at 26sp).
 

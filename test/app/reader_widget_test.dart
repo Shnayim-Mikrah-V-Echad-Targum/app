@@ -150,7 +150,8 @@ void main() {
     c.read(routerProvider).go('/read/5787:2/0?mode=full');
     await loadTexts(tester);
     expect(find.text('Chapter 6'), findsOneWidget);
-    expect(find.text('Mark this aliyah as read'), findsNothing, reason: 'the button is at the end of the list');
+    // Built with the text, so that Tab reaches it, but at its end.
+    expect(tester.getTopLeft(find.text('Mark this aliyah as read')).dy, greaterThan(900), reason: 'the button is at the end of the text');
   });
 
   testWidgets('a section mark between verses is a rubric, like one inside a verse', (tester) async {
