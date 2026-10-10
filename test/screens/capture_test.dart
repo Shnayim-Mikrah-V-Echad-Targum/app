@@ -808,6 +808,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.byIcon(Icons.delete_forever_outlined)),
   's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
+  // The plan's last choice brought into view, so that the tap reaches it
+  // rather than the navigation bar over where it would be.
+  's_reading_changed': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(RadioListTile<ReadingPlanType>).last), alignment: 0.5),
   'city': _untilLoaded,
   'city_search': (tester) async {
     await _untilLoaded(tester);
