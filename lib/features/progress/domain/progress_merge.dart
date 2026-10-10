@@ -74,6 +74,28 @@ ProgressState mergeProgress(ProgressState a, ProgressState b) {
   );
 }
 
+/// This device's progress, [local], with a backup file's, [imported],
+/// merged in at the reader's request: what either holds is kept, merged as
+/// [mergeProgress] merges two devices' copies, except that neither side's
+/// reset erases the other's progress. A sync applies a reset to the copies
+/// it reaches, but a reader merging a backup made before one, or a backup
+/// made after a reset elsewhere into progress from before it, is asking to
+/// keep both.
+///
+/// Restore the result with [ProgressController.restore], so that what the
+/// backup adds counts as a new change, which a sync keeps.
+ProgressState mergeBackup(ProgressState local, ProgressState imported) =>
+    mergeProgress(_withoutReset(local), _withoutReset(imported));
+
+/// [s] as if never reset. All it holds is from after its reset, so nothing
+/// comes back; only the other side's progress is no longer cut.
+ProgressState _withoutReset(ProgressState s) => ProgressState(
+      weeks: s.weeks,
+      pauses: s.pauses,
+      unknownWeeks: s.unknownWeeks,
+      unknownPauses: s.unknownPauses,
+    );
+
 /// What a sync saves to the reader's account: their [progress], and the day
 /// they joined (see [mergeSyncPayload]). Earlier versions saved the
 /// progress alone, and read past the join date.

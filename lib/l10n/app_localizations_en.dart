@@ -1449,7 +1449,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importData => 'Import progress';
 
   @override
-  String get importDataDesc => 'Restore from a backup';
+  String get importDataDesc => 'Restore from a backup file';
 
   @override
   String get importPrompt => 'Paste the contents of your backup file.';
@@ -1462,6 +1462,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportCopied => 'Backup copied to the clipboard.';
+
+  @override
+  String get exportSaved => 'Backup saved.';
+
+  @override
+  String get importPaste => 'Paste backup text';
+
+  @override
+  String get importPasteDesc => 'For a backup copied as text';
+
+  @override
+  String get pasteFromClipboard => 'Paste from clipboard';
+
+  @override
+  String importSummary(String date, int weeks, int pauses) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: '$weeks weeks logged',
+      one: '1 week logged',
+      zero: 'nothing logged',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pauses,
+      locale: localeName,
+      other: '$pauses pauses',
+      one: '1 pause',
+      zero: 'no pauses',
+    );
+    return 'Backup from $date: $_temp0, $_temp1.';
+  }
+
+  @override
+  String importCounts(int weeks, int pauses) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: '$weeks weeks logged',
+      one: '1 week logged',
+      zero: 'Nothing logged',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pauses,
+      locale: localeName,
+      other: '$pauses pauses',
+      one: '1 pause',
+      zero: 'no pauses',
+    );
+    return '$_temp0, $_temp1.';
+  }
+
+  @override
+  String get importMergeBody =>
+      'Merge this backup with the progress on this device? Nothing on either side is lost.';
+
+  @override
+  String get importAlsoSettings => 'Also restore settings';
+
+  @override
+  String get importMerge => 'Merge';
+
+  @override
+  String get importReplace => 'Replace instead';
+
+  @override
+  String get importRemindersOff =>
+      'Reminders are off, since notifications aren\'t allowed for this app.';
 
   @override
   String get cloudBackup => 'Cloud backup';

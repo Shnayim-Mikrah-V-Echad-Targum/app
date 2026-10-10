@@ -1444,7 +1444,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get importData => 'ייבוא התקדמות';
 
   @override
-  String get importDataDesc => 'שחזור מגיבוי';
+  String get importDataDesc => 'שחזור מקובץ גיבוי';
 
   @override
   String get importPrompt => 'יש להדביק את תוכן קובץ הגיבוי.';
@@ -1457,6 +1457,77 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get exportCopied => 'הגיבוי הועתק ללוח.';
+
+  @override
+  String get exportSaved => 'הגיבוי נשמר.';
+
+  @override
+  String get importPaste => 'הדבקת טקסט של גיבוי';
+
+  @override
+  String get importPasteDesc => 'לגיבוי שהועתק כטקסט';
+
+  @override
+  String get pasteFromClipboard => 'הדבקה מהלוח';
+
+  @override
+  String importSummary(String date, int weeks, int pauses) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: 'קריאה מתועדת ב־$weeks שבועות',
+      two: 'קריאה מתועדת בשבועיים',
+      one: 'קריאה מתועדת בשבוע אחד',
+      zero: 'אין קריאה מתועדת',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pauses,
+      locale: localeName,
+      other: '$pauses השהיות',
+      two: 'שתי השהיות',
+      one: 'השהיה אחת',
+      zero: 'ללא השהיות',
+    );
+    return 'גיבוי מ־$date: $_temp0, $_temp1.';
+  }
+
+  @override
+  String importCounts(int weeks, int pauses) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weeks,
+      locale: localeName,
+      other: 'קריאה מתועדת ב־$weeks שבועות',
+      two: 'קריאה מתועדת בשבועיים',
+      one: 'קריאה מתועדת בשבוע אחד',
+      zero: 'אין קריאה מתועדת',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pauses,
+      locale: localeName,
+      other: '$pauses השהיות',
+      two: 'שתי השהיות',
+      one: 'השהיה אחת',
+      zero: 'ללא השהיות',
+    );
+    return '$_temp0, $_temp1.';
+  }
+
+  @override
+  String get importMergeBody =>
+      'למזג את הגיבוי עם ההתקדמות שבמכשיר הזה? שום דבר לא יאבד, לא מהגיבוי ולא מהמכשיר.';
+
+  @override
+  String get importAlsoSettings => 'לשחזר גם את ההגדרות';
+
+  @override
+  String get importMerge => 'מיזוג';
+
+  @override
+  String get importReplace => 'החלפה במקום מיזוג';
+
+  @override
+  String get importRemindersOff =>
+      'התזכורות כבויות, כי לאפליקציה אין הרשאה לשלוח התראות.';
 
   @override
   String get cloudBackup => 'גיבוי בענן';

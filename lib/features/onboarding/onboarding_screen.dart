@@ -60,7 +60,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 }
 
 /// Where a reader who already uses the app restores their progress from.
-enum _RestoreFrom { account, file }
+enum _RestoreFrom { account, file, pasted }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// Whether progress is being restored from the account's backup.
@@ -110,7 +110,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       case _RestoreFrom.account:
         await _restoreFromAccount();
       case _RestoreFrom.file:
-        await _restoreFromFile();
+        await _restoreFromBackup(askToImportBackup);
+      case _RestoreFrom.pasted:
+        await _restoreFromBackup(askToPasteBackup);
       case null:
         break;
     }
@@ -143,17 +145,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
-  /// Restores a backup file in place of everything here.
-  Future<void> _restoreFromFile() async {
+  /// Restores a backup, from a file or pasted, as [ask] asks for it.
+  Future<void> _restoreFromBackup(Future<BackupImport?> Function(BuildContext, WidgetRef) ask) async {
     final l = context.l10n;
-    final restored = await askToImportBackup(context, ref);
-    if (restored == null || !mounted) return;
-    if (!restored) {
-      showStatus(context, l.importFailed);
-      return;
-    }
-    showStatus(context, l.onbRestoreDone);
-    _finishRestoring();
+    final result = await ask(context, ref);
+    if (result == null || !mounted) return;
+    showStatus(context, backupImportStatus(l, result, restored: l.onbRestoreDone));
+    if (result != BackupImport.unreadable) _finishRestoring();
   }
 
   /// Ends onboarding, keeping the join date that came with the progress, and
@@ -212,6 +210,12 @@ class _RestoreSheet extends StatelessWidget {
               title: Text(l.onbRestoreFile),
               subtitle: Text(l.onbRestoreFileDesc),
               onTap: () => Navigator.pop(context, _RestoreFrom.file),
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_paste),
+              title: Text(l.importPaste),
+              subtitle: Text(l.importPasteDesc),
+              onTap: () => Navigator.pop(context, _RestoreFrom.pasted),
             ),
           ],
         ),

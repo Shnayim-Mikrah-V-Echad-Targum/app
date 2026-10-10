@@ -9,6 +9,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/features/settings/screens/data_settings_screen.dart';
 
 import '../../helpers.dart';
@@ -420,7 +421,7 @@ void main() {
     c = await pumpApp(tester, now: DateTime(2026, 10, 12, 10));
     c.read(routerProvider).go('/settings/data');
     await tester.pumpAndSettle();
-    expect(importBackup(ref(), file), isTrue);
+    expect(await importBackup(ref(), parseBackup(file)!, replace: true), BackupImport.restored);
     final imported = c.read(progressProvider);
     expect(imported.week('5787:1').isAliyahDone(3), isTrue);
     expect(imported.unknownWeeks, unknownWeeks);
@@ -428,7 +429,9 @@ void main() {
   });
 
   group('importing a backup', () {
-    Future<ProviderContainer> import(WidgetTester tester, Map<String, dynamic> progress) async {
+    /// Pastes a backup holding [progress], as far as the question of how to
+    /// restore it.
+    Future<ProviderContainer> paste(WidgetTester tester, Map<String, dynamic> progress) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -436,18 +439,19 @@ void main() {
       final c = await pumpApp(tester, progress: mine, now: DateTime(2026, 10, 12, 10));
       c.read(routerProvider).go('/settings/data');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Import progress'));
+      await tester.tap(find.text('Paste backup text'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), jsonEncode({'app': 'shnayim_mikra', 'progress': progress}));
-      await tester.tap(find.widgetWithText(FilledButton, 'Import progress'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();
       return c;
     }
 
     for (final MapEntry(key: name, value: raw) in _bad.entries) {
       testWidgets('a file with $name is rejected whole', (tester) async {
-        final c = await import(tester, jsonDecode(raw) as Map<String, dynamic>);
+        final c = await paste(tester, jsonDecode(raw) as Map<String, dynamic>);
         expect(find.text("That backup couldn't be read."), findsOneWidget);
+        expect(find.byType(TextField), findsOneWidget, reason: 'to paste it again');
         expect(c.read(progressProvider).weeks.keys, ['5787:1'], reason: 'nothing was imported');
         expect(c.read(progressProvider).week('5787:1').isAliyahDone(3), isTrue);
       });
@@ -468,7 +472,9 @@ void main() {
       now += 1000;
       final resetAt = now;
       now += 1000;
-      final c = await import(tester, _roundTrip(theirs));
+      final c = await paste(tester, _roundTrip(theirs));
+      await tester.tap(find.text('Replace instead'));
+      await tester.pumpAndSettle();
       final backup = ProgressState(
         weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAliyah(3, _d1)},
         resetAt: resetAt,

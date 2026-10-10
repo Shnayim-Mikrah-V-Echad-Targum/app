@@ -88,6 +88,9 @@ class Names {
   /// "11 Oct".
   String dateShort(LocalDate d) => DateFormat.MMMd(context.localeName).format(d.toDateTime());
 
+  /// "11 October 2026".
+  String dateWithYear(LocalDate d) => DateFormat.yMMMMd(context.localeName).format(d.toDateTime());
+
   String time(int minutesSinceMidnight) => DateFormat.jm(context.localeName)
       .format(DateTime(2000, 1, 1, minutesSinceMidnight ~/ 60, minutesSinceMidnight % 60));
 

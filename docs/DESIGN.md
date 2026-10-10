@@ -115,7 +115,7 @@ The planner is a pure function. Its rules come from the research:
 
 The copy is informational ("Revi'i is today's reading"), never guilt-based.
 
-Permission is requested in context, after the reader finishes their first aliyah, not at launch.
+Permission is requested in context, after the reader finishes their first aliyah, not at launch. Restoring a backup's settings with reminders on asks for it then, since the OS's permission doesn't come with the backup; refused, the reminders are turned off and the reader is told why.
 
 ## 6. Onboarding
 
@@ -127,7 +127,7 @@ The goal is to reach the first verse in under a minute. Onboarding has four scre
 
 Each step after the welcome is a page of its own, so Back, the system's or the app bar's, returns a step rather than leaving the app, and screen readers announce each step as a new screen. Every choice is saved as it is made, so going back loses nothing. Everything else is a setting with a sensible default.
 
-**A reader who already uses the app restores from the welcome** ("I already use Shnayim Mikra"), on a new phone say. Signing in turns on backup and syncs: with progress in the account, onboarding is done and Today shows the streaks as they were; with none, onboarding carries on, with backup on. A backup file can be restored instead, in place of everything on the device. Signing in is offered only with a real community backend: the demo keeps nothing from one run to the next.
+**A reader who already uses the app restores from the welcome** ("I already use Shnayim Mikra"), on a new phone say. Signing in turns on backup and syncs: with progress in the account, onboarding is done and Today shows the streaks as they were; with none, onboarding carries on, with backup on. A backup file can be restored instead, settings and all. Signing in is offered only with a real community backend: the demo keeps nothing from one run to the next.
 
 **Israel is guessed from the time zone's IANA name** (Asia/Jerusalem, or the older Asia/Tel_Aviv), which every platform gives, the web included. Abbreviations such as IST are not used: India and Ireland have one too. The guess is made once, on the welcome, and never overrides a choice the reader has made. It is right for those who live in Israel; "Why we ask" tells a visitor that the days of Yom Tov they keep can be set apart in Settings.
 
@@ -188,7 +188,7 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md). The key decisions:
 
 - **Pure-Dart core.** Calendar, plans, streaks and the reminder planner have no Flutter imports and are tested exhaustively.
 - **Riverpod providers** connect settings, today's date, the schedule, progress and the streak summary. Everything else is derived from those.
-- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. A week or pause that can't be read is kept untouched rather than dropped, and copied aside before a readable copy or a merge replaces it. Stored progress that can only be read by fixing part of it, or that a newer version wrote, is copied aside before anything can overwrite it. Export and import are available in settings. An export keeps what this version can't read apart from the rest, so the file can always be imported, and an import restores that part too. An import is all or nothing, and counts as a new change, so the next sync keeps it. Cloud backup is optional and merges rather than overwrites (see [Streaks](#4-streaks)), and it pauses (asking for an update) if a newer version of the app wrote the backup.
+- **Local-first storage.** Settings and progress are versioned JSON in shared preferences, with tolerant parsing. A week or pause that can't be read is kept untouched rather than dropped, and copied aside before a readable copy or a merge replaces it. Stored progress that can only be read by fixing part of it, or that a newer version wrote, is copied aside before anything can overwrite it. Export and import are available in settings. An export is a file, `shnayim-mikra-backup-YYYY-MM-DD.json`: shared through the share sheet on phones, downloaded in a browser, and saved where the reader chooses on Windows (copied to the clipboard if none of that works). An import opens such a file, or takes its text pasted, which is how earlier versions shared backups, and says what it holds (when it was made, the weeks logged, the pauses) before anything changes. By default it merges with the progress on the device, as a sync does, except that neither side's reset erases the other's progress, and the earlier join date wins; the reader can choose to replace instead. Its settings come too if the reader asks, which on a new install, with no settings of its own to keep, is the default. An export keeps what this version can't read apart from the rest, so the file can always be imported, and an import restores that part too. An import is all or nothing, and counts as a new change, so the next sync keeps it. Cloud backup is optional and merges rather than overwrites (see [Streaks](#4-streaks)), and it pauses (asking for an update) if a newer version of the app wrote the backup.
 - **Bundled texts.** About 9 MB of JSON, loaded per book on demand.
 - **Localization.** English is the source language. The Hebrew ARB is generated from a dictionary, and the build fails if any key is missing.
 

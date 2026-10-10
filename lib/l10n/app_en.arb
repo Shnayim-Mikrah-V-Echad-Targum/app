@@ -981,11 +981,47 @@
   "exportData": "Export my progress",
   "exportDataDesc": "Save a backup you can restore later",
   "importData": "Import progress",
-  "importDataDesc": "Restore from a backup",
+  "importDataDesc": "Restore from a backup file",
   "importPrompt": "Paste the contents of your backup file.",
   "importSuccess": "Progress imported.",
   "importFailed": "That backup couldn't be read.",
   "exportCopied": "Backup copied to the clipboard.",
+  "exportSaved": "Backup saved.",
+  "importPaste": "Paste backup text",
+  "importPasteDesc": "For a backup copied as text",
+  "pasteFromClipboard": "Paste from clipboard",
+  "importSummary": "Backup from {date}: {weeks, plural, =0{nothing logged} =1{1\u00a0week logged} other{{weeks}\u00a0weeks logged}}, {pauses, plural, =0{no pauses} =1{1\u00a0pause} other{{pauses}\u00a0pauses}}.",
+  "@importSummary": {
+    "description": "What a backup holds, as importCounts says it, and the day it was made.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "weeks": {
+        "type": "int"
+      },
+      "pauses": {
+        "type": "int"
+      }
+    }
+  },
+  "importCounts": "{weeks, plural, =0{Nothing logged} =1{1\u00a0week logged} other{{weeks}\u00a0weeks logged}}, {pauses, plural, =0{no pauses} =1{1\u00a0pause} other{{pauses}\u00a0pauses}}.",
+  "@importCounts": {
+    "description": "What a backup holds: the weeks with reading logged, and the pauses (\"Life happens\"). Each number is joined to its noun by a no-break space.",
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      },
+      "pauses": {
+        "type": "int"
+      }
+    }
+  },
+  "importMergeBody": "Merge this backup with the progress on this device? Nothing on either side is lost.",
+  "importAlsoSettings": "Also restore settings",
+  "importMerge": "Merge",
+  "importReplace": "Replace instead",
+  "importRemindersOff": "Reminders are off, since notifications aren't allowed for this app.",
   "cloudBackup": "Cloud backup",
   "resetProgress": "Reset all progress",
   "resetProgressConfirm": "This erases your reading history and streaks on this device. It can't be undone.",

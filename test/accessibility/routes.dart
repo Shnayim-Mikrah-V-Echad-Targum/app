@@ -12,6 +12,7 @@ const a11yRoutes = [
   '/settings/display',
   '/settings/accessibility',
   '/settings/reminders',
+  '/settings/data',
   '/settings/about',
   '/settings/account',
   '/guide',

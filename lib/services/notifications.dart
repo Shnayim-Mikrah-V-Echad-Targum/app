@@ -100,8 +100,19 @@ class NotificationService {
   void handleTap(String? payload) => _taps.add(payload ?? '/today');
 
   /// Asks the OS for permission. Call only after the user has said yes in
-  /// the app's own explanation screen.
+  /// the app's own explanation screen, or turned reminders on themselves
+  /// (in a backup they restore, say). A platform that fails to answer counts
+  /// as refusing.
   Future<bool> requestPermission() async {
+    try {
+      return await _requestPermission();
+    } catch (e) {
+      debugPrint('Could not ask for notification permission: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _requestPermission() async {
     final p = _plugin;
     if (p == null) return false;
     if (defaultTargetPlatform == TargetPlatform.android) {
@@ -265,6 +276,9 @@ ReminderCopy reminderCopy(
 }
 
 final notificationServiceProvider = Provider<NotificationService>((ref) => NotificationService.disabled());
+
+/// Whether any reminder is on in [s].
+bool anyReminderOn(AppSettings s) => s.dailyReminder || s.fridayReminder || s.checkInReminder;
 
 /// Recomputes and reschedules reminders whenever settings, progress or the
 /// date change.

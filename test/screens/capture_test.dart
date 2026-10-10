@@ -27,11 +27,14 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/backup.dart';
+import 'package:shnayim_mikra/services/backup_files.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
+import '../fake_backup_files.dart';
 import '../helpers.dart';
 import 'galleries.dart';
 
@@ -69,6 +72,8 @@ const _screens = {
   'welcome_restore': '/welcome',
   // Signed in, while the account's backup comes in.
   'welcome_restoring': '/welcome',
+  // A backup file chosen: what it holds, with nothing here to merge with.
+  'welcome_import': '/welcome',
   'today': '/today',
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
@@ -141,6 +146,10 @@ const _screens = {
   's_reminders_on': '/settings/reminders',
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
+  // A backup file chosen: what it holds, and whether to merge it.
+  's_data_import': '/settings/data',
+  // Pasting a backup, which can't be read.
+  's_data_paste': '/settings/data',
   'about': '/settings/about',
   'guide': '/guide',
   'legal': '/legal/privacy',
@@ -274,6 +283,26 @@ Future<ForumRepository> _accountWithNewerBackup() async {
 
 /// Screens shown signed in with backup on.
 const _backupOn = {'s_data_reset'};
+
+/// Screens where the reader chooses [_backupFile] to restore.
+const _choosesBackup = {'s_data_import', 'welcome_import'};
+
+/// A backup made on another phone on the Thursday of Bereshit: the last
+/// eleven weeks of 5786 read, and a pause over Sukkot.
+String _backupFile() {
+  final first = LocalDate(2026, 7, 24);
+  return encodeBackup(
+    ProgressState(
+      weeks: {
+        for (var i = 0; i < 11; i++)
+          '5786:${44 + i}': WeekProgress(weekId: '5786:${44 + i}').withAll(first.addDays(7 * i)),
+      },
+      pauses: [Pause(LocalDate(2026, 9, 27), LocalDate(2026, 10, 3), id: 'sukkot')],
+    ),
+    AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 7, 20)),
+    now: DateTime(2026, 10, 8, 21),
+  );
+}
 
 /// Screens shown where reminders are available.
 const _remindersSupported = {'s_reminders_on'};
@@ -518,6 +547,15 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'welcome_restoring': _tapInTurn([() => find.byType(TextButton).last, () => find.byType(ListTile).first]),
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.byIcon(Icons.delete_forever_outlined)),
+  's_data_import': (tester) => tester.tap(find.byIcon(Icons.download)),
+  's_data_paste': _tapInTurn([
+    () => find.byIcon(Icons.content_paste),
+    () => find.byType(FilledButton),
+  ]),
+  'welcome_import': _tapInTurn([
+    () => find.byType(TextButton).last,
+    () => find.byIcon(Icons.restore_page_outlined),
+  ]),
   // The week strip, in the middle of the page.
   'today_yomtov_oneday': _showWeekStrip,
   'today_yomtov_twoday': _showWeekStrip,
@@ -633,11 +671,13 @@ const _desktopScreens = {
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week'};
+const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
   'today',
   'welcome',
   'welcome_restore',
+  's_data',
+  's_data_import',
   'progress',
   'reader',
   'kit_ornaments',
@@ -714,6 +754,10 @@ void main() {
                 ? await _accountWithNewerBackup()
                 : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
             notifications: _remindersSupported.contains(entry.key) ? PhoneNotifications() : null,
+            overrides: [
+              if (_choosesBackup.contains(entry.key))
+                backupFilesProvider.overrideWithValue(FakeBackupFiles(file: _backupFile())),
+            ],
           );
           c.read(routerProvider).go(entry.value);
           await _settle(tester);

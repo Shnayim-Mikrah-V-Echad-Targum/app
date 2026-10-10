@@ -14,7 +14,9 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/services/backup_files.dart';
 
+import '../fake_backup_files.dart';
 import '../helpers.dart';
 
 /// The demo community, standing in for a real one, whose backups outlive
@@ -39,12 +41,19 @@ void main() {
           '5787:${i + 1}': WeekProgress(weekId: '5787:${i + 1}').withAll(bereshitFriday.addDays(7 * i)),
       });
 
-  /// A first launch, with the restore sheet open.
-  Future<ProviderContainer> openRestore(WidgetTester tester, ForumRepository forums) async {
+  /// A first launch, with the restore sheet open, where the reader would
+  /// choose [file] as a backup.
+  Future<ProviderContainer> openRestore(WidgetTester tester, ForumRepository forums, {String? file}) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final c = await pumpApp(tester, settings: const AppSettings(), now: now, forums: forums);
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(),
+      now: now,
+      forums: forums,
+      overrides: [backupFilesProvider.overrideWithValue(FakeBackupFiles(file: file))],
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('I already use Shnayim Mikra'));
     await tester.pumpAndSettle();
@@ -148,18 +157,42 @@ void main() {
     await openRestore(tester, DemoForumRepository());
     expect(find.text('Sign in to restore'), findsNothing);
     expect(find.text('Restore from a backup file'), findsOneWidget);
+    expect(find.text('Paste backup text'), findsOneWidget);
   });
 
   group('a backup file', () {
-    Future<ProviderContainer> restoreFile(WidgetTester tester, Map<String, dynamic> backup) async {
-      final c = await openRestore(tester, DemoForumRepository());
+    /// Chooses [backup] as the file to restore from.
+    Future<ProviderContainer> chooseFile(WidgetTester tester, Map<String, dynamic> backup) async {
+      final c = await openRestore(
+        tester,
+        DemoForumRepository(),
+        file: jsonEncode({'app': 'shnayim_mikra', 'exportedAt': '2026-11-01T12:00:00.000Z', ...backup}),
+      );
       await tester.tap(find.text('Restore from a backup file'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), jsonEncode({'app': 'shnayim_mikra', ...backup}));
+      return c;
+    }
+
+    Future<ProviderContainer> restoreFile(WidgetTester tester, Map<String, dynamic> backup) async {
+      final c = await chooseFile(tester, backup);
       await tester.tap(find.widgetWithText(FilledButton, 'Import progress'));
       await tester.pumpAndSettle();
       return c;
     }
+
+    testWidgets('says what it holds, with nothing here to merge with or keep', (tester) async {
+      final saved = AppSettings(onboardingComplete: true, joinDate: simchatTorah);
+      await chooseFile(tester, {'progress': fiveWeeks().toJson(), 'settings': saved.toJson()});
+
+      expect(find.text('Backup from November 1, 2026: 5\u00a0weeks logged, no pauses.'), findsOneWidget);
+      expect(find.text('Merge'), findsNothing);
+      expect(find.text('Replace instead'), findsNothing);
+      expect(
+        tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
+        isTrue,
+        reason: 'a new install has no settings of its own to keep',
+      );
+    });
 
     testWidgets('restores its progress and settings, and opens Today with the streak', (tester) async {
       final saved = AppSettings(onboardingComplete: true, joinDate: simchatTorah, plan: ReadingPlanType.erevShabbat);
@@ -184,13 +217,46 @@ void main() {
       expect(c.read(streakSummaryProvider).parshaStreak, 5);
     });
 
+    testWidgets('can leave its settings out', (tester) async {
+      final saved = AppSettings(onboardingComplete: true, joinDate: simchatTorah, plan: ReadingPlanType.erevShabbat);
+      final c = await chooseFile(tester, {'progress': fiveWeeks().toJson(), 'settings': saved.toJson()});
+      await tester.tap(find.text('Also restore settings'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Import progress'));
+      await tester.pumpAndSettle();
+
+      expect(location(c), '/today');
+      expect(c.read(settingsProvider).plan, isNot(ReadingPlanType.erevShabbat));
+      expect(c.read(settingsProvider).joinDate, simchatTorah, reason: 'the join date comes with the progress');
+      expect(c.read(streakSummaryProvider).parshaStreak, 5);
+    });
+
     testWidgets("that can't be read says so, and stays on the welcome", (tester) async {
-      final c = await restoreFile(tester, {'progress': 'none'});
+      final c = await chooseFile(tester, {'progress': 'none'});
 
       expect(location(c), '/welcome');
       expect(find.text("That backup couldn't be read."), findsOneWidget);
       expect(c.read(settingsProvider).onboardingComplete, isFalse);
     });
+  });
+
+  testWidgets('a backup pasted as text restores as a file does', (tester) async {
+    final c = await openRestore(tester, DemoForumRepository());
+    await tester.tap(find.text('Paste backup text'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextField),
+      jsonEncode({'app': 'shnayim_mikra', 'progress': fiveWeeks().toJson()}),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('5\u00a0weeks logged, no pauses.'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Import progress'));
+    await tester.pumpAndSettle();
+
+    expect(location(c), '/today');
+    expect(find.text('Your progress is restored.'), findsOneWidget);
+    expect(c.read(settingsProvider).joinDate, bereshitFriday);
+    expect(c.read(streakSummaryProvider).parshaStreak, 5);
   });
 
   testWidgets('Your data has a row for the cloud backup, which opens the account page', (tester) async {

@@ -2567,7 +2567,7 @@ abstract class AppLocalizations {
   /// No description provided for @importDataDesc.
   ///
   /// In en, this message translates to:
-  /// **'Restore from a backup'**
+  /// **'Restore from a backup file'**
   String get importDataDesc;
 
   /// No description provided for @importPrompt.
@@ -2593,6 +2593,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Backup copied to the clipboard.'**
   String get exportCopied;
+
+  /// No description provided for @exportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved.'**
+  String get exportSaved;
+
+  /// No description provided for @importPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste backup text'**
+  String get importPaste;
+
+  /// No description provided for @importPasteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'For a backup copied as text'**
+  String get importPasteDesc;
+
+  /// No description provided for @pasteFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from clipboard'**
+  String get pasteFromClipboard;
+
+  /// What a backup holds, as importCounts says it, and the day it was made.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup from {date}: {weeks, plural, =0{nothing logged} =1{1 week logged} other{{weeks} weeks logged}}, {pauses, plural, =0{no pauses} =1{1 pause} other{{pauses} pauses}}.'**
+  String importSummary(String date, int weeks, int pauses);
+
+  /// What a backup holds: the weeks with reading logged, and the pauses ("Life happens"). Each number is joined to its noun by a no-break space.
+  ///
+  /// In en, this message translates to:
+  /// **'{weeks, plural, =0{Nothing logged} =1{1 week logged} other{{weeks} weeks logged}}, {pauses, plural, =0{no pauses} =1{1 pause} other{{pauses} pauses}}.'**
+  String importCounts(int weeks, int pauses);
+
+  /// No description provided for @importMergeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge this backup with the progress on this device? Nothing on either side is lost.'**
+  String get importMergeBody;
+
+  /// No description provided for @importAlsoSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Also restore settings'**
+  String get importAlsoSettings;
+
+  /// No description provided for @importMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get importMerge;
+
+  /// No description provided for @importReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace instead'**
+  String get importReplace;
+
+  /// No description provided for @importRemindersOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders are off, since notifications aren\'t allowed for this app.'**
+  String get importRemindersOff;
 
   /// No description provided for @cloudBackup.
   ///
