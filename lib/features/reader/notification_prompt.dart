@@ -32,6 +32,9 @@ Future<void> maybeOfferReminders(BuildContext context, WidgetRef ref, {required 
     builder: (context) => AlertDialog(
       // The routines and the time may not fit at large text sizes.
       scrollable: true,
+      // No wider than Material's dialogs, so that on a wide screen the title
+      // isn't one long line and the routines wrap in even rows.
+      constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
       icon: const Icon(Icons.notifications_outlined),
       title: Text(celebration),
       content: service.supported

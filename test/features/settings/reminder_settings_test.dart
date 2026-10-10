@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -133,6 +134,24 @@ void main() {
       ),
     );
     expect(selected(tester), ['finish dinner']);
+  });
+
+  testWidgets('the times read as values and the prompt as a subtitle, not in small print', (tester) async {
+    await openReminders(
+      tester,
+      _Notifications(),
+      settings: const AppSettings(onboardingComplete: true, dailyReminder: true, fridayReminder: true),
+    );
+    final theme = Theme.of(tester.element(find.text('Daily reminder time')));
+    for (final text in [
+      find.textContaining(RegExp(r'^8:00\sPM$')),
+      find.textContaining(RegExp(r'^10:00\sAM$')),
+      find.text('Tie your reading to something you already do every day.'),
+    ]) {
+      final style = tester.renderObject<RenderParagraph>(text).text.style!;
+      expect(style.fontSize, theme.textTheme.bodyMedium!.fontSize, reason: '$text');
+      expect(style.color, theme.colorScheme.onSurfaceVariant, reason: '$text');
+    }
   });
 
   group('notifications refused', () {

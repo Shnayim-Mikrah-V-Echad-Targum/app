@@ -92,6 +92,11 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
     final fridayMinutes = city == null
         ? math.min(s.fridayReminderMinutes, kErevShabbatLatestMinutes)
         : s.fridayReminderMinutes;
+    // The times read as a row's value and the routines' prompt as a
+    // subtitle does (DESIGN_SYSTEM.md §6.3), rather than in ListTile's small
+    // label style and in small ink.
+    final theme = Theme.of(context);
+    final secondary = theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant);
 
     Future<void> enable(AppSettings Function(AppSettings) f) async {
       final granted = await service.requestPermission();
@@ -159,6 +164,7 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
             ListTile(
               contentPadding: const EdgeInsetsDirectional.only(start: 32, end: 16),
               title: Text(l.dailyReminderTime),
+              leadingAndTrailingTextStyle: secondary,
               trailing: Semantics(liveRegion: _timeMoved, child: Text(names.time(s.dailyReminderMinutes))),
               onTap: () => pickTime(s.dailyReminderMinutes, (m) => update((s) => s.copyWith(dailyReminderMinutes: m))),
             ),
@@ -167,7 +173,7 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l.habitAnchorPrompt, style: Theme.of(context).textTheme.bodySmall),
+                  Text(l.habitAnchorPrompt, style: secondary),
                   const Gap(6),
                   HabitAnchorChips(
                     selected: s.habitAnchor,
@@ -195,6 +201,7 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
             ListTile(
               contentPadding: const EdgeInsetsDirectional.only(start: 32, end: 16),
               title: Text(l.fridayReminderTime),
+              leadingAndTrailingTextStyle: secondary,
               trailing: Text(names.time(fridayMinutes)),
               // With a city, any time: the reminder comes three hours before
               // candle-lighting at the latest.

@@ -38,8 +38,9 @@ void main() {
   /// Finishes Rishon of Noach, the reader's first aliyah, read by aliyah, so
   /// that reminders are offered.
   Future<ProviderContainer> finishFirstAliyah(WidgetTester tester, _AskingNotifications service,
-      {AppSettings settings = const AppSettings(onboardingComplete: true, method: ReadingMethod.aliyahByAliyah)}) async {
-    tester.view.physicalSize = const Size(412, 915);
+      {AppSettings settings = const AppSettings(onboardingComplete: true, method: ReadingMethod.aliyahByAliyah),
+      Size size = const Size(412, 915)}) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final c = await pumpApp(
@@ -205,6 +206,12 @@ void main() {
     expect(find.descendant(of: find.byType(AlertDialog), matching: find.byIcon(Icons.notifications_outlined)),
         findsOneWidget);
     expect(find.byIcon(Icons.celebration_outlined), findsNothing);
+  });
+
+  testWidgets('on a wide screen, the offer is no wider than a Material dialog', (tester) async {
+    await finishFirstAliyah(tester, _AskingNotifications(allows: true), size: const Size(1366, 860));
+    final dialog = find.descendant(of: find.byType(AlertDialog), matching: find.byType(Material)).first;
+    expect(tester.getSize(dialog).width, 560);
   });
 
   testWidgets('Not now keeps nothing chosen in the offer, and it is not made again', (tester) async {
