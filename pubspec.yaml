@@ -28,6 +28,7 @@ dependencies:
   url_launcher: ^6.3.3
   wakelock_plus: ^1.8.0
   file_selector: ^1.1.0
+  app_settings: ^9.0.0
 
 dev_dependencies:
   flutter_test:

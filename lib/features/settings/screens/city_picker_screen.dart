@@ -36,7 +36,9 @@ class _CityPickerScreenState extends ConsumerState<CityPickerScreen> {
   }
 
   void _choose(City? city) {
-    ref.read(settingsProvider.notifier).update((s) => s.copyWith(city: city));
+    // A reader who has chosen here knows of the city, and isn't offered one
+    // in Reminders again if they later go without.
+    ref.read(settingsProvider.notifier).update((s) => s.copyWith(city: city, cityOfferAnswered: true));
     context.pop();
   }
 

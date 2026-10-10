@@ -22,6 +22,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
@@ -40,6 +41,9 @@ import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikra/ui/widgets/sefer_choice_chip.dart';
+
+import 'package:timezone/timezone.dart' as tz;
 
 import '../fake_backup_files.dart';
 import '../helpers.dart';
@@ -84,6 +88,8 @@ const _screens = {
   // A backup file chosen: what it holds, with nothing here to merge with.
   'welcome_import': '/welcome',
   'today': '/today',
+  // With a city for Shabbat times: on Erev Shabbat, candle-lighting there.
+  'today_candles': '/today',
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
   'today_haftarah_left': '/today',
@@ -110,6 +116,11 @@ const _screens = {
   'reader_third': '/read/5787:42-43/2',
   // Shevi'i just finished, with Shlishi still under way.
   'reader_finished': '/read/5787:1/6',
+  // The reader's first aliyah ever, Rishon, just finished: the offer of
+  // reminders, with a routine chosen.
+  'reader_offer': '/read/5787:1/0',
+  // Its first routine chosen, and Yes: the list of cities offered.
+  'reader_offer_city': '/read/5787:1/0',
   'reader_full': '/read/5787:1/2?mode=full',
   // The keyboard shortcuts, in the app and on the web.
   'reader_keys': '/read/5787:1/2',
@@ -183,6 +194,12 @@ const _screens = {
   's_reminders': '/settings/reminders',
   // As on a phone, where reminders can be scheduled, with all three on.
   's_reminders_on': '/settings/reminders',
+  // Turning the daily reminder on where the OS has refused notifications.
+  's_reminders_denied': '/settings/reminders',
+  // Turning the first reminder on without a city: the list of cities offered.
+  's_reminders_offer': '/settings/reminders',
+  // All three on, following the Shabbat times of the city chosen.
+  's_reminders_city': '/settings/reminders',
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
   // A backup file chosen: what it holds, and whether to merge it.
@@ -265,7 +282,10 @@ const _screens = {
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
-  's_reminders_on': (s) => s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true),
+  's_reminders_on': (s) =>
+      s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true, habitAnchor: HabitAnchor.shacharit),
+  'reader_offer': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
+  'reader_offer_city': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   // Reading by section, so that 32:3 is read with the verses around it.
   'reader_third': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   // Reading by aliyah, so that one step finishes Shevi'i.
@@ -294,6 +314,14 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   // Joined on the Wednesday of Bereshit: the days before have no reading.
   'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
   's_reading_city': (s) => s.copyWith(city: _jerusalem),
+  'today_candles': (s) => s.copyWith(city: _jerusalem),
+  's_reminders_city': (s) => s.copyWith(
+        dailyReminder: true,
+        fridayReminder: true,
+        checkInReminder: true,
+        habitAnchor: HabitAnchor.shacharit,
+        city: _jerusalem,
+      ),
   'city': (s) => s.copyWith(city: _jerusalem),
   'city_search': (s) => s.copyWith(city: _jerusalem),
   'city_many': (s) => s.copyWith(city: _jerusalem),
@@ -317,12 +345,24 @@ const _jerusalem = City(
 );
 
 /// Providers replaced for a screen: the device's time zone, which suggests
-/// cities.
+/// cities, and the time zones loaded, as the app loads them once its first
+/// frame is up (which tests never report).
 final _screenOverrides = <String, List<Override>>{
   for (final screen in ['city', 'city_search', 'city_many', 'city_none'])
     screen: [deviceTimeZoneProvider.overrideWith((ref) async => 'Asia/Jerusalem')],
+  'today_candles': [
+    timeZoneDatabaseProvider.overrideWith((ref) async {}),
+    // A device in Jerusalem, on its clock: tests run on UTC.
+    deviceClockProvider.overrideWithValue(_clockOf(_jerusalem)),
+  ],
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
 };
+
+/// The clock of [city], for a device there.
+Duration Function(LocalDate) _clockOf(City city) {
+  final location = Zmanim.timeZone(city.timeZone)!;
+  return (d) => tz.TZDateTime(location, d.year, d.month, d.day, 12).timeZoneOffset;
+}
 
 /// A verse index that stays two fifths built.
 class _PreparingIndex extends VerseIndexLoader {
@@ -358,6 +398,9 @@ final _screenProgress = <String, ProgressState Function()>{
   'today_joined_midweek': () => ProgressState(weeks: {}),
   'today_simchat_torah': () => ProgressState(weeks: {}),
   'today_three_weeks': () => ProgressState(weeks: {}),
+  // Nothing read yet: Rishon is the first aliyah ever finished.
+  'reader_offer': () => ProgressState(weeks: {}),
+  'reader_offer_city': () => ProgressState(weeks: {}),
   'today_paused': () => ProgressState(
         weeks: _progress().weeks,
         pauses: [Pause(LocalDate(2026, 10, 8), LocalDate(2026, 10, 18), id: 'travel')],
@@ -426,7 +469,23 @@ String _backupFile() {
 }
 
 /// Screens shown where reminders are available.
-const _remindersSupported = {'s_reminders_on'};
+const _remindersSupported = {'s_reminders_on', 's_reminders_city', 'reader_offer'};
+
+/// Screens shown where reminders are available and the OS allows them.
+const _remindersAllowed = {'s_reminders_offer', 'reader_offer_city'};
+
+/// Screens shown where reminders are available but the OS refuses them.
+const _remindersRefused = {'s_reminders_denied'};
+
+class _RefusedNotifications extends PhoneNotifications {
+  @override
+  Future<bool> requestPermission() async => false;
+}
+
+class _AllowedNotifications extends PhoneNotifications {
+  @override
+  Future<bool> requestPermission() async => true;
+}
 
 Future<ForumRepository> _signedIn() async {
   final repo = DemoForumRepository();
@@ -582,6 +641,19 @@ Future<void> _scrollToEnd(WidgetTester tester) async {
 }
 
 final _screenSetup = <String, Future<void> Function(WidgetTester)>{
+  // Next through Rishon's three readings, then a routine in the offer.
+  'reader_offer': _tapInTurn([
+    for (var i = 0; i < 3; i++) () => find.byWidgetPredicate((w) => w is FilledButton).last,
+    () => find.descendant(of: find.byType(AlertDialog), matching: find.byType(SeferChoiceChip)).first,
+  ]),
+  'reader_offer_city': _tapInTurn([
+    for (var i = 0; i < 3; i++) () => find.byWidgetPredicate((w) => w is FilledButton).last,
+    () => find.descendant(of: find.byType(AlertDialog), matching: find.byType(SeferChoiceChip)).first,
+    () => find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)),
+  ]),
+  // The daily reminder's switch.
+  's_reminders_denied': (tester) => tester.tap(find.byType(SwitchListTile).first),
+  's_reminders_offer': (tester) => tester.tap(find.byType(SwitchListTile).first),
   // The last post's menu, then Report.
   'thread_report': _tapInTurn([
     () => find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)),
@@ -835,6 +907,7 @@ final _modes = [
 
 const _desktopScreens = {
   'today',
+  'today_candles',
   'today_divergence',
   'today_haftarah_left',
   'today_yomtov_oneday',
@@ -845,6 +918,8 @@ const _desktopScreens = {
   'reader',
   'reader_third',
   'reader_finished',
+  'reader_offer',
+  'reader_offer_city',
   'reader_full',
   'reader_focus',
   'reader_keys',
@@ -879,6 +954,12 @@ const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {'today', 'today_paused', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
   'today',
+  'reader_offer',
+  'reader_offer_city',
+  's_reminders_on',
+  's_reminders_offer',
+  's_reminders_city',
+  'today_candles',
   'goto_verse',
   'goto_missing',
   'reader_verse',
@@ -967,7 +1048,11 @@ void main() {
             forums: blocked
                 ? await _accountWithNewerBackup()
                 : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
-            notifications: _remindersSupported.contains(entry.key) ? PhoneNotifications() : null,
+            notifications: _remindersRefused.contains(entry.key)
+                ? _RefusedNotifications()
+                : _remindersAllowed.contains(entry.key)
+                    ? _AllowedNotifications()
+                    : (_remindersSupported.contains(entry.key) ? PhoneNotifications() : null),
             overrides: [
               ...?_screenOverrides[entry.key],
               if (_choosesBackup.contains(entry.key))

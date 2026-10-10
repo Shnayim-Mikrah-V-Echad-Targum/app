@@ -112,7 +112,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               ]),
               _route('display', (_) => const DisplaySettingsScreen()),
               _route('accessibility', (_) => const AccessibilitySettingsScreen()),
-              _route('reminders', (_) => const ReminderSettingsScreen()),
+              _route('reminders', (_) => const ReminderSettingsScreen(), routes: [
+                _route('city', (_) => const CityPickerScreen()),
+              ]),
               _route('data', (_) => const DataSettingsScreen()),
               _route('account', _account),
               _route('about', (_) => const AboutScreen(), routes: [
@@ -135,6 +137,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       _haftarah('/haftarah/:id'),
       // Search fills the screen, as the reader does; ?q= searches at once.
       _route('/search', (s) => SearchScreen(initialQuery: s.uri.queryParameters['q'] ?? '')),
+      // The list of cities over the reader, offered once reminders are turned
+      // on there; choosing one goes back to it.
+      _route('/city', (_) => const CityPickerScreen()),
       // The reader always fills the screen. ?verse=28:12 opens the full
       // text at that verse.
       _route('/read/:id/:aliyah', (s) => ReaderScreen(

@@ -170,11 +170,22 @@ class InfoCard extends StatelessWidget {
 
 /// A banner for important, non-blocking information.
 class NoticeBanner extends StatelessWidget {
-  const NoticeBanner({super.key, required this.icon, required this.text, this.action, this.actionBelow = false});
+  const NoticeBanner({
+    super.key,
+    required this.icon,
+    required this.text,
+    this.action,
+    this.actionBelow = false,
+    this.liveRegion = false,
+  });
 
   final IconData icon;
   final String text;
   final Widget? action;
+
+  /// Whether the banner is read out as it appears or its text changes: a
+  /// live region, on the node that holds the text.
+  final bool liveRegion;
 
   /// Puts [action] beneath the text, at the end, rather than beside it: for
   /// a text of more than a line or two, which would otherwise be squeezed.
@@ -212,7 +223,8 @@ class NoticeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final message = Text(text, style: TextStyle(color: scheme.onSecondaryContainer));
+    Widget message = Text(text, style: TextStyle(color: scheme.onSecondaryContainer));
+    if (liveRegion) message = Semantics(liveRegion: true, child: message);
     final action = _legible(context);
     final below = actionBelow ? action : null;
     return Card(

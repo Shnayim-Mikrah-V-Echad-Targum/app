@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/city_providers.dart';
 import '../../app/providers.dart';
 import '../../core/calendar/jewish_holidays.dart';
 import '../../core/calendar/local_date.dart';
@@ -19,6 +20,7 @@ import '../progress/domain/progress_models.dart';
 import '../progress/domain/reading_plan.dart';
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
+import '../settings/widgets/shabbat_times_setting.dart' show clockTime;
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
@@ -189,6 +191,10 @@ class _ParshaCard extends ConsumerWidget {
             : occasion.isShabbat
                 ? l.shabbatInDays(daysLeft)
                 : null;
+    // On the eve of Shabbat or Yom Tov, with a city chosen, when candles are
+    // lit there tonight instead.
+    final candles = ref.watch(candleLightingTodayProvider);
+    final note = candles == null ? countdown : l.todayCandleLighting(clockTime(context, candles));
 
     return InfoCard(
       child: Column(
@@ -215,7 +221,7 @@ class _ParshaCard extends ConsumerWidget {
                 ),
                 const Gap(8),
                 Text(readOn, style: theme.textTheme.bodyMedium),
-                if (countdown != null) Text(countdown, style: theme.textTheme.bodySmall),
+                if (note != null) Text(note, style: theme.textTheme.bodySmall),
               ],
             ),
           ),

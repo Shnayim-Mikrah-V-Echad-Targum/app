@@ -278,6 +278,25 @@ void main() {
       expect(Theme.of(tester.element(inkWell)).focusColor, Colors.transparent);
     });
 
+    testWidgets('$ui UI: an unselected chip is transparent, so on paper too', (tester) async {
+      final theme = _theme(AppThemeMode.light, hebrewUi: hebrewUi);
+      // A dialog's paper, which is lighter than the page's surface.
+      await tester.pumpWidget(MaterialApp(
+        theme: theme,
+        home: Scaffold(
+          body: Center(
+            child: Material(
+              color: theme.extension<SeferColors>()!.paper,
+              child: SeferChoiceChip(label: const Text('Sheni'), selected: false, onSelected: (_) {}),
+            ),
+          ),
+        ),
+      ));
+      final chip = find.descendant(of: find.byType(ChoiceChip), matching: find.byType(Material)).first;
+      expect(chip, isNot(paints..path(color: theme.canvasColor)));
+      expect(chip, isNot(paints..rrect(color: theme.canvasColor)));
+    });
+
     testWidgets('$ui UI: Tab marks the focused segment, not just the group', (tester) async {
       final theme = _theme(AppThemeMode.light, hebrewUi: hebrewUi);
       await _pump(
