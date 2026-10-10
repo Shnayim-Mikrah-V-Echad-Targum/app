@@ -280,18 +280,22 @@ class ProgressState {
   /// it. Unchanged if this progress has seen [reset] already.
   ProgressState renewedPast(int reset) {
     if (reset <= resetAt) return this;
-    return ProgressClock.above(reset, () {
-      return ProgressState(
+    return ProgressClock.above(
+      reset,
+      () => ProgressState(
         weeks: {for (final MapEntry(:key, :value) in weeks.entries) key: value.renewedBefore(reset)},
         pauses: [
           for (final p in pauses)
-            if (p.updatedAt < reset && !p.deleted) Pause(p.start, p.end, id: p.id, updatedAt: ProgressClock.after(p.updatedAt)) else p,
+            if (p.updatedAt < reset && !p.deleted)
+              Pause(p.start, p.end, id: p.id, updatedAt: ProgressClock.after(p.updatedAt))
+            else
+              p,
         ],
         resetAt: reset,
         unknownWeeks: unknownWeeks,
         unknownPauses: unknownPauses,
-      );
-    });
+      ),
+    );
   }
 
   /// Equal progress compares equal whatever order its maps and lists are in,

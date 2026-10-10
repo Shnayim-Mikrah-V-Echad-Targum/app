@@ -386,7 +386,8 @@ void main() {
       expect(synced.pauses.map((p) => p.id), ['trip']);
     });
 
-    testWidgets("merges a backup made after a reset elsewhere, keeping what is here through the next sync", (tester) async {
+    testWidgets('merges a backup made after a reset elsewhere, keeping what is here through the next sync',
+        (tester) async {
       // Bereshit, read here. Then progress was reset everywhere on another
       // device, which this one hasn't synced with since, Rishon of Noach
       // read there, and a backup made.

@@ -478,7 +478,8 @@ void main() {
     await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
 
-    expect(find.descendant(of: find.byType(SnackBar), matching: find.textContaining(RegExp('^התחברת בשם '))), findsOneWidget);
+    final status = find.textContaining(RegExp('^התחברת בשם '));
+    expect(find.descendant(of: find.byType(SnackBar), matching: status), findsOneWidget);
     expect(find.descendant(of: find.byType(PageBody), matching: find.textContaining(RegExp('^החשבון: '))), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
@@ -1270,9 +1271,15 @@ void main() {
     forums.seed(
       threads: [_thread(7200)],
       posts: [
-        Post(id: '1', threadId: '7200', authorId: 'r', authorName: 'Rivka', body: 'שלום לכולם', createdAt: DateTime(2026, 10, 1)),
-        Post(id: '2', threadId: '7200', authorId: 'm', authorName: 'Moshe', body: '+1', createdAt: DateTime(2026, 10, 2)),
-        Post(id: '3', threadId: '7200', authorId: 'n', authorName: 'Nina', body: 'Привет!', createdAt: DateTime(2026, 10, 3)),
+        for (final (i, body) in ['שלום לכולם', '+1', 'Привет!'].indexed)
+          Post(
+            id: '${i + 1}',
+            threadId: '7200',
+            authorId: 'member$i',
+            authorName: 'Member $i',
+            body: body,
+            createdAt: DateTime(2026, 10, i + 1),
+          ),
       ],
     );
     final c = await _pump(
@@ -1282,8 +1289,9 @@ void main() {
     );
     c.read(routerProvider).go('/community/thread/7200');
     await tester.pumpAndSettle();
-    TextDirection bodyDirection(String body) =>
-        tester.widget<SelectableText>(find.byWidgetPredicate((w) => w is SelectableText && w.data == body)).textDirection!;
+    TextDirection bodyDirection(String body) => tester
+        .widget<SelectableText>(find.byWidgetPredicate((w) => w is SelectableText && w.data == body))
+        .textDirection!;
     expect(bodyDirection('+1'), TextDirection.rtl, reason: 'no strong character: the UI direction');
     expect(bodyDirection('Привет!'), TextDirection.ltr, reason: 'Cyrillic runs left to right');
     expect(bodyDirection('שלום לכולם'), TextDirection.rtl);

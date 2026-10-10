@@ -68,6 +68,8 @@ const _screens = {
   'welcome_method': '/welcome/method',
   'welcome_plan': '/welcome/plan',
   'welcome_plan_midweek': '/welcome/plan',
+  // Joining on Tisha B'Av 5787, a quiet day: only Friday is left.
+  'welcome_plan_tisha_bav': '/welcome/plan',
   // "I already use Shnayim Mikra": the ways to restore, with an account's
   // backup to sign in to.
   'welcome_restore': '/welcome',
@@ -274,6 +276,8 @@ final _screenNow = <String, DateTime>{
   'reader_third': DateTime(2027, 7, 27, 11),
   // The Wednesday of Bereshit, which began on Monday.
   'welcome_plan_midweek': DateTime(2026, 10, 7, 11),
+  // Thursday 12 August 2027, 9 Av 5787.
+  'welcome_plan_tisha_bav': DateTime(2027, 8, 12, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,

@@ -20,7 +20,9 @@ void main() {
       final c = await pumpApp(tester, settings: AppSettings(onboardingComplete: true, language: language));
       c.read(routerProvider).go('/settings/accessibility');
       await tester.pumpAndSettle();
-      final option = find.byWidgetPredicate((w) => w is RadioListTile<DivineNameSpeech> && w.value == DivineNameSpeech.adonai);
+      final option = find.byWidgetPredicate(
+        (w) => w is RadioListTile<DivineNameSpeech> && w.value == DivineNameSpeech.adonai,
+      );
       await tester.ensureVisible(option);
       await tester.pumpAndSettle();
 

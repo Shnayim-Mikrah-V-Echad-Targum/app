@@ -19,7 +19,11 @@ class _Dialogs extends FileSelectorPlatform {
   String? suggestedName;
 
   @override
-  Future<XFile?> openFile({List<XTypeGroup>? acceptedTypeGroups, String? initialDirectory, String? confirmButtonText}) async {
+  Future<XFile?> openFile({
+    List<XTypeGroup>? acceptedTypeGroups,
+    String? initialDirectory,
+    String? confirmButtonText,
+  }) async {
     openTypes = acceptedTypeGroups;
     return toOpen;
   }

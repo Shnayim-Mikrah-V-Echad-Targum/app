@@ -72,7 +72,10 @@ class ModerationScreen extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                              child: Text(r.postBody!, textDirection: autoDirection(r.postBody!, fallback: Directionality.of(context))),
+                              child: Text(
+                                r.postBody!,
+                                textDirection: autoDirection(r.postBody!, fallback: Directionality.of(context)),
+                              ),
                             ),
                           ],
                           const Gap(8),

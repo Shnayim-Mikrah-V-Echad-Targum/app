@@ -191,7 +191,11 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       builder: (context, refreshButton) => Scaffold(
         appBar: AppBar(
           // An English title in Hebrew UI, or the reverse, is cut at its own end.
-          title: Text(title, textDirection: autoDirection(title, fallback: Directionality.of(context)), overflow: TextOverflow.ellipsis),
+          title: Text(
+            title,
+            textDirection: autoDirection(title, fallback: Directionality.of(context)),
+            overflow: TextOverflow.ellipsis,
+          ),
           actions: [
             refreshButton,
             if (isMod && t != null)
