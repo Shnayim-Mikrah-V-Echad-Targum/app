@@ -7,9 +7,12 @@ import '../settings/app_settings.dart';
 import '../settings/screens/display_settings_screen.dart';
 import '../settings/widgets/settings_widgets.dart';
 
-/// Quick display controls available while reading.
+/// Quick display controls available while reading. The sheet and its scrim
+/// cover the whole screen, the navigation bar too when the page (the
+/// haftarah, say) is shown within a tab.
 Future<void> showDisplaySheet(BuildContext context) => showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       isScrollControlled: true,
       useSafeArea: true,
@@ -132,9 +135,9 @@ class _DisplaySheet extends ConsumerWidget {
             title: Text(l.settingsDisplay),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              // Over the page that opened the sheet, which it goes back to.
-              // The reader is shown over the tabs, so the Settings tab's own
-              // page can't open above it.
+              // Over the page that opened the sheet, which it goes back to,
+              // and over the navigation bar like the sheet: the Settings
+              // tab's own page would leave the reader or the haftarah.
               final navigator = Navigator.of(context)..pop();
               navigator.push(MaterialPageRoute<void>(builder: (_) => const DisplaySettingsScreen()));
             },

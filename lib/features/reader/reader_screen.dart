@@ -422,9 +422,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final ctx = ref.watch(weekContextProvider(widget.weekId));
-    if (ctx == null) {
-      return Scaffold(appBar: AppBar(leading: homeLeading(context)), body: Center(child: Text(l.errorGeneric)));
-    }
+    // A link to a week that doesn't exist.
+    if (ctx == null) return const NotFoundPage();
     final s = ref.watch(settingsProvider);
     final names = Names(context);
     final textsAsync = ref.watch(readerTextsProvider((

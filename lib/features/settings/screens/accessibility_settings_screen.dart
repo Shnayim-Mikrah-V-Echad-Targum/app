@@ -9,6 +9,7 @@ import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
 import '../../about/about_screen.dart';
+import '../../community/data/backend.dart';
 import '../../reader/reader_screen.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
@@ -67,12 +68,20 @@ AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPrefe
 class AccessibilitySettingsScreen extends ConsumerWidget {
   const AccessibilitySettingsScreen({super.key});
 
-  /// By email where the build names an address for it, and otherwise (or
-  /// with no mail app to send it) in the feedback forum.
-  static Future<void> _sendFeedback(BuildContext context) async {
+  /// By email where the build names an address for it. Otherwise (or with
+  /// no mail app to send it) in the feedback forum, where there is a
+  /// community server for it to reach, and else, as from About, on the
+  /// issue tracker: the on-device demo forum reaches no one.
+  static Future<void> _sendFeedback(BuildContext context, WidgetRef ref) async {
     final email = supportEmailUri(context.l10n);
+    final forum = !ref.read(forumRepositoryProvider).isDemo;
     if (email != null && await launchUrl(email).catchError((_) => false)) return;
-    if (context.mounted) await context.push('/community/forum/feedback');
+    if (!context.mounted) return;
+    if (forum) {
+      await context.push('/community/forum/feedback');
+    } else {
+      await launchUrl(issueTrackerUri).catchError((_) => false);
+    }
   }
 
   @override
@@ -174,7 +183,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           leading: const Icon(Icons.feedback_outlined),
           title: Text(l.sendFeedback),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => _sendFeedback(context),
+          onTap: () => _sendFeedback(context, ref),
         ),
       ],
     );

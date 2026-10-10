@@ -4,6 +4,7 @@ import '../../app/config.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
+import 'about_screen.dart';
 
 enum LegalDoc {
   privacy,
@@ -11,7 +12,9 @@ enum LegalDoc {
   guidelines,
   accessibility;
 
-  static LegalDoc fromSlug(String slug) => values.firstWhere((d) => d.name == slug, orElse: () => privacy);
+  /// The policy at [slug], or null for none: a mistyped link leads to no
+  /// policy rather than to the wrong one.
+  static LegalDoc? fromSlug(String slug) => values.where((d) => d.name == slug).firstOrNull;
 }
 
 /// In-app policies. Kept in the app (not only on a website) so they are
@@ -32,7 +35,7 @@ class LegalScreen extends StatelessWidget {
       LegalDoc.accessibility => l.accessibilityStatement,
     };
     final sections = (he ? _he : _en)[doc]!;
-    final contact = AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '${AppConfig.sourceUrl}/issues';
+    final contact = AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '$issueTrackerUri';
     return Scaffold(
       appBar: AppBar(leading: homeLeading(context), title: Text(title)),
       body: PageBody(

@@ -270,13 +270,13 @@ void main() {
     });
   });
 
-  test('Erev Shabbat opens the week; the daily reading and the check-in open Today', () {
+  test('Erev Shabbat opens the week within Today; the daily reading and the check-in open Today', () {
     final reminders = plan();
     for (final kind in ReminderKind.values) {
       expect(reminders.where((r) => r.kind == kind), isNotEmpty, reason: '$kind');
     }
     for (final r in reminders) {
-      expect(reminderRoute(r), r.kind == ReminderKind.erevShabbat ? '/week/${r.plan.weekId}' : '/today', reason: '$r');
+      expect(reminderRoute(r), r.kind == ReminderKind.erevShabbat ? '/today/week/${r.plan.weekId}' : '/today', reason: '$r');
     }
   });
 

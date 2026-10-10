@@ -32,9 +32,8 @@ class HaftarahScreen extends ConsumerWidget {
     final ctx = ref.watch(weekContextProvider(weekId));
     final settings = ref.watch(settingsProvider);
     final verses = ref.watch(haftarahTextProvider(weekId));
-    if (ctx == null) {
-      return Scaffold(appBar: AppBar(leading: homeLeading(context)), body: Center(child: Text(l.errorGeneric)));
-    }
+    // A link to a week that doesn't exist.
+    if (ctx == null) return const NotFoundPage();
     final styles = ScriptureStyles(context, settings);
     final done = ctx.progress.haftarah != null;
     final tts = ref.watch(ttsProvider);

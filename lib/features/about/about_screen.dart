@@ -15,6 +15,10 @@ Uri? supportEmailUri(AppLocalizations l) => AppConfig.supportEmail.isEmpty
     ? null
     : Uri(scheme: 'mailto', path: AppConfig.supportEmail, query: 'subject=${Uri.encodeComponent(l.appTitle)}');
 
+/// The public issue tracker, where feedback reaches the maintainers in any
+/// build.
+final issueTrackerUri = Uri.parse('${AppConfig.sourceUrl}/issues');
+
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
@@ -56,7 +60,7 @@ class AboutScreen extends StatelessWidget {
           link(Icons.groups_outlined, l.guidelinesTitle, () => context.push('/legal/guidelines')),
           link(Icons.description_outlined, l.licensesTitle, () => showLicensePage(context: context, applicationName: l.appTitleFull)),
           if (supportEmailUri(l) case final email?) link(Icons.mail_outline, l.contactTitle, () => launchUrl(email)),
-          link(Icons.feedback_outlined, l.sendFeedback, () => launchUrl(Uri.parse('${AppConfig.sourceUrl}/issues'))),
+          link(Icons.feedback_outlined, l.sendFeedback, () => launchUrl(issueTrackerUri)),
         ],
       ),
     );

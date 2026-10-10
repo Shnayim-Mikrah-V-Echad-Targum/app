@@ -117,6 +117,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 children: [
                   DropdownButtonFormField<int>(
                     initialValue: _forumId,
+                    // As wide as the field, rather than its longest forum's
+                    // name, which can be wider than a phone.
+                    isExpanded: true,
                     decoration: InputDecoration(labelText: l.forumLabel),
                     items: [for (final f in available) DropdownMenuItem(value: f.id, child: Text(f.name(he)))],
                     onChanged: (v) => setState(() => _forumId = v),

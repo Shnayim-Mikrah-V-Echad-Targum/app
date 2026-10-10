@@ -225,9 +225,10 @@ String? _windowsIconPath() {
 }
 
 /// The page a reminder opens: the week, for Erev Shabbat, to finish it; Today
-/// for the others, where the day's reading and the check-in card are.
+/// for the others, where the day's reading and the check-in card are. The
+/// week opens within Today, with the navigation bar and a way back.
 String reminderRoute(PlannedReminder r) => switch (r.kind) {
-      ReminderKind.erevShabbat => '/week/${r.plan.weekId}',
+      ReminderKind.erevShabbat => '/today/week/${r.plan.weekId}',
       ReminderKind.daily || ReminderKind.checkIn || ReminderKind.paused => '/today',
     };
 

@@ -9,9 +9,11 @@ import 'common.dart';
 /// Today rather than a dead end. Null, leaving the usual back button, when
 /// there is a page to go back to.
 Widget? homeLeading(BuildContext context) {
-  // The app bar's own test for its back button, so exactly one of the two
-  // shows.
-  if (ModalRoute.of(context)?.impliesAppBarDismissal ?? true) return null;
+  // Only whether the route can pop: depending on the whole route would
+  // rebuild the page each time a menu, sheet or dialog opens over it. The
+  // app bar's own test differs only for local history entries, which these
+  // pages don't use.
+  if (ModalRoute.canPopOf(context) ?? true) return null;
   return IconButton(
     tooltip: context.l10n.navToday,
     icon: const Icon(Icons.home_outlined),
@@ -19,8 +21,9 @@ Widget? homeLeading(BuildContext context) {
   );
 }
 
-/// A short message in the middle of a page that has nothing else to show,
-/// with what to do next beneath it.
+/// A short message on a page that has nothing else to show, with what to do
+/// next beneath it: the first of [actions] a Tonal button, any others Text
+/// buttons (DESIGN_SYSTEM.md §6.22).
 class CenteredMessage extends StatelessWidget {
   const CenteredMessage({super.key, required this.text, this.actions = const []});
 
@@ -30,11 +33,11 @@ class CenteredMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+      child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
+          constraints: const BoxConstraints(maxWidth: 320),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -50,6 +53,30 @@ class CenteredMessage extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The page for a link that leads nowhere in the app: a mistyped or outdated
+/// web address, say, or one to a week or a policy that doesn't exist.
+class NotFoundPage extends StatelessWidget {
+  const NotFoundPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return Scaffold(
+      appBar: AppBar(title: Text(l.notFoundTitle)),
+      body: CenteredMessage(
+        text: l.notFoundBody,
+        actions: [
+          FilledButton.tonalIcon(
+            icon: const Icon(Icons.home_outlined),
+            label: Text(l.goToToday),
+            onPressed: () => context.go('/today'),
+          ),
+        ],
       ),
     );
   }

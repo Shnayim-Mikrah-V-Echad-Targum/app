@@ -70,20 +70,21 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
     final forums = ref.watch(forumsProvider);
     final forum = (forums.value ?? const []).where((f) => f.slug == widget.slug).firstOrNull;
     if (forum == null) {
-      // Spin only while the forums load: a link to a forum that doesn't
-      // exist, or one that can't load, says so.
-      final error = forums.error;
-      final missing = !forums.isLoading && error == null;
+      // Spin only while the forums first load: a link to a forum that
+      // doesn't exist says so, and so do forums that can't load, at once,
+      // while they are tried again.
+      final missing = forums.hasValue;
+      final error = missing ? null : forums.error;
       return Scaffold(
         appBar: AppBar(title: missing ? Text(l.notFoundTitle) : null),
-        body: forums.isLoading
+        body: !missing && error == null
             ? const Center(child: CircularProgressIndicator())
             : CenteredMessage(
                 text: error != null ? communityError(l, error) : l.forumNotFound,
                 actions: [
+                  FilledButton.tonal(onPressed: () => context.go('/community'), child: Text(l.allForums)),
                   if (error != null)
                     TextButton(onPressed: () => ref.invalidate(forumsProvider), child: Text(l.actionRetry)),
-                  TextButton(onPressed: () => context.go('/community'), child: Text(l.allForums)),
                 ],
               ),
       );

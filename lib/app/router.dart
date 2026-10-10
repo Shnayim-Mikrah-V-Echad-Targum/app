@@ -26,7 +26,6 @@ import '../features/settings/screens/reading_settings_screen.dart';
 import '../features/settings/screens/reminder_settings_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/today/today_screen.dart';
-import '../ui/l10n.dart';
 import '../ui/widgets/fallbacks.dart';
 import 'providers.dart';
 import 'routes.dart';
@@ -65,12 +64,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       final atWelcome = path == '/welcome';
       // The guide, sources and policies are open before onboarding too: the
       // stores require the privacy policy to be reachable on a first visit.
-      final isPublic = path == '/guide' || path == '/sources' || path.startsWith('/legal/');
+      // So are the addresses they had in About, which lead to them.
+      final isPublic = path == '/guide' ||
+          path == '/sources' ||
+          path.startsWith('/legal/') ||
+          path == '/settings/about/sources' ||
+          path.startsWith('/settings/about/legal/');
       if (!onboarded.value && !atWelcome && !isPublic) return '/welcome';
       if (onboarded.value && atWelcome) return '/today';
       return null;
     },
-    errorPageBuilder: (context, state) => _page(state, const _NotFound()),
+    errorPageBuilder: (context, state) => _page(state, const NotFoundPage()),
     routes: [
       _route('/welcome', (_) => const OnboardingScreen()),
       StatefulShellRoute.indexedStack(
@@ -112,7 +116,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       _route('/guide', (_) => const GuideScreen()),
       _route('/sources', (_) => const SourcesScreen()),
-      _route('/legal/:doc', (s) => LegalScreen(doc: LegalDoc.fromSlug(s.pathParameters['doc']!))),
+      _route('/legal/:doc', (s) => switch (LegalDoc.fromSlug(s.pathParameters['doc']!)) {
+            final doc? => LegalScreen(doc: doc),
+            null => const NotFoundPage(),
+          }),
       // A week and its haftarah on their own, for links and notifications.
       _week('/week/:id'),
       _haftarah('/haftarah/:id'),
@@ -133,37 +140,16 @@ const _tabs = ['/today', '/parsha', '/progress', '/community', '/settings'];
 /// Opens [location] from outside the app's own navigation: a tapped
 /// notification, or one that launched the app. A tab, or a page within one,
 /// opens in its place; any other page opens over Today, so it has a back
-/// button that leads to the navigation bar rather than a dead end.
+/// button that leads to the navigation bar rather than a dead end. A week or
+/// a haftarah on its own, as notifications scheduled by earlier versions
+/// name them, opens within Today.
 void openFromOutside(GoRouter router, String location) {
+  if (RegExp(r'^/(week|haftarah)/').hasMatch(location)) location = '/today$location';
   final path = Uri.parse(location).path;
   if (_tabs.any((tab) => path == tab || path.startsWith('$tab/'))) {
     router.go(location);
   } else {
     router.go('/today');
     router.push(location);
-  }
-}
-
-/// Where a link that leads nowhere in the app lands: a mistyped or outdated
-/// web address, say.
-class _NotFound extends StatelessWidget {
-  const _NotFound();
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    return Scaffold(
-      appBar: AppBar(title: Text(l.notFoundTitle)),
-      body: CenteredMessage(
-        text: l.notFoundBody,
-        actions: [
-          FilledButton.icon(
-            icon: const Icon(Icons.home_outlined),
-            label: Text(l.goToToday),
-            onPressed: () => context.go('/today'),
-          ),
-        ],
-      ),
-    );
   }
 }

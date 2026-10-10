@@ -25,9 +25,8 @@ class WeekOverviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ctx = ref.watch(weekContextProvider(weekId));
-    if (ctx == null) {
-      return Scaffold(appBar: AppBar(leading: homeLeading(context)), body: Center(child: Text(context.l10n.errorGeneric)));
-    }
+    // A link to a week that doesn't exist.
+    if (ctx == null) return const NotFoundPage();
     return WeekOverview(ctx: ctx, leading: homeLeading(context));
   }
 }
