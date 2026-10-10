@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -130,6 +131,9 @@ class DisplaySettingsScreen extends ConsumerWidget {
             Choice(UiFont.atkinson, l.uiFontAtkinson),
             Choice(UiFont.lexend, l.uiFontLexend),
             Choice(UiFont.openDyslexic, l.uiFontOpenDyslexic),
+            // The web can't use the device's fonts. Still list the option if
+            // it was imported from another device, so the group shows a value.
+            if (!kIsWeb || s.uiFont == UiFont.system) Choice(UiFont.system, l.uiFontSystem),
           ],
           onChanged: (v) => update((s) => s.copyWith(uiFont: v)),
         ),

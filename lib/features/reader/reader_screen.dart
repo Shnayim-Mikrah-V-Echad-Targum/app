@@ -14,7 +14,9 @@ import '../../data/text_repository.dart';
 import '../../services/feedback.dart';
 import '../../services/tts.dart';
 import '../../ui/l10n.dart';
+import '../../ui/theme/motion.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/sefer_choice_chip.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../settings/app_settings.dart';
@@ -396,6 +398,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               ),
               PopupMenuButton<String>(
                 tooltip: l.actionMore,
+                popUpAnimationStyle: Motion.of(context).style,
                 onSelected: (v) {
                   switch (v) {
                     case 'mode':
@@ -506,7 +509,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ('$mod + Shift + L', l.shortcutListen),
       ('F1 · $mod + /', l.shortcutHelp),
     ];
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l.keyboardShortcuts),
@@ -549,7 +552,7 @@ class _AliyahSelector extends StatelessWidget {
           for (var a = 0; a < kAliyot; a++)
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 8),
-              child: ChoiceChip(
+              child: SeferChoiceChip(
                 avatar: ctx.progress.isAliyahDone(a) ? const Icon(Icons.check, size: 18) : null,
                 label: Text(names.aliyah(a)),
                 selected: selected == a,
@@ -734,7 +737,7 @@ class _StepHeader extends StatelessWidget {
                     Text(title,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         )),
                     Text(l.stepOf(stepNumber, totalSteps),
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
@@ -760,15 +763,15 @@ class _Note extends StatelessWidget {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: scheme.tertiaryContainer,
+        color: scheme.secondaryContainer,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, color: scheme.onTertiaryContainer, size: 20),
+          Icon(Icons.info_outline, color: scheme.onSecondaryContainer, size: 20),
           const Gap(8),
-          Expanded(child: Text(text, style: TextStyle(color: scheme.onTertiaryContainer))),
+          Expanded(child: Text(text, style: TextStyle(color: scheme.onSecondaryContainer))),
         ],
       ),
     );

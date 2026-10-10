@@ -34,28 +34,36 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_lints: ^6.0.0
 
-# Regenerate platform icons with: dart run flutter_launcher_icons
+# Platform icons. Regenerate all of them with:
+#   python3 tool/branding/make_icon.py && dart run flutter_launcher_icons \
+#     && python3 tool/branding/make_icon.py --post
 flutter_launcher_icons:
   image_path: assets/branding/icon.png
   android: true
-  adaptive_icon_background: "#1E4B8F"
+  adaptive_icon_background: "#1D3F75"
   adaptive_icon_foreground: assets/branding/icon_foreground.png
+  # The art already sits inside the 66/108 safe circle.
+  adaptive_icon_foreground_inset: 0
   adaptive_icon_monochrome: assets/branding/icon_monochrome.png
   ios: true
   remove_alpha_ios: true
+  image_path_ios_dark_transparent: assets/branding/icon_dark.png
+  image_path_ios_tinted_grayscale: assets/branding/icon_tinted.png
   web:
     generate: true
-    background_color: "#FBF9F5"
-    theme_color: "#1E4B8F"
+    background_color: "#FAF7F0"
+    theme_color: "#1D3F75"
   windows:
-    generate: true
-    icon_size: 256
+    # make_icon.py --post writes the multi-size windows/runner/resources/app_icon.ico.
+    generate: false
 
 flutter:
   uses-material-design: true
   generate: true
 
   assets:
+    - assets/branding/icon.png
+    - assets/branding/mark_128.png
     - assets/data/
     - assets/text/
     - assets/text/mikra/
@@ -64,6 +72,9 @@ flutter:
     - assets/text/rashi/
     - assets/text/rashi_en/
     - assets/fonts/licenses/
+    # Optional fonts: plain assets that OptionalFonts registers on first use,
+    # so the web build does not download them at start-up.
+    - assets/fonts/rashi/
 
   fonts:
     # Scripture fonts. All support nikud and the full set of ta'amim.
@@ -79,6 +90,28 @@ flutter:
     - family: EzraSIL
       fonts:
         - asset: assets/fonts/EzraSIL-Regular.ttf
+    # Display serifs: static instances built by tool/fonts/build_fonts.sh.
+    # There is no 400. Bold is needed because Text switches to FontWeight.bold
+    # when the platform's bold-text setting is on.
+    - family: EBGaramond
+      fonts:
+        - asset: assets/fonts/EBGaramond-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/EBGaramond-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/EBGaramond-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/EBGaramond-MediumItalic.ttf
+          weight: 500
+          style: italic
+    - family: FrankRuhlLibre
+      fonts:
+        - asset: assets/fonts/FrankRuhlLibre-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/FrankRuhlLibre-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/FrankRuhlLibre-Bold.ttf
+          weight: 700
     # Interface fonts.
     - family: NotoSans
       fonts:

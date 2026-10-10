@@ -74,6 +74,22 @@
   "passMikra2": "Second reading",
   "passTargum": "Targum",
   "passRashi": "Rashi",
+  "aliyotWord": "aliyot",
+  "@aliyotWord": {
+    "description": "Under the count of finished aliyot (\"2/7\") in the centre of the parsha rings."
+  },
+  "countOfTotal": "{done} of {total}",
+  "@countOfTotal": {
+    "description": "A count against its total, e.g. readings done out of the seven aliyot.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "passShortMikra": "Mikra",
   "passSemantics": "{pass}: {state}",
   "@passSemantics": {
@@ -262,6 +278,20 @@
       }
     }
   },
+  "streakBeginsWith": "Begins with {name}",
+  "@streakBeginsWith": {
+    "description": "On the streak card, in place of a parsha streak of 0: the streak starts when this parsha is finished.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
+      }
+    }
+  },
+  "daysBeginToday": "Begins with today's reading",
+  "@daysBeginToday": {
+    "description": "On the streak card, in place of 0 days on track."
+  },
   "graceDays": "Grace days",
   "graceDaysAvailable": "{count, plural, =0{none available} =1{1 available} other{{count} available}}",
   "@graceDaysAvailable": {
@@ -281,6 +311,14 @@
   "dayRest": "Shabbat or Yom Tov",
   "dayUpcoming": "Upcoming",
   "dayNoReading": "No reading planned",
+  "dayToday": "Today",
+  "@dayToday": {
+    "description": "In the week-strip legend, beside the mark for today."
+  },
+  "yomTovShort": "Yom Tov",
+  "@yomTovShort": {
+    "description": "Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide, and a longer word is shrunk to fit one line."
+  },
   "dayChipLabel": "{day}: {status}",
   "@dayChipLabel": {
     "placeholders": {
@@ -524,8 +562,58 @@
       }
     }
   },
+  "yearBarSemantics": "This year: {done} of {total} parshiyot complete",
+  "@yearBarSemantics": {
+    "description": "Screen-reader label of the bar of the year's parshiyot, when none is being read now.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "yearBarSemanticsCurrent": "This year: {done} of {total} parshiyot complete; {name} in progress",
+  "@yearBarSemanticsCurrent": {
+    "description": "Screen-reader label of the bar of the year's parshiyot; name is this week's parsha.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookAbbrGenesis": "Gen",
+  "@bookAbbrGenesis": {
+    "description": "Short name of the book under its part of the year bar."
+  },
+  "bookAbbrExodus": "Exo",
+  "bookAbbrLeviticus": "Lev",
+  "bookAbbrNumbers": "Num",
+  "bookAbbrDeuteronomy": "Deu",
   "torahMap": "Torah map",
   "torahMapHelp": "Each tile is one parsha of this year's cycle.",
+  "torahMapBook": "{book}: {done} of {total} parshiyot",
+  "@torahMapBook": {
+    "description": "Screen-reader label of a book's header on the Torah map; the header expands or collapses that book.",
+    "placeholders": {
+      "book": {
+        "type": "String"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "recentWeeks": "Recent weeks",
   "makeUpTitle": "Make up before Simchat Torah",
   "makeUpBody": "Optional. Make-ups count toward this year's siyum.",
@@ -669,6 +757,24 @@
       }
     }
   },
+  "sliderDecrease": "{title}: decrease",
+  "@sliderDecrease": {
+    "description": "Tooltip and spoken name of the minus button beside a settings slider. title is the slider's name, such as 'Reading size'.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "sliderIncrease": "{title}: increase",
+  "@sliderIncrease": {
+    "description": "Tooltip and spoken name of the plus button beside a settings slider. title is the slider's name, such as 'Reading size'.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "lineSpacing": "Line spacing",
   "wordSpacing": "Word spacing",
   "letterSpacing": "Letter spacing",
@@ -688,6 +794,7 @@
   "uiFontAtkinson": "Atkinson Hyperlegible",
   "uiFontLexend": "Lexend",
   "uiFontOpenDyslexic": "OpenDyslexic",
+  "uiFontSystem": "Device font",
   "boldText": "Bold text",
   "focusMode": "Focus mode",
   "focusModeDesc": "Highlight the current verse and dim the rest",

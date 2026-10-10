@@ -4,14 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../ui/l10n.dart';
+import '../../ui/widgets/common.dart';
+import '../../ui/widgets/sefer_choice_chip.dart';
 import '../settings/app_settings.dart';
 
 /// Quick display controls available while reading.
-Future<void> showDisplaySheet(BuildContext context) => showModalBottomSheet<void>(
+Future<void> showDisplaySheet(BuildContext context) => showAppSheet<void>(
       context: context,
-      showDragHandle: true,
       isScrollControlled: true,
-      useSafeArea: true,
       builder: (_) => const _DisplaySheet(),
     );
 
@@ -37,14 +37,7 @@ class _DisplaySheet extends ConsumerWidget {
         controller: controller,
         padding: const EdgeInsets.only(bottom: 24),
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-            child: Semantics(
-              header: true,
-              headingLevel: 2,
-              child: Text(l.displaySettings, style: Theme.of(context).textTheme.titleLarge),
-            ),
-          ),
+          SheetTitle(l.displaySettings),
           ListTile(
             title: Text(l.textSize),
             subtitle: Text(l.readingSizeValue((s.readingScale * 100).round())),
@@ -120,7 +113,7 @@ class _DisplaySheet extends ConsumerWidget {
                     (AppThemeMode.highContrastLight, l.themeHcLight),
                     (AppThemeMode.highContrastDark, l.themeHcDark),
                   ])
-                    ChoiceChip(
+                    SeferChoiceChip(
                       label: Text(label),
                       selected: s.theme == mode,
                       onSelected: (_) => update((s) => s.copyWith(theme: mode)),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/calendar/local_date.dart';
 import '../../core/calendar/parsha_schedule.dart';
 import '../l10n.dart';
+import 'common.dart';
 
 /// Asks when something was read — supporting the honor-system logging of
 /// reading done from a printed Chumash (including on Shabbat itself).
@@ -19,23 +20,14 @@ Future<LocalDate?> pickReadDate(BuildContext context, {required ReadingWeek week
       (Icons.wb_sunny_outlined, l.whenOnShabbat, names.dateLong(week.occasion), week.occasion),
   ];
 
-  return showModalBottomSheet<LocalDate>(
+  return showAppSheet<LocalDate>(
     context: context,
-    showDragHandle: true,
-    useSafeArea: true,
     builder: (context) => SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-            child: Semantics(
-              header: true,
-              headingLevel: 2,
-              child: Text(l.whenDidYouRead, style: Theme.of(context).textTheme.titleLarge),
-            ),
-          ),
+          SheetTitle(l.whenDidYouRead),
           for (final (icon, title, subtitle, date) in options)
             ListTile(
               leading: Icon(icon),
@@ -49,11 +41,15 @@ Future<LocalDate?> pickReadDate(BuildContext context, {required ReadingWeek week
             onTap: () async {
               final first = earliest.toDateTime();
               final last = today.toDateTime();
-              final picked = await showDatePicker(
+              // showDatePicker's dialog, shown the app's way (instantly under
+              // Reduce Motion).
+              final picked = await showAppDialog<DateTime>(
                 context: context,
-                firstDate: first.isAfter(last) ? last : first,
-                lastDate: last,
-                initialDate: last,
+                builder: (_) => DatePickerDialog(
+                  firstDate: first.isAfter(last) ? last : first,
+                  lastDate: last,
+                  initialDate: last,
+                ),
               );
               if (picked != null && context.mounted) Navigator.pop(context, LocalDate.fromDateTime(picked));
             },

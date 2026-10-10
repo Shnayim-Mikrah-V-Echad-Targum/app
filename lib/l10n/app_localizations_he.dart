@@ -157,6 +157,14 @@ class AppLocalizationsHe extends AppLocalizations {
   String get passRashi => 'רש״י';
 
   @override
+  String get aliyotWord => 'עליות';
+
+  @override
+  String countOfTotal(int done, int total) {
+    return '$done מתוך $total';
+  }
+
+  @override
   String get passShortMikra => 'מקרא';
 
   @override
@@ -352,6 +360,14 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String streakBeginsWith(String name) {
+    return 'יתחיל בפרשת $name';
+  }
+
+  @override
+  String get daysBeginToday => 'יתחיל בקריאה של היום';
+
+  @override
   String get graceDays => 'ימי חסד';
 
   @override
@@ -395,6 +411,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get dayNoReading => 'אין קריאה מתוכננת';
+
+  @override
+  String get dayToday => 'היום';
+
+  @override
+  String get yomTovShort => 'יו״ט';
 
   @override
   String dayChipLabel(String day, String status) {
@@ -686,10 +708,40 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String yearBarSemantics(int done, int total) {
+    return 'השנה: הושלמו $done מתוך $total פרשות';
+  }
+
+  @override
+  String yearBarSemanticsCurrent(int done, int total, String name) {
+    return 'השנה: הושלמו $done מתוך $total פרשות; פרשת $name בתהליך';
+  }
+
+  @override
+  String get bookAbbrGenesis => 'בר׳';
+
+  @override
+  String get bookAbbrExodus => 'שמ׳';
+
+  @override
+  String get bookAbbrLeviticus => 'וי׳';
+
+  @override
+  String get bookAbbrNumbers => 'במ׳';
+
+  @override
+  String get bookAbbrDeuteronomy => 'דב׳';
+
+  @override
   String get torahMap => 'מפת התורה';
 
   @override
   String get torahMapHelp => 'כל משבצת היא פרשה אחת במחזור של השנה.';
+
+  @override
+  String torahMapBook(String book, int done, int total) {
+    return '$book: $done מתוך $total פרשות';
+  }
 
   @override
   String get recentWeeks => 'שבועות אחרונים';
@@ -1034,6 +1086,16 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String sliderDecrease(String title) {
+    return '$title: הקטנה';
+  }
+
+  @override
+  String sliderIncrease(String title) {
+    return '$title: הגדלה';
+  }
+
+  @override
   String get lineSpacing => 'ריווח שורות';
 
   @override
@@ -1089,6 +1151,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get uiFontOpenDyslexic => 'OpenDyslexic';
+
+  @override
+  String get uiFontSystem => 'גופן המכשיר';
 
   @override
   String get boldText => 'טקסט מודגש';

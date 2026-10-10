@@ -5,7 +5,8 @@ import 'package:shnayim_mikra/data/models/scripture.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
+
+import '../../helpers.dart';
 
 void main() {
   // Exodus 20:13, unpointed: three commandments with setumah gaps between.
@@ -25,13 +26,10 @@ void main() {
     AppSettings settings = const AppSettings(),
     bool dimmed = false,
   }) =>
-      tester.pumpWidget(MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: settings, dimmed: dimmed),
-        ),
-      ));
+      pumpThemed(
+        tester,
+        ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: settings, dimmed: dimmed),
+      );
 
   List<TextSpan> marksIn(WidgetTester tester) {
     final marks = <TextSpan>[];

@@ -59,14 +59,23 @@ enum ScriptureFont {
   final String family;
 }
 
+/// The interface font. Persisted by name, so new values go at the end.
 enum UiFont {
-  /// The platform font (bundled Noto Sans on the web).
+  /// The bundled Noto Sans (English UI) or Noto Sans Hebrew (Hebrew UI) on
+  /// every platform, so the app looks the same everywhere.
   standard(null),
   atkinson('AtkinsonHyperlegibleNext'),
   lexend('Lexend'),
-  openDyslexic('OpenDyslexic');
+  openDyslexic('OpenDyslexic'),
+
+  /// The platform's own interface font, such as Roboto or Segoe UI. The web
+  /// can't reach it, so it gets the bundled font there.
+  system(null);
 
   const UiFont(this.family);
+
+  /// The accessibility font's family, or null for [standard] and [system],
+  /// whose family depends on the UI language and the platform.
   final String? family;
 }
 
