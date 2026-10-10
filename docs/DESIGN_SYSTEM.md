@@ -864,8 +864,8 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - Monochrome: the foreground with every shape #FFFFFF.
    - iOS: the master without alpha.
    - Web: Icon-192/512 from the master; maskable 192/512 with the group scaled 0.90 on the full-bleed gradient.
-   - Sizes ≤32 px (favicon.png, Windows .ico entries at 16/24/32): the three rules only, each 62.5% of the canvas wide and 9.4% high, gaps 7.8%, vertically centred, on the gradient with corner radius 18.75%.
-   - The Windows .ico also carries 48, 64 and 256 from the master.
+   - Sizes ≤32 px (favicon.png, and the favicon.ico and Windows .ico entries at 16/20/24/32): the three rules only, each 62.5% of the canvas wide and 9.4% high, gaps 7.8%, vertically centred, on the gradient with corner radius 18.75%.
+   - The Windows .ico also carries 40, 48, 64 and 256, and favicon.ico carries 48: the master's art on the gradient, with the same 18.75% corners (transparent outside them) rather than the master's square. Every entry then has one shape, so the icon doesn't change outline as Windows switches entries between views and DPI settings.
 
    Then run `dart run flutter_launcher_icons`.
 

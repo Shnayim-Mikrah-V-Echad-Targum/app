@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,6 +43,27 @@ void main() {
       }
     });
 
+    // make_icon.py --post must run after flutter_launcher_icons, which
+    // otherwise leaves a 16 px downscale of the whole wordmark as the favicon
+    // and the unpadded master as the maskable icons.
+    testWidgets('favicon.png is the 32 px tile of three rules', (tester) async {
+      final image = await _decode(tester, 'web/favicon.png');
+      expect((image.width, image.height), (32, 32));
+    });
+
+    for (final size in [192, 512]) {
+      testWidgets('Icon-maskable-$size.png pads the mark well inside the safe circle', (tester) async {
+        final maskable = await _decode(tester, 'web/icons/Icon-maskable-$size.png');
+        final plain = await _decode(tester, 'web/icons/Icon-$size.png');
+        expect((maskable.width, maskable.height), (size, size));
+        final reach = await _inkReach(tester, maskable);
+        // Masks may cut anything beyond 40% of the width from the centre;
+        // the mark is drawn at 90% of the master's size, well inside that.
+        expect(reach, lessThan(0.4 * size));
+        expect(reach, lessThan(0.92 * await _inkReach(tester, plain)));
+      });
+    }
+
     test('iOS shows a localized name under the icon', () {
       expect(File('ios/Runner/en.lproj/InfoPlist.strings').readAsStringSync(),
           contains('"CFBundleDisplayName" = "Shnayim Mikra";'));
@@ -52,6 +75,32 @@ void main() {
       expect(RegExp(r'knownRegions = \([^)]*\bhe,').hasMatch(project), isTrue);
     });
   });
+}
+
+/// Decodes the PNG at [path], outside the fake-async zone.
+Future<ui.Image> _decode(WidgetTester tester, String path) async {
+  final image = (await tester.runAsync(() async {
+    final codec = await ui.instantiateImageCodec(File(path).readAsBytesSync());
+    return (await codec.getNextFrame()).image;
+  }))!;
+  addTearDown(image.dispose);
+  return image;
+}
+
+/// How far from the centre the icon's cream and gold ink reaches, in pixels.
+/// The blue gradient behind it is dark in every channel.
+Future<double> _inkReach(WidgetTester tester, ui.Image image) async {
+  final pixels = (await tester.runAsync(() => image.toByteData()))!;
+  final centre = image.width / 2;
+  var reach = 0.0;
+  for (var y = 0; y < image.height; y++) {
+    for (var x = 0; x < image.width; x++) {
+      if (pixels.getUint8((y * image.width + x) * 4) > 0x80) {
+        reach = math.max(reach, math.sqrt(math.pow(x + 0.5 - centre, 2) + math.pow(y + 0.5 - centre, 2)));
+      }
+    }
+  }
+  return reach;
 }
 
 /// Decodes [provider] once, outside the fake-async zone.

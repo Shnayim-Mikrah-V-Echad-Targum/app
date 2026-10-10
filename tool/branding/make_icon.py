@@ -73,8 +73,10 @@ FOREGROUND_SAFE_RADIUS = 300
 # Web maskable icons: the safe zone is a circle of radius 40%.
 MASKABLE_SCALE = 0.90
 MASKABLE_SAFE_RADIUS = 0.40 * CANVAS
-MARK_RADIUS = 0.22  # in-app mark and the larger .ico entries
-SMALL_MARK_RADIUS = 0.1875
+MARK_RADIUS = 0.22  # the in-app mark (mark_128.png)
+# Every favicon and Windows .ico entry, whatever its size, so the tile keeps
+# one shape as Windows switches entries between views and DPI settings.
+TILE_RADIUS = 0.1875
 
 
 def fail(message: str) -> NoReturn:
@@ -268,7 +270,7 @@ def small_mark(size: int) -> str:
                           height / 2, fill)
              for i, (_, fill) in enumerate(RULES)]
     return document('\n'.join(rules), background='gradient',
-                    radius=SMALL_MARK_RADIUS * size, size=size)
+                    radius=TILE_RADIUS * size, size=size)
 
 
 # Raster output ------------------------------------------------------------
@@ -338,8 +340,9 @@ def write_sources(mark: Mark) -> None:
 def write_post(mark: Mark) -> None:
     """Outputs flutter_launcher_icons cannot make; run after it."""
     master = document(group(mark), background='gradient')
-    rounded = document(group(mark), background='gradient',
-                       radius=MARK_RADIUS * CANVAS)
+    # The larger tiles: the master's art, with the small tiles' corners.
+    tile = document(group(mark), background='gradient',
+                    radius=TILE_RADIUS * CANVAS)
     maskable = document(group(mark, scale=MASKABLE_SCALE), background='gradient')
 
     for size in (192, 512):
@@ -348,12 +351,12 @@ def write_post(mark: Mark) -> None:
     write_png(ROOT / 'web' / 'favicon.png', render(small_mark(32), 32))
     write_ico(ROOT / 'web' / 'favicon.ico',
               [render(small_mark(s), s) for s in (16, 32)]
-              + [render(rounded, 48)])
+              + [render(tile, 48)])
     write_png(ROOT / 'web' / 'apple-touch-icon.png',
               render(master, 180, opaque=True))
     write_ico(ROOT / 'windows' / 'runner' / 'resources' / 'app_icon.ico',
               [render(small_mark(s), s) for s in (16, 20, 24, 32)]
-              + [render(rounded, s) for s in (40, 48, 64, 256)])
+              + [render(tile, s) for s in (40, 48, 64, 256)])
 
 
 def main() -> None:
