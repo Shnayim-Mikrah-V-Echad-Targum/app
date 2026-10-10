@@ -635,8 +635,104 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String continueWithAliyah(String aliyah) {
-    return 'להמשיך עם $aliyah';
+  String aliyahDoneTitle(String aliyah) {
+    return 'עליית $aliyah הושלמה';
+  }
+
+  @override
+  String parshaDoneTitle(String name) {
+    return 'פרשת $name הושלמה';
+  }
+
+  @override
+  String nextAliyahLength(String aliyah, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'בעליית $aliyah $count פסוקים.',
+      one: 'בעליית $aliyah פסוק אחד.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String nextAliyahAction(String aliyah) {
+    return 'העלייה הבאה · $aliyah';
+  }
+
+  @override
+  String keepGoingAliyah(String aliyah) {
+    return 'להמשיך ל$aliyah';
+  }
+
+  @override
+  String get todayReadingDone => 'זו הקריאה של היום. נתראה מחר.';
+
+  @override
+  String todayReadingDoneOn(String day) {
+    return 'זו הקריאה של היום. נתראה ב$day.';
+  }
+
+  @override
+  String erevShabbatDone(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'חג שמח!',
+      'other': 'שבת שלום!',
+    });
+    return 'זו הקריאה של השבוע. $_temp0';
+  }
+
+  @override
+  String erevShabbatDoneMorning(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'חג שמח!',
+      'other': 'שבת שלום!',
+    });
+    return 'השאר לשבת בבוקר. $_temp0';
+  }
+
+  @override
+  String parshaStreakLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פרשות ברצף',
+      one: 'פרשה אחת ברצף',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get graceDayEarned => 'יום חסד נוסף';
+
+  @override
+  String get parshaDoneLate => 'אחרי שבת — וזה עדיין נחשב.';
+
+  @override
+  String get parshaDoneLateStreak => 'אחרי שבת — וזה עדיין נחשב. הרצף נמשך.';
+
+  @override
+  String get parshaDoneRestored => 'הושלמה יחד עם הפרשה הבאה.';
+
+  @override
+  String get parshaDoneRestoredStreak =>
+      'הושלמה יחד עם הפרשה הבאה — הרצף נמשך.';
+
+  @override
+  String get readHaftarah => 'לקריאת ההפטרה';
+
+  @override
+  String seferDoneTitle(String book) {
+    return 'ספר $book הושלם';
+  }
+
+  @override
+  String seferDoneBody(String book, int count, String second) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'ספר $book הושלם — $countString פסוקים, שניים מקרא ו$second.';
   }
 
   @override
@@ -716,6 +812,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get markHaftarahRead => 'סימון ההפטרה כנקראה';
+
+  @override
+  String haftarahReadOn(String date) {
+    return 'נקראה ב$date';
+  }
 
   @override
   String specialHaftarah(String reason) {

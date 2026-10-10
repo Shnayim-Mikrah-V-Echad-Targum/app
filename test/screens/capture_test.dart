@@ -30,6 +30,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading;
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
@@ -85,6 +86,16 @@ const _screens = {
   'reader_third': '/read/5787:42-43/2',
   // Shevi'i just finished, with Shlishi still under way.
   'reader_finished': '/read/5787:1/6',
+  // Shlishi just finished on Friday, with Friday's own aliyot still to read:
+  // on to Revi'i.
+  'reader_finished_next': '/read/5787:1/2',
+  // Shlishi just finished on Wednesday, the day's reading: Done, or keep
+  // going.
+  'reader_finished_day': '/read/5787:1/2',
+  // Shishi just finished on Friday, with Shevi'i left for Shabbat morning.
+  'reader_finished_erev': '/read/5787:1/5',
+  // Shevi'i just finished on Friday, the rest read: the parsha, on time.
+  'reader_finished_week': '/read/5787:1/6',
   'reader_full': '/read/5787:1/2?mode=full',
   // Its end, with the button that marks the aliyah read.
   'reader_full_end': '/read/5787:1/2?mode=full',
@@ -114,6 +125,16 @@ const _screens = {
   'reader_taamey': '/read/5787:1/2?mode=full',
   'reader_ezra': '/read/5787:1/2?mode=full',
   'haftarah': '/haftarah/5787:1',
+  // Nitzavim-Vayeilech 5786's (Isaiah 61:10–63:9): the head of its last
+  // chapter, and its end, with the divider and the button. Then Bereshit's
+  // once it is read.
+  'haftarah_chapter': '/haftarah/5786:51-52',
+  'haftarah_end': '/haftarah/5786:51-52',
+  'haftarah_read': '/haftarah/5787:1',
+  // Shabbat Shuva with Ha'azinu 5787: Hosea, then Joel.
+  'haftarah_books': '/haftarah/5786:53',
+  // A book of the Torah just finished: Genesis, in the cycle of 5787.
+  'celebrate': '/celebrate/sefer:5787:0',
   'progress': '/progress',
   'community': '/community',
   'forum': '/community/forum/parsha',
@@ -232,8 +253,12 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_reminders_on': (s) => s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true),
   // Reading by section, so that 32:3 is read with the verses around it.
   'reader_third': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
-  // Reading by aliyah, so that one step finishes Shevi'i.
+  // Reading by aliyah, so that one step finishes the aliyah.
   'reader_finished': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, repeatLastVerse: false),
+  'reader_finished_next': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
+  'reader_finished_day': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
+  'reader_finished_erev': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, plan: ReadingPlanType.sheviiOnShabbat),
+  'reader_finished_week': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, repeatLastVerse: false),
   'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
@@ -298,6 +323,7 @@ final _screenNow = <String, DateTime>{
   'today_yomtov_twoday': DateTime(2029, 5, 22, 11),
   // Tuesday of Matot-Masei 5787.
   'reader_third': DateTime(2027, 7, 27, 11),
+  'reader_finished_day': DateTime(2026, 10, 7, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
@@ -333,7 +359,32 @@ final _screenProgress = <String, ProgressState Function()>{
     }
     return ProgressState(weeks: {'5787:1': w.withPosition(6, const [16, 16, 0])});
   },
+  'haftarah_read': () {
+    final w = _progress().weeks['5787:1']!.withHaftarah(LocalDate(2026, 10, 8));
+    return ProgressState(weeks: {'5787:1': w});
+  },
+  'reader_finished_next': () => _readThrough(1, partly: 2),
+  'reader_finished_day': () => _readThrough(1, partly: 2, on: LocalDate(2026, 10, 7)),
+  'reader_finished_erev': () => _readThrough(4, partly: 5),
+  'reader_finished_week': () => _readThrough(5, partly: 6),
 };
+
+/// Bereshit with every aliyah up to [last] read on its planned day, and the
+/// Hebrew of aliyah [partly] read twice on [on], so that the guided reader
+/// resumes at its Targum.
+ProgressState _readThrough(int last, {required int partly, LocalDate? on}) {
+  final mon = LocalDate(2026, 10, 5);
+  var w = WeekProgress(weekId: '5787:1');
+  for (var a = 0; a <= last; a++) {
+    w = w.withAliyah(a, mon.addDays(a < 3 ? a : (a < 5 ? 3 : 4)));
+  }
+  final day = on ?? mon.addDays(4);
+  w = w
+      .withUnit(partly, ReadingPass.mikra1, day)
+      .withUnit(partly, ReadingPass.mikra2, day)
+      .withPosition(partly, const [99, 99, 0]);
+  return ProgressState(weeks: {'5787:1': w});
+}
 
 /// Screens shown as on the web, where the reader takes single keys.
 const _webKeys = {'reader_keys_web', 's_a11y_web'};
@@ -436,8 +487,9 @@ final _taps = {
   's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
   // The second page of onboarding: where the reader will be this Shabbat.
   'welcome_location': () => find.byType(FilledButton).first,
-  // Next, on the last step of Shevi'i.
-  'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
+  // Finish, on the aliyah's last step.
+  for (final screen in ['reader_finished', 'reader_finished_next', 'reader_finished_day', 'reader_finished_erev', 'reader_finished_week'])
+    screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
   'thread_refreshed': () => find.byIcon(Icons.refresh),
   'account_code': () => find.byType(FilledButton).first,
@@ -516,6 +568,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'reader_dots': _scrollToEnd,
   'reader_full_end': _scrollToEnd,
+  'haftarah_end': _scrollToEnd,
+  'haftarah_chapter': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
+  'haftarah_read': _scrollToEnd,
   'reader_third': _scrollToEnd,
   'thread_long_end': _scrollToEnd,
   'week_discuss': _scrollToEnd,
@@ -722,9 +777,12 @@ const _desktopScreens = {
   'week',
   'week_tab',
   'haftarah_tab',
+  'haftarah_read',
   'reader',
   'reader_third',
   'reader_finished',
+  'reader_finished_week',
+  'celebrate',
   'reader_full',
   'reader_full_end',
   'reader_focus',
@@ -767,6 +825,11 @@ const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week', 'reader'};
 const _bigTextScreens = {
   'today',
+  'reader_finished_day',
+  'reader_finished_week',
+  'celebrate',
+  'haftarah',
+  'haftarah_read',
   'goto_verse',
   'goto_missing',
   'reader_verse',

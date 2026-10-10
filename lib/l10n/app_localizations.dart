@@ -1082,11 +1082,113 @@ abstract class AppLocalizations {
   /// **'Yasher koach! Your first aliyah is done — {verses}, twice, with Targum.'**
   String firstAliyahDone(String verses);
 
-  /// No description provided for @continueWithAliyah.
+  /// The title of the reader's finished panel once an aliyah is read, e.g. "Revi'i is complete". Calm and short: aliyahComplete is what is spoken.
   ///
   /// In en, this message translates to:
-  /// **'Continue with {aliyah}'**
-  String continueWithAliyah(String aliyah);
+  /// **'{aliyah} is complete'**
+  String aliyahDoneTitle(String aliyah);
+
+  /// The title of the reader's finished panel once the whole parsha is read. parshaComplete is what is spoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Parshat {name} is complete'**
+  String parshaDoneTitle(String name);
+
+  /// A gentle line on the finished panel about the aliyah to read next, e.g. "Chamishi is 31 verses."
+  ///
+  /// In en, this message translates to:
+  /// **'{aliyah} is {count, plural, =1{one verse} other{{count} verses}}.'**
+  String nextAliyahLength(String aliyah, int count);
+
+  /// The finished panel's main button, naming the aliyah it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Next aliyah · {aliyah}'**
+  String nextAliyahAction(String aliyah);
+
+  /// A quieter button on the finished panel once the day's reading is done, for reading on anyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going: {aliyah}'**
+  String keepGoingAliyah(String aliyah);
+
+  /// On the finished panel when every aliyah planned for today (and before) is read, and tomorrow has reading planned.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s today\'s reading. See you tomorrow.'**
+  String get todayReadingDone;
+
+  /// As todayReadingDone, when the next day with reading planned is later than tomorrow. {day} is a weekday, e.g. "Sunday".
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s today\'s reading. See you on {day}.'**
+  String todayReadingDoneOn(String day);
+
+  /// On the finished panel when the last day of the week's plan is done. {greeting} is chag when Yom Tov begins the next day.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s this week\'s reading. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
+  String erevShabbatDone(String greeting);
+
+  /// As erevShabbatDone, when the plan leaves aliyot for Shabbat morning (read from a printed chumash).
+  ///
+  /// In en, this message translates to:
+  /// **'The rest is for Shabbat morning. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
+  String erevShabbatDoneMorning(String greeting);
+
+  /// After "On time · " on the finished panel, once a parsha is finished before its Shabbat.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1-week parsha streak} other{{count}-week parsha streak}}'**
+  String parshaStreakLength(int count);
+
+  /// After the parsha streak on the finished panel, when finishing on time earned a grace day.
+  ///
+  /// In en, this message translates to:
+  /// **'+1 grace day'**
+  String get graceDayEarned;
+
+  /// No description provided for @parshaDoneLate.
+  ///
+  /// In en, this message translates to:
+  /// **'After Shabbat — and it still counts.'**
+  String get parshaDoneLate;
+
+  /// No description provided for @parshaDoneLateStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'After Shabbat — and it still counts. Your streak continues.'**
+  String get parshaDoneLateStreak;
+
+  /// No description provided for @parshaDoneRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished together with the next parsha.'**
+  String get parshaDoneRestored;
+
+  /// No description provided for @parshaDoneRestoredStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished together with the next parsha — your streak continues.'**
+  String get parshaDoneRestoredStreak;
+
+  /// No description provided for @readHaftarah.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the haftarah'**
+  String get readHaftarah;
+
+  /// Names the page shown once a whole book of the Torah is read, e.g. in the browser's tab.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} is complete'**
+  String seferDoneTitle(String book);
+
+  /// Under "Chazak chazak venitchazek" once a whole book is read, e.g. "Genesis complete — 1,533 verses, twice, with Targum." {second} is what was read after the Torah's two readings. A book has hundreds of verses.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} complete — {count} verses, twice, with {second}.'**
+  String seferDoneBody(String book, int count, String second);
 
   /// Spoken for an aliyah's tab in the reader's ribbon, before its state, e.g. "Revi'i, aliyah 4 of 7, not started".
   ///
@@ -1231,6 +1333,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark the haftarah as read'**
   String get markHaftarahRead;
+
+  /// At the end of the haftarah once it is marked read. {date} is dateLong, e.g. "Friday, 9 October".
+  ///
+  /// In en, this message translates to:
+  /// **'Read on {date}'**
+  String haftarahReadOn(String date);
 
   /// No description provided for @specialHaftarah.
   ///

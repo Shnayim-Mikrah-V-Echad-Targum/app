@@ -824,16 +824,22 @@ Centred, max width 320, 40 top padding:
 2. 12 gap, then one marginalia sentence;
 3. 16 gap, then a Tonal button.
 
-### 6.23 Finished panel (reader_screen.dart:826-884; replaces the celebration icon)
+### 6.23 Finished panel (reader_screen.dart `_FinishedPanel`; replaces the celebration icon)
 
 Centred, max width 480:
 1. SeferDivider at 200 wide (animated, §8).
-2. 16 gap, then the title in headlineMedium: "Revi'i is complete" (existing string).
-3. 8 gap, then a marginalia line, e.g. "Chamishi is four verses."
-4. 24 gap, then actions: Filled "Next aliyah · Chamishi" and Text "Done".
-5. When the parsha is complete: the title becomes `weekComplete` and a Tonal "Read the haftarah" (if enabled) is added.
+2. 16 gap, then the title in headlineMedium (displaySmall from 600 dp): `aliyahDoneTitle`, "Revi'i is complete". The warmer `aliyahComplete` ("Yasher koach! Revi'i is complete.") is what is spoken, by the announcement or, where the platform takes none, the title's live region.
+3. 8 gap, then a marginalia line about the aliyah to continue with (the first after this one not yet read, then the first before it): `nextAliyahLength`, "Chamishi is 31 verses."
+4. 24 gap, then actions: Filled "Next aliyah · Chamishi" (52 high, a trailing chevron) and Text "Done". The first button takes the focus.
+5. Once everything planned for today and before is read, with the parsha unfinished, a marginalia line comes first: `todayReadingDone`, "That's today's reading. See you tomorrow." (or "See you on Sunday." when the next day with reading is later), or on the plan's last day `erevShabbatDone`, "That's this week's reading. Shabbat shalom!" ("The rest is for Shabbat morning." when the plan leaves aliyot for it, and "Chag sameach!" when Yom Tov begins the next day). Done is then the Filled button, and continuing a Text "Keep going: Chamishi". While anything planned is still unread, the panel stays as in 4.
+6. When the parsha is complete:
+   - the title becomes `parshaDoneTitle`, "Parshat Bereshit is complete" (`parshaComplete` is spoken);
+   - a status line, bodyMedium onSurfaceVariant after the status's icon in its colour (§6.14), says how the week stands, from its WeekEvaluation: on time, "On time · 3-week parsha streak · +1 grace day" (the grace day only when finishing earned one; the streak and the grace day are left out while streak numbers are hidden); late, "After Shabbat — and it still counts. Your streak continues."; doubled up, "Finished together with the next parsha — your streak continues.";
+   - a Tonal "Read the haftarah" (if enabled and not read) over a Text "Done", or else a Filled "Done".
 
-When a sefer is complete: a one-time full-screen panel. SeferDivider, then "חֲזַק חֲזַק וְנִתְחַזֵּק" in hebrewDisplay 40/56 primary, then SeferDivider, then a Filled "Continue". It never auto-dismisses.
+**Sefer complete** (`lib/features/reader/sefer_complete_screen.dart`, `/celebrate/sefer:5787:0`): a one-time full-screen page, centred, max width 480. SeferDivider, then "חֲזַק חֲזַק וְנִתְחַזֵּק" in hebrewDisplay 40/56 primary, untranslated (a level-1 heading, read from its letters), then SeferDivider, then bodyMedium onSurfaceVariant `seferDoneBody`, "Genesis complete — 1,533 verses, twice, with Targum.", then a Filled "Continue". It fades in over 400 ms (at once under Reduce Motion) and never auto-dismisses.
+- `celebrationListenerProvider` (`lib/app/celebrations.dart`), which the app watches, opens it whenever the reading log changes and a book of this cycle or the last is newly finished, however it was finished: in the reader, from Today, on the week's page or by the check-in.
+- The books celebrated are kept on the device alone (`celebrated.v1`), never synced or backed up, so each is celebrated once. Books already finished when the app starts, and a book finished more than a week before it arrives (in a restored backup, say), are recorded without a celebration.
 
 ### 6.24 Theme swatches (Display settings)
 
@@ -1081,10 +1087,10 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 
 ### Haftarah (haftarah_screen.dart)
 
-- The same paper layout and verse styling.
-- Header: Eyebrow "Haftarah", headlineSmall reference "I Samuel 20:18–42", and the special-haftarah line in marginalia.
-- Book labels become chapter heads.
-- At the end: a SeferDivider and a Tonal "Mark the haftarah as read".
+- The same paper layout and verse styling as the full text: the reader's measure between the page's gutters, verses 20 apart.
+- Header, under an app bar with no title of its own: Eyebrow "Haftarah · Bereshit", then the reference in headlineSmall, "I Samuel 20:18–42" (the page's level-1 heading), then the special haftarah, "Shabbat Machar Chodesh", in marginalia.
+- A chapter's head (§4.7) where the chapter changes from one verse to the next. A haftarah drawn from more than one book heads each book's verses with its name, set the same way ("הושע" over "Hosea"); one drawn from a single book doesn't name it again.
+- At the end: a SeferDivider and a centred Tonal "Mark the haftarah as read", at most 360 wide. Once read, a check_circle in primary and `haftarahReadOn`, "Read on Thursday, 8 October", over a Text "Mark as not read", which clears it and offers Undo in its status message. The focus moves from one button to the one that takes its place.
 
 ### Progress (progress_screen.dart; phonetall_progress, dark_progress, he_progress, desktop_progress)
 

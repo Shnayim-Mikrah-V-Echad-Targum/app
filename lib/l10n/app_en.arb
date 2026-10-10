@@ -542,10 +542,124 @@
       }
     }
   },
-  "continueWithAliyah": "Continue with {aliyah}",
-  "@continueWithAliyah": {
+  "aliyahDoneTitle": "{aliyah} is complete",
+  "@aliyahDoneTitle": {
+    "description": "The title of the reader's finished panel once an aliyah is read, e.g. \"Revi'i is complete\". Calm and short: aliyahComplete is what is spoken.",
     "placeholders": {
       "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "parshaDoneTitle": "Parshat {name} is complete",
+  "@parshaDoneTitle": {
+    "description": "The title of the reader's finished panel once the whole parsha is read. parshaComplete is what is spoken.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nextAliyahLength": "{aliyah} is {count, plural, =1{one verse} other{{count} verses}}.",
+  "@nextAliyahLength": {
+    "description": "A gentle line on the finished panel about the aliyah to read next, e.g. \"Chamishi is 31 verses.\"",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextAliyahAction": "Next aliyah · {aliyah}",
+  "@nextAliyahAction": {
+    "description": "The finished panel's main button, naming the aliyah it opens.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "keepGoingAliyah": "Keep going: {aliyah}",
+  "@keepGoingAliyah": {
+    "description": "A quieter button on the finished panel once the day's reading is done, for reading on anyway.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "todayReadingDone": "That's today's reading. See\u00A0you\u00A0tomorrow.",
+  "@todayReadingDone": {
+    "description": "On the finished panel when every aliyah planned for today (and before) is read, and tomorrow has reading planned."
+  },
+  "todayReadingDoneOn": "That's today's reading. See\u00A0you\u00A0on\u00A0{day}.",
+  "@todayReadingDoneOn": {
+    "description": "As todayReadingDone, when the next day with reading planned is later than tomorrow. {day} is a weekday, e.g. \"Sunday\".",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "erevShabbatDone": "That's this week's reading. {greeting, select, chag{Chag\u00A0sameach!} other{Shabbat\u00A0shalom!}}",
+  "@erevShabbatDone": {
+    "description": "On the finished panel when the last day of the week's plan is done. {greeting} is chag when Yom Tov begins the next day.",
+    "placeholders": {
+      "greeting": {
+        "type": "String"
+      }
+    }
+  },
+  "erevShabbatDoneMorning": "The rest is for Shabbat morning. {greeting, select, chag{Chag\u00A0sameach!} other{Shabbat\u00A0shalom!}}",
+  "@erevShabbatDoneMorning": {
+    "description": "As erevShabbatDone, when the plan leaves aliyot for Shabbat morning (read from a printed chumash).",
+    "placeholders": {
+      "greeting": {
+        "type": "String"
+      }
+    }
+  },
+  "parshaStreakLength": "{count, plural, =1{1-week parsha streak} other{{count}-week parsha streak}}",
+  "@parshaStreakLength": {
+    "description": "After \"On time · \" on the finished panel, once a parsha is finished before its Shabbat.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "graceDayEarned": "+1 grace day",
+  "@graceDayEarned": {
+    "description": "After the parsha streak on the finished panel, when finishing on time earned a grace day."
+  },
+  "parshaDoneLate": "After Shabbat — and it still counts.",
+  "parshaDoneLateStreak": "After Shabbat — and it still counts. Your streak continues.",
+  "parshaDoneRestored": "Finished together with the next parsha.",
+  "parshaDoneRestoredStreak": "Finished together with the next parsha — your streak continues.",
+  "readHaftarah": "Read the haftarah",
+  "seferDoneTitle": "{book} is complete",
+  "@seferDoneTitle": {
+    "description": "Names the page shown once a whole book of the Torah is read, e.g. in the browser's tab.",
+    "placeholders": {
+      "book": {
+        "type": "String"
+      }
+    }
+  },
+  "seferDoneBody": "{book} complete — {count} verses, twice,\u00A0with\u00A0{second}.",
+  "@seferDoneBody": {
+    "description": "Under \"Chazak chazak venitchazek\" once a whole book is read, e.g. \"Genesis complete — 1,533 verses, twice, with Targum.\" {second} is what was read after the Torah's two readings. A book has hundreds of verses.",
+    "placeholders": {
+      "book": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "second": {
         "type": "String"
       }
     }
@@ -599,6 +713,15 @@
   "translationLabel": "Translation (JPS 1917)",
   "haftarahTitle": "Haftarah",
   "markHaftarahRead": "Mark the haftarah as read",
+  "haftarahReadOn": "Read on {date}",
+  "@haftarahReadOn": {
+    "description": "At the end of the haftarah once it is marked read. {date} is dateLong, e.g. \"Friday, 9 October\".",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "specialHaftarah": "Special haftarah: {reason}",
   "@specialHaftarah": {
     "placeholders": {

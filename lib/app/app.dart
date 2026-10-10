@@ -13,6 +13,7 @@ import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/fonts_change_scope.dart';
+import 'celebrations.dart';
 import 'pending_saves.dart';
 import 'providers.dart';
 import 'router.dart';
@@ -147,6 +148,8 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     // watched): its timestamp must not rebuild the app.
     ref.watch(reminderSchedulerProvider);
     ref.watch(appShortcutsProvider);
+    // A book of the Torah finished anywhere in the app is celebrated once.
+    ref.watch(celebrationListenerProvider);
     ref.listen(progressSyncProvider, (_, _) {});
     // Opt-in fonts load when first chosen (and at start, in initState): the
     // Rashi script only once it is turned on.

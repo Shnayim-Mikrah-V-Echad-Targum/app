@@ -20,6 +20,7 @@ import '../features/parsha/week_overview_screen.dart';
 import '../features/progress/progress_screen.dart';
 import '../features/reader/haftarah_screen.dart';
 import '../features/reader/reader_screen.dart';
+import '../features/reader/sefer_complete_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/settings/screens/accessibility_settings_screen.dart';
 import '../features/settings/screens/city_picker_screen.dart';
@@ -130,6 +131,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       _haftarah('/haftarah/:id'),
       // Search fills the screen, as the reader does; ?q= searches at once.
       _route('/search', (s) => SearchScreen(initialQuery: s.uri.queryParameters['q'] ?? '')),
+      // A book of the Torah just finished, once (see celebrations.dart):
+      // /celebrate/sefer:5787:0.
+      _route('/celebrate/:key', (s) => SeferCompleteScreen(celebrationKey: s.pathParameters['key']!)),
       // The reader always fills the screen. ?verse=28:12 opens the full
       // text at that verse.
       _route('/read/:id/:aliyah', (s) => ReaderScreen(

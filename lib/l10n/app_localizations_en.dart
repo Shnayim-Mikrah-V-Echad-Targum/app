@@ -632,8 +632,105 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String continueWithAliyah(String aliyah) {
-    return 'Continue with $aliyah';
+  String aliyahDoneTitle(String aliyah) {
+    return '$aliyah is complete';
+  }
+
+  @override
+  String parshaDoneTitle(String name) {
+    return 'Parshat $name is complete';
+  }
+
+  @override
+  String nextAliyahLength(String aliyah, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verses',
+      one: 'one verse',
+    );
+    return '$aliyah is $_temp0.';
+  }
+
+  @override
+  String nextAliyahAction(String aliyah) {
+    return 'Next aliyah · $aliyah';
+  }
+
+  @override
+  String keepGoingAliyah(String aliyah) {
+    return 'Keep going: $aliyah';
+  }
+
+  @override
+  String get todayReadingDone => 'That\'s today\'s reading. See you tomorrow.';
+
+  @override
+  String todayReadingDoneOn(String day) {
+    return 'That\'s today\'s reading. See you on $day.';
+  }
+
+  @override
+  String erevShabbatDone(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'Chag sameach!',
+      'other': 'Shabbat shalom!',
+    });
+    return 'That\'s this week\'s reading. $_temp0';
+  }
+
+  @override
+  String erevShabbatDoneMorning(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'Chag sameach!',
+      'other': 'Shabbat shalom!',
+    });
+    return 'The rest is for Shabbat morning. $_temp0';
+  }
+
+  @override
+  String parshaStreakLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count-week parsha streak',
+      one: '1-week parsha streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get graceDayEarned => '+1 grace day';
+
+  @override
+  String get parshaDoneLate => 'After Shabbat — and it still counts.';
+
+  @override
+  String get parshaDoneLateStreak =>
+      'After Shabbat — and it still counts. Your streak continues.';
+
+  @override
+  String get parshaDoneRestored => 'Finished together with the next parsha.';
+
+  @override
+  String get parshaDoneRestoredStreak =>
+      'Finished together with the next parsha — your streak continues.';
+
+  @override
+  String get readHaftarah => 'Read the haftarah';
+
+  @override
+  String seferDoneTitle(String book) {
+    return '$book is complete';
+  }
+
+  @override
+  String seferDoneBody(String book, int count, String second) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$book complete — $countString verses, twice, with $second.';
   }
 
   @override
@@ -714,6 +811,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markHaftarahRead => 'Mark the haftarah as read';
+
+  @override
+  String haftarahReadOn(String date) {
+    return 'Read on $date';
+  }
 
   @override
   String specialHaftarah(String reason) {

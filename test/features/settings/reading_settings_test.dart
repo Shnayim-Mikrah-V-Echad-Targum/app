@@ -145,7 +145,7 @@ void main() {
 
     testWidgets('offers its haftarah when its last aliyah is finished in the reader; a later week does not', (tester) async {
       await turnHaftarahOff(tester, _now, aliyotRead: kAliyot - 1);
-      final haftarahButton = find.ancestor(of: find.text('Haftarah'), matching: find.bySubtype<FilledButton>());
+      final haftarahButton = find.ancestor(of: find.text('Read the haftarah'), matching: find.bySubtype<FilledButton>());
 
       Future<void> finishLastAliyah(String weekId) async {
         c.read(routerProvider).go('/read/$weekId/${kAliyot - 1}');
@@ -158,11 +158,11 @@ void main() {
       }
 
       await finishLastAliyah('5787:1');
-      expect(find.text('Chazak! Parshat Bereshit is complete.'), findsOneWidget);
+      expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
       expect(haftarahButton, findsOneWidget, reason: 'Bereshit still needs its haftarah');
 
       await finishLastAliyah('5787:2');
-      expect(find.text('Chazak! Parshat Noach is complete.'), findsOneWidget);
+      expect(find.text('Parshat Noach is complete'), findsOneWidget);
       expect(haftarahButton, findsNothing, reason: 'Noach does not');
     });
   });

@@ -524,9 +524,19 @@ class VerseGroup extends StatelessWidget {
 /// §4.7): "פרק ג" in gold between two hairlines and, in the English UI,
 /// "Chapter 3" beneath. One heading to a screen reader, in the UI language.
 class ChapterHeading extends StatelessWidget {
-  const ChapterHeading({super.key, required this.chapter, required this.settings});
+  const ChapterHeading({super.key, required int this.chapter, required this.settings})
+      : hebrewName = null,
+        name = null;
 
-  final int chapter;
+  /// The head of a book's verses in a haftarah drawn from more than one
+  /// book, set as a chapter's: the book's [hebrewName] in gold and, in the
+  /// English UI, its [name] beneath. Screen readers hear [name].
+  const ChapterHeading.book({super.key, required String this.hebrewName, required String this.name, required this.settings})
+      : chapter = null;
+
+  final int? chapter;
+  final String? hebrewName;
+  final String? name;
   final AppSettings settings;
 
   static const _rule = 32.0;
@@ -538,8 +548,11 @@ class ChapterHeading extends StatelessWidget {
     final theme = Theme.of(context);
     final sefer = SeferColors.of(context);
     final hebrewUi = context.isHebrewUi;
-    final numeral = HebrewText.gematria(chapter, punctuate: false);
-    final english = l.chapterLabel('$chapter');
+    final chapter = this.chapter;
+    final numeral = chapter == null ? '' : HebrewText.gematria(chapter, punctuate: false);
+    final english = chapter == null ? name! : l.chapterLabel('$chapter');
+    final gold = chapter == null ? hebrewName! : lookupAppLocalizations(_hebrew).chapterLabel(numeral);
+    final label = chapter == null || !hebrewUi ? english : l.chapterLabel(numeral);
     // The heading grows with the reading size, but more slowly than the
     // text, so that it never outweighs it.
     final style = SeferType.of(context).hebrewDisplay.copyWith(
@@ -555,7 +568,7 @@ class ChapterHeading extends StatelessWidget {
     return Semantics(
       header: true,
       headingLevel: 2,
-      label: hebrewUi ? l.chapterLabel(numeral) : english,
+      label: label,
       child: ExcludeSemantics(
         child: Padding(
           padding: const EdgeInsets.only(top: 16, bottom: 8),
@@ -570,7 +583,7 @@ class ChapterHeading extends StatelessWidget {
                   const SizedBox(width: _gap),
                   Flexible(
                     child: Text(
-                      lookupAppLocalizations(_hebrew).chapterLabel(numeral),
+                      gold,
                       style: style,
                       textAlign: TextAlign.center,
                       textDirection: TextDirection.rtl,

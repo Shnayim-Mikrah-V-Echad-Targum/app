@@ -583,7 +583,7 @@ void main() {
       await tester.tap(find.text('Mark this aliyah as read'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Haftarah'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Read the haftarah'));
       await _loadTexts(tester);
       expect(find.byType(HaftarahScreen), findsOneWidget);
       expect(selectedTab(tester), 0);
@@ -622,7 +622,7 @@ void main() {
       await tester.tap(find.text('Mark this aliyah as read'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Haftarah'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Read the haftarah'));
       await _loadTexts(tester);
       expect(find.byType(HaftarahScreen), findsOneWidget);
       expect(router.state.uri.toString(), '/progress/haftarah/5787:1');

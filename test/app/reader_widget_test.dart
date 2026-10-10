@@ -316,9 +316,13 @@ void main() {
     await tester.tap(find.text('Mark this aliyah as read'));
     await tester.pumpAndSettle();
 
-    // Shevi'i is the last aliyah, but Shlishi is still under way.
-    expect(find.textContaining("Shevi'i is complete"), findsWidgets);
-    await tester.tap(find.text('Continue with Shlishi'));
+    // Shevi'i is the last aliyah, but Shlishi is still under way. Monday's
+    // reading (and Sunday's) is done, so Done leads and going on is quieter.
+    expect(find.text("Shevi'i is complete"), findsOneWidget);
+    expect(find.textContaining("That's today's reading."), findsOneWidget);
+    expect(find.text('Shlishi is 22 verses.'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Done'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Keep going: Shlishi'));
     await tester.pumpAndSettle();
     expect(find.text('Shlishi · שלישי'), findsOneWidget);
     expect(find.text('Read the Hebrew'), findsOneWidget);
@@ -328,8 +332,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mark this aliyah as read'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Parshat Noach is complete'), findsWidgets);
-    expect(find.textContaining('Continue with'), findsNothing);
+    expect(find.text('Parshat Noach is complete'), findsOneWidget);
+    expect(find.textContaining('Next aliyah'), findsNothing);
+    expect(find.textContaining('Keep going'), findsNothing);
   });
 
   testWidgets('read by section, the Targum of Numbers 32:3 is followed by its Hebrew', (tester) async {
@@ -999,11 +1004,17 @@ void main() {
           await tester.tap(find.text(label));
           await tester.pumpAndSettle();
         }
-        const heading = 'Yasher koach! Rishon is complete.';
+        // The title is quiet; what is said is warmer, by the announcement or
+        // by the title's live region.
+        const heading = 'Rishon is complete';
+        const spoken = 'Yasher koach! Rishon is complete.';
         expect(find.text(heading), findsOneWidget);
-        expect(focused(tester, 'Continue with Sheni'), isTrue);
-        expect(tester.getSemantics(find.text(heading)), isSemantics(label: heading, isHeader: true, isLiveRegion: !announces));
-        expect(tester.takeAnnouncements().map((a) => a.message), announces ? contains(heading) : isEmpty);
+        expect(focused(tester, 'Next aliyah · Sheni'), isTrue);
+        expect(
+          tester.getSemantics(find.text(heading)),
+          isSemantics(label: announces ? heading : spoken, isHeader: true, isLiveRegion: !announces),
+        );
+        expect(tester.takeAnnouncements().map((a) => a.message), announces ? contains(spoken) : isEmpty);
 
         // Continued from the keyboard, the next aliyah opens with the focus
         // on Next.
@@ -1026,7 +1037,7 @@ void main() {
         await press(tester, LogicalKeyboardKey.enter);
       }
       expect(find.byType(AlertDialog), findsOneWidget);
-      expect(Focus.of(tester.element(find.text('Continue with Sheni'))).hasFocus, isFalse,
+      expect(Focus.of(tester.element(find.text('Next aliyah · Sheni'))).hasFocus, isFalse,
           reason: 'nothing behind the dialog has the focus');
       // Enter answers the dialog, rather than continuing behind it.
       final answer = find.descendant(of: find.byType(AlertDialog), matching: find.bySubtype<ButtonStyleButton>()).first;
@@ -1035,7 +1046,7 @@ void main() {
       await press(tester, LogicalKeyboardKey.enter);
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.text('Rishon · ראשון'), findsOneWidget);
-      expect(focused(tester, 'Continue with Sheni'), isTrue, reason: "the panel's first button takes the focus back");
+      expect(focused(tester, 'Next aliyah · Sheni'), isTrue, reason: "the panel's first button takes the focus back");
     });
 
     testWidgets("marking the aliyah read from the menu gives the panel's first button the focus", (tester) async {
@@ -1044,7 +1055,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Mark this aliyah as read'));
       await tester.pumpAndSettle();
-      expect(focused(tester, 'Continue with Sheni'), isTrue);
+      expect(focused(tester, 'Next aliyah · Sheni'), isTrue);
     });
 
     for (final (name, key, holding) in [
@@ -1061,7 +1072,7 @@ void main() {
           await tester.tap(forward);
           await tester.pumpAndSettle();
         }
-        expect(focused(tester, 'Continue with Sheni'), isTrue);
+        expect(focused(tester, 'Next aliyah · Sheni'), isTrue);
         await press(tester, key, holding: holding);
         expect(find.text('Read the Targum'), findsOneWidget);
         // The aliyah's last step, whose Next says Finish.

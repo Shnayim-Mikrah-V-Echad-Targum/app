@@ -10,6 +10,8 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../app/providers.dart';
 import '../../app/routes.dart';
+import '../../core/calendar/hebrew_date.dart';
+import '../../core/calendar/jewish_holidays.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/scripture.dart';
 import '../../data/models/verse_ref.dart';
@@ -21,8 +23,10 @@ import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/ornaments.dart' show Eyebrow, SeferDivider;
+import '../../ui/widgets/progress_widgets.dart' show WeekStatusBadge;
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
+import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
 import 'aliyah_ribbon.dart';
 import 'display_sheet.dart';
@@ -199,10 +203,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// Gives [node] the keyboard focus once the frame being built, which
   /// builds its control in place of the one that had the focus, is done.
   /// Asking autofocus would not do: the route remembers the reader's own
-  /// focus.
+  /// focus. Not while a page is over the reader (the one celebrating a
+  /// finished book, say), whose focus it would take.
   void _focusAfterFrame(FocusNode node) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && node.context != null) node.requestFocus();
+      // Asked of the control's own context, so that only it, and not the
+      // whole reader, depends on what is over the page.
+      final at = node.context;
+      if (mounted && at != null && (ModalRoute.isCurrentOf(at) ?? true)) node.requestFocus();
     });
   }
 
@@ -1253,7 +1261,11 @@ class _Note extends StatelessWidget {
       );
 }
 
-class _FinishedPanel extends ConsumerWidget {
+/// What the reader sees once an aliyah is read (DESIGN_SYSTEM.md §6.23): a
+/// divider whose hairlines draw outward from its lozenge, then the title, a
+/// line about what comes next, and the way on. Once the parsha is read, it
+/// says how the week stands and offers the haftarah.
+class _FinishedPanel extends ConsumerStatefulWidget {
   const _FinishedPanel({required this.ctx, required this.aliyah, required this.firstFocus, required this.onGoToAliyah});
 
   final WeekContext ctx;
@@ -1263,10 +1275,46 @@ class _FinishedPanel extends ConsumerWidget {
   final FocusNode firstFocus;
   final ValueChanged<int> onGoToAliyah;
 
+  @override
+  ConsumerState<_FinishedPanel> createState() => _FinishedPanelState();
+}
+
+class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTickerProviderStateMixin {
+  // The completion moment (§8), once: the divider's hairlines draw outward
+  // over Motion.long, then the rest fades in over Motion.short.
+  late final AnimationController _reveal = AnimationController(vsync: this, duration: Motion.long + Motion.short);
+  late final Animation<double> _draw = CurvedAnimation(parent: _reveal, curve: Interval(0, _split, curve: Motion.decelerate));
+  late final Animation<double> _fade = CurvedAnimation(parent: _reveal, curve: Interval(_split, 1, curve: Motion.standard));
+  bool _started = false;
+
+  static final _split = Motion.long.inMilliseconds / (Motion.long + Motion.short).inMilliseconds;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    // Under Reduce Motion it is simply there.
+    if (Motion.of(context).reduced) {
+      _reveal.value = 1;
+    } else {
+      _reveal.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _reveal.dispose();
+    super.dispose();
+  }
+
+  WeekContext get ctx => widget.ctx;
+
   /// The aliyah to continue with: the first after this one not yet read,
   /// then the first before it; null once the parsha is read. A preview
   /// records no reading, so it simply moves on to the next aliyah.
   int? _nextTarget(WeekProgress week) {
+    final aliyah = widget.aliyah;
     if (!ctx.isOpen) return aliyah < kAliyot - 1 ? aliyah + 1 : null;
     for (final a in [for (var a = aliyah + 1; a < kAliyot; a++) a, for (var a = 0; a < aliyah; a++) a]) {
       if (!week.isAliyahDone(a)) return a;
@@ -1274,16 +1322,122 @@ class _FinishedPanel extends ConsumerWidget {
     return null;
   }
 
+  /// The line for a reader who has read all that is planned for today and
+  /// before, with the parsha still unfinished: when the next reading is, or
+  /// on the plan's last day, a greeting for Shabbat (or the Yom Tov that
+  /// comes first). Null while anything planned is still unread.
+  String? _doneForToday(AppSettings settings) {
+    final l = context.l10n;
+    final today = ctx.today;
+    final day = ctx.plan.dayFor(today);
+    if (day == null || day.aliyot.isEmpty || !day.aliyot.every(ctx.progress.isAliyahDone)) return null;
+    if (ctx.dueAliyot().isNotEmpty) return null;
+    final later = ctx.plan.days.where((d) => d.date > today).firstOrNull;
+    if (later != null) {
+      return later.date == today.addDays(1) ? l.todayReadingDone : l.todayReadingDoneOn(Names(context).weekday(later.date));
+    }
+    final tomorrow = today.addDays(1);
+    final chag = !tomorrow.isShabbat &&
+        JewishHolidays.isYomTov(HebrewDate.fromLocalDate(tomorrow), israel: settings.oneDayYomTov);
+    final greeting = chag ? 'chag' : 'shabbat';
+    return ctx.plan.shabbatAliyot.isEmpty ? l.erevShabbatDone(greeting) : l.erevShabbatDoneMorning(greeting);
+  }
+
+  /// How the finished parsha stands (on time, after Shabbat, or doubled up),
+  /// with the streak where streaks are shown; null for any other standing.
+  (WeekStatus, String)? _standing(AppSettings settings) {
+    final l = context.l10n;
+    final summary = ref.watch(streakSummaryProvider);
+    final evaluation = summary.weeks.where((e) => e.plan.weekId == ctx.id).lastOrNull;
+    if (evaluation == null) return null;
+    final streaks = settings.showStreaks;
+    final status = evaluation.status;
+    final text = switch (status) {
+      WeekStatus.onTime when streaks => [
+          l.weekOnTime,
+          l.parshaStreakLength(summary.parshaStreak),
+          if (evaluation.earnedGrace) l.graceDayEarned,
+        ].join(' · '),
+      WeekStatus.onTime => l.weekOnTime,
+      WeekStatus.late => streaks ? l.parshaDoneLateStreak : l.parshaDoneLate,
+      WeekStatus.restored => streaks ? l.parshaDoneRestoredStreak : l.parshaDoneRestored,
+      _ => null,
+    };
+    return text == null ? null : (status, text);
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final names = Names(context);
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final type = SeferType.of(context);
     final settings = ref.watch(settingsProvider);
-    final week = ref.watch(progressProvider).week(ctx.id);
+    final week = ctx.progress;
     final complete = week.isComplete;
     final next = _nextTarget(week);
     final haftarah = complete && (settings.haftarahEnabled || ctx.haftarahRequired) && week.haftarah == null;
+    final doneForToday = complete || next == null ? null : _doneForToday(settings);
+    final standing = complete ? _standing(settings) : null;
+    final title = complete
+        ? l.parshaDoneTitle(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames))
+        : l.aliyahDoneTitle(names.aliyah(widget.aliyah));
+    // What the reader's announcement says, where there is one; elsewhere
+    // the title's live region says it.
+    final spoken = complete
+        ? l.parshaComplete(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames))
+        : l.aliyahComplete(names.aliyah(widget.aliyah));
+    final announces = MediaQuery.supportsAnnounceOf(context);
+    final wide = MediaQuery.sizeOf(context).width >= Breakpoints.medium;
+    final marginalia = type.marginalia;
+
+    // At most one Filled button (§6.5): the next aliyah, unless the day's
+    // reading is done, when Done is, and continuing is a quiet Keep going.
+    // The first button takes the focus.
+    final buttons = <Widget>[];
+    FocusNode? focus() => buttons.isEmpty ? widget.firstFocus : null;
+    void done() => context.canPop() ? context.pop() : context.go('/today');
+    Widget doneButton({required bool filled}) => filled
+        ? FilledButton(
+            focusNode: focus(),
+            style: FilledButton.styleFrom(minimumSize: const Size(160, 52)),
+            onPressed: done,
+            child: Text(l.actionDone),
+          )
+        : TextButton(focusNode: focus(), onPressed: done, child: Text(l.actionDone));
+    if (next != null && doneForToday == null) {
+      buttons
+        ..add(FilledButton.icon(
+          focusNode: focus(),
+          style: FilledButton.styleFrom(minimumSize: const Size(64, 52)),
+          onPressed: () => widget.onGoToAliyah(next),
+          icon: const Icon(Icons.chevron_right),
+          iconAlignment: IconAlignment.end,
+          label: Text(l.nextAliyahAction(names.aliyah(next))),
+        ))
+        ..add(doneButton(filled: false));
+    } else if (next != null) {
+      buttons
+        ..add(doneButton(filled: true))
+        ..add(TextButton(
+          focusNode: focus(),
+          onPressed: () => widget.onGoToAliyah(next),
+          child: Text(l.keepGoingAliyah(names.aliyah(next))),
+        ));
+    } else {
+      if (haftarah) {
+        buttons.add(FilledButton.tonalIcon(
+          focusNode: focus(),
+          style: AppButtons.tonal(context),
+          onPressed: () => replaceWithWeekPage(context, 'haftarah/${ctx.id}'),
+          icon: const Icon(Icons.auto_stories_outlined),
+          label: Text(l.readHaftarah),
+        ));
+      }
+      buttons.add(doneButton(filled: !haftarah));
+    }
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -1291,49 +1445,97 @@ class _FinishedPanel extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 480),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(complete ? Icons.celebration : Icons.check_circle, size: 72, color: theme.colorScheme.primary),
-              const Gap(16),
-              Semantics(
-                // Spoken by the reader's announcement where there is one,
-                // and elsewhere (on Android) as it appears.
-                liveRegion: !MediaQuery.supportsAnnounceOf(context),
-                header: true,
-                headingLevel: 1,
-                child: Text(
-                  complete
-                      ? l.parshaComplete(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames))
-                      : l.aliyahComplete(names.aliyah(aliyah)),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineSmall,
-                ),
+              AnimatedBuilder(
+                animation: _draw,
+                builder: (context, _) => SeferDivider(width: SeferDivider.maxWidth, progress: _draw.value),
               ),
-              const Gap(24),
-              if (next != null)
-                FilledButton.icon(
-                  focusNode: firstFocus,
-                  onPressed: () => onGoToAliyah(next),
-                  icon: const Icon(Icons.arrow_forward),
-                  label: Text(l.continueWithAliyah(names.aliyah(next))),
+              const Gap(16),
+              // Faded in together, but present for screen readers from the
+              // start, so that the heading is there to be found.
+              FadeTransition(
+                opacity: _fade,
+                alwaysIncludeSemantics: true,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Semantics(
+                      // Said by the reader's announcement where there is one,
+                      // and elsewhere (on Android) as it appears.
+                      liveRegion: !announces,
+                      header: true,
+                      headingLevel: 1,
+                      child: Text(
+                        title,
+                        semanticsLabel: announces ? null : spoken,
+                        textAlign: TextAlign.center,
+                        style: (wide ? theme.textTheme.displaySmall : theme.textTheme.headlineMedium)
+                            ?.copyWith(color: scheme.onSurface),
+                      ),
+                    ),
+                    if (next != null) ...[
+                      const Gap(8),
+                      if (doneForToday != null) ...[
+                        Text(doneForToday, textAlign: TextAlign.center, style: marginalia),
+                        const Gap(4),
+                      ],
+                      Text(
+                        l.nextAliyahLength(names.aliyah(next), ctx.aliyahVerses[next]),
+                        textAlign: TextAlign.center,
+                        style: marginalia,
+                      ),
+                    ],
+                    if (standing case (final status, final text)) ...[
+                      const Gap(8),
+                      _StandingLine(status: status, text: text),
+                    ],
+                    const Gap(24),
+                    for (final (i, button) in buttons.indexed) ...[
+                      if (i > 0) const Gap(8),
+                      button,
+                    ],
+                  ],
                 ),
-              if (haftarah)
-                FilledButton.icon(
-                  focusNode: next == null ? firstFocus : null,
-                  onPressed: () => replaceWithWeekPage(context, 'haftarah/${ctx.id}'),
-                  icon: const Icon(Icons.auto_stories),
-                  label: Text(l.haftarahTitle),
-                ),
-              const Gap(8),
-              OutlinedButton(
-                focusNode: next == null && !haftarah ? firstFocus : null,
-                onPressed: () => context.canPop() ? context.pop() : context.go('/today'),
-                child: Text(l.actionDone),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// How a finished parsha stands: its status's icon, in its colour, and a
+/// sentence (§6.23).
+class _StandingLine extends StatelessWidget {
+  const _StandingLine({required this.status, required this.text});
+
+  final WeekStatus status;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    // The icon rides with the first word, so the line wraps as one sentence.
+    return Text.rich(
+      TextSpan(children: [
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 6),
+            child: Icon(
+              WeekStatusBadge.icon(status),
+              // Growing with the text, but never outweighing it.
+              size: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(18),
+              color: WeekStatusBadge.color(context, status),
+            ),
+          ),
+        ),
+        TextSpan(text: text),
+      ]),
+      textAlign: TextAlign.center,
+      style: style,
     );
   }
 }
