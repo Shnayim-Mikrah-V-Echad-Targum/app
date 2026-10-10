@@ -710,6 +710,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutHelp => 'Show shortcuts';
 
   @override
+  String get shortcutScroll => 'Scroll the text';
+
+  @override
+  String get shortcutPageDown => 'Down a page, then the next step';
+
+  @override
+  String get shortcutPageUp => 'Up a page, then the previous step';
+
+  @override
+  String get shortcutFocusVerse => 'Focus mode: previous or next verse';
+
+  @override
+  String get keyUp => 'Up arrow';
+
+  @override
+  String get keyDown => 'Down arrow';
+
+  @override
+  String get keySpace => 'Space';
+
+  @override
   String get progressTitle => 'Progress';
 
   @override
@@ -1168,6 +1189,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get haptics => 'Haptic feedback';
+
+  @override
+  String get singleKeyShortcuts => 'Single-key shortcuts';
+
+  @override
+  String get singleKeyShortcutsDesc =>
+      'While reading, T, N, L, + and − work on their own. Turn this off if you use speech input or screen-reader quick keys.';
 
   @override
   String get screenReaderText => 'Screen reader text';

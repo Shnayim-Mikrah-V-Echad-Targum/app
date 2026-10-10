@@ -712,6 +712,27 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shortcutHelp => 'הצגת קיצורים';
 
   @override
+  String get shortcutScroll => 'גלילת הטקסט';
+
+  @override
+  String get shortcutPageDown => 'עמוד למטה, ואז השלב הבא';
+
+  @override
+  String get shortcutPageUp => 'עמוד למעלה, ואז השלב הקודם';
+
+  @override
+  String get shortcutFocusVerse => 'מצב מיקוד: הפסוק הקודם או הבא';
+
+  @override
+  String get keyUp => 'חץ למעלה';
+
+  @override
+  String get keyDown => 'חץ למטה';
+
+  @override
+  String get keySpace => 'רווח';
+
+  @override
   String get progressTitle => 'התקדמות';
 
   @override
@@ -1167,6 +1188,13 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get haptics => 'משוב רטט';
+
+  @override
+  String get singleKeyShortcuts => 'קיצורי מקש יחיד';
+
+  @override
+  String get singleKeyShortcutsDesc =>
+      'בזמן הקריאה המקשים T,‏ N,‏ L,‏ + ו־− פועלים לבדם. כדאי לכבות אם משתמשים בקלט קולי או במקשים המהירים של קורא מסך.';
 
   @override
   String get screenReaderText => 'טקסט לקורא מסך';

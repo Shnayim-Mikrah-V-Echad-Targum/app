@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -75,6 +77,12 @@ class ReaderScreen extends ConsumerStatefulWidget {
   /// Opened from the week's own page, which "Back to the week" returns to.
   final bool fromWeek;
 
+  /// Whether the display shortcuts are single keys (T, N, L, + and −), as on
+  /// the web, where Chrome and Edge keep Ctrl+Shift+T, Ctrl+Shift+N and
+  /// Ctrl+= for themselves. Elsewhere they are Ctrl (⌘) chords. Settable,
+  /// for tests.
+  static bool singleKeyPlatform = kIsWeb;
+
   @override
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
 }
@@ -88,6 +96,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   bool _positioned = false;
   int? _focusedVerse;
   final _scroll = ScrollController();
+
+  // Controls that take the keyboard focus when the one that had it goes:
+  // Next, when Back is disabled or the finished panel closes; the panel's
+  // first button, when the last step is read.
+  final _nextFocus = FocusNode();
+  final _backFocus = FocusNode();
+  final _finishFocus = FocusNode();
+  // Has the focus while any of the finished panel's buttons does.
+  final _panelFocus = FocusNode(canRequestFocus: false, skipTraversal: true);
+
+  // One per verse of the full text, for scrolling a verse into view.
+  final _verseKeys = <GlobalKey>[];
 
   // Kept for dispose(), when ref can no longer be used.
   late final TtsService _tts;
@@ -106,6 +126,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     WakelockPlus.disable().catchError((_) {});
     _tts.stop();
     _scroll.dispose();
+    for (final node in [_nextFocus, _backFocus, _finishFocus, _panelFocus]) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -132,6 +155,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   void _goToAliyah(int a) {
     ref.read(ttsProvider).stop();
+    // Continued from the finished panel, the focus goes on to Next.
+    if (_panelFocus.hasFocus) _focusAfterFrame(_nextFocus);
     setState(() {
       _aliyah = a;
       _positioned = false;
@@ -139,6 +164,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _focusedVerse = null;
     });
     if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
+
+  /// Gives [node] the keyboard focus once the frame being built, which
+  /// builds its control in place of the one that had the focus, is done.
+  /// Asking autofocus would not do: the route remembers the reader's own
+  /// focus.
+  void _focusAfterFrame(FocusNode node) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && node.context != null) node.requestFocus();
+    });
   }
 
   // --- Recording progress ---------------------------------------------------
@@ -190,6 +225,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       }
     });
     if (_finished) {
+      // Next goes with the bottom bar: the panel's first button takes over.
+      _focusAfterFrame(_finishFocus);
       _onFinished(ctx, firstEver: !hadCompletedBefore);
     } else {
       _announceStep(flow);
@@ -198,7 +235,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _back(ReaderFlow flow) {
+    // Page Up or Alt+↑ at the first step: nothing to go back to, or to say.
+    if (!_finished && _chunk == 0 && _step == 0) return;
     ref.read(ttsProvider).stop();
+    final fromPanel = _finished && _panelFocus.hasFocus;
+    final fromBack = _backFocus.hasFocus;
     setState(() {
       if (_finished) {
         _finished = false;
@@ -209,7 +250,81 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _step = flow.stepsFor(_chunk).length - 1;
       }
     });
+    // Back from the finished panel, or to the first step, where Back is
+    // disabled: the control with the focus goes, and Next takes it.
+    if (fromPanel || (fromBack && _chunk == 0 && _step == 0)) _focusAfterFrame(_nextFocus);
     _announceStep(flow);
+  }
+
+  /// Page Down and Page Up: the text scrolls by most of a screen, and once
+  /// at its end, the reader goes on to the next step (or back to the one
+  /// before).
+  void _pageOrStep(int direction, WeekContext ctx, ReaderFlow flow) {
+    if (_scroll.hasClients) {
+      final p = _scroll.position;
+      if ((direction > 0 ? p.extentAfter : p.extentBefore) > 1) {
+        final to = (p.pixels + direction * 0.8 * p.viewportDimension).clamp(p.minScrollExtent, p.maxScrollExtent);
+        if (MediaQuery.disableAnimationsOf(context)) {
+          _scroll.jumpTo(to);
+        } else {
+          _scroll.animateTo(to, duration: const Duration(milliseconds: 150), curve: Curves.easeOut);
+        }
+        return;
+      }
+    }
+    if (_fullText) return;
+    if (direction > 0) {
+      _next(ctx, flow);
+    } else {
+      _back(flow);
+    }
+  }
+
+  // --- Focus mode -------------------------------------------------------------
+
+  GlobalKey _verseKey(int i) {
+    while (_verseKeys.length <= i) {
+      _verseKeys.add(GlobalKey());
+    }
+    return _verseKeys[i];
+  }
+
+  /// ↓ and ↑ in focus mode: the next or previous verse is the one read, and
+  /// comes into view at the same height on the screen. With none yet, the
+  /// first in view is.
+  void _moveFocusedVerse(int direction, int count) {
+    final current = _focusedVerse;
+    final verse = current == null ? _firstVerseInView(count) : (current + direction).clamp(0, count - 1);
+    setState(() => _focusedVerse = verse);
+    _revealVerse(verse, animate: true);
+  }
+
+  /// The first verse of the full text whose top is in view.
+  int _firstVerseInView(int count) {
+    if (!_scroll.hasClients) return 0;
+    final top = _scroll.position.pixels;
+    for (var i = 0; i < count && i < _verseKeys.length; i++) {
+      final box = _verseKeys[i].currentContext?.findRenderObject();
+      final viewport = box == null ? null : RenderAbstractViewport.maybeOf(box);
+      if (box != null && viewport != null && viewport.getOffsetToReveal(box, 0).offset >= top - 1) return i;
+    }
+    return count - 1;
+  }
+
+  /// Scrolls verse [i] of the full text into view, nearer the top than the
+  /// bottom, once this frame has laid it out.
+  void _revealVerse(int i, {required bool animate}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final verse = i < _verseKeys.length ? _verseKeys[i].currentContext : null;
+      if (!mounted || verse == null) return;
+      final still = !animate || MediaQuery.disableAnimationsOf(context);
+      Scrollable.ensureVisible(
+        verse,
+        alignment: 0.3,
+        duration: still ? Duration.zero : const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   /// Announces the new step, in one message, where the platform takes
@@ -350,6 +465,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           _chunk = c.clamp(0, flow.chunks.length - 1);
           _step = st.clamp(0, flow.stepsFor(_chunk).length - 1);
           _positioned = true;
+          // Focus mode opens on the reader's place, where the guided reader
+          // would resume, not on nothing.
+          if (s.focusMode && _focusedVerse == null) {
+            final verse = (saved?.first ?? 0).clamp(0, flow.verses.length - 1);
+            _focusedVerse = verse;
+            if (_fullText) _revealVerse(verse, animate: false);
+          }
         }
         // Settings changes can reshape the flow; keep indices in range.
         if (_chunk >= flow.chunks.length) _chunk = flow.chunks.length - 1;
@@ -372,132 +494,176 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       if (!_fullText) _back(flow);
     }
 
+    void larger() => changeReadingScale(ref, 0.1);
+    void smaller() => changeReadingScale(ref, -0.1);
+    void teamim() => toggle((s) => s.copyWith(showTeamim: !s.showTeamim));
+    void nikud() => toggle((s) => s.copyWith(showNikud: !s.showNikud));
+    void listen() => _toggleSpeech(texts, flow);
+    void help() => _showShortcuts(context, isMac, s);
+
+    final singleKeys = ReaderScreen.singleKeyPlatform;
     final shortcuts = <ShortcutActivator, VoidCallback>{
-      const SingleActivator(LogicalKeyboardKey.pageDown): () => next(),
-      const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true): () => next(),
-      const SingleActivator(LogicalKeyboardKey.pageUp): () => back(),
-      const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true): () => back(),
-      SingleActivator(LogicalKeyboardKey.equal, control: !isMac, meta: isMac): () => changeReadingScale(ref, 0.1),
-      SingleActivator(LogicalKeyboardKey.minus, control: !isMac, meta: isMac): () => changeReadingScale(ref, -0.1),
-      SingleActivator(LogicalKeyboardKey.keyT, control: !isMac, meta: isMac, shift: true): () =>
-          toggle((s) => s.copyWith(showTeamim: !s.showTeamim)),
-      SingleActivator(LogicalKeyboardKey.keyN, control: !isMac, meta: isMac, shift: true): () =>
-          toggle((s) => s.copyWith(showNikud: !s.showNikud)),
-      SingleActivator(LogicalKeyboardKey.keyL, control: !isMac, meta: isMac, shift: true): () => _toggleSpeech(texts, flow),
-      const SingleActivator(LogicalKeyboardKey.f1): () => _showShortcuts(context, isMac),
-      SingleActivator(LogicalKeyboardKey.slash, control: !isMac, meta: isMac): () => _showShortcuts(context, isMac),
+      const SingleActivator(LogicalKeyboardKey.pageDown): () => _pageOrStep(1, ctx, flow),
+      const SingleActivator(LogicalKeyboardKey.pageUp): () => _pageOrStep(-1, ctx, flow),
+      const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true): next,
+      const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true): back,
+      if (_fullText && s.focusMode) ...{
+        const SingleActivator(LogicalKeyboardKey.arrowDown): () => _moveFocusedVerse(1, flow.verses.length),
+        const SingleActivator(LogicalKeyboardKey.arrowUp): () => _moveFocusedVerse(-1, flow.verses.length),
+      },
+      if (!singleKeys) ...{
+        SingleActivator(LogicalKeyboardKey.equal, control: !isMac, meta: isMac): larger,
+        SingleActivator(LogicalKeyboardKey.minus, control: !isMac, meta: isMac): smaller,
+        SingleActivator(LogicalKeyboardKey.keyT, control: !isMac, meta: isMac, shift: true, includeRepeats: false): teamim,
+        SingleActivator(LogicalKeyboardKey.keyN, control: !isMac, meta: isMac, shift: true, includeRepeats: false): nikud,
+        SingleActivator(LogicalKeyboardKey.keyL, control: !isMac, meta: isMac, shift: true, includeRepeats: false): listen,
+      } else if (s.singleKeyShortcuts) ...{
+        const SingleActivator(LogicalKeyboardKey.keyT, includeRepeats: false): teamim,
+        const SingleActivator(LogicalKeyboardKey.keyN, includeRepeats: false): nikud,
+        const SingleActivator(LogicalKeyboardKey.keyL, includeRepeats: false): listen,
+        // "+" is Shift+= on many layouts, and a key of its own on others.
+        const SingleActivator(LogicalKeyboardKey.equal): larger,
+        const SingleActivator(LogicalKeyboardKey.equal, shift: true): larger,
+        const SingleActivator(LogicalKeyboardKey.numpadAdd): larger,
+        const CharacterActivator('+'): larger,
+        const SingleActivator(LogicalKeyboardKey.minus): smaller,
+        const SingleActivator(LogicalKeyboardKey.numpadSubtract): smaller,
+        const CharacterActivator('?'): help,
+      },
+      const SingleActivator(LogicalKeyboardKey.f1): help,
+      SingleActivator(LogicalKeyboardKey.slash, control: !isMac, meta: isMac): help,
     };
 
-    return CallbackShortcuts(
-      bindings: shortcuts,
-      child: Focus(
-        autofocus: true,
-        child: Scaffold(
-          appBar: AppBar(
-            leading: homeLeading(context),
-            title: Text(title, overflow: TextOverflow.ellipsis),
-            actions: [
-              ValueListenableBuilder<bool>(
-                valueListenable: tts.speaking,
-                builder: (context, speaking, _) => IconButton(
-                  tooltip: speaking ? l.stopListening : l.listen,
-                  icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
-                  onPressed: () => _toggleSpeech(texts, flow),
+    // The text scrolls by keyboard as well: with ↑, ↓, Page Up, Page Down
+    // and Space on the web, and Ctrl (⌘) with ↑ or ↓ elsewhere, the keys
+    // that scroll whatever has no focus of its own.
+    return PrimaryScrollController(
+      controller: _scroll,
+      automaticallyInheritForPlatforms: const {},
+      child: CallbackShortcuts(
+        bindings: shortcuts,
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+            appBar: AppBar(
+              leading: homeLeading(context),
+              title: Text(title, overflow: TextOverflow.ellipsis),
+              actions: [
+                ValueListenableBuilder<bool>(
+                  valueListenable: tts.speaking,
+                  builder: (context, speaking, _) => IconButton(
+                    tooltip: speaking ? l.stopListening : l.listen,
+                    icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
+                    onPressed: () => _toggleSpeech(texts, flow),
+                  ),
                 ),
-              ),
-              IconButton(
-                tooltip: l.displaySettings,
-                icon: const Icon(Icons.text_format),
-                onPressed: () => showDisplaySheet(context),
-              ),
-              PopupMenuButton<String>(
-                tooltip: l.actionMore,
-                onSelected: (v) {
-                  switch (v) {
-                    case 'mode':
-                      setState(() => _fullText = !_fullText);
-                    case 'mark':
-                      _markAliyahRead(ctx);
-                    case 'week':
-                      // The week's page beneath, or in place of the reader:
-                      // never a second copy of it.
-                      if (widget.fromWeek && context.canPop()) {
-                        context.pop();
-                      } else {
-                        replaceWithWeekPage(context, 'week/${ctx.id}');
-                      }
-                    case 'keys':
-                      _showShortcuts(context, isMac);
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(value: 'mode', child: Text(_fullText ? l.guidedMode : l.fullTextMode)),
-                  if (ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah))
-                    PopupMenuItem(value: 'mark', child: Text(l.markAliyahRead)),
-                  PopupMenuItem(value: 'week', child: Text(l.backToWeek)),
-                  PopupMenuItem(value: 'keys', child: Text(l.keyboardShortcuts)),
+                IconButton(
+                  tooltip: l.displaySettings,
+                  icon: const Icon(Icons.text_format),
+                  onPressed: () => showDisplaySheet(context),
+                ),
+                PopupMenuButton<String>(
+                  tooltip: l.actionMore,
+                  onSelected: (v) {
+                    switch (v) {
+                      case 'mode':
+                        setState(() {
+                          _fullText = !_fullText;
+                          // Focus mode picks up the full text at the verse
+                          // being read.
+                          if (_fullText && s.focusMode && !_finished) _focusedVerse = flow.chunks[_chunk].start;
+                        });
+                        if (_fullText && _focusedVerse != null) _revealVerse(_focusedVerse!, animate: false);
+                      case 'mark':
+                        _markAliyahRead(ctx);
+                      case 'week':
+                        // The week's page beneath, or in place of the reader:
+                        // never a second copy of it.
+                        if (widget.fromWeek && context.canPop()) {
+                          context.pop();
+                        } else {
+                          replaceWithWeekPage(context, 'week/${ctx.id}');
+                        }
+                      case 'keys':
+                        help();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(value: 'mode', child: Text(_fullText ? l.guidedMode : l.fullTextMode)),
+                    if (ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah))
+                      PopupMenuItem(value: 'mark', child: Text(l.markAliyahRead)),
+                    PopupMenuItem(value: 'week', child: Text(l.backToWeek)),
+                    PopupMenuItem(value: 'keys', child: Text(l.keyboardShortcuts)),
+                  ],
+                ),
+              ],
+            ),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  _AliyahSelector(
+                    ctx: ctx,
+                    selected: _aliyah,
+                    onSelected: _goToAliyah,
+                  ),
+                  if (!ctx.isOpen)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: NoticeBanner(
+                        icon: Icons.visibility_outlined,
+                        text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
+                      ),
+                    ),
+                  Expanded(
+                    child: _fullText
+                        ? _FullText(
+                            flow: flow,
+                            texts: texts,
+                            settings: s,
+                            scroll: _scroll,
+                            verseKey: _verseKey,
+                            focusedVerse: _focusedVerse,
+                            onVerseTap: (i) => setState(() => _focusedVerse = _focusedVerse == i ? null : i),
+                            footer: ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah)
+                                ? FilledButton.icon(
+                                    icon: const Icon(Icons.check),
+                                    label: Text(l.markAliyahRead),
+                                    onPressed: () => _markAliyahRead(ctx),
+                                  )
+                                : null,
+                          )
+                        : _finished
+                            ? Focus(
+                                focusNode: _panelFocus,
+                                child: _FinishedPanel(
+                                  ctx: ctx,
+                                  aliyah: _aliyah,
+                                  firstFocus: _finishFocus,
+                                  onGoToAliyah: _goToAliyah,
+                                ),
+                              )
+                            : _GuidedStep(
+                                flow: flow,
+                                texts: texts,
+                                settings: s,
+                                chunk: _chunk,
+                                step: _step,
+                                scroll: _scroll,
+                                stepTitle: _stepTitle(flow.stepsFor(_chunk)[_step]),
+                              ),
+                  ),
+                  if (!_fullText && !_finished)
+                    _BottomBar(
+                      flow: flow,
+                      chunk: _chunk,
+                      step: _step,
+                      onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
+                      onNext: () => _next(ctx, flow),
+                      backFocus: _backFocus,
+                      nextFocus: _nextFocus,
+                    ),
                 ],
               ),
-            ],
-          ),
-          body: SafeArea(
-            child: Column(
-              children: [
-                _AliyahSelector(
-                  ctx: ctx,
-                  selected: _aliyah,
-                  onSelected: _goToAliyah,
-                ),
-                if (!ctx.isOpen)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                    child: NoticeBanner(
-                      icon: Icons.visibility_outlined,
-                      text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
-                    ),
-                  ),
-                Expanded(
-                  child: _fullText
-                      ? _FullText(
-                          flow: flow,
-                          texts: texts,
-                          settings: s,
-                          scroll: _scroll,
-                          focusedVerse: _focusedVerse,
-                          onVerseTap: (i) => setState(() => _focusedVerse = _focusedVerse == i ? null : i),
-                          footer: ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah)
-                              ? FilledButton.icon(
-                                  icon: const Icon(Icons.check),
-                                  label: Text(l.markAliyahRead),
-                                  onPressed: () => _markAliyahRead(ctx),
-                                )
-                              : null,
-                        )
-                      : _finished
-                          ? _FinishedPanel(
-                              ctx: ctx,
-                              aliyah: _aliyah,
-                              onGoToAliyah: _goToAliyah,
-                            )
-                          : _GuidedStep(
-                              flow: flow,
-                              texts: texts,
-                              settings: s,
-                              chunk: _chunk,
-                              step: _step,
-                              scroll: _scroll,
-                              stepTitle: _stepTitle(flow.stepsFor(_chunk)[_step]),
-                            ),
-                ),
-                if (!_fullText && !_finished)
-                  _BottomBar(
-                    flow: flow,
-                    chunk: _chunk,
-                    step: _step,
-                    onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
-                    onNext: () => _next(ctx, flow),
-                  ),
-              ],
             ),
           ),
         ),
@@ -513,39 +679,163 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     hapticSuccess(ref);
     showStatus(context, context.l10n.markedRead);
     setState(() => _finished = true);
+    // The guided reader shows the finished panel in place of the step.
+    if (!_fullText) _focusAfterFrame(_finishFocus);
   }
 
-  void _showShortcuts(BuildContext context, bool isMac) {
+  /// The reader's keys, as this platform binds them.
+  void _showShortcuts(BuildContext context, bool isMac, AppSettings settings) {
     final l = context.l10n;
-    final mod = isMac ? '⌘' : 'Ctrl';
-    final rows = [
-      ('Page Down · Alt+↓', l.shortcutNext),
-      ('Page Up · Alt+↑', l.shortcutBack),
-      ('$mod + =', l.shortcutLarger),
-      ('$mod + −', l.shortcutSmaller),
-      ('$mod + Shift + T', l.shortcutTeamim),
-      ('$mod + Shift + N', l.shortcutNikud),
-      ('$mod + Shift + L', l.shortcutListen),
-      ('F1 · $mod + /', l.shortcutHelp),
+    // Key names are those printed on the keys, but for the arrows and the
+    // space bar. The interface fonts have no arrows, ⌘ or ⌥: icons draw them.
+    final up = _Key(l.keyUp, Icons.arrow_upward);
+    final down = _Key(l.keyDown, Icons.arrow_downward);
+    final mod = isMac ? const _Key('Command', Icons.keyboard_command_key) : const _Key('Ctrl');
+    final alt = isMac ? const _Key('Option', Icons.keyboard_option_key) : const _Key('Alt');
+    const shift = _Key('Shift');
+    final web = ReaderScreen.singleKeyPlatform;
+    final singleKeys = web && settings.singleKeyShortcuts;
+    final rows = <(List<List<_Key>>, String)>[
+      (
+        web ? [[up], [down], [_Key(l.keySpace)]] : [[mod, up], [mod, down]],
+        l.shortcutScroll,
+      ),
+      (const [[_Key('Page Down')]], l.shortcutPageDown),
+      (const [[_Key('Page Up')]], l.shortcutPageUp),
+      ([[alt, down]], l.shortcutNext),
+      ([[alt, up]], l.shortcutBack),
+      ([[up], [down]], l.shortcutFocusVerse),
+      if (!web) ...[
+        ([[mod, const _Key('=')]], l.shortcutLarger),
+        ([[mod, const _Key('−')]], l.shortcutSmaller),
+        ([[mod, shift, const _Key('T')]], l.shortcutTeamim),
+        ([[mod, shift, const _Key('N')]], l.shortcutNikud),
+        ([[mod, shift, const _Key('L')]], l.shortcutListen),
+      ] else if (singleKeys) ...[
+        (const [[_Key('+')]], l.shortcutLarger),
+        (const [[_Key('−')]], l.shortcutSmaller),
+        (const [[_Key('T')]], l.shortcutTeamim),
+        (const [[_Key('N')]], l.shortcutNikud),
+        (const [[_Key('L')]], l.shortcutListen),
+      ],
+      (
+        [
+          if (singleKeys) const [_Key('?')],
+          const [_Key('F1')],
+          [mod, const _Key('/')],
+        ],
+        l.shortcutHelp,
+      ),
     ];
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l.keyboardShortcuts),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      builder: (context) {
+        final theme = Theme.of(context);
+        // The keys take as much of the width as they need, up to a little
+        // over half.
+        final width = min(560.0, MediaQuery.sizeOf(context).width - 80) - 48;
+        return AlertDialog(
+          title: Text(l.keyboardShortcuts),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final (combos, action) in rows)
+                  MergeSemantics(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(action, style: theme.textTheme.bodyMedium)),
+                          const Gap(16),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: max(120, width * 0.55)),
+                            child: _KeyCombos(combos),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionClose))],
+        );
+      },
+    );
+  }
+}
+
+/// A key as the shortcuts dialog names it, and draws it when [icon] is set.
+class _Key {
+  const _Key(this.label, [this.icon]);
+  final String label;
+  final IconData? icon;
+}
+
+/// Ways to press a shortcut, each a combination of keys drawn as keycaps.
+/// The combinations stand apart; the keys of one are joined by "+".
+class _KeyCombos extends StatelessWidget {
+  const _KeyCombos(this.combos);
+  final List<List<_Key>> combos;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final label = theme.textTheme.labelMedium?.copyWith(color: scheme.onSurface);
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final alignment = rtl ? WrapAlignment.start : WrapAlignment.end;
+    Widget cap(_Key key) => Container(
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            border: Border.all(color: scheme.outline),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: key.icon != null
+                // Drawn keys grow with the text, like the named ones.
+                ? Icon(key.icon, size: MediaQuery.textScalerOf(context).scale(16), color: scheme.onSurface)
+                : Text(key.label, style: label),
+          ),
+        );
+    return Semantics(
+      label: combos.map((keys) => keys.map((k) => k.label).join(' + ')).join(', '),
+      child: ExcludeSemantics(
+        // Keys read left to right in either language, on the dialog's outer
+        // side.
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          // Wraps rather than overflows at a large text size.
+          child: Wrap(
+            alignment: alignment,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 6,
             children: [
-              for (final (keys, action) in rows)
-                ListTile(
-                  dense: true,
-                  title: Text(action),
-                  trailing: Directionality(textDirection: TextDirection.ltr, child: Text(keys)),
+              for (final keys in combos)
+                Wrap(
+                  alignment: alignment,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 6,
+                  children: [
+                    for (final (i, key) in keys.indexed) ...[
+                      if (i > 0)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          child: Text('+', style: theme.textTheme.labelMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                        ),
+                      cap(key),
+                    ],
+                  ],
                 ),
             ],
           ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionClose))],
       ),
     );
   }
@@ -895,13 +1185,23 @@ class _Note extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.flow, required this.chunk, required this.step, required this.onBack, required this.onNext});
+  const _BottomBar({
+    required this.flow,
+    required this.chunk,
+    required this.step,
+    required this.onBack,
+    required this.onNext,
+    required this.backFocus,
+    required this.nextFocus,
+  });
 
   final ReaderFlow flow;
   final int chunk;
   final int step;
   final VoidCallback? onBack;
   final VoidCallback onNext;
+  final FocusNode backFocus;
+  final FocusNode nextFocus;
 
   @override
   Widget build(BuildContext context) {
@@ -933,6 +1233,7 @@ class _BottomBar extends StatelessWidget {
             Row(
               children: [
                 OutlinedButton.icon(
+                  focusNode: backFocus,
                   onPressed: onBack,
                   icon: const BackButtonIcon(),
                   label: Text(l.actionBack),
@@ -945,6 +1246,7 @@ class _BottomBar extends StatelessWidget {
                   ),
                 ),
                 FilledButton.icon(
+                  focusNode: nextFocus,
                   onPressed: onNext,
                   icon: const Icon(Icons.check),
                   label: Text(l.actionNext),
@@ -959,10 +1261,13 @@ class _BottomBar extends StatelessWidget {
 }
 
 class _FinishedPanel extends ConsumerWidget {
-  const _FinishedPanel({required this.ctx, required this.aliyah, required this.onGoToAliyah});
+  const _FinishedPanel({required this.ctx, required this.aliyah, required this.firstFocus, required this.onGoToAliyah});
 
   final WeekContext ctx;
   final int aliyah;
+
+  /// For the first of its buttons, which the reader gives the focus.
+  final FocusNode firstFocus;
   final ValueChanged<int> onGoToAliyah;
 
   /// The aliyah to continue with: the first after this one not yet read,
@@ -985,6 +1290,7 @@ class _FinishedPanel extends ConsumerWidget {
     final week = ref.watch(progressProvider).week(ctx.id);
     final complete = week.isComplete;
     final next = _nextTarget(week);
+    final haftarah = complete && (settings.haftarahEnabled || ctx.haftarahRequired) && week.haftarah == null;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -997,6 +1303,9 @@ class _FinishedPanel extends ConsumerWidget {
               Icon(complete ? Icons.celebration : Icons.check_circle, size: 72, color: theme.colorScheme.primary),
               const Gap(16),
               Semantics(
+                // Spoken by the reader's announcement where there is one,
+                // and elsewhere (on Android) as it appears.
+                liveRegion: !MediaQuery.supportsAnnounceOf(context),
                 header: true,
                 headingLevel: 1,
                 child: Text(
@@ -1010,18 +1319,21 @@ class _FinishedPanel extends ConsumerWidget {
               const Gap(24),
               if (next != null)
                 FilledButton.icon(
+                  focusNode: firstFocus,
                   onPressed: () => onGoToAliyah(next),
                   icon: const Icon(Icons.arrow_forward),
                   label: Text(l.continueWithAliyah(names.aliyah(next))),
                 ),
-              if (complete && (settings.haftarahEnabled || ctx.haftarahRequired) && week.haftarah == null)
+              if (haftarah)
                 FilledButton.icon(
+                  focusNode: next == null ? firstFocus : null,
                   onPressed: () => replaceWithWeekPage(context, 'haftarah/${ctx.id}'),
                   icon: const Icon(Icons.auto_stories),
                   label: Text(l.haftarahTitle),
                 ),
               const Gap(8),
               OutlinedButton(
+                focusNode: next == null && !haftarah ? firstFocus : null,
                 onPressed: () => context.canPop() ? context.pop() : context.go('/today'),
                 child: Text(l.actionDone),
               ),
@@ -1040,6 +1352,7 @@ class _FullText extends StatelessWidget {
     required this.texts,
     required this.settings,
     required this.scroll,
+    required this.verseKey,
     required this.focusedVerse,
     required this.onVerseTap,
     this.footer,
@@ -1049,6 +1362,9 @@ class _FullText extends StatelessWidget {
   final ReaderTexts texts;
   final AppSettings settings;
   final ScrollController scroll;
+
+  /// The key of each verse's block, by index, for scrolling it into view.
+  final GlobalKey Function(int) verseKey;
   final int? focusedVerse;
   final ValueChanged<int> onVerseTap;
   final Widget? footer;
@@ -1059,100 +1375,108 @@ class _FullText extends StatelessWidget {
     final theme = Theme.of(context);
     final styles = ScriptureStyles(context, settings);
     final englishRashi = settings.secondReading == SecondReading.rashiEnglish;
-    return Scrollbar(
-      controller: scroll,
-      child: ListView.builder(
-        controller: scroll,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        itemCount: flow.verses.length + 1,
-        itemBuilder: (context, i) {
-          if (i == flow.verses.length) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Center(child: footer ?? const SizedBox.shrink()),
-            );
-          }
-          final r = flow.verses[i];
-          final dimmed = settings.focusMode && focusedVerse != null && focusedVerse != i;
-          final highlighted = settings.focusMode && focusedVerse == i;
-          final brk = texts.mikra.breaks[r];
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: styles.maxLineWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (r.verse == 1 || i == 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 4),
-                      child: Semantics(
-                        header: true,
-                        headingLevel: 3,
-                        child: Text(
-                          l.chapterLabel(context.isHebrewUi ? HebrewText.gematria(r.chapter, punctuate: false) : '${r.chapter}'),
-                          style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
-                        ),
-                      ),
-                    ),
-                  InkWell(
-                    onTap: settings.focusMode ? () => onVerseTap(i) : null,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ScriptureVerse(
-                          verse: texts.mikra.verse(r),
-                          kind: ScriptureKind.mikra,
-                          settings: settings,
-                          dimmed: dimmed,
-                          highlighted: highlighted,
-                        ),
-                        if (texts.onkelos != null)
-                          ScriptureVerse(
-                            verse: texts.onkelos!.verse(r),
-                            kind: ScriptureKind.targum,
-                            settings: settings,
-                            dimmed: dimmed,
-                            secondary: true,
-                          ),
-                        if (settings.showTranslation && texts.english != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: TranslationVerse(
-                              text: texts.english!.verse(r).readText,
-                              number: r.verse,
-                              settings: settings,
-                              dimmed: dimmed,
-                            ),
-                          ),
-                        if ((settings.showRashi || settings.usesRashi) && texts.rashi != null && texts.rashi!.on(r).isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
-                          ),
-                      ],
+
+    Widget verse(int i) {
+      final r = flow.verses[i];
+      final dimmed = settings.focusMode && focusedVerse != null && focusedVerse != i;
+      final highlighted = settings.focusMode && focusedVerse == i;
+      final brk = texts.mikra.breaks[r];
+      return Center(
+        key: verseKey(i),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: styles.maxLineWidth),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (r.verse == 1 || i == 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                  child: Semantics(
+                    header: true,
+                    headingLevel: 3,
+                    child: Text(
+                      l.chapterLabel(context.isHebrewUi ? HebrewText.gematria(r.chapter, punctuate: false) : '${r.chapter}'),
+                      style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
                     ),
                   ),
-                  if (brk != null)
-                    ExcludeSemantics(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: brk == SectionBreak.open ? 16 : 8),
-                        // A rubric, like the marks inside a verse
-                        // (DESIGN_SYSTEM.md §3.1).
-                        child: Text(
-                          brk == SectionBreak.open ? 'פ' : 'ס',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary),
+                ),
+              InkWell(
+                onTap: settings.focusMode ? () => onVerseTap(i) : null,
+                // ↑ and ↓ move from verse to verse: a Tab stop on each
+                // would put up to 72 before the button at the end.
+                canRequestFocus: false,
+                borderRadius: BorderRadius.circular(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ScriptureVerse(
+                      verse: texts.mikra.verse(r),
+                      kind: ScriptureKind.mikra,
+                      settings: settings,
+                      dimmed: dimmed,
+                      highlighted: highlighted,
+                    ),
+                    if (texts.onkelos != null)
+                      ScriptureVerse(
+                        verse: texts.onkelos!.verse(r),
+                        kind: ScriptureKind.targum,
+                        settings: settings,
+                        dimmed: dimmed,
+                        secondary: true,
+                      ),
+                    if (settings.showTranslation && texts.english != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: TranslationVerse(
+                          text: texts.english!.verse(r).readText,
+                          number: r.verse,
+                          settings: settings,
+                          dimmed: dimmed,
                         ),
                       ),
-                    )
-                  else
-                    const Gap(10),
-                ],
+                    if ((settings.showRashi || settings.usesRashi) && texts.rashi != null && texts.rashi!.on(r).isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+              if (brk != null)
+                ExcludeSemantics(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: brk == SectionBreak.open ? 16 : 8),
+                    // A rubric, like the marks inside a verse
+                    // (DESIGN_SYSTEM.md §3.1).
+                    child: Text(
+                      brk == SectionBreak.open ? 'פ' : 'ס',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary),
+                    ),
+                  ),
+                )
+              else
+                const Gap(10),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Scrollbar(
+      controller: scroll,
+      // Every verse is built (an aliyah has 72 at most), so that any of them
+      // can be scrolled to, and Tab reaches the button at the end.
+      child: SingleChildScrollView(
+        controller: scroll,
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < flow.verses.length; i++) verse(i),
+            if (footer case final footer?) Padding(padding: const EdgeInsets.only(top: 16), child: Center(child: footer)),
+          ],
+        ),
       ),
     );
   }

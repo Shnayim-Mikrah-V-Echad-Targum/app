@@ -1232,6 +1232,48 @@ abstract class AppLocalizations {
   /// **'Show shortcuts'**
   String get shortcutHelp;
 
+  /// No description provided for @shortcutScroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll the text'**
+  String get shortcutScroll;
+
+  /// No description provided for @shortcutPageDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Down a page, then the next step'**
+  String get shortcutPageDown;
+
+  /// No description provided for @shortcutPageUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Up a page, then the previous step'**
+  String get shortcutPageUp;
+
+  /// No description provided for @shortcutFocusVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus mode: previous or next verse'**
+  String get shortcutFocusVerse;
+
+  /// No description provided for @keyUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Up arrow'**
+  String get keyUp;
+
+  /// No description provided for @keyDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Down arrow'**
+  String get keyDown;
+
+  /// No description provided for @keySpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Space'**
+  String get keySpace;
+
   /// No description provided for @progressTitle.
   ///
   /// In en, this message translates to:
@@ -2071,6 +2113,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Haptic feedback'**
   String get haptics;
+
+  /// No description provided for @singleKeyShortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Single-key shortcuts'**
+  String get singleKeyShortcuts;
+
+  /// No description provided for @singleKeyShortcutsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'While reading, T, N, L, + and − work on their own. Turn this off if you use speech input or screen-reader quick keys.'**
+  String get singleKeyShortcutsDesc;
 
   /// No description provided for @screenReaderText.
   ///

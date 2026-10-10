@@ -163,7 +163,7 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md). The key decisions:
 - **Reading size multiplies the system text size**, up to 5× for scripture only. The interface follows the system setting alone, so layouts stay usable.
 - **Five display themes:** light, dark, sepia, and high-contrast light and dark. They can follow the system or be set manually. Colour is never the only signal: statuses also have icons and text.
 - **Line height of at least 1.6, split evenly above and below.** Lower vowels and cantillation marks must never be clipped. Typography details: a non-breaking space before a paseq, and a word joiner after a maqaf.
-- **Desktop keyboard shortcuts** for every reader action, with a visible focus ring everywhere.
+- **Keyboard shortcuts** for every reader action, with a visible focus ring everywhere: Ctrl chords in the app, and on the web single keys that can be turned off, because the browser keeps the chords. The text scrolls by keyboard, and the focus is never lost when a page changes in place.
 
 ## 9. Typography
 

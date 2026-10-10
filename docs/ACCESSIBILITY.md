@@ -29,7 +29,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - Each aliyah tile announces the state of all three readings. The week strip announces each day's status, and a day with reading, like each parsha of the Torah map, is a button that opens it.
 
 **Announcements and controls**
-- Each step in the guided reader is announced once, with its reading and place ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"): in an announcement where the platform takes them, and elsewhere by the step header, a live region. A completed aliyah is announced where the platform takes announcements.
+- Each step in the guided reader is announced once, with its reading and place ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"): in an announcement where the platform takes them, and elsewhere by the step header, a live region. A completed aliyah is announced the same way: in an announcement, or elsewhere by the finished panel's heading, a live region.
 - Status messages appear in a SnackBar and are spoken once: by its live region on Android and the web, and in an announcement elsewhere.
 - Every icon button has a label and a tooltip. Where there are several alike, each is named for what it acts on ("More options for Rishon", "Increase Reading size").
 - A slider is read by its setting and value ("Reading size, 100%"), with a button on either side to step it.
@@ -61,17 +61,28 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 ### Motor and keyboard
 - All tap targets are at least 48×48 dp, which also meets Apple's 44 pt.
 - Every action can be done with the keyboard, with a visible focus ring. Tab order follows reading order and mirrors in Hebrew.
-- Reader shortcuts. On macOS, use ⌘ in place of Ctrl.
+- The focus is never lost when the page changes in place:
+  - When an aliyah is finished, the panel's first button (the next aliyah, else the haftarah, else Done) takes it. On Android, where announcements aren't taken, the panel's heading is a live region.
+  - Continuing from the panel, leaving it with Back, or reaching the first step, where Back is disabled, gives it to Next.
+  - After *Email me a code*, the code field takes it, and a status message says where the code went.
+  - *Load more* keeps it while it loads. Then the first discussion loaded, in the button's place, takes it, and a status message says how many came.
+- Reader shortcuts. In the app, the display shortcuts are Ctrl chords. On the web they are single keys, because Chrome and Edge keep Ctrl+Shift+T, Ctrl+Shift+N and Ctrl+= for themselves. On macOS and iOS, use ⌘ in place of Ctrl and ⌥ in place of Alt. *Settings → Accessibility → Single-key shortcuts*, shown on the web only, turns the single keys off for speech input and screen-reader quick keys (WCAG 2.1.4).
 
-  | Keys | Action |
-  |---|---|
-  | Page Down, or Alt+↓ | Next step |
-  | Page Up, or Alt+↑ | Previous step |
-  | Ctrl+= / Ctrl+− | Larger / smaller scripture text |
-  | Ctrl+Shift+T | Show or hide cantillation |
-  | Ctrl+Shift+N | Show or hide vowels |
-  | Ctrl+Shift+L | Listen / stop |
-  | F1, or Ctrl+/ | Show shortcuts |
+  | Action | Windows, macOS, Linux, Android and iOS | Web |
+  |---|---|---|
+  | Scroll the text | Ctrl+↑ / Ctrl+↓ | ↑ / ↓, or Space |
+  | Down a page, then the next step | Page Down | Page Down |
+  | Up a page, then the previous step | Page Up | Page Up |
+  | Next step | Alt+↓ | Alt+↓ |
+  | Previous step | Alt+↑ | Alt+↑ |
+  | Focus mode, full text: next or previous verse | ↓ / ↑ | ↓ / ↑ |
+  | Larger / smaller scripture text | Ctrl+= / Ctrl+− | + or = / − |
+  | Show or hide cantillation | Ctrl+Shift+T | T |
+  | Show or hide vowels | Ctrl+Shift+N | N |
+  | Listen / stop | Ctrl+Shift+L | L |
+  | Show shortcuts | F1, or Ctrl+/ | ?, F1, or Ctrl+/ |
+
+  Page Down and Page Up scroll a step that is longer than the screen before they move on, so nothing is skipped at a large reading size. In focus mode, the full text opens on the reader's place, and the verse that ↓ or ↑ moves to is scrolled into view, nearer the top of the screen than the bottom. Verses are not Tab stops of their own, so Tab reaches *Mark this aliyah as read* at the end of the text.
 
 - In the community, F5 or Ctrl+R (⌘R on macOS) refreshes the forums, a forum, a thread or the moderation queue. On the web those keys stay the browser's. Each of these pages also has a Refresh button.
 - No action needs a swipe, drag or multi-finger gesture. Pull to refresh has a Refresh button beside it. Everything is a tap, click or key press, and nothing has a time limit.

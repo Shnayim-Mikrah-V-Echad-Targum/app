@@ -26,6 +26,7 @@ import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
@@ -70,6 +71,11 @@ const _screens = {
   // Shevi'i just finished, with Shlishi still under way.
   'reader_finished': '/read/5787:1/6',
   'reader_full': '/read/5787:1/2?mode=full',
+  // Focus mode, opened on the reader's place in Shlishi.
+  'reader_focus': '/read/5787:1/2?mode=full',
+  // The keyboard shortcuts, in the app and on the web.
+  'reader_keys': '/read/5787:1/2',
+  'reader_keys_web': '/read/5787:1/2',
   // The display sheet, scrolled to its line spacing.
   'reader_display': '/read/5787:1/2',
   // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
@@ -99,6 +105,8 @@ const _screens = {
   'thread_refreshed': '/community/thread/1',
   'compose': '/community/new',
   'account': '/community/account',
+  // Just after "Email me a code".
+  'account_code': '/community/account',
   'account_settings': '/settings/account',
   'account_sync': '/community/account',
   'settings': '/settings',
@@ -106,6 +114,7 @@ const _screens = {
   's_reading_changed': '/settings/reading',
   's_display': '/settings/display',
   's_a11y': '/settings/accessibility',
+  's_a11y_web': '/settings/accessibility',
   's_reminders': '/settings/reminders',
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
@@ -133,6 +142,7 @@ final _scenes = <String, (DateTime, AppSettings Function(AppSettings))>{
   // The widest word spacing, justified: the spaces around a section mark.
   'reader_gaps_spaced': (_now, (s) => s.copyWith(wordSpacing: 16, justify: true)),
   'reader_dots': (_now, (s) => s.copyWith(showTeamim: false)),
+  'reader_focus': (_now, (s) => s.copyWith(focusMode: true)),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
   'today_haftarah_left': (DateTime(2026, 10, 13, 11), (s) => s.copyWith(haftarahRequired: true)),
   // Tuesday of Matot-Masei 5787, reading by section.
@@ -145,6 +155,10 @@ final _scenes = <String, (DateTime, AppSettings Function(AppSettings))>{
 final _sceneProgress = <String, ProgressState Function()>{
   'today_haftarah_left': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
+      }),
+  // Shlishi's first reading has reached Genesis 2:10.
+  'reader_focus': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 0]),
       }),
   // Both Hebrew readings of 32:1–4 done: the Targum is next.
   'reader_third': () => ProgressState(weeks: {
@@ -163,6 +177,12 @@ final _sceneProgress = <String, ProgressState Function()>{
     return ProgressState(weeks: {'5787:1': w.withPosition(6, const [16, 16, 0])});
   },
 };
+
+/// Screens shown as on the web, where the reader takes single keys.
+const _webKeys = {'reader_keys_web', 's_a11y_web'};
+
+/// Screens captured after typing into their only text field.
+const _typed = {'account_code': 'reader@example.org'};
 
 /// Screens shown signed in with backup on, where a newer version of the app
 /// has written the backup, so syncing has stopped.
@@ -264,6 +284,7 @@ final _taps = {
   'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
   'thread_refreshed': () => find.byIcon(Icons.refresh),
+  'account_code': () => find.byType(FilledButton).first,
 };
 
 /// Screens captured after tapping what each finder finds in turn, settling
@@ -274,12 +295,20 @@ final _tapSteps = {
     () => find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)),
     () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'report'),
   ],
+  // The reader's menu, then Keyboard shortcuts.
+  'reader_keys': _openShortcuts,
+  'reader_keys_web': _openShortcuts,
   // The week's menu, then Clear.
   'week_clear': [
     () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
     () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'clear'),
   ],
 };
+
+final _openShortcuts = [
+  () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
+  () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'keys'),
+];
 
 /// Screens captured scrolled to the end of their main list.
 const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced', 'reader_dots', 'reader_third', 'week_discuss', 'thread_long_end'};
@@ -352,7 +381,7 @@ void main() {
 
   for (final mode in _modes) {
     for (final entry in _screens.entries) {
-      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'today_haftarah_left', 'week', 'week_tab', 'haftarah_tab', 'reader', 'reader_third', 'reader_finished', 'reader_full', 'reader_gaps', 'progress', 'thread', 'thread_long', 'settings', 'welcome'}.contains(entry.key)) {
+      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'today_haftarah_left', 'week', 'week_tab', 'haftarah_tab', 'reader', 'reader_third', 'reader_finished', 'reader_full', 'reader_focus', 'reader_keys', 'reader_keys_web', 'reader_gaps', 'progress', 'thread', 'thread_long', 'settings', 'welcome'}.contains(entry.key)) {
         continue;
       }
       final only = _only;
@@ -361,6 +390,10 @@ void main() {
         tester.view.physicalSize = mode.size;
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
+        if (_webKeys.contains(entry.key)) {
+          ReaderScreen.singleKeyPlatform = true;
+          addTearDown(() => ReaderScreen.singleKeyPlatform = false);
+        }
         final blocked = _syncBlocked.contains(entry.key);
         final base = AppSettings(
           onboardingComplete: !entry.key.startsWith('welcome'),
@@ -385,11 +418,17 @@ void main() {
           await _settle(tester);
           if (_sheetsScrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);
         }
+        if (_typed[entry.key] case final text?) {
+          await tester.enterText(find.byType(TextField), text);
+          await tester.pump();
+        }
         if (_taps[entry.key] case final target?) {
           await tester.tap(target());
-          // Long enough for a snackbar to appear, not to leave again.
+          // Long enough for a snackbar to appear, not to leave again, and
+          // for the focus to move where it is moved after a frame.
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 500));
+          await tester.pump(const Duration(milliseconds: 200));
         }
         for (final step in _tapSteps[entry.key] ?? const <Finder Function()>[]) {
           await tester.tap(step());

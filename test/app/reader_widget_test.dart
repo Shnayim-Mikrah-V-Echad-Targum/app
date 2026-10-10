@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/reader/reader_screen.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
@@ -418,7 +422,236 @@ void main() {
     c.read(routerProvider).go('/read/5787:2/0?mode=full');
     await loadTexts(tester);
     expect(find.text('Chapter 6'), findsOneWidget);
-    expect(find.text('Mark this aliyah as read'), findsNothing, reason: 'the button is at the end of the list');
+    // Built with the text, so that Tab reaches it, but at its end.
+    expect(tester.getTopLeft(find.text('Mark this aliyah as read')).dy, greaterThan(900), reason: 'the button is at the end of the text');
+  });
+
+  group('the keyboard', () {
+    Future<ProviderContainer> open(WidgetTester tester, String path, {AppSettings? settings, ProgressState? progress}) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: settings ?? const AppSettings(onboardingComplete: true, notificationPromptShown: true),
+        now: monday,
+        progress: progress,
+      );
+      c.read(routerProvider).go(path);
+      await loadTexts(tester);
+      return c;
+    }
+
+    // The text's own scrollable: the aliyah chips scroll across.
+    ScrollPosition text(WidgetTester tester) => tester
+        .stateList<ScrollableState>(find.byType(Scrollable))
+        .firstWhere((s) => s.position.axis == Axis.vertical)
+        .position;
+
+    Future<void> press(WidgetTester tester, LogicalKeyboardKey key, {List<LogicalKeyboardKey> holding = const []}) async {
+      for (final k in holding) {
+        await tester.sendKeyDownEvent(k);
+      }
+      await tester.sendKeyEvent(key);
+      for (final k in holding.reversed) {
+        await tester.sendKeyUpEvent(k);
+      }
+      await tester.pumpAndSettle();
+    }
+
+    bool focused(WidgetTester tester, String label) => Focus.of(tester.element(find.text(label))).hasPrimaryFocus;
+
+    testWidgets('scrolls the full text by the page, and Tab reaches Mark as read', (tester) async {
+      await open(tester, '/read/5787:2/0?mode=full');
+      expect(text(tester).pixels, 0);
+      await press(tester, LogicalKeyboardKey.pageDown);
+      expect(text(tester).pixels, closeTo(0.8 * text(tester).viewportDimension, 1));
+      await press(tester, LogicalKeyboardKey.pageUp);
+      expect(text(tester).pixels, 0);
+
+      for (var i = 0; i < 30 && !focused(tester, 'Mark this aliyah as read'); i++) {
+        await press(tester, LogicalKeyboardKey.tab);
+      }
+      expect(focused(tester, 'Mark this aliyah as read'), isTrue);
+    });
+
+    testWidgets('pages through a long step, and at its end goes on to the next', (tester) async {
+      await open(
+        tester,
+        '/read/5787:2/0',
+        settings: const AppSettings(onboardingComplete: true, method: ReadingMethod.sectionBySection, readingScale: 3),
+      );
+      expect(find.text('Read the Hebrew'), findsOneWidget);
+      await press(tester, LogicalKeyboardKey.pageDown);
+      expect(text(tester).pixels, greaterThan(0));
+      expect(find.text('Read the Hebrew'), findsOneWidget, reason: 'the first press scrolls');
+      for (var i = 0; i < 40 && text(tester).extentAfter > 1; i++) {
+        await press(tester, LogicalKeyboardKey.pageDown);
+      }
+      expect(text(tester).extentAfter, lessThanOrEqualTo(1));
+      expect(find.text('Read the Hebrew'), findsOneWidget, reason: 'the step is scrolled to its end before it is left');
+
+      await press(tester, LogicalKeyboardKey.pageDown);
+      expect(find.text('Read the Hebrew again'), findsOneWidget);
+      expect(text(tester).pixels, 0, reason: 'the next step opens at its top');
+      await press(tester, LogicalKeyboardKey.pageUp);
+      expect(find.text('Read the Hebrew'), findsOneWidget, reason: 'at the top, Page Up goes back');
+      // Alt+↓ steps on wherever the text is scrolled.
+      await press(tester, LogicalKeyboardKey.arrowDown, holding: [LogicalKeyboardKey.altLeft]);
+      expect(find.text('Read the Hebrew again'), findsOneWidget);
+    });
+
+    testWidgets('Space presses a focused Next, and Back gives the focus to Next when it is disabled', (tester) async {
+      await open(tester, '/read/5787:2/0');
+      Focus.of(tester.element(find.text('Next'))).requestFocus();
+      await tester.pump();
+      await press(tester, LogicalKeyboardKey.space);
+      expect(find.text('Read the Hebrew again'), findsOneWidget);
+
+      Focus.of(tester.element(find.text('Back'))).requestFocus();
+      await tester.pump();
+      await press(tester, LogicalKeyboardKey.space);
+      expect(find.text('Read the Hebrew'), findsOneWidget);
+      expect(tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Back')).onPressed, isNull);
+      expect(focused(tester, 'Next'), isTrue);
+    });
+
+    for (final announces in [true, false]) {
+      testWidgets('the finished panel takes the focus, and says so ${announces ? 'in an announcement' : 'by its live region'}',
+          (tester) async {
+        final handle = tester.ensureSemantics();
+        tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(supportsAnnounce: announces);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        await open(
+          tester,
+          '/read/5787:2/0',
+          settings: const AppSettings(
+            onboardingComplete: true,
+            notificationPromptShown: true,
+            method: ReadingMethod.aliyahByAliyah,
+          ),
+        );
+        tester.takeAnnouncements();
+        for (var i = 0; i < 3; i++) {
+          await tester.tap(find.text('Next'));
+          await tester.pumpAndSettle();
+        }
+        const heading = 'Yasher koach! Rishon is complete.';
+        expect(find.text(heading), findsOneWidget);
+        expect(focused(tester, 'Continue with Sheni'), isTrue);
+        expect(tester.getSemantics(find.text(heading)), isSemantics(label: heading, isHeader: true, isLiveRegion: !announces));
+        expect(tester.takeAnnouncements().map((a) => a.message), announces ? contains(heading) : isEmpty);
+
+        // Continued from the keyboard, the next aliyah opens with the focus
+        // on Next.
+        await press(tester, LogicalKeyboardKey.enter);
+        expect(find.text('Noach · Sheni'), findsOneWidget);
+        expect(focused(tester, 'Next'), isTrue);
+        handle.dispose();
+      });
+    }
+
+    testWidgets('in focus mode, ↓ and ↑ move the verse read and keep it in view', (tester) async {
+      // The first reading has reached Genesis 6:15, the seventh verse.
+      final progress = ProgressState(weeks: {'5787:2': WeekProgress(weekId: '5787:2').withPosition(0, const [6, 6, 6])});
+      await open(
+        tester,
+        '/read/5787:2/0?mode=full',
+        settings: const AppSettings(onboardingComplete: true, focusMode: true),
+        progress: progress,
+      );
+      Finder current() => find.byWidgetPredicate((w) => w is ScriptureVerse && w.highlighted);
+      int verse() => tester.widget<ScriptureVerse>(current()).verse.ref.verse;
+      void expectInView() {
+        final rect = tester.getRect(current());
+        expect(rect.top, greaterThanOrEqualTo(tester.getRect(find.byType(SingleChildScrollView).last).top));
+        expect(rect.bottom, lessThanOrEqualTo(915));
+      }
+
+      expect(verse(), 15, reason: "focus mode opens on the reader's place");
+      expect(text(tester).pixels, greaterThan(0));
+      expectInView();
+      for (var i = 0; i < 5; i++) {
+        await press(tester, LogicalKeyboardKey.arrowDown);
+      }
+      expect(verse(), 20);
+      expectInView();
+      await press(tester, LogicalKeyboardKey.arrowUp);
+      expect(verse(), 19);
+      expectInView();
+    });
+
+    testWidgets('on the web, single keys change the display, unless turned off', (tester) async {
+      ReaderScreen.singleKeyPlatform = true;
+      addTearDown(() => ReaderScreen.singleKeyPlatform = false);
+      final c = await open(tester, '/read/5787:2/0');
+      AppSettings s() => c.read(settingsProvider);
+
+      await press(tester, LogicalKeyboardKey.keyT);
+      expect(s().showTeamim, isFalse);
+      await press(tester, LogicalKeyboardKey.keyN);
+      expect(s().showNikud, isFalse);
+      await press(tester, LogicalKeyboardKey.equal);
+      expect(s().readingScale, closeTo(1.1, 1e-9));
+      await press(tester, LogicalKeyboardKey.minus);
+      expect(s().readingScale, closeTo(1.0, 1e-9));
+      // Ctrl+Shift+T stays the browser's.
+      await press(tester, LogicalKeyboardKey.keyT, holding: [LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.shiftLeft]);
+      expect(s().showTeamim, isFalse);
+
+      // ? lists the keys as the web binds them.
+      final handle = tester.ensureSemantics();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.slash, character: '?');
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+      expect(find.text('Keyboard shortcuts'), findsOneWidget);
+      expect(find.bySemanticsLabel('Scroll the text\nUp arrow, Down arrow, Space'), findsOneWidget);
+      expect(find.bySemanticsLabel('Show or hide cantillation\nT'), findsOneWidget);
+      expect(find.bySemanticsLabel('Show shortcuts\n?, F1, Ctrl + /'), findsOneWidget);
+      handle.dispose();
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      // Settings → Accessibility turns them off.
+      c.read(routerProvider).go('/settings/accessibility');
+      await tester.pumpAndSettle();
+      final toggle = find.widgetWithText(SwitchListTile, 'Single-key shortcuts');
+      await tester.scrollUntilVisible(toggle, 200);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(s().singleKeyShortcuts, isFalse);
+      c.read(routerProvider).go('/read/5787:2/0');
+      await loadTexts(tester);
+      await press(tester, LogicalKeyboardKey.keyT);
+      expect(s().showTeamim, isFalse);
+    });
+
+    testWidgets('elsewhere, display shortcuts take Ctrl, and single keys are left alone', (tester) async {
+      final c = await open(tester, '/read/5787:2/0');
+      AppSettings s() => c.read(settingsProvider);
+      await press(tester, LogicalKeyboardKey.keyT);
+      expect(s().showTeamim, isTrue);
+      await press(tester, LogicalKeyboardKey.keyT, holding: [LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.shiftLeft]);
+      expect(s().showTeamim, isFalse);
+      await press(tester, LogicalKeyboardKey.equal, holding: [LogicalKeyboardKey.controlLeft]);
+      expect(s().readingScale, closeTo(1.1, 1e-9));
+
+      final handle = tester.ensureSemantics();
+      await press(tester, LogicalKeyboardKey.f1);
+      expect(find.text('Keyboard shortcuts'), findsOneWidget);
+      expect(find.bySemanticsLabel('Scroll the text\nCtrl + Up arrow, Ctrl + Down arrow'), findsOneWidget);
+      expect(find.bySemanticsLabel('Down a page, then the next step\nPage Down'), findsOneWidget);
+      expect(find.bySemanticsLabel('Show or hide cantillation\nCtrl + Shift + T'), findsOneWidget);
+      expect(find.bySemanticsLabel('Show shortcuts\nF1, Ctrl + /'), findsOneWidget);
+      handle.dispose();
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      c.read(routerProvider).go('/settings/accessibility');
+      await tester.pumpAndSettle();
+      expect(find.text('Single-key shortcuts'), findsNothing, reason: 'there are none to turn off');
+    });
   });
 
   testWidgets('a section mark between verses is a rubric, like one inside a verse', (tester) async {

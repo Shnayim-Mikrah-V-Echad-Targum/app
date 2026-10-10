@@ -9,6 +9,7 @@ import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
 import '../../about/about_screen.dart';
+import '../../reader/reader_screen.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -122,6 +123,15 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           value: s.haptics,
           onChanged: (v) => update((s) => s.copyWith(haptics: v)),
         ),
+        // Only where the reader takes single keys: elsewhere its shortcuts
+        // all need Ctrl or ⌘ (WCAG 2.1.4).
+        if (ReaderScreen.singleKeyPlatform)
+          SwitchListTile(
+            title: Text(l.singleKeyShortcuts),
+            subtitle: Text(l.singleKeyShortcutsDesc),
+            value: s.singleKeyShortcuts,
+            onChanged: (v) => update((s) => s.copyWith(singleKeyShortcuts: v)),
+          ),
         ListTile(
           leading: const Icon(Icons.text_fields),
           title: Text(l.settingsDisplay),
