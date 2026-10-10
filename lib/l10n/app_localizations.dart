@@ -2366,6 +2366,24 @@ abstract class AppLocalizations {
   /// **'Did you read on Shabbat? Tap to log it.'**
   String get notifCheckInBody;
 
+  /// Shortcut shown when the app's icon is long-pressed on Android and iOS; opens the reader at the first aliyah not yet read. Keep it under 25 characters.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue reading'**
+  String get shortcutContinueReading;
+
+  /// Shortcut shown when the app's icon is long-pressed; opens this week's page to mark what was read from a printed Chumash. Keep it under 25 characters.
+  ///
+  /// In en, this message translates to:
+  /// **'Log reading from a book'**
+  String get shortcutLogFromBook;
+
+  /// Shortcut shown when the app's icon is long-pressed; opens the Parsha tab. Keep it under 25 characters.
+  ///
+  /// In en, this message translates to:
+  /// **'This week\'s parsha'**
+  String get shortcutThisWeek;
+
   /// No description provided for @showStreaks.
   ///
   /// In en, this message translates to:

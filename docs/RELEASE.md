@@ -56,6 +56,7 @@
   - The launch screen is the mark's tile on cream (light) or lamplight brown (dark), with no white flash before or after it.
   - The status and navigation bars are the colour of the screen beneath them, and their icons are legible: dark on Welcome's cream. Check three-button navigation on Android 9 and 10, gesture navigation on Android 14 or later, and an app theme that differs from the system's.
 - [ ] Predictive back, Android 14 or later: a back gesture on Today previews the home screen.
+- [ ] Shortcuts on the app's icon, on Android and iOS, in English and Hebrew: long-pressing the icon shows Continue reading, Log reading from a book and This week's parsha, in the app's language and with the app's icon (on iOS, the mark). Each opens its page with back leading to Today, from a cold start and with the app in the background.
 - [ ] Android system backup: after `adb shell bmgr backupnow org.shnayimmikra.app`, reinstalling the app restores its settings and progress.
 - [ ] Community against the production backend:
   - sign in with a code

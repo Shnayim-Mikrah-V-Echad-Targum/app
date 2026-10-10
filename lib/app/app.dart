@@ -3,8 +3,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/community/data/community_providers.dart';
+import '../features/parsha/week_context.dart';
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
+import '../services/app_shortcuts.dart';
 import '../services/notifications.dart';
 import '../ui/theme/app_theme.dart';
 import 'providers.dart';
@@ -24,6 +26,11 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Shortcuts on the app's icon open once Today is up, the one that
+    // launched the app first, so each has somewhere to go back to.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(appShortcutsServiceProvider).listen(_openShortcut);
+    });
   }
 
   @override
@@ -32,9 +39,19 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     super.dispose();
   }
 
-  // The text theme follows the platform's language when the app does.
+  // The text theme follows the platform's language when the app does, and
+  // so do the shortcuts' titles.
   @override
-  void didChangeLocales(List<Locale>? locales) => setState(() {});
+  void didChangeLocales(List<Locale>? locales) {
+    ref.invalidate(appShortcutsProvider);
+    setState(() {});
+  }
+
+  void _openShortcut(AppShortcut shortcut) {
+    // Shortcuts are offered only after onboarding, which must come first.
+    if (!mounted || !ref.read(settingsProvider).onboardingComplete) return;
+    openFromOutside(ref.read(routerProvider), shortcut.route(ref.read(currentWeekContextProvider)));
+  }
 
   /// Whether the app shows in Hebrew, resolved the way MaterialApp resolves
   /// its locale.
@@ -52,10 +69,12 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final router = ref.watch(routerProvider);
-    // Keep scheduled reminders in sync with settings and progress, and the
-    // cloud backup (if enabled) in sync with progress. The sync is only kept
-    // alive (listened to, not watched): its timestamp must not rebuild the app.
+    // Keep scheduled reminders in sync with settings and progress, the icon's
+    // shortcuts in the app's language, and the cloud backup (if enabled) in
+    // sync with progress. The sync is only kept alive (listened to, not
+    // watched): its timestamp must not rebuild the app.
     ref.watch(reminderSchedulerProvider);
+    ref.watch(appShortcutsProvider);
     ref.listen(progressSyncProvider, (_, _) {});
     ref.listen(notificationTapsProvider, (_, next) {
       final route = next.value;

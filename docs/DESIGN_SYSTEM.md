@@ -886,6 +886,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - Launch screens (`splash_logo.png`, read at 4×, so 288 dp or pt): a transparent 1152² canvas with the in-app mark's tile in the middle, the master on the gradient, 576 px wide with 22% corners. The corners reach 355 px from the centre, inside the 384 px (192 dp) circle that Android 12 and later show.
    - Web link preview (`web/og.png`, 1200×630): the About header on surface (#FAF7F0) in a TitlePageFrame at 2×. The mark's tile at 168, then "שניים מקרא ואחד תרגום" in Frank Ruhl Libre Medium 58 primary, a SeferDivider at 2×, and "Shnayim Mikra v’Echad Targum" in EB Garamond Medium 36 onSurfaceVariant, all within the middle 630 px so a square crop keeps them.
    - Web shortcut icons (`web/icons/shortcut-*.png`, 192²): the navigation's `today` and `donut_large` glyphs in #F6F0E2, their em box 58% of the favicons' tile.
+   - Shortcuts on the app's icon (`lib/services/app_shortcuts.dart`): Android's wear the launcher icon itself (`@mipmap/ic_launcher`). iOS draws a shortcut's icon as a template, from its alpha alone in the menu's ink, so iOS's wear `ShortcutMark` (`ios/Runner/Assets.xcassets`, 35 pt at 2× and 3×): the mark alone in one ink on transparent, centred and 94% of the canvas wide.
    - Web loading screen: the in-app mark's tile as inline SVG in `web/index.html`, 96 px.
 
    Then run `dart run flutter_launcher_icons`, `dart run flutter_native_splash:create` and `make_icon.py --post` (the full command is above `flutter_launcher_icons` in pubspec.yaml).

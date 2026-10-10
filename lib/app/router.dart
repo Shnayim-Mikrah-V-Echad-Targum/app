@@ -104,6 +104,23 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// The roots of the navigation tabs.
+const _tabs = ['/today', '/parsha', '/progress', '/community', '/settings'];
+
+/// Opens [location] from outside the app's own navigation: a shortcut on the
+/// app's icon, say. A tab, or a page within one, opens in its place; any
+/// other page opens over Today, so it has a back button that leads to the
+/// navigation bar rather than a dead end.
+void openFromOutside(GoRouter router, String location) {
+  final path = Uri.parse(location).path;
+  if (_tabs.any((tab) => path == tab || path.startsWith('$tab/'))) {
+    router.go(location);
+  } else {
+    router.go('/today');
+    router.push(location);
+  }
+}
+
 class _NotFound extends StatelessWidget {
   const _NotFound();
 

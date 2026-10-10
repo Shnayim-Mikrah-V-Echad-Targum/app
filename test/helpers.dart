@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/app.dart';
@@ -70,13 +71,14 @@ final historyNow = DateTime(2026, 11, 11, 10);
 final historyJoinDate = LocalDate(2026, 10, 4);
 
 /// Pumps the whole app with in-memory storage and the demo backend (or
-/// [forums], when given).
+/// [forums], when given), and any further [overrides].
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   AppSettings settings = const AppSettings(onboardingComplete: true),
   DateTime? now,
   ProgressState? progress,
   ForumRepository? forums,
+  List<Override> overrides = const [],
 }) async {
   TodayController.autoRollover = false;
   if (now != null) TodayController.now = () => now;
@@ -91,6 +93,7 @@ Future<ProviderContainer> pumpApp(
     parshaRepositoryProvider.overrideWithValue(repo!),
     backendProvider.overrideWithValue(Backend(forums ?? DemoForumRepository())),
     notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
+    ...overrides,
   ]);
   addTearDown(container.dispose);
   await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const ShnayimMikraApp()));

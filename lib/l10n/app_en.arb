@@ -887,6 +887,18 @@
   "notifFridayBody": "If you haven't finished, there's still time — or finish Shabbat morning from your Chumash and log it after Shabbat.",
   "notifCheckInTitle": "Shavua tov!",
   "notifCheckInBody": "Did you read on Shabbat? Tap to log it.",
+  "shortcutContinueReading": "Continue reading",
+  "@shortcutContinueReading": {
+    "description": "Shortcut shown when the app's icon is long-pressed on Android and iOS; opens the reader at the first aliyah not yet read. Keep it under 25 characters."
+  },
+  "shortcutLogFromBook": "Log reading from a book",
+  "@shortcutLogFromBook": {
+    "description": "Shortcut shown when the app's icon is long-pressed; opens this week's page to mark what was read from a printed Chumash. Keep it under 25 characters."
+  },
+  "shortcutThisWeek": "This week's parsha",
+  "@shortcutThisWeek": {
+    "description": "Shortcut shown when the app's icon is long-pressed; opens the Parsha tab. Keep it under 25 characters."
+  },
   "showStreaks": "Show streak numbers",
   "showStreaksDesc": "Hide them if you'd rather focus on the learning itself",
   "exportData": "Export my progress",

@@ -1,6 +1,6 @@
 """Checks make_icon.py's glyph-order assertion, the launch screens' logo,
-the launch themes' system bars, the MSIX icons and the web's link preview,
-shortcut icons and loading mark.
+the launch themes' system bars, the MSIX icons, the web's link preview,
+shortcut icons and loading mark, and iOS's shortcut icon.
 
     python3 -m unittest discover -s tool/branding
 
@@ -8,6 +8,7 @@ Needs the packages in requirements.txt, and network access unless
 assets/fonts/FrankRuhlLibre-Bold.ttf exists.
 """
 
+import json
 import math
 import tempfile
 import unittest
@@ -173,6 +174,54 @@ class WebTest(unittest.TestCase):
             margin = (1 - 0.58) / 2 * make_icon.SHORTCUT_SIZE
             self.assertGreaterEqual(min(glyph[:2]), margin - 1)
             self.assertLessEqual(max(glyph[2:]), make_icon.SHORTCUT_SIZE - margin + 1)
+
+
+
+class IosShortcutTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        with tempfile.TemporaryDirectory() as tmp:
+            font_path = make_icon.load_font(Path(tmp))
+            font = TTFont(font_path)
+            glyphs, upem = make_icon.shape(font_path, font)
+            cls.mark = make_icon.layout(glyphs, upem, font)
+
+    def test_icon_is_the_mark_centred_in_one_ink(self):
+        size = 3 * make_icon.IOS_SHORTCUT_POINTS
+        image = make_icon.render(make_icon.ios_shortcut_icon(self.mark), size)
+        self.assertEqual(image.size, (size, size))
+        # One ink: iOS draws a template from its alpha alone.
+        self.assertEqual({px[:3] for px in image.getdata() if px[3] == 255},
+                         {(0, 0, 0)})
+        left, top, right, bottom = image.getchannel('A').getbbox()
+        self.assertAlmostEqual((right - left) / size,
+                               make_icon.IOS_SHORTCUT_WIDTH, delta=0.02)
+        self.assertLessEqual(abs(left - (size - right)), 1)
+        self.assertLessEqual(abs(top - (size - bottom)), 1)
+
+    def test_image_set_is_a_template_at_2x_and_3x(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets = Path(tmp)
+            with mock.patch.object(make_icon, 'IOS_ASSETS', assets), \
+                    mock.patch.object(make_icon, 'ROOT', assets):
+                make_icon.write_ios_shortcut(self.mark)
+            folder = assets / 'ShortcutMark.imageset'
+            contents = json.loads((folder / 'Contents.json').read_text())
+            self.assertEqual(contents['properties'],
+                             {'template-rendering-intent': 'template'})
+            self.assertEqual(
+                [(i['scale'], i['filename']) for i in contents['images']],
+                [('2x', 'ShortcutMark@2x.png'), ('3x', 'ShortcutMark@3x.png')])
+            for scale in (2, 3):
+                with Image.open(folder / f'ShortcutMark@{scale}x.png') as image:
+                    self.assertEqual(image.size, (35 * scale,) * 2)
+
+    def test_catalog_holds_the_current_icon(self):
+        folder = make_icon.IOS_ASSETS / 'ShortcutMark.imageset'
+        expected = make_icon.render(make_icon.ios_shortcut_icon(self.mark), 105)
+        with Image.open(folder / 'ShortcutMark@3x.png') as image:
+            self.assertEqual(image.convert('RGBA').tobytes(), expected.tobytes(),
+                             'run python3 tool/branding/make_icon.py --post')
 
 
 if __name__ == '__main__':

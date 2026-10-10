@@ -16,7 +16,8 @@ From the repository root:
                                                 # .ico and MSIX icons, launch
                                                 # screens' system bars, the
                                                 # web's link preview, shortcut
-                                                # icons and loading mark
+                                                # icons and loading mark, and
+                                                # iOS's shortcut icon
 
 A Hebrew reader checks the results by eye before every release.
 """
@@ -26,6 +27,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import io
+import json
 import math
 import os
 import re
@@ -49,6 +51,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 BRANDING = ROOT / 'assets' / 'branding'
 ANDROID_RES = ROOT / 'android' / 'app' / 'src' / 'main' / 'res'
+IOS_ASSETS = ROOT / 'ios' / 'Runner' / 'Assets.xcassets'
 MSIX = ROOT / 'windows' / 'msix'
 WEB = ROOT / 'web'
 FONTS = ROOT / 'assets' / 'fonts'
@@ -119,6 +122,14 @@ OG_TITLE_EN = 'Shnayim Mikra v’Echad Targum'
 # icons font in the Flutter SDK.
 SHORTCUT_ICONS = {'today': 0xE66A, 'progress': 0xE1F9}
 SHORTCUT_SIZE = 192
+# The shortcuts on the app's icon on iOS (lib/services/app_shortcuts.dart).
+# iOS draws a shortcut's icon as a template, from its alpha alone in the
+# menu's ink, so it is the mark as one silhouette, centred on a 35 pt canvas
+# and nearly as wide as it.
+IOS_SHORTCUT_NAME = 'ShortcutMark'
+IOS_SHORTCUT_POINTS = 35
+IOS_SHORTCUT_SCALES = (2, 3)
+IOS_SHORTCUT_WIDTH = 0.94
 # web/index.html's loading screen shows the in-app mark inline, between these.
 LOADER_MARK_START = '<!-- mark: tool/branding/make_icon.py --post -->'
 LOADER_MARK_END = '<!-- /mark -->'
@@ -463,6 +474,19 @@ def shortcut_icon(font: TTFont, codepoint: int) -> str:
     return document(glyph, background='gradient', radius=TILE_RADIUS * CANVAS)
 
 
+def ios_shortcut_icon(mark: Mark) -> str:
+    """iOS's shortcut icon: the mark in one ink on a transparent square, as
+    wide as IOS_SHORTCUT_WIDTH of it."""
+    x_min, y_min, x_max, y_max = mark.bounds
+    side = (x_max - x_min) / IOS_SHORTCUT_WIDTH
+    left = (x_min + x_max - side) / 2
+    top = (y_min + y_max - side) / 2
+    size = IOS_SHORTCUT_POINTS
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" '
+            f'height="{size}" viewBox="{num(left)} {num(top)} {num(side)} '
+            f'{num(side)}">\n' + group(mark, colour='#000000') + '\n</svg>\n')
+
+
 # Raster output ------------------------------------------------------------
 
 
@@ -576,6 +600,28 @@ def write_loader_mark(mark: Mark) -> None:
     report(path, 'loading mark')
 
 
+def write_ios_shortcut(mark: Mark) -> None:
+    """iOS's shortcut icon, as a template image set in the asset catalog."""
+    folder = IOS_ASSETS / f'{IOS_SHORTCUT_NAME}.imageset'
+    svg = ios_shortcut_icon(mark)
+    images = []
+    for scale in IOS_SHORTCUT_SCALES:
+        name = f'{IOS_SHORTCUT_NAME}@{scale}x.png'
+        write_png(folder / name, render(svg, IOS_SHORTCUT_POINTS * scale))
+        images.append({'filename': name, 'idiom': 'universal',
+                       'scale': f'{scale}x'})
+    contents = {
+        'images': images,
+        'info': {'author': 'xcode', 'version': 1},
+        'properties': {'template-rendering-intent': 'template'},
+    }
+    path = folder / 'Contents.json'
+    # Xcode's own layout, so opening the catalog leaves it unchanged.
+    path.write_text(json.dumps(contents, indent=2, separators=(',', ' : '))
+                    + '\n', encoding='utf-8')
+    report(path, 'template image set')
+
+
 def write_web(mark: Mark) -> None:
     """The web's link preview, its shortcuts' icons and its loading mark."""
     write_png(WEB / 'og.png', render(og_image(mark), OG_WIDTH, height=OG_HEIGHT,
@@ -610,6 +656,7 @@ def write_post(mark: Mark) -> None:
               + [render(tile, s) for s in (40, 48, 64, 256)])
     write_msix(tile)
     write_web(mark)
+    write_ios_shortcut(mark)
     fix_launch_themes()
 
 
@@ -619,7 +666,8 @@ def main() -> None:
         '--post', action='store_true',
         help='write the web maskable icons, favicons, link preview, '
              'shortcut icons and loading mark, the Windows .ico and MSIX '
-             'icons, and fix the launch themes\' system bars; run after '
+             'icons and iOS\'s shortcut icon, and fix the launch themes\' '
+             'system bars; run after '
              '`dart run flutter_launcher_icons` and '
              '`dart run flutter_native_splash:create`')
     args = parser.parse_args()

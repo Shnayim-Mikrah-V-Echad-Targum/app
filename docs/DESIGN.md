@@ -114,6 +114,8 @@ The copy is informational ("Revi'i is today's reading"), never guilt-based.
 
 Permission is requested in context, after the reader finishes their first aliyah, not at launch.
 
+**Shortcuts on the app's icon** (Android and iOS) are a calm way in: long-pressing the icon offers Continue reading, Log reading from a book and This week's parsha, once onboarding is done. The platform keeps them while the app isn't running, so each names a page rather than a week, and opens the current week as it is when it is chosen. A shortcut's page opens over Today, so back leads to the navigation bar.
+
 ## 6. Onboarding
 
 The goal is to reach the first verse in under a minute. Onboarding has four screens:

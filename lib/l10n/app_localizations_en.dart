@@ -1336,6 +1336,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifCheckInBody => 'Did you read on Shabbat? Tap to log it.';
 
   @override
+  String get shortcutContinueReading => 'Continue reading';
+
+  @override
+  String get shortcutLogFromBook => 'Log reading from a book';
+
+  @override
+  String get shortcutThisWeek => 'This week\'s parsha';
+
+  @override
   String get showStreaks => 'Show streak numbers';
 
   @override

@@ -12,6 +12,7 @@ import 'app/providers.dart';
 import 'app/system_bars.dart';
 import 'data/parsha_repository.dart';
 import 'features/community/data/backend.dart';
+import 'services/app_shortcuts.dart';
 import 'services/notifications.dart';
 
 Future<void> main() async {
@@ -23,6 +24,7 @@ Future<void> main() async {
   final parshiyot = await ParshaRepository.load();
   final backend = await Backend.initialize();
   final notifications = await NotificationService.create();
+  final shortcuts = await AppShortcutsService.create();
 
   runApp(ProviderScope(
     overrides: [
@@ -30,6 +32,7 @@ Future<void> main() async {
       parshaRepositoryProvider.overrideWithValue(parshiyot),
       backendProvider.overrideWithValue(backend),
       notificationServiceProvider.overrideWithValue(notifications),
+      appShortcutsServiceProvider.overrideWithValue(shortcuts),
     ],
     child: const ShnayimMikraApp(),
   ));

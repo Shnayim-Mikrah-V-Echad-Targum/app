@@ -1333,6 +1333,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get notifCheckInBody => 'קראת בשבת? אפשר לרשום זאת כאן.';
 
   @override
+  String get shortcutContinueReading => 'המשך קריאה';
+
+  @override
+  String get shortcutLogFromBook => 'רישום קריאה מתוך ספר';
+
+  @override
+  String get shortcutThisWeek => 'פרשת השבוע';
+
+  @override
   String get showStreaks => 'הצגת מספרי הרצף';
 
   @override
