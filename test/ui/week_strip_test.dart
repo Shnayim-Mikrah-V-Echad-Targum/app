@@ -135,9 +135,12 @@ void main() {
       await pumpThemed(tester, strip(), hebrew: hebrew);
       expect(tester.getSize(find.byType(WeekStrip)).height, plain, reason: hebrew ? 'he' : 'en');
       final note = find.text(hebrew ? 'יו״ט' : 'Yom Tov');
-      // Within the day, the margins aside.
+      // Within the day's wash (the slot less its 2 px margins), and clear of
+      // its edges by 2 px.
       final sunday = tester.getRect(dayOf(hebrew ? 'יום ראשון' : 'Sunday'));
-      expect(tester.getRect(note).width, lessThanOrEqualTo(sunday.width - 4));
+      final text = tester.getRect(note);
+      expect(text.left, greaterThanOrEqualTo(sunday.left + 4 - 0.01), reason: hebrew ? 'he' : 'en');
+      expect(text.right, lessThanOrEqualTo(sunday.right - 4 + 0.01), reason: hebrew ? 'he' : 'en');
       expect(tester.widget<Text>(note).maxLines, 1);
     }
   });

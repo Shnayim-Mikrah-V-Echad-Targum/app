@@ -925,12 +925,16 @@ class WeekStrip extends StatelessWidget {
           if (note != null) ...[
             const SizedBox(height: 4),
             if (yomTov)
-              // One line across the whole day, shrunk a little if need be
-              // ("Yom Tov" is about 50 px; a day on a 412 dp phone has 48),
-              // so a Yom Tov week is no taller than any other.
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(note, maxLines: 1, softWrap: false, style: noteStyle),
+              // One line across the day, untracked and shrunk a little if
+              // need be ("Yom Tov" is about 50 px; a day on a 412 dp phone
+              // has 48), so a Yom Tov week is no taller than any other. The
+              // inset keeps it off the edges of the wash.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: _inset),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(note, maxLines: 1, softWrap: false, style: noteStyle?.copyWith(letterSpacing: 0)),
+                ),
               )
             else
               Padding(
