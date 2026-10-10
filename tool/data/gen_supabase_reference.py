@@ -26,7 +26,9 @@ def q(s):
 
 
 def strip_marks(s):
-    return re.sub('[֑-ׇ]', '', s)
+    # Cantillation, vowels and dots, as HebrewText.stripNikud does in the app.
+    # The maqaf stays: 'לך־לך', not 'לךלך'.
+    return re.sub('[\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7]', '', s)
 
 
 out = [
@@ -41,7 +43,7 @@ out = [
     '',
     'insert into public.parashot (id, name_en, name_he, book, start_ref, end_ref) values',
     ',\n'.join(
-        f"  ({p['num']}, {q(p['key'])}, {q(strip_marks(p['he']))}, {BOOKS.index(p['book']) + 1}, "
+        f"  ({p['num']}, {q(p['en'])}, {q(strip_marks(p['he']))}, {BOOKS.index(p['book']) + 1}, "
         f"{q(p['book'] + ' ' + p['start'])}, {q(p['book'] + ' ' + p['end'])})"
         for p in data['parshiyot'])
     + '\non conflict (id) do update set name_en = excluded.name_en, name_he = excluded.name_he,'

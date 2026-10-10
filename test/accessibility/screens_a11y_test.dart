@@ -46,6 +46,42 @@ void main() {
     });
   }
 
+  for (final route in a11yOnboardingRoutes) {
+    for (final hebrew in [false, true]) {
+      testWidgets('a11y guidelines: $route${hebrew ? ', Hebrew' : ''}', (tester) async {
+        final handle = tester.ensureSemantics();
+        await open(tester, route, settings: AppSettings(language: hebrew ? AppLanguage.hebrew : AppLanguage.system));
+        expect(tester.takeException(), isNull);
+        if (route == '/welcome/location') {
+          // With the reason it is asked shown.
+          await tester.tap(find.byIcon(Icons.expand_more));
+          await tester.pumpAndSettle();
+        }
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        handle.dispose();
+      });
+    }
+
+    testWidgets('no overflow at 200% text size: $route', (tester) async {
+      await open(tester, route, settings: const AppSettings(), textScale: 2);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  // Material leaves no space above and below a button's label at this size.
+  testWidgets("at 200% text size the welcome's wrapped button labels keep clear of the buttons' edges", (tester) async {
+    await open(tester, '/welcome', settings: const AppSettings(), textScale: 2);
+    for (final button in [find.byType(FilledButton), find.widgetWithText(TextButton, 'I already use Shnayim Mikra')]) {
+      final box = tester.getRect(button);
+      final label = tester.getRect(find.descendant(of: button, matching: find.byType(Text)));
+      expect(label.height, greaterThan(60), reason: 'two lines of 30 px text');
+      expect(label.top - box.top, greaterThanOrEqualTo(7.5));
+      expect(box.bottom - label.bottom, greaterThanOrEqualTo(7.5));
+    }
+  });
+
   // Text contrast on this page is checked in text_contrast_test.dart.
   testWidgets('a11y guidelines: reminders, where they can be scheduled, with all of them on', (tester) async {
     final handle = tester.ensureSemantics();

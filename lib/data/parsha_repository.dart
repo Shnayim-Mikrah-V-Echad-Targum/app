@@ -11,9 +11,18 @@ import 'models/verse_ref.dart';
 /// The haftarah to read for a given week, with the reason when it is a
 /// special one (e.g. "Shabbat Shekalim").
 class WeekHaftarah {
-  const WeekHaftarah(this.parts, {this.specialKey});
+  const WeekHaftarah(this.parts, {this.specialKey, this.regular, this.fallback = false});
   final Haftarah parts;
   final String? specialKey;
+
+  /// The portion's own haftarah, in a week a special one displaces it,
+  /// unless the special one already includes it (as Masei's on Rosh Chodesh
+  /// Av does). Some read it as well; Chabad's custom is to.
+  final Haftarah? regular;
+
+  /// Whether [parts], or [regular], is the Ashkenazi reading given for want
+  /// of the custom's own (see [HaftarahOptions.fallsBack]).
+  final bool fallback;
 }
 
 /// Parsha metadata: names, aliyot and haftarot (assets/data/parshiyot.json).
@@ -81,14 +90,26 @@ class ParshaRepository {
 
   PortionInfo byNumber(int number) => _singles[number - 1];
 
-  /// The haftarah read on [occasion] for [portion], accounting for special
-  /// Shabbatot. Vezot HaBerakhah's haftarah is that of Simchat Torah.
+  /// The haftarah read on [occasion] for [portion] by [nusach], accounting
+  /// for special Shabbatot. Vezot HaBerachah's haftarah is that of Simchat
+  /// Torah.
   WeekHaftarah haftarahFor(PortionId portion, LocalDate occasion, HaftarahNusach nusach) {
+    final own = this.portion(portion).haftarah;
     if (occasion.isShabbat) {
-      final key = specialHaftarahKey(occasion, portion);
+      final key = specialHaftarahKey(occasion, portion, nusach: nusach);
       final special = key == null ? null : _special[key];
-      if (special != null) return WeekHaftarah(special.forNusach(nusach), specialKey: key);
+      if (special != null) {
+        final parts = special.forNusach(nusach);
+        final regular = own.forNusach(nusach);
+        final displaced = !haftarahCovers(parts, regular);
+        return WeekHaftarah(
+          parts,
+          specialKey: key,
+          regular: displaced ? regular : null,
+          fallback: special.fallsBack(nusach) || (displaced && own.fallsBack(nusach)),
+        );
+      }
     }
-    return WeekHaftarah(this.portion(portion).haftarah.forNusach(nusach));
+    return WeekHaftarah(own.forNusach(nusach), fallback: own.fallsBack(nusach));
   }
 }

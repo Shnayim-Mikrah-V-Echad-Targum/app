@@ -70,7 +70,7 @@ void main() {
       expect(week.lateDeadline, LocalDate(2026, 10, 20));
     });
 
-    test('Vezot HaBerakhah is read on Hoshana Rabbah', () {
+    test('Vezot HaBerachah is read on Hoshana Rabbah', () {
       final week = diaspora.weekFor(LocalDate(2026, 9, 25));
       expect(week.portion.isVezotHaberakhah, isTrue);
       expect(week.occasion, LocalDate(2026, 10, 4)); // Simchat Torah (Diaspora)

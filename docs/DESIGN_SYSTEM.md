@@ -689,7 +689,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 | upcoming | paper | hairline | onSurfaceVariant | none |
 | untracked | paper | hairline | onSurfaceVariant | pause_circle_outline |
 
-A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled up", "Lech-Lecha: Can still be restored").
+A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled up", "Lech Lecha: Can still be restored").
 
 **Book header row**
 - Hebrew book name (FRL 600 18), a 8 gap, the Latin name (titleSmall), and "3 of 12" end-aligned in bodySmall with tabular figures, then an `expand_more` chevron that turns over `Motion.short`. The two names are one paragraph, so with large text the Latin name wraps under the Hebrew one.
@@ -984,10 +984,10 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
      - an Israeli abroad (the Diaspora's reading, one day): `readingDivergenceAhead`, with no action.
    - The open-previous-week card also shows a week whose haftarah, which counts, is all that is left: it adds `openWeekHaftarahLeft` and opens the haftarah.
 3. **Hero card** (TitlePageFrame, padding 24, centred):
-   - **Eyebrow:** `parshatHashavua` by default; `erevShabbat` on Friday at or after 12:00 local; "Simchat Torah" when the portion is Vezot Haberakhah.
+   - **Eyebrow:** `parshatHashavua` by default; `erevShabbat` on Friday at or after 12:00 local; "Simchat Torah" when the portion is Vezot HaBerachah.
    - 8 gap, then the Hebrew pointed name: new `Names.portionPointed(p)` = `HebrewText.forDisplay(p.nameHe, nikud: true, teamim: false)`, in hebrewDisplay 46/60 primary. Semantics header level 1 with label `parshaLabel(name)`.
    - English UI: the Latin name in headlineLarge onSurface. Hebrew UI: the Latin name in bodyMedium onSurfaceVariant.
-   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read Shabbat, 10 October". Then bodySmall onSurfaceVariant `shabbatInDays`.
+   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`.
    - 16 gap, SeferDivider, 16 gap.
    - Row of ParshaRings 104, a 20 gap, and `Expanded(RingLegend)`. Under the legend, an end-aligned TextButton `allAliyot` ("All aliyot") with a chevron, to /today/week/{id} (within the Today tab). Under 360 dp the rings sit centred above the legend.
    - 20 gap, then a full-width Filled button (52) with `menu_book` and a label naming the destination. Let `next = ctx.nextAliyah` and `p` = the first ReadingPass of `next` that is not done:
@@ -1025,7 +1025,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 
 1. **Header** (no card, start-aligned):
    - Hebrew pointed name in hebrewDisplay 36/48 primary; in the English UI, the Latin name in headlineMedium;
-   - bodyMedium onSurfaceVariant "Genesis 1:1–6:8 · 146 verses · Read Shabbat, 10 October";
+   - bodyMedium onSurfaceVariant "Genesis 1:1–6:8 · 146 verses · Read on Shabbat, 10 October" (`names.readOnLabel(week)`, as on Today);
    - the status line (icon plus label) in bodySmall;
    - ParshaRings 88 with RingLegend in a Row at ≥360.
 2. **GroupHeader** with `aliyotProgress` ("2 of 7 aliyot", no digits in the eyebrow, so render it as titleSmall onSurfaceVariant instead of an eyebrow).
@@ -1165,7 +1165,7 @@ In order:
 - Web: one NoticeBanner explaining that reminders need the installed app (replaces two stacked banners).
 
 **Your data**
-- Group 1: Export, Import.
+- Group 1: a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export, Import, and "Paste backup text".
 - Group 2: "Reset all progress" in error-coloured text with no icon tile. The confirm dialog uses the destructive Filled button.
 
 ### Onboarding (onboarding_screen.dart; phone_welcome, he_welcome, dark_welcome, desktop_welcome)
@@ -1179,7 +1179,9 @@ In order:
   - a SeferDivider;
   - English UI only: "Shnayim Mikra v'Echad Targum" in EBG MediumItalic 24/30;
   - body in bodyLarge onSurfaceVariant.
-- Outside the frame: 24 gap, a Filled "Start this week's parsha" 52 high (max width 400), then the disclaimer in bodySmall.
+- Outside the frame: 24 gap, a Filled "Start this week's parsha" 52 high (max width 400).
+- An 8 gap, then a TextButton "I already use Shnayim Mikra" (the same max width), which opens the restore sheet: sign in (only with a real community backend), a backup file, or pasted text. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
+- Then the disclaimer in bodySmall.
 
 **Steps 2–4**
 - At the top: four 12 px lozenges (filled = done, outlined = pending). Semantics still announce "Step 2 of 4".

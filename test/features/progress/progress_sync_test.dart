@@ -122,10 +122,24 @@ class _FixedToday extends TodayController {
   LocalDate build() => day;
 }
 
-/// Progress logged on another device and already backed up.
-Map<String, dynamic> _otherDevice() => ProgressState(weeks: {
-      _week: WeekProgress(weekId: _week).withUnit(0, ReadingPass.mikra1, _d1),
-    }).toJson();
+/// Progress logged on another device, which joined on the day of it, and
+/// already backed up.
+Map<String, dynamic> _otherDevice() => syncPayload(
+      ProgressState(weeks: {
+        _week: WeekProgress(weekId: _week).withUnit(0, ReadingPass.mikra1, _d1),
+      }),
+      _d1,
+    );
+
+/// A reader who joined on Simchat Torah 5787 (Sunday 4 October 2026) and
+/// read every portion on its Friday, Bereshit to Chayei Sara: a parsha
+/// streak of 5 on the Wednesday of Toldot, [_toldotWednesday].
+ProgressState _fiveWeeks() => ProgressState(weeks: {
+      for (final (i, friday) in [9, 16, 23, 30, 37].indexed)
+        '5787:${i + 1}': WeekProgress(weekId: '5787:${i + 1}').withAll(LocalDate(2026, 10, 1).addDays(friday - 1)),
+    });
+final _simchatTorah = LocalDate(2026, 10, 4);
+final _toldotWednesday = LocalDate(2026, 11, 11);
 
 void main() {
   late SharedPreferences prefs;
@@ -477,6 +491,108 @@ void main() {
       expect(summary.weeks, hasLength(1));
       expect(summary.weeks.where((w) => w.status == WeekStatus.missed), isEmpty);
       container.dispose();
+    });
+  });
+
+  group('the join date', () {
+    /// Settings with backup on, for a reader who joined on [joined].
+    Future<void> joinedOn(LocalDate? joined) => prefs.setString(
+          SettingsController.storageKey,
+          jsonEncode(AppSettings(onboardingComplete: joined != null, cloudSync: true, joinDate: joined).toJson()),
+        );
+
+    /// The device, on [_toldotWednesday].
+    ProviderContainer device(_CountingRepo repo) {
+      final c = ProviderContainer(overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        backendProvider.overrideWithValue(Backend(repo)),
+        todayProvider.overrideWith(() => _FixedToday(_toldotWednesday)),
+      ]);
+      c.listen(progressSyncProvider, (_, _) {});
+      return c;
+    }
+
+    test('comes with the backup to a new device, and the streak with it', () async {
+      final backup = _fiveWeeks();
+      final repo = _CountingRepo(user: _me, remote: syncPayload(backup, _simchatTorah));
+      // Set up on Monday.
+      await joinedOn(LocalDate(2026, 11, 9));
+      fakeAsync((async) {
+        final container = device(repo);
+        expect(container.read(streakSummaryProvider).parshaStreak, 0, reason: 'nothing read since Monday');
+        async.elapse(const Duration(seconds: 120));
+        expect(container.read(progressProvider), backup);
+        expect(container.read(settingsProvider).joinDate, _simchatTorah);
+        expect(container.read(streakSummaryProvider).parshaStreak, 5);
+        expect(repo.saves, 0, reason: 'the cloud already held everything');
+        container.dispose();
+      });
+    });
+
+    test('is added to a backup saved by an earlier version, from its earliest reading', () async {
+      final repo = _CountingRepo(user: _me, remote: _fiveWeeks().toJson());
+      await joinedOn(LocalDate(2026, 11, 9));
+      fakeAsync((async) {
+        final container = device(repo);
+        async.elapse(const Duration(seconds: 120));
+        final bereshitFriday = LocalDate(2026, 10, 9);
+        expect(container.read(settingsProvider).joinDate, bereshitFriday);
+        expect(container.read(streakSummaryProvider).parshaStreak, 5);
+        expect(repo.saves, 1);
+        expect(syncPayloadJoinDate(repo.remote!), bereshitFriday);
+        expect(remoteOf(repo), container.read(progressProvider));
+        container.dispose();
+      });
+    });
+
+    test("isn't moved by this device's own readings, backed up by an earlier version", () async {
+      // Joined on the Monday of Toldot, and marked Rishon read on Sunday, the
+      // week's first day; an earlier version backed that up, without the
+      // join date.
+      final monday = LocalDate(2026, 11, 9);
+      final here = ProgressState(weeks: {
+        '5787:6': WeekProgress(weekId: '5787:6').withAliyah(0, LocalDate(2026, 11, 8)),
+      });
+      await prefs.setString(ProgressController.storageKey, jsonEncode(here.toJson()));
+      final repo = _CountingRepo(user: _me, remote: here.toJson());
+      await joinedOn(monday);
+      fakeAsync((async) {
+        final container = device(repo);
+        async.elapse(const Duration(seconds: 120));
+        expect(container.read(settingsProvider).joinDate, monday);
+        expect(syncPayloadJoinDate(repo.remote!), monday, reason: "this device's, backed up");
+        expect(remoteOf(repo), here);
+        container.dispose();
+      });
+    });
+
+    test('is backed up when it is first set, as onboarding ends', () async {
+      final repo = _CountingRepo(user: _me);
+      await joinedOn(null);
+      fakeAsync((async) {
+        final container = device(repo);
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.saves, 1, reason: 'the first backup');
+        expect(syncPayloadJoinDate(repo.remote!), isNull);
+
+        container.read(settingsProvider.notifier).update((s) => s.copyWith(joinDate: _toldotWednesday));
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.saves, 2);
+        expect(syncPayloadJoinDate(repo.remote!), _toldotWednesday);
+        container.dispose();
+      });
+    });
+
+    test("from another device doesn't move this one's when it is later", () async {
+      final repo = _CountingRepo(user: _me, remote: syncPayload(_fiveWeeks(), LocalDate(2026, 11, 9)));
+      await joinedOn(_simchatTorah);
+      fakeAsync((async) {
+        final container = device(repo);
+        async.elapse(const Duration(seconds: 120));
+        expect(container.read(settingsProvider).joinDate, _simchatTorah);
+        expect(syncPayloadJoinDate(repo.remote!), _simchatTorah, reason: 'the earlier one, backed up');
+        container.dispose();
+      });
     });
   });
 

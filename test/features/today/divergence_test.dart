@@ -14,7 +14,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import '../../helpers.dart';
 
 /// Tuesday 22 June 2027. The second day of Shavuot fell on Shabbat outside
-/// Israel, so Israel is a parsha ahead: Sh'lach there, Beha'alotcha elsewhere.
+/// Israel, so Israel is a parsha ahead: Shelach there, Beha'alotcha elsewhere.
 final _tuesday = DateTime(2027, 6, 22, 10);
 
 /// A visitor to Israel: Israel's reading, two days of Yom Tov.
@@ -27,12 +27,12 @@ final _visitor = AppSettings(
 /// An Israeli abroad: the reading outside Israel, one day of Yom Tov.
 final _abroad = _visitor.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true);
 
-const _notice = "In Israel this week: Sh'lach. Outside Israel: Beha'alotcha. Visitors from abroad usually read both. "
+const _notice = "In Israel this week: Shelach. Outside Israel: Beha'alotcha. Visitors from abroad usually read both. "
     "If you daven with a minyan reading Beha'alotcha, read only that one, and set the reading you'll hear to "
     'Outside Israel in Settings.';
 
-const _aheadNotice = "In Israel this week: Sh'lach. Outside Israel: Beha'alotcha. Israel is a parsha ahead, so you'll "
-    "read Sh'lach next week.";
+const _aheadNotice = "In Israel this week: Shelach. Outside Israel: Beha'alotcha. Israel is a parsha ahead, so you'll "
+    'read Shelach next week.';
 
 void main() {
   group('on Today', () {
@@ -48,7 +48,7 @@ void main() {
     testWidgets('a visitor sees both portions, and can open the other', (tester) async {
       await openToday(tester, _visitor);
       expect(find.text(_notice), findsOneWidget);
-      expect(find.text("Parshat Sh'lach"), findsOneWidget, reason: 'the week follows the reading heard');
+      expect(find.text('Parshat Shelach'), findsOneWidget, reason: 'the week follows the reading heard');
 
       await tester.tap(find.widgetWithText(TextButton, "Open Beha'alotcha"));
       await tester.pumpAndSettle();
@@ -60,7 +60,7 @@ void main() {
       await openToday(tester, _abroad);
       expect(find.text(_aheadNotice), findsOneWidget);
       expect(find.text("Parshat Beha'alotcha"), findsOneWidget);
-      // Sh'lach is next week's reading for them, not open yet.
+      // Shelach is next week's reading for them, not open yet.
       expect(find.textContaining('Open '), findsNothing);
     });
 

@@ -64,7 +64,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: onboarded,
     redirect: (context, state) {
       final path = state.uri.path;
-      final atWelcome = path == '/welcome';
+      // The welcome and the steps of onboarding after it.
+      final atWelcome = path == '/welcome' || path.startsWith('/welcome/');
       // The guide, sources and policies are open before onboarding too: the
       // stores require the privacy policy to be reachable on a first visit.
       // So are the addresses they had in About, which lead to them.
@@ -79,7 +80,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     errorPageBuilder: (context, state) => _page(state, const NotFoundPage()),
     routes: [
-      _route('/welcome', (_) => const OnboardingScreen()),
+      _route('/welcome', (_) => const OnboardingScreen(), routes: [
+        for (final step in OnboardingStep.values) _route(step.name, (_) => OnboardingStepScreen(step: step)),
+        // Signing in to restore a backup, back to the welcome once signed in.
+        _route('account', (_) => const AccountScreen(returnWhenSignedIn: true)),
+      ]),
       StatefulShellRoute.indexedStack(
         pageBuilder: (context, state, shell) => _page(state, AppShell(shell: shell)),
         branches: [

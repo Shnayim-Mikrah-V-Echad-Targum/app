@@ -265,9 +265,9 @@ void main() {
     final router = await _pump(tester);
     router.go('/settings');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('About Shnayim Mikra'));
+    await tester.ensureVisible(find.text('How it works'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('About Shnayim Mikra'));
+    await tester.tap(find.text('How it works'));
     await tester.pumpAndSettle();
     expect(find.byType(GuideScreen), findsOneWidget);
 

@@ -1,55 +1,372 @@
-import 'dart:convert';
-
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../core/calendar/local_date.dart';
+import '../../../services/backup_files.dart';
 import '../../../services/feedback.dart';
+import '../../../services/notifications.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../community/data/backend.dart';
-import '../app_settings.dart';
+import '../../progress/domain/progress_merge.dart';
+import '../backup.dart';
 import '../widgets/settings_widgets.dart';
 
-/// A backup contains both progress and settings, as JSON. Progress this
-/// version couldn't read is kept apart, as `unreadableProgress`, so that the
-/// rest can always be imported again, and that part restored with it.
-String exportBackup(WidgetRef ref) {
-  final progress = ref.read(progressProvider);
-  return const JsonEncoder.withIndent('  ').convert({
-    'app': 'shnayim_mikra',
-    'exportedAt': DateTime.now().toUtc().toIso8601String(),
-    'progress': progress.readable.toJson(),
-    'unreadableProgress': ?progress.unknownMissingFrom(progress.readable),
-    'settings': ref.read(settingsProvider).toJson(),
-  });
+/// A backup of all progress and settings, made at [now] (see
+/// [encodeBackup]).
+String exportBackup(WidgetRef ref, {DateTime? now}) =>
+    encodeBackup(ref.read(progressProvider), ref.read(settingsProvider), now: now ?? TodayController.now());
+
+/// Saves a backup as a file, the platform's way (see [BackupFiles.save]).
+/// [context] is the control's own, where the iPad anchors the share sheet.
+/// If the file can't be saved, the backup is copied to the clipboard.
+Future<void> exportBackupFile(BuildContext context, WidgetRef ref) async {
+  final l = context.l10n;
+  final now = TodayController.now();
+  final data = exportBackup(ref, now: now);
+  final files = ref.read(backupFilesProvider);
+  final box = context.findRenderObject();
+  final origin = box is RenderBox && box.hasSize ? box.localToGlobal(Offset.zero) & box.size : null;
+  try {
+    final saved = await files.save(data, backupFileName(now), subject: l.appTitleFull, origin: origin);
+    if (saved && context.mounted) showStatus(context, l.exportSaved);
+  } catch (_) {
+    await Clipboard.setData(ClipboardData(text: data));
+    if (context.mounted) showStatus(context, l.exportCopied);
+  }
 }
 
-/// Restores a backup made by [exportBackup]. A file with anything this
-/// version can't read exactly is rejected whole, rather than half imported.
-bool importBackup(WidgetRef ref, String raw) {
-  try {
-    final j = jsonDecode(raw.trim()) as Map<String, dynamic>;
-    if (j['app'] != 'shnayim_mikra') return false;
-    final progress = ProgressState.fromJson(j['progress'] as Map<String, dynamic>, strict: true);
-    final unreadable = (j['unreadableProgress'] ?? const <String, dynamic>{}) as Map<String, dynamic>;
-    final settings = j['settings'] is Map<String, dynamic>
-        ? AppSettings.fromJson(j['settings'] as Map<String, dynamic>)
-        : null;
-    ref.read(progressProvider.notifier).restore(
-          progress,
-          unknownWeeks: (unreadable['weeks'] ?? const <String, dynamic>{}) as Map<String, dynamic>,
-          unknownPauses: (unreadable['pauses'] ?? const []) as List,
-        );
-    if (settings != null) {
-      ref.read(settingsProvider.notifier).replace(settings.copyWith(onboardingComplete: true));
+/// How restoring a backup went, for the caller to say (see
+/// [showBackupImportStatus]).
+enum BackupImport {
+  restored,
+
+  /// Restored, but with the reminders its settings had on turned off: this
+  /// device doesn't allow the app's notifications.
+  remindersOff,
+
+  /// Not a backup this version can read. Nothing changed.
+  unreadable,
+}
+
+/// Says how restoring a backup went: [restored] if it was, or
+/// [remindersOff] if its reminders had to be turned off. That is a change
+/// the reader didn't ask for, so the message leads to the reminders'
+/// settings, and stays as long as a message with an action does.
+void showBackupImportStatus(
+  BuildContext context,
+  BackupImport result, {
+  required String restored,
+  required String remindersOff,
+}) {
+  final l = context.l10n;
+  switch (result) {
+    case BackupImport.restored:
+      showStatus(context, restored);
+    case BackupImport.remindersOff:
+      // The router, not this page, which may be gone by then: onboarding
+      // ends on Today.
+      final router = GoRouter.of(context);
+      showStatus(
+        context,
+        remindersOff,
+        action: SnackBarAction(label: l.settingsReminders, onPressed: () => router.push('/settings/reminders')),
+      );
+    case BackupImport.unreadable:
+      showStatus(context, l.importFailed);
+  }
+}
+
+/// Restores [backup], merged with the progress here (see [mergeBackup]), or
+/// with [replace], in its place. Either way it counts as a new change, which
+/// the next sync keeps (see [ProgressController.restore]), even where the
+/// backup has seen a reset made elsewhere that this device hasn't.
+///
+/// The join date is the earlier of this device's and the backup's (see
+/// [Backup.joinDate]), so that the history from both counts; replacing, it
+/// is the one saved with the backup, if any.
+///
+/// Its settings come too only [withSettings], keeping this device's record
+/// of having offered reminders. Reminders they turn on need the OS's
+/// permission here, as they did on the device that saved them, so it is
+/// asked for; refused, they are turned off ([BackupImport.remindersOff]).
+Future<BackupImport> importBackup(
+  WidgetRef ref,
+  Backup backup, {
+  bool replace = false,
+  bool withSettings = false,
+}) async {
+  // All read now: the page may close while the OS asks.
+  final progress = ref.read(progressProvider.notifier);
+  final settings = ref.read(settingsProvider.notifier);
+  final notifications = ref.read(notificationServiceProvider);
+  final current = ref.read(settingsProvider);
+  final savedJoin = backup.settings?.joinDate;
+  final joinDate = replace && savedJoin != null ? savedJoin : [current.joinDate, backup.joinDate].nonNulls.minOrNull;
+  progress.restore(
+    replace ? backup.progress : mergeBackup(ref.read(progressProvider), backup.progress),
+    unknownWeeks: backup.unknownWeeks,
+    unknownPauses: backup.unknownPauses,
+    outlast: backup.progress.resetAt,
+  );
+  final restored = withSettings ? backup.settings : null;
+  if (restored == null) {
+    if (joinDate != current.joinDate) settings.update((s) => s.copyWith(joinDate: joinDate));
+    return BackupImport.restored;
+  }
+  var next = restored.copyWith(
+    onboardingComplete: true,
+    notificationPromptShown: current.notificationPromptShown,
+    joinDate: joinDate,
+  );
+  var result = BackupImport.restored;
+  if (notifications.supported && anyReminderOn(next)) {
+    final allowed = await notifications.requestPermission();
+    // Asked now, they aren't offered again after the first aliyah.
+    next = next.copyWith(notificationPromptShown: true);
+    if (!allowed) {
+      next = next.copyWith(dailyReminder: false, fridayReminder: false, checkInReminder: false);
+      result = BackupImport.remindersOff;
     }
-    return true;
+  }
+  settings.replace(next);
+  return result;
+}
+
+/// Asks for a backup file, shows what it holds, and restores it as the
+/// reader chooses (see [importBackup]). Null if the reader cancels;
+/// otherwise how it went, for the caller to say.
+Future<BackupImport?> askToImportBackup(BuildContext context, WidgetRef ref) async {
+  final String? raw;
+  try {
+    raw = await ref.read(backupFilesProvider).open();
   } catch (_) {
-    return false;
+    return BackupImport.unreadable;
+  }
+  if (raw == null || !context.mounted) return null;
+  final backup = parseBackup(raw);
+  if (backup == null) return BackupImport.unreadable;
+  return _confirmImport(context, ref, backup);
+}
+
+/// As [askToImportBackup], for a backup pasted as text: an earlier version
+/// shared its backups that way.
+Future<BackupImport?> askToPasteBackup(BuildContext context, WidgetRef ref) async {
+  final backup = await showAppDialog<Backup>(context: context, builder: (_) => const _PasteDialog());
+  if (backup == null || !context.mounted) return null;
+  return _confirmImport(context, ref, backup);
+}
+
+typedef _ImportChoice = ({bool replace, bool withSettings});
+
+Future<BackupImport?> _confirmImport(BuildContext context, WidgetRef ref, Backup backup) async {
+  final choice = await showAppDialog<_ImportChoice>(
+    context: context,
+    builder: (_) => _ImportDialog(
+      backup: backup,
+      merge: holdsProgress(ref.read(progressProvider)),
+      // A reader still setting up has no settings of their own to keep.
+      withSettings: !ref.read(settingsProvider).onboardingComplete,
+      // Replacing removes what the backup lacks as a change, which the next
+      // sync takes to the account (see importBackup).
+      synced: ref.read(settingsProvider).cloudSync && ref.read(forumRepositoryProvider).currentUser != null,
+    ),
+  );
+  if (choice == null || !context.mounted) return null;
+  return importBackup(ref, backup, replace: choice.replace, withSettings: choice.withSettings);
+}
+
+/// What a backup holds, and how to restore it: merged with the progress
+/// here, or in its place, and whether with its settings.
+class _ImportDialog extends StatefulWidget {
+  const _ImportDialog({required this.backup, required this.merge, required this.withSettings, required this.synced});
+
+  final Backup backup;
+
+  /// Whether there is progress here to merge with. Without any, the backup
+  /// simply comes in.
+  final bool merge;
+
+  /// Whether its settings come too, until the reader says.
+  final bool withSettings;
+
+  /// Whether progress is backed up to an account, which replacing would
+  /// erase too.
+  final bool synced;
+
+  @override
+  State<_ImportDialog> createState() => _ImportDialogState();
+}
+
+class _ImportDialogState extends State<_ImportDialog> {
+  late bool _withSettings = widget.withSettings;
+
+  void _choose({required bool replace}) => Navigator.pop<_ImportChoice>(
+        context,
+        (replace: replace, withSettings: _withSettings && widget.backup.settings != null),
+      );
+
+  /// Replacing erases what is here, so it asks first.
+  Future<void> _replace() async {
+    final l = context.l10n;
+    final ok = await showAppDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.importReplaceTitle),
+        content: Text(widget.synced ? l.importReplaceConfirmSynced : l.importReplaceConfirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
+          FilledButton(
+            style: AppButtons.destructive(context),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.importReplaceAction),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) _choose(replace: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final backup = widget.backup;
+    final made = backup.exportedAt;
+    final (weeks, pauses) = (backup.weeksLogged, backup.pauses);
+    return AlertDialog(
+      scrollable: true,
+      title: Text(l.importData),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(made == null
+              ? l.importCounts(weeks, pauses)
+              : l.importSummary(Names(context).dateWithYear(LocalDate.fromDateTime(made)), weeks, pauses)),
+          if (widget.merge) ...[const SizedBox(height: 12), Text(l.importMergeBody)],
+          if (backup.settings != null) ...[
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _withSettings,
+              onChanged: (v) => setState(() => _withSettings = v ?? false),
+              title: Text(l.importAlsoSettings),
+            ),
+          ],
+        ],
+      ),
+      // Stacked on a narrow screen, the main action comes first.
+      actionsOverflowDirection: VerticalDirection.up,
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
+        if (widget.merge) TextButton(onPressed: _replace, child: Text(l.importReplace)),
+        FilledButton(
+          onPressed: () => _choose(replace: !widget.merge),
+          child: Text(widget.merge ? l.importMerge : l.importData),
+        ),
+      ],
+    );
+  }
+}
+
+/// Takes a backup pasted as text, and returns it once it reads as one.
+class _PasteDialog extends StatefulWidget {
+  const _PasteDialog();
+
+  @override
+  State<_PasteDialog> createState() => _PasteDialogState();
+}
+
+class _PasteDialogState extends State<_PasteDialog> {
+  final _text = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  /// Fills the field from the clipboard, or says that it can't: a browser
+  /// may refuse to let a page read it (Firefox always does), and the
+  /// clipboard may hold no text.
+  Future<void> _paste() async {
+    String? text;
+    try {
+      text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    } catch (_) {
+      text = null;
+    }
+    if (!mounted) return;
+    setState(() {
+      if (text == null || text.trim().isEmpty) {
+        _error = context.l10n.importPasteFailed;
+      } else {
+        _text.text = text;
+        _error = null;
+      }
+    });
+  }
+
+  void _continue() {
+    final backup = parseBackup(_text.text);
+    if (backup == null) {
+      setState(() => _error = context.l10n.importFailed);
+    } else {
+      Navigator.pop(context, backup);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return AlertDialog(
+      scrollable: true,
+      title: Text(l.importPaste),
+      // As wide as the dialog can be, for the text.
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _text,
+              maxLines: 8,
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
+              // A short label, which stays once the field is filled, and
+              // the instruction below, where it can wrap.
+              decoration: InputDecoration(
+                labelText: l.importBackupText,
+                // At the top of the tall field, not in its middle.
+                alignLabelWithHint: true,
+                helperText: l.importPrompt,
+                helperMaxLines: 3,
+                errorText: _error,
+                errorMaxLines: 3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _paste,
+              icon: const Icon(Icons.content_paste),
+              label: Text(l.pasteFromClipboard),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
+        FilledButton(onPressed: _continue, child: Text(l.actionContinue)),
+      ],
+    );
   }
 }
 
@@ -59,49 +376,43 @@ class DataSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+
+    Future<void> import(Future<BackupImport?> Function(BuildContext, WidgetRef) ask) async {
+      final result = await ask(context, ref);
+      if (result == null || !context.mounted) return;
+      showBackupImportStatus(context, result, restored: l.importSuccess, remindersOff: l.importSuccessRemindersOff);
+    }
+
     return SettingsPage(
       title: l.settingsData,
       children: [
         ListTile(
-          leading: const Icon(Icons.upload_file),
-          title: Text(l.exportData),
-          subtitle: Text(l.exportDataDesc),
-          onTap: () async {
-            final data = exportBackup(ref);
-            await Clipboard.setData(ClipboardData(text: data));
-            if (!context.mounted) return;
-            showStatus(context, l.exportCopied);
-            try {
-              await SharePlus.instance.share(ShareParams(text: data, subject: l.appTitleFull));
-            } catch (_) {
-              // Sharing isn't available everywhere; the clipboard copy suffices.
-            }
-          },
+          leading: const Icon(Icons.cloud_outlined),
+          title: Text(l.cloudBackup),
+          subtitle: Text(l.syncProgressDesc),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/settings/account'),
+        ),
+        Builder(
+          // The row's own context, where the iPad anchors the share sheet.
+          builder: (context) => ListTile(
+            leading: const Icon(Icons.upload_file),
+            title: Text(l.exportData),
+            subtitle: Text(l.exportDataDesc),
+            onTap: () => exportBackupFile(context, ref),
+          ),
         ),
         ListTile(
           leading: const Icon(Icons.download),
           title: Text(l.importData),
           subtitle: Text(l.importDataDesc),
-          onTap: () async {
-            final controller = TextEditingController();
-            final ok = await showAppDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text(l.importData),
-                content: TextField(
-                  controller: controller,
-                  maxLines: 8,
-                  decoration: InputDecoration(labelText: l.importPrompt, alignLabelWithHint: true),
-                ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
-                  FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.importData)),
-                ],
-              ),
-            );
-            if (ok != true || !context.mounted) return;
-            showStatus(context, importBackup(ref, controller.text) ? l.importSuccess : l.importFailed);
-          },
+          onTap: () => import(askToImportBackup),
+        ),
+        ListTile(
+          leading: const Icon(Icons.content_paste),
+          title: Text(l.importPaste),
+          subtitle: Text(l.importPasteDesc),
+          onTap: () => import(askToPasteBackup),
         ),
         const Divider(height: 32),
         ListTile(

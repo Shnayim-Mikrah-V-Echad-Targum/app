@@ -3,7 +3,7 @@ import 'jewish_holidays.dart';
 import 'local_date.dart';
 import 'parsha_table.g.dart';
 
-/// Number of weekly portions, Bereshit (1) through Vezot HaBerakhah (54).
+/// Number of weekly portions, Bereshit (1) through Vezot HaBerachah (54).
 const int kParshaCount = 54;
 const int kVezotHaberakhah = 54;
 
@@ -40,7 +40,7 @@ class PortionId {
 }
 
 /// A day on which a portion is read publicly: a Shabbat, or Simchat Torah for
-/// Vezot HaBerakhah.
+/// Vezot HaBerachah.
 class ReadingOccasion {
   const ReadingOccasion(this.portion, this.date);
 
@@ -90,7 +90,7 @@ class ReadingWeek {
 
   /// "Until Wednesday": the latest time one may still complete the portion
   /// after Shabbat in the usual sense (SA 285:4). Modeled as the end of
-  /// Tuesday. For Vezot HaBerakhah there is no later time.
+  /// Tuesday. For Vezot HaBerachah there is no later time.
   LocalDate get lateDeadline =>
       portion.isVezotHaberakhah ? occasion : occasion.addDays(3);
 

@@ -17,6 +17,8 @@ class ReadingSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
+    // Each method's description names the reading after the Torah's two.
+    final second = Names(context).secondReading(s.secondReading);
     void update(AppSettings Function(AppSettings) f) {
       final before = ref.read(settingsProvider).planSettings;
       ref.read(settingsProvider.notifier).update(f);
@@ -59,9 +61,9 @@ class ReadingSettingsScreen extends ConsumerWidget {
           title: l.methodLabel,
           value: s.method,
           choices: [
-            Choice(ReadingMethod.verseByVerse, l.methodVerse, subtitle: l.methodVerseDesc),
-            Choice(ReadingMethod.sectionBySection, l.methodSection, subtitle: l.methodSectionDesc),
-            Choice(ReadingMethod.aliyahByAliyah, l.methodAliyah, subtitle: l.methodAliyahDesc),
+            Choice(ReadingMethod.verseByVerse, l.methodVerse, subtitle: l.methodVerseDesc(second)),
+            Choice(ReadingMethod.sectionBySection, l.methodSection, subtitle: l.methodSectionDesc(second)),
+            Choice(ReadingMethod.aliyahByAliyah, l.methodAliyah, subtitle: l.methodAliyahDesc(second)),
           ],
           onChanged: (v) => update((s) => s.copyWith(method: v)),
         ),
@@ -80,9 +82,9 @@ class ReadingSettingsScreen extends ConsumerWidget {
         const Divider(height: 32),
         SwitchListTile(
           title: Text(l.repeatLastVerse),
-          subtitle: Text(l.repeatLastVerseDesc),
+          subtitle: Text(s.nusach == HaftarahNusach.chabad ? l.repeatLastVerseDescChabad : l.repeatLastVerseDesc),
           value: s.repeatLastVerse,
-          onChanged: (v) => update((s) => s.copyWith(repeatLastVerse: v)),
+          onChanged: (v) => update((s) => s.withRepeatLastVerse(v)),
         ),
         SwitchListTile(
           title: Text(l.thirdReading),
@@ -105,7 +107,14 @@ class ReadingSettingsScreen extends ConsumerWidget {
               Choice(HaftarahNusach.sephardi, l.nusachSephardi),
               Choice(HaftarahNusach.chabad, l.nusachChabad),
             ],
-            onChanged: (v) => update((s) => s.copyWith(nusach: v)),
+            // Also the last verse's repeat, while it follows the custom: a
+            // switch further up, perhaps out of sight, so it says so.
+            onChanged: (v) {
+              final repeat = ref.read(settingsProvider).repeatLastVerse;
+              update((s) => s.withNusach(v));
+              final now = ref.read(settingsProvider).repeatLastVerse;
+              if (now != repeat) showStatus(context, now ? l.repeatLastVerseBackOn : l.repeatLastVerseFollowsChabad);
+            },
           ),
           SwitchListTile(
             title: Text(l.haftarahRequired),

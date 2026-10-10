@@ -152,7 +152,7 @@ void main() {
     await untilIndexed(tester);
     await search(tester, 'ויצא יעקב');
     expect(find.text('1 verse'), findsOneWidget);
-    expect(find.text('Vayetzei'), findsOneWidget);
+    expect(find.text('Vayetze'), findsOneWidget);
     expect(find.text('Genesis 28:10'), findsOneWidget);
     expect(snippets(tester).single, contains('חָרָנָה'));
 

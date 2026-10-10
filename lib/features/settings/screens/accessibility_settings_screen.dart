@@ -160,7 +160,11 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
         ChoiceGroup<DivineNameSpeech>(
           title: l.divineNameLabel,
           value: s.divineName,
-          choices: [Choice(DivineNameSpeech.adonai, l.divineAdonai), Choice(DivineNameSpeech.hashem, l.divineHashem)],
+          choices: [
+            // Written with a hyphen, which a screen reader would spell out.
+            Choice(DivineNameSpeech.adonai, l.divineAdonai, semanticsLabel: l.divineAdonaiSpoken),
+            Choice(DivineNameSpeech.hashem, l.divineHashem),
+          ],
           onChanged: (v) => update((s) => s.copyWith(divineName: v)),
         ),
         LabeledSlider(

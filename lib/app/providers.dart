@@ -87,13 +87,16 @@ final settingsProvider = NotifierProvider<SettingsController, AppSettings>(Setti
 // ---------------------------------------------------------------------------
 // Calendar
 
-/// The current "reading day". The day rolls over at 3 a.m. so late-night
-/// reading counts for the evening it began; and because no one reads on a
-/// device on Shabbat or Yom Tov, use on those civil dates (i.e. after
-/// Havdalah) counts toward the next day. [oneDayYomTov] is the reader's
-/// custom (see [AppSettings.oneDayYomTov]).
+/// The civil date [time] counts for: the day rolls over at 3 a.m., so
+/// late-night reading counts for the evening it began.
+LocalDate rolloverDate(DateTime time) => LocalDate.fromDateTime(time.subtract(const Duration(hours: 3)));
+
+/// The current "reading day": the [rolloverDate] of [now], except that
+/// because no one reads on a device on Shabbat or Yom Tov, use on those
+/// civil dates (i.e. after Havdalah) counts toward the next day.
+/// [oneDayYomTov] is the reader's custom (see [AppSettings.oneDayYomTov]).
 LocalDate effectiveReadingDay(DateTime now, {required bool oneDayYomTov}) {
-  var d = LocalDate.fromDateTime(now.subtract(const Duration(hours: 3)));
+  var d = rolloverDate(now);
   while (JewishHolidays.isRestDay(d, israel: oneDayYomTov)) {
     d = d.addDays(1);
   }
@@ -315,6 +318,30 @@ class ProgressState {
           unknownPauses: unknownPauses,
         );
       });
+
+  /// This progress as seen after a reset made elsewhere at [reset], keeping
+  /// all it holds: what was recorded before the reset is recorded again, as
+  /// a change made now, so that merging with a copy that has the reset keeps
+  /// it. Unchanged if this progress has seen [reset] already.
+  ProgressState renewedPast(int reset) {
+    if (reset <= resetAt) return this;
+    return ProgressClock.above(
+      reset,
+      () => ProgressState(
+        weeks: {for (final MapEntry(:key, :value) in weeks.entries) key: value.renewedBefore(reset)},
+        pauses: [
+          for (final p in pauses)
+            if (p.updatedAt < reset && !p.deleted)
+              Pause(p.start, p.end, id: p.id, updatedAt: ProgressClock.after(p.updatedAt))
+            else
+              p,
+        ],
+        resetAt: reset,
+        unknownWeeks: unknownWeeks,
+        unknownPauses: unknownPauses,
+      ),
+    );
+  }
 
   /// Equal progress compares equal whatever order its maps and lists are in,
   /// so a sync that changes nothing doesn't look like a change. ([toJson]
@@ -616,12 +643,20 @@ class ProgressController extends Notifier<ProgressState> {
   /// What this version couldn't read is kept, and so are [unknownWeeks] and
   /// [unknownPauses]: what the backup held that the version that made it
   /// couldn't read.
+  ///
+  /// [outlast] is the time of the backup's reset, which may have been made
+  /// elsewhere after this device last synced. Restored, the progress has
+  /// seen it, and what it keeps from before it is recorded again (see
+  /// [ProgressState.renewedPast]): the next sync, with an account that has
+  /// the reset, then keeps what the reader chose to keep, and doesn't take
+  /// the reset for a new one that restarts the join date.
   void restore(
     ProgressState target, {
     Map<String, Object?> unknownWeeks = const {},
     List<Object?> unknownPauses = const [],
+    int outlast = 0,
   }) {
-    var restored = state.restoredTo(target);
+    var restored = state.restoredTo(target).renewedPast(outlast);
     final from = ProgressState(unknownWeeks: unknownWeeks, unknownPauses: unknownPauses);
     if (from.unknownMissingFrom(restored) case final more?) {
       restored = restored.copyWith(
@@ -633,7 +668,8 @@ class ProgressController extends Notifier<ProgressState> {
         _backUp(ref.read(sharedPreferencesProvider), corruptBackupPrefix, jsonEncode(lost));
       }
     }
-    replaceAll(restored);
+    // Not replaceAll: the reset is the backup's, seen with all kept.
+    if (restored != state) _set(restored);
   }
 
   /// Erases all progress. With [everywhere] (when progress is backed up),

@@ -135,6 +135,13 @@ void main() {
     test('in the spellings people use', () {
       for (final (spelling, key) in [
         ('Chayei Sarah', 'Chayei Sara'),
+        // The app's own English names, and the older spellings beside them.
+        ('Vayetze', 'Vayetzei'),
+        ('Vayeitzei', 'Vayetzei'),
+        ('Ekev', 'Eikev'),
+        ('Ki Tetze', 'Ki Teitzei'),
+        ('Ki Seitzei', 'Ki Teitzei'),
+        ('Vayelech', 'Vayeilech'),
         ('Chaye Sara', 'Chayei Sara'),
         ('Mikets', 'Miketz'),
         ('Vayakhel', 'Vayakhel'),

@@ -63,6 +63,58 @@ void main() {
     expect(v.readText, isNot(contains('צביים')));
   });
 
+  group('the Torah follows Ashkenazi and Sephardi scrolls', () {
+    late Map<String, BookText> torah;
+    setUpAll(() async => torah = {for (final b in kTorahBooks) b: await texts.book(TextLayer.mikra, b)});
+
+    Verse verse(String book, int c, int v) => torah[book]!.verse(VerseRef(c, v));
+    List<String> notes(Verse v) => [for (final n in v.segments.whereType<TextNote>()) n.text];
+    String consonants(String s) => HebrewText.consonantsOnly(s);
+
+    test('in the words they spell differently, noting the Aleppo Codex', () {
+      // Read aloud: "vayehi", not the Codex's "vayihyu".
+      final gen929 = verse('Genesis', 9, 29);
+      expect(gen929.readText, startsWith('וַֽיְהִי'));
+      expect(consonants(gen929.readText), startsWith('ויהי כל־ימי־נח'));
+      expect(notes(gen929).map(consonants), ['בכתר ארם צובה ובספרי תימן: ויהיו']);
+
+      // The last word before the note, after a maqaf: דַּכָּ֛ה, its marks
+      // in the text's order.
+      final deut232 = verse('Deuteronomy', 23, 2);
+      expect(deut232.readText, contains('דַּכָּ֛ה'));
+      expect(consonants(deut232.readText), startsWith('לא־יבא פצוע־דכה וכרות'));
+      // Only most Ashkenazi scrolls have it; the rest share the Codex's.
+      expect(notes(deut232).map(consonants), ['בכתר ארם צובה, בספרי תימן ובמקצת ספרי אשכנז: דכא']);
+    });
+
+    test('with the small yod of Pinchas, and a word on the broken vav of shalom', () {
+      final pinchas = verse('Numbers', 25, 11);
+      final small = pinchas.segments.whereType<SizedLetters>().single;
+      expect((small.text, small.size), ('י', LetterSize.small));
+      expect(consonants(pinchas.readText), startsWith('פינחס בן־אלעזר'));
+      expect(notes(pinchas), isEmpty);
+      expect(notes(verse('Numbers', 25, 12)), ['בספר תורה נכתבת וי״ו קטיעא במילה שלום']);
+    });
+
+    test('in their section breaks', () {
+      expect(torah['Leviticus']!.breaks.keys, isNot(contains(const VerseRef(7, 21))));
+      expect(notes(verse('Leviticus', 7, 21)), ['בכתר ארם צובה: פרשה פתוחה']);
+      expect(torah['Deuteronomy']!.breaks[const VerseRef(27, 19)], SectionBreak.closed);
+    });
+
+    test('everywhere they differ, rather than only noting it', () {
+      for (final book in torah.values) {
+        for (final ch in book.chapters) {
+          for (final v in ch) {
+            for (final note in notes(v)) {
+              expect(note, isNot(startsWith('בספרי ספרד')), reason: '${book.book} ${v.ref}');
+            }
+          }
+        }
+      }
+    });
+  });
+
   group('section breaks inside a verse', () {
     // Every verse of Mikra and of the haftarot, keyed "Book c:v".
     Future<Map<String, Verse>> allHebrewVerses() async {

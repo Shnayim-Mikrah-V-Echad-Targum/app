@@ -1,8 +1,8 @@
 import '../../core/calendar/parsha_schedule.dart';
+import '../../core/calendar/special_haftarah.dart' show HaftarahNusach;
 import 'verse_ref.dart';
 
-/// Which tradition's haftarah to read.
-enum HaftarahNusach { ashkenazi, sephardi, chabad }
+export '../../core/calendar/special_haftarah.dart' show HaftarahNusach;
 
 /// A passage from the Prophets, possibly one of several read together.
 class HaftarahPart {
@@ -18,14 +18,25 @@ class HaftarahPart {
   final VerseRef start;
   final VerseRef end;
 
+  /// Whether [other] lies within this passage.
+  bool covers(HaftarahPart other) => other.book == book && other.start >= start && other.end <= end;
+
   @override
   String toString() => '$book $start-$end';
 }
 
 typedef Haftarah = List<HaftarahPart>;
 
+/// Whether every verse of [inner] is read in [outer].
+bool haftarahCovers(Haftarah outer, Haftarah inner) => inner.every((p) => outer.any((o) => o.covers(p)));
+
 /// Haftarah references by tradition. Sephardi and Chabad fall back to the
-/// Ashkenazi reading where they don't differ.
+/// Ashkenazi reading where they have none of their own.
+///
+/// Sephardi readings are listed wherever they differ, so a Sephardi
+/// fallback is the same reading. Chabad's are listed only where they have
+/// been sourced so far, so a Chabad fallback may not be the Chabad reading
+/// (see [fallsBack]).
 class HaftarahOptions {
   const HaftarahOptions({required this.ashkenazi, this.sephardi, this.chabad});
 
@@ -49,6 +60,11 @@ class HaftarahOptions {
         HaftarahNusach.sephardi => sephardi ?? ashkenazi,
         HaftarahNusach.chabad => chabad ?? ashkenazi,
       };
+
+  /// Whether [forNusach] gives [nusach] the Ashkenazi reading for want of
+  /// its own, rather than because the two are the same: so far, a Chabad
+  /// reading that isn't listed.
+  bool fallsBack(HaftarahNusach nusach) => nusach == HaftarahNusach.chabad && chabad == null;
 }
 
 /// Metadata for one weekly reading (a single parsha or a combined pair).
@@ -57,6 +73,7 @@ class PortionInfo {
     required this.id,
     required this.key,
     required this.nameHe,
+    required this.nameEn,
     required this.nameAshkenazi,
     required this.book,
     required this.aliyot,
@@ -78,6 +95,7 @@ class PortionInfo {
       id: id,
       key: j['key'] as String,
       nameHe: j['he'] as String,
+      nameEn: j['en'] as String,
       nameAshkenazi: j['ashkenazi'] as String,
       book: book,
       aliyot: aliyot,
@@ -88,9 +106,15 @@ class PortionInfo {
 
   final PortionId id;
 
-  /// Sephardi-style transliteration, also the stable data key (e.g. "Lech-Lecha").
+  /// The stable data key, @hebcal's name (e.g. "Lech-Lecha"). Progress and
+  /// other data are keyed by it, so it never changes; it is never shown.
   final String key;
   final String nameHe;
+
+  /// The English name in Sephardi (Israeli) pronunciation, e.g. "Lech Lecha".
+  final String nameEn;
+
+  /// The English name in Ashkenazi pronunciation, e.g. "Bereishis".
   final String nameAshkenazi;
 
   /// English book name, e.g. "Genesis".
@@ -109,7 +133,7 @@ class PortionInfo {
   /// Index of the book in the Torah, 0 (Genesis) – 4 (Deuteronomy).
   int get bookIndex => kTorahBooks.indexOf(book);
 
-  String displayName({required bool ashkenazi}) => ashkenazi ? nameAshkenazi : key;
+  String displayName({required bool ashkenazi}) => ashkenazi ? nameAshkenazi : nameEn;
 }
 
 const kTorahBooks = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'];

@@ -68,7 +68,7 @@ String weekIdFor(PortionId portion, LocalDate occasion) =>
 /// (the year whose Simchat Torah started it with Bereshit).
 int cycleYearOf(PortionId portion, LocalDate occasion) {
   final h = HebrewDate.fromLocalDate(occasion);
-  // Vayeilech (when separate), Ha'azinu and Vezot HaBerakhah are read in
+  // Vayelech (when separate), Ha'azinu and Vezot HaBerachah are read in
   // Tishrei, after Rosh Hashana of the next year.
   if (h.month == HebrewMonth.tishrei && portion.number >= 52) return h.year - 1;
   return h.year;
@@ -581,6 +581,37 @@ class WeekProgress {
       w = want == null ? w._withoutPosition(a) : w.withPosition(a, want);
     }
     return w;
+  }
+
+  /// This week with what decides it that was recorded before [reset]
+  /// recorded again, as a change made now: each reading's and the
+  /// haftarah's day, and each saved place. Merged with a copy reset then,
+  /// the week reads the same. Call it within [ProgressClock.above] [reset].
+  WeekProgress renewedBefore(int reset) {
+    final r = [for (final row in records) [...row]];
+    var changed = false;
+    for (var a = 0; a < kAliyot; a++) {
+      for (var p = 0; p < 3; p++) {
+        if (r[a][p].marks.firstOrNull case final m? when m.at < reset) {
+          r[a][p] = r[a][p].changedTo(m.day);
+          changed = true;
+        }
+      }
+    }
+    var haftarah = haftarahRecord;
+    if (haftarah.marks.firstOrNull case final m? when m.at < reset) {
+      haftarah = haftarah.changedTo(m.day);
+      changed = true;
+    }
+    final stamps = {...positionStamps};
+    for (final a in positions.keys) {
+      final t = stamps[a] ?? 0;
+      if (t < reset) {
+        stamps[a] = ProgressClock.after(t);
+        changed = true;
+      }
+    }
+    return changed ? _copy(records: r, haftarahRecord: haftarah, positionStamps: stamps) : this;
   }
 
   static bool _sameList(List<int> a, List<int> b) {

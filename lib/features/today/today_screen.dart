@@ -62,6 +62,9 @@ class TodayScreen extends ConsumerWidget {
             NoticeBanner(
               icon: Icons.pause_circle_outline,
               text: l.pausedBanner(names.dateLong(pauses.firstWhere((p) => p.contains(today)).end)),
+              // Two sentences, which beside the button would wrap into a
+              // narrow column.
+              actionBelow: true,
               action: TextButton(
                 onPressed: () {
                   ref.read(progressProvider.notifier).endPause(today);
@@ -173,12 +176,19 @@ class _ParshaCard extends ConsumerWidget {
     final repo = ref.watch(parshaRepositoryProvider);
     final weights = [for (var a = 0; a < kAliyot; a++) repo.aliyahVerseCount(ctx.portion, a)];
     final occasion = ctx.week.occasion;
-    final readOn = ctx.week.portion.isVezotHaberakhah
-        ? l.readOnSimchatTorah(names.dateLong(occasion))
-        : l.readOnShabbat(names.dateMonthDay(occasion));
+    final readOn = names.readOnLabel(ctx.week);
     final next = ctx.nextAliyah;
     final started = ctx.progress.isStarted;
     final daysLeft = occasion.differenceInDays(ctx.today);
+    // The days until the portion is read in synagogue: on Shabbat, or for
+    // Vezot HaBerachah on Simchat Torah, which is seldom a Shabbat.
+    final countdown = daysLeft < 0 || ctx.progress.isComplete
+        ? null
+        : ctx.week.portion.isVezotHaberakhah
+            ? l.simchatTorahInDays(daysLeft)
+            : occasion.isShabbat
+                ? l.shabbatInDays(daysLeft)
+                : null;
 
     return InfoCard(
       child: Column(
@@ -205,8 +215,7 @@ class _ParshaCard extends ConsumerWidget {
                 ),
                 const Gap(8),
                 Text(readOn, style: theme.textTheme.bodyMedium),
-                if (daysLeft >= 0 && !ctx.progress.isComplete)
-                  Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
+                if (countdown != null) Text(countdown, style: theme.textTheme.bodySmall),
               ],
             ),
           ),
@@ -394,6 +403,7 @@ class _HaftarahTile extends ConsumerWidget {
                 Text(done ? l.haftarahRead : l.haftarahLabel, style: Theme.of(context).textTheme.titleSmall),
                 Text(refs),
                 if (h.specialKey != null) Text(l.specialHaftarah(names.specialHaftarah(h.specialKey!))),
+                if (h.regular != null) Text(l.alsoRegularHaftarah),
               ],
             ),
           ),

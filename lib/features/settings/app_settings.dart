@@ -104,6 +104,7 @@ class AppSettings {
     this.method = ReadingMethod.verseByVerse,
     this.secondReading = SecondReading.onkelos,
     this.repeatLastVerse = true,
+    this.repeatLastVerseTouched = false,
     this.thirdReadingPrompts = true,
     this.showTranslation = false,
     this.showRashi = false,
@@ -173,7 +174,12 @@ class AppSettings {
   final SecondReading secondReading;
 
   /// Repeat the final verse in Hebrew after its Targum, to end with Mikra.
+  /// Until the reader sets it ([repeatLastVerseTouched]), it follows the
+  /// custom (see [withNusach]).
   final bool repeatLastVerse;
+
+  /// Whether the reader has set [repeatLastVerse] themselves.
+  final bool repeatLastVerseTouched;
 
   /// Suggest a third Hebrew reading where Onkelos is mostly names (Numbers
   /// 32:3) or, when Rashi replaces the Targum, where Rashi is silent (MB
@@ -264,6 +270,18 @@ class AppSettings {
 
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
+  /// These settings with [nusach] as the reader's custom. Until the reader
+  /// sets [repeatLastVerse] themselves, it follows the custom: Chabad's is
+  /// not to repeat the last verse.
+  AppSettings withNusach(HaftarahNusach nusach) => copyWith(
+        nusach: nusach,
+        repeatLastVerse: repeatLastVerseTouched ? null : nusach != HaftarahNusach.chabad,
+      );
+
+  /// These settings with [repeatLastVerse] set by the reader, so that it no
+  /// longer follows the custom.
+  AppSettings withRepeatLastVerse(bool repeat) => copyWith(repeatLastVerse: repeat, repeatLastVerseTouched: true);
+
   /// Whether the reading heard and the days of Yom Tov kept are those of
   /// different places, as for a visitor to or from Israel.
   bool get readingAndYomTovDiffer => (readingSchedule == ReadingSchedule.israel) != oneDayYomTov;
@@ -335,6 +353,7 @@ class AppSettings {
     ReadingMethod? method,
     SecondReading? secondReading,
     bool? repeatLastVerse,
+    bool? repeatLastVerseTouched,
     bool? thirdReadingPrompts,
     bool? showTranslation,
     bool? showRashi,
@@ -390,6 +409,7 @@ class AppSettings {
         method: method ?? this.method,
         secondReading: secondReading ?? this.secondReading,
         repeatLastVerse: repeatLastVerse ?? this.repeatLastVerse,
+        repeatLastVerseTouched: repeatLastVerseTouched ?? this.repeatLastVerseTouched,
         thirdReadingPrompts: thirdReadingPrompts ?? this.thirdReadingPrompts,
         showTranslation: showTranslation ?? this.showTranslation,
         showRashi: showRashi ?? this.showRashi,
@@ -451,6 +471,7 @@ class AppSettings {
         'method': method.name,
         'secondReading': secondReading.name,
         'repeatLastVerse': repeatLastVerse,
+        'repeatLastVerseTouched': repeatLastVerseTouched,
         'thirdReadingPrompts': thirdReadingPrompts,
         'showTranslation': showTranslation,
         'showRashi': showRashi,
@@ -503,6 +524,10 @@ class AppSettings {
     double n(String k, double fallback, double min, double max) =>
         j[k] is num ? (j[k] as num).toDouble().clamp(min, max) : fallback;
     int i(String k, int fallback) => j[k] is int ? j[k] as int : fallback;
+    final nusach = e(HaftarahNusach.values, j['nusach'], d.nusach);
+    // Settings saved before this was kept may have turned the repeat off:
+    // that was the reader's choice, since it was on by default.
+    final repeatTouched = b('repeatLastVerseTouched', j['repeatLastVerse'] == false);
     // Settings saved before the reading and the days of Yom Tov were
     // separate have one 'israel' setting, which decided both.
     final located = switch (j['israel']) {
@@ -513,7 +538,7 @@ class AppSettings {
     return AppSettings(
       readingSchedule: e(ReadingSchedule.values, j['readingSchedule'], located.readingSchedule),
       oneDayYomTov: b('oneDayYomTov', located.oneDayYomTov),
-      nusach: e(HaftarahNusach.values, j['nusach'], d.nusach),
+      nusach: nusach,
       plan: e(ReadingPlanType.values, j['plan'], d.plan),
       lateWindow: e(LateWindow.values, j['lateWindow'], d.lateWindow),
       haftarahEnabled: b('haftarahEnabled', d.haftarahEnabled),
@@ -523,7 +548,11 @@ class AppSettings {
       starterCatchUp: b('starterCatchUp', d.starterCatchUp),
       method: e(ReadingMethod.values, j['method'], d.method),
       secondReading: e(SecondReading.values, j['secondReading'], d.secondReading),
-      repeatLastVerse: b('repeatLastVerse', d.repeatLastVerse),
+      // Until the reader sets it, it follows the custom (see withNusach).
+      // Chabad settings saved before then have it on only because that was
+      // the default.
+      repeatLastVerse: repeatTouched ? b('repeatLastVerse', d.repeatLastVerse) : nusach != HaftarahNusach.chabad,
+      repeatLastVerseTouched: repeatTouched,
       thirdReadingPrompts: b('thirdReadingPrompts', d.thirdReadingPrompts),
       showTranslation: b('showTranslation', d.showTranslation),
       showRashi: b('showRashi', d.showRashi),

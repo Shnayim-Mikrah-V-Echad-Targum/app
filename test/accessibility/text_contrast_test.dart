@@ -36,6 +36,10 @@ void main() {
     testWidgets('text contrast: $route', (tester) => expectReadableText(tester, route));
   }
 
+  for (final route in a11yOnboardingRoutes) {
+    testWidgets('text contrast: $route', (tester) => expectReadableText(tester, route, settings: const AppSettings()));
+  }
+
   testWidgets('text contrast: reminders, where they can be scheduled, with all of them on', (tester) async {
     await expectReadableText(tester, '/settings/reminders', settings: a11yRemindersOn, notifications: PhoneNotifications());
     expect(find.text('Daily reminder time'), findsOneWidget);
@@ -80,10 +84,10 @@ void main() {
       for (final label in [
         'Bereshit: On time',
         'Noach: After Shabbat — still counts',
-        'Lech-Lecha: Not completed',
+        'Lech Lecha: Not completed',
         'Vayera: Made up',
         'Toldot: In progress',
-        'Vayetzei: Upcoming',
+        'Vayetze: Upcoming',
       ]) {
         final tile = find.bySemanticsLabel(label);
         final ink = tester.widget<Ink>(find.descendant(of: tile, matching: find.byType(Ink)));

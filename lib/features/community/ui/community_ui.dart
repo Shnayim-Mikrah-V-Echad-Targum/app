@@ -68,15 +68,37 @@ String absoluteTime(BuildContext context, DateTime time) {
   return '${m.formatFullDate(t)}, ${m.formatTimeOfDay(TimeOfDay.fromDateTime(t))}';
 }
 
-/// Text direction from the first strong character, so Hebrew and English
-/// posts each display correctly.
-TextDirection autoDirection(String text) {
+/// Text direction from the first strong character, so that posts in Hebrew,
+/// English, Russian or any other script each display correctly; [fallback]
+/// for a text with none, such as an empty field or "+1". Pass the UI's
+/// direction, so that in Hebrew such a text, a field included, runs right
+/// to left like everything around it.
+TextDirection autoDirection(String text, {required TextDirection fallback}) {
   for (final rune in text.runes) {
-    if (rune >= 0x0590 && rune <= 0x08FF) return TextDirection.rtl;
-    if ((rune >= 0x41 && rune <= 0x5A) || (rune >= 0x61 && rune <= 0x7A)) return TextDirection.ltr;
+    if (_isRtl(rune)) return TextDirection.rtl;
+    // Any other letter (Latin, Cyrillic, Greek, CJK...), and the
+    // left-to-right mark.
+    if (rune == 0x200E || (rune > 0x7F ? _letter.hasMatch(String.fromCharCode(rune)) : _asciiLetter(rune))) {
+      return TextDirection.ltr;
+    }
   }
-  return TextDirection.ltr;
+  return fallback;
 }
+
+/// The right-to-left scripts' blocks: Hebrew, Arabic, Syriac, Thaana, N'Ko
+/// and the rest to U+08FF, their presentation forms, the supplementary
+/// right-to-left planes' blocks, and the right-to-left mark.
+bool _isRtl(int rune) =>
+    (rune >= 0x0590 && rune <= 0x08FF) ||
+    (rune >= 0xFB1D && rune <= 0xFDFF) ||
+    (rune >= 0xFE70 && rune <= 0xFEFF) ||
+    (rune >= 0x10800 && rune <= 0x10FFF) ||
+    (rune >= 0x1E800 && rune <= 0x1EFFF) ||
+    rune == 0x200F;
+
+bool _asciiLetter(int rune) => (rune >= 0x41 && rune <= 0x5A) || (rune >= 0x61 && rune <= 0x7A);
+
+final _letter = RegExp(r'\p{L}', unicode: true);
 
 /// Sends the user to sign in if needed. Returns whether they are signed in.
 Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref) async {
@@ -142,7 +164,7 @@ Future<bool> ensureGuidelines(BuildContext context, WidgetRef ref) async {
 Future<void> openWeeklyThread(BuildContext context, WidgetRef ref, PortionInfo portion, int hebrewYear) async {
   final l = context.l10n;
   // Only a fallback: the server builds the title from its own reference data.
-  final title = '${portion.key} · ${HebrewText.stripNikud(portion.nameHe)} · $hebrewYear';
+  final title = '${portion.nameEn} · ${HebrewText.stripNikud(portion.nameHe)} · $hebrewYear';
   try {
     final id = await ref.read(forumRepositoryProvider).weeklyThread(
           parshaNumber: portion.id.number,

@@ -4,3 +4,8 @@ output-localization-file: app_localizations.dart
 output-class: AppLocalizations
 nullable-getter: false
 untranslated-messages-file: build/untranslated_messages.json
+# Some Hebrew strings isolate a Latin run between U+2066 and U+2069 on purpose
+# (docs/DESIGN_SYSTEM.md §4.6). tool/l10n/he_strings.py writes them as
+# escapes, test/lint/hebrew_isolates_test.dart checks that they are balanced,
+# and gen-l10n writes them out as they are.
+header: "// ignore_for_file: text_direction_code_point_in_literal"

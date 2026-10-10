@@ -3,8 +3,10 @@ import 'package:intl/intl.dart';
 
 import '../core/calendar/hebrew_date.dart';
 import '../core/calendar/local_date.dart';
+import '../core/calendar/parsha_schedule.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/models/parsha.dart';
+import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 
 /// [s] as a left-to-right isolate, between U+2066 and U+2069
@@ -54,6 +56,14 @@ class Names {
     if (names.length == 1) return names.single;
     return _l.andJoiner(names.sublist(0, names.length - 1).join(', '), names.last);
   }
+
+  /// What the reader reads after the Torah's two readings, as [reading]
+  /// says: "Targum", "Rashi" or "Onkelos and Rashi".
+  String secondReading(SecondReading reading) => switch (reading) {
+        SecondReading.onkelos => _l.passTargum,
+        SecondReading.rashi || SecondReading.rashiEnglish => _l.passRashi,
+        SecondReading.onkelosAndRashi => _l.secondBoth,
+      };
 
   /// The parsha name in the UI language. In Hebrew, the Hebrew name without
   /// vowels; in English, the transliteration in the chosen style.
@@ -109,17 +119,38 @@ class Names {
   /// "11 Oct".
   String dateShort(LocalDate d) => DateFormat.MMMd(context.localeName).format(d.toDateTime());
 
+  /// "11 October 2026".
+  String dateWithYear(LocalDate d) => DateFormat.yMMMMd(context.localeName).format(d.toDateTime());
+
   String time(int minutesSinceMidnight) => DateFormat.jm(context.localeName)
       .format(DateTime(2000, 1, 1, minutesSinceMidnight ~/ 60, minutesSinceMidnight % 60));
 
-  /// "28 Tishrei 5787" / "כ״ח תשרי תשפ״ז".
+  /// "28 Tishrei 5787" / "כ״ח בתשרי תשפ״ז".
   String hebrewDate(LocalDate d) {
     final h = HebrewDate.fromLocalDate(d);
+    return '${_hebrewDayMonth(h)} ${_he ? HebrewText.gematria(h.year % 1000) : h.year}';
+  }
+
+  /// "28 Tishrei" / "כ״ח בתשרי": [hebrewDate] without the year.
+  String hebrewDayMonth(LocalDate d) => _hebrewDayMonth(HebrewDate.fromLocalDate(d));
+
+  /// In Hebrew the month takes ב, as a date is written and said: כ״ח בתשרי.
+  String _hebrewDayMonth(HebrewDate h) {
     final month = hebrewMonth(h.year, h.month);
-    if (_he) {
-      return '${HebrewText.gematria(h.day)} $month ${HebrewText.gematria(h.year % 1000)}';
+    return _he ? '${HebrewText.gematria(h.day)} ב$month' : '${h.day} $month';
+  }
+
+  /// When [week]'s portion is read in synagogue: "Read on Shabbat,
+  /// 10 October", or for Vezot HaBerachah "Read on Simchat Torah, Sunday,
+  /// 4 October". The Hebrew UI dates it in the Hebrew calendar, without the
+  /// year: "נקראת בשבת, כ״ט בתשרי".
+  String readOnLabel(ReadingWeek week) {
+    final d = week.occasion;
+    if (week.portion.isVezotHaberakhah) {
+      // Simchat Torah is seldom a Shabbat, so it gives the weekday too.
+      return _l.readOnSimchatTorah(_he ? '${weekday(d)}, ${hebrewDayMonth(d)}' : dateLong(d));
     }
-    return '${h.day} $month ${h.year}';
+    return _l.readOnShabbat(_he ? hebrewDayMonth(d) : dateMonthDay(d));
   }
 
   String hebrewMonth(int year, int month) {
@@ -135,10 +166,7 @@ class Names {
   }
 
   /// Human name for a special haftarah key from the data file.
-  String specialHaftarah(String key) {
-    if (!_he) return key;
-    return _specialHe[key] ?? key;
-  }
+  String specialHaftarah(String key) => (_he ? specialHaftarotHe[key] : specialHaftarotEn[key]) ?? key;
 
   static const _prophetsHe = {
     'Joshua': 'יהושע', 'Judges': 'שופטים', 'I Samuel': 'שמואל א', 'II Samuel': 'שמואל ב',
@@ -148,7 +176,11 @@ class Names {
     'Haggai': 'חגי', 'Zechariah': 'זכריה', 'Malachi': 'מלאכי',
   };
 
-  static const _specialHe = {
+  /// The names of the special haftarot (the keys of `specialHaftarot` in
+  /// assets/data/parshiyot.json) in Hebrew, and in [specialHaftarotEn] in
+  /// English.
+  @visibleForTesting
+  static const specialHaftarotHe = {
     'Shabbat Rosh Chodesh': 'שבת ראש חודש',
     'Shabbat Machar Chodesh': 'שבת מחר חודש',
     'Shabbat Shekalim': 'שבת שקלים',
@@ -160,7 +192,7 @@ class Names {
     'Shabbat HaGadol': 'שבת הגדול',
     "Shabbat Shuva (with Ha'azinu)": 'שבת שובה',
     'Shabbat Shuva (with Vayeilech)': 'שבת שובה',
-    'Pinchas occurring after 17 Tammuz': 'פנחס אחרי י״ז בתמוז',
+    'Pinchas occurring after 17 Tammuz': 'ראשונה דפורענותא (״דברי ירמיהו״)',
     'Shabbat Rosh Chodesh Chanukah': 'שבת ראש חודש וחנוכה',
     'Chanukah Day 1 (on Shabbat)': 'שבת חנוכה',
     'Chanukah Day 2 (on Shabbat)': 'שבת חנוכה',
@@ -169,8 +201,37 @@ class Names {
     'Chanukah Day 7 (on Shabbat)': 'שבת חנוכה',
     'Chanukah Day 8 (on Shabbat)': 'שבת חנוכה השנייה',
     'Kedoshim following Special Shabbat': 'קדושים (הפטרת אחרי מות)',
-    'Masei on Shabbat Rosh Chodesh': 'מסעי בשבת ראש חודש',
-    'Matot-Masei on Shabbat Rosh Chodesh': 'מטות־מסעי בשבת ראש חודש',
+    'Masei on Shabbat Rosh Chodesh': 'מסעי בראש חודש אב',
+    'Matot-Masei on Shabbat Rosh Chodesh': 'מטות־מסעי בראש חודש אב',
     'Ki Teitzei with 3rd Haftarah of Consolation': 'כי תצא עם ״עניה סוערה״',
+    "Re'eh on Shabbat Rosh Chodesh": 'ראה בשבת ראש חודש אלול',
+  };
+
+  @visibleForTesting
+  static const specialHaftarotEn = {
+    'Shabbat Rosh Chodesh': 'Shabbat Rosh Chodesh',
+    'Shabbat Machar Chodesh': 'Shabbat Machar Chodesh',
+    'Shabbat Shekalim': 'Shabbat Shekalim',
+    'Shabbat Shekalim (on Rosh Chodesh)': 'Shabbat Shekalim and Rosh Chodesh',
+    'Shabbat Zachor': 'Shabbat Zachor',
+    'Shabbat Parah': 'Shabbat Parah',
+    'Shabbat HaChodesh': 'Shabbat HaChodesh',
+    'Shabbat HaChodesh (on Rosh Chodesh)': 'Shabbat HaChodesh and Rosh Chodesh',
+    'Shabbat HaGadol': 'Shabbat HaGadol',
+    "Shabbat Shuva (with Ha'azinu)": 'Shabbat Shuvah',
+    'Shabbat Shuva (with Vayeilech)': 'Shabbat Shuvah',
+    'Pinchas occurring after 17 Tammuz': 'First haftarah of the Three Weeks',
+    'Shabbat Rosh Chodesh Chanukah': 'Shabbat Chanukah and Rosh Chodesh',
+    'Chanukah Day 1 (on Shabbat)': 'Shabbat Chanukah',
+    'Chanukah Day 2 (on Shabbat)': 'Shabbat Chanukah',
+    'Chanukah Day 3 (on Shabbat)': 'Shabbat Chanukah',
+    'Chanukah Day 4 (on Shabbat)': 'Shabbat Chanukah',
+    'Chanukah Day 7 (on Shabbat)': 'Shabbat Chanukah',
+    'Chanukah Day 8 (on Shabbat)': 'Second Shabbat of Chanukah',
+    'Kedoshim following Special Shabbat': 'Kedoshim (haftarah of Acharei Mot)',
+    'Masei on Shabbat Rosh Chodesh': 'Masei on Rosh Chodesh Av',
+    'Matot-Masei on Shabbat Rosh Chodesh': 'Matot-Masei on Rosh Chodesh Av',
+    'Ki Teitzei with 3rd Haftarah of Consolation': "Ki Tetze, with Aniyah So'arah",
+    "Re'eh on Shabbat Rosh Chodesh": "Re'eh on Rosh Chodesh Elul",
   };
 }
