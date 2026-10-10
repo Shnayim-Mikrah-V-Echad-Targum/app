@@ -122,7 +122,7 @@ class ScriptureVerse extends StatelessWidget {
     // Petuchah and setumah marks are rubrics, drawn like SectionBreakMark
     // (DESIGN_SYSTEM.md §7.3) so that marks inside and between verses match.
     final rubric = base.copyWith(
-      color: theme.colorScheme.secondary.withValues(alpha: dimmed ? 0.55 : 1),
+      color: dimmed ? dimInk : theme.colorScheme.secondary,
       fontSize: base.fontSize! * 0.55,
       fontWeight: FontWeight.w600,
     );

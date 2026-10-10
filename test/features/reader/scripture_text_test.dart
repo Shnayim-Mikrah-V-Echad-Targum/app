@@ -5,6 +5,7 @@ import 'package:shnayim_mikra/data/models/scripture.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
 
 import '../../helpers.dart';
 
@@ -55,8 +56,10 @@ void main() {
     expect(marks.first.style?.fontWeight, FontWeight.w600);
     expect(marks.first.style?.color, colors.secondary);
 
+    // Dimmed in focus mode in the dimmed text's own ink, never a fade.
     await pumpVerse(tester, decalogue, dimmed: true);
-    expect(marksIn(tester).first.style?.color, colors.secondary.withValues(alpha: 0.55), reason: 'dimmed in focus mode');
+    final dimInk = SeferColors.of(tester.element(find.byType(ScriptureVerse))).dimInk;
+    expect(marksIn(tester).first.style?.color, dimInk, reason: 'dimmed in focus mode');
   });
 
   for (final (wordSpacing, letterSpacing) in [(16.0, 0.0), (4.0, 2.0)]) {
