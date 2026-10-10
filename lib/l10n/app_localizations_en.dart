@@ -1047,6 +1047,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String sliderDecrease(String title) {
+    return '$title: decrease';
+  }
+
+  @override
+  String sliderIncrease(String title) {
+    return '$title: increase';
+  }
+
+  @override
   String get lineSpacing => 'Line spacing';
 
   @override

@@ -117,7 +117,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
             disableAnimations: reduceMotion,
             highContrast: systemHighContrast || AppTheme.isHighContrast(settings.theme),
           ),
-          child: child!,
+          child: FocusHighlightScope(child: child!),
         );
       },
     );

@@ -488,13 +488,15 @@ This fixes D3: the ring paints on the surface, outside the fill (9.72:1 in light
 
 Chips draw every border outside the chip (`strokeAlign: BorderSide.strokeAlignOutside`), so selecting or focusing one never resizes it. Their `shape` is a `WidgetStateOutlinedBorder` that resolves focused to `FocusRingBorder(borderRadius: 8, …)`, which starts its gap past an outside border. The selection border stays visible under focus, and in high contrast the ring is not confused with the 2 px outline. `SeferChoiceChip` also clears the chip's focus tint, which would read as a selection fill.
 
-Icon buttons keep Material's circle; focused, they take a `FocusRingBorder` of radius 24. The slider rings its thumb the same way (`FocusRingSliderOverlay`).
+Icon buttons keep Material's circle; focused, they take a `FocusRingBorder` of radius 24. The slider rings its thumb the same way (`FocusRingSliderOverlay`), and the FAB takes the ring at its own radius, 12.
+
+Controls pick the ring as they build, but Material rebuilds them only when their own states change, and a switch between touch and keyboard is not one of them. `FocusHighlightScope`, in `MaterialApp.builder`, records the highlight mode in the theme, so a control that keeps its focus shows or drops its ring the moment the user switches.
 
 `SeferInkWell` is used for cards, PaperRows, week cells, map tiles and ribbon tabs:
 - an InkWell with `onFocusChange`;
 - when focused and `FocusManager.instance.highlightMode == FocusHighlightMode.traditional`, a foreground `ShapeDecoration(RoundedRectangleBorder(radius, side: BorderSide(color: focus, width: 3, strokeAlign: outside)))`.
 
-Text fields: focused border 2 px primary (was 3). The ring appears instantly.
+Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7). The ring appears instantly.
 
 ### 6.2 App bar
 
@@ -561,6 +563,7 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 ### 6.7 Inputs
 
 - Outlined, radius 10; enabled 1 px outline (2 px in high contrast); focused 2 px primary; error 2 px error.
+- High contrast: focused (and focused error) borders are 3 px. The enabled border is already 2 px there, and primary is only about 1.5:1 from outline, so the width has to change as well as the colour.
 - Label bodyLarge onSurfaceVariant; helper and counter bodySmall with tabular figures.
 - Code entry (account): six 48×56 boxes, radius 10, titleLarge NS w500 with tabular figures; auto-advance; paste fills all six.
 
@@ -578,6 +581,7 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 
 **SegmentedButton**
 - Radius 10, height 48; selected primaryContainer with label w700 and a check icon (keep the M3 check here; it's the non-colour cue); unselected transparent with 1 px outline.
+- Focus: the ring goes around the whole group (Flutter gives each segment a plain shape of its own), so the focused segment is also washed in its ink at 24% and its label is underlined.
 
 ### 6.9 Navigation bar (phone)
 

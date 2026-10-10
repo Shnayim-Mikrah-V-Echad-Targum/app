@@ -12,13 +12,6 @@ export 'sefer_colors.dart';
 export 'status_colors.dart';
 export 'typography.dart';
 
-/// Brand colors: techelet blue and gold ink (the light theme's primary and
-/// secondary).
-abstract final class Brand {
-  static const techelet = Color(0xFF1D3F75);
-  static const gold = Color(0xFF7A5712);
-}
-
 /// The colour tokens of one theme.
 typedef _Tokens = ({ColorScheme scheme, SeferColors sefer, StatusColors status});
 
@@ -35,9 +28,14 @@ WidgetStateProperty<Color?> _overlay(Color ink) => WidgetStateProperty.resolveWi
       return null;
     });
 
+/// A segment's ink: onPrimaryContainer on the selected segment's fill,
+/// onSurface on the others.
+Color _segmentInkFor(ColorScheme scheme, Set<WidgetState> states) =>
+    states.contains(WidgetState.selected) ? scheme.onPrimaryContainer : scheme.onSurface;
+
 WidgetStateProperty<Color?> _segmentInk(ColorScheme scheme) => WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) return null;
-      return states.contains(WidgetState.selected) ? scheme.onPrimaryContainer : scheme.onSurface;
+      return _segmentInkFor(scheme, states);
     });
 
 /// Counts line up when they change ("12/500").
@@ -124,11 +122,13 @@ abstract final class AppTheme {
     final focusRing = FocusRingBorder(borderRadius: r10, ring: sefer.focus, gap: sefer.focusGap);
     // Icon buttons keep Material's circle, so their ring is round too.
     final roundFocusRing = focusRing.copyWith(borderRadius: const BorderRadius.all(Radius.circular(24)));
+    const fabRadius = BorderRadius.all(Radius.circular(12));
     const chipShape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8)));
     final chipFocusRing = focusRing.copyWith(borderRadius: chipShape.borderRadius);
     WidgetStateProperty<OutlinedBorder?> ringed(OutlinedBorder? normal, OutlinedBorder ring) =>
         WidgetStateProperty.resolveWith((states) => showsFocusRing(states) ? ring : normal);
     final outlineWidth = highContrast ? 2.0 : 1.0;
+    final focusedFieldWidth = highContrast ? 3.0 : 2.0;
 
     final base = ThemeData(
       useMaterial3: true,
@@ -194,6 +194,8 @@ abstract final class AppTheme {
         margin: EdgeInsets.zero,
       ),
       // Menus and the FAB are the only things that float on a shadow (§5).
+      // The FAB (§9 Community: radius 12) takes the buttons' focus ring; its
+      // RawMaterialButton resolves a state-dependent shape.
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primaryContainer,
         foregroundColor: scheme.onPrimaryContainer,
@@ -203,7 +205,9 @@ abstract final class AppTheme {
         highlightElevation: 2,
         disabledElevation: 0,
         // The pale fill alone barely shows on a high-contrast surface.
-        shape: RoundedRectangleBorder(borderRadius: const BorderRadius.all(Radius.circular(16)), side: floatingEdge),
+        shape: WidgetStateOutlinedBorder.resolveWith((states) => showsFocusRing(states)
+            ? focusRing.copyWith(borderRadius: fabRadius, side: floatingEdge)
+            : RoundedRectangleBorder(borderRadius: fabRadius, side: floatingEdge)),
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: sefer.paper,
@@ -214,7 +218,10 @@ abstract final class AppTheme {
           borderRadius: const BorderRadius.all(Radius.circular(12)),
           side: hairline,
         ),
-        labelTextStyle: WidgetStatePropertyAll(text.bodyLarge!.copyWith(color: scheme.onSurface)),
+        // Material 3 shows a disabled item only through this style.
+        labelTextStyle: WidgetStateProperty.resolveWith((states) => text.bodyLarge!.copyWith(
+              color: scheme.onSurface.withValues(alpha: states.contains(WidgetState.disabled) ? 0.38 : 1),
+            )),
       ),
       menuTheme: MenuThemeData(
         style: MenuStyle(
@@ -288,12 +295,22 @@ abstract final class AppTheme {
           }),
           foregroundColor: _segmentInk(scheme),
           iconColor: _segmentInk(scheme),
+          // SegmentedButton draws its ring around the whole group (it gives
+          // segments a plain shape of their own), so the focused segment is
+          // marked as well: a wash of its ink, and its label underlined,
+          // which shows on the selected segment's fill too.
           overlayColor: WidgetStateProperty.resolveWith((states) {
-            final ink = states.contains(WidgetState.selected) ? scheme.onPrimaryContainer : scheme.onSurface;
+            final ink = _segmentInkFor(scheme, states);
+            if (!states.contains(WidgetState.pressed) && showsFocusRing(states)) return ink.withValues(alpha: 0.24);
             return _overlay(ink).resolve(states);
           }),
-          textStyle: WidgetStateProperty.resolveWith((states) =>
-              states.contains(WidgetState.selected) ? labelLarge.copyWith(fontWeight: FontWeight.w700) : labelLarge),
+          textStyle: WidgetStateProperty.resolveWith((states) {
+            final style =
+                states.contains(WidgetState.selected) ? labelLarge.copyWith(fontWeight: FontWeight.w700) : labelLarge;
+            return showsFocusRing(states)
+                ? style.copyWith(decoration: TextDecoration.underline, decorationThickness: 2)
+                : style;
+          }),
           side: _enabled(BorderSide(color: scheme.outline, width: outlineWidth)),
           shape: ringed(buttonShape, focusRing),
           // SegmentedButton passes neither minimumSize nor fixedSize on to its
@@ -388,7 +405,9 @@ abstract final class AppTheme {
         valueIndicatorTextStyle: _tabular(labelLarge.copyWith(color: scheme.onInverseSurface)),
       ),
       // §6.7. The label is Material's: bodyLarge in onSurfaceVariant, primary
-      // when focused.
+      // when focused. In high contrast the enabled border is already 2 px,
+      // and primary is barely apart from outline there (about 1.5:1), so
+      // focus widens the border to 3 px as well.
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: r10,
@@ -398,10 +417,15 @@ abstract final class AppTheme {
           borderRadius: r10,
           borderSide: BorderSide(color: scheme.outline, width: outlineWidth),
         ),
-        focusedBorder: OutlineInputBorder(borderRadius: r10, borderSide: BorderSide(color: scheme.primary, width: 2)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: r10,
+          borderSide: BorderSide(color: scheme.primary, width: focusedFieldWidth),
+        ),
         errorBorder: OutlineInputBorder(borderRadius: r10, borderSide: BorderSide(color: scheme.error, width: 2)),
-        focusedErrorBorder:
-            OutlineInputBorder(borderRadius: r10, borderSide: BorderSide(color: scheme.error, width: 2)),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: r10,
+          borderSide: BorderSide(color: scheme.error, width: focusedFieldWidth),
+        ),
         disabledBorder: OutlineInputBorder(
           borderRadius: r10,
           borderSide: BorderSide(color: scheme.onSurface.withValues(alpha: 0.12)),
@@ -428,7 +452,7 @@ abstract final class AppTheme {
               color: states.contains(WidgetState.selected) ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
             )),
         // labelSmall's own weight when unselected: 500, or 400 in an
-        // accessibility font, which has no 500.
+        // accessibility font in the English UI (it has no 500).
         labelTextStyle: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected)
             ? text.labelSmall!.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w700)
             : text.labelSmall!.copyWith(color: scheme.onSurfaceVariant)),

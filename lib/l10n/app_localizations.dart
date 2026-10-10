@@ -1850,6 +1850,18 @@ abstract class AppLocalizations {
   /// **'{percent}%'**
   String readingSizeValue(int percent);
 
+  /// Tooltip and spoken name of the minus button beside a settings slider. title is the slider's name, such as 'Reading size'.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}: decrease'**
+  String sliderDecrease(String title);
+
+  /// Tooltip and spoken name of the plus button beside a settings slider. title is the slider's name, such as 'Reading size'.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}: increase'**
+  String sliderIncrease(String title);
+
   /// No description provided for @lineSpacing.
   ///
   /// In en, this message translates to:

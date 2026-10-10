@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
 
 /// One option in a [ChoiceGroup].
@@ -105,7 +106,7 @@ class LabeledSlider extends StatelessWidget {
           Row(
             children: [
               IconButton(
-                tooltip: '−',
+                tooltip: context.l10n.sliderDecrease(title),
                 icon: const Icon(Icons.remove),
                 onPressed: value > min ? () => onChanged(snap(value - step)) : null,
               ),
@@ -121,7 +122,7 @@ class LabeledSlider extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: '+',
+                tooltip: context.l10n.sliderIncrease(title),
                 icon: const Icon(Icons.add),
                 onPressed: value < max ? () => onChanged(snap(value + step)) : null,
               ),

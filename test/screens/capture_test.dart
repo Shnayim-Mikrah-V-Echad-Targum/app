@@ -85,6 +85,8 @@ const _screens = {
   'focus_chip': '/read/5787:1/2',
   'focus_menu': '/week/5787:1',
   'focus_nav': '/today',
+  'focus_segment': '/welcome',
+  'focus_fab': '/community/forum/parsha',
   // Overlays (§6.19) and the app bar with content scrolled under it (§6.2).
   'menu': '/week/5787:1',
   'dialog': '/week/5787:1',
@@ -110,6 +112,7 @@ const _screens = {
 /// the screen has loaded.
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  'focus_segment': (s) => s.copyWith(onboardingComplete: false),
 };
 
 /// Screens shown on another day, with another history: the Torah map in
@@ -156,6 +159,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
             )
             .first,
       ),
+  // The second segment of the language switch: the group is ringed, the
+  // segment washed and underlined.
+  'focus_segment': (tester) => _keyboardFocus(
+        tester,
+        find.descendant(of: find.byType(SegmentedButton<AppLanguage>), matching: find.byType(TextButton)).last,
+      ),
+  'focus_fab': (tester) => _keyboardFocus(tester, find.byType(FloatingActionButton)),
   'menu': (tester) => _openWeekMenu(tester),
   // The week menu: full text, mark the whole parsha, clear the week.
   'dialog': (tester) => _openWeekMenu(tester, item: 2),

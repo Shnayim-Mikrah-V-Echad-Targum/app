@@ -127,16 +127,23 @@ void main() {
         expect(chips.labelStyle!.fontSize, theme.textTheme.labelMedium!.fontSize);
       });
 
-      test('inputs: outlined, radius 10, a 2 px focused border', () {
+      test('inputs: outlined, radius 10, a focused border wider than the enabled one', () {
         final inputs = theme.inputDecorationTheme;
         OutlineInputBorder border(InputBorder? b) => b! as OutlineInputBorder;
         for (final b in [inputs.border, inputs.enabledBorder, inputs.focusedBorder, inputs.errorBorder]) {
           expect(border(b).borderRadius, _r10);
         }
         expect(border(inputs.enabledBorder).borderSide, BorderSide(color: scheme.outline, width: hc ? 2 : 1));
-        expect(border(inputs.focusedBorder).borderSide, BorderSide(color: scheme.primary, width: 2));
+        // 2 px; 3 px in high contrast, where the enabled border is already 2
+        // and primary is barely apart from outline, so focus never rests on
+        // colour alone.
+        expect(border(inputs.focusedBorder).borderSide, BorderSide(color: scheme.primary, width: hc ? 3 : 2));
         expect(border(inputs.errorBorder).borderSide, BorderSide(color: scheme.error, width: 2));
-        expect(border(inputs.focusedErrorBorder).borderSide, BorderSide(color: scheme.error, width: 2));
+        expect(border(inputs.focusedErrorBorder).borderSide, BorderSide(color: scheme.error, width: hc ? 3 : 2));
+        expect(
+          border(inputs.focusedBorder).borderSide.width,
+          greaterThan(border(inputs.enabledBorder).borderSide.width),
+        );
         for (final style in [inputs.helperStyle!, inputs.counterStyle!]) {
           expect(style.fontSize, theme.textTheme.bodySmall!.fontSize);
           expect(style.fontFeatures, contains(const FontFeature.tabularFigures()));
@@ -177,6 +184,26 @@ void main() {
         expect(s.backgroundColor!.resolve({}), Colors.transparent);
         expect(s.textStyle!.resolve({WidgetState.selected})!.fontWeight, FontWeight.w700);
         expect(s.side!.resolve({}), BorderSide(color: scheme.outline, width: hc ? 2 : 1));
+      });
+
+      test('segmented: the focused segment is washed in its ink and its label underlined', () {
+        final s = theme.segmentedButtonTheme.style!;
+        for (final selected in [false, true]) {
+          final ink = selected ? scheme.onPrimaryContainer : scheme.onSurface;
+          final focused = {WidgetState.focused, if (selected) WidgetState.selected};
+          expect(s.overlayColor!.resolve(focused), ink.withValues(alpha: 0.24), reason: 'selected $selected');
+          expect(s.textStyle!.resolve(focused)!.decoration, TextDecoration.underline);
+          expect(s.overlayColor!.resolve({...focused, WidgetState.pressed}), ink.withValues(alpha: 0.10));
+          final unfocused = {if (selected) WidgetState.selected};
+          expect(s.textStyle!.resolve(unfocused)!.decoration, isNot(TextDecoration.underline));
+        }
+      });
+
+      test('popup menus: a disabled item is dimmed, as Material 3 shows it only through the label style', () {
+        final label = theme.popupMenuTheme.labelTextStyle!;
+        expect(label.resolve({})!.color, scheme.onSurface);
+        expect(label.resolve({WidgetState.disabled})!.color, scheme.onSurface.withValues(alpha: 0.38));
+        expect(label.resolve({WidgetState.disabled})!.fontSize, theme.textTheme.bodyLarge!.fontSize);
       });
     });
   }
@@ -249,6 +276,72 @@ void main() {
       // The ring alone marks focus: a grey fill would read as a selection.
       final inkWell = find.descendant(of: find.byType(ChoiceChip).last, matching: find.byType(InkWell));
       expect(Theme.of(tester.element(inkWell)).focusColor, Colors.transparent);
+    });
+
+    testWidgets('$ui UI: Tab marks the focused segment, not just the group', (tester) async {
+      final theme = _theme(AppThemeMode.light, hebrewUi: hebrewUi);
+      await _pump(
+        tester,
+        theme,
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(value: 0, label: Text('English')),
+            ButtonSegment(value: 1, label: Text('עברית')),
+          ],
+          selected: const {0},
+          onSelectionChanged: (_) {},
+        ),
+      );
+      final scheme = theme.colorScheme;
+      Finder segment(String label) => find.ancestor(of: find.text(label), matching: find.byType(TextButton));
+      bool underlined(String label) =>
+          tester.renderObject<RenderParagraph>(find.text(label)).text.style?.decoration == TextDecoration.underline;
+      // The wash is the focused segment's ink highlight, on the group's ink.
+      void expectWash(Color ink) {
+        expect(
+          find.descendant(of: find.byType(SegmentedButton<int>), matching: find.byType(Material)).first,
+          paints..rect(color: ink.withValues(alpha: 0.24)),
+        );
+      }
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus!.context!.findAncestorWidgetOfExactType<TextButton>(),
+          tester.widget<TextButton>(segment('English')));
+      expect((underlined('English'), underlined('עברית')), (true, false));
+      expectWash(scheme.onPrimaryContainer);
+
+      // The mark moves with focus; the selection stays.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      expect((underlined('English'), underlined('עברית')), (false, true));
+      expectWash(scheme.onSurface);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+    });
+
+    testWidgets('$ui UI: a selected chip under keyboard focus keeps its border and rings it', (tester) async {
+      final theme = _theme(AppThemeMode.light, hebrewUi: hebrewUi);
+      final scheme = theme.colorScheme;
+      final sefer = theme.extension<SeferColors>()!;
+      await _pump(tester, theme, SeferChoiceChip(label: const Text('Shlishi'), selected: true, onSelected: (_) {}));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      // Focus is on the chip itself.
+      final chip = find.byType(ChoiceChip);
+      final focused = find.byElementPredicate((e) => e == FocusManager.instance.primaryFocus!.context);
+      expect(find.ancestor(of: focused, matching: chip), findsOneWidget);
+
+      final size = tester.getSize(find.descendant(of: chip, matching: find.byType(Material)).first);
+      final r = RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(8));
+      expect(
+        find.descendant(of: chip, matching: find.byType(Material)).first,
+        paints
+          // The 1.5 px selection border, drawn outside the chip...
+          ..drrect(outer: r.inflate(1.5), inner: r, color: scheme.primary)
+          // ...then the gap and the ring beyond it.
+          ..rrect(rrect: r.inflate(2.5), color: sefer.focusGap, strokeWidth: 2, style: PaintingStyle.stroke)
+          ..rrect(rrect: r.inflate(5), color: sefer.focus, strokeWidth: 3, style: PaintingStyle.stroke),
+      );
     });
 
     testWidgets('$ui UI: a segmented button is 48 high, with a check on the selected segment', (tester) async {

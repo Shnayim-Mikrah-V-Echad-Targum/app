@@ -293,6 +293,8 @@ HE = {
   "fontNotoSans": "נוטו סנס עברי (ללא תגים)",
   "readingSize": "גודל הקריאה",
   "readingSizeValue": "{percent}%",
+  "sliderDecrease": "{title}: הקטנה",
+  "sliderIncrease": "{title}: הגדלה",
   "lineSpacing": "ריווח שורות",
   "wordSpacing": "ריווח מילים",
   "letterSpacing": "ריווח אותיות",

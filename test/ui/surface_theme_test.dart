@@ -88,7 +88,11 @@ void main() {
         for (final e in [fab.elevation, fab.focusElevation, fab.hoverElevation, fab.highlightElevation]) {
           expect(e, 2);
         }
-        expect(_side(fab.shape), floatingEdge);
+        // The one FAB, the forum's extended "New discussion", is radius 12
+        // (§9 Community); focus swaps in the ring (focus_test.dart).
+        final fabShape = WidgetStateProperty.resolveAs<ShapeBorder?>(fab.shape, {});
+        expect(_side(fabShape), floatingEdge);
+        expect(_radius(fabShape), const BorderRadius.all(Radius.circular(12)));
         expect(theme.popupMenuTheme.elevation, 2);
         expect(theme.popupMenuTheme.shadowColor, scheme.shadow);
         expect(theme.popupMenuTheme.color, sefer.paper);

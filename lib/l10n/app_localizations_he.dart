@@ -1046,6 +1046,16 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String sliderDecrease(String title) {
+    return '$title: הקטנה';
+  }
+
+  @override
+  String sliderIncrease(String title) {
+    return '$title: הגדלה';
+  }
+
+  @override
   String get lineSpacing => 'ריווח שורות';
 
   @override

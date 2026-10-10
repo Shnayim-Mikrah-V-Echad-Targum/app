@@ -9,6 +9,77 @@ import 'sefer_colors.dart';
 bool showsFocusRing(Set<WidgetState> states) =>
     states.contains(WidgetState.focused) && FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
 
+/// Keeps keyboard focus rings in step with the focus highlight mode: place it
+/// in `MaterialApp.builder`.
+///
+/// Buttons, chips, segmented buttons and the FAB pick their shape with
+/// [showsFocusRing] as they build, but Material rebuilds them only when their
+/// own states change, and a switch between touch and keyboard is not one of
+/// them. A button tabbed to would keep its ring after the page is scrolled by
+/// touch, and one focused by touch would get none after a key press. So this
+/// scope adds the mode to the theme ([FocusHighlight]); a change of mode is
+/// then a change of theme, which rebuilds everything that reads it.
+class FocusHighlightScope extends StatefulWidget {
+  const FocusHighlightScope({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<FocusHighlightScope> createState() => _FocusHighlightScopeState();
+}
+
+class _FocusHighlightScopeState extends State<FocusHighlightScope> {
+  FocusHighlightMode _mode = FocusManager.instance.highlightMode;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addHighlightModeListener(_modeChanged);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_modeChanged);
+    super.dispose();
+  }
+
+  void _modeChanged(FocusHighlightMode mode) {
+    if (mode != _mode) setState(() => _mode = mode);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final highlight = FocusHighlight(keyboard: _mode == FocusHighlightMode.traditional);
+    return Theme(
+      data: theme.copyWith(extensions: [...theme.extensions.values, highlight]),
+      child: widget.child,
+    );
+  }
+}
+
+/// Whether keyboard focus is being shown, as [FocusHighlightScope] records it
+/// in the theme.
+@immutable
+class FocusHighlight extends ThemeExtension<FocusHighlight> {
+  const FocusHighlight({required this.keyboard});
+
+  /// The user is navigating with a keyboard rather than by touch.
+  final bool keyboard;
+
+  @override
+  FocusHighlight copyWith({bool? keyboard}) => FocusHighlight(keyboard: keyboard ?? this.keyboard);
+
+  @override
+  FocusHighlight lerp(FocusHighlight? other, double t) => t < 0.5 || other == null ? this : other;
+
+  @override
+  bool operator ==(Object other) => other is FocusHighlight && other.keyboard == keyboard;
+
+  @override
+  int get hashCode => keyboard.hashCode;
+}
+
 /// A rounded rectangle that also draws the keyboard focus ring
 /// (docs/DESIGN_SYSTEM.md §6.1): a 2 px band of [gap] just outside the shape
 /// (and outside its border, if that is drawn outside), then a 3 px [ring]

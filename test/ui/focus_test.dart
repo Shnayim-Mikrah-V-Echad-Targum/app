@@ -151,6 +151,96 @@ void main() {
     expect(material.shape, isNot(isA<FocusRingBorder>()));
   });
 
+  group('a switch between keyboard and touch', () {
+    /// The app's shell around [home]: FocusHighlightScope sits in its builder.
+    Widget app(Widget home) => MaterialApp(
+          theme: _theme(AppThemeMode.light),
+          builder: (context, child) => FocusHighlightScope(child: child!),
+          home: Scaffold(body: Center(child: home)),
+        );
+
+    OutlinedBorder? shapeOf(WidgetTester tester, Finder control) =>
+        tester.widget<Material>(find.descendant(of: control, matching: find.byType(Material)).first).shape
+            as OutlinedBorder?;
+
+    testWidgets('a button that keeps its focus drops its ring on a touch, and gets it back on a key',
+        (tester) async {
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await tester.pumpWidget(app(FilledButton(focusNode: focus, onPressed: () {}, child: const Text('Read'))));
+      final button = find.byType(FilledButton);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(focus.hasFocus, isTrue);
+      expect(shapeOf(tester, button), isA<FocusRingBorder>());
+
+      // Touching the page elsewhere switches to touch mode; focus stays.
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump();
+      expect(focus.hasFocus, isTrue);
+      expect(shapeOf(tester, button), isNot(isA<FocusRingBorder>()));
+      expect(find.byType(FilledButton), isNot(paints..rrect(strokeWidth: 3, style: PaintingStyle.stroke)));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+      expect(shapeOf(tester, button), isA<FocusRingBorder>());
+    });
+
+    testWidgets('a button focused by touch gets its ring at the first key press', (tester) async {
+      await tester.pumpWidget(app(FilledButton(autofocus: true, onPressed: () {}, child: const Text('Read'))));
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump();
+      final button = find.byType(FilledButton);
+      expect(shapeOf(tester, button), isNot(isA<FocusRingBorder>()));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+      expect(shapeOf(tester, button), isA<FocusRingBorder>());
+    });
+
+    test('records the mode in the theme', () {
+      const keyboard = FocusHighlight(keyboard: true);
+      const touch = FocusHighlight(keyboard: false);
+      expect(keyboard, isNot(touch));
+      expect(keyboard.copyWith(keyboard: false), touch);
+      expect(keyboard.lerp(touch, 0.4), keyboard);
+      expect(keyboard.lerp(touch, 0.6), touch);
+    });
+  });
+
+  testWidgets('the FAB takes the focus ring, radius 12, while keyboard focus is shown', (tester) async {
+    _keyboardMode();
+    final theme = _theme(AppThemeMode.light);
+    final sefer = theme.extension<SeferColors>()!;
+    await tester.pumpWidget(MaterialApp(
+      theme: theme,
+      home: Scaffold(
+        body: const SizedBox.expand(),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {},
+          icon: const Icon(Icons.add),
+          label: const Text('New discussion'),
+        ),
+      ),
+    ));
+    ShapeBorder? shape() => tester
+        .widget<Material>(find.descendant(of: find.byType(FloatingActionButton), matching: find.byType(Material)))
+        .shape;
+    const r12 = BorderRadius.all(Radius.circular(12));
+    expect(shape(), const RoundedRectangleBorder(borderRadius: r12));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pumpAndSettle();
+    expect(shape(), FocusRingBorder(borderRadius: r12, ring: sefer.focus, gap: sefer.focusGap));
+    expect(
+      find.byType(FloatingActionButton),
+      paints
+        ..rrect(color: sefer.focusGap, strokeWidth: 2, style: PaintingStyle.stroke)
+        ..rrect(color: sefer.focus, strokeWidth: 3, style: PaintingStyle.stroke),
+    );
+  });
+
   testWidgets('SeferInkWell rings itself only while keyboard focus is shown', (tester) async {
     final focus = FocusNode();
     addTearDown(focus.dispose);
