@@ -62,7 +62,8 @@ class ChoiceGroup<T> extends StatelessWidget {
 }
 
 /// A slider with a visible, spoken value and +/- buttons for users who
-/// can't drag precisely.
+/// can't drag precisely. Assistive technology reads the slider by its
+/// setting and value ("Reading size, 100%"), and each button by what it does.
 class LabeledSlider extends StatelessWidget {
   const LabeledSlider({
     super.key,
@@ -85,44 +86,58 @@ class LabeledSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final divisions = ((max - min) / step).round();
     double snap(double v) => (min + ((v - min) / step).round() * step).clamp(min, max);
     final textTheme = Theme.of(context).textTheme;
+    // In line with the list tiles around it: 16 on a settings page, and a
+    // sheet's own inset in a sheet (showAppSheet).
+    final inset = ListTileTheme.of(context).contentPadding?.resolve(Directionality.of(context)) ??
+        const EdgeInsets.symmetric(horizontal: 16);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: EdgeInsets.fromLTRB(inset.left, 4, inset.right, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(child: Text(title, style: textTheme.bodyLarge)),
-              // Tabular figures, so the value doesn't jiggle as it changes.
-              Text(
-                format(value),
-                style: textTheme.labelLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-              ),
-            ],
+          // The slider says all of this itself.
+          ExcludeSemantics(
+            child: Row(
+              children: [
+                Expanded(child: Text(title, style: textTheme.bodyLarge)),
+                // Tabular figures, so the value doesn't jiggle as it changes.
+                Text(
+                  format(value),
+                  style: textTheme.labelLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                ),
+              ],
+            ),
           ),
           Row(
             children: [
               IconButton(
-                tooltip: context.l10n.sliderDecrease(title),
+                tooltip: l.decreaseSetting(title),
                 icon: const Icon(Icons.remove),
                 onPressed: value > min ? () => onChanged(snap(value - step)) : null,
               ),
               Expanded(
-                child: Slider(
-                  value: value.clamp(min, max),
-                  min: min,
-                  max: max,
-                  divisions: divisions,
-                  label: format(value),
-                  semanticFormatterCallback: format,
-                  onChanged: (v) => onChanged(snap(v)),
+                // One node, read as "Reading size, 100%". No value indicator:
+                // the value already shows above.
+                child: MergeSemantics(
+                  child: Semantics(
+                    label: title,
+                    child: Slider(
+                      value: value.clamp(min, max),
+                      min: min,
+                      max: max,
+                      divisions: divisions,
+                      semanticFormatterCallback: format,
+                      onChanged: (v) => onChanged(snap(v)),
+                    ),
+                  ),
                 ),
               ),
               IconButton(
-                tooltip: context.l10n.sliderIncrease(title),
+                tooltip: l.increaseSetting(title),
                 icon: const Icon(Icons.add),
                 onPressed: value < max ? () => onChanged(snap(value + step)) : null,
               ),

@@ -88,6 +88,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionDelete => 'Delete';
 
   @override
+  String get actionClear => 'Clear';
+
+  @override
   String get actionReport => 'Report';
 
   @override
@@ -103,10 +106,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMore => 'More options';
 
   @override
+  String moreOptionsFor(String name) {
+    return 'More options for $name';
+  }
+
+  @override
+  String get actionRefresh => 'Refresh';
+
+  @override
+  String get refreshed => 'Updated';
+
+  @override
   String get loading => 'Loading…';
 
   @override
   String get errorGeneric => 'Something went wrong. Please try again.';
+
+  @override
+  String get notFoundTitle => 'Page not found';
+
+  @override
+  String get notFoundBody => 'This link leads nowhere in the app.';
+
+  @override
+  String get goToToday => 'Go to Today';
 
   @override
   String get aliyah1 => 'Rishon';
@@ -160,8 +183,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aliyotWord => 'aliyot';
 
   @override
-  String countOfTotal(int done, int total) {
-    return '$done of $total';
+  String countOfTotal(int count, int total) {
+    return '$count of $total';
   }
 
   @override
@@ -542,17 +565,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String targumVerseLabel(String number) {
+    return 'Targum, verse $number';
+  }
+
+  @override
   String chapterLabel(String number) {
     return 'Chapter $number';
   }
 
   @override
   String get noTargumNote =>
-      'Many read this verse a third time in Hebrew in place of the Targum (Shulchan Aruch OC 285:2).';
+      'Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berakhot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).';
 
   @override
   String get noRashiNote =>
       'Rashi does not comment on this verse. Some read it a third time in Hebrew (Mishnah Berurah 285:5).';
+
+  @override
+  String get noRashiComment => 'Rashi does not comment on this verse.';
 
   @override
   String ketivQereLabel(String ketiv, String qere) {
@@ -590,7 +621,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get nextAliyah => 'Next aliyah';
+  String continueWithAliyah(String aliyah) {
+    return 'Continue with $aliyah';
+  }
+
+  @override
+  String get aliyahStatusRead => 'read';
+
+  @override
+  String get aliyahStatusPartial => 'in progress';
+
+  @override
+  String get aliyahStatusUnread => 'not started';
 
   @override
   String get backToWeek => 'Back to the week';
@@ -686,6 +728,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutHelp => 'Show shortcuts';
+
+  @override
+  String get shortcutScroll => 'Scroll the text';
+
+  @override
+  String get shortcutPageDown => 'Down a page, then the next step';
+
+  @override
+  String get shortcutPageUp => 'Up a page, then the previous step';
+
+  @override
+  String get shortcutFocusVerse =>
+      'Full text in focus mode: previous or next verse';
+
+  @override
+  String get keyUp => 'Up arrow';
+
+  @override
+  String get keyDown => 'Down arrow';
+
+  @override
+  String get keySpace => 'Space';
 
   @override
   String get progressTitle => 'Progress';
@@ -985,7 +1049,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thirdReadingDesc =>
-      'Where there is no Targum or Rashi, suggest reading the Hebrew a third time';
+      'Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent';
 
   @override
   String get haftarahEnabled => 'Haftarah';
@@ -1087,16 +1151,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String sliderDecrease(String title) {
-    return '$title: decrease';
-  }
-
-  @override
-  String sliderIncrease(String title) {
-    return '$title: increase';
-  }
-
-  @override
   String get lineSpacing => 'Line spacing';
 
   @override
@@ -1104,6 +1158,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get letterSpacing => 'Letter spacing';
+
+  @override
+  String decreaseSetting(String name) {
+    return 'Decrease $name';
+  }
+
+  @override
+  String increaseSetting(String name) {
+    return 'Increase $name';
+  }
 
   @override
   String get showNikud => 'Vowels (nikud)';
@@ -1181,6 +1245,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get haptics => 'Haptic feedback';
 
   @override
+  String get singleKeyShortcuts => 'Single-key shortcuts';
+
+  @override
+  String get singleKeyShortcutsDesc =>
+      'While reading, T, N, L, + and − work on their own, without Ctrl. Turn this off if you use speech input or screen-reader quick keys.';
+
+  @override
   String get screenReaderText => 'Screen reader text';
 
   @override
@@ -1240,7 +1311,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyReminderDesc => 'A gentle nudge at your chosen time';
 
   @override
-  String get reminderTime => 'Time';
+  String get dailyReminderTime => 'Daily reminder time';
 
   @override
   String get fridayReminder => 'Erev Shabbat reminder';
@@ -1248,6 +1319,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get fridayReminderDesc =>
       'Friday morning, only if the parsha isn\'t finished';
+
+  @override
+  String get fridayReminderTime => 'Erev Shabbat reminder time';
 
   @override
   String get checkInReminder => 'After-Shabbat check-in';
@@ -1291,6 +1365,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Notifications are turned off for this app in your device settings.';
 
   @override
+  String get notificationsDeniedTitle => 'Notifications are off';
+
+  @override
   String get primingTitle => 'Want a gentle daily nudge?';
 
   @override
@@ -1309,6 +1386,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifChannelCheckIn => 'After Shabbat';
+
+  @override
+  String get notifChannelDailyDesc =>
+      'Your day\'s reading at the time you choose, never on Shabbat or Yom Tov';
+
+  @override
+  String get notifChannelErevShabbatDesc =>
+      'The morning before Shabbat or Yom Tov, only if the parsha isn\'t finished';
+
+  @override
+  String get notifChannelCheckInDesc =>
+      'After Shabbat, a reminder to log what you read; also the note when reminders stop';
 
   @override
   String notifDailyTitle(String aliyah) {
@@ -1334,6 +1423,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifCheckInBody => 'Did you read on Shabbat? Tap to log it.';
+
+  @override
+  String get notifPausedTitle => 'Reminders paused';
+
+  @override
+  String notifPausedBody(String parsha) {
+    return 'We\'ll pause reminders for now. Your place in Parshat $parsha is saved — come back anytime.';
+  }
 
   @override
   String get showStreaks => 'Show streak numbers';
@@ -1486,7 +1583,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideSpecialBody =>
-      'Some verses have no separate Targum, such as \"Atarot v\'Divon\" (Numbers 32:3); many read them a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.';
+      'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.';
 
   @override
   String get guideShabbatTitle => 'Shabbat and Yom Tov';
@@ -1521,6 +1618,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forumsHeading => 'Forums';
+
+  @override
+  String get forumNotFound =>
+      'This forum couldn\'t be found. It may have moved or closed.';
+
+  @override
+  String get allForums => 'All forums';
 
   @override
   String thisWeeksThread(String name) {
@@ -1664,6 +1768,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String todahRemove(String name) {
+    return 'Remove your thanks to $name';
+  }
+
+  @override
   String get reportTitle => 'Report this post';
 
   @override
@@ -1780,7 +1889,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noThreads => 'No discussions yet. Start the first one!';
 
   @override
+  String noPostsYet(String name) {
+    return 'No posts yet — share a thought on Parshat $name.';
+  }
+
+  @override
+  String get noReplies => 'No replies yet.';
+
+  @override
   String get loadMore => 'Load more';
+
+  @override
+  String loadedMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Loaded $count more discussions',
+      one: 'Loaded 1 more discussion',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get showEarlierPosts => 'Show earlier posts';
 
   @override
   String postsCount(int count) {
@@ -1825,6 +1956,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String postNofM(int n, int total) {
+    return 'Post $n of $total';
+  }
+
+  @override
   String get anonymousMember => 'Former member';
 
   @override
@@ -1859,6 +1995,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errNameTaken => 'That name is taken.';
+
+  @override
+  String get errAlreadyReported => 'You\'ve already reported this post.';
 
   @override
   String get errInvalidName => 'Names must be 2–40 characters.';

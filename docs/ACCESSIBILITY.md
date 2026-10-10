@@ -9,24 +9,32 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 ### Screen readers (TalkBack, VoiceOver, Narrator, NVDA, JAWS)
 
 **Verses**
-- Each verse is a single node with a curated spoken label, such as "Verse 9." followed by the text. This avoids reading glyph by glyph.
-- The Hebrew part of the label is tagged `he`, so the screen reader switches voice. Cantillation is removed by default because screen readers mispronounce it or stop at it.
+- Each verse is a single node with a curated spoken label, such as "Verse 9." followed by the text, or "Targum, verse 9." for Onkelos. This avoids reading glyph by glyph.
+- The Hebrew is tagged `he`, so the screen reader can switch to a Hebrew voice:
+  - **Android and iOS:** only the Hebrew part of the label is tagged, so "Verse 9." is read in the interface language.
+  - **The web:** a node can carry only one language there, so the whole label is in Hebrew ("פסוק 9.") and the node is tagged `he`. This sets the `lang` attribute.
+  - **Windows:** Flutter's bridge passes no language, so the label is as on Android and iOS, and Narrator or NVDA reads "Verse 9." (or "Targum, verse 9.") in its own voice.
+- Cantillation is removed by default because screen readers mispronounce it or stop at it. The extraordinary points written over some words in the scroll (as over וישקהו, Genesis 33:4) are shown whether or not cantillation is, and are never spoken.
 - *Settings → Accessibility → Screen reader text* changes what the label contains:
   - **vowels kept** (the default)
   - **letters only**
   - **every mark**, for braille displays
-- The Divine Name is spoken as **Adonai** or **Hashem**, as the user chooses. This applies to screen-reader labels and to text-to-speech.
-- Notes, ketiv/qere and the Targum each have their own labels.
+- The Divine Name is spoken as **Adonai** or **Hashem**, as the user chooses. This applies to screen-reader labels and to text-to-speech, in the Torah and haftarah, in Targum Onkelos (which writes it יְיָ) and in Rashi (who writes ה'). A ה' that cites a chapter, as in (ישעיהו ה'), or counts something stays a number.
+- Each of Rashi's comments is its own node, read the same way and tagged `he`, or `en` for Rashi in English, whose quoted Hebrew is tagged `he` and read the same way. The English translation is tagged `en`, so it is read in an English voice in the Hebrew interface too.
+- Notes, ketiv/qere and the Targum each have their own labels. A note is read like the verse: without cantillation, and with the Divine Name as chosen.
 
 **Structure and state**
 - Screen titles and section headers are marked as headings with levels, so heading navigation works.
+- A heading is a node of its own, never merged with the text or controls around it. A card that opens something when tapped is read as one node.
 - Progress, streak rings and status badges have text equivalents. Colour is never the only signal.
-- Each aliyah tile announces the state of all three readings. The week strip announces each day's status, and each Torah-map tile its parsha's.
+- Each aliyah tile announces the state of all three readings. The week strip announces each day's status, and a day with reading, like each parsha of the Torah map, is a button that opens it.
 - The Torah map's book headers are headings and buttons that say whether their book is expanded. Only the current book starts expanded.
 
 **Announcements and controls**
-- Steps in the guided reader and a completed aliyah are announced as live updates where the platform supports them. Elsewhere they appear in a SnackBar that is read aloud.
-- Every icon button has a label and a tooltip.
+- Each step in the guided reader is announced once, with its reading and place ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"): in an announcement where the platform takes them, and elsewhere by the step header, a live region. So is the step an aliyah opens on when it is chosen from the aliyah tabs. A completed aliyah is announced the same way: in an announcement, or elsewhere by the finished panel's heading, a live region.
+- Status messages appear in a SnackBar and are spoken once: by its live region on Android, iOS and the web, and in an announcement on Windows and macOS.
+- Every icon button has a label and a tooltip. Where there are several alike, each is named for what it acts on ("More options for Rishon", "Increase Reading size").
+- A slider is read by its setting and value ("Reading size, 100%"), with a button on either side to step it.
 
 **Web**
 - On the web, Flutter's semantics tree is turned on at startup (`SemanticsBinding.ensureSemantics`), so screen readers work without the hidden "enable accessibility" button.
@@ -55,19 +63,33 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 ### Motor and keyboard
 - All tap targets are at least 48×48 dp, which also meets Apple's 44 pt.
 - Every action can be done with the keyboard, with a visible focus ring. Tab order follows reading order and mirrors in Hebrew.
-- Reader shortcuts. On macOS, use ⌘ in place of Ctrl.
+- The focus is never lost when the page changes in place:
+  - When an aliyah is finished, the panel's first button (the next aliyah, else the haftarah, else Done) takes it. On Android, where announcements aren't taken, the panel's heading is a live region. After the first aliyah ever, the reminders offered keep it until they are answered, and then the panel's first button takes it.
+  - *Mark this aliyah as read* at the end of the full text goes once pressed, and the reader itself takes the focus: its keys keep working, and Tab goes on from the top.
+  - Continuing from the panel, leaving it with Back, or reaching the first step, where Back is disabled, gives it to Next.
+  - After *Email me a code*, the code field takes it, and a status message says where the code went.
+  - *Load more* keeps it while it loads. Then the first discussion loaded, in the button's place, takes it, and a status message says how many came.
+  - *Show earlier posts* keeps it while it loads, and while more remain. Once the earliest posts are in and the button goes, the first post, in its place, takes it.
+- Reader shortcuts. In the app, the display shortcuts are Ctrl chords. On the web they are single keys, because Chrome and Edge keep Ctrl+Shift+T, Ctrl+Shift+N and Ctrl+= for themselves. On macOS and iOS, use ⌘ in place of Ctrl and ⌥ in place of Alt. *Settings → Accessibility → Single-key shortcuts*, shown on the web only, turns the single keys off for speech input and screen-reader quick keys (WCAG 2.1.4).
 
-  | Keys | Action |
-  |---|---|
-  | Page Down, or Alt+↓ | Next step |
-  | Page Up, or Alt+↑ | Previous step |
-  | Ctrl+= / Ctrl+− | Larger / smaller scripture text |
-  | Ctrl+Shift+T | Show or hide cantillation |
-  | Ctrl+Shift+N | Show or hide vowels |
-  | Ctrl+Shift+L | Listen / stop |
-  | F1, or Ctrl+/ | Show shortcuts |
+  | Action | Windows, macOS, Linux, Android and iOS | Web |
+  |---|---|---|
+  | Scroll the text | Ctrl+↑ / Ctrl+↓ | ↑ / ↓, or Space |
+  | Down a page, then the next step | Page Down | Page Down |
+  | Up a page, then the previous step | Page Up | Page Up |
+  | Next step | Alt+↓ | Alt+↓ |
+  | Previous step | Alt+↑ | Alt+↑ |
+  | Focus mode, full text: next or previous verse | ↓ / ↑ | ↓ / ↑ |
+  | Larger / smaller scripture text | Ctrl+= / Ctrl+− | + or = / − |
+  | Show or hide cantillation | Ctrl+Shift+T | T |
+  | Show or hide vowels | Ctrl+Shift+N | N |
+  | Listen / stop | Ctrl+Shift+L | L |
+  | Show shortcuts | F1, or Ctrl+/ | ?, F1, or Ctrl+/ |
 
-- No action needs a swipe, drag or multi-finger gesture. Everything is a tap, click or key press, and nothing has a time limit.
+  Page Down and Page Up scroll a step that is longer than the screen before they move on, so nothing is skipped at a large reading size. In focus mode, the full text opens on the reader's place, the first verse of the step the guided reader would resume at, and the verse that ↓ or ↑ moves to is scrolled into view, nearer the top of the screen than the bottom. The shortcuts list shows ↑ and ↓ for focus mode only while it is on. Verses are not Tab stops of their own, so Tab reaches *Mark this aliyah as read* at the end of the text.
+
+- In the community, F5 or Ctrl+R (⌘R on macOS) refreshes the forums, a forum, a thread or the moderation queue. On the web those keys stay the browser's. Each of these pages also has a Refresh button.
+- No action needs a swipe, drag or multi-finger gesture. Pull to refresh has a Refresh button beside it. Everything is a tap, click or key press, and nothing has a time limit.
 - The screen can be kept on while reading, which is on by default.
 
 ### Cognitive and learning
@@ -90,18 +112,19 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 ## How it is tested
 
 ### Automated (on every pull request, in CI)
-- `test/accessibility/screens_a11y_test.dart` lays 12 screens and the reader (guided and full text, in English and Hebrew) out in the bundled fonts, so text sizes are the real ones, and runs Flutter's accessibility guidelines on them:
+- `test/accessibility/screens_a11y_test.dart` lays 19 screens (among them a week within a tab and one opened on its own, the policies, and the pages for links that lead nowhere), the reminders page with every reminder on, and the reader (guided and full text, in English and Hebrew) out in the bundled fonts, so text sizes are the real ones, and runs Flutter's accessibility guidelines on them:
   - `androidTapTargetGuideline`
   - `iOSTapTargetGuideline`
   - `labeledTapTargetGuideline`
 - The same test also checks:
   - no overflow at 200% text on the busiest screens, the reader among them, in English and Hebrew
+  - that a day of the week strip and a parsha of the Torah map can be activated by a screen reader, that sliders are named by their setting and their buttons by what they do, and that a page keeps its headings, texts and controls apart
   - the Hebrew right-to-left layout
   - the desktop layout with a navigation rail
-- `test/accessibility/text_contrast_test.dart` runs `textContrastGuideline` on the same 12 screens, and on Today in all five themes: light, dark, sepia, high-contrast light and high-contrast dark. It keeps the test font: the guideline reads colours from rendered pixels, and the test font's solid glyphs show it the exact text colour where real glyphs show mostly anti-aliased edges.
-- `test/app/reader_widget_test.dart` runs `textContrastGuideline` on the reader (on the test font, for the reason above), checks the verse labels, and checks that focus mode's dimmed verses keep 4.5:1 in every theme.
+- `test/accessibility/text_contrast_test.dart` runs `textContrastGuideline` on the same screens, on the reminders page with every reminder on, and on Today in all five themes: light, dark, sepia, high-contrast light and high-contrast dark. It keeps the test font: the guideline reads colours from rendered pixels, and the test font's solid glyphs show it the exact text colour where real glyphs show mostly anti-aliased edges.
+- `test/app/reader_widget_test.dart` runs `textContrastGuideline` on the reader (on the test font, for the reason above), checks the labels of verses, notes, the Targum and Rashi, and their language tags on Android, Windows and the web, and checks that focus mode's dimmed verses keep 4.5:1 in every theme.
 - `test/ui/palette_contrast_test.dart` computes the WCAG contrast of every text and graphics colour pair in the palette (docs/DESIGN_SYSTEM.md §3.5): 4.5:1 for text and 3:1 for graphics, 7:1 and 4.5:1 in the high-contrast themes, and 7:1 for scripture everywhere.
-- Unit tests check the spoken-label pipeline (`test/core/text/hebrew_text_test.dart`), including Divine Name substitution and stripping cantillation.
+- Unit tests check the spoken-label pipeline (`test/core/text/hebrew_text_test.dart`), including Divine Name substitution in the Torah, the Targum and Rashi, and stripping cantillation but not the extraordinary points.
 
 ### Manual (before each release)
 Each item below is tested with the screen reader named:
@@ -132,6 +155,7 @@ Record the results in the release checklist ([RELEASE.md](RELEASE.md)).
   - Hebrew voices vary by platform, and some systems have none installed.
   - In that case the screen reader reads the Hebrew with its default voice, usually badly.
   - Before reading aloud, the app checks for a Hebrew text-to-speech voice. If there is none, it says so and points to the device's speech settings.
+- **Narrator and NVDA on Windows** can't switch voices within the app, because Flutter's Windows accessibility bridge has no language property. They read the Hebrew labels in the voice of the screen reader's own language. Choosing a Hebrew voice in the screen reader's settings while reading is the workaround.
 - **Cantillation:** no screen reader can convey it. Reading with ta'amim needs sight or a teacher. The *every mark* label setting lets braille users get every mark.
 - **Flutter on the web** draws text on a canvas. The semantics tree is mirrored as accessible DOM nodes, but browser find-in-page and the browser's own text zoom do not apply to it. Use the in-app reading size instead.
 

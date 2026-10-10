@@ -5,6 +5,7 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/services/reminder_planner.dart';
 
 void main() {
@@ -71,9 +72,13 @@ void main() {
   });
 
   test('the after-Shabbat check-in lands on the first weekday after Shabbat', () {
+    // Besides the final "reminders paused" message, which follows them all.
     final reminders = plan(prefs: const ReminderPrefs(checkIn: true));
-    expect(reminders.every((r) => r.kind == ReminderKind.checkIn), isTrue);
-    expect(reminders.first.date.weekday, 0);
+    expect(reminders.last.kind, ReminderKind.paused);
+    final checkIns = reminders.sublist(0, reminders.length - 1);
+    expect(checkIns, isNotEmpty);
+    expect(checkIns.every((r) => r.kind == ReminderKind.checkIn), isTrue);
+    expect(checkIns.first.date.weekday, 0);
   });
 
   test('no reminders during a pause', () {
@@ -99,6 +104,140 @@ void main() {
       (wed.addDays(1), ReminderKind.daily, '2,3'),
       (wed.addDays(2), ReminderKind.erevShabbat, ''),
     ]);
+  });
+
+  group("Erev Tisha B'Av", () {
+    // A week either side of the fast, with only the daily reminder on.
+    List<PlannedReminder> around(LocalDate fast, int minutes) {
+      final today = fast.addDays(-7);
+      return planReminders(
+        prefs: ReminderPrefs(daily: true, dailyMinutes: minutes),
+        planner: planner,
+        progressOf: empty,
+        now: DateTime(today.year, today.month, today.day, 8),
+        today: today,
+      );
+    }
+
+    for (final year in [5786, 5787]) {
+      test('$year: nothing from midday on the eve, while a morning reminder stays', () {
+        final fast = HebrewDate(year, HebrewMonth.av, 9).toLocalDate();
+        expect(JewishHolidays.isTishaBav(fast), isTrue);
+        final eve = fast.addDays(-1);
+        expect(planner.planFor(planner.schedule.weekFor(eve)).days.map((d) => d.date), contains(eve));
+
+        expect(around(fast, 20 * 60).where((r) => r.date == eve), isEmpty);
+        expect(around(fast, kErevCutoffMinutes).where((r) => r.date == eve), isEmpty);
+        expect(around(fast, 9 * 60).where((r) => r.date == eve).single.kind, ReminderKind.daily);
+        // The day before the eve keeps its evening reminder.
+        expect(around(fast, 20 * 60).where((r) => r.date == eve.addDays(-1)), isNotEmpty);
+      });
+    }
+
+    test('when the fast is postponed to Sunday, its eve is Shabbat and has no reminder', () {
+      final ninth = HebrewDate(5789, HebrewMonth.av, 9).toLocalDate();
+      final fast = ninth.addDays(1);
+      expect(ninth.isShabbat, isTrue);
+      expect(JewishHolidays.isTishaBav(ninth), isFalse, reason: 'the fast is postponed');
+      expect(JewishHolidays.isTishaBav(fast), isTrue);
+      for (final minutes in [9 * 60, 20 * 60]) {
+        expect(around(fast, minutes).where((r) => r.date == ninth), isEmpty, reason: '$minutes');
+      }
+      // Friday, 8 Av, is not the eve of the fast: its morning reminder
+      // stays, and only Shabbat's rule takes its evening one.
+      final friday = ninth.addDays(-1);
+      expect(planner.planFor(planner.schedule.weekFor(friday)).days.map((d) => d.date), contains(friday));
+      expect(around(fast, 9 * 60).where((r) => r.date == friday).single.kind, ReminderKind.daily);
+      expect(around(fast, 20 * 60).where((r) => r.date == friday), isEmpty);
+    });
+  });
+
+  group('the final "reminders paused" message', () {
+    PlannedReminder pausedIn(List<PlannedReminder> reminders) =>
+        reminders.singleWhere((r) => r.kind == ReminderKind.paused);
+
+    test('comes once, at the daily time, after every other reminder and the horizon', () {
+      final reminders = plan(days: 14);
+      final paused = pausedIn(reminders);
+      expect(reminders.last, same(paused));
+      expect(paused.minutes, all.dailyMinutes);
+      expect(paused.date > LocalDate(2026, 10, 25), isTrue);
+      // Lech Lecha's Erev Shabbat and check-in fall just past the horizon; the
+      // message comes the next day, Monday.
+      final others = reminders.where((r) => r.kind != ReminderKind.paused).toList();
+      expect([others[others.length - 2].kind, others.last.kind], [ReminderKind.erevShabbat, ReminderKind.checkIn]);
+      expect(paused.date, others.last.date.addDays(1));
+      expect(paused.date, LocalDate(2026, 11, 2));
+      expect(paused.id, paused.date.rd * 10 + 3);
+      expect(reminderRoute(paused), '/today');
+    });
+
+    test('names the portion of the week it was planned in', () {
+      final week = planner.schedule.weekFor(LocalDate(2026, 10, 11));
+      expect(pausedIn(plan(days: 14)).plan.weekId, weekIdFor(week.portion, week.occasion));
+    });
+
+    test('skips Shabbat', () {
+      // Daily reminders alone end at the horizon, here a Friday.
+      final reminders = plan(prefs: const ReminderPrefs(daily: true, dailyMinutes: 9 * 60), days: 12);
+      expect(LocalDate(2026, 10, 23).weekday, 5);
+      expect(pausedIn(reminders).date, LocalDate(2026, 10, 25));
+    });
+
+    test('skips the eve of Shabbat when the daily time is after midday', () {
+      final reminders = plan(prefs: const ReminderPrefs(daily: true, dailyMinutes: 20 * 60), days: 11);
+      expect(pausedIn(reminders).date, LocalDate(2026, 10, 25));
+    });
+
+    test('skips Yom Tov', () {
+      // The horizon ends on Erev Pesach 5787, Wednesday 21 April 2027: the two
+      // days of Yom Tov run into Shabbat, so the message waits for Sunday.
+      final now = DateTime(2027, 4, 11, 8);
+      final reminders = planReminders(
+        prefs: const ReminderPrefs(daily: true),
+        planner: planner,
+        progressOf: empty,
+        now: now,
+        today: LocalDate.fromDateTime(now),
+        days: 10,
+      );
+      expect(JewishHolidays.isRestDay(LocalDate(2027, 4, 22), israel: false), isTrue);
+      expect(JewishHolidays.isRestDay(LocalDate(2027, 4, 23), israel: false), isTrue);
+      expect(pausedIn(reminders).date, LocalDate(2027, 4, 25));
+    });
+
+    test('follows the reminders that resume after a pause longer than the horizon', () {
+      // A pause of 30 days, from 9 days ahead: it runs past the 14 days
+      // planned.
+      final pause = Pause(LocalDate(2026, 10, 20), LocalDate(2026, 11, 18));
+      final reminders = plan(days: 14, pauses: [pause]);
+      final others = reminders.where((r) => r.kind != ReminderKind.paused).toList();
+      expect(others.where((r) => pause.contains(r.date)), isEmpty);
+      final after = others.where((r) => r.date > pause.end).toList();
+      expect(after, isNotEmpty, reason: 'reminders resume once the pause ends');
+      expect(after.first.date, LocalDate(2026, 11, 19));
+      expect(after.where((r) => r.kind == ReminderKind.daily), isNotEmpty);
+      expect(after.last.date.rd - pause.end.rd, lessThanOrEqualTo(14 + 7), reason: "for the horizon's length, or a week more");
+      final paused = pausedIn(reminders);
+      expect(reminders.last, same(paused));
+      expect(paused.date > pause.end.addDays(14), isTrue);
+      expect(reminders.length, lessThan(64), reason: 'within the pending notifications iOS allows');
+    });
+
+    test('is not sent when every reminder is off', () {
+      expect(plan(prefs: const ReminderPrefs()), isEmpty);
+    });
+
+    const onlyOne = {
+      'daily': ReminderPrefs(daily: true),
+      'Erev Shabbat': ReminderPrefs(erevShabbat: true),
+      'check-in': ReminderPrefs(checkIn: true),
+    };
+    for (final MapEntry(key: name, value: prefs) in onlyOne.entries) {
+      test('is sent when only the $name reminder is on', () {
+        expect(plan(prefs: prefs).where((r) => r.kind == ReminderKind.paused), hasLength(1));
+      });
+    }
   });
 
   group('hearing the reading in Israel but keeping two days of Yom Tov', () {
@@ -146,6 +285,16 @@ void main() {
       expect(planned(resident, acharon), contains(acharon));
       expect(remind(resident, DateTime(2027, 4, 18, 8)).where((r) => r.date == acharon), isNotEmpty);
     });
+  });
+
+  test('Erev Shabbat opens the week within Today; the daily reading and the check-in open Today', () {
+    final reminders = plan();
+    for (final kind in ReminderKind.values) {
+      expect(reminders.where((r) => r.kind == kind), isNotEmpty, reason: '$kind');
+    }
+    for (final r in reminders) {
+      expect(reminderRoute(r), r.kind == ReminderKind.erevShabbat ? '/today/week/${r.plan.weekId}' : '/today', reason: '$r');
+    }
   });
 
   test('ids are unique', () {

@@ -71,25 +71,34 @@ class LedgerCard extends StatelessWidget {
               child: Padding(padding: EdgeInsets.fromLTRB(16, first ? 16 : 0, 16, last ? 16 : 0), child: cell(c)),
             ),
         ]);
+    // "Parsha streak: begins with Bereshit. Days on track: 2"
+    final label = columns.map((c) => c.semanticsLabel).join('. ');
+    final table = Table(
+      border: TableBorder(verticalInside: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth)),
+      children: [
+        row(first: true, (c) => c.count == 0
+            ? Text(c.zero, style: theme.textTheme.titleMedium)
+            : Text('${c.count}', style: numeral)),
+        row(last: !hasLongest, (c) => Text(c.label, style: meta)),
+        if (hasLongest) row(last: true, (c) => Text(c.longest ?? '', style: meta)),
+      ],
+    );
+    final onTap = this.onTap;
+    // One item, read as a whole. A card that can be tapped is one node, its
+    // button; any other keeps its contents apart, so this one is a node of
+    // its own.
+    if (onTap == null) {
+      return Semantics(
+        container: true,
+        label: label,
+        excludeSemantics: true,
+        child: InfoCard(padding: EdgeInsets.zero, child: table),
+      );
+    }
     return InfoCard(
       padding: EdgeInsets.zero,
       onTap: onTap,
-      child: Semantics(
-        // "Parsha streak: begins with Bereshit. Days on track: 2"
-        label: columns.map((c) => c.semanticsLabel).join('. '),
-        button: onTap != null,
-        excludeSemantics: true,
-        child: Table(
-          border: TableBorder(verticalInside: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth)),
-          children: [
-            row(first: true, (c) => c.count == 0
-                ? Text(c.zero, style: theme.textTheme.titleMedium)
-                : Text('${c.count}', style: numeral)),
-            row(last: !hasLongest, (c) => Text(c.label, style: meta)),
-            if (hasLongest) row(last: true, (c) => Text(c.longest ?? '', style: meta)),
-          ],
-        ),
-      ),
+      child: Semantics(label: label, button: true, excludeSemantics: true, child: table),
     );
   }
 }

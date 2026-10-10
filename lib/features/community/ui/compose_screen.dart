@@ -9,18 +9,15 @@ import '../../../app/providers.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
-import '../../progress/domain/progress_models.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import 'community_ui.dart';
 
-/// Start a new discussion. With `?parsha=<key>` (from a week's page), opens
-/// that parsha's shared discussion instead.
+/// Start a new discussion, in the forum [forumSlug] if given.
 class ComposeScreen extends ConsumerStatefulWidget {
-  const ComposeScreen({super.key, this.forumSlug, this.parshaKey});
+  const ComposeScreen({super.key, this.forumSlug});
 
   final String? forumSlug;
-  final String? parshaKey;
 
   @override
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
@@ -55,17 +52,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     _title.addListener(save);
     _body.addListener(save);
-    if (widget.parshaKey != null && widget.forumSlug == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _openParshaThread());
-    }
-  }
-
-  Future<void> _openParshaThread() async {
-    final repo = ref.read(parshaRepositoryProvider);
-    final portion = repo.all.where((p) => p.key == widget.parshaKey).firstOrNull;
-    final week = ref.read(currentWeekProvider);
-    if (portion == null) return;
-    await openWeeklyThread(context, ref, portion, cycleYearOf(week.portion, week.occasion), replace: true);
   }
 
   @override
@@ -78,17 +64,19 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Future<void> _post() async {
     final l = context.l10n;
+    // This page may close while the post is sent, and its ref with it.
+    final prefs = ref.read(sharedPreferencesProvider);
+    final container = ProviderScope.containerOf(context, listen: false);
+    final repo = ref.read(forumRepositoryProvider);
     if (!await ensureSignedIn(context, ref) || !mounted) return;
-    if (!await ensureGuidelines(context, ref) || !mounted) return;
-    setState(() => _sending = true);
     try {
-      final id = await ref.read(forumRepositoryProvider).createThread(
-            forumId: _forumId!,
-            title: _title.text,
-            body: _body.text,
-          );
-      await ref.read(sharedPreferencesProvider).remove(_draftKey);
-      ref.invalidate(threadsProvider);
+      if (!await ensureGuidelines(context, ref) || !mounted) return;
+      setState(() => _sending = true);
+      final id = await repo.createThread(forumId: _forumId!, title: _title.text, body: _body.text);
+      // Sent: whatever happens to this page, the draft must not come back.
+      _draftTimer?.cancel();
+      await prefs.remove(_draftKey);
+      container.invalidate(threadsProvider);
       if (mounted) {
         showStatus(context, l.posted);
         context.pushReplacement('/community/thread/$id');
@@ -109,10 +97,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final available = forums.where((f) => !f.locked || (profile?.isModerator ?? false)).toList();
     _forumId ??= available.where((f) => f.slug == widget.forumSlug).firstOrNull?.id ?? available.firstOrNull?.id;
     final canPost = _forumId != null && _title.text.trim().length >= 5 && _body.text.trim().length >= 2 && !_sending;
-
-    if (widget.parshaKey != null && widget.forumSlug == null) {
-      return Scaffold(appBar: AppBar(), body: const Center(child: CircularProgressIndicator()));
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -135,16 +119,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   // whose menu always fades in over 300 ms: this one opens at
                   // once, so Reduce Motion holds here too (§8). It can be
                   // focused, and Enter or the arrow keys open it.
-                  DropdownMenu<int>(
-                    initialSelection: _forumId,
-                    label: Text(l.forumLabel),
-                    selectOnly: true,
-                    requestFocusOnTap: true,
-                    expandedInsets: EdgeInsets.zero,
-                    dropdownMenuEntries: [
-                      for (final f in available) DropdownMenuEntry(value: f.id, label: f.name(he)),
-                    ],
-                    onSelected: (v) => setState(() => _forumId = v),
+                  LayoutBuilder(
+                    builder: (context, constraints) => DropdownMenu<int>(
+                      initialSelection: _forumId,
+                      label: Text(l.forumLabel),
+                      selectOnly: true,
+                      requestFocusOnTap: true,
+                      expandedInsets: EdgeInsets.zero,
+                      // The menu as wide as the field, rather than its longest
+                      // forum's name, which can be wider than a phone.
+                      width: constraints.maxWidth,
+                      dropdownMenuEntries: [
+                        for (final f in available) DropdownMenuEntry(value: f.id, label: f.name(he)),
+                      ],
+                      onSelected: (v) => setState(() => _forumId = v),
+                    ),
                   ),
                   const Gap(16),
                   TextField(
@@ -171,7 +160,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: TextButton(
-                      onPressed: () => context.push('/settings/about/legal/guidelines'),
+                      onPressed: () => context.push('/legal/guidelines'),
                       child: Text(l.readGuidelines),
                     ),
                   ),

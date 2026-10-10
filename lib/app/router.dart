@@ -26,8 +26,9 @@ import '../features/settings/screens/reading_settings_screen.dart';
 import '../features/settings/screens/reminder_settings_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/today/today_screen.dart';
-import '../services/notifications.dart';
+import '../ui/widgets/fallbacks.dart';
 import 'providers.dart';
+import 'routes.dart';
 import 'shell.dart';
 
 /// Every page uses the app's (Material) theme transitions, which become
@@ -38,42 +39,61 @@ Page<void> _page(GoRouterState state, Widget child) =>
 GoRoute _route(String path, Widget Function(GoRouterState s) build, {List<RouteBase> routes = const []}) =>
     GoRoute(path: path, pageBuilder: (context, state) => _page(state, build(state)), routes: routes);
 
+GoRoute _week(String path) => _route(path, (s) => WeekOverviewScreen(weekId: s.pathParameters['id']!));
+GoRoute _haftarah(String path) => _route(path, (s) => HaftarahScreen(weekId: s.pathParameters['id']!));
+
+/// A week and its haftarah within each of the [weekTabs], so the navigation
+/// bar stays.
+List<RouteBase> _weekPages() => [_week('week/:id'), _haftarah('haftarah/:id')];
+
+/// The account page, in Community and in Settings: each tab keeps its own.
+AccountScreen _account(GoRouterState s) => AccountScreen(returnWhenSignedIn: s.uri.queryParameters['then'] == 'back');
+
 final routerProvider = Provider<GoRouter>((ref) {
   final onboarded = ValueNotifier<bool>(ref.read(settingsProvider).onboardingComplete);
   ref.listen(settingsProvider.select((s) => s.onboardingComplete), (_, next) => onboarded.value = next);
   ref.onDispose(onboarded.dispose);
 
   return GoRouter(
-    initialLocation: ref.read(notificationServiceProvider).launchRoute ?? '/today',
+    // A notification that launched the app is opened over Today once it is
+    // up (see openFromOutside), so it always has somewhere to go back to.
+    initialLocation: '/today',
     refreshListenable: onboarded,
     redirect: (context, state) {
-      final atWelcome = state.uri.path == '/welcome';
-      if (!onboarded.value && !atWelcome) return '/welcome';
+      final path = state.uri.path;
+      final atWelcome = path == '/welcome';
+      // The guide, sources and policies are open before onboarding too: the
+      // stores require the privacy policy to be reachable on a first visit.
+      // So are the addresses they had in About, which lead to them.
+      final isPublic = path == '/guide' ||
+          path == '/sources' ||
+          path.startsWith('/legal/') ||
+          path == '/settings/about/sources' ||
+          path.startsWith('/settings/about/legal/');
+      if (!onboarded.value && !atWelcome && !isPublic) return '/welcome';
       if (onboarded.value && atWelcome) return '/today';
       return null;
     },
-    errorPageBuilder: (context, state) => _page(state, const _NotFound()),
+    errorPageBuilder: (context, state) => _page(state, const NotFoundPage()),
     routes: [
       _route('/welcome', (_) => const OnboardingScreen()),
       StatefulShellRoute.indexedStack(
         pageBuilder: (context, state, shell) => _page(state, AppShell(shell: shell)),
         branches: [
-          StatefulShellBranch(routes: [_route('/today', (_) => const TodayScreen())]),
+          StatefulShellBranch(routes: [_route('/today', (_) => const TodayScreen(), routes: _weekPages())]),
           StatefulShellBranch(routes: [
             _route('/parsha', (_) => const ParshaTab(), routes: [
               _route('browse', (_) => const BrowseScreen()),
+              ..._weekPages(),
             ]),
           ]),
-          StatefulShellBranch(routes: [_route('/progress', (_) => const ProgressScreen())]),
+          StatefulShellBranch(routes: [_route('/progress', (_) => const ProgressScreen(), routes: _weekPages())]),
           StatefulShellBranch(routes: [
             _route('/community', (_) => const CommunityScreen(), routes: [
               _route('forum/:slug', (s) => ForumScreen(slug: s.pathParameters['slug']!)),
               _route('thread/:id', (s) => ThreadScreen(threadId: s.pathParameters['id']!)),
-              _route('new', (s) => ComposeScreen(
-                    forumSlug: s.uri.queryParameters['forum'],
-                    parshaKey: s.uri.queryParameters['parsha'],
-                  )),
-              _route('account', (s) => AccountScreen(returnWhenSignedIn: s.uri.queryParameters['then'] == 'back')),
+              _route('new', (s) => ComposeScreen(forumSlug: s.uri.queryParameters['forum'])),
+              _route('account', _account),
               _route('moderation', (_) => const ModerationScreen()),
             ]),
           ]),
@@ -84,34 +104,52 @@ final routerProvider = Provider<GoRouter>((ref) {
               _route('accessibility', (_) => const AccessibilitySettingsScreen()),
               _route('reminders', (_) => const ReminderSettingsScreen()),
               _route('data', (_) => const DataSettingsScreen()),
+              _route('account', _account),
               _route('about', (_) => const AboutScreen(), routes: [
-                _route('sources', (_) => const SourcesScreen()),
-                _route('legal/:doc', (s) => LegalScreen(doc: LegalDoc.fromSlug(s.pathParameters['doc']!))),
+                // Where these pages used to be, for old links.
+                GoRoute(path: 'sources', redirect: (_, _) => '/sources'),
+                GoRoute(path: 'legal/:doc', redirect: (_, s) => '/legal/${s.pathParameters['doc']}'),
               ]),
             ]),
           ]),
         ],
       ),
       _route('/guide', (_) => const GuideScreen()),
-      _route('/week/:id', (s) => WeekOverviewScreen(weekId: s.pathParameters['id']!)),
+      _route('/sources', (_) => const SourcesScreen()),
+      _route('/legal/:doc', (s) => switch (LegalDoc.fromSlug(s.pathParameters['doc']!)) {
+            final doc? => LegalScreen(doc: doc),
+            null => const NotFoundPage(),
+          }),
+      // A week and its haftarah on their own, for links and notifications.
+      _week('/week/:id'),
+      _haftarah('/haftarah/:id'),
+      // The reader always fills the screen.
       _route('/read/:id/:aliyah', (s) => ReaderScreen(
             weekId: s.pathParameters['id']!,
             aliyah: int.tryParse(s.pathParameters['aliyah']!) ?? 0,
             fullText: s.uri.queryParameters['mode'] == 'full',
+            fromWeek: s.uri.queryParameters['from'] == 'week',
           )),
-      _route('/haftarah/:id', (s) => HaftarahScreen(weekId: s.pathParameters['id']!)),
     ],
   );
 });
 
-class _NotFound extends StatelessWidget {
-  const _NotFound();
+/// The roots of the navigation tabs.
+const _tabs = ['/today', '/parsha', '/progress', '/community', '/settings'];
 
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(),
-        body: Center(
-          child: FilledButton(onPressed: () => context.go('/today'), child: const Icon(Icons.home)),
-        ),
-      );
+/// Opens [location] from outside the app's own navigation: a tapped
+/// notification, or one that launched the app. A tab, or a page within one,
+/// opens in its place; any other page opens over Today, so it has a back
+/// button that leads to the navigation bar rather than a dead end. A week or
+/// a haftarah on its own, as notifications scheduled by earlier versions
+/// name them, opens within Today.
+void openFromOutside(GoRouter router, String location) {
+  if (RegExp(r'^/(week|haftarah)/').hasMatch(location)) location = '/today$location';
+  final path = Uri.parse(location).path;
+  if (_tabs.any((tab) => path == tab || path.startsWith('$tab/'))) {
+    router.go(location);
+  } else {
+    router.go('/today');
+    router.push(location);
+  }
 }

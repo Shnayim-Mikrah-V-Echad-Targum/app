@@ -88,6 +88,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get actionDelete => 'מחיקה';
 
   @override
+  String get actionClear => 'ניקוי';
+
+  @override
   String get actionReport => 'דיווח';
 
   @override
@@ -103,10 +106,30 @@ class AppLocalizationsHe extends AppLocalizations {
   String get actionMore => 'אפשרויות נוספות';
 
   @override
+  String moreOptionsFor(String name) {
+    return 'אפשרויות נוספות עבור $name';
+  }
+
+  @override
+  String get actionRefresh => 'רענון';
+
+  @override
+  String get refreshed => 'עודכן';
+
+  @override
   String get loading => 'טוען…';
 
   @override
   String get errorGeneric => 'משהו השתבש. נא לנסות שוב.';
+
+  @override
+  String get notFoundTitle => 'הדף לא נמצא';
+
+  @override
+  String get notFoundBody => 'הקישור הזה לא מוביל לשום דף באפליקציה.';
+
+  @override
+  String get goToToday => 'מעבר למסך היום';
 
   @override
   String get aliyah1 => 'ראשון';
@@ -160,8 +183,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get aliyotWord => 'עליות';
 
   @override
-  String countOfTotal(int done, int total) {
-    return '$done מתוך $total';
+  String countOfTotal(int count, int total) {
+    return '$count מתוך $total';
   }
 
   @override
@@ -545,17 +568,25 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String targumVerseLabel(String number) {
+    return 'תרגום, פסוק $number';
+  }
+
+  @override
   String chapterLabel(String number) {
     return 'פרק $number';
   }
 
   @override
   String get noTargumNote =>
-      'רבים קוראים פסוק זה פעם שלישית בעברית במקום התרגום (שולחן ערוך או״ח רפה, ב).';
+      'אונקלוס כאן מביא בעיקר את שמות המקומות בארמית. בעקבות רש״י (ברכות ח, ב) רבים קוראים פסוק זה גם פעם שלישית בעברית (ראו שו״ע או״ח רפה, א).';
 
   @override
   String get noRashiNote =>
       'רש״י אינו מפרש פסוק זה. יש הקוראים אותו פעם שלישית בעברית (משנה ברורה רפה, ה).';
+
+  @override
+  String get noRashiComment => 'רש״י אינו מפרש פסוק זה.';
 
   @override
   String ketivQereLabel(String ketiv, String qere) {
@@ -593,7 +624,18 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get nextAliyah => 'לעלייה הבאה';
+  String continueWithAliyah(String aliyah) {
+    return 'להמשיך עם $aliyah';
+  }
+
+  @override
+  String get aliyahStatusRead => 'נקראה';
+
+  @override
+  String get aliyahStatusPartial => 'בתהליך';
+
+  @override
+  String get aliyahStatusUnread => 'טרם התחילה';
 
   @override
   String get backToWeek => 'חזרה לפרשה';
@@ -688,6 +730,27 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get shortcutHelp => 'הצגת קיצורים';
+
+  @override
+  String get shortcutScroll => 'גלילת הטקסט';
+
+  @override
+  String get shortcutPageDown => 'עמוד למטה, ואז השלב הבא';
+
+  @override
+  String get shortcutPageUp => 'עמוד למעלה, ואז השלב הקודם';
+
+  @override
+  String get shortcutFocusVerse => 'טקסט מלא במצב מיקוד: הפסוק הקודם או הבא';
+
+  @override
+  String get keyUp => 'חץ למעלה';
+
+  @override
+  String get keyDown => 'חץ למטה';
+
+  @override
+  String get keySpace => 'רווח';
 
   @override
   String get progressTitle => 'התקדמות';
@@ -984,7 +1047,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get thirdReadingDesc =>
-      'כשאין תרגום או רש״י, להציע לקרוא את המקרא פעם שלישית';
+      'להציע קריאה שלישית בעברית כשאונקלוס מביא בעיקר שמות (במדבר לב, ג) או כשרש״י אינו מפרש';
 
   @override
   String get haftarahEnabled => 'הפטרה';
@@ -1086,16 +1149,6 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String sliderDecrease(String title) {
-    return '$title: הקטנה';
-  }
-
-  @override
-  String sliderIncrease(String title) {
-    return '$title: הגדלה';
-  }
-
-  @override
   String get lineSpacing => 'ריווח שורות';
 
   @override
@@ -1103,6 +1156,16 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get letterSpacing => 'ריווח אותיות';
+
+  @override
+  String decreaseSetting(String name) {
+    return 'הקטנת $name';
+  }
+
+  @override
+  String increaseSetting(String name) {
+    return 'הגדלת $name';
+  }
 
   @override
   String get showNikud => 'ניקוד';
@@ -1180,6 +1243,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get haptics => 'משוב רטט';
 
   @override
+  String get singleKeyShortcuts => 'קיצורי מקש יחיד';
+
+  @override
+  String get singleKeyShortcutsDesc =>
+      'בזמן הקריאה, המקשים T,‏ N,‏ L,‏ + ומינוס פועלים בלחיצה אחת, בלי Ctrl. כדאי לכבות את האפשרות אם משתמשים בקלט קולי או במקשים המהירים של קורא מסך.';
+
+  @override
   String get screenReaderText => 'טקסט לקורא מסך';
 
   @override
@@ -1239,13 +1309,16 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dailyReminderDesc => 'תזכורת עדינה בשעה שבחרת';
 
   @override
-  String get reminderTime => 'שעה';
+  String get dailyReminderTime => 'שעת התזכורת היומית';
 
   @override
   String get fridayReminder => 'תזכורת לערב שבת';
 
   @override
   String get fridayReminderDesc => 'ביום שישי בבוקר, רק אם הפרשה לא הושלמה';
+
+  @override
+  String get fridayReminderTime => 'שעת התזכורת לערב שבת';
 
   @override
   String get checkInReminder => 'תזכורת אחרי שבת';
@@ -1288,6 +1361,9 @@ class AppLocalizationsHe extends AppLocalizations {
       'ההתראות לאפליקציה זו כבויות בהגדרות המכשיר.';
 
   @override
+  String get notificationsDeniedTitle => 'ההתראות כבויות';
+
+  @override
   String get primingTitle => 'רוצה תזכורת יומית עדינה?';
 
   @override
@@ -1306,6 +1382,18 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notifChannelCheckIn => 'אחרי שבת';
+
+  @override
+  String get notifChannelDailyDesc =>
+      'הקריאה של היום בשעה שבחרת, אף פעם לא בשבת או ביום טוב';
+
+  @override
+  String get notifChannelErevShabbatDesc =>
+      'בבוקר שלפני שבת או יום טוב, רק אם הפרשה לא הושלמה';
+
+  @override
+  String get notifChannelCheckInDesc =>
+      'אחרי שבת: תזכורת לרשום מה שנקרא, וגם הודעה כשהתזכורות נעצרות';
 
   @override
   String notifDailyTitle(String aliyah) {
@@ -1331,6 +1419,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notifCheckInBody => 'קראת בשבת? אפשר לרשום זאת כאן.';
+
+  @override
+  String get notifPausedTitle => 'התזכורות הושהו';
+
+  @override
+  String notifPausedBody(String parsha) {
+    return 'נשהה את התזכורות לעת עתה. המקום שלך בפרשת $parsha שמור — אפשר לחזור בכל עת.';
+  }
 
   @override
   String get showStreaks => 'הצגת מספרי הרצף';
@@ -1481,7 +1577,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideSpecialBody =>
-      'יש פסוקים שאין להם תרגום נפרד, כגון ״עטרות ודיבון״ (במדבר לב, ג); רבים קוראים אותם פעם שלישית בעברית. את פרשת וזאת הברכה קוראים לפני שמחת תורה, ובמיוחד בהושענא רבה. רבים קוראים גם את הפטרת השבוע פעם אחת.';
+      'בפסוק ״עטרות ודיבון״ (במדבר לב, ג) אונקלוס מביא בעיקר את שמות המקומות בארמית, ובעקבות רש״י (ברכות ח, ב) רבים קוראים אותו גם פעם שלישית בעברית. את פרשת וזאת הברכה קוראים לפני שמחת תורה, ובמיוחד בהושענא רבה. רבים קוראים גם את הפטרת השבוע פעם אחת.';
 
   @override
   String get guideShabbatTitle => 'שבת ויום טוב';
@@ -1516,6 +1612,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get forumsHeading => 'פורומים';
+
+  @override
+  String get forumNotFound => 'הפורום לא נמצא. ייתכן שהועבר או נסגר.';
+
+  @override
+  String get allForums => 'כל הפורומים';
 
   @override
   String thisWeeksThread(String name) {
@@ -1658,6 +1760,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String todahRemove(String name) {
+    return 'ביטול התודה ל$name';
+  }
+
+  @override
   String get reportTitle => 'דיווח על ההודעה';
 
   @override
@@ -1774,7 +1881,29 @@ class AppLocalizationsHe extends AppLocalizations {
   String get noThreads => 'אין עדיין דיונים. אפשר לפתוח את הראשון!';
 
   @override
+  String noPostsYet(String name) {
+    return 'אין עדיין הודעות — אפשר לשתף מחשבה על פרשת $name.';
+  }
+
+  @override
+  String get noReplies => 'אין עדיין תגובות.';
+
+  @override
   String get loadMore => 'טעינת עוד';
+
+  @override
+  String loadedMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'נטענו עוד $count דיונים',
+      one: 'נטען עוד דיון אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get showEarlierPosts => 'הצגת הודעות קודמות';
 
   @override
   String postsCount(int count) {
@@ -1820,6 +1949,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String postNofM(int n, int total) {
+    return 'הודעה $n מתוך $total';
+  }
+
+  @override
   String get anonymousMember => 'חבר/ה לשעבר';
 
   @override
@@ -1851,6 +1985,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get errNameTaken => 'השם תפוס.';
+
+  @override
+  String get errAlreadyReported => 'כבר דיווחת על ההודעה הזאת.';
 
   @override
   String get errInvalidName => 'השם צריך להכיל 2–40 תווים.';

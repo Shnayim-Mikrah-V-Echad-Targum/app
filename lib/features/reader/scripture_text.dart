@@ -3,8 +3,10 @@ import 'package:flutter/rendering.dart';
 
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/scripture.dart';
+import '../../l10n/app_localizations.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/sefer_colors.dart';
+import '../../ui/widgets/lang.dart';
 import '../settings/app_settings.dart';
 
 /// Which kind of text is being rendered, for sizing and styling.
@@ -68,15 +70,51 @@ String displayHebrew(String text, AppSettings s) {
   return out;
 }
 
-/// The text a screen reader should speak for a verse.
-String spokenVerse(Verse verse, AppSettings s) {
-  final read = verse.readText;
-  return switch (s.screenReaderText) {
-    ScreenReaderText.simplified => HebrewSpeech.spoken(read, divineName: s.divineName),
-    ScreenReaderText.consonants => HebrewSpeech.spoken(read, keepNikud: false, divineName: s.divineName),
-    ScreenReaderText.allMarks => read,
-  };
+/// The text a screen reader should speak for a verse of the Torah or of
+/// Targum Onkelos.
+String spokenVerse(Verse verse, AppSettings s, {required ScriptureKind kind}) =>
+    _spoken(verse.readText, s, targum: kind == ScriptureKind.targum);
+
+/// The text a screen reader should speak for one of Rashi's comments in
+/// Hebrew: the words it explains, then the comment.
+String spokenRashi(Comment c, AppSettings s) =>
+    _spoken(c.heading == null ? c.text : '${c.heading} ${c.text}', s, rashi: true);
+
+/// The same for one of Rashi's comments in English, with the Hebrew it
+/// quotes ("בראשית IN THE BEGINNING") tagged as Hebrew. The Hebrew is read
+/// as Rashi in Hebrew is, the Divine Name among it ("לפני ה׳ BEFORE THE
+/// LORD"); for text-to-speech ([speech]), whatever the screen-reader text.
+AttributedString spokenRashiEnglish(Comment c, AppSettings s, {bool speech = false}) {
+  final text = c.heading == null ? c.text : '${c.heading} ${c.text}';
+  final label = StringBuffer();
+  final hebrew = <TextRange>[];
+  var from = 0;
+  for (final m in _hebrewRun.allMatches(text)) {
+    label.write(text.substring(from, m.start));
+    final run = speech
+        ? HebrewSpeech.spoken(m.group(0)!, divineName: s.divineName, rashi: true)
+        : _spoken(m.group(0)!, s, rashi: true);
+    hebrew.add(TextRange(start: label.length, end: label.length + run.length));
+    label.write(run);
+    from = m.end;
+  }
+  label.write(text.substring(from));
+  return AttributedString(label.toString(), attributes: [
+    for (final range in hebrew) LocaleStringAttribute(range: range, locale: _hebrew),
+  ]);
 }
+
+// Hebrew words, with the spaces and punctuation between them.
+final _hebrewRun = RegExp('[\u05d0-\u05ea][\u0591-\u05f4\\s"\'.,:;-]*[\u05b0-\u05f4]|[\u05d0-\u05ea]');
+
+String _spoken(String text, AppSettings s, {bool targum = false, bool rashi = false}) => switch (s.screenReaderText) {
+      ScreenReaderText.simplified => HebrewSpeech.spoken(text, divineName: s.divineName, targum: targum, rashi: rashi),
+      ScreenReaderText.consonants =>
+        HebrewSpeech.spoken(text, keepNikud: false, divineName: s.divineName, targum: targum, rashi: rashi),
+      ScreenReaderText.allMarks => text,
+    };
+
+const _hebrew = Locale('he');
 
 /// One verse of Hebrew or Aramaic, with its number.
 class ScriptureVerse extends StatelessWidget {
@@ -178,10 +216,27 @@ class ScriptureVerse extends StatelessWidget {
       }
     }
 
-    final spoken = spokenVerse(verse, settings);
-    final prefix = '${l.verseLabel('${verse.ref.verse}')}. ';
-    final noteText = notes.map(l.noteLabel).join(' ');
-    final label = '$prefix$spoken${noteText.isEmpty ? '' : '. $noteText'}';
+    // A screen reader reads the verse as one label, "Verse 9." and then the
+    // Hebrew, tagged as Hebrew so that it is read in a Hebrew voice. Where
+    // only a whole node can be tagged (the web), the whole label is in
+    // Hebrew ("פסוק 9.") and the node itself is tagged.
+    final byNode = nodeLanguageOnly;
+    final labels = byNode ? lookupAppLocalizations(_hebrew) : l;
+    final number = '${verse.ref.verse}';
+    final prefix = '${kind == ScriptureKind.targum ? labels.targumVerseLabel(number) : labels.verseLabel(number)}. ';
+    final spoken = spokenVerse(verse, settings, kind: kind);
+    var label = '$prefix$spoken';
+    final hebrewSpans = [TextRange(start: prefix.length, end: label.length)];
+    for (final (i, n) in notes.indexed) {
+      // The notes are in Hebrew too, and read like the verse: without
+      // cantillation, and the Divine Name as chosen.
+      label += i == 0 ? '. ' : ' ';
+      final spokenNote = _spoken(n, settings);
+      final note = labels.noteLabel(spokenNote);
+      final start = label.length + note.indexOf(spokenNote);
+      hebrewSpans.add(TextRange(start: start, end: start + spokenNote.length));
+      label += note;
+    }
 
     Widget text = Text.rich(
       TextSpan(children: spans, style: base),
@@ -202,14 +257,12 @@ class ScriptureVerse extends StatelessWidget {
 
     return Semantics(
       container: true,
+      // Only where the whole label is Hebrew: elsewhere the node's language
+      // would also be given to the English "Verse 9.".
+      localeForSubtree: byNode ? _hebrew : null,
       attributedLabel: AttributedString(
         label,
-        attributes: [
-          LocaleStringAttribute(
-            range: TextRange(start: prefix.length, end: prefix.length + spoken.length),
-            locale: const Locale('he'),
-          ),
-        ],
+        attributes: [for (final range in hebrewSpans) LocaleStringAttribute(range: range, locale: _hebrew)],
       ),
       textDirection: TextDirection.rtl,
       child: ExcludeSemantics(
@@ -245,18 +298,21 @@ class TranslationVerse extends StatelessWidget {
       ScriptureKind.translation,
       color: dimmed ? dimInk : theme.colorScheme.onSurfaceVariant,
     );
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Text.rich(
-        TextSpan(children: [
-          TextSpan(
-            text: '$number ',
-            style: style.copyWith(fontWeight: FontWeight.w700, color: dimmed ? dimInk : theme.colorScheme.primary),
-          ),
-          TextSpan(text: text),
-        ]),
-        style: style,
-        textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+    return Lang(
+      const Locale('en'),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Text.rich(
+          TextSpan(children: [
+            TextSpan(
+              text: '$number ',
+              style: style.copyWith(fontWeight: FontWeight.w700, color: dimmed ? dimInk : theme.colorScheme.primary),
+            ),
+            TextSpan(text: text),
+          ]),
+          style: style,
+          textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+        ),
       ),
     );
   }
@@ -284,22 +340,40 @@ class RashiComments extends StatelessWidget {
         for (final c in comments)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Text.rich(
-              TextSpan(children: [
-                if (c.heading != null)
-                  TextSpan(
-                    text: '${c.heading} ',
-                    style: style.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
-                  ),
-                TextSpan(text: english ? c.text : HebrewText.forDisplay(c.text, nikud: settings.showNikud, teamim: true)),
-              ]),
-              style: style,
+            // Each comment is one node in its own language, read like a verse
+            // (the Divine Name as chosen); its Hebrew label is tagged as well
+            // for Android and iOS.
+            child: Semantics(
+              container: true,
+              localeForSubtree: english ? const Locale('en') : _hebrew,
+              attributedLabel: english ? spokenRashiEnglish(c, settings) : _hebrewLabel(c),
               textDirection: dir,
-              textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+              child: ExcludeSemantics(
+                child: Text.rich(
+                  TextSpan(children: [
+                    if (c.heading != null)
+                      TextSpan(
+                        text: '${c.heading} ',
+                        style: style.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
+                      ),
+                    TextSpan(text: english ? c.text : HebrewText.forDisplay(c.text, nikud: settings.showNikud, teamim: true)),
+                  ]),
+                  style: style,
+                  textDirection: dir,
+                  textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+                ),
+              ),
             ),
           ),
       ],
     );
+  }
+
+  AttributedString _hebrewLabel(Comment c) {
+    final label = spokenRashi(c, settings);
+    return AttributedString(label, attributes: [
+      LocaleStringAttribute(range: TextRange(start: 0, end: label.length), locale: _hebrew),
+    ]);
   }
 }
 

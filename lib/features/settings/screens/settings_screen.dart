@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/widgets/app_icon.dart';
 import '../../../ui/widgets/common.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
@@ -15,12 +16,13 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final settings = ref.watch(settingsProvider);
+    // Every page opens over Settings and goes back to it.
     Widget item(IconData icon, String title, String? subtitle, String route) => ListTile(
-          leading: Icon(icon),
+          leading: AppIcon(icon),
           title: Text(title),
           subtitle: subtitle == null ? null : Text(subtitle),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go(route),
+          onTap: () => context.push(route),
         );
     return Scaffold(
       appBar: AppBar(title: Text(l.settingsTitle)),
@@ -31,7 +33,7 @@ class SettingsScreen extends ConsumerWidget {
           item(Icons.text_fields, l.settingsDisplay, l.settingsDisplayDesc, '/settings/display'),
           item(Icons.accessibility_new, l.settingsAccessibility, l.settingsAccessibilityDesc, '/settings/accessibility'),
           item(Icons.notifications_outlined, l.settingsReminders, l.settingsRemindersDesc, '/settings/reminders'),
-          item(Icons.person_outline, l.settingsAccount, null, '/community/account'),
+          item(Icons.person_outline, l.settingsAccount, null, '/settings/account'),
           item(Icons.save_alt, l.settingsData, l.settingsDataDesc, '/settings/data'),
           SwitchListTile(
             secondary: const Icon(Icons.auto_graph),

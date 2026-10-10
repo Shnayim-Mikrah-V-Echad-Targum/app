@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/app.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -18,6 +21,8 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/services/reminder_planner.dart';
+import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 
 ParshaRepository? _repo;
@@ -70,13 +75,16 @@ final historyNow = DateTime(2026, 11, 11, 10);
 final historyJoinDate = LocalDate(2026, 10, 4);
 
 /// Pumps the whole app with in-memory storage and the demo backend (or
-/// [forums], when given).
+/// [forums], when given), and notifications disabled (or [notifications]),
+/// and any further [overrides].
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   AppSettings settings = const AppSettings(onboardingComplete: true),
   DateTime? now,
   ProgressState? progress,
   ForumRepository? forums,
+  NotificationService? notifications,
+  List<Override> overrides = const [],
 }) async {
   TodayController.autoRollover = false;
   if (now != null) TodayController.now = () => now;
@@ -90,7 +98,8 @@ Future<ProviderContainer> pumpApp(
     sharedPreferencesProvider.overrideWithValue(prefs),
     parshaRepositoryProvider.overrideWithValue(repo!),
     backendProvider.overrideWithValue(Backend(forums ?? DemoForumRepository())),
-    notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
+    notificationServiceProvider.overrideWithValue(notifications ?? NotificationService.disabled()),
+    ...overrides,
   ]);
   addTearDown(container.dispose);
   await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const ShnayimMikraApp()));
@@ -99,8 +108,9 @@ Future<ProviderContainer> pumpApp(
   return container;
 }
 
-/// Pumps the app on [route] in a [size] view at [textScale], and waits for
-/// asset-backed content (text previews, for example) to load.
+/// Pumps the app on [route] in a [size] view at [textScale], with
+/// notifications disabled (or [notifications]), and waits for asset-backed
+/// content (text previews, for example) to load.
 Future<ProviderContainer> openRoute(
   WidgetTester tester,
   String route, {
@@ -108,13 +118,14 @@ Future<ProviderContainer> openRoute(
   DateTime? now,
   Size size = const Size(412, 915),
   double textScale = 1,
+  NotificationService? notifications,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
   addTearDown(tester.view.reset);
   addTearDown(tester.platformDispatcher.clearAllTestValues);
-  final container = await pumpApp(tester, settings: settings, now: now);
+  final container = await pumpApp(tester, settings: settings, now: now, notifications: notifications);
   container.read(routerProvider).go(route);
   await tester.pumpAndSettle();
   await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
@@ -150,3 +161,43 @@ Future<void> pumpThemed(
       ),
       home: Scaffold(body: child),
     ));
+
+/// Text-to-speech that records what it is asked to say, and says nothing.
+/// Override [ttsProvider] with it.
+class RecordingTts extends TtsService {
+  RecordingTts() : super(engine: _SilentEngine());
+
+  /// Each text asked for, with its language.
+  final spoken = <(String, String)>[];
+
+  @override
+  Future<bool?> hasHebrewVoice() async => true;
+
+  @override
+  Future<void> speak(String text, {required String language, double rate = 0.45}) async => spoken.add((text, language));
+}
+
+class _SilentEngine extends Fake implements FlutterTts {
+  @override
+  void setStartHandler(VoidCallback callback) {}
+  @override
+  void setCompletionHandler(VoidCallback callback) {}
+  @override
+  void setCancelHandler(VoidCallback callback) {}
+  @override
+  void setErrorHandler(ErrorHandler handler) {}
+  @override
+  Future<dynamic> stop() async => 1;
+}
+
+/// Reminders as on a phone, where they are available: for pages that show
+/// their settings. Schedules nothing.
+class PhoneNotifications extends NotificationService {
+  PhoneNotifications() : super.withPlugin(_NoPlugin());
+
+  @override
+  Future<void> reschedule(
+          List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) async {}
+}
+
+class _NoPlugin extends Fake implements FlutterLocalNotificationsPlugin {}

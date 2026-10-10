@@ -1,3 +1,4 @@
+import AVFoundation
 import Flutter
 import UIKit
 import flutter_local_notifications
@@ -19,5 +20,27 @@ import flutter_local_notifications
       GeneratedPluginRegistrant.register(with: registry)
     }
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    registerAudioSessionChannel(engineBridge.pluginRegistry)
+  }
+
+  // Ends the audio session that Listen sets, when speech stops part-way
+  // (lib/services/tts.dart). flutter_tts ends it only when speech finishes,
+  // so music it ducked would stay quiet, and a podcast it interrupted would
+  // never resume.
+  private func registerAudioSessionChannel(_ registry: FlutterPluginRegistry) {
+    guard let registrar = registry.registrar(forPlugin: "ShnayimMikraAudioSession") else { return }
+    let channel = FlutterMethodChannel(name: "shnayim_mikra/audio_session", binaryMessenger: registrar.messenger())
+    channel.setMethodCallHandler { call, result in
+      guard call.method == "deactivate" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      do {
+        try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        result(true)
+      } catch {
+        result(false)
+      }
+    }
   }
 }

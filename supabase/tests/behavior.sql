@@ -79,6 +79,16 @@ select public.check((select count(*) = 1 from public.posts where thread_id = :t1
 select set_config('request.jwt.claim.sub', :'carol', false);
 select public.check((select count(*) = 2 from public.posts where thread_id = :t1), 'other members still see both posts');
 
+-- ---- the app's todah and blocks may be sent twice (upserts that ignore duplicates) ----
+select id as bob_post from public.posts where author_id = :'bob' \gset
+insert into public.reactions (post_id, user_id) values (:bob_post, :'carol') on conflict (post_id, user_id, kind) do nothing;
+insert into public.reactions (post_id, user_id) values (:bob_post, :'carol') on conflict (post_id, user_id, kind) do nothing;
+select public.check((select count(*) = 1 from public.reactions where post_id = :bob_post), 'todah given twice counts once');
+select set_config('request.jwt.claim.sub', :'bob', false);
+insert into public.user_blocks (blocker_id, blocked_id) values (:'bob', :'alice') on conflict (blocker_id, blocked_id) do nothing;
+select public.check((select count(*) = 1 from public.user_blocks), 'blocking twice keeps one block');
+select set_config('request.jwt.claim.sub', :'carol', false);
+
 -- ---- three distinct reports hide a post pending review ----
 select id as alice_post from public.posts where author_id = :'alice' \gset
 insert into public.reports (post_id, reason) values (:alice_post, 'spam');
@@ -86,6 +96,9 @@ select set_config('request.jwt.claim.sub', :'dave', false);
 insert into public.reports (post_id, reason) values (:alice_post, 'spam');
 select set_config('request.jwt.claim.sub', :'bob', false);
 insert into public.reports (post_id, reason) values (:alice_post, 'disrespect');
+-- The app tells this apart from a taken display name by the index's name.
+select public.expect_error(format('insert into public.reports (post_id, reason) values (%s, %L)', :alice_post, 'spam'),
+  'duplicate key value violates unique constraint "reports_one_per_reporter_post"');
 select set_config('request.jwt.claim.sub', :'carol', false);
 select public.check((select count(*) = 1 from public.posts where thread_id = :t1), 'post auto-hidden after 3 reports');
 select set_config('request.jwt.claim.sub', :'alice', false);
@@ -115,6 +128,14 @@ set role authenticated;
 select set_config('request.jwt.claim.sub', :'carol', false);
 select public.expect_error(format('select public.soft_delete_post(%s)', :bob_post), 'forbidden');
 
+-- ---- a thread's post count leaves out deleted posts ----
+select set_config('request.jwt.claim.sub', :'bob', false);
+select public.soft_delete_post(:bob_post);
+select public.check((select post_count = 1 from public.threads where id = :t1), 'a deleted post leaves its thread''s count');
+select set_config('request.jwt.claim.sub', :'mod', false);
+select public.moderate('restore_post', :'bob_post');
+select public.check((select post_count = 2 from public.threads where id = :t1), 'a restored post counts again');
+
 -- ---- content filter folds vowels, cantillation and final letters ----
 reset role;
 insert into private.banned_terms (pattern, action) values ('שקרן', 'reject');
@@ -134,6 +155,8 @@ select public.ensure_weekly_thread(1::smallint, 5787::smallint) as w1 \gset
 select public.ensure_weekly_thread(1::smallint, 5787::smallint) as w2 \gset
 select public.check(:w1 = :w2, 'weekly thread is created once and reused');
 select public.check((select title = 'Bereshit · בראשית · 5787' and kind = 'weekly' and author_id is null from public.threads where id = :w1), 'weekly thread title comes from reference data');
+-- The app's "This week" card opens it: pinned, past weeks would crowd out every other thread.
+select public.check((select not is_pinned from public.threads where id = :w1), 'a new weekly thread is not pinned');
 select public.expect_error($$select public.ensure_weekly_thread(99::smallint, 5787::smallint)$$, 'invalid_parasha');
 select public.expect_error($$insert into public.threads (category_id, title, kind) values (1, 'Fake weekly thread', 'weekly')$$, 'permission denied');
 reset role;
@@ -151,7 +174,8 @@ select public.expect_error(format('insert into public.user_progress (user_id, da
 -- ---- display names are unique, case-insensitively ----
 update public.profiles set display_name = 'Bob the Reader' where id = :'bob';
 select set_config('request.jwt.claim.sub', :'carol', false);
-select public.expect_error($$update public.profiles set display_name = 'bob THE reader' where id = auth.uid()$$, 'duplicate key');
+select public.expect_error($$update public.profiles set display_name = 'bob THE reader' where id = auth.uid()$$,
+  'duplicate key value violates unique constraint "profiles_display_name_ci"');
 select public.expect_error($$update public.profiles set trust_level = 4 where id = auth.uid()$$, 'permission denied');
 
 -- ---- account deletion removes the account and everything posted ----
@@ -161,6 +185,7 @@ reset role;
 select public.check((select count(*) = 0 from auth.users where id = :'alice'), 'auth user deleted');
 select public.check((select count(*) = 0 from public.profiles where id = :'alice'), 'profile deleted');
 select public.check((select count(*) = 0 from public.posts where author_id = :'alice'), 'posts deleted');
+select public.check((select post_count = 1 from public.threads where id = :t1), 'deleted posts leave their thread''s count');
 select public.check((select count(*) = 0 from public.user_progress where user_id = :'alice'), 'progress backup deleted');
 
 \echo 'All community schema tests passed.'

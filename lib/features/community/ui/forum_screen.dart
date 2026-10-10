@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
-import '../data/backend.dart';
+import '../../../ui/widgets/fallbacks.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
 import 'community_ui.dart';
@@ -20,19 +22,43 @@ class ForumScreen extends ConsumerStatefulWidget {
 }
 
 class _ForumScreenState extends ConsumerState<ForumScreen> {
-  final _extra = <ThreadSummary>[];
   bool _loadingMore = false;
-  bool _exhausted = false;
 
-  Future<void> _loadMore(Forum forum, List<ThreadSummary> current) async {
-    if (current.isEmpty) return;
+  // Load more keeps the keyboard focus while it loads. Then it moves down
+  // past the threads loaded, out of view, and the first of them, in its
+  // place, takes the focus.
+  final _loadMoreFocus = FocusNode();
+  final _firstLoadedFocus = FocusNode();
+  int? _firstLoaded;
+
+  @override
+  void dispose() {
+    _loadMoreFocus.dispose();
+    _firstLoadedFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMore(Forum forum) async {
+    if (_loadingMore) return;
+    final l = context.l10n;
+    final threads = threadsProvider(forum.id);
+    final before = ref.read(threads).value?.threads.length ?? 0;
     setState(() => _loadingMore = true);
     try {
-      final more = await ref.read(forumRepositoryProvider).threads(forumId: forum.id, before: current.last.lastPostAt);
-      setState(() {
-        _extra.addAll(more);
-        _exhausted = more.isEmpty;
-      });
+      await ref.read(threads.notifier).loadMore();
+      final loaded = (ref.read(threads).value?.threads.length ?? before) - before;
+      if (!mounted || loaded <= 0) return;
+      if (_loadMoreFocus.hasFocus) {
+        setState(() => _firstLoaded = before);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _firstLoadedFocus.context == null) return;
+          _firstLoadedFocus.requestFocus();
+          _firstLoadedFocus.context!.findRenderObject()?.showOnScreen();
+        });
+      }
+      showStatus(context, l.loadedMore(loaded));
+    } catch (e) {
+      if (mounted) showStatus(context, communityError(l, e));
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
@@ -42,75 +68,126 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final he = context.isHebrewUi;
-    final forums = ref.watch(forumsProvider).value ?? const [];
-    final forum = forums.where((f) => f.slug == widget.slug).firstOrNull;
+    final forums = ref.watch(forumsProvider);
+    final forum = (forums.value ?? const []).where((f) => f.slug == widget.slug).firstOrNull;
     if (forum == null) {
-      return Scaffold(appBar: AppBar(), body: const Center(child: CircularProgressIndicator()));
+      // Spin only while the forums first load: a link to a forum that
+      // doesn't exist says so, and so do forums that can't load, at once,
+      // while they are tried again.
+      final missing = forums.hasValue;
+      final error = missing ? null : forums.error;
+      return Scaffold(
+        appBar: AppBar(title: missing ? Text(l.notFoundTitle) : null),
+        body: !missing && error == null
+            ? const Center(child: CircularProgressIndicator())
+            : CenteredMessage(
+                text: error != null ? communityError(l, error) : l.forumNotFound,
+                actions: [
+                  FilledButton.tonal(
+                    style: AppButtons.tonal(context),
+                    onPressed: () => context.go('/community'),
+                    child: Text(l.allForums),
+                  ),
+                  if (error != null)
+                    TextButton(onPressed: () => ref.invalidate(forumsProvider), child: Text(l.actionRetry)),
+                ],
+              ),
+      );
     }
     final threads = ref.watch(threadsProvider(forum.id));
     final profile = ref.watch(myProfileProvider).value;
     final canStart = !forum.locked || (profile?.isModerator ?? false);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(forum.name(he))),
-      floatingActionButton: canStart
-          ? FloatingActionButton.extended(
-              onPressed: () => context.go('/community/new?forum=${forum.slug}'),
-              icon: const Icon(Icons.edit_outlined),
-              label: Text(l.newThread),
-            )
-          : null,
-      body: Column(
-        children: [
-          const DemoBanner(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                _extra.clear();
-                _exhausted = false;
-                ref.invalidate(threadsProvider(forum.id));
-              },
-              child: threads.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
-                data: (list) {
-                  final all = [...list, ..._extra];
-                  return PageBody(
-                    children: [
-                      if (forum.description(he).isNotEmpty)
-                        Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(forum.description(he))),
-                      if (all.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(l.noThreads, textAlign: TextAlign.center)),
-                      for (final t in all) ThreadTile(thread: t),
-                      if (all.length >= 30 && !_exhausted)
-                        Padding(
+    Future<void> refresh() async {
+      ref.invalidate(threadsProvider(forum.id));
+      await ref.read(threadsProvider(forum.id).future);
+    }
+
+    return RefreshablePage(
+      refresh: refresh,
+      builder: (context, refreshButton) => Scaffold(
+        appBar: AppBar(title: Text(forum.name(he)), actions: [refreshButton]),
+        floatingActionButton: canStart
+            ? FloatingActionButton.extended(
+                onPressed: () => context.push('/community/new?forum=${forum.slug}'),
+                icon: const Icon(Icons.edit_outlined),
+                label: Text(l.newThread),
+              )
+            : null,
+        body: Column(
+          children: [
+            const DemoBanner(),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  try {
+                    await refresh();
+                  } catch (e) {
+                    if (context.mounted) showStatus(context, communityError(l, e));
+                  }
+                },
+                child: threads.when(
+                  // Fetched again, the threads shown stay until the new ones come.
+                  skipError: threads.hasValue,
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
+                  data: (page) {
+                    final list = page.threads;
+                    return PageBody.builder(
+                      header: [
+                        if (forum.description(he).isNotEmpty)
+                          Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(forum.description(he))),
+                        if (list.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(l.noThreads, textAlign: TextAlign.center)),
+                      ],
+                      // The last item makes room for the button over it.
+                      itemCount: list.length + 1,
+                      itemBuilder: (context, i) {
+                        if (i < list.length) {
+                          return ThreadTile(
+                            key: ValueKey(list[i].id),
+                            thread: list[i],
+                            focusNode: i == _firstLoaded ? _firstLoadedFocus : null,
+                          );
+                        }
+                        if (!page.hasMore) return const Gap(72);
+                        return Padding(
                           padding: const EdgeInsets.only(top: 8, bottom: 72),
                           child: OutlinedButton(
-                            onPressed: _loadingMore ? null : () => _loadMore(forum, all),
-                            child: Text(l.loadMore),
+                            // Enabled while it loads, so that it keeps the
+                            // keyboard focus; presses meanwhile do nothing.
+                            focusNode: _loadMoreFocus,
+                            onPressed: () => _loadMore(forum),
+                            child: _loadingMore
+                                ? SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
+                                  )
+                                : Text(l.loadMore),
                           ),
-                        )
-                      else
-                        const Gap(72),
-                    ],
-                  );
-                },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class ThreadTile extends StatelessWidget {
-  const ThreadTile({super.key, required this.thread});
+class ThreadTile extends ConsumerWidget {
+  const ThreadTile({super.key, required this.thread, this.focusNode});
   final ThreadSummary thread;
+  final FocusNode? focusNode;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final title = threadDisplayTitle(context, ref, thread);
     final meta = [
       if (thread.pinned) l.pinnedLabel,
       if (thread.locked) l.lockedLabel,
@@ -120,11 +197,12 @@ class ThreadTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        focusNode: focusNode,
         leading: Icon(thread.pinned ? Icons.push_pin_outlined : (thread.locked ? Icons.lock_outline : Icons.chat_bubble_outline)),
-        title: Text(thread.title, textDirection: autoDirection(thread.title)),
+        title: Text(title, textDirection: autoDirection(title)),
         subtitle: Text(meta, style: theme.textTheme.bodySmall),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.go('/community/thread/${thread.id}'),
+        onTap: () => context.push('/community/thread/${thread.id}'),
       ),
     );
   }

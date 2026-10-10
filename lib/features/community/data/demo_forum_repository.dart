@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:math';
+
+import 'package:flutter/foundation.dart';
 
 import 'forum_repository.dart';
 import 'models.dart';
@@ -24,6 +27,9 @@ class DemoForumRepository implements ForumRepository {
   final _todah = <String, Set<String>>{};
   final _blocked = <String>{};
   final _reports = <Report>[];
+
+  /// The posts each member has reported, once each as on the server.
+  final _reported = <(String, String)>{};
   final _progress = <String, Map<String, dynamic>>{};
   int _nextId = 1000;
   DateTime? _lastPost;
@@ -108,7 +114,23 @@ class DemoForumRepository implements ForumRepository {
     ]);
   }
 
+  /// Adds [threads] and [posts] as they are, for tests and screenshots.
+  @visibleForTesting
+  void seed({Iterable<ThreadSummary> threads = const [], Iterable<Post> posts = const []}) {
+    _threads.addAll(threads);
+    _posts.addAll(posts);
+  }
+
   CommunityUser _requireUser() => _user ?? (throw const CommunityException('not_signed_in'));
+
+  /// Counts again the posts in each of [threadIds], as the server does when
+  /// a post is deleted.
+  void _recount(Iterable<String> threadIds) {
+    for (final id in threadIds.toSet()) {
+      final i = _threads.indexWhere((t) => t.id == id);
+      if (i >= 0) _threads[i] = _threads[i].copyWith(postCount: _posts.where((p) => p.threadId == id).length);
+    }
+  }
 
   // --- Auth -------------------------------------------------------------------
 
@@ -140,8 +162,14 @@ class DemoForumRepository implements ForumRepository {
 
   @override
   Future<void> deleteAccount() async {
+    final touched = {for (final p in _posts.where((p) => p.authorId == 'me')) p.threadId};
     _posts.removeWhere((p) => p.authorId == 'me');
     _threads.removeWhere((t) => t.authorId == 'me' && !_posts.any((p) => p.threadId == t.id));
+    _recount(touched);
+    for (final givers in _todah.values) {
+      givers.remove('me');
+    }
+    _reported.removeWhere((r) => r.$1 == 'me');
     _progress.remove('me');
     await signOut();
   }
@@ -171,17 +199,28 @@ class DemoForumRepository implements ForumRepository {
   Future<List<Forum>> forums() async => List.of(_forums);
 
   @override
-  Future<List<ThreadSummary>> threads({int? forumId, int? parshaNumber, DateTime? before, int limit = 30}) async {
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) async {
     final list = _threads
         .where((t) => forumId == null || t.forumId == forumId)
         .where((t) => parshaNumber == null || t.parshaNumber == parshaNumber)
-        .where((t) => before == null || t.lastPostAt.isBefore(before))
         .toList()
-      ..sort((a, b) {
-        if (a.pinned != b.pinned) return a.pinned ? -1 : 1;
-        return b.lastPostAt.compareTo(a.lastPostAt);
-      });
-    return list.take(limit).toList();
+      ..sort(ThreadSummary.byLatestActivity);
+    return [
+      if (after == null) ...list.where((t) => t.pinned),
+      ...list.where((t) => !t.pinned && (after == null || _isBefore(t.lastPostAt, t.id, after))).take(limit),
+    ];
+  }
+
+  /// Whether ([time], [id]) comes before [cursor], as the server compares
+  /// them: by time, then by id.
+  static bool _isBefore(DateTime time, String id, (DateTime, String) cursor) {
+    final byTime = time.compareTo(cursor.$1);
+    return byTime < 0 || (byTime == 0 && compareIds(id, cursor.$2) < 0);
   }
 
   @override
@@ -189,13 +228,29 @@ class DemoForumRepository implements ForumRepository {
       _threads.firstWhere((t) => t.id == id, orElse: () => throw const CommunityException('thread_not_found'));
 
   @override
-  Future<List<Post>> posts(String threadId, {int limit = 200}) async => [
-        for (final p in _posts.where((p) => p.threadId == threadId && !_blocked.contains(p.authorId)))
-          p.copyWith(
-            todah: p.todah + (_todah[p.id]?.length ?? 0),
-            myTodah: _todah[p.id]?.contains('me') ?? false,
-          ),
-      ].take(limit).toList();
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) async {
+    final shown = _posts
+        .where((p) => p.threadId == threadId && !_blocked.contains(p.authorId))
+        .where((p) => before == null || _isBefore(p.createdAt, p.id, before))
+        .toList()
+      ..sort(Post.chronological);
+    return [
+      for (final p in shown.skip(max(0, shown.length - limit)))
+        p.copyWith(
+          todah: p.todah + (_todah[p.id]?.length ?? 0),
+          myTodah: _user != null && (_todah[p.id]?.contains(_user!.id) ?? false),
+          quote: _quote(p.replyToId),
+        ),
+    ];
+  }
+
+  /// The post [id] as a reply quotes it, unless it is gone or its author
+  /// blocked, as the server's policies hide it.
+  QuotedPost? _quote(String? id) {
+    final p = id == null ? null : _posts.where((p) => p.id == id).firstOrNull;
+    if (p == null || _blocked.contains(p.authorId)) return null;
+    return QuotedPost(authorName: p.authorName, body: p.body);
+  }
 
   @override
   Future<String> weeklyThread({required int parshaNumber, required int hebrewYear, required String title}) async {
@@ -213,7 +268,6 @@ class DemoForumRepository implements ForumRepository {
       createdAt: now,
       parshaNumber: parshaNumber,
       hebrewYear: hebrewYear,
-      pinned: true,
     );
     _threads.add(t);
     return t.id;
@@ -271,21 +325,7 @@ class DemoForumRepository implements ForumRepository {
     );
     _posts.add(post);
     final i = _threads.indexWhere((x) => x.id == threadId);
-    _threads[i] = ThreadSummary(
-      id: t.id,
-      forumId: t.forumId,
-      title: t.title,
-      kind: t.kind,
-      authorId: t.authorId,
-      authorName: t.authorName,
-      postCount: t.postCount + 1,
-      lastPostAt: now,
-      createdAt: t.createdAt,
-      parshaNumber: t.parshaNumber,
-      hebrewYear: t.hebrewYear,
-      pinned: t.pinned,
-      locked: t.locked,
-    );
+    _threads[i] = t.copyWith(postCount: t.postCount + 1, lastPostAt: now);
     return post;
   }
 
@@ -302,20 +342,22 @@ class DemoForumRepository implements ForumRepository {
     if (p == null) throw const CommunityException('not_found');
     if (p.authorId != 'me' && !(_profile?.isModerator ?? false)) throw const CommunityException('forbidden');
     _posts.remove(p);
+    _recount([p.threadId]);
   }
 
   @override
   Future<void> setTodah(String postId, bool on) async {
-    _requireUser();
+    final user = _requireUser().id;
     final set = _todah.putIfAbsent(postId, () => {});
-    on ? set.add('me') : set.remove('me');
+    on ? set.add(user) : set.remove(user);
   }
 
   // --- Safety -----------------------------------------------------------------
 
   @override
   Future<void> report({String? postId, String? threadId, required ReportReason reason, String? details}) async {
-    _requireUser();
+    final user = _requireUser().id;
+    if (postId != null && !_reported.add((user, postId))) throw const CommunityException('already_reported');
     _reports.add(Report(
       id: '${_nextId++}',
       postId: postId,
@@ -352,23 +394,14 @@ class DemoForumRepository implements ForumRepository {
       case 'resolve_report' || 'dismiss_report':
         _reports.removeWhere((r) => r.id == targetId);
       case 'hide_post':
+        final hidden = _posts.where((p) => p.id == targetId).toList();
         _posts.removeWhere((p) => p.id == targetId);
+        _recount([for (final p in hidden) p.threadId]);
       case 'lock_thread' || 'unlock_thread' || 'pin_thread' || 'unpin_thread':
         final i = _threads.indexWhere((t) => t.id == targetId);
         if (i < 0) return;
         final t = _threads[i];
-        _threads[i] = ThreadSummary(
-          id: t.id,
-          forumId: t.forumId,
-          title: t.title,
-          kind: t.kind,
-          authorId: t.authorId,
-          authorName: t.authorName,
-          postCount: t.postCount,
-          lastPostAt: t.lastPostAt,
-          createdAt: t.createdAt,
-          parshaNumber: t.parshaNumber,
-          hebrewYear: t.hebrewYear,
+        _threads[i] = t.copyWith(
           pinned: action == 'pin_thread' ? true : (action == 'unpin_thread' ? false : t.pinned),
           locked: action == 'lock_thread' ? true : (action == 'unlock_thread' ? false : t.locked),
         );

@@ -4,10 +4,21 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/config.dart';
+import '../../l10n/app_localizations.dart';
 import '../../ui/l10n.dart';
+import '../../ui/widgets/app_icon.dart';
 import '../../ui/widgets/common.dart';
 
 final _version = PackageInfo.fromPlatform().then((i) => '${i.version} (${i.buildNumber})').catchError((_) => '');
+
+/// An email to the maintainers, or null when the build names no address.
+Uri? supportEmailUri(AppLocalizations l) => AppConfig.supportEmail.isEmpty
+    ? null
+    : Uri(scheme: 'mailto', path: AppConfig.supportEmail, query: 'subject=${Uri.encodeComponent(l.appTitle)}');
+
+/// The public issue tracker, where feedback reaches the maintainers in any
+/// build.
+final issueTrackerUri = Uri.parse('${AppConfig.sourceUrl}/issues');
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -17,7 +28,7 @@ class AboutScreen extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     Widget link(IconData icon, String title, VoidCallback onTap) =>
-        ListTile(leading: Icon(icon), title: Text(title), trailing: const Icon(Icons.chevron_right), onTap: onTap);
+        ListTile(leading: AppIcon(icon), title: Text(title), trailing: const Icon(Icons.chevron_right), onTap: onTap);
     return Scaffold(
       appBar: AppBar(title: Text(l.aboutTitle)),
       body: PageBody(
@@ -30,8 +41,11 @@ class AboutScreen extends StatelessWidget {
                 Text('שניים מקרא ואחד תרגום',
                     textDirection: TextDirection.rtl,
                     style: TextStyle(fontFamily: 'NotoSerifHebrew', fontSize: 28, color: theme.colorScheme.primary)),
-                const Gap(8),
-                Text(l.appTitleFull, style: theme.textTheme.titleMedium),
+                // The name as read in English; in Hebrew it would repeat the title.
+                if (!context.isHebrewUi) ...[
+                  const Gap(8),
+                  Text(l.appTitleFull, style: theme.textTheme.titleMedium),
+                ],
                 FutureBuilder<String>(
                   future: _version,
                   builder: (context, snap) => Text(
@@ -43,16 +57,14 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
           link(Icons.help_outline, l.guideTitle, () => context.push('/guide')),
-          link(Icons.library_books_outlined, l.sourcesTitle, () => context.go('/settings/about/sources')),
-          link(Icons.accessibility, l.accessibilityStatement, () => context.go('/settings/about/legal/accessibility')),
-          link(Icons.privacy_tip_outlined, l.privacyTitle, () => context.go('/settings/about/legal/privacy')),
-          link(Icons.gavel_outlined, l.termsTitle, () => context.go('/settings/about/legal/terms')),
-          link(Icons.groups_outlined, l.guidelinesTitle, () => context.go('/settings/about/legal/guidelines')),
+          link(Icons.library_books_outlined, l.sourcesTitle, () => context.push('/sources')),
+          link(Icons.accessibility, l.accessibilityStatement, () => context.push('/legal/accessibility')),
+          link(Icons.privacy_tip_outlined, l.privacyTitle, () => context.push('/legal/privacy')),
+          link(Icons.gavel_outlined, l.termsTitle, () => context.push('/legal/terms')),
+          link(Icons.groups_outlined, l.guidelinesTitle, () => context.push('/legal/guidelines')),
           link(Icons.description_outlined, l.licensesTitle, () => showLicensePage(context: context, applicationName: l.appTitleFull)),
-          if (AppConfig.supportEmail.isNotEmpty)
-            link(Icons.mail_outline, l.contactTitle,
-                () => launchUrl(Uri(scheme: 'mailto', path: AppConfig.supportEmail, query: 'subject=${Uri.encodeComponent(l.appTitle)}'))),
-          link(Icons.feedback_outlined, l.sendFeedback, () => launchUrl(Uri.parse('${AppConfig.sourceUrl}/issues'))),
+          if (supportEmailUri(l) case final email?) link(Icons.mail_outline, l.contactTitle, () => launchUrl(email)),
+          link(Icons.feedback_outlined, l.sendFeedback, () => launchUrl(issueTrackerUri)),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'forum_repository.dart';
@@ -24,14 +25,22 @@ class SupabaseForumRepository implements ForumRepository {
     try {
       return await f();
     } on PostgrestException catch (e) {
-      throw CommunityException(_codeOf(e.message, e.code), e.message);
+      throw CommunityException(codeOf(e.message, e.code), e.message);
     } on AuthException catch (e) {
       throw CommunityException(e.code ?? 'auth_error', e.message);
     }
   }
 
-  static String _codeOf(String message, String? sqlCode) {
-    if (sqlCode == '23505') return 'name_taken';
+  /// The stable code of a database error. A unique violation names the
+  /// index it broke: only the display names' index means the name is taken.
+  /// Any other means the change was there already ('duplicate').
+  @visibleForTesting
+  static String codeOf(String message, String? sqlCode) {
+    if (sqlCode == '23505') {
+      if (message.contains('profiles_display_name_ci')) return 'name_taken';
+      if (message.contains('reports_one_per_reporter_post')) return 'already_reported';
+      return 'duplicate';
+    }
     if (sqlCode == '42501') return 'forbidden';
     final m = RegExp(r'^[a-z_]+').firstMatch(message);
     return m?.group(0) ?? 'unknown';
@@ -112,7 +121,18 @@ class SupabaseForumRepository implements ForumRepository {
       'id, category_id, parasha_id, hebrew_year, kind, title, author_id, is_pinned, is_locked, post_count, '
       'last_post_at, created_at, author:profiles(display_name)';
 
-  static ThreadSummary _thread(Map<String, dynamic> r) => ThreadSummary(
+  /// The exact times PostgREST gave, by row: `thread:ID` for a thread's
+  /// last post, `post:ID` for a post. A page follows on from the last row
+  /// shown at its exact time: a DateTime on the web keeps only milliseconds,
+  /// and a cursor cut short would skip rows that share its time.
+  final _exactTimes = <String, String>{};
+
+  ThreadSummary _thread(Map<String, dynamic> r) {
+    _exactTimes['thread:${r['id']}'] = r['last_post_at'] as String;
+    return _threadFrom(r);
+  }
+
+  static ThreadSummary _threadFrom(Map<String, dynamic> r) => ThreadSummary(
         id: '${r['id']}',
         forumId: r['category_id'] as int,
         title: r['title'] as String,
@@ -128,15 +148,40 @@ class SupabaseForumRepository implements ForumRepository {
         locked: r['is_locked'] as bool? ?? false,
       );
 
+  /// A filter for the rows that come after [cursor] (a time in [column], and
+  /// the id of a row of [kind]) when ordered newest first, then by the
+  /// higher id: those earlier than it, or as early with a lower id. The time
+  /// is the one PostgREST gave for that row, while the row is as it was.
+  String _olderThan(String column, String kind, (DateTime, String) cursor) {
+    final (time, id) = cursor;
+    final exact = _exactTimes['$kind:$id'];
+    final ts = exact != null && DateTime.parse(exact).isAtSameMomentAs(time) ? exact : time.toUtc().toIso8601String();
+    final n = int.parse(id);
+    return '$column.lt.$ts,and($column.eq.$ts,id.lt.$n)';
+  }
+
   @override
-  Future<List<ThreadSummary>> threads({int? forumId, int? parshaNumber, DateTime? before, int limit = 30}) =>
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) =>
       _call(() async {
-        var q = _db.from('threads').select(_threadColumns);
-        if (forumId != null) q = q.eq('category_id', forumId);
-        if (parshaNumber != null) q = q.eq('parasha_id', parshaNumber);
-        if (before != null) q = q.lt('last_post_at', before.toUtc().toIso8601String());
-        final rows = await q.order('is_pinned', ascending: false).order('last_post_at', ascending: false).limit(limit);
-        return [for (final r in rows) _thread(r)];
+        PostgrestTransformBuilder<PostgrestList> query({required bool pinned, String? after}) {
+          var q = _db.from('threads').select(_threadColumns).eq('is_pinned', pinned);
+          if (forumId != null) q = q.eq('category_id', forumId);
+          if (parshaNumber != null) q = q.eq('parasha_id', parshaNumber);
+          if (after != null) q = q.or(after);
+          return q.order('last_post_at', ascending: false).order('id', ascending: false);
+        }
+
+        final pages = await Future.wait([
+          // Pinned threads come once, on the first page, however many there are.
+          if (after == null) query(pinned: true),
+          query(pinned: false, after: after == null ? null : _olderThan('last_post_at', 'thread', after)).limit(limit),
+        ]);
+        return [for (final r in pages.expand((rows) => rows)) _thread(r)];
       });
 
   @override
@@ -146,15 +191,20 @@ class SupabaseForumRepository implements ForumRepository {
       });
 
   @override
-  Future<List<Post>> posts(String threadId, {int limit = 200}) => _call(() async {
-        final rows = await _db
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) =>
+      _call(() async {
+        // With the post each one answers, which may be on an earlier page.
+        // The policies leave it out where the reader may not see it.
+        var q = _db
             .from('posts')
             .select('id, thread_id, author_id, reply_to_post_id, body, created_at, edited_at, hidden_at, '
-                'author:profiles(display_name)')
+                'author:profiles(display_name), '
+                'reply_to:reply_to_post_id(body, deleted_at, author:profiles(display_name))')
             .eq('thread_id', int.parse(threadId))
-            .isFilter('deleted_at', null)
-            .order('created_at')
-            .limit(limit);
+            .isFilter('deleted_at', null);
+        if (before != null) q = q.or(_olderThan('created_at', 'post', before));
+        final latest = await q.order('created_at', ascending: false).order('id', ascending: false).limit(limit);
+        final rows = latest.reversed.toList();
         final ids = [for (final r in rows) r['id'] as int];
         final todah = <int, int>{};
         final mine = <int>{};
@@ -167,6 +217,12 @@ class SupabaseForumRepository implements ForumRepository {
             if (r['user_id'] == me) mine.add(id);
           }
         }
+        QuotedPost? quote(Map<String, dynamic>? q) => q == null || q['deleted_at'] != null
+            ? null
+            : QuotedPost(
+                authorName: (q['author'] as Map<String, dynamic>?)?['display_name'] as String? ?? '',
+                body: q['body'] as String,
+              );
         return [
           for (final r in rows)
             Post(
@@ -175,10 +231,11 @@ class SupabaseForumRepository implements ForumRepository {
               authorId: r['author_id'] as String?,
               authorName: (r['author'] as Map<String, dynamic>?)?['display_name'] as String? ?? '',
               body: r['body'] as String,
-              createdAt: DateTime.parse(r['created_at'] as String),
+              createdAt: DateTime.parse(_exactTimes['post:${r['id']}'] = r['created_at'] as String),
               editedAt: r['edited_at'] == null ? null : DateTime.parse(r['edited_at'] as String),
               hidden: r['hidden_at'] != null,
               replyToId: r['reply_to_post_id'] == null ? null : '${r['reply_to_post_id']}',
+              quote: quote(r['reply_to'] as Map<String, dynamic>?),
               todah: todah[r['id']] ?? 0,
               myTodah: mine.contains(r['id']),
             ),
@@ -244,7 +301,12 @@ class SupabaseForumRepository implements ForumRepository {
   @override
   Future<void> setTodah(String postId, bool on) => _call(() async {
         if (on) {
-          await _db.from('reactions').insert({'post_id': int.parse(postId), 'user_id': _uid, 'kind': 'todah'});
+          // Given already (a second tap, or another device) is given.
+          await _db.from('reactions').upsert(
+            {'post_id': int.parse(postId), 'user_id': _uid, 'kind': 'todah'},
+            onConflict: 'post_id,user_id,kind',
+            ignoreDuplicates: true,
+          );
         } else {
           await _db.from('reactions').delete().eq('post_id', int.parse(postId)).eq('user_id', _uid).eq('kind', 'todah');
         }
@@ -262,8 +324,11 @@ class SupabaseForumRepository implements ForumRepository {
           }));
 
   @override
-  Future<void> block(String userId) =>
-      _call(() => _db.from('user_blocks').insert({'blocker_id': _uid, 'blocked_id': userId}));
+  Future<void> block(String userId) => _call(() => _db.from('user_blocks').upsert(
+        {'blocker_id': _uid, 'blocked_id': userId},
+        onConflict: 'blocker_id,blocked_id',
+        ignoreDuplicates: true,
+      ));
 
   @override
   Future<void> unblock(String userId) =>

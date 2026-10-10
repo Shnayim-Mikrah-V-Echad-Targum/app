@@ -28,21 +28,21 @@ void main() {
     expect(value.style!.fontSize, Theme.of(tester.element(find.text('120%'))).textTheme.labelLarge!.fontSize);
   });
 
-  testWidgets('the − and + buttons are named after the slider, and step it', (tester) async {
+  testWidgets('the − and + buttons say what they do to the slider, and step it', (tester) async {
     final values = <double>[];
     await pump(tester, onChanged: values.add);
-    await tester.tap(find.byTooltip('Reading size: decrease'));
-    await tester.tap(find.byTooltip('Reading size: increase'));
+    await tester.tap(find.byTooltip('Decrease Reading size'));
+    await tester.tap(find.byTooltip('Increase Reading size'));
     expect(values.map((v) => v.toStringAsFixed(1)), ['1.1', '1.3']);
 
     final handle = tester.ensureSemantics();
-    expect(tester.getSemantics(find.byIcon(Icons.add)), isSemantics(tooltip: 'Reading size: increase', isButton: true));
+    expect(tester.getSemantics(find.byIcon(Icons.add)), isSemantics(tooltip: 'Increase Reading size', isButton: true));
     handle.dispose();
   });
 
   testWidgets('Hebrew: the buttons are named in Hebrew', (tester) async {
     await pump(tester, hebrew: true);
-    expect(find.byTooltip('גודל הקריאה: הקטנה'), findsOneWidget);
-    expect(find.byTooltip('גודל הקריאה: הגדלה'), findsOneWidget);
+    expect(find.byTooltip('הקטנת גודל הקריאה'), findsOneWidget);
+    expect(find.byTooltip('הגדלת גודל הקריאה'), findsOneWidget);
   });
 }

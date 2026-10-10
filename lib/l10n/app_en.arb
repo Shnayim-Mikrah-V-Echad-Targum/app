@@ -26,13 +26,27 @@
   "actionNotNow": "Not now",
   "actionEdit": "Edit",
   "actionDelete": "Delete",
+  "actionClear": "Clear",
   "actionReport": "Report",
   "actionSend": "Send",
   "actionSignIn": "Sign in",
   "actionSignOut": "Sign out",
   "actionMore": "More options",
+  "moreOptionsFor": "More options for {name}",
+  "@moreOptionsFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "actionRefresh": "Refresh",
+  "refreshed": "Updated",
   "loading": "Loading…",
   "errorGeneric": "Something went wrong. Please try again.",
+  "notFoundTitle": "Page not found",
+  "notFoundBody": "This link leads nowhere in the app.",
+  "goToToday": "Go to Today",
   "aliyah1": "Rishon",
   "aliyah2": "Sheni",
   "aliyah3": "Shlishi",
@@ -124,6 +138,17 @@
   "@aliyotProgress": {
     "placeholders": {
       "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "countOfTotal": "{count} of {total}",
+  "@countOfTotal": {
+    "placeholders": {
+      "count": {
         "type": "int"
       },
       "total": {
@@ -430,6 +455,15 @@
       }
     }
   },
+  "targumVerseLabel": "Targum, verse {number}",
+  "@targumVerseLabel": {
+    "description": "Spoken by screen readers before the Aramaic of a verse of Targum Onkelos.",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "chapterLabel": "Chapter {number}",
   "@chapterLabel": {
     "placeholders": {
@@ -438,8 +472,9 @@
       }
     }
   },
-  "noTargumNote": "Many read this verse a third time in Hebrew in place of the Targum (Shulchan Aruch OC 285:2).",
+  "noTargumNote": "Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berakhot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).",
   "noRashiNote": "Rashi does not comment on this verse. Some read it a third time in Hebrew (Mishnah Berurah 285:5).",
+  "noRashiComment": "Rashi does not comment on this verse.",
   "ketivQereLabel": "Written {ketiv}, read {qere}",
   "@ketivQereLabel": {
     "placeholders": {
@@ -499,7 +534,26 @@
       }
     }
   },
-  "nextAliyah": "Next aliyah",
+  "continueWithAliyah": "Continue with {aliyah}",
+  "@continueWithAliyah": {
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "aliyahStatusRead": "read",
+  "@aliyahStatusRead": {
+    "description": "Spoken after an aliyah's name on its chip in the reader, e.g. \"Rishon, read\"."
+  },
+  "aliyahStatusPartial": "in progress",
+  "@aliyahStatusPartial": {
+    "description": "Spoken after an aliyah's name on its chip in the reader: some of its readings are done."
+  },
+  "aliyahStatusUnread": "not started",
+  "@aliyahStatusUnread": {
+    "description": "Spoken after an aliyah's name on its chip in the reader: none of its readings are done."
+  },
   "backToWeek": "Back to the week",
   "displaySettings": "Display settings",
   "textSize": "Text size",
@@ -537,6 +591,13 @@
   "shortcutNikud": "Show or hide vowels",
   "shortcutListen": "Listen / stop",
   "shortcutHelp": "Show shortcuts",
+  "shortcutScroll": "Scroll the text",
+  "shortcutPageDown": "Down a page, then the next step",
+  "shortcutPageUp": "Up a page, then the previous step",
+  "shortcutFocusVerse": "Full text in focus mode: previous or next verse",
+  "keyUp": "Up arrow",
+  "keyDown": "Down arrow",
+  "keySpace": "Space",
   "progressTitle": "Progress",
   "longest": "Longest: {value}",
   "@longest": {
@@ -714,7 +775,7 @@
   "repeatLastVerse": "End with Mikra",
   "repeatLastVerseDesc": "Repeat the parsha's last verse in Hebrew after its Targum",
   "thirdReading": "Third-reading prompts",
-  "thirdReadingDesc": "Where there is no Targum or Rashi, suggest reading the Hebrew a third time",
+  "thirdReadingDesc": "Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent",
   "haftarahEnabled": "Haftarah",
   "haftarahEnabledDesc": "Read the week's haftarah once",
   "nusachLabel": "Haftarah custom",
@@ -757,27 +818,27 @@
       }
     }
   },
-  "sliderDecrease": "{title}: decrease",
-  "@sliderDecrease": {
-    "description": "Tooltip and spoken name of the minus button beside a settings slider. title is the slider's name, such as 'Reading size'.",
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
-  },
-  "sliderIncrease": "{title}: increase",
-  "@sliderIncrease": {
-    "description": "Tooltip and spoken name of the plus button beside a settings slider. title is the slider's name, such as 'Reading size'.",
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
-  },
   "lineSpacing": "Line spacing",
   "wordSpacing": "Word spacing",
   "letterSpacing": "Letter spacing",
+  "decreaseSetting": "Decrease {name}",
+  "@decreaseSetting": {
+    "description": "Tooltip and spoken name of the minus button beside a settings slider. name is the slider's name, such as 'Reading size'.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "increaseSetting": "Increase {name}",
+  "@increaseSetting": {
+    "description": "Tooltip and spoken name of the plus button beside a settings slider. name is the slider's name, such as 'Reading size'.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "showNikud": "Vowels (nikud)",
   "showTeamim": "Cantillation (ta'amim)",
   "showKetiv": "Show ketiv (as written)",
@@ -803,6 +864,8 @@
   "reduceMotion": "Reduce motion",
   "reduceMotionDesc": "Turn off animations and moving celebrations",
   "haptics": "Haptic feedback",
+  "singleKeyShortcuts": "Single-key shortcuts",
+  "singleKeyShortcutsDesc": "While reading, T, N, L, + and − work on their own, without Ctrl. Turn this off if you use speech input or screen-reader quick keys.",
   "screenReaderText": "Screen reader text",
   "srSimplified": "Vowels, no cantillation (recommended)",
   "srConsonants": "Letters only",
@@ -829,9 +892,10 @@
   "sendFeedback": "Send feedback",
   "dailyReminder": "Daily reminder",
   "dailyReminderDesc": "A gentle nudge at your chosen time",
-  "reminderTime": "Time",
+  "dailyReminderTime": "Daily reminder time",
   "fridayReminder": "Erev Shabbat reminder",
   "fridayReminderDesc": "Friday morning, only if the parsha isn't finished",
+  "fridayReminderTime": "Erev Shabbat reminder time",
   "checkInReminder": "After-Shabbat check-in",
   "checkInReminderDesc": "Sunday morning, to log what you read on Shabbat",
   "remindersShabbatNote": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.",
@@ -844,6 +908,7 @@
   "anchorBed": "get ready for bed",
   "notificationsUnsupported": "Reminders aren't available in the web version. Install the app on your phone or computer to get them.",
   "notificationsDenied": "Notifications are turned off for this app in your device settings.",
+  "notificationsDeniedTitle": "Notifications are off",
   "primingTitle": "Want a gentle daily nudge?",
   "primingBody": "At {time}. Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.",
   "@primingBody": {
@@ -857,6 +922,18 @@
   "notifChannelDaily": "Daily reading",
   "notifChannelFriday": "Erev Shabbat",
   "notifChannelCheckIn": "After Shabbat",
+  "notifChannelDailyDesc": "Your day's reading at the time you choose, never on Shabbat or Yom Tov",
+  "@notifChannelDailyDesc": {
+    "description": "Android notification channel description, shown in the system's notification settings."
+  },
+  "notifChannelErevShabbatDesc": "The morning before Shabbat or Yom Tov, only if the parsha isn't finished",
+  "@notifChannelErevShabbatDesc": {
+    "description": "Android notification channel description, shown in the system's notification settings."
+  },
+  "notifChannelCheckInDesc": "After Shabbat, a reminder to log what you read; also the note when reminders stop",
+  "@notifChannelCheckInDesc": {
+    "description": "Android notification channel description, shown in the system's notification settings."
+  },
   "notifDailyTitle": "Today: {aliyah}",
   "@notifDailyTitle": {
     "placeholders": {
@@ -887,6 +964,18 @@
   "notifFridayBody": "If you haven't finished, there's still time — or finish Shabbat morning from your Chumash and log it after Shabbat.",
   "notifCheckInTitle": "Shavua tov!",
   "notifCheckInBody": "Did you read on Shabbat? Tap to log it.",
+  "notifPausedTitle": "Reminders paused",
+  "@notifPausedTitle": {
+    "description": "The last notification, sent when the app has not been opened for two weeks; none follow until it is opened again."
+  },
+  "notifPausedBody": "We'll pause reminders for now. Your place in Parshat {parsha} is saved — come back anytime.",
+  "@notifPausedBody": {
+    "placeholders": {
+      "parsha": {
+        "type": "String"
+      }
+    }
+  },
   "showStreaks": "Show streak numbers",
   "showStreaksDesc": "Hide them if you'd rather focus on the learning itself",
   "exportData": "Export my progress",
@@ -949,7 +1038,7 @@
   "guideTargumTitle": "Targum or Rashi",
   "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum.",
   "guideSpecialTitle": "Special cases",
-  "guideSpecialBody": "Some verses have no separate Targum, such as \"Atarot v'Divon\" (Numbers 32:3); many read them a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once.",
+  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once.",
   "guideShabbatTitle": "Shabbat and Yom Tov",
   "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
   "guideSourcesTitle": "Sources",
@@ -973,6 +1062,8 @@
   "communityTitle": "Community",
   "demoModeBanner": "Demo mode: posts stay on this device and reset when the app restarts.",
   "forumsHeading": "Forums",
+  "forumNotFound": "This forum couldn't be found. It may have moved or closed.",
+  "allForums": "All forums",
   "thisWeeksThread": "This week: Parshat {name}",
   "@thisWeeksThread": {
     "placeholders": {
@@ -1070,6 +1161,14 @@
       }
     }
   },
+  "todahRemove": "Remove your thanks to {name}",
+  "@todahRemove": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reportTitle": "Report this post",
   "reportReasonLabel": "What's wrong?",
   "reasonSpam": "Spam or advertising",
@@ -1121,7 +1220,29 @@
   "guidelinesPrompt": "Before your first post, please read the community guidelines.",
   "readGuidelines": "Read the guidelines",
   "noThreads": "No discussions yet. Start the first one!",
+  "noPostsYet": "No posts yet — share a thought on Parshat\u00a0{name}.",
+  "@noPostsYet": {
+    "description": "An empty weekly thread. {name} is the parsha; a no-break space keeps it with \"Parshat\".",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noReplies": "No replies yet.",
   "loadMore": "Load more",
+  "loadedMore": "{count, plural, =1{Loaded 1 more discussion} other{Loaded {count} more discussions}}",
+  "@loadedMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showEarlierPosts": "Show earlier posts",
+  "@showEarlierPosts": {
+    "description": "Above the first post shown in a long thread, which opens on its latest posts: loads the posts before it."
+  },
   "postsCount": "{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}",
   "@postsCount": {
     "placeholders": {
@@ -1158,6 +1279,17 @@
       }
     }
   },
+  "postNofM": "Post {n} of {total}",
+  "@postNofM": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "anonymousMember": "Former member",
   "errRateLimited": "You're posting quickly — please wait a few seconds.",
   "errThreadLocked": "This discussion is locked.",
@@ -1169,6 +1301,7 @@
   "errLinks": "New members can include at most 2 links.",
   "errDailyLimit": "New members can post a limited amount each day. Please try again tomorrow.",
   "errNameTaken": "That name is taken.",
+  "errAlreadyReported": "You've already reported this post.",
   "errInvalidName": "Names must be 2–40 characters.",
   "errInvalidCode": "That code didn't work. Check it and try again.",
   "errInvalidEmail": "Please enter a valid email address.",

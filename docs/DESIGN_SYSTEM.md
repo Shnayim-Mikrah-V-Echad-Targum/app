@@ -258,6 +258,7 @@ Notes:
   - `adaptive_icon_background: "#1D3F75"`;
   - web `background_color: "#FAF7F0"`, `theme_color: "#1D3F75"`;
   - `remove_alpha_ios: true`.
+- Android reminders: the status-bar glyph (§7.8) tinted primary #1D3F75 (`Palettes.light.primary`).
 
 ## 4. Typography
 
@@ -859,6 +860,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - nav `insights`: becomes `donut_large`;
    - the streak-tile icons, the repeated `menu_book` on the 54 Browse rows, and the reader LayerLabel icons: removed.
    - The grace shield and `auto_stories_outlined` for the haftarah stay.
+   - `help_outline` is drawn with `AppIcon` (lib/ui/widgets/app_icon.dart), which keeps it unmirrored in the Hebrew UI: Material mirrors its question mark for Arabic, but Hebrew writes "?" as English does.
 8. **App icon** (critical, D1). `tool/branding/make_icon.py` writes `assets/branding/icon.svg` plus all PNGs.
 
    **Shaping**
@@ -880,6 +882,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - Web: Icon-192/512 from the master; maskable 192/512 with the group scaled 0.90 on the full-bleed gradient.
    - Sizes ≤32 px (favicon.png, and the favicon.ico and Windows .ico entries at 16/20/24/32): the three rules only, each 62.5% of the canvas wide and 9.4% high, gaps 7.8%, vertically centred, on the gradient with corner radius 18.75%.
    - The Windows .ico also carries 40, 48, 64 and 256, and favicon.ico carries 48: the master's art on the gradient, with the same 18.75% corners (transparent outside them) rather than the master's square. Every entry then has one shape, so the icon doesn't change outline as Windows switches entries between views and DPI settings.
+   - Android status bar (`ic_stat_reminder`, a 24 dp vector drawn as a white silhouette): the three rules alone, 2.7 high with round ends, at y 5.7, 10.65 and 15.6. The two Mikra rules span x 3–21. The Targum's gold is lost in white, so its rule is 60% as long (x 10.2–21), aligned to the right like the last line of a Hebrew paragraph: three equal bars read as a menu icon. To be confirmed with the owner.
 
    Then run `dart run flutter_launcher_icons`.
 
@@ -943,7 +946,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - English UI: the Latin name in headlineLarge onSurface. Hebrew UI: the Latin name in bodyMedium onSurfaceVariant.
    - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read Shabbat, 10 October". Then bodySmall onSurfaceVariant `shabbatInDays`.
    - 16 gap, SeferDivider, 16 gap.
-   - Row of ParshaRings 104, a 20 gap, and `Expanded(RingLegend)`. Under the legend, an end-aligned TextButton `allAliyot` ("All aliyot") with a chevron, to /week/{id}. Under 360 dp the rings sit centred above the legend.
+   - Row of ParshaRings 104, a 20 gap, and `Expanded(RingLegend)`. Under the legend, an end-aligned TextButton `allAliyot` ("All aliyot") with a chevron, to /today/week/{id} (within the Today tab). Under 360 dp the rings sit centred above the legend.
    - 20 gap, then a full-width Filled button (52) with `menu_book` and a label naming the destination. Let `next = ctx.nextAliyah` and `p` = the first ReadingPass of `next` that is not done:
      - nothing read this week: `startAt(name)` = "Start · Rishon";
      - `next` has some passes done: `continueAtPass(name, passLabel(p))` = "Continue · Shlishi, Targum";
