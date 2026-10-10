@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
@@ -195,9 +194,8 @@ void main() {
     expect(menu.id, isNot(row.id));
 
     // A screen reader's double tap on each item does what it says.
-    final owner = tester.binding.pipelineOwner.semanticsOwner!;
-    owner.performAction(row.id, SemanticsAction.tap);
-    owner.performAction(menu.id, SemanticsAction.tap);
+    tester.semantics.tap(find.semantics.byPredicate((node) => node.id == row.id));
+    tester.semantics.tap(find.semantics.byPredicate((node) => node.id == menu.id));
     await tester.pump();
     expect(taps, ['row', 'menu']);
     handle.dispose();

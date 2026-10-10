@@ -610,12 +610,13 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Arc weights by verse count, as now. Gap 0.042 rad between aliyot; butt caps.
 - Start at −π/2 and sweep CLOCKWISE in both directions. Do not mirror.
 - Colours: ring 0 ringMikra1, ring 1 ringMikra2, ring 2 ringTargum; track ringTrack.
-- Centre: "2/7" in ringNumeral, plus "aliyot" in labelSmall onSurfaceVariant.
+- Centre: "2/7" in ringNumeral, plus "aliyot" in labelSmall onSurfaceVariant, scaled down as needed to fit the square inscribed in the hole (with 5% clearance), so large, bold or accessibility-font text never reaches the Targum ring.
 - Wrap in RepaintBoundary. Existing semantics stay.
 
 **RingLegend** (always beside or under rings of size 88 or more)
 - Three rows, each 24 high: a 9 px dot in the ring colour, a 10 gap, the label in bodyMedium (`passMikra1`, `passMikra2`, `passTargum`/`passRashi`), and the count end-aligned "3 of 7" in bodyMedium onSurfaceVariant with tabular figures.
 - Excluded from semantics: the rings' label already says it.
+- `RingsWithLegend` sets the legend beside the rings whenever it fits there, each count under its name if the two can't share a line (as on a 360 dp phone); otherwise, on a narrower phone or with large text, the rings sit centred above it. Beside the rings on a wide card, the legend grows at most 40 past its natural width, so the counts stay near their names.
 
 ### 6.12 LedgerCard (replaces the two streak cards, today_screen.dart:300-325)
 
@@ -686,7 +687,8 @@ A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled 
 
 - 54 segments across the content width; segment gap 2; an extra 4 px between books; height 8; radius 1.5.
 - Colours: on time = done; late = late; made up = paper with a 1 px late border; current = primaryContainer with a 1 px primary border; everything else = ringTrack.
-- Below it, book abbreviations in labelSmall onSurfaceVariant at each book's start: "Gen Exo Lev Num Deu" / "בר׳ שמ׳ וי׳ במ׳ דב׳".
+- Below it, book abbreviations in labelSmall onSurfaceVariant at each book's start: "Gen Exo Lev Num Deu" / "בר׳ שמ׳ וי׳ במ׳ דב׳". If very large text would run one into the next book's, all five shrink together to the size the tightest needs.
+- Its states and the Torah map's come from one function (`parshaStandings`), so the two never disagree.
 - One Semantics node: "This year: 0 of 54 parshiyot complete; Bereshit in progress". RepaintBoundary.
 
 ### 6.16 AliyahRibbon (replaces _AliyahSelector, reader_screen.dart:517-549; fixes D5)

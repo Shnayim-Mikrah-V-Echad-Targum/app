@@ -212,6 +212,20 @@ void main() {
         }
         // The names never touch.
         expect(tester.getRect(find.text('Num')).right, lessThan(tester.getRect(find.text('Deu')).left));
+        // When the tightest has to shrink, they all shrink with it.
+        final names = ['Gen', 'Exo', 'Lev', 'Num', 'Deu'];
+        expect({for (final name in names) tester.getRect(find.text(name)).height}, hasLength(1), reason: '${scale}x');
+      }
+    });
+
+    testWidgets('Hebrew: the names shrink together too', (tester) async {
+      await pumpBar(tester, YearBar(segments: year(const {})), width: 280, textScale: 2, hebrew: true);
+      expect(tester.takeException(), isNull);
+      final names = ['בר׳', 'שמ׳', 'וי׳', 'במ׳', 'דב׳'];
+      expect({for (final name in names) tester.getRect(find.text(name)).height}, hasLength(1));
+      for (var i = 0; i + 1 < names.length; i++) {
+        // Right to left: each book's name ends before the next one's begins.
+        expect(tester.getRect(find.text(names[i])).left, greaterThan(tester.getRect(find.text(names[i + 1])).right));
       }
     });
   });

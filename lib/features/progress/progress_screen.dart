@@ -17,6 +17,7 @@ import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/sefer_choice_chip.dart';
 import '../parsha/week_context.dart';
 import 'domain/milestones.dart';
+import 'domain/parsha_standing.dart';
 import 'domain/progress_models.dart';
 import 'domain/streak_engine.dart';
 
@@ -331,28 +332,23 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
     if (old.current.week.portion != widget.current.week.portion) _open.add(widget.current.portion.bookIndex);
   }
 
+  /// Each parsha's standing, as the year bar reads it too.
+  late List<ParshaStanding> _standings;
+
   /// The tile's state, and the words for it.
   (_TileState, String) _stateOf(BuildContext context, PortionInfo p) {
     final l = context.l10n;
-    final n = p.id.number;
-    final current = widget.current.week.portion;
-    WeekStatus? status;
-    for (final e in widget.summary.weeks) {
-      if (e.plan.portion.parshiyot.contains(n) && cycleYearOf(e.plan.portion, e.plan.week.occasion) == widget.cycle) {
-        status = e.status;
-      }
-    }
-    if (status == WeekStatus.onTime) return (_TileState.onTime, l.weekOnTime);
-    if (status == WeekStatus.late) return (_TileState.late, l.weekLate);
-    if (status == WeekStatus.restored) return (_TileState.late, l.weekRestored);
-    if (current.parshiyot.contains(n)) {
-      return widget.done.contains(n) ? (_TileState.onTime, l.weekOnTime) : (_TileState.current, l.weekInProgress);
-    }
-    if (widget.done.contains(n)) return (_TileState.madeUp, l.weekMadeUp);
-    if (status == WeekStatus.missed) return (_TileState.missed, l.weekMissed);
-    if (status == WeekStatus.overdue) return (_TileState.missed, l.weekOverdue);
-    if (n > current.number) return (_TileState.upcoming, l.dayUpcoming);
-    return (_TileState.untracked, l.weekTransparent);
+    return switch (_standings[p.id.number - 1]) {
+      ParshaStanding.onTime => (_TileState.onTime, l.weekOnTime),
+      ParshaStanding.late => (_TileState.late, l.weekLate),
+      ParshaStanding.restored => (_TileState.late, l.weekRestored),
+      ParshaStanding.inProgress => (_TileState.current, l.weekInProgress),
+      ParshaStanding.madeUp => (_TileState.madeUp, l.weekMadeUp),
+      ParshaStanding.missed => (_TileState.missed, l.weekMissed),
+      ParshaStanding.overdue => (_TileState.missed, l.weekOverdue),
+      ParshaStanding.upcoming => (_TileState.upcoming, l.dayUpcoming),
+      ParshaStanding.untracked => (_TileState.untracked, l.weekTransparent),
+    };
   }
 
   /// The most columns the window allows (3, 4 or 6) whose tiles hold the
@@ -376,6 +372,12 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
     final settings = ref.watch(settingsProvider);
     String name(PortionInfo p) => names.portion(p, ashkenazi: settings.ashkenaziNames);
     final books = [for (var b = 0; b < kTorahBooks.length; b++) repo.all.where((p) => p.bookIndex == b).toList()];
+    _standings = parshaStandings(
+      weeks: widget.summary.weeks,
+      cycle: widget.cycle,
+      done: widget.done,
+      current: widget.current.week.portion,
+    );
 
     // Tiles paint their fills as ink, so a press shows on them; this keeps
     // the ink moving with them as the page scrolls.

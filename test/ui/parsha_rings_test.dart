@@ -161,6 +161,43 @@ void main() {
       expect(find.text('aliyot'), findsNothing);
     });
 
+    // The count and its word stay inside the Targum ring's hole: with large
+    // or bold text, and in the wide accessibility fonts.
+    for (final size in [ParshaRings.header, ParshaRings.hero]) {
+      for (final (font, hebrew, scale, bold) in [
+        (UiFont.standard, false, 1.0, false),
+        (UiFont.standard, false, 2.0, false),
+        (UiFont.standard, false, 1.0, true),
+        (UiFont.standard, true, 2.0, true),
+        (UiFont.lexend, false, 1.0, false),
+        (UiFont.openDyslexic, false, 2.0, true),
+      ]) {
+        final what = '${font.name}${hebrew ? ' he' : ''} ×$scale${bold ? ' bold' : ''}';
+        testWidgets('at ${size.round()}, $what: the centre fits inside the rings', (tester) async {
+          await pumpThemed(
+            tester,
+            Builder(
+              builder: (context) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(boldText: bold),
+                child: Center(child: ParshaRings(progress: week(5), aliyahWeights: weights, size: size)),
+              ),
+            ),
+            uiFont: font,
+            hebrew: hebrew,
+            textScale: scale,
+          );
+          final centre = tester.getCenter(find.byType(ParshaRings));
+          final reach = RingGeometry(size).hole / 2;
+          for (final text in [find.text('5/7'), find.text(hebrew ? 'עליות' : 'aliyot')]) {
+            final r = tester.getRect(text);
+            for (final corner in [r.topLeft, r.topRight, r.bottomLeft, r.bottomRight]) {
+              expect((corner - centre).distance, lessThanOrEqualTo(reach), reason: '$text corner $corner');
+            }
+          }
+        });
+      }
+    }
+
     testWidgets('are drawn the same in both directions of text', (tester) async {
       await pumpRings(tester, week(3, passes: 2), direction: TextDirection.ltr);
       final ltr = await snapshot(tester);
@@ -369,6 +406,23 @@ void main() {
       await pumpBoth(tester, 332, textScale: 2);
       expect(tester.getRect(find.byType(RingLegend)).top, greaterThan(tester.getRect(find.byType(ParshaRings)).bottom));
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('on a 360 dp phone, side by side, each count under its name', (tester) async {
+      // A 360 dp phone's card: 16 px gutters and 20 px of card padding.
+      await pumpBoth(tester, 288);
+      final rings = tester.getRect(find.byType(ParshaRings));
+      final legend = tester.getRect(find.byType(RingLegend));
+      expect(legend.left, rings.right + RingsWithLegend.gap);
+      expect(legend.right, lessThanOrEqualTo(400 + 144));
+      final count = tester.getTopLeft(find.text('2 of 7').first);
+      final name = tester.getTopLeft(find.text('First reading'));
+      expect((count.dx, count.dy > name.dy), (name.dx, true));
+      expect(tester.takeException(), isNull);
+
+      // Narrower than that, the rings go above.
+      await pumpBoth(tester, 240);
+      expect(tester.getRect(find.byType(RingLegend)).top, greaterThan(tester.getRect(find.byType(ParshaRings)).bottom));
     });
 
     testWidgets('the rings lead in Hebrew too, on the right', (tester) async {

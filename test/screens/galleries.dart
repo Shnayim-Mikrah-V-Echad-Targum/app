@@ -221,14 +221,17 @@ class ProgressGallery extends StatelessWidget {
             ),
           ),
           const Gap(12),
-          // The narrowest card on a 360 dp phone: the legend goes under.
-          Center(
-            child: SizedBox(
-              width: 280,
-              child: InfoCard(child: RingsWithLegend(progress: _week(0, passes: 1), aliyahWeights: _weights)),
+          // A 360 dp phone's card: the counts go under their names. Narrower
+          // still, the legend goes under the rings.
+          for (final width in [328.0, 280.0]) ...[
+            Center(
+              child: SizedBox(
+                width: width,
+                child: InfoCard(child: RingsWithLegend(progress: _week(0, passes: 1), aliyahWeights: _weights)),
+              ),
             ),
-          ),
-          const Gap(12),
+            const Gap(12),
+          ],
           InfoCard(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,

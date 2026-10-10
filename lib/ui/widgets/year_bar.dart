@@ -1,8 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/calendar/parsha_schedule.dart';
-import '../../features/progress/domain/progress_models.dart';
+import '../../features/progress/domain/parsha_standing.dart';
 import '../../features/progress/domain/streak_engine.dart';
 import '../l10n.dart';
 import '../theme/app_theme.dart';
@@ -55,7 +57,8 @@ class YearBar extends StatelessWidget {
   /// The least space between two books' names.
   static const double labelGap = 4;
 
-  /// The segments for [cycle]: how each week of it ended in [weeks], the
+  /// The segments for [cycle], by the same rules as the Torah map
+  /// ([parshaStandings]): how each week of it ended in [weeks], the
   /// parshiyot finished at any time ([done], as `parshiyotDoneInCycle` gives
   /// them), and the [current] portion.
   static List<YearSegment> segmentsFor({
@@ -63,26 +66,21 @@ class YearBar extends StatelessWidget {
     required int cycle,
     required Set<int> done,
     required PortionId current,
-  }) {
-    final status = <int, WeekStatus>{};
-    for (final e in weeks) {
-      if (cycleYearOf(e.plan.portion, e.plan.week.occasion) != cycle) continue;
-      for (final n in e.plan.portion.parshiyot) {
-        status[n] = e.status;
-      }
-    }
-    return [
-      for (var n = 1; n <= kParshaCount; n++)
-        switch (status[n]) {
-          WeekStatus.onTime => YearSegment.onTime,
-          WeekStatus.late || WeekStatus.restored => YearSegment.late,
-          WeekStatus.madeUp => YearSegment.madeUp,
-          _ when current.parshiyot.contains(n) => done.contains(n) ? YearSegment.onTime : YearSegment.current,
-          _ when done.contains(n) => YearSegment.madeUp,
-          _ => YearSegment.open,
-        },
-    ];
-  }
+  }) =>
+      [
+        for (final standing in parshaStandings(weeks: weeks, cycle: cycle, done: done, current: current))
+          switch (standing) {
+            ParshaStanding.onTime => YearSegment.onTime,
+            ParshaStanding.late || ParshaStanding.restored => YearSegment.late,
+            ParshaStanding.madeUp => YearSegment.madeUp,
+            ParshaStanding.inProgress => YearSegment.current,
+            ParshaStanding.missed ||
+            ParshaStanding.overdue ||
+            ParshaStanding.upcoming ||
+            ParshaStanding.untracked =>
+              YearSegment.open,
+          },
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +103,7 @@ class YearBar extends StatelessWidget {
             // Segments of 6 where nothing sets the width.
             final width = constraints.hasBoundedWidth ? constraints.maxWidth : 446.0;
             final layout = _YearBarLayout(width);
+            final scaler = _namesScaler(context, books, abbreviation, layout);
             return SizedBox(
               width: width,
               child: Column(
@@ -121,8 +120,7 @@ class YearBar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  // Each name starts at its book's first segment. If the text is
-                  // very large, it shrinks rather than run into the next one.
+                  // Each name starts at its book's first segment.
                   Row(
                     children: [
                       for (var b = 0; b < books.length; b++)
@@ -132,9 +130,12 @@ class YearBar extends StatelessWidget {
                             padding: const EdgeInsetsDirectional.only(end: labelGap),
                             child: Align(
                               alignment: AlignmentDirectional.centerStart,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(books[b], style: abbreviation, maxLines: 1),
+                              child: Text(
+                                books[b],
+                                style: abbreviation,
+                                textScaler: scaler,
+                                maxLines: 1,
+                                softWrap: false,
                               ),
                             ),
                           ),
@@ -149,6 +150,30 @@ class YearBar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The text size for the books' names: the reader's, unless one of the
+/// names would then run into the next book's. Then all five shrink together,
+/// to the size the tightest needs, so no name is set smaller than the rest.
+TextScaler _namesScaler(BuildContext context, List<String> books, TextStyle? style, _YearBarLayout layout) {
+  final ambient = MediaQuery.textScalerOf(context);
+  var shrink = 1.0;
+  for (var b = 0; b < books.length; b++) {
+    final painter = TextPainter(
+      text: TextSpan(text: books[b], style: style),
+      textDirection: Directionality.of(context),
+      textScaler: ambient,
+      locale: Localizations.maybeLocaleOf(context),
+      maxLines: 1,
+    )..layout();
+    final room = layout.bookWidth(b) - YearBar.labelGap;
+    if (painter.width > room) shrink = math.min(shrink, room / painter.width);
+    painter.dispose();
+  }
+  if (shrink == 1) return ambient;
+  final size = style?.fontSize ?? 14;
+  // A hair under, so rounding never pushes a name past its room.
+  return TextScaler.linear(ambient.scale(size) / size * shrink * 0.999);
 }
 
 /// Where each segment falls, measured from the start edge.

@@ -256,6 +256,8 @@ class _ParshaRingsState extends State<ParshaRings> with SingleTickerProviderStat
         '${e.label}: ${l.countOfTotal(e.done, kAliyot)}',
     ].join('. ');
     return Semantics(
+      // An item of its own, never merged into a card or row around it.
+      container: true,
       label: label,
       image: true,
       child: RepaintBoundary(
@@ -277,12 +279,14 @@ class _ParshaRingsState extends State<ParshaRings> with SingleTickerProviderStat
     );
   }
 
-  /// "2/7" over "aliyot", scaled down if large text would spill onto the
-  /// rings. The legend beside the rings carries the counts at full size.
+  /// "2/7" over "aliyot", scaled down to fit inside the Targum ring. The
+  /// legend beside the rings carries the counts at full size.
   Widget _centre(BuildContext context) {
     final theme = Theme.of(context);
     final duration = Motion.of(context).d(Motion.short);
-    final box = RingGeometry(widget.size).hole * 0.85;
+    // The square inscribed in the round hole, with a little clearance: any
+    // larger, and its corners (where "aliyot" sits) would cross the ring.
+    final box = RingGeometry(widget.size).hole / math.sqrt2 * 0.95;
     return Center(
       child: SizedBox.square(
         dimension: box,
@@ -410,7 +414,14 @@ class RingLegend extends StatelessWidget {
 
   /// The width the legend needs to set each row on one line, at the
   /// current text size.
-  static double naturalWidth(BuildContext context, WeekProgress progress, {String? thirdLabel}) {
+  static double naturalWidth(BuildContext context, WeekProgress progress, {String? thirdLabel}) =>
+      _width(context, progress, thirdLabel: thirdLabel, split: false);
+
+  /// The width the legend needs with each count under its name.
+  static double splitWidth(BuildContext context, WeekProgress progress, {String? thirdLabel}) =>
+      _width(context, progress, thirdLabel: thirdLabel, split: true);
+
+  static double _width(BuildContext context, WeekProgress progress, {String? thirdLabel, required bool split}) {
     final l = context.l10n;
     final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
     double measure(String text, TextStyle? style) {
@@ -429,7 +440,8 @@ class RingLegend extends StatelessWidget {
     final entries = _legendEntries(context, progress, thirdLabel);
     final label = entries.map((e) => measure(e.label, _labelStyle(context))).reduce(math.max);
     final count = entries.map((e) => measure(l.countOfTotal(e.done, kAliyot), _countStyle(context))).reduce(math.max);
-    return (_dot + _dotGap + label + _countGap + count).ceilToDouble();
+    final text = split ? math.max(label, count) : label + _countGap + count;
+    return (_dot + _dotGap + text).ceilToDouble();
   }
 
   @override
@@ -494,9 +506,10 @@ class RingLegend extends StatelessWidget {
   }
 }
 
-/// [ParshaRings] with their [RingLegend]: side by side where every legend
-/// row fits on one line beside the rings, otherwise the rings centred above
-/// the legend (on a narrow phone, or with large text).
+/// [ParshaRings] with their [RingLegend] (docs/DESIGN_SYSTEM.md §6.11): side
+/// by side wherever the legend fits beside the rings, each count under its
+/// name if the two can't share a line (as on a 360 dp phone); otherwise the
+/// rings centred above the legend (on a narrower phone, or with large text).
 class RingsWithLegend extends StatelessWidget {
   const RingsWithLegend({
     super.key,
@@ -525,9 +538,10 @@ class RingsWithLegend extends StatelessWidget {
     final rings = ParshaRings(progress: progress, aliyahWeights: aliyahWeights, size: size, thirdLabel: thirdLabel);
     final legend = RingLegend(progress: progress, thirdLabel: thirdLabel);
     final natural = RingLegend.naturalWidth(context, progress, thirdLabel: thirdLabel);
+    final split = RingLegend.splitWidth(context, progress, thirdLabel: thirdLabel);
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth >= size + gap + natural) {
+        if (constraints.maxWidth >= size + gap + split) {
           return Row(
             children: [
               rings,
@@ -1074,9 +1088,11 @@ class WeekStatusBadge extends StatelessWidget {
   static Color color(BuildContext context, WeekStatus s) {
     final c = StatusColors.of(context);
     final scheme = Theme.of(context).colorScheme;
+    // §3.4 and §6.14: restored is finished late too, so it takes the late
+    // colour; only a week finished on time is in the done colour.
     return switch (s) {
-      WeekStatus.onTime || WeekStatus.restored => c.done,
-      WeekStatus.late || WeekStatus.madeUp => c.late,
+      WeekStatus.onTime => c.done,
+      WeekStatus.late || WeekStatus.restored || WeekStatus.madeUp => c.late,
       WeekStatus.overdue => c.overdue,
       WeekStatus.missed || WeekStatus.transparent => c.neutral,
       WeekStatus.inProgress => scheme.primary,
