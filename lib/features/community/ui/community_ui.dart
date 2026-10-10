@@ -12,10 +12,12 @@ import '../../../data/models/parsha.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
-import '../../../ui/theme/layout.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/lang.dart';
 import '../../about/legal_screen.dart';
 import '../../parsha/week_context.dart';
+import '../../progress/domain/progress_models.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -298,24 +300,232 @@ String emptyThreadMessage(BuildContext context, WidgetRef ref, ThreadSummary t) 
 String _portionName(BuildContext context, WidgetRef ref, PortionInfo portion) =>
     Names(context).portion(portion, ashkenazi: ref.watch(settingsProvider.select((s) => s.ashkenaziNames)));
 
-/// Says that the community is the demo, on the device alone: a notice at
-/// the top of the page, within its gutters and column (§6.20).
-class DemoBanner extends ConsumerWidget {
+/// [s] as a first-strong isolate, between U+2068 and U+2069: a name, which
+/// may be Hebrew or English, then keeps its own order inside a line in the
+/// other language, and the punctuation either side of it stays with the line.
+String isolate(String s) => '\u2068$s\u2069';
+
+/// Says on the Community page that the community is the demo, on the device
+/// alone (§6.20). It can be dismissed for the rest of the session; the other
+/// community pages say it with their [DemoTag].
+class DemoBanner extends ConsumerStatefulWidget {
   const DemoBanner({super.key});
+
+  @override
+  ConsumerState<DemoBanner> createState() => _DemoBannerState();
+}
+
+class _DemoBannerState extends ConsumerState<DemoBanner> {
+  final _dismiss = FocusNode();
+
+  @override
+  void dispose() {
+    _dismiss.dispose();
+    super.dispose();
+  }
+
+  void _onDismiss() {
+    // The button goes with the notice: the keyboard focus moves on to what
+    // follows it, rather than back to the top of the page.
+    if (_dismiss.hasPrimaryFocus) _dismiss.nextFocus();
+    ref.read(demoBannerDismissedProvider.notifier).dismiss();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!ref.watch(forumRepositoryProvider).isDemo || ref.watch(demoBannerDismissedProvider)) {
+      return const SizedBox.shrink();
+    }
+    final l = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Rhythm.cardGap),
+      child: NoticeBanner(
+        icon: Icons.info_outline,
+        text: l.demoModeBanner,
+        action: IconButton(
+          focusNode: _dismiss,
+          tooltip: l.dismissNotice,
+          color: Theme.of(context).colorScheme.onSecondaryContainer,
+          icon: const Icon(Icons.close, size: 20),
+          onPressed: _onDismiss,
+        ),
+      ),
+    );
+  }
+}
+
+/// A small "Demo" tag for the app bar of a community page (§6.20), while the
+/// community is the demo. It opens a sheet that explains the demo.
+class DemoTag extends ConsumerWidget {
+  const DemoTag({super.key});
+
+  static const _corners = BorderRadius.all(Radius.circular(6));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(forumRepositoryProvider).isDemo) return const SizedBox.shrink();
-    final g = Gutter.of(context);
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: ContentWidth.list),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(g, Space.sm, g, 0),
-          child: SizedBox(
-            width: double.infinity,
-            child: NoticeBanner(icon: Icons.info_outline, text: context.l10n.demoModeBanner),
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final themed = theme.textButtonTheme.style;
+    // High contrast outlines it, as it does notices: the pale fill alone
+    // barely shows there.
+    final side = SeferColors.of(context).isHighContrast ? BorderSide(color: scheme.outline, width: 2) : BorderSide.none;
+    return Padding(
+      // Its end where an icon button's glyph would end: at the page's edge,
+      // and clear of the action after it.
+      padding: const EdgeInsetsDirectional.only(start: Space.sm, end: Space.md),
+      child: TextButton(
+        style: TextButton.styleFrom(
+          backgroundColor: scheme.secondaryContainer,
+          foregroundColor: scheme.onSecondaryContainer,
+          textStyle: theme.textTheme.labelSmall,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          minimumSize: Size.zero,
+          // A small tag, but a whole 48 to tap.
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ).copyWith(
+          // The theme's keyboard focus ring (§6.1), around the tag's corners.
+          shape: WidgetStateProperty.resolveWith(
+            (states) => switch (themed?.shape?.resolve(states)) {
+              final FocusRingBorder ring => ring.copyWith(borderRadius: _corners, side: side),
+              _ => RoundedRectangleBorder(borderRadius: _corners, side: side),
+            },
           ),
+        ),
+        onPressed: () => showDemoAbout(context),
+        child: Text(context.l10n.demoTag),
+      ),
+    );
+  }
+}
+
+/// What the demo is: that it runs on this device alone, with example
+/// discussions; that what is posted stays on the device until the app
+/// restarts; and how to sign in to try it.
+Future<void> showDemoAbout(BuildContext context) => showAppSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        final l = context.l10n;
+        final theme = Theme.of(context);
+        final padding = sheetPadding(context);
+        final body = theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface);
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: Space.xxl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SheetTitle(l.demoAboutTitle),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: padding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(l.demoAboutBody, style: body),
+                      const Gap(Space.md),
+                      Text(l.demoAboutPosts, style: body),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+/// A member's initial on a disc of gold-ink paper (§6.21), standing for them
+/// beside their name, or for the account on its button. It is decorative:
+/// what shows it names the member too. Without a name yet, a person.
+class InitialDisc extends StatelessWidget {
+  const InitialDisc(this.name, {super.key, this.size = 32});
+
+  final String name;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final ink = scheme.onSecondaryContainer;
+    final initial = name.trim().characters.firstOrNull?.toUpperCase();
+    // The serif of titles, at 600 at least (§6.21): EB Garamond, with Frank
+    // Ruhl Libre for a Hebrew initial, or the chosen accessibility font.
+    final serif = theme.textTheme.titleLarge!;
+    final weight = (serif.fontWeight?.value ?? 400) >= 600 ? serif.fontWeight : FontWeight.w600;
+    return ExcludeSemantics(
+      child: Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: scheme.secondaryContainer, shape: BoxShape.circle),
+        child: initial == null
+            ? Icon(Icons.person_outline, size: size * 0.6, color: ink)
+            : Text(
+                initial,
+                // Sized to its disc, which keeps its size as text grows.
+                textScaler: TextScaler.noScaling,
+                style: serif.copyWith(fontSize: size / 2, height: 1, fontWeight: weight, color: ink),
+              ),
+      ),
+    );
+  }
+}
+
+/// This week's discussion on a card that opens it (§9 Community): the
+/// parsha's name in Hebrew, "This week: Parshat Bereshit" and "Open the
+/// discussion". While the discussion opens, a small spinner takes the
+/// chevron's place.
+class ThisWeekCard extends ConsumerWidget {
+  const ThisWeekCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final week = ref.watch(currentWeekContextProvider);
+    final portion = week.portion;
+    final hebrew = SeferType.of(context).hebrewDisplay.copyWith(
+          fontSize: 20,
+          // Frank Ruhl Libre is set heavier in high contrast.
+          fontWeight: SeferColors.of(context).isHighContrast ? FontWeight.w700 : FontWeight.w600,
+        );
+    return WeeklyThreadOpener(
+      portion: portion,
+      hebrewYear: cycleYearOf(week.week.portion, week.week.occasion),
+      builder: (context, progress, open) => InfoCard(
+        onTap: open,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Lang(
+                    const Locale('he'),
+                    child: Text(
+                      portion.nameHe,
+                      locale: const Locale('he'),
+                      // Read from its letters, as screen readers read verses.
+                      semanticsLabel: HebrewText.stripNikud(portion.nameHe),
+                      style: hebrew,
+                    ),
+                  ),
+                  const Gap(Space.xs),
+                  Text(l.thisWeeksThread(_portionName(context, ref, portion)), style: theme.textTheme.titleMedium),
+                  Text(l.openDiscussion, style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            const Gap(Space.md),
+            SizedBox.square(
+              dimension: 24,
+              child: Center(child: progress ?? Icon(Icons.chevron_right, size: 20, color: scheme.outline)),
+            ),
+          ],
         ),
       ),
     );

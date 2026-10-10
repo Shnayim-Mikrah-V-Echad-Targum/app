@@ -3056,6 +3056,36 @@ abstract class AppLocalizations {
   /// **'Demo mode: posts stay on this device and reset when the app restarts.'**
   String get demoModeBanner;
 
+  /// A small tag in the app bar of community pages when no community server is connected. Tapping it explains the demo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo'**
+  String get demoTag;
+
+  /// No description provided for @demoAboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About the demo'**
+  String get demoAboutTitle;
+
+  /// No description provided for @demoAboutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No community server is connected, so the community runs as a demo on this device alone. The discussions in it are examples.'**
+  String get demoAboutBody;
+
+  /// No description provided for @demoAboutPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything you post stays on this device, and everything resets when the app restarts. To try it, sign in with any email address and any 6 digits as the code.'**
+  String get demoAboutPosts;
+
+  /// No description provided for @dismissNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss notice'**
+  String get dismissNotice;
+
   /// No description provided for @forumsHeading.
   ///
   /// In en, this message translates to:
@@ -3440,11 +3470,17 @@ abstract class AppLocalizations {
   /// **'This discussion is locked.'**
   String get lockedThread;
 
-  /// No description provided for @pinnedLabel.
+  /// Heading over a forum's pinned discussions.
   ///
   /// In en, this message translates to:
   /// **'Pinned'**
-  String get pinnedLabel;
+  String get pinnedHeading;
+
+  /// Heading over a forum's other discussions, the most recently active first.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get recentHeading;
 
   /// No description provided for @lockedLabel.
   ///
@@ -3524,11 +3560,11 @@ abstract class AppLocalizations {
   /// **'Read the guidelines'**
   String get readGuidelines;
 
-  /// No description provided for @noThreads.
+  /// No description provided for @emptyForum.
   ///
   /// In en, this message translates to:
-  /// **'No discussions yet. Start the first one!'**
-  String get noThreads;
+  /// **'No discussions yet — begin the first.'**
+  String get emptyForum;
 
   /// An empty weekly thread. {name} is the parsha; a no-break space keeps it with "Parshat".
   ///
@@ -3565,6 +3601,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}'**
   String postsCount(int count);
+
+  /// In a forum's list, how many replies a discussion has had. A no-break space keeps the count with its word.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No replies yet} =1{1 reply} other{{count} replies}}'**
+  String repliesCount(int count);
 
   /// No description provided for @timeJustNow.
   ///

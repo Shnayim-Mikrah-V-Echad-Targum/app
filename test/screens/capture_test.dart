@@ -25,6 +25,8 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
+import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -144,6 +146,19 @@ const _screens = {
   // An empty weekly thread, and the forum that lists it.
   'thread_weekly': '/community/thread/1000',
   'forum_weekly': '/community/forum/parsha',
+  // Signed in as a moderator: the initial on the account button, and the
+  // reports to review.
+  'community_member': '/community',
+  // This week's discussion, opened from its card, with the posts the demo
+  // starts it with.
+  'thread_this_week': '/community',
+  // Forums in both languages, one with a locked discussion, and one with
+  // none at all.
+  'forum_questions': '/community/forum/questions',
+  'forum_feedback': '/community/forum/feedback',
+  'forum_empty': '/community/forum/divrei-torah',
+  // What the Demo tag explains.
+  'demo_about': '/community/forum/questions',
   // Reporting a post, before a reason is chosen.
   'thread_report': '/community/thread/1',
   // A thread of 250 posts, open on its latest hundred, and at its end.
@@ -222,6 +237,8 @@ const _screens = {
   'focus_nav': '/today',
   'focus_segment': '/welcome',
   'focus_fab': '/community/forum/parsha',
+  'focus_thread': '/community/forum/questions',
+  'focus_demo_tag': '/community/forum/questions',
   // Overlays (§6.19) and the app bar with content scrolled under it (§6.2).
   'menu': '/week/5787:1',
   'dialog': '/week/5787:1',
@@ -441,6 +458,8 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_weekly': _withWeeklyThread,
   'forum_weekly': _withWeeklyThread,
   'thread_report': _signedIn,
+  'community_member': _signedIn,
+  'forum_empty': () async => DemoForumRepository(samples: false),
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
   'week_discuss': () async => _OpeningForever(),
@@ -639,6 +658,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
         find.descendant(of: find.byType(SegmentedButton<AppLanguage>), matching: find.byType(TextButton)).last,
       ),
   'focus_fab': (tester) => _keyboardFocus(tester, find.byType(FloatingActionButton)),
+  // A discussion in the middle of a forum's list: its ring clears the hairlines.
+  'focus_thread': (tester) => _keyboardFocus(tester, find.byType(ThreadTile).at(1)),
+  'focus_demo_tag': (tester) => _keyboardFocus(tester, find.byType(DemoTag)),
+  'demo_about': (tester) => tester.tap(find.byType(DemoTag)),
+  'thread_this_week': (tester) => tester.tap(find.byType(ThisWeekCard)),
   'menu': (tester) => _openWeekMenu(tester),
   // The week menu: full text, mark the whole parsha, clear the week.
   'dialog': (tester) => _openWeekMenu(tester, item: 2),
@@ -840,6 +864,7 @@ const _desktopScreens = {
   's_display',
   'community',
   'forum',
+  'forum_questions',
   'account',
   'browse',
   'guide',
@@ -864,6 +889,8 @@ const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {'today', 'progress', 'progress_map', 'progress_years', 'kit_week', 'reader'};
 const _bigTextScreens = {
   'today',
+  'community',
+  'forum_questions',
   'reader_finished_day',
   'reader_finished_week',
   'celebrate',

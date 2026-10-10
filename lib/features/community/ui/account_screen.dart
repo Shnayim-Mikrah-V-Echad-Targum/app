@@ -73,16 +73,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final profile = ref.watch(myProfileProvider).value;
     return PageScaffold(
       titleText: user == null ? l.signInTitle : l.settingsAccount,
-      body: Column(
-        children: [
-          const DemoBanner(),
-          Expanded(
-            child: PageBody(
-              children: user == null ? _signIn(context, repo.isDemo) : _signedIn(context, profile),
-            ),
-          ),
-        ],
-      ),
+      actions: const [DemoTag()],
+      body: PageBody(children: user == null ? _signIn(context, repo.isDemo) : _signedIn(context, profile)),
     );
   }
 

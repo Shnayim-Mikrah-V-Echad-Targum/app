@@ -1,18 +1,25 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart' show toBeginningOfSentenceCase;
 
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fallbacks.dart';
+import '../../../ui/widgets/lang.dart';
+import '../../../ui/widgets/paper_group.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
 import 'community_ui.dart';
 
-/// Threads in one forum, pinned first, with explicit "Load more" paging
-/// (no infinite-scroll trap for keyboard and screen reader users).
+/// Threads in one forum (§9 Community): the pinned ones, then the rest,
+/// newest activity first, with explicit "Load more" paging (no
+/// infinite-scroll trap for keyboard and screen reader users). The Parshat
+/// HaShavua forum opens on this week's discussion.
 class ForumScreen extends ConsumerStatefulWidget {
   const ForumScreen({super.key, required this.slug});
   final String slug;
@@ -99,6 +106,11 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
     final threads = ref.watch(threadsProvider(forum.id));
     final profile = ref.watch(myProfileProvider).value;
     final canStart = !forum.locked || (profile?.isModerator ?? false);
+    final theme = Theme.of(context);
+    final description = forum.description(he);
+    // The Parsha forum opens on this week's discussion, so it is never empty.
+    final weekly = forum.slug == 'parsha';
+    void compose() => context.push('/community/new?forum=${forum.slug}');
 
     Future<void> refresh() async {
       ref.invalidate(threadsProvider(forum.id));
@@ -109,103 +121,162 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
       refresh: refresh,
       builder: (context, refreshButton) => PageScaffold(
         titleText: forum.name(he),
-        actions: [refreshButton],
+        actions: [const DemoTag(), refreshButton],
         floatingActionButton: canStart
             ? FloatingActionButton.extended(
-                onPressed: () => context.push('/community/new?forum=${forum.slug}'),
+                onPressed: compose,
                 icon: const Icon(Icons.edit_outlined),
                 label: Text(l.newThread),
               )
             : null,
-        body: Column(
-          children: [
-            const DemoBanner(),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  try {
-                    await refresh();
-                  } catch (e) {
-                    if (context.mounted) showStatus(context, communityError(l, e));
-                  }
-                },
-                child: threads.when(
-                  // Fetched again, the threads shown stay until the new ones come.
-                  skipError: threads.hasValue,
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
-                  data: (page) {
-                    final list = page.threads;
-                    return PageBody.builder(
-                      header: [
-                        if (forum.description(he).isNotEmpty)
-                          Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(forum.description(he))),
-                        if (list.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(l.noThreads, textAlign: TextAlign.center)),
-                      ],
-                      // The last item makes room for the button over it.
-                      itemCount: list.length + 1,
-                      itemBuilder: (context, i) {
-                        if (i < list.length) {
-                          return ThreadTile(
-                            key: ValueKey(list[i].id),
-                            thread: list[i],
-                            focusNode: i == _firstLoaded ? _firstLoadedFocus : null,
-                          );
-                        }
-                        if (!page.hasMore) return const Gap(72);
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 72),
-                          child: OutlinedButton(
-                            // Enabled while it loads, so that it keeps the
-                            // keyboard focus; presses meanwhile do nothing.
-                            focusNode: _loadMoreFocus,
-                            onPressed: () => _loadMore(forum),
-                            child: _loadingMore
-                                ? SizedBox.square(
-                                    dimension: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
-                                  )
-                                : Text(l.loadMore),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
+        body: RefreshIndicator(
+          onRefresh: () async {
+            try {
+              await refresh();
+            } catch (e) {
+              if (context.mounted) showStatus(context, communityError(l, e));
+            }
+          },
+          child: threads.when(
+            // Fetched again, the threads shown stay until the new ones come.
+            skipError: threads.hasValue,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
+            data: (page) {
+              final pinned = <Widget>[];
+              final recent = <Widget>[];
+              for (final (i, t) in page.threads.indexed) {
+                (t.pinned ? pinned : recent).add(ThreadTile(
+                  key: ValueKey(t.id),
+                  thread: t,
+                  focusNode: i == _firstLoaded ? _firstLoadedFocus : null,
+                ));
+              }
+              return PageBody(
+                children: [
+                  if (description.isNotEmpty)
+                    Text(description, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  if (weekly) ...[
+                    if (description.isNotEmpty) const Gap(Rhythm.cardGap),
+                    const ThisWeekCard(),
+                  ],
+                  if (pinned.isNotEmpty) ...[GroupHeader(l.pinnedHeading), PaperGroup(children: pinned)],
+                  if (recent.isNotEmpty) ...[GroupHeader(l.recentHeading), PaperGroup(children: recent)],
+                  if (page.threads.isEmpty && !weekly)
+                    EmptyState(
+                      message: l.emptyForum,
+                      actionLabel: canStart ? l.newThread : null,
+                      onAction: canStart ? compose : null,
+                    ),
+                  if (page.hasMore)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Space.lg),
+                      child: Center(
+                        child: OutlinedButton(
+                          // Enabled while it loads, so that it keeps the
+                          // keyboard focus; presses meanwhile do nothing.
+                          focusNode: _loadMoreFocus,
+                          onPressed: () => _loadMore(forum),
+                          child: _loadingMore
+                              ? SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
+                                )
+                              : Text(l.loadMore),
+                        ),
+                      ),
+                    ),
+                  // Room at the end for the button over it.
+                  if (canStart) const Gap(72),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
 }
 
+/// A thread in a forum's list (§9 Community): its title, run in the direction
+/// of its own language, under a Locked tag if it is locked; then who started
+/// it, when it was last active, and how many replies it has had. One item for
+/// screen readers, which opens the thread.
 class ThreadTile extends ConsumerWidget {
   const ThreadTile({super.key, required this.thread, this.focusNode});
   final ThreadSummary thread;
   final FocusNode? focusNode;
 
+  /// Every post but the one that opened the thread. A weekly thread opens
+  /// with none of its own, so all of its posts are replies.
+  int get _replies => thread.kind == ThreadKind.weekly ? thread.postCount : max(0, thread.postCount - 1);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final text = theme.textTheme;
+    final muted = theme.colorScheme.onSurfaceVariant;
     final title = threadDisplayTitle(context, ref, thread);
-    final meta = [
-      if (thread.pinned) l.pinnedLabel,
-      if (thread.locked) l.lockedLabel,
-      l.postsCount(thread.postCount),
-      relativeTime(context, thread.lastPostAt),
-    ].join(' · ');
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
+    final direction = autoDirection(title);
+    // Each title runs its own way, but starts on the same edge as the rest.
+    final edge = Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.left;
+    // Never cut short once the text is enlarged (WCAG 1.4.4).
+    final enlarged = MediaQuery.textScalerOf(context).scale(1) > 1;
+    // Starting with the time, as a weekly thread's does, it starts with a
+    // capital: "Just now".
+    final meta = toBeginningOfSentenceCase(
+      [
+        // A weekly thread is the community's, started by no one.
+        if (thread.authorName.isNotEmpty) isolate(thread.authorName),
+        relativeTime(context, thread.lastPostAt),
+        l.repliesCount(_replies),
+      ].join(' · '),
+      context.localeName,
+    );
+    return Semantics(
+      container: true,
+      button: true,
+      child: SeferInkWell(
         focusNode: focusNode,
-        leading: Icon(thread.pinned ? Icons.push_pin_outlined : (thread.locked ? Icons.lock_outline : Icons.chat_bubble_outline)),
-        title: Text(title, textDirection: autoDirection(title)),
-        subtitle: Text(meta, style: theme.textTheme.bodySmall),
-        trailing: const Icon(Icons.chevron_right),
+        borderRadius: PaperGroup.rowCorners(context),
         onTap: () => context.push('/community/thread/${thread.id}'),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 72),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (thread.locked)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Row(
+                      children: [
+                        Icon(Icons.lock_outline, size: 16, color: muted),
+                        const Gap(Space.xs),
+                        Flexible(child: Text(l.lockedLabel, style: text.labelSmall?.copyWith(color: muted))),
+                      ],
+                    ),
+                  ),
+                Lang(
+                  Locale(direction == TextDirection.rtl ? 'he' : 'en'),
+                  child: Text(
+                    title,
+                    style: text.titleMedium,
+                    textDirection: direction,
+                    textAlign: edge,
+                    maxLines: enlarged ? null : 2,
+                    overflow: enlarged ? null : TextOverflow.ellipsis,
+                  ),
+                ),
+                const Gap(2),
+                Text(meta, style: text.bodySmall?.copyWith(color: muted)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

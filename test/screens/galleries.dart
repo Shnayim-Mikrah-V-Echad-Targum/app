@@ -104,7 +104,7 @@ class OrnamentsGallery extends StatelessWidget {
               ],
             ),
           ),
-          EmptyState(message: context.l10n.noThreads, actionLabel: context.l10n.newThread, onAction: () {}),
+          EmptyState(message: context.l10n.emptyForum, actionLabel: context.l10n.newThread, onAction: () {}),
         ],
       ),
     );

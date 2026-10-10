@@ -1129,8 +1129,9 @@ In order:
 
 **Forum**
 - The description in bodyMedium onSurfaceVariant.
-- Thread rows in one PaperGroup: title titleMedium with `autoDirection`; bodySmall "Rivka · 3 hours ago · 4 replies".
-- Empty state per §6.22 with `emptyForum`.
+- Parshat HaShavua first shows this week's card, as on Home, so that forum is never empty.
+- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines), then bodySmall "Rivka · 3 hours ago · 4 replies" with the name isolated. A locked thread has a 16 px lock and a labelSmall "Locked" above its title; a pinned one needs no tag under "Pinned". No leading icon or chevron.
+- Empty state per §6.22 with `emptyForum`, its action New discussion.
 - FAB: extended "New discussion", primaryContainer / onPrimaryContainer, radius 12, elevation 2.
 
 **Thread**

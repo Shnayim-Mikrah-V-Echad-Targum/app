@@ -1779,6 +1779,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Demo mode: posts stay on this device and reset when the app restarts.';
 
   @override
+  String get demoTag => 'Demo';
+
+  @override
+  String get demoAboutTitle => 'About the demo';
+
+  @override
+  String get demoAboutBody =>
+      'No community server is connected, so the community runs as a demo on this device alone. The discussions in it are examples.';
+
+  @override
+  String get demoAboutPosts =>
+      'Anything you post stays on this device, and everything resets when the app restarts. To try it, sign in with any email address and any 6 digits as the code.';
+
+  @override
+  String get dismissNotice => 'Dismiss notice';
+
+  @override
   String get forumsHeading => 'Forums';
 
   @override
@@ -2005,7 +2022,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockedThread => 'This discussion is locked.';
 
   @override
-  String get pinnedLabel => 'Pinned';
+  String get pinnedHeading => 'Pinned';
+
+  @override
+  String get recentHeading => 'Recent';
 
   @override
   String get lockedLabel => 'Locked';
@@ -2048,7 +2068,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readGuidelines => 'Read the guidelines';
 
   @override
-  String get noThreads => 'No discussions yet. Start the first one!';
+  String get emptyForum => 'No discussions yet — begin the first.';
 
   @override
   String noPostsYet(String name) {
@@ -2083,6 +2103,18 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$count posts',
       one: '1 post',
       zero: 'No posts yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repliesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count replies',
+      one: '1 reply',
+      zero: 'No replies yet',
     );
     return '$_temp0';
   }

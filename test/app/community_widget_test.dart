@@ -13,12 +13,14 @@ import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikra/features/community/ui/compose_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/lang.dart';
 
 import '../helpers.dart';
 
@@ -128,6 +130,12 @@ class _FlakyForum extends DemoForumRepository {
   }
 }
 
+/// A community on a server: no demo.
+class _Server extends DemoForumRepository {
+  @override
+  bool get isDemo => false;
+}
+
 /// A signed-in member who can't reach the server to accept the guidelines.
 class _OfflineNewcomer extends DemoForumRepository {
   @override
@@ -135,8 +143,10 @@ class _OfflineNewcomer extends DemoForumRepository {
 }
 
 /// A community whose forums can't be paged: the first page comes, and no
-/// other.
+/// other. Its forums start empty.
 class _FirstPageOnly extends DemoForumRepository {
+  _FirstPageOnly() : super(samples: false);
+
   @override
   Future<List<ThreadSummary>> threads({
     int? forumId,
@@ -150,8 +160,10 @@ class _FirstPageOnly extends DemoForumRepository {
 }
 
 /// A community whose pages after the first wait for [gate], and are
-/// counted ([pages]).
+/// counted ([pages]). Its forums start empty.
 class _SlowPaging extends DemoForumRepository {
+  _SlowPaging() : super(samples: false);
+
   Completer<void>? gate;
   int pages = 0;
 
@@ -203,7 +215,8 @@ T _withLongThread<T extends DemoForumRepository>(T repo, {int count = 250, int? 
     ],
   );
 
-/// [repo] with 40 pinned and 40 other threads in Divrei Torah.
+/// [repo], whose forums start empty, with 40 pinned and 40 other threads in
+/// Divrei Torah.
 T _withManyThreads<T extends DemoForumRepository>(T repo) => repo
   ..seed(threads: [
     for (var i = 0; i < 40; i++) _thread(300 + i, minutes: i, pinned: true),
@@ -910,7 +923,7 @@ void main() {
 
   group('a forum', () {
     testWidgets('lists its pinned threads, then the rest a page at a time', (tester) async {
-      final c = await _pump(tester, forums: _withManyThreads(DemoForumRepository()));
+      final c = await _pump(tester, forums: _withManyThreads(DemoForumRepository(samples: false)));
       c.read(routerProvider).go('/community/forum/divrei-torah');
       await tester.pumpAndSettle();
       expect(find.text('Thread 339'), findsOneWidget, reason: 'the latest pinned thread first');
@@ -997,7 +1010,9 @@ void main() {
       final c = await _pump(tester, forums: forums);
       c.read(routerProvider).go('/community/forum/questions');
       await tester.pumpAndSettle();
-      expect(find.textContaining('3 posts'), findsOneWidget);
+      // The forum counts the replies: the posts after the first.
+      final tile = find.widgetWithText(ThreadTile, 'Why read the Targum rather than a translation?');
+      expect(find.descendant(of: tile, matching: find.textContaining('2\u00a0replies')), findsOneWidget);
       await tester.tap(find.text('Why read the Targum rather than a translation?'));
       await tester.pumpAndSettle();
       expect(find.text('3 posts'), findsOneWidget);
@@ -1018,8 +1033,8 @@ void main() {
       expect(find.text('2 posts'), findsOneWidget);
 
       await _goBack(tester);
-      expect(find.textContaining('2 posts'), findsOneWidget);
-      expect(find.textContaining('3 posts'), findsNothing);
+      expect(find.descendant(of: tile, matching: find.textContaining('1\u00a0reply')), findsOneWidget);
+      expect(find.descendant(of: tile, matching: find.textContaining('2\u00a0replies')), findsNothing);
     });
   });
 
@@ -1041,7 +1056,9 @@ void main() {
     forums.gate!.complete();
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(find.textContaining('Pinned'), findsOneWidget, reason: 'as its forum lists it');
+    // As its forum lists it: under Pinned, before the rest.
+    final top = tester.getTopLeft(find.text('Why read the Targum rather than a translation?')).dy;
+    expect(top, inExclusiveRange(tester.getTopLeft(find.text('Pinned')).dy, tester.getTopLeft(find.text('Recent')).dy));
 
     await tester.tap(find.text('Why read the Targum rather than a translation?'));
     await tester.pumpAndSettle();
@@ -1134,6 +1151,230 @@ void main() {
 
       await _openPostMenu(tester, 1);
       expect(find.text('Report'), findsNothing);
+    });
+  });
+
+  group('the community page', () {
+    const demoMode = 'Demo mode: posts stay on this device and reset when the app restarts.';
+
+    testWidgets('says that it is the demo, until its notice is dismissed for the session', (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      final notice = find.widgetWithText(NoticeBanner, demoMode);
+      expect(notice, findsOneWidget);
+      expect(find.byType(DemoTag), findsNothing, reason: 'the notice says it here');
+
+      await tester.tap(find.byTooltip('Dismiss notice'));
+      await tester.pumpAndSettle();
+      expect(notice, findsNothing);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      expect(notice, findsNothing, reason: 'for the rest of the session');
+    });
+
+    testWidgets("dismissed from the keyboard, gives the focus to this week's discussion", (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      Focus.of(tester.element(find.descendant(of: find.byTooltip('Dismiss notice'), matching: find.byIcon(Icons.close))))
+          .requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.byType(NoticeBanner), findsNothing);
+      final focused = FocusManager.instance.primaryFocus?.context;
+      expect(focused, isNotNull);
+      expect(
+        find.descendant(of: find.byType(ThisWeekCard), matching: find.byElementPredicate((e) => e == focused)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("opens this week's discussion, which the demo has begun", (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      final card = find.byType(ThisWeekCard);
+      // The parsha's name in Hebrew, tagged as Hebrew, over its English title.
+      final hebrew = find.descendant(of: card, matching: find.text('בְּרֵאשִׁית'));
+      expect(hebrew, findsOneWidget);
+      expect(tester.widget<Lang>(find.ancestor(of: hebrew, matching: find.byType(Lang))).locale, const Locale('he'));
+      expect(find.descendant(of: card, matching: find.text('This week: Parshat Bereshit')), findsOneWidget);
+      expect(find.descendant(of: card, matching: find.text('Open the discussion')), findsOneWidget);
+
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      expect(find.byType(ThreadScreen), findsOneWidget);
+      expect(find.text('Parshat Bereshit 5787'), findsNWidgets(2));
+      expect(find.byType(PostCard), findsNWidgets(3));
+    });
+
+    testWidgets("has an account button: a person signed out, and the member's initial signed in", (tester) async {
+      final forums = DemoForumRepository();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      final appBar = find.byType(AppBar);
+      expect(find.descendant(of: appBar, matching: find.byIcon(Icons.person_outline)), findsOneWidget);
+      expect(find.byTooltip('Sign in'), findsNWidgets(1));
+
+      await forums.verifyCode('reader@example.org', '123456');
+      await forums.updateDisplayName('rivka');
+      c.invalidate(myProfileProvider);
+      await tester.pumpAndSettle();
+      final disc = find.descendant(of: appBar, matching: find.byType(InitialDisc));
+      expect(disc, findsOneWidget);
+      expect(find.descendant(of: disc, matching: find.text('R')), findsOneWidget);
+      expect(tester.getSize(disc), const Size(32, 32));
+      expect(find.byTooltip('Account & community'), findsOneWidget);
+      // The sign-in row goes, and a moderator's reports come.
+      expect(find.text('Sign in to post, say thanks or report.'), findsNothing);
+      expect(find.text('Reports to review'), findsOneWidget);
+    });
+
+    testWidgets('on a community server says nothing of a demo', (tester) async {
+      final c = await _pump(tester, forums: _Server());
+      for (final page in ['/community', '/community/forum/questions', '/community/thread/1', '/community/account']) {
+        c.read(routerProvider).go(page);
+        await tester.pumpAndSettle();
+        expect(find.text(demoMode), findsNothing, reason: page);
+        expect(find.text('Demo'), findsNothing, reason: page);
+      }
+    });
+  });
+
+  group('the Demo tag', () {
+    for (final page in ['/community/forum/questions', '/community/thread/1', '/community/new?forum=questions', '/community/account']) {
+      testWidgets('on $page is a button that explains the demo', (tester) async {
+        final semantics = tester.ensureSemantics();
+        final c = await _pump(tester);
+        c.read(routerProvider).go(page);
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Demo mode'), findsNothing, reason: "the notice is the Community page's alone");
+        final tag = find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(TextButton, 'Demo'));
+        expect(tag, findsOneWidget);
+        // A small tag, but a whole 48 to tap.
+        expect(tester.getSize(tag).height, greaterThanOrEqualTo(48));
+        expect(tester.getSize(tag).width, greaterThanOrEqualTo(48));
+        expect(tester.getSemantics(tag), isSemantics(label: 'Demo', isButton: true, hasTapAction: true));
+
+        await tester.tap(tag);
+        await tester.pumpAndSettle();
+        expect(find.text('About the demo'), findsOneWidget);
+        expect(find.textContaining('Anything you post stays on this device'), findsOneWidget);
+        semantics.dispose();
+      });
+    }
+  });
+
+  group('a forum page', () {
+    testWidgets("of the week's parsha opens on this week's discussion, and is never empty", (tester) async {
+      final c = await _pump(tester, forums: DemoForumRepository(samples: false));
+      c.read(routerProvider).go('/community/forum/parsha');
+      await tester.pumpAndSettle();
+      expect(find.byType(ThisWeekCard), findsOneWidget);
+      expect(find.byType(EmptyState), findsNothing);
+      await tester.tap(find.byType(ThisWeekCard));
+      await tester.pumpAndSettle();
+      expect(find.text('Parshat Bereshit 5787'), findsNWidgets(2));
+    });
+
+    testWidgets('with no discussions says so, and offers to begin the first', (tester) async {
+      final c = await _pump(tester, forums: DemoForumRepository(samples: false));
+      c.read(routerProvider).go('/community/forum/divrei-torah');
+      await tester.pumpAndSettle();
+      final empty = find.byType(EmptyState);
+      expect(find.descendant(of: empty, matching: find.text('No discussions yet — begin the first.')), findsOneWidget);
+      await tester.tap(find.descendant(of: empty, matching: find.text('New discussion')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ComposeScreen), findsOneWidget);
+      expect(find.descendant(of: find.byType(DropdownMenu<int>), matching: find.text('Divrei Torah')), findsOneWidget);
+    });
+
+    testWidgets('lists its pinned discussions apart, and tags a locked one above its title', (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/forum/parsha');
+      await tester.pumpAndSettle();
+      final welcome = tester.getTopLeft(find.text('Welcome: how the weekly discussions work')).dy;
+      expect(welcome, inExclusiveRange(tester.getTopLeft(find.text('Pinned')).dy, tester.getTopLeft(find.text('Recent')).dy));
+
+      c.read(routerProvider).go('/community/forum/feedback');
+      await tester.pumpAndSettle();
+      const title = 'A warmer theme for reading at night?';
+      final locked = find.widgetWithText(ThreadTile, title);
+      final tag = find.descendant(of: locked, matching: find.text('Locked'));
+      expect(tag, findsOneWidget);
+      expect(find.descendant(of: locked, matching: find.byIcon(Icons.lock_outline)), findsOneWidget);
+      expect(tester.getTopLeft(tag).dy, lessThan(tester.getTopLeft(find.text(title)).dy));
+      // Who started it, when it was last active, and its replies.
+      expect(find.descendant(of: locked, matching: find.textContaining(RegExp(r'^\u2068Avraham\u2069 · .+ · 1\u00a0reply$'))), findsOneWidget);
+    });
+
+    testWidgets("lists a weekly thread as the community's, started by no one", (tester) async {
+      final now = DateTime.now();
+      final forums = DemoForumRepository()
+        ..seed(threads: [
+          ThreadSummary(
+            id: '6100',
+            forumId: 1,
+            title: 'Noach · נח · 5787',
+            kind: ThreadKind.weekly,
+            authorName: '',
+            postCount: 0,
+            // Ahead of the clock, so that it is "just now" however long the
+            // test takes.
+            lastPostAt: now.add(const Duration(days: 1)),
+            createdAt: now,
+            parshaNumber: 2,
+            hebrewYear: 5787,
+          ),
+        ]);
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/parsha');
+      await tester.pumpAndSettle();
+      final weekly = find.widgetWithText(ThreadTile, 'Parshat Noach 5787');
+      expect(find.descendant(of: weekly, matching: find.text('Just now · No replies yet')), findsOneWidget);
+    });
+
+    testWidgets("runs each title its own way from the page's edge, and keeps a Hebrew name in its place", (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      const question = 'עד מתי אפשר להשלים את הקריאה?';
+      final hebrew = tester.widget<Text>(find.text(question));
+      expect(hebrew.textDirection, TextDirection.rtl, reason: 'so its question mark ends it');
+      expect(hebrew.textAlign, TextAlign.left, reason: "from the English page's edge");
+      expect(tester.widget<Lang>(find.ancestor(of: find.text(question), matching: find.byType(Lang))).locale, const Locale('he'));
+      expect(tester.widget<Text>(find.text('Why read Numbers 32:3 a third time?')).textDirection, TextDirection.ltr);
+      // Isolated, so that the rest of the line stays after the name.
+      expect(find.textContaining('\u2068שירה\u2069 · '), findsOneWidget);
+    });
+  });
+
+  group('InitialDisc', () {
+    testWidgets("a member's initial in the serif, on gold-ink paper, kept to its disc at 200%", (tester) async {
+      await pumpThemed(tester, const Center(child: InitialDisc('miriam')), textScale: 2);
+      expect(tester.getSize(find.byType(InitialDisc)), const Size(32, 32));
+      final initial = tester.widget<Text>(find.text('M'));
+      expect(initial.style?.fontFamily, 'EBGaramond');
+      expect(initial.style?.fontWeight, FontWeight.w600);
+      expect(initial.textScaler, TextScaler.noScaling);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a Hebrew initial, or a person before there is a name, and nothing for screen readers', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpThemed(tester, const Center(child: InitialDisc('שירה', size: 56)));
+      expect(find.text('ש'), findsOneWidget);
+      expect(tester.getSize(find.byType(InitialDisc)), const Size(56, 56));
+      expect(find.bySemanticsLabel('ש'), findsNothing);
+
+      await pumpThemed(tester, const Center(child: InitialDisc(' ')));
+      expect(find.byIcon(Icons.person_outline), findsOneWidget);
+      semantics.dispose();
     });
   });
 }

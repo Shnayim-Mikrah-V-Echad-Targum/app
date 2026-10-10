@@ -101,85 +101,79 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return PageScaffold(
       titleText: l.newThread,
       actions: [
+        const DemoTag(),
         Padding(
           padding: const EdgeInsetsDirectional.only(end: 8),
           child: FilledButton(onPressed: canPost ? _post : null, child: Text(l.postAction)),
         ),
       ],
-      body: Column(
-        children: [
-          const DemoBanner(),
-          Expanded(
-            child: AutofillGroup(
-              child: PageBody(
-                children: [
-                  // A select-only DropdownMenu rather than DropdownButtonFormField,
-                  // whose menu always fades in over 300 ms: this one opens at
-                  // once, so Reduce Motion holds here too (§8). It can be
-                  // focused, and Enter or the arrow keys open it.
-                  LayoutBuilder(
-                    builder: (context, constraints) => DropdownMenu<int>(
-                      initialSelection: _forumId,
-                      label: Text(l.forumLabel),
-                      selectOnly: true,
-                      requestFocusOnTap: true,
-                      expandedInsets: EdgeInsets.zero,
-                      // The menu as wide as the field, rather than its longest
-                      // forum's name, which can be wider than a phone.
-                      width: constraints.maxWidth,
-                      dropdownMenuEntries: [
-                        for (final f in available) DropdownMenuEntry(value: f.id, label: f.name(he)),
-                      ],
-                      onSelected: (v) => setState(() => _forumId = v),
-                    ),
-                  ),
-                  const Gap(16),
-                  TextField(
-                    controller: _title,
-                    maxLength: 150,
-                    textDirection: autoDirection(_title.text),
-                    decoration: InputDecoration(
-                      labelText: l.threadTitleLabel,
-                      errorText: _title.text.isNotEmpty && _title.text.trim().length < 5 ? l.errTitleTooShort : null,
-                    ),
-                  ),
-                  const Gap(8),
-                  TextField(
-                    controller: _body,
-                    minLines: 6,
-                    maxLines: 16,
-                    maxLength: 10000,
-                    textDirection: autoDirection(_body.text),
-                    keyboardType: TextInputType.multiline,
-                    decoration: InputDecoration(labelText: l.threadBodyLabel, alignLabelWithHint: true),
-                  ),
-                  const Gap(8),
-                  Text(l.guidelinesPrompt, style: Theme.of(context).textTheme.bodySmall),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton(
-                      onPressed: () => context.push('/legal/guidelines'),
-                      child: Text(l.readGuidelines),
-                    ),
-                  ),
-                  if (_title.text.isNotEmpty || _body.text.isNotEmpty)
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.delete_outline),
-                        label: Text(l.discardDraft),
-                        onPressed: () {
-                          _title.clear();
-                          _body.clear();
-                          ref.read(sharedPreferencesProvider).remove(_draftKey);
-                        },
-                      ),
-                    ),
+      body: AutofillGroup(
+        child: PageBody(
+          children: [
+            // A select-only DropdownMenu rather than DropdownButtonFormField,
+            // whose menu always fades in over 300 ms: this one opens at
+            // once, so Reduce Motion holds here too (§8). It can be
+            // focused, and Enter or the arrow keys open it.
+            LayoutBuilder(
+              builder: (context, constraints) => DropdownMenu<int>(
+                initialSelection: _forumId,
+                label: Text(l.forumLabel),
+                selectOnly: true,
+                requestFocusOnTap: true,
+                expandedInsets: EdgeInsets.zero,
+                // The menu as wide as the field, rather than its longest
+                // forum's name, which can be wider than a phone.
+                width: constraints.maxWidth,
+                dropdownMenuEntries: [
+                  for (final f in available) DropdownMenuEntry(value: f.id, label: f.name(he)),
                 ],
+                onSelected: (v) => setState(() => _forumId = v),
               ),
             ),
-          ),
-        ],
+            const Gap(16),
+            TextField(
+              controller: _title,
+              maxLength: 150,
+              textDirection: autoDirection(_title.text),
+              decoration: InputDecoration(
+                labelText: l.threadTitleLabel,
+                errorText: _title.text.isNotEmpty && _title.text.trim().length < 5 ? l.errTitleTooShort : null,
+              ),
+            ),
+            const Gap(8),
+            TextField(
+              controller: _body,
+              minLines: 6,
+              maxLines: 16,
+              maxLength: 10000,
+              textDirection: autoDirection(_body.text),
+              keyboardType: TextInputType.multiline,
+              decoration: InputDecoration(labelText: l.threadBodyLabel, alignLabelWithHint: true),
+            ),
+            const Gap(8),
+            Text(l.guidelinesPrompt, style: Theme.of(context).textTheme.bodySmall),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(
+                onPressed: () => context.push('/legal/guidelines'),
+                child: Text(l.readGuidelines),
+              ),
+            ),
+            if (_title.text.isNotEmpty || _body.text.isNotEmpty)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(l.discardDraft),
+                  onPressed: () {
+                    _title.clear();
+                    _body.clear();
+                    ref.read(sharedPreferencesProvider).remove(_draftKey);
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

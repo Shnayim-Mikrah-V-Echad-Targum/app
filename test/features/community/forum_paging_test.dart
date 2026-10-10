@@ -35,7 +35,7 @@ Post _post(int id, {required int minutes}) => Post(
 /// The demo with 40 pinned and 40 unpinned threads in an empty forum.
 /// Several share a last post time, and their ids run from three digits to
 /// two (101 and 98 among them), so that ties are broken by id as a number.
-DemoForumRepository _manyThreads() => DemoForumRepository()
+DemoForumRepository _manyThreads() => DemoForumRepository(samples: false)
   ..seed(threads: [
     for (var i = 0; i < 40; i++) _thread(300 + i, minutes: i ~/ 3, pinned: true),
     for (var i = 0; i < 40; i++) _thread(200 - i * 3, minutes: i ~/ 4),

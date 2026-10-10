@@ -162,7 +162,7 @@ It ends by opening the reader on today's aliyah. Everything else is a setting wi
 
 **Posting on Shabbat** can optionally be blocked on the server, using a per-region table of Shabbat times. It is off by default: users span time zones, and the forum's moderators should make that call.
 
-**Without a backend**, a demo repository runs on the device. The app is fully usable without any server.
+**Without a backend**, a demo repository runs on the device. The app is fully usable without any server. Every forum starts with a few sample discussions in Hebrew and English, and this week's discussion with a few posts when it is first opened; no sample is dated on Shabbat or Yom Tov.
 
 ## 8. Accessibility
 

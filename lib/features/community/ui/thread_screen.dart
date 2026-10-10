@@ -193,6 +193,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         // An English title in Hebrew UI, or the reverse, is cut at its own end.
         title: Text(title, textDirection: autoDirection(title), overflow: TextOverflow.ellipsis),
         actions: [
+          const DemoTag(),
           refreshButton,
           if (isMod && t != null)
             PopupMenuButton<String>(
@@ -207,7 +208,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         ],
         body: Column(
           children: [
-            const DemoBanner(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {

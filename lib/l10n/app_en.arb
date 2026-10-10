@@ -1283,6 +1283,14 @@
   },
   "communityTitle": "Community",
   "demoModeBanner": "Demo mode: posts stay on this device and reset when the app restarts.",
+  "demoTag": "Demo",
+  "@demoTag": {
+    "description": "A small tag in the app bar of community pages when no community server is connected. Tapping it explains the demo."
+  },
+  "demoAboutTitle": "About the demo",
+  "demoAboutBody": "No community server is connected, so the community runs as a demo on this device alone. The discussions in it are examples.",
+  "demoAboutPosts": "Anything you post stays on this device, and everything resets when the app restarts. To try it, sign in with any email address and any 6 digits as the code.",
+  "dismissNotice": "Dismiss notice",
   "forumsHeading": "Forums",
   "forumNotFound": "This forum couldn't be found. It may have moved or closed.",
   "allForums": "All forums",
@@ -1427,7 +1435,14 @@
   "posted": "Posted.",
   "pendingReview": "Hidden — waiting for a moderator",
   "lockedThread": "This discussion is locked.",
-  "pinnedLabel": "Pinned",
+  "pinnedHeading": "Pinned",
+  "@pinnedHeading": {
+    "description": "Heading over a forum's pinned discussions."
+  },
+  "recentHeading": "Recent",
+  "@recentHeading": {
+    "description": "Heading over a forum's other discussions, the most recently active first."
+  },
   "lockedLabel": "Locked",
   "lockThread": "Lock discussion",
   "unlockThread": "Unlock discussion",
@@ -1441,7 +1456,7 @@
   "guidelinesAccept": "I'll follow the community guidelines",
   "guidelinesPrompt": "Before your first post, please read the community guidelines.",
   "readGuidelines": "Read the guidelines",
-  "noThreads": "No discussions yet. Start the first one!",
+  "emptyForum": "No discussions yet — begin the first.",
   "noPostsYet": "No posts yet — share a thought on Parshat {name}.",
   "@noPostsYet": {
     "description": "An empty weekly thread. {name} is the parsha; a no-break space keeps it with \"Parshat\".",
@@ -1467,6 +1482,15 @@
   },
   "postsCount": "{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}",
   "@postsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "repliesCount": "{count, plural, =0{No replies yet} =1{1 reply} other{{count} replies}}",
+  "@repliesCount": {
+    "description": "In a forum's list, how many replies a discussion has had. A no-break space keeps the count with its word.",
     "placeholders": {
       "count": {
         "type": "int"

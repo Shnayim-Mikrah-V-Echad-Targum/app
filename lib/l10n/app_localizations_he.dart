@@ -1772,6 +1772,23 @@ class AppLocalizationsHe extends AppLocalizations {
       'מצב הדגמה: ההודעות נשמרות במכשיר זה בלבד ומתאפסות בהפעלה מחדש.';
 
   @override
+  String get demoTag => 'הדגמה';
+
+  @override
+  String get demoAboutTitle => 'על ההדגמה';
+
+  @override
+  String get demoAboutBody =>
+      'לא מחובר שרת קהילה, ולכן הקהילה פועלת כהדגמה במכשיר הזה בלבד. הדיונים בה הם דוגמאות.';
+
+  @override
+  String get demoAboutPosts =>
+      'כל מה שמפרסמים נשאר במכשיר הזה, והכול מתאפס כשהאפליקציה מופעלת מחדש. כדי לנסות, אפשר להתחבר עם כל כתובת דוא״ל וכל קוד בן 6 ספרות.';
+
+  @override
+  String get dismissNotice => 'סגירת ההודעה';
+
+  @override
   String get forumsHeading => 'פורומים';
 
   @override
@@ -1996,7 +2013,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get lockedThread => 'הדיון נעול.';
 
   @override
-  String get pinnedLabel => 'נעוץ';
+  String get pinnedHeading => 'נעוצים';
+
+  @override
+  String get recentHeading => 'פעילים לאחרונה';
 
   @override
   String get lockedLabel => 'נעול';
@@ -2039,7 +2059,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get readGuidelines => 'לכללי הקהילה';
 
   @override
-  String get noThreads => 'אין עדיין דיונים. אפשר לפתוח את הראשון!';
+  String get emptyForum => 'עדיין אין דיונים — אפשר לפתוח את הראשון.';
 
   @override
   String noPostsYet(String name) {
@@ -2074,6 +2094,18 @@ class AppLocalizationsHe extends AppLocalizations {
       other: '$count הודעות',
       one: 'הודעה אחת',
       zero: 'אין עדיין הודעות',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repliesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count תגובות',
+      one: 'תגובה אחת',
+      zero: 'אין עדיין תגובות',
     );
     return '$_temp0';
   }

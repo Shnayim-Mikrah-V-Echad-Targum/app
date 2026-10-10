@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../core/calendar/jewish_holidays.dart';
+import '../../../core/calendar/local_date.dart';
 import 'forum_repository.dart';
 import 'models.dart';
 
@@ -10,13 +12,23 @@ import 'models.dart';
 /// project is configured (development, screenshots, tests). Nothing leaves
 /// the device and content resets when the app restarts. Any 6-digit code
 /// signs in.
+///
+/// Every forum starts with a few sample discussions in Hebrew and English,
+/// dated back from now. With [samples] false, the forums start empty but for
+/// the question in Questions & answers (thread 1).
 class DemoForumRepository implements ForumRepository {
-  DemoForumRepository() {
-    _seed();
+  DemoForumRepository({bool samples = true}) {
+    _seed(samples: samples);
   }
 
   @override
   bool get isDemo => true;
+
+  /// Whether the weekly thread of a parsha's number, in the cycle that began
+  /// in a Hebrew year, is this week's: that discussion starts with a few posts
+  /// when it is first opened. The app sets it, as only the app knows the
+  /// reader's schedule and clock; while it is null, no weekly thread is.
+  bool Function(int parshaNumber, int hebrewYear)? isCurrentWeek;
 
   final _users = StreamController<CommunityUser?>.broadcast();
   CommunityUser? _user;
@@ -34,9 +46,10 @@ class DemoForumRepository implements ForumRepository {
   int _nextId = 1000;
   DateTime? _lastPost;
 
-  static const _sampleAuthor = 'demo-author';
+  /// Shabbat and Yom Tov, by day, as [_postable] asks about them.
+  final _restDays = <LocalDate, bool>{};
 
-  void _seed() {
+  void _seed({required bool samples}) {
     _forums.addAll(const [
       Forum(
         id: 1,
@@ -80,38 +93,60 @@ class DemoForumRepository implements ForumRepository {
       ),
     ]);
     final now = DateTime.now();
-    final t = ThreadSummary(
-      id: '1',
-      forumId: 2,
-      title: 'Why read the Targum rather than a translation?',
-      kind: ThreadKind.question,
-      authorId: _sampleAuthor,
-      authorName: 'Avraham',
-      postCount: 2,
-      lastPostAt: now.subtract(const Duration(hours: 3)),
-      createdAt: now.subtract(const Duration(days: 1)),
-    );
-    _threads.add(t);
-    _posts.addAll([
-      Post(
-        id: '1',
-        threadId: '1',
-        authorId: _sampleAuthor,
-        authorName: 'Avraham',
-        body: 'I read English more easily than Aramaic. Why does the Shulchan Aruch insist on Targum Onkelos?',
-        createdAt: now.subtract(const Duration(days: 1)),
-      ),
-      Post(
-        id: '2',
-        threadId: '1',
-        authorId: 'demo-2',
-        authorName: 'Rivka',
-        body: 'The Shulchan Aruch (OC 285:2) allows Rashi in place of Targum because Rashi also explains the text. '
-            'Many poskim hold a plain translation is a study aid but does not replace the Targum — worth asking your rav.',
-        createdAt: now.subtract(const Duration(hours: 3)),
-        todah: 4,
-      ),
-    ]);
+    for (final sample in samples ? _samples : _samples.where((s) => s.id == '1')) {
+      _addSample(sample, now);
+    }
+  }
+
+  void _addSample(_SampleThread sample, DateTime now) {
+    final posts = [for (final p in sample.posts) p.post(sample.id, _sampleTime(now, p.ago))];
+    _threads.add(ThreadSummary(
+      id: sample.id,
+      forumId: sample.forumId,
+      title: sample.title,
+      kind: sample.kind,
+      authorId: posts.first.authorId,
+      authorName: posts.first.authorName,
+      postCount: posts.length,
+      lastPostAt: posts.last.createdAt,
+      createdAt: posts.first.createdAt,
+      parshaNumber: sample.parshaNumber,
+      pinned: sample.pinned,
+      locked: sample.locked,
+    ));
+    _posts.addAll(posts);
+  }
+
+  /// [ago] before [now], counting only the time when one may post: never on
+  /// Shabbat or Yom Tov, nor from 2 p.m. on the day before one, earlier than
+  /// candle-lighting even in a northern winter. So no sample is dated when its
+  /// author would have been keeping Shabbat.
+  DateTime _sampleTime(DateTime now, Duration ago) {
+    var t = now;
+    var left = ago.inMinutes;
+    // Back an hour at a time, each hour wholly postable or not: the limits
+    // fall on the hour.
+    while (left > 0 || !_postable(t)) {
+      var start = DateTime(t.year, t.month, t.day, t.hour);
+      // On the hour, the hour before; so too where a change of the clocks
+      // leaves no start of the hour before [t].
+      if (!start.isBefore(t)) start = t.subtract(const Duration(hours: 1));
+      final span = t.difference(start).inMinutes;
+      if (_postable(start)) {
+        if (left <= span) return t.subtract(Duration(minutes: left));
+        left -= span;
+      }
+      t = start;
+    }
+    return t;
+  }
+
+  bool _postable(DateTime t) {
+    // Two days of Yom Tov, as the Diaspora keeps, so that a sample suits
+    // either.
+    bool rest(LocalDate day) => _restDays[day] ??= JewishHolidays.isRestDay(day, israel: false);
+    final day = LocalDate.fromDateTime(t);
+    return !rest(day) && (t.hour < 14 || !rest(day.addDays(1)));
   }
 
   /// Adds [threads] and [posts] as they are, for tests and screenshots.
@@ -257,20 +292,32 @@ class DemoForumRepository implements ForumRepository {
     final existing = _threads.where((t) => t.kind == ThreadKind.weekly && t.parshaNumber == parshaNumber && t.hebrewYear == hebrewYear);
     if (existing.isNotEmpty) return existing.first.id;
     final now = DateTime.now();
-    final t = ThreadSummary(
-      id: '${_nextId++}',
+    final id = '${_nextId++}';
+    // This week's starts with a few posts; any other is empty.
+    final posts = (isCurrentWeek?.call(parshaNumber, hebrewYear) ?? false) ? _weeklyPosts(id, now) : const <Post>[];
+    _threads.add(ThreadSummary(
+      id: id,
       forumId: 1,
       title: title,
       kind: ThreadKind.weekly,
       authorName: '',
-      postCount: 0,
-      lastPostAt: now,
-      createdAt: now,
+      postCount: posts.length,
+      lastPostAt: posts.lastOrNull?.createdAt ?? now,
+      createdAt: posts.firstOrNull?.createdAt ?? now,
       parshaNumber: parshaNumber,
       hebrewYear: hebrewYear,
-    );
-    _threads.add(t);
-    return t.id;
+    ));
+    _posts.addAll(posts);
+    return id;
+  }
+
+  /// The posts this week's discussion starts with, in thread [threadId].
+  List<Post> _weeklyPosts(String threadId, DateTime now) {
+    final ids = {for (final p in _weeklySamples) p.id: '${_nextId++}'};
+    return [
+      for (final p in _weeklySamples)
+        p.post(threadId, _sampleTime(now, p.ago), id: ids[p.id], replyTo: ids[p.replyTo]),
+    ];
   }
 
   // --- Writing ----------------------------------------------------------------
@@ -416,3 +463,337 @@ class DemoForumRepository implements ForumRepository {
   @override
   Future<void> saveProgress(Map<String, dynamic> data) async => _progress[_requireUser().id] = data;
 }
+
+/// A sample discussion of the demo: its posts in order, the first starting
+/// it.
+class _SampleThread {
+  const _SampleThread({
+    required this.id,
+    required this.forumId,
+    required this.title,
+    required this.posts,
+    this.kind = ThreadKind.discussion,
+    this.parshaNumber,
+    this.pinned = false,
+    this.locked = false,
+  });
+
+  final String id;
+  final int forumId;
+  final String title;
+  final List<_SamplePost> posts;
+  final ThreadKind kind;
+  final int? parshaNumber;
+  final bool pinned;
+  final bool locked;
+}
+
+/// A sample post by [author], written [ago] before the demo starts, perhaps
+/// in reply to the post [replyTo].
+class _SamplePost {
+  const _SamplePost(this.id, this.author, this.ago, this.body, {this.todah = 0, this.replyTo});
+
+  final String id;
+  final String author;
+  final Duration ago;
+  final String body;
+  final int todah;
+  final String? replyTo;
+
+  Post post(String threadId, DateTime createdAt, {String? id, String? replyTo}) => Post(
+        id: id ?? this.id,
+        threadId: threadId,
+        authorId: _sampleAuthors[author],
+        authorName: author,
+        body: body,
+        createdAt: createdAt,
+        todah: todah,
+        replyToId: replyTo ?? this.replyTo,
+      );
+}
+
+/// The members who wrote the samples, by name.
+const _sampleAuthors = {
+  'Avraham': 'demo-author',
+  'Rivka': 'demo-2',
+  'Yosef': 'demo-yosef',
+  'Miriam': 'demo-miriam',
+  'Chana': 'demo-chana',
+  'שירה': 'demo-shira',
+  'דוד': 'demo-david',
+};
+
+/// The demo's discussions, two or three in each forum. Their post ids are
+/// apart from those tests give their own posts (up to 250, and 9000 on).
+const _samples = [
+  // Parshat HaShavua: a pinned welcome from a moderator, then two
+  // discussions. This week's thread starts as it is first opened.
+  _SampleThread(
+    id: '11',
+    forumId: 1,
+    kind: ThreadKind.announcement,
+    pinned: true,
+    title: 'Welcome: how the weekly discussions work',
+    posts: [
+      _SamplePost(
+        '701',
+        'Chana',
+        Duration(days: 12),
+        'Welcome! Every parsha has one shared discussion, which the “This week” card opens. Share a thought on '
+            'the reading, a question on a Targum or a Rashi, or how you fit Shnayim Mikra into your week. Please '
+            'keep to the community guidelines, and bring a source where you can.',
+        todah: 8,
+      ),
+      _SamplePost('702', 'Yosef', Duration(days: 11, hours: 20), 'Thank you! Is it all right to write in Hebrew?',
+          todah: 2, replyTo: '701'),
+      _SamplePost('703', 'Chana', Duration(days: 11, hours: 18), 'Of course. Hebrew and English are both welcome here.',
+          todah: 4, replyTo: '702'),
+    ],
+  ),
+  _SampleThread(
+    id: '12',
+    forumId: 1,
+    parshaNumber: 1,
+    title: '״בקדמין״: איך אונקלוס מתרגם ׳בראשית׳',
+    posts: [
+      _SamplePost(
+        '704',
+        'דוד',
+        Duration(days: 2),
+        'רש״י כותב שלפי פשוטו המילה ׳בראשית׳ סמוכה למה שאחריה: ׳בראשית בריאת שמים וארץ׳. ואילו אונקלוס מתרגם '
+            '׳בקדמין׳, כלומר ׳בתחילה׳. מישהו עמד על ההבדל?',
+        todah: 5,
+      ),
+      _SamplePost(
+        '705',
+        'שירה',
+        Duration(days: 1, hours: 20),
+        'שמתי לב לזה כשקראתי את התרגום. רש״י מדייק שבכל המקרא ׳ראשית׳ דבוקה למילה שאחריה. כדאי לראות גם את '
+            'הרמב״ן שם, שמאריך בזה.',
+        todah: 3,
+        replyTo: '704',
+      ),
+      _SamplePost('706', 'Avraham', Duration(days: 1, hours: 4),
+          'Thank you both. I read the Targum of that verse twice after seeing this.',
+          todah: 1),
+    ],
+  ),
+  _SampleThread(
+    id: '13',
+    forumId: 1,
+    parshaNumber: 35,
+    title: 'Pacing the longest parsha',
+    posts: [
+      _SamplePost('707', 'Rivka', Duration(days: 5),
+          'Nasso is the longest parsha in the Torah, 176 verses. How do you pace yourselves in its week?',
+          todah: 2),
+      _SamplePost(
+        '708',
+        'Yosef',
+        Duration(days: 4, hours: 20),
+        'An aliyah a day works for me. The last three aliyot are mostly the offerings of the twelve Nesi’im, '
+            'nearly the same passage each time, so they go faster than you’d expect.',
+        todah: 7,
+      ),
+      _SamplePost('709', 'Rivka', Duration(days: 4, hours: 18), 'That’s encouraging. Thank you!', replyTo: '708'),
+    ],
+  ),
+
+  // Questions & answers. Thread 1 is the one tests read and reply to: keep
+  // its posts as they are.
+  _SampleThread(
+    id: '1',
+    forumId: 2,
+    kind: ThreadKind.question,
+    title: 'Why read the Targum rather than a translation?',
+    posts: [
+      _SamplePost('1', 'Avraham', Duration(days: 1),
+          'I read English more easily than Aramaic. Why does the Shulchan Aruch insist on Targum Onkelos?'),
+      _SamplePost(
+        '2',
+        'Rivka',
+        Duration(hours: 3),
+        'The Shulchan Aruch (OC 285:2) allows Rashi in place of Targum because Rashi also explains the text. '
+            'Many poskim hold a plain translation is a study aid but does not replace the Targum — worth asking '
+            'your rav.',
+        todah: 4,
+      ),
+    ],
+  ),
+  _SampleThread(
+    id: '21',
+    forumId: 2,
+    kind: ThreadKind.question,
+    title: 'עד מתי אפשר להשלים את הקריאה?',
+    posts: [
+      _SamplePost('710', 'שירה', Duration(days: 3),
+          'קרה לי שלא הספקתי לסיים שניים מקרא לפני שבת. עד מתי אפשר עוד להשלים?',
+          todah: 1),
+      _SamplePost(
+        '711',
+        'Yosef',
+        Duration(days: 2, hours: 22),
+        'בשולחן ערוך (אורח חיים רפה, ד) כתוב שמצוה להשלים לפני הסעודה ביום השבת, ואם לא, אחרי הסעודה עד מנחה. '
+            'יש אומרים שאפשר להשלים עד יום רביעי, ויש אומרים עד שמיני עצרת. המשנה ברורה (רפה, יב) כותב שזה רק '
+            'בדיעבד, ולכתחילה קוראים את הפרשה בשבוע שלה. למעשה כדאי לשאול את הרב.',
+        todah: 12,
+        replyTo: '710',
+      ),
+      _SamplePost('712', 'שירה', Duration(days: 2, hours: 20), 'תודה רבה, זה מאוד עוזר!', replyTo: '711'),
+    ],
+  ),
+  _SampleThread(
+    id: '22',
+    forumId: 2,
+    kind: ThreadKind.question,
+    title: 'Why read Numbers 32:3 a third time?',
+    posts: [
+      _SamplePost('713', 'Chana', Duration(days: 6),
+          'The reader suggests reading Numbers 32:3 a third time, after the Targum. Where does that come from?',
+          todah: 1),
+      _SamplePost(
+        '714',
+        'Miriam',
+        Duration(days: 5, hours: 20),
+        'The Gemara (Berakhot 8a) says to complete the parsha twice in Mikra and once in Targum “even Atarot and '
+            'Divon”, a verse that is almost all place names. For a verse with no Targum, Rashi holds that it is read '
+            'three times in Hebrew, while Tosafot suggest reading another Targum instead. Your rav can tell you '
+            'which practice to follow.',
+        todah: 7,
+        replyTo: '713',
+      ),
+    ],
+  ),
+
+  // Divrei Torah.
+  _SampleThread(
+    id: '31',
+    forumId: 3,
+    parshaNumber: 1,
+    title: '“A speaking spirit” (Genesis 2:7)',
+    posts: [
+      _SamplePost(
+        '715',
+        'Rivka',
+        Duration(days: 4),
+        'Onkelos renders “and man became a living soul” (Genesis 2:7) as “a speaking spirit”, לרוח ממללא. In his '
+            'reading, what makes us human is speech. A lovely thought for anyone who reads the parsha aloud each week.',
+        todah: 9,
+      ),
+      _SamplePost(
+        '716',
+        'Chana',
+        Duration(days: 3, hours: 18),
+        'Rashi there says something close: animals are also called “a living soul”, but man’s is the most alive of '
+            'all, since knowledge and speech were added to it.',
+        todah: 6,
+        replyTo: '715',
+      ),
+    ],
+  ),
+  _SampleThread(
+    id: '32',
+    forumId: 3,
+    parshaNumber: 4,
+    title: '״ואתגלי ליה״: איך אונקלוס מתרגם ׳וירא אליו׳',
+    posts: [
+      _SamplePost(
+        '717',
+        'דוד',
+        Duration(days: 3),
+        'אונקלוס מתרגם ׳וירא אליו ה׳׳ (בראשית יח, א) ׳ואתגלי ליה ה׳׳, כלומר ׳ונגלה אליו׳. בכל מקום הוא מרחיק '
+            'מהכתוב תיאורים גשמיים, כך שקריאת התרגום מלמדת גם אמונה, לא רק מילים.',
+        todah: 4,
+      ),
+      _SamplePost('718', 'Miriam', Duration(days: 2, hours: 6),
+          'That’s why I love reading the Targum straight after the verse: it’s a commentary in a single line.',
+          todah: 2, replyTo: '717'),
+    ],
+  ),
+
+  // Chavruta & encouragement.
+  _SampleThread(
+    id: '41',
+    forumId: 4,
+    title: 'Shnayim Mikra with children',
+    posts: [
+      _SamplePost(
+        '719',
+        'Miriam',
+        Duration(days: 2, hours: 3),
+        'My children, 8 and 11, read the verses with me on Friday night, and I read the Targum. Any tips for keeping '
+            'it a pleasure rather than a chore?',
+        todah: 3,
+      ),
+      _SamplePost(
+        '720',
+        'Rivka',
+        Duration(days: 1, hours: 22),
+        'We read one aliyah at dinner each night, and each child picks one Rashi to read out loud. Short and every '
+            'day works better for us than long and once.',
+        todah: 5,
+      ),
+      _SamplePost('721', 'Chana', Duration(days: 1, hours: 8), 'Love the Rashi idea. We’re trying it this week!',
+          replyTo: '720'),
+    ],
+  ),
+  _SampleThread(
+    id: '42',
+    forumId: 4,
+    title: 'מחפשת חברותא לקריאת התרגום',
+    posts: [
+      _SamplePost('722', 'שירה', Duration(hours: 9),
+          'אני קוראת עלייה ביום, אבל את התרגום קשה לי לקרוא לבד. מישהי רוצה לקרוא איתי בטלפון, פעם בשבוע בערב?',
+          todah: 1),
+      _SamplePost('723', 'Miriam', Duration(hours: 2), 'אשמח! ימי רביעי בערב מתאימים לי.', todah: 2, replyTo: '722'),
+    ],
+  ),
+
+  // App feedback: a request done, and locked by a moderator.
+  _SampleThread(
+    id: '51',
+    forumId: 5,
+    locked: true,
+    title: 'A warmer theme for reading at night?',
+    posts: [
+      _SamplePost('724', 'Avraham', Duration(days: 9),
+          'Could there be a warmer theme for reading at night? White is harsh on my eyes before bed.',
+          todah: 3),
+      _SamplePost(
+        '725',
+        'Chana',
+        Duration(days: 7),
+        'Thank you for the idea! Settings → Display now has a Sepia theme, and a dark one. I’m locking this '
+            'discussion now that it’s done.',
+        todah: 10,
+        replyTo: '724',
+      ),
+    ],
+  ),
+  _SampleThread(
+    id: '52',
+    forumId: 5,
+    title: 'תודה על כתב רש״י',
+    posts: [
+      _SamplePost('726', 'דוד', Duration(days: 1, hours: 2),
+          'רק רציתי לומר תודה. פירוש רש״י בכתב רש״י נראה בדיוק כמו בחומש שלי בבית.',
+          todah: 6),
+      _SamplePost('727', 'Yosef', Duration(hours: 20),
+          'Agreed! And with the large text, my father can read along with us now.',
+          todah: 4),
+    ],
+  ),
+];
+
+/// This week's discussion as the demo starts it, in words that suit any
+/// parsha. Its ids are given as the thread is made.
+const _weeklySamples = [
+  _SamplePost('w1', 'Yosef', Duration(hours: 20),
+      'Rishon and Sheni done on my commute. Reading the Targum aloud slows me down, in the best way.',
+      todah: 3),
+  _SamplePost('w2', 'שירה', Duration(hours: 6),
+      'השבוע אני קוראת לפי הפרשיות הפתוחות והסתומות: כל פרשה פעמיים ואחר כך התרגום שלה. כך רואים את הסיפור כולו.',
+      todah: 5),
+  _SamplePost('w3', 'Miriam', Duration(minutes: 40), 'Same here! My children now ask what the Aramaic words mean.',
+      todah: 1, replyTo: 'w1'),
+];
