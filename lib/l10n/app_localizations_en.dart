@@ -103,6 +103,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMore => 'More options';
 
   @override
+  String moreOptionsFor(String name) {
+    return 'More options for $name';
+  }
+
+  @override
+  String get actionRefresh => 'Refresh';
+
+  @override
+  String get refreshed => 'Updated';
+
+  @override
   String get loading => 'Loading…';
 
   @override
@@ -198,6 +209,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String aliyotProgress(int done, int total) {
     return '$done of $total aliyot';
+  }
+
+  @override
+  String countOfTotal(int count, int total) {
+    return '$count of $total';
   }
 
   @override
@@ -1072,6 +1088,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get letterSpacing => 'Letter spacing';
 
   @override
+  String decreaseSetting(String name) {
+    return 'Decrease $name';
+  }
+
+  @override
+  String increaseSetting(String name) {
+    return 'Increase $name';
+  }
+
+  @override
   String get showNikud => 'Vowels (nikud)';
 
   @override
@@ -1203,7 +1229,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyReminderDesc => 'A gentle nudge at your chosen time';
 
   @override
-  String get reminderTime => 'Time';
+  String get dailyReminderTime => 'Daily reminder time';
 
   @override
   String get fridayReminder => 'Erev Shabbat reminder';
@@ -1211,6 +1237,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get fridayReminderDesc =>
       'Friday morning, only if the parsha isn\'t finished';
+
+  @override
+  String get fridayReminderTime => 'Erev Shabbat reminder time';
 
   @override
   String get checkInReminder => 'After-Shabbat check-in';
@@ -1252,6 +1281,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationsDenied =>
       'Notifications are turned off for this app in your device settings.';
+
+  @override
+  String get notificationsDeniedTitle => 'Notifications are off';
 
   @override
   String get primingTitle => 'Want a gentle daily nudge?';
@@ -1654,6 +1686,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String todahRemove(String name) {
+    return 'Remove your thanks to $name';
+  }
+
+  @override
   String get reportTitle => 'Report this post';
 
   @override
@@ -1823,6 +1860,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String postedBy(String name, String time) {
     return '$name, $time';
+  }
+
+  @override
+  String postNofM(int n, int total) {
+    return 'Post $n of $total';
   }
 
   @override

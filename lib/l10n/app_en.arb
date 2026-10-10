@@ -31,6 +31,16 @@
   "actionSignIn": "Sign in",
   "actionSignOut": "Sign out",
   "actionMore": "More options",
+  "moreOptionsFor": "More options for {name}",
+  "@moreOptionsFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "actionRefresh": "Refresh",
+  "refreshed": "Updated",
   "loading": "Loading…",
   "errorGeneric": "Something went wrong. Please try again.",
   "notFoundTitle": "Page not found",
@@ -111,6 +121,17 @@
   "@aliyotProgress": {
     "placeholders": {
       "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "countOfTotal": "{count} of {total}",
+  "@countOfTotal": {
+    "placeholders": {
+      "count": {
         "type": "int"
       },
       "total": {
@@ -704,6 +725,22 @@
   "lineSpacing": "Line spacing",
   "wordSpacing": "Word spacing",
   "letterSpacing": "Letter spacing",
+  "decreaseSetting": "Decrease {name}",
+  "@decreaseSetting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "increaseSetting": "Increase {name}",
+  "@increaseSetting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "showNikud": "Vowels (nikud)",
   "showTeamim": "Cantillation (ta'amim)",
   "showKetiv": "Show ketiv (as written)",
@@ -754,9 +791,10 @@
   "sendFeedback": "Send feedback",
   "dailyReminder": "Daily reminder",
   "dailyReminderDesc": "A gentle nudge at your chosen time",
-  "reminderTime": "Time",
+  "dailyReminderTime": "Daily reminder time",
   "fridayReminder": "Erev Shabbat reminder",
   "fridayReminderDesc": "Friday morning, only if the parsha isn't finished",
+  "fridayReminderTime": "Erev Shabbat reminder time",
   "checkInReminder": "After-Shabbat check-in",
   "checkInReminderDesc": "Sunday morning, to log what you read on Shabbat",
   "remindersShabbatNote": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.",
@@ -769,6 +807,7 @@
   "anchorBed": "get ready for bed",
   "notificationsUnsupported": "Reminders aren't available in the web version. Install the app on your phone or computer to get them.",
   "notificationsDenied": "Notifications are turned off for this app in your device settings.",
+  "notificationsDeniedTitle": "Notifications are off",
   "primingTitle": "Want a gentle daily nudge?",
   "primingBody": "At {time}. Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.",
   "@primingBody": {
@@ -1021,6 +1060,14 @@
       }
     }
   },
+  "todahRemove": "Remove your thanks to {name}",
+  "@todahRemove": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "reportTitle": "Report this post",
   "reportReasonLabel": "What's wrong?",
   "reasonSpam": "Spam or advertising",
@@ -1120,6 +1167,17 @@
       },
       "time": {
         "type": "String"
+      }
+    }
+  },
+  "postNofM": "Post {n} of {total}",
+  "@postNofM": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
       }
     }
   },

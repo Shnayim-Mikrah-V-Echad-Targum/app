@@ -82,7 +82,7 @@ void main() {
       c.read(routerProvider).go('/week/5787:2');
       await tester.pumpAndSettle();
       final rishon = find.ancestor(of: find.text('Rishon · aliyah 1'), matching: find.byType(ListTile));
-      await tester.tap(find.descendant(of: rishon, matching: find.byTooltip('More options')));
+      await tester.tap(find.descendant(of: rishon, matching: find.byTooltip('More options for Rishon')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Mark as not read'));
       await tester.pumpAndSettle();
@@ -360,6 +360,54 @@ void main() {
       expect(labelled(tester, RegExp(r'^9 These are the generations of Noah')).locale, const Locale('en'));
       handle.dispose();
     });
+  });
+
+  group('a step is spoken once', () {
+    for (final announces in [true, false]) {
+      testWidgets(announces ? 'in an announcement, where the platform takes them' : 'by its live region, elsewhere', (tester) async {
+        final handle = tester.ensureSemantics();
+        tester.view.physicalSize = const Size(412, 915);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(supportsAnnounce: announces);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
+        c.read(routerProvider).go('/read/5787:2/0');
+        await loadTexts(tester);
+        tester.takeAnnouncements();
+
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
+        expect(find.text('Read the Hebrew again'), findsOneWidget);
+        expect(
+          tester.getSemantics(find.text('Read the Hebrew again')),
+          isSemantics(label: 'Read the Hebrew again\nReading 2 of 3', isLiveRegion: !announces),
+        );
+        expect(tester.takeAnnouncements(), [
+          if (announces) isAccessibilityAnnouncement('Read the Hebrew again. Reading 2 of 3. Verse 1 of 14'),
+        ]);
+        handle.dispose();
+      });
+    }
+  });
+
+  testWidgets('the display sheet names its slider by its setting', (tester) async {
+    final handle = tester.ensureSemantics();
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
+    c.read(routerProvider).go('/read/5787:2/0');
+    await loadTexts(tester);
+    await tester.tap(find.byTooltip('Display settings'));
+    await tester.pumpAndSettle();
+    final slider = find.descendant(of: find.byType(BottomSheet), matching: find.byType(Slider));
+    await tester.scrollUntilVisible(slider, 200, scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
+    expect(tester.getSemantics(slider), isSemantics(label: 'Line spacing', value: '1.9', isSlider: true));
+    await tester.tap(find.byTooltip('Increase Line spacing'));
+    await tester.pumpAndSettle();
+    expect(c.read(settingsProvider).lineHeight, closeTo(2.0, 1e-9));
+    handle.dispose();
   });
 
   testWidgets('full-text mode shows Torah and Targum together', (tester) async {

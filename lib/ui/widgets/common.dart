@@ -64,7 +64,12 @@ class PageBody extends StatelessWidget {
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Padding(
               padding: padding ?? _defaultPadding,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              // The page is one item of its list. Its headings, texts and
+              // controls are each a node of their own, never merged into one.
+              child: Semantics(
+                explicitChildNodes: true,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              ),
             ),
           ),
         ),
@@ -117,7 +122,9 @@ class Gap extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(width: size, height: size);
 }
 
-/// A card with consistent padding.
+/// A card with consistent padding. A card with [onTap] is one node for
+/// assistive technology, read out as a whole; any other keeps its heading,
+/// text and controls apart, so that each can be found and used on its own.
 class InfoCard extends StatelessWidget {
   const InfoCard({super.key, required this.child, this.color, this.padding = const EdgeInsets.all(16), this.onTap});
 
@@ -131,6 +138,7 @@ class InfoCard extends StatelessWidget {
     final content = Padding(padding: padding, child: child);
     return Card(
       color: color,
+      semanticContainer: onTap != null,
       clipBehavior: Clip.antiAlias,
       child: onTap == null ? content : InkWell(onTap: onTap, child: content),
     );

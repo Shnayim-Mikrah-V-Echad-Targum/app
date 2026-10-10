@@ -184,26 +184,31 @@ class _ParshaCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Semantics(
-                      header: true,
-                      headingLevel: 1,
-                      child: Text(
-                        l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
-                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+                // Read through before the rings beside it.
+                child: Semantics(
+                  container: true,
+                  explicitChildNodes: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Semantics(
+                        header: true,
+                        headingLevel: 1,
+                        child: Text(
+                          l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
+                          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+                        ),
                       ),
-                    ),
-                    Text(
-                      names.portionAlt(ctx.portion, ashkenazi: settings.ashkenaziNames),
-                      style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                    const Gap(8),
-                    Text(readOn, style: theme.textTheme.bodyMedium),
-                    if (daysLeft >= 0 && !ctx.progress.isComplete)
-                      Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
-                  ],
+                      Text(
+                        names.portionAlt(ctx.portion, ashkenazi: settings.ashkenaziNames),
+                        style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                      const Gap(8),
+                      Text(readOn, style: theme.textTheme.bodyMedium),
+                      if (daysLeft >= 0 && !ctx.progress.isComplete)
+                        Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
+                    ],
+                  ),
                 ),
               ),
               const Gap(12),

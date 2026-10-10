@@ -103,6 +103,17 @@ class AppLocalizationsHe extends AppLocalizations {
   String get actionMore => 'אפשרויות נוספות';
 
   @override
+  String moreOptionsFor(String name) {
+    return 'אפשרויות נוספות עבור $name';
+  }
+
+  @override
+  String get actionRefresh => 'רענון';
+
+  @override
+  String get refreshed => 'עודכן';
+
+  @override
   String get loading => 'טוען…';
 
   @override
@@ -198,6 +209,11 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String aliyotProgress(int done, int total) {
     return '$done מתוך $total עליות';
+  }
+
+  @override
+  String countOfTotal(int count, int total) {
+    return '$count מתוך $total';
   }
 
   @override
@@ -1071,6 +1087,16 @@ class AppLocalizationsHe extends AppLocalizations {
   String get letterSpacing => 'ריווח אותיות';
 
   @override
+  String decreaseSetting(String name) {
+    return 'הקטנת $name';
+  }
+
+  @override
+  String increaseSetting(String name) {
+    return 'הגדלת $name';
+  }
+
+  @override
   String get showNikud => 'ניקוד';
 
   @override
@@ -1202,13 +1228,16 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dailyReminderDesc => 'תזכורת עדינה בשעה שבחרת';
 
   @override
-  String get reminderTime => 'שעה';
+  String get dailyReminderTime => 'שעת התזכורת היומית';
 
   @override
   String get fridayReminder => 'תזכורת לערב שבת';
 
   @override
   String get fridayReminderDesc => 'ביום שישי בבוקר, רק אם הפרשה לא הושלמה';
+
+  @override
+  String get fridayReminderTime => 'שעת התזכורת לערב שבת';
 
   @override
   String get checkInReminder => 'תזכורת אחרי שבת';
@@ -1249,6 +1278,9 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get notificationsDenied =>
       'ההתראות לאפליקציה זו כבויות בהגדרות המכשיר.';
+
+  @override
+  String get notificationsDeniedTitle => 'ההתראות כבויות';
 
   @override
   String get primingTitle => 'רוצה תזכורת יומית עדינה?';
@@ -1647,6 +1679,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String todahRemove(String name) {
+    return 'ביטול התודה ל$name';
+  }
+
+  @override
   String get reportTitle => 'דיווח על ההודעה';
 
   @override
@@ -1817,6 +1854,11 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String postedBy(String name, String time) {
     return '$name, $time';
+  }
+
+  @override
+  String postNofM(int n, int total) {
+    return 'הודעה $n מתוך $total';
   }
 
   @override

@@ -39,11 +39,13 @@ class ParshaRings extends StatelessWidget {
     int count(ReadingPass p) => [for (var a = 0; a < kAliyot; a++) a].where((a) => progress.isUnitDone(a, p)).length;
     final label = [
       l.aliyotProgress(progress.completedAliyot, kAliyot),
-      '${l.passMikra1}: ${count(ReadingPass.mikra1)}/7',
-      '${l.passMikra2}: ${count(ReadingPass.mikra2)}/7',
-      '${secondLabel ?? l.passTargum}: ${count(ReadingPass.targum)}/7',
+      '${l.passMikra1}: ${l.countOfTotal(count(ReadingPass.mikra1), kAliyot)}',
+      '${l.passMikra2}: ${l.countOfTotal(count(ReadingPass.mikra2), kAliyot)}',
+      '${secondLabel ?? l.passTargum}: ${l.countOfTotal(count(ReadingPass.targum), kAliyot)}',
     ].join('. ');
     return Semantics(
+      // Its own node, never merged into a heading or text beside it.
+      container: true,
       label: label,
       image: true,
       child: SizedBox.square(
@@ -278,19 +280,22 @@ class WeekStrip extends StatelessWidget {
                     ],
                   ),
                 );
+                final box = ExcludeSemantics(
+                  child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: chip),
+                );
+                final interactive = planned != null && onDayTap != null;
+                // One node for the day, which takes the InkWell's tap and
+                // focus, so that it can be activated as the button it is.
                 return Semantics(
+                  container: true,
+                  button: interactive,
                   label: semantic,
-                  button: planned != null && onDayTap != null,
-                  excludeSemantics: true,
                   child: Tooltip(
                     message: semantic,
-                    child: planned != null && onDayTap != null
-                        ? InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () => onDayTap!(planned),
-                            child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: chip),
-                          )
-                        : ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: chip),
+                    excludeFromSemantics: true,
+                    child: interactive
+                        ? InkWell(borderRadius: BorderRadius.circular(12), onTap: () => onDayTap!(planned), child: box)
+                        : box,
                   ),
                 );
               }),

@@ -64,7 +64,7 @@ class WeekOverview extends ConsumerWidget {
       final ok = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          content: Text(l.clearWeekConfirm(name)),
+          title: Text(l.clearWeekConfirm(name)),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
             FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.clearWeek)),
@@ -132,7 +132,8 @@ class WeekOverview extends ConsumerWidget {
             const Gap(8),
             ListTile(
               leading: Icon(ctx.progress.haftarah != null ? Icons.check_circle : Icons.auto_stories_outlined,
-                  color: ctx.progress.haftarah != null ? theme.colorScheme.primary : null),
+                  color: ctx.progress.haftarah != null ? theme.colorScheme.primary : null,
+                  semanticLabel: ctx.progress.haftarah != null ? l.stateDone : null),
               title: Text(l.haftarahTitle),
               subtitle: Text([
                 ctx.haftarah.parts
@@ -242,7 +243,7 @@ class _AliyahTile extends ConsumerWidget {
           isThreeLine: true,
           onTap: () => context.push('/read/${ctx.id}/$aliyah?from=week'),
           trailing: PopupMenuButton<String>(
-            tooltip: l.actionMore,
+            tooltip: l.moreOptionsFor(names.aliyah(aliyah)),
             onSelected: (v) {
               if (v == 'read') markRead();
               if (v == 'unread') {

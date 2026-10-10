@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../ui/l10n.dart';
 import '../settings/app_settings.dart';
 import '../settings/screens/display_settings_screen.dart';
+import '../settings/widgets/settings_widgets.dart';
 
 /// Quick display controls available while reading.
 Future<void> showDisplaySheet(BuildContext context) => showModalBottomSheet<void>(
@@ -92,17 +93,14 @@ class _DisplaySheet extends ConsumerWidget {
             value: s.focusMode,
             onChanged: (v) => update((s) => s.copyWith(focusMode: v)),
           ),
-          ListTile(
-            title: Text(l.lineSpacing),
-            subtitle: Slider(
-              value: s.lineHeight,
-              min: 1.5,
-              max: 3.0,
-              divisions: 15,
-              label: s.lineHeight.toStringAsFixed(1),
-              semanticFormatterCallback: (v) => v.toStringAsFixed(1),
-              onChanged: (v) => update((s) => s.copyWith(lineHeight: v)),
-            ),
+          LabeledSlider(
+            title: l.lineSpacing,
+            value: s.lineHeight,
+            min: 1.5,
+            max: 3.0,
+            step: 0.1,
+            format: (v) => v.toStringAsFixed(1),
+            onChanged: (v) => update((s) => s.copyWith(lineHeight: v)),
           ),
           ListTile(
             title: Text(l.themeLabel),

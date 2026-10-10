@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -11,9 +12,10 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
   final messenger = ScaffoldMessenger.maybeOf(context);
   messenger?.hideCurrentSnackBar();
   messenger?.showSnackBar(SnackBar(content: Text(message), action: action));
-  // Android announces SnackBars through their live region; other platforms
-  // need an explicit announcement.
-  if (MediaQuery.supportsAnnounceOf(context)) {
+  // The SnackBar is a live region, which Android and the web read out by
+  // themselves. Elsewhere it takes an announcement, sent only there so that
+  // the message is spoken once.
+  if (!kIsWeb && MediaQuery.supportsAnnounceOf(context)) {
     SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
   }
 }

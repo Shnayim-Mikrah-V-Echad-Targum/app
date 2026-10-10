@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -60,6 +61,17 @@ class _Member extends DemoForumRepository {
     await gate?.future;
     if (failTodah) throw Exception('offline');
     return super.setTodah(postId, on);
+  }
+}
+
+/// A community whose threads' posts fail to load while [offline].
+class _Flaky extends DemoForumRepository {
+  bool offline = false;
+
+  @override
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) async {
+    if (offline) throw Exception('offline');
+    return super.posts(threadId, before: before, limit: limit);
   }
 }
 
@@ -153,9 +165,9 @@ Future<void> _scrollThreadTo(WidgetTester tester, Finder finder, {bool up = fals
   await tester.pumpAndSettle();
 }
 
-/// The post menu of the [index]th post.
+/// The post menu of the [index]th post, named for its author.
 Future<void> _openPostMenu(WidgetTester tester, int index) async {
-  await tester.tap(find.descendant(of: find.byType(PostCard).at(index), matching: find.byTooltip('More options')));
+  await tester.tap(find.descendant(of: find.byType(PostCard).at(index), matching: find.byTooltip(RegExp('^More options for '))));
   await tester.pumpAndSettle();
 }
 
@@ -304,6 +316,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text("Clear this week's progress"));
     await tester.pumpAndSettle();
+    expect(find.text('Clear all progress for Bereshit?'), findsOneWidget, reason: "the dialog's title");
     await tester.tap(find.widgetWithText(FilledButton, "Clear this week's progress"));
     await tester.pumpAndSettle();
     expect(c.read(progressProvider).week('5787:1').completedUnits, 0);
@@ -420,6 +433,94 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.favorite), findsNothing);
       expect(find.text('5 thanks'), findsOneWidget);
+    });
+  });
+
+  testWidgets('a post is numbered, and its todah is a toggle named for what a tap does', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final forums = await _Member().signIn();
+    final c = await _pump(tester, forums: forums);
+    c.read(routerProvider).go('/community/thread/1');
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel(RegExp(r'^Post 2 of 2\n')), findsOneWidget);
+    expect(find.byTooltip('More options for Rivka'), findsOneWidget);
+
+    final todah = find.descendant(of: find.byType(PostCard).at(1), matching: find.bySubtype<TextButton>());
+    expect(
+      tester.getSemantics(todah),
+      isSemantics(label: 'Say thanks to Rivka. 4 thanks', isButton: true, hasToggledState: true, isToggled: false),
+    );
+    await _tapTodah(tester, '4 thanks');
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSemantics(todah),
+      isSemantics(label: 'Remove your thanks to Rivka. 5 thanks', isButton: true, hasToggledState: true, isToggled: true),
+    );
+    semantics.dispose();
+  });
+
+  group('refreshing', () {
+    testWidgets('a thread from the keyboard shows the replies since it opened', (tester) async {
+      final forums = DemoForumRepository();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      forums.seed(posts: [
+        Post(id: '9001', threadId: '1', authorName: 'Sarah', body: 'Sent from another device', createdAt: DateTime.now()),
+      ]);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.f5);
+      await tester.pumpAndSettle();
+      expect(find.text('Updated'), findsOneWidget);
+      await _scrollThreadTo(tester, find.text('Sent from another device'));
+      expect(find.text('Sent from another device'), findsOneWidget);
+    });
+
+    testWidgets('a forum with Ctrl+R shows its new threads', (tester) async {
+      final forums = DemoForumRepository();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/divrei-torah');
+      await tester.pumpAndSettle();
+      forums.seed(threads: [_thread(9002, minutes: 100000)]);
+      expect(find.text('Thread 9002'), findsNothing);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.text('Thread 9002'), findsOneWidget);
+      expect(find.text('Updated'), findsOneWidget);
+    });
+
+    testWidgets('the forums and the reports from their Refresh button', (tester) async {
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pumpAndSettle();
+      expect(find.text('Updated'), findsOneWidget);
+
+      c.read(routerProvider).go('/community/moderation');
+      await tester.pumpAndSettle();
+      expect(find.text('Spam or advertising'), findsNothing);
+      await forums.report(postId: '2', reason: ReportReason.spam);
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pumpAndSettle();
+      expect(find.text('Spam or advertising'), findsOneWidget);
+    });
+
+    testWidgets('that fails says why, and keeps what is shown', (tester) async {
+      final forums = _Flaky();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      forums.offline = true;
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pumpAndSettle();
+      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Updated'), findsNothing);
+      expect(find.byType(PostCard), findsWidgets);
     });
   });
 

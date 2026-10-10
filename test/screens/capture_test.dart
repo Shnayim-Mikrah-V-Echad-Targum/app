@@ -70,6 +70,8 @@ const _screens = {
   // Shevi'i just finished, with Shlishi still under way.
   'reader_finished': '/read/5787:1/6',
   'reader_full': '/read/5787:1/2?mode=full',
+  // The display sheet, scrolled to its line spacing.
+  'reader_display': '/read/5787:1/2',
   // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
   'reader_gaps': '/read/5787:17/5?mode=full',
   'reader_gaps_spaced': '/read/5787:17/5?mode=full',
@@ -91,6 +93,10 @@ const _screens = {
   'thread_long_end': '/community/thread/5000',
   // The week's Discuss button while its discussion opens.
   'week_discuss': '/week/5787:1',
+  // Asked to confirm clearing the week's progress.
+  'week_clear': '/week/5787:1',
+  // Just refreshed from the app bar.
+  'thread_refreshed': '/community/thread/1',
   'compose': '/community/new',
   'account': '/community/account',
   'account_settings': '/settings/account',
@@ -242,7 +248,10 @@ class _OpeningForever extends DemoForumRepository {
 }
 
 /// Screens captured with a dialog open, by tapping the icon given.
-const _dialogs = {'s_data_reset': Icons.delete_forever_outlined};
+const _dialogs = {'s_data_reset': Icons.delete_forever_outlined, 'reader_display': Icons.text_format};
+
+/// Screens captured with the sheet their dialog opens scrolled to its end.
+const _sheetsScrolledToEnd = {'reader_display'};
 
 /// Screens captured just after tapping what the finder finds, to show the
 /// response.
@@ -254,6 +263,7 @@ final _taps = {
   // Next, on the last step of Shevi'i.
   'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
+  'thread_refreshed': () => find.byIcon(Icons.refresh),
 };
 
 /// Screens captured after tapping what each finder finds in turn, settling
@@ -263,6 +273,11 @@ final _tapSteps = {
   'thread_report': [
     () => find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)),
     () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'report'),
+  ],
+  // The week's menu, then Clear.
+  'week_clear': [
+    () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
+    () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'clear'),
   ],
 };
 
@@ -368,6 +383,7 @@ void main() {
         if (_dialogs[entry.key] case final icon?) {
           await tester.tap(find.byIcon(icon));
           await _settle(tester);
+          if (_sheetsScrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);
         }
         if (_taps[entry.key] case final target?) {
           await tester.tap(target());

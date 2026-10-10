@@ -24,12 +24,15 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 
 **Structure and state**
 - Screen titles and section headers are marked as headings with levels, so heading navigation works.
+- A heading is a node of its own, never merged with the text or controls around it. A card that opens something when tapped is read as one node.
 - Progress, streak rings and status badges have text equivalents. Colour is never the only signal.
-- Each aliyah tile announces the state of all three readings. The week strip announces each day's status.
+- Each aliyah tile announces the state of all three readings. The week strip announces each day's status, and a day with reading, like each parsha of the Torah map, is a button that opens it.
 
 **Announcements and controls**
-- Steps in the guided reader and a completed aliyah are announced as live updates where the platform supports them. Elsewhere they appear in a SnackBar that is read aloud.
-- Every icon button has a label and a tooltip.
+- Each step in the guided reader is announced once, with its reading and place ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"): in an announcement where the platform takes them, and elsewhere by the step header, a live region. A completed aliyah is announced where the platform takes announcements.
+- Status messages appear in a SnackBar and are spoken once: by its live region on Android and the web, and in an announcement elsewhere.
+- Every icon button has a label and a tooltip. Where there are several alike, each is named for what it acts on ("More options for Rishon", "Increase Reading size").
+- A slider is read by its setting and value ("Reading size, 100%"), with a button on either side to step it.
 
 **Web**
 - On the web, Flutter's semantics tree is turned on at startup (`SemanticsBinding.ensureSemantics`), so screen readers work without the hidden "enable accessibility" button.
@@ -70,7 +73,8 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   | Ctrl+Shift+L | Listen / stop |
   | F1, or Ctrl+/ | Show shortcuts |
 
-- No action needs a swipe, drag or multi-finger gesture. Everything is a tap, click or key press, and nothing has a time limit.
+- In the community, F5 or Ctrl+R (⌘R on macOS) refreshes the forums, a forum, a thread or the moderation queue. On the web those keys stay the browser's. Each of these pages also has a Refresh button.
+- No action needs a swipe, drag or multi-finger gesture. Pull to refresh has a Refresh button beside it. Everything is a tap, click or key press, and nothing has a time limit.
 - The screen can be kept on while reading, which is on by default.
 
 ### Cognitive and learning

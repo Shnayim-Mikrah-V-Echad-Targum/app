@@ -212,18 +212,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _announceStep(flow);
   }
 
+  /// Announces the new step, in one message, where the platform takes
+  /// announcements. Elsewhere the step header is a live region instead.
   void _announceStep(ReaderFlow flow) {
-    if (!mounted) return;
+    if (!mounted || !MediaQuery.supportsAnnounceOf(context)) return;
     final l = context.l10n;
-    final kind = flow.stepsFor(_chunk)[_step];
+    final steps = flow.stepsFor(_chunk);
     final c = flow.chunks[_chunk];
     final where = flow.method == ReadingMethod.verseByVerse
         ? l.verseOf(c.start + 1, flow.verses.length)
         : l.sectionOf(_chunk + 1, flow.chunks.length);
-    final message = '${_stepTitle(kind)}. $where';
-    if (MediaQuery.supportsAnnounceOf(context)) {
-      SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
-    }
+    final message = '${_stepTitle(steps[_step])}. ${l.stepOf(_step + 1, steps.length)}. $where';
+    SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
   }
 
   Future<void> _onFinished(WeekContext ctx, {required bool firstEver}) async {
@@ -845,7 +845,8 @@ class _StepHeader extends StatelessWidget {
             const Gap(8),
             Expanded(
               child: Semantics(
-                liveRegion: true,
+                // Spoken by the reader's announcement where there is one.
+                liveRegion: !MediaQuery.supportsAnnounceOf(context),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

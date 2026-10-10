@@ -26,6 +26,7 @@ class ReminderSettingsScreen extends ConsumerWidget {
           await showDialog<void>(
             context: context,
             builder: (context) => AlertDialog(
+              title: Text(l.notificationsDeniedTitle),
               content: Text(l.notificationsDenied),
               actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionOk))],
             ),
@@ -69,7 +70,7 @@ class ReminderSettingsScreen extends ConsumerWidget {
           if (s.dailyReminder) ...[
             ListTile(
               contentPadding: const EdgeInsetsDirectional.only(start: 32, end: 16),
-              title: Text(l.reminderTime),
+              title: Text(l.dailyReminderTime),
               trailing: Text(names.time(s.dailyReminderMinutes)),
               onTap: () => pickTime(s.dailyReminderMinutes, (m) => update((s) => s.copyWith(dailyReminderMinutes: m))),
             ),
@@ -106,7 +107,7 @@ class ReminderSettingsScreen extends ConsumerWidget {
           if (s.fridayReminder)
             ListTile(
               contentPadding: const EdgeInsetsDirectional.only(start: 32, end: 16),
-              title: Text(l.reminderTime),
+              title: Text(l.fridayReminderTime),
               trailing: Text(names.time(s.fridayReminderMinutes)),
               onTap: () => pickTime(s.fridayReminderMinutes, (m) => update((s) => s.copyWith(fridayReminderMinutes: m.clamp(0, 11 * 60 + 30)))),
             ),

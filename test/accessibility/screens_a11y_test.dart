@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -35,7 +36,13 @@ void main() {
     '/community/forum/xyz',
   ];
 
-  Future<void> open(WidgetTester tester, String route, {AppSettings? settings, Size size = const Size(412, 915), double textScale = 1}) async {
+  Future<ProviderContainer> open(
+    WidgetTester tester,
+    String route, {
+    AppSettings? settings,
+    Size size = const Size(412, 915),
+    double textScale = 1,
+  }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
@@ -51,6 +58,7 @@ void main() {
     // Let asset-backed previews (e.g. display settings) load.
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
     await tester.pumpAndSettle();
+    return container;
   }
 
   for (final route in routes) {
@@ -91,6 +99,86 @@ void main() {
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
     handle.dispose();
+  });
+
+  group('semantics', () {
+    String location(ProviderContainer c) => c.read(routerProvider).state.uri.toString();
+
+    testWidgets('a day of the week strip is a button that can be activated', (tester) async {
+      final handle = tester.ensureSemantics();
+      final c = await open(tester, '/today');
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(RegExp('^Monday'))),
+        isSemantics(isButton: true, hasTapAction: true, isFocusable: true),
+      );
+      // Shabbat has no reading to open.
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(RegExp('^Saturday'))),
+        isSemantics(isButton: false, hasTapAction: false),
+      );
+      tester.semantics.tap(find.semantics.byLabel(RegExp('^Monday')));
+      await tester.pump();
+      await tester.pump();
+      expect(location(c), '/read/5787:2/1', reason: "Monday's reading is Sheni");
+      handle.dispose();
+    });
+
+    testWidgets('a parsha of the Torah map is a button that can be activated', (tester) async {
+      final handle = tester.ensureSemantics();
+      final c = await open(tester, '/progress');
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(RegExp('^Noach: '))),
+        isSemantics(isButton: true, hasTapAction: true, isFocusable: true),
+      );
+      tester.semantics.tap(find.semantics.byLabel(RegExp('^Noach: ')));
+      await tester.pumpAndSettle();
+      expect(location(c), '/progress/week/5787:2');
+      handle.dispose();
+    });
+
+    testWidgets('a slider is named by its setting, and its buttons by what they do', (tester) async {
+      final handle = tester.ensureSemantics();
+      await open(tester, '/settings/display');
+      expect(
+        tester.getSemantics(find.byType(Slider).first),
+        isSemantics(label: 'Reading size', value: '100%', isSlider: true),
+      );
+      expect(find.byTooltip('Decrease Reading size'), findsOneWidget);
+      expect(find.byTooltip('Increase Reading size'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets("the parsha's title is a heading of its own, apart from its rings", (tester) async {
+      final handle = tester.ensureSemantics();
+      await open(tester, '/today');
+      final title = tester.getSemantics(find.text('Parshat Noach'));
+      expect(title, isSemantics(label: 'Parshat Noach', isHeader: true, isImage: false));
+      expect(title.getSemanticsData().headingLevel, 1);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(RegExp(r'^0 of 7 aliyot\. '))),
+        isSemantics(
+          label: '0 of 7 aliyot. First reading: 0 of 7. Second reading: 0 of 7. Targum: 0 of 7',
+          isImage: true,
+          isHeader: false,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('a page keeps its headings, texts and controls apart', (tester) async {
+      final handle = tester.ensureSemantics();
+      await open(tester, '/week/5787:2');
+      // Not one node with the texts above it and the haftarah's button below.
+      expect(
+        tester.getSemantics(find.text('0 of 7 aliyot')),
+        isSemantics(label: '0 of 7 aliyot', isHeader: true, isButton: false, hasTapAction: false),
+      );
+      expect(find.byTooltip("More options for Revi'i"), findsOneWidget);
+
+      await open(tester, '/sources');
+      expect(tester.getSemantics(find.text('Targum Onkelos')), isSemantics(label: 'Targum Onkelos', isHeader: true));
+      handle.dispose();
+    });
   });
 
   testWidgets('desktop width uses a navigation rail', (tester) async {

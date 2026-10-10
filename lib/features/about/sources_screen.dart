@@ -66,6 +66,8 @@ class SourcesScreen extends StatelessWidget {
           for (final s in sources)
             Card(
               margin: const EdgeInsets.only(bottom: 12),
+              // Its heading, text and link each a node of their own.
+              semanticContainer: false,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(

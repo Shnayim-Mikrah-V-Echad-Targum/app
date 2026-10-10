@@ -128,6 +128,14 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     }
   }
 
+  /// Fetches the thread and its latest posts again. Fails as the backend does.
+  Future<void> _refresh() async {
+    ref
+      ..invalidate(threadProvider(widget.threadId))
+      ..invalidate(postsProvider(widget.threadId));
+    await ref.read(postsProvider(widget.threadId).future);
+  }
+
   Future<void> _loadEarlier() async {
     if (_loadingEarlier) return;
     final l = context.l10n;
@@ -152,115 +160,116 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final t = thread.value;
     final title = t == null ? '' : threadDisplayTitle(context, ref, t);
 
-    return Scaffold(
-      appBar: AppBar(
-        // An English title in Hebrew UI, or the reverse, is cut at its own end.
-        title: Text(title, textDirection: autoDirection(title), overflow: TextOverflow.ellipsis),
-        actions: [
-          if (isMod && t != null)
-            PopupMenuButton<String>(
-              tooltip: l.actionMore,
-              onSelected: _moderate,
-              itemBuilder: (context) => [
-                PopupMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
-                PopupMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
-              ],
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          const DemoBanner(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                ref
-                  ..invalidate(threadProvider(widget.threadId))
-                  ..invalidate(postsProvider(widget.threadId));
-                try {
-                  await ref.read(postsProvider(widget.threadId).future);
-                } catch (e) {
-                  if (context.mounted) showStatus(context, communityError(l, e));
-                }
-              },
-              child: posts.when(
-                // Fetched again, the posts shown stay until the new ones come.
-                skipError: posts.hasValue,
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
-                data: (page) {
-                  final list = page.posts;
-                  final byId = {for (final p in list) p.id: p};
-                  return PageBody.builder(
-                    controller: _scroll,
-                    header: [
-                      if (t != null) ...[
-                        Semantics(
-                          header: true,
-                          headingLevel: 1,
-                          child: Text(title, textDirection: autoDirection(title), style: Theme.of(context).textTheme.headlineSmall),
-                        ),
-                        // An empty thread says so below. The count is the
-                        // thread's, with any earlier posts not yet shown.
-                        if (list.isNotEmpty) ...[
-                          const Gap(4),
-                          Text(l.postsCount(max(t.postCount, list.length)), style: Theme.of(context).textTheme.bodySmall),
+    return RefreshablePage(
+      refresh: _refresh,
+      builder: (context, refreshButton) => Scaffold(
+        appBar: AppBar(
+          // An English title in Hebrew UI, or the reverse, is cut at its own end.
+          title: Text(title, textDirection: autoDirection(title), overflow: TextOverflow.ellipsis),
+          actions: [
+            refreshButton,
+            if (isMod && t != null)
+              PopupMenuButton<String>(
+                tooltip: l.actionMore,
+                onSelected: _moderate,
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
+                  PopupMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
+                ],
+              ),
+          ],
+        ),
+        body: Column(
+          children: [
+            const DemoBanner(),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  try {
+                    await _refresh();
+                  } catch (e) {
+                    if (context.mounted) showStatus(context, communityError(l, e));
+                  }
+                },
+                child: posts.when(
+                  // Fetched again, the posts shown stay until the new ones come.
+                  skipError: posts.hasValue,
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
+                  data: (page) {
+                    final list = page.posts;
+                    final byId = {for (final p in list) p.id: p};
+                    return PageBody.builder(
+                      controller: _scroll,
+                      header: [
+                        if (t != null) ...[
+                          Semantics(
+                            header: true,
+                            headingLevel: 1,
+                            child: Text(title, textDirection: autoDirection(title), style: Theme.of(context).textTheme.headlineSmall),
+                          ),
+                          // An empty thread says so below. The count is the
+                          // thread's, with any earlier posts not yet shown.
+                          if (list.isNotEmpty) ...[
+                            const Gap(4),
+                            Text(l.postsCount(max(t.postCount, list.length)), style: Theme.of(context).textTheme.bodySmall),
+                          ],
+                          if (t.locked) ...[const Gap(8), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
+                          const Gap(12),
                         ],
-                        if (t.locked) ...[const Gap(8), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
-                        const Gap(12),
-                      ],
-                      if (list.isEmpty && t != null)
-                        Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(emptyThreadMessage(context, ref, t), textAlign: TextAlign.center),
-                        ),
-                      if (page.hasEarlier)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Center(
-                            child: TextButton.icon(
-                              // Enabled while it loads, so that it keeps the keyboard focus.
-                              onPressed: _loadEarlier,
-                              icon: _loadingEarlier
-                                  ? SizedBox.square(
-                                      dimension: 18,
-                                      child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
-                                    )
-                                  : const Icon(Icons.expand_less),
-                              label: Text(l.showEarlierPosts),
+                        if (list.isEmpty && t != null)
+                          Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(emptyThreadMessage(context, ref, t), textAlign: TextAlign.center),
+                          ),
+                        if (page.hasEarlier)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Center(
+                              child: TextButton.icon(
+                                // Enabled while it loads, so that it keeps the keyboard focus.
+                                onPressed: _loadEarlier,
+                                icon: _loadingEarlier
+                                    ? SizedBox.square(
+                                        dimension: 18,
+                                        child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
+                                      )
+                                    : const Icon(Icons.expand_less),
+                                label: Text(l.showEarlierPosts),
+                              ),
                             ),
                           ),
-                        ),
-                    ],
-                    itemCount: list.length,
-                    itemBuilder: (context, i) => PostCard(
-                      key: ValueKey(list[i].id),
-                      post: list[i],
-                      index: i,
-                      total: list.length,
-                      replyTo: byId[list[i].replyToId],
-                      isMine: user != null && list[i].authorId == user.id,
-                      isModerator: isMod,
-                      onReply: () {
-                        setState(() => _replyTo = list[i]);
-                        _focus.requestFocus();
-                      },
-                    ),
-                  );
-                },
+                      ],
+                      itemCount: list.length,
+                      itemBuilder: (context, i) => PostCard(
+                        key: ValueKey(list[i].id),
+                        post: list[i],
+                        index: i,
+                        total: list.length,
+                        replyTo: byId[list[i].replyToId],
+                        isMine: user != null && list[i].authorId == user.id,
+                        isModerator: isMod,
+                        onReply: () {
+                          setState(() => _replyTo = list[i]);
+                          _focus.requestFocus();
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          if (t != null && (!t.locked || isMod))
-            _Composer(
-              controller: _reply,
-              focusNode: _focus,
-              replyTo: _replyTo,
-              sending: _sending,
-              onCancelReply: () => setState(() => _replyTo = null),
-              onSend: _reply.text.trim().length >= 2 && !_sending ? _send : null,
-            ),
-        ],
+            if (t != null && (!t.locked || isMod))
+              _Composer(
+                controller: _reply,
+                focusNode: _focus,
+                replyTo: _replyTo,
+                sending: _sending,
+                onCancelReply: () => setState(() => _replyTo = null),
+                onSend: _reply.text.trim().length >= 2 && !_sending ? _send : null,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -407,7 +416,7 @@ class PostCard extends ConsumerWidget {
           );
           if (ok == true) await run(() => repo.editPost(post.id, controller.text));
         case 'delete':
-          final ok = await _confirm(context, l.deletePostConfirm, l.actionDelete);
+          final ok = await _confirm(context, title: l.deletePostConfirm, action: l.actionDelete);
           if (ok) await run(() => repo.deletePost(post.id), success: l.postDeleted, recount: true);
         case 'report':
           if (!await ensureSignedIn(context, ref) || !context.mounted) return;
@@ -426,7 +435,7 @@ class PostCard extends ConsumerWidget {
           }, success: l.reportSent);
         case 'block':
           if (!await ensureSignedIn(context, ref) || !context.mounted) return;
-          final ok = await _confirm(context, l.blockConfirm(name), l.blockUser(name));
+          final ok = await _confirm(context, title: l.blockUser(name), message: l.blockConfirm(name), action: l.blockUser(name));
           if (ok && post.authorId != null) {
             await run(() => repo.block(post.authorId!), success: l.blockedDone);
             container.invalidate(blockedUsersProvider);
@@ -443,7 +452,7 @@ class PostCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 10),
       child: Semantics(
         container: true,
-        label: '${index + 1}/$total',
+        label: l.postNofM(index + 1, total),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
           child: Column(
@@ -462,7 +471,7 @@ class PostCard extends ConsumerWidget {
                     ),
                   ),
                   PopupMenuButton<String>(
-                    tooltip: l.actionMore,
+                    tooltip: l.moreOptionsFor(name),
                     onSelected: onMenu,
                     itemBuilder: (context) => [
                       PopupMenuItem(value: 'reply', child: Text(l.replyAction)),
@@ -579,11 +588,14 @@ class _TodahButtonState extends ConsumerState<_TodahButton> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final action = _given ? l.todahRemove(widget.authorName) : l.todahSemantics(widget.authorName);
     return TextButton.icon(
       onPressed: widget.isMine ? null : _toggle,
       icon: Icon(_given ? Icons.favorite : Icons.favorite_border, size: 20),
+      // Merged into the button's node: a toggle, on once thanks are given.
       label: Semantics(
-        label: '${l.todahSemantics(widget.authorName)}. ${l.todahCount(_count)}',
+        toggled: widget.isMine ? null : _given,
+        label: '$action. ${l.todahCount(_count)}',
         excludeSemantics: true,
         child: Text(l.todahCount(_count)),
       ),
@@ -591,11 +603,12 @@ class _TodahButtonState extends ConsumerState<_TodahButton> {
   }
 }
 
-Future<bool> _confirm(BuildContext context, String message, String action) async =>
+Future<bool> _confirm(BuildContext context, {required String title, String? message, required String action}) async =>
     await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        content: Text(message),
+        title: Text(title),
+        content: message == null ? null : Text(message),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.actionCancel)),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(action)),

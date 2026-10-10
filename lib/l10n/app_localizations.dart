@@ -284,6 +284,24 @@ abstract class AppLocalizations {
   /// **'More options'**
   String get actionMore;
 
+  /// No description provided for @moreOptionsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'More options for {name}'**
+  String moreOptionsFor(String name);
+
+  /// No description provided for @actionRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get actionRefresh;
+
+  /// No description provided for @refreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get refreshed;
+
   /// No description provided for @loading.
   ///
   /// In en, this message translates to:
@@ -439,6 +457,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{done} of {total} aliyot'**
   String aliyotProgress(int done, int total);
+
+  /// No description provided for @countOfTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {total}'**
+  String countOfTotal(int count, int total);
 
   /// No description provided for @readOnShabbat.
   ///
@@ -1892,6 +1916,18 @@ abstract class AppLocalizations {
   /// **'Letter spacing'**
   String get letterSpacing;
 
+  /// No description provided for @decreaseSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease {name}'**
+  String decreaseSetting(String name);
+
+  /// No description provided for @increaseSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase {name}'**
+  String increaseSetting(String name);
+
   /// No description provided for @showNikud.
   ///
   /// In en, this message translates to:
@@ -2150,11 +2186,11 @@ abstract class AppLocalizations {
   /// **'A gentle nudge at your chosen time'**
   String get dailyReminderDesc;
 
-  /// No description provided for @reminderTime.
+  /// No description provided for @dailyReminderTime.
   ///
   /// In en, this message translates to:
-  /// **'Time'**
-  String get reminderTime;
+  /// **'Daily reminder time'**
+  String get dailyReminderTime;
 
   /// No description provided for @fridayReminder.
   ///
@@ -2167,6 +2203,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Friday morning, only if the parsha isn\'t finished'**
   String get fridayReminderDesc;
+
+  /// No description provided for @fridayReminderTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Erev Shabbat reminder time'**
+  String get fridayReminderTime;
 
   /// No description provided for @checkInReminder.
   ///
@@ -2239,6 +2281,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notifications are turned off for this app in your device settings.'**
   String get notificationsDenied;
+
+  /// No description provided for @notificationsDeniedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off'**
+  String get notificationsDeniedTitle;
 
   /// No description provided for @primingTitle.
   ///
@@ -2912,6 +2960,12 @@ abstract class AppLocalizations {
   /// **'Say thanks to {name}'**
   String todahSemantics(String name);
 
+  /// No description provided for @todahRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove your thanks to {name}'**
+  String todahRemove(String name);
+
   /// No description provided for @reportTitle.
   ///
   /// In en, this message translates to:
@@ -3187,6 +3241,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name}, {time}'**
   String postedBy(String name, String time);
+
+  /// No description provided for @postNofM.
+  ///
+  /// In en, this message translates to:
+  /// **'Post {n} of {total}'**
+  String postNofM(int n, int total);
 
   /// No description provided for @anonymousMember.
   ///

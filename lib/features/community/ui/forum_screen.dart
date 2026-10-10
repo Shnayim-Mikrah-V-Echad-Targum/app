@@ -65,66 +65,73 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
     final profile = ref.watch(myProfileProvider).value;
     final canStart = !forum.locked || (profile?.isModerator ?? false);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(forum.name(he))),
-      floatingActionButton: canStart
-          ? FloatingActionButton.extended(
-              onPressed: () => context.push('/community/new?forum=${forum.slug}'),
-              icon: const Icon(Icons.edit_outlined),
-              label: Text(l.newThread),
-            )
-          : null,
-      body: Column(
-        children: [
-          const DemoBanner(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(threadsProvider(forum.id));
-                try {
-                  await ref.read(threadsProvider(forum.id).future);
-                } catch (e) {
-                  if (context.mounted) showStatus(context, communityError(l, e));
-                }
-              },
-              child: threads.when(
-                // Fetched again, the threads shown stay until the new ones come.
-                skipError: threads.hasValue,
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
-                data: (page) {
-                  final list = page.threads;
-                  return PageBody.builder(
-                    header: [
-                      if (forum.description(he).isNotEmpty)
-                        Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(forum.description(he))),
-                      if (list.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(l.noThreads, textAlign: TextAlign.center)),
-                    ],
-                    // The last item makes room for the button over it.
-                    itemCount: list.length + 1,
-                    itemBuilder: (context, i) {
-                      if (i < list.length) return ThreadTile(key: ValueKey(list[i].id), thread: list[i]);
-                      if (!page.hasMore) return const Gap(72);
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 72),
-                        child: OutlinedButton(
-                          // Enabled while it loads, so that it keeps the keyboard focus.
-                          onPressed: () => _loadMore(forum),
-                          child: _loadingMore
-                              ? SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
-                                )
-                              : Text(l.loadMore),
-                        ),
-                      );
-                    },
-                  );
+    Future<void> refresh() async {
+      ref.invalidate(threadsProvider(forum.id));
+      await ref.read(threadsProvider(forum.id).future);
+    }
+
+    return RefreshablePage(
+      refresh: refresh,
+      builder: (context, refreshButton) => Scaffold(
+        appBar: AppBar(title: Text(forum.name(he)), actions: [refreshButton]),
+        floatingActionButton: canStart
+            ? FloatingActionButton.extended(
+                onPressed: () => context.push('/community/new?forum=${forum.slug}'),
+                icon: const Icon(Icons.edit_outlined),
+                label: Text(l.newThread),
+              )
+            : null,
+        body: Column(
+          children: [
+            const DemoBanner(),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  try {
+                    await refresh();
+                  } catch (e) {
+                    if (context.mounted) showStatus(context, communityError(l, e));
+                  }
                 },
+                child: threads.when(
+                  // Fetched again, the threads shown stay until the new ones come.
+                  skipError: threads.hasValue,
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
+                  data: (page) {
+                    final list = page.threads;
+                    return PageBody.builder(
+                      header: [
+                        if (forum.description(he).isNotEmpty)
+                          Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(forum.description(he))),
+                        if (list.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(l.noThreads, textAlign: TextAlign.center)),
+                      ],
+                      // The last item makes room for the button over it.
+                      itemCount: list.length + 1,
+                      itemBuilder: (context, i) {
+                        if (i < list.length) return ThreadTile(key: ValueKey(list[i].id), thread: list[i]);
+                        if (!page.hasMore) return const Gap(72);
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 72),
+                          child: OutlinedButton(
+                            // Enabled while it loads, so that it keeps the keyboard focus.
+                            onPressed: () => _loadMore(forum),
+                            child: _loadingMore
+                                ? SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
+                                  )
+                                : Text(l.loadMore),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

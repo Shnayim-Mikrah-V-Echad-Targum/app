@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -190,6 +192,65 @@ class _WeeklyThreadOpenerState extends ConsumerState<WeeklyThreadOpener> {
           )
         : null;
     return widget.builder(context, progress, _open);
+  }
+}
+
+/// A page whose content can be fetched again by [refresh] without pulling it
+/// down, which takes a touch screen: with the Refresh button that [builder]
+/// puts in the app bar, and outside the web, where the browser keeps them
+/// for reloading, with F5 and Ctrl+R (⌘R on Apple platforms). Either says
+/// once the content is up to date, or why it isn't; [refresh] fails as the
+/// backend does. Presses while it runs are ignored. The button stays enabled
+/// meanwhile, so that it keeps the keyboard focus.
+class RefreshablePage extends StatefulWidget {
+  const RefreshablePage({super.key, required this.refresh, required this.builder});
+
+  final Future<void> Function() refresh;
+  final Widget Function(BuildContext context, Widget refreshButton) builder;
+
+  @override
+  State<RefreshablePage> createState() => _RefreshablePageState();
+}
+
+class _RefreshablePageState extends State<RefreshablePage> {
+  bool _busy = false;
+
+  Future<void> _refresh() async {
+    if (_busy) return;
+    final l = context.l10n;
+    setState(() => _busy = true);
+    try {
+      await widget.refresh();
+      if (mounted) showStatus(context, l.refreshed);
+    } catch (e) {
+      if (mounted) showStatus(context, communityError(l, e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final button = IconButton(
+      tooltip: l.actionRefresh,
+      onPressed: _refresh,
+      icon: _busy
+          ? SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading))
+          : const Icon(Icons.refresh),
+    );
+    final page = widget.builder(context, button);
+    if (kIsWeb) return page;
+    final apple = defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.iOS;
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.f5): _refresh,
+        SingleActivator(LogicalKeyboardKey.keyR, control: !apple, meta: apple): _refresh,
+      },
+      // Takes the focus when the page opens on top, so that the keys work at
+      // once, but is no stop of its own for Tab.
+      child: Focus(autofocus: ModalRoute.isCurrentOf(context) ?? true, skipTraversal: true, child: page),
+    );
   }
 }
 

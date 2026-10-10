@@ -281,29 +281,33 @@ class _TorahMap extends ConsumerWidget {
         _TileState.untracked => (null, theme.colorScheme.outlineVariant, null),
       };
       final onFill = s == _TileState.done || s == _TileState.late ? colors.onDone : theme.colorScheme.onSurface;
+      // One node, which takes the InkWell's tap and focus.
       return Semantics(
-        label: '$name: ${label(s)}',
+        container: true,
         button: true,
-        excludeSemantics: true,
+        label: '$name: ${label(s)}',
         child: Tooltip(
           message: '$name — ${label(s)}',
+          excludeFromSemantics: true,
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
             onTap: () => context.push('/progress/week/$cycle:${p.id.number}'),
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: fill,
-                border: Border.all(color: border, width: s == _TileState.current ? 2 : 1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[Icon(icon, size: 14, color: onFill), const SizedBox(width: 4)],
-                  Flexible(child: Text(name, style: theme.textTheme.labelMedium?.copyWith(color: onFill))),
-                ],
+            child: ExcludeSemantics(
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: fill,
+                  border: Border.all(color: border, width: s == _TileState.current ? 2 : 1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[Icon(icon, size: 14, color: onFill), const SizedBox(width: 4)],
+                    Flexible(child: Text(name, style: theme.textTheme.labelMedium?.copyWith(color: onFill))),
+                  ],
+                ),
               ),
             ),
           ),
