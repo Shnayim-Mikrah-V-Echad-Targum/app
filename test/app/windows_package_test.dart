@@ -16,7 +16,30 @@ void main() {
     expect(File('android/app/build.gradle.kts').readAsStringSync(), contains('applicationId = "org.shnayimmikra.app"'));
     expect(File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync(),
         contains('PRODUCT_BUNDLE_IDENTIFIER = org.shnayimmikra.app;'));
-    expect(config['display_name'], 'Shnayim Mikra');
+  });
+
+  // As on Android (values-iw) and iOS (he.lproj), Windows names the app in
+  // its own language: Start, the taskbar, Settings and notifications.
+  test('the package names the app in English and Hebrew', () {
+    expect(config['display_name'], 'ms-resource:AppName');
+    expect((config['toast_activator'] as YamlMap)['display_name'], 'ms-resource:AppName');
+    String name(String language) {
+      final resw = File('windows/msix/Strings/$language/Resources.resw').readAsStringSync();
+      return RegExp(r'<data name="AppName" xml:space="preserve">\s*<value>([^<]+)</value>').firstMatch(resw)![1]!;
+    }
+
+    expect(name('en-us'), 'Shnayim Mikra');
+    expect(name('he-il'), 'שניים מקרא');
+    expect(File('android/app/src/main/res/values-iw/strings.xml').readAsStringSync(),
+        contains('<string name="app_name">${name('he-il')}</string>'));
+    // One folder for each of the package's languages.
+    final folders = Directory('windows/msix/Strings').listSync().map((d) => d.uri.pathSegments.where((s) => s.isNotEmpty).last);
+    expect(folders.toSet(), (config['languages'] as String).split(', ').toSet());
+    // make_msix.sh puts them in the build and indexes them into one resources.pri.
+    final script = File('tool/windows/make_msix.sh').readAsStringSync();
+    expect(script, contains('cp -R windows/msix/Strings "\$release/Strings"'));
+    expect(script, contains('/cf "\$(win windows/msix/priconfig.xml)"'));
+    expect(File('windows/msix/priconfig.xml').readAsStringSync(), isNot(contains('<packaging>')));
   });
 
   // Without it, a reminder's notification can't reach the running app.

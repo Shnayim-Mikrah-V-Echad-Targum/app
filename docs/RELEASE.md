@@ -176,8 +176,9 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 
 - [ ] Install the MSIX on Windows 10 and Windows 11:
   - Start, the taskbar and *Settings → Apps* show the app's icon. At small sizes, such as the taskbar at 100% scaling, the icon is the three rules alone.
+  - They name the app in Windows's display language: Shnayim Mikra, or שניים מקרא with Hebrew first in *Settings → Time & language → Language*, as does the header of a reminder's notification. (`tool/windows/make_msix.sh` stops if the package's `resources.pri` lacks the Hebrew name.)
   - The window opens centred on the screen it was launched from, and no larger than 90% of it. It can't be made smaller than 380 × 560 at 100% scaling, and scales that minimum at 150% and 200%.
-  - The title bar follows the app's theme: choosing *Dark* in the app darkens it, even when Windows is light, and the reverse. With the app following the system, switching Windows between light and dark switches it too.
+  - The title bar follows the app's theme: choosing *Dark* in the app darkens it, even when Windows is light, and the reverse. With the app following the system, switching Windows between light and dark switches it too. Check this on a Windows 10 older than version 2004 as well (1809, as in Enterprise LTSC 2019, up to 1909), which numbers the setting differently.
   - A reminder's notification opens the app, also when it is already running.
 - [ ] Check with Narrator and NVDA, using the keyboard only, at 200% display scaling.
 

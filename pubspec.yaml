@@ -83,7 +83,9 @@ flutter_native_splash:
 # The Windows MSIX installer: build with `flutter build windows --release`,
 # then package with tool/windows/make_msix.sh (docs/RELEASE.md).
 msix_config:
-  display_name: Shnayim Mikra
+  # The app's name in each language, from windows/msix/Strings (Shnayim Mikra,
+  # שניים מקרא), which tool/windows/make_msix.sh indexes.
+  display_name: ms-resource:AppName
   publisher_display_name: Shnayim Mikra
   # The app id on every platform. The Microsoft Store assigns its own, passed
   # with --identity-name when packaging for it.
@@ -99,7 +101,7 @@ msix_config:
   # (lib/services/notifications.dart).
   toast_activator:
     clsid: 7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57
-    display_name: Shnayim Mikra
+    display_name: ms-resource:AppName
   # Package the build that was made with the release dart-defines, instead
   # of building again without them.
   build_windows: false

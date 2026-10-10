@@ -18,6 +18,10 @@ namespace {
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif
 
+/// The same attribute's number on Windows 10 before version 2004 (build
+/// 18985), back to version 1809, the package's minimum.
+constexpr DWORD kUseImmersiveDarkModeBefore20H1 = 19;
+
 constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 
 /// Registry key for app theme preference.
@@ -345,8 +349,12 @@ void Win32Window::UpdateTheme(HWND const window) {
 
 void Win32Window::ApplyDarkTitleBar(HWND const window, bool dark) {
   BOOL enable_dark_mode = dark;
-  DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE,
-                        &enable_dark_mode, sizeof(enable_dark_mode));
+  if (FAILED(DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE,
+                                   &enable_dark_mode,
+                                   sizeof(enable_dark_mode)))) {
+    DwmSetWindowAttribute(window, kUseImmersiveDarkModeBefore20H1,
+                          &enable_dark_mode, sizeof(enable_dark_mode));
+  }
 
   // Windows 10 repaints the title bar only when the window is next activated
   // or deactivated, so draw it inactive and back (or the reverse), ending in
