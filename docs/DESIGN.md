@@ -48,8 +48,8 @@ Verse by verse is the default because it is the easiest to follow on a phone.
 The JPS translation is offered only as a study aid and is labelled so. It never counts as the Targum.
 
 **Edge cases from the research are handled explicitly:**
-- **Bamidbar 32:3** has no Targum. The reader prompts a third Mikra reading instead.
-- **Verses with no Rashi** get the same treatment when Rashi replaces the Targum.
+- **Bamidbar 32:3:** Onkelos is mostly names, so the reader suggests a third Mikra reading after the Targum, in every reading method.
+- **Verses with no Rashi** get a third Mikra reading too when Rashi replaces the Targum. Both suggestions can be turned off.
 - **The last verse of the parsha** can optionally be repeated so the reading ends with Mikra.
 - **Ketiv/qere:** the qere is read and the ketiv is shown on request.
 

@@ -535,11 +535,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noTargumNote =>
-      'Many read this verse a third time in Hebrew in place of the Targum (Shulchan Aruch OC 285:2).';
+      'Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berakhot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).';
 
   @override
   String get noRashiNote =>
       'Rashi does not comment on this verse. Some read it a third time in Hebrew (Mishnah Berurah 285:5).';
+
+  @override
+  String get noRashiComment => 'Rashi does not comment on this verse.';
 
   @override
   String ketivQereLabel(String ketiv, String qere) {
@@ -577,7 +580,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get nextAliyah => 'Next aliyah';
+  String continueWithAliyah(String aliyah) {
+    return 'Continue with $aliyah';
+  }
+
+  @override
+  String get aliyahStatusRead => 'read';
+
+  @override
+  String get aliyahStatusPartial => 'in progress';
+
+  @override
+  String get aliyahStatusUnread => 'not started';
 
   @override
   String get backToWeek => 'Back to the week';
@@ -942,7 +956,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thirdReadingDesc =>
-      'Where there is no Targum or Rashi, suggest reading the Hebrew a third time';
+      'Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent';
 
   @override
   String get haftarahEnabled => 'Haftarah';
@@ -1430,7 +1444,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideSpecialBody =>
-      'Some verses have no separate Targum, such as \"Atarot v\'Divon\" (Numbers 32:3); many read them a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.';
+      'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.';
 
   @override
   String get guideShabbatTitle => 'Shabbat and Yom Tov';

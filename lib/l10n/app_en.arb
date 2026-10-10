@@ -403,8 +403,9 @@
       }
     }
   },
-  "noTargumNote": "Many read this verse a third time in Hebrew in place of the Targum (Shulchan Aruch OC 285:2).",
+  "noTargumNote": "Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berakhot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).",
   "noRashiNote": "Rashi does not comment on this verse. Some read it a third time in Hebrew (Mishnah Berurah 285:5).",
+  "noRashiComment": "Rashi does not comment on this verse.",
   "ketivQereLabel": "Written {ketiv}, read {qere}",
   "@ketivQereLabel": {
     "placeholders": {
@@ -464,7 +465,26 @@
       }
     }
   },
-  "nextAliyah": "Next aliyah",
+  "continueWithAliyah": "Continue with {aliyah}",
+  "@continueWithAliyah": {
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "aliyahStatusRead": "read",
+  "@aliyahStatusRead": {
+    "description": "Spoken after an aliyah's name on its chip in the reader, e.g. \"Rishon, read\"."
+  },
+  "aliyahStatusPartial": "in progress",
+  "@aliyahStatusPartial": {
+    "description": "Spoken after an aliyah's name on its chip in the reader: some of its readings are done."
+  },
+  "aliyahStatusUnread": "not started",
+  "@aliyahStatusUnread": {
+    "description": "Spoken after an aliyah's name on its chip in the reader: none of its readings are done."
+  },
   "backToWeek": "Back to the week",
   "displaySettings": "Display settings",
   "textSize": "Text size",
@@ -629,7 +649,7 @@
   "repeatLastVerse": "End with Mikra",
   "repeatLastVerseDesc": "Repeat the parsha's last verse in Hebrew after its Targum",
   "thirdReading": "Third-reading prompts",
-  "thirdReadingDesc": "Where there is no Targum or Rashi, suggest reading the Hebrew a third time",
+  "thirdReadingDesc": "Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent",
   "haftarahEnabled": "Haftarah",
   "haftarahEnabledDesc": "Read the week's haftarah once",
   "nusachLabel": "Haftarah custom",
@@ -845,7 +865,7 @@
   "guideTargumTitle": "Targum or Rashi",
   "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum.",
   "guideSpecialTitle": "Special cases",
-  "guideSpecialBody": "Some verses have no separate Targum, such as \"Atarot v'Divon\" (Numbers 32:3); many read them a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once.",
+  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once.",
   "guideShabbatTitle": "Shabbat and Yom Tov",
   "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
   "guideSourcesTitle": "Sources",

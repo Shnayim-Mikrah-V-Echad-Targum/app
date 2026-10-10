@@ -538,11 +538,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get noTargumNote =>
-      'רבים קוראים פסוק זה פעם שלישית בעברית במקום התרגום (שולחן ערוך או״ח רפה, ב).';
+      'אונקלוס כאן מביא בעיקר את שמות המקומות בארמית. בעקבות רש״י (ברכות ח, ב) רבים קוראים פסוק זה גם פעם שלישית בעברית (ראו שו״ע או״ח רפה, א).';
 
   @override
   String get noRashiNote =>
       'רש״י אינו מפרש פסוק זה. יש הקוראים אותו פעם שלישית בעברית (משנה ברורה רפה, ה).';
+
+  @override
+  String get noRashiComment => 'רש״י אינו מפרש פסוק זה.';
 
   @override
   String ketivQereLabel(String ketiv, String qere) {
@@ -580,7 +583,18 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get nextAliyah => 'לעלייה הבאה';
+  String continueWithAliyah(String aliyah) {
+    return 'להמשיך עם $aliyah';
+  }
+
+  @override
+  String get aliyahStatusRead => 'נקראה';
+
+  @override
+  String get aliyahStatusPartial => 'בתהליך';
+
+  @override
+  String get aliyahStatusUnread => 'טרם התחילה';
 
   @override
   String get backToWeek => 'חזרה לפרשה';
@@ -941,7 +955,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get thirdReadingDesc =>
-      'כשאין תרגום או רש״י, להציע לקרוא את המקרא פעם שלישית';
+      'להציע קריאה שלישית בעברית כשאונקלוס מביא בעיקר שמות (במדבר לב, ג) או כשרש״י אינו מפרש';
 
   @override
   String get haftarahEnabled => 'הפטרה';
@@ -1425,7 +1439,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideSpecialBody =>
-      'יש פסוקים שאין להם תרגום נפרד, כגון ״עטרות ודיבון״ (במדבר לב, ג); רבים קוראים אותם פעם שלישית בעברית. את פרשת וזאת הברכה קוראים לפני שמחת תורה, ובמיוחד בהושענא רבה. רבים קוראים גם את הפטרת השבוע פעם אחת.';
+      'בפסוק ״עטרות ודיבון״ (במדבר לב, ג) אונקלוס מביא בעיקר את שמות המקומות בארמית, ובעקבות רש״י (ברכות ח, ב) רבים קוראים אותו גם פעם שלישית בעברית. את פרשת וזאת הברכה קוראים לפני שמחת תורה, ובמיוחד בהושענא רבה. רבים קוראים גם את הפטרת השבוע פעם אחת.';
 
   @override
   String get guideShabbatTitle => 'שבת ויום טוב';

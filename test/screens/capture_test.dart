@@ -59,6 +59,13 @@ const _screens = {
   'week_tab': '/today/week/5787:1',
   'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
+  // Revi'i open after Rishon and Sheni, with Shlishi under way.
+  'reader_chips': '/read/5787:1/3',
+  // Shlishi of Matot-Masei (Numbers 32:1–19) read by section: the Targum
+  // step of 32:1–4, with the third reading of 32:3.
+  'reader_third': '/read/5787:42-43/2',
+  // Shevi'i just finished, with Shlishi still under way.
+  'reader_finished': '/read/5787:1/6',
   'reader_full': '/read/5787:1/2?mode=full',
   // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
   'reader_gaps': '/read/5787:17/5?mode=full',
@@ -105,6 +112,10 @@ final _scenes = <String, (DateTime, AppSettings Function(AppSettings))>{
   'reader_gaps_spaced': (_now, (s) => s.copyWith(wordSpacing: 16, justify: true)),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
   'today_haftarah_left': (DateTime(2026, 10, 13, 11), (s) => s.copyWith(haftarahRequired: true)),
+  // Tuesday of Matot-Masei 5787, reading by section.
+  'reader_third': (DateTime(2027, 7, 27, 11), (s) => s.copyWith(method: ReadingMethod.sectionBySection)),
+  // Reading by aliyah, so that one step finishes Shevi'i.
+  'reader_finished': (_now, (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, repeatLastVerse: false)),
 };
 
 /// Screens shown with other progress than [_progress].
@@ -112,6 +123,22 @@ final _sceneProgress = <String, ProgressState Function()>{
   'today_haftarah_left': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
+  // Both Hebrew readings of 32:1–4 done: the Targum is next.
+  'reader_third': () => ProgressState(weeks: {
+        '5787:42-43': WeekProgress(weekId: '5787:42-43').withPosition(2, const [4, 4, 0]),
+      }),
+  // All but Shlishi (two readings) and Shevi'i (all but the Targum) read.
+  'reader_finished': () {
+    final day = LocalDate(2026, 10, 8);
+    var w = WeekProgress(weekId: '5787:1');
+    for (final a in [0, 1, 3, 4, 5]) {
+      w = w.withAliyah(a, day);
+    }
+    for (final a in [2, 6]) {
+      w = w.withUnit(a, ReadingPass.mikra1, day).withUnit(a, ReadingPass.mikra2, day);
+    }
+    return ProgressState(weeks: {'5787:1': w.withPosition(6, const [16, 16, 0])});
+  },
 };
 
 /// Screens shown signed in with backup on, where a newer version of the app
@@ -144,10 +171,12 @@ final _taps = {
   's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
   // The second page of onboarding: where the reader will be this Shabbat.
   'welcome_location': () => find.byType(FilledButton).first,
+  // Next, on the last step of Shevi'i.
+  'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
 };
 
 /// Screens captured scrolled to the end of their main list.
-const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced'};
+const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced', 'reader_third'};
 
 Future<void> _scrollToEnd(WidgetTester tester) async {
   // A lazily built list only learns its full extent as it scrolls.
@@ -217,7 +246,7 @@ void main() {
 
   for (final mode in _modes) {
     for (final entry in _screens.entries) {
-      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'today_haftarah_left', 'week', 'week_tab', 'haftarah_tab', 'reader', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
+      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'today_haftarah_left', 'week', 'week_tab', 'haftarah_tab', 'reader', 'reader_third', 'reader_finished', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
         continue;
       }
       final only = _only;

@@ -941,7 +941,7 @@ abstract class AppLocalizations {
   /// No description provided for @noTargumNote.
   ///
   /// In en, this message translates to:
-  /// **'Many read this verse a third time in Hebrew in place of the Targum (Shulchan Aruch OC 285:2).'**
+  /// **'Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berakhot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).'**
   String get noTargumNote;
 
   /// No description provided for @noRashiNote.
@@ -949,6 +949,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rashi does not comment on this verse. Some read it a third time in Hebrew (Mishnah Berurah 285:5).'**
   String get noRashiNote;
+
+  /// No description provided for @noRashiComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Rashi does not comment on this verse.'**
+  String get noRashiComment;
 
   /// No description provided for @ketivQereLabel.
   ///
@@ -992,11 +998,29 @@ abstract class AppLocalizations {
   /// **'Yasher koach! Your first aliyah is done — {verses}, twice, with Targum.'**
   String firstAliyahDone(String verses);
 
-  /// No description provided for @nextAliyah.
+  /// No description provided for @continueWithAliyah.
   ///
   /// In en, this message translates to:
-  /// **'Next aliyah'**
-  String get nextAliyah;
+  /// **'Continue with {aliyah}'**
+  String continueWithAliyah(String aliyah);
+
+  /// Spoken after an aliyah's name on its chip in the reader, e.g. "Rishon, read".
+  ///
+  /// In en, this message translates to:
+  /// **'read'**
+  String get aliyahStatusRead;
+
+  /// Spoken after an aliyah's name on its chip in the reader: some of its readings are done.
+  ///
+  /// In en, this message translates to:
+  /// **'in progress'**
+  String get aliyahStatusPartial;
+
+  /// Spoken after an aliyah's name on its chip in the reader: none of its readings are done.
+  ///
+  /// In en, this message translates to:
+  /// **'not started'**
+  String get aliyahStatusUnread;
 
   /// No description provided for @backToWeek.
   ///
@@ -1649,7 +1673,7 @@ abstract class AppLocalizations {
   /// No description provided for @thirdReadingDesc.
   ///
   /// In en, this message translates to:
-  /// **'Where there is no Targum or Rashi, suggest reading the Hebrew a third time'**
+  /// **'Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent'**
   String get thirdReadingDesc;
 
   /// No description provided for @haftarahEnabled.
@@ -2555,7 +2579,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideSpecialBody.
   ///
   /// In en, this message translates to:
-  /// **'Some verses have no separate Targum, such as \"Atarot v\'Divon\" (Numbers 32:3); many read them a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.'**
+  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.

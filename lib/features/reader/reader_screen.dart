@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +15,7 @@ import '../../data/text_repository.dart';
 import '../../services/feedback.dart';
 import '../../services/tts.dart';
 import '../../ui/l10n.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../parsha/week_context.dart';
@@ -279,20 +280,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   StepKind _currentKind(ReaderFlow flow) => _fullText || _finished ? StepKind.mikra1 : flow.stepsFor(_chunk)[_step];
 
   String _speechText(ReaderTexts texts, ReaderFlow flow, AppSettings s) {
-    final refs = _fullText || _finished
-        ? flow.verses
-        : flow.verses.sublist(flow.chunks[_chunk].start, flow.chunks[_chunk].end);
     final kind = _currentKind(flow);
+    final refs = _fullText || _finished ? flow.verses : flow.stepVerses(_chunk, kind);
     String hebrew(Verse v) => HebrewSpeech.spoken(v.readText, divineName: s.divineName);
     return switch (kind) {
-      StepKind.targum => refs.map((r) => hebrew(texts.onkelos!.verse(r))).join(' '),
+      StepKind.targum => refs
+          .expand((r) => [
+                hebrew(texts.onkelos!.verse(r)),
+                if (flow.thirdHebrewInTargum(_chunk, r)) hebrew(texts.mikra.verse(r)),
+              ])
+          .join(' '),
       StepKind.rashi => refs
           .expand((r) => texts.rashi!.on(r))
           .map((c) => s.secondReading == SecondReading.rashiEnglish
               ? '${c.heading ?? ''} ${c.text}'
               : HebrewSpeech.spoken('${c.heading ?? ''} ${c.text}', divineName: s.divineName))
           .join(' '),
-      StepKind.repeatLast => hebrew(texts.mikra.verse(flow.verses.last)),
       _ => refs.map((r) => hebrew(texts.mikra.verse(r))).join(' '),
     };
   }
@@ -473,7 +476,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           ? _FinishedPanel(
                               ctx: ctx,
                               aliyah: _aliyah,
-                              onNext: _aliyah < kAliyot - 1 ? () => _goToAliyah(_aliyah + 1) : null,
+                              onGoToAliyah: _goToAliyah,
                             )
                           : _GuidedStep(
                               flow: flow,
@@ -547,8 +550,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 }
 
-/// Chips to switch between the seven aliyot.
-class _AliyahSelector extends StatelessWidget {
+/// Chips to switch between the seven aliyot, each marked read or in
+/// progress. A check means only "read": the open aliyah is set apart by its
+/// fill, border and weight alone (DESIGN_SYSTEM.md §6.6).
+class _AliyahSelector extends StatefulWidget {
   const _AliyahSelector({required this.ctx, required this.selected, required this.onSelected});
 
   final WeekContext ctx;
@@ -556,25 +561,104 @@ class _AliyahSelector extends StatelessWidget {
   final ValueChanged<int> onSelected;
 
   @override
+  State<_AliyahSelector> createState() => _AliyahSelectorState();
+}
+
+class _AliyahSelectorState extends State<_AliyahSelector> {
+  // One key per chip, never moved, so that selecting a chip keeps its focus.
+  final _chipKeys = List.generate(kAliyot, (_) => GlobalKey());
+
+  @override
+  void initState() {
+    super.initState();
+    _revealSelected(animate: false);
+  }
+
+  @override
+  void didUpdateWidget(_AliyahSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected) _revealSelected(animate: true);
+  }
+
+  /// Centres the open aliyah's chip unless it is already in full view: on a
+  /// phone, Shevi'i's starts off screen.
+  void _revealSelected({required bool animate}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final chip = _chipKeys[widget.selected].currentContext;
+      if (!mounted || chip == null) return;
+      final box = chip.findRenderObject();
+      final viewport = box == null ? null : RenderAbstractViewport.maybeOf(box);
+      final position = Scrollable.maybeOf(chip)?.position;
+      if (box == null || viewport == null || position == null) return;
+      final startAligned = viewport.getOffsetToReveal(box, 0).offset;
+      final endAligned = viewport.getOffsetToReveal(box, 1).offset;
+      if (position.pixels >= endAligned && position.pixels <= startAligned) return;
+      final still = !animate || MediaQuery.disableAnimationsOf(context);
+      Scrollable.ensureVisible(
+        chip,
+        alignment: 0.5,
+        duration: still ? Duration.zero : const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  /// Whether any reading of [aliyah] is done or under way.
+  static bool _started(WeekProgress week, int aliyah) =>
+      week.units[aliyah].any((d) => d != null) || (week.positions[aliyah]?.any((n) => n > 0) ?? false);
+
+  @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final names = Names(context);
+    final scheme = Theme.of(context).colorScheme;
+    final doneColor = StatusColors.of(context).done;
+    final week = widget.ctx.progress;
+    final side = WidgetStateBorderSide.resolveWith((states) {
+      if (states.contains(WidgetState.focused)) {
+        return BorderSide(color: scheme.primary, width: 3, strokeAlign: BorderSide.strokeAlignOutside);
+      }
+      if (states.contains(WidgetState.selected)) return BorderSide(color: scheme.primary, width: 1.5);
+      return null;
+    });
     return SizedBox(
       height: 60,
-      child: ListView(
+      // Seven chips at most, all built, so that any of them can be revealed.
+      child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        children: [
-          for (var a = 0; a < kAliyot; a++)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8),
-              child: ChoiceChip(
-                avatar: ctx.progress.isAliyahDone(a) ? const Icon(Icons.check, size: 18) : null,
-                label: Text(names.aliyah(a)),
-                selected: selected == a,
-                onSelected: (_) => onSelected(a),
+        child: Row(
+          children: [
+            for (var a = 0; a < kAliyot; a++)
+              Padding(
+                key: _chipKeys[a],
+                padding: const EdgeInsetsDirectional.only(end: 8),
+                child: Builder(builder: (context) {
+                  final name = names.aliyah(a);
+                  final done = week.isAliyahDone(a);
+                  final partial = !done && _started(week, a);
+                  final isSelected = widget.selected == a;
+                  return ChoiceChip(
+                    showCheckmark: false,
+                    avatar: done
+                        ? Icon(Icons.check_circle, size: 18, color: doneColor)
+                        : (partial ? Icon(Icons.timelapse, size: 18, color: scheme.primary) : null),
+                    label: Text(
+                      name,
+                      semanticsLabel:
+                          '$name, ${done ? l.aliyahStatusRead : (partial ? l.aliyahStatusPartial : l.aliyahStatusUnread)}',
+                    ),
+                    labelStyle:
+                        isSelected ? TextStyle(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w700) : null,
+                    selectedColor: scheme.primaryContainer,
+                    side: side,
+                    selected: isSelected,
+                    onSelected: (_) => widget.onSelected(a),
+                  );
+                }),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -607,8 +691,7 @@ class _GuidedStep extends StatelessWidget {
     final theme = Theme.of(context);
     final steps = flow.stepsFor(chunk);
     final kind = steps[step];
-    final c = flow.chunks[chunk];
-    final refs = kind == StepKind.repeatLast ? [flow.verses.last] : flow.verses.sublist(c.start, c.end);
+    final refs = flow.stepVerses(chunk, kind);
     final styles = ScriptureStyles(context, settings);
     final englishRashi = settings.secondReading == SecondReading.rashiEnglish;
 
@@ -632,15 +715,31 @@ class _GuidedStep extends StatelessWidget {
             ],
           );
         case StepKind.targum:
-          return ScriptureVerse(verse: texts.onkelos!.verse(r), kind: ScriptureKind.targum, settings: settings);
+          final targum = ScriptureVerse(verse: texts.onkelos!.verse(r), kind: ScriptureKind.targum, settings: settings);
+          if (!flow.thirdHebrewInTargum(chunk, r)) return targum;
+          // Read with others, the verse has no step of its own for its third
+          // reading: the Hebrew follows its Onkelos here instead, labelled
+          // like the Rashi shown beneath a verse.
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              targum,
+              LayerLabel(l.mikraLabel, icon: Icons.menu_book),
+              ScriptureVerse(verse: texts.mikra.verse(r), kind: ScriptureKind.mikra, settings: settings),
+              _Note(text: l.noTargumNote),
+            ],
+          );
         case StepKind.rashi:
           final comments = texts.rashi?.on(r) ?? const [];
           if (comments.isEmpty) {
+            // A third reading stands in only for Rashi read in place of the
+            // Targum.
+            final suggestThird = settings.thirdReadingPrompts && !settings.usesOnkelos;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ScriptureVerse(verse: texts.mikra.verse(r), kind: ScriptureKind.mikra, settings: settings),
-                _Note(text: l.noRashiNote),
+                _Note(text: suggestThird ? l.noRashiNote : l.noRashiComment),
               ],
             );
           }
@@ -858,11 +957,22 @@ class _BottomBar extends StatelessWidget {
 }
 
 class _FinishedPanel extends ConsumerWidget {
-  const _FinishedPanel({required this.ctx, required this.aliyah, required this.onNext});
+  const _FinishedPanel({required this.ctx, required this.aliyah, required this.onGoToAliyah});
 
   final WeekContext ctx;
   final int aliyah;
-  final VoidCallback? onNext;
+  final ValueChanged<int> onGoToAliyah;
+
+  /// The aliyah to continue with: the first after this one not yet read,
+  /// then the first before it; null once the parsha is read. A preview
+  /// records no reading, so it simply moves on to the next aliyah.
+  int? _nextTarget(WeekProgress week) {
+    if (!ctx.isOpen) return aliyah < kAliyot - 1 ? aliyah + 1 : null;
+    for (final a in [for (var a = aliyah + 1; a < kAliyot; a++) a, for (var a = 0; a < aliyah; a++) a]) {
+      if (!week.isAliyahDone(a)) return a;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -872,6 +982,7 @@ class _FinishedPanel extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final week = ref.watch(progressProvider).week(ctx.id);
     final complete = week.isComplete;
+    final next = _nextTarget(week);
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -895,8 +1006,12 @@ class _FinishedPanel extends ConsumerWidget {
                 ),
               ),
               const Gap(24),
-              if (onNext != null && !complete)
-                FilledButton.icon(onPressed: onNext, icon: const Icon(Icons.arrow_forward), label: Text(l.nextAliyah)),
+              if (next != null)
+                FilledButton.icon(
+                  onPressed: () => onGoToAliyah(next),
+                  icon: const Icon(Icons.arrow_forward),
+                  label: Text(l.continueWithAliyah(names.aliyah(next))),
+                ),
               if (complete && (settings.haftarahEnabled || ctx.haftarahRequired) && week.haftarah == null)
                 FilledButton.icon(
                   onPressed: () => replaceWithWeekPage(context, 'haftarah/${ctx.id}'),
