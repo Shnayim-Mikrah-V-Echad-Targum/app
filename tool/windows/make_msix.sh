@@ -56,6 +56,7 @@ MSYS_NO_PATHCONV=1 "$makepri" dump /if "$(win "$release/resources.pri")" /of "$(
 # value="HE-IL">, so look for the language tag itself.
 if ! tr -d '\000' < "$out/resources.xml" | grep -qiE 'language-he(-il)?|"he(-il)?"'; then
   echo "make_msix: resources.pri has no Hebrew name for the app (see $out/resources.xml)" >&2
+  tr -d '\000' < "$out/resources.xml" | grep -iE 'language|qualifier|AppName' | head -n 20 >&2 || true
   exit 1
 fi
 
