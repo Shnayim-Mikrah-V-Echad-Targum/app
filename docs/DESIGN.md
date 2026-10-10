@@ -24,6 +24,8 @@ This document summarizes the decisions behind the app and the reasons for them. 
 
 **The day rolls over at 3 a.m.** Reading done late at night counts for the evening it began. Using the app on Shabbat or Yom Tov (after Havdalah, for example) counts toward the next weekday.
 
+**On Shabbat and Yom Tov, Today rests.** It shows only a greeting, the parsha and a way to it, with a word that reading from a printed Chumash is logged afterwards, and nothing on it moves. The day of rest is the device's date, which turns at 3 a.m.; with a city chosen for Shabbat times, and the device on its clock, it ends at nightfall there, so that the check-in is ready after Havdalah. Without a city nothing says when Shabbat ends, and Today rests until 3 a.m., as the reminders without a city wait for the morning. Afterwards, Today asks what was read on Shabbat from a printed Chumash, on each reading day while the week can still count as late, until the reader answers: logged in one sheet (the aliyot not yet read and the haftarah, each checked, and the day, Shabbat unless changed), finished at once, or put aside for this time. Either way of logging can be undone.
+
 **Israel and the Diaspora are a per-user setting**, asked during onboarding as "Where will you be this Shabbat?". The answer sets two things that Settings keeps apart:
 - **the reading** heard in synagogue, which decides each week's portion;
 - **the days of Yom Tov** kept, one or two, which decide the days without reading or reminders.
@@ -98,9 +100,10 @@ A portion can end in one of these states:
 - The reader starts with 2 grace days and can hold at most 3. Finishing a portion on time earns one more.
 - A grace day is spent automatically on a missed planned day.
 - At most 2 grace days can be spent in one week, so a fully missed week still shows as missed. The point is to absorb a bad day, not to hide a pattern.
+- A grace day is spent silently, so Today says so once, under the week: which day it covered, that the rhythm continues, and that finishing the parsha by Shabbat earns one back. It says too, in the same place, when today's reading was read ahead or doubling up has made up for yesterday; one line at most, said once: not again once put away, nor after the day it was first seen.
 
 ### Pause
-"Life happens" is for illness, travel, mourning or a new baby. Days and weeks inside a pause are transparent. A pause can be ended early.
+"Life happens" is for illness, travel, mourning or a new baby. Days and weeks inside a pause are transparent. A pause can be ended early. While it lasts, Today says that nothing counts against the reader instead of counting aliyot to catch up. A pause that ends while the app is closed is followed by a welcome back, with this week's parsha and last week's, while it can still count, a tap away, until the reader puts it away or reads again.
 
 ### Join date
 Nothing before the day the reader started counts against them. In the week they join, only what was planned from that day on is expected (see [Onboarding](#6-onboarding)). If they joined after that week began and don't finish it, it is transparent; a week they joined on its first day counts like any other. Resetting all progress starts the reader again from the day of the reset, on every device the reset reaches.
@@ -218,4 +221,6 @@ These defaults should be reviewed before a public release. Each is a setting:
 - How the Divine Name is spoken by text-to-speech and screen readers.
 - Whether posting on Shabbat should be blocked on the server.
 - The margins reminders keep with a city chosen: nothing arriving from an hour before candle-lighting on the eve (nothing due from two hours before it, as Android may deliver an hour late), the daily reminder two and a half hours before it at the latest, the Erev Shabbat reminder three hours before it at the latest, and the check-in an hour after Shabbat ends.
+- The wording of Today on Shabbat and Yom Tov ("Reading from a printed Chumash today? You can log it after Shabbat."), and that it rests until nightfall in the reader's city, or until 3 a.m. without one.
+- The note on the eve of Tisha B'Av: "Erev Tisha B'Av: many finish their learning before midday."
 - The Shabbat times, which are not a setting yet: candle-lighting minutes (18 abroad, 20 in Israel, 40 in Jerusalem, 30 in Haifa; whether nearby places such as Ma'ale Adumim follow Jerusalem), and the end of Shabbat at 8.5°.

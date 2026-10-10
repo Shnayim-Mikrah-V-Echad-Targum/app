@@ -91,6 +91,28 @@ void main() {
           closeTo(tester.getCenter(find.text('Bereshit is still open')).dy, 1));
     });
 
+    testWidgets('can be put away with a close button at its top end', (tester) async {
+      var dismissed = 0;
+      await pumpThemed(
+        tester,
+        NoticeBanner(
+          icon: Icons.play_circle_outline,
+          title: 'Welcome back',
+          text: 'Your pause has ended.',
+          onDismiss: () => dismissed++,
+          dismissLabel: 'Dismiss',
+        ),
+      );
+      final close = find.byTooltip('Dismiss');
+      expect(close, findsOneWidget);
+      expect(tester.getSize(find.byType(IconButton)), const Size(48, 48), reason: 'a 48 dp target');
+      // On the title's line, at the end.
+      expect(tester.getCenter(find.byIcon(Icons.close)).dy, closeTo(tester.getCenter(find.text('Welcome back')).dy, 3));
+      expect(tester.getRect(find.byType(NoticeBanner)).right - tester.getRect(find.byType(IconButton)).right, 4);
+      await tester.tap(close);
+      expect(dismissed, 1);
+    });
+
     testWidgets('is outlined 2 px in high contrast', (tester) async {
       await pumpThemed(
         tester,

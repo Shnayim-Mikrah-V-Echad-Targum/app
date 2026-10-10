@@ -264,6 +264,22 @@ class AppLocalizationsHe extends AppLocalizations {
   String get erevShabbat => 'ערב שבת';
 
   @override
+  String get shabbatShalom => 'שבת שלום';
+
+  @override
+  String get chagSameach => 'חג שמח';
+
+  @override
+  String get restDayBody => 'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת.';
+
+  @override
+  String get restDayBodyChag =>
+      'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג.';
+
+  @override
+  String get openTheParsha => 'לפרשה';
+
+  @override
   String get simchatTorahEyebrow => 'שמחת תורה';
 
   @override
@@ -300,6 +316,19 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get todayAhead => 'מקדימים את התוכנית. כל הכבוד!';
+
+  @override
+  String graceUsedNote(String weekday, String parsha) {
+    return '$weekday כוסה ביום חסד — הקצב נמשך. יום חסד יתווסף בחזרה עם סיום פרשת $parsha עד שבת.';
+  }
+
+  @override
+  String graceUsedNoteShort(String weekday) {
+    return '$weekday כוסה ביום חסד — הקצב נמשך.';
+  }
+
+  @override
+  String get caughtUpNote => 'חזרה לתוכנית — הקריאה הכפולה השלימה את אתמול.';
 
   @override
   String get todayNothingPlanned =>
@@ -366,6 +395,14 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get pausedTodayNote =>
+      'בהשהיה — אפשר לקרוא מתי שנוח; שום דבר לא נחשב לחובתך.';
+
+  @override
+  String get erevTishaBavNote =>
+      'ערב תשעה באב: רבים מסיימים את הלימוד לפני חצות היום.';
+
+  @override
   String get readTodaysAliyah => 'לקריאה של היום';
 
   @override
@@ -384,6 +421,16 @@ class AppLocalizationsHe extends AppLocalizations {
   String get weekComplete => 'הפרשה של השבוע הושלמה. יישר כוח!';
 
   @override
+  String get weekCompleteNote => 'הכול מוכן לקריאת התורה בשבת.';
+
+  @override
+  String get weekCompleteNoteSimchatTorah =>
+      'הכול מוכן לקריאת התורה בשמחת תורה.';
+
+  @override
+  String get discussTheParsha => 'לדיון בפרשה';
+
+  @override
   String get haftarahLabel => 'הפטרה';
 
   @override
@@ -400,8 +447,21 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String openWeekRestore(String name, String next) {
-    return 'סיום $name ו$next עד שבת ישמור על הרצף — השלמה כפולה אחת לכל חומש.';
+  String openWeekRestore(String name, String next, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'סיום $name ו$next עד שבת ימשיך את הרצף של $count שבועות — השלמה כפולה אחת לכל חומש.',
+      one:
+          'סיום $name ו$next עד שבת ימשיך את הרצף של שבוע אחד — השלמה כפולה אחת לכל חומש.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String openWeekRestoreZero(String name, String next) {
+    return 'סיום $name ו$next עד שבת, ושתיהן ייחשבו — השלמה כפולה אחת לכל חומש.';
   }
 
   @override
@@ -429,12 +489,50 @@ class AppLocalizationsHe extends AppLocalizations {
   String get checkInPick => 'בחירת עליות';
 
   @override
+  String get checkInNotThisTime => 'לא הפעם';
+
+  @override
+  String checkInReadOnShabbat(String date) {
+    return 'תאריך הקריאה: שבת, $date';
+  }
+
+  @override
+  String checkInReadOn(String date) {
+    return 'תאריך הקריאה: $date';
+  }
+
+  @override
+  String get changeDate => 'שינוי התאריך';
+
+  @override
+  String get logReading => 'סימון הקריאה';
+
+  @override
   String pausedBanner(String date) {
     return 'בהשהיה עד $date. דבר אינו מתאפס בזמן ההשהיה.';
   }
 
   @override
   String get resume => 'סיום ההשהיה';
+
+  @override
+  String pauseEndedOn(String date) {
+    return 'ההשהיה הסתיימה ב$date, ושום דבר בזמנה לא נחשב לחובתך.';
+  }
+
+  @override
+  String get pauseEndedStart => 'התחלת פרשת השבוע';
+
+  @override
+  String get pauseEndedContinue => 'המשך פרשת השבוע';
+
+  @override
+  String catchUpOn(String name) {
+    return 'השלמת פרשת $name';
+  }
+
+  @override
+  String get actionDismiss => 'הסתרה';
 
   @override
   String readingDivergence(String israel, String diaspora) {

@@ -440,6 +440,36 @@ void main() {
       expect(find.text('Progress imported.'), findsOneWidget);
     });
 
+    testWidgets('restoring the settings keeps what Today has asked and said on this device', (tester) async {
+      final here = setUpHere.copyWith(
+        checkInAnsweredFor: '5787:1',
+        pauseEndSeen: _monday.addDays(-2),
+        lastStripAck: _monday,
+        stripNoteShownOn: _monday,
+      );
+      final (c, _) = await open(
+        tester,
+        settings: here,
+        file: encodeBackup(
+          backedUp(),
+          savedSettings.copyWith(checkInAnsweredFor: '5786:54', lastStripAck: _monday.addDays(-9)),
+          now: DateTime.utc(2026, 10, 11, 12),
+        ),
+      );
+      await chooseFile(tester);
+      await tester.tap(find.text('Also restore settings'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Merge'));
+      await tester.pumpAndSettle();
+
+      final settings = c.read(settingsProvider);
+      expect(settings.plan, ReadingPlanType.erevShabbat, reason: 'restored');
+      expect(
+        (settings.checkInAnsweredFor, settings.pauseEndSeen, settings.lastStripAck, settings.stripNoteShownOn),
+        ('5787:1', _monday.addDays(-2), _monday, _monday),
+      );
+    });
+
     for (final allows in [true, false]) {
       testWidgets('asks the OS before restoring reminders, and ${allows ? 'keeps them when allowed' : 'turns them off when refused'}',
           (tester) async {

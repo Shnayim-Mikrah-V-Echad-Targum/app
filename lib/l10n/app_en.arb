@@ -193,6 +193,26 @@
   "@erevShabbat": {
     "description": "The eyebrow over the parsha's name in the Today hero on Friday afternoon."
   },
+  "shabbatShalom": "Shabbat Shalom",
+  "@shabbatShalom": {
+    "description": "The greeting on Today's title page on Shabbat."
+  },
+  "chagSameach": "Chag Sameach",
+  "@chagSameach": {
+    "description": "The greeting on Today's title page on Yom Tov."
+  },
+  "restDayBody": "Reading from a printed Chumash today? You can log it after Shabbat.",
+  "@restDayBody": {
+    "description": "On Today's title page on Shabbat, under the parsha's name."
+  },
+  "restDayBodyChag": "Reading from a printed Chumash today? You can log it after Yom Tov.",
+  "@restDayBodyChag": {
+    "description": "As restDayBody, on Shabbat or Yom Tov when the days of rest end with Yom Tov."
+  },
+  "openTheParsha": "Open the parsha",
+  "@openTheParsha": {
+    "description": "The one button on Today on Shabbat or Yom Tov, which opens the parsha's week."
+  },
   "simchatTorahEyebrow": "Simchat Torah",
   "@simchatTorahEyebrow": {
     "description": "The eyebrow over the parsha's name in the Today hero in the week of Vezot HaBerachah, which is read on Simchat Torah."
@@ -247,6 +267,34 @@
   "todayReadingTitle": "Today's reading",
   "todayDone": "Today's reading is done",
   "todayAhead": "You're ahead of plan. Well done!",
+  "graceUsedNote": "{weekday} was covered by a grace day — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat.",
+  "@graceUsedNote": {
+    "description": "Under Today's week strip, once, after a grace day covered a planned day without reading. weekday is that day; parsha this week's.",
+    "placeholders": {
+      "weekday": {
+        "type": "String",
+        "example": "Wednesday"
+      },
+      "parsha": {
+        "type": "String",
+        "example": "Noach"
+      }
+    }
+  },
+  "graceUsedNoteShort": "{weekday} was covered by a grace day — your rhythm continues.",
+  "@graceUsedNoteShort": {
+    "description": "As graceUsedNote, when finishing this week's parsha would not earn a grace day back (it is finished, or none is missing).",
+    "placeholders": {
+      "weekday": {
+        "type": "String",
+        "example": "Wednesday"
+      }
+    }
+  },
+  "caughtUpNote": "Caught up — doubling up repaired yesterday.",
+  "@caughtUpNote": {
+    "description": "Under Today's week strip when reading two days' aliyot today has made up for yesterday."
+  },
   "todayNothingPlanned": "No reading is planned for today. A good day to catch up or read ahead.",
   "todayCatchUpTitle": "Catching up",
   "@todayCatchUpTitle": {
@@ -296,6 +344,14 @@
       }
     }
   },
+  "pausedTodayNote": "Paused — read whenever you like; nothing counts against you.",
+  "@pausedTodayNote": {
+    "description": "On Today's reading card while streaks are paused, in place of a line about aliyot to catch up."
+  },
+  "erevTishaBavNote": "Erev Tisha B'Av: many finish their learning before midday.",
+  "@erevTishaBavNote": {
+    "description": "On Today's reading card on the day before Tisha B'Av, when many have the custom not to learn Torah from midday."
+  },
   "readTodaysAliyah": "Read today's reading",
   "continueReading": "Continue reading",
   "startReading": "Start reading",
@@ -305,6 +361,18 @@
     "description": "The title of the sheet that logs reading done from a printed Chumash, over the aliyot to log, each checked."
   },
   "weekComplete": "This week's parsha is complete. Yasher koach!",
+  "weekCompleteNote": "Ready to hear it read on Shabbat.",
+  "@weekCompleteNote": {
+    "description": "A gentle line under weekComplete on Today's title page, once every aliyah of the week is read."
+  },
+  "weekCompleteNoteSimchatTorah": "Ready to hear it read on Simchat Torah.",
+  "@weekCompleteNoteSimchatTorah": {
+    "description": "As weekCompleteNote, for Vezot HaBerachah, which is read on Simchat Torah."
+  },
+  "discussTheParsha": "Discuss the parsha",
+  "@discussTheParsha": {
+    "description": "A text button on Today's title page, once the week is complete, that opens the week's discussion."
+  },
   "haftarahLabel": "Haftarah",
   "haftarahRead": "Haftarah read",
   "openWeekTitle": "{name} is still open",
@@ -323,8 +391,24 @@
       }
     }
   },
-  "openWeekRestore": "Finish {name} and {next} by Shabbat to keep your streak — one double-up per book.",
+  "openWeekRestore": "Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book.",
   "@openWeekRestore": {
+    "description": "On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openWeekRestoreZero": "Finish {name} and {next} by Shabbat and both count — one double-up per book.",
+  "@openWeekRestoreZero": {
+    "description": "As openWeekRestore, when the reader has no parsha streak to continue.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -352,6 +436,38 @@
   "checkInBody": "Log what you read from a printed Chumash — it counts just the same.",
   "checkInFinished": "I finished it on Shabbat",
   "checkInPick": "Choose aliyot",
+  "checkInNotThisTime": "Not this time",
+  "@checkInNotThisTime": {
+    "description": "A button of the after-Shabbat check-in on Today that puts it away without logging anything."
+  },
+  "checkInReadOnShabbat": "Read on Shabbat, {date}",
+  "@checkInReadOnShabbat": {
+    "description": "In the after-Shabbat check-in sheet, the day the checked readings are logged for: the Shabbat just past. date is its day and month.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "10 October"
+      }
+    }
+  },
+  "checkInReadOn": "Read on {date}",
+  "@checkInReadOn": {
+    "description": "As checkInReadOnShabbat, once another day is chosen. date is its weekday, day and month.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, 11 October"
+      }
+    }
+  },
+  "changeDate": "Change date",
+  "@changeDate": {
+    "description": "A button beside the day reading is logged for, which asks for another."
+  },
+  "logReading": "Log reading",
+  "@logReading": {
+    "description": "The button of the after-Shabbat check-in sheet that logs every checked reading at once."
+  },
   "pausedBanner": "Paused until {date}. Nothing resets while paused.",
   "@pausedBanner": {
     "placeholders": {
@@ -361,6 +477,38 @@
     }
   },
   "resume": "Resume",
+  "pauseEndedOn": "Your pause ended on {date}, and nothing during it counts against you.",
+  "@pauseEndedOn": {
+    "description": "On Today, under pauseEnded, the first time it is opened after a pause has ended. date is the pause's last day.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, 18 October"
+      }
+    }
+  },
+  "pauseEndedStart": "Start this week's parsha",
+  "@pauseEndedStart": {
+    "description": "A button on Today's welcome back after a pause, when nothing of this week's parsha is read yet."
+  },
+  "pauseEndedContinue": "Continue this week's parsha",
+  "@pauseEndedContinue": {
+    "description": "As pauseEndedStart, when some of this week's parsha is read."
+  },
+  "catchUpOn": "Catch up on {name}",
+  "@catchUpOn": {
+    "description": "A button on Today's welcome back after a pause, that opens last week's parsha, which can still count.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
+      }
+    }
+  },
+  "actionDismiss": "Dismiss",
+  "@actionDismiss": {
+    "description": "The tooltip and label of a close button that puts a note away."
+  },
   "readingDivergence": "In Israel this week: {israel}. Outside Israel: {diaspora}. Visitors from abroad usually read both. If you daven with a minyan reading {diaspora}, read only that one, and set the reading you'll hear to Outside Israel in Settings.",
   "@readingDivergence": {
     "description": "Shown on Today when the reader hears Israel's reading but keeps two days of Yom Tov (a visitor to Israel), in a week when Israel and the Diaspora read different portions.",

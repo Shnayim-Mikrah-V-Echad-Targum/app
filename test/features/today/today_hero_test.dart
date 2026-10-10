@@ -11,9 +11,11 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/reader/reader_flow.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_clock.dart';
+import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/ui/widgets/ledger.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show TitlePageFrame;
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart' show ParshaRings;
 
 import '../../helpers.dart';
 
@@ -34,6 +36,8 @@ ProgressState _bereshit() {
 final _friday = DateTime(2026, 10, 9, 11);
 
 void main() {
+  setUp(TodayScreen.forgetCompletions);
+
   Future<ProviderContainer> openToday(
     WidgetTester tester, {
     AppSettings? settings,
@@ -105,13 +109,110 @@ void main() {
     });
 
     testWidgets('gives way, once the parsha is read, to saying so', (tester) async {
-      await openToday(
+      final c = await openToday(
         tester,
         progress: ProgressState(weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 8))}),
       );
-      expect(find.text("This week's parsha is complete. Yasher koach!"), findsOneWidget);
-      expect(find.bySubtype<FilledButton>(), findsNothing);
+      expect(find.bySemanticsLabel("This week's parsha is complete. Yasher koach!"), findsOneWidget);
+      expect(find.text('Ready to hear it read on Shabbat.'), findsOneWidget);
+      expect(find.byType(ParshaRings), findsNothing);
+      expect(find.textContaining(RegExp('^(Start|Continue) ·')), findsNothing);
       expect(find.byIcon(Icons.celebration_outlined), findsNothing);
+      // The haftarah, still to read, is the one button that looks like one,
+      // and it is tonal.
+      final haftarah = find.widgetWithText(FilledButton, 'Read the haftarah');
+      expect(find.bySubtype<FilledButton>(), findsOneWidget);
+      expect(tester.widget<FilledButton>(haftarah).style?.backgroundColor, isNotNull, reason: 'it is tonal');
+      expect(find.widgetWithText(TextButton, 'Discuss the parsha'), findsOneWidget);
+      await tester.tap(haftarah);
+      await tester.pump();
+      expect(c.read(routerProvider).state.uri.path, '/today/haftarah/5787:1');
+
+      // Once read, only the discussion is offered.
+      await openToday(
+        tester,
+        progress: ProgressState(weeks: {
+          '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 8)).withHaftarah(LocalDate(2026, 10, 8)),
+        }),
+      );
+      expect(find.bySubtype<FilledButton>(), findsNothing);
+      expect(find.widgetWithText(TextButton, 'Discuss the parsha'), findsOneWidget);
+    });
+
+    testWidgets('for Vezot HaBerachah, is ready for Simchat Torah', (tester) async {
+      // Hoshana Rabbah 5787 in Israel, where Simchat Torah is on Shabbat.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(
+          readingSchedule: ReadingSchedule.israel,
+          oneDayYomTov: true,
+          joinDate: LocalDate(2026, 9, 20),
+        ),
+        now: DateTime(2026, 10, 2, 11),
+        progress: ProgressState(weeks: {'5786:54': WeekProgress(weekId: '5786:54').withAll(LocalDate(2026, 10, 1))}),
+      );
+      expect(find.text('Ready to hear it read on Simchat Torah.'), findsOneWidget);
+    });
+
+    group('once the parsha is read while the app is open, its frame', () {
+      /// Shevi'i's Targum alone left; then logged.
+      Future<ProviderContainer> finish(WidgetTester tester, {AppSettings? settings}) async {
+        final w = WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 8)).withUnit(6, ReadingPass.targum, null);
+        final c = await openToday(tester, settings: settings, progress: ProgressState(weeks: {'5787:1': w}));
+        expect(tester.widget<TitlePageFrame>(find.byType(TitlePageFrame)).drawProgress, isNull);
+        c.read(progressProvider.notifier).markUnit('5787:1', 6, ReadingPass.targum, LocalDate(2026, 10, 9));
+        await tester.pump();
+        return c;
+      }
+
+      double? drawn(WidgetTester tester) => tester.widget<TitlePageFrame>(find.byType(TitlePageFrame)).drawProgress;
+
+      testWidgets('draws itself around the page once, and stays', (tester) async {
+        final c = await finish(tester);
+        expect(drawn(tester), 0);
+        await tester.pump(const Duration(milliseconds: 450));
+        expect(drawn(tester), allOf(greaterThan(0), lessThan(1)));
+        await tester.pumpAndSettle();
+        expect(drawn(tester), 1);
+
+        // Undone and finished again, it is drawn already.
+        c.read(progressProvider.notifier).markUnit('5787:1', 6, ReadingPass.targum, null);
+        await tester.pumpAndSettle();
+        c.read(progressProvider.notifier).markUnit('5787:1', 6, ReadingPass.targum, LocalDate(2026, 10, 9));
+        await tester.pump();
+        expect(drawn(tester), 1);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(drawn(tester), 1);
+      });
+
+      testWidgets('is drawn at once under Reduce Motion', (tester) async {
+        await finish(tester, settings: _settings.copyWith(reduceMotion: true));
+        expect(drawn(tester), 1);
+      });
+
+      testWidgets('waits until the page can be seen', (tester) async {
+        final w = WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 8)).withUnit(6, ReadingPass.targum, null);
+        final c = await openToday(tester, progress: ProgressState(weeks: {'5787:1': w}));
+        c.read(routerProvider).push('/settings');
+        await tester.pumpAndSettle();
+        c.read(progressProvider.notifier).markUnit('5787:1', 6, ReadingPass.targum, LocalDate(2026, 10, 9));
+        await tester.pumpAndSettle();
+        c.read(routerProvider).pop();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(drawn(tester), lessThan(1));
+        await tester.pumpAndSettle();
+        expect(drawn(tester), 1);
+      });
+
+      testWidgets('is still in a restarted app', (tester) async {
+        await openToday(
+          tester,
+          progress: ProgressState(weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 8))}),
+        );
+        expect(drawn(tester), 1);
+        expect(tester.binding.hasScheduledFrame, isFalse);
+      });
     });
 
     test('resumes a reading marked done with no place saved after it', () {

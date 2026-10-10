@@ -92,7 +92,8 @@ void showBackupImportStatus(
 /// is the one saved with the backup, if any.
 ///
 /// Its settings come too only [withSettings], keeping this device's record
-/// of having offered reminders. Reminders they turn on need the OS's
+/// of having offered reminders and of what Today has asked and said here.
+/// Reminders they turn on need the OS's
 /// permission here, as they did on the device that saved them, so it is
 /// asked for; refused, they are turned off ([BackupImport.remindersOff]).
 Future<BackupImport> importBackup(
@@ -119,11 +120,13 @@ Future<BackupImport> importBackup(
     if (joinDate != current.joinDate) settings.update((s) => s.copyWith(joinDate: joinDate));
     return BackupImport.restored;
   }
-  var next = restored.copyWith(
-    onboardingComplete: true,
-    notificationPromptShown: current.notificationPromptShown,
-    joinDate: joinDate,
-  );
+  var next = restored
+      .copyWith(
+        onboardingComplete: true,
+        notificationPromptShown: current.notificationPromptShown,
+        joinDate: joinDate,
+      )
+      .keepingTodaysNotesOf(current);
   var result = BackupImport.restored;
   if (notifications.supported && anyReminderOn(next)) {
     final allowed = await notifications.requestPermission();

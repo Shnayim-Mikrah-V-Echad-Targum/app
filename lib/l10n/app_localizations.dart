@@ -519,6 +519,36 @@ abstract class AppLocalizations {
   /// **'Erev Shabbat'**
   String get erevShabbat;
 
+  /// The greeting on Today's title page on Shabbat.
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat Shalom'**
+  String get shabbatShalom;
+
+  /// The greeting on Today's title page on Yom Tov.
+  ///
+  /// In en, this message translates to:
+  /// **'Chag Sameach'**
+  String get chagSameach;
+
+  /// On Today's title page on Shabbat, under the parsha's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading from a printed Chumash today? You can log it after Shabbat.'**
+  String get restDayBody;
+
+  /// As restDayBody, on Shabbat or Yom Tov when the days of rest end with Yom Tov.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading from a printed Chumash today? You can log it after Yom Tov.'**
+  String get restDayBodyChag;
+
+  /// The one button on Today on Shabbat or Yom Tov, which opens the parsha's week.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the parsha'**
+  String get openTheParsha;
+
   /// The eyebrow over the parsha's name in the Today hero in the week of Vezot HaBerachah, which is read on Simchat Torah.
   ///
   /// In en, this message translates to:
@@ -579,6 +609,24 @@ abstract class AppLocalizations {
   /// **'You\'re ahead of plan. Well done!'**
   String get todayAhead;
 
+  /// Under Today's week strip, once, after a grace day covered a planned day without reading. weekday is that day; parsha this week's.
+  ///
+  /// In en, this message translates to:
+  /// **'{weekday} was covered by a grace day — your rhythm continues. You\'ll earn one back when you finish {parsha} by Shabbat.'**
+  String graceUsedNote(String weekday, String parsha);
+
+  /// As graceUsedNote, when finishing this week's parsha would not earn a grace day back (it is finished, or none is missing).
+  ///
+  /// In en, this message translates to:
+  /// **'{weekday} was covered by a grace day — your rhythm continues.'**
+  String graceUsedNoteShort(String weekday);
+
+  /// Under Today's week strip when reading two days' aliyot today has made up for yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Caught up — doubling up repaired yesterday.'**
+  String get caughtUpNote;
+
   /// No description provided for @todayNothingPlanned.
   ///
   /// In en, this message translates to:
@@ -621,6 +669,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.}}'**
   String todayLastDayYomTov(int count);
 
+  /// On Today's reading card while streaks are paused, in place of a line about aliyot to catch up.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused — read whenever you like; nothing counts against you.'**
+  String get pausedTodayNote;
+
+  /// On Today's reading card on the day before Tisha B'Av, when many have the custom not to learn Torah from midday.
+  ///
+  /// In en, this message translates to:
+  /// **'Erev Tisha B\'Av: many finish their learning before midday.'**
+  String get erevTishaBavNote;
+
   /// No description provided for @readTodaysAliyah.
   ///
   /// In en, this message translates to:
@@ -657,6 +717,24 @@ abstract class AppLocalizations {
   /// **'This week\'s parsha is complete. Yasher koach!'**
   String get weekComplete;
 
+  /// A gentle line under weekComplete on Today's title page, once every aliyah of the week is read.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to hear it read on Shabbat.'**
+  String get weekCompleteNote;
+
+  /// As weekCompleteNote, for Vezot HaBerachah, which is read on Simchat Torah.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to hear it read on Simchat Torah.'**
+  String get weekCompleteNoteSimchatTorah;
+
+  /// A text button on Today's title page, once the week is complete, that opens the week's discussion.
+  ///
+  /// In en, this message translates to:
+  /// **'Discuss the parsha'**
+  String get discussTheParsha;
+
   /// No description provided for @haftarahLabel.
   ///
   /// In en, this message translates to:
@@ -681,11 +759,17 @@ abstract class AppLocalizations {
   /// **'Finish by {date} and it still counts.'**
   String openWeekLate(String date);
 
-  /// No description provided for @openWeekRestore.
+  /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.
   ///
   /// In en, this message translates to:
-  /// **'Finish {name} and {next} by Shabbat to keep your streak — one double-up per book.'**
-  String openWeekRestore(String name, String next);
+  /// **'Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book.'**
+  String openWeekRestore(String name, String next, int count);
+
+  /// As openWeekRestore, when the reader has no parsha streak to continue.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish {name} and {next} by Shabbat and both count — one double-up per book.'**
+  String openWeekRestoreZero(String name, String next);
 
   /// No description provided for @openWeekHaftarahLeft.
   ///
@@ -729,6 +813,36 @@ abstract class AppLocalizations {
   /// **'Choose aliyot'**
   String get checkInPick;
 
+  /// A button of the after-Shabbat check-in on Today that puts it away without logging anything.
+  ///
+  /// In en, this message translates to:
+  /// **'Not this time'**
+  String get checkInNotThisTime;
+
+  /// In the after-Shabbat check-in sheet, the day the checked readings are logged for: the Shabbat just past. date is its day and month.
+  ///
+  /// In en, this message translates to:
+  /// **'Read on Shabbat, {date}'**
+  String checkInReadOnShabbat(String date);
+
+  /// As checkInReadOnShabbat, once another day is chosen. date is its weekday, day and month.
+  ///
+  /// In en, this message translates to:
+  /// **'Read on {date}'**
+  String checkInReadOn(String date);
+
+  /// A button beside the day reading is logged for, which asks for another.
+  ///
+  /// In en, this message translates to:
+  /// **'Change date'**
+  String get changeDate;
+
+  /// The button of the after-Shabbat check-in sheet that logs every checked reading at once.
+  ///
+  /// In en, this message translates to:
+  /// **'Log reading'**
+  String get logReading;
+
   /// No description provided for @pausedBanner.
   ///
   /// In en, this message translates to:
@@ -740,6 +854,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resume'**
   String get resume;
+
+  /// On Today, under pauseEnded, the first time it is opened after a pause has ended. date is the pause's last day.
+  ///
+  /// In en, this message translates to:
+  /// **'Your pause ended on {date}, and nothing during it counts against you.'**
+  String pauseEndedOn(String date);
+
+  /// A button on Today's welcome back after a pause, when nothing of this week's parsha is read yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Start this week\'s parsha'**
+  String get pauseEndedStart;
+
+  /// As pauseEndedStart, when some of this week's parsha is read.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue this week\'s parsha'**
+  String get pauseEndedContinue;
+
+  /// A button on Today's welcome back after a pause, that opens last week's parsha, which can still count.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch up on {name}'**
+  String catchUpOn(String name);
+
+  /// The tooltip and label of a close button that puts a note away.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get actionDismiss;
 
   /// Shown on Today when the reader hears Israel's reading but keeps two days of Yom Tov (a visitor to Israel), in a week when Israel and the Diaspora read different portions.
   ///

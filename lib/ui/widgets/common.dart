@@ -344,10 +344,17 @@ class NoticeBanner extends StatelessWidget {
     this.action,
     this.actionBelow = false,
     this.liveRegion = false,
+    this.onDismiss,
+    this.dismissLabel,
   });
 
   final IconData icon;
   final String text;
+
+  /// Puts the notice away: a close button at its top end, whose tooltip and
+  /// label are [dismissLabel].
+  final VoidCallback? onDismiss;
+  final String? dismissLabel;
 
   /// A line in titleSmall over [text], for a notice that needs one.
   final String? title;
@@ -405,6 +412,7 @@ class NoticeBanner extends StatelessWidget {
     if (liveRegion) message = Semantics(liveRegion: true, child: message);
     final action = _legible(context);
     final below = actionBelow ? action : null;
+    final dismiss = onDismiss;
     return Card(
       color: scheme.secondaryContainer,
       // The fill sets it apart; only high contrast outlines it (§6.20).
@@ -412,12 +420,20 @@ class NoticeBanner extends StatelessWidget {
         borderRadius: const BorderRadius.all(Radius.circular(12)),
         side: SeferColors.of(context).isHighContrast ? BorderSide(color: scheme.outline, width: 2) : BorderSide.none,
       ),
+      // Unclipped, so the close button's focus ring shows whole.
+      clipBehavior: dismiss == null ? null : Clip.none,
       child: Padding(
         // A trailing button's own padding makes up the end padding beside it.
-        padding: EdgeInsetsDirectional.fromSTEB(16, 12, action == null ? 16 : 8, below == null ? 12 : 4),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          16,
+          12,
+          dismiss != null ? 4 : (action == null ? 16 : 8),
+          below == null ? 12 : 4,
+        ),
         child: Row(
           // A title, or text over a button, starts beside the icon.
-          crossAxisAlignment: below == null && title == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              below == null && title == null && dismiss == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
           children: [
             Icon(icon, size: 20, color: ink),
             const Gap(12),
@@ -433,6 +449,16 @@ class NoticeBanner extends StatelessWidget {
                     ),
             ),
             if (below == null) ?action,
+            if (dismiss != null)
+              // Raised to the first line, its 48 dp target reaching the edge.
+              Transform.translate(
+                offset: const Offset(0, -12),
+                child: IconButton(
+                  tooltip: dismissLabel,
+                  icon: Icon(Icons.close, size: 20, color: ink),
+                  onPressed: dismiss,
+                ),
+              ),
           ],
         ),
       ),

@@ -137,8 +137,14 @@ void main() {
 
     /// Opens the app on [now] with Bereshit's aliyot read on Friday (all of
     /// them, or all but the last), and its haftarah, which counted, not
-    /// read; then turns the haftarah off.
-    Future<void> turnHaftarahOff(WidgetTester tester, DateTime now, {int aliyotRead = 7}) async {
+    /// read; then turns the haftarah off. With [checkInAnswered], the reader
+    /// has answered the check-in after its Shabbat.
+    Future<void> turnHaftarahOff(
+      WidgetTester tester,
+      DateTime now, {
+      int aliyotRead = 7,
+      bool checkInAnswered = false,
+    }) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -150,7 +156,12 @@ void main() {
       }
       c = await pumpApp(
         tester,
-        settings: AppSettings(onboardingComplete: true, joinDate: _joined, haftarahRequired: true),
+        settings: AppSettings(
+          onboardingComplete: true,
+          joinDate: _joined,
+          haftarahRequired: true,
+          checkInAnsweredFor: checkInAnswered ? '5787:1' : null,
+        ),
         progress: ProgressState(weeks: {'5787:1': bereshit, if (aliyotRead < kAliyot) '5787:2': noach}),
         now: now,
       );
@@ -170,7 +181,8 @@ void main() {
     }
 
     testWidgets('is still open on Today, which leads to its haftarah', (tester) async {
-      await turnHaftarahOff(tester, _now);
+      // On Tuesday, the check-in is asked first until it is answered.
+      await turnHaftarahOff(tester, _now, checkInAnswered: true);
       expect(find.text('Bereshit is still open'), findsOneWidget);
       expect(find.textContaining('Only the haftarah is left.'), findsOneWidget);
       await tester.tap(find.text('Read the haftarah'));

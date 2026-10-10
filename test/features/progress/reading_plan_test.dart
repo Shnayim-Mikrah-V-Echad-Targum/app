@@ -336,13 +336,24 @@ void main() {
         readingSchedule: ReadingSchedule.israel,
         oneDayYomTov: false,
       );
+      // Monday is still Yom Tov for them: Today rests.
+      await pumpApp(tester, settings: visitor, now: DateTime(2029, 5, 21, 10));
+      await tester.pumpAndSettle();
+      expect(find.text(checkIn), findsNothing);
+      expect(find.text('Chag Sameach'), findsOneWidget);
+
+      await pumpApp(tester, settings: visitor.copyWith(oneDayYomTov: true), now: DateTime(2029, 5, 21, 10));
+      await tester.pumpAndSettle();
+      expect(find.text(checkIn), findsOneWidget, reason: 'in Israel, Monday is the first reading day after Shabbat');
+
       await pumpApp(tester, settings: visitor, now: DateTime(2029, 5, 22, 10));
       await tester.pumpAndSettle();
       expect(find.text(checkIn), findsOneWidget, reason: 'Tuesday is their first reading day after Shabbat');
 
-      await pumpApp(tester, settings: visitor.copyWith(oneDayYomTov: true), now: DateTime(2029, 5, 22, 10));
+      // Past the late window, Bamidbar is still open, and asked about no more.
+      await pumpApp(tester, settings: visitor.copyWith(oneDayYomTov: true), now: DateTime(2029, 5, 23, 10));
       await tester.pumpAndSettle();
-      expect(find.text(checkIn), findsNothing, reason: 'in Israel, that was Monday');
+      expect(find.text(checkIn), findsNothing);
       expect(find.text('Bamidbar is still open'), findsOneWidget);
     });
   });

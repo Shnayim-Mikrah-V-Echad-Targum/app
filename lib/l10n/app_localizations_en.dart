@@ -263,6 +263,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get erevShabbat => 'Erev Shabbat';
 
   @override
+  String get shabbatShalom => 'Shabbat Shalom';
+
+  @override
+  String get chagSameach => 'Chag Sameach';
+
+  @override
+  String get restDayBody =>
+      'Reading from a printed Chumash today? You can log it after Shabbat.';
+
+  @override
+  String get restDayBodyChag =>
+      'Reading from a printed Chumash today? You can log it after Yom Tov.';
+
+  @override
+  String get openTheParsha => 'Open the parsha';
+
+  @override
   String get simchatTorahEyebrow => 'Simchat Torah';
 
   @override
@@ -299,6 +316,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todayAhead => 'You\'re ahead of plan. Well done!';
+
+  @override
+  String graceUsedNote(String weekday, String parsha) {
+    return '$weekday was covered by a grace day — your rhythm continues. You\'ll earn one back when you finish $parsha by Shabbat.';
+  }
+
+  @override
+  String graceUsedNoteShort(String weekday) {
+    return '$weekday was covered by a grace day — your rhythm continues.';
+  }
+
+  @override
+  String get caughtUpNote => 'Caught up — doubling up repaired yesterday.';
 
   @override
   String get todayNothingPlanned =>
@@ -366,6 +396,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pausedTodayNote =>
+      'Paused — read whenever you like; nothing counts against you.';
+
+  @override
+  String get erevTishaBavNote =>
+      'Erev Tisha B\'Av: many finish their learning before midday.';
+
+  @override
   String get readTodaysAliyah => 'Read today\'s reading';
 
   @override
@@ -384,6 +422,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weekComplete => 'This week\'s parsha is complete. Yasher koach!';
 
   @override
+  String get weekCompleteNote => 'Ready to hear it read on Shabbat.';
+
+  @override
+  String get weekCompleteNoteSimchatTorah =>
+      'Ready to hear it read on Simchat Torah.';
+
+  @override
+  String get discussTheParsha => 'Discuss the parsha';
+
+  @override
   String get haftarahLabel => 'Haftarah';
 
   @override
@@ -400,8 +448,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String openWeekRestore(String name, String next) {
-    return 'Finish $name and $next by Shabbat to keep your streak — one double-up per book.';
+  String openWeekRestore(String name, String next, int count) {
+    return 'Finish $name and $next by Shabbat and your $count-week streak continues — one double-up per book.';
+  }
+
+  @override
+  String openWeekRestoreZero(String name, String next) {
+    return 'Finish $name and $next by Shabbat and both count — one double-up per book.';
   }
 
   @override
@@ -429,12 +482,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInPick => 'Choose aliyot';
 
   @override
+  String get checkInNotThisTime => 'Not this time';
+
+  @override
+  String checkInReadOnShabbat(String date) {
+    return 'Read on Shabbat, $date';
+  }
+
+  @override
+  String checkInReadOn(String date) {
+    return 'Read on $date';
+  }
+
+  @override
+  String get changeDate => 'Change date';
+
+  @override
+  String get logReading => 'Log reading';
+
+  @override
   String pausedBanner(String date) {
     return 'Paused until $date. Nothing resets while paused.';
   }
 
   @override
   String get resume => 'Resume';
+
+  @override
+  String pauseEndedOn(String date) {
+    return 'Your pause ended on $date, and nothing during it counts against you.';
+  }
+
+  @override
+  String get pauseEndedStart => 'Start this week\'s parsha';
+
+  @override
+  String get pauseEndedContinue => 'Continue this week\'s parsha';
+
+  @override
+  String catchUpOn(String name) {
+    return 'Catch up on $name';
+  }
+
+  @override
+  String get actionDismiss => 'Dismiss';
 
   @override
   String readingDivergence(String israel, String diaspora) {

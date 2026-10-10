@@ -46,6 +46,32 @@ void main() {
     expect(AppSettings.fromJson({}).cityOfferAnswered, isFalse, reason: 'offered until answered');
   });
 
+  test('what Today has asked and said round-trips through JSON, and can be cleared', () {
+    final s = const AppSettings().copyWith(
+      checkInAnsweredFor: '5787:1',
+      pauseEndSeen: LocalDate(2026, 10, 11),
+      lastStripAck: LocalDate(2026, 10, 16),
+      stripNoteShownOn: LocalDate(2026, 10, 15),
+    );
+    final back = AppSettings.fromJson(s.toJson());
+    expect(back.toJson(), s.toJson());
+    expect(
+      (back.checkInAnsweredFor, back.pauseEndSeen, back.lastStripAck, back.stripNoteShownOn),
+      ('5787:1', LocalDate(2026, 10, 11), LocalDate(2026, 10, 16), LocalDate(2026, 10, 15)),
+    );
+    final none = AppSettings.fromJson({});
+    expect(
+      [none.checkInAnsweredFor, none.pauseEndSeen, none.lastStripAck, none.stripNoteShownOn],
+      everyElement(isNull),
+    );
+    // Values that can't be read are none.
+    final odd = AppSettings.fromJson({'checkInAnsweredFor': 3, 'pauseEndSeen': 'Sunday', 'lastStripAck': null});
+    expect([odd.checkInAnsweredFor, odd.pauseEndSeen, odd.lastStripAck], everyElement(isNull));
+    // Undoing a check-in clears its answer.
+    expect(s.copyWith(checkInAnsweredFor: null).checkInAnsweredFor, isNull);
+    expect(s.copyWith(plan: ReadingPlanType.erevShabbat).checkInAnsweredFor, '5787:1');
+  });
+
   group('habit anchor', () {
     test('is saved by name, so it stays chosen whatever the language', () {
       for (final a in HabitAnchor.values) {
