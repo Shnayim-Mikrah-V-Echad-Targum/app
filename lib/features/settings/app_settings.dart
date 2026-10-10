@@ -281,8 +281,14 @@ class AppSettings {
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
   /// The opt-in font families these settings show text in, which are loaded
-  /// on demand (OptionalFonts); null for a bundled font.
-  List<String?> get optionalFonts => [uiFont.family, scriptureFont.family, if (rashiScript) kRashiScriptFamily];
+  /// on demand (OptionalFonts); null for a bundled font. The Rashi script
+  /// only while Rashi is shown in it.
+  List<String?> get optionalFonts =>
+      [uiFont.family, scriptureFont.family, if (rashiScript && showsRashi) kRashiScriptFamily];
+
+  /// Whether the reader shows Rashi: beside the Torah, or as the second
+  /// reading.
+  bool get showsRashi => showRashi || usesRashi;
 
   /// Whether the reading heard and the days of Yom Tov kept are those of
   /// different places, as for a visitor to or from Israel.

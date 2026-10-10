@@ -152,8 +152,8 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     ref.watch(celebrationListenerProvider);
     ref.listen(progressSyncProvider, (_, _) {});
     // Opt-in fonts load when first chosen (and at start, in initState): the
-    // Rashi script only once it is turned on.
-    ref.listen(settingsProvider.select((s) => (s.uiFont, s.scriptureFont, s.rashiScript)), (_, _) => _loadFonts());
+    // Rashi script only once it is turned on, and Rashi shown.
+    ref.listen(settingsProvider.select((s) => (s.uiFont, s.scriptureFont, s.rashiScript && s.showsRashi)), (_, _) => _loadFonts());
     if (OptionalFonts.isLoaded(settings.uiFont.family)) _uiFont = settings.uiFont;
 
     final systemHighContrast = MediaQuery.highContrastOf(context);

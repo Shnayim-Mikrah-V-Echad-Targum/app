@@ -133,10 +133,21 @@ void main() {
     return found;
   }
 
+  /// The verse number leading the paragraph, joined to its first word by a
+  /// no-break space: null where it hangs in a gutter, or isn't shown.
+  TextSpan? numberSpan(WidgetTester tester) {
+    for (final paragraph in tester.widgetList<RichText>(find.byType(RichText))) {
+      final root = paragraph.text;
+      if (root is! TextSpan || !root.toPlainText().startsWith('כב\u00A0')) continue;
+      return spanOf(tester, 'כב');
+    }
+    return null;
+  }
+
   group('typesetting (DESIGN_SYSTEM.md §4.7)', () {
     testWidgets('a verse number is gold Frank Ruhl Libre at 0.55 of the verse, joined to its first word', (tester) async {
       await pumpVerse(tester, serpent);
-      final number = spanOf(tester, 'כב ');
+      final number = numberSpan(tester);
       expect(number, isNotNull, reason: 'a no-break space, so the number never ends a line alone');
       final colors = Theme.of(tester.element(find.byType(ScriptureVerse))).colorScheme;
       expect(number!.style?.fontFamily, 'FrankRuhlLibre');
@@ -147,7 +158,7 @@ void main() {
 
       await pumpVerse(tester, serpent, dimmed: true);
       final dimInk = SeferColors.of(tester.element(find.byType(ScriptureVerse))).dimInk;
-      expect(spanOf(tester, 'כב ')!.style?.color, dimInk, reason: 'dimmed with its verse');
+      expect(numberSpan(tester)!.style?.color, dimInk, reason: 'dimmed with its verse');
       expect(verseStyle(tester)?.color, dimInk);
     });
 
@@ -169,7 +180,7 @@ void main() {
       final verse = tester.getRect(find.byType(ScriptureVerse));
       final number = find.text('כב');
       expect(number, findsOneWidget);
-      expect(spanOf(tester, 'כב '), isNull, reason: 'not in the paragraph too');
+      expect(numberSpan(tester), isNull, reason: 'not in the paragraph too');
       // The gutter is on the right, the verse's start, 1.4 times its size.
       final gutter = tester.getRect(find.ancestor(of: number, matching: find.byType(SizedBox)).first);
       expect(gutter.right, verse.right);
@@ -196,7 +207,7 @@ void main() {
         ),
       );
       expect(find.byType(Row), findsNothing);
-      expect(spanOf(tester, 'כב '), isNotNull);
+      expect(numberSpan(tester), isNotNull);
     });
 
     for (final theme in [AppThemeMode.light, AppThemeMode.highContrastDark]) {
@@ -216,7 +227,7 @@ void main() {
         );
         final context = tester.element(find.byType(ScriptureVerse));
         final sefer = SeferColors.of(context);
-        expect(spanOf(tester, 'כב '), isNull, reason: 'its verse has the number');
+        expect(numberSpan(tester), isNull, reason: 'its verse has the number');
         final box = tester.widget<Container>(find.descendant(of: find.byType(ScriptureVerse), matching: find.byType(Container)));
         final rule = ((box.decoration! as BoxDecoration).border! as Border).right;
         expect(rule.color, sefer.goldLeaf);
@@ -228,6 +239,87 @@ void main() {
         expect(text.right, tester.getRect(find.byType(ScriptureVerse)).right - 14);
       });
     }
+
+    for (final (wordSpacing, letterSpacing) in [(0.0, 0.0), (4.0, 0.0), (16.0, 2.0)]) {
+      testWidgets('a verse number stands a word space from its word: word spacing $wordSpacing, letter spacing $letterSpacing',
+          (tester) async {
+        await pumpVerse(tester, serpent, settings: AppSettings(wordSpacing: wordSpacing, letterSpacing: letterSpacing));
+        final paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
+        final text = paragraph.text.toPlainText();
+        double widthAt(int i) => paragraph
+            .getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1))
+            .fold(0, (w, box) => w + box.right - box.left);
+        expect(text.substring(0, 3), 'כב\u00A0', reason: 'a no-break space, so the number never ends a line alone');
+        // The text engine widens only spaces a line may break at: the no-break
+        // space carries the reader's word spacing itself.
+        expect(widthAt(2), closeTo(widthAt(text.indexOf(' ')), 0.01));
+      });
+    }
+
+    testWidgets('a large letter stands above the line, and moves no line apart', (tester) async {
+      // Genesis 1:1, whose first letter the Masorah writes large.
+      const words = 'רֵאשִׁית בָּרָא אֱלֹהִים';
+      final large = Verse.fromJson(const VerseRef(1, 1), [{'big': 'בְּ'}, words]);
+      final plain = Verse.fromJson(const VerseRef(1, 1), ['בְּ$words']);
+      for (final lineHeight in [kMinLineHeight, 1.9, 2.6]) {
+        final settings = AppSettings(lineHeight: lineHeight);
+        await pumpVerse(tester, plain, settings: settings);
+        final line = tester.getSize(find.byType(RichText)).height;
+        await pumpVerse(tester, large, settings: settings);
+        expect(tester.getSize(find.byType(RichText)).height, closeTo(line, 0.01), reason: 'at line height $lineHeight');
+        expect(spanOf(tester, 'בְּ')!.style!.fontSize, closeTo(26 * 1.45, 0.001));
+      }
+    });
+
+    testWidgets("dimmed, the Targum's rule recedes to a hairline, and Rashi's eyebrow to the dimmed ink", (tester) async {
+      final targum = Verse.fromJson(const VerseRef(3, 22), ['וַאֲמַר יְיָ אֱלֹהִים']);
+      await pumpThemed(
+        tester,
+        Column(
+          children: [
+            ScriptureVerse(
+              verse: targum,
+              kind: ScriptureKind.targum,
+              settings: const AppSettings(),
+              secondary: true,
+              showNumber: false,
+              ruled: true,
+              dimmed: true,
+            ),
+            const RashiEyebrow(english: false, dimmed: true),
+            const RashiEyebrow(english: false),
+          ],
+        ),
+      );
+      final sefer = SeferColors.of(tester.element(find.byType(ScriptureVerse)));
+      final box = tester.widget<Container>(find.descendant(of: find.byType(ScriptureVerse), matching: find.byType(Container)));
+      expect(((box.decoration! as BoxDecoration).border! as Border).right.color, sefer.hairline);
+      final eyebrows = tester.widgetList<Text>(find.descendant(of: find.byType(RashiEyebrow), matching: find.byType(Text))).toList();
+      expect(eyebrows.first.style?.color, sefer.dimInk);
+      expect(eyebrows.last.style?.color, Theme.of(tester.element(find.byType(ScriptureVerse))).colorScheme.secondary);
+    });
+
+    testWidgets('what goes with a hanging verse shares its edge, past the gutter', (tester) async {
+      await pumpThemed(
+        tester,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+            const HangingIndent(
+              settings: AppSettings(),
+              child: RashiComments(comments: [Comment('הן האדם', 'הֲרֵי הוּא יָחִיד')], settings: AppSettings(), english: false),
+            ),
+            const HangingIndent(settings: AppSettings(showVerseNumbers: false), child: SizedBox(height: 10, key: Key('bare'))),
+          ],
+        ),
+      );
+      final verseText = tester.getRect(find.byType(RichText).at(1));
+      final rashi = tester.getRect(find.byType(RashiComments));
+      expect(rashi.right, closeTo(verseText.right, 0.001));
+      // With no numbers to hang, there is no gutter.
+      expect(tester.getRect(find.byKey(const Key('bare'))).right, tester.getRect(find.byType(ScriptureVerse)).right);
+    });
 
     testWidgets('the styles of each layer', (tester) async {
       await pumpThemed(tester, const SizedBox());

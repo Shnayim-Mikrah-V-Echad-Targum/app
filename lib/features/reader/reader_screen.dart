@@ -1158,10 +1158,19 @@ class _GuidedStep extends StatelessWidget {
     ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false}) =>
         ScriptureVerse(verse: text.verse(r), kind: kind, settings: settings, secondary: secondary, hangingNumber: true);
 
+    // What goes with a verse shares the edge its text starts at, past the
+    // gutter its number hangs in.
+    Widget hanging(Widget child) => HangingIndent(settings: settings, child: child);
+
     Widget translation(VerseRef r) => Padding(
           padding: const EdgeInsets.only(top: 6),
-          child: TranslationVerse(text: texts.english!.verse(r).readText, number: r.verse, settings: settings),
+          child: hanging(TranslationVerse(text: texts.english!.verse(r).readText, number: r.verse, settings: settings)),
         );
+
+    Widget note(String text) => hanging(_Note(text: text));
+
+    Widget rashi(List<Comment> comments) =>
+        hanging(RashiComments(comments: comments, settings: settings, english: englishRashi));
 
     Widget layerFor(VerseRef r) {
       switch (kind) {
@@ -1174,8 +1183,7 @@ class _GuidedStep extends StatelessWidget {
             children: [
               verse(texts.mikra, r, ScriptureKind.mikra),
               if (settings.showTranslation && texts.english != null) translation(r),
-              if (kind == StepKind.thirdHebrew)
-                _Note(text: settings.usesOnkelos ? l.noTargumNote : l.noRashiNote),
+              if (kind == StepKind.thirdHebrew) note(settings.usesOnkelos ? l.noTargumNote : l.noRashiNote),
             ],
           );
         case StepKind.targum:
@@ -1185,6 +1193,8 @@ class _GuidedStep extends StatelessWidget {
           // reading: the Hebrew follows its Onkelos here instead, set apart
           // in a block of its own so that it can't be taken for Targum, nor
           // the Targum after it for Torah, which is labelled again (below).
+          // Its rule is where the Hebrew begins, at the right in either
+          // language of the app, as every scripture rule is (§4.7).
           final scheme = theme.colorScheme;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1192,17 +1202,17 @@ class _GuidedStep extends StatelessWidget {
               targum,
               Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 4),
-                padding: const EdgeInsetsDirectional.only(start: 12),
+                padding: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
-                  border: BorderDirectional(start: BorderSide(color: scheme.outline, width: 3)),
+                  border: Border(right: BorderSide(color: scheme.outline, width: 3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    LayerLabel(l.mikraLabel),
+                    hanging(LayerLabel(l.mikraLabel)),
                     verse(texts.mikra, r, ScriptureKind.mikra),
                     if (settings.showTranslation && texts.english != null) translation(r),
-                    _Note(text: l.noTargumNote),
+                    note(l.noTargumNote),
                   ],
                 ),
               ),
@@ -1218,7 +1228,7 @@ class _GuidedStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 verse(texts.mikra, r, ScriptureKind.mikra),
-                _Note(text: suggestThird ? l.noRashiNote : l.noRashiComment),
+                note(suggestThird ? l.noRashiNote : l.noRashiComment),
               ],
             );
           }
@@ -1227,7 +1237,7 @@ class _GuidedStep extends StatelessWidget {
             children: [
               verse(texts.mikra, r, ScriptureKind.mikra, secondary: true),
               const Gap(8),
-              RashiComments(comments: comments, settings: settings, english: englishRashi),
+              rashi(comments),
             ],
           );
       }
@@ -1273,15 +1283,15 @@ class _GuidedStep extends StatelessWidget {
                           // The Targum again, after the Hebrew of a verse read
                           // a third time among it.
                           if (kind == StepKind.targum && i > 0 && flow.thirdHebrewInTargum(chunk, refs[i - 1]))
-                            LayerLabel(l.targumLabel),
+                            hanging(LayerLabel(l.targumLabel)),
                           layerFor(r),
                           if (settings.showRashi &&
                               kind != StepKind.rashi &&
                               texts.rashi != null &&
                               texts.rashi!.on(r).isNotEmpty) ...[
                             const Gap(4),
-                            LayerLabel(l.rashiLabel),
-                            RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
+                            hanging(LayerLabel(l.rashiLabel)),
+                            rashi(texts.rashi!.on(r)),
                           ],
                           if (texts.mikra.breaks[r] case final brk? when hebrewStep)
                             SectionGap(kind: brk, settings: settings)
@@ -1698,7 +1708,7 @@ class _FullText extends StatelessWidget {
                       ],
                       if (rashi.isNotEmpty) ...[
                         const Gap(10),
-                        RashiEyebrow(english: englishRashi),
+                        RashiEyebrow(english: englishRashi, dimmed: dimmed),
                         const Gap(2),
                         RashiComments(comments: rashi, settings: settings, english: englishRashi, dimmed: dimmed),
                       ],
@@ -1706,7 +1716,13 @@ class _FullText extends StatelessWidget {
                   ),
                 ),
               ),
-              if (brk != null) SectionGap(kind: brk, settings: settings) else const Gap(_verseGap),
+              // The aliyah's last verse is followed by its divider, which
+              // marks the end: a section's mark too would be a second
+              // ornament on the same break.
+              if (brk != null && i < flow.verses.length - 1)
+                SectionGap(kind: brk, settings: settings)
+              else
+                const Gap(_verseGap),
             ],
           ),
         ),

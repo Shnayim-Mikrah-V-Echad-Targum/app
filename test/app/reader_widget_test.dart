@@ -366,6 +366,17 @@ void main() {
         reason: 'no separate step for the third reading');
     expect(find.textContaining('Onkelos here gives mostly the Aramaic forms of the place names'), findsOneWidget);
     expect(find.text('Torah'), findsOneWidget, reason: 'the Hebrew is labelled among the Targum');
+    // Its block is ruled where the Hebrew begins, at the right, as every
+    // scripture rule is in either language of the app.
+    final block = tester.widget<Container>(find.ancestor(of: find.text('Torah'), matching: find.byType(Container)).first);
+    final border = (block.decoration! as BoxDecoration).border! as Border;
+    expect(border.right.width, 3);
+    expect(border.left, BorderSide.none);
+    // Like everything that goes with a verse, its label shares the Hebrew's
+    // edge, past the gutter its number hangs in.
+    final verse = find.descendant(of: find.byType(Container), matching: find.byType(ScriptureVerse)).first;
+    final verseText = find.descendant(of: verse, matching: find.byType(RichText)).last;
+    expect(tester.getRect(find.byType(HangingIndent).first).right, greaterThan(tester.getRect(verseText).right - 1));
     handle.dispose();
   });
 
@@ -865,7 +876,7 @@ void main() {
     expect(c.read(settingsProvider).lineHeight, 1.6);
   });
 
-  testWidgets('the display sheet turns the Rashi script on', (tester) async {
+  testWidgets('the display sheet turns the Rashi script on, once Rashi is shown', (tester) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -874,11 +885,59 @@ void main() {
     await loadTexts(tester);
     await tester.tap(find.byTooltip('Display settings'));
     await tester.pumpAndSettle();
+    final sheet = find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable));
     final toggle = find.widgetWithText(SwitchListTile, 'Rashi script');
-    await tester.scrollUntilVisible(toggle, 200, scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
+    // With Rashi shown nowhere, the script would change nothing to be seen.
+    await tester.scrollUntilVisible(find.widgetWithText(SwitchListTile, 'Focus mode'), 200, scrollable: sheet);
+    expect(toggle, findsNothing);
+
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Show Rashi alongside'));
+    // Rashi's comments load behind the sheet.
+    await loadTexts(tester);
+    await tester.scrollUntilVisible(toggle, 200, scrollable: sheet);
     await tester.tap(toggle);
     await tester.pumpAndSettle();
     expect(c.read(settingsProvider).rashiScript, isTrue);
+  });
+
+  testWidgets("the guided reader marks a section's end under the Hebrew, never the Targum", (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(onboardingComplete: true, method: ReadingMethod.aliyahByAliyah),
+      now: monday,
+    );
+    // Noach's Rishon, Genesis 6:9–22: a setumah follows 6:12.
+    c.read(routerProvider).go('/read/5787:2/0');
+    await loadTexts(tester);
+    final scroll = find.byType(SingleChildScrollView).last;
+    expect(find.text('Read the Hebrew'), findsOneWidget);
+    expect(find.descendant(of: scroll, matching: find.byType(SectionBreakMark)), findsOneWidget);
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(forward);
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Read the Targum'), findsOneWidget);
+    expect(find.descendant(of: scroll, matching: find.byType(SectionBreakMark)), findsNothing);
+  });
+
+  testWidgets("the full text's last verse ends at the aliyah's divider, with no section mark too", (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
+    // Bereshit's Rishon ends at Genesis 2:3, on a petuchah.
+    c.read(routerProvider).go('/read/5787:1/0?mode=full');
+    await loadTexts(tester);
+    final last = tester.getRect(find.byType(VerseGroup).last);
+    final gaps = find.byType(SectionGap);
+    expect(gaps, findsWidgets, reason: 'the petuchot within the aliyah');
+    for (final gap in tester.widgetList<SectionGap>(gaps).indexed) {
+      expect(tester.getRect(gaps.at(gap.$1)).bottom, lessThanOrEqualTo(last.top), reason: 'none after the last verse');
+    }
+    expect(tester.getTopLeft(find.byType(SeferDivider)).dy, greaterThan(last.bottom));
   });
 
   testWidgets('the guided reader heads a chapter where one starts', (tester) async {
@@ -974,6 +1033,24 @@ void main() {
       // Alt+↓ steps on wherever the text is scrolled.
       await press(tester, LogicalKeyboardKey.arrowDown, holding: [LogicalKeyboardKey.altLeft]);
       expect(find.text('Read the Hebrew again'), findsOneWidget);
+    });
+
+    testWidgets('a step opens at its top after Back, as after Next', (tester) async {
+      await open(
+        tester,
+        '/read/5787:2/0',
+        settings: const AppSettings(onboardingComplete: true, method: ReadingMethod.sectionBySection, readingScale: 3),
+      );
+      await tester.tap(forward);
+      await tester.pumpAndSettle();
+      expect(find.text('Read the Hebrew again'), findsOneWidget);
+      text(tester).jumpTo(text(tester).maxScrollExtent / 2);
+      await tester.pump();
+      expect(text(tester).pixels, greaterThan(0));
+      await tester.tap(find.text('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('Read the Hebrew'), findsOneWidget);
+      expect(text(tester).pixels, 0);
     });
 
     testWidgets('Space presses a focused Next, and Back gives the focus to Next when it is disabled', (tester) async {
@@ -1440,17 +1517,24 @@ void main() {
       addTearDown(tester.view.reset);
       final c = await pumpApp(
         tester,
-        settings: AppSettings(onboardingComplete: true, theme: theme, focusMode: true, showTranslation: true),
+        settings: AppSettings(onboardingComplete: true, theme: theme, focusMode: true, showTranslation: true, showRashi: true),
         now: monday,
       );
       c.read(routerProvider).go('/read/5787:2/0?mode=full');
       await loadTexts(tester);
       // Focus mode opens on the reader's place, the first verse: every other
-      // verse is dimmed.
+      // verse is dimmed, Rashi on it too, and his eyebrow.
       expect(tester.widget<VerseGroup>(find.byType(VerseGroup).first).highlighted, isTrue);
+      expect(tester.widget<RashiComments>(find.byType(RashiComments).first).dimmed, isFalse);
+      expect(find.byWidgetPredicate((w) => w is RashiComments && w.dimmed), findsWidgets);
+      expect(find.byWidgetPredicate((w) => w is RashiEyebrow && w.dimmed), findsWidgets);
 
       final dimmed = find.byWidgetPredicate(
-        (w) => (w is ScriptureVerse && w.dimmed) || (w is TranslationVerse && w.dimmed),
+        (w) =>
+            (w is ScriptureVerse && w.dimmed) ||
+            (w is TranslationVerse && w.dimmed) ||
+            (w is RashiComments && w.dimmed) ||
+            (w is RashiEyebrow && w.dimmed),
       );
       expect(dimmed, findsWidgets);
       await expectLater(

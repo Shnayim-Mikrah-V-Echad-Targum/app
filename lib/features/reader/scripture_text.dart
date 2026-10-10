@@ -177,6 +177,39 @@ class ScriptureStyles {
   /// text scale.
   double get gutterWidth => gutterScale * sizeFor(ScriptureKind.mikra);
 
+  /// The gutter the guided reader hangs a verse's number in, in a column
+  /// [maxWidth] wide: [gutterWidth] at the system text scale, or none where
+  /// numbers are hidden, or where so wide a gutter would take more than a
+  /// quarter of each line and the number leads the first line instead.
+  double hangingGutter(double maxWidth) {
+    if (!settings.showVerseNumbers) return 0;
+    final gutter = MediaQuery.textScalerOf(context).scale(gutterWidth);
+    return gutter > maxWidth / 4 ? 0 : gutter;
+  }
+
+  /// The height for a run of letters [scale] times the size of [base] (the
+  /// Masorah's large letters) that sets the run's top no higher above the
+  /// baseline than [base]'s own, as a large letter stands in print: above the
+  /// line, without pushing it from the one above. Leading split evenly, as
+  /// the verse's is, would centre the larger letters' box on the line's and
+  /// so raise its top by (scale - 1) / 2 of the font's ascent less its
+  /// descent; the run's height takes that back.
+  double largeLetterHeight(TextStyle base, double scale, String letters) {
+    // At the font's own line height, which a style with no height keeps.
+    final natural = TextStyle(
+      fontFamily: base.fontFamily,
+      fontFamilyFallback: base.fontFamilyFallback,
+      fontWeight: base.fontWeight,
+      fontSize: 100,
+    );
+    final painter = TextPainter(text: TextSpan(text: letters, style: natural), textDirection: TextDirection.rtl)..layout();
+    final metrics = painter.computeLineMetrics();
+    painter.dispose();
+    // The font's own ascent and descent, as shares of its size.
+    final (ascent, descent) = metrics.isEmpty ? (0.8, 0.2) : (metrics.first.ascent / 100, metrics.first.descent / 100);
+    return (base.height! - (scale - 1) * (ascent - descent)) / scale;
+  }
+
   /// The reading column's measure: about 80 characters at the Torah's size
   /// at its widest.
   double get maxLineWidth => switch (settings.lineWidth) {
@@ -318,13 +351,15 @@ class ScriptureVerse extends StatelessWidget {
           spans.add(TextSpan(text: '*', style: dimmed ? muted : muted.copyWith(color: scheme.primary)));
         case SizedLetters(:final text, :final size):
           final scale = size == LetterSize.large ? 1.45 : 0.72;
+          final letters = displayHebrew(text, settings);
           spans.add(TextSpan(
-            text: displayHebrew(text, settings),
+            text: letters,
             style: base.copyWith(
               fontSize: base.fontSize! * scale,
               // A large letter stands above the line, as in print, rather
-              // than push the line apart: its line box is the verse's own.
-              height: scale > 1 ? base.height! / scale : null,
+              // than push the line apart: it reaches no higher above the
+              // baseline than the verse's own letters' line box, nor lower.
+              height: scale > 1 ? styles.largeLetterHeight(base, scale, letters) : null,
             ),
           ));
         case AlternateReading(:final text):
@@ -369,7 +404,10 @@ class ScriptureVerse extends StatelessWidget {
     }
 
     // The number in gold, joined to the first word by a no-break space so
-    // that it never ends a line alone.
+    // that it never ends a line alone. The space is the verse's, and the
+    // text engine widens only spaces where a line may break, so it carries
+    // the reader's word spacing as letter spacing, as a section mark's does:
+    // the number stands as far from its word as words from each other.
     final numeral = showNumber && settings.showVerseNumbers ? HebrewText.gematria(verse.ref.verse, punctuate: false) : null;
     final numberStyle = styles.numberStyle(kind, dimmed: dimmed);
     final strut = styles.strut(kind);
@@ -379,7 +417,10 @@ class ScriptureVerse extends StatelessWidget {
         TextSpan(
           style: base,
           children: [
-            if (withNumber && numeral != null) TextSpan(text: '$numeral\u00A0', style: numberStyle),
+            if (withNumber && numeral != null) ...[
+              TextSpan(text: numeral, style: numberStyle),
+              TextSpan(text: '\u00A0', style: TextStyle(letterSpacing: settings.letterSpacing + settings.wordSpacing)),
+            ],
             ...spans,
           ],
         ),
@@ -404,10 +445,10 @@ class ScriptureVerse extends StatelessWidget {
     if (hangingNumber && numeral != null) {
       content = LayoutBuilder(
         builder: (context, constraints) {
-          final gutter = MediaQuery.textScalerOf(context).scale(styles.gutterWidth);
+          final gutter = styles.hangingGutter(constraints.maxWidth);
           // At a very large size a gutter would take too much of each line:
           // the number leads the first line instead, as in the full text.
-          if (gutter > constraints.maxWidth / 4) return paragraph(withNumber: true);
+          if (gutter == 0) return paragraph(withNumber: true);
           // The verse begins on the right in either language of the app.
           return Row(
             textDirection: TextDirection.rtl,
@@ -427,12 +468,14 @@ class ScriptureVerse extends StatelessWidget {
     if (ruled) {
       // At the scripture's start, the right, in either language of the app.
       // High contrast keeps the inset but not the rule, a decoration (§3.1).
+      // Dimmed, it recedes with its verse to a hairline, leaving the gold to
+      // the verse being read.
       content = Container(
         padding: const EdgeInsets.only(right: ruleGap),
         decoration: BoxDecoration(
           border: Border(
             right: BorderSide(
-              color: sefer.goldLeaf,
+              color: dimmed ? sefer.hairline : sefer.goldLeaf,
               width: ruleWidth,
               style: sefer.isHighContrast ? BorderStyle.none : BorderStyle.solid,
             ),
@@ -744,9 +787,13 @@ class RashiComments extends StatelessWidget {
 /// Hebrew, at the right, or "Rashi" over Rashi in English, at the left. A
 /// screen reader hears it in the UI language.
 class RashiEyebrow extends StatelessWidget {
-  const RashiEyebrow({super.key, required this.english});
+  const RashiEyebrow({super.key, required this.english, this.dimmed = false});
 
   final bool english;
+
+  /// De-emphasized with the rest of its verse (focus mode): in the dimmed
+  /// ink rather than gold.
+  final bool dimmed;
 
   @override
   Widget build(BuildContext context) {
@@ -756,11 +803,33 @@ class RashiEyebrow extends StatelessWidget {
       child: ExcludeSemantics(
         child: Directionality(
           textDirection: english ? TextDirection.ltr : TextDirection.rtl,
-          child: Eyebrow(lookupAppLocalizations(locale).rashiLabel),
+          child: Eyebrow(
+            lookupAppLocalizations(locale).rashiLabel,
+            color: dimmed ? SeferColors.of(context).dimInk : null,
+          ),
         ),
       ),
     );
   }
+}
+
+/// What goes with a verse in the guided reader (its translation, Rashi, a
+/// note or a label), set in at the right by the gutter the verse hangs its
+/// number in, so that every block shares the edge its text starts at, as on
+/// a chumash's page, with the number alone in the margin (§4.7).
+class HangingIndent extends StatelessWidget {
+  const HangingIndent({super.key, required this.settings, required this.child});
+
+  final AppSettings settings;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) => Padding(
+          padding: EdgeInsets.only(right: ScriptureStyles(context, settings).hangingGutter(constraints.maxWidth)),
+          child: child,
+        ),
+      );
 }
 
 /// A label above a block of text in the guided reader ("Targum Onkelos"): an

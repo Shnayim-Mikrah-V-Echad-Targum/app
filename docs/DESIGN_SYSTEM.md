@@ -425,12 +425,12 @@ Rules:
 
 **Targum**
 - 0.90× (was 0.92×), `onSurfaceVariant`, height `max(1.6, lineHeight - 0.1)`.
-- In full-text mode, add a 2 px `goldLeaf` start-edge rule (`BorderDirectional(start:)`) with 12 px start padding. Remove the rule in high contrast.
+- In full-text mode, add a 2 px `goldLeaf` rule at the scripture's start, the right in either language of the app, with 12 px padding. Remove the rule in high contrast. The guided reader's block for a verse read a third time among the Targum is ruled at the right too (3 px `outline`), where the Hebrew begins.
 
 **Verse numbers**
 - FRL 600 at 0.55× of the verse size, colour `secondary` (`dimInk` when dimmed).
-- Follow the number with U+00A0 NO-BREAK SPACE instead of a plain space, so a number is never stranded at the end of a line.
-- Guided mode only: the number hangs in a start gutter 1.4 × verse size wide. Use `Row(textDirection: rtl, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic)` with the number Text, then `Expanded` verse Text.
+- Follow the number with U+00A0 NO-BREAK SPACE instead of a plain space, so a number is never stranded at the end of a line. The space is the verse's own and carries the reader's word spacing as letter spacing (the text engine widens only spaces a line may break at), so the number stands a word's space from its word however wide the spacing.
+- Guided mode only: the number hangs in a start gutter 1.4 × verse size wide. Use `Row(textDirection: rtl, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic)` with the number Text, then `Expanded` verse Text. What goes with the verse (its translation, Rashi, notes and layer labels) is set in by the same gutter at the right (`HangingIndent`), so every block shares the edge the text starts at and the number alone stands in the margin. Where the gutter would take more than a quarter of the line, or numbers are hidden, there is none.
 - Full-text mode keeps the number inline.
 
 **Chapter heading**
@@ -442,11 +442,14 @@ Rules:
 **Petuchah / setumah**
 - `SectionBreakMark` (§7.3) replaces the grey letter in reader_screen.dart full-text rendering.
 - Vertical space: petuchah 20 px above and below; setumah 10 px.
+- The full text's last verse takes none: the aliyah's SeferDivider follows it and marks the end, and two ornaments on one break would crowd it.
+- The guided reader marks them under the steps that read the Hebrew, never the Targum's or Rashi's.
 
 **Other text**
 - Ketiv and alternate readings: 0.62×, `onSurfaceVariant`, as now (dimmed: `dimInk`).
+- Large letters (the bet of Bereshit): 1.45× the verse, with a line height that sets their top no higher above the baseline than the verse's own line box, so they stand above the line, as in print, and move no line apart.
 - Rashi: Noto Serif Hebrew 0.78×, height 1.7, `onSurfaceVariant`.
-  - New Display switch "Rashi script" (off by default) switches to NotoRashiHebrew 400 at 0.80×, height 1.75.
+  - New Display switch "Rashi script" (off by default) switches to NotoRashiHebrew 400 at 0.80×, height 1.75. The switch shows only while Rashi is shown (beside the Torah or as the second reading), and the script loads only then.
   - Dibbur hamatchil: FRL 700 in `onSurface` (never primary).
 - English translation (study aid): EBG 500, 20sp × readingScale, height 1.5, `onSurfaceVariant`.
   - Verse number EBG 600 in `secondary` with lining figures.
@@ -456,7 +459,7 @@ Rules:
 - The current verse's whole block (Mikra, Targum, translation and Rashi, one tap target, `VerseGroup`) gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`, faded in over `Motion.short`. No radius: Flutter forbids a radius with non-uniform borders.
 - Padding, on every block whether highlighted or not, so that focus mode never moves a line: start 12 (the rule's 3 included), end 12, so the highlight frames a line that runs the full measure (the translation, or justified text), and vertical 4.
 - Start here, as for the Targum's rule, is the scripture's start: the right, in either language of the app.
-- All other verses, including their numbers and ketiv, use `dimInk`. Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
+- All other verses, including their numbers, ketiv, Rashi and Rashi's eyebrow, use `dimInk`, and the Targum's gold rule recedes to the hairline colour, leaving the gold to the verse being read. Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
 
 **The verse opened at** (`TargetVerseMark`, lib/features/reader/verse_anchor.dart)
 - A verse the reader opens at, from a search result, Go to verse (§6.26) or a link (`/read/{week}/{aliyah}?verse=28:12`), opens the full text and is scrolled to a fifth of the way down the text's viewport (`Scrollable.ensureVisible`, alignment 0.2, 300 ms on `Motion.standard`, at once under Reduce Motion).

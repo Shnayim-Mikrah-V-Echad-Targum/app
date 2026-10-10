@@ -112,10 +112,17 @@ void main() {
 
   test('the Rashi script is off unless chosen, and is the only opt-in font it adds', () {
     expect(AppSettings.fromJson({}).rashiScript, isFalse);
-    const on = AppSettings(rashiScript: true);
+    const on = AppSettings(rashiScript: true, showRashi: true);
     expect(AppSettings.fromJson(on.toJson()).rashiScript, isTrue);
     expect(const AppSettings().optionalFonts, [null, 'NotoSerifHebrew']);
     expect(on.optionalFonts, [null, 'NotoSerifHebrew', 'NotoRashiHebrew']);
+    expect(
+      const AppSettings(rashiScript: true, secondReading: SecondReading.rashi).optionalFonts,
+      [null, 'NotoSerifHebrew', 'NotoRashiHebrew'],
+      reason: 'Rashi read as the second reading',
+    );
+    // Chosen, but with Rashi shown nowhere: nothing to load it for.
+    expect(const AppSettings(rashiScript: true).optionalFonts, [null, 'NotoSerifHebrew']);
     expect(
       const AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.taameyFrank).optionalFonts,
       ['Lexend', 'TaameyFrank'],

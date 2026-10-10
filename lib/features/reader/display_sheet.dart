@@ -83,11 +83,14 @@ class _DisplaySheet extends ConsumerWidget {
             value: s.showRashi,
             onChanged: (v) => update((s) => s.copyWith(showRashi: v)),
           ),
-          SwitchListTile(
-            title: Text(l.rashiScript),
-            value: s.rashiScript,
-            onChanged: (v) => update((s) => s.copyWith(rashiScript: v)),
-          ),
+          // Only while Rashi is shown, beside the Torah or as its second
+          // reading: otherwise it would change nothing to be seen.
+          if (s.showsRashi)
+            SwitchListTile(
+              title: Text(l.rashiScript),
+              value: s.rashiScript,
+              onChanged: (v) => update((s) => s.copyWith(rashiScript: v)),
+            ),
           SwitchListTile(
             title: Text(l.focusMode),
             subtitle: Text(l.focusModeDesc),
