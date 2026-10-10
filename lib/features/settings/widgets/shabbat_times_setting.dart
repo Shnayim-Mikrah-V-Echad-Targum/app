@@ -47,7 +47,7 @@ class ShabbatTimesSetting extends ConsumerWidget {
                 title: l.cityLabel,
                 value: city?.name(hebrew: context.isHebrewUi) ?? l.cityNotSet,
                 subtitle: times == null ? null : shabbatTimesSummary(context, times.friday, times.shabbat),
-                onTap: () => context.go(route),
+                onTap: () => context.push(route),
               ),
             ],
           ),
