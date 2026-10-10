@@ -1087,6 +1087,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Repeat the parsha\'s last verse in Hebrew after its Targum (Chabad custom: not repeated)';
 
   @override
+  String get repeatLastVerseFollowsChabad =>
+      '\"End with Mikra\" is now off, following the Chabad custom.';
+
+  @override
+  String get repeatLastVerseBackOn => '\"End with Mikra\" is on again.';
+
+  @override
   String get thirdReading => 'Third-reading prompts';
 
   @override

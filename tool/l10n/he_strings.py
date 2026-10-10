@@ -298,6 +298,8 @@ HE = {
   "repeatLastVerse": "לסיים במקרא",
   "repeatLastVerseDesc": "לחזור על הפסוק האחרון של הפרשה בעברית אחרי התרגום",
   "repeatLastVerseDescChabad": "לחזור על הפסוק האחרון של הפרשה בעברית אחרי התרגום (במנהג חב״ד לא חוזרים עליו)",
+  "repeatLastVerseFollowsChabad": "האפשרות ״לסיים במקרא״ כבויה עכשיו, כמנהג חב״ד.",
+  "repeatLastVerseBackOn": "האפשרות ״לסיים במקרא״ פועלת שוב.",
   "thirdReading": "הצעה לקריאה שלישית",
   "thirdReadingDesc": "להציע קריאה שלישית בעברית כשאונקלוס מביא בעיקר שמות (במדבר לב, ג) או כשרש״י אינו מפרש",
   "haftarahEnabled": "הפטרה",

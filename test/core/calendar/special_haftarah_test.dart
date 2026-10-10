@@ -83,11 +83,17 @@ void main() {
     });
 
     for (final nusach in [HaftarahNusach.sephardi, HaftarahNusach.chabad]) {
-      test("the ${nusach.name} custom keeps Re'eh's own haftarah, and Ki Teitzei's and Kedoshim's", () {
+      test("the ${nusach.name} custom keeps Re'eh's own haftarah, and Ki Teitzei's", () {
         expect(key(reeh, nusach), "Re'eh on Shabbat Rosh Chodesh");
         expect(key(kiTeitzei, nusach), isNull);
-        expect(key(kedoshim, nusach), isNull);
       });
     }
+
+    test("Sephardim keep Kedoshim's own haftarah, and Chabad the Ashkenazi rule", () {
+      expect(key(kedoshim, HaftarahNusach.sephardi), isNull);
+      // Chabad reads Acharei Mot's haftarah as Ashkenazim do, and no Chabad
+      // source yet says what it reads for Kedoshim after it is displaced.
+      expect(key(kedoshim, HaftarahNusach.chabad), 'Kedoshim following Special Shabbat');
+    });
   });
 }

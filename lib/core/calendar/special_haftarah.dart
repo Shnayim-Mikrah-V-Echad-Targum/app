@@ -24,7 +24,7 @@ abstract final class _P {
 /// null when the portion's own haftarah is read. The precedence follows the
 /// common practice (Shulchan Aruch OC 425, 428, 684–685; Mishnah Berurah
 /// ibid.). Sephardim and Chabad differ from Ashkenazim around Rosh Chodesh
-/// Elul and in Kedoshim, as noted below.
+/// Elul, and Sephardim in Kedoshim, as noted below.
 String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required HaftarahNusach nusach}) {
   final ashkenazi = nusach == HaftarahNusach.ashkenazi;
   final h = HebrewDate.fromLocalDate(shabbat);
@@ -105,8 +105,12 @@ String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required Hafta
   }
 
   // When Acharei Mot's haftarah was displaced by a special one, Ashkenazim
-  // read it for Kedoshim. Sephardim and Chabad read Kedoshim's own.
-  if (portion.number == _P.kedoshim && !portion.combined && ashkenazi) {
+  // read it for Kedoshim. Sephardim read Kedoshim's own, which is the same
+  // reading in their custom (Ezekiel 20:2-20). Chabad, whose haftarah for
+  // Acharei Mot is the Ashkenazi one (Amos 9:7-15), keeps the Ashkenazi rule
+  // until a Chabad source is found: the data has no Chabad haftarah for
+  // Kedoshim to read instead.
+  if (portion.number == _P.kedoshim && !portion.combined && nusach != HaftarahNusach.sephardi) {
     // Acharei Mot was read last week, or two weeks ago if Pesach intervened.
     var previous = shabbat.addDays(-7);
     final ph = HebrewDate.fromLocalDate(previous);

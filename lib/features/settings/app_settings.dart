@@ -512,6 +512,10 @@ class AppSettings {
     double n(String k, double fallback, double min, double max) =>
         j[k] is num ? (j[k] as num).toDouble().clamp(min, max) : fallback;
     int i(String k, int fallback) => j[k] is int ? j[k] as int : fallback;
+    final nusach = e(HaftarahNusach.values, j['nusach'], d.nusach);
+    // Settings saved before this was kept may have turned the repeat off:
+    // that was the reader's choice, since it was on by default.
+    final repeatTouched = b('repeatLastVerseTouched', j['repeatLastVerse'] == false);
     // Settings saved before the reading and the days of Yom Tov were
     // separate have one 'israel' setting, which decided both.
     final located = switch (j['israel']) {
@@ -522,7 +526,7 @@ class AppSettings {
     return AppSettings(
       readingSchedule: e(ReadingSchedule.values, j['readingSchedule'], located.readingSchedule),
       oneDayYomTov: b('oneDayYomTov', located.oneDayYomTov),
-      nusach: e(HaftarahNusach.values, j['nusach'], d.nusach),
+      nusach: nusach,
       plan: e(ReadingPlanType.values, j['plan'], d.plan),
       lateWindow: e(LateWindow.values, j['lateWindow'], d.lateWindow),
       haftarahEnabled: b('haftarahEnabled', d.haftarahEnabled),
@@ -532,10 +536,11 @@ class AppSettings {
       starterCatchUp: b('starterCatchUp', d.starterCatchUp),
       method: e(ReadingMethod.values, j['method'], d.method),
       secondReading: e(SecondReading.values, j['secondReading'], d.secondReading),
-      repeatLastVerse: b('repeatLastVerse', d.repeatLastVerse),
-      // Settings saved before this was kept may have turned the repeat off:
-      // that was the reader's choice, since it was on by default.
-      repeatLastVerseTouched: b('repeatLastVerseTouched', j['repeatLastVerse'] == false),
+      // Until the reader sets it, it follows the custom (see withNusach).
+      // Chabad settings saved before then have it on only because that was
+      // the default.
+      repeatLastVerse: repeatTouched ? b('repeatLastVerse', d.repeatLastVerse) : nusach != HaftarahNusach.chabad,
+      repeatLastVerseTouched: repeatTouched,
       thirdReadingPrompts: b('thirdReadingPrompts', d.thirdReadingPrompts),
       showTranslation: b('showTranslation', d.showTranslation),
       showRashi: b('showRashi', d.showRashi),

@@ -1086,6 +1086,13 @@ class AppLocalizationsHe extends AppLocalizations {
       'לחזור על הפסוק האחרון של הפרשה בעברית אחרי התרגום (במנהג חב״ד לא חוזרים עליו)';
 
   @override
+  String get repeatLastVerseFollowsChabad =>
+      'האפשרות ״לסיים במקרא״ כבויה עכשיו, כמנהג חב״ד.';
+
+  @override
+  String get repeatLastVerseBackOn => 'האפשרות ״לסיים במקרא״ פועלת שוב.';
+
+  @override
   String get thirdReading => 'הצעה לקריאה שלישית';
 
   @override

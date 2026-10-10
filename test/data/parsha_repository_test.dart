@@ -83,6 +83,27 @@ void main() {
     }
   });
 
+  group('Kedoshim 5782, after Acharei Mot gave way to Shabbat Machar Chodesh,', () {
+    final kedoshim = LocalDate(2022, 5, 7);
+
+    test("has Acharei Mot's haftarah for Ashkenazim, and for Chabad, saying it is the Ashkenazi reading", () {
+      for (final n in [HaftarahNusach.ashkenazi, HaftarahNusach.chabad]) {
+        final h = repo.haftarahFor(const PortionId(30), kedoshim, n);
+        expect(h.specialKey, 'Kedoshim following Special Shabbat', reason: n.name);
+        expect(refs(h.parts), 'Amos 9:7-9:15', reason: n.name);
+        expect(refs(h.regular), 'Ezekiel 22:1-22:19', reason: n.name);
+        expect(h.fallback, n == HaftarahNusach.chabad, reason: n.name);
+      }
+    });
+
+    test("has Kedoshim's own for Sephardim", () {
+      final h = repo.haftarahFor(const PortionId(30), kedoshim, HaftarahNusach.sephardi);
+      expect(h.specialKey, isNull);
+      expect(refs(h.parts), 'Ezekiel 20:2-20:20');
+      expect(h.regular, isNull);
+    });
+  });
+
   test('HaftarahOptions says when Chabad falls back to the Ashkenazi reading', () {
     final bereshit = repo.portion(const PortionId(1)).haftarah;
     expect(bereshit.fallsBack(HaftarahNusach.chabad), isTrue);

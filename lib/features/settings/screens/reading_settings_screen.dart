@@ -105,8 +105,14 @@ class ReadingSettingsScreen extends ConsumerWidget {
               Choice(HaftarahNusach.sephardi, l.nusachSephardi),
               Choice(HaftarahNusach.chabad, l.nusachChabad),
             ],
-            // Also the last verse's repeat, while it follows the custom.
-            onChanged: (v) => update((s) => s.withNusach(v)),
+            // Also the last verse's repeat, while it follows the custom: a
+            // switch further up, perhaps out of sight, so it says so.
+            onChanged: (v) {
+              final repeat = ref.read(settingsProvider).repeatLastVerse;
+              update((s) => s.withNusach(v));
+              final now = ref.read(settingsProvider).repeatLastVerse;
+              if (now != repeat) showStatus(context, now ? l.repeatLastVerseBackOn : l.repeatLastVerseFollowsChabad);
+            },
           ),
           SwitchListTile(
             title: Text(l.haftarahRequired),

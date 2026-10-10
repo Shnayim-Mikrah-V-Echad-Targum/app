@@ -1851,6 +1851,18 @@ abstract class AppLocalizations {
   /// **'Repeat the parsha\'s last verse in Hebrew after its Targum (Chabad custom: not repeated)'**
   String get repeatLastVerseDescChabad;
 
+  /// Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves.
+  ///
+  /// In en, this message translates to:
+  /// **'\"End with Mikra\" is now off, following the Chabad custom.'**
+  String get repeatLastVerseFollowsChabad;
+
+  /// Said when choosing another haftarah custom than Chabad turns repeatLastVerse back on.
+  ///
+  /// In en, this message translates to:
+  /// **'\"End with Mikra\" is on again.'**
+  String get repeatLastVerseBackOn;
+
   /// No description provided for @thirdReading.
   ///
   /// In en, this message translates to:

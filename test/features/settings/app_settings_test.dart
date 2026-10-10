@@ -130,6 +130,22 @@ void main() {
       expect(AppSettings.fromJson({'repeatLastVerse': true}).repeatLastVerseTouched, isFalse);
       expect(AppSettings.fromJson({}).repeatLastVerseTouched, isFalse);
     });
+
+    test('saved for Chabad before it was kept, follows the custom', () {
+      // On only because that was the default: Chabad's custom is not to.
+      final chabad = AppSettings.fromJson({'nusach': 'chabad', 'repeatLastVerse': true});
+      expect(chabad.repeatLastVerse, isFalse);
+      expect(chabad.repeatLastVerseTouched, isFalse);
+      // Set by the reader, it stays as set.
+      final set = AppSettings.fromJson({'nusach': 'chabad', 'repeatLastVerse': true, 'repeatLastVerseTouched': true});
+      expect(set.repeatLastVerse, isTrue);
+      final off = AppSettings.fromJson({'nusach': 'ashkenazi', 'repeatLastVerse': false});
+      expect((off.repeatLastVerse, off.repeatLastVerseTouched), (false, true));
+      // And the round trip keeps either.
+      for (final s in [const AppSettings().withNusach(HaftarahNusach.chabad), set, off]) {
+        expect(AppSettings.fromJson(s.toJson()).repeatLastVerse, s.repeatLastVerse);
+      }
+    });
   });
 
   test('copyWith can clear nullable fields', () {

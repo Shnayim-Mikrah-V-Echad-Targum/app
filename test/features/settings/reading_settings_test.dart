@@ -88,9 +88,18 @@ void main() {
     expect(repeat(), isFalse, reason: "Chabad's custom");
     expect(find.text(chabadDesc), findsOneWidget);
     expect(find.text(desc), findsNothing);
+    // The switch is further up the page, so the change is said.
+    expect(find.text('"End with Mikra" is now off, following the Chabad custom.'), findsOneWidget);
     await tapText(tester, 'Ashkenazi');
     expect(repeat(), isTrue);
     expect(find.text(desc), findsOneWidget);
+    expect(find.text('"End with Mikra" is on again.'), findsOneWidget);
+    // Between two customs that both repeat it, nothing changes, and nothing
+    // is said.
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'Sephardi');
+    expect(find.byType(SnackBar), findsNothing);
 
     // Once set by the reader, it stays as set.
     await tapText(tester, 'Chabad');

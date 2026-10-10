@@ -152,19 +152,22 @@ write('test/fixtures/special_haftarot.json', compact);
 // ---------------------------------------------------------------------------
 // 5. Special haftarot by custom, 5780–5800
 //
-// hebcal gives the Ashkenazi custom. Sephardim and Chabad differ in three
-// cases, which lib/core/calendar/special_haftarah.dart must find on its own:
+// hebcal gives the Ashkenazi custom. Sephardim and Chabad differ in two
+// cases, and Sephardim in a third, which lib/core/calendar/special_haftarah.dart
+// must find on its own:
 //  - Re'eh on Rosh Chodesh Elul: Re'eh's own haftarah with the first and last
 //    verses of the Rosh Chodesh haftarah (Shulchan Aruch OC 425:1), rather
 //    than the Rosh Chodesh haftarah;
 //  - Ki Teitzei two weeks later: its own haftarah, not joined to Re'eh's;
-//  - Kedoshim after a special Shabbat: its own haftarah.
+//  - Kedoshim after a special Shabbat: for Sephardim, its own haftarah.
+//    Chabad, whose Acharei Mot haftarah is the Ashkenazi one, keeps the
+//    Ashkenazi rule until a Chabad source is found.
 
 function forCustom(nusach, parsha, reason) {
   if (nusach === 'ashkenazi' || !reason) return reason;
   if (parsha === "Re'eh" && reason === 'Shabbat Rosh Chodesh') return "Re'eh on Shabbat Rosh Chodesh";
   if (reason === 'Ki Teitzei with 3rd Haftarah of Consolation') return null;
-  if (reason === 'Kedoshim following Special Shabbat') return null;
+  if (reason === 'Kedoshim following Special Shabbat') return nusach === 'sephardi' ? null : reason;
   return reason;
 }
 
