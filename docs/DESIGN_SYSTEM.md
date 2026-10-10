@@ -598,7 +598,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 ### 6.10 Navigation rail (≥600)
 
 - Background surface, with a 1 px hairline end border (replaces surfaceContainer and the VerticalDivider in shell.dart).
-- Leading: the app mark (icon.png at 40×40, ClipRRect radius 10).
+- Leading: the app mark (`AppMark`, 40×40, ClipRRect radius 10). It draws mark_128.png wherever 128 px covers the pixels drawn and icon.png above that: decoding the 1024 px master straight to 40 px breaks up the letters.
 - Extended at ≥1200: the mark plus a 12 gap plus the wordmark "Shnayim Mikra" (EBG 500 20/24) or "שניים מקרא" (FRL 500 20/24) in onSurface. Semantics header. Replaces "SM" / "ש״מ".
 - Indicator primaryContainer radius 12; destination height 56 in the extended rail. The compact rail keeps Material's 64 (the 32 indicator, 4, a 16 px label and 12 below), spacing the framework fixes.
 - Keyboard focus: the bar's onSurface wash at 32% (the rail draws no ring either).
