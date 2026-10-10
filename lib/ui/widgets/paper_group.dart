@@ -114,7 +114,10 @@ class _RowRule extends CustomPainter {
 /// of its own beside the row's, so a screen reader reaches both actions:
 /// merged into the row, its action would replace the row's. Set
 /// [mergeTrailing] for a switch or checkbox that the row's tap also toggles,
-/// so that the row and its state read as one item.
+/// so that the row and its state read as one item. A trailing button with a
+/// label (a [TextButton], say) ends the title's line as a value does, and
+/// moves under the title when the two don't fit side by side, rather than
+/// squeeze the title until its words break (large text).
 class PaperRow extends StatelessWidget {
   const PaperRow({
     super.key,
@@ -129,6 +132,7 @@ class PaperRow extends StatelessWidget {
     this.mergeTrailing = false,
     this.onTap,
     this.selected,
+    this.focusNode,
     bool? chevron,
   }) : chevron = chevron ?? onTap != null;
 
@@ -141,11 +145,11 @@ class PaperRow extends StatelessWidget {
   /// At most two lines, unless the text is enlarged.
   final String? subtitle;
 
-  /// bodyLarge in onSurface unless given: a list of places to go, such as
-  /// the forums, sets its titles in titleMedium.
+  /// bodyLarge in onSurface, merged with this where given: a list of places
+  /// to go, such as the forums, sets its titles in titleMedium.
   final TextStyle? titleStyle;
 
-  /// bodyMedium in onSurfaceVariant unless given.
+  /// bodyMedium in onSurfaceVariant, merged with this where given.
   final TextStyle? subtitleStyle;
 
   /// The current setting, such as a language, at the end of the row.
@@ -164,6 +168,10 @@ class PaperRow extends StatelessWidget {
 
   final bool chevron;
 
+  /// The focus node of the row's ink well, for a row given the focus when
+  /// the control that had it goes; null for its own.
+  final FocusNode? focusNode;
+
   static const double _start = 16;
   static const double _iconSlot = 38;
 
@@ -173,9 +181,14 @@ class PaperRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
     final muted = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
-    final titleStyle = this.titleStyle ?? text.bodyLarge!.copyWith(color: scheme.onSurface);
+    final titleStyle = text.bodyLarge!.copyWith(color: scheme.onSurface).merge(this.titleStyle);
+    final subtitleStyle = muted?.merge(this.subtitleStyle);
+    // A labelled button goes with the title, as a value does, rather than
+    // after it.
+    final trailing = this.trailing;
+    final besideTitle = value == null && trailing is ButtonStyleButton ? trailing : null;
     final end = <Widget>[
-      ?trailing,
+      if (besideTitle == null) ?trailing,
       if (chevron) Icon(Icons.chevron_right, size: 20, color: scheme.outline),
     ];
     final scaler = MediaQuery.textScalerOf(context);
@@ -185,13 +198,23 @@ class PaperRow extends StatelessWidget {
     // the end of the row line up with that line too, rather than with the
     // middle of the row, so the value and chevron stay side by side.
     final onTitleLine = value != null && subtitle != null;
-    final titleLine = scaler.scale(titleStyle.fontSize!) * titleStyle.height!;
     Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
         ? ConstrainedBox(
-            constraints: BoxConstraints(minHeight: titleLine),
+            constraints: BoxConstraints(minHeight: scaler.scale(titleStyle.fontSize ?? 16) * (titleStyle.height ?? 1.5)),
             child: Align(alignment: alignment, widthFactor: 1, heightFactor: 1, child: child),
           )
         : child;
+    // The title, and at the end of its line a value or a labelled button,
+    // which move under it when the two don't fit side by side.
+    Widget titleWith(Widget other) => SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            children: [Text(title, style: titleStyle), other],
+          ),
+        );
     final content = ConstrainedBox(
       constraints: BoxConstraints(minHeight: subtitle == null ? 56 : 72),
       child: Padding(
@@ -216,24 +239,16 @@ class PaperRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (value == null)
-                    Text(title, style: titleStyle)
+                  if (value case final value?)
+                    titleWith(Text(value, style: muted))
+                  else if (besideTitle != null)
+                    titleWith(besideTitle)
                   else
-                    // The value sits at the end of the title's line, or under
-                    // the title when the two don't fit side by side.
-                    SizedBox(
-                      width: double.infinity,
-                      child: Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 12,
-                        children: [Text(title, style: titleStyle), Text(value!, style: muted)],
-                      ),
-                    ),
+                    Text(title, style: titleStyle),
                   if (subtitle != null)
                     Text(
                       subtitle!,
-                      style: subtitleStyle ?? muted,
+                      style: subtitleStyle,
                       maxLines: enlarged ? null : 2,
                       overflow: enlarged ? null : TextOverflow.ellipsis,
                     ),
@@ -259,6 +274,7 @@ class PaperRow extends StatelessWidget {
       child: onTap == null
           ? content
           : SeferInkWell(
+              focusNode: focusNode,
               onTap: onTap,
               borderRadius: PaperGroup.rowCorners(context),
               child: content,

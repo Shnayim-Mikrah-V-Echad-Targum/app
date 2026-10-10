@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart' show LateWindow;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations_en.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
@@ -164,7 +166,8 @@ void main() {
     expect(find.descendant(of: dialog, matching: find.text(en.extendPauseTitle)), findsOneWidget);
     await tester.tap(find.descendant(of: dialog, matching: find.text('7 days')));
     await tester.pump();
-    expect(find.descendant(of: dialog, matching: find.text(en.pauseStarted('Tuesday, November 24'))), findsOneWidget);
+    // What the pause would become, said as what it will be, not as done.
+    expect(find.descendant(of: dialog, matching: find.text(en.extendPauseUntil('Tuesday, November 24'))), findsOneWidget);
     await tester.tap(find.descendant(of: dialog, matching: find.widgetWithText(FilledButton, en.extendPause)));
     await tester.pumpAndSettle();
     expect(c.read(progressProvider).pauses.single.end, LocalDate(2026, 11, 24));
@@ -175,6 +178,64 @@ void main() {
     expect(c.read(isPausedProvider), isFalse);
     expect(find.text(en.pauseRowBody), findsOneWidget);
   });
+
+  testWidgets('from the keyboard, the focus moves on to what takes a pause button\'s place', (tester) async {
+    // Paused to 9 December: one day more is all the room Extend has left.
+    await openProgress(
+      tester,
+      progress: historyProgress().copyWith(pauses: [Pause(LocalDate(2026, 11, 11), LocalDate(2026, 12, 9))]),
+    );
+    Future<void> press(Finder button) async {
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      Focus.of(tester.element(find.descendant(of: button, matching: find.byType(Text)).first)).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+    }
+
+    final extend = find.widgetWithText(TextButton, en.extendPause);
+    final end = find.widgetWithText(FilledButton, en.endPause);
+    await press(extend);
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.widgetWithText(FilledButton, en.extendPause)));
+    await tester.pumpAndSettle();
+    // Extend is gone, its room used up: End pause has the focus.
+    expect(extend, findsNothing);
+    expect(Focus.of(tester.element(find.text(en.endPause))).hasPrimaryFocus, isTrue);
+
+    await press(end);
+    expect(end, findsNothing);
+    final row = tester.widget<SeferInkWell>(
+      find.ancestor(of: find.text(en.pauseRowBody), matching: find.byType(SeferInkWell)),
+    );
+    expect(FocusManager.instance.primaryFocus, row.focusNode);
+    expect(row.focusNode, isNotNull);
+  });
+
+  testWidgets('at 200% text, the grace row breaks no word, "About streaks" going under its title', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final c = await openProgress(tester);
+    final title = find.text(en.graceAvailable(c.read(streakSummaryProvider).graceBalance));
+    final paragraph = tester.renderObject<RenderParagraph>(title);
+    expect(paragraph.size.width, greaterThanOrEqualTo(paragraph.getMinIntrinsicWidth(double.infinity) - 0.5),
+        reason: 'as wide as its longest word, at least');
+    final about = tester.getRect(find.widgetWithText(TextButton, en.aboutStreaks));
+    expect(about.top, greaterThanOrEqualTo(tester.getRect(title).bottom - 1), reason: 'under the title');
+  });
+
+  for (final (window, text) in [
+    (LateWindow.tuesday, en.streakExplainer),
+    (LateWindow.wednesday, en.streakExplainerWednesday),
+    (LateWindow.none, en.streakExplainerNoWindow),
+  ]) {
+    testWidgets('"About streaks" says the window after Shabbat the reader chose: ${window.name}', (tester) async {
+      await openProgress(tester, settings: AppSettings(onboardingComplete: true, joinDate: historyJoinDate, lateWindow: window));
+      await tester.tap(find.widgetWithText(TextButton, en.aboutStreaks));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(BottomSheet), matching: find.text(text)), findsOneWidget);
+    });
+  }
 
   testWidgets('a pause reaches no further than 30 days ahead', (tester) async {
     await openProgress(
@@ -243,7 +304,10 @@ void main() {
     // Vayera to Vezot HaBerakhah.
     expect(find.text('51 of 54 parshiyot'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('^5786: 51 of 54 parshiyot complete')), findsOneWidget);
-    // The map shows 5786 as it ended: nothing in it is still to come.
+    // The map shows 5786 as it ended, and says so: nothing in it is still
+    // to come.
+    expect(find.text(en.torahMap), findsNothing);
+    expect(find.descendant(of: find.byType(SectionHeader), matching: find.text(en.torahMapOfYear('5786'))), findsOneWidget);
     expect(find.bySemanticsLabel('Bereshit: Not counted'), findsOneWidget);
     expect(find.bySemanticsLabel('Vayera: On time'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp(r': (In progress|Upcoming)$')), findsNothing);

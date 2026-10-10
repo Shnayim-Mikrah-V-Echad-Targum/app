@@ -1442,12 +1442,6 @@ abstract class AppLocalizations {
   /// **'Longest: {value}'**
   String longest(String value);
 
-  /// No description provided for @thisCycle.
-  ///
-  /// In en, this message translates to:
-  /// **'This year: {done} of 54 parshiyot'**
-  String thisCycle(int done);
-
   /// No description provided for @versesRead.
   ///
   /// In en, this message translates to:
@@ -1501,6 +1495,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Torah map'**
   String get torahMap;
+
+  /// The Torah map's heading while it shows an earlier year, chosen by the year chips on Progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Torah map · {year}'**
+  String torahMapOfYear(String year);
 
   /// No description provided for @torahMapHelp.
   ///
@@ -1586,6 +1586,12 @@ abstract class AppLocalizations {
   /// **'Extend by'**
   String get extendPauseBy;
 
+  /// In the dialog that extends a pause, before it is confirmed: when the pause would then end.
+  ///
+  /// In en, this message translates to:
+  /// **'The pause will end on {date}.'**
+  String extendPauseUntil(String date);
+
   /// Heading on Progress over what the reader has done: first aliyah, books finished, the siyum.
   ///
   /// In en, this message translates to:
@@ -1670,11 +1676,23 @@ abstract class AppLocalizations {
   /// **'Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.'**
   String get graceExplainer;
 
-  /// No description provided for @streakExplainer.
+  /// In the About streaks sheet, for a reader whose after-Shabbat window ends on Tuesday night (the default).
   ///
   /// In en, this message translates to:
   /// **'Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.'**
   String get streakExplainer;
+
+  /// As streakExplainer, for a reader whose after-Shabbat window ends on Wednesday night.
+  ///
+  /// In en, this message translates to:
+  /// **'Your parsha streak counts portions finished before Shabbat — or by Wednesday night, which still counts. Shabbat and Yom Tov never break a streak.'**
+  String get streakExplainerWednesday;
+
+  /// As streakExplainer, for a reader who has chosen no after-Shabbat window.
+  ///
+  /// In en, this message translates to:
+  /// **'Your parsha streak counts portions finished before Shabbat. Shabbat and Yom Tov never break a streak.'**
+  String get streakExplainerNoWindow;
 
   /// No description provided for @statusLegend.
   ///
@@ -1717,12 +1735,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} days on track'**
   String milestoneDaysOnTrack(int count);
-
-  /// No description provided for @milestoneSefer.
-  ///
-  /// In en, this message translates to:
-  /// **'Sefer {book} complete — Chazak!'**
-  String milestoneSefer(String book);
 
   /// No description provided for @milestoneSiyum.
   ///

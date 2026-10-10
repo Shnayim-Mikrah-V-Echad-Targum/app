@@ -865,11 +865,6 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String thisCycle(int done) {
-    return 'השנה: $done מתוך 54 פרשות';
-  }
-
-  @override
   String versesRead(String count) {
     return '$count פסוקים בשניים מקרא ואחד תרגום';
   }
@@ -901,6 +896,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get torahMap => 'מפת התורה';
+
+  @override
+  String torahMapOfYear(String year) {
+    return 'מפת התורה · $year';
+  }
 
   @override
   String get torahMapHelp => 'כל משבצת היא פרשה אחת במחזור של השנה.';
@@ -963,11 +963,16 @@ class AppLocalizationsHe extends AppLocalizations {
   String get extendPauseBy => 'הארכה בעוד';
 
   @override
+  String extendPauseUntil(String date) {
+    return 'ההשהיה תסתיים ב$date.';
+  }
+
+  @override
   String get recordTitle => 'הושלם עד כה';
 
   @override
   String milestoneSiyumFrom(String name) {
-    return 'סיום מפרשת $name';
+    return 'סיום התורה מפרשת $name';
   }
 
   @override
@@ -1015,6 +1020,14 @@ class AppLocalizationsHe extends AppLocalizations {
       'רצף הפרשות סופר פרשות שהושלמו לפני שבת — או עד ליל רביעי, שגם זה נחשב. שבת ויום טוב לעולם אינם שוברים רצף.';
 
   @override
+  String get streakExplainerWednesday =>
+      'רצף הפרשות סופר פרשות שהושלמו לפני שבת — או עד ליל חמישי, שגם זה נחשב. שבת ויום טוב לעולם אינם שוברים רצף.';
+
+  @override
+  String get streakExplainerNoWindow =>
+      'רצף הפרשות סופר פרשות שהושלמו לפני שבת. שבת ויום טוב לעולם אינם שוברים רצף.';
+
+  @override
   String get statusLegend => 'מקרא';
 
   @override
@@ -1037,11 +1050,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String milestoneDaysOnTrack(int count) {
     return '$count ימים לפי התוכנית';
-  }
-
-  @override
-  String milestoneSefer(String book) {
-    return 'חומש $book הושלם — חזק!';
   }
 
   @override

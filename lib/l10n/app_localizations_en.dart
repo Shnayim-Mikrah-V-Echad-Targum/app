@@ -865,11 +865,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String thisCycle(int done) {
-    return 'This year: $done of 54 parshiyot';
-  }
-
-  @override
   String versesRead(String count) {
     return '$count verses read twice with Targum';
   }
@@ -901,6 +896,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get torahMap => 'Torah map';
+
+  @override
+  String torahMapOfYear(String year) {
+    return 'Torah map · $year';
+  }
 
   @override
   String get torahMapHelp => 'Each tile is one parsha of this year\'s cycle.';
@@ -963,6 +963,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get extendPauseBy => 'Extend by';
 
   @override
+  String extendPauseUntil(String date) {
+    return 'The pause will end on $date.';
+  }
+
+  @override
   String get recordTitle => 'Finished so far';
 
   @override
@@ -1017,6 +1022,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.';
 
   @override
+  String get streakExplainerWednesday =>
+      'Your parsha streak counts portions finished before Shabbat — or by Wednesday night, which still counts. Shabbat and Yom Tov never break a streak.';
+
+  @override
+  String get streakExplainerNoWindow =>
+      'Your parsha streak counts portions finished before Shabbat. Shabbat and Yom Tov never break a streak.';
+
+  @override
   String get statusLegend => 'Legend';
 
   @override
@@ -1039,11 +1052,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String milestoneDaysOnTrack(int count) {
     return '$count days on track';
-  }
-
-  @override
-  String milestoneSefer(String book) {
-    return 'Sefer $book complete — Chazak!';
   }
 
   @override

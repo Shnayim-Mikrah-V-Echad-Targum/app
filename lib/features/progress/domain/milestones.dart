@@ -34,11 +34,14 @@ const kDaysOnTrackMilestones = [7, 30, 66, 100, 180, 365];
 /// [doneByCycle] is the parshiyot completed in each cycle, as
 /// [parshiyotDoneByCycle] gives them. A book counts as finished, and the
 /// Torah as completed, if it was in any cycle, so neither is lost when the
-/// next year begins.
+/// next year begins. [joinDate] is the day the reader started: the week
+/// they joined after it began is no part of their history, and no gap they
+/// could come back from.
 List<Milestone> computeMilestones({
   required StreakSummary summary,
   required Map<String, WeekProgress> progress,
   required Map<int, Set<int>> doneByCycle,
+  LocalDate? joinDate,
 }) {
   LocalDate? earliest(Iterable<LocalDate?> days) =>
       days.nonNulls.fold<LocalDate?>(null, (a, d) => a == null || d < a ? d : a);
@@ -62,11 +65,17 @@ List<Milestone> computeMilestones({
           }))
       .firstOrNull;
 
+  // Back after a week missed, made up or paused: not after the week the
+  // reader joined once it had begun, which the engine leaves transparent
+  // too when they don't finish it.
+  bool gap(WeekEvaluation e) => switch (e.status) {
+        WeekStatus.missed || WeekStatus.madeUp => true,
+        WeekStatus.transparent => joinDate == null || !(e.plan.week.start < joinDate),
+        _ => false,
+      };
   LocalDate? comeback;
   for (var i = 1; i < summary.weeks.length && comeback == null; i++) {
-    final prev = summary.weeks[i - 1].status;
-    if ((prev == WeekStatus.missed || prev == WeekStatus.transparent || prev == WeekStatus.madeUp) &&
-        summary.weeks[i].status.counts) {
+    if (gap(summary.weeks[i - 1]) && summary.weeks[i].status.counts) {
       comeback = summary.weeks[i].completedOn;
     }
   }

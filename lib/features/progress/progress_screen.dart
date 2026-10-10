@@ -28,6 +28,7 @@ import '../reader/sefer_complete_screen.dart';
 import 'domain/milestones.dart';
 import 'domain/parsha_standing.dart';
 import 'domain/progress_models.dart';
+import 'domain/reading_plan.dart' show LateWindow;
 import 'domain/streak_engine.dart';
 
 /// Progress (docs/DESIGN_SYSTEM.md §9): the streaks, the year, this week's
@@ -81,7 +82,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     ];
 
     final record = [
-      for (final m in computeMilestones(summary: summary, progress: progress.weeks, doneByCycle: doneByCycle))
+      for (final m in computeMilestones(
+        summary: summary,
+        progress: progress.weeks,
+        doneByCycle: doneByCycle,
+        joinDate: settings.joinDate,
+      ))
         // While streak numbers are hidden, so are the milestones that count them.
         if (m.achieved &&
             (settings.showStreaks || (m.kind != MilestoneKind.parshaStreak && m.kind != MilestoneKind.daysOnTrack)))
@@ -110,7 +116,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   icon: Icons.shield_outlined,
                   iconColor: StatusColors.of(context).grace,
                   title: l.graceAvailable(summary.graceBalance),
-                  trailing: TextButton(onPressed: () => _showAboutStreaks(context), child: Text(l.aboutStreaks)),
+                  trailing: TextButton(
+                    onPressed: () => _showAboutStreaks(context, settings.lateWindow),
+                    child: Text(l.aboutStreaks),
+                  ),
                 ),
               ],
             ),
@@ -151,7 +160,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               onDayTap: (d) => context.push('/read/${current.id}/${d.aliyot.first}'),
             ),
           ),
-          SectionHeader(l.torahMap, trailing: const _TorahMapHelpButton()),
+          // An earlier year's map is named for its year, which in English
+          // has digits: no eyebrow holds those (§4.5).
+          if (cycle == live)
+            SectionHeader(l.torahMap, trailing: const _TorahMapHelpButton())
+          else if (context.isHebrewUi)
+            SectionHeader(l.torahMapOfYear(names.hebrewYear(cycle)), trailing: const _TorahMapHelpButton())
+          else
+            SectionHeader.plain(l.torahMapOfYear(names.hebrewYear(cycle)), trailing: const _TorahMapHelpButton()),
           _TorahMap(cycle: cycle, summary: summary, done: done, current: current, live: cycle == live),
           if (missedThisCycle.isNotEmpty) ...[
             GroupHeader(l.makeUpTitle),
@@ -224,8 +240,9 @@ int _recordRank(MilestoneKind kind) => switch (kind) {
     };
 
 /// The two paragraphs on how grace days and the parsha streak work, behind
-/// the grace row's "About streaks".
-Future<void> _showAboutStreaks(BuildContext context) => showAppSheet<void>(
+/// the grace row's "About streaks": the streak's by the reader's [window]
+/// after Shabbat.
+Future<void> _showAboutStreaks(BuildContext context, LateWindow window) => showAppSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) {
@@ -248,7 +265,14 @@ Future<void> _showAboutStreaks(BuildContext context) => showAppSheet<void>(
                     children: [
                       Text(l.graceExplainer, style: body),
                       const Gap(Space.md),
-                      Text(l.streakExplainer, style: body),
+                      Text(
+                        switch (window) {
+                          LateWindow.tuesday => l.streakExplainer,
+                          LateWindow.wednesday => l.streakExplainerWednesday,
+                          LateWindow.none => l.streakExplainerNoWindow,
+                        },
+                        style: body,
+                      ),
                     ],
                   ),
                 ),
@@ -477,12 +501,57 @@ class _WeekRow extends StatelessWidget {
 }
 
 /// "Life happens": a pause for illness, travel, mourning or a new baby. While
-/// one covers today, it says until when, and offers to end or extend it.
-class _LifeHappens extends ConsumerWidget {
+/// one covers today, it says until when, and offers to end or extend it. The
+/// keyboard's focus moves on to what takes a button's place: the row, once
+/// End pause has ended the pause, and End pause, once Extend has used up
+/// the room there was.
+class _LifeHappens extends ConsumerStatefulWidget {
   const _LifeHappens();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LifeHappens> createState() => _LifeHappensState();
+}
+
+class _LifeHappensState extends ConsumerState<_LifeHappens> {
+  final _row = FocusNode(debugLabel: 'Life happens');
+  final _endPause = FocusNode(debugLabel: 'End pause');
+  final _extend = FocusNode(debugLabel: 'Extend');
+
+  /// Whether Extend was built, as of the last frame.
+  bool _canExtend = false;
+
+  @override
+  void dispose() {
+    _row.dispose();
+    _endPause.dispose();
+    _extend.dispose();
+    super.dispose();
+  }
+
+  /// Gives [node] the focus once the frame that builds it is done.
+  void _focusAfterFrame(FocusNode node) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && node.context != null) node.requestFocus();
+      });
+
+  void _end(LocalDate today) {
+    final hadFocus = _endPause.hasFocus;
+    ref.read(progressProvider.notifier).endPause(today);
+    showStatus(context, context.l10n.pauseEnded);
+    if (hadFocus) _focusAfterFrame(_row);
+  }
+
+  Future<void> _extendPause(LocalDate end) async {
+    final hadFocus = _extend.hasFocus;
+    await _showExtendPauseDialog(context, ref, end);
+    if (!mounted || !hadFocus) return;
+    // The focus comes back to Extend from the dialog, unless Extend is gone.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_canExtend && ref.read(isPausedProvider)) _endPause.requestFocus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final paused = ref.watch(isPausedProvider);
     if (!paused) {
@@ -492,6 +561,7 @@ class _LifeHappens extends ConsumerWidget {
             icon: Icons.pause_circle_outline,
             title: l.pauseTitle,
             subtitle: l.pauseRowBody,
+            focusNode: _row,
             onTap: () => showPauseDialog(context, ref),
           ),
         ],
@@ -502,7 +572,7 @@ class _LifeHappens extends ConsumerWidget {
     final scheme = theme.colorScheme;
     final today = ref.watch(todayProvider);
     final pause = ref.watch(progressProvider.select((p) => p.pauses)).firstWhere((p) => p.contains(today));
-    final canExtend = _extensions(today, pause.end).isNotEmpty;
+    final canExtend = _canExtend = _extensions(today, pause.end).isNotEmpty;
     return PaperGroup(
       children: [
         Padding(
@@ -532,16 +602,15 @@ class _LifeHappens extends ConsumerWidget {
                       runSpacing: Space.sm,
                       children: [
                         FilledButton.tonal(
+                          focusNode: _endPause,
                           style: AppButtons.tonal(context),
-                          onPressed: () {
-                            ref.read(progressProvider.notifier).endPause(today);
-                            showStatus(context, l.pauseEnded);
-                          },
+                          onPressed: () => _end(today),
                           child: Text(l.endPause),
                         ),
                         if (canExtend)
                           TextButton(
-                            onPressed: () => _showExtendPauseDialog(context, ref, pause.end),
+                            focusNode: _extend,
+                            onPressed: () => _extendPause(pause.end),
                             child: Text(l.extendPause),
                           ),
                       ],
@@ -600,7 +669,7 @@ Future<void> _showExtendPauseDialog(BuildContext context, WidgetRef ref, LocalDa
                 ),
                 const Gap(Space.lg),
                 Text(
-                  l.pauseStarted(names.dateLong(end.addDays(days))),
+                  l.extendPauseUntil(names.dateLong(end.addDays(days))),
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ],

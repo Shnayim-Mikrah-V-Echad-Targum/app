@@ -46,8 +46,17 @@ void main() {
 
   group('computeMilestones', () {
     /// The milestones of [progress], with no weeks evaluated.
-    List<Milestone> milestonesOf(Map<String, WeekProgress> progress, {StreakSummary summary = StreakSummary.empty}) =>
-        computeMilestones(summary: summary, progress: progress, doneByCycle: parshiyotDoneByCycle(progress));
+    List<Milestone> milestonesOf(
+      Map<String, WeekProgress> progress, {
+      StreakSummary summary = StreakSummary.empty,
+      LocalDate? joinDate,
+    }) =>
+        computeMilestones(
+          summary: summary,
+          progress: progress,
+          doneByCycle: parshiyotDoneByCycle(progress),
+          joinDate: joinDate,
+        );
     List<Milestone> achieved(List<Milestone> all, MilestoneKind kind) =>
         all.where((m) => m.kind == kind && m.achieved).toList();
 
@@ -125,6 +134,72 @@ void main() {
       expect(sevenDays.achievedOn, kept[6], reason: 'the seventh day on track');
       expect(all.singleWhere((m) => m.kind == MilestoneKind.firstAliyah).achievedOn, LocalDate(2026, 10, 5));
       expect(all.where((m) => m.kind == MilestoneKind.parshaStreak && m.value == 13).single.achieved, isFalse);
+    });
+  });
+
+  group('welcome back', () {
+    const planner = ReadingPlanner(schedule: ParshaSchedule(israel: false));
+    const engine = StreakEngine(planner: planner);
+
+    /// The week of [anyDay], each aliyah read on its planned day, or all on
+    /// [on].
+    MapEntry<String, WeekProgress> week(LocalDate anyDay, {LocalDate? on}) {
+      final plan = planner.planFor(planner.schedule.weekFor(anyDay));
+      var w = WeekProgress(weekId: plan.weekId);
+      for (final day in plan.days) {
+        for (final a in day.aliyot) {
+          w = w.withAliyah(a, on ?? day.date);
+        }
+      }
+      return MapEntry(plan.weekId, w);
+    }
+
+    Milestone comeback(Map<String, WeekProgress> progress, {required LocalDate joinDate, required LocalDate today, List<Pause> pauses = const []}) {
+      final summary = engine.evaluate(progress: progress, joinDate: joinDate, today: today, pauses: pauses);
+      return computeMilestones(
+        summary: summary,
+        progress: progress,
+        doneByCycle: parshiyotDoneByCycle(progress),
+        joinDate: joinDate,
+      ).singleWhere((m) => m.kind == MilestoneKind.comeback);
+    }
+
+    // Joined on Simchat Torah, the last day of Vezot HaBerakhah's week, and
+    // read Bereshit; or partway through Bereshit's week, left unfinished, and
+    // read Noach.
+    for (final (label, joined, first) in [
+      ('on Simchat Torah', LocalDate(2026, 10, 4), LocalDate(2026, 10, 5)),
+      ('midweek', LocalDate(2026, 10, 7), LocalDate(2026, 10, 12)),
+    ]) {
+      test('is not for a new reader who joined $label and finished a first parsha', () {
+        final progress = Map.fromEntries([week(first)]);
+        final summary = engine.evaluate(progress: progress, joinDate: joined, today: LocalDate(2026, 10, 20));
+        expect(summary.weeks.first.status, WeekStatus.transparent, reason: 'the week joined in');
+        expect(comeback(progress, joinDate: joined, today: LocalDate(2026, 10, 20)).achieved, isFalse);
+      });
+    }
+
+    test('is for a reader back after a missed week, on the day they finished', () {
+      // Bereshit read, Noach missed, Lech-Lecha read.
+      final lechLecha = week(LocalDate(2026, 10, 19));
+      final progress = Map.fromEntries([week(LocalDate(2026, 10, 5)), lechLecha]);
+      final m = comeback(progress, joinDate: LocalDate(2026, 10, 4), today: LocalDate(2026, 10, 28));
+      expect(m.achieved, isTrue);
+      expect(m.achievedOn, lechLecha.value.completedOn);
+    });
+
+    test('is for a reader back after a pause', () {
+      // Bereshit read, then a pause over the whole week of Noach.
+      final lechLecha = week(LocalDate(2026, 10, 19));
+      final progress = Map.fromEntries([week(LocalDate(2026, 10, 5)), lechLecha]);
+      final m = comeback(
+        progress,
+        joinDate: LocalDate(2026, 10, 4),
+        today: LocalDate(2026, 10, 28),
+        pauses: [Pause(LocalDate(2026, 10, 11), LocalDate(2026, 10, 17))],
+      );
+      expect(m.achieved, isTrue);
+      expect(m.achievedOn, lechLecha.value.completedOn);
     });
   });
 

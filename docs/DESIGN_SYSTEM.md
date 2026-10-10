@@ -543,6 +543,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max. Once the system text is enlarged, the subtitle is never cut short (WCAG 1.4.4).
 - Trailing: an optional value in bodyMedium onSurfaceVariant, then `Icons.chevron_right` 20 in outline (mirrors in RTL automatically).
   - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it. With a subtitle under them, the icon and chevron line up with the title's line too.
+  - A trailing button with a label (a TextButton, such as "About streaks" or "Sign in") goes with the title the same way: at the end of its line, or under it when the two don't fit, so that no word of the title ever breaks.
 - Tap via SeferInkWell.
 - Semantics: the row is one item, its text and its tap. A trailing control (a menu or text button) keeps an item of its own beside it, so both actions can be reached; a switch or checkbox that the row's tap also toggles merges into the row (`mergeTrailing`).
 
@@ -1104,10 +1105,10 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 
 In order:
 1. **LedgerCard** with "Longest" lines.
-2. **Grace PaperRow:** `shield_outlined` in grace, `graceAvailable(n)` = "1 grace day available", trailing TextButton `aboutStreaks`. That opens a sheet holding the two explanatory paragraphs, which leave the page.
+2. **Grace PaperRow:** `shield_outlined` in grace, `graceAvailable(n)` = "1 grace day available", trailing TextButton `aboutStreaks` (under the title at large text, §6.3). That opens a sheet holding the two explanatory paragraphs, which leave the page; the streak's names the reader's window after Shabbat (`streakExplainer`, `streakExplainerWednesday` or `streakExplainerNoWindow`).
 3. **This year**, a card:
    - Eyebrow `thisYear`;
-   - when the log holds more than one cycle, ChoiceChips (§6.6) of their years ("5786", "תשפ״ו" in the Hebrew UI) choose the year this card and the Torah map show; for an earlier one the eyebrow reads `earlierYear`, the year bar names its year to screen readers, and nothing in the map is current or still to come. The chips sit here rather than over the map, so the first thing they change is under them;
+   - when the log holds more than one cycle, ChoiceChips (§6.6) of their years ("5786", "תשפ״ו" in the Hebrew UI) choose the year this card and the Torah map show; for an earlier one the eyebrow reads `earlierYear`, the year bar names its year to screen readers, the map's heading names it too (`torahMapOfYear`, "Torah map · 5786", in plain type as it holds digits; "מפת התורה · תשפ״ו" as an eyebrow in the Hebrew UI), and nothing in the map is current or still to come. The chips sit here rather than over the map, so the first thing they change is under them;
    - headlineSmall `parshiyotOfYear(0, 54)`;
    - bodySmall "5787 · 50 verses read twice with Targum", the verses of the year shown;
    - YearBar.
@@ -1117,13 +1118,14 @@ In order:
 7. **Recent weeks:** a PaperGroup. Rows show the name in titleMedium, a status icon plus label in bodySmall, and the date end-aligned in bodySmall with tabular figures (with the year for a week of another year), then a chevron.
    - A week before the join date with nothing read is left out (the Vezot HaBerakhah of a reader who joined on Simchat Torah).
    - Ten rows, then a centred TextButton `showAllWeeks` ("Show all (45)") that shows the rest in place, passing the keyboard's focus to the first week it adds.
-8. **"Life happens":** a PaperRow with a pause icon and `pauseRowBody` that opens the existing pause flow. Its ChoiceChips follow §6.6. While a pause covers today, the row says `pausedBanner` under its title, over a Tonal `endPause` and a Text `extendPause`, which asks how many days more (1, 3, 7 or 14, as long as the pause then ends within 30 days of today) and shows the new end as the choice changes.
+8. **"Life happens":** a PaperRow with a pause icon and `pauseRowBody` that opens the existing pause flow. Its ChoiceChips follow §6.6. While a pause covers today, the row says `pausedBanner` under its title, over a Tonal `endPause` and a Text `extendPause`, which asks how many days more (1, 3, 7 or 14, as long as the pause then ends within 30 days of today) and shows the new end as the choice changes (`extendPauseUntil`, "The pause will end on …", until it is confirmed). The keyboard's focus moves on to what takes a button's place: the row once End pause ends the pause, End pause once an extension uses up the room for another.
 9. **Record** (replaces Milestones, progress_screen.dart:337-376):
    - GroupHeader `recordTitle`;
    - achieved items only, newest first (on the same day, a siyum before the book that completed it), dated by the day each was first reached and never stored (DESIGN.md §4);
    - each row: an 8 px lozenge where a row's icon sits, the title in bodyLarge, the date in bodySmall; hairlines inset 54;
    - a completed sefer adds "חֲזַק חֲזַק וְנִתְחַזֵּק" in FRL 500 17 in `secondary` under its row;
    - a reader who joined partway through a year has `milestoneSiyumFrom`, "Siyum from Parshat Vayera";
+   - "Welcome back" (`milestoneComeback`) follows a week missed, made up or paused, never the week the reader joined after it began;
    - with streak numbers hidden, the streak lengths are left out;
    - no locked items, trophies or counts of what remains.
 

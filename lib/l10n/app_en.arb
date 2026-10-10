@@ -746,14 +746,6 @@
       }
     }
   },
-  "thisCycle": "This year: {done} of 54 parshiyot",
-  "@thisCycle": {
-    "placeholders": {
-      "done": {
-        "type": "int"
-      }
-    }
-  },
   "versesRead": "{count} verses read twice with Targum",
   "@versesRead": {
     "placeholders": {
@@ -798,6 +790,16 @@
   "bookAbbrNumbers": "Num",
   "bookAbbrDeuteronomy": "Deu",
   "torahMap": "Torah map",
+  "torahMapOfYear": "Torah map · {year}",
+  "@torahMapOfYear": {
+    "description": "The Torah map's heading while it shows an earlier year, chosen by the year chips on Progress.",
+    "placeholders": {
+      "year": {
+        "type": "String",
+        "example": "5786"
+      }
+    }
+  },
   "torahMapHelp": "Each tile is one parsha of this year's cycle.",
   "torahMapBook": "{book}: {done} of {total} parshiyot",
   "@torahMapBook": {
@@ -878,6 +880,16 @@
   },
   "extendPauseTitle": "Extend the pause",
   "extendPauseBy": "Extend by",
+  "extendPauseUntil": "The pause will end on {date}.",
+  "@extendPauseUntil": {
+    "description": "In the dialog that extends a pause, before it is confirmed: when the pause would then end.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Tuesday, November 24"
+      }
+    }
+  },
   "@extendPauseBy": {
     "description": "Over choices of 1, 3, 7 or 14 days."
   },
@@ -915,6 +927,17 @@
   "streaksHidden": "Streak numbers are hidden. Your progress is still saved.",
   "graceExplainer": "Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.",
   "streakExplainer": "Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.",
+  "@streakExplainer": {
+    "description": "In the About streaks sheet, for a reader whose after-Shabbat window ends on Tuesday night (the default)."
+  },
+  "streakExplainerWednesday": "Your parsha streak counts portions finished before Shabbat — or by Wednesday night, which still counts. Shabbat and Yom Tov never break a streak.",
+  "@streakExplainerWednesday": {
+    "description": "As streakExplainer, for a reader whose after-Shabbat window ends on Wednesday night."
+  },
+  "streakExplainerNoWindow": "Your parsha streak counts portions finished before Shabbat. Shabbat and Yom Tov never break a streak.",
+  "@streakExplainerNoWindow": {
+    "description": "As streakExplainer, for a reader who has chosen no after-Shabbat window."
+  },
   "statusLegend": "Legend",
   "noHistory": "Your weeks will appear here as you read.",
   "milestoneFirstAliyah": "First aliyah",
@@ -933,14 +956,6 @@
     "placeholders": {
       "count": {
         "type": "int"
-      }
-    }
-  },
-  "milestoneSefer": "Sefer {book} complete — Chazak!",
-  "@milestoneSefer": {
-    "placeholders": {
-      "book": {
-        "type": "String"
       }
     }
   },

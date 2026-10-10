@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
@@ -325,6 +326,67 @@ void main() {
     expect(tester.widget<Text>(find.text('Questions & answers')).style, text.titleMedium);
     expect(tester.widget<Text>(find.text('Ask about a verse, a Targum or a Rashi.')).style, text.bodySmall);
   });
+
+  testWidgets('a style given in part keeps the rest of the row\'s own', (tester) async {
+    await pumpThemed(
+      tester,
+      const SizedBox(
+        width: 400,
+        child: PaperRow(
+          title: 'Reading',
+          titleStyle: TextStyle(fontWeight: FontWeight.w700),
+          subtitle: 'Location and plan',
+          subtitleStyle: TextStyle(fontStyle: FontStyle.italic),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    final context = tester.element(find.byType(PaperRow));
+    final text = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final title = tester.widget<Text>(find.text('Reading')).style!;
+    expect((title.fontSize, title.fontWeight, title.color), (text.bodyLarge!.fontSize, FontWeight.w700, scheme.onSurface));
+    final subtitle = tester.widget<Text>(find.text('Location and plan')).style!;
+    expect((subtitle.fontSize, subtitle.fontStyle, subtitle.color), (text.bodyMedium!.fontSize, FontStyle.italic, scheme.onSurfaceVariant));
+  });
+
+  for (final hebrew in [false, true]) {
+    testWidgets('${hebrew ? 'he' : 'en'}: a labelled button ends the title\'s line, or goes under it at 200%', (tester) async {
+      // In the test font, whose every letter is as wide as it is high.
+      Future<void> pump(double textScale) => pumpThemed(
+            tester,
+            Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: textScale == 1 ? 700 : 400,
+                child: PaperGroup(children: [
+                  PaperRow(
+                    icon: Icons.shield_outlined,
+                    title: '1 grace day available',
+                    trailing: TextButton(onPressed: () {}, child: const Text('About streaks')),
+                  ),
+                ]),
+              ),
+            ),
+            hebrew: hebrew,
+            textScale: textScale,
+          );
+      await pump(1);
+      final title = tester.getRect(find.text('1 grace day available'));
+      final button = tester.getRect(find.byType(TextButton));
+      expect(button.center.dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+      // At the row's end, 12 in, as a trailing control ends.
+      final row = tester.getRect(find.byType(PaperRow));
+      expect(hebrew ? button.left - row.left : row.right - button.right, 12);
+
+      await pump(2);
+      expect(tester.takeException(), isNull);
+      final paragraph = tester.renderObject<RenderParagraph>(find.text('1 grace day available'));
+      expect(paragraph.size.width, greaterThanOrEqualTo(paragraph.getMinIntrinsicWidth(double.infinity) - 0.5),
+          reason: 'no word broken');
+      expect(tester.getRect(find.byType(TextButton)).top, greaterThanOrEqualTo(tester.getRect(find.text('1 grace day available')).bottom - 1));
+    });
+  }
 
   testWidgets('the help icon keeps its question mark the right way round in Hebrew', (tester) async {
     await pumpThemed(tester, const PaperRow(icon: Icons.help_outline, title: 'שאלות ותשובות'), hebrew: true);
