@@ -300,6 +300,39 @@ void main() {
     expect(await maxLines(2), isNull);
   });
 
+  testWidgets('a row may set its title and subtitle in other styles, as the forums do', (tester) async {
+    late TextTheme text;
+    await pumpThemed(
+      tester,
+      Builder(builder: (context) {
+        text = Theme.of(context).textTheme;
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 400,
+            child: PaperRow(
+              icon: Icons.help_outline,
+              title: 'Questions & answers',
+              titleStyle: text.titleMedium,
+              subtitle: 'Ask about a verse, a Targum or a Rashi.',
+              subtitleStyle: text.bodySmall,
+              onTap: () {},
+            ),
+          ),
+        );
+      }),
+    );
+    expect(tester.widget<Text>(find.text('Questions & answers')).style, text.titleMedium);
+    expect(tester.widget<Text>(find.text('Ask about a verse, a Targum or a Rashi.')).style, text.bodySmall);
+  });
+
+  testWidgets('the help icon keeps its question mark the right way round in Hebrew', (tester) async {
+    await pumpThemed(tester, const PaperRow(icon: Icons.help_outline, title: 'שאלות ותשובות'), hebrew: true);
+    final icon = find.byIcon(Icons.help_outline);
+    expect(tester.widget<Icon>(icon).textDirection, TextDirection.ltr);
+    expect(find.descendant(of: icon, matching: find.byType(Transform)), findsNothing);
+  });
+
   group('GroupHeader', () {
     for (final hebrew in [false, true]) {
       testWidgets('an eyebrow heading, 28 above, 8 below, inset 4 (${hebrew ? 'he' : 'en'})', (tester) async {

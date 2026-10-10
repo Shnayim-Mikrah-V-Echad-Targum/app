@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/focus.dart';
 import '../theme/sefer_colors.dart';
+import 'app_icon.dart';
 import 'ornaments.dart';
 
 /// Rows on one sheet of paper (docs/DESIGN_SYSTEM.md §6.3): a card with no
@@ -121,6 +122,8 @@ class PaperRow extends StatelessWidget {
     this.iconColor,
     required this.title,
     this.subtitle,
+    this.titleStyle,
+    this.subtitleStyle,
     this.value,
     this.trailing,
     this.mergeTrailing = false,
@@ -137,6 +140,13 @@ class PaperRow extends StatelessWidget {
 
   /// At most two lines, unless the text is enlarged.
   final String? subtitle;
+
+  /// bodyLarge in onSurface unless given: a list of places to go, such as
+  /// the forums, sets its titles in titleMedium.
+  final TextStyle? titleStyle;
+
+  /// bodyMedium in onSurfaceVariant unless given.
+  final TextStyle? subtitleStyle;
 
   /// The current setting, such as a language, at the end of the row.
   final String? value;
@@ -163,7 +173,7 @@ class PaperRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
     final muted = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
-    final titleStyle = text.bodyLarge!.copyWith(color: scheme.onSurface);
+    final titleStyle = this.titleStyle ?? text.bodyLarge!.copyWith(color: scheme.onSurface);
     final end = <Widget>[
       ?trailing,
       if (chevron) Icon(Icons.chevron_right, size: 20, color: scheme.outline),
@@ -196,7 +206,7 @@ class PaperRow extends StatelessWidget {
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     heightFactor: 1,
-                    child: Icon(icon, size: 22, color: iconColor ?? scheme.onSurfaceVariant),
+                    child: AppIcon(icon!, size: 22, color: iconColor ?? scheme.onSurfaceVariant),
                   ),
                   AlignmentDirectional.centerStart,
                 ),
@@ -223,7 +233,7 @@ class PaperRow extends StatelessWidget {
                   if (subtitle != null)
                     Text(
                       subtitle!,
-                      style: muted,
+                      style: subtitleStyle ?? muted,
                       maxLines: enlarged ? null : 2,
                       overflow: enlarged ? null : TextOverflow.ellipsis,
                     ),
