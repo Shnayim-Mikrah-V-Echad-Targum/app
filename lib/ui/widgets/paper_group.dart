@@ -122,6 +122,7 @@ class PaperRow extends StatelessWidget {
     this.trailing,
     this.mergeTrailing = false,
     this.onTap,
+    this.selected,
     bool? chevron,
   }) : chevron = chevron ?? onTap != null;
 
@@ -140,6 +141,11 @@ class PaperRow extends StatelessWidget {
   final bool mergeTrailing;
 
   final VoidCallback? onTap;
+
+  /// Whether the row is the one chosen of a list, for screen readers; null
+  /// for a row that isn't one of a choice.
+  final bool? selected;
+
   final bool chevron;
 
   static const double _start = 16;
@@ -233,6 +239,7 @@ class PaperRow extends StatelessWidget {
       // control below keeps its own (unless merged, below).
       container: true,
       button: onTap != null,
+      selected: selected,
       child: onTap == null
           ? content
           : SeferInkWell(

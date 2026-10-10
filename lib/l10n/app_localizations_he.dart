@@ -933,7 +933,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get shabbatNoSunset =>
-      'השמש אינה שוקעת שם בשבת הקרובה. על הזמנים יש לשאול רב.';
+      'אין שם שקיעה בשבת הקרובה. על הזמנים יש לשאול רב.';
+
+  @override
+  String get shabbatTimesUnavailable =>
+      'המכשיר אינו יודע מה השעה בעיר הזו, ולכן אי אפשר להציג את הזמנים בה.';
 
   @override
   String get cityPickerTitle => 'בחירת עיר';
@@ -957,9 +961,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get cityNearYou => 'באזור הזמן שלך';
 
   @override
-  String get citySelected => 'נבחרה';
-
-  @override
   String cityNoResults(String query) {
     return 'לא נמצאה עיר בשם ״$query״.';
   }
@@ -977,8 +978,13 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String cityResultsMore(int shown, int count) {
+    return 'מוצגות $shown התוצאות הראשונות מתוך $count. אפשר להקליד עוד מהשם כדי למצוא את האחרות.';
+  }
+
+  @override
   String get cityListNote =>
-      'ברשימה כל מקום שגרים בו 100,000 איש ומעלה, וכל הערים בישראל. אם העיר שלך אינה ברשימה, אפשר לבחור את הקרובה אליה.';
+      'ברשימה כל מקום שגרים בו 100,000 איש ומעלה, כל הערים בישראל והיישובים הישראליים הגדולים שמעבר לקו הירוק. אם המקום שלך אינו ברשימה, אפשר לבחור את הקרוב אליו; מעבר לקו הירוק, את היישוב הישראלי הקרוב.';
 
   @override
   String get searchTitle => 'חיפוש בתורה';

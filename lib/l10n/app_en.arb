@@ -716,7 +716,14 @@
       }
     }
   },
-  "shabbatNoSunset": "The sun doesn't set there this Shabbat. Ask your rav about the times.",
+  "shabbatNoSunset": "There is no sunset there this Shabbat. Ask your rav about the times.",
+  "@shabbatNoSunset": {
+    "description": "Under the city in Settings, near the poles, where the sun neither sets nor rises on some days (the midnight sun, or the polar night)."
+  },
+  "shabbatTimesUnavailable": "This device can't tell the time in that city, so its times can't be shown.",
+  "@shabbatTimesUnavailable": {
+    "description": "Under the city in Settings, in the rare case that the device doesn't know the city's time zone."
+  },
   "cityPickerTitle": "Choose a city",
   "citySearchLabel": "Search for a city",
   "citySearchClear": "Clear search",
@@ -724,7 +731,6 @@
   "cityNone": "No city",
   "cityNoneDesc": "Shabbat times aren't shown",
   "cityNearYou": "In your time zone",
-  "citySelected": "Selected",
   "cityNoResults": "No city matches “{query}”.",
   "@cityNoResults": {
     "description": "Shown when a search of the city list finds nothing. query is what the reader typed.",
@@ -743,7 +749,19 @@
       }
     }
   },
-  "cityListNote": "The list has every place of 100,000 people or more, and every city in Israel. If yours isn't there, choose the nearest one.",
+  "cityResultsMore": "The first {shown} of {count} matches are listed. Type more of the name to find the others.",
+  "@cityResultsMore": {
+    "description": "Under a long list of city search results, which stops at the first matches.",
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cityListNote": "The list has every place of 100,000 people or more, every city in Israel, and the larger Israeli localities beyond the Green Line. If yours isn't there, choose the nearest one; beyond the Green Line, the nearest Israeli locality.",
   "searchTitle": "Search the Torah",
   "searchFieldLabel": "A word or phrase",
   "searchClear": "Clear search",

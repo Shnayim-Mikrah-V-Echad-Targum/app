@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -16,8 +17,14 @@ class CityDirectory {
 
   /// Reads the list. The text isn't kept in the bundle's cache: the parsed
   /// list is what's kept, by whoever holds it.
-  static Future<CityDirectory> load([AssetBundle? bundle]) async =>
-      CityDirectory.parse(await (bundle ?? rootBundle).loadString('assets/data/cities.json', cache: false));
+  ///
+  /// Parsing and indexing some 6,000 places takes a few hundred milliseconds
+  /// on a phone, so it runs on another isolate, off the UI's (on the web,
+  /// which has no other, in place).
+  static Future<CityDirectory> load([AssetBundle? bundle]) async {
+    final json = await (bundle ?? rootBundle).loadString('assets/data/cities.json', cache: false);
+    return compute(CityDirectory.parse, json, debugLabel: 'CityDirectory.parse');
+  }
 
   factory CityDirectory.parse(String json) {
     final j = jsonDecode(json) as Map<String, dynamic>;
@@ -64,6 +71,17 @@ class CityDirectory {
     found.sort((a, b) => a.$1 != b.$1 ? a.$1 - b.$1 : a.$2 - b.$2);
     return [for (final (_, i) in found.take(limit)) cities[i]];
   }
+
+  /// How many places [search] finds for [query], without its limit.
+  int count(String query) {
+    final q = foldForSearch(query);
+    if (q.isEmpty) return 0;
+    return _keys.where((keys) => keys.rank(q) != null).length;
+  }
+
+  /// Whether [query] is something to search for: one that folds to nothing,
+  /// such as a lone ו or י, or punctuation, is treated as no query at all.
+  static bool isQuery(String query) => foldForSearch(query).isNotEmpty;
 
   /// The largest places on the clock of [timeZone], the device's: the places
   /// in that zone, or for a zone the list doesn't use (an old name such as
@@ -141,13 +159,14 @@ class _Folded {
 /// punctuation or spaces, and with the letters that transliterations and
 /// Hebrew spellings vary on made alike: "ch" and "kh" as "h", "q" and "c" as
 /// "k", "y" and "j" as "i", "w" as "v", "tz" and "ts" as "z", doubled letters
-/// once; in Hebrew, without ו and י, and with final letters as other letters.
+/// once; in Hebrew, without ו and י, or an א after the first letter (פאריז and
+/// פריז, שאנגחאי and שנגחאי), and with final letters as other letters.
 String foldForSearch(String text) {
   final out = StringBuffer();
   for (final rune in text.toLowerCase().runes) {
     final char = String.fromCharCode(rune);
     if (rune >= 0x05D0 && rune <= 0x05EA) {
-      if (char != 'ו' && char != 'י') out.write(_hebrewFinals[char] ?? char);
+      if (char != 'ו' && char != 'י' && (char != 'א' || out.isEmpty)) out.write(_hebrewFinals[char] ?? char);
     } else if (_plain.hasMatch(char)) {
       out.write(char);
     } else if (_accents[char] case final plain?) {

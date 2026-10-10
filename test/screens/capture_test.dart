@@ -30,6 +30,7 @@ import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
+import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -95,6 +96,7 @@ const _screens = {
   's_reading_city': '/settings/reading',
   'city': '/settings/reading/city',
   'city_search': '/settings/reading/city',
+  'city_many': '/settings/reading/city',
   'city_none': '/settings/reading/city',
   's_display': '/settings/display',
   's_fonts': '/settings/display',
@@ -188,6 +190,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_reading_city': (s) => s.copyWith(city: _jerusalem),
   'city': (s) => s.copyWith(city: _jerusalem),
   'city_search': (s) => s.copyWith(city: _jerusalem),
+  'city_many': (s) => s.copyWith(city: _jerusalem),
 };
 
 const _jerusalem = City(
@@ -204,7 +207,7 @@ const _jerusalem = City(
 /// Providers replaced for a screen: the device's time zone, which suggests
 /// cities.
 final _screenOverrides = <String, List<Override>>{
-  for (final screen in ['city', 'city_search', 'city_none'])
+  for (final screen in ['city', 'city_search', 'city_many', 'city_none'])
     screen: [deviceTimeZoneProvider.overrideWith((ref) async => 'Asia/Jerusalem')],
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
 };
@@ -398,6 +401,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'city_none': (tester) async {
     await _untilLoaded(tester);
     await tester.enterText(find.byType(TextField), 'Atlantis');
+  },
+  // More matches than are listed: the note at the end of the list.
+  'city_many': (tester) async {
+    await _untilLoaded(tester);
+    await tester.enterText(find.byType(TextField), tester.element(find.byType(TextField)).isHebrewUi ? 'בר' : 'an');
+    await tester.pump();
+    await _scrollToEnd(tester);
   },
   'search': (tester) => _search(tester, ''),
   'search_results': (tester) => _search(tester, 'ויצא יעקב'),

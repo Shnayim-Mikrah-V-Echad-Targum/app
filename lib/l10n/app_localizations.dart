@@ -1610,11 +1610,17 @@ abstract class AppLocalizations {
   /// **'Candle-lighting {candles}'**
   String shabbatCandlesOnly(String candles);
 
-  /// No description provided for @shabbatNoSunset.
+  /// Under the city in Settings, near the poles, where the sun neither sets nor rises on some days (the midnight sun, or the polar night).
   ///
   /// In en, this message translates to:
-  /// **'The sun doesn\'t set there this Shabbat. Ask your rav about the times.'**
+  /// **'There is no sunset there this Shabbat. Ask your rav about the times.'**
   String get shabbatNoSunset;
+
+  /// Under the city in Settings, in the rare case that the device doesn't know the city's time zone.
+  ///
+  /// In en, this message translates to:
+  /// **'This device can\'t tell the time in that city, so its times can\'t be shown.'**
+  String get shabbatTimesUnavailable;
 
   /// No description provided for @cityPickerTitle.
   ///
@@ -1658,12 +1664,6 @@ abstract class AppLocalizations {
   /// **'In your time zone'**
   String get cityNearYou;
 
-  /// No description provided for @citySelected.
-  ///
-  /// In en, this message translates to:
-  /// **'Selected'**
-  String get citySelected;
-
   /// Shown when a search of the city list finds nothing. query is what the reader typed.
   ///
   /// In en, this message translates to:
@@ -1676,10 +1676,16 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No cities found} =1{1 city found} other{{count} cities found}}'**
   String cityResultsCount(int count);
 
+  /// Under a long list of city search results, which stops at the first matches.
+  ///
+  /// In en, this message translates to:
+  /// **'The first {shown} of {count} matches are listed. Type more of the name to find the others.'**
+  String cityResultsMore(int shown, int count);
+
   /// No description provided for @cityListNote.
   ///
   /// In en, this message translates to:
-  /// **'The list has every place of 100,000 people or more, and every city in Israel. If yours isn\'t there, choose the nearest one.'**
+  /// **'The list has every place of 100,000 people or more, every city in Israel, and the larger Israeli localities beyond the Green Line. If yours isn\'t there, choose the nearest one; beyond the Green Line, the nearest Israeli locality.'**
   String get cityListNote;
 
   /// No description provided for @searchTitle.

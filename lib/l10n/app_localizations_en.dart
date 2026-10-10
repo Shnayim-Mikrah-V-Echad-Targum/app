@@ -934,7 +934,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shabbatNoSunset =>
-      'The sun doesn\'t set there this Shabbat. Ask your rav about the times.';
+      'There is no sunset there this Shabbat. Ask your rav about the times.';
+
+  @override
+  String get shabbatTimesUnavailable =>
+      'This device can\'t tell the time in that city, so its times can\'t be shown.';
 
   @override
   String get cityPickerTitle => 'Choose a city';
@@ -958,9 +962,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cityNearYou => 'In your time zone';
 
   @override
-  String get citySelected => 'Selected';
-
-  @override
   String cityNoResults(String query) {
     return 'No city matches “$query”.';
   }
@@ -978,8 +979,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String cityResultsMore(int shown, int count) {
+    return 'The first $shown of $count matches are listed. Type more of the name to find the others.';
+  }
+
+  @override
   String get cityListNote =>
-      'The list has every place of 100,000 people or more, and every city in Israel. If yours isn\'t there, choose the nearest one.';
+      'The list has every place of 100,000 people or more, every city in Israel, and the larger Israeli localities beyond the Green Line. If yours isn\'t there, choose the nearest one; beyond the Green Line, the nearest Israeli locality.';
 
   @override
   String get searchTitle => 'Search the Torah';

@@ -13,13 +13,13 @@ import 'local_date.dart';
 /// the usual allowance for refraction, as Hebcal and most calendars have
 /// them.
 class Zmanim {
-  const Zmanim._(this.date, {this.sunrise, this.sunset, this.candleLighting, this.havdalah});
+  const Zmanim._(this.date, {this.sunrise, this.sunset, this.candleLighting, this.havdalah, this.timeZoneKnown = true});
 
   /// The times of [city] on [date]. Every time is null in a time zone the
-  /// device doesn't know.
+  /// device doesn't know ([timeZoneKnown]).
   factory Zmanim.of(City city, LocalDate date) {
     final location = timeZone(city.timeZone);
-    if (location == null) return Zmanim._(date);
+    if (location == null) return Zmanim._(date, timeZoneKnown: false);
     final lat = city.latitude, lon = city.longitude;
     // The UTC day whose noon at the place falls on [date] on its clock. It is
     // [date] itself unless the clock is far from the sun (Kiribati's, a day
@@ -44,6 +44,10 @@ class Zmanim {
   }
 
   final LocalDate date;
+
+  /// Whether the device knows the place's time zone, without which no time
+  /// can be given.
+  final bool timeZoneKnown;
 
   /// Null on a day the sun doesn't rise, or doesn't set, there: near the
   /// poles.

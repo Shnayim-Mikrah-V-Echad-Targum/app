@@ -39,14 +39,15 @@ class _CityPickerScreenState extends ConsumerState<CityPickerScreen> {
     context.pop();
   }
 
-  /// Tells a screen reader how many cities match, once typing pauses.
+  /// Tells a screen reader how many cities match, once typing pauses: all of
+  /// them, though only the first [CityDirectory.search] finds are listed.
   void _changed(CityDirectory? directory) {
     setState(() {});
     _announcement?.cancel();
-    if (directory == null || _query.text.trim().isEmpty) return;
+    if (directory == null || !CityDirectory.isQuery(_query.text)) return;
     _announcement = Timer(const Duration(milliseconds: 800), () {
       if (!mounted) return;
-      final count = directory.search(_query.text).length;
+      final count = directory.count(_query.text);
       SemanticsService.sendAnnouncement(
         View.of(context),
         context.l10n.cityResultsCount(count),
@@ -115,6 +116,9 @@ class _CityPickerScreenState extends ConsumerState<CityPickerScreen> {
 class _Cities extends ConsumerWidget {
   const _Cities({required this.directory, required this.query, required this.onChoose});
 
+  /// How many matches are listed, best first.
+  static const _limit = 50;
+
   final CityDirectory directory;
   final String query;
   final ValueChanged<City?> onChoose;
@@ -134,15 +138,18 @@ class _Cities extends ConsumerWidget {
       return PaperRow(
         title: city.name(hebrew: he),
         subtitle: directory.placeOf(city, hebrew: he),
-        trailing: selected ? Icon(Icons.check, color: theme.colorScheme.primary, semanticLabel: l.citySelected) : null,
-        mergeTrailing: true,
+        // The row says it is selected; the check is what shows it.
+        selected: selected,
+        trailing: selected ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
         chevron: false,
         onTap: () => onChoose(city),
       );
     }
 
-    if (query.isNotEmpty) {
-      final found = directory.search(query);
+    // A query of nothing that search reads, such as a lone י, is no query.
+    if (CityDirectory.isQuery(query)) {
+      final found = directory.search(query, limit: _limit);
+      final all = found.length < _limit ? found.length : directory.count(query);
       return PageBody(
         children: [
           const Gap(16),
@@ -154,6 +161,14 @@ class _Cities extends ConsumerWidget {
             )
           else
             PaperGroup(children: [for (final c in found) row(c)]),
+          if (all > found.length)
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(4, 16, 4, 0),
+              child: Text(
+                l.cityResultsMore(found.length, all),
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ),
           note,
         ],
       );

@@ -23,8 +23,9 @@ class ShabbatTimesSetting extends ConsumerWidget {
     final l = context.l10n;
     final city = ref.watch(settingsProvider.select((s) => s.city));
     final times = ref.watch(shabbatTimesProvider);
-    // Loads the list while the page is open, so that it opens at once.
-    ref.watch(cityDirectoryProvider);
+    // Loads the list, off the UI's isolate, and keeps it while the page is
+    // open, so that the list of cities opens at once.
+    ref.listen(cityDirectoryProvider, (_, _) {});
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -60,7 +61,9 @@ class ShabbatTimesSetting extends ConsumerWidget {
 /// from Friday's times and Shabbat's.
 String shabbatTimesSummary(BuildContext context, Zmanim friday, Zmanim shabbat) {
   final l = context.l10n;
+  if (!friday.timeZoneKnown) return l.shabbatTimesUnavailable;
   final candles = friday.candleLighting;
+  // Near the poles: the midnight sun, or the polar night.
   if (candles == null) return l.shabbatNoSunset;
   final ends = shabbat.havdalah;
   return ends == null
@@ -70,7 +73,5 @@ String shabbatTimesSummary(BuildContext context, Zmanim friday, Zmanim shabbat) 
 
 /// [time] as the UI writes a time of day, on the clock of its own place. In
 /// Hebrew it is isolated as a left-to-right run.
-String clockTime(BuildContext context, tz.TZDateTime time) {
-  final text = Names(context).time(time.hour * 60 + time.minute);
-  return context.isHebrewUi ? '\u2066$text\u2069' : text;
-}
+String clockTime(BuildContext context, tz.TZDateTime time) =>
+    context.ltrRun(Names(context).time(time.hour * 60 + time.minute));

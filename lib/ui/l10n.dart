@@ -7,12 +7,24 @@ import '../core/text/hebrew_text.dart';
 import '../data/models/parsha.dart';
 import '../l10n/app_localizations.dart';
 
+/// [s] as a left-to-right isolate, between U+2066 and U+2069
+/// (docs/DESIGN_SYSTEM.md §4.6). Inside Hebrew text a Latin run, such as a
+/// reference ("3:22–4:18"), a range of years, an email, a URL or
+/// "@hebcal/leyning", then keeps its own order, and the punctuation either
+/// side of it stays with the Hebrew sentence.
+String ltr(String s) => '\u2066$s\u2069';
+
 extension L10nContext on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 
   bool get isHebrewUi => Localizations.localeOf(this).languageCode == 'he';
 
   String get localeName => Localizations.localeOf(this).toLanguageTag();
+
+  /// [s], a Latin run put into a sentence in the UI's language: isolated by
+  /// [ltr] in the Hebrew UI, and as it is in the English UI, where it already
+  /// runs that way.
+  String ltrRun(String s) => isHebrewUi ? ltr(s) : s;
 }
 
 /// Localized names and dates.

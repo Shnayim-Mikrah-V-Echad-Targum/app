@@ -10,16 +10,16 @@
 // selected places.
 //
 // The list holds every place of 100,000 people or more, and every Israeli
-// city: Israeli places of 10,000 or more, and a few smaller ones readers look
-// for. Each has its English and Hebrew names, coordinates, IANA time zone and
+// city: Israeli places of 10,000 or more, and smaller ones readers look for. Each has its English and Hebrew names, coordinates, IANA time zone and
 // how many minutes before sunset candles are lit. It is sorted by population,
 // largest first, so the app can rank search results by the order alone.
 //
 // Changes from GeoNames, all listed below: Israeli names are written as
-// Israelis write them, sections of a city that GeoNames lists apart are
-// left out, Hebrew names are picked from the alternate names (preferring
-// Hebrew spellings to Yiddish ones), and Israeli localities beyond the Green
-// Line keep Israel time, as their residents do.
+// Israelis write them, sections of a city that GeoNames lists apart are left
+// out (in Israel and in the cities abroad with Jewish communities), Hebrew
+// names are picked from the alternate names (preferring Hebrew spellings to
+// Yiddish ones), and Israeli localities beyond the Green Line of 2,000 people
+// or more are listed and keep Israel time, as their residents do.
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -196,12 +196,50 @@ const IL_NAMES = {
   294545: ['Kfar Chabad', 'כפר חב״ד'],
   8141842: ['Harish', 'חריש'],
   294166: ['Mitzpe Ramon', 'מצפה רמון'],
+  // Israeli localities beyond the Green Line of 2,000 people or more (the
+  // larger ones are listed above): their nearest listed place would
+  // otherwise be Hebron or Nablus, whose clock and custom differ.
+  8199420: ['Oranit', 'אורנית'],
+  283046: ['Kochav Yaakov', 'כוכב יעקב'],
+  285101: ['Alfei Menashe', 'אלפי מנשה'],
+  282431: ['Karnei Shomron', 'קרני שומרון'],
+  12156437: ['Beit El', 'בית אל'],
+  11979646: ['Geva Binyamin (Adam)', 'גבע בנימין (אדם)'],
+  284279: ['Beit Aryeh-Ofarim', 'בית אריה-עופרים'],
+  282353: ['Kedumim', 'קדומים'],
+  8199392: ['Talmon', 'טלמון'],
+  283314: ['Kfar Adumim', 'כפר אדומים'],
+  281285: ['Alei Zahav', 'עלי זהב'],
+  282597: ['Tekoa', 'תקוע'],
+  283986: ['Elkana', 'אלקנה'],
+  283610: ['Immanuel', 'עמנואל'],
+  282582: ['Har Adar', 'הר אדר'],
+  11979628: ['Alon Shvut', 'אלון שבות'],
+  282489: ['Ofra', 'עפרה'],
+  8199382: ['Hashmonaim', 'חשמונאים'],
+  8199422: ['Revava', 'רבבה'],
+  282536: ['Neve Daniel', 'נווה דניאל'],
+  283047: ['Kochav HaShachar', 'כוכב השחר'],
 };
 
-/** Israeli places under [MIN_POPULATION_IL] that are listed all the same. */
-const IL_EXTRA = [282993, 284375, 8199386, 283991, 443093, 293821, 294545, 8141842, 294166];
+/** Israeli localities beyond the Green Line, listed whatever their size. */
+const BEYOND_GREEN_LINE = [
+  282993, 284375, 8199386, 283991, 8199420, 283046, 285101, 282431, 12156437, 11979646, 284279, 282353, 8199392,
+  283314, 281285, 282597, 283986, 283610, 282582, 11979628, 282489, 8199382, 8199422, 282536, 283047,
+];
 
-/** Sections of a city, and duplicates, that GeoNames lists as places. */
+/** Israeli places under [MIN_POPULATION_IL] that are listed all the same. */
+const IL_EXTRA = [...BEYOND_GREEN_LINE, 443093, 293821, 294545, 8141842, 294166];
+
+/**
+ * Sections of a city, and duplicates, that GeoNames lists as places: in
+ * Israel, and in the cities abroad with Jewish communities, where they would
+ * crowd the city's own name out of the suggestions for its time zone and out
+ * of searches. (GeoNames' cities carry no feature code to tell a district
+ * from a town, and nearness alone won't do: New South Memphis is listed as
+ * larger than Memphis.) Towns of their own beside a city stay, as do New
+ * York's boroughs, which people give as their place.
+ */
 const SKIP = new Set([
   7498240, // West Jerusalem
   7303419, // East Jerusalem
@@ -211,14 +249,73 @@ const SKIP = new Set([
   8478264, // Herzliya Pituah, Herzliya
   12156557, // Binyamina-Givat Ada, listed twice
   293207, // Yehud, part of Yehud-Monosson
+  // Saint Petersburg
+  8504951, 8504952, 8504960, 8504949, 8504953, 8504948, 8504958,
+  // Moscow
+  529237, 470451, 468809, 532535, 549479, 576432, 560465, 487150, 462745, 539110, 6418220, 517121, 537832,
+  6418146, 502971, 461835, 515027, 555129, 483551, 536164, 473972, 542634, 461740, 481453, 484912, 516264,
+  569273, 554787, 575505, 495136, 571741, 508751, 517161, 483826,
+  // Kyiv, Kharkiv, Odesa, Dnipro
+  13546519, 13546518, 13580095, 688758, 8519916, 13546521, 11778464, 13580316, 13580094, 13535745,
+  6722148, 13561808, 12500938, 9983718, 700022,
+  // Berlin
+  2864695, 2884161, 2852217, 2940187, 2836788, 2924573, 2873074, 6545310, 2808473,
+  // Hamburg
+  2911285, 8354626, 2911288, 2911287, 2911293, 2911296, 2910685, 7290243,
+  // Cologne
+  2862375, 2852566, 8593863,
+  // Vienna
+  8063098, 11903636, 2779469, 2769359, 2765028,
+  // Budapest
+  3046446, 3054667, 7284824, 3042430, 7284842, 7284830, 3043470,
+  // Warsaw
+  764484, 6545348, 6545326, 755330, 776029, 776103, 757065, 776251,
+  // Helsinki, Stockholm, Tallinn
+  12747032, 2676209, 590775,
+  // London
+  2646003, 2634341, 11777624,
+  // Paris and Lyon
+  2970479, 2994540, 3029374, 3015772, 3029372, 12808673, 2988394, 3034610, 12808658, 12808663, 2986082, 2983854,
+  2989781, 6543969,
+  // Brussels
+  2803201, 2787149,
+  // Madrid
+  6544489, 6544493, 3112737, 3121969, 3124964, 8285534, 3120635, 6544488, 3108118, 6544494, 6544487, 6544491,
+  6544492, 6544490, 3125239, 3104748, 6544495, 6544099, 3116156,
+  // Barcelona
+  6544100, 6544105, 6544104, 6544103, 6252065, 6544102, 3110876, 3121245, 6544106,
+  // Istanbul
+  742394, 751324, 7627067, 738377, 738329, 747340, 7628416, 6947637, 747158, 739549, 737071, 6947639,
+  // Dublin
+  6697759,
+  // Toronto, Ottawa, Montreal
+  5950268, 6087029, 5962204, 8556295, 6094835, 13546323, 13546324, 13546319, 5882725, 13546325, 13546322,
+  13546316, 13546317,
+  // New York City's neighbourhoods
+  5142036, 5122520, 5115843, 5115985, 5143307, 5107464, 5109790, 8436486, 5137849, 5120034, 6332428, 5116495,
+  5110918, 5119167, 5113779,
+  // Boston, Memphis, Los Angeles, San Francisco, Phoenix
+  4951305, 4645421, 5357527, 5363748, 5336477, 5303929, 5551123,
+  // Mexico City
+  3526683, 3514674, 3514663, 3530139, 3515428, 3827409, 3827407, 3532497, 6957079, 3526700, 3827408, 3827406,
+  7280708, 3523760, 7280711,
+  // Buenos Aires, São Paulo, Rio de Janeiro
+  6693228, 3436077, 3427408, 6318632, 11962429, 11962392, 11962395, 3467722, 11962390, 3460103, 7614932,
+  11962431, 11962405, 6318546, 11962407, 11962398, 11962379, 3456225, 11962385, 11962381, 12377091, 3445061,
+  11962396, 11962419, 3461109, 8535094, 11962414, 6317077, 3445062, 11962403, 11962373, 11962406, 11962413,
+  11962401, 11962417, 10173001, 3473664,
+  // Melbourne, Auckland
+  10300648, 2185964, 2187404,
+  // Shanghai, Hong Kong
+  11072148, 1798524, 1798439, 1787375, 1787957, 1805701, 1785412, 1815611, 1808090, 1819609, 12747064, 1931681,
 ]);
 
 /**
- * Israeli localities beyond the Green Line, which GeoNames files under PS,
- * some with Asia/Hebron, whose daylight-saving dates differ from Israel's.
- * Their residents keep Israel time.
+ * Israeli localities beyond the Green Line, which GeoNames mostly files under
+ * PS, some with Asia/Hebron, whose daylight-saving dates differ from
+ * Israel's. Their residents keep Israel time.
  */
-const ISRAEL_TIME = new Set([282993, 284375, 8199386, 283991]);
+const ISRAEL_TIME = new Set(BEYOND_GREEN_LINE);
 
 /**
  * GeoNames gives Beitar Illit's Hebrew name to Battir, the village 3 km
@@ -267,7 +364,7 @@ const HE_NAMES = {
   4140963: 'וושינגטון',
   2165087: 'גולד קוסט',
   709930: 'דניפרו',
-  1796236: 'שנגחאי',
+  1796236: 'שאנגחאי',
   2174003: 'בריסביין',
   2192362: 'קרייסטצ׳רץ׳',
   4273837: 'קנזס סיטי',
@@ -572,6 +669,13 @@ function hebrewName(alternates) {
  * spellings of its name that [aliases] picks out.
  */
 const IL_ALIASES = {
+  283046: ["Kokhav Ya'akov", 'Kochav Yaakov'],
+  11979646: ['Adam', 'אדם'],
+  284279: ['Beit Arye', 'Ofarim', 'בית אריה', 'עופרים'],
+  282353: ['Qedumim'],
+  282431: ['Karne Shomron'],
+  283610: ['Emanuel'],
+  283047: ['Kokhav HaShahar'],
   293397: ['Tel Aviv-Yafo', 'Jaffa', 'Yafo', 'תל אביב-יפו', 'יפו'],
   293918: ['Petach Tikva', 'Petach Tikvah'],
   293703: ['Rishon Lezion', 'Rishon LeTsiyon'],

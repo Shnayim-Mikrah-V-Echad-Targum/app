@@ -5,8 +5,10 @@ import '../core/calendar/zmanim.dart';
 import '../data/city_directory.dart';
 import 'providers.dart';
 
-/// The places a reader can choose for Shabbat times, loaded on first use.
-final cityDirectoryProvider = FutureProvider<CityDirectory>((ref) => CityDirectory.load());
+/// The places a reader can choose for Shabbat times, loaded on first use and
+/// kept while a page that uses them is open (Reading & customs, or the list
+/// of cities).
+final cityDirectoryProvider = FutureProvider.autoDispose<CityDirectory>((ref) => CityDirectory.load());
 
 /// The device's IANA time zone, which suggests places to choose; null where
 /// the platform doesn't say.

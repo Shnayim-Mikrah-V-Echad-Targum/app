@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +31,8 @@ void main() {
     jerusalem = directory.cities.firstWhere((c) => c.nameEn == 'Jerusalem');
   });
 
+  City named(String name) => directory.cities.firstWhere((c) => c.nameEn == name);
+
   Future<ProviderContainer> open(
     WidgetTester tester,
     String route, {
@@ -37,6 +40,7 @@ void main() {
     String? timeZone,
     bool hebrew = false,
     bool loadForReal = false,
+    DateTime? now,
   }) async {
     final c = await pumpApp(
       tester,
@@ -46,7 +50,7 @@ void main() {
         city: city,
         language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
       ),
-      now: _now,
+      now: now ?? _now,
       overrides: <Override>[
         if (!loadForReal) cityDirectoryProvider.overrideWith((ref) => directory),
         deviceTimeZoneProvider.overrideWith((ref) => timeZone),
@@ -92,6 +96,35 @@ void main() {
       expect(find.text('ירושלים'), findsOneWidget);
       expect(find.text('הדלקת נרות \u206617:26\u2069\nצאת השבת \u206618:42\u2069'), findsOneWidget);
     });
+
+    // Far north in summer the sky never gets dark enough for Shabbat to end.
+    testWidgets('gives only candle-lighting where Shabbat has no nightfall', (tester) async {
+      await open(tester, '/settings/reading', city: named('Stockholm'), now: DateTime(2026, 6, 16, 10));
+      final summary = find.textContaining('Candle-lighting');
+      expect(summary, findsOneWidget);
+      expect(tester.widget<Text>(summary).data, startsWith('Candle-lighting '));
+      expect(tester.widget<Text>(summary).data, isNot(contains('\n')));
+    });
+
+    // In the polar night the sun neither sets nor rises.
+    testWidgets('says when there is no sunset at all', (tester) async {
+      await open(tester, '/settings/reading', city: named('Murmansk'), now: DateTime(2026, 12, 15, 10));
+      expect(find.text('There is no sunset there this Shabbat. Ask your rav about the times.'), findsOneWidget);
+      expect(find.textContaining('Candle-lighting'), findsNothing);
+    });
+
+    testWidgets("says so when the device doesn't know the city's time zone", (tester) async {
+      const nowhere = City(
+        id: 1,
+        nameEn: 'Nowhere',
+        countryCode: 'IL',
+        latitude: 31.8,
+        longitude: 35.2,
+        timeZone: 'Mars/Olympus_Mons',
+      );
+      await open(tester, '/settings/reading', city: nowhere);
+      expect(find.text("This device can't tell the time in that city, so its times can't be shown."), findsOneWidget);
+    });
   });
 
   group('the list of cities', () {
@@ -135,11 +168,78 @@ void main() {
       expect(find.text('Tel Aviv'), findsOneWidget);
       // Jerusalem is chosen, so it is listed once, at the top, as selected.
       expect(find.text('Jerusalem'), findsOneWidget);
+      final row = find.ancestor(of: find.text('Jerusalem'), matching: find.byType(PaperRow));
       expect(
-        tester.getSemantics(find.ancestor(of: find.text('Jerusalem'), matching: find.byType(PaperRow))),
-        isSemantics(label: 'Jerusalem\nIsrael\nSelected', isButton: true, hasTapAction: true),
+        tester.getSemantics(row),
+        isSemantics(label: 'Jerusalem\nIsrael', isButton: true, hasTapAction: true, hasSelectedState: true, isSelected: true),
       );
+      expect(
+        tester.getSemantics(find.ancestor(of: find.text('Tel Aviv'), matching: find.byType(PaperRow))),
+        isSemantics(label: 'Tel Aviv\nIsrael', isButton: true, hasTapAction: true, hasSelectedState: true, isSelected: false),
+      );
+      // Every row, the check and No city among them, is a target of its own.
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
       semantics.dispose();
+    });
+
+    for (final hebrew in [false, true]) {
+      testWidgets('search results are targets of their own${hebrew ? ', in Hebrew' : ''}', (tester) async {
+        final semantics = tester.ensureSemantics();
+        await open(tester, '/settings/reading/city', city: jerusalem, hebrew: hebrew);
+        await tester.enterText(find.byType(TextField), hebrew ? 'קרית' : 'kiryat');
+        await tester.pumpAndSettle();
+        expect(find.byType(PaperRow), findsAtLeastNWidgets(3));
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        semantics.dispose();
+      });
+    }
+
+    // ו and י are left out of Hebrew search, so the first letter of ירושלים
+    // is no search at all yet.
+    testWidgets('treats a lone י as no search yet', (tester) async {
+      await open(tester, '/settings/reading/city', city: jerusalem, timeZone: 'Asia/Jerusalem', hebrew: true);
+      await tester.enterText(find.byType(TextField), 'י');
+      await tester.pumpAndSettle();
+      expect(find.textContaining('לא נמצאה עיר'), findsNothing);
+      expect(find.text('העיר שלך'), findsOneWidget);
+    });
+
+    testWidgets('finds the usual Hebrew spellings, with or without א', (tester) async {
+      await open(tester, '/settings/reading/city', hebrew: true);
+      for (final (query, city) in [('שאנגחאי', 'שאנגחאי'), ('פאריז', 'פריז'), ('שיקאגו', 'שיקגו')]) {
+        await tester.enterText(find.byType(TextField), query);
+        await tester.pumpAndSettle();
+        expect(find.descendant(of: find.byType(PaperRow), matching: find.text(city)), findsWidgets, reason: query);
+      }
+    });
+
+    testWidgets('says when a search finds more than it lists, and how many it found', (tester) async {
+      final announced = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<dynamic>(SystemChannels.accessibility, (m) async {
+        final data = (m as Map)['data'] as Map;
+        if (data['message'] case final String message) announced.add(message);
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler(SystemChannels.accessibility, null));
+      await open(tester, '/settings/reading/city');
+      await tester.enterText(find.byType(TextField), 'an');
+      await tester.pumpAndSettle();
+      final all = directory.count('an');
+      expect(all, greaterThan(50));
+      expect(find.byType(PaperRow), findsNWidgets(50));
+      await tester.scrollUntilVisible(
+        find.textContaining('The first 50 of $all matches'),
+        500,
+        scrollable: find.ancestor(of: find.byType(PaperGroup), matching: find.byType(Scrollable)).first,
+      );
+      expect(find.text('The first 50 of $all matches are listed. Type more of the name to find the others.'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(announced, ['$all cities found']);
     });
 
     testWidgets('suggests nothing when the device doesn\'t say its time zone', (tester) async {
