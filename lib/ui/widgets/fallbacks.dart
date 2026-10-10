@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n.dart';
+import '../theme/app_theme.dart';
 import 'common.dart';
+import 'ornaments.dart';
 
 /// The leading button of the app bar of a page that can open with nothing
 /// beneath it, from a link, a notification or a web reload: a way home to
@@ -22,8 +24,10 @@ Widget? homeLeading(BuildContext context) {
 }
 
 /// A short message on a page that has nothing else to show, with what to do
-/// next beneath it: the first of [actions] a Tonal button, any others Text
-/// buttons (DESIGN_SYSTEM.md §6.22).
+/// next beneath it: the first of [actions] a Tonal button (styled with
+/// [AppButtons.tonal]), any others Text buttons. Laid out as an [EmptyState]
+/// (DESIGN_SYSTEM.md §6.22): a divider, one gentle sentence, centred, at most
+/// 320 wide and 40 below the app bar; it scrolls when large text needs it.
 class CenteredMessage extends StatelessWidget {
   const CenteredMessage({super.key, required this.text, this.actions = const []});
 
@@ -32,7 +36,6 @@ class CenteredMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
       child: Center(
@@ -41,11 +44,9 @@ class CenteredMessage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                text,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
+              const SeferDivider(),
+              const Gap(12),
+              Text(text, textAlign: TextAlign.center, style: SeferType.of(context).marginalia),
               if (actions.isNotEmpty) ...[
                 const Gap(16),
                 Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: actions),
@@ -72,6 +73,7 @@ class NotFoundPage extends StatelessWidget {
         text: l.notFoundBody,
         actions: [
           FilledButton.tonalIcon(
+            style: AppButtons.tonal(context),
             icon: const Icon(Icons.home_outlined),
             label: Text(l.goToToday),
             onPressed: () => context.go('/today'),

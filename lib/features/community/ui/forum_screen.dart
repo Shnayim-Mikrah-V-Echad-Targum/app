@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fallbacks.dart';
 import '../data/community_providers.dart';
@@ -82,7 +83,11 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
             : CenteredMessage(
                 text: error != null ? communityError(l, error) : l.forumNotFound,
                 actions: [
-                  FilledButton.tonal(onPressed: () => context.go('/community'), child: Text(l.allForums)),
+                  FilledButton.tonal(
+                    style: AppButtons.tonal(context),
+                    onPressed: () => context.go('/community'),
+                    child: Text(l.allForums),
+                  ),
                   if (error != null)
                     TextButton(onPressed: () => ref.invalidate(forumsProvider), child: Text(l.actionRetry)),
                 ],

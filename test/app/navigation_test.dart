@@ -212,12 +212,13 @@ void main() {
     expect(find.text('Page not found'), findsOneWidget);
     expect(find.text('This link leads nowhere in the app.'), findsOneWidget);
 
-    // The page's one action, a Tonal button (DESIGN_SYSTEM.md §6.22).
+    // The page's one action, a Tonal button (DESIGN_SYSTEM.md §6.22), in
+    // primaryContainer: gold is never a button (§6.5).
     final button = find.ancestor(of: find.text('Go to Today'), matching: find.bySubtype<FilledButton>());
     final scheme = Theme.of(tester.element(button)).colorScheme;
     expect(
       tester.widget<Material>(find.descendant(of: button, matching: find.byType(Material)).first).color,
-      scheme.secondaryContainer,
+      scheme.primaryContainer,
     );
     await tester.tap(button);
     await tester.pumpAndSettle();
