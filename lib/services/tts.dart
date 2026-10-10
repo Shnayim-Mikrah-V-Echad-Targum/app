@@ -7,7 +7,8 @@ import 'package:flutter_tts/flutter_tts.dart';
 /// Text-to-speech for listening to the text (an aid, not a substitute for
 /// reading). Hebrew voices are used for both the Hebrew and the Aramaic.
 class TtsService {
-  TtsService() {
+  /// Speaks through [engine], by default the platform's.
+  TtsService({@visibleForTesting FlutterTts? engine}) : _tts = engine ?? FlutterTts() {
     _tts.setStartHandler(() {
       if (!_disposed) speaking.value = true;
     });
@@ -16,11 +17,12 @@ class TtsService {
     _tts.setErrorHandler((_) => _done());
   }
 
-  final FlutterTts _tts = FlutterTts();
+  final FlutterTts _tts;
   final ValueNotifier<bool> speaking = ValueNotifier(false);
   Completer<void>? _utterance;
   bool? _hebrewAvailable;
   bool _disposed = false;
+  bool _iosAudioReady = false;
 
   void _done() {
     if (!_disposed) speaking.value = false;
@@ -50,6 +52,7 @@ class TtsService {
     await stop();
     final c = _utterance = Completer<void>();
     try {
+      await _prepareIosAudio();
       await _tts.setLanguage(language);
       await _tts.setSpeechRate(rate);
       if (!kIsWeb) await _tts.awaitSpeakCompletion(false);
@@ -61,6 +64,27 @@ class TtsService {
       rethrow;
     }
     return c.future;
+  }
+
+  /// On iOS, speech is silenced by the Silent switch unless the audio session
+  /// is for playback. Set on the first Listen rather than at startup, so that
+  /// opening the reader never ducks the user's music; other audio ducks while
+  /// speaking and resumes after.
+  Future<void> _prepareIosAudio() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS || _iosAudioReady) return;
+    try {
+      await _tts.setIosAudioCategory(
+        IosTextToSpeechAudioCategory.playback,
+        [
+          IosTextToSpeechAudioCategoryOptions.duckOthers,
+          IosTextToSpeechAudioCategoryOptions.interruptSpokenAudioAndMixWithOthers,
+        ],
+        IosTextToSpeechAudioMode.spokenAudio,
+      );
+      _iosAudioReady = true;
+    } catch (_) {
+      // Speech still works; only the Silent switch silences it.
+    }
   }
 
   /// Stops speech. Never throws: a platform without a speech engine has

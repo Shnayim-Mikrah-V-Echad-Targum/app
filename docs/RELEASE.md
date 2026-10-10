@@ -51,6 +51,7 @@
   - Tapping a reminder, with the app running and with it closed, opens Today. The Erev Shabbat reminder opens the week instead, and going back from it leads to Today.
   - Reminders survive a reboot (Android).
   - On Android, the status-bar icon is the three rules of the mark, not a white square, and the Erev Shabbat reminder expands to show its whole message.
+- [ ] Listen is audible with the Silent switch on; music ducks and resumes (iOS).
 - [ ] Offline: reading, logging and streaks all work in airplane mode.
 - [ ] Community against the production backend:
   - sign in with a code
