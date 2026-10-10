@@ -47,6 +47,8 @@ jobs:
         run: |
           python3 tool/l10n/build_he.py
           git diff --exit-code lib/l10n/app_he.arb
+      - name: Check the static policy pages build
+        run: node --test tool/legal/build_html.test.mjs
       - run: flutter analyze
       - run: flutter test
       - name: Community database tests (PostgreSQL)
@@ -67,6 +69,12 @@ jobs:
         run: |
           flutter build web --release --no-web-resources-cdn --no-wasm-dry-run \
             --base-href "${{ vars.WEB_BASE_HREF || '/' }}" $DART_DEFINES
+      # The public privacy, support and account-deletion pages the stores
+      # ask for, as static HTML in build/web/legal/ (docs/RELEASE.md).
+      - name: Static policy, support and account-deletion pages
+        env:
+          SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
+        run: node tool/legal/build_html.mjs build/web
       - uses: actions/upload-artifact@v4
         with:
           name: web

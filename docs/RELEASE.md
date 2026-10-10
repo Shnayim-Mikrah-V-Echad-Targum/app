@@ -12,13 +12,14 @@
 - [ ] **Identity:**
   - The app id, bundle id and MSIX identity name are `org.shnayimmikra.app`. Change them now if you won't control that domain; they can't be changed after publishing.
   - The display name is "Shnayim Mikra".
-- [ ] **Support address.** Set `SUPPORT_EMAIL`. Both stores and the accessibility statement need a working contact.
-- [ ] **Public pages.** Both stores need a public URL for each of these:
-  - the privacy policy
-  - a support page
-  - for Google Play, a page where users can **request account deletion**
+- [ ] **Support address.** Set `SUPPORT_EMAIL`, as a repository variable for CI. Both stores and the accessibility statement need a working contact, and without one the account-deletion page offers no way to ask by email.
+- [ ] **Public pages.** Both stores need a public URL for each of these, and the web build has them as static pages that work without JavaScript, in English and in Hebrew (add `.he` before `.html`):
+  - the privacy policy: `<web address>/legal/privacy.html`
+  - a support page: `<web address>/legal/support.html`
+  - for Google Play, a page where users can **request account deletion**: `<web address>/legal/delete-account.html`
+  - also the terms of use, the community guidelines and the accessibility statement: `legal/terms.html`, `legal/guidelines.html` and `legal/accessibility.html`
 
-  The texts are in `lib/features/about/legal_screen.dart`, in English and Hebrew. Publish them on the web build or a simple site.
+  CI writes them after the web build with `node tool/legal/build_html.mjs build/web`. The texts the app shows come from `lib/features/about/legal_screen.dart`; the support and account-deletion pages, which only the web has, are in `assets/legal/legal.json`.
 - [ ] **Community backend.** Set it up per [BACKEND.md](BACKEND.md):
   - custom SMTP
   - the OTP email template
@@ -100,7 +101,7 @@
   - Collected only when the user uses the community: email address (account management), user-generated content (posts) and user IDs.
   - Collected only if the user opts in: app activity (reading progress, for backup).
   - Encrypted in transit.
-  - Users can delete their data in the app, and through the account-deletion URL.
+  - Users can delete their data in the app, and through the account-deletion URL (`legal/delete-account.html`).
   - No data is shared with third parties.
   - No ads and no analytics.
 - [ ] **Content rating questionnaire:** users can interact and share content (forums), with moderation, reporting and blocking.
