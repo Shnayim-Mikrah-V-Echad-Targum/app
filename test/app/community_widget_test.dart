@@ -150,6 +150,25 @@ class _LockedFeedback extends DemoForumRepository {
       ];
 }
 
+/// A member whose blocked members can't be fetched (offline).
+class _NoBlockedList extends DemoForumRepository {
+  @override
+  Future<Set<String>> blockedUsers() async => throw Exception('offline');
+}
+
+/// A member whose Unblock waits for [gate], is counted, and fails.
+class _FailingUnblock extends DemoForumRepository {
+  Completer<void>? gate;
+  int calls = 0;
+
+  @override
+  Future<void> unblock(String userId) async {
+    calls++;
+    await gate?.future;
+    throw Exception('offline');
+  }
+}
+
 /// A community on a server: no demo.
 class _Server extends DemoForumRepository {
   @override
@@ -444,10 +463,15 @@ void main() {
       expect(chip.right, lessThanOrEqualTo(412));
     });
 
-    testWidgets('picks its forum from the keyboard', (tester) async {
+    testWidgets('picks its forum from the keyboard, which keeps the focus on the chip', (tester) async {
       await compose(tester);
       Focus.of(tester.element(find.text('Divrei Torah'))).requestFocus();
       await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump();
+      expect(_chosenForum(tester), 'Divrei Torah');
+      expect(Focus.of(tester.element(find.text('Divrei Torah'))).hasPrimaryFocus, isTrue);
+      // And on from there.
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pump();
       expect(_chosenForum(tester), 'Divrei Torah');
@@ -528,6 +552,27 @@ void main() {
       expect(find.descendant(of: find.byType(SnackBar), matching: find.text("You're posting quickly — please wait a few seconds.")), findsOneWidget);
     });
 
+    testWidgets("keeps a server's error under its field until that field is changed", (tester) async {
+      await compose(tester, forums: await _Refusing('too_many_links').signIn());
+      await tester.enterText(title, 'A question on Rashi');
+      await tester.enterText(message, 'See https://a.example and https://b.example');
+      await tester.tap(postInAppBar);
+      await tester.pumpAndSettle();
+      const links = 'New members can include at most 2 links.';
+      expect(find.text(links), findsOneWidget);
+      // A typo fixed in the title leaves it, as the links are still there.
+      await tester.enterText(title, 'A question on Rashi.');
+      await tester.pump();
+      expect(find.text(links), findsOneWidget);
+      // So does a window resized.
+      tester.view.physicalSize = const Size(800, 900);
+      await tester.pumpAndSettle();
+      expect(find.text(links), findsOneWidget);
+      await tester.enterText(message, 'See the commentary');
+      await tester.pumpAndSettle();
+      expect(find.text(links), findsNothing);
+    });
+
     testWidgets('counts its characters only near the limit, in the number format of the language', (tester) async {
       await compose(tester);
       await tester.enterText(title, 'x' * 119);
@@ -563,9 +608,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Reply'));
     await tester.pumpAndSettle();
-    // Asked for a name, the page goes back only once it is saved.
+    // Asked for a name, the page goes back only once it is saved. Its field
+    // has the focus as the page opens on it.
     expect(find.byType(AccountScreen), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Save name'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus, isTrue);
     await tester.tap(find.widgetWithText(FilledButton, 'Save name'));
     await tester.pumpAndSettle();
     expect(find.text('Names must be 2–40 characters.'), findsOneWidget);
@@ -2215,6 +2262,59 @@ void main() {
       final confirm = find.descendant(of: find.byType(AlertDialog), matching: find.widgetWithText(FilledButton, 'Delete my account'));
       final style = tester.widget<FilledButton>(confirm).style!;
       expect(style.backgroundColor?.resolve({}), scheme.error);
+    });
+
+    testWidgets('reads its backup row as one switch, Sync now an item of its own', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final forums = DemoForumRepository();
+      await forums.verifyCode('reader@example.org', '123456');
+      await account(tester, forums: forums, settings: const AppSettings(onboardingComplete: true, cloudSync: true));
+      final row = find.ancestor(of: find.text('Back up my progress'), matching: find.byType(PaperRow));
+      final node = tester.getSemantics(row);
+      expect(node, isSemantics(isButton: true, hasTapAction: true, hasToggledState: true, isToggled: true));
+      expect(node.label, startsWith('Back up my progress'));
+      final sync = tester.getSemantics(find.byTooltip('Sync now'));
+      expect(sync, isSemantics(tooltip: 'Sync now', isButton: true, hasTapAction: true));
+      expect(sync.id, isNot(node.id));
+      // The switch is no tab stop of its own beside the row that toggles it.
+      expect(find.descendant(of: find.byType(ExcludeFocus), matching: find.byType(Switch)), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('counts no blocked members it could not fetch, and still opens the list to say why', (tester) async {
+      final forums = _NoBlockedList();
+      await forums.verifyCode('reader@example.org', '123456');
+      await forums.updateDisplayName('Rivka');
+      await account(tester, forums: forums);
+      expect(find.text('Blocked members (0)'), findsNothing);
+      expect(find.text("You haven't blocked anyone."), findsNothing);
+      await tester.tap(find.text('Blocked members'));
+      await tester.pumpAndSettle();
+      final sheet = find.byType(BottomSheet);
+      expect(find.descendant(of: sheet, matching: find.widgetWithText(TextButton, 'Try again')), findsOneWidget);
+    });
+
+    testWidgets('says in the sheet why an Unblock failed, and sends one at a time', (tester) async {
+      final forums = _FailingUnblock();
+      await forums.verifyCode('reader@example.org', '123456');
+      await forums.updateDisplayName('Rivka');
+      final author = (await forums.posts('1')).map((p) => p.authorId).firstWhere((id) => id != null && id != 'me')!;
+      await forums.block(author);
+      await account(tester, forums: forums);
+      await tester.tap(find.text('Blocked members (1)'));
+      await tester.pumpAndSettle();
+      final sheet = find.byType(BottomSheet);
+      final unblock = find.descendant(of: sheet, matching: find.widgetWithText(TextButton, 'Unblock'));
+      forums.gate = Completer<void>();
+      await tester.tap(unblock);
+      await tester.pump();
+      expect(tester.widget<TextButton>(unblock).onPressed, isNull, reason: 'waits while it is sent');
+      forums.gate!.complete();
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextButton>(unblock).onPressed, isNotNull);
+      expect(forums.calls, 1);
+      expect(find.descendant(of: sheet, matching: find.textContaining('connection')), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
     });
 
     testWidgets('lists the members blocked in a sheet, until none are left', (tester) async {

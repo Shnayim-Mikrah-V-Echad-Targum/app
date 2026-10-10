@@ -57,6 +57,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String? _bodyError;
   bool _checked = false;
 
+  /// What the server said of a field (too many links, say), shown in place
+  /// of its length's error until that field's own text changes.
+  String? _titleServerError;
+  String? _bodyServerError;
+
+  /// Each field's text as last seen, so that only a change to its text (not
+  /// to the other field's, nor to the selection) lets its server error go.
+  String _titleSeen = '';
+  String _bodySeen = '';
+
   @override
   void initState() {
     super.initState();
@@ -68,12 +78,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _body.text = j['body'] as String? ?? '';
       } catch (_) {}
     }
+    _titleSeen = _title.text;
+    _bodySeen = _body.text;
     void save() {
       _draftTimer?.cancel();
       _draftTimer = Timer(const Duration(milliseconds: 600), () {
         ref.read(sharedPreferencesProvider).setString(_draftKey, jsonEncode({'title': _title.text, 'body': _body.text}));
       });
       setState(() {
+        if (_title.text != _titleSeen) _titleServerError = null;
+        if (_body.text != _bodySeen) _bodyServerError = null;
+        _titleSeen = _title.text;
+        _bodySeen = _body.text;
         if (_checked) _check();
       });
     }
@@ -107,10 +123,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return _titleError == null && _bodyError == null;
   }
 
-  /// Shows [message] under [field], which takes the focus.
-  void _showFieldError(CommunityField field, String message) {
+  /// Shows [message] under [field], which takes the focus: what it still
+  /// needs, or else what the [server] said of it.
+  void _showFieldError(CommunityField field, String message, {bool server = false}) {
     final title = field == CommunityField.title;
-    setState(() => title ? _titleError = message : _bodyError = message);
+    setState(() {
+      switch ((title, server)) {
+        case (true, false):
+          _titleError = message;
+        case (false, false):
+          _bodyError = message;
+        case (true, true):
+          _titleServerError = message;
+        case (false, true):
+          _bodyServerError = message;
+      }
+    });
     (title ? _titleFocus : _bodyFocus).requestFocus();
     announceFieldError(context, message);
   }
@@ -147,7 +175,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final message = communityError(l, e);
       switch (fieldOf(e)) {
         case final field? when field == CommunityField.title || field == CommunityField.body:
-          _showFieldError(field, message);
+          _showFieldError(field, message, server: true);
         case _:
           showStatus(context, message);
       }
@@ -162,7 +190,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     ref.read(sharedPreferencesProvider).remove(_draftKey);
     setState(() {
       _checked = false;
-      _titleError = _bodyError = null;
+      _titleError = _bodyError = _titleServerError = _bodyServerError = null;
     });
   }
 
@@ -241,7 +269,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                             decoration: InputDecoration(
                               labelText: l.threadTitleLabel,
                               helperText: l.titleMinHelp,
-                              errorText: _titleError,
+                              errorText: _titleServerError ?? _titleError,
                               helperMaxLines: 3,
                               errorMaxLines: 3,
                             ),
@@ -260,7 +288,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                               labelText: l.threadBodyLabel,
                               alignLabelWithHint: true,
                               helperText: l.bodyMinHelp,
-                              errorText: _bodyError,
+                              errorText: _bodyServerError ?? _bodyError,
                               helperMaxLines: 3,
                               errorMaxLines: 3,
                             ),
@@ -316,7 +344,10 @@ class _ForumPicker extends StatefulWidget {
 }
 
 class _ForumPickerState extends State<_ForumPicker> {
-  final _selectedKey = GlobalKey();
+  /// A key for each forum's chip, which stays with it: a key that moved to
+  /// whichever chip is chosen would carry the chosen chip's element to the
+  /// new one, and take the chip just pressed, with its focus, from the tree.
+  final _keys = <int, GlobalKey>{};
   bool _revealed = false;
 
   @override
@@ -337,7 +368,7 @@ class _ForumPickerState extends State<_ForumPicker> {
     if (_revealed || widget.forums.isEmpty) return;
     _revealed = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final chip = _selectedKey.currentContext;
+      final chip = _keys[widget.selected]?.currentContext;
       final box = chip?.findRenderObject();
       if (!mounted || chip == null || box == null) return;
       // The row alone, where it scrolls: the page stays where it is.
@@ -353,7 +384,7 @@ class _ForumPickerState extends State<_ForumPicker> {
     final chips = [
       for (final f in widget.forums)
         SeferChoiceChip(
-          key: f.id == widget.selected ? _selectedKey : null,
+          key: _keys.putIfAbsent(f.id, GlobalKey.new),
           avatar: AppIcon(
             CommunityScreen.iconFor(f.slug),
             size: 18,

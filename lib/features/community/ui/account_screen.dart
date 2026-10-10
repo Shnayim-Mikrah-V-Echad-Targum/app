@@ -60,6 +60,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   /// name of its own yet.
   bool _justSignedIn = false;
 
+  /// Whether the name step is on show, whose field takes the focus as it
+  /// appears, however the page came to it.
+  bool _onNameStep = false;
+
   bool _syncing = false;
   String? _emailError;
   String? _codeError;
@@ -158,6 +162,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } else {
       children = _signedIn(context, user, profile);
     }
+    // The name step's field takes the focus as the step appears: after the
+    // code, or as the page opens on it, for a member signed in already but
+    // never named who is about to post.
+    final onNameStep = !signingIn && profile != null && !profile.hasChosenName && (_justSignedIn || widget.returnWhenSignedIn);
+    if (onNameStep && !_onNameStep) _focusAfterFrame(_nameFocus);
+    _onNameStep = onNameStep;
     return PageScaffold(
       titleText: l.settingsAccount,
       contentMaxWidth: ContentWidth.account,
@@ -424,7 +434,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final settings = ref.watch(settingsProvider);
     final lastSync = ref.watch(progressSyncProvider);
     final syncBlocked = ref.watch(syncBlockedByNewerFormatProvider);
-    final blocked = ref.watch(blockedUsersProvider).value?.length ?? 0;
+    // Counted once known: while they load, or can't, the row says no number,
+    // and still opens the list, which says why.
+    final blocked = ref.watch(blockedUsersProvider).value?.length;
     final sync = settings.cloudSync;
     void setSync(bool on) => ref.read(settingsProvider.notifier).update((s) => s.copyWith(cloudSync: on));
     return [
@@ -438,12 +450,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       GroupHeader(l.cloudBackupTitle),
       PaperGroup(
         children: [
-          // One item for screen readers, the switch's state with it; Sync
-          // now is an item of its own.
+          // One item for screen readers, a switch in its state, which the
+          // row's tap toggles; Sync now is an item of its own. The switch
+          // can't merge into the row with Sync now beside it, so it is left
+          // out of the semantics and the focus order, and the row says its
+          // state.
           PaperRow(
             title: l.syncProgress,
             subtitle: sync && lastSync != null ? l.lastSynced(relativeTime(context, lastSync)) : null,
             onTap: () => setSync(!sync),
+            toggled: sync,
             chevron: false,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -459,7 +475,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           )
                         : const Icon(Icons.sync),
                   ),
-                Switch(value: sync, onChanged: setSync),
+                ExcludeFocus(child: ExcludeSemantics(child: Switch(value: sync, onChanged: setSync))),
               ],
             ),
           ),
@@ -480,7 +496,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         children: [
           PaperRow(
             icon: Icons.block,
-            title: l.blockedMembersCount(blocked),
+            title: blocked == null ? l.blockedUsersTitle : l.blockedMembersCount(blocked),
             subtitle: blocked == 0 ? l.noBlockedMembers : null,
             onTap: blocked == 0 ? null : _showBlocked,
           ),
@@ -918,28 +934,51 @@ class _ProfileCard extends StatelessWidget {
 }
 
 /// The members the reader has blocked, each with Unblock; or, once there
-/// are none, a sentence saying so.
-class _BlockedMembersSheet extends ConsumerWidget {
+/// are none, a sentence saying so. An Unblock that fails says why under its
+/// member, in the sheet, where a status message would sit unseen behind it;
+/// while one is sent, its button waits.
+class _BlockedMembersSheet extends ConsumerStatefulWidget {
   const _BlockedMembersSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_BlockedMembersSheet> createState() => _BlockedMembersSheetState();
+}
+
+class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
+  /// The members whose Unblock is being sent.
+  final _busy = <String>{};
+
+  /// Why a member's Unblock failed, by member.
+  final _errors = <String, String>{};
+
+  Future<void> _unblock(String id) async {
+    if (_busy.contains(id)) return;
+    final l = context.l10n;
+    setState(() {
+      _busy.add(id);
+      _errors.remove(id);
+    });
+    try {
+      await ref.read(forumRepositoryProvider).unblock(id);
+      ref.invalidate(blockedUsersProvider);
+    } catch (e) {
+      if (mounted) setState(() => _errors[id] = communityError(l, e));
+    } finally {
+      if (mounted) setState(() => _busy.remove(id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final padding = sheetPadding(context);
     final members = ref.watch(blockedMembersProvider);
     Widget note(String text) => Padding(
           padding: EdgeInsets.fromLTRB(padding, Space.sm, padding, Space.sm),
-          child: Text(text, style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          child: Text(text, style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant)),
         );
-    Future<void> unblock(String id) async {
-      try {
-        await ref.read(forumRepositoryProvider).unblock(id);
-        ref.invalidate(blockedUsersProvider);
-      } catch (e) {
-        if (context.mounted) showStatus(context, communityError(l, e));
-      }
-    }
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -954,7 +993,22 @@ class _BlockedMembersSheet extends ConsumerWidget {
                 padding: const EdgeInsets.all(Space.xxl),
                 child: Center(child: CircularProgressIndicator(semanticsLabel: l.loading)),
               ),
-              error: (e, _) => note(communityError(l, e)),
+              error: (e, _) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  note(communityError(l, e)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: padding - Space.sm),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton(
+                        onPressed: () => ref.invalidate(blockedUsersProvider),
+                        child: Text(l.actionRetry),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               data: (list) => list.isEmpty
                   ? note(l.noBlockedMembers)
                   : Column(
@@ -962,7 +1016,17 @@ class _BlockedMembersSheet extends ConsumerWidget {
                         for (final (id, name) in list)
                           ListTile(
                             title: Text(name, textDirection: autoDirection(name, fallback: Directionality.of(context))),
-                            trailing: TextButton(onPressed: () => unblock(id), child: Text(l.unblock)),
+                            subtitle: switch (_errors[id]) {
+                              final error? => Semantics(
+                                  liveRegion: !MediaQuery.supportsAnnounceOf(context),
+                                  child: Text(error, style: theme.textTheme.bodySmall?.copyWith(color: scheme.error)),
+                                ),
+                              null => null,
+                            },
+                            trailing: TextButton(
+                              onPressed: _busy.contains(id) ? null : () => _unblock(id),
+                              child: Text(l.unblock),
+                            ),
                           ),
                       ],
                     ),

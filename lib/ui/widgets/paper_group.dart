@@ -240,6 +240,7 @@ class PaperRow extends StatelessWidget {
     this.mergeTrailing = false,
     this.onTap,
     this.selected,
+    this.toggled,
     this.focusNode,
     bool? chevron,
   }) : chevron = chevron ?? onTap != null;
@@ -273,6 +274,13 @@ class PaperRow extends StatelessWidget {
   /// Whether the row is the one chosen of a list, for screen readers; null
   /// for a row that isn't one of a choice.
   final bool? selected;
+
+  /// Whether what the row's tap toggles is on, for screen readers, which
+  /// then hear the row as a switch: for a row whose switch can't be merged
+  /// into it (it has another control beside it), and is left out of the
+  /// semantics and the focus order instead. Null for a row that toggles
+  /// nothing.
+  final bool? toggled;
 
   final bool chevron;
 
@@ -379,6 +387,7 @@ class PaperRow extends StatelessWidget {
       container: true,
       button: onTap != null,
       selected: selected,
+      toggled: toggled,
       child: onTap == null
           ? content
           : SeferInkWell(
