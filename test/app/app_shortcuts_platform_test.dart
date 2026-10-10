@@ -19,6 +19,24 @@ void main() {
     }
   });
 
+  test('Android: a recreated activity forgets the shortcut that started it', () {
+    // quick_actions_android reads the chosen shortcut from an intent extra;
+    // MainActivity must remove that same extra.
+    final config = File('.dart_tool/package_config.json');
+    final packages = (jsonDecode(config.readAsStringSync()) as Map<String, dynamic>)['packages'] as List;
+    final plugin = packages.cast<Map<String, dynamic>>().firstWhere((p) => p['name'] == 'quick_actions_android');
+    final root = config.absolute.uri.resolve('${plugin['rootUri']}/');
+    final source = File.fromUri(root.resolve('android/src/main/java/io/flutter/plugins/quickactions/QuickActions.java'))
+        .readAsStringSync();
+    final extra = RegExp(r'EXTRA_ACTION\s*=\s*"([^"]+)"').firstMatch(source)![1]!;
+
+    final activity =
+        File('android/app/src/main/kotlin/org/shnayimmikra/shnayim_mikra/MainActivity.kt').readAsStringSync();
+    expect(activity, contains('const val QUICK_ACTION_EXTRA = "$extra"'));
+    expect(activity, contains('intent.removeExtra(QUICK_ACTION_EXTRA)'));
+    expect(activity, contains('setIntent(intent)'));
+  });
+
   group('iOS: the shortcuts wear the mark', () {
     const folder = 'ios/Runner/Assets.xcassets/ShortcutMark.imageset';
 
