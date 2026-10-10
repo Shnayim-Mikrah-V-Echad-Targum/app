@@ -60,16 +60,28 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
   Future<void> _send() async {
     final l = context.l10n;
+    final threadId = widget.threadId;
+    final draftKey = _draftKey;
+    // This page may close while the reply is sent, and its ref with it.
+    final prefs = ref.read(sharedPreferencesProvider);
+    final container = ProviderScope.containerOf(context, listen: false);
+    final repo = ref.read(forumRepositoryProvider);
     if (!await ensureSignedIn(context, ref) || !mounted) return;
-    if (!await ensureGuidelines(context, ref) || !mounted) return;
-    setState(() => _sending = true);
     try {
-      await ref.read(forumRepositoryProvider).reply(widget.threadId, _reply.text, replyToId: _replyTo?.id);
-      _reply.clear();
-      await ref.read(sharedPreferencesProvider).remove(_draftKey);
-      setState(() => _replyTo = null);
-      ref.invalidate(postsProvider(widget.threadId));
-      ref.invalidate(threadProvider(widget.threadId));
+      if (!await ensureGuidelines(context, ref) || !mounted) return;
+      setState(() => _sending = true);
+      await repo.reply(threadId, _reply.text, replyToId: _replyTo?.id);
+      if (mounted) {
+        _reply.clear();
+        setState(() => _replyTo = null);
+      }
+      // Sent: whatever happens to this page, the draft must not come back.
+      _draftTimer?.cancel();
+      await prefs.remove(draftKey);
+      container
+        ..invalidate(postsProvider(threadId))
+        ..invalidate(threadProvider(threadId))
+        ..invalidate(threadsProvider);
       if (mounted) showStatus(context, l.posted);
     } catch (e) {
       if (mounted) showStatus(context, communityError(l, e));
@@ -96,10 +108,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final profile = ref.watch(myProfileProvider).value;
     final isMod = profile?.isModerator ?? false;
     final t = thread.value;
+    final title = t == null ? '' : threadDisplayTitle(context, ref, t);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(t?.title ?? '', overflow: TextOverflow.ellipsis),
+        // An English title in Hebrew UI, or the reverse, is cut at its own end.
+        title: Text(title, textDirection: autoDirection(title), overflow: TextOverflow.ellipsis),
         actions: [
           if (isMod && t != null)
             PopupMenuButton<String>(
@@ -130,14 +144,21 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       Semantics(
                         header: true,
                         headingLevel: 1,
-                        child: Text(t.title, textDirection: autoDirection(t.title), style: Theme.of(context).textTheme.headlineSmall),
+                        child: Text(title, textDirection: autoDirection(title), style: Theme.of(context).textTheme.headlineSmall),
                       ),
-                      const Gap(4),
-                      Text(l.postsCount(list.length), style: Theme.of(context).textTheme.bodySmall),
+                      // An empty thread says so below.
+                      if (list.isNotEmpty) ...[
+                        const Gap(4),
+                        Text(l.postsCount(list.length), style: Theme.of(context).textTheme.bodySmall),
+                      ],
                       if (t.locked) ...[const Gap(8), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
                       const Gap(12),
                     ],
-                    if (list.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(l.noThreads, textAlign: TextAlign.center)),
+                    if (list.isEmpty && t != null)
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(emptyThreadMessage(context, ref, t), textAlign: TextAlign.center),
+                      ),
                     for (var i = 0; i < list.length; i++)
                       PostCard(
                         post: list[i],
@@ -267,18 +288,23 @@ class PostCard extends ConsumerWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final repo = ref.read(forumRepositoryProvider);
+    // This card may be gone (its thread closed, say) by the time an action
+    // ends, and its ref with it.
+    final container = ProviderScope.containerOf(context, listen: false);
     final name = post.authorName.isEmpty ? l.anonymousMember : post.authorName;
-
-    void refresh() => ref.invalidate(postsProvider(post.threadId));
+    final reported = ref.watch(reportedPostIdsProvider).contains(post.id);
 
     Future<void> run(Future<void> Function() f, {String? success}) async {
       try {
         await f();
-        refresh();
-        if (success != null && context.mounted) showStatus(context, success);
       } catch (e) {
-        if (context.mounted) showStatus(context, communityError(l, e));
+        if (!alreadyDone(e)) {
+          if (context.mounted) showStatus(context, communityError(l, e));
+          return;
+        }
       }
+      container.invalidate(postsProvider(post.threadId));
+      if (success != null && context.mounted) showStatus(context, success);
     }
 
     Future<void> onMenu(String v) async {
@@ -305,15 +331,24 @@ class PostCard extends ConsumerWidget {
         case 'report':
           if (!await ensureSignedIn(context, ref) || !context.mounted) return;
           final result = await showReportDialog(context);
-          if (result != null) {
-            await run(() => repo.report(postId: post.id, reason: result.$1, details: result.$2), success: l.reportSent);
-          }
+          if (result == null) return;
+          final reportedIds = container.read(reportedPostIdsProvider.notifier);
+          await run(() async {
+            try {
+              await repo.report(postId: post.id, reason: result.$1, details: result.$2);
+            } on CommunityException catch (e) {
+              // Reported before, in another session say: nothing more to do.
+              if (e.code == 'already_reported') reportedIds.add(post.id);
+              rethrow;
+            }
+            reportedIds.add(post.id);
+          }, success: l.reportSent);
         case 'block':
           if (!await ensureSignedIn(context, ref) || !context.mounted) return;
           final ok = await _confirm(context, l.blockConfirm(name), l.blockUser(name));
           if (ok && post.authorId != null) {
             await run(() => repo.block(post.authorId!), success: l.blockedDone);
-            ref.invalidate(blockedUsersProvider);
+            container.invalidate(blockedUsersProvider);
           }
         case 'hide':
           await run(() => repo.moderate('hide_post', post.id));
@@ -352,7 +387,7 @@ class PostCard extends ConsumerWidget {
                       PopupMenuItem(value: 'reply', child: Text(l.replyAction)),
                       if (isMine) PopupMenuItem(value: 'edit', child: Text(l.actionEdit)),
                       if (isMine || isModerator) PopupMenuItem(value: 'delete', child: Text(l.actionDelete)),
-                      if (!isMine) PopupMenuItem(value: 'report', child: Text(l.actionReport)),
+                      if (!isMine && !reported) PopupMenuItem(value: 'report', child: Text(l.actionReport)),
                       if (!isMine && post.authorId != null) PopupMenuItem(value: 'block', child: Text(l.blockUser(name))),
                       if (isModerator && !isMine) PopupMenuItem(value: 'hide', child: Text(l.hidePost)),
                     ],
@@ -390,24 +425,86 @@ class PostCard extends ConsumerWidget {
               ),
               Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  onPressed: isMine
-                      ? null
-                      : () async {
-                          if (!await ensureSignedIn(context, ref)) return;
-                          await run(() => repo.setTodah(post.id, !post.myTodah));
-                        },
-                  icon: Icon(post.myTodah ? Icons.favorite : Icons.favorite_border, size: 20),
-                  label: Semantics(
-                    label: '${l.todahSemantics(name)}. ${l.todahCount(post.todah)}',
-                    excludeSemantics: true,
-                    child: Text(l.todahCount(post.todah)),
-                  ),
-                ),
+                child: _TodahButton(post: post, authorName: name, isMine: isMine),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "Todah" (thanks) for a post. A tap shows at once, and is undone if it
+/// fails; further taps wait for it. The button stays enabled meanwhile, so
+/// that it keeps the keyboard focus.
+class _TodahButton extends ConsumerStatefulWidget {
+  const _TodahButton({required this.post, required this.authorName, required this.isMine});
+
+  final Post post;
+  final String authorName;
+  final bool isMine;
+
+  @override
+  ConsumerState<_TodahButton> createState() => _TodahButtonState();
+}
+
+class _TodahButtonState extends ConsumerState<_TodahButton> {
+  late bool _given = widget.post.myTodah;
+  late int _count = widget.post.todah;
+  bool _busy = false;
+
+  @override
+  void didUpdateWidget(_TodahButton old) {
+    super.didUpdateWidget(old);
+    // Fetched again: the server's count is the truth, once ours is sent.
+    if (!_busy && !identical(old.post, widget.post)) {
+      _given = widget.post.myTodah;
+      _count = widget.post.todah;
+    }
+  }
+
+  Future<void> _toggle() async {
+    if (_busy) return;
+    final l = context.l10n;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final repo = ref.read(forumRepositoryProvider);
+    if (!await ensureSignedIn(context, ref) || !mounted || _busy) return;
+    final (given, count) = (_given, _count);
+    setState(() {
+      _busy = true;
+      _given = !given;
+      _count = count + (given ? -1 : 1);
+    });
+    try {
+      await repo.setTodah(widget.post.id, !given);
+    } catch (e) {
+      if (!alreadyDone(e)) {
+        if (mounted) {
+          setState(() {
+            _given = given;
+            _count = count;
+            _busy = false;
+          });
+          showStatus(context, communityError(l, e));
+        }
+        return;
+      }
+    }
+    if (mounted) setState(() => _busy = false);
+    container.invalidate(postsProvider(widget.post.threadId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return TextButton.icon(
+      onPressed: widget.isMine ? null : _toggle,
+      icon: Icon(_given ? Icons.favorite : Icons.favorite_border, size: 20),
+      label: Semantics(
+        label: '${l.todahSemantics(widget.authorName)}. ${l.todahCount(_count)}',
+        excludeSemantics: true,
+        child: Text(l.todahCount(_count)),
       ),
     );
   }
@@ -426,10 +523,11 @@ Future<bool> _confirm(BuildContext context, String message, String action) async
     ) ??
     false;
 
-/// Asks why a post is being reported.
+/// Asks why a post is being reported. No reason is chosen at first: the
+/// reporter picks one.
 Future<(ReportReason, String?)?> showReportDialog(BuildContext context) {
   final l = context.l10n;
-  var reason = ReportReason.spam;
+  ReportReason? reason;
   final details = TextEditingController();
   return showDialog<(ReportReason, String?)>(
     context: context,
@@ -444,7 +542,7 @@ Future<(ReportReason, String?)?> showReportDialog(BuildContext context) {
               Text(l.reportReasonLabel, style: Theme.of(context).textTheme.titleSmall),
               RadioGroup<ReportReason>(
                 groupValue: reason,
-                onChanged: (v) => setState(() => reason = v ?? reason),
+                onChanged: (v) => setState(() => reason = v),
                 child: Column(
                   children: [
                     for (final (r, label) in [
@@ -465,7 +563,13 @@ Future<(ReportReason, String?)?> showReportDialog(BuildContext context) {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
-          FilledButton(onPressed: () => Navigator.pop(context, (reason, details.text)), child: Text(l.actionReport)),
+          FilledButton(
+            onPressed: switch (reason) {
+              final r? => () => Navigator.pop(context, (r, details.text)),
+              null => null,
+            },
+            child: Text(l.actionReport),
+          ),
         ],
       ),
     ),

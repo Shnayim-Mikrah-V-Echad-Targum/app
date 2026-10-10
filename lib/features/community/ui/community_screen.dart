@@ -43,32 +43,34 @@ class CommunityScreen extends ConsumerWidget {
               onRefresh: () async => ref.invalidate(forumsProvider),
               child: PageBody(
                 children: [
-                  InfoCard(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    onTap: () => openWeeklyThread(
-                      context,
-                      ref,
-                      week.portion,
-                      cycleYearOf(week.week.portion, week.week.occasion),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.local_library_outlined),
-                        const Gap(12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l.thisWeeksThread(names.portion(week.portion, ashkenazi: settings.ashkenaziNames)),
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              Text(l.openDiscussion),
-                            ],
+                  WeeklyThreadOpener(
+                    portion: week.portion,
+                    hebrewYear: cycleYearOf(week.week.portion, week.week.occasion),
+                    builder: (context, progress, open) => InfoCard(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      onTap: open,
+                      child: Row(
+                        children: [
+                          SizedBox.square(
+                            dimension: 24,
+                            child: Center(child: progress ?? const Icon(Icons.local_library_outlined)),
                           ),
-                        ),
-                        const Icon(Icons.chevron_right),
-                      ],
+                          const Gap(12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l.thisWeeksThread(names.portion(week.portion, ashkenazi: settings.ashkenaziNames)),
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                Text(l.openDiscussion),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right),
+                        ],
+                      ),
                     ),
                   ),
                   if (user == null) ...[

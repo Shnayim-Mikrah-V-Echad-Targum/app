@@ -79,6 +79,16 @@ select public.check((select count(*) = 1 from public.posts where thread_id = :t1
 select set_config('request.jwt.claim.sub', :'carol', false);
 select public.check((select count(*) = 2 from public.posts where thread_id = :t1), 'other members still see both posts');
 
+-- ---- the app's todah and blocks may be sent twice (upserts that ignore duplicates) ----
+select id as bob_post from public.posts where author_id = :'bob' \gset
+insert into public.reactions (post_id, user_id) values (:bob_post, :'carol') on conflict (post_id, user_id, kind) do nothing;
+insert into public.reactions (post_id, user_id) values (:bob_post, :'carol') on conflict (post_id, user_id, kind) do nothing;
+select public.check((select count(*) = 1 from public.reactions where post_id = :bob_post), 'todah given twice counts once');
+select set_config('request.jwt.claim.sub', :'bob', false);
+insert into public.user_blocks (blocker_id, blocked_id) values (:'bob', :'alice') on conflict (blocker_id, blocked_id) do nothing;
+select public.check((select count(*) = 1 from public.user_blocks), 'blocking twice keeps one block');
+select set_config('request.jwt.claim.sub', :'carol', false);
+
 -- ---- three distinct reports hide a post pending review ----
 select id as alice_post from public.posts where author_id = :'alice' \gset
 insert into public.reports (post_id, reason) values (:alice_post, 'spam');
@@ -86,6 +96,9 @@ select set_config('request.jwt.claim.sub', :'dave', false);
 insert into public.reports (post_id, reason) values (:alice_post, 'spam');
 select set_config('request.jwt.claim.sub', :'bob', false);
 insert into public.reports (post_id, reason) values (:alice_post, 'disrespect');
+-- The app tells this apart from a taken display name by the index's name.
+select public.expect_error(format('insert into public.reports (post_id, reason) values (%s, %L)', :alice_post, 'spam'),
+  'duplicate key value violates unique constraint "reports_one_per_reporter_post"');
 select set_config('request.jwt.claim.sub', :'carol', false);
 select public.check((select count(*) = 1 from public.posts where thread_id = :t1), 'post auto-hidden after 3 reports');
 select set_config('request.jwt.claim.sub', :'alice', false);
@@ -151,7 +164,8 @@ select public.expect_error(format('insert into public.user_progress (user_id, da
 -- ---- display names are unique, case-insensitively ----
 update public.profiles set display_name = 'Bob the Reader' where id = :'bob';
 select set_config('request.jwt.claim.sub', :'carol', false);
-select public.expect_error($$update public.profiles set display_name = 'bob THE reader' where id = auth.uid()$$, 'duplicate key');
+select public.expect_error($$update public.profiles set display_name = 'bob THE reader' where id = auth.uid()$$,
+  'duplicate key value violates unique constraint "profiles_display_name_ci"');
 select public.expect_error($$update public.profiles set trust_level = 4 where id = auth.uid()$$, 'permission denied');
 
 -- ---- account deletion removes the account and everything posted ----

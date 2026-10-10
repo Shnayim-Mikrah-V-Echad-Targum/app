@@ -11,6 +11,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
+import '../community/ui/community_ui.dart';
 import '../progress/domain/progress_models.dart';
 import 'week_context.dart';
 
@@ -70,19 +71,19 @@ class WeekOverview extends ConsumerWidget {
           ],
         ),
       );
-      if (ok == true) {
+      if (ok == true && context.mounted) {
         final before = ref.read(progressProvider).week(ctx.id);
         ref.read(progressProvider.notifier).clearWeek(ctx.id);
-        if (context.mounted) {
-          showStatus(
-            context,
-            l.markedUnread,
-            action: SnackBarAction(
-              label: l.actionUndo,
-              onPressed: () => ref.read(progressProvider.notifier).restoreWeek(ctx.id, before),
-            ),
-          );
-        }
+        // The snackbar outlives this page, and its ref with it.
+        final container = ProviderScope.containerOf(context, listen: false);
+        showStatus(
+          context,
+          l.markedUnread,
+          action: SnackBarAction(
+            label: l.actionUndo,
+            onPressed: () => container.read(progressProvider.notifier).restoreWeek(ctx.id, before),
+          ),
+        );
       }
     }
 
@@ -151,10 +152,14 @@ class WeekOverview extends ConsumerWidget {
               onPressed: markWeek,
             ),
           const Gap(8),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.forum_outlined),
-            label: Text(l.discussThisWeek),
-            onPressed: () => openTabPage(context, '/community/new?parsha=${Uri.encodeComponent(portion.key)}'),
+          WeeklyThreadOpener(
+            portion: portion,
+            hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
+            builder: (context, progress, open) => OutlinedButton.icon(
+              icon: progress ?? const Icon(Icons.forum_outlined),
+              label: Text(l.discussThisWeek),
+              onPressed: open,
+            ),
           ),
         ],
       ),

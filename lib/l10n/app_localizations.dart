@@ -3098,6 +3098,18 @@ abstract class AppLocalizations {
   /// **'No discussions yet. Start the first one!'**
   String get noThreads;
 
+  /// An empty weekly thread. {name} is the parsha; a no-break space keeps it with "Parshat".
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet — share a thought on Parshat {name}.'**
+  String noPostsYet(String name);
+
+  /// No description provided for @noReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'No replies yet.'**
+  String get noReplies;
+
   /// No description provided for @loadMore.
   ///
   /// In en, this message translates to:
@@ -3199,6 +3211,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That name is taken.'**
   String get errNameTaken;
+
+  /// No description provided for @errAlreadyReported.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve already reported this post.'**
+  String get errAlreadyReported;
 
   /// No description provided for @errInvalidName.
   ///

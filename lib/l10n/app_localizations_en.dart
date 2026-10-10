@@ -1745,6 +1745,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noThreads => 'No discussions yet. Start the first one!';
 
   @override
+  String noPostsYet(String name) {
+    return 'No posts yet — share a thought on Parshat $name.';
+  }
+
+  @override
+  String get noReplies => 'No replies yet.';
+
+  @override
   String get loadMore => 'Load more';
 
   @override
@@ -1824,6 +1832,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errNameTaken => 'That name is taken.';
+
+  @override
+  String get errAlreadyReported => 'You\'ve already reported this post.';
 
   @override
   String get errInvalidName => 'Names must be 2–40 characters.';

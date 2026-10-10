@@ -120,14 +120,15 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
   }
 }
 
-class ThreadTile extends StatelessWidget {
+class ThreadTile extends ConsumerWidget {
   const ThreadTile({super.key, required this.thread});
   final ThreadSummary thread;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final title = threadDisplayTitle(context, ref, thread);
     final meta = [
       if (thread.pinned) l.pinnedLabel,
       if (thread.locked) l.lockedLabel,
@@ -138,7 +139,7 @@ class ThreadTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Icon(thread.pinned ? Icons.push_pin_outlined : (thread.locked ? Icons.lock_outline : Icons.chat_bubble_outline)),
-        title: Text(thread.title, textDirection: autoDirection(thread.title)),
+        title: Text(title, textDirection: autoDirection(title)),
         subtitle: Text(meta, style: theme.textTheme.bodySmall),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/community/thread/${thread.id}'),

@@ -88,10 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             _route('/community', (_) => const CommunityScreen(), routes: [
               _route('forum/:slug', (s) => ForumScreen(slug: s.pathParameters['slug']!)),
               _route('thread/:id', (s) => ThreadScreen(threadId: s.pathParameters['id']!)),
-              _route('new', (s) => ComposeScreen(
-                    forumSlug: s.uri.queryParameters['forum'],
-                    parshaKey: s.uri.queryParameters['parsha'],
-                  )),
+              _route('new', (s) => ComposeScreen(forumSlug: s.uri.queryParameters['forum'])),
               _route('account', _account),
               _route('moderation', (_) => const ModerationScreen()),
             ]),

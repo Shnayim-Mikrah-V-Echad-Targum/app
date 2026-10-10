@@ -1738,6 +1738,14 @@ class AppLocalizationsHe extends AppLocalizations {
   String get noThreads => 'אין עדיין דיונים. אפשר לפתוח את הראשון!';
 
   @override
+  String noPostsYet(String name) {
+    return 'אין עדיין הודעות — אפשר לשתף מחשבה על פרשת $name.';
+  }
+
+  @override
+  String get noReplies => 'אין עדיין תגובות.';
+
+  @override
   String get loadMore => 'טעינת עוד';
 
   @override
@@ -1815,6 +1823,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get errNameTaken => 'השם תפוס.';
+
+  @override
+  String get errAlreadyReported => 'כבר דיווחת על ההודעה הזאת.';
 
   @override
   String get errInvalidName => 'השם צריך להכיל 2–40 תווים.';

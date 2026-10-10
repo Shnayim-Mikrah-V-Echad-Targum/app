@@ -11,6 +11,7 @@ import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
+import '../community/ui/community_ui.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/reading_plan.dart';
@@ -100,15 +101,19 @@ class TodayScreen extends ConsumerWidget {
             _HaftarahTile(ctx: ctx),
           ],
           const Gap(12),
-          InfoCard(
-            onTap: () => context.go('/community'),
-            child: Row(
-              children: [
-                const Icon(Icons.forum_outlined),
-                const Gap(12),
-                Expanded(child: Text(l.discussThisWeek)),
-                const Icon(Icons.chevron_right),
-              ],
+          WeeklyThreadOpener(
+            portion: ctx.portion,
+            hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
+            builder: (context, progress, open) => InfoCard(
+              onTap: open,
+              child: Row(
+                children: [
+                  SizedBox.square(dimension: 24, child: Center(child: progress ?? const Icon(Icons.forum_outlined))),
+                  const Gap(12),
+                  Expanded(child: Text(l.discussThisWeek)),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
             ),
           ),
         ],

@@ -24,6 +24,9 @@ class DemoForumRepository implements ForumRepository {
   final _todah = <String, Set<String>>{};
   final _blocked = <String>{};
   final _reports = <Report>[];
+
+  /// The posts each member has reported, once each as on the server.
+  final _reported = <(String, String)>{};
   final _progress = <String, Map<String, dynamic>>{};
   int _nextId = 1000;
   DateTime? _lastPost;
@@ -142,6 +145,10 @@ class DemoForumRepository implements ForumRepository {
   Future<void> deleteAccount() async {
     _posts.removeWhere((p) => p.authorId == 'me');
     _threads.removeWhere((t) => t.authorId == 'me' && !_posts.any((p) => p.threadId == t.id));
+    for (final givers in _todah.values) {
+      givers.remove('me');
+    }
+    _reported.removeWhere((r) => r.$1 == 'me');
     _progress.remove('me');
     await signOut();
   }
@@ -193,7 +200,7 @@ class DemoForumRepository implements ForumRepository {
         for (final p in _posts.where((p) => p.threadId == threadId && !_blocked.contains(p.authorId)))
           p.copyWith(
             todah: p.todah + (_todah[p.id]?.length ?? 0),
-            myTodah: _todah[p.id]?.contains('me') ?? false,
+            myTodah: _user != null && (_todah[p.id]?.contains(_user!.id) ?? false),
           ),
       ].take(limit).toList();
 
@@ -306,16 +313,17 @@ class DemoForumRepository implements ForumRepository {
 
   @override
   Future<void> setTodah(String postId, bool on) async {
-    _requireUser();
+    final user = _requireUser().id;
     final set = _todah.putIfAbsent(postId, () => {});
-    on ? set.add('me') : set.remove('me');
+    on ? set.add(user) : set.remove(user);
   }
 
   // --- Safety -----------------------------------------------------------------
 
   @override
   Future<void> report({String? postId, String? threadId, required ReportReason reason, String? details}) async {
-    _requireUser();
+    final user = _requireUser().id;
+    if (postId != null && !_reported.add((user, postId))) throw const CommunityException('already_reported');
     _reports.add(Report(
       id: '${_nextId++}',
       postId: postId,

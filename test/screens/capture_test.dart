@@ -8,6 +8,7 @@
 @Tags(['screens'])
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -21,6 +22,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -75,6 +77,13 @@ const _screens = {
   'community': '/community',
   'forum': '/community/forum/parsha',
   'thread': '/community/thread/1',
+  // An empty weekly thread, and the forum that lists it.
+  'thread_weekly': '/community/thread/1000',
+  'forum_weekly': '/community/forum/parsha',
+  // Reporting a post, before a reason is chosen.
+  'thread_report': '/community/thread/1',
+  // The week's Discuss button while its discussion opens.
+  'week_discuss': '/week/5787:1',
   'compose': '/community/new',
   'account': '/community/account',
   'account_settings': '/settings/account',
@@ -161,6 +170,28 @@ Future<ForumRepository> _signedIn() async {
   return repo;
 }
 
+/// Screens shown with another community than the plain demo.
+final _communities = <String, Future<ForumRepository> Function()>{
+  'thread_weekly': _withWeeklyThread,
+  'forum_weekly': _withWeeklyThread,
+  'thread_report': _signedIn,
+  'week_discuss': () async => _OpeningForever(),
+};
+
+/// The demo with the weekly thread of Bereshit 5787, thread 1000.
+Future<ForumRepository> _withWeeklyThread() async {
+  final repo = DemoForumRepository();
+  await repo.weeklyThread(parshaNumber: 1, hebrewYear: 5787, title: 'Bereshit · בראשית · 5787');
+  return repo;
+}
+
+/// A community whose weekly threads never finish opening.
+class _OpeningForever extends DemoForumRepository {
+  @override
+  Future<String> weeklyThread({required int parshaNumber, required int hebrewYear, required String title}) =>
+      Completer<String>().future;
+}
+
 /// Screens captured with a dialog open, by tapping the icon given.
 const _dialogs = {'s_data_reset': Icons.delete_forever_outlined};
 
@@ -173,10 +204,21 @@ final _taps = {
   'welcome_location': () => find.byType(FilledButton).first,
   // Next, on the last step of Shevi'i.
   'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
+  'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
+};
+
+/// Screens captured after tapping what each finder finds in turn, settling
+/// after each.
+final _tapSteps = {
+  // The last post's menu, then Report.
+  'thread_report': [
+    () => find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)),
+    () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'report'),
+  ],
 };
 
 /// Screens captured scrolled to the end of their main list.
-const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced', 'reader_third'};
+const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced', 'reader_third', 'week_discuss'};
 
 Future<void> _scrollToEnd(WidgetTester tester) async {
   // A lazily built list only learns its full extent as it scrolls.
@@ -269,7 +311,7 @@ void main() {
           progress: (_sceneProgress[entry.key] ?? _progress)(),
           forums: blocked
               ? await _accountWithNewerBackup()
-              : (_backupOn.contains(entry.key) ? await _signedIn() : null),
+              : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
         );
         if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
         await _settle(tester);
@@ -283,6 +325,10 @@ void main() {
           // Long enough for a snackbar to appear, not to leave again.
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 500));
+        }
+        for (final step in _tapSteps[entry.key] ?? const <Finder Function()>[]) {
+          await tester.tap(step());
+          await _settle(tester);
         }
         await _write(tester, '${mode.tag}_${entry.key}');
       }, skip: !_capture);

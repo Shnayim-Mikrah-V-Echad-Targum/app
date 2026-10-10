@@ -31,15 +31,32 @@ final threadProvider = FutureProvider.family<ThreadSummary, String>(
   (ref, id) => ref.watch(forumRepositoryProvider).thread(id),
 );
 
-final postsProvider = FutureProvider.family<List<Post>, String>(
-  (ref, threadId) => ref.watch(forumRepositoryProvider).posts(threadId),
-);
+/// Posts in a thread, fetched again when the account changes: what the
+/// reader has given todah to, and whom they have blocked, are their own.
+final postsProvider = FutureProvider.family<List<Post>, String>((ref, threadId) {
+  ref.watch(communityUserProvider.select((v) => v.value?.id));
+  return ref.watch(forumRepositoryProvider).posts(threadId);
+});
 
 final blockedUsersProvider = FutureProvider<Set<String>>((ref) async {
   final user = await ref.watch(communityUserProvider.future);
   if (user == null) return <String>{};
   return ref.watch(forumRepositoryProvider).blockedUsers();
 });
+
+/// Posts reported in this session, whose Report action is hidden. They are
+/// the account's own, so another account starts afresh.
+class ReportedPostIds extends Notifier<Set<String>> {
+  @override
+  Set<String> build() {
+    ref.watch(communityUserProvider.select((v) => v.value?.id));
+    return const {};
+  }
+
+  void add(String postId) => state = {...state, postId};
+}
+
+final reportedPostIdsProvider = NotifierProvider<ReportedPostIds, Set<String>>(ReportedPostIds.new);
 
 /// Keeps reading progress backed up to the user's account (when they have
 /// opted in): pulls and merges on sign-in, pushes a few seconds after any

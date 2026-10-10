@@ -1039,6 +1039,16 @@
   "guidelinesPrompt": "Before your first post, please read the community guidelines.",
   "readGuidelines": "Read the guidelines",
   "noThreads": "No discussions yet. Start the first one!",
+  "noPostsYet": "No posts yet — share a thought on Parshat\u00a0{name}.",
+  "@noPostsYet": {
+    "description": "An empty weekly thread. {name} is the parsha; a no-break space keeps it with \"Parshat\".",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noReplies": "No replies yet.",
   "loadMore": "Load more",
   "postsCount": "{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}",
   "@postsCount": {
@@ -1087,6 +1097,7 @@
   "errLinks": "New members can include at most 2 links.",
   "errDailyLimit": "New members can post a limited amount each day. Please try again tomorrow.",
   "errNameTaken": "That name is taken.",
+  "errAlreadyReported": "You've already reported this post.",
   "errInvalidName": "Names must be 2–40 characters.",
   "errInvalidCode": "That code didn't work. Check it and try again.",
   "errInvalidEmail": "Please enter a valid email address.",

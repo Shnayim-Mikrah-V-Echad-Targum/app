@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'forum_repository.dart';
@@ -24,14 +25,22 @@ class SupabaseForumRepository implements ForumRepository {
     try {
       return await f();
     } on PostgrestException catch (e) {
-      throw CommunityException(_codeOf(e.message, e.code), e.message);
+      throw CommunityException(codeOf(e.message, e.code), e.message);
     } on AuthException catch (e) {
       throw CommunityException(e.code ?? 'auth_error', e.message);
     }
   }
 
-  static String _codeOf(String message, String? sqlCode) {
-    if (sqlCode == '23505') return 'name_taken';
+  /// The stable code of a database error. A unique violation names the
+  /// index it broke: only the display names' index means the name is taken.
+  /// Any other means the change was there already ('duplicate').
+  @visibleForTesting
+  static String codeOf(String message, String? sqlCode) {
+    if (sqlCode == '23505') {
+      if (message.contains('profiles_display_name_ci')) return 'name_taken';
+      if (message.contains('reports_one_per_reporter_post')) return 'already_reported';
+      return 'duplicate';
+    }
     if (sqlCode == '42501') return 'forbidden';
     final m = RegExp(r'^[a-z_]+').firstMatch(message);
     return m?.group(0) ?? 'unknown';
@@ -244,7 +253,12 @@ class SupabaseForumRepository implements ForumRepository {
   @override
   Future<void> setTodah(String postId, bool on) => _call(() async {
         if (on) {
-          await _db.from('reactions').insert({'post_id': int.parse(postId), 'user_id': _uid, 'kind': 'todah'});
+          // Given already (a second tap, or another device) is given.
+          await _db.from('reactions').upsert(
+            {'post_id': int.parse(postId), 'user_id': _uid, 'kind': 'todah'},
+            onConflict: 'post_id,user_id,kind',
+            ignoreDuplicates: true,
+          );
         } else {
           await _db.from('reactions').delete().eq('post_id', int.parse(postId)).eq('user_id', _uid).eq('kind', 'todah');
         }
@@ -262,8 +276,11 @@ class SupabaseForumRepository implements ForumRepository {
           }));
 
   @override
-  Future<void> block(String userId) =>
-      _call(() => _db.from('user_blocks').insert({'blocker_id': _uid, 'blocked_id': userId}));
+  Future<void> block(String userId) => _call(() => _db.from('user_blocks').upsert(
+        {'blocker_id': _uid, 'blocked_id': userId},
+        onConflict: 'blocker_id,blocked_id',
+        ignoreDuplicates: true,
+      ));
 
   @override
   Future<void> unblock(String userId) =>
