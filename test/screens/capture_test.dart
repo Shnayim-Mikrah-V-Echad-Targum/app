@@ -89,6 +89,7 @@ const _screens = {
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
   'about': '/settings/about',
+  'privacy': '/settings/about/legal/privacy',
   'guide': '/guide',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What Android 12 and later back up to the user's Google account and carry
+     to a new device: only the settings and reading progress, which
+     shared_preferences keeps in this one file. Scheduled reminders are left
+     out; the app schedules them again from its settings. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="sharedpref" path="FlutterSharedPreferences.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="FlutterSharedPreferences.xml" />
+    </device-transfer>
+</data-extraction-rules>

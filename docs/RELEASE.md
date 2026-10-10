@@ -54,6 +54,8 @@
 - [ ] Launch and system bars, from a cold start, in light and dark mode: iOS, Android 11, and Android 14 or later.
   - The launch screen is the mark's tile on cream (light) or lamplight brown (dark), with no white flash before or after it.
   - The status and navigation bars are the colour of the screen beneath them, and their icons are legible: dark on Welcome's cream. Check three-button navigation on Android 9 and 10, gesture navigation on Android 14 or later, and an app theme that differs from the system's.
+- [ ] Predictive back, Android 14 or later: a back gesture on Today previews the home screen.
+- [ ] Android system backup: after `adb shell bmgr backupnow org.shnayimmikra.app`, reinstalling the app restores its settings and progress.
 - [ ] Community against the production backend:
   - sign in with a code
   - post, edit and delete
@@ -90,7 +92,7 @@
 
 **Build**
 
-- [ ] Run `flutter build appbundle --release` with the dart-defines from the README, or take the `android` artifact from CI.
+- [ ] Run `flutter build appbundle --release` with the dart-defines from the README, or take the `android` artifact from CI. A build without the keystore ends with "RELEASE BUILD SIGNED WITH DEBUG KEY", and CI names its artifact `android-debug-signed`: Google Play refuses it.
 
 **Play Console**
 

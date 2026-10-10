@@ -125,7 +125,10 @@ jobs:
       - run: flutter build appbundle --release $DART_DEFINES
       - uses: actions/upload-artifact@v4
         with:
-          name: android
+          # Without the keystore secrets (as in pull requests from forks), the
+          # release build is signed with the debug key, which Google Play
+          # refuses; the name says so.
+          name: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'android' || 'android-debug-signed' }}
           path: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab
