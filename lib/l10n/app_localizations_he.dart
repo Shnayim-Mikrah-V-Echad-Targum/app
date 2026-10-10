@@ -861,7 +861,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get settingsReadingDesc =>
-      'ארץ ישראל או חו״ל, תוכנית, תרגום או רש״י, הפטרה';
+      'ארץ ישראל או חו״ל, זמני שבת, תוכנית, תרגום או רש״י, הפטרה';
 
   @override
   String get settingsDisplayDesc =>

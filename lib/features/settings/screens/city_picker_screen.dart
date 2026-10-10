@@ -12,6 +12,7 @@ import '../../../data/city_directory.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/paper_group.dart';
+import '../../search/query_direction.dart';
 
 /// Chooses the city for Shabbat times from a list, searched by name in
 /// English or Hebrew. The device's location is never asked for: its time
@@ -74,6 +75,9 @@ class _CityPickerScreenState extends ConsumerState<CityPickerScreen> {
                   controller: _query,
                   textInputAction: TextInputAction.search,
                   autocorrect: false,
+                  // A Hebrew name is written from the right and a Latin one
+                  // from the left, whatever the language of the app.
+                  textDirection: queryDirection(_query.text),
                   decoration: InputDecoration(
                     labelText: l.citySearchLabel,
                     prefixIcon: const Icon(Icons.search),

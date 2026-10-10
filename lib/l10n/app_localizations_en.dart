@@ -861,7 +861,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsReadingDesc =>
-      'Israel or abroad, plan, Targum or Rashi, haftarah';
+      'Israel or abroad, Shabbat times, plan, Targum or Rashi, haftarah';
 
   @override
   String get settingsDisplayDesc =>

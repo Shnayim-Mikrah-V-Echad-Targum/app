@@ -160,6 +160,21 @@ void main() {
       expect(find.text('ישראל'), findsWidgets);
     });
 
+    for (final hebrew in [false, true]) {
+      testWidgets('types a Latin name left to right and a Hebrew one right to left${hebrew ? ', in Hebrew' : ''}',
+          (tester) async {
+        await open(tester, '/settings/reading/city', hebrew: hebrew);
+        TextDirection? direction() => tester.widget<TextField>(find.byType(TextField)).textDirection;
+        expect(direction(), isNull, reason: "the page's own while empty");
+        await tester.enterText(find.byType(TextField), 'York');
+        await tester.pump();
+        expect(direction(), TextDirection.ltr);
+        await tester.enterText(find.byType(TextField), 'בני ברק');
+        await tester.pump();
+        expect(direction(), TextDirection.rtl);
+      });
+    }
+
     testWidgets('suggests the cities in the device\'s time zone, with the chosen one first', (tester) async {
       final semantics = tester.ensureSemantics();
       await open(tester, '/settings/reading/city', city: jerusalem, timeZone: 'Asia/Jerusalem');

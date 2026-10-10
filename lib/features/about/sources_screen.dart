@@ -109,8 +109,8 @@ class SourcesScreen extends StatelessWidget {
             ),
           Text(
             he
-                ? 'הטקסטים והנתונים בצורתם המעובדת באפליקציה זו מופצים בתנאי הרישיונות המקוריים. קובצי הנתונים נמצאים בתיקיות assets/text ו־assets/data בקוד המקור.'
-                : 'The texts and data as adapted in this app are distributed under their original licenses. The data files are in the assets/text and assets/data folders of the source code.',
+                ? 'הטקסטים והנתונים בצורתם המעובדת באפליקציה זו מופצים בתנאי הרישיונות המקוריים. קובצי הנתונים נמצאים בתיקיות assets/\u2060text ו־assets/\u2060data בקוד המקור.'
+                : 'The texts and data as adapted in this app are distributed under their original licenses. The data files are in the assets/\u2060text and assets/\u2060data folders of the source code.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
