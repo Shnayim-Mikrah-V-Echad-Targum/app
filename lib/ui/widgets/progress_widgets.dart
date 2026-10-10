@@ -13,6 +13,7 @@ import '../../features/progress/domain/streak_engine.dart';
 import '../l10n.dart';
 import '../theme/app_theme.dart';
 import 'common.dart';
+import 'fonts_change_scope.dart';
 
 /// The geometry of the parsha rings at one size (docs/DESIGN_SYSTEM.md
 /// §6.11): three strokes of `size × 0.055`, 1.6 strokes apart.
@@ -423,6 +424,8 @@ class RingLegend extends StatelessWidget {
       _width(context, progress, thirdLabel: thirdLabel, split: true);
 
   static double _width(BuildContext context, WeekProgress progress, {String? thirdLabel, required bool split}) {
+    // Measured again when a font arrives.
+    FontsChangeScope.watch(context);
     final l = context.l10n;
     final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
     double measure(String text, TextStyle? style) {
@@ -841,6 +844,7 @@ class WeekStrip extends StatelessWidget {
   /// The width each day needs to set its weekday on one line, margins
   /// included, and never less than [minDayWidth].
   double _dayWidthNeeded(BuildContext context, List<LocalDate> days) {
+    FontsChangeScope.watch(context);
     final names = Names(context);
     // Today's is bold; measure every name as if it were.
     final style = Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700);

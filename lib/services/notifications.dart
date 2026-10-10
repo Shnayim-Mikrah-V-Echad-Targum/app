@@ -3,7 +3,9 @@ import 'dart:io' show File, Platform;
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding, Priority;
+import 'package:flutter/widgets.dart' show WidgetsBinding;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart' hide Priority;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -23,16 +25,20 @@ typedef ReminderCopy = ({String title, String body});
 /// Local notifications on Android, iOS, macOS and Windows. Scheduled
 /// notifications aren't available in browsers, so the web build has none.
 class NotificationService {
-  NotificationService._(this._plugin, {required this.supported});
+  NotificationService._(this._plugin, {required this.supported, Future<void> Function()? loadTimeZones})
+      : _loadTimeZones = loadTimeZones ?? _loadTimeZoneDatabase;
 
   /// For tests and unsupported platforms.
   NotificationService.disabled()
       : _plugin = null,
-        supported = false;
+        supported = false,
+        _loadTimeZones = _loadTimeZoneDatabase;
 
-  /// A service that schedules through [plugin], for tests.
+  /// A service that schedules through [plugin], with [loadTimeZones] in place
+  /// of loading the time-zone database.
   @visibleForTesting
-  NotificationService.withPlugin(FlutterLocalNotificationsPlugin plugin) : this._(plugin, supported: true);
+  NotificationService.forTesting(FlutterLocalNotificationsPlugin plugin, {required Future<void> Function() loadTimeZones})
+      : this._(plugin, supported: true, loadTimeZones: loadTimeZones);
 
   static Future<NotificationService> create() async {
     final supported = !kIsWeb &&
@@ -43,13 +49,6 @@ class NotificationService {
     if (!supported) return NotificationService.disabled();
 
     try {
-      tzdata.initializeTimeZones();
-      try {
-        final info = await FlutterTimezone.getLocalTimezone();
-        tz.setLocalLocation(tz.getLocation(info.identifier));
-      } catch (_) {
-        // Falls back to UTC offsets; reminders may be off by DST at worst.
-      }
       final plugin = FlutterLocalNotificationsPlugin();
       final service = NotificationService._(plugin, supported: true);
       await plugin.initialize(
@@ -84,8 +83,32 @@ class NotificationService {
     }
   }
 
+  /// Loads the time-zone database and finds the device's zone, which only
+  /// scheduling a reminder needs. Decoding the database blocks the UI for a
+  /// while, so it waits for the first frame and then for a moment when
+  /// nothing is animating.
+  static Future<void> _loadTimeZoneDatabase() async {
+    await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
+    try {
+      // Zmanim may have loaded it already.
+      if (!tz.timeZoneDatabase.isInitialized) {
+        await SchedulerBinding.instance.scheduleTask(tzdata.initializeTimeZones, Priority.idle);
+      }
+      final info = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(info.identifier));
+    } catch (_) {
+      // Falls back to UTC offsets; reminders may be off by DST at worst.
+    }
+  }
+
   final FlutterLocalNotificationsPlugin? _plugin;
   final bool supported;
+
+  final Future<void> Function() _loadTimeZones;
+
+  /// The time-zone database loading, from the first reminder to schedule:
+  /// most readers have none, and never load it.
+  Future<void>? _timeZones;
 
   /// The route to open if the app was launched from a notification.
   String? launchRoute;
@@ -133,17 +156,20 @@ class NotificationService {
   ///
   /// Each call waits for the one before it to finish, and a call that a
   /// newer one has already superseded is skipped, so a quick succession of
-  /// changes leaves exactly the last plan scheduled.
+  /// changes leaves exactly the last plan scheduled. Scheduling first waits
+  /// for the time-zone database, loaded for the first reminders (clearing
+  /// them never loads it); a call superseded while it waited schedules
+  /// nothing.
   Future<void> reschedule(
       List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) {
     final call = ++_latest;
     return _queue = _queue.then((_) async {
-      if (call == _latest) await _reschedule(reminders, l, describe);
+      if (call == _latest) await _reschedule(call, reminders, l, describe);
     }).catchError((Object _) {});
   }
 
-  Future<void> _reschedule(
-      List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) async {
+  Future<void> _reschedule(int call, List<PlannedReminder> reminders, AppLocalizations l,
+      ReminderCopy Function(PlannedReminder) describe) async {
     final p = _plugin;
     if (p == null) return;
     final copy = [for (final r in reminders) describe(r)];
@@ -153,6 +179,11 @@ class NotificationService {
       for (final (i, r) in reminders.indexed) '${r.id}@${r.localDateTime}:${copy[i].title}|${copy[i].body}',
     ].join('\n');
     if (signature == _lastSignature) return;
+    if (reminders.isNotEmpty) {
+      await (_timeZones ??= _loadTimeZones());
+      // A later call has taken over while this one waited.
+      if (call != _latest) return;
+    }
     try {
       final android = p.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       if (android != null) {
@@ -266,13 +297,23 @@ ReminderCopy reminderCopy(
 
 final notificationServiceProvider = Provider<NotificationService>((ref) => NotificationService.disabled());
 
-/// Recomputes and reschedules reminders whenever settings, progress or the
-/// date change.
+/// Recomputes and reschedules reminders whenever the reminder settings, the
+/// reading log or the date change.
 final reminderSchedulerProvider = Provider<void>((ref) {
   final service = ref.watch(notificationServiceProvider);
   if (!service.supported) return;
-  final settings = ref.watch(settingsProvider);
-  final progress = ref.watch(progressProvider);
+  final settings = ref.watch(settingsProvider.select((s) => (
+        dailyReminder: s.dailyReminder,
+        dailyReminderMinutes: s.dailyReminderMinutes,
+        fridayReminder: s.fridayReminder,
+        fridayReminderMinutes: s.fridayReminderMinutes,
+        checkInReminder: s.checkInReminder,
+        language: s.language,
+        ashkenaziNames: s.ashkenaziNames,
+      )));
+  // The reading log, not the place saved in it (see ProgressState.logRevision).
+  ref.watch(progressProvider.select((p) => p.logRevision));
+  final progress = ref.read(progressProvider);
   final today = ref.watch(todayProvider);
   final planner = ref.watch(plannerProvider);
   final repo = ref.watch(parshaRepositoryProvider);

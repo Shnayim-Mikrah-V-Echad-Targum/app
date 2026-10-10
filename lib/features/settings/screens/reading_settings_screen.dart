@@ -8,6 +8,7 @@ import '../../../ui/l10n.dart';
 import '../../progress/domain/reading_plan.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
+import '../widgets/shabbat_times_setting.dart';
 
 class ReadingSettingsScreen extends ConsumerWidget {
   const ReadingSettingsScreen({super.key});
@@ -43,6 +44,7 @@ class ReadingSettingsScreen extends ConsumerWidget {
           choices: [Choice(true, l.yomTovDaysOne), Choice(false, l.yomTovDaysTwo)],
           onChanged: (v) => update((s) => s.copyWith(oneDayYomTov: v)),
         ),
+        const ShabbatTimesSetting(),
         ChoiceGroup<ReadingPlanType>(
           title: l.planLabel,
           value: s.plan,

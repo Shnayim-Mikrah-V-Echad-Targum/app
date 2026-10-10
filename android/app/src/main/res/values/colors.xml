@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#1D3F75</color>
+    <!-- The app's surface (DESIGN_SYSTEM.md §3.2), behind the Flutter UI from
+         the launch screen to the first frame and whenever it resizes. -->
+    <color name="app_bg">#FAF7F0</color>
 </resources>

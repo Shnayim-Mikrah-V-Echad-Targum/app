@@ -925,7 +925,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsReadingDesc =>
-      'Israel or abroad, plan, Targum or Rashi, haftarah';
+      'Israel or abroad, Shabbat times, plan, Targum or Rashi, haftarah';
 
   @override
   String get settingsDisplayDesc =>
@@ -2041,4 +2041,191 @@ class AppLocalizationsEn extends AppLocalizations {
   String charactersLeft(int count) {
     return '$count characters left';
   }
+
+  @override
+  String get shabbatTimesLabel => 'Shabbat times';
+
+  @override
+  String get shabbatTimesHelp =>
+      'Choose your city to see when to light candles and when Shabbat ends. The times are worked out on this device, and your city stays on it.';
+
+  @override
+  String get cityLabel => 'City';
+
+  @override
+  String get cityNotSet => 'Not set';
+
+  @override
+  String shabbatTimesSummary(String candles, String ends) {
+    return 'Candle-lighting $candles\nShabbat ends $ends';
+  }
+
+  @override
+  String shabbatCandlesOnly(String candles) {
+    return 'Candle-lighting $candles';
+  }
+
+  @override
+  String get shabbatNoSunset =>
+      'There is no sunset there this Shabbat. Ask your rav about the times.';
+
+  @override
+  String get shabbatTimesUnavailable =>
+      'This device can\'t tell the time in that city, so its times can\'t be shown.';
+
+  @override
+  String get cityPickerTitle => 'Choose a city';
+
+  @override
+  String get citySearchLabel => 'Search for a city';
+
+  @override
+  String get citySearchClear => 'Clear search';
+
+  @override
+  String get cityYours => 'Your city';
+
+  @override
+  String get cityNone => 'No city';
+
+  @override
+  String get cityNoneDesc => 'Shabbat times aren\'t shown';
+
+  @override
+  String get cityNearYou => 'In your time zone';
+
+  @override
+  String cityNoResults(String query) {
+    return 'No city matches “$query”.';
+  }
+
+  @override
+  String cityResultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cities found',
+      one: '1 city found',
+      zero: 'No cities found',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cityResultsMore(int shown, int count) {
+    return 'The first $shown of $count matches are listed. Type more of the name to find the others.';
+  }
+
+  @override
+  String get cityListNote =>
+      'The list has every place of 100,000 people or more, every city in Israel, and the larger Israeli localities beyond the Green Line. If yours isn\'t there, choose the nearest one; beyond the Green Line, the nearest Israeli locality.';
+
+  @override
+  String get searchTitle => 'Search the Torah';
+
+  @override
+  String get searchFieldLabel => 'A word or phrase';
+
+  @override
+  String get searchClear => 'Clear search';
+
+  @override
+  String get searchIntro =>
+      'Find a word or phrase in the Torah, in Targum Onkelos, or in the English translation.';
+
+  @override
+  String get searchPreparing => 'Preparing the text for search…';
+
+  @override
+  String searchResultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verses',
+      one: '1 verse',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String searchResultsFirst(int shown, int count) {
+    return 'The first $shown of $count verses';
+  }
+
+  @override
+  String get searchNarrow => 'Add a word to narrow the search.';
+
+  @override
+  String searchNoResults(String query) {
+    return 'No verse matches “$query”.';
+  }
+
+  @override
+  String get searchNoResultsHint =>
+      'Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.';
+
+  @override
+  String get searchNoResultsHintEnglish =>
+      'Try fewer words, or the older English of the 1917 translation, such as “hath” for “has”.';
+
+  @override
+  String searchResultsAnnounced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verses found',
+      one: '1 verse found',
+      zero: 'No verses found',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goToVerseLabel => 'A verse, word or phrase';
+
+  @override
+  String goToVerseHint(String book) {
+    return '$book 28:12';
+  }
+
+  @override
+  String goToVerseHelp(String example) {
+    return 'Type a book or parsha, then a chapter and verse, as in $example; or words to search for.';
+  }
+
+  @override
+  String goToVerseSearch(String query) {
+    return 'Search for “$query”';
+  }
+
+  @override
+  String goToVerseChapters(String book, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chapters',
+      one: '1 chapter',
+    );
+    return '$book has $_temp0.';
+  }
+
+  @override
+  String goToVerseVerses(String book, String chapter, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verses',
+      one: '1 verse',
+    );
+    return '$book $chapter has $_temp0.';
+  }
+
+  @override
+  String get shortcutContinueReading => 'Continue reading';
+
+  @override
+  String get shortcutLogFromBook => 'Log reading from a book';
+
+  @override
+  String get shortcutThisWeek => 'This week\'s parsha';
 }

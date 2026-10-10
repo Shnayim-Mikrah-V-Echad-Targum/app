@@ -28,6 +28,7 @@ import 'display_sheet.dart';
 import 'notification_prompt.dart';
 import 'reader_flow.dart';
 import 'scripture_text.dart';
+import 'verse_anchor.dart';
 
 final bookTextProvider = FutureProvider.family<BookText, (TextLayer, String)>(
   (ref, args) => ref.watch(textRepositoryProvider).book(args.$1, args.$2),
@@ -69,6 +70,7 @@ class ReaderScreen extends ConsumerStatefulWidget {
     required this.aliyah,
     this.fullText = false,
     this.fromWeek = false,
+    this.targetVerse,
   });
 
   final String weekId;
@@ -77,6 +79,11 @@ class ReaderScreen extends ConsumerStatefulWidget {
 
   /// Opened from the week's own page, which "Back to the week" returns to.
   final bool fromWeek;
+
+  /// A verse of the aliyah to open at, from a search result, Go to verse or
+  /// a link: the full text opens scrolled to it, and marks it until the next
+  /// tap.
+  final VerseRef? targetVerse;
 
   /// Whether the display shortcuts are single keys (T, N, L, + and −), as on
   /// the web, where Chrome and Edge keep Ctrl+Shift+T, Ctrl+Shift+N and
@@ -90,7 +97,7 @@ class ReaderScreen extends ConsumerStatefulWidget {
 
 class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   late int _aliyah = widget.aliyah.clamp(0, kAliyot - 1);
-  late bool _fullText = widget.fullText;
+  late bool _fullText = widget.fullText || widget.targetVerse != null;
   int _chunk = 0;
   int _step = 0;
   bool _finished = false;
@@ -114,6 +121,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   // goes with nothing in its place: its keys keep working, and Tab goes on
   // from the top.
   final _readerFocus = FocusNode(skipTraversal: true);
+
+  // The verse the reader was opened at, marked until the next tap or another
+  // aliyah. It is not focus mode's verse: it shows with focus mode off too.
+  late VerseRef? _targetVerse = widget.targetVerse;
+
+  // In focus mode, the verse focused for the one opened at, whose highlight
+  // is held off until focus moves, so that nothing moves when the mark goes.
+  int? _quietFocus;
 
   // One per verse of the full text, for scrolling a verse into view.
   final _verseKeys = <GlobalKey>[];
@@ -172,6 +187,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _announceWhenPositioned = true;
       _finished = false;
       _focusedVerse = null;
+      _quietFocus = null;
+      _targetVerse = null;
     });
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
@@ -183,6 +200,30 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void _focusAfterFrame(FocusNode node) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && node.context != null) node.requestFocus();
+    });
+  }
+
+  // --- The verse opened at ---------------------------------------------------
+
+  /// Scrolls verse [i] of the full text, the one the reader was opened at, a
+  /// fifth of the way down the screen once this frame has laid it out, and
+  /// then says which verse it is where the platform takes announcements.
+  void _revealTarget(int i, String book, VerseRef verse) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final target = i < _verseKeys.length ? _verseKeys[i].currentContext : null;
+      if (!mounted || target == null) return;
+      await Scrollable.ensureVisible(
+        target,
+        alignment: 0.2,
+        duration: Motion.of(context).d(const Duration(milliseconds: 300)),
+        curve: Motion.standard,
+      );
+      if (!mounted || !MediaQuery.supportsAnnounceOf(context)) return;
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        Names(context).reference(book, verse.chapter, verse.verse),
+        Directionality.of(context),
+      );
     });
   }
 
@@ -294,11 +335,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   /// ↓ and ↑ in focus mode: the next or previous verse is the one read, and
   /// comes into view at the same height on the screen. With none yet, the
-  /// first in view is.
+  /// first in view is. Like a tap, it clears the mark of the verse opened at
+  /// and gives focus mode its own highlight back.
   void _moveFocusedVerse(int direction, int count) {
     final current = _focusedVerse;
     final verse = current == null ? _firstVerseInView(count) : (current + direction).clamp(0, count - 1);
-    setState(() => _focusedVerse = verse);
+    setState(() {
+      _focusedVerse = verse;
+      _quietFocus = null;
+      _targetVerse = null;
+    });
     _revealVerse(verse, animate: true);
   }
 
@@ -495,13 +541,24 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             WidgetsBinding.instance.addPostFrameCallback((_) => _announceStep(flow));
           }
           _announceWhenPositioned = false;
+          if (_targetVerse case final target?) {
+            final i = flow.verses.indexOf(target);
+            if (i < 0) {
+              // Not in this aliyah (an old link, say): it opens as usual.
+              _targetVerse = null;
+            } else {
+              // Focus mode reads around it, rather than around nothing.
+              if (s.focusMode) _focusedVerse = _quietFocus = i;
+              _revealTarget(i, flow.book, target);
+            }
+          }
           // Focus mode opens on the reader's place, the first verse of the
           // step the guided reader resumes at, as switching to the full text
-          // does: not on nothing.
+          // does: not on nothing. The verse opened at is revealed instead.
           if (s.focusMode && _focusedVerse == null) {
             final verse = flow.chunks[_chunk].start;
             _focusedVerse = verse;
-            if (_fullText) _revealVerse(verse, animate: false);
+            if (_fullText && _targetVerse == null) _revealVerse(verse, animate: false);
           }
         }
         // Settings changes can reshape the flow; keep indices in range.
@@ -603,6 +660,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                       case 'mode':
                         setState(() {
                           _fullText = !_fullText;
+                          // The mark of the verse opened at goes with a
+                          // change of mode.
+                          _targetVerse = null;
+                          _quietFocus = null;
                           // Focus mode picks up the full text at the verse
                           // being read.
                           if (_fullText && s.focusMode && !_finished) _focusedVerse = flow.chunks[_chunk].start;
@@ -657,7 +718,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                             scroll: _scroll,
                             verseKey: _verseKey,
                             focusedVerse: _focusedVerse,
-                            onVerseTap: (i) => setState(() => _focusedVerse = _focusedVerse == i ? null : i),
+                            quietFocus: _quietFocus,
+                            targetVerse: _targetVerse,
+                            onTap: _targetVerse == null ? null : () => setState(() => _targetVerse = null),
+                            onVerseTap: (i) => setState(() {
+                              _focusedVerse = _focusedVerse == i ? null : i;
+                              _quietFocus = null;
+                            }),
                             footer: ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah)
                                 ? FilledButton.icon(
                                     icon: const Icon(Icons.check),
@@ -1393,6 +1460,9 @@ class _FullText extends StatelessWidget {
     required this.scroll,
     required this.verseKey,
     required this.focusedVerse,
+    this.quietFocus,
+    required this.targetVerse,
+    required this.onTap,
     required this.onVerseTap,
     this.footer,
   });
@@ -1405,6 +1475,16 @@ class _FullText extends StatelessWidget {
   /// The key of each verse's block, by index, for scrolling it into view.
   final GlobalKey Function(int) verseKey;
   final int? focusedVerse;
+
+  /// The focused verse that shows no highlight: the one opened at, until
+  /// focus moves.
+  final int? quietFocus;
+
+  /// The verse the reader was opened at, which is marked.
+  final VerseRef? targetVerse;
+
+  /// Called on any tap on the text, wherever it lands.
+  final VoidCallback? onTap;
   final ValueChanged<int> onVerseTap;
   final Widget? footer;
 
@@ -1417,8 +1497,11 @@ class _FullText extends StatelessWidget {
 
     Widget verse(int i) {
       final r = flow.verses[i];
+      final targeted = r == targetVerse;
       final dimmed = settings.focusMode && focusedVerse != null && focusedVerse != i;
-      final highlighted = settings.focusMode && focusedVerse == i;
+      // The mark of the verse opened at stands in for focus mode's own, which
+      // stays off after the mark goes, until focus moves.
+      final highlighted = settings.focusMode && focusedVerse == i && !targeted && quietFocus != i;
       final brk = texts.mikra.breaks[r];
       return Center(
         key: verseKey(i),
@@ -1439,46 +1522,49 @@ class _FullText extends StatelessWidget {
                     ),
                   ),
                 ),
-              InkWell(
-                onTap: settings.focusMode ? () => onVerseTap(i) : null,
-                // ↑ and ↓ move from verse to verse: a Tab stop on each
-                // would put up to 72 before the button at the end.
-                canRequestFocus: false,
-                borderRadius: BorderRadius.circular(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ScriptureVerse(
-                      verse: texts.mikra.verse(r),
-                      kind: ScriptureKind.mikra,
-                      settings: settings,
-                      dimmed: dimmed,
-                      highlighted: highlighted,
-                    ),
-                    if (texts.onkelos != null)
+              TargetVerseMark(
+                active: targeted,
+                child: InkWell(
+                  onTap: settings.focusMode ? () => onVerseTap(i) : null,
+                  // ↑ and ↓ move from verse to verse: a Tab stop on each
+                  // would put up to 72 before the button at the end.
+                  canRequestFocus: false,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                       ScriptureVerse(
-                        verse: texts.onkelos!.verse(r),
-                        kind: ScriptureKind.targum,
+                        verse: texts.mikra.verse(r),
+                        kind: ScriptureKind.mikra,
                         settings: settings,
                         dimmed: dimmed,
-                        secondary: true,
+                        highlighted: highlighted,
                       ),
-                    if (settings.showTranslation && texts.english != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: TranslationVerse(
-                          text: texts.english!.verse(r).readText,
-                          number: r.verse,
+                      if (texts.onkelos != null)
+                        ScriptureVerse(
+                          verse: texts.onkelos!.verse(r),
+                          kind: ScriptureKind.targum,
                           settings: settings,
                           dimmed: dimmed,
+                          secondary: true,
                         ),
-                      ),
-                    if ((settings.showRashi || settings.usesRashi) && texts.rashi != null && texts.rashi!.on(r).isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
-                      ),
-                  ],
+                      if (settings.showTranslation && texts.english != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: TranslationVerse(
+                            text: texts.english!.verse(r).readText,
+                            number: r.verse,
+                            settings: settings,
+                            dimmed: dimmed,
+                          ),
+                        ),
+                      if ((settings.showRashi || settings.usesRashi) && texts.rashi != null && texts.rashi!.on(r).isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               if (brk != null)
@@ -1502,19 +1588,22 @@ class _FullText extends StatelessWidget {
       );
     }
 
-    return Scrollbar(
-      controller: scroll,
-      // Every verse is built (an aliyah has 72 at most), so that any of them
-      // can be scrolled to, and Tab reaches the button at the end.
-      child: SingleChildScrollView(
+    return TapObserver(
+      onTap: onTap,
+      child: Scrollbar(
         controller: scroll,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < flow.verses.length; i++) verse(i),
-            if (footer case final footer?) Padding(padding: const EdgeInsets.only(top: 16), child: Center(child: footer)),
-          ],
+        // Every verse is built (an aliyah has 72 at most), so that any of them
+        // can be scrolled to, and Tab reaches the button at the end.
+        child: SingleChildScrollView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < flow.verses.length; i++) verse(i),
+              if (footer case final footer?) Padding(padding: const EdgeInsets.only(top: 16), child: Center(child: footer)),
+            ],
+          ),
         ),
       ),
     );

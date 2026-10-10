@@ -33,6 +33,8 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 **Announcements and controls**
 - Each step in the guided reader is announced once, with its reading and place ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"): in an announcement where the platform takes them, and elsewhere by the step header, a live region. So is the step an aliyah opens on when it is chosen from the aliyah tabs. A completed aliyah is announced the same way: in an announcement, or elsewhere by the finished panel's heading, a live region.
 - Status messages appear in a SnackBar and are spoken once: by its live region on Android, iOS and the web, and in an announcement on Windows and macOS.
+- Search says how many verses were found once typing pauses, when the text is ready if it wasn't, and when Go to verse hands it a search. Each verse found is one item: its reference, then its text, tagged `he` (or `en` for the translation) and spoken as verses are, from the pointed words even when vowels are hidden, with the Targum and the translation named. With bold text or high contrast, matches are outlined as well as bold.
+- Go to verse says what its first row offers once typing pauses: the verse found and the week and aliyah that read it, why there is none, or the search. The reader then says the reference of the verse it opened at, which it marks with a rule as well as a wash, so the mark doesn't rest on colour.
 - Every icon button has a label and a tooltip. Where there are several alike, each is named for what it acts on ("More options for Rishon", "Increase Reading size").
 - A slider is read by its setting and value ("Reading size, 100%"), with a button on either side to step it.
 
@@ -88,6 +90,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 
   Page Down and Page Up scroll a step that is longer than the screen before they move on, so nothing is skipped at a large reading size. In focus mode, the full text opens on the reader's place, the first verse of the step the guided reader would resume at, and the verse that ↓ or ↑ moves to is scrolled into view, nearer the top of the screen than the bottom. The shortcuts list shows ↑ and ↓ for focus mode only while it is on. Verses are not Tab stops of their own, so Tab reaches *Mark this aliyah as read* at the end of the text.
 
+- On any of the five tabs, Ctrl+K (⌘K on macOS) opens Search, where a verse is reached by its reference or words are searched for. It is not bound in the reader, whose own shortcuts take the keyboard there.
 - In the community, F5 or Ctrl+R (⌘R on macOS) refreshes the forums, a forum, a thread or the moderation queue. On the web those keys stay the browser's. Each of these pages also has a Refresh button.
 - No action needs a swipe, drag or multi-finger gesture. Pull to refresh has a Refresh button beside it. Everything is a tap, click or key press, and nothing has a time limit.
 - The screen can be kept on while reading, which is on by default.

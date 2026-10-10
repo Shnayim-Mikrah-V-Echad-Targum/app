@@ -56,6 +56,7 @@ app.*.map.json
 /android/key.properties
 /android/app/*.jks
 /android/app/*.keystore
+*.pfx
 
 # Python bytecode from tool/ scripts
 __pycache__/

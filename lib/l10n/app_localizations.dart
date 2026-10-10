@@ -1607,7 +1607,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsReadingDesc.
   ///
   /// In en, this message translates to:
-  /// **'Israel or abroad, plan, Targum or Rashi, haftarah'**
+  /// **'Israel or abroad, Shabbat times, plan, Targum or Rashi, haftarah'**
   String get settingsReadingDesc;
 
   /// No description provided for @settingsDisplayDesc.
@@ -3547,6 +3547,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} characters left'**
   String charactersLeft(int count);
+
+  /// No description provided for @shabbatTimesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat times'**
+  String get shabbatTimesLabel;
+
+  /// No description provided for @shabbatTimesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your city to see when to light candles and when Shabbat ends. The times are worked out on this device, and your city stays on it.'**
+  String get shabbatTimesHelp;
+
+  /// No description provided for @cityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get cityLabel;
+
+  /// No description provided for @cityNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get cityNotSet;
+
+  /// This week's Shabbat times in the reader's city, on two lines under the city in Settings. candles and ends are times of day, such as 6:07 PM.
+  ///
+  /// In en, this message translates to:
+  /// **'Candle-lighting {candles}\nShabbat ends {ends}'**
+  String shabbatTimesSummary(String candles, String ends);
+
+  /// This week's candle-lighting time, where the sky never gets dark enough to say when Shabbat ends (far north in summer).
+  ///
+  /// In en, this message translates to:
+  /// **'Candle-lighting {candles}'**
+  String shabbatCandlesOnly(String candles);
+
+  /// Under the city in Settings, near the poles, where the sun neither sets nor rises on some days (the midnight sun, or the polar night).
+  ///
+  /// In en, this message translates to:
+  /// **'There is no sunset there this Shabbat. Ask your rav about the times.'**
+  String get shabbatNoSunset;
+
+  /// Under the city in Settings, in the rare case that the device doesn't know the city's time zone.
+  ///
+  /// In en, this message translates to:
+  /// **'This device can\'t tell the time in that city, so its times can\'t be shown.'**
+  String get shabbatTimesUnavailable;
+
+  /// No description provided for @cityPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a city'**
+  String get cityPickerTitle;
+
+  /// No description provided for @citySearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a city'**
+  String get citySearchLabel;
+
+  /// No description provided for @citySearchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get citySearchClear;
+
+  /// No description provided for @cityYours.
+  ///
+  /// In en, this message translates to:
+  /// **'Your city'**
+  String get cityYours;
+
+  /// No description provided for @cityNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No city'**
+  String get cityNone;
+
+  /// No description provided for @cityNoneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat times aren\'t shown'**
+  String get cityNoneDesc;
+
+  /// No description provided for @cityNearYou.
+  ///
+  /// In en, this message translates to:
+  /// **'In your time zone'**
+  String get cityNearYou;
+
+  /// Shown when a search of the city list finds nothing. query is what the reader typed.
+  ///
+  /// In en, this message translates to:
+  /// **'No city matches “{query}”.'**
+  String cityNoResults(String query);
+
+  /// Read out by screen readers after typing in the city search.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No cities found} =1{1 city found} other{{count} cities found}}'**
+  String cityResultsCount(int count);
+
+  /// Under a long list of city search results, which stops at the first matches.
+  ///
+  /// In en, this message translates to:
+  /// **'The first {shown} of {count} matches are listed. Type more of the name to find the others.'**
+  String cityResultsMore(int shown, int count);
+
+  /// No description provided for @cityListNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The list has every place of 100,000 people or more, every city in Israel, and the larger Israeli localities beyond the Green Line. If yours isn\'t there, choose the nearest one; beyond the Green Line, the nearest Israeli locality.'**
+  String get cityListNote;
+
+  /// No description provided for @searchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the Torah'**
+  String get searchTitle;
+
+  /// No description provided for @searchFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'A word or phrase'**
+  String get searchFieldLabel;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get searchClear;
+
+  /// No description provided for @searchIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a word or phrase in the Torah, in Targum Onkelos, or in the English translation.'**
+  String get searchIntro;
+
+  /// Shown with a progress bar the first time search opens, while every verse is read and indexed.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the text for search…'**
+  String get searchPreparing;
+
+  /// Above the results of a search: how many verses hold what was searched for.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 verse} other{{count} verses}}'**
+  String searchResultsCount(int count);
+
+  /// Above the results of a search that found more verses than are listed. shown is how many are listed, count how many there are.
+  ///
+  /// In en, this message translates to:
+  /// **'The first {shown} of {count} verses'**
+  String searchResultsFirst(int shown, int count);
+
+  /// No description provided for @searchNarrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a word to narrow the search.'**
+  String get searchNarrow;
+
+  /// Shown when a search of the Torah finds nothing. query is what the reader typed.
+  ///
+  /// In en, this message translates to:
+  /// **'No verse matches “{query}”.'**
+  String searchNoResults(String query);
+
+  /// Under searchNoResults, after a search in Hebrew. The Torah's spelling is often defective (חסר): אהרן rather than אהרון.
+  ///
+  /// In en, this message translates to:
+  /// **'Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.'**
+  String get searchNoResultsHint;
+
+  /// Under searchNoResults, after a search in English. The translation is the JPS 1917.
+  ///
+  /// In en, this message translates to:
+  /// **'Try fewer words, or the older English of the 1917 translation, such as “hath” for “has”.'**
+  String get searchNoResultsHintEnglish;
+
+  /// Read out by screen readers once typing in the Torah search pauses.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No verses found} =1{1 verse found} other{{count} verses found}}'**
+  String searchResultsAnnounced(int count);
+
+  /// The label of the field in the sheet that opens from the search button: a reference to go to, or words to search the Torah for.
+  ///
+  /// In en, this message translates to:
+  /// **'A verse, word or phrase'**
+  String get goToVerseLabel;
+
+  /// An example reference shown in the empty field. book is the name of the first parsha (Bereshit, or Bereishis for readers who chose Ashkenazi names), which is also the book's name. In Hebrew the chapter and verse are Hebrew numerals: כח, יב.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} 28:12'**
+  String goToVerseHint(String book);
+
+  /// Shown in the go-to-verse sheet when what was typed is neither a reference nor words to search for, such as a number alone. example is a sample reference, such as Bereshit 28:12 (in Hebrew, בראשית כח, יב).
+  ///
+  /// In en, this message translates to:
+  /// **'Type a book or parsha, then a chapter and verse, as in {example}; or words to search for.'**
+  String goToVerseHelp(String example);
+
+  /// A row in the go-to-verse sheet that opens the Torah search for what was typed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for “{query}”'**
+  String goToVerseSearch(String query);
+
+  /// Shown in the go-to-verse sheet for a chapter past the end of the book, e.g. Genesis 51.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} has {count, plural, =1{1 chapter} other{{count} chapters}}.'**
+  String goToVerseChapters(String book, int count);
+
+  /// Shown in the go-to-verse sheet for a verse past the end of its chapter, e.g. Genesis 28:30. chapter is the chapter's number, in Hebrew numerals in Hebrew.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} {chapter} has {count, plural, =1{1 verse} other{{count} verses}}.'**
+  String goToVerseVerses(String book, String chapter, int count);
+
+  /// Shortcut shown when the app's icon is long-pressed on Android and iOS; opens the reader at the first aliyah not yet read. Keep it under 25 characters.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue reading'**
+  String get shortcutContinueReading;
+
+  /// Shortcut shown when the app's icon is long-pressed; opens this week's page to mark what was read from a printed Chumash. Keep it under 25 characters.
+  ///
+  /// In en, this message translates to:
+  /// **'Log reading from a book'**
+  String get shortcutLogFromBook;
+
+  /// Shortcut shown when the app's icon is long-pressed; opens the Parsha tab. Keep it under 25 characters.
+  ///
+  /// In en, this message translates to:
+  /// **'This week\'s parsha'**
+  String get shortcutThisWeek;
 }
 
 class _AppLocalizationsDelegate

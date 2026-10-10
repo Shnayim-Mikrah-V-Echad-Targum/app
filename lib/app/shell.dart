@@ -4,9 +4,12 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/search/go_to_verse_sheet.dart';
 import '../ui/l10n.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/app_mark.dart';
+import '../ui/widgets/fonts_change_scope.dart';
+import 'system_bars.dart';
 
 /// Breakpoints follow Material 3 window size classes.
 abstract final class Breakpoints {
@@ -34,8 +37,11 @@ class AppShell extends StatelessWidget {
 
   void _go(int index) => shell.goBranch(index, initialLocation: index == shell.currentIndex);
 
+  // Ctrl+K (⌘K) goes to a verse, or searches, from any tab.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => GoToVerseShortcut(child: _layout(context));
+
+  Widget _layout(BuildContext context) {
     final l = context.l10n;
     final sefer = SeferColors.of(context);
     // 1 px, or a 2 px outline in high contrast.
@@ -53,17 +59,22 @@ class AppShell extends StatelessWidget {
     if (width < Breakpoints.medium) {
       return Scaffold(
         body: shell,
-        bottomNavigationBar: DecoratedBox(
-          decoration: BoxDecoration(border: Border(top: hairline)),
-          child: Padding(
-            padding: EdgeInsets.only(top: hairline.width),
-            child: _NavBar(
-              selectedIndex: shell.currentIndex,
-              onSelected: _go,
-              destinations: [
-                for (final (icon, selected, label) in items)
-                  NavigationDestination(icon: Icon(icon), selectedIcon: Icon(selected), label: label),
-              ],
+        // Where Android's navigation bar can't be see-through, it takes the
+        // colour of this bar rather than the page's.
+        bottomNavigationBar: SystemBars(
+          navigationBarColor: NavigationBarTheme.of(context).backgroundColor,
+          child: DecoratedBox(
+            decoration: BoxDecoration(border: Border(top: hairline)),
+            child: Padding(
+              padding: EdgeInsets.only(top: hairline.width),
+              child: _NavBar(
+                selectedIndex: shell.currentIndex,
+                onSelected: _go,
+                destinations: [
+                  for (final (icon, selected, label) in items)
+                    NavigationDestination(icon: Icon(icon), selectedIcon: Icon(selected), label: label),
+                ],
+              ),
             ),
           ),
         ),
@@ -155,6 +166,8 @@ class _NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Measured again when a font arrives.
+    FontsChangeScope.watch(context);
     final mq = MediaQuery.of(context);
     // Selected labels are bold, so every label is measured that way.
     final style = NavigationBarTheme.of(context).labelTextStyle!.resolve({WidgetState.selected})!;

@@ -227,6 +227,10 @@ Targets:
 | secondary / paper | 6.46 | 9.36 | 7.17 | 11.40 | 15.41 |
 | secondary / restWash (candles) | 5.34 | 5.88 | 5.77 | 10.04 | 9.70 |
 | onSecondaryContainer / secondaryContainer (notices) | 11.24 | 8.79 | 10.20 | 18.50 | 13.21 |
+| onSurface / secondaryContainer (the verse opened at) | 14.07 | 8.85 | 11.49 | 18.50 | 13.21 |
+| onSurfaceVariant / secondaryContainer (its Targum and translation) | 6.47 | 5.73 | 6.74 | 14.52 | 11.08 |
+| secondary / secondaryContainer (its verse numbers, and the rule) | 5.34 | 5.88 | 5.77 | 10.04 | 9.70 |
+| primary / secondaryContainer (its note marks) | 8.46 | 6.36 | 7.54 | 12.28 | 8.33 |
 | tertiary (grace) / paper | 6.24 | 9.89 | 6.32 | 10.84 | 13.67 |
 | onLate / late (map tile) | 5.49 | 5.32 | 6.20 | 8.20 | 9.64 |
 | late / paper | 5.40 | 6.09 | 5.61 | 8.20 | 9.64 |
@@ -253,12 +257,14 @@ Notes:
 ### 3.6 Platform colours
 
 - `web/manifest.json`: theme_color #1D3F75, background_color #FAF7F0.
-- `web/index.html`: `<meta name="theme-color" content="#1D3F75">`, and body background #FAF7F0.
+- `web/index.html`: `<meta name="theme-color" content="#1D3F75" class="boot-theme">` until the first frame, when it is removed and the app's surface takes over (`MaterialApp.color`, and the status bar's colour on the web). The loading screen before it has the saved theme's surface as its background (#FAF7F0 by default), with the mark and a 3 px bar in primary on ringTrack.
 - `pubspec.yaml` flutter_launcher_icons:
   - `adaptive_icon_background: "#1D3F75"`;
   - web `background_color: "#FAF7F0"`, `theme_color: "#1D3F75"`;
   - `remove_alpha_ios: true`.
 - Android reminders: the status-bar glyph (§7.8) tinted primary #1D3F75 (`Palettes.light.primary`).
+- Launch screens (`pubspec.yaml` flutter_native_splash, Android and iOS): `color: "#FAF7F0"`, `color_dark: "#14120F"`, the same on Android 12 and later, with the mark's tile (§7.8) and no icon background. Android's window background behind the app (`NormalTheme`) is `@color/app_bg`, the same two surfaces, so nothing changes colour between the launch screen and the first frame.
+- System bars: edge to edge and transparent, with dark icons over the light, sepia and high-contrast light themes and light icons over the dark ones; no contrast scrim (`lib/app/system_bars.dart`, and the launch themes in `android/app/src/main/res/values*/styles.xml`). Where the app can't run beneath Android's navigation bar (Android 9 and earlier), the bar is painted the colour of what lies just above it: `surfaceContainer` below the phone's navigation bar (§6.9), which wraps itself in its own `SystemBars`, and `surface` elsewhere. A theme can give that bar dark icons only from Android 8.1, so before then the light launch theme leaves it black.
 
 ## 4. Typography
 
@@ -297,6 +303,7 @@ I verified that the small-caps lookups survive subsetting (smcp: 209 mappings, c
 Bundle impact:
 - About 571 KB is loaded eagerly: EB Garamond 4 files at about 417 KB, plus Frank Ruhl Libre 3 files at about 154 KB.
 - Noto Rashi Hebrew is NOT declared in pubspec `fonts:`. It is a plain asset, loaded on first use with `FontLoader('NotoRashiHebrew')..addFont(rootBundle.load('assets/fonts/rashi/NotoRashiHebrew-Regular.ttf'))`, so web does not download it at startup.
+- The opt-in fonts (Taamey Frank CLM, Ezra SIL, Atkinson Hyperlegible Next, Lexend and OpenDyslexic, about 874 KB) are plain assets in `assets/fonts/optional/` too, registered by `OptionalFonts` (lib/services/optional_fonts.dart): the chosen ones before the first frame, and any other when it is chosen (each family's files requested at once, and one that failed tried again as the app resumes). The theme switches to a chosen interface font only once it has loaded, so nothing is drawn or measured in a stand-in; and what measures text while building (the navigation bar's labels, the week strip and legend, the Torah map) depends on `FontsChangeScope`, so it measures again when a font arrives.
 - While doing this, re-instance NotoSansHebrew-Regular/Medium/Bold with `--update-name-table` (their name table still says "Thin").
 
 pubspec families:
@@ -447,6 +454,12 @@ Rules:
 - The current verse gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`. No radius: Flutter forbids a radius with non-uniform borders.
 - Padding: start 12, vertical 4.
 - All other verses, including their numbers and ketiv, use `dimInk`. Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
+
+**The verse opened at** (`TargetVerseMark`, lib/features/reader/verse_anchor.dart)
+- A verse the reader opens at, from a search result, Go to verse (§6.26) or a link (`/read/{week}/{aliyah}?verse=28:12`), opens the full text and is scrolled to a fifth of the way down the text's viewport (`Scrollable.ensureVisible`, alignment 0.2, 300 ms on `Motion.standard`, at once under Reduce Motion).
+- It is marked until the next tap on the text, another aliyah or a change of mode: its whole block (Mikra, Targum, translation, Rashi) on a `secondaryContainer` wash, the gold wash search marks matches with, with radius 8, painted 8 px past the text at each side and 4 above and below, so nothing moves when it goes; and a 3 px `secondary` rule at its right edge, where the verse and its number begin, clipped to the wash's corners. The rule is the cue in high contrast, where the wash is close to the paper. Scripture on the wash keeps 7:1 in every theme (§3.5).
+- It is not focus mode's verse and shows with focus mode off. With focus mode on, it is also the focused verse, so the others dim around it, and focus mode's own highlight yields to the mark.
+- Where the platform takes announcements, its reference is said once the scroll ends ("Genesis 28:12").
 
 **Line widths:** `LineWidth.narrow` 560, `medium` 680 (default), `wide` 880 (was 1040, about 80 characters at 26sp).
 
@@ -824,6 +837,30 @@ When a sefer is complete: a one-time full-screen panel. SeferDivider, then "חֲ
 - Selected: 2 px primary border plus a 20 px check badge (primary disc, onPrimary check) at the top-end corner.
 - Wrapped in the existing RadioGroup semantics. Match device is a separate row above the grid (switch).
 
+### 6.25 Search results (lib/features/search/)
+
+- The search field as in §6.7, at the content width, with `search` leading and a clear button once there is text. Hebrew in it runs right to left and English left to right, in either UI; empty, it takes the UI's direction.
+- While the index is first built: a marginalia line over a determinate bar, 4 px with radius 2, primary on ringTrack; centred, at most 320 wide, 40 below the field.
+- With nothing to search yet: an empty state (§6.22) with `searchIntro`. With nothing found: `searchNoResults` in bodyLarge and a hint in bodyMedium onSurfaceVariant.
+- Results: the count in bodySmall onSurfaceVariant, then a GroupHeader (§6.3) per parsha over one PaperGroup of verses.
+- **Verse row:** min 72; padding start 16, end 12, vertical 12; a chevron 20 in outline at the end. On top the reference ("Genesis 28:10" / "בראשית כח, י") in titleSmall onSurfaceVariant with tabular figures, followed by " · Targum" when only the Targum holds the search, or " · Translation (JPS 1917)" (`translationLabel`) for a verse found in the translation, a study aid labelled as such. Then each layer, 4 apart:
+  - Mikra in the scripture font, 20 / 1.7, onSurface; Targum 18, onSurfaceVariant, under it as in the reader; the translation in bodyLarge onSurface. Never cantillation; vowels as the reader shows them.
+  - About 16 Hebrew or 26 English words around the first match, cut at word breaks; a verse up to a third longer stays whole. Ellipses mark a cut, joined to the text by a no-break space. A word joiner follows each maqaf, as in the reader, so joined words stay on one line.
+  - **Match:** w700 in onSecondaryContainer on a secondaryContainer wash (11.24:1 in light) as tall as the letters, not the line (`MarkedText`, a tight text box with a 2 px bleed each side and radius 3), so washes on lines one above the other never meet. The weight is the non-colour cue, needed in high contrast where the wash is close to the paper. With bold text on, where every letter is bold, and in high contrast, each wash is also outlined, 1.5 px in onSecondaryContainer. The washes are placed again when a font finishes loading.
+- Semantics: each row is one button whose label is the reference, then each layer tagged with its language and spoken as verses are (§8 of DESIGN.md), from the pointed words whether or not vowels are shown, the Targum and the translation named. A list of results opens at its top, with its count.
+
+### 6.26 Go to verse (lib/features/search/go_to_verse_sheet.dart)
+
+The Parsha tab's search button, and Ctrl+K (⌘K) on any tab, open one sheet (§6.19) over the whole window, the navigation too:
+- `SheetTitle` `searchTitle`, then the field as in §6.7 at the sheet's width: label `goToVerseLabel` ("A verse, word or phrase"), hint `goToVerseHint` ("Bereshit 28:12" with the reader's spelling of parsha names, "בראשית כח, יב" in Hebrew), `search` leading and a clear button once there is text, focused as the sheet opens. Hebrew in it runs right to left and English left to right, in either UI.
+- 16 below the field, one PaperGroup (§6.3) of what the text leads to, in order:
+  - **A verse** the text names (§3 of DESIGN.md): `menu_book_outlined`, the reference as Names.reference writes it, and the week of this year's cycle that reads it and its aliyah ("Vayetzei · Rishon") as subtitle. It opens the reader at the verse (§4.7).
+  - **Or why there is none**, for numbers past the end of a book or chapter that are plainly numbers: `info_outline` and `goToVerseChapters` ("Genesis has 50 chapters.") or `goToVerseVerses` ("Genesis 28 has 22 verses."), with no tap.
+  - **A search** of the text, `search` and `goToVerseSearch` ("Search for “ladder”", the query isolated in its own direction), for words worth searching: not for a reference by its numbers, which the text has none of, but for a parsha's name alone (ויצא), which is also a word, and for a reference that rests on unmarked Hebrew words that are also numerals (דבר נא, שלח לו), which may be a phrase. It opens the Search page (§6.25) with the query.
+  - **Or, with nothing else to offer** (a number alone, say), `info_outline` and `goToVerseHelp`, which says what the sheet takes, with no tap.
+- Enter takes the first row that leads somewhere; with none, the field keeps the focus.
+- Once typing pauses, the first row is announced where the platform takes announcements.
+
 ## 7. Motifs and iconography
 
 At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/ornaments.dart`, wrapped in ExcludeSemantics. In high contrast they draw in onSurface.
@@ -883,8 +920,14 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - Sizes ≤32 px (favicon.png, and the favicon.ico and Windows .ico entries at 16/20/24/32): the three rules only, each 62.5% of the canvas wide and 9.4% high, gaps 7.8%, vertically centred, on the gradient with corner radius 18.75%.
    - The Windows .ico also carries 40, 48, 64 and 256, and favicon.ico carries 48: the master's art on the gradient, with the same 18.75% corners (transparent outside them) rather than the master's square. Every entry then has one shape, so the icon doesn't change outline as Windows switches entries between views and DPI settings.
    - Android status bar (`ic_stat_reminder`, a 24 dp vector drawn as a white silhouette): the three rules alone, 2.7 high with round ends, at y 5.7, 10.65 and 15.6. The two Mikra rules span x 3–21. The Targum's gold is lost in white, so its rule is 60% as long (x 10.2–21), aligned to the right like the last line of a Hebrew paragraph: three equal bars read as a menu icon. To be confirmed with the owner.
+   - The MSIX package matches the .ico size for size. The msix tool makes every icon from `windows/msix/logo.png`: the .ico's larger tile at 1240², the size of the largest icon the tool makes (the large tile at 400%). `tool/windows/make_msix.sh` then replaces the app icons of 32 px and below (`windows/msix/Images`: 16, 20, 24, 30 and 32, plated and unplated) with the three rules alone.
+   - Launch screens (`splash_logo.png`, read at 4×, so 288 dp or pt): a transparent 1152² canvas with the in-app mark's tile in the middle, the master on the gradient, 576 px wide with 22% corners. The corners reach 355 px from the centre, inside the 384 px (192 dp) circle that Android 12 and later show.
+   - Web link preview (`web/og.png`, 1200×630): the About header on surface (#FAF7F0) in a TitlePageFrame at 2×. The mark's tile at 168, then "שניים מקרא ואחד תרגום" in Frank Ruhl Libre Medium 58 primary, a SeferDivider at 2×, and "Shnayim Mikra v’Echad Targum" in EB Garamond Medium 36 onSurfaceVariant, all within the middle 630 px so a square crop keeps them.
+   - Web shortcut icons (`web/icons/shortcut-*.png`, 192²): the navigation's `today` and `donut_large` glyphs in #F6F0E2, their em box 58% of the favicons' tile.
+   - Shortcuts on the app's icon (`lib/services/app_shortcuts.dart`): Android's wear the launcher icon itself (`@mipmap/ic_launcher`). iOS draws a shortcut's icon as a template, from its alpha alone in the menu's ink, so iOS's wear `ShortcutMark` (`ios/Runner/Assets.xcassets`, 35 pt at 2× and 3×): the mark alone in one ink on transparent, centred and 94% of the canvas wide.
+   - Web loading screen: the in-app mark's tile as inline SVG in `web/index.html`, 96 px.
 
-   Then run `dart run flutter_launcher_icons`.
+   Then run `dart run flutter_launcher_icons`, `dart run flutter_native_splash:create` and `make_icon.py --post` (the full command is above `flutter_launcher_icons` in pubspec.yaml).
 
 ## 8. Motion (lib/ui/theme/motion.dart)
 
@@ -1212,7 +1255,7 @@ The literal "חֲזַק חֲזַק וְנִתְחַזֵּק" is not translated.
    - run `textContrastGuideline` for /today, the reader, /parsha, /progress, /community and /settings/display in all five themes;
    - add 200%-text-scale overflow tests for the Hebrew locale on /today, /progress and the reader;
    - add a focus-traversal test asserting that a focused FilledButton paints `FocusRingBorder`.
-3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family. Pixel-sampled contrast checks (`textContrastGuideline`) stay on the test font: with real glyphs, anti-aliased edge pixels can outnumber the text colour (test/accessibility/text_contrast_test.dart).
+3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family, then loads the fonts `OptionalFonts` loads on demand. Pixel-sampled contrast checks (`textContrastGuideline`) stay on the test font: with real glyphs, anti-aliased edge pixels can outnumber the text colour (test/accessibility/text_contrast_test.dart).
 4. **Goldens** (`matchesGoldenFile`): Today, Reader guided, Parsha, Progress and Community × 5 themes × {en, he}. Plus the mixed headings "Revi'i · רביעי" and "בְּרֵאשִׁית" in titleLarge and hebrewDisplay (catches fallback tofu).
 5. **Update tests that depend on removed visuals:**
    - reader_widget_test.dart:39 expects 'Targum Onkelos' (the removed LayerLabel). Change it to expect the PassTrack label '3 · Targum'.

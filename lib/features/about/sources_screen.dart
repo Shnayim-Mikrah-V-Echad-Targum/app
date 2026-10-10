@@ -13,7 +13,8 @@ class _Source {
   final String url;
 }
 
-/// Attribution for every bundled text (required by CC BY-SA, and good practice).
+/// Attribution for every bundled text and dataset (required by CC BY-SA and
+/// CC BY, and good practice).
 class SourcesScreen extends StatelessWidget {
   const SourcesScreen({super.key});
 
@@ -58,6 +59,22 @@ class SourcesScreen extends StatelessWidget {
         'BSD-2-Clause',
         'https://github.com/hebcal/hebcal-leyning',
       ),
+      _Source(
+        he ? 'ערים לזמני השבת' : 'Cities for Shabbat times',
+        he
+            ? 'ממאגר המידע הגאוגרפי GeoNames: שמות, קואורדינטות ואזורי זמן של המקומות שגרים בהם 100,000 איש ומעלה ושל כל הערים בישראל. נבחרו ועובדו עבור האפליקציה, ונוספו שמות בעברית.'
+            : 'From the GeoNames geographical database: the names, coordinates and time zones of places of 100,000 people or more, and of every city in Israel. Selected and adapted for this app, with Hebrew names added.',
+        'CC BY 4.0',
+        'https://www.geonames.org/',
+      ),
+      _Source(
+        he ? 'זריחה ושקיעה' : 'Sunrise and sunset',
+        he
+            ? 'מחושבות במכשיר לפי הנוסחאות של מחשבון השמש של NOAA (על פי Meeus, Astronomical Algorithms), ונבדקו מול Hebcal. זמני הדלקת הנרות וצאת השבת כמו ב־Hebcal.'
+            : 'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose candle-lighting and Havdalah times they follow.',
+        he ? 'נחלת הכלל' : 'Public domain',
+        'https://gml.noaa.gov/grad/solcalc/',
+      ),
     ];
     return Scaffold(
       appBar: AppBar(leading: homeLeading(context), title: Text(l.sourcesTitle)),
@@ -95,8 +112,8 @@ class SourcesScreen extends StatelessWidget {
             ),
           Text(
             he
-                ? 'הטקסטים בצורתם המעובדת באפליקציה זו מופצים בתנאי הרישיונות המקוריים. קובצי הנתונים נמצאים בתיקייה assets/text בקוד המקור.'
-                : 'The texts as adapted in this app are distributed under their original licenses. The data files are in the assets/text folder of the source code.',
+                ? 'הטקסטים והנתונים בצורתם המעובדת באפליקציה זו מופצים בתנאי הרישיונות המקוריים. קובצי הנתונים נמצאים בתיקיות assets/\u2060text ו־assets/\u2060data בקוד המקור.'
+                : 'The texts and data as adapted in this app are distributed under their original licenses. The data files are in the assets/\u2060text and assets/\u2060data folders of the source code.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

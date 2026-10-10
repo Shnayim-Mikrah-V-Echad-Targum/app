@@ -47,6 +47,8 @@ jobs:
         run: |
           python3 tool/l10n/build_he.py
           git diff --exit-code lib/l10n/app_he.arb
+      - name: Check the static policy pages build, and the web build's scripts
+        run: node --test tool/legal/build_html.test.mjs tool/web/web.test.mjs
       - run: flutter analyze
       - run: flutter test
       - name: Community database tests (PostgreSQL)
@@ -67,6 +69,28 @@ jobs:
         run: |
           flutter build web --release --no-web-resources-cdn --no-wasm-dry-run \
             --base-href "${{ vars.WEB_BASE_HREF || '/' }}" $DART_DEFINES
+      # The public privacy, support and account-deletion pages the stores
+      # ask for, as static HTML in build/web/legal/ (docs/RELEASE.md).
+      - name: Static policy, support and account-deletion pages
+        env:
+          SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
+        run: node tool/legal/build_html.mjs build/web
+      # Link previews want absolute URLs; vars.WEB_URL is the site's public
+      # address (for example https://example.org/app/).
+      - name: Absolute link-preview URLs
+        if: vars.WEB_URL != ''
+        env:
+          WEB_URL: ${{ vars.WEB_URL }}
+        run: |
+          url="${WEB_URL%/}/"
+          sed -i \
+            -e "s|<link rel=\"canonical\" href=\"./\">|<link rel=\"canonical\" href=\"$url\">\n  <meta property=\"og:url\" content=\"$url\">|" \
+            -e "s|<meta property=\"og:image\" content=\"og.png\">|<meta property=\"og:image\" content=\"${url}og.png\">|" \
+            build/web/index.html
+          grep -q "content=\"${url}og.png\"" build/web/index.html
+      # Last, so it precaches the finished files (workbox-config.cjs).
+      - name: Offline service worker
+        run: npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs
       - uses: actions/upload-artifact@v4
         with:
           name: web
@@ -125,7 +149,10 @@ jobs:
       - run: flutter build appbundle --release $DART_DEFINES
       - uses: actions/upload-artifact@v4
         with:
-          name: android
+          # Without the keystore secrets (as in pull requests from forks), the
+          # release build is signed with the debug key, which Google Play
+          # refuses; the name says so.
+          name: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'android' || 'android-debug-signed' }}
           path: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab
@@ -160,3 +187,27 @@ jobs:
         with:
           name: windows
           path: build/windows/x64/runner/Release
+      - name: Package as MSIX (signed with the certificate, if it is configured)
+        shell: bash
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if [ -n "$CERTIFICATE_BASE64" ]; then
+            certificate="$RUNNER_TEMP/certificate.pfx"
+            echo "$CERTIFICATE_BASE64" | base64 -d > "$certificate"
+            bash tool/windows/make_msix.sh \
+              --certificate-path "$certificate" --certificate-password "$CERTIFICATE_PASSWORD"
+            rm "$certificate"
+          else
+            bash tool/windows/make_msix.sh
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          # Without the certificate secrets (as in pull requests from forks),
+          # the package is signed with the msix tool's public test
+          # certificate, which a machine must trust before it will install
+          # the package (docs/RELEASE.md); the name says so.
+          name: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' && 'windows-msix' || 'windows-msix-test-signed' }}
+          path: build/windows/msix/ShnayimMikra.msix
+          if-no-files-found: error

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/services/optional_fonts.dart';
 
 import '../helpers.dart';
 
@@ -38,6 +40,30 @@ void main() {
     // It still ships, as a plain asset.
     final bytes = await rootBundle.load('assets/fonts/rashi/NotoRashiHebrew-Regular.ttf');
     expect(bytes.lengthInBytes, greaterThan(10000));
+  });
+
+  test('the opt-in fonts are not in the font manifest either, but ship as plain assets', () async {
+    final declared = {for (final family in await manifest()) family['family'] as String};
+    for (final family in OptionalFonts.families) {
+      expect(declared, isNot(contains(family)));
+      for (final file in OptionalFonts.filesOf(family)) {
+        expect(file, startsWith(family == 'NotoRashiHebrew' ? 'assets/fonts/rashi/' : 'assets/fonts/optional/'));
+        expect((await rootBundle.load(file)).lengthInBytes, greaterThan(10000), reason: file);
+      }
+    }
+  });
+
+  test('every font a setting can choose is bundled or loaded on demand', () async {
+    final declared = {for (final family in await manifest()) family['family'] as String};
+    final families = {
+      for (final f in ScriptureFont.values) f.family,
+      for (final f in UiFont.values) ?f.family,
+    };
+    for (final family in families) {
+      expect(declared.contains(family) || OptionalFonts.families.contains(family), isTrue, reason: family);
+    }
+    // The defaults never wait for a download.
+    expect(declared, containsAll(['NotoSerifHebrew', 'NotoSans', 'NotoSansHebrew']));
   });
 
   group('text metrics', () {

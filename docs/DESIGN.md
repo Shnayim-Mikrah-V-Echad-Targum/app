@@ -18,7 +18,7 @@ This document summarizes the decisions behind the app and the reasons for them. 
 
 ## 2. The calendar
 
-**The portion is computed on the device and never fetched.** A pure-Dart Hebrew calendar uses fixed-day arithmetic. The parsha schedule comes from 28 tables, one for each combination of year type and Israel or Diaspora. Each table was generated from hebcal and validated for every year from 5700 to 5900. The app works fully offline and does not depend on a server staying online.
+**The portion is computed on the device and never fetched.** A pure-Dart Hebrew calendar uses fixed-day arithmetic. The parsha schedule comes from 28 tables, one for each combination of year type and Israel or Diaspora. Each table was generated from hebcal and validated for every year from 5700 to 5900. The app works fully offline, the web version too once it has been opened, and does not depend on a server staying online.
 
 **A reading week runs from the day after the previous public reading through the next one.** That makes the week the halachic window for the obligation. When a holiday displaces Shabbat, the week is simply longer. A double portion is one week of seven aliyot spanning both portions, following the standard leyning divisions.
 
@@ -29,6 +29,8 @@ This document summarizes the decisions behind the app and the reasons for them. 
 - **the days of Yom Tov** kept, one or two, which decide the days without reading or reminders.
 
 A visitor usually hears the local reading but keeps their home custom for Yom Tov, so a visitor to Israel still has no reading and no reminder on the second day of Yom Tov. When the two schedules diverge after Pesach or Shavuot, the user sees the portion of the reading they hear. If their two settings follow different places, Today names both portions. A visitor to Israel is told that visitors usually read both, with a link to the home portion, and that someone who davens with a Diaspora minyan reads only that one and should set the reading they hear to match. Someone who hears the Diaspora's reading but keeps one day of Yom Tov is told that Israel is a parsha ahead.
+
+**Shabbat times are computed on the device too.** The reader chooses a city from a list (Settings → Reading & customs): every place of 100,000 people or more, every Israeli city and the Israeli localities beyond the Green Line of 2,000 or more, from GeoNames, leaving out the districts GeoNames lists as places in Israel and in the cities abroad with Jewish communities. The app never asks for the device's location; its time zone only suggests where to start, and the city stays on the device. Sunset uses NOAA's public-domain solar formulas, on the city's own clock. Candles are lit 18 minutes before sunset, 20 in Israel, 40 in Jerusalem and 30 in Haifa and Zikhron Ya'akov; Shabbat ends when the sun is 8.5° below the horizon. These are Hebcal's defaults, and the tests check every Shabbat and Yom Tov of two years in 24 cities against Hebcal. Candle-lighting is rounded down and the end of Shabbat up, so neither is ever late or early: candle-lighting matches Hebcal exactly, and the end of Shabbat is at most a minute after Hebcal's, which rounds to the nearest minute. Far enough north in summer the sky never gets that dark, and the app gives no time rather than a wrong one.
 
 ## 3. Reading
 
@@ -52,6 +54,10 @@ The JPS translation is offered only as a study aid and is labelled so. It never 
 - **Verses with no Rashi** get a third Mikra reading too when Rashi replaces the Targum. Both suggestions can be turned off.
 - **The last verse of the parsha** can optionally be repeated so the reading ends with Mikra.
 - **Ketiv/qere:** the qere is read and the ketiv is shown on request.
+
+**Search finds a word or phrase in the Mikra, Targum Onkelos and the translation**, on the device and offline. The first search of a session reads every verse of the three layers, about 3.5 MB, with a progress bar, and keeps them folded for comparison: Hebrew without vowels or cantillation, final letters as ordinary ones, and the maqaf, paseq and sof pasuq as word spaces. A Hebrew search reads the Mikra and the Targum and matches anywhere in a word, since prefixes (ו, ה, ב, ל…) are written as part of it; an English one reads the translation and matches only from the start of a word, so "ram" doesn't find Abram. Words are matched as the Torah spells them: a search for אהרון finds nothing, and the page suggests the Torah's spelling, which often leaves out ו and י, rather than guess at looser matches. Up to 200 verses are listed, in order under their parsha, each opening the reader in full text at that verse, in the week of this year's cycle that reads it. A verse found only in its Targum shows the verse above it, as the reader does.
+
+**Go to verse reaches a verse by its reference**, as people write one: a book in English, in transliteration or in Hebrew, or an abbreviation (Genesis, Gen, Bereshit, Bereishis, בראשית, בר׳), or a parsha by any of its names (Vayetzei, Vayeitzei, ויצא), or a combined week by its own (Vayakhel-Pekudei), then the chapter and verse in digits or Hebrew numerals (28:12, כ״ח, י״ב, כח יב), joined by a colon, comma, full stop or space. A chapter and verse alone (3:22) are in this week's book, but only when they are plainly numbers: two Hebrew words such as כח יב may be a phrase. A chapter alone opens at its first verse, and a book or parsha named in full at its own. Hebrew numerals are read only in their usual form (ט״ו for 15, letters from the largest down, no final letters), and Hebrew names are listed with and without ו and י rather than folded, so that a word such as לך isn't taken for a number, nor שמן (Shmini without its י) for a parsha; a parsha's name alone, which is often a word too, is also offered as a search, and so is a reference that rests on unmarked Hebrew words, such as דבר נא or שלח לו, which may be a phrase. The verse opens in the week of this year's cycle that reads it, at the aliyah of that week's own division: in a year when two parshiyot are read together, Exodus 38:21 is in the fourth aliyah of Vayakhel-Pekudei, not the first of Pekudei. The reader opens in full text, scrolled to the verse, and marks it until the next tap. Numbers past the end of a book or chapter say how long it is, unless they may be words, which are searched for instead; anything else typed is told what the sheet takes. The Parsha tab's search button opens it, and so does Ctrl+K (⌘K) on any tab; words typed there are handed to search.
 
 **Progress is stored per unit:** (aliyah × pass), plus the haftarah. The guided reader saves the reader's position within each pass. This makes resuming exact, and lets the streak engine see partial days.
 
@@ -114,6 +120,8 @@ The planner is a pure function. Its rules come from the research:
 The copy is informational ("Revi'i is today's reading"), never guilt-based.
 
 Permission is requested in context, after the reader finishes their first aliyah, not at launch.
+
+**Shortcuts on the app's icon** (Android and iOS) are a calm way in: long-pressing the icon offers Continue reading, Log reading from a book and This week's parsha, once onboarding is done. The platform keeps them while the app isn't running, so each names a page rather than a week, and opens the current week as it is when it is chosen, even before the app hears it has resumed. From Shabbat through the first reading day after it, the current week is already the next parsha, so Log reading from a book opens the week just read while it is unfinished: the week a reading from a printed Chumash on Shabbat belongs to, as Today's check-in asks. A shortcut's page opens over Today, so back leads to the navigation bar.
 
 ## 6. Onboarding
 
@@ -194,3 +202,4 @@ These defaults should be reviewed before a public release. Each is a setting:
 - Whether Chol HaMoed should be quiet by default.
 - How the Divine Name is spoken by text-to-speech and screen readers.
 - Whether posting on Shabbat should be blocked on the server.
+- The Shabbat times, which are not a setting yet: candle-lighting minutes (18 abroad, 20 in Israel, 40 in Jerusalem, 30 in Haifa; whether nearby places such as Ma'ale Adumim follow Jerusalem), and the end of Shabbat at 8.5°.

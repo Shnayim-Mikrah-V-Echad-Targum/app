@@ -13,6 +13,7 @@ import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/fonts_change_scope.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/sefer_choice_chip.dart';
 import '../parsha/week_context.dart';
@@ -483,7 +484,10 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
 /// The widths of the words of parsha names in the map's tile style, at the
 /// current text size.
 class _WordWidths {
-  _WordWidths(this.context);
+  /// Measures in [context], which is built again when a font arrives.
+  _WordWidths(this.context) {
+    FontsChangeScope.watch(context);
+  }
 
   final BuildContext context;
   final _widths = <(String, bool), double>{};

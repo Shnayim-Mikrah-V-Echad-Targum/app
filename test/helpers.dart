@@ -21,6 +21,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/services/optional_fonts.dart';
 import 'package:shnayim_mikra/services/reminder_planner.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
@@ -29,9 +30,10 @@ ParshaRepository? _repo;
 
 Future<void>? _fonts;
 
-/// Registers every font in FontManifest.json, so widget tests lay text out
-/// with real glyph metrics instead of the test font's uniform squares. Call it
-/// from `setUpAll`; it loads the fonts only once per test file.
+/// Registers every font in FontManifest.json, and every font the app loads
+/// on demand (see [OptionalFonts]), so widget tests lay text out with real
+/// glyph metrics instead of the test font's uniform squares. Call it from
+/// `setUpAll`; it loads the fonts only once per test file.
 ///
 /// NotoSans is also registered as Roboto, the family Material's typography
 /// asks for when the theme names none, so text renders as it does on the web.
@@ -48,6 +50,10 @@ Future<void> loadBundledFonts() => _fonts ??= () async {
           }
           await loader.load();
         }
+      }
+      // Through OptionalFonts, so that the app finds them already loaded.
+      for (final family in OptionalFonts.families) {
+        await OptionalFonts.ensure(family);
       }
     }();
 
@@ -193,7 +199,7 @@ class _SilentEngine extends Fake implements FlutterTts {
 /// Reminders as on a phone, where they are available: for pages that show
 /// their settings. Schedules nothing.
 class PhoneNotifications extends NotificationService {
-  PhoneNotifications() : super.withPlugin(_NoPlugin());
+  PhoneNotifications() : super.forTesting(_NoPlugin(), loadTimeZones: () async {});
 
   @override
   Future<void> reschedule(

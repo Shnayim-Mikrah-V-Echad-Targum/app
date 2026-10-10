@@ -11,7 +11,13 @@ From the repository root:
     pip install -r tool/branding/requirements.txt
     python3 tool/branding/make_icon.py          # assets/branding/*
     dart run flutter_launcher_icons             # Android, iOS and web icons
+    dart run flutter_native_splash:create       # Android and iOS launch screens
     python3 tool/branding/make_icon.py --post   # maskable, favicons, Windows
+                                                # .ico and MSIX icons, launch
+                                                # screens' system bars, the
+                                                # web's link preview, shortcut
+                                                # icons and loading mark, and
+                                                # iOS's shortcut icon
 
 A Hebrew reader checks the results by eye before every release.
 """
@@ -21,7 +27,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import io
+import json
 import math
+import os
+import re
+import shutil
 import sys
 import tempfile
 import urllib.request
@@ -40,6 +50,11 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 BRANDING = ROOT / 'assets' / 'branding'
+ANDROID_RES = ROOT / 'android' / 'app' / 'src' / 'main' / 'res'
+IOS_ASSETS = ROOT / 'ios' / 'Runner' / 'Assets.xcassets'
+MSIX = ROOT / 'windows' / 'msix'
+WEB = ROOT / 'web'
+FONTS = ROOT / 'assets' / 'fonts'
 
 BUNDLED_FONT = ROOT / 'assets' / 'fonts' / 'FrankRuhlLibre-Bold.ttf'
 FONT_URL = ('https://raw.githubusercontent.com/google/fonts/'
@@ -73,10 +88,53 @@ FOREGROUND_SAFE_RADIUS = 300
 # Web maskable icons: the safe zone is a circle of radius 40%.
 MASKABLE_SCALE = 0.90
 MASKABLE_SAFE_RADIUS = 0.40 * CANVAS
-MARK_RADIUS = 0.22  # the in-app mark (mark_128.png)
+MARK_RADIUS = 0.22  # the in-app mark (mark_128.png) and the launch screens
 # Every favicon and Windows .ico entry, whatever its size, so the tile keeps
 # one shape as Windows switches entries between views and DPI settings.
 TILE_RADIUS = 0.1875
+# Launch screens: flutter_native_splash reads the logo at 4× (1152 px for
+# 288 dp or pt). Android 12 and later show only the central 768 px circle
+# (192 dp), so the tile's rounded corners must stay inside it.
+SPLASH_CANVAS = 1152
+SPLASH_SAFE_RADIUS = 384
+SPLASH_TILE = 576  # 144 dp or pt
+# The MSIX package's icons. The msix tool makes every size from one logo, up
+# to 1240 px (the large tile at 400%); tool/windows/make_msix.sh then
+# replaces the app icons of 32 px and below, which keep these msix file
+# names, with the three rules alone, as app_icon.ico has them.
+MSIX_LOGO = 1240
+MSIX_SMALL_SIZES = (16, 20, 24, 30, 32)
+MSIX_SMALL_FORMS = ('targetsize', 'altform-unplated_targetsize',
+                    'altform-lightunplated_targetsize')
+
+# The web's link preview (og:image): the About header on Klaf, in a title
+# page's frame (docs/DESIGN_SYSTEM.md §7.4).
+OG_WIDTH, OG_HEIGHT = 1200, 630
+KLAF = '#FAF7F0'
+TECHELET = '#1D3F75'
+INK_VARIANT = '#575046'  # onSurfaceVariant
+HAIRLINE = '#D8CFBF'
+GOLD_LEAF = '#B38D3F'
+OG_TITLE_HE = 'שניים מקרא ואחד תרגום'
+OG_TITLE_EN = 'Shnayim Mikra v’Echad Targum'
+# The web app's shortcuts (manifest.json) wear the navigation's icons
+# (lib/app/shell.dart): Icons.today and Icons.donut_large, from the Material
+# icons font in the Flutter SDK.
+SHORTCUT_ICONS = {'today': 0xE66A, 'progress': 0xE1F9}
+SHORTCUT_SIZE = 192
+# The shortcuts on the app's icon on iOS (lib/services/app_shortcuts.dart).
+# iOS draws a shortcut's icon as a template, from its alpha alone in the
+# menu's ink, so it is the mark as one silhouette, centred on a 35 pt canvas
+# and nearly as wide as it.
+IOS_SHORTCUT_NAME = 'ShortcutMark'
+IOS_SHORTCUT_POINTS = 35
+IOS_SHORTCUT_SCALES = (2, 3)
+IOS_SHORTCUT_WIDTH = 0.94
+# web/index.html's loading screen shows the in-app mark inline, between these.
+LOADER_MARK_START = '<!-- mark: tool/branding/make_icon.py --post -->'
+LOADER_MARK_END = '<!-- /mark -->'
+LOADER_MARK = re.compile(rf'([ \t]*){re.escape(LOADER_MARK_START)}.*?'
+                         rf'{re.escape(LOADER_MARK_END)}', re.DOTALL)
 
 
 def fail(message: str) -> NoReturn:
@@ -121,15 +179,20 @@ class Glyph:
     y: float
 
 
-def shape(font_path: Path, font: TTFont,
-          direction: str = 'rtl') -> tuple[list[Glyph], int]:
-    """Shapes WORD as Hebrew; returns the glyphs and the units per em."""
+def shape(font_path: Path, font: TTFont, direction: str = 'rtl', *,
+          text: str | None = None) -> tuple[list[Glyph], int]:
+    """Shapes WORD as Hebrew, or [text] (Hebrew when [direction] is 'rtl',
+    otherwise English); returns the glyphs and the units per em."""
     face = hb.Face(hb.Blob.from_file_path(str(font_path)))
     buf = hb.Buffer()
-    buf.add_codepoints(list(WORD))
+    if text is None:
+        buf.add_codepoints(list(WORD))
+    else:
+        buf.add_str(text)
+    hebrew = text is None or direction == 'rtl'
     buf.direction = direction
-    buf.script = 'Hebr'
-    buf.language = 'he'
+    buf.script = 'Hebr' if hebrew else 'Latn'
+    buf.language = 'he' if hebrew else 'en'
     hb.shape(hb.Font(face), buf, {})
 
     order = font.getGlyphOrder()
@@ -238,24 +301,29 @@ def group(mark: Mark, *, scale: float = 1.0, colour: str | None = None) -> str:
     return f'<g{transform}>\n' + '\n'.join(shapes) + '\n</g>'
 
 
+GRADIENT = 'url(#bg)'
+GRADIENT_DEFS = ('<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">'
+                 f'<stop offset="0" stop-color="{GRADIENT_TOP}"/>'
+                 f'<stop offset="1" stop-color="{GRADIENT_BOTTOM}"/>'
+                 '</linearGradient></defs>\n')
+
+
 def document(body: str, *, background: str | None, radius: float = 0,
              size: int = CANVAS) -> str:
     """An SVG of [size]² user units. [background] is 'gradient', 'black' or
-    None (transparent); [radius] rounds the background's corners."""
-    defs = ''
+    None (transparent); [radius] rounds the background's corners. The
+    gradient is defined whenever a layer (the body included) fills with it."""
     layers = []
     if background == 'gradient':
-        defs = ('<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">'
-                f'<stop offset="0" stop-color="{GRADIENT_TOP}"/>'
-                f'<stop offset="1" stop-color="{GRADIENT_BOTTOM}"/>'
-                '</linearGradient></defs>\n')
-        layers.append(rounded_rect(0, 0, size, size, radius, 'url(#bg)'))
+        layers.append(rounded_rect(0, 0, size, size, radius, GRADIENT))
     elif background == 'black':
         layers.append(rounded_rect(0, 0, size, size, radius, '#000000'))
     layers.append(body)
+    content = '\n'.join(layers)
+    defs = GRADIENT_DEFS if GRADIENT in content else ''
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" '
             f'height="{size}" viewBox="0 0 {size} {size}">\n'
-            + defs + '\n'.join(layers) + '\n</svg>\n')
+            + defs + content + '\n</svg>\n')
 
 
 def small_mark(size: int) -> str:
@@ -273,12 +341,160 @@ def small_mark(size: int) -> str:
                     radius=TILE_RADIUS * size, size=size)
 
 
+def rounded_square_reach(side: float, radius: float) -> float:
+    """How far a rounded square's outline reaches from its centre: the
+    middle of a corner arc."""
+    return (side / 2 - radius) * math.sqrt(2) + radius
+
+
+def splash_logo(mark: Mark) -> str:
+    """The launch screens' logo: the in-app mark's tile (the master's art on
+    the gradient, with its rounded corners), SPLASH_TILE px wide in the
+    middle of a transparent SPLASH_CANVAS. The screen's own colour shows
+    around it, cream in light mode and lamplight brown in dark."""
+    offset = (SPLASH_CANVAS - SPLASH_TILE) / 2
+    tile = (f'<g transform="translate({num(offset)} {num(offset)}) '
+            f'scale({num(SPLASH_TILE / CANVAS)})">\n'
+            + rounded_rect(0, 0, CANVAS, CANVAS, MARK_RADIUS * CANVAS, GRADIENT)
+            + '\n' + group(mark) + '\n</g>')
+    return document(tile, background=None, size=SPLASH_CANVAS)
+
+
+def text_path(font_path: Path, text: str, px: float, *, centre: float,
+              baseline: float, fill: str,
+              direction: str = 'ltr') -> tuple[str, float]:
+    """[text] shaped by HarfBuzz at [px], its ink centred on x = [centre],
+    as an SVG path; and the ink's width."""
+    font = TTFont(font_path)
+    glyph_set = font.getGlyphSet()
+    glyphs, upem = shape(font_path, font, direction, text=text)
+    scale = px / upem
+    ink = BoundsPen(glyph_set)
+    for g in glyphs:
+        glyph_set[g.name].draw(TransformPen(ink, (1, 0, 0, 1, g.x, g.y)))
+    x_min, _, x_max, _ = ink.bounds
+    dx = centre - (x_min + x_max) / 2 * scale
+    pen = SVGPathPen(glyph_set, ntos=num)
+    for g in glyphs:
+        glyph_set[g.name].draw(TransformPen(
+            pen, (scale, 0, 0, -scale, dx + g.x * scale, baseline - g.y * scale)))
+    return f'<path fill="{fill}" d="{pen.getCommands()}"/>', (x_max - x_min) * scale
+
+
+def tile_at(mark: Mark, x: float, y: float, side: float) -> str:
+    """The in-app mark's tile (mark_128.png), [side] px wide at (x, y)."""
+    return (f'<g transform="translate({num(x)} {num(y)}) '
+            f'scale({num(side / CANVAS)})">'
+            + rounded_rect(0, 0, CANVAS, CANVAS, MARK_RADIUS * CANVAS, GRADIENT)
+            + group(mark).replace('\n', '') + '</g>')
+
+
+def og_image(mark: Mark) -> str:
+    """The link preview, as the About header is laid out: the mark's tile,
+    the full name in Hebrew (Techelet) and in English, a divider between,
+    on Klaf in a title page's frame. Everything sits in the middle 630 px,
+    so a square crop keeps it."""
+    centre = OG_WIDTH / 2
+    tile = 168
+    top = 126
+    he_baseline = top + tile + 98
+    divider = he_baseline + 40
+    en_baseline = divider + 62
+    hebrew, he_width = text_path(FONTS / 'FrankRuhlLibre-Medium.ttf', OG_TITLE_HE,
+                                 58, centre=centre, baseline=he_baseline,
+                                 fill=TECHELET, direction='rtl')
+    english, en_width = text_path(FONTS / 'EBGaramond-Medium.ttf', OG_TITLE_EN,
+                                  36, centre=centre, baseline=en_baseline,
+                                  fill=INK_VARIANT)
+    if max(he_width, en_width, tile) > OG_HEIGHT - 2 * 48:
+        fail('the link preview is too wide for a square crop')
+    # SeferDivider (§7.2) at 2×, 0.45 of the square crop wide: hairlines to
+    # 20 px short of a gold lozenge.
+    rules = ''.join(
+        f'<path d="M{num(a)} {num(divider)}H{num(b)}" stroke="{HAIRLINE}" '
+        'stroke-width="2"/>'
+        for a, b in ((centre - 140, centre - 20), (centre + 20, centre + 140)))
+    lozenge = (f'<path fill="{GOLD_LEAF}" d="M{num(centre)} {num(divider - 8)}'
+               f'L{num(centre + 8)} {num(divider)}L{num(centre)} '
+               f'{num(divider + 8)}L{num(centre - 8)} {num(divider)}Z"/>')
+    # TitlePageFrame (§7.4) at 2×: a hairline, and a gold rule inset within it.
+    frame = (f'<rect x="32" y="32" width="{OG_WIDTH - 64}" height="{OG_HEIGHT - 64}" '
+             f'rx="24" fill="none" stroke="{HAIRLINE}" stroke-width="2"/>'
+             f'<rect x="44" y="44" width="{OG_WIDTH - 88}" height="{OG_HEIGHT - 88}" '
+             f'rx="16" fill="none" stroke="{GOLD_LEAF}" stroke-width="2"/>')
+    body = '\n'.join([
+        f'<rect width="{OG_WIDTH}" height="{OG_HEIGHT}" fill="{KLAF}"/>',
+        frame,
+        tile_at(mark, centre - tile / 2, top, tile),
+        hebrew, rules, lozenge, english,
+    ])
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{OG_WIDTH}" '
+            f'height="{OG_HEIGHT}" viewBox="0 0 {OG_WIDTH} {OG_HEIGHT}">\n'
+            + GRADIENT_DEFS + body + '\n</svg>\n')
+
+
+def loader_mark(mark: Mark) -> str:
+    """The in-app mark for web/index.html's loading screen: one line of
+    inline SVG, with a gradient id of its own."""
+    gradient = 'loading-mark-bg'
+    defs = GRADIENT_DEFS.strip().replace('id="bg"', f'id="{gradient}"')
+    return (f'<svg class="mark" viewBox="0 0 {CANVAS} {CANVAS}" width="96" '
+            'height="96" aria-hidden="true" focusable="false">' + defs
+            + rounded_rect(0, 0, CANVAS, CANVAS, MARK_RADIUS * CANVAS,
+                           f'url(#{gradient})')
+            + group(mark).replace('\n', '') + '</svg>')
+
+
+def material_icons_font() -> Path:
+    """The Material icons font the Flutter SDK bundles with the app."""
+    roots = [Path(os.environ['FLUTTER_ROOT'])] if 'FLUTTER_ROOT' in os.environ else []
+    if flutter := shutil.which('flutter'):
+        roots.append(Path(flutter).resolve().parents[1])
+    for root in roots:
+        path = (root / 'bin' / 'cache' / 'artifacts' / 'material_fonts'
+                / 'MaterialIcons-Regular.otf')
+        if path.exists():
+            return path
+    fail('no Material icons font: put flutter on the PATH or set FLUTTER_ROOT')
+
+
+def shortcut_icon(font: TTFont, codepoint: int) -> str:
+    """A shortcut's icon: the navigation's glyph in cream on the favicons'
+    tile, its em box (24 dp in the app) 58% of the tile."""
+    name = font.getBestCmap()[codepoint]
+    upem = font['head'].unitsPerEm
+    em = 0.58 * CANVAS
+    scale = em / upem
+    origin = CENTRE - em / 2
+    pen = SVGPathPen(font.getGlyphSet(), ntos=num)
+    # The em box runs from 0 to upem on both axes; SVG's y runs down.
+    font.getGlyphSet()[name].draw(TransformPen(
+        pen, (scale, 0, 0, -scale, origin, origin + em)))
+    glyph = f'<path fill="{CREAM}" d="{pen.getCommands()}"/>'
+    return document(glyph, background='gradient', radius=TILE_RADIUS * CANVAS)
+
+
+def ios_shortcut_icon(mark: Mark) -> str:
+    """iOS's shortcut icon: the mark in one ink on a transparent square, as
+    wide as IOS_SHORTCUT_WIDTH of it."""
+    x_min, y_min, x_max, y_max = mark.bounds
+    side = (x_max - x_min) / IOS_SHORTCUT_WIDTH
+    left = (x_min + x_max - side) / 2
+    top = (y_min + y_max - side) / 2
+    size = IOS_SHORTCUT_POINTS
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" '
+            f'height="{size}" viewBox="{num(left)} {num(top)} {num(side)} '
+            f'{num(side)}">\n' + group(mark, colour='#000000') + '\n</svg>\n')
+
+
 # Raster output ------------------------------------------------------------
 
 
-def render(svg: str, size: int, *, opaque: bool = False) -> Image.Image:
+def render(svg: str, size: int, *, opaque: bool = False,
+           height: int | None = None) -> Image.Image:
+    """[svg] at [size]² px, or [size] × [height]."""
     png = cairosvg.svg2png(bytestring=svg.encode('utf-8'),
-                           output_width=size, output_height=size)
+                           output_width=size, output_height=height or size)
     image = Image.open(io.BytesIO(png))
     return image.convert('RGB' if opaque else 'RGBA')
 
@@ -335,10 +551,91 @@ def write_sources(mark: Mark) -> None:
     write_png(BRANDING / 'mark_128.png', render(
         document(group(mark), background='gradient', radius=MARK_RADIUS * CANVAS),
         128))
+    # flutter_native_splash reads this for the Android and iOS launch screens.
+    write_png(BRANDING / 'splash_logo.png',
+              render(splash_logo(mark), SPLASH_CANVAS))
+
+
+# flutter_native_splash writes this into every LaunchTheme unless the splash
+# is full screen. Android then paints the system bars black around the launch
+# screen, whatever the themes say; edge to edge, the window must draw them.
+SPLASH_BARS_FALSE = ('<item name="android:windowDrawsSystemBarBackgrounds">'
+                     'false</item>')
+SPLASH_BARS_TRUE = SPLASH_BARS_FALSE.replace('false', 'true')
+
+
+def fix_launch_themes() -> None:
+    """Lets every LaunchTheme draw its own, transparent, system bars."""
+    for path in sorted(ANDROID_RES.glob('values*/styles.xml')):
+        text = path.read_text(encoding='utf-8')
+        if SPLASH_BARS_FALSE in text:
+            path.write_text(text.replace(SPLASH_BARS_FALSE, SPLASH_BARS_TRUE),
+                            encoding='utf-8')
+            report(path, 'LaunchTheme draws its system bars')
+
+
+def write_msix(tile: str) -> None:
+    """The MSIX package's logo, [tile] (the .ico's larger entries), and its
+    app icons of 32 px and below."""
+    write_png(MSIX / 'logo.png', render(tile, MSIX_LOGO))
+    for size in MSIX_SMALL_SIZES:
+        small = render(small_mark(size), size)
+        for form in MSIX_SMALL_FORMS:
+            write_png(MSIX / 'Images' / f'Square44x44Logo.{form}-{size}.png',
+                      small)
+
+
+def write_loader_mark(mark: Mark) -> None:
+    """Puts the mark inline in web/index.html, between its markers."""
+    path = WEB / 'index.html'
+    html = path.read_text(encoding='utf-8')
+    if not LOADER_MARK.search(html):
+        fail(f'{path.relative_to(ROOT)} lacks the loading mark\'s markers')
+    svg = loader_mark(mark)
+    html = LOADER_MARK.sub(
+        lambda m: '\n'.join(m.group(1) + line
+                            for line in (LOADER_MARK_START, svg, LOADER_MARK_END)),
+        html, count=1)
+    path.write_text(html, encoding='utf-8')
+    report(path, 'loading mark')
+
+
+def write_ios_shortcut(mark: Mark) -> None:
+    """iOS's shortcut icon, as a template image set in the asset catalog."""
+    folder = IOS_ASSETS / f'{IOS_SHORTCUT_NAME}.imageset'
+    svg = ios_shortcut_icon(mark)
+    images = []
+    for scale in IOS_SHORTCUT_SCALES:
+        name = f'{IOS_SHORTCUT_NAME}@{scale}x.png'
+        write_png(folder / name, render(svg, IOS_SHORTCUT_POINTS * scale))
+        images.append({'filename': name, 'idiom': 'universal',
+                       'scale': f'{scale}x'})
+    contents = {
+        'images': images,
+        'info': {'author': 'xcode', 'version': 1},
+        'properties': {'template-rendering-intent': 'template'},
+    }
+    path = folder / 'Contents.json'
+    # Xcode's own layout, so opening the catalog leaves it unchanged.
+    path.write_text(json.dumps(contents, indent=2, separators=(',', ' : '))
+                    + '\n', encoding='utf-8')
+    report(path, 'template image set')
+
+
+def write_web(mark: Mark) -> None:
+    """The web's link preview, its shortcuts' icons and its loading mark."""
+    write_png(WEB / 'og.png', render(og_image(mark), OG_WIDTH, height=OG_HEIGHT,
+                                     opaque=True))
+    icons = TTFont(material_icons_font())
+    for name, codepoint in SHORTCUT_ICONS.items():
+        write_png(WEB / 'icons' / f'shortcut-{name}.png',
+                  render(shortcut_icon(icons, codepoint), SHORTCUT_SIZE))
+    write_loader_mark(mark)
 
 
 def write_post(mark: Mark) -> None:
-    """Outputs flutter_launcher_icons cannot make; run after it."""
+    """Outputs flutter_launcher_icons cannot make, and the launch themes'
+    system bars after flutter_native_splash; run after both."""
     master = document(group(mark), background='gradient')
     # The larger tiles: the master's art, with the small tiles' corners.
     tile = document(group(mark), background='gradient',
@@ -357,14 +654,22 @@ def write_post(mark: Mark) -> None:
     write_ico(ROOT / 'windows' / 'runner' / 'resources' / 'app_icon.ico',
               [render(small_mark(s), s) for s in (16, 20, 24, 32)]
               + [render(tile, s) for s in (40, 48, 64, 256)])
+    write_msix(tile)
+    write_web(mark)
+    write_ios_shortcut(mark)
+    fix_launch_themes()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     parser.add_argument(
         '--post', action='store_true',
-        help='write the web maskable icons, favicons and Windows .ico; '
-             'run after `dart run flutter_launcher_icons`')
+        help='write the web maskable icons, favicons, link preview, '
+             'shortcut icons and loading mark, the Windows .ico and MSIX '
+             'icons and iOS\'s shortcut icon, and fix the launch themes\' '
+             'system bars; run after '
+             '`dart run flutter_launcher_icons` and '
+             '`dart run flutter_native_splash:create`')
     args = parser.parse_args()
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -379,6 +684,9 @@ def main() -> None:
         fail('the adaptive foreground leaves the safe circle')
     if mark.radius(MASKABLE_SCALE) > MASKABLE_SAFE_RADIUS:
         fail('the maskable icon leaves the safe zone')
+    if (rounded_square_reach(SPLASH_TILE, MARK_RADIUS * SPLASH_TILE)
+            > SPLASH_SAFE_RADIUS):
+        fail("the launch screen's tile leaves the Android 12 icon circle")
 
     print(f'Wordmark: letters {mark.letter_height:.0f} px tall, ink '
           f'{mark.word_width:.0f} px wide ({mark.advance_width:.0f} px of '

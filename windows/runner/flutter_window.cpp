@@ -1,6 +1,11 @@
 #include "flutter_window.h"
 
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
+
+#include <memory>
 #include <optional>
+#include <variant>
 
 #include "flutter/generated_plugin_registrant.h"
 
@@ -25,6 +30,7 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+  RegisterWindowChannel();
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -37,6 +43,28 @@ bool FlutterWindow::OnCreate() {
   flutter_controller_->ForceRedraw();
 
   return true;
+}
+
+void FlutterWindow::RegisterWindowChannel() {
+  // The handler stays registered with the engine, which this window owns.
+  flutter::MethodChannel<> channel(
+      flutter_controller_->engine()->messenger(), "shnayim/window",
+      &flutter::StandardMethodCodec::GetInstance());
+  channel.SetMethodCallHandler(
+      [this](const flutter::MethodCall<>& call,
+             std::unique_ptr<flutter::MethodResult<>> result) {
+        if (call.method_name() == "setDarkTitleBar") {
+          const auto* dark = std::get_if<bool>(call.arguments());
+          if (!dark) {
+            result->Error("bad-arguments", "Expected a bool.");
+            return;
+          }
+          SetDarkTitleBar(*dark);
+          result->Success();
+        } else {
+          result->NotImplemented();
+        }
+      });
 }
 
 void FlutterWindow::OnDestroy() {

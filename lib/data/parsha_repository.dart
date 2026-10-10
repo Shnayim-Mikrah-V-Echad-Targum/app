@@ -67,6 +67,9 @@ class ParshaRepository {
   /// All 54 parshiyot in order.
   List<PortionInfo> get all => List.unmodifiable(_singles);
 
+  /// The weeks that read two parshiyot together, by their first.
+  List<PortionInfo> get combined => List.unmodifiable(_combined.values);
+
   PortionInfo portion(PortionId id) {
     if (id.combined) {
       final c = _combined[id.number];

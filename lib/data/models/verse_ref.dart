@@ -8,6 +8,18 @@ class VerseRef implements Comparable<VerseRef> {
     return VerseRef(int.parse(s.substring(0, i)), int.parse(s.substring(i + 1)));
   }
 
+  /// Parses `"12:3"` from outside the app's data, such as a link: null for
+  /// anything else.
+  static VerseRef? tryParse(String? s) {
+    final m = _form.firstMatch(s ?? '');
+    if (m == null) return null;
+    final chapter = int.parse(m[1]!);
+    final verse = int.parse(m[2]!);
+    return chapter > 0 && verse > 0 ? VerseRef(chapter, verse) : null;
+  }
+
+  static final _form = RegExp(r'^(\d{1,3}):(\d{1,3})$');
+
   final int chapter;
   final int verse;
 
