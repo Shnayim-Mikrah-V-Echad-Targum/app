@@ -517,6 +517,41 @@
       }
     }
   },
+  "yearBarSemantics": "This year: {done} of {total} parshiyot complete",
+  "@yearBarSemantics": {
+    "description": "Screen-reader label of the bar of the year's parshiyot, when none is being read now.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "yearBarSemanticsCurrent": "This year: {done} of {total} parshiyot complete; {name} in progress",
+  "@yearBarSemanticsCurrent": {
+    "description": "Screen-reader label of the bar of the year's parshiyot; name is this week's parsha.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bookAbbrGenesis": "Gen",
+  "@bookAbbrGenesis": {
+    "description": "Short name of the book under its part of the year bar."
+  },
+  "bookAbbrExodus": "Exo",
+  "bookAbbrLeviticus": "Lev",
+  "bookAbbrNumbers": "Num",
+  "bookAbbrDeuteronomy": "Deu",
   "torahMap": "Torah map",
   "torahMapHelp": "Each tile is one parsha of this year's cycle.",
   "recentWeeks": "Recent weeks",

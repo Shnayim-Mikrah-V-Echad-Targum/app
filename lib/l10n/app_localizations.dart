@@ -1184,6 +1184,48 @@ abstract class AppLocalizations {
   /// **'{count} verses read twice with Targum'**
   String versesRead(String count);
 
+  /// Screen-reader label of the bar of the year's parshiyot, when none is being read now.
+  ///
+  /// In en, this message translates to:
+  /// **'This year: {done} of {total} parshiyot complete'**
+  String yearBarSemantics(int done, int total);
+
+  /// Screen-reader label of the bar of the year's parshiyot; name is this week's parsha.
+  ///
+  /// In en, this message translates to:
+  /// **'This year: {done} of {total} parshiyot complete; {name} in progress'**
+  String yearBarSemanticsCurrent(int done, int total, String name);
+
+  /// Short name of the book under its part of the year bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Gen'**
+  String get bookAbbrGenesis;
+
+  /// No description provided for @bookAbbrExodus.
+  ///
+  /// In en, this message translates to:
+  /// **'Exo'**
+  String get bookAbbrExodus;
+
+  /// No description provided for @bookAbbrLeviticus.
+  ///
+  /// In en, this message translates to:
+  /// **'Lev'**
+  String get bookAbbrLeviticus;
+
+  /// No description provided for @bookAbbrNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Num'**
+  String get bookAbbrNumbers;
+
+  /// No description provided for @bookAbbrDeuteronomy.
+  ///
+  /// In en, this message translates to:
+  /// **'Deu'**
+  String get bookAbbrDeuteronomy;
+
   /// No description provided for @torahMap.
   ///
   /// In en, this message translates to:

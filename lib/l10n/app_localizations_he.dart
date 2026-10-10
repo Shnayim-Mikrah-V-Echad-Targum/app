@@ -684,6 +684,31 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String yearBarSemantics(int done, int total) {
+    return 'השנה: הושלמו $done מתוך $total פרשות';
+  }
+
+  @override
+  String yearBarSemanticsCurrent(int done, int total, String name) {
+    return 'השנה: הושלמו $done מתוך $total פרשות; פרשת $name בתהליך';
+  }
+
+  @override
+  String get bookAbbrGenesis => 'בר׳';
+
+  @override
+  String get bookAbbrExodus => 'שמ׳';
+
+  @override
+  String get bookAbbrLeviticus => 'וי׳';
+
+  @override
+  String get bookAbbrNumbers => 'במ׳';
+
+  @override
+  String get bookAbbrDeuteronomy => 'דב׳';
+
+  @override
   String get torahMap => 'מפת התורה';
 
   @override

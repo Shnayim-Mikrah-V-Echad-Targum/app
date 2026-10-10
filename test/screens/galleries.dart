@@ -11,6 +11,7 @@ import 'package:shnayim_mikra/ui/widgets/ledger.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikra/ui/widgets/year_bar.dart';
 
 /// The ornaments of docs/DESIGN_SYSTEM.md §7, the candles and an empty state.
 class OrnamentsGallery extends StatelessWidget {
@@ -164,7 +165,7 @@ class RowsGallery extends StatelessWidget {
   }
 }
 
-/// The parsha rings with their legend, and compact rings.
+/// The parsha rings with their legend, compact rings, and the year bar.
 class ProgressGallery extends StatelessWidget {
   const ProgressGallery({super.key});
 
@@ -187,6 +188,20 @@ class ProgressGallery extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final he = context.isHebrewUi;
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    const s = YearSegment.values;
+    final year = [
+      ...List.filled(5, s[0]),
+      s[1],
+      s[0],
+      s[2],
+      s[4],
+      s[0],
+      s[3],
+      ...List.filled(43, s[4]),
+    ];
     return Scaffold(
       appBar: AppBar(title: const Text('Progress')),
       body: PageBody(
@@ -216,6 +231,22 @@ class ProgressGallery extends StatelessWidget {
               children: [
                 for (final w in [_week(0), _week(1, passes: 2), _week(4), _week(7)])
                   ParshaRings(progress: w, aliyahWeights: _weights, size: ParshaRings.compact),
+              ],
+            ),
+          ),
+          const Gap(12),
+          InfoCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                YearBar(segments: year, currentName: he ? 'שמות' : 'Shemot'),
+                const Gap(16),
+                Text('280 dp', style: muted),
+                const Gap(4),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: SizedBox(width: 280, child: YearBar(segments: year)),
+                ),
               ],
             ),
           ),
