@@ -94,6 +94,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   int _step = 0;
   bool _finished = false;
   bool _positioned = false;
+
+  // Another aliyah was chosen: once the step it resumes at is known, it is
+  // announced, as Next and Back announce theirs.
+  bool _announceWhenPositioned = false;
   int? _focusedVerse;
   final _scroll = ScrollController();
 
@@ -160,6 +164,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     setState(() {
       _aliyah = a;
       _positioned = false;
+      _announceWhenPositioned = true;
       _finished = false;
       _focusedVerse = null;
     });
@@ -472,6 +477,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           _chunk = c.clamp(0, flow.chunks.length - 1);
           _step = st.clamp(0, flow.stepsFor(_chunk).length - 1);
           _positioned = true;
+          if (_announceWhenPositioned && !_fullText) {
+            WidgetsBinding.instance.addPostFrameCallback((_) => _announceStep(flow));
+          }
+          _announceWhenPositioned = false;
           // Focus mode opens on the reader's place, where the guided reader
           // would resume, not on nothing.
           if (s.focusMode && _focusedVerse == null) {

@@ -12,10 +12,11 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
   final messenger = ScaffoldMessenger.maybeOf(context);
   messenger?.hideCurrentSnackBar();
   messenger?.showSnackBar(SnackBar(content: Text(message), action: action));
-  // The SnackBar is a live region, which Android and the web read out by
-  // themselves. Elsewhere it takes an announcement, sent only there so that
-  // the message is spoken once.
-  if (!kIsWeb && MediaQuery.supportsAnnounceOf(context)) {
+  // The SnackBar is a live region, which Android, iOS and the web read out
+  // by themselves (Flutter's iOS engine announces a node that becomes a
+  // live region). Windows and macOS take an announcement instead, sent only
+  // there so that the message is spoken once.
+  if (!kIsWeb && defaultTargetPlatform != TargetPlatform.iOS && MediaQuery.supportsAnnounceOf(context)) {
     SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
   }
 }

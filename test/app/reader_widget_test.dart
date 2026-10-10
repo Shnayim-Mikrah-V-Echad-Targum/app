@@ -651,6 +651,14 @@ void main() {
         expect(tester.takeAnnouncements(), [
           if (announces) isAccessibilityAnnouncement('Read the Hebrew again. Reading 2 of 3. Verse 1 of 14'),
         ]);
+
+        // So is the step another aliyah opens on, chosen from its tab.
+        await tester.tap(find.ancestor(of: find.text('Sheni'), matching: find.byType(ChoiceChip)));
+        await tester.pumpAndSettle();
+        expect(find.text('Noach · Sheni'), findsOneWidget);
+        expect([for (final a in tester.takeAnnouncements()) a.message], [
+          if (announces) matches(RegExp(r'^Read the Hebrew\. Reading 1 of 3\. Verse 1 of \d+$')),
+        ]);
         handle.dispose();
       });
     }

@@ -30,8 +30,8 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - Each aliyah tile announces the state of all three readings. The week strip announces each day's status, and a day with reading, like each parsha of the Torah map, is a button that opens it.
 
 **Announcements and controls**
-- Each step in the guided reader is announced once, with its reading and place ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"): in an announcement where the platform takes them, and elsewhere by the step header, a live region. A completed aliyah is announced the same way: in an announcement, or elsewhere by the finished panel's heading, a live region.
-- Status messages appear in a SnackBar and are spoken once: by its live region on Android and the web, and in an announcement elsewhere.
+- Each step in the guided reader is announced once, with its reading and place ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"): in an announcement where the platform takes them, and elsewhere by the step header, a live region. So is the step an aliyah opens on when it is chosen from the aliyah tabs. A completed aliyah is announced the same way: in an announcement, or elsewhere by the finished panel's heading, a live region.
+- Status messages appear in a SnackBar and are spoken once: by its live region on Android, iOS and the web, and in an announcement on Windows and macOS.
 - Every icon button has a label and a tooltip. Where there are several alike, each is named for what it acts on ("More options for Rishon", "Increase Reading size").
 - A slider is read by its setting and value ("Reading size, 100%"), with a button on either side to step it.
 
