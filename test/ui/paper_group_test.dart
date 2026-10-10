@@ -300,6 +300,20 @@ void main() {
     expect(await maxLines(2), isNull);
   });
 
+  testWidgets('a subtitle of several facts, a line each, can be let run', (tester) async {
+    const facts = 'I Samuel 20:18–42\nSpecial haftarah: Shabbat Machar Chodesh\nAlso the regular haftarah';
+    await pumpThemed(
+      tester,
+      const Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(width: 300, child: PaperRow(title: 'Haftarah', subtitle: facts, subtitleMaxLines: null)),
+      ),
+    );
+    final text = tester.widget<Text>(find.text(facts));
+    expect((text.maxLines, text.overflow), (null, null));
+    expect(tester.getSize(find.text(facts)).height, greaterThan(3 * 22 - 1), reason: 'every line shows');
+  });
+
   group('GroupHeader', () {
     for (final hebrew in [false, true]) {
       testWidgets('an eyebrow heading, 28 above, 8 below, inset 4 (${hebrew ? 'he' : 'en'})', (tester) async {

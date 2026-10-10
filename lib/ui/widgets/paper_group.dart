@@ -118,6 +118,7 @@ class PaperRow extends StatelessWidget {
     this.icon,
     required this.title,
     this.subtitle,
+    this.subtitleMaxLines = 2,
     this.value,
     this.trailing,
     this.mergeTrailing = false,
@@ -129,8 +130,12 @@ class PaperRow extends StatelessWidget {
   final IconData? icon;
   final String title;
 
-  /// At most two lines, unless the text is enlarged.
+  /// At most [subtitleMaxLines] lines, unless the text is enlarged.
   final String? subtitle;
+
+  /// Two by default; null for a subtitle of several facts, each on a line
+  /// of its own, that is never cut short.
+  final int? subtitleMaxLines;
 
   /// The current setting, such as a language, at the end of the row.
   final String? value;
@@ -218,8 +223,8 @@ class PaperRow extends StatelessWidget {
                     Text(
                       subtitle!,
                       style: muted,
-                      maxLines: enlarged ? null : 2,
-                      overflow: enlarged ? null : TextOverflow.ellipsis,
+                      maxLines: enlarged ? null : subtitleMaxLines,
+                      overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
                     ),
                 ],
               ),

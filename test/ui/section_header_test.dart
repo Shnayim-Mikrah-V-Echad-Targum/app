@@ -75,6 +75,22 @@ void main() {
       expect(glyph.left - banner.left, 16);
     });
 
+    testWidgets('can carry a title over its text, both in its ink, beside the icon', (tester) async {
+      await pumpThemed(
+        tester,
+        const NoticeBanner(icon: Icons.schedule, title: 'Bereshit is still open', text: 'Finish by Tuesday.'),
+      );
+      final context = tester.element(find.byType(NoticeBanner));
+      final title = tester.widget<Text>(find.text('Bereshit is still open')).style;
+      expect(title?.fontSize, Theme.of(context).textTheme.titleSmall?.fontSize);
+      expect(title?.color, Palettes.light.onSecondaryContainer);
+      expect(tester.getTopLeft(find.text('Finish by Tuesday.')).dy,
+          tester.getBottomLeft(find.text('Bereshit is still open')).dy);
+      // The icon beside the title's line, not the middle of both.
+      expect(tester.getCenter(find.byIcon(Icons.schedule)).dy,
+          closeTo(tester.getCenter(find.text('Bereshit is still open')).dy, 1));
+    });
+
     testWidgets('is outlined 2 px in high contrast', (tester) async {
       await pumpThemed(
         tester,

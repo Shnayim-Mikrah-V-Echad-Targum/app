@@ -340,6 +340,7 @@ class NoticeBanner extends StatelessWidget {
     super.key,
     required this.icon,
     required this.text,
+    this.title,
     this.action,
     this.actionBelow = false,
     this.liveRegion = false,
@@ -347,6 +348,9 @@ class NoticeBanner extends StatelessWidget {
 
   final IconData icon;
   final String text;
+
+  /// A line in titleSmall over [text], for a notice that needs one.
+  final String? title;
   final Widget? action;
 
   /// Whether the banner is read out as it appears or its text changes: a
@@ -390,7 +394,14 @@ class NoticeBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    Widget message = Text(text, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSecondaryContainer));
+    final ink = scheme.onSecondaryContainer;
+    Widget message = Text(text, style: theme.textTheme.bodyMedium?.copyWith(color: ink));
+    if (title case final title?) {
+      message = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [Text(title, style: theme.textTheme.titleSmall?.copyWith(color: ink)), message],
+      );
+    }
     if (liveRegion) message = Semantics(liveRegion: true, child: message);
     final action = _legible(context);
     final below = actionBelow ? action : null;
@@ -405,9 +416,10 @@ class NoticeBanner extends StatelessWidget {
         // A trailing button's own padding makes up the end padding beside it.
         padding: EdgeInsetsDirectional.fromSTEB(16, 12, action == null ? 16 : 8, below == null ? 12 : 4),
         child: Row(
-          crossAxisAlignment: below == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+          // A title, or text over a button, starts beside the icon.
+          crossAxisAlignment: below == null && title == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 20, color: scheme.onSecondaryContainer),
+            Icon(icon, size: 20, color: ink),
             const Gap(12),
             Expanded(
               child: below == null

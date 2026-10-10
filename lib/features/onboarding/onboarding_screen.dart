@@ -7,7 +7,7 @@ import '../../app/providers.dart';
 import '../../core/calendar/local_date.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
-import '../../ui/theme/motion.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../community/data/backend.dart';
 import '../community/data/community_providers.dart';
@@ -568,7 +568,7 @@ class _Welcome extends ConsumerWidget {
           const Gap(48),
           // Centred like the text around them, also when large text wraps them.
           FilledButton(
-            style: _roomy(context, (24, 12, 6)),
+            style: AppButtons.roomy(context, (24, 12, 6)),
             onPressed: onStart,
             child: Text(l.onbStart, textAlign: TextAlign.center),
           ),
@@ -597,7 +597,7 @@ class _Welcome extends ConsumerWidget {
             )
           else
             TextButton(
-              style: _roomy(context, (12, 8, 4), vertical: 8),
+              style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
               onPressed: onRestore,
               child: Text(l.onbRestore, textAlign: TextAlign.center),
             ),
@@ -605,23 +605,6 @@ class _Welcome extends ConsumerWidget {
           Text(l.disclaimer, textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
         ],
       ),
-    );
-  }
-
-  /// Material's padding for a button: [sides] at each side at 1×, 2× and
-  /// 3× the usual text size, as its own narrows when text grows, and
-  /// [vertical] above and below at the usual size. Where Material's leaves
-  /// nothing above and below large text, this keeps 8, so a label wrapped
-  /// onto two lines doesn't run into the button's edges.
-  static ButtonStyle _roomy(BuildContext context, (double, double, double) sides, {double vertical = 0}) {
-    final size = Theme.of(context).textTheme.labelLarge?.fontSize ?? 14;
-    return ButtonStyle(
-      padding: WidgetStatePropertyAll(ButtonStyleButton.scaledPadding(
-        EdgeInsets.symmetric(horizontal: sides.$1, vertical: vertical),
-        EdgeInsets.symmetric(horizontal: sides.$2, vertical: 8),
-        EdgeInsets.symmetric(horizontal: sides.$3, vertical: 8),
-        MediaQuery.textScalerOf(context).scale(size) / 14,
-      )),
     );
   }
 }
