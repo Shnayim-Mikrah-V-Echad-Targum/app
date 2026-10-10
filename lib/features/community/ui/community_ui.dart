@@ -6,6 +6,7 @@ import '../../../core/text/hebrew_text.dart';
 import '../../../data/models/parsha.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../ui/l10n.dart';
+import '../../about/legal_screen.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -89,7 +90,10 @@ Future<bool> ensureGuidelines(BuildContext context, WidgetRef ref) async {
           children: [
             Text(l.guidelinesPrompt),
             TextButton(
-              onPressed: () => context.push('/settings/about/legal/guidelines'),
+              // In front of this dialog, which it returns to.
+              onPressed: () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute<void>(builder: (_) => const LegalScreen(doc: LegalDoc.guidelines)),
+              ),
               child: Text(l.readGuidelines),
             ),
             CheckboxListTile(

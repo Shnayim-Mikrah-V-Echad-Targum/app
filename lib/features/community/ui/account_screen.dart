@@ -195,7 +195,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           leading: const Icon(Icons.shield_outlined),
           title: Text(l.moderationQueue),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/community/moderation'),
+          onTap: () => context.push('/community/moderation'),
         ),
       ListTile(
         contentPadding: EdgeInsets.zero,

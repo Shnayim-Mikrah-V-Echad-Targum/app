@@ -4,10 +4,16 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/config.dart';
+import '../../l10n/app_localizations.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
 
 final _version = PackageInfo.fromPlatform().then((i) => '${i.version} (${i.buildNumber})').catchError((_) => '');
+
+/// An email to the maintainers, or null when the build names no address.
+Uri? supportEmailUri(AppLocalizations l) => AppConfig.supportEmail.isEmpty
+    ? null
+    : Uri(scheme: 'mailto', path: AppConfig.supportEmail, query: 'subject=${Uri.encodeComponent(l.appTitle)}');
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -49,9 +55,7 @@ class AboutScreen extends StatelessWidget {
           link(Icons.gavel_outlined, l.termsTitle, () => context.push('/legal/terms')),
           link(Icons.groups_outlined, l.guidelinesTitle, () => context.push('/legal/guidelines')),
           link(Icons.description_outlined, l.licensesTitle, () => showLicensePage(context: context, applicationName: l.appTitleFull)),
-          if (AppConfig.supportEmail.isNotEmpty)
-            link(Icons.mail_outline, l.contactTitle,
-                () => launchUrl(Uri(scheme: 'mailto', path: AppConfig.supportEmail, query: 'subject=${Uri.encodeComponent(l.appTitle)}'))),
+          if (supportEmailUri(l) case final email?) link(Icons.mail_outline, l.contactTitle, () => launchUrl(email)),
           link(Icons.feedback_outlined, l.sendFeedback, () => launchUrl(Uri.parse('${AppConfig.sourceUrl}/issues'))),
         ],
       ),

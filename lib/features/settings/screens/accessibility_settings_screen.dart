@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/text/hebrew_text.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
+import '../../about/about_screen.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -63,6 +65,14 @@ AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPrefe
 
 class AccessibilitySettingsScreen extends ConsumerWidget {
   const AccessibilitySettingsScreen({super.key});
+
+  /// By email where the build names an address for it, and otherwise (or
+  /// with no mail app to send it) in the feedback forum.
+  static Future<void> _sendFeedback(BuildContext context) async {
+    final email = supportEmailUri(context.l10n);
+    if (email != null && await launchUrl(email).catchError((_) => false)) return;
+    if (context.mounted) await context.push('/community/forum/feedback');
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -154,7 +164,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           leading: const Icon(Icons.feedback_outlined),
           title: Text(l.sendFeedback),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push('/settings/about'),
+          onTap: () => _sendFeedback(context),
         ),
       ],
     );

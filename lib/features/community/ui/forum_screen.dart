@@ -72,7 +72,7 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
       appBar: AppBar(title: Text(forum.name(he))),
       floatingActionButton: canStart
           ? FloatingActionButton.extended(
-              onPressed: () => context.go('/community/new?forum=${forum.slug}'),
+              onPressed: () => context.push('/community/new?forum=${forum.slug}'),
               icon: const Icon(Icons.edit_outlined),
               label: Text(l.newThread),
             )
@@ -141,7 +141,7 @@ class ThreadTile extends StatelessWidget {
         title: Text(thread.title, textDirection: autoDirection(thread.title)),
         subtitle: Text(meta, style: theme.textTheme.bodySmall),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.go('/community/thread/${thread.id}'),
+        onTap: () => context.push('/community/thread/${thread.id}'),
       ),
     );
   }

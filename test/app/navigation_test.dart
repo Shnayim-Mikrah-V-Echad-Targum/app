@@ -11,7 +11,10 @@ import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/community_screen.dart';
+import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
+import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
+import 'package:shnayim_mikra/features/settings/screens/accessibility_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
@@ -254,5 +257,63 @@ void main() {
       expect(_home, findsOneWidget);
     });
   });
-}
 
+  testWidgets('a thread goes back to its forum', (tester) async {
+    final router = await _pump(tester);
+    router.go('/community');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Questions & answers'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Why read the Targum rather than a translation?'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ThreadScreen), findsOneWidget);
+
+    await goBack(tester);
+    expect(find.byType(ForumScreen), findsOneWidget);
+    await goBack(tester);
+    expect(find.byType(CommunityScreen), findsOneWidget);
+    expect(selectedTab(tester), 3);
+  });
+
+  testWidgets('the guidelines open in front of the dialog that asks to accept them', (tester) async {
+    final forums = DemoForumRepository();
+    await forums.verifyCode('reader@example.org', '123456');
+    final router = await _pump(tester, forums: forums);
+    router.go('/community/thread/1');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Write a reply'), 'Thank you.');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Reply'));
+    await tester.pumpAndSettle();
+    final accept = find.byType(CheckboxListTile).hitTestable();
+    expect(accept, findsOneWidget);
+
+    await tester.tap(find.text('Read the guidelines'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LegalScreen).hitTestable(), findsOneWidget);
+    expect(accept, findsNothing);
+
+    await goBack(tester);
+    expect(find.byType(LegalScreen), findsNothing);
+    expect(accept, findsOneWidget);
+  });
+
+  group('in Settings', () {
+    testWidgets('feedback, with no address to email, goes to the feedback forum and back', (tester) async {
+      final router = await _pump(tester);
+      router.go('/settings/accessibility');
+      await tester.pumpAndSettle();
+      final feedback = find.text('Send feedback');
+      await tester.ensureVisible(feedback);
+      await tester.pumpAndSettle();
+      await tester.tap(feedback);
+      await tester.pumpAndSettle();
+      expect(find.byType(ForumScreen), findsOneWidget);
+      expect(find.text('App feedback'), findsOneWidget);
+      expect(selectedTab(tester), 4);
+
+      await goBack(tester);
+      expect(find.byType(AccessibilitySettingsScreen), findsOneWidget);
+    });
+  });
+}
