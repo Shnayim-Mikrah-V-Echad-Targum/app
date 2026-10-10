@@ -184,12 +184,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         if (profile.isModerator) Chip(avatar: const Icon(Icons.shield_outlined, size: 18), label: Text(l.moderatorBadge)),
       ],
       SectionHeader(l.displayNameLabel),
-      TextField(
-        controller: _name,
-        maxLength: 40,
-        textDirection: autoDirection(_name.text),
-        autofillHints: const [AutofillHints.nickname],
-        decoration: InputDecoration(labelText: l.displayNameLabel, helperText: l.displayNameHelp),
+      // Its direction follows the name as it is typed.
+      ListenableBuilder(
+        listenable: _name,
+        builder: (context, _) => TextField(
+          controller: _name,
+          maxLength: 40,
+          textDirection: autoDirection(_name.text, fallback: Directionality.of(context)),
+          autofillHints: const [AutofillHints.nickname],
+          decoration: InputDecoration(labelText: l.displayNameLabel, helperText: l.displayNameHelp),
+        ),
       ),
       Align(
         alignment: AlignmentDirectional.centerStart,

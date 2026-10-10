@@ -129,6 +129,8 @@ const _screens = {
   // Just refreshed from the app bar.
   'thread_refreshed': '/community/thread/1',
   'compose': '/community/new',
+  // Its empty title field focused: the caret at the start of the UI's direction.
+  'compose_focused': '/community/new',
   'account': '/community/account',
   // Just after "Email me a code".
   'account_code': '/community/account',
@@ -477,6 +479,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'focus_slider': (tester) => _keyboardFocus(tester, find.byType(Slider).first),
   'focus_switch': (tester) => _keyboardFocus(tester, find.byType(SwitchListTile).first),
   'focus_field': (tester) => _keyboardFocus(tester, find.byType(TextField).first),
+  'compose_focused': (tester) => _keyboardFocus(tester, find.byWidgetPredicate((w) => w is TextField && w.maxLength == 150)),
   'focus_chip': (tester) => _keyboardFocus(tester, find.byType(ChoiceChip).at(1)),
   // A menu button inside a card, which clips: the ring must still show.
   'focus_menu': (tester) => _keyboardFocus(

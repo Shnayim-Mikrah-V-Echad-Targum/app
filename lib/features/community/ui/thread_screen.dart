@@ -366,7 +366,7 @@ class _Composer extends StatelessWidget {
                       maxLines: 6,
                       maxLength: 10000,
                       buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-                      textDirection: autoDirection(controller.text),
+                      textDirection: autoDirection(controller.text, fallback: Directionality.of(context)),
                       keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(labelText: l.replyLabel),
                     ),
@@ -458,7 +458,16 @@ class PostCard extends ConsumerWidget {
             context: context,
             builder: (context) => AlertDialog(
               title: Text(l.editPostTitle),
-              content: TextField(controller: controller, maxLines: 8, minLines: 3, textDirection: autoDirection(post.body)),
+              // Its direction follows the text as it is edited.
+              content: ListenableBuilder(
+                listenable: controller,
+                builder: (context, _) => TextField(
+                  controller: controller,
+                  maxLines: 8,
+                  minLines: 3,
+                  textDirection: autoDirection(controller.text, fallback: Directionality.of(context)),
+                ),
+              ),
               actions: [
                 TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
                 FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.actionSave)),
