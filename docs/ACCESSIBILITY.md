@@ -27,6 +27,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 **Announcements and controls**
 - Steps in the guided reader and a completed aliyah are announced as live updates where the platform supports them. Elsewhere they appear in a SnackBar that is read aloud.
 - Search says how many verses were found once typing pauses. Each verse found is one item: its reference, then its text, tagged `he` (or `en` for the translation) and spoken as verses are, with the Targum named.
+- Go to verse says what its first row offers once typing pauses: the verse found and the week and aliyah that read it, why there is none, or the search. The reader then says the reference of the verse it opened at, which it marks with a rule as well as a wash, so the mark doesn't rest on colour.
 - Every icon button has a label and a tooltip.
 
 **Web**
@@ -67,6 +68,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   | Ctrl+Shift+N | Show or hide vowels |
   | Ctrl+Shift+L | Listen / stop |
   | F1, or Ctrl+/ | Show shortcuts |
+  | Ctrl+K, on any tab | Search, or go to a verse |
 
 - No action needs a swipe, drag or multi-finger gesture. Everything is a tap, click or key press, and nothing has a time limit.
 - The screen can be kept on while reading, which is on by default.

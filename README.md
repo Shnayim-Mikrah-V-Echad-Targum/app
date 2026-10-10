@@ -16,6 +16,7 @@ Accessibility is a core requirement, not an add-on. See [docs/ACCESSIBILITY.md](
   - aliyah by aliyah
 - Full-text mode with the Torah and Targum interleaved.
 - Search for a word or phrase in the Torah, the Targum or the translation, from the Parsha tab. Hebrew is matched without vowels or cantillation, and each verse found opens in the reader.
+- Go to a verse by its reference, in English or Hebrew ("Gen 28:12", "Vayetzei 28 12", "בראשית כח, יב", or "3:22" in this week's book), from the same search button or Ctrl+K. The reader opens at the verse and marks it.
 - The reader handles the special cases:
   - verses with no Targum (Bamidbar 32:3)
   - verses with no Rashi when Rashi replaces Targum

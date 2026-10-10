@@ -113,6 +113,15 @@ const _screens = {
   'search_targum': '/search',
   'search_english': '/search',
   'search_none': '/search',
+  // Go to verse, from the Parsha tab's search button: as it opens, a verse
+  // found, one past the end of its chapter, and words to search for. Then
+  // the verse in the reader, and in focus mode.
+  'goto': '/parsha',
+  'goto_verse': '/parsha',
+  'goto_missing': '/parsha',
+  'goto_words': '/parsha',
+  'reader_verse': '/read/5787:1/2?verse=3:8',
+  'reader_verse_focus': '/read/5787:1/2?verse=3:8',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
   'focus_day': '/today',
@@ -151,6 +160,7 @@ const _screens = {
 /// the screen has loaded.
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
   // Israel is a parsha ahead, and both pairs of portions are read together.
@@ -254,6 +264,13 @@ Future<void> _search(WidgetTester tester, String query) async {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump(const Duration(milliseconds: 100));
   }
+  if (query.isNotEmpty) await tester.enterText(find.byType(TextField), query);
+}
+
+/// Opens Go to verse from the Parsha tab, and types [query].
+Future<void> _goTo(WidgetTester tester, String query) async {
+  await tester.tap(find.byIcon(Icons.search));
+  await tester.pumpAndSettle();
   if (query.isNotEmpty) await tester.enterText(find.byType(TextField), query);
 }
 
@@ -383,6 +400,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'search_targum': (tester) => _search(tester, 'בקדמין'),
   'search_english': (tester) => _search(tester, 'ladder'),
   'search_none': (tester) => _search(tester, 'אהרון'),
+  'goto': (tester) => _goTo(tester, ''),
+  'goto_verse': (tester) => _goTo(tester, 'בראשית כח יב'),
+  'goto_missing': (tester) => _goTo(tester, 'Gen 28:30'),
+  'goto_words': (tester) => _goTo(tester, 'ladder'),
   // The week strip, in the middle of the page.
   'today_yomtov_oneday': _showWeekStrip,
   'today_yomtov_twoday': _showWeekStrip,
@@ -483,6 +504,8 @@ const _desktopScreens = {
   'progress_map',
   'city_search',
   'search_many',
+  'goto_verse',
+  'reader_verse',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
@@ -491,6 +514,9 @@ const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week'};
 const _bigTextScreens = {
   'today',
+  'goto_verse',
+  'goto_missing',
+  'reader_verse',
   'search_many',
   'search_none',
   's_reading_city',

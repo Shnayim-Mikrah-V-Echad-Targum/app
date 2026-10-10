@@ -1754,6 +1754,36 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No verses found} =1{1 verse found} other{{count} verses found}}'**
   String searchResultsAnnounced(int count);
 
+  /// The label of the field in the sheet that opens from the search button: a reference to go to, or words to search the Torah for.
+  ///
+  /// In en, this message translates to:
+  /// **'A verse, word or phrase'**
+  String get goToVerseLabel;
+
+  /// An example reference shown in the empty field. book is the name of the first parsha (Bereshit, or Bereishis for readers who chose Ashkenazi names), which is also the book's name. In Hebrew the chapter and verse are Hebrew numerals: כח, יב.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} 28:12'**
+  String goToVerseHint(String book);
+
+  /// A row in the go-to-verse sheet that opens the Torah search for what was typed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for “{query}”'**
+  String goToVerseSearch(String query);
+
+  /// Shown in the go-to-verse sheet for a chapter past the end of the book, e.g. Genesis 51.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} has {count, plural, =1{1 chapter} other{{count} chapters}}.'**
+  String goToVerseChapters(String book, int count);
+
+  /// Shown in the go-to-verse sheet for a verse past the end of its chapter, e.g. Genesis 28:30. chapter is the chapter's number, in Hebrew numerals in Hebrew.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} {chapter} has {count, plural, =1{1 verse} other{{count} verses}}.'**
+  String goToVerseVerses(String book, String chapter, int count);
+
   /// No description provided for @planLabel.
   ///
   /// In en, this message translates to:

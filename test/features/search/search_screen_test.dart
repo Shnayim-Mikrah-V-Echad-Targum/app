@@ -93,13 +93,18 @@ void main() {
   /// Where the reader on top was opened.
   String readerLocation(WidgetTester tester) => GoRouterState.of(tester.element(find.byType(ReaderScreen))).uri.toString();
 
-  testWidgets('the Parsha tab opens search', (tester) async {
+  testWidgets('the Parsha tab opens search, through Go to verse', (tester) async {
     await open(tester, route: '/parsha');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Search the Torah'));
     await tester.pumpAndSettle();
+    // The sheet takes a reference or words, and hands words over.
+    await tester.enterText(find.byType(TextField), 'ladder');
+    await tester.testTextInput.receiveAction(TextInputAction.go);
+    await tester.pumpAndSettle();
     expect(find.byType(SearchScreen), findsOneWidget);
-    // Ready to type.
+    expect(find.text('Genesis 28:12'), findsOneWidget);
+    // Ready to type more.
     expect(tester.widget<TextField>(find.byType(TextField)).focusNode?.hasFocus, isTrue);
   });
 

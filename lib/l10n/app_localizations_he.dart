@@ -1041,6 +1041,41 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get goToVerseLabel => 'פסוק, מילה או ביטוי';
+
+  @override
+  String goToVerseHint(String book) {
+    return '$book כח, יב';
+  }
+
+  @override
+  String goToVerseSearch(String query) {
+    return 'חיפוש ״$query״';
+  }
+
+  @override
+  String goToVerseChapters(String book, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פרקים',
+      one: 'פרק אחד',
+    );
+    return 'בספר $book $_temp0.';
+  }
+
+  @override
+  String goToVerseVerses(String book, String chapter, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פסוקים',
+      one: 'פסוק אחד',
+    );
+    return 'בפרק $chapter בספר $book $_temp0.';
+  }
+
+  @override
   String get planLabel => 'תוכנית שבועית';
 
   @override

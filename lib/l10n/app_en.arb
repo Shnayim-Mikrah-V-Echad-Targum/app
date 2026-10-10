@@ -800,6 +800,55 @@
       }
     }
   },
+  "goToVerseLabel": "A verse, word or phrase",
+  "@goToVerseLabel": {
+    "description": "The label of the field in the sheet that opens from the search button: a reference to go to, or words to search the Torah for."
+  },
+  "goToVerseHint": "{book} 28:12",
+  "@goToVerseHint": {
+    "description": "An example reference shown in the empty field. book is the name of the first parsha (Bereshit, or Bereishis for readers who chose Ashkenazi names), which is also the book's name. In Hebrew the chapter and verse are Hebrew numerals: כח, יב.",
+    "placeholders": {
+      "book": {
+        "type": "String"
+      }
+    }
+  },
+  "goToVerseSearch": "Search for “{query}”",
+  "@goToVerseSearch": {
+    "description": "A row in the go-to-verse sheet that opens the Torah search for what was typed.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "goToVerseChapters": "{book} has {count, plural, =1{1 chapter} other{{count} chapters}}.",
+  "@goToVerseChapters": {
+    "description": "Shown in the go-to-verse sheet for a chapter past the end of the book, e.g. Genesis 51.",
+    "placeholders": {
+      "book": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goToVerseVerses": "{book} {chapter} has {count, plural, =1{1 verse} other{{count} verses}}.",
+  "@goToVerseVerses": {
+    "description": "Shown in the go-to-verse sheet for a verse past the end of its chapter, e.g. Genesis 28:30. chapter is the chapter's number, in Hebrew numerals in Hebrew.",
+    "placeholders": {
+      "book": {
+        "type": "String"
+      },
+      "chapter": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "planLabel": "Weekly plan",
   "planAliyahPerDay": "An aliyah a day",
   "planAliyahPerDayDesc": "One aliyah Sunday–Thursday; the 6th and 7th on Friday",

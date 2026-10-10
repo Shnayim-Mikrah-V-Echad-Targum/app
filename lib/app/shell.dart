@@ -4,6 +4,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/search/go_to_verse_sheet.dart';
 import '../ui/l10n.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/app_mark.dart';
@@ -34,8 +35,11 @@ class AppShell extends StatelessWidget {
 
   void _go(int index) => shell.goBranch(index, initialLocation: index == shell.currentIndex);
 
+  // Ctrl+K (⌘K) goes to a verse, or searches, from any tab.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => GoToVerseShortcut(child: _layout(context));
+
+  Widget _layout(BuildContext context) {
     final l = context.l10n;
     final sefer = SeferColors.of(context);
     // 1 px, or a 2 px outline in high contrast.

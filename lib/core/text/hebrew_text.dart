@@ -92,6 +92,37 @@ abstract final class HebrewText {
     if (s.length == 1) return '$s׳';
     return '${s.substring(0, s.length - 1)}״${s.substring(s.length - 1)}';
   }
+
+  // The geresh and gershayim, and the quotation marks typed for them.
+  static final _numeralMarks = RegExp('[׳״\'"`’‘”“]');
+
+  static final _letterValues = {
+    for (final (i, letter) in _hebrewLetters.split('').indexed)
+      letter.codeUnitAt(0): switch (i) {
+        < 9 => i + 1,
+        < 18 => (i - 8) * 10,
+        _ => (i - 17) * 100,
+      },
+  };
+
+  /// Reads a number in Hebrew numerals, with or without a geresh or
+  /// gershayim: כ״ח → 28, ט״ו → 15, ק׳ → 100.
+  ///
+  /// Only the form [gematria] writes counts, so that a word is not taken for
+  /// a number: letters from the largest down, 15 and 16 as טו and טז (never
+  /// יה and יו), and no final letters. Null for anything else, such as בא or
+  /// לך.
+  static int? parseGematria(String s) {
+    final letters = s.trim().replaceAll(_numeralMarks, '');
+    if (letters.isEmpty) return null;
+    var n = 0;
+    for (final unit in letters.codeUnits) {
+      final value = _letterValues[unit];
+      if (value == null) return null;
+      n += value;
+    }
+    return gematria(n, punctuate: false) == letters ? n : null;
+  }
 }
 
 /// How the Divine Name is rendered when text is spoken aloud.

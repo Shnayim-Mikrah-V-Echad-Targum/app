@@ -1042,6 +1042,41 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goToVerseLabel => 'A verse, word or phrase';
+
+  @override
+  String goToVerseHint(String book) {
+    return '$book 28:12';
+  }
+
+  @override
+  String goToVerseSearch(String query) {
+    return 'Search for “$query”';
+  }
+
+  @override
+  String goToVerseChapters(String book, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chapters',
+      one: '1 chapter',
+    );
+    return '$book has $_temp0.';
+  }
+
+  @override
+  String goToVerseVerses(String book, String chapter, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verses',
+      one: '1 verse',
+    );
+    return '$book $chapter has $_temp0.';
+  }
+
+  @override
   String get planLabel => 'Weekly plan';
 
   @override

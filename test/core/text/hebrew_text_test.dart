@@ -52,6 +52,44 @@ void main() {
     expect(HebrewText.gematria(31, punctuate: false), 'לא');
   });
 
+  group('parseGematria', () {
+    test('reads numbers with or without a geresh or gershayim', () {
+      expect(HebrewText.parseGematria('כ״ח'), 28);
+      expect(HebrewText.parseGematria('כח'), 28);
+      expect(HebrewText.parseGematria('י״ב'), 12);
+      expect(HebrewText.parseGematria('א׳'), 1);
+      expect(HebrewText.parseGematria('ק׳'), 100);
+      expect(HebrewText.parseGematria('תשפ״ז'), 787);
+    });
+
+    test('takes the quotation marks typed for them', () {
+      expect(HebrewText.parseGematria('כ"ח'), 28);
+      expect(HebrewText.parseGematria("ג'"), 3);
+      expect(HebrewText.parseGematria('ט”ו'), 15);
+    });
+
+    test('reads 15 and 16 as they are written', () {
+      expect(HebrewText.parseGematria('ט״ו'), 15);
+      expect(HebrewText.parseGematria('טז'), 16);
+      expect(HebrewText.parseGematria('קט״ו'), 115);
+      expect(HebrewText.parseGematria('יה'), isNull);
+      expect(HebrewText.parseGematria('יו'), isNull);
+    });
+
+    test('takes no word for a number', () {
+      for (final word in ['בא', 'לך', 'ראה', 'עקב', 'חכ', 'אב', 'כך', '', '׳', 'abc', '12', 'כ ח']) {
+        expect(HebrewText.parseGematria(word), isNull, reason: word);
+      }
+    });
+
+    test('reads back every number gematria writes', () {
+      for (var n = 1; n < 1000; n++) {
+        expect(HebrewText.parseGematria(HebrewText.gematria(n)), n, reason: '$n');
+        expect(HebrewText.parseGematria(HebrewText.gematria(n, punctuate: false)), n, reason: '$n');
+      }
+    });
+  });
+
   group('HebrewSpeech', () {
     test('the Divine Name is read as Adonai, or Elohim where so vocalized', () {
       expect(HebrewSpeech.spoken('וַיֹּ֥אמֶר יְהֹוָ֖ה אֶל־מֹשֶׁ֑ה'), contains('אֲדֹנָי'));

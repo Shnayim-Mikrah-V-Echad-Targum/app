@@ -847,6 +847,17 @@ When a sefer is complete: a one-time full-screen panel. SeferDivider, then "חֲ
   - **Match:** w700 in onSecondaryContainer on a secondaryContainer wash (11.24:1 in light) as tall as the letters, not the line (`MarkedText`, a tight text box with a 2 px bleed each side and radius 3), so washes on lines one above the other never meet. The weight is the non-colour cue, needed in high contrast where the wash is close to the paper.
 - Semantics: each row is one button whose label is the reference, then each layer tagged with its language and spoken as verses are (§8 of DESIGN.md), the Targum named.
 
+### 6.26 Go to verse (lib/features/search/go_to_verse_sheet.dart)
+
+The Parsha tab's search button, and Ctrl+K (⌘K) on any tab, open one sheet (§6.19) over the whole window, the navigation too:
+- `SheetTitle` `searchTitle`, then the field as in §6.7 at the sheet's width: label `goToVerseLabel` ("A verse, word or phrase"), hint `goToVerseHint` ("Bereshit 28:12" with the reader's spelling of parsha names, "בראשית כח, יב" in Hebrew), `search` leading and a clear button once there is text, focused as the sheet opens. Hebrew in it runs right to left in either UI.
+- 16 below the field, one PaperGroup (§6.3) of what the text leads to, in order:
+  - **A verse** the text names (§3 of DESIGN.md): `menu_book_outlined`, the reference as Names.reference writes it, and the week of this year's cycle that reads it and its aliyah ("Vayetzei · Rishon") as subtitle. It opens the reader at the verse (§4.7).
+  - **Or why there is none**, for numbers past the end of a book or chapter: `info_outline` and `goToVerseChapters` ("Genesis has 50 chapters.") or `goToVerseVerses` ("Genesis 28 has 22 verses."), with no tap.
+  - **A search** of the text, `search` and `goToVerseSearch` ("Search for “ladder”", the query isolated in its own direction), for words worth searching: not for a reference by its numbers, which the text has none of, but for a parsha's name alone (ויצא), which is also a word. It opens the Search page (§6.25) with the query.
+- Enter takes the first row that leads somewhere; with none, the field keeps the focus.
+- Once typing pauses, the first row is announced where the platform takes announcements.
+
 ## 7. Motifs and iconography
 
 At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/ornaments.dart`, wrapped in ExcludeSemantics. In high contrast they draw in onSurface.
