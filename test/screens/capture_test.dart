@@ -73,6 +73,9 @@ const _screens = {
   // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
   'reader_gaps': '/read/5787:17/5?mode=full',
   'reader_gaps_spaced': '/read/5787:17/5?mode=full',
+  // Shlishi of Vayishlach with cantillation hidden: the dots written over
+  // וישקהו (Genesis 33:4) stay.
+  'reader_dots': '/read/5787:8/2?mode=full',
   'haftarah': '/haftarah/5787:1',
   'progress': '/progress',
   'community': '/community',
@@ -123,6 +126,7 @@ final _scenes = <String, (DateTime, AppSettings Function(AppSettings))>{
   ),
   // The widest word spacing, justified: the spaces around a section mark.
   'reader_gaps_spaced': (_now, (s) => s.copyWith(wordSpacing: 16, justify: true)),
+  'reader_dots': (_now, (s) => s.copyWith(showTeamim: false)),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
   'today_haftarah_left': (DateTime(2026, 10, 13, 11), (s) => s.copyWith(haftarahRequired: true)),
   // Tuesday of Matot-Masei 5787, reading by section.
@@ -263,7 +267,7 @@ final _tapSteps = {
 };
 
 /// Screens captured scrolled to the end of their main list.
-const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced', 'reader_third', 'week_discuss', 'thread_long_end'};
+const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced', 'reader_dots', 'reader_third', 'week_discuss', 'thread_long_end'};
 
 Future<void> _scrollToEnd(WidgetTester tester) async {
   // A lazily built list only learns its full extent as it scrolls.

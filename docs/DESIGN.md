@@ -158,6 +158,7 @@ It ends by opening the reader on today's aliyah. Everything else is a setting wi
 See [ACCESSIBILITY.md](ACCESSIBILITY.md). The key decisions:
 
 - **Verse labels for screen readers.** Each verse is exposed as one node with a curated label: "Verse 9." followed by the Hebrew with cantillation removed and tagged `he`. Screen readers read raw cantillation marks badly or skip the words. Users can switch to letters only, or to every mark for braille displays. The Divine Name is spoken as "Adonai" or "Hashem", as the user chooses.
+- **The extraordinary points stay on the page.** The dots written over some words in the scroll are part of the text, not cantillation, so hiding cantillation keeps them. Speech leaves them out.
 - **Reading size multiplies the system text size**, up to 5× for scripture only. The interface follows the system setting alone, so layouts stay usable.
 - **Five display themes:** light, dark, sepia, and high-contrast light and dark. They can follow the system or be set manually. Colour is never the only signal: statuses also have icons and text.
 - **Line height of at least 1.6, split evenly above and below.** Lower vowels and cantillation marks must never be clipped. Typography details: a non-breaking space before a paseq, and a word joiner after a maqaf.

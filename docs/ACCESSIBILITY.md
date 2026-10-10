@@ -10,7 +10,8 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 
 **Verses**
 - Each verse is a single node with a curated spoken label, such as "Verse 9." followed by the text. This avoids reading glyph by glyph.
-- The Hebrew part of the label is tagged `he`, so the screen reader switches voice. Cantillation is removed by default because screen readers mispronounce it or stop at it.
+- The Hebrew part of the label is tagged `he`, so the screen reader switches voice.
+- Cantillation is removed by default because screen readers mispronounce it or stop at it. The extraordinary points written over some words in the scroll (as over וישקהו, Genesis 33:4) are shown whether or not cantillation is, and are never spoken.
 - *Settings → Accessibility → Screen reader text* changes what the label contains:
   - **vowels kept** (the default)
   - **letters only**
@@ -100,7 +101,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   - the Hebrew right-to-left layout
   - the desktop layout with a navigation rail
 - `test/app/reader_widget_test.dart` runs the guidelines on the reader and checks the verse labels.
-- Unit tests check the spoken-label pipeline (`test/core/text/hebrew_text_test.dart`), including Divine Name substitution and stripping cantillation.
+- Unit tests check the spoken-label pipeline (`test/core/text/hebrew_text_test.dart`), including Divine Name substitution, and stripping cantillation but not the extraordinary points.
 
 ### Manual (before each release)
 Each item below is tested with the screen reader named:

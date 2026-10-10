@@ -4,19 +4,25 @@
 ///  * U+0591–U+05AF  cantillation marks (ta'amim)
 ///  * U+05BD         meteg (a stress/secondary accent mark)
 ///  * U+05C0         paseq / legarmeih stroke
-///  * U+05C4–U+05C5  upper / lower Masoretic dots
+///  * U+05C4–U+05C5  upper / lower Masoretic dots: the extraordinary points
+///                   written in the Sefer Torah (e.g. over וישקהו, Gen 33:4)
+///  * U+05C6         nun hafucha, the inverted nun around Num 10:35–36
 ///  * U+05B0–U+05BC, U+05BF, U+05C1–U+05C2, U+05C7  vowel points, dagesh,
 ///                   rafe, shin/sin dots, qamatz qatan
 ///  * U+034F         combining grapheme joiner, used to order marks
 abstract final class HebrewText {
-  static final _teamim = RegExp('[֑-ֽׅ֯ׄ]');
+  static final _teamim = RegExp('[\u0591-\u05af\u05bd]');
   static final _nikud = RegExp('[ְ-ׇּֿׁׂ]');
   static final _cgj = RegExp('͏');
+  // Part of the text of the scroll, so shown whatever the display settings;
+  // only speech leaves them out.
+  static final _masoraDots = RegExp('[\u05c4\u05c5]');
   // A paseq with the spaces around it collapses to a single space.
   static final _paseq = RegExp(r'\s*׀\s*');
   static final _spaces = RegExp(r'[  ]{2,}');
 
-  /// Removes cantillation marks, meteg and the paseq stroke.
+  /// Removes cantillation marks, meteg and the paseq stroke. The Masoretic
+  /// dots stay: they are written in the scroll, not added for chanting.
   static String stripTeamim(String s) => s
       .replaceAll(_paseq, ' ')
       .replaceAll(_teamim, '')
@@ -28,7 +34,7 @@ abstract final class HebrewText {
       s.replaceAll(_nikud, '').replaceAll(_cgj, '');
 
   /// Removes every mark, leaving only letters and punctuation.
-  static String consonantsOnly(String s) => stripNikud(stripTeamim(s));
+  static String consonantsOnly(String s) => stripNikud(stripTeamim(s)).replaceAll(_masoraDots, '');
 
   /// Applies the reader's display preferences.
   static String forDisplay(String s, {required bool nikud, required bool teamim}) {
@@ -81,16 +87,20 @@ abstract final class HebrewSpeech {
   static final _tetragrammaton = RegExp('^([ובכלמשה]?)יהוה\$');
 
   /// Prepares one verse for speech: removes cantillation (screen readers
-  /// mis-handle it), optionally removes vowels, and substitutes the Divine
-  /// Name according to [divineName].
+  /// mis-handle it) and the Masoretic dots, optionally removes vowels, and
+  /// substitutes the Divine Name according to [divineName].
   static String spoken(
     String text, {
     bool keepNikud = true,
     DivineNameSpeech divineName = DivineNameSpeech.adonai,
   }) {
     // A sof pasuq ends a sentence: speak it as a full stop, always followed
-    // by a space so the next word is never run into it.
-    final cleaned = HebrewText.stripTeamim(text).replaceAll('׃', '. ');
+    // by a space so the next word is never run into it. The extraordinary
+    // points and the inverted nun are written, not read.
+    final cleaned = HebrewText.stripTeamim(text)
+        .replaceAll(HebrewText._masoraDots, '')
+        .replaceAll('\u05c6', '')
+        .replaceAll('׃', '. ');
     final parts = cleaned.split(_wordSplit);
     final seps = _wordSplit.allMatches(cleaned).map((m) => m.group(0)!).toList();
     final out = StringBuffer();
