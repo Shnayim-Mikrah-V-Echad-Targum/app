@@ -90,8 +90,12 @@ class LabeledSlider extends StatelessWidget {
     final divisions = ((max - min) / step).round();
     double snap(double v) => (min + ((v - min) / step).round() * step).clamp(min, max);
     final textTheme = Theme.of(context).textTheme;
+    // In line with the list tiles around it: 16 on a settings page, and a
+    // sheet's own inset in a sheet (showAppSheet).
+    final inset = ListTileTheme.of(context).contentPadding?.resolve(Directionality.of(context)) ??
+        const EdgeInsets.symmetric(horizontal: 16);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: EdgeInsets.fromLTRB(inset.left, 4, inset.right, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
