@@ -1705,7 +1705,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get onbRestoreFile => 'שחזור מקובץ גיבוי';
 
   @override
-  String get onbRestoreFileDesc => 'גיבוי שיוצא מההגדרות';
+  String get onbRestoreFileDesc => 'קובץ גיבוי שנשמר מההגדרות';
 
   @override
   String get onbRestoring => 'משחזרים את ההתקדמות…';

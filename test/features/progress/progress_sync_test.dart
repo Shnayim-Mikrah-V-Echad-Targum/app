@@ -545,6 +545,27 @@ void main() {
       });
     });
 
+    test("isn't moved by this device's own readings, backed up by an earlier version", () async {
+      // Joined on the Monday of Toldot, and marked Rishon read on Sunday, the
+      // week's first day; an earlier version backed that up, without the
+      // join date.
+      final monday = LocalDate(2026, 11, 9);
+      final here = ProgressState(weeks: {
+        '5787:6': WeekProgress(weekId: '5787:6').withAliyah(0, LocalDate(2026, 11, 8)),
+      });
+      await prefs.setString(ProgressController.storageKey, jsonEncode(here.toJson()));
+      final repo = _CountingRepo(user: _me, remote: here.toJson());
+      await joinedOn(monday);
+      fakeAsync((async) {
+        final container = device(repo);
+        async.elapse(const Duration(seconds: 120));
+        expect(container.read(settingsProvider).joinDate, monday);
+        expect(syncPayloadJoinDate(repo.remote!), monday, reason: "this device's, backed up");
+        expect(remoteOf(repo), here);
+        container.dispose();
+      });
+    });
+
     test('is backed up when it is first set, as onboarding ends', () async {
       final repo = _CountingRepo(user: _me);
       await joinedOn(null);

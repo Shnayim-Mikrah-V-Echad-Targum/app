@@ -405,6 +405,26 @@ void main() {
       expect(mergeSyncPayload(backfilled, oct20, noach.toJson()).joinDate, LocalDate(2026, 10, 16));
     });
 
+    test("an earlier version's backup of this device's own readings doesn't move its join date", () {
+      // Joined on Monday the 12th, and marked Rishon read on Sunday, the
+      // week's first day: backed up by an earlier version, without the join
+      // date.
+      final oct12 = LocalDate(2026, 10, 12);
+      final here = edit(const ProgressState(), (w) => w.withAliyah(0, d1));
+      expect(mergeSyncPayload(here, oct12, here.toJson()).joinDate, oct12);
+      // Nor does a reading the backup holds for another day than this
+      // device's, when this device's has replaced it.
+      later();
+      final moved = edit(here, (w) => w.withAliyah(0, oct12));
+      expect(mergeSyncPayload(moved, oct12, here.toJson()).joinDate, oct12);
+      // What the backup brings from another device still counts.
+      final elsewhere = here.copyWith(weeks: {
+        ...here.weeks,
+        '5787:1': WeekProgress(weekId: '5787:1').withAliyah(0, LocalDate(2026, 10, 5)),
+      });
+      expect(mergeSyncPayload(here, oct12, elsewhere.toJson()).joinDate, LocalDate(2026, 10, 5));
+    });
+
     test('the earliest reading includes the haftarah, and can be limited to the days from one on', () {
       expect(earliestReadDate(const ProgressState()), isNull);
       final p = ProgressState(weeks: {
@@ -414,6 +434,13 @@ void main() {
       expect(earliestReadDate(p), LocalDate(2026, 10, 6));
       expect(earliestReadDate(p, from: LocalDate(2026, 10, 7)), LocalDate(2026, 10, 8));
       expect(earliestReadDate(p, from: LocalDate(2026, 10, 13)), isNull);
+      // Leaving out what another copy holds done on the same day.
+      final held = ProgressState(weeks: {
+        id: WeekProgress(weekId: id).withHaftarah(LocalDate(2026, 10, 6)),
+        '5787:1': WeekProgress(weekId: '5787:1').withUnit(3, ReadingPass.targum, LocalDate(2026, 10, 9)),
+      });
+      expect(earliestReadDate(p, except: held), LocalDate(2026, 10, 8));
+      expect(earliestReadDate(p, except: p), isNull);
     });
 
     test('after a reset everywhere, a join date from before it has no say', () {

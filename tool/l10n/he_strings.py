@@ -479,7 +479,7 @@ HE = {
   "onbRestoreSignIn": "כניסה לחשבון ושחזור",
   "onbRestoreSignInDesc": "מהגיבוי שנשמר בחשבון",
   "onbRestoreFile": "שחזור מקובץ גיבוי",
-  "onbRestoreFileDesc": "גיבוי שיוצא מההגדרות",
+  "onbRestoreFileDesc": "קובץ גיבוי שנשמר מההגדרות",
   "onbRestoring": "משחזרים את ההתקדמות…",
   "onbRestoreDone": "ההתקדמות שוחזרה.",
   "onbRestoreNone": "לחשבון הזה אין עדיין גיבוי. נמשיך בהגדרת הקריאה.",

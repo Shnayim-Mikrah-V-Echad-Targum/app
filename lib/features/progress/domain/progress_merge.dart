@@ -115,9 +115,13 @@ LocalDate? syncPayloadJoinDate(Map<String, dynamic> payload) =>
 /// day it was set up would leave out every week before, and the streaks
 /// would start again from 0, when a sync must never lower one. A backup
 /// saved without a join date (by an earlier version) counts as joined on
-/// the day of its earliest reading. A side that hasn't seen the latest
-/// reset has no say, since the reset started the reader again; nor does a
-/// reading logged for a day before the reset.
+/// the day of the earliest reading it brings that this device doesn't
+/// already hold. Readings this device logged itself, and an earlier version
+/// backed up, are no history to restore: one logged for a day before
+/// joining must not move the join date, and with it turn the first week
+/// from one that can't be missed into one already behind. A side that
+/// hasn't seen the latest reset has no say, since the reset started the
+/// reader again; nor does a reading logged for a day before the reset.
 ///
 /// The join date is null when neither side has one to give.
 ({ProgressState progress, LocalDate? joinDate}) mergeSyncPayload(
@@ -129,7 +133,7 @@ LocalDate? syncPayloadJoinDate(Map<String, dynamic> payload) =>
   final progress = mergeProgress(local, theirs);
   final cut = progress.resetAt;
   final restart = cut == 0 ? null : rolloverDate(DateTime.fromMillisecondsSinceEpoch(cut));
-  final theirJoin = syncPayloadJoinDate(remote) ?? earliestReadDate(theirs, from: restart);
+  final theirJoin = syncPayloadJoinDate(remote) ?? earliestReadDate(progress, from: restart, except: local);
   final joins = [
     if (local.resetAt == cut) localJoin,
     if (theirs.resetAt == cut) theirJoin,
@@ -138,12 +142,19 @@ LocalDate? syncPayloadJoinDate(Map<String, dynamic> payload) =>
 }
 
 /// The earliest day on which a reading or the haftarah in [progress] counts
-/// as done, of those from [from] on; null if there is none.
-LocalDate? earliestReadDate(ProgressState progress, {LocalDate? from}) {
+/// as done, of those from [from] on, leaving out any that [except] holds
+/// done on the same day; null if there is none.
+LocalDate? earliestReadDate(ProgressState progress, {LocalDate? from, ProgressState? except}) {
   LocalDate? earliest;
-  for (final week in progress.weeks.values) {
-    for (final day in [for (final unit in week.units) ...unit, week.haftarah]) {
-      if (day == null || (from != null && day < from)) continue;
+  for (final MapEntry(key: id, value: week) in progress.weeks.entries) {
+    final held = except?.week(id);
+    final days = [
+      for (var a = 0; a < kAliyot; a++)
+        for (var p = 0; p < 3; p++) (week.units[a][p], held?.units[a][p]),
+      (week.haftarah, held?.haftarah),
+    ];
+    for (final (day, heldDay) in days) {
+      if (day == null || day == heldDay || (from != null && day < from)) continue;
       if (earliest == null || day < earliest) earliest = day;
     }
   }

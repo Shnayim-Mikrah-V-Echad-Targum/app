@@ -1122,7 +1122,7 @@ In order:
 - Web: one NoticeBanner explaining that reminders need the installed app (replaces two stacked banners).
 
 **Your data**
-- Group 1: Export, Import.
+- Group 1: a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export, Import, and "Paste backup text".
 - Group 2: "Reset all progress" in error-coloured text with no icon tile. The confirm dialog uses the destructive Filled button.
 
 ### Onboarding (onboarding_screen.dart; phone_welcome, he_welcome, dark_welcome, desktop_welcome)
@@ -1136,7 +1136,9 @@ In order:
   - a SeferDivider;
   - English UI only: "Shnayim Mikra v'Echad Targum" in EBG MediumItalic 24/30;
   - body in bodyLarge onSurfaceVariant.
-- Outside the frame: 24 gap, a Filled "Start this week's parsha" 52 high (max width 400), then the disclaimer in bodySmall.
+- Outside the frame: 24 gap, a Filled "Start this week's parsha" 52 high (max width 400).
+- An 8 gap, then a TextButton "I already use Shnayim Mikra" (the same max width), which opens the restore sheet: sign in (only with a real community backend), a backup file, or pasted text. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
+- Then the disclaimer in bodySmall.
 
 **Steps 2–4**
 - At the top: four 12 px lozenges (filled = done, outlined = pending). Semantics still announce "Step 2 of 4".

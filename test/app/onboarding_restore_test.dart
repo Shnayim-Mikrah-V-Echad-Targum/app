@@ -96,6 +96,23 @@ void main() {
       expect(c.read(streakSummaryProvider).parshaStreak, 5);
     });
 
+    testWidgets('restores a backup that holds only the join date, and opens Today', (tester) async {
+      // Reset everywhere, say, and nothing read since.
+      final cloud = _Cloud();
+      await cloud.verifyCode(email, '123456');
+      await cloud.saveProgress(syncPayload(const ProgressState(), simchatTorah));
+      await cloud.signOut();
+
+      final c = await openRestore(tester, cloud);
+      await signIn(tester);
+
+      expect(location(c), '/today');
+      expect(find.text('Your progress is restored.'), findsOneWidget);
+      final settings = c.read(settingsProvider);
+      expect(settings.onboardingComplete, isTrue);
+      expect(settings.joinDate, simchatTorah);
+    });
+
     testWidgets('to an account with no backup goes on to the first step, with backup on', (tester) async {
       final c = await openRestore(tester, _Cloud());
       await signIn(tester);

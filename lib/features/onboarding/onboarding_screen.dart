@@ -128,8 +128,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   /// Signs in, unless already signed in, then turns backup on and syncs.
-  /// With progress restored, onboarding is done. An account with no backup
-  /// goes on to the first step, keeping backup on for what is read from now.
+  /// With progress restored, or only the day the reader joined (an account
+  /// reset everywhere, say, with nothing read since), onboarding is done:
+  /// that day comes back with every sync, so starting afresh from today
+  /// isn't possible. An account with no backup goes on to the first step,
+  /// keeping backup on for what is read from now.
   Future<void> _restoreFromAccount() async {
     final l = context.l10n;
     final repo = ref.read(forumRepositoryProvider);
@@ -145,7 +148,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final progress = ref.read(progressProvider);
     if (!synced) {
       showStatus(context, ref.read(syncBlockedByNewerFormatProvider) ? l.syncNeedsUpdate : l.syncFailed);
-    } else if (progress.weeks.isNotEmpty || progress.pauses.isNotEmpty) {
+    } else if (progress.weeks.isNotEmpty || progress.pauses.isNotEmpty || ref.read(settingsProvider).joinDate != null) {
       showStatus(context, l.onbRestoreDone);
       _finishRestoring();
     } else {
