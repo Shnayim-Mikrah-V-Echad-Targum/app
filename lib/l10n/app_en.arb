@@ -168,6 +168,15 @@
       }
     }
   },
+  "todayCandleLighting": "Candle-lighting {time}",
+  "@todayCandleLighting": {
+    "description": "On Today, in place of shabbatInDays on the eve of Shabbat or Yom Tov, when a city is chosen for Shabbat times: when candles are lit there today. time is a time of day, such as 4:12 PM.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "parshaLabel": "Parshat {name}",
   "@parshaLabel": {
     "placeholders": {
@@ -924,13 +933,46 @@
   "sendFeedback": "Send feedback",
   "dailyReminder": "Daily reminder",
   "dailyReminderDesc": "A gentle nudge at your chosen time",
+  "dailyReminderDescCity": "A gentle nudge at your chosen time, or before candle-lighting on the eve of Shabbat or Yom Tov",
+  "@dailyReminderDescCity": {
+    "description": "In place of dailyReminderDesc when a city is chosen for Shabbat times: a daily reminder set for later than two and a half hours before candle-lighting comes then instead."
+  },
   "dailyReminderTime": "Daily reminder time",
   "fridayReminder": "Erev Shabbat reminder",
   "fridayReminderDesc": "Friday morning, only if the parsha isn't finished",
+  "fridayReminderDescCity": "Friday, at least three hours before candle-lighting, only if the parsha isn't finished",
+  "@fridayReminderDescCity": {
+    "description": "In place of fridayReminderDesc when a city is chosen for Shabbat times: the reminder comes at the time chosen, or three hours before candle-lighting if that is earlier."
+  },
   "fridayReminderTime": "Erev Shabbat reminder time",
   "checkInReminder": "After-Shabbat check-in",
   "checkInReminderDesc": "Sunday morning, to log what you read on Shabbat",
+  "checkInReminderDescCity": "An hour after Shabbat ends, or Sunday morning when it ends late, to log what you read on Shabbat",
+  "@checkInReminderDescCity": {
+    "description": "In place of checkInReminderDesc when a city is chosen for Shabbat times: on Motzaei Shabbat, unless that is after 10:30 PM."
+  },
   "remindersShabbatNote": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.",
+  "remindersShabbatNoteCity": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in {city}.",
+  "@remindersShabbatNoteCity": {
+    "description": "In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.",
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderCityOffer": "Choose your city, and reminders will follow its Shabbat times: before candle-lighting on Friday, and after Shabbat ends.",
+  "@reminderCityOffer": {
+    "description": "Offered under the reminders while any of them is on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow."
+  },
+  "reminderCityChoose": "Choose a city",
+  "@reminderCityChoose": {
+    "description": "Button: opens the list of cities for Shabbat times (see reminderCityOffer and remindersOnCityOffer)."
+  },
+  "remindersOnCityOffer": "Reminders are on. Choose your city, and they'll follow its Shabbat times.",
+  "@remindersOnCityOffer": {
+    "description": "Status message, with the action reminderCityChoose, once the reader has turned reminders on in the offer after their first aliyah and no city is chosen for Shabbat times."
+  },
   "habitAnchorLabel": "After I…",
   "habitAnchorPrompt": "Tie your reading to something you already do every day.",
   "anchorShacharit": "finish Shacharit",
@@ -938,15 +980,42 @@
   "anchorCommute": "start my commute",
   "anchorDinner": "finish dinner",
   "anchorBed": "get ready for bed",
+  "anchorCueShacharit": "After Shacharit",
+  "@anchorCueShacharit": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'After Shacharit — it's yours.'"
+  },
+  "anchorCueBreakfast": "After breakfast",
+  "@anchorCueBreakfast": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'After breakfast — it's yours.'"
+  },
+  "anchorCueCommute": "On your commute",
+  "@anchorCueCommute": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'On your commute — it's yours.'"
+  },
+  "anchorCueDinner": "After dinner",
+  "@anchorCueDinner": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'After dinner — it's yours.'"
+  },
+  "anchorCueBed": "Before bed",
+  "@anchorCueBed": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'Before bed — it's yours.'"
+  },
   "notificationsUnsupported": "Reminders aren't available in the web version. Install the app on your phone or computer to get them.",
   "notificationsDenied": "Notifications are turned off for this app in your device settings.",
   "notificationsDeniedTitle": "Notifications are off",
+  "openSystemSettings": "Open settings",
+  "@openSystemSettings": {
+    "description": "Opens the device's notification settings for this app, from the dialog saying notifications are off."
+  },
   "primingTitle": "Want a gentle daily nudge?",
-  "primingBody": "At {time}. Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.",
-  "@primingBody": {
+  "primingBody": "Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.",
+  "reminderAtTime": "At {time}",
+  "@reminderAtTime": {
+    "description": "The daily reminder's time in the offer of reminders; tapping it changes the time.",
     "placeholders": {
       "time": {
-        "type": "String"
+        "type": "String",
+        "example": "8:00 PM"
       }
     }
   },
@@ -958,7 +1027,7 @@
   "@notifChannelDailyDesc": {
     "description": "Android notification channel description, shown in the system's notification settings."
   },
-  "notifChannelErevShabbatDesc": "The morning before Shabbat or Yom Tov, only if the parsha isn't finished",
+  "notifChannelErevShabbatDesc": "Before Shabbat or Yom Tov, only if the parsha isn't finished",
   "@notifChannelErevShabbatDesc": {
     "description": "Android notification channel description, shown in the system's notification settings."
   },
@@ -974,14 +1043,28 @@
       }
     }
   },
-  "notifDailyBody": "Parshat {parsha} · {verses}",
+  "notifDailyBody": "Parshat {parsha} · {verses} · about {minutes} min",
   "@notifDailyBody": {
     "placeholders": {
       "parsha": {
         "type": "String"
       },
       "verses": {
-        "type": "String"
+        "type": "String",
+        "example": "21 verses"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "notifDailyAnchor": "{cue} — it's yours.",
+  "@notifDailyAnchor": {
+    "description": "Ends the daily reminder when the reader has tied the reading to a routine, after ' · '.",
+    "placeholders": {
+      "cue": {
+        "type": "String",
+        "example": "After Shacharit"
       }
     }
   },

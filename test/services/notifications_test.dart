@@ -2,13 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -20,7 +24,13 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../helpers.dart';
 
-typedef _Scheduled = ({String? title, String? body, NotificationDetails details, String? payload});
+typedef _Scheduled = ({
+  String? title,
+  String? body,
+  NotificationDetails details,
+  String? payload,
+  AndroidScheduleMode mode,
+});
 
 /// Records what is scheduled. Every call yields to the event loop first, as
 /// a platform channel does, so overlapping calls interleave.
@@ -55,7 +65,13 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
       throw Exception('platform failure');
     }
     schedules++;
-    scheduled[id] = (title: title, body: body, details: notificationDetails, payload: payload);
+    scheduled[id] = (
+      title: title,
+      body: body,
+      details: notificationDetails,
+      payload: payload,
+      mode: androidScheduleMode,
+    );
   }
 
   @override
@@ -65,6 +81,18 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
 
 class _FakeAndroid extends Fake implements AndroidFlutterLocalNotificationsPlugin {
   final channels = <String, AndroidNotificationChannel>{};
+
+  /// What the device answers when asked whether exact alarms are allowed:
+  /// yes before Android 12, and from it no, the permission not being
+  /// declared. Null throws, as a platform that can't say.
+  bool? exact = false;
+  int exactAsked = 0;
+
+  @override
+  Future<bool?> canScheduleExactNotifications() async {
+    exactAsked++;
+    return exact ?? (throw PlatformException(code: 'unavailable'));
+  }
 
   @override
   Future<void> createNotificationChannel(AndroidNotificationChannel notificationChannel) async {
@@ -76,17 +104,25 @@ class _FakeAndroid extends Fake implements AndroidFlutterLocalNotificationsPlugi
 /// setUpAll) need no loading.
 NotificationService _service(_FakePlugin plugin) => NotificationService.forTesting(plugin, loadTimeZones: () async {});
 
-/// A service that counts how often reminders are handed to it.
+/// A service that counts how often reminders are handed to it, and keeps
+/// the last of them, how they were worded and what it scheduled.
 class _CountingService extends NotificationService {
-  _CountingService() : super.forTesting(_FakePlugin(), loadTimeZones: () async => tz.setLocalLocation(tz.UTC));
+  _CountingService._(this.plugin) : super.forTesting(plugin, loadTimeZones: () async => tz.setLocalLocation(tz.UTC));
+  _CountingService() : this._(_FakePlugin());
 
+  final _FakePlugin plugin;
   int reschedules = 0;
+  List<PlannedReminder> reminders = const [];
+  ReminderCopy Function(PlannedReminder)? describe;
+  Future<void> done = Future.value();
 
   @override
   Future<void> reschedule(
       List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) {
     reschedules++;
-    return super.reschedule(reminders, l, describe);
+    this.reminders = reminders;
+    this.describe = describe;
+    return done = super.reschedule(reminders, l, describe);
   }
 }
 
@@ -244,6 +280,70 @@ void main() {
     });
   });
 
+  group('on Android, reminders are scheduled', () {
+    test('exactly where exact alarms need no permission, before Android 12', () async {
+      final plugin = _FakePlugin()..android.exact = true;
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      await _service(plugin).reschedule(plan, en, copyIn(en));
+      expect({for (final s in plugin.scheduled.values) s.mode}, {AndroidScheduleMode.exactAllowWhileIdle});
+    });
+
+    test('inexactly from Android 12, where they need one, and the planner allows for an hour late', () async {
+      final plugin = _FakePlugin()..android.exact = false;
+      final service = _service(plugin);
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      await service.reschedule(plan, en, copyIn(en));
+      expect({for (final s in plugin.scheduled.values) s.mode}, {AndroidScheduleMode.inexactAllowWhileIdle});
+
+      // Asked once.
+      await service.reschedule(plan, he, copyIn(he));
+      expect(plugin.android.exactAsked, 1);
+    });
+
+    test('inexactly where the device can\'t say', () async {
+      final plugin = _FakePlugin()..android.exact = null;
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      await _service(plugin).reschedule(plan, en, copyIn(en));
+      expect(plugin.scheduled, hasLength(plan.length));
+      expect({for (final s in plugin.scheduled.values) s.mode}, {AndroidScheduleMode.inexactAllowWhileIdle});
+    });
+  });
+
+  group("the device's notification settings", () {
+    const channel = MethodChannel('com.spencerccf.app_settings/methods');
+    tearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    });
+
+    test('can be opened on Android, iOS and macOS, where notifications can be refused', () {
+      for (final platform in TargetPlatform.values) {
+        debugDefaultTargetPlatformOverride = platform;
+        expect(
+          _service(_FakePlugin()).canOpenSystemSettings,
+          {TargetPlatform.android, TargetPlatform.iOS, TargetPlatform.macOS}.contains(platform),
+          reason: '$platform',
+        );
+      }
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      expect(NotificationService.disabled().canOpenSystemSettings, isFalse, reason: 'nothing to allow there');
+    });
+
+    test("open at the app's notifications, and a platform that can't open them is no error", () async {
+      final calls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        calls.add(call);
+        return null;
+      });
+      await _service(_FakePlugin()).openSystemSettings();
+      expect(calls.single.method, 'openSettings');
+      expect((calls.single.arguments as Map)['type'], 'notification');
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+      await _service(_FakePlugin()).openSystemSettings();
+    });
+  });
+
   group('the time zones', () {
     late List<PlannedReminder> reminders;
 
@@ -332,6 +432,32 @@ void main() {
       expect(service.reschedules, 2);
     });
 
+    test("names the reader's routine in the daily reminders it schedules, and leaves it out once cleared", () async {
+      /// The bodies of the daily reminders scheduled, and of [day]'s worded
+      /// as the scheduler words them, whatever the clock says is past.
+      Future<List<String?>> bodies() async {
+        await service.done;
+        final scheduled = [
+          for (final r in service.reminders)
+            if (r.kind == ReminderKind.daily) service.plugin.scheduled[r.id]!.body,
+        ];
+        final week = planner.planFor(planner.schedule.weekFor(_monday));
+        final day = PlannedReminder(kind: ReminderKind.daily, date: _monday, minutes: 20 * 60, plan: week, aliyot: [0]);
+        return [...scheduled, service.describe!(day).body];
+      }
+
+      change((s) => s.copyWith(habitAnchor: HabitAnchor.dinner));
+      expect(await bodies(), everyElement(endsWith(" · After dinner — it's yours.")));
+
+      change((s) => s.copyWith(language: AppLanguage.hebrew));
+      expect(await bodies(), everyElement(endsWith(' · אחרי ארוחת הערב — זה הזמן שלך.')));
+
+      change((s) => s.copyWith(habitAnchor: null, language: AppLanguage.english));
+      final cleared = await bodies();
+      expect(cleared, everyElement(isNot(contains('it\'s yours'))));
+      expect(cleared.last, endsWith(' min'));
+    });
+
     test('plans again when a reminder setting or the language changes', () {
       change((s) => s.copyWith(dailyReminderMinutes: 7 * 60));
       expect(service.reschedules, 2);
@@ -341,6 +467,26 @@ void main() {
       expect(service.reschedules, 4);
       change((s) => s.copyWith(nameStyle: NameStyle.ashkenazi));
       expect(service.reschedules, 5);
+      // The daily reminder names it.
+      change((s) => s.copyWith(habitAnchor: HabitAnchor.dinner));
+      expect(service.reschedules, 6);
+    });
+
+    test('plans again when the city for Shabbat times changes, once its times can be worked out', () {
+      // As the app loads the time zones after its first frame.
+      Zmanim.timeZone('UTC');
+      const london = City(
+        id: 2643743,
+        nameEn: 'London',
+        countryCode: 'GB',
+        latitude: 51.5085,
+        longitude: -0.1257,
+        timeZone: 'Europe/London',
+      );
+      change((s) => s.copyWith(city: london));
+      expect(service.reschedules, 2);
+      change((s) => s.copyWith(city: null));
+      expect(service.reschedules, 3);
     });
   });
 
@@ -352,8 +498,69 @@ void main() {
       expect(friday.aliyot, [5, 6]);
       final info = repo.portion(friday.plan.portion);
       final verses = repo.aliyahVerseCount(info, 5) + repo.aliyahVerseCount(info, 6);
-      expect(copyIn(en)(friday), (title: "Today: Shishi, Shevi'i", body: 'Parshat Noach · $verses verses'));
-      expect(copyIn(he)(friday).body, he.notifDailyBody('נח', he.versesCount(verses)));
+      final minutes = (verses * 25 / 60).ceil();
+      expect(
+        copyIn(en)(friday),
+        (title: "Today: Shishi, Shevi'i", body: 'Parshat Noach · $verses verses · about $minutes min'),
+      );
+      expect(copyIn(he)(friday).body, he.notifDailyBody('נח', he.versesCount(verses), minutes));
+    });
+
+    group("the reader's routine", () {
+      // Revi'i of Bereshit 5787 (Genesis 3:22–4:18), on its Thursday.
+      late PlannedReminder revii;
+      setUpAll(() {
+        final plan = planner.planFor(planner.schedule.weekFor(LocalDate(2026, 10, 8)));
+        revii = PlannedReminder(
+          kind: ReminderKind.daily,
+          date: LocalDate(2026, 10, 8),
+          minutes: 7 * 60,
+          plan: plan,
+          aliyot: const [3],
+        );
+      });
+
+      ReminderCopy describe(PlannedReminder r, AppLocalizations l, HabitAnchor? anchor) =>
+          reminderCopy(r, l: l, repo: repo, ashkenaziNames: false, anchor: anchor);
+
+      test('ends the daily reminder, after its length', () {
+        final copy = describe(revii, en, HabitAnchor.shacharit);
+        expect(copy.title, "Today: Revi'i");
+        expect(copy.body, contains('After Shacharit'));
+        expect(copy.body, contains('about 9 min'));
+        expect(copy.body, "Parshat Bereshit · 21 verses · about 9 min · After Shacharit — it's yours.");
+        expect(describe(revii, he, HabitAnchor.shacharit).body, 'פרשת בראשית · 21 פסוקים · כ־9 דק׳ · אחרי שחרית — זה הזמן שלך.');
+      });
+
+      test('is left out when none is chosen', () {
+        expect(describe(revii, en, null).body, 'Parshat Bereshit · 21 verses · about 9 min');
+      });
+
+      test('ends a day of the whole portion too', () {
+        final r = PlannedReminder(
+          kind: ReminderKind.daily,
+          date: revii.date,
+          minutes: revii.minutes,
+          plan: revii.plan,
+          aliyot: const [0, 1, 2, 3, 4, 5, 6],
+        );
+        expect(describe(r, en, HabitAnchor.bed).body, endsWith(" · Before bed — it's yours."));
+      });
+
+      test('is named in every language, each routine its own way', () {
+        for (final l in [en, he]) {
+          final cues = {for (final a in HabitAnchor.values) anchorCue(a, l)};
+          expect(cues, hasLength(HabitAnchor.values.length), reason: l.localeName);
+        }
+        expect(anchorCue(HabitAnchor.commute, en), 'On your commute');
+      });
+
+      test('is only in the daily reminder', () {
+        final plan = planFrom(DateTime(2026, 10, 11, 8));
+        for (final r in plan.where((r) => r.kind != ReminderKind.daily)) {
+          expect(describe(r, en, HabitAnchor.shacharit), copyIn(en)(r), reason: '$r');
+        }
+      });
     });
 
     test('a day that holds the whole portion names it once', () {
@@ -370,7 +577,7 @@ void main() {
       final verses = [for (var a = 0; a < 7; a++) repo.aliyahVerseCount(info, a)].reduce((a, b) => a + b);
       final copy = copyIn(en)(r);
       expect(copy.title, 'Today: Parshat ${info.displayName(ashkenazi: false)}');
-      expect(copy.body, '$verses verses');
+      expect(copy.body, '$verses verses · about ${(verses * 25 / 60).ceil()} min');
     });
 
     test("the paused message keeps the reader's place, in Hebrew without nikud", () {

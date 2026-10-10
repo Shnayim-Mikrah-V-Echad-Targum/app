@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show File, Platform;
 import 'dart:ui';
 
+import 'package:app_settings/app_settings.dart' as system;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart' show SchedulerBinding, Priority;
 import 'package:flutter/widgets.dart' show WidgetsBinding;
@@ -11,9 +12,11 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../app/city_providers.dart';
 import '../app/providers.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/parsha_repository.dart';
+import '../features/progress/domain/reading_plan.dart' show kSecondsPerVerse;
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 import '../ui/theme/palette.dart';
@@ -159,9 +162,48 @@ class NotificationService {
     return true;
   }
 
+  /// Whether [openSystemSettings] can take the reader to the device's
+  /// notification settings: the app's own on Android and iOS, and on macOS
+  /// (which has no build yet) the system's Notifications settings, where
+  /// the app is listed. Windows never refuses permission.
+  bool get canOpenSystemSettings =>
+      supported &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS);
+
+  /// Opens the device's notification settings (see [canOpenSystemSettings]),
+  /// where notifications once refused can be allowed again.
+  Future<void> openSystemSettings() async {
+    try {
+      await system.AppSettings.openAppSettings(type: system.AppSettingsType.notification);
+    } catch (e) {
+      debugPrint('Could not open the notification settings: $e');
+    }
+  }
+
   String _lastSignature = '';
   Future<void> _queue = Future.value();
   int _latest = 0;
+
+  /// Whether Android lets the app schedule exact alarms, asked once.
+  bool? _exact;
+
+  /// How reminders are scheduled on Android. Before Android 12 an inexact
+  /// alarm may come as late as three quarters of the time until it is due,
+  /// so one planned days ahead could come on Shabbat; exact alarms there need
+  /// no permission. From Android 12 they need one the app doesn't ask for,
+  /// and inexact alarms come within the hour, which the planner allows for
+  /// ([kMaxDeliveryDelay]).
+  Future<AndroidScheduleMode> _scheduleMode(AndroidFlutterLocalNotificationsPlugin? android) async {
+    if (android == null) return AndroidScheduleMode.inexactAllowWhileIdle;
+    try {
+      _exact ??= await android.canScheduleExactNotifications() ?? false;
+    } catch (_) {
+      _exact = false;
+    }
+    return _exact! ? AndroidScheduleMode.exactAllowWhileIdle : AndroidScheduleMode.inexactAllowWhileIdle;
+  }
 
   /// Replaces all scheduled reminders with [reminders], worded by [describe].
   ///
@@ -197,6 +239,7 @@ class NotificationService {
     }
     try {
       final android = p.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      final mode = await _scheduleMode(android);
       if (android != null) {
         // Creating a channel that exists updates its name and description,
         // so they follow the app's language.
@@ -231,7 +274,7 @@ class NotificationService {
             macOS: const DarwinNotificationDetails(threadIdentifier: _thread),
             windows: const WindowsNotificationDetails(),
           ),
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          androidScheduleMode: mode,
           payload: reminderRoute(r),
         );
       }
@@ -277,25 +320,33 @@ String reminderRoute(PlannedReminder r) => switch (r.kind) {
     };
 
 /// The words of reminder [r] in [l]'s language: for the daily reading, the
-/// aliyot due as the title and the portion and length as the body.
+/// aliyot due as the title, and the portion and length as the body, ending
+/// with the routine the reader tied the reading to, [anchor], if any.
 ReminderCopy reminderCopy(
   PlannedReminder r, {
   required AppLocalizations l,
   required ParshaRepository repo,
   required bool ashkenaziNames,
+  HabitAnchor? anchor,
 }) {
   final info = repo.portion(r.plan.portion);
   final parsha =
       l.localeName.startsWith('he') ? HebrewText.stripNikud(info.nameHe) : info.displayName(ashkenazi: ashkenaziNames);
   switch (r.kind) {
     case ReminderKind.daily:
-      final verses = l.versesCount(r.aliyot.fold<int>(0, (n, a) => n + repo.aliyahVerseCount(info, a)));
+      final count = r.aliyot.fold<int>(0, (n, a) => n + repo.aliyahVerseCount(info, a));
+      final verses = l.versesCount(count);
+      // All three readings of each verse, as Today estimates them.
+      final minutes = (count * kSecondsPerVerse / 60).ceil();
+      final cue = anchor == null ? '' : ' · ${l.notifDailyAnchor(anchorCue(anchor, l))}';
       // The whole portion in one day: named once, in the title.
-      if (r.aliyot.length == 7) return (title: l.notifDailyTitle(l.parshaLabel(parsha)), body: verses);
+      if (r.aliyot.length == 7) {
+        return (title: l.notifDailyTitle(l.parshaLabel(parsha)), body: '$verses · ${l.minutesEstimate(minutes)}$cue');
+      }
       final names = [l.aliyah1, l.aliyah2, l.aliyah3, l.aliyah4, l.aliyah5, l.aliyah6, l.aliyah7];
       return (
         title: l.notifDailyTitle(r.aliyot.map((a) => names[a]).join(', ')),
-        body: l.notifDailyBody(parsha, verses),
+        body: '${l.notifDailyBody(parsha, verses, minutes)}$cue',
       );
     case ReminderKind.erevShabbat:
       return (title: l.notifFridayTitle(parsha), body: l.notifFridayBody);
@@ -305,6 +356,15 @@ ReminderCopy reminderCopy(
       return (title: l.notifPausedTitle, body: l.notifPausedBody(parsha));
   }
 }
+
+/// How the daily reminder names [anchor]: "After Shacharit".
+String anchorCue(HabitAnchor anchor, AppLocalizations l) => switch (anchor) {
+      HabitAnchor.shacharit => l.anchorCueShacharit,
+      HabitAnchor.breakfast => l.anchorCueBreakfast,
+      HabitAnchor.commute => l.anchorCueCommute,
+      HabitAnchor.dinner => l.anchorCueDinner,
+      HabitAnchor.bed => l.anchorCueBed,
+    };
 
 final notificationServiceProvider = Provider<NotificationService>((ref) => NotificationService.disabled());
 
@@ -322,6 +382,8 @@ final reminderSchedulerProvider = Provider<void>((ref) {
         fridayReminder: s.fridayReminder,
         fridayReminderMinutes: s.fridayReminderMinutes,
         checkInReminder: s.checkInReminder,
+        habitAnchor: s.habitAnchor,
+        city: s.city,
         language: s.language,
         ashkenaziNames: s.ashkenaziNames,
       )));
@@ -339,7 +401,12 @@ final reminderSchedulerProvider = Provider<void>((ref) {
     erevShabbatMinutes: settings.fridayReminderMinutes,
     checkIn: settings.checkInReminder,
   );
-  final reminders = (prefs.daily || prefs.erevShabbat || prefs.checkIn)
+  final on = prefs.daily || prefs.erevShabbat || prefs.checkIn;
+  // With a city, reminders follow its Shabbat times, worked out once the
+  // time-zone database is in; scheduling them waits for it anyway.
+  final city = settings.city;
+  if (on && city != null && !timeZonesReady(ref)) return;
+  final reminders = on
       ? planReminders(
           prefs: prefs,
           planner: planner,
@@ -347,6 +414,7 @@ final reminderSchedulerProvider = Provider<void>((ref) {
           now: DateTime.now(),
           today: today,
           pauses: progress.pauses,
+          zmanim: city == null ? null : reminderZmanim(city, deviceOffset: ref.watch(deviceClockProvider)),
         )
       : const <PlannedReminder>[];
 
@@ -362,6 +430,6 @@ final reminderSchedulerProvider = Provider<void>((ref) {
   unawaited(service.reschedule(
     reminders,
     l,
-    (r) => reminderCopy(r, l: l, repo: repo, ashkenaziNames: settings.ashkenaziNames),
+    (r) => reminderCopy(r, l: l, repo: repo, ashkenaziNames: settings.ashkenaziNames, anchor: settings.habitAnchor),
   ));
 });

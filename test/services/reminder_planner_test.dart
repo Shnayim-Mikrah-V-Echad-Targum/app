@@ -1,12 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
 import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/services/reminder_planner.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   const planner = ReadingPlanner(schedule: ParshaSchedule(israel: false));
@@ -285,6 +288,319 @@ void main() {
       expect(planned(resident, acharon), contains(acharon));
       expect(remind(resident, DateTime(2027, 4, 18, 8)).where((r) => r.date == acharon), isNotEmpty);
     });
+  });
+
+  group("with the Shabbat times of the reader's city", () {
+    const london = City(
+      id: 2643743,
+      nameEn: 'London',
+      countryCode: 'GB',
+      latitude: 51.5085,
+      longitude: -0.1257,
+      timeZone: 'Europe/London',
+    );
+    const newYork = City(
+      id: 5128581,
+      nameEn: 'New York City',
+      countryCode: 'US',
+      region: 'US.NY',
+      latitude: 40.7143,
+      longitude: -74.006,
+      timeZone: 'America/New_York',
+    );
+    const jerusalem = City(
+      id: 281184,
+      nameEn: 'Jerusalem',
+      countryCode: 'IL',
+      latitude: 31.769,
+      longitude: 35.2163,
+      timeZone: 'Asia/Jerusalem',
+      candleMinutes: 40,
+    );
+
+    /// The UTC offset of [place]'s clock on a day.
+    Duration Function(LocalDate) clockOf(City place) {
+      final location = Zmanim.timeZone(place.timeZone)!;
+      return (d) => tz.TZDateTime(location, d.year, d.month, d.day, 12).timeZoneOffset;
+    }
+
+    /// [city]'s times, on a device that keeps [city]'s clock (or [device]'s).
+    ReminderZmanim Function(LocalDate) timesIn(City city, {City? device}) =>
+        reminderZmanim(city, deviceOffset: clockOf(device ?? city));
+    int candles(City city, LocalDate d) => timesIn(city)(d).candles!;
+    int havdalah(City city, LocalDate d) => timesIn(city)(d).havdalah!;
+
+    /// Planned on the morning of [from], for a week and a day, in [city] if
+    /// any.
+    List<PlannedReminder> plan(
+      LocalDate from,
+      ReminderPrefs prefs, {
+      City? city,
+      City? device,
+      ReadingPlanner planner = planner,
+    }) =>
+        planReminders(
+          prefs: prefs,
+          planner: planner,
+          progressOf: empty,
+          now: DateTime(from.year, from.month, from.day, 8),
+          today: from,
+          zmanim: city == null ? null : timesIn(city, device: device),
+          days: 8,
+        );
+    PlannedReminder? on(List<PlannedReminder> reminders, LocalDate d) =>
+        reminders.where((r) => r.date == d && r.kind != ReminderKind.paused).singleOrNull;
+    String hm(int minutes) => '${minutes ~/ 60}:${(minutes % 60).toString().padLeft(2, '0')}';
+
+    group('a winter Friday in London', () {
+      final friday = LocalDate(2026, 11, 27);
+      final sunday = friday.addDays(-5);
+
+      test('candles are lit at about 15:40', () {
+        expect(hm(candles(london, friday)), '15:39');
+      });
+
+      test('the daily reminder at 20:00 comes before candle-lighting, not never', () {
+        const daily = ReminderPrefs(daily: true, dailyMinutes: 20 * 60);
+        expect(on(plan(sunday, daily), friday), isNull, reason: 'without a city, nothing after midday');
+        final reminders = plan(sunday, daily, city: london);
+        final r = on(reminders, friday)!;
+        expect(r.kind, ReminderKind.daily);
+        expect(r.aliyot, [5, 6]);
+        expect(r.minutes, candles(london, friday) - kDailyBeforeCandles);
+        expect(hm(r.minutes), '13:09');
+        // Thursday's keeps its time, and so does an earlier one on Friday.
+        expect(on(reminders, friday.addDays(-1))!.minutes, 20 * 60);
+        expect(on(plan(sunday, const ReminderPrefs(daily: true, dailyMinutes: 9 * 60), city: london), friday)!.minutes,
+            9 * 60);
+      });
+
+      test('the Erev Shabbat reminder comes three hours before candle-lighting at the latest', () {
+        ReminderPrefs at(int minutes) => ReminderPrefs(erevShabbat: true, erevShabbatMinutes: minutes);
+        expect(on(plan(sunday, at(14 * 60), city: london), friday)!.minutes, candles(london, friday) - 180);
+        expect(on(plan(sunday, at(10 * 60), city: london), friday)!.minutes, 10 * 60);
+        expect(on(plan(sunday, at(14 * 60)), friday)!.minutes, kErevShabbatLatestMinutes, reason: 'without a city');
+      });
+
+      test('the check-in comes on Motzaei Shabbat, an hour after Havdalah', () {
+        const checkIn = ReminderPrefs(checkIn: true);
+        final shabbat = friday.addDays(1);
+        final r = on(plan(sunday, checkIn, city: london), shabbat)!;
+        expect(r.kind, ReminderKind.checkIn);
+        expect(r.minutes, havdalah(london, shabbat) + kCheckInAfterHavdalah);
+        expect(hm(r.minutes), '17:54');
+        expect(on(plan(sunday, checkIn, city: london), shabbat.addDays(1)), isNull, reason: 'once');
+        // Without a city, on Sunday morning.
+        expect(on(plan(sunday, checkIn), shabbat), isNull);
+        expect(on(plan(sunday, checkIn), shabbat.addDays(1))!.minutes, checkIn.checkInMinutes);
+      });
+    });
+
+    group('a summer Friday in New York', () {
+      final friday = LocalDate(2027, 6, 25);
+      final sunday = friday.addDays(-5);
+
+      test('candles are lit at about 20:10', () {
+        expect(hm(candles(newYork, friday)), '20:13');
+      });
+
+      test('the daily reminder at 20:00 comes two and a half hours before candle-lighting', () {
+        final r = on(plan(sunday, const ReminderPrefs(daily: true, dailyMinutes: 20 * 60), city: newYork), friday)!;
+        expect(r.kind, ReminderKind.daily);
+        expect(hm(r.minutes), '17:43');
+        // Later than two and a half hours before candle-lighting, even when
+        // it would arrive in time, it comes as early as a later one.
+        expect(
+            on(plan(sunday, const ReminderPrefs(daily: true, dailyMinutes: 18 * 60), city: newYork), friday)!.minutes,
+            r.minutes);
+        expect(
+            on(plan(sunday, const ReminderPrefs(daily: true, dailyMinutes: 17 * 60), city: newYork), friday)!.minutes,
+            17 * 60);
+      });
+
+      test('the Erev Shabbat reminder may come in the afternoon', () {
+        final r = on(
+            plan(sunday, const ReminderPrefs(erevShabbat: true, erevShabbatMinutes: 18 * 60), city: newYork), friday)!;
+        expect(hm(r.minutes), '17:13');
+      });
+
+      test('the check-in comes on Motzaei Shabbat, before 22:30', () {
+        final shabbat = friday.addDays(1);
+        final r = on(plan(sunday, const ReminderPrefs(checkIn: true), city: newYork), shabbat)!;
+        expect(r.kind, ReminderKind.checkIn);
+        expect(hm(r.minutes), '22:22');
+      });
+    });
+
+    test('when Shabbat ends late, the check-in waits for Sunday morning', () {
+      // London in June: Shabbat ends at 22:37.
+      final shabbat = LocalDate(2027, 6, 26);
+      expect(hm(havdalah(london, shabbat)), '22:37');
+      final reminders = plan(shabbat.addDays(-6), const ReminderPrefs(checkIn: true), city: london);
+      expect(on(reminders, shabbat), isNull);
+      expect(on(reminders, shabbat.addDays(1))!.minutes, const ReminderPrefs().checkInMinutes);
+    });
+
+    group('Yom Tov followed by Shabbat: Rosh Hashanah 5789, Thursday to Shabbat Shuva', () {
+      final erev = LocalDate(2028, 9, 20);
+      final shabbat = erev.addDays(3);
+      final sunday = erev.addDays(-3);
+
+      test('the days are as expected', () {
+        expect(HebrewDate.fromLocalDate(erev.addDays(1)), HebrewDate(5789, HebrewMonth.tishrei, 1));
+        for (final d in [erev.addDays(1), erev.addDays(2), shabbat]) {
+          expect(JewishHolidays.isRestDay(d, israel: false), isTrue, reason: '$d');
+        }
+        final week = planner.schedule.weekFor(erev);
+        expect(week.occasion, shabbat);
+        expect(planner.planFor(week).days.last.date, erev);
+      });
+
+      test('on Erev Rosh Hashanah, reminders keep to its candle-lighting', () {
+        final lit = candles(newYork, erev);
+        final reminders = plan(
+          sunday,
+          const ReminderPrefs(daily: true, dailyMinutes: 20 * 60, erevShabbat: true, erevShabbatMinutes: 17 * 60),
+          city: newYork,
+        );
+        expect((on(reminders, erev)!.kind, on(reminders, erev)!.minutes), (ReminderKind.erevShabbat, lit - 180));
+        final daily = on(plan(sunday, const ReminderPrefs(daily: true, dailyMinutes: 20 * 60), city: newYork), erev)!;
+        expect(daily.minutes, lit - kDailyBeforeCandles);
+      });
+
+      test('nothing over the three days but the check-in after Shabbat', () {
+        final reminders = plan(sunday, all, city: newYork);
+        expect(on(reminders, erev.addDays(1)), isNull);
+        expect(on(reminders, erev.addDays(2)), isNull);
+        final r = on(reminders, shabbat)!;
+        expect((r.kind, r.minutes), (ReminderKind.checkIn, havdalah(newYork, shabbat) + kCheckInAfterHavdalah));
+      });
+    });
+
+    test('Shabbat followed by Yom Tov: the check-in comes after the Yom Tov ends', () {
+      // Shabbat Bamidbar 5789, and Shavuot on Sunday and Monday.
+      final shabbat = LocalDate(2029, 5, 19);
+      final monday = shabbat.addDays(2);
+      expect(JewishHolidays.isRestDay(monday, israel: false), isTrue);
+      final reminders = plan(shabbat.addDays(-6), const ReminderPrefs(checkIn: true), city: newYork);
+      expect(on(reminders, shabbat), isNull);
+      expect(on(reminders, shabbat.addDays(1)), isNull);
+      final r = on(reminders, monday)!;
+      expect((r.kind, r.minutes), (ReminderKind.checkIn, havdalah(newYork, monday) + kCheckInAfterHavdalah));
+    });
+
+    test("no check-in as Tisha B'Av begins on Motzaei Shabbat", () {
+      final ninth = HebrewDate(5789, HebrewMonth.av, 9).toLocalDate();
+      expect(ninth.isShabbat, isTrue);
+      expect(JewishHolidays.isTishaBav(ninth.addDays(1)), isTrue);
+      final reminders = plan(ninth.addDays(-6), const ReminderPrefs(checkIn: true), city: newYork);
+      expect(on(reminders, ninth), isNull);
+      expect(on(reminders, ninth.addDays(1))!.minutes, const ReminderPrefs().checkInMinutes);
+    });
+
+    group('a reminder delivered an hour late, as Android may deliver it', () {
+      // London, 27 November 2026: candles at 15:39, so nothing may arrive
+      // from 14:39, nor be due from 13:39.
+      final friday = LocalDate(2026, 11, 27);
+      final sunday = friday.addDays(-5);
+
+      test('still arrives over an hour before candle-lighting', () {
+        expect(kMaxDeliveryDelay, 60);
+        expect(kDailyBeforeCandles, greaterThan(kCutoffBeforeCandles + kMaxDeliveryDelay));
+        expect(kErevShabbatBeforeCandles, greaterThan(kCutoffBeforeCandles + kMaxDeliveryDelay));
+        final lit = candles(london, friday);
+        for (final minutes in [13 * 60, 14 * 60, 20 * 60, 23 * 60 + 59]) {
+          for (final prefs in [
+            ReminderPrefs(daily: true, dailyMinutes: minutes),
+            ReminderPrefs(erevShabbat: true, erevShabbatMinutes: minutes),
+          ]) {
+            final r = on(plan(sunday, prefs, city: london), friday)!;
+            expect(r.minutes + kMaxDeliveryDelay, lessThan(lit - kCutoffBeforeCandles), reason: '$r');
+          }
+        }
+      });
+
+      test('so a time that would arrive in time only if punctual comes earlier', () {
+        // Due at 14:00, it may arrive as late as 15:00, within the hour
+        // before candle-lighting.
+        final r = on(plan(sunday, const ReminderPrefs(daily: true, dailyMinutes: 14 * 60), city: london), friday)!;
+        expect(hm(r.minutes), '13:09');
+        // One due early enough keeps its time.
+        expect(
+            on(plan(sunday, const ReminderPrefs(daily: true, dailyMinutes: 13 * 60), city: london), friday)!.minutes,
+            13 * 60);
+      });
+
+      test('the final message keeps the same margin', () {
+        // Planned on the Sunday for five days, the message that reminders
+        // have paused falls on the Friday.
+        final reminders = planReminders(
+          prefs: const ReminderPrefs(daily: true, dailyMinutes: 20 * 60),
+          planner: planner,
+          progressOf: empty,
+          now: DateTime(sunday.year, sunday.month, sunday.day, 8),
+          today: sunday,
+          zmanim: timesIn(london),
+          days: 4,
+        );
+        final paused = reminders.last;
+        expect((paused.kind, paused.date), (ReminderKind.paused, friday));
+        expect(paused.minutes, candles(london, friday) - kDailyBeforeCandles);
+      });
+    });
+
+    test("on a device keeping another city's clock, the rules without a city apply", () {
+      final friday = LocalDate(2026, 11, 27);
+      expect(timesIn(london, device: newYork)(friday), (candles: null, havdalah: null));
+      const prefs = ReminderPrefs(daily: true, dailyMinutes: 20 * 60, erevShabbat: true, erevShabbatMinutes: 14 * 60);
+      List<(LocalDate, ReminderKind, int)> times(List<PlannedReminder> reminders) =>
+          [for (final r in reminders) (r.date, r.kind, r.minutes)];
+      final sunday = friday.addDays(-5);
+      expect(times(plan(sunday, prefs, city: london, device: newYork)), times(plan(sunday, prefs)));
+    });
+
+    for (final (place, schedule) in [(london, false), (newYork, false), (jerusalem, true)]) {
+      test('in ${place.nameEn}, over a year: never on Shabbat or Yom Tov, nor from an hour before candle-lighting, '
+          'even an hour late', () {
+        final planner = ReadingPlanner(schedule: ParshaSchedule(israel: schedule));
+        final times = timesIn(place);
+        // The latest times, to press against the limits.
+        const latest = ReminderPrefs(
+          daily: true,
+          dailyMinutes: 23 * 60 + 59,
+          erevShabbat: true,
+          erevShabbatMinutes: 23 * 60 + 59,
+          checkIn: true,
+        );
+        final from = LocalDate(2026, 10, 11);
+        final reminders = planReminders(
+          prefs: latest,
+          planner: planner,
+          progressOf: empty,
+          now: DateTime(from.year, from.month, from.day, 8),
+          today: from,
+          zmanim: times,
+          days: 365,
+        );
+        expect(reminders.length, greaterThan(250));
+        var evenings = 0;
+        for (final r in reminders) {
+          final rest = JewishHolidays.isRestDay(r.date, israel: planner.oneDayYomTov);
+          if (rest) {
+            // Only the check-in, after Shabbat or Yom Tov has ended.
+            expect(r.kind, ReminderKind.checkIn, reason: '$r');
+            expect(r.minutes, greaterThanOrEqualTo(times(r.date).havdalah! + kCheckInAfterHavdalah), reason: '$r');
+            expect(r.minutes, lessThanOrEqualTo(kCheckInLatestMinutes), reason: '$r');
+            expect(JewishHolidays.isRestDay(r.date.addDays(1), israel: planner.oneDayYomTov), isFalse, reason: '$r');
+            evenings++;
+          } else if (JewishHolidays.isRestDay(r.date.addDays(1), israel: planner.oneDayYomTov)) {
+            expect(r.minutes + kMaxDeliveryDelay, lessThan(times(r.date).candles! - kCutoffBeforeCandles),
+                reason: '$r');
+          }
+        }
+        expect(evenings, greaterThan(10), reason: 'most weeks, on Motzaei Shabbat');
+      });
+    }
   });
 
   test('Erev Shabbat opens the week within Today; the daily reading and the check-in open Today', () {

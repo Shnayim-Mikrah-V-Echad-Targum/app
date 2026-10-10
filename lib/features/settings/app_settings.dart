@@ -88,6 +88,53 @@ enum LineWidth { narrow, medium, wide }
 /// portion.
 enum ReadingSchedule { israel, diaspora }
 
+/// The daily routine the reader ties the day's reading to ("After I finish
+/// Shacharit"), which the daily reminder names. Persisted by name.
+enum HabitAnchor {
+  shacharit,
+  breakfast,
+  commute,
+  dinner,
+  bed;
+
+  /// The anchor saved as [raw]: its name or, from versions that saved the
+  /// chip's label instead, that label in English or Hebrew. Anything else
+  /// is no anchor.
+  static HabitAnchor? parse(Object? raw) => values.where((a) => a.name == raw).firstOrNull ?? _legacyLabels[raw];
+
+  /// When the routine usually comes, in minutes after midnight: the time a
+  /// daily reminder tied to it suggests, so that a reminder naming a morning
+  /// routine doesn't come in the evening.
+  int get usualMinutes => switch (this) {
+        shacharit || breakfast => 7 * 60 + 30,
+        commute => 8 * 60,
+        dinner => 20 * 60,
+        bed => 21 * 60 + 30,
+      };
+
+  /// The daily reminder's time, now [minutes], once the routine [next] is
+  /// chosen in place of [previous]: [next]'s usual time while [minutes] is
+  /// only a suggestion (the default, or [previous]'s usual time), and
+  /// otherwise, or when the routine is cleared, the time as it is.
+  static int reminderMinutes(int minutes, {required HabitAnchor? previous, required HabitAnchor? next}) {
+    final suggested = minutes == const AppSettings().dailyReminderMinutes || minutes == previous?.usualMinutes;
+    return next != null && suggested ? next.usualMinutes : minutes;
+  }
+
+  static const _legacyLabels = {
+    'finish Shacharit': shacharit,
+    'eat breakfast': breakfast,
+    'start my commute': commute,
+    'finish dinner': dinner,
+    'get ready for bed': bed,
+    'אסיים שחרית': shacharit,
+    'אאכל ארוחת בוקר': breakfast,
+    'אצא לדרך': commute,
+    'אסיים ארוחת ערב': dinner,
+    'אתכונן לשינה': bed,
+  };
+}
+
 /// Every user preference, persisted as JSON.
 class AppSettings {
   const AppSettings({
@@ -140,6 +187,7 @@ class AppSettings {
     this.checkInReminder = false,
     this.habitAnchor,
     this.city,
+    this.cityOfferAnswered = false,
     this.language = AppLanguage.system,
     this.onboardingComplete = false,
     this.notificationPromptShown = false,
@@ -243,8 +291,9 @@ class AppSettings {
   /// After Shabbat, a reminder to log reading done from a printed Chumash.
   final bool checkInReminder;
 
-  /// The routine the daily reading is anchored to ("after Shacharit").
-  final String? habitAnchor;
+  /// The routine the daily reading is tied to, which the daily reminder
+  /// names; null if none is chosen.
+  final HabitAnchor? habitAnchor;
 
   // Shabbat times
 
@@ -252,6 +301,11 @@ class AppSettings {
   /// from a list rather than found by location; null until one is chosen.
   /// It stays on the device.
   final City? city;
+
+  /// Whether the offer of a city, in Settings → Reminders, has been answered:
+  /// put aside, or a city chosen. Until then it is made while reminders are
+  /// on without a city, however they were turned on.
+  final bool cityOfferAnswered;
 
   // App
   final AppLanguage language;
@@ -389,6 +443,7 @@ class AppSettings {
     bool? checkInReminder,
     Object? habitAnchor = _keep,
     Object? city = _keep,
+    bool? cityOfferAnswered,
     AppLanguage? language,
     bool? onboardingComplete,
     bool? notificationPromptShown,
@@ -443,8 +498,9 @@ class AppSettings {
         fridayReminder: fridayReminder ?? this.fridayReminder,
         fridayReminderMinutes: fridayReminderMinutes ?? this.fridayReminderMinutes,
         checkInReminder: checkInReminder ?? this.checkInReminder,
-        habitAnchor: identical(habitAnchor, _keep) ? this.habitAnchor : habitAnchor as String?,
+        habitAnchor: identical(habitAnchor, _keep) ? this.habitAnchor : habitAnchor as HabitAnchor?,
         city: identical(city, _keep) ? this.city : city as City?,
+        cityOfferAnswered: cityOfferAnswered ?? this.cityOfferAnswered,
         language: language ?? this.language,
         onboardingComplete: onboardingComplete ?? this.onboardingComplete,
         notificationPromptShown: notificationPromptShown ?? this.notificationPromptShown,
@@ -505,8 +561,9 @@ class AppSettings {
         'fridayReminder': fridayReminder,
         'fridayReminderMinutes': fridayReminderMinutes,
         'checkInReminder': checkInReminder,
-        'habitAnchor': habitAnchor,
+        'habitAnchor': habitAnchor?.name,
         'city': city?.toJson(),
+        'cityOfferAnswered': cityOfferAnswered,
         'language': language.name,
         'onboardingComplete': onboardingComplete,
         'notificationPromptShown': notificationPromptShown,
@@ -586,8 +643,9 @@ class AppSettings {
       fridayReminder: b('fridayReminder', d.fridayReminder),
       fridayReminderMinutes: i('fridayReminderMinutes', d.fridayReminderMinutes),
       checkInReminder: b('checkInReminder', d.checkInReminder),
-      habitAnchor: j['habitAnchor'] as String?,
+      habitAnchor: HabitAnchor.parse(j['habitAnchor']),
       city: _readCity(j['city']),
+      cityOfferAnswered: b('cityOfferAnswered', d.cityOfferAnswered),
       language: e(AppLanguage.values, j['language'], d.language),
       onboardingComplete: b('onboardingComplete', d.onboardingComplete),
       notificationPromptShown: b('notificationPromptShown', d.notificationPromptShown),
