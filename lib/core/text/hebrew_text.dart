@@ -86,18 +86,19 @@ abstract final class HebrewSpeech {
   static final _wordSplit = RegExp(r'(\s+|־)');
   // Vowel points, any number. Cantillation is gone before words are matched.
   static const _v = '[\u05b0-\u05bc\u05bf\u05c1\u05c2\u05c7]*';
-  // Each pattern for the Divine Name matches a whole word in three parts:
-  // what precedes the Name (punctuation, then any prefix letters with their
-  // vowels), the Name as written, and the punctuation after it.
+  // Each pattern for the Divine Name matches a whole word in four parts:
+  // the punctuation before it, any prefix letters with their vowels, the
+  // Name as written, and the punctuation after it.
   static final _tetragrammaton =
-      RegExp('^(?<before>[^א-ת]*(?:[ובכלמשה]$_v){0,2})(?<name>י$_vה$_vו$_vה$_v)(?<after>[^א-ת]*)\$');
+      RegExp('^(?<lead>[^א-ת]*)(?<prefix>(?:[ובכלמשה]$_v){0,2})(?<name>י$_vה$_vו$_vה$_v)(?<after>[^א-ת]*)\$');
   // Onkelos writes the Name יְיָ, with a prefix where it has one (דַּיְיָ).
   static final _targumName =
-      RegExp('^(?<before>[^א-ת]*(?:[ודלבמכ]$_v)?)(?<name>י$_vי$_v)(?<after>[^א-ת]*)\$');
-  // Rashi abbreviates it ה' (or with a geresh), also after a prefix (לַה')
-  // and inside quotation marks or braces.
+      RegExp('^(?<lead>[^א-ת]*)(?<prefix>(?:[ודלבמכ]$_v)?)(?<name>י$_vי$_v)(?<after>[^א-ת]*)\$');
+  // Rashi abbreviates it ה' (or with a geresh), also after one or two
+  // prefix letters (לַה', שֶׁמֵּה', הלה'), the Aramaic ד (דַה'), quotation
+  // marks (שֶׁ"ה'), and inside quotation marks or braces.
   static final _rashiName = RegExp(
-    '^(?<before>["״“„{\\[]*(?<prefix>(?:[ובכלמש]$_v)?))(?<name>ה$_v[\'׳])(?<after>[.,:;!?)"״”}\\]]*)\$',
+    '^(?<lead>["״“„{\\[]*)(?<prefix>(?:[ובכלמשהד]$_v){0,2})["״“„]*(?<name>ה$_v[\'׳])(?<after>[.,:;!?)"״”}\\]]*)\$',
   );
   // But ה' is also the numeral 5. Rashi cites chapters by number, as in
   // (ישעיהו ה') or (שם ה', ד'), and counts with it: "כְּבֶן ה'" (five years
@@ -158,13 +159,66 @@ abstract final class HebrewSpeech {
   static String _letters(String word) => HebrewText.consonantsOnly(word).replaceAll(RegExp('[^א-ת]'), '');
 
   static String _substitute(RegExpMatch m, DivineNameSpeech mode) {
-    final name = switch (mode) {
-      // Vocalized with a hiriq in the Name itself (יֱהֹוִה) it is read "Elohim".
-      DivineNameSpeech.adonai => m.namedGroup('name')!.contains('\u05b4') ? 'אֱלֹהִים' : 'אֲדֹנָי',
-      DivineNameSpeech.hashem => 'הַשֵּׁם',
+    final lead = m.namedGroup('lead')!;
+    final prefix = m.namedGroup('prefix')!;
+    final after = m.namedGroup('after')!;
+    return switch (mode) {
+      // A prefix keeps its vowels, set for this reading: לַיהוָה is read
+      // לַאֲדֹנָי. Vocalized with a hiriq in the Name itself (יֱהֹוִה), it is
+      // read "Elohim".
+      DivineNameSpeech.adonai =>
+        '$lead$prefix${m.namedGroup('name')!.contains('\u05b4') ? 'אֱלֹהִים' : 'אֲדֹנָי'}$after',
+      DivineNameSpeech.hashem => '$lead${_hashemWithPrefix(_letters(prefix))}$after',
     };
-    // What precedes the Name is kept as written, so a prefix keeps its
-    // vowels: לַיהוָה is read לַאֲדֹנָי.
-    return '${m.namedGroup('before')}$name${m.namedGroup('after')}';
+  }
+
+  /// "HaShem" after the prefix [letters], as Hebrew joins them: ל, ב and כ
+  /// take the article's vowel and its ה drops (לַשֵּׁם, as in "Hodu
+  /// laShem"); any other keeps it (וְהַשֵּׁם, מֵהַשֵּׁם, שֶׁהַשֵּׁם,
+  /// and the Aramaic דְּהַשֵּׁם). The vowels written under a prefix were
+  /// set for "Adonai", so they are not kept.
+  static String _hashemWithPrefix(String letters) {
+    if (letters.isEmpty) return 'הַשֵּׁם';
+    final last = letters[letters.length - 1];
+    if (letters.length == 1) {
+      return switch (last) {
+        'ל' => 'לַשֵּׁם',
+        'ב' => 'בַּשֵּׁם',
+        'כ' => 'כַּשֵּׁם',
+        'ו' => 'וְהַשֵּׁם',
+        'מ' => 'מֵהַשֵּׁם',
+        'ש' => 'שֶׁהַשֵּׁם',
+        'ד' => 'דְּהַשֵּׁם',
+        _ => 'הַשֵּׁם',
+      };
+    }
+    // Two letters. After ש or מ the next letter is doubled
+    // (שֶׁבַּשֵּׁם); after any other, ב and כ are soft (וּבַשֵּׁם,
+    // "uvaShem"). ו is וּ before ב or מ, and an interrogative ה is הֲ
+    // (הֲלַשֵּׁם).
+    final first = letters[0];
+    final doubled = first == 'ש' || first == 'מ';
+    final joined = switch (last) {
+      'ל' => doubled ? 'לַּשֵּׁם' : 'לַשֵּׁם',
+      'ב' => doubled ? 'בַּשֵּׁם' : 'בַשֵּׁם',
+      'כ' => doubled ? 'כַּשֵּׁם' : 'כַשֵּׁם',
+      'ו' => 'וְהַשֵּׁם',
+      'מ' => doubled ? 'מֵּהַשֵּׁם' : 'מֵהַשֵּׁם',
+      'ש' => doubled ? 'שֶּׁהַשֵּׁם' : 'שֶׁהַשֵּׁם',
+      'ד' => 'דְּהַשֵּׁם',
+      _ => 'הַשֵּׁם',
+    };
+    final lead = switch (first) {
+      'ו' => last == 'ב' || last == 'מ' ? 'וּ' : 'וְ',
+      'ש' => 'שֶׁ',
+      'מ' => 'מִ',
+      'ה' => 'הֲ',
+      'ד' => 'דְּ',
+      'כ' => 'כְּ',
+      'ל' => 'לְ',
+      'ב' => 'בְּ',
+      _ => first,
+    };
+    return '$lead$joined';
   }
 }

@@ -12,15 +12,16 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - Each verse is a single node with a curated spoken label, such as "Verse 9." followed by the text, or "Targum, verse 9." for Onkelos. This avoids reading glyph by glyph.
 - The Hebrew is tagged `he`, so the screen reader can switch to a Hebrew voice:
   - **Android and iOS:** only the Hebrew part of the label is tagged, so "Verse 9." is read in the interface language.
-  - **The web and desktop:** a node can carry only one language there, so the whole label is in Hebrew ("פסוק 9.") and the node is tagged `he`. On the web this sets the `lang` attribute.
+  - **The web:** a node can carry only one language there, so the whole label is in Hebrew ("פסוק 9.") and the node is tagged `he`. This sets the `lang` attribute.
+  - **Windows:** Flutter's bridge passes no language, so the label is as on Android and iOS, and Narrator or NVDA reads "Verse 9." (or "Targum, verse 9.") in its own voice.
 - Cantillation is removed by default because screen readers mispronounce it or stop at it. The extraordinary points written over some words in the scroll (as over וישקהו, Genesis 33:4) are shown whether or not cantillation is, and are never spoken.
 - *Settings → Accessibility → Screen reader text* changes what the label contains:
   - **vowels kept** (the default)
   - **letters only**
   - **every mark**, for braille displays
 - The Divine Name is spoken as **Adonai** or **Hashem**, as the user chooses. This applies to screen-reader labels and to text-to-speech, in the Torah and haftarah, in Targum Onkelos (which writes it יְיָ) and in Rashi (who writes ה'). A ה' that cites a chapter, as in (ישעיהו ה'), or counts something stays a number.
-- Each of Rashi's comments is its own node, read the same way and tagged `he`, or `en` for Rashi in English. The English translation is tagged `en`, so it is read in an English voice in the Hebrew interface too.
-- Notes, ketiv/qere and the Targum each have their own labels.
+- Each of Rashi's comments is its own node, read the same way and tagged `he`, or `en` for Rashi in English, whose quoted Hebrew is tagged `he` and read the same way. The English translation is tagged `en`, so it is read in an English voice in the Hebrew interface too.
+- Notes, ketiv/qere and the Targum each have their own labels. A note is read like the verse: without cantillation, and with the Divine Name as chosen.
 
 **Structure and state**
 - Screen titles and section headers are marked as headings with levels, so heading navigation works.
@@ -119,7 +120,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   - no overflow at 200% text on the busiest screens
   - the Hebrew right-to-left layout
   - the desktop layout with a navigation rail
-- `test/app/reader_widget_test.dart` runs the guidelines on the reader and checks the labels of verses, the Targum and Rashi, and their language tags on Android and on Windows.
+- `test/app/reader_widget_test.dart` runs the guidelines on the reader and checks the labels of verses, notes, the Targum and Rashi, and their language tags on Android, Windows and the web.
 - Unit tests check the spoken-label pipeline (`test/core/text/hebrew_text_test.dart`), including Divine Name substitution in the Torah, the Targum and Rashi, and stripping cantillation but not the extraordinary points.
 
 ### Manual (before each release)

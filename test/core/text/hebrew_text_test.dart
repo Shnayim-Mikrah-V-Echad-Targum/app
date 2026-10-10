@@ -70,10 +70,43 @@ void main() {
 
     test('a prefix keeps its vowels, and punctuation stays', () {
       expect(HebrewSpeech.spoken('לַֽיהֹוָ֔ה'), 'לַאֲדֹנָי');
-      expect(HebrewSpeech.spoken('וַֽיהֹוָ֔ה', divineName: DivineNameSpeech.hashem), 'וַהַשֵּׁם');
+      expect(HebrewSpeech.spoken('וַֽיהֹוָ֔ה'), 'וַאֲדֹנָי');
       expect(HebrewSpeech.spoken('כִּ֛י אֲנִ֥י יְהֹוָֽה׃'), 'כִּי אֲנִי אֲדֹנָי.');
       // Deuteronomy 32:6, with two prefix letters.
       expect(HebrewSpeech.spoken('הַֽלְיהֹוָה֙ תִּגְמְלוּ־זֹ֔את'), 'הַלְאֲדֹנָי תִּגְמְלוּ זֹאת');
+    });
+
+    group('HaShem after a prefix, as Hebrew joins them', () {
+      // Deuteronomy 32:6 (הַֽלְיהֹוָה֙) has an interrogative ה, then ל.
+      const cases = {
+        'לַֽיהֹוָ֔ה': 'לַשֵּׁם',
+        'בַּֽיהֹוָ֔ה': 'בַּשֵּׁם',
+        'כַּֽיהֹוָ֔ה': 'כַּשֵּׁם',
+        'וַֽיהֹוָ֔ה': 'וְהַשֵּׁם',
+        'מֵיְהֹוָ֔ה': 'מֵהַשֵּׁם',
+        'שֶׁיְהֹוָ֔ה': 'שֶׁהַשֵּׁם',
+        'וּבַֽיהֹוָ֔ה': 'וּבַשֵּׁם',
+        'וְלַֽיהֹוָ֔ה': 'וְלַשֵּׁם',
+        'הַֽלְיהֹוָה֙': 'הֲלַשֵּׁם',
+      };
+      for (final MapEntry(key: written, value: spoken) in cases.entries) {
+        test('$written is read $spoken', () {
+          expect(HebrewSpeech.spoken(written, divineName: DivineNameSpeech.hashem), spoken);
+        });
+      }
+
+      test('in the Targum and Rashi too, with punctuation kept', () {
+        expect(HebrewSpeech.spoken('לַיָי', targum: true, divineName: DivineNameSpeech.hashem), 'לַשֵּׁם');
+        expect(HebrewSpeech.spoken('קֳדָם דַּיְיָ:', targum: true, divineName: DivineNameSpeech.hashem), 'קֳדָם דְּהַשֵּׁם:');
+        expect(HebrewSpeech.spoken('"לַה׳", כְּמוֹ', rashi: true, divineName: DivineNameSpeech.hashem), '"לַשֵּׁם", כְּמוֹ');
+        expect(HebrewSpeech.spoken("וה' המטיר.", rashi: true, divineName: DivineNameSpeech.hashem), 'וְהַשֵּׁם המטיר.');
+        // Genesis 24:50 and the heading of Deuteronomy 32:6, in Rashi.
+        expect(
+          HebrewSpeech.spoken("וְנִכָּר שֶׁמֵּה' יָצָא", rashi: true, divineName: DivineNameSpeech.hashem),
+          'וְנִכָּר שֶׁמֵּהַשֵּׁם יָצָא',
+        );
+        expect(HebrewSpeech.spoken("הלה' תגמלו זאת.", rashi: true, divineName: DivineNameSpeech.hashem), 'הֲלַשֵּׁם תגמלו זאת.');
+      });
     });
 
     group('Targum', () {
@@ -86,7 +119,6 @@ void main() {
       test('with a prefix', () {
         expect(HebrewSpeech.spoken('קֳדָם דַּיְיָ', targum: true), 'קֳדָם דַּאֲדֹנָי');
         expect(HebrewSpeech.spoken('וְהֵימִין בְּמֵימְרָא דַיְיָ:', targum: true), 'וְהֵימִין בְּמֵימְרָא דַאֲדֹנָי:');
-        expect(HebrewSpeech.spoken('לַיָי', targum: true, divineName: DivineNameSpeech.hashem), 'לַהַשֵּׁם');
       });
 
       test('only when asked for', () {
@@ -118,6 +150,15 @@ void main() {
         expect(HebrewSpeech.spoken("לפני ה'.", rashi: true, divineName: DivineNameSpeech.hashem), 'לפני הַשֵּׁם.');
         expect(HebrewSpeech.spoken('"לַה׳", כְּמוֹ', rashi: true), '"לַאֲדֹנָי", כְּמוֹ');
         expect(HebrewSpeech.spoken("וה' המטיר.", rashi: true), 'ואֲדֹנָי המטיר.');
+      });
+
+      test('after two prefix letters, an Aramaic ד, or quotation marks', () {
+        // Genesis 24:50, Exodus 15:17, Exodus 34:5 and the heading of
+        // Deuteronomy 32:6, as the bundled Rashi writes them.
+        expect(HebrewSpeech.spoken("וְנִכָּר שֶׁמֵּה' יָצָא הַדָּבָר", rashi: true), 'וְנִכָּר שֶׁמֵּאֲדֹנָי יָצָא הַדָּבָר');
+        expect(HebrewSpeech.spoken("בִּזְמַן שֶׁ\"ה' יִמְלֹךְ", rashi: true), 'בִּזְמַן שֶׁאֲדֹנָי יִמְלֹךְ');
+        expect(HebrewSpeech.spoken("וּקְרָא בִשְׁמָא דַה':", rashi: true), 'וּקְרָא בִשְׁמָא דַאֲדֹנָי:');
+        expect(HebrewSpeech.spoken("הלה' תגמלו זאת.", rashi: true), 'הלאֲדֹנָי תגמלו זאת.');
       });
 
       test("ה' counting something is a number", () {

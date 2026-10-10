@@ -79,6 +79,33 @@ String spokenVerse(Verse verse, AppSettings s, {required ScriptureKind kind}) =>
 String spokenRashi(Comment c, AppSettings s) =>
     _spoken(c.heading == null ? c.text : '${c.heading} ${c.text}', s, rashi: true);
 
+/// The same for one of Rashi's comments in English, with the Hebrew it
+/// quotes ("בראשית IN THE BEGINNING") tagged as Hebrew. The Hebrew is read
+/// as Rashi in Hebrew is, the Divine Name among it ("לפני ה׳ BEFORE THE
+/// LORD"); for text-to-speech ([speech]), whatever the screen-reader text.
+AttributedString spokenRashiEnglish(Comment c, AppSettings s, {bool speech = false}) {
+  final text = c.heading == null ? c.text : '${c.heading} ${c.text}';
+  final label = StringBuffer();
+  final hebrew = <TextRange>[];
+  var from = 0;
+  for (final m in _hebrewRun.allMatches(text)) {
+    label.write(text.substring(from, m.start));
+    final run = speech
+        ? HebrewSpeech.spoken(m.group(0)!, divineName: s.divineName, rashi: true)
+        : _spoken(m.group(0)!, s, rashi: true);
+    hebrew.add(TextRange(start: label.length, end: label.length + run.length));
+    label.write(run);
+    from = m.end;
+  }
+  label.write(text.substring(from));
+  return AttributedString(label.toString(), attributes: [
+    for (final range in hebrew) LocaleStringAttribute(range: range, locale: _hebrew),
+  ]);
+}
+
+// Hebrew words, with the spaces and punctuation between them.
+final _hebrewRun = RegExp('[\u05d0-\u05ea][\u0591-\u05f4\\s"\'.,:;-]*[\u05b0-\u05f4]|[\u05d0-\u05ea]');
+
 String _spoken(String text, AppSettings s, {bool targum = false, bool rashi = false}) => switch (s.screenReaderText) {
       ScreenReaderText.simplified => HebrewSpeech.spoken(text, divineName: s.divineName, targum: targum, rashi: rashi),
       ScreenReaderText.consonants =>
@@ -190,21 +217,23 @@ class ScriptureVerse extends StatelessWidget {
 
     // A screen reader reads the verse as one label, "Verse 9." and then the
     // Hebrew, tagged as Hebrew so that it is read in a Hebrew voice. Where
-    // voices switch only between nodes, the whole label is in Hebrew
-    // ("פסוק 9.") and the node itself is tagged.
-    final spansSwitch = labelSpansSwitchVoice;
-    final labels = spansSwitch ? l : lookupAppLocalizations(_hebrew);
+    // only a whole node can be tagged (the web), the whole label is in
+    // Hebrew ("פסוק 9.") and the node itself is tagged.
+    final byNode = nodeLanguageOnly;
+    final labels = byNode ? lookupAppLocalizations(_hebrew) : l;
     final number = '${verse.ref.verse}';
     final prefix = '${kind == ScriptureKind.targum ? labels.targumVerseLabel(number) : labels.verseLabel(number)}. ';
     final spoken = spokenVerse(verse, settings, kind: kind);
     var label = '$prefix$spoken';
     final hebrewSpans = [TextRange(start: prefix.length, end: label.length)];
     for (final (i, n) in notes.indexed) {
-      // The notes are in Hebrew too.
+      // The notes are in Hebrew too, and read like the verse: without
+      // cantillation, and the Divine Name as chosen.
       label += i == 0 ? '. ' : ' ';
-      final note = labels.noteLabel(n);
-      final start = label.length + note.indexOf(n);
-      hebrewSpans.add(TextRange(start: start, end: start + n.length));
+      final spokenNote = _spoken(n, settings);
+      final note = labels.noteLabel(spokenNote);
+      final start = label.length + note.indexOf(spokenNote);
+      hebrewSpans.add(TextRange(start: start, end: start + spokenNote.length));
       label += note;
     }
 
@@ -227,9 +256,9 @@ class ScriptureVerse extends StatelessWidget {
 
     return Semantics(
       container: true,
-      // Never on Android or iOS, where the node's language would also be
-      // given to the English "Verse 9.".
-      localeForSubtree: spansSwitch ? null : _hebrew,
+      // Only where the whole label is Hebrew: elsewhere the node's language
+      // would also be given to the English "Verse 9.".
+      localeForSubtree: byNode ? _hebrew : null,
       attributedLabel: AttributedString(
         label,
         attributes: [for (final range in hebrewSpans) LocaleStringAttribute(range: range, locale: _hebrew)],
@@ -284,9 +313,6 @@ class TranslationVerse extends StatelessWidget {
   }
 }
 
-// Hebrew words, with the spaces and punctuation between them.
-final _hebrewRun = RegExp('[\u05d0-\u05ea][\u0591-\u05f4\\s"\'.,:;-]*[\u05b0-\u05f4]|[\u05d0-\u05ea]');
-
 /// Rashi's comments on one verse.
 class RashiComments extends StatelessWidget {
   const RashiComments({super.key, required this.comments, required this.settings, required this.english});
@@ -315,7 +341,7 @@ class RashiComments extends StatelessWidget {
             child: Semantics(
               container: true,
               localeForSubtree: english ? const Locale('en') : _hebrew,
-              attributedLabel: english ? _englishLabel(c) : _hebrewLabel(c),
+              attributedLabel: english ? spokenRashiEnglish(c, settings) : _hebrewLabel(c),
               textDirection: dir,
               child: ExcludeSemantics(
                 child: Text.rich(
@@ -342,16 +368,6 @@ class RashiComments extends StatelessWidget {
     final label = spokenRashi(c, settings);
     return AttributedString(label, attributes: [
       LocaleStringAttribute(range: TextRange(start: 0, end: label.length), locale: _hebrew),
-    ]);
-  }
-
-  // The translation quotes the words it explains in Hebrew ("בראשית IN THE
-  // BEGINNING"), and sometimes other Hebrew.
-  AttributedString _englishLabel(Comment c) {
-    final label = c.heading == null ? c.text : '${c.heading} ${c.text}';
-    return AttributedString(label, attributes: [
-      for (final m in _hebrewRun.allMatches(label))
-        LocaleStringAttribute(range: TextRange(start: m.start, end: m.end), locale: _hebrew),
     ]);
   }
 }

@@ -15,10 +15,16 @@ class Lang extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(localeForSubtree: locale, child: child);
 }
 
-/// Whether screen readers here switch voice partway through a label, where a
-/// [LocaleStringAttribute] marks a span in another language. TalkBack and
-/// VoiceOver do. Elsewhere only a whole node can be tagged: the web engine
-/// ignores label attributes and sets `lang` from the node's locale, and
-/// Flutter's Windows bridge passes no language at all.
-bool get labelSpansSwitchVoice =>
-    !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+/// Whether a screen reader here takes a node's language only from the node
+/// as a whole, so that a label in two languages is better given in one. So
+/// it is on the web, whose engine ignores label attributes and sets `lang`
+/// from the node's locale. TalkBack and VoiceOver switch voice partway
+/// through a label, where a [LocaleStringAttribute] marks a span in another
+/// language. Flutter's Windows bridge passes no language at all, so there a
+/// label is best in the interface language, which the screen reader's voice
+/// reads.
+bool get nodeLanguageOnly => debugNodeLanguageOnly ?? kIsWeb;
+
+/// Overrides [nodeLanguageOnly], for tests of the web's labels.
+@visibleForTesting
+bool? debugNodeLanguageOnly;

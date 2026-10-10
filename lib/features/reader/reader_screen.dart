@@ -405,7 +405,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         if (english) {
           // One voice reads it all: the comments in English, or, where Rashi
           // is silent on the whole step, its verses in Hebrew.
-          final text = comments.expand((c) => c).map((c) => '${c.heading ?? ''} ${c.text}').join(' ');
+          final text = comments.expand((c) => c).map((c) => spokenRashiEnglish(c, s, speech: true).string).join(' ');
           if (text.trim().isNotEmpty) return (text, english: true);
           return (refs.map((r) => hebrew(texts.mikra.verse(r))).join(' '), english: false);
         }

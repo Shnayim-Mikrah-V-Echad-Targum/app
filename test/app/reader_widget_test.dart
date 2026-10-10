@@ -12,6 +12,7 @@ import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/tts.dart';
+import 'package:shnayim_mikra/ui/widgets/lang.dart';
 
 import '../helpers.dart';
 
@@ -501,18 +502,53 @@ void main() {
     });
 
     testWidgets(
-      'on Windows, as on the web, a verse is labelled in Hebrew and its node is tagged he',
+      'on Windows, whose screen readers take no language from the app, a verse keeps "Verse 9." in the interface language',
       (tester) async {
         final handle = tester.ensureSemantics();
         await openNoach(tester);
-        expect(find.bySemanticsLabel(RegExp(r'^Verse 9\. ')), findsNothing);
-        final verse = labelled(tester, RegExp(r'^פסוק 9\. '));
-        expect(HebrewText.consonantsOnly(verse.label), startsWith('פסוק 9. אלה תולדת נח'));
-        expect(verse.locale, const Locale('he'));
+        final verse = labelled(tester, RegExp(r'^Verse 9\. '));
+        expect(verse.locale, isNull);
+        final span = verse.attributedLabel.attributes.whereType<LocaleStringAttribute>().single;
+        expect((span.locale, span.range.start), (const Locale('he'), 'Verse 9. '.length));
         handle.dispose();
       },
       variant: TargetPlatformVariant.only(TargetPlatform.windows),
     );
+
+    testWidgets('on the web, which tags whole nodes, a verse is labelled in Hebrew and its node is tagged he', (tester) async {
+      debugNodeLanguageOnly = true;
+      addTearDown(() => debugNodeLanguageOnly = null);
+      final handle = tester.ensureSemantics();
+      await openNoach(tester);
+      expect(find.bySemanticsLabel(RegExp(r'^Verse 9\. ')), findsNothing);
+      final verse = labelled(tester, RegExp(r'^פסוק 9\. '));
+      expect(HebrewText.consonantsOnly(verse.label), startsWith('פסוק 9. אלה תולדת נח'));
+      expect(verse.locale, const Locale('he'));
+      handle.dispose();
+    });
+
+    testWidgets("a verse's note is read like the verse: no cantillation, and the Name as chosen", (tester) async {
+      final handle = tester.ensureSemantics();
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: const AppSettings(onboardingComplete: true, divineName: DivineNameSpeech.hashem),
+        now: monday,
+      );
+      // Deuteronomy 32:6, in Haazinu's first aliyah, has a note: "בספרי
+      // תימן הַֽלְיהֹוָה֙ בתיבה אחת".
+      c.read(routerProvider).go('/read/5787:53/0?mode=full');
+      await loadTexts(tester);
+      final verse = labelled(tester, RegExp(r'^Verse 6\. '));
+      final note = verse.label.substring(verse.label.indexOf('Note: ') + 'Note: '.length);
+      expect(HebrewText.consonantsOnly(note), 'בספרי תימן הלשם בתיבה אחת');
+      expect(note, isNot(contains(RegExp('[\u0591-\u05af]'))), reason: 'no cantillation');
+      final span = verse.attributedLabel.attributes.whereType<LocaleStringAttribute>().last;
+      expect(verse.label.substring(span.range.start, span.range.end), note);
+      handle.dispose();
+    });
 
     testWidgets('a verse of Targum is labelled as Targum and reads the Name as chosen', (tester) async {
       final handle = tester.ensureSemantics();
@@ -536,6 +572,37 @@ void main() {
       expect((span.range.start, span.range.end), (0, comment.label.length));
       handle.dispose();
     });
+
+    for (final english in [false, true]) {
+      testWidgets("Rashi${english ? ' in English' : ''} reads the Name he writes ה' as chosen", (tester) async {
+        final handle = tester.ensureSemantics();
+        tester.view.physicalSize = const Size(412, 915);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final c = await pumpApp(
+          tester,
+          settings: AppSettings(
+            onboardingComplete: true,
+            method: ReadingMethod.aliyahByAliyah,
+            secondReading: english ? SecondReading.rashiEnglish : SecondReading.rashi,
+            divineName: DivineNameSpeech.hashem,
+          ),
+          now: monday,
+        );
+        // Rashi on Genesis 7:16, in Sheni: "ויסגור ה' בעדו".
+        c.read(routerProvider).go('/read/5787:2/1');
+        await loadTexts(tester);
+        await next(tester, 2);
+        expect(find.text('Read Rashi'), findsOneWidget);
+        final comment = labelled(tester, RegExp('^ויסגור '));
+        expect(HebrewText.consonantsOnly(comment.label), startsWith('ויסגור השם בעדו'));
+        if (english) {
+          final span = comment.attributedLabel.attributes.whereType<LocaleStringAttribute>().first;
+          expect(HebrewText.consonantsOnly(comment.label.substring(span.range.start, span.range.end)), 'ויסגור השם בעדו');
+        }
+        handle.dispose();
+      });
+    }
 
     testWidgets('Rashi in English is tagged en, and the Hebrew it quotes he', (tester) async {
       final handle = tester.ensureSemantics();
