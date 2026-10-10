@@ -176,6 +176,51 @@ void main() {
       expect(title.getSemanticsData().headingLevel, 1);
       handle.dispose();
     });
+
+    group('a title with little room beside its actions', () {
+      /// The size the app bar sets a title at, and the size [text] is set at.
+      (double, double) sizes(WidgetTester tester, Finder text) {
+        final context = tester.element(text);
+        final full = MediaQuery.textScalerOf(context).scale(Theme.of(context).appBarTheme.titleTextStyle!.fontSize!);
+        final paragraph = tester.renderObject<RenderParagraph>(text);
+        return (full, paragraph.textScaler.scale(paragraph.text.style!.fontSize!));
+      }
+
+      // Lexend is wider than the standard font: on a 412 dp phone, "New
+      // discussion" has no room at its full size beside the Demo tag and Post,
+      // nor a thread's forum beside the Demo tag and Refresh.
+      for (final (route, title) in [
+        ('/community/new', _en.newThread),
+        ('/community/thread/1', 'Questions & answers'),
+      ]) {
+        testWidgets('is set a little smaller rather than cut short: $route', (tester) async {
+          await openRoute(tester, route, settings: const AppSettings(onboardingComplete: true, uiFont: UiFont.lexend));
+          final text = _title(title);
+          expect(text, findsOneWidget);
+          final paragraph = tester.renderObject<RenderParagraph>(text);
+          expect(paragraph.didExceedMaxLines, isFalse, reason: 'never cut short');
+          expect(paragraph.size.width, greaterThanOrEqualTo(paragraph.getMaxIntrinsicWidth(double.infinity) - 0.5));
+          final (full, set) = sizes(tester, text);
+          expect(set, lessThan(full));
+          expect(set, greaterThanOrEqualTo(full * 0.75));
+        });
+      }
+
+      testWidgets('keeps its full size where it fits', (tester) async {
+        await openRoute(tester, '/community/new');
+        final (full, set) = sizes(tester, _title(_en.newThread));
+        expect(set, full);
+      });
+
+      testWidgets('is never set below 75% of its size, and only then cut short', (tester) async {
+        // The longest forum's name, enlarged, on a 360 dp phone.
+        await openRoute(tester, '/community/forum/chavruta', size: const Size(360, 800), textScale: 2);
+        final text = _title('Chavruta & encouragement');
+        final (full, set) = sizes(tester, text);
+        expect(set, moreOrLessEquals(full * 0.75));
+        expect(tester.renderObject<RenderParagraph>(text).didExceedMaxLines, isTrue);
+      });
+    });
   });
 
   group('DocumentTitle', () {

@@ -217,7 +217,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         // The browser's tab is named for the thread, and so is the page, by
         // its heading below: the forum's name over it is no heading.
         titleText: title,
-        title: Text(forumName ?? '', overflow: TextOverflow.ellipsis),
+        title: AppBarTitle(forumName ?? ''),
         showTitle: forumName != null,
         titleNamesPage: false,
         actions: [

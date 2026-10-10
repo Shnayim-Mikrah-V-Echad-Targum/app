@@ -201,8 +201,8 @@ class PageScaffold extends StatelessWidget {
                             ),
                             // The app bar makes it a heading; this gives its level.
                             child: titleNamesPage
-                                ? Semantics(headingLevel: 1, child: title ?? Text(titleText))
-                                : title ?? Text(titleText),
+                                ? Semantics(headingLevel: 1, child: title ?? AppBarTitle(titleText))
+                                : title ?? AppBarTitle(titleText),
                           )
                         : null,
                     actions: actions,
@@ -215,6 +215,47 @@ class PageScaffold extends StatelessWidget {
           );
         }),
       );
+}
+
+/// An app bar's title, in the app bar's style: set a little smaller where
+/// the line has no room for it (a wider interface font, or enlarged text,
+/// beside the Demo tag and a button), as the reader's title is, and cut short
+/// only once it would have to be smaller still. [PageScaffold] sets its
+/// [PageScaffold.titleText] so; a page whose app bar shows another name (a
+/// thread, its forum's) gives it as its [PageScaffold.title].
+class AppBarTitle extends StatelessWidget {
+  const AppBarTitle(this.text, {super.key});
+
+  final String text;
+
+  /// The smallest the title is set, of its size, before it is cut short.
+  static const double minScale = 0.75;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
+        // As the app bar sets it: its style, and its text size, which it
+        // keeps from growing past 1.34 times.
+        final style = DefaultTextStyle.of(context).style;
+        final size = MediaQuery.textScalerOf(context).scale(style.fontSize ?? 22);
+        final painter = TextPainter(
+          text: TextSpan(text: text, style: style.copyWith(fontSize: size)),
+          textDirection: Directionality.of(context),
+          locale: Localizations.maybeLocaleOf(context),
+          maxLines: 1,
+        )..layout();
+        final width = painter.width;
+        painter.dispose();
+        if (width <= constraints.maxWidth) return Text(text, maxLines: 1, softWrap: false);
+        final scale = math.max(minScale, constraints.maxWidth / width);
+        return Text(
+          text,
+          style: TextStyle(fontSize: size * scale),
+          textScaler: TextScaler.noScaling,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        );
+      });
 }
 
 /// Names the page in the browser: its tab, history and bookmarks ("Settings
