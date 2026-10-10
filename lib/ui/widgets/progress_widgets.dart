@@ -893,9 +893,10 @@ class WeekStrip extends StatelessWidget {
     // Shabbat, that it is one, so Simchat Torah is not taken for Shabbat.
     final yomTov = rest && !d.isShabbat;
     final note = yomTov ? l.yomTovShort : (dayAliyot.isEmpty ? null : aliyahOrdinals(dayAliyot));
+    final noteStyle = theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant);
     final content = Container(
       constraints: const BoxConstraints(minHeight: 68),
-      padding: const EdgeInsets.symmetric(horizontal: _inset, vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       // A foreground border, so today's content sits exactly where the
       // other days' does.
       foregroundDecoration: isToday
@@ -903,12 +904,15 @@ class WeekStrip extends StatelessWidget {
           : null,
       child: Column(
         children: [
-          Text(
-            names.weekdayShort(d),
-            textAlign: TextAlign.center,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: isToday ? scheme.onSurface : scheme.onSurfaceVariant,
-              fontWeight: isToday ? FontWeight.w700 : null,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: _inset),
+            child: Text(
+              names.weekdayShort(d),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: isToday ? scheme.onSurface : scheme.onSurfaceVariant,
+                fontWeight: isToday ? FontWeight.w700 : null,
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -920,44 +924,52 @@ class WeekStrip extends StatelessWidget {
           ),
           if (note != null) ...[
             const SizedBox(height: 4),
-            Text(
-              note,
-              textAlign: TextAlign.center,
-              // Ordinals read right to left in either UI.
-              textDirection: yomTov ? null : TextDirection.rtl,
-              style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
-            ),
+            if (yomTov)
+              // One line across the whole day, shrunk a little if need be
+              // ("Yom Tov" is about 50 px; a day on a 412 dp phone has 48),
+              // so a Yom Tov week is no taller than any other.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(note, maxLines: 1, softWrap: false, style: noteStyle),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: _inset),
+                child: Text(
+                  note,
+                  textAlign: TextAlign.center,
+                  // Ordinals read right to left in either UI.
+                  textDirection: TextDirection.rtl,
+                  style: noteStyle,
+                ),
+              ),
           ],
         ],
       ),
     );
     final fill = rest ? SeferColors.of(context).restWash : (isToday ? scheme.primaryContainer : null);
     final interactive = planned != null && onDayTap != null;
+    void tap() => onDayTap!(planned!);
     final body = interactive
-        ? SeferInkWell(
-            borderRadius: _dayRadius,
-            onTap: () => onDayTap!(planned),
-            child: ExcludeSemantics(child: content),
-          )
+        ? SeferInkWell(borderRadius: _dayRadius, onTap: tap, child: ExcludeSemantics(child: content))
         : ExcludeSemantics(child: content);
-    // One node per day, the size of its slot (margins and all), carrying the
-    // ink well's tap and focus.
-    return Semantics(
-      container: true,
-      button: interactive,
-      label: semantic,
-      child: Padding(
-        // Outside the ink well, so its focus ring hugs the day.
-        padding: const EdgeInsets.symmetric(horizontal: _margin),
-        child: Tooltip(
-          message: semantic,
-          excludeFromSemantics: true,
-          child: fill == null
-              ? body
-              : Ink(decoration: BoxDecoration(color: fill, borderRadius: _dayRadius), child: body),
-        ),
+    Widget day = Padding(
+      // Outside the ink well, so its focus ring hugs the day.
+      padding: const EdgeInsets.symmetric(horizontal: _margin),
+      child: Tooltip(
+        message: semantic,
+        excludeFromSemantics: true,
+        child: fill == null ? body : Ink(decoration: BoxDecoration(color: fill, borderRadius: _dayRadius), child: body),
       ),
     );
+    // The margins answer a tap too, so the whole slot, at least 48 dp, is
+    // the target a finger has (the ink well's own taps win inside it).
+    if (interactive) {
+      day = GestureDetector(behavior: HitTestBehavior.opaque, excludeFromSemantics: true, onTap: tap, child: day);
+    }
+    // One node per day, the size of its slot (margins and all), carrying the
+    // ink well's tap and focus.
+    return Semantics(container: true, button: interactive, label: semantic, child: day);
   }
 }
 

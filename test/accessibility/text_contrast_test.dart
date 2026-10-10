@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
 import 'routes.dart';
@@ -35,13 +36,16 @@ void main() {
     });
   }
 
-  // The Torah map with a tile in every past state. textContrastGuideline
-  // finds text by its node's label, and a tile's label also names its state
-  // ("Noach: Made up"), so the guideline checks the rest of the page and each
-  // tile's own colours are checked here: the name against the tile's fill,
-  // and its icon against the fill as a graphic.
-  for (final theme in [AppThemeMode.light, AppThemeMode.sepia]) {
-    testWidgets('Torah map tiles are readable in the ${theme.name} theme', (tester) async {
+  // The Torah map with a tile in every past state, and the week strip above
+  // it. textContrastGuideline finds text by its node's label, and a tile's
+  // label also names its state ("Noach: Made up"), as a day's names its
+  // status and a book header's its count, so the guideline skips them; their
+  // colours are checked here instead: a tile's name against its fill and its
+  // icon against the fill as a graphic, a filled day's weekday and aliyot
+  // against its fill, and each book header's count against the page.
+  for (final theme in [AppThemeMode.light, AppThemeMode.sepia, AppThemeMode.highContrastDark]) {
+    testWidgets('Torah map tiles, filled days and book counts are readable in the ${theme.name} theme',
+        (tester) async {
       final handle = tester.ensureSemantics();
       tester.view.physicalSize = const Size(412, 2600);
       tester.view.devicePixelRatio = 1;
@@ -80,6 +84,27 @@ void main() {
         for (final icon in tester.widgetList<Icon>(find.descendant(of: tile, matching: find.byType(Icon)))) {
           expect(contrast(icon.color!, fill), greaterThanOrEqualTo(3), reason: '$label icon');
         }
+      }
+
+      // Today (Wednesday) on primaryContainer, Shabbat on the rest wash.
+      final strip = find.byType(WeekStrip);
+      final filled = tester.widgetList<Ink>(find.descendant(of: strip, matching: find.byType(Ink))).toList();
+      expect(filled, hasLength(2));
+      for (final ink in filled) {
+        final fill = (ink.decoration! as BoxDecoration).color!;
+        final texts = tester.widgetList<Text>(find.descendant(of: find.byWidget(ink), matching: find.byType(Text)));
+        expect(texts, isNotEmpty);
+        for (final text in texts) {
+          expect(contrast(text.style!.color!, fill), greaterThanOrEqualTo(4.5), reason: '"${text.data}" on $fill');
+        }
+      }
+
+      final page = Theme.of(tester.element(strip)).colorScheme.surface;
+      for (final book in ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy']) {
+        final count = tester.widget<Text>(
+          find.descendant(of: find.bySemanticsLabel(RegExp('^$book: ')), matching: find.textContaining(' of ')),
+        );
+        expect(contrast(count.style!.color!, page), greaterThanOrEqualTo(4.5), reason: '$book count');
       }
       await expectLater(tester, meetsGuideline(textContrastGuideline));
       handle.dispose();

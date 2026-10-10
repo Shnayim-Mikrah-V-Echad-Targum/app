@@ -398,7 +398,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dayToday => 'היום';
 
   @override
-  String get yomTovShort => 'חג';
+  String get yomTovShort => 'יו״ט';
 
   @override
   String dayChipLabel(String day, String status) {

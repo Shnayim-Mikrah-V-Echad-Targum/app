@@ -25,6 +25,7 @@ void main() {
   final sefer = Palettes.seferLight;
 
   Widget strip({
+    WeekPlan? week,
     LocalDate? today,
     Map<LocalDate, DayStatus> statuses = const {},
     LocalDate? joinDate,
@@ -35,7 +36,7 @@ void main() {
         child: SizedBox(
           width: width,
           child: WeekStrip(
-            plan: plan,
+            plan: week ?? plan,
             today: today ?? day(5),
             statuses: statuses,
             israel: false,
@@ -125,9 +126,25 @@ void main() {
     expect(find.text('Yom Tov'), findsOneWidget);
   });
 
-  testWidgets('Hebrew: Yom Tov reads חג, and the week runs from the right', (tester) async {
+  testWidgets('a Yom Tov week is no taller than any other: its note keeps to one line', (tester) async {
+    // The week of Noach has no Yom Tov.
+    final noach = planner.planFor(planner.schedule.weekFor(LocalDate(2026, 10, 14)));
+    for (final hebrew in [false, true]) {
+      await pumpThemed(tester, strip(week: noach, today: LocalDate(2026, 10, 14)), hebrew: hebrew);
+      final plain = tester.getSize(find.byType(WeekStrip)).height;
+      await pumpThemed(tester, strip(), hebrew: hebrew);
+      expect(tester.getSize(find.byType(WeekStrip)).height, plain, reason: hebrew ? 'he' : 'en');
+      final note = find.text(hebrew ? 'יו״ט' : 'Yom Tov');
+      // Within the day, the margins aside.
+      final sunday = tester.getRect(dayOf(hebrew ? 'יום ראשון' : 'Sunday'));
+      expect(tester.getRect(note).width, lessThanOrEqualTo(sunday.width - 4));
+      expect(tester.widget<Text>(note).maxLines, 1);
+    }
+  });
+
+  testWidgets('Hebrew: Yom Tov reads יו״ט, and the week runs from the right', (tester) async {
     await pumpThemed(tester, strip(), hebrew: true);
-    expect(find.text('חג'), findsOneWidget);
+    expect(find.text('יו״ט'), findsOneWidget);
     expect(tester.getCenter(dayOf('יום ראשון')).dx, greaterThan(tester.getCenter(dayOf('יום שבת')).dx));
   });
 
@@ -203,6 +220,22 @@ void main() {
     expect(find.byTooltip('Tuesday: Not yet. Sheni'), findsOneWidget);
     handle.dispose();
   });
+
+  // The 48 dp target is the whole slot, its 2 px margins included.
+  for (final width in [364.0, 336.0]) {
+    testWidgets('at ${(width / 7).round()} dp a day, a tap on its margin opens it', (tester) async {
+      final tapped = <List<int>>[];
+      await pumpThemed(tester, strip(width: width, onDayTap: (d) => tapped.add(d.aliyot)));
+      final tuesday = tester.getRect(dayOf('Tuesday'));
+      expect(tuesday.width, moreOrLessEquals(width / 7));
+      await tester.tapAt(Offset(tuesday.left + 1, tuesday.center.dy));
+      await tester.tapAt(Offset(tuesday.right - 1, tuesday.center.dy));
+      expect(tapped, [
+        [1],
+        [1],
+      ]);
+    });
+  }
 
   testWidgets('a day that changes cross-fades to its new glyph over 250 ms', (tester) async {
     await pumpThemed(tester, strip());

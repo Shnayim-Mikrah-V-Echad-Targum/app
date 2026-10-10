@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../../helpers.dart';
 
@@ -15,7 +18,7 @@ import '../../helpers.dart';
 void main() {
   setUpAll(loadBundledFonts);
 
-  Future<void> openProgress(
+  Future<ProviderContainer> openProgress(
     WidgetTester tester, {
     Size size = const Size(412, 2600),
     double textScale = 1,
@@ -34,6 +37,7 @@ void main() {
     );
     c.read(routerProvider).go('/progress');
     await tester.pumpAndSettle();
+    return c;
   }
 
   /// The tile whose screen-reader label starts with [name].
@@ -129,6 +133,36 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('when the week moves into the next book, that book opens', (tester) async {
+    final c = await openProgress(tester);
+    // The reader folds Genesis, the book being read.
+    await tester.tap(headerOf('Genesis'));
+    await tester.pumpAndSettle();
+    expect(tileOf('Toldot'), findsNothing);
+    expect(tileOf('Shemot'), findsNothing);
+
+    // Weeks later it is the week of Shemot.
+    TodayController.now = () => DateTime(2027, 1, 4, 10);
+    c.invalidate(todayProvider);
+    await tester.pumpAndSettle();
+    expect(tileOf('Shemot'), findsOneWidget);
+    expect(tester.getSemantics(headerOf('Exodus')), isSemantics(isExpanded: true, hasExpandedState: true));
+    // Genesis stays as the reader left it.
+    expect(tileOf('Toldot'), findsNothing);
+  });
+
+  testWidgets("the strip's legend button heads its section and opens the legend", (tester) async {
+    await openProgress(tester);
+    final button = find.byType(WeekStripLegendButton);
+    expect(button, findsOneWidget);
+    final header = find.ancestor(of: button, matching: find.byType(SectionHeader));
+    expect(find.descendant(of: header, matching: find.text("This week's plan")), findsOneWidget);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(SheetTitle, 'Legend'), findsOneWidget);
+    expect(find.descendant(of: find.byType(BottomSheet), matching: find.text('Shabbat or Yom Tov')), findsOneWidget);
+  });
+
   testWidgets('a header opens its book from the keyboard', (tester) async {
     await openProgress(tester);
     await tabInto(tester, headerOf('Leviticus'));
@@ -182,20 +216,30 @@ void main() {
     });
 
     // A one-word name is never broken inside the word. A tile whose name
-    // has a word too long to sit beside its icon puts the icon above it;
-    // only large text takes fewer columns. In the week of Beha'alotcha
-    // (the longest word), its tile has the bold and the icon of the current
-    // parsha, and the unread parshiyot before it have icons too.
+    // has a word too long to sit beside its icon puts the icon above it,
+    // and one too long for the tile is set a little smaller (80% at the
+    // least); only large text that would shrink it further takes columns
+    // away, and only in that book. In the week of Beha'alotcha (the longest
+    // word), its tile has the bold and the icon of the current parsha, and
+    // the unread parshiyot before it have icons too.
     const numbers = ['Bamidbar', 'Nasso', "Beha'alotcha", "Sh'lach", 'Korach', 'Chukat', 'Balak', 'Pinchas'];
     for (final (size, scale, columns, stacked) in [
       (const Size(360, 2600), 1.0, 3, true),
+      // Android's "Large" font: still three columns.
+      (const Size(360, 2600), 1.15, 3, true),
       (const Size(412, 2600), 1.0, 3, false),
       (const Size(1366, 1600), 1.0, 6, true),
-      (const Size(412, 4000), 2.0, 1, false),
+      (const Size(412, 4000), 2.0, 2, true),
     ]) {
       testWidgets('one-word names stay whole at ${size.width.round()} dp and ${scale}x', (tester) async {
         await openProgress(tester, size: size, textScale: scale, now: DateTime(2027, 6, 23, 10));
         expect(firstRow(tester, numbers), columns);
+        // Shrunk, if at all, by no more than a fifth.
+        final name = tester.renderObject<RenderParagraph>(find.descendant(
+          of: find.descendant(of: tileOf("Beha'alotcha"), matching: find.text("Beha'alotcha")),
+          matching: find.byType(RichText),
+        ));
+        expect(name.textScaler.scale(13) / 13, inInclusiveRange(0.8 * scale, scale));
         final icon = tester.getCenter(find.descendant(of: tileOf("Beha'alotcha"), matching: find.byIcon(Icons.timelapse)));
         final text = tester.getCenter(find.descendant(of: tileOf("Beha'alotcha"), matching: find.text("Beha'alotcha")));
         expect(icon.dy < text.dy, stacked, reason: 'the icon above the name');
@@ -237,6 +281,7 @@ void main() {
       'Doubled up',
       'Made up',
       'Not completed',
+      'Can still be restored',
       'In progress',
       'Upcoming',
       'Not counted',
@@ -244,7 +289,7 @@ void main() {
       expect(find.descendant(of: sheet, matching: find.text(label)), findsOneWidget, reason: label);
     }
     // Each label beside a swatch of its tile.
-    expect(find.descendant(of: sheet, matching: find.byType(Ink)), findsNWidgets(8));
+    expect(find.descendant(of: sheet, matching: find.byType(Ink)), findsNWidgets(9));
     final colours = tester
         .widgetList<Ink>(find.descendant(of: sheet, matching: find.byType(Ink)))
         .map((i) => (i.decoration! as BoxDecoration).color)

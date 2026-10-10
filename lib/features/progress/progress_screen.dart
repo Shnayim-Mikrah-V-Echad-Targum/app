@@ -351,19 +351,26 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
     };
   }
 
-  /// The most columns the window allows (3, 4 or 6) whose tiles hold the
-  /// longest word of any name, so a name wraps between words, never inside
-  /// one. Only large text takes fewer.
+  /// A book's columns: the window's (3, 4 or 6), unless large text would
+  /// have to shrink the book's longest word below [_minNameScale] to fit a
+  /// tile. A name wraps between words, never inside one: a word a little too
+  /// long for its tile is set just small enough instead (see [_tile]).
   static int _columns(BuildContext context, double width, double longestWord) {
     final window = MediaQuery.sizeOf(context).width;
     final most = window >= Breakpoints.expanded ? 6 : (window >= Breakpoints.medium ? 4 : 3);
     for (var c = most; c > 1; c--) {
-      if (_tileWidth(width, c) - 2 * _tilePadding >= longestWord) return c;
+      if (_room(width, c) >= longestWord * _minNameScale) return c;
     }
     return 1;
   }
 
+  /// The least a name is shrunk to keep its longest word whole.
+  static const _minNameScale = 0.8;
+
   static double _tileWidth(double width, int columns) => (width - _tileGap * (columns - 1)) / columns;
+
+  /// The width a tile has for its name.
+  static double _room(double width, int columns) => _tileWidth(width, columns) - 2 * _tilePadding;
 
   @override
   Widget build(BuildContext context) {
@@ -386,10 +393,14 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final words = _WordWidths(context);
-          // Any parsha may be the current one, which is set in bold.
-          final longest = repo.all.map((p) => words.longest(name(p), bold: true)).reduce(math.max);
-          final columns = _columns(context, constraints.maxWidth, longest);
-          final beside = _tileWidth(constraints.maxWidth, columns) - 2 * _tilePadding - _tileIcon - _tileIconGap;
+          final width = constraints.maxWidth;
+          // Each book its own columns, so a long word in one book never
+          // changes another's. Any parsha may be the current one, which is
+          // set in bold.
+          final columns = [
+            for (final book in books)
+              _columns(context, width, book.map((p) => words.longest(name(p), bold: true)).reduce(math.max)),
+          ];
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -406,8 +417,8 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
                     padding: const EdgeInsets.only(top: 4, bottom: 16),
                     child: _grid(
                       context,
-                      [for (final p in books[b]) _tile(context, p, name(p), words, beside)],
-                      columns,
+                      [for (final p in books[b]) _tile(context, p, name(p), words, _room(width, columns[b]))],
+                      columns[b],
                     ),
                   ),
               ],
@@ -440,12 +451,14 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
         ],
       );
 
-  /// [beside] is the room for a name beside an icon: a name with a longer
-  /// word goes under its icon instead.
-  Widget _tile(BuildContext context, PortionInfo p, String name, _WordWidths words, double beside) {
+  /// [room] is the tile's width for its name. A name with a word too long to
+  /// sit beside the icon goes under it, and one with a word too long for the
+  /// tile at all is set just small enough for it, so no word ever breaks.
+  Widget _tile(BuildContext context, PortionInfo p, String name, _WordWidths words, double room) {
     final (state, label) = _stateOf(context, p);
     final semantic = '$name: $label';
     final look = _lookOf(context, state);
+    final word = words.longest(name, bold: look.bold);
     // One node per tile, carrying the ink well's tap and focus.
     return Semantics(
       container: true,
@@ -458,7 +471,9 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
           state: state,
           onTap: () => context.push('/week/${widget.cycle}:${p.id.number}'),
           name: name,
-          stacked: look.icon != null && words.longest(name, bold: look.bold) > beside,
+          stacked: look.icon != null && word > room - _tileIcon - _tileIconGap,
+          // A hair under, so rounding never wraps the word after all.
+          nameScale: word > room ? (room - 0.5) / word : 1,
         ),
       ),
     );
@@ -500,7 +515,14 @@ class _WordWidths {
 /// over the tile, so every tile's content sits in the same place whatever its
 /// border.
 class _TileFace extends StatelessWidget {
-  const _TileFace({required this.state, this.onTap, this.name, this.stacked = false, this.minHeight = 52});
+  const _TileFace({
+    required this.state,
+    this.onTap,
+    this.name,
+    this.stacked = false,
+    this.nameScale = 1,
+    this.minHeight = 52,
+  });
 
   final _TileState state;
   final VoidCallback? onTap;
@@ -510,13 +532,23 @@ class _TileFace extends StatelessWidget {
   /// with a word too long to share the line. Within the minimum height, so
   /// the tile is no taller for it.
   final bool stacked;
+
+  /// Below 1 for a name whose longest word would not fit the tile at the
+  /// reader's text size: the size it is set at, as a share of that.
+  final double nameScale;
   final double minHeight;
 
   @override
   Widget build(BuildContext context) {
     final look = _lookOf(context, state);
-    final enlarged = MediaQuery.textScalerOf(context).scale(1) > 1;
+    final scaler = MediaQuery.textScalerOf(context);
+    final enlarged = scaler.scale(1) > 1;
     final name = this.name;
+    final style = Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: look.text,
+          fontWeight: look.bold ? FontWeight.w700 : null,
+        );
+    final fontSize = style?.fontSize ?? 13;
     final content = Container(
       constraints: BoxConstraints(minHeight: minHeight),
       padding: const EdgeInsets.symmetric(horizontal: _tilePadding, vertical: 6),
@@ -539,10 +571,8 @@ class _TileFace extends StatelessWidget {
                 // name is never cut short (WCAG 1.4.4).
                 maxLines: enlarged ? null : 2,
                 overflow: enlarged ? null : TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: look.text,
-                      fontWeight: look.bold ? FontWeight.w700 : null,
-                    ),
+                textScaler: nameScale < 1 ? TextScaler.linear(scaler.scale(fontSize) / fontSize * nameScale) : null,
+                style: style,
               ),
             ),
         ],
@@ -679,6 +709,8 @@ Future<void> _showTorahMapLegend(BuildContext context) => showAppSheet<void>(
           (_TileState.late, l.weekRestored),
           (_TileState.madeUp, l.weekMadeUp),
           (_TileState.missed, l.weekMissed),
+          // A tile's tooltip names it, so the legend names it too.
+          (_TileState.missed, l.weekOverdue),
           (_TileState.current, l.weekInProgress),
           (_TileState.upcoming, l.dayUpcoming),
           (_TileState.untracked, l.weekTransparent),
