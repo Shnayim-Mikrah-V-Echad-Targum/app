@@ -220,7 +220,6 @@ class DemoForumRepository implements ForumRepository {
       createdAt: now,
       parshaNumber: parshaNumber,
       hebrewYear: hebrewYear,
-      pinned: true,
     );
     _threads.add(t);
     return t.id;

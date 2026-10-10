@@ -130,6 +130,8 @@ It ends by opening the reader on today's aliyah. Everything else is a setting wi
 
 **Weekly threads per parsha (the 929 model).** Each week's thread is created on demand by a security-definer function, and its title is built on the server from reference data. Clients can't create duplicate threads or spoof their titles. A week's thread belongs to the year its cycle began, and a double portion shares its first parsha's thread. The app names each weekly thread in the reader's language and spelling ("פרשת בראשית תשפ״ז"); the server's title stays the one searched and moderated. There are general forums for questions, the haftarah, accessibility, and announcements (moderator-only).
 
+**Weekly threads are not pinned.** The "This week" card on the Community screen opens the current one. Pinned, a year of past weeks would crowd every other discussion off the first page of the Parsha forum. Moderators can still pin any thread by hand.
+
 **Sign-in is a six-digit email code.** It needs no password and no deep links, which matters on Windows and in desktop browsers. The code arrives through Supabase's magic-link template, edited to show `{{ .Token }}`.
 
 **Safety follows Apple guideline 1.2 and Google Play's user-generated-content (UGC) policy:**

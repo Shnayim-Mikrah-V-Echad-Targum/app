@@ -147,6 +147,8 @@ select public.ensure_weekly_thread(1::smallint, 5787::smallint) as w1 \gset
 select public.ensure_weekly_thread(1::smallint, 5787::smallint) as w2 \gset
 select public.check(:w1 = :w2, 'weekly thread is created once and reused');
 select public.check((select title = 'Bereshit · בראשית · 5787' and kind = 'weekly' and author_id is null from public.threads where id = :w1), 'weekly thread title comes from reference data');
+-- The app's "This week" card opens it: pinned, past weeks would crowd out every other thread.
+select public.check((select not is_pinned from public.threads where id = :w1), 'a new weekly thread is not pinned');
 select public.expect_error($$select public.ensure_weekly_thread(99::smallint, 5787::smallint)$$, 'invalid_parasha');
 select public.expect_error($$insert into public.threads (category_id, title, kind) values (1, 'Fake weekly thread', 'weekly')$$, 'permission denied');
 reset role;
