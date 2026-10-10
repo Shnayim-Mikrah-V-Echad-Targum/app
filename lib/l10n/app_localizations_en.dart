@@ -157,6 +157,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passRashi => 'Rashi';
 
   @override
+  String get aliyotWord => 'aliyot';
+
+  @override
+  String countOfTotal(int done, int total) {
+    return '$done of $total';
+  }
+
+  @override
   String get passShortMikra => 'Mikra';
 
   @override

@@ -1,5 +1,7 @@
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/calendar/jewish_holidays.dart';
@@ -10,54 +12,307 @@ import '../../features/progress/domain/streak_engine.dart';
 import '../l10n.dart';
 import '../theme/app_theme.dart';
 
-/// Three concentric rings — first reading, second reading, Targum — each
-/// made of seven arcs (one per aliyah) sized by verse count.
-class ParshaRings extends StatelessWidget {
+/// The geometry of the parsha rings at one size (docs/DESIGN_SYSTEM.md
+/// §6.11): three strokes of `size × 0.055`, 1.6 strokes apart.
+@immutable
+class RingGeometry {
+  factory RingGeometry(double size) {
+    final stroke = size * 0.055;
+    final r0 = size / 2 - stroke / 2;
+    return RingGeometry._(stroke, [r0, r0 - 1.6 * stroke, r0 - 3.2 * stroke]);
+  }
+
+  const RingGeometry._(this.stroke, this.radii);
+
+  final double stroke;
+
+  /// The radius of each ring's centre line: first reading (outermost),
+  /// second reading, Targum.
+  final List<double> radii;
+
+  /// The diameter of the hole inside the Targum ring: 56 at size 104.
+  double get hole => 2 * (radii.last - stroke / 2);
+}
+
+/// The angle the rings start from: 12 o'clock.
+const double kRingStart = -math.pi / 2;
+
+/// The gap between two aliyot's arcs, in radians.
+const double kRingGap = 0.042;
+
+/// One done stretch of a ring, in radians clockwise from 3 o'clock, as
+/// [Canvas.drawArc] takes it.
+@immutable
+class RingArc {
+  const RingArc(this.ring, this.start, this.sweep);
+
+  /// 0 for the first reading, 1 for the second, 2 for the Targum.
+  final int ring;
+  final double start;
+  final double sweep;
+
+  @override
+  bool operator ==(Object other) => other is RingArc && other.ring == ring && other.start == start && other.sweep == sweep;
+
+  @override
+  int get hashCode => Object.hash(ring, start, sweep);
+
+  @override
+  String toString() => 'RingArc($ring, ${start.toStringAsFixed(3)}, ${sweep.toStringAsFixed(3)})';
+}
+
+/// The bit of one unit (reading [ring] of [aliyah]) in a [ringMask].
+int _unit(int ring, int aliyah) => 1 << (ring * kAliyot + aliyah);
+
+/// The done units of [progress] as bits, one per unit: bit
+/// `pass.index * kAliyot + aliyah`.
+int ringMask(WeekProgress progress) {
+  var mask = 0;
+  for (final pass in ReadingPass.values) {
+    for (var a = 0; a < kAliyot; a++) {
+      if (progress.isUnitDone(a, pass)) mask |= _unit(pass.index, a);
+    }
+  }
+  return mask;
+}
+
+/// The aliyot whose three readings are all done in [mask].
+int _aliyotDone(int mask) {
+  var n = 0;
+  for (var a = 0; a < kAliyot; a++) {
+    if (ReadingPass.values.every((p) => mask & _unit(p.index, a) != 0)) n++;
+  }
+  return n;
+}
+
+/// The arcs to draw in each ring's colour, for done units [from] sweeping
+/// to done units [to] (masks as [ringMask] makes them), [t] of the way.
+///
+/// Each aliyah's arc is sized by its share of [weights] (verse counts).
+/// In each ring, a head travels clockwise from the start of the first arc
+/// that changes to the end of the last one: arcs being finished fill in
+/// behind it, and arcs being cleared empty behind it. Arcs that don't
+/// change are drawn as they are. Clockwise in both directions of text: a
+/// ring is not text, and the same progress looks the same in every language.
+List<RingArc> ringArcs({required List<int> weights, required int from, required int to, double t = 1}) {
+  final total = weights.fold<int>(0, (a, b) => a + b);
+  // Each aliyah's arc, less half the gap at each end.
+  final spans = <(double, double)>[];
+  var at = kRingStart;
+  for (final w in weights) {
+    final share = 2 * math.pi * (total > 0 ? w / total : 1 / weights.length);
+    spans.add((at + kRingGap / 2, at + kRingGap / 2 + math.max(0.001, share - kRingGap)));
+    at += share;
+  }
+  bool done(int mask, int ring, int a) => mask & _unit(ring, a) != 0;
+
+  final arcs = <RingArc>[];
+  for (var ring = 0; ring < 3; ring++) {
+    final changed = [
+      for (var a = 0; a < spans.length; a++)
+        if (done(from, ring, a) != done(to, ring, a)) a,
+    ];
+    final head = changed.isEmpty || t >= 1 ? null : lerpDouble(spans[changed.first].$1, spans[changed.last].$2, t)!;
+    for (var a = 0; a < spans.length; a++) {
+      final (start, end) = spans[a];
+      final was = done(from, ring, a);
+      final now = done(to, ring, a);
+      var (s, e) = (start, end);
+      if (head != null && was != now) {
+        // Finishing: done up to the head. Clearing: done only past it.
+        (s, e) = now ? (start, math.min(head, end)) : (math.max(head, start), end);
+      } else if (!now) {
+        continue;
+      }
+      if (e > s) arcs.add(RingArc(ring, s, e - s));
+    }
+  }
+  return arcs;
+}
+
+/// Three concentric rings: first reading (outermost), second reading,
+/// Targum (docs/DESIGN_SYSTEM.md §6.11). Each is made of seven arcs, one
+/// per aliyah, sized by verse count, and drawn over a full track. At
+/// [header] size and up, the centre counts the finished aliyot ("2/7").
+///
+/// Put a [RingLegend] beside or under rings of [header] size or more
+/// ([RingsWithLegend] does both): only the legend says which ring is which.
+///
+/// The rings remember, for this run of the app, what they last showed for
+/// each week. When a unit has been finished since, the next time they are
+/// shown the arcs sweep from the old progress to the new over [Motion.ring]
+/// and the centre count cross-fades. Once; nothing loops.
+class ParshaRings extends StatefulWidget {
   const ParshaRings({
     super.key,
     required this.progress,
     required this.aliyahWeights,
-    this.size = 120,
-    this.center,
-    this.secondLabel,
+    this.size = hero,
+    this.thirdLabel,
   });
+
+  /// The three sizes: the Today hero, the Parsha header and compact rows.
+  static const double hero = 104;
+  static const double header = 88;
+  static const double compact = 40;
 
   final WeekProgress progress;
 
   /// Relative length of each aliyah (verse counts).
   final List<int> aliyahWeights;
   final double size;
-  final Widget? center;
 
-  /// Name of the third reading ("Targum" or "Rashi").
-  final String? secondLabel;
+  /// Name of the third reading, if not "Targum" (e.g. "Rashi").
+  final String? thirdLabel;
+
+  /// Forgets what the rings last showed, as if the app had restarted.
+  @visibleForTesting
+  static void forgetShown() => _ParshaRingsState._shown.clear();
+
+  @override
+  State<ParshaRings> createState() => _ParshaRingsState();
+}
+
+class _ParshaRingsState extends State<ParshaRings> with SingleTickerProviderStateMixin {
+  /// What the rings of each week last showed, by week id. In memory only:
+  /// a restarted app shows progress as it is, without a sweep.
+  static final _shown = <String, int>{};
+
+  late final AnimationController _controller = AnimationController(vsync: this, value: 1);
+  late final Animation<double> _sweep = CurvedAnimation(parent: _controller, curve: Motion.decelerate);
+
+  /// The sweep runs from [_from] to [_to] (masks, as [ringMask] makes them).
+  late int _from;
+  late int _to;
+
+  /// Whether [_to] has yet to be shown: set while the rings are hidden (a
+  /// route covers them, or their tab is in the background), so the sweep
+  /// waits until they can be seen.
+  bool _pending = true;
+
+  String get _week => widget.progress.weekId;
+
+  @override
+  void initState() {
+    super.initState();
+    _to = ringMask(widget.progress);
+    _from = _shown[_week] ?? _to;
+    if (_from != _to) _controller.value = 0;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _showIfVisible();
+  }
+
+  @override
+  void didUpdateWidget(ParshaRings old) {
+    super.didUpdateWidget(old);
+    final to = ringMask(widget.progress);
+    if (old.progress.weekId != _week) {
+      // Another week in the same place sweeps from what it last showed.
+      _from = _shown[_week] ?? to;
+    } else if (to != _to) {
+      // A sweep still running ends where it was going, and the next starts
+      // from there. One not yet shown still starts from what was last seen.
+      if (!_pending) _from = _to;
+    } else {
+      return;
+    }
+    _to = to;
+    _pending = true;
+    _controller.value = _from == _to ? 1 : 0;
+    _showIfVisible();
+  }
+
+  void _showIfVisible() {
+    if (!_pending || !TickerMode.valuesOf(context).enabled) return;
+    _pending = false;
+    _shown[_week] = _to;
+    if (_controller.value < 1) {
+      _controller
+        ..duration = Motion.of(context).d(Motion.ring)
+        ..forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final scheme = Theme.of(context).colorScheme;
     final sefer = SeferColors.of(context);
-    int count(ReadingPass p) => [for (var a = 0; a < kAliyot; a++) a].where((a) => progress.isUnitDone(a, p)).length;
+    // "2 of 7 aliyot. First reading: 3 of 7. …", the legend in words.
     final label = [
-      l.aliyotProgress(progress.completedAliyot, kAliyot),
-      '${l.passMikra1}: ${count(ReadingPass.mikra1)}/7',
-      '${l.passMikra2}: ${count(ReadingPass.mikra2)}/7',
-      '${secondLabel ?? l.passTargum}: ${count(ReadingPass.targum)}/7',
+      l.aliyotProgress(widget.progress.completedAliyot, kAliyot),
+      for (final e in _legendEntries(context, widget.progress, widget.thirdLabel))
+        '${e.label}: ${l.countOfTotal(e.done, kAliyot)}',
     ].join('. ');
     return Semantics(
       label: label,
       image: true,
-      child: SizedBox.square(
-        dimension: size,
-        child: CustomPaint(
-          painter: _RingsPainter(
-            progress: progress,
-            weights: aliyahWeights,
-            done: [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum],
-            track: sefer.ringTrack,
-            gapColor: scheme.surface,
+      child: RepaintBoundary(
+        child: SizedBox.square(
+          dimension: widget.size,
+          child: CustomPaint(
+            painter: _RingsPainter(
+              weights: widget.aliyahWeights,
+              from: _from,
+              to: _to,
+              sweep: _sweep,
+              colors: [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum],
+              track: sefer.ringTrack,
+            ),
+            child: widget.size >= ParshaRings.header ? ExcludeSemantics(child: _centre(context)) : null,
           ),
-          child: center == null ? null : Center(child: ExcludeSemantics(child: center!)),
+        ),
+      ),
+    );
+  }
+
+  /// "2/7" over "aliyot", scaled down if large text would spill onto the
+  /// rings. The legend beside the rings carries the counts at full size.
+  Widget _centre(BuildContext context) {
+    final theme = Theme.of(context);
+    final duration = Motion.of(context).d(Motion.short);
+    final box = RingGeometry(widget.size).hole * 0.85;
+    return Center(
+      child: SizedBox.square(
+        dimension: box,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  // The old count until the sweep sets off.
+                  final n = _aliyotDone(_controller.value > 0 ? _to : _from);
+                  return AnimatedSwitcher(
+                    // Another week in the same place is not a change to fade.
+                    key: ValueKey(_week),
+                    duration: duration,
+                    child: Text(
+                      '$n/$kAliyot',
+                      key: ValueKey(n),
+                      style: SeferType.of(context).ringNumeral,
+                      textDirection: TextDirection.ltr,
+                    ),
+                  );
+                },
+              ),
+              Text(
+                context.l10n.aliyotWord,
+                style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -65,40 +320,234 @@ class ParshaRings extends StatelessWidget {
 }
 
 class _RingsPainter extends CustomPainter {
-  _RingsPainter({required this.progress, required this.weights, required this.done, required this.track, required this.gapColor});
+  _RingsPainter({
+    required this.weights,
+    required this.from,
+    required this.to,
+    required this.sweep,
+    required this.colors,
+    required this.track,
+  }) : super(repaint: sweep);
 
-  final WeekProgress progress;
   final List<int> weights;
-  final List<Color> done;
+  final int from;
+  final int to;
+  final Animation<double> sweep;
+  final List<Color> colors;
   final Color track;
-  final Color gapColor;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final total = weights.fold<int>(0, (a, b) => a + b).toDouble();
-    final stroke = size.width * 0.075;
-    const gap = 0.025; // radians between aliyot
-    for (var ring = 0; ring < 3; ring++) {
-      final radius = size.width / 2 - stroke / 2 - ring * (stroke + stroke * 0.35);
-      final rect = Rect.fromCircle(center: size.center(Offset.zero), radius: radius);
-      var start = -math.pi / 2;
-      for (var a = 0; a < weights.length; a++) {
-        final sweep = 2 * math.pi * weights[a] / total;
-        final isDone = progress.isUnitDone(a, ReadingPass.values[ring]);
-        final paint = Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = stroke
-          ..strokeCap = StrokeCap.butt
-          ..color = isDone ? done[ring] : track;
-        canvas.drawArc(rect, start + gap / 2, math.max(0.001, sweep - gap), false, paint);
-        start += sweep;
-      }
+    final geometry = RingGeometry(size.shortestSide);
+    final centre = size.center(Offset.zero);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = geometry.stroke
+      ..strokeCap = StrokeCap.butt;
+    // Each track is one full circle, under its done arcs.
+    paint.color = track;
+    for (final r in geometry.radii) {
+      canvas.drawCircle(centre, r, paint);
+    }
+    for (final arc in ringArcs(weights: weights, from: from, to: to, t: sweep.value)) {
+      paint.color = colors[arc.ring];
+      canvas.drawArc(Rect.fromCircle(center: centre, radius: geometry.radii[arc.ring]), arc.start, arc.sweep, false, paint);
     }
   }
 
   @override
   bool shouldRepaint(_RingsPainter old) =>
-      old.progress != progress || old.done != done || old.track != track || old.weights != weights;
+      old.from != from ||
+      old.to != to ||
+      old.sweep != sweep ||
+      old.track != track ||
+      !listEquals(old.colors, colors) ||
+      !listEquals(old.weights, weights);
+}
+
+/// One reading in the legend: its ring's colour, its name, and how many
+/// aliyot it has covered.
+typedef _LegendEntry = ({Color color, String label, int done});
+
+List<_LegendEntry> _legendEntries(BuildContext context, WeekProgress progress, String? thirdLabel) {
+  final l = context.l10n;
+  final sefer = SeferColors.of(context);
+  int count(ReadingPass p) => [for (var a = 0; a < kAliyot; a++) a].where((a) => progress.isUnitDone(a, p)).length;
+  return [
+    (color: sefer.ringMikra1, label: l.passMikra1, done: count(ReadingPass.mikra1)),
+    (color: sefer.ringMikra2, label: l.passMikra2, done: count(ReadingPass.mikra2)),
+    (color: sefer.ringTargum, label: thirdLabel ?? l.passTargum, done: count(ReadingPass.targum)),
+  ];
+}
+
+/// Which ring is which (docs/DESIGN_SYSTEM.md §6.11): for each reading, a
+/// dot in its ring's colour, its name, and how many of the seven aliyot it
+/// has covered ("3 of 7"). Hidden from screen readers, since the rings'
+/// own label says all of it.
+class RingLegend extends StatelessWidget {
+  const RingLegend({super.key, required this.progress, this.thirdLabel});
+
+  final WeekProgress progress;
+
+  /// Name of the third reading, if not "Targum" (e.g. "Rashi").
+  final String? thirdLabel;
+
+  static const double _dot = 9;
+  static const double _dotGap = 10;
+  static const double _countGap = 12;
+
+  static TextStyle? _labelStyle(BuildContext context) => Theme.of(context).textTheme.bodyMedium;
+
+  static TextStyle? _countStyle(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+  }
+
+  /// The width the legend needs to set each row on one line, at the
+  /// current text size.
+  static double naturalWidth(BuildContext context, WeekProgress progress, {String? thirdLabel}) {
+    final l = context.l10n;
+    final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
+    double measure(String text, TextStyle? style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style?.merge(bold) ?? bold),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        locale: Localizations.maybeLocaleOf(context),
+        maxLines: 1,
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return width;
+    }
+
+    final entries = _legendEntries(context, progress, thirdLabel);
+    final label = entries.map((e) => measure(e.label, _labelStyle(context))).reduce(math.max);
+    final count = entries.map((e) => measure(l.countOfTotal(e.done, kAliyot), _countStyle(context))).reduce(math.max);
+    return (_dot + _dotGap + label + _countGap + count).ceilToDouble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final labelStyle = _labelStyle(context);
+    final countStyle = _countStyle(context);
+    // One line of a name, for the dot to sit beside the first.
+    final line = MediaQuery.textScalerOf(context).scale(labelStyle?.fontSize ?? 15) * (labelStyle?.height ?? 1.5);
+    final natural = naturalWidth(context, progress, thirdLabel: thirdLabel);
+    final entries = _legendEntries(context, progress, thirdLabel);
+    return ExcludeSemantics(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // With large text in a small space, each count goes under its
+          // name rather than squeezing it.
+          final split = constraints.maxWidth < natural;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final e in entries)
+                Container(
+                  constraints: const BoxConstraints(minHeight: 24),
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: line,
+                        child: Center(
+                          child: SizedBox.square(
+                            dimension: _dot,
+                            child: DecoratedBox(decoration: BoxDecoration(color: e.color, shape: BoxShape.circle)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: _dotGap),
+                      if (split)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(e.label, style: labelStyle),
+                              Text(l.countOfTotal(e.done, kAliyot), style: countStyle),
+                            ],
+                          ),
+                        )
+                      else ...[
+                        Expanded(child: Text(e.label, style: labelStyle)),
+                        const SizedBox(width: _countGap),
+                        Text(l.countOfTotal(e.done, kAliyot), style: countStyle),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// [ParshaRings] with their [RingLegend]: side by side where every legend
+/// row fits on one line beside the rings, otherwise the rings centred above
+/// the legend (on a narrow phone, or with large text).
+class RingsWithLegend extends StatelessWidget {
+  const RingsWithLegend({
+    super.key,
+    required this.progress,
+    required this.aliyahWeights,
+    this.size = ParshaRings.hero,
+    this.thirdLabel,
+  }) : assert(size >= ParshaRings.header, 'Compact rings have no legend.');
+
+  final WeekProgress progress;
+  final List<int> aliyahWeights;
+  final double size;
+  final String? thirdLabel;
+
+  /// Between the rings and the legend beside them.
+  static const double gap = 20;
+
+  /// Between the rings and the legend under them.
+  static const double stackedGap = 16;
+
+  /// The most the legend beside the rings grows past its natural width.
+  static const double maxSlack = 40;
+
+  @override
+  Widget build(BuildContext context) {
+    final rings = ParshaRings(progress: progress, aliyahWeights: aliyahWeights, size: size, thirdLabel: thirdLabel);
+    final legend = RingLegend(progress: progress, thirdLabel: thirdLabel);
+    final natural = RingLegend.naturalWidth(context, progress, thirdLabel: thirdLabel);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= size + gap + natural) {
+          return Row(
+            children: [
+              rings,
+              const SizedBox(width: gap),
+              // On a wide card the counts stay near their names.
+              Flexible(
+                child: ConstrainedBox(constraints: BoxConstraints(maxWidth: natural + maxSlack), child: legend),
+              ),
+            ],
+          );
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            rings,
+            const SizedBox(height: stackedGap),
+            ConstrainedBox(constraints: BoxConstraints(maxWidth: natural), child: legend),
+          ],
+        );
+      },
+    );
+  }
 }
 
 /// Two Shabbat candles, the rest-day symbol (docs/DESIGN_SYSTEM.md §7.6),

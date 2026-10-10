@@ -380,6 +380,18 @@ abstract class AppLocalizations {
   /// **'Rashi'**
   String get passRashi;
 
+  /// Under the count of finished aliyot ("2/7") in the centre of the parsha rings.
+  ///
+  /// In en, this message translates to:
+  /// **'aliyot'**
+  String get aliyotWord;
+
+  /// A count against its total, e.g. readings done out of the seven aliyot.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total}'**
+  String countOfTotal(int done, int total);
+
   /// No description provided for @passShortMikra.
   ///
   /// In en, this message translates to:

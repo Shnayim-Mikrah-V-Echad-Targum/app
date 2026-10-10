@@ -74,6 +74,22 @@
   "passMikra2": "Second reading",
   "passTargum": "Targum",
   "passRashi": "Rashi",
+  "aliyotWord": "aliyot",
+  "@aliyotWord": {
+    "description": "Under the count of finished aliyot (\"2/7\") in the centre of the parsha rings."
+  },
+  "countOfTotal": "{done} of {total}",
+  "@countOfTotal": {
+    "description": "A count against its total, e.g. readings done out of the seven aliyot.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "passShortMikra": "Mikra",
   "passSemantics": "{pass}: {state}",
   "@passSemantics": {

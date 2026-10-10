@@ -48,6 +48,8 @@ HE = {
   "passMikra2": "קריאה שנייה",
   "passTargum": "תרגום",
   "passRashi": "רש״י",
+  "aliyotWord": "עליות",
+  "countOfTotal": "{done} מתוך {total}",
   "passShortMikra": "מקרא",
   "passSemantics": "{pass}: {state}",
   "stateDone": "הושלם",

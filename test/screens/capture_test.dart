@@ -97,6 +97,7 @@ const _screens = {
   'kit_ornaments': '/today',
   'kit_rows': '/today',
   'kit_focus': '/today',
+  'kit_progress': '/today',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -159,6 +160,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -400)),
   'kit_ornaments': (tester) => _showGallery(tester, const OrnamentsGallery()),
   'kit_rows': (tester) => _showGallery(tester, const RowsGallery()),
+  'kit_progress': (tester) => _showGallery(tester, const ProgressGallery()),
   // The middle row of a paper group: its ring must clear the hairlines.
   'kit_focus': (tester) async {
     await _showGallery(tester, const RowsGallery());
@@ -251,12 +253,13 @@ const _desktopScreens = {
   'focus_nav',
   'kit_ornaments',
   'kit_rows',
+  'kit_progress',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
 const _bigTextModes = {'big', 'bighe'};
-const _bigTextScreens = {'today', 'progress', 'reader', 'kit_ornaments', 'kit_rows'};
+const _bigTextScreens = {'today', 'progress', 'reader', 'kit_ornaments', 'kit_rows', 'kit_progress'};
 
 Future<void> _settle(WidgetTester tester) async {
   // Text assets load on real async I/O; spinners never "settle".

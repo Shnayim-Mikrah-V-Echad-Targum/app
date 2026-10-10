@@ -2,6 +2,8 @@
 // the design-system pieces can be reviewed in every mode before the screens
 // that use them are rebuilt. Not part of the app.
 import 'package:flutter/material.dart';
+import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
@@ -155,6 +157,67 @@ class RowsGallery extends StatelessWidget {
               PaperRow(title: l.guideTitle, onTap: () {}),
               PaperRow(title: l.settingsData, subtitle: l.settingsDataDesc, onTap: () {}),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The parsha rings with their legend, and compact rings.
+class ProgressGallery extends StatelessWidget {
+  const ProgressGallery({super.key});
+
+  /// Bereshit's aliyot, in verses.
+  static const _weights = [34, 31, 26, 25, 22, 22, 6];
+
+  /// [aliyot] read in full, then [passes] readings of the next.
+  static WeekProgress _week(int aliyot, {int passes = 0}) {
+    final day = LocalDate(2026, 10, 5);
+    var w = WeekProgress(weekId: 'gallery:$aliyot:$passes');
+    for (var a = 0; a < aliyot; a++) {
+      w = w.withAliyah(a, day);
+    }
+    for (var p = 0; p < passes; p++) {
+      w = w.withUnit(aliyot, ReadingPass.values[p], day);
+    }
+    return w;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Progress')),
+      body: PageBody(
+        children: [
+          InfoCard(child: RingsWithLegend(progress: _week(2, passes: 2), aliyahWeights: _weights)),
+          const Gap(12),
+          InfoCard(
+            child: RingsWithLegend(
+              progress: _week(5, passes: 1),
+              aliyahWeights: _weights,
+              size: ParshaRings.header,
+              thirdLabel: l.passRashi,
+            ),
+          ),
+          const Gap(12),
+          // The narrowest card on a 360 dp phone: the legend goes under.
+          Center(
+            child: SizedBox(
+              width: 280,
+              child: InfoCard(child: RingsWithLegend(progress: _week(0, passes: 1), aliyahWeights: _weights)),
+            ),
+          ),
+          const Gap(12),
+          InfoCard(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                for (final w in [_week(0), _week(1, passes: 2), _week(4), _week(7)])
+                  ParshaRings(progress: w, aliyahWeights: _weights, size: ParshaRings.compact),
+              ],
+            ),
           ),
         ],
       ),

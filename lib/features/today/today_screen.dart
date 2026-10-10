@@ -137,45 +137,34 @@ class _ParshaCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Semantics(
-                      header: true,
-                      headingLevel: 1,
-                      child: Text(
-                        l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
-                        style: theme.textTheme.headlineSmall,
-                      ),
-                    ),
-                    Text(
-                      names.portionAlt(ctx.portion, ashkenazi: settings.ashkenaziNames),
-                      style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                    const Gap(8),
-                    Text(readOn, style: theme.textTheme.bodyMedium),
-                    if (daysLeft >= 0 && !ctx.progress.isComplete)
-                      Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
-                  ],
+              Semantics(
+                header: true,
+                headingLevel: 1,
+                child: Text(
+                  l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
+                  style: theme.textTheme.headlineSmall,
                 ),
               ),
-              const Gap(12),
-              ParshaRings(
-                progress: ctx.progress,
-                aliyahWeights: weights,
-                size: 96,
-                secondLabel: settings.usesRashi && !settings.usesOnkelos ? l.passRashi : null,
-                center: Text(
-                  '${ctx.progress.completedAliyot}/7',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
+              Text(
+                names.portionAlt(ctx.portion, ashkenazi: settings.ashkenaziNames),
+                style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
+              const Gap(8),
+              Text(readOn, style: theme.textTheme.bodyMedium),
+              if (daysLeft >= 0 && !ctx.progress.isComplete)
+                Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
             ],
           ),
-          const Gap(16),
+          const Gap(20),
+          RingsWithLegend(
+            progress: ctx.progress,
+            aliyahWeights: weights,
+            thirdLabel: settings.usesRashi && !settings.usesOnkelos ? l.passRashi : null,
+          ),
+          const Gap(20),
           if (ctx.progress.isComplete)
             Row(
               children: [
