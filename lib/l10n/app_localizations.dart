@@ -933,7 +933,7 @@ abstract class AppLocalizations {
   /// **'The Torah'**
   String get browseTitle;
 
-  /// No description provided for @previewNotOpen.
+  /// The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.
   ///
   /// In en, this message translates to:
   /// **'Preview — this parsha opens for credit on {date}.'**
@@ -2886,7 +2886,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbPlanTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your plan this week'**
+  /// **'Your weekly plan'**
   String get onbPlanTitle;
 
   /// No description provided for @onbHonor.

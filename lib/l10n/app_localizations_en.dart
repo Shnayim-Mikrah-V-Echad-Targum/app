@@ -1680,7 +1680,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onbMethodTitle => 'How do you read?';
 
   @override
-  String get onbPlanTitle => 'Your plan this week';
+  String get onbPlanTitle => 'Your weekly plan';
 
   @override
   String get onbHonor =>

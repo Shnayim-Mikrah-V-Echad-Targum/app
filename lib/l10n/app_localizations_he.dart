@@ -541,7 +541,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String previewNotOpen(String date) {
-    return 'תצוגה מקדימה — הפרשה נפתחת לרישום ב־$date.';
+    return 'תצוגה מקדימה — הפרשה נפתחת לרישום ב$date.';
   }
 
   @override
@@ -1679,7 +1679,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get onbMethodTitle => 'איך לקרוא?';
 
   @override
-  String get onbPlanTitle => 'התוכנית שלך לשבוע';
+  String get onbPlanTitle => 'התוכנית השבועית שלך';
 
   @override
   String get onbHonor =>

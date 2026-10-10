@@ -411,6 +411,7 @@
   "browseTitle": "The Torah",
   "previewNotOpen": "Preview — this parsha opens for credit on {date}.",
   "@previewNotOpen": {
+    "description": "The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.",
     "placeholders": {
       "date": {
         "type": "String"
@@ -1149,7 +1150,7 @@
   "onbStart": "Start this week's parsha",
   "onbLocationTitle": "Where will you be this Shabbat?",
   "onbMethodTitle": "How do you read?",
-  "onbPlanTitle": "Your plan this week",
+  "onbPlanTitle": "Your weekly plan",
   "onbHonor": "Shnayim Mikra runs on the honor system. Log what you read, wherever you read it — a Chumash in shul counts just as much as this app.",
   "onbChangeAnytime": "You can change this anytime in Settings.",
   "onbStep": "Step {current} of {total}",

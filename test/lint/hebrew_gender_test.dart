@@ -22,6 +22,18 @@ void main() {
     expect(slashed, isEmpty, reason: 'Rewrite each in tool/l10n/he_strings.py.');
   });
 
+  // The policies and a few other texts are written into the code in both
+  // languages rather than kept in the ARB files.
+  test('no Hebrew written in the code uses a slashed gender form', () {
+    final slashed = [
+      for (final file in Directory('lib').listSync(recursive: true).whereType<File>())
+        if (file.path.endsWith('.dart') && !file.path.startsWith('lib/l10n/'))
+          for (final (i, line) in file.readAsLinesSync().indexed)
+            for (final form in slashedForms(line)) '${file.path}:${i + 1}: $form',
+    ];
+    expect(slashed, isEmpty);
+  });
+
   test('the check sees what it is for', () {
     expect(slashedForms('את/ה מקדים/ה את התוכנית'), ['את/ה', 'מקדים/ה']);
     expect(slashedForms('אם תסיים/י עד שבת'), ['תסיים/י']);

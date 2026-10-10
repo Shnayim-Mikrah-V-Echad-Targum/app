@@ -1123,7 +1123,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
-    expect(find.text('Your plan this week'), findsOneWidget);
+    expect(find.text('Your weekly plan'), findsOneWidget);
     // Below the choice for the week of joining.
     await tester.ensureVisible(find.text('Start reading'));
     await tester.pumpAndSettle();

@@ -29,7 +29,7 @@ void main() {
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
     }
-    expect(find.text('Your plan this week'), findsOneWidget);
+    expect(find.text('Your weekly plan'), findsOneWidget);
     return c;
   }
 
