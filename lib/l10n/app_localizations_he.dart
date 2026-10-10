@@ -1749,6 +1749,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get loadMore => 'טעינת עוד';
 
   @override
+  String get showEarlierPosts => 'הצגת הודעות קודמות';
+
+  @override
   String postsCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

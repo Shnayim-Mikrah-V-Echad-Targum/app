@@ -57,6 +57,12 @@ class Forum {
   String description(bool he) => he ? descriptionHe : descriptionEn;
 }
 
+/// Orders ids as the backend does: by number, as they are numbers in text.
+int compareIds(String a, String b) {
+  final (x, y) = (int.tryParse(a), int.tryParse(b));
+  return x != null && y != null ? x.compareTo(y) : a.compareTo(b);
+}
+
 enum ThreadKind { discussion, weekly, question, announcement }
 
 class ThreadSummary {
@@ -89,6 +95,29 @@ class ThreadSummary {
   final int? hebrewYear;
   final bool pinned;
   final bool locked;
+
+  /// Orders threads as the forum lists them: newest activity first, then
+  /// the higher id.
+  static int byLatestActivity(ThreadSummary a, ThreadSummary b) {
+    final byTime = b.lastPostAt.compareTo(a.lastPostAt);
+    return byTime != 0 ? byTime : compareIds(b.id, a.id);
+  }
+
+  ThreadSummary copyWith({int? postCount, DateTime? lastPostAt, bool? pinned, bool? locked}) => ThreadSummary(
+        id: id,
+        forumId: forumId,
+        title: title,
+        kind: kind,
+        authorId: authorId,
+        authorName: authorName,
+        postCount: postCount ?? this.postCount,
+        lastPostAt: lastPostAt ?? this.lastPostAt,
+        createdAt: createdAt,
+        parshaNumber: parshaNumber,
+        hebrewYear: hebrewYear,
+        pinned: pinned ?? this.pinned,
+        locked: locked ?? this.locked,
+      );
 }
 
 class Post {
@@ -121,6 +150,12 @@ class Post {
   /// "Todah" (thanks) reactions.
   final int todah;
   final bool myTodah;
+
+  /// Orders posts as a thread reads: oldest first, then the lower id.
+  static int chronological(Post a, Post b) {
+    final byTime = a.createdAt.compareTo(b.createdAt);
+    return byTime != 0 ? byTime : compareIds(a.id, b.id);
+  }
 
   Post copyWith({int? todah, bool? myTodah, String? body, DateTime? editedAt}) => Post(
         id: id,

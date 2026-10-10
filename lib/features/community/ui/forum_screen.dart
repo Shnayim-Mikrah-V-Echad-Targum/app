@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fallbacks.dart';
-import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
 import 'community_ui.dart';
@@ -21,19 +21,16 @@ class ForumScreen extends ConsumerStatefulWidget {
 }
 
 class _ForumScreenState extends ConsumerState<ForumScreen> {
-  final _extra = <ThreadSummary>[];
   bool _loadingMore = false;
-  bool _exhausted = false;
 
-  Future<void> _loadMore(Forum forum, List<ThreadSummary> current) async {
-    if (current.isEmpty) return;
+  Future<void> _loadMore(Forum forum) async {
+    if (_loadingMore) return;
+    final l = context.l10n;
     setState(() => _loadingMore = true);
     try {
-      final more = await ref.read(forumRepositoryProvider).threads(forumId: forum.id, before: current.last.lastPostAt);
-      setState(() {
-        _extra.addAll(more);
-        _exhausted = more.isEmpty;
-      });
+      await ref.read(threadsProvider(forum.id).notifier).loadMore();
+    } catch (e) {
+      if (mounted) showStatus(context, communityError(l, e));
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
@@ -83,32 +80,45 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
-                _extra.clear();
-                _exhausted = false;
                 ref.invalidate(threadsProvider(forum.id));
+                try {
+                  await ref.read(threadsProvider(forum.id).future);
+                } catch (e) {
+                  if (context.mounted) showStatus(context, communityError(l, e));
+                }
               },
               child: threads.when(
+                // Fetched again, the threads shown stay until the new ones come.
+                skipError: threads.hasValue,
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
-                data: (list) {
-                  final all = [...list, ..._extra];
-                  return PageBody(
-                    children: [
+                data: (page) {
+                  final list = page.threads;
+                  return PageBody.builder(
+                    header: [
                       if (forum.description(he).isNotEmpty)
                         Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(forum.description(he))),
-                      if (all.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(l.noThreads, textAlign: TextAlign.center)),
-                      for (final t in all) ThreadTile(thread: t),
-                      if (all.length >= 30 && !_exhausted)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 72),
-                          child: OutlinedButton(
-                            onPressed: _loadingMore ? null : () => _loadMore(forum, all),
-                            child: Text(l.loadMore),
-                          ),
-                        )
-                      else
-                        const Gap(72),
+                      if (list.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(l.noThreads, textAlign: TextAlign.center)),
                     ],
+                    // The last item makes room for the button over it.
+                    itemCount: list.length + 1,
+                    itemBuilder: (context, i) {
+                      if (i < list.length) return ThreadTile(key: ValueKey(list[i].id), thread: list[i]);
+                      if (!page.hasMore) return const Gap(72);
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 72),
+                        child: OutlinedButton(
+                          // Enabled while it loads, so that it keeps the keyboard focus.
+                          onPressed: () => _loadMore(forum),
+                          child: _loadingMore
+                              ? SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
+                                )
+                              : Text(l.loadMore),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

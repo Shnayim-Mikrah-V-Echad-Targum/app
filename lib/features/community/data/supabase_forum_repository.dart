@@ -137,15 +137,38 @@ class SupabaseForumRepository implements ForumRepository {
         locked: r['is_locked'] as bool? ?? false,
       );
 
+  /// A filter for the rows that come after [cursor] (a time in [column], and
+  /// an id) when ordered newest first, then by the higher id: those earlier
+  /// than it, or as early with a lower id.
+  static String _olderThan(String column, (DateTime, String) cursor) {
+    final (time, id) = cursor;
+    final ts = time.toUtc().toIso8601String();
+    final n = int.parse(id);
+    return '$column.lt.$ts,and($column.eq.$ts,id.lt.$n)';
+  }
+
   @override
-  Future<List<ThreadSummary>> threads({int? forumId, int? parshaNumber, DateTime? before, int limit = 30}) =>
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) =>
       _call(() async {
-        var q = _db.from('threads').select(_threadColumns);
-        if (forumId != null) q = q.eq('category_id', forumId);
-        if (parshaNumber != null) q = q.eq('parasha_id', parshaNumber);
-        if (before != null) q = q.lt('last_post_at', before.toUtc().toIso8601String());
-        final rows = await q.order('is_pinned', ascending: false).order('last_post_at', ascending: false).limit(limit);
-        return [for (final r in rows) _thread(r)];
+        PostgrestTransformBuilder<PostgrestList> query({required bool pinned, String? after}) {
+          var q = _db.from('threads').select(_threadColumns).eq('is_pinned', pinned);
+          if (forumId != null) q = q.eq('category_id', forumId);
+          if (parshaNumber != null) q = q.eq('parasha_id', parshaNumber);
+          if (after != null) q = q.or(after);
+          return q.order('last_post_at', ascending: false).order('id', ascending: false);
+        }
+
+        final pages = await Future.wait([
+          // Pinned threads come once, on the first page, however many there are.
+          if (after == null) query(pinned: true),
+          query(pinned: false, after: after == null ? null : _olderThan('last_post_at', after)).limit(limit),
+        ]);
+        return [for (final r in pages.expand((rows) => rows)) _thread(r)];
       });
 
   @override
@@ -155,15 +178,17 @@ class SupabaseForumRepository implements ForumRepository {
       });
 
   @override
-  Future<List<Post>> posts(String threadId, {int limit = 200}) => _call(() async {
-        final rows = await _db
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) =>
+      _call(() async {
+        var q = _db
             .from('posts')
             .select('id, thread_id, author_id, reply_to_post_id, body, created_at, edited_at, hidden_at, '
                 'author:profiles(display_name)')
             .eq('thread_id', int.parse(threadId))
-            .isFilter('deleted_at', null)
-            .order('created_at')
-            .limit(limit);
+            .isFilter('deleted_at', null);
+        if (before != null) q = q.or(_olderThan('created_at', before));
+        final latest = await q.order('created_at', ascending: false).order('id', ascending: false).limit(limit);
+        final rows = latest.reversed.toList();
         final ids = [for (final r in rows) r['id'] as int];
         final todah = <int, int>{};
         final mine = <int>{};

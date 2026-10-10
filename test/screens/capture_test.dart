@@ -22,6 +22,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -82,6 +83,9 @@ const _screens = {
   'forum_weekly': '/community/forum/parsha',
   // Reporting a post, before a reason is chosen.
   'thread_report': '/community/thread/1',
+  // A thread of 250 posts, open on its latest hundred, and at its end.
+  'thread_long': '/community/thread/5000',
+  'thread_long_end': '/community/thread/5000',
   // The week's Discuss button while its discussion opens.
   'week_discuss': '/week/5787:1',
   'compose': '/community/new',
@@ -175,8 +179,49 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_weekly': _withWeeklyThread,
   'forum_weekly': _withWeeklyThread,
   'thread_report': _signedIn,
+  'thread_long': _withLongThread,
+  'thread_long_end': _withLongThread,
   'week_discuss': () async => _OpeningForever(),
 };
+
+/// The demo with a thread of 250 posts in Divrei Torah, thread 5000.
+Future<ForumRepository> _withLongThread() async {
+  const names = ['Avraham', 'Rivka', 'Yosef', 'Miriam', 'Shmuel'];
+  const bodies = [
+    'Rashi reads the verse as a promise rather than a command.',
+    'Onkelos translates it the same way here as in the previous chapter.',
+    'רמב״ן מקשה על כך מן הפסוק הבא.',
+    'Thank you — I had never noticed that before.',
+    'Which edition of the Targum are you reading from?',
+  ];
+  final start = _now.subtract(const Duration(days: 20));
+  return DemoForumRepository()
+    ..seed(
+      threads: [
+        ThreadSummary(
+          id: '5000',
+          forumId: 3,
+          title: 'The order of the blessings in Vayechi',
+          kind: ThreadKind.discussion,
+          authorName: names.first,
+          postCount: 250,
+          lastPostAt: _now.subtract(const Duration(minutes: 20)),
+          createdAt: start,
+        ),
+      ],
+      posts: [
+        for (var i = 0; i < 250; i++)
+          Post(
+            id: '${i + 1}',
+            threadId: '5000',
+            authorId: 'demo-${i % names.length}',
+            authorName: names[i % names.length],
+            body: bodies[i % bodies.length],
+            createdAt: i == 249 ? _now.subtract(const Duration(minutes: 20)) : start.add(Duration(hours: i)),
+          ),
+      ],
+    );
+}
 
 /// The demo with the weekly thread of Bereshit 5787, thread 1000.
 Future<ForumRepository> _withWeeklyThread() async {
@@ -218,7 +263,7 @@ final _tapSteps = {
 };
 
 /// Screens captured scrolled to the end of their main list.
-const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced', 'reader_third', 'week_discuss'};
+const _scrolledToEnd = {'reader_gaps', 'reader_gaps_spaced', 'reader_third', 'week_discuss', 'thread_long_end'};
 
 Future<void> _scrollToEnd(WidgetTester tester) async {
   // A lazily built list only learns its full extent as it scrolls.
@@ -288,7 +333,7 @@ void main() {
 
   for (final mode in _modes) {
     for (final entry in _screens.entries) {
-      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'today_haftarah_left', 'week', 'week_tab', 'haftarah_tab', 'reader', 'reader_third', 'reader_finished', 'reader_full', 'reader_gaps', 'progress', 'thread', 'settings', 'welcome'}.contains(entry.key)) {
+      if (mode.tag == 'desktop' && !const {'today', 'today_divergence', 'today_haftarah_left', 'week', 'week_tab', 'haftarah_tab', 'reader', 'reader_third', 'reader_finished', 'reader_full', 'reader_gaps', 'progress', 'thread', 'thread_long', 'settings', 'welcome'}.contains(entry.key)) {
         continue;
       }
       final only = _only;

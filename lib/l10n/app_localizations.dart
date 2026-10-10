@@ -3116,6 +3116,12 @@ abstract class AppLocalizations {
   /// **'Load more'**
   String get loadMore;
 
+  /// Above the first post shown in a long thread, which opens on its latest posts: loads the posts before it.
+  ///
+  /// In en, this message translates to:
+  /// **'Show earlier posts'**
+  String get showEarlierPosts;
+
   /// No description provided for @postsCount.
   ///
   /// In en, this message translates to:

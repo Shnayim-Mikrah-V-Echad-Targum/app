@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,8 @@ import '../data/models.dart';
 import 'community_ui.dart';
 
 /// A discussion: posts in chronological order (flat, which reads more
-/// predictably with screen readers than deep nesting), and a reply box.
+/// predictably with screen readers than deep nesting), and a reply box. A
+/// long thread opens on its latest posts, with earlier ones a tap away.
 class ThreadScreen extends ConsumerStatefulWidget {
   const ThreadScreen({super.key, required this.threadId});
   final String threadId;
@@ -25,8 +27,10 @@ class ThreadScreen extends ConsumerStatefulWidget {
 class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   final _reply = TextEditingController();
   final _focus = FocusNode();
+  final _scroll = ScrollController();
   Post? _replyTo;
   bool _sending = false;
+  bool _loadingEarlier = false;
   Timer? _draftTimer;
 
   String get _draftKey => 'draft.thread.${widget.threadId}';
@@ -55,6 +59,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     _draftTimer?.cancel();
     _reply.dispose();
     _focus.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -82,7 +87,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         ..invalidate(postsProvider(threadId))
         ..invalidate(threadProvider(threadId))
         ..invalidate(threadsProvider);
-      if (mounted) showStatus(context, l.posted);
+      if (mounted) {
+        showStatus(context, l.posted);
+        unawaited(_scrollToLatest());
+      }
     } catch (e) {
       if (mounted) showStatus(context, communityError(l, e));
     } finally {
@@ -90,12 +98,46 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     }
   }
 
+  /// Scrolls to the end of the thread, where a reply just sent appears once
+  /// the posts are fetched again.
+  Future<void> _scrollToLatest() async {
+    try {
+      await ref.read(postsProvider(widget.threadId).future);
+    } catch (_) {
+      return;
+    }
+    // A lazily built list learns its full extent only as it scrolls there.
+    for (var i = 0; i < 8; i++) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || !_scroll.hasClients) return;
+      final p = _scroll.position;
+      if (p.pixels >= p.maxScrollExtent) return;
+      p.jumpTo(p.maxScrollExtent);
+    }
+  }
+
   Future<void> _moderate(String action) async {
     try {
       await ref.read(forumRepositoryProvider).moderate(action, widget.threadId);
-      ref.invalidate(threadProvider(widget.threadId));
+      ref
+        ..invalidate(threadProvider(widget.threadId))
+        // Pinned or not, locked or not, as its forum lists it.
+        ..invalidate(threadsProvider);
     } catch (e) {
       if (mounted) showStatus(context, communityError(context.l10n, e));
+    }
+  }
+
+  Future<void> _loadEarlier() async {
+    if (_loadingEarlier) return;
+    final l = context.l10n;
+    setState(() => _loadingEarlier = true);
+    try {
+      await ref.read(postsProvider(widget.threadId).notifier).loadEarlier();
+    } catch (e) {
+      if (mounted) showStatus(context, communityError(l, e));
+    } finally {
+      if (mounted) setState(() => _loadingEarlier = false);
     }
   }
 
@@ -132,48 +174,80 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
-                ref.invalidate(postsProvider(widget.threadId));
-                ref.invalidate(threadProvider(widget.threadId));
+                ref
+                  ..invalidate(threadProvider(widget.threadId))
+                  ..invalidate(postsProvider(widget.threadId));
+                try {
+                  await ref.read(postsProvider(widget.threadId).future);
+                } catch (e) {
+                  if (context.mounted) showStatus(context, communityError(l, e));
+                }
               },
               child: posts.when(
+                // Fetched again, the posts shown stay until the new ones come.
+                skipError: posts.hasValue,
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
-                data: (list) => PageBody(
-                  children: [
-                    if (t != null) ...[
-                      Semantics(
-                        header: true,
-                        headingLevel: 1,
-                        child: Text(title, textDirection: autoDirection(title), style: Theme.of(context).textTheme.headlineSmall),
-                      ),
-                      // An empty thread says so below.
-                      if (list.isNotEmpty) ...[
-                        const Gap(4),
-                        Text(l.postsCount(list.length), style: Theme.of(context).textTheme.bodySmall),
+                data: (page) {
+                  final list = page.posts;
+                  final byId = {for (final p in list) p.id: p};
+                  return PageBody.builder(
+                    controller: _scroll,
+                    header: [
+                      if (t != null) ...[
+                        Semantics(
+                          header: true,
+                          headingLevel: 1,
+                          child: Text(title, textDirection: autoDirection(title), style: Theme.of(context).textTheme.headlineSmall),
+                        ),
+                        // An empty thread says so below. The count is the
+                        // thread's, with any earlier posts not yet shown.
+                        if (list.isNotEmpty) ...[
+                          const Gap(4),
+                          Text(l.postsCount(max(t.postCount, list.length)), style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                        if (t.locked) ...[const Gap(8), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
+                        const Gap(12),
                       ],
-                      if (t.locked) ...[const Gap(8), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
-                      const Gap(12),
+                      if (list.isEmpty && t != null)
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(emptyThreadMessage(context, ref, t), textAlign: TextAlign.center),
+                        ),
+                      if (page.hasEarlier)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Center(
+                            child: TextButton.icon(
+                              // Enabled while it loads, so that it keeps the keyboard focus.
+                              onPressed: _loadEarlier,
+                              icon: _loadingEarlier
+                                  ? SizedBox.square(
+                                      dimension: 18,
+                                      child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
+                                    )
+                                  : const Icon(Icons.expand_less),
+                              label: Text(l.showEarlierPosts),
+                            ),
+                          ),
+                        ),
                     ],
-                    if (list.isEmpty && t != null)
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(emptyThreadMessage(context, ref, t), textAlign: TextAlign.center),
-                      ),
-                    for (var i = 0; i < list.length; i++)
-                      PostCard(
-                        post: list[i],
-                        index: i,
-                        total: list.length,
-                        replyTo: list.where((p) => p.id == list[i].replyToId).firstOrNull,
-                        isMine: user != null && list[i].authorId == user.id,
-                        isModerator: isMod,
-                        onReply: () {
-                          setState(() => _replyTo = list[i]);
-                          _focus.requestFocus();
-                        },
-                      ),
-                  ],
-                ),
+                    itemCount: list.length,
+                    itemBuilder: (context, i) => PostCard(
+                      key: ValueKey(list[i].id),
+                      post: list[i],
+                      index: i,
+                      total: list.length,
+                      replyTo: byId[list[i].replyToId],
+                      isMine: user != null && list[i].authorId == user.id,
+                      isModerator: isMod,
+                      onReply: () {
+                        setState(() => _replyTo = list[i]);
+                        _focus.requestFocus();
+                      },
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -294,7 +368,9 @@ class PostCard extends ConsumerWidget {
     final name = post.authorName.isEmpty ? l.anonymousMember : post.authorName;
     final reported = ref.watch(reportedPostIdsProvider).contains(post.id);
 
-    Future<void> run(Future<void> Function() f, {String? success}) async {
+    /// Runs [f], then fetches the posts again, and with [recount] the
+    /// thread's count too, here and in its forum.
+    Future<void> run(Future<void> Function() f, {String? success, bool recount = false}) async {
       try {
         await f();
       } catch (e) {
@@ -304,6 +380,11 @@ class PostCard extends ConsumerWidget {
         }
       }
       container.invalidate(postsProvider(post.threadId));
+      if (recount) {
+        container
+          ..invalidate(threadProvider(post.threadId))
+          ..invalidate(threadsProvider);
+      }
       if (success != null && context.mounted) showStatus(context, success);
     }
 
@@ -327,7 +408,7 @@ class PostCard extends ConsumerWidget {
           if (ok == true) await run(() => repo.editPost(post.id, controller.text));
         case 'delete':
           final ok = await _confirm(context, l.deletePostConfirm, l.actionDelete);
-          if (ok) await run(() => repo.deletePost(post.id), success: l.postDeleted);
+          if (ok) await run(() => repo.deletePost(post.id), success: l.postDeleted, recount: true);
         case 'report':
           if (!await ensureSignedIn(context, ref) || !context.mounted) return;
           final result = await showReportDialog(context);
@@ -351,7 +432,7 @@ class PostCard extends ConsumerWidget {
             container.invalidate(blockedUsersProvider);
           }
         case 'hide':
-          await run(() => repo.moderate('hide_post', post.id));
+          await run(() => repo.moderate('hide_post', post.id), recount: true);
       }
     }
 

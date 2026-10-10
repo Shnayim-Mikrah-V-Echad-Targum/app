@@ -3,15 +3,58 @@ import 'package:flutter/material.dart';
 /// Constrains page content to a readable width and centers it on wide
 /// screens, so lines never get uncomfortably long (WCAG 1.4.8).
 class PageBody extends StatelessWidget {
-  const PageBody({super.key, required this.children, this.maxWidth = 760, this.padding, this.controller});
+  const PageBody({super.key, required this.children, this.maxWidth = 760, this.padding, this.controller})
+      : header = const [],
+        itemCount = 0,
+        itemBuilder = null;
+
+  /// A page of [header] and then [itemCount] items, each built by
+  /// [itemBuilder] only as it scrolls into view: for lists that may grow
+  /// long, such as a forum's threads or a thread's posts.
+  const PageBody.builder({
+    super.key,
+    required this.itemCount,
+    required IndexedWidgetBuilder this.itemBuilder,
+    this.header = const [],
+    this.maxWidth = 760,
+    this.padding,
+    this.controller,
+  }) : children = const [];
 
   final List<Widget> children;
+  final List<Widget> header;
+  final int itemCount;
+  final IndexedWidgetBuilder? itemBuilder;
   final double maxWidth;
   final EdgeInsetsGeometry? padding;
   final ScrollController? controller;
 
+  static const _defaultPadding = EdgeInsets.fromLTRB(16, 8, 16, 32);
+
   @override
   Widget build(BuildContext context) {
+    final itemBuilder = this.itemBuilder;
+    if (itemBuilder != null) {
+      final p = (padding ?? _defaultPadding).resolve(Directionality.of(context));
+      return ListView.builder(
+        controller: controller,
+        padding: EdgeInsets.only(top: p.top, bottom: p.bottom),
+        itemCount: header.length + itemCount,
+        itemBuilder: (context, i) => Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Padding(
+              padding: EdgeInsets.only(left: p.left, right: p.right),
+              // Full width, as in a stretched column.
+              child: SizedBox(
+                width: double.infinity,
+                child: i < header.length ? header[i] : itemBuilder(context, i - header.length),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return ListView(
       controller: controller,
       padding: EdgeInsets.zero,
@@ -20,7 +63,7 @@ class PageBody extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Padding(
-              padding: padding ?? const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              padding: padding ?? _defaultPadding,
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
             ),
           ),

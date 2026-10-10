@@ -128,6 +128,14 @@ set role authenticated;
 select set_config('request.jwt.claim.sub', :'carol', false);
 select public.expect_error(format('select public.soft_delete_post(%s)', :bob_post), 'forbidden');
 
+-- ---- a thread's post count leaves out deleted posts ----
+select set_config('request.jwt.claim.sub', :'bob', false);
+select public.soft_delete_post(:bob_post);
+select public.check((select post_count = 1 from public.threads where id = :t1), 'a deleted post leaves its thread''s count');
+select set_config('request.jwt.claim.sub', :'mod', false);
+select public.moderate('restore_post', :'bob_post');
+select public.check((select post_count = 2 from public.threads where id = :t1), 'a restored post counts again');
+
 -- ---- content filter folds vowels, cantillation and final letters ----
 reset role;
 insert into private.banned_terms (pattern, action) values ('שקרן', 'reject');
@@ -177,6 +185,7 @@ reset role;
 select public.check((select count(*) = 0 from auth.users where id = :'alice'), 'auth user deleted');
 select public.check((select count(*) = 0 from public.profiles where id = :'alice'), 'profile deleted');
 select public.check((select count(*) = 0 from public.posts where author_id = :'alice'), 'posts deleted');
+select public.check((select post_count = 1 from public.threads where id = :t1), 'deleted posts leave their thread''s count');
 select public.check((select count(*) = 0 from public.user_progress where user_id = :'alice'), 'progress backup deleted');
 
 \echo 'All community schema tests passed.'

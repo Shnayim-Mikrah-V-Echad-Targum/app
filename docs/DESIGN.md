@@ -132,6 +132,8 @@ It ends by opening the reader on today's aliyah. Everything else is a setting wi
 
 **Weekly threads are not pinned.** The "This week" card on the Community screen opens the current one. Pinned, a year of past weeks would crowd every other discussion off the first page of the Parsha forum. Moderators can still pin any thread by hand.
 
+**Long lists come a page at a time.** A forum lists its pinned threads, then 30 others at a time, newest activity first. A thread opens on its latest 100 posts, so the newest reply is never cut off, and earlier posts are a tap away. Pages follow on from the last row shown (keyset paging), with ties broken by id, so none repeats or skips a row. A thread's post count leaves out deleted posts.
+
 **Sign-in is a six-digit email code.** It needs no password and no deep links, which matters on Windows and in desktop browsers. The code arrives through Supabase's magic-link template, edited to show `{{ .Token }}`.
 
 **Safety follows Apple guideline 1.2 and Google Play's user-generated-content (UGC) policy:**

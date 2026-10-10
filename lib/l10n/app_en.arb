@@ -1050,6 +1050,10 @@
   },
   "noReplies": "No replies yet.",
   "loadMore": "Load more",
+  "showEarlierPosts": "Show earlier posts",
+  "@showEarlierPosts": {
+    "description": "Above the first post shown in a long thread, which opens on its latest posts: loads the posts before it."
+  },
   "postsCount": "{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}",
   "@postsCount": {
     "placeholders": {

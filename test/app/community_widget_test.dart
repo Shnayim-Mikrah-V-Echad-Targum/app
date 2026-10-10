@@ -6,9 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/features/community/data/community_providers.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
@@ -66,6 +69,41 @@ class _OfflineNewcomer extends DemoForumRepository {
   Future<void> acceptGuidelines() async => throw Exception('offline');
 }
 
+/// A community whose forums can't be paged: the first page comes, and no
+/// other.
+class _FirstPageOnly extends DemoForumRepository {
+  @override
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) async {
+    if (after != null) throw Exception('offline');
+    return super.threads(forumId: forumId, parshaNumber: parshaNumber, limit: limit);
+  }
+}
+
+/// A thread in Divrei Torah, with its last post [minutes] into October.
+ThreadSummary _thread(int id, {int minutes = 0, bool pinned = false, int posts = 1}) => ThreadSummary(
+      id: '$id',
+      forumId: 3,
+      title: 'Thread $id',
+      kind: ThreadKind.discussion,
+      authorName: 'Avraham',
+      postCount: posts,
+      lastPostAt: DateTime(2026, 10, 1).add(Duration(minutes: minutes)),
+      createdAt: DateTime(2026, 10, 1),
+      pinned: pinned,
+    );
+
+/// [repo] with 40 pinned and 40 other threads in Divrei Torah.
+T _withManyThreads<T extends DemoForumRepository>(T repo) => repo
+  ..seed(threads: [
+    for (var i = 0; i < 40; i++) _thread(300 + i, minutes: i, pinned: true),
+    for (var i = 0; i < 40; i++) _thread(100 + i, minutes: i),
+  ]);
+
 /// Friday of Bereshit 5787.
 final _bereshit = DateTime(2026, 10, 9, 11);
 
@@ -106,6 +144,15 @@ Future<void> _tapTodah(WidgetTester tester, String label) async {
   await tester.tap(find.text(label));
 }
 
+/// The thread's list, which builds its posts only as they scroll into view.
+final _threadList = find.descendant(of: find.byType(ThreadScreen), matching: find.byType(Scrollable)).first;
+
+/// Scrolls the thread down (or [up]) until [finder] is in view.
+Future<void> _scrollThreadTo(WidgetTester tester, Finder finder, {bool up = false}) async {
+  await tester.scrollUntilVisible(finder, up ? -400 : 400, scrollable: _threadList, maxScrolls: 100);
+  await tester.pumpAndSettle();
+}
+
 /// The post menu of the [index]th post.
 Future<void> _openPostMenu(WidgetTester tester, int index) async {
   await tester.tap(find.descendant(of: find.byType(PostCard).at(index), matching: find.byTooltip('More options')));
@@ -141,7 +188,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
     await tester.pumpAndSettle();
+    // Sent, the reply is scrolled to, at the end of the thread.
     expect(find.text('Thank you, this helped me.'), findsOneWidget);
+    await _scrollThreadTo(tester, find.text('3 posts'), up: true);
     expect(find.text('3 posts'), findsOneWidget);
   });
 
@@ -292,8 +341,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Your draft was restored.'), findsNothing);
       expect(tester.widget<TextField>(find.widgetWithText(TextField, 'Write a reply')).controller!.text, isEmpty);
-      expect(find.text('Thank you, this helped me.'), findsOneWidget);
       expect(find.text('3 posts'), findsOneWidget);
+      await _scrollThreadTo(tester, find.text('Thank you, this helped me.'));
+      expect(find.text('Thank you, this helped me.'), findsOneWidget);
     });
 
     testWidgets('that cannot accept the guidelines offline says so', (tester) async {
@@ -370,6 +420,83 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.favorite), findsNothing);
       expect(find.text('5 thanks'), findsOneWidget);
+    });
+  });
+
+  group('a long thread', () {
+    testWidgets('opens on its latest posts, shows the earlier ones on request, and counts them all', (tester) async {
+      final forums = DemoForumRepository()
+        ..seed(
+          threads: [_thread(5000, minutes: 250, posts: 250)],
+          posts: [
+            for (var i = 1; i <= 250; i++)
+              Post(
+                id: '$i',
+                threadId: '5000',
+                authorId: 'demo-author',
+                authorName: 'Rivka',
+                body: 'Post $i',
+                createdAt: DateTime(2026, 10, 1).add(Duration(minutes: i)),
+              ),
+          ],
+        );
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/5000');
+      await tester.pumpAndSettle();
+      expect(find.text('250 posts'), findsOneWidget);
+      expect(find.text('Show earlier posts'), findsOneWidget);
+      expect(find.text('Post 151'), findsOneWidget);
+      expect(find.text('Post 150'), findsNothing);
+      await _scrollThreadTo(tester, find.text('Post 250'));
+      expect(find.text('Post 250'), findsOneWidget);
+
+      await _scrollThreadTo(tester, find.text('Show earlier posts'), up: true);
+      await tester.tap(find.text('Show earlier posts'));
+      await tester.pumpAndSettle();
+      // The posts before, from their first.
+      expect(find.text('Post 51'), findsOneWidget);
+      await tester.tap(find.text('Show earlier posts'));
+      await tester.pumpAndSettle();
+      expect(find.text('Post 1'), findsOneWidget);
+      expect(find.text('Show earlier posts'), findsNothing);
+      expect(c.read(postsProvider('5000')).requireValue.posts, hasLength(250));
+      await _scrollThreadTo(tester, find.text('250 posts'), up: true);
+      expect(find.text('250 posts'), findsOneWidget);
+    });
+  });
+
+  group('a forum', () {
+    testWidgets('lists its pinned threads, then the rest a page at a time', (tester) async {
+      final c = await _pump(tester, forums: _withManyThreads(DemoForumRepository()));
+      c.read(routerProvider).go('/community/forum/divrei-torah');
+      await tester.pumpAndSettle();
+      expect(find.text('Thread 339'), findsOneWidget, reason: 'the latest pinned thread first');
+      final list = find.descendant(of: find.byType(ForumScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('Load more'), 400, scrollable: list);
+      await tester.pumpAndSettle();
+      expect(find.text('Thread 110'), findsOneWidget, reason: 'the 30th latest of the others, last');
+      await tester.tap(find.text('Load more'));
+      await tester.pumpAndSettle();
+      expect(find.text('Load more'), findsNothing);
+      final shown = c.read(threadsProvider(3)).requireValue.threads;
+      expect({for (final t in shown) t.id}, hasLength(80));
+      await tester.scrollUntilVisible(find.text('Thread 100'), 400, scrollable: list);
+      expect(find.text('Thread 100'), findsOneWidget);
+    });
+
+    testWidgets('that cannot load more says so, and offers it again', (tester) async {
+      final c = await _pump(tester, forums: _withManyThreads(_FirstPageOnly()));
+      c.read(routerProvider).go('/community/forum/divrei-torah');
+      await tester.pumpAndSettle();
+      final list = find.descendant(of: find.byType(ForumScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('Load more'), 400, scrollable: list);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Load more'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Load more'), findsOneWidget);
+      expect(c.read(threadsProvider(3)).requireValue.threads, hasLength(70));
     });
   });
 

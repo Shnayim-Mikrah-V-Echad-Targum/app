@@ -1756,6 +1756,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadMore => 'Load more';
 
   @override
+  String get showEarlierPosts => 'Show earlier posts';
+
+  @override
   String postsCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

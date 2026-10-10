@@ -26,14 +26,32 @@ abstract class ForumRepository {
   // --- Reading ---------------------------------------------------------------
   Future<List<Forum>> forums();
 
-  /// Threads in a forum (or across all forums), pinned first, newest
-  /// activity first. Pass [before] to page.
-  Future<List<ThreadSummary>> threads({int? forumId, int? parshaNumber, DateTime? before, int limit = 30});
+  /// How many unpinned threads [threads] returns at most, by default.
+  static const threadsPageSize = 30;
+
+  /// How many posts [posts] returns at most, by default.
+  static const postsPageSize = 100;
+
+  /// Threads in a forum (or across all forums), newest activity first.
+  ///
+  /// The first page (no [after]) holds every pinned thread, then at most
+  /// [limit] others. Each later page holds the next [limit] unpinned threads
+  /// after [after], the last activity and id of the last unpinned thread
+  /// shown. Threads with the same last activity are ordered by id, so no
+  /// page repeats or skips one.
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = threadsPageSize,
+  });
 
   Future<ThreadSummary> thread(String id);
 
-  /// Posts in a thread, oldest first.
-  Future<List<Post>> posts(String threadId, {int limit = 200});
+  /// The latest [limit] posts in a thread, or with [before] (the time and id
+  /// of the earliest post shown) the [limit] posts just before it. Either
+  /// way they are returned oldest first, to be read in order.
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = postsPageSize});
 
   /// The shared discussion thread for a parsha in a given year, created on
   /// first use.
