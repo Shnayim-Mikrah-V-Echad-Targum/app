@@ -10,13 +10,16 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 
 **Verses**
 - Each verse is a single node with a curated spoken label, such as "Verse 9." followed by the text, or "Targum, verse 9." for Onkelos. This avoids reading glyph by glyph.
-- The Hebrew part of the label is tagged `he`, so the screen reader switches voice.
+- The Hebrew is tagged `he`, so the screen reader can switch to a Hebrew voice:
+  - **Android and iOS:** only the Hebrew part of the label is tagged, so "Verse 9." is read in the interface language.
+  - **The web and desktop:** a node can carry only one language there, so the whole label is in Hebrew ("פסוק 9.") and the node is tagged `he`. On the web this sets the `lang` attribute.
 - Cantillation is removed by default because screen readers mispronounce it or stop at it. The extraordinary points written over some words in the scroll (as over וישקהו, Genesis 33:4) are shown whether or not cantillation is, and are never spoken.
 - *Settings → Accessibility → Screen reader text* changes what the label contains:
   - **vowels kept** (the default)
   - **letters only**
   - **every mark**, for braille displays
 - The Divine Name is spoken as **Adonai** or **Hashem**, as the user chooses. This applies to screen-reader labels and to text-to-speech, in the Torah and haftarah, in Targum Onkelos (which writes it יְיָ) and in Rashi (who writes ה'). A ה' that cites a chapter, as in (ישעיהו ה'), or counts something stays a number.
+- Each of Rashi's comments is its own node, read the same way and tagged `he`, or `en` for Rashi in English. The English translation is tagged `en`, so it is read in an English voice in the Hebrew interface too.
 - Notes, ketiv/qere and the Targum each have their own labels.
 
 **Structure and state**
@@ -100,7 +103,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   - no overflow at 200% text on the busiest screens
   - the Hebrew right-to-left layout
   - the desktop layout with a navigation rail
-- `test/app/reader_widget_test.dart` runs the guidelines on the reader and checks the labels of verses and the Targum.
+- `test/app/reader_widget_test.dart` runs the guidelines on the reader and checks the labels of verses, the Targum and Rashi, and their language tags on Android and on Windows.
 - Unit tests check the spoken-label pipeline (`test/core/text/hebrew_text_test.dart`), including Divine Name substitution in the Torah, the Targum and Rashi, and stripping cantillation but not the extraordinary points.
 
 ### Manual (before each release)
@@ -132,6 +135,7 @@ Record the results in the release checklist ([RELEASE.md](RELEASE.md)).
   - Hebrew voices vary by platform, and some systems have none installed.
   - In that case the screen reader reads the Hebrew with its default voice, usually badly.
   - Before reading aloud, the app checks for a Hebrew text-to-speech voice. If there is none, it says so and points to the device's speech settings.
+- **Narrator and NVDA on Windows** can't switch voices within the app, because Flutter's Windows accessibility bridge has no language property. They read the Hebrew labels in the voice of the screen reader's own language. Choosing a Hebrew voice in the screen reader's settings while reading is the workaround.
 - **Cantillation:** no screen reader can convey it. Reading with ta'amim needs sight or a teacher. The *every mark* label setting lets braille users get every mark.
 - **Flutter on the web** draws text on a canvas. The semantics tree is mirrored as accessible DOM nodes, but browser find-in-page and the browser's own text zoom do not apply to it. Use the in-app reading size instead.
 

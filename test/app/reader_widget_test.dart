@@ -289,6 +289,33 @@ void main() {
     SemanticsData labelled(WidgetTester tester, Pattern label) =>
         tester.getSemantics(find.bySemanticsLabel(label).first).getSemanticsData();
 
+    testWidgets('on Android, the Hebrew of a verse is tagged within its English label', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openNoach(tester);
+      final verse = labelled(tester, RegExp(r'^Verse 9\. '));
+      expect(verse.locale, isNull, reason: 'the node is not Hebrew: "Verse 9." is English');
+      final span = verse.attributedLabel.attributes.whereType<LocaleStringAttribute>().single;
+      expect(span.locale, const Locale('he'));
+      expect(span.range.start, 'Verse 9. '.length);
+      final hebrew = verse.label.substring(span.range.start, span.range.end);
+      expect(HebrewText.consonantsOnly(hebrew), 'אלה תולדת נח נח איש צדיק תמים היה בדרתיו את האלהים התהלך נח.');
+      handle.dispose();
+    });
+
+    testWidgets(
+      'on Windows, as on the web, a verse is labelled in Hebrew and its node is tagged he',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await openNoach(tester);
+        expect(find.bySemanticsLabel(RegExp(r'^Verse 9\. ')), findsNothing);
+        final verse = labelled(tester, RegExp(r'^פסוק 9\. '));
+        expect(HebrewText.consonantsOnly(verse.label), startsWith('פסוק 9. אלה תולדת נח'));
+        expect(verse.locale, const Locale('he'));
+        handle.dispose();
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.windows),
+    );
+
     testWidgets('a verse of Targum is labelled as Targum and reads the Name as chosen', (tester) async {
       final handle = tester.ensureSemantics();
       await openNoach(tester, settings: const AppSettings(onboardingComplete: true, divineName: DivineNameSpeech.hashem));
@@ -297,6 +324,40 @@ void main() {
       // Onkelos writes the Name יְיָ, here with a prefix: דַּיְיָ.
       final targum = labelled(tester, RegExp(r'^Targum, verse 9\. '));
       expect(HebrewText.consonantsOnly(targum.label), contains(' בדחלתא דהשם הליך '));
+      handle.dispose();
+    });
+
+    testWidgets('each comment of Rashi is one node, tagged he', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openNoach(tester, settings: const AppSettings(onboardingComplete: true, secondReading: SecondReading.rashi));
+      await next(tester, 2);
+      expect(find.text('Read Rashi'), findsOneWidget);
+      final comment = labelled(tester, RegExp(r'^אלה תולדת נח נח איש צדיק\. הוֹאִיל '));
+      expect(comment.locale, const Locale('he'));
+      final span = comment.attributedLabel.attributes.whereType<LocaleStringAttribute>().single;
+      expect((span.range.start, span.range.end), (0, comment.label.length));
+      handle.dispose();
+    });
+
+    testWidgets('Rashi in English is tagged en, and the Hebrew it quotes he', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openNoach(tester, settings: const AppSettings(onboardingComplete: true, secondReading: SecondReading.rashiEnglish));
+      await next(tester, 2);
+      final comment = labelled(tester, RegExp(r'^אלה תולדת נח נח איש צדיק THESE ARE THE PROGENY OF NOAH'));
+      expect(comment.locale, const Locale('en'));
+      final span = comment.attributedLabel.attributes.whereType<LocaleStringAttribute>().first;
+      expect(span.locale, const Locale('he'));
+      expect(comment.label.substring(span.range.start, span.range.end), 'אלה תולדת נח נח איש צדיק');
+      handle.dispose();
+    });
+
+    testWidgets('the English translation is tagged en in the Hebrew interface', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openNoach(
+        tester,
+        settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew, showTranslation: true),
+      );
+      expect(labelled(tester, RegExp(r'^9 These are the generations of Noah')).locale, const Locale('en'));
       handle.dispose();
     });
   });

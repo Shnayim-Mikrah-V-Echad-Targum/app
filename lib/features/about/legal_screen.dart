@@ -88,7 +88,8 @@ const _en = <LegalDoc, List<(String, String)>>{
   LegalDoc.accessibility: [
     ('', 'We want everyone to be able to learn the parsha with this app, including people who use screen readers, magnification, switch access or keyboards, and people with dyslexia or low vision. We aim to meet WCAG 2.2 level AA.'),
     ('What the app offers',
-        '• Screen reader support on every platform, with a clean spoken version of each verse (cantillation removed) tagged as Hebrew, and a choice of how the Divine Name is spoken\n'
+        '• Screen reader support on every platform, with a clean spoken version (cantillation removed) of each verse of the Torah and the Targum, and of each comment of Rashi, tagged as Hebrew; the English translation is tagged as English\n'
+            '• A choice of how the Divine Name is spoken, wherever it is written: in the Torah, in the Targum and in Rashi\n'
             '• Reading size up to 500%, on top of your device\'s text size, plus line, word and letter spacing\n'
             '• Light, dark, sepia and two high-contrast themes; bold text; a choice of fonts, including Atkinson Hyperlegible and Lexend\n'
             '• Show or hide vowels and cantillation; focus mode; adjustable line width\n'
@@ -97,7 +98,7 @@ const _en = <LegalDoc, List<(String, String)>>{
             '• Status is never shown by color alone\n'
             '• Text-to-speech where a Hebrew voice is available'),
     ('Known limitations',
-        'Hebrew voices differ between devices and some screen readers do not pronounce pointed Hebrew perfectly. Reminders are not available in the web version.'),
+        'Hebrew voices differ between devices and some screen readers do not pronounce pointed Hebrew perfectly. On Windows, Narrator and NVDA cannot switch to a Hebrew voice on their own, because the app has no way to tell them the language of a text there. To hear the Hebrew in a Hebrew voice, choose one in the screen reader\'s settings. Reminders are not available in the web version.'),
     ('Feedback',
         'If something is hard to use, please tell us: {contact}. We aim to respond within five working days.'),
   ],
@@ -136,7 +137,8 @@ const _he = <LegalDoc, List<(String, String)>>{
   LegalDoc.accessibility: [
     ('', 'אנחנו רוצים שכל אחד יוכל ללמוד את הפרשה באפליקציה, כולל משתמשי קוראי מסך, הגדלה, מתג או מקלדת, ואנשים עם דיסלקציה או ראייה ירודה. היעד שלנו הוא עמידה ב־WCAG 2.2 ברמה AA.'),
     ('מה האפליקציה מציעה',
-        '• תמיכה בקוראי מסך בכל הפלטפורמות, עם גרסה מדוברת נקייה של כל פסוק (בלי טעמים) המסומנת כעברית, ובחירה כיצד להגות את השם\n'
+        '• תמיכה בקוראי מסך בכל הפלטפורמות, עם גרסה מדוברת נקייה (בלי טעמים) של כל פסוק בתורה ובתרגום ושל כל דיבור ברש״י, המסומנת כעברית; התרגום לאנגלית מסומן כאנגלית\n'
+            '• בחירה כיצד להגות את השם בכל מקום שהוא כתוב: בתורה, בתרגום וברש״י\n'
             '• גודל קריאה עד 500%, מעבר לגודל הטקסט של המכשיר, וכן ריווח שורות, מילים ואותיות\n'
             '• ערכות בהירה, כהה, ספיה ושתי ערכות בניגודיות גבוהה; טקסט מודגש; מבחר גופנים\n'
             '• הצגה או הסתרה של ניקוד וטעמים; מצב מיקוד; רוחב שורה מתכוונן\n'
@@ -145,7 +147,7 @@ const _he = <LegalDoc, List<(String, String)>>{
             '• מצב לעולם אינו מוצג באמצעות צבע בלבד\n'
             '• הקראה קולית כשקיים קול בעברית'),
     ('מגבלות ידועות',
-        'קולות העברית שונים בין מכשירים, וחלק מקוראי המסך אינם הוגים עברית מנוקדת באופן מושלם. תזכורות אינן זמינות בגרסת הדפדפן.'),
+        'קולות העברית שונים בין מכשירים, וחלק מקוראי המסך אינם הוגים עברית מנוקדת באופן מושלם. ב־Windows, \u200fNarrator ו־NVDA אינם עוברים לקול עברי מעצמם, כי שם אין לאפליקציה דרך לציין להם את שפת הטקסט. כדי לשמוע את העברית בקול עברי, יש לבחור קול כזה בהגדרות קורא המסך. תזכורות אינן זמינות בגרסת הדפדפן.'),
     ('משוב', 'אם משהו קשה לשימוש, נשמח לשמוע: {contact}. נשתדל להשיב תוך חמישה ימי עבודה.'),
   ],
 };
