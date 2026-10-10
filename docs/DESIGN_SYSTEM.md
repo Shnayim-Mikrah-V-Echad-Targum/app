@@ -847,6 +847,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - Web: Icon-192/512 from the master; maskable 192/512 with the group scaled 0.90 on the full-bleed gradient.
    - Sizes ≤32 px (favicon.png, Windows .ico entries at 16/24/32): the three rules only, each 62.5% of the canvas wide and 9.4% high, gaps 7.8%, vertically centred, on the gradient with corner radius 18.75%.
    - The Windows .ico also carries 48, 64 and 256 from the master.
+   - Android status bar (`ic_stat_reminder`, a 24 dp vector drawn as a white silhouette): the three rules alone, 2.7 high with round ends, at y 5.7, 10.65 and 15.6. The two Mikra rules span x 3–21. The Targum's gold is lost in white, so its rule is 60% as long (x 10.2–21), aligned to the right like the last line of a Hebrew paragraph: three equal bars read as a menu icon. To be confirmed with the owner.
 
    Then run `dart run flutter_launcher_icons`.
 

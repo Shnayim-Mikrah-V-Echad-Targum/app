@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Status-bar icon for reminders: the app mark's three rules (two readings
      of the Mikra and one of the Targum). Android draws it as a white
-     silhouette, so a white-filled glyph with no wordmark reads at 24dp. -->
+     silhouette, so a white-filled glyph with no wordmark reads at 24dp. The
+     gold of the Targum's rule is lost in white, so its shape sets it apart:
+     60% as long and aligned to the right, like the last line of a Hebrew
+     paragraph, and not three equal bars, which read as a menu icon
+     (DESIGN_SYSTEM.md §7.8). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -15,5 +19,5 @@
         android:pathData="M4.35,10.65h15.3a1.35,1.35 0,0 1,0 2.7h-15.3a1.35,1.35 0,0 1,0 -2.7z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M4.35,15.6h15.3a1.35,1.35 0,0 1,0 2.7h-15.3a1.35,1.35 0,0 1,0 -2.7z" />
+        android:pathData="M11.55,15.6h8.1a1.35,1.35 0,0 1,0 2.7h-8.1a1.35,1.35 0,0 1,0 -2.7z" />
 </vector>

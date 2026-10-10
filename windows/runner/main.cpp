@@ -12,16 +12,22 @@ namespace {
 // second instance would overwrite progress logged in the first.
 constexpr const wchar_t kInstanceMutexName[] = L"Local\\org.shnayimmikra.app";
 
-// Brings the window of the instance already running to the front.
-void ActivateRunningInstance() {
+// How long a second launch waits for an instance that has no window yet,
+// because it is starting or closing.
+constexpr DWORD kInstanceWaitMs = 5000;
+
+// Brings the window of the instance already running to the front. Returns
+// false if it has no window.
+bool ActivateRunningInstance() {
   HWND window = ::FindWindowW(kWindowClassName, nullptr);
   if (window == nullptr) {
-    return;
+    return false;
   }
   if (::IsIconic(window)) {
     ::ShowWindow(window, SW_RESTORE);
   }
   ::SetForegroundWindow(window);
+  return true;
 }
 
 }  // namespace
@@ -30,9 +36,19 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
   HANDLE instance_mutex = ::CreateMutexW(nullptr, TRUE, kInstanceMutexName);
   if (instance_mutex != nullptr && ::GetLastError() == ERROR_ALREADY_EXISTS) {
-    ActivateRunningInstance();
-    ::CloseHandle(instance_mutex);
-    return EXIT_SUCCESS;
+    if (ActivateRunningInstance()) {
+      ::CloseHandle(instance_mutex);
+      return EXIT_SUCCESS;
+    }
+    // The other instance has no window: it is starting, or closing (say,
+    // the app was closed and opened again at once). Once it has closed,
+    // this one takes over; once it has started, its window is brought up.
+    const DWORD wait = ::WaitForSingleObject(instance_mutex, kInstanceWaitMs);
+    if (wait != WAIT_OBJECT_0 && wait != WAIT_ABANDONED) {
+      ActivateRunningInstance();
+      ::CloseHandle(instance_mutex);
+      return EXIT_SUCCESS;
+    }
   }
 
   // Attach to console when present (e.g., 'flutter run') or create a
@@ -66,10 +82,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     ::DispatchMessage(&msg);
   }
 
-  ::CoUninitialize();
+  // The window, and the Flutter engine with it, are gone: nothing more is
+  // saved, so another launch may start at once.
   if (instance_mutex != nullptr) {
     ::ReleaseMutex(instance_mutex);
     ::CloseHandle(instance_mutex);
   }
+  ::CoUninitialize();
   return EXIT_SUCCESS;
 }

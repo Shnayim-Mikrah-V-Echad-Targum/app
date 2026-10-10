@@ -109,7 +109,7 @@ The planner is a pure function. Its rules come from the research:
 - never on Shabbat or Yom Tov
 - nothing after midday on the eve of Shabbat or Yom Tov, or on Erev Tisha B'Av
 - at most one notification a day, chosen by priority: Erev Shabbat, then check-in, then daily
-- after two weeks without the app opened, one last message that reminders have paused, and then nothing until it is opened again
+- after two weeks without the app opened, one last message that reminders have paused, and then nothing until it is opened again; a "Life happens" pause longer than that is followed by two weeks of reminders before the message
 
 The copy is informational ("Revi'i is today's reading"), never guilt-based.
 

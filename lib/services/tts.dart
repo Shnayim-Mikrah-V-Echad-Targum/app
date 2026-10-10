@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -13,9 +14,24 @@ class TtsService {
       if (!_disposed) speaking.value = true;
     });
     _tts.setCompletionHandler(_done);
-    _tts.setCancelHandler(_done);
-    _tts.setErrorHandler((_) => _done());
+    _tts.setCancelHandler(() {
+      _done();
+      _releaseIosAudioSoon();
+    });
+    _tts.setErrorHandler((_) {
+      _done();
+      _releaseIosAudioSoon();
+    });
   }
+
+  /// Ends the iOS audio session (ios/Runner/AppDelegate.swift).
+  @visibleForTesting
+  static const audioSessionChannel = MethodChannel('shnayim_mikra/audio_session');
+
+  /// How long after speech stops part-way the iOS audio session is ended,
+  /// unless speech starts again meanwhile.
+  @visibleForTesting
+  static Duration releaseDelay = const Duration(milliseconds: 300);
 
   final FlutterTts _tts;
   final ValueNotifier<bool> speaking = ValueNotifier(false);
@@ -23,6 +39,7 @@ class TtsService {
   bool? _hebrewAvailable;
   bool _disposed = false;
   bool _iosAudioReady = false;
+  Timer? _release;
 
   void _done() {
     if (!_disposed) speaking.value = false;
@@ -73,7 +90,7 @@ class TtsService {
   Future<void> _prepareIosAudio() async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS || _iosAudioReady) return;
     try {
-      await _tts.setIosAudioCategory(
+      final result = await _tts.setIosAudioCategory(
         IosTextToSpeechAudioCategory.playback,
         [
           IosTextToSpeechAudioCategoryOptions.duckOthers,
@@ -81,19 +98,37 @@ class TtsService {
         ],
         IosTextToSpeechAudioMode.spokenAudio,
       );
-      _iosAudioReady = true;
+      // The plugin reports a failure as 0, or as null, rather than throwing:
+      // tried again on the next Listen.
+      _iosAudioReady = result == 1;
     } catch (_) {
       // Speech still works; only the Silent switch silences it.
     }
   }
 
+  /// On iOS, once speech has stopped part-way, ends the audio session set
+  /// for it, as the engine does by itself only when speech finishes: music
+  /// it ducked comes back up, and spoken audio it interrupted (a podcast)
+  /// is told it may resume. After [releaseDelay], so that the session isn't
+  /// ended under speech that a new Listen starts.
+  void _releaseIosAudioSoon() {
+    if (!_iosAudioReady || _disposed) return;
+    _release?.cancel();
+    _release = Timer(releaseDelay, () {
+      if (_utterance != null) return;
+      unawaited(audioSessionChannel.invokeMethod<bool>('deactivate').then((_) {}, onError: (Object _) {}));
+    });
+  }
+
   /// Stops speech. Never throws: a platform without a speech engine has
   /// nothing to stop.
   Future<void> stop() async {
+    final wasSpeaking = _utterance != null || speaking.value;
     try {
       await _tts.stop();
     } catch (_) {}
     _done();
+    if (wasSpeaking) _releaseIosAudioSoon();
   }
 
   void dispose() {

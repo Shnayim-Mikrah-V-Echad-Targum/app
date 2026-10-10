@@ -50,8 +50,8 @@
   - Nothing fires on Shabbat.
   - Tapping a reminder, with the app running and with it closed, opens Today. The Erev Shabbat reminder opens the week instead, and going back from it leads to Today.
   - Reminders survive a reboot (Android).
-  - On Android, the status-bar icon is the three rules of the mark, not a white square, and the Erev Shabbat reminder expands to show its whole message.
-- [ ] Listen is audible with the Silent switch on; music ducks and resumes (iOS).
+  - On Android, the status-bar icon is the three rules of the mark (two long over a shorter one), not a white square or a menu icon, and the Erev Shabbat reminder expands to show its whole message.
+- [ ] Listen is audible with the Silent switch on; music ducks and comes back up, and a paused podcast resumes, both when speech finishes and when it is stopped part-way or the reader is left (iOS).
 - [ ] Offline: reading, logging and streaks all work in airplane mode.
 - [ ] Community against the production backend:
   - sign in with a code
@@ -148,7 +148,7 @@
 - [ ] Package it as MSIX for the Microsoft Store or for sideloading (for example with the `msix` package), or wrap it in an installer.
 - [ ] Sign it with a code-signing certificate; unsigned apps trigger SmartScreen warnings. Store submissions are signed by Microsoft.
 - [ ] Check with Narrator and NVDA, using the keyboard only, at 200% display scaling.
-- [ ] Launching the app while it is already running brings the open window forward, restoring it if minimized, and opens no second window.
+- [ ] Launching the app while it is already running brings the open window forward, restoring it if minimized, and opens no second window. Closing it and launching it again at once opens it.
 - [ ] A reminder toast carries the three-rule mark as its icon.
 
 ## Web

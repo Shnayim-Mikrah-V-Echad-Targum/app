@@ -136,15 +136,19 @@ void main() {
 
     test('when the fast is postponed to Sunday, its eve is Shabbat and has no reminder', () {
       final ninth = HebrewDate(5789, HebrewMonth.av, 9).toLocalDate();
+      final fast = ninth.addDays(1);
       expect(ninth.isShabbat, isTrue);
-      expect(JewishHolidays.isTishaBav(ninth.addDays(1)), isTrue);
+      expect(JewishHolidays.isTishaBav(ninth), isFalse, reason: 'the fast is postponed');
+      expect(JewishHolidays.isTishaBav(fast), isTrue);
       for (final minutes in [9 * 60, 20 * 60]) {
-        final reminders = around(ninth.addDays(1), minutes);
-        expect(reminders.where((r) => r.date == ninth), isEmpty, reason: '$minutes');
-        for (final r in reminders.where((r) => JewishHolidays.isTishaBav(r.date.addDays(1)))) {
-          expect(r.minutes, lessThan(kErevCutoffMinutes), reason: '$r');
-        }
+        expect(around(fast, minutes).where((r) => r.date == ninth), isEmpty, reason: '$minutes');
       }
+      // Friday, 8 Av, is not the eve of the fast: its morning reminder
+      // stays, and only Shabbat's rule takes its evening one.
+      final friday = ninth.addDays(-1);
+      expect(planner.planFor(planner.schedule.weekFor(friday)).days.map((d) => d.date), contains(friday));
+      expect(around(fast, 9 * 60).where((r) => r.date == friday).single.kind, ReminderKind.daily);
+      expect(around(fast, 20 * 60).where((r) => r.date == friday), isEmpty);
     });
   });
 
@@ -202,9 +206,22 @@ void main() {
       expect(pausedIn(reminders).date, LocalDate(2027, 4, 25));
     });
 
-    test('waits for a pause to end', () {
-      final reminders = plan(days: 14, pauses: [Pause(LocalDate(2026, 10, 20), LocalDate(2026, 11, 10))]);
-      expect(pausedIn(reminders).date, LocalDate(2026, 11, 11));
+    test('follows the reminders that resume after a pause longer than the horizon', () {
+      // A pause of 30 days, from 9 days ahead: it runs past the 14 days
+      // planned.
+      final pause = Pause(LocalDate(2026, 10, 20), LocalDate(2026, 11, 18));
+      final reminders = plan(days: 14, pauses: [pause]);
+      final others = reminders.where((r) => r.kind != ReminderKind.paused).toList();
+      expect(others.where((r) => pause.contains(r.date)), isEmpty);
+      final after = others.where((r) => r.date > pause.end).toList();
+      expect(after, isNotEmpty, reason: 'reminders resume once the pause ends');
+      expect(after.first.date, LocalDate(2026, 11, 19));
+      expect(after.where((r) => r.kind == ReminderKind.daily), isNotEmpty);
+      expect(after.last.date.rd - pause.end.rd, lessThanOrEqualTo(14 + 7), reason: "for the horizon's length, or a week more");
+      final paused = pausedIn(reminders);
+      expect(reminders.last, same(paused));
+      expect(paused.date > pause.end.addDays(14), isTrue);
+      expect(reminders.length, lessThan(64), reason: 'within the pending notifications iOS allows');
     });
 
     test('is not sent when every reminder is off', () {

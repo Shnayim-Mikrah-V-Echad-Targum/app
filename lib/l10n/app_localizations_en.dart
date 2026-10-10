@@ -1339,11 +1339,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifChannelErevShabbatDesc =>
-      'Friday morning, only if the parsha isn\'t finished';
+      'The morning before Shabbat or Yom Tov, only if the parsha isn\'t finished';
 
   @override
   String get notifChannelCheckInDesc =>
-      'After Shabbat, to log what you read, and the note when reminders pause';
+      'After Shabbat, a reminder to log what you read; also the note when reminders stop';
 
   @override
   String notifDailyTitle(String aliyah) {

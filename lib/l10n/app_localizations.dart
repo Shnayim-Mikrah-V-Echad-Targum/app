@@ -2387,13 +2387,13 @@ abstract class AppLocalizations {
   /// Android notification channel description, shown in the system's notification settings.
   ///
   /// In en, this message translates to:
-  /// **'Friday morning, only if the parsha isn\'t finished'**
+  /// **'The morning before Shabbat or Yom Tov, only if the parsha isn\'t finished'**
   String get notifChannelErevShabbatDesc;
 
   /// Android notification channel description, shown in the system's notification settings.
   ///
   /// In en, this message translates to:
-  /// **'After Shabbat, to log what you read, and the note when reminders pause'**
+  /// **'After Shabbat, a reminder to log what you read; also the note when reminders stop'**
   String get notifChannelCheckInDesc;
 
   /// No description provided for @notifDailyTitle.

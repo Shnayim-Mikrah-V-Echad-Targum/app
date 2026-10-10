@@ -1332,15 +1332,15 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notifChannelDailyDesc =>
-      'הקריאה של היום בשעה שבחרת, לעולם לא בשבת וביום טוב';
+      'הקריאה של היום בשעה שבחרת, אף פעם לא בשבת או ביום טוב';
 
   @override
   String get notifChannelErevShabbatDesc =>
-      'ביום שישי בבוקר, רק אם הפרשה לא הושלמה';
+      'בבוקר שלפני שבת או יום טוב, רק אם הפרשה לא הושלמה';
 
   @override
   String get notifChannelCheckInDesc =>
-      'אחרי שבת, לרשום מה שקראת, וההודעה כשהתזכורות מושהות';
+      'אחרי שבת: תזכורת לרשום מה שנקרא, וגם הודעה כשהתזכורות נעצרות';
 
   @override
   String notifDailyTitle(String aliyah) {

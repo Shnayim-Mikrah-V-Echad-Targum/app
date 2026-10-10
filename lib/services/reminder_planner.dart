@@ -76,9 +76,10 @@ const kErevCutoffMinutes = 12 * 60;
 ///  * nothing after midday on Erev Tisha B'Av, when Torah study stops;
 ///  * at most one a day — Erev Shabbat > after-Shabbat check-in > daily;
 ///  * daily reminders only on planned days whose reading isn't done yet;
-///  * nothing during a pause;
+///  * nothing during a pause, and after a pause that runs past the [days]
+///    ahead, [days] more of them from its end;
 ///  * after the last of them, one message that reminders have paused. Every
-///    app open plans again, so only someone away for [days] days sees it.
+///    app open plans again, so only someone away for that long sees it.
 List<PlannedReminder> planReminders({
   required ReminderPrefs prefs,
   required ReadingPlanner planner,
@@ -108,7 +109,19 @@ List<PlannedReminder> planReminders({
     if (existing == null || _priority(r.kind) > _priority(existing.kind)) byDay[r.date] = r;
   }
 
-  final end = today.addDays(days);
+  // A pause chosen for longer than the horizon moves it on: reminders
+  // resume when the pause ends, rather than the message that they have
+  // paused coming first.
+  var end = today.addDays(days);
+  for (var moved = true; moved;) {
+    moved = false;
+    for (final p in pauses) {
+      if (p.contains(end)) {
+        end = p.end.addDays(days);
+        moved = true;
+      }
+    }
+  }
   // Start a week back: last week's after-Shabbat check-in may be due today.
   var week = planner.schedule.previousWeek(planner.schedule.weekFor(today));
   while (week.start <= end) {

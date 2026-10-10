@@ -834,11 +834,11 @@
   "@notifChannelDailyDesc": {
     "description": "Android notification channel description, shown in the system's notification settings."
   },
-  "notifChannelErevShabbatDesc": "Friday morning, only if the parsha isn't finished",
+  "notifChannelErevShabbatDesc": "The morning before Shabbat or Yom Tov, only if the parsha isn't finished",
   "@notifChannelErevShabbatDesc": {
     "description": "Android notification channel description, shown in the system's notification settings."
   },
-  "notifChannelCheckInDesc": "After Shabbat, to log what you read, and the note when reminders pause",
+  "notifChannelCheckInDesc": "After Shabbat, a reminder to log what you read; also the note when reminders stop",
   "@notifChannelCheckInDesc": {
     "description": "Android notification channel description, shown in the system's notification settings."
   },
