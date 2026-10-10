@@ -148,7 +148,7 @@ lib/
   l10n/           ARB files (English source and generated Hebrew)
 assets/
   text/           Torah, Targum, English, Rashi and haftarot as JSON
-  data/           parsha metadata, aliyot, haftarah references
+  data/           parsha metadata, aliyot, haftarah references, cities for Shabbat times
   fonts/          bundled fonts and their licenses
 supabase/         database migrations, local config, email template, SQL tests
 tool/
@@ -167,6 +167,7 @@ You only need to do this when a source text or the schedule rules change:
 ```sh
 cd tool/data && npm ci
 NODE_USE_ENV_PROXY=1 node build_data.mjs      # assets/text/** and assets/data/parshiyot.json
+node build_cities.mjs                         # assets/data/cities.json (before the fixtures)
 node gen_fixtures.mjs                         # calendar tables and test fixtures
 python3 gen_supabase_reference.py             # forum categories and parashot reference data
 ```
@@ -189,6 +190,7 @@ bash tool/fonts/build_fonts.sh
 | English | JPS 1917 | Public domain |
 | Rashi (Hebrew and English) | Rosenbaum & Silbermann, 1929–1934 | Public domain |
 | Aliyot and haftarah references | @hebcal/leyning | BSD-2-Clause |
+| Cities for Shabbat times | GeoNames, via geonamescache 3.0.2 | CC BY 4.0 |
 
 The texts come from the Sefaria public export. Font licenses are listed in [assets/fonts/licenses/README.md](assets/fonts/licenses/README.md) and shown in the app under *About → Open-source licenses*.
 
