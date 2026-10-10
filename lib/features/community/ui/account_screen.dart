@@ -106,7 +106,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         const Gap(16),
         FilledButton(onPressed: _busy ? null : _sendCode, child: Text(l.sendCodeAction)),
       ] else ...[
-        Text(l.codeSentTo(_email.text.trim())),
+        Text(l.codeSentTo(context.ltrRun(_email.text.trim()))),
         if (demo) Text(l.demoCodeHint, style: Theme.of(context).textTheme.bodySmall),
         const Gap(12),
         TextField(
@@ -143,7 +143,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       if (!mounted) return;
       setState(() => _codeSent = true);
       _focusAfterFrame(_codeFocus);
-    }, success: context.l10n.codeSentTo(email));
+    }, success: context.l10n.codeSentTo(context.ltrRun(email)));
   }
 
   /// Signs in, and says as whom.

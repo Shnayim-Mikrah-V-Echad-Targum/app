@@ -13,7 +13,7 @@ Future<void> maybeOfferReminders(BuildContext context, WidgetRef ref, {required 
   final service = ref.read(notificationServiceProvider);
   final settings = ref.read(settingsProvider);
   ref.read(settingsProvider.notifier).update((s) => s.copyWith(notificationPromptShown: true));
-  final time = Names(context).time(settings.dailyReminderMinutes);
+  final time = context.ltrRun(Names(context).time(settings.dailyReminderMinutes));
 
   final yes = await showAppDialog<bool>(
     context: context,

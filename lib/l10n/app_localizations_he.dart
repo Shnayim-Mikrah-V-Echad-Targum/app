@@ -1,3 +1,5 @@
+// ignore_for_file: text_direction_code_point_in_literal
+
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
 
@@ -985,7 +987,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get planShevii => 'שביעי בשבת בבוקר';
 
   @override
-  String get planSheviiDesc => 'עליות 1–6 בימים א׳–ו׳; השביעית לפני סעודת שבת';
+  String get planSheviiDesc =>
+      'עליות ⁦1–6⁩ בימים א׳–ו׳; השביעית לפני סעודת שבת';
 
   @override
   String get planErevShabbat => 'הכול ביום שישי';
@@ -1799,7 +1802,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get displayNameLabel => 'שם תצוגה';
 
   @override
-  String get displayNameHelp => 'מוצג עם ההודעות שלך. 2–40 תווים.';
+  String get displayNameHelp => 'מוצג עם ההודעות שלך. ⁦2–40⁩ תווים.';
 
   @override
   String get saveName => 'שמירת השם';
@@ -2116,7 +2119,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get errAlreadyReported => 'כבר דיווחת על ההודעה הזאת.';
 
   @override
-  String get errInvalidName => 'השם צריך להכיל 2–40 תווים.';
+  String get errInvalidName => 'השם צריך להכיל ⁦2–40⁩ תווים.';
 
   @override
   String get errInvalidCode => 'הקוד לא התקבל. נא לבדוק ולנסות שוב.';

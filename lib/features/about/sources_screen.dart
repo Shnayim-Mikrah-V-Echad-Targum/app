@@ -39,7 +39,7 @@ class SourcesScreen extends StatelessWidget {
       _Source(
         he ? 'פירוש רש״י' : "Rashi's commentary (Hebrew and English)",
         he
-            ? 'חמישה חומשי תורה עם פירוש רש״י, מ. רוזנבאום וא.מ. סילברמן, לונדון 1929–1934, דרך ספריא.'
+            ? 'חמישה חומשי תורה עם פירוש רש״י, מ. רוזנבאום וא.מ. סילברמן, לונדון ${ltr('1929–1934')}, דרך ספריא.'
             : "Pentateuch with Rashi's commentary, M. Rosenbaum and A. M. Silbermann, London 1929–1934, via Sefaria.",
         he ? 'נחלת הכלל' : 'Public domain',
         'https://www.sefaria.org/Rashi_on_Genesis',
@@ -47,14 +47,14 @@ class SourcesScreen extends StatelessWidget {
       _Source(
         he ? 'תרגום לאנגלית' : 'English translation',
         he
-            ? 'The Holy Scriptures: A New Translation, JPS 1917, דרך פרויקט הסידור הפתוח וספריא.'
+            ? 'התרגום ${ltr('The Holy Scriptures: A New Translation')} של JPS משנת 1917, דרך פרויקט הסידור הפתוח וספריא.'
             : 'The Holy Scriptures: A New Translation (JPS 1917), via the Open Siddur Project and Sefaria.',
         he ? 'נחלת הכלל' : 'Public domain',
         'https://opensiddur.org/',
       ),
       _Source(
         he ? 'חלוקת עליות והפטרות' : 'Aliyah divisions and haftarah references',
-        he ? 'מתוך @hebcal/leyning של Hebcal.' : 'From @hebcal/leyning by Hebcal.',
+        he ? 'מתוך ${ltr('@hebcal/leyning')} של Hebcal.' : 'From @hebcal/leyning by Hebcal.',
         'BSD-2-Clause',
         'https://github.com/hebcal/hebcal-leyning',
       ),
@@ -95,7 +95,7 @@ class SourcesScreen extends StatelessWidget {
             ),
           Text(
             he
-                ? 'הטקסטים בצורתם המעובדת באפליקציה זו מופצים בתנאי הרישיונות המקוריים. קובצי הנתונים נמצאים בתיקייה assets/text בקוד המקור.'
+                ? 'הטקסטים בצורתם המעובדת באפליקציה זו מופצים בתנאי הרישיונות המקוריים. קובצי הנתונים נמצאים בתיקייה ${ltr('assets/text')} בקוד המקור.'
                 : 'The texts as adapted in this app are distributed under their original licenses. The data files are in the assets/text folder of the source code.',
             style: Theme.of(context).textTheme.bodySmall,
           ),

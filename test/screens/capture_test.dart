@@ -152,7 +152,9 @@ const _screens = {
   's_data_paste': '/settings/data',
   'about': '/settings/about',
   'guide': '/guide',
+  'sources': '/sources',
   'legal': '/legal/privacy',
+  'legal_a11y': '/legal/accessibility',
   // Links that lead nowhere: a mistyped address, and a forum that is gone.
   'not_found': '/nope',
   'forum_missing': '/community/forum/xyz',

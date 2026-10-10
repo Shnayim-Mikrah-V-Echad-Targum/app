@@ -1,3 +1,5 @@
+// ignore_for_file: text_direction_code_point_in_literal
+
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
 

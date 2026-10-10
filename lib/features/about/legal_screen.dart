@@ -35,7 +35,10 @@ class LegalScreen extends StatelessWidget {
       LegalDoc.accessibility => l.accessibilityStatement,
     };
     final sections = (he ? _he : _en)[doc]!;
-    final contact = AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '$issueTrackerUri';
+    // Isolated in Hebrew, where it has a line of its own: so it keeps its
+    // order, and where it wraps, at one of its hyphens say, the hyphen isn't
+    // left against the Hebrew before it.
+    final contact = context.ltrRun(AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '$issueTrackerUri');
     return Scaffold(
       appBar: AppBar(leading: homeLeading(context), title: Text(title)),
       body: PageBody(
@@ -117,7 +120,7 @@ const _he = <LegalDoc, List<(String, String)>>{
         'הכניסה לקהילה משתמשת בכתובת הדוא״ל שלך לצורך הכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. אם בחרת לסנכרן את ההתקדמות, היא נשמרת עם החשבון כדי שתוכל/י לשחזר אותה במכשיר אחר.'),
     ('מחיקת המידע',
         'אפשר לאפס את ההתקדמות בכל עת בהגדרות, תחת ״הנתונים שלך״. אפשר למחוק את החשבון בהגדרות, תחת ״חשבון וקהילה״; פעולה זו מוחקת את הפרופיל, ההודעות וההתקדמות המסונכרנת.'),
-    ('יצירת קשר', 'שאלות ובקשות: {contact}'),
+    ('יצירת קשר', 'שאלות ובקשות:\n{contact}'),
   ],
   LegalDoc.terms: [
     ('', 'השימוש בשניים מקרא מהווה הסכמה לתנאים אלה.'),
@@ -151,6 +154,6 @@ const _he = <LegalDoc, List<(String, String)>>{
             '• הקראה קולית כשקיים קול בעברית'),
     ('מגבלות ידועות',
         'קולות העברית שונים בין מכשירים, וחלק מקוראי המסך אינם הוגים עברית מנוקדת באופן מושלם. ב־Windows, \u200fNarrator ו־NVDA אינם עוברים לקול עברי מעצמם, כי שם אין לאפליקציה דרך לציין להם את שפת הטקסט. כדי לשמוע את העברית בקול עברי, יש לבחור קול כזה בהגדרות קורא המסך. תזכורות אינן זמינות בגרסת הדפדפן.'),
-    ('משוב', 'אם משהו קשה לשימוש, נשמח לשמוע: {contact}. נשתדל להשיב תוך חמישה ימי עבודה.'),
+    ('משוב', 'אם משהו קשה לשימוש, נשמח לשמוע, ונשתדל להשיב תוך חמישה ימי עבודה. אפשר לכתוב לנו:\n{contact}'),
   ],
 };

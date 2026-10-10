@@ -1,5 +1,9 @@
 # Hebrew translations for lib/l10n/app_he.arb. Run `python3 tool/l10n/build_he.py`
 # after editing; it checks that every key in app_en.arb is translated.
+#
+# A Latin run that the bidi algorithm would reorder inside Hebrew, such as a
+# range of numbers ("1–6", which would show as "6–1") or a URL, goes between
+# \u2066 and \u2069 (a left-to-right isolate; ltr() in lib/ui/l10n.dart).
 HE = {
   "appTitle": "שניים מקרא",
   "appTitleFull": "שניים מקרא ואחד תרגום",
@@ -271,7 +275,7 @@ HE = {
   "planAliyahPerDay": "עלייה ליום",
   "planAliyahPerDayDesc": "עלייה אחת בימים א׳–ה׳; שישי ושביעי ביום ו׳",
   "planShevii": "שביעי בשבת בבוקר",
-  "planSheviiDesc": "עליות 1–6 בימים א׳–ו׳; השביעית לפני סעודת שבת",
+  "planSheviiDesc": "עליות \u20661–6\u2069 בימים א׳–ו׳; השביעית לפני סעודת שבת",
   "planErevShabbat": "הכול ביום שישי",
   "planErevShabbatDesc": "כל הפרשה בערב שבת (האריז״ל; שולחן ערוך הרב)",
   "methodLabel": "שיטת קריאה",
@@ -508,7 +512,7 @@ HE = {
   "demoCodeHint": "מצב הדגמה: כל 6 ספרות יעבדו.",
   "signedInAs": "מחובר/ת בשם {name}",
   "displayNameLabel": "שם תצוגה",
-  "displayNameHelp": "מוצג עם ההודעות שלך. 2–40 תווים.",
+  "displayNameHelp": "מוצג עם ההודעות שלך. \u20662–40\u2069 תווים.",
   "saveName": "שמירת השם",
   "nameSaved": "השם נשמר.",
   "syncProgress": "גיבוי ההתקדמות שלי",
@@ -592,7 +596,7 @@ HE = {
   "errDailyLimit": "לחברים חדשים יש מגבלה יומית. נא לנסות שוב מחר.",
   "errNameTaken": "השם תפוס.",
   "errAlreadyReported": "כבר דיווחת על ההודעה הזאת.",
-  "errInvalidName": "השם צריך להכיל 2–40 תווים.",
+  "errInvalidName": "השם צריך להכיל \u20662–40\u2069 תווים.",
   "errInvalidCode": "הקוד לא התקבל. נא לבדוק ולנסות שוב.",
   "errInvalidEmail": "נא להזין כתובת דוא״ל תקינה.",
   "errNotSignedIn": "יש להתחבר תחילה.",

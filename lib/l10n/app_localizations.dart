@@ -1,3 +1,4 @@
+// ignore_for_file: text_direction_code_point_in_literal
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
