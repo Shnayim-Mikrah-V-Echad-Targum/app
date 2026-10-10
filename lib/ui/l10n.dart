@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../core/calendar/hebrew_date.dart';
 import '../core/calendar/local_date.dart';
+import '../core/calendar/parsha_schedule.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/models/parsha.dart';
 import '../features/settings/app_settings.dart';
@@ -115,14 +116,32 @@ class Names {
   String time(int minutesSinceMidnight) => DateFormat.jm(context.localeName)
       .format(DateTime(2000, 1, 1, minutesSinceMidnight ~/ 60, minutesSinceMidnight % 60));
 
-  /// "28 Tishrei 5787" / "כ״ח תשרי תשפ״ז".
+  /// "28 Tishrei 5787" / "כ״ח בתשרי תשפ״ז".
   String hebrewDate(LocalDate d) {
     final h = HebrewDate.fromLocalDate(d);
+    return '${_hebrewDayMonth(h)} ${_he ? HebrewText.gematria(h.year % 1000) : h.year}';
+  }
+
+  /// "28 Tishrei" / "כ״ח בתשרי": [hebrewDate] without the year.
+  String hebrewDayMonth(LocalDate d) => _hebrewDayMonth(HebrewDate.fromLocalDate(d));
+
+  /// In Hebrew the month takes ב, as a date is written and said: כ״ח בתשרי.
+  String _hebrewDayMonth(HebrewDate h) {
     final month = hebrewMonth(h.year, h.month);
-    if (_he) {
-      return '${HebrewText.gematria(h.day)} $month ${HebrewText.gematria(h.year % 1000)}';
+    return _he ? '${HebrewText.gematria(h.day)} ב$month' : '${h.day} $month';
+  }
+
+  /// When [week]'s portion is read in synagogue: "Read on Shabbat,
+  /// 10 October", or for Vezot HaBerakhah "Read on Simchat Torah, Sunday,
+  /// 4 October". The Hebrew UI dates it in the Hebrew calendar, without the
+  /// year: "נקראת בשבת, כ״ט בתשרי".
+  String readOnLabel(ReadingWeek week) {
+    final d = week.occasion;
+    if (week.portion.isVezotHaberakhah) {
+      // Simchat Torah is seldom a Shabbat, so it gives the weekday too.
+      return _l.readOnSimchatTorah(_he ? '${weekday(d)}, ${hebrewDayMonth(d)}' : dateLong(d));
     }
-    return '${h.day} $month ${h.year}';
+    return _l.readOnShabbat(_he ? hebrewDayMonth(d) : dateMonthDay(d));
   }
 
   String hebrewMonth(int year, int month) {

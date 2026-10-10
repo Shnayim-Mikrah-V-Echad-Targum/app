@@ -944,7 +944,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - **Eyebrow:** `parshatHashavua` by default; `erevShabbat` on Friday at or after 12:00 local; "Simchat Torah" when the portion is Vezot Haberakhah.
    - 8 gap, then the Hebrew pointed name: new `Names.portionPointed(p)` = `HebrewText.forDisplay(p.nameHe, nikud: true, teamim: false)`, in hebrewDisplay 46/60 primary. Semantics header level 1 with label `parshaLabel(name)`.
    - English UI: the Latin name in headlineLarge onSurface. Hebrew UI: the Latin name in bodyMedium onSurfaceVariant.
-   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read Shabbat, 10 October". Then bodySmall onSurfaceVariant `shabbatInDays`.
+   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`.
    - 16 gap, SeferDivider, 16 gap.
    - Row of ParshaRings 104, a 20 gap, and `Expanded(RingLegend)`. Under the legend, an end-aligned TextButton `allAliyot` ("All aliyot") with a chevron, to /today/week/{id} (within the Today tab). Under 360 dp the rings sit centred above the legend.
    - 20 gap, then a full-width Filled button (52) with `menu_book` and a label naming the destination. Let `next = ctx.nextAliyah` and `p` = the first ReadingPass of `next` that is not done:
@@ -982,7 +982,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 
 1. **Header** (no card, start-aligned):
    - Hebrew pointed name in hebrewDisplay 36/48 primary; in the English UI, the Latin name in headlineMedium;
-   - bodyMedium onSurfaceVariant "Genesis 1:1–6:8 · 146 verses · Read Shabbat, 10 October";
+   - bodyMedium onSurfaceVariant "Genesis 1:1–6:8 · 146 verses · Read on Shabbat, 10 October" (`names.readOnLabel(week)`, as on Today);
    - the status line (icon plus label) in bodySmall;
    - ParshaRings 88 with RingLegend in a Row at ≥360.
 2. **GroupHeader** with `aliyotProgress` ("2 of 7 aliyot", no digits in the eyebrow, so render it as titleSmall onSurfaceVariant instead of an eyebrow).

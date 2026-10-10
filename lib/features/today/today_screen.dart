@@ -173,9 +173,7 @@ class _ParshaCard extends ConsumerWidget {
     final repo = ref.watch(parshaRepositoryProvider);
     final weights = [for (var a = 0; a < kAliyot; a++) repo.aliyahVerseCount(ctx.portion, a)];
     final occasion = ctx.week.occasion;
-    final readOn = ctx.week.portion.isVezotHaberakhah
-        ? l.readOnSimchatTorah(names.dateLong(occasion))
-        : l.readOnShabbat(names.dateMonthDay(occasion));
+    final readOn = names.readOnLabel(ctx.week);
     final next = ctx.nextAliyah;
     final started = ctx.progress.isStarted;
     final daysLeft = occasion.differenceInDays(ctx.today);

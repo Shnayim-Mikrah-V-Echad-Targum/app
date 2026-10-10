@@ -85,6 +85,8 @@ const _screens = {
   'today_simchat_torah': '/today',
   // The week of Pinchas after 17 Tammuz, with its special haftarah.
   'today_three_weeks': '/today',
+  // Paused over the end of Bereshit, with its button to end the pause.
+  'today_paused': '/today',
   'parsha': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
@@ -262,6 +264,10 @@ final _screenProgress = <String, ProgressState Function()>{
   'today_joined_midweek': () => ProgressState(weeks: {}),
   'today_simchat_torah': () => ProgressState(weeks: {}),
   'today_three_weeks': () => ProgressState(weeks: {}),
+  'today_paused': () => ProgressState(
+        weeks: _progress().weeks,
+        pauses: [Pause(LocalDate(2026, 10, 8), LocalDate(2026, 10, 18), id: 'travel')],
+      ),
   // All three readings of Shlishi (from Genesis 2:20) have reached 3:1,
   // its seventh verse, where the guided reader resumes and focus mode opens.
   'reader_focus': () => ProgressState(weeks: {

@@ -3,6 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
+import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -56,6 +59,63 @@ void main() {
       names = Names(await _page(tester, hebrew: true));
       expect(names.specialHaftarah('Pinchas occurring after 17 Tammuz'), 'פנחס אחרי י״ז בתמוז');
       expect(names.specialHaftarah('Chanukah Day 8 (on Shabbat)'), 'שבת חנוכה השנייה');
+    });
+  });
+
+  group('Hebrew dates', () {
+    LocalDate on(int year, int month, int day) => HebrewDate(year, month, day).toLocalDate();
+
+    testWidgets('are transliterated in English, with the year', (tester) async {
+      final names = Names(await _page(tester, hebrew: false));
+      expect(names.hebrewDate(LocalDate(2026, 10, 9)), '28 Tishrei 5787');
+      expect(names.hebrewDayMonth(LocalDate(2026, 10, 9)), '28 Tishrei');
+      expect(names.hebrewDate(on(5787, HebrewMonth.adar2, 14)), '14 Adar II 5787');
+    });
+
+    testWidgets('take ב before the month in Hebrew, as a date is written', (tester) async {
+      final names = Names(await _page(tester, hebrew: true));
+      expect(names.hebrewDate(LocalDate(2026, 10, 9)), 'כ״ח בתשרי תשפ״ז');
+      expect(names.hebrewDayMonth(LocalDate(2026, 10, 9)), 'כ״ח בתשרי');
+      expect(names.hebrewDayMonth(on(5787, HebrewMonth.nisan, 1)), 'א׳ בניסן');
+      expect(names.hebrewDayMonth(on(5787, HebrewMonth.shevat, 15)), 'ט״ו בשבט');
+      // 5787 is a leap year, and 5786 is not.
+      expect(names.hebrewDate(on(5787, HebrewMonth.adar, 14)), 'י״ד באדר א׳ תשפ״ז');
+      expect(names.hebrewDate(on(5787, HebrewMonth.adar2, 14)), 'י״ד באדר ב׳ תשפ״ז');
+      expect(names.hebrewDate(on(5786, HebrewMonth.adar, 14)), 'י״ד באדר תשפ״ו');
+    });
+  });
+
+  group('the day a portion is read', () {
+    const diaspora = ParshaSchedule(israel: false);
+    const israel = ParshaSchedule(israel: true);
+    // Bereshit, read on Shabbat 10 October 2026, 29 Tishrei 5787.
+    final bereshit = diaspora.weekFor(LocalDate(2026, 10, 9));
+    // Vezot HaBerakhah, read on Simchat Torah: Sunday 4 October 2026
+    // (23 Tishrei) in the Diaspora, and Shabbat 3 October (22 Tishrei) in
+    // Israel, where it is still Simchat Torah rather than Shabbat.
+    final vezot = diaspora.weekFor(LocalDate(2026, 10, 1));
+    final vezotIsrael = israel.weekFor(LocalDate(2026, 10, 1));
+
+    test('is the Shabbat of Bereshit, and Simchat Torah for Vezot HaBerakhah', () {
+      expect(bereshit.portion, const PortionId(1));
+      expect(bereshit.occasion, LocalDate(2026, 10, 10));
+      expect(vezot.portion.isVezotHaberakhah, isTrue);
+      expect(vezot.occasion, LocalDate(2026, 10, 4));
+      expect(vezotIsrael.portion.isVezotHaberakhah, isTrue);
+      expect(vezotIsrael.occasion, LocalDate(2026, 10, 3));
+    });
+
+    testWidgets('is a Gregorian date in English', (tester) async {
+      final names = Names(await _page(tester, hebrew: false));
+      expect(names.readOnLabel(bereshit), 'Read on Shabbat, October 10');
+      expect(names.readOnLabel(vezot), 'Read on Simchat Torah, Sunday, October 4');
+    });
+
+    testWidgets('is a Hebrew date in Hebrew, without the year', (tester) async {
+      final names = Names(await _page(tester, hebrew: true));
+      expect(names.readOnLabel(bereshit), 'נקראת בשבת, כ״ט בתשרי');
+      expect(names.readOnLabel(vezot), 'נקראת בשמחת תורה, יום ראשון, כ״ג בתשרי');
+      expect(names.readOnLabel(vezotIsrael), 'נקראת בשמחת תורה, יום שבת, כ״ב בתשרי');
     });
   });
 

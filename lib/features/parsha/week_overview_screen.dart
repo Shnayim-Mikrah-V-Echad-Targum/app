@@ -114,13 +114,14 @@ class WeekOverview extends ConsumerWidget {
           Text(names.portionAlt(portion, ashkenazi: settings.ashkenaziNames),
               style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           Text(names.range(portion.book, range.start.chapter, range.start.verse, range.end.chapter, range.end.verse)),
+          Text(names.readOnLabel(ctx.week)),
+          // The line above dates the reading in the UI's own calendar, the
+          // Hebrew one in the Hebrew UI; this one gives the other calendar.
           Text(
-            ctx.week.portion.isVezotHaberakhah
-                ? l.readOnSimchatTorah(names.dateLong(ctx.week.occasion))
-                : l.readOnShabbat(names.dateMonthDay(ctx.week.occasion)),
+            '${l.versesCount(repo.verseCount(portion))} · '
+            '${context.isHebrewUi ? names.dateWithYear(ctx.week.occasion) : names.hebrewDate(ctx.week.occasion)}',
+            style: theme.textTheme.bodySmall,
           ),
-          Text('${l.versesCount(repo.verseCount(portion))} · ${names.hebrewDate(ctx.week.occasion)}',
-              style: theme.textTheme.bodySmall),
           if (ctx.status != null) ...[const Gap(8), WeekStatusBadge(ctx.status!)],
           if (!ctx.isOpen) ...[
             const Gap(12),
