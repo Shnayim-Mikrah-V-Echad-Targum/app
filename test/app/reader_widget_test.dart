@@ -87,8 +87,7 @@ void main() {
 
       c.read(routerProvider).go('/week/5787:2');
       await tester.pumpAndSettle();
-      final rishon = find.ancestor(of: find.text('Rishon · aliyah 1'), matching: find.byType(ListTile));
-      await tester.tap(find.descendant(of: rishon, matching: find.byTooltip('More options for Rishon')));
+      await tester.tap(find.byTooltip('More options for Rishon'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Mark as not read'));
       await tester.pumpAndSettle();

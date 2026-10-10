@@ -143,8 +143,14 @@ const _screens = {
   // Erev Tisha B'Av 5787, the day the reader joined.
   'today_erev_tisha_bav': '/today',
   'parsha': '/parsha',
+  // Scrolled past its head: the app bar names the parsha.
+  'parsha_scrolled': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
+  // Next week's, not yet open: a preview.
+  'week_next': '/week/5787:2',
+  // Two parshiyot read together, under one long name.
+  'week_combined': '/week/5787:22-23',
   // A week and its haftarah opened within a tab, under its navigation bar.
   'week_tab': '/today/week/5787:1',
   'haftarah_tab': '/parsha/haftarah/5787:1',
@@ -673,7 +679,7 @@ final _taps = {
   'welcome_why': () => find.byIcon(Icons.expand_more),
   // Next, on the last step of Shevi'i.
   'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
-  'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
+  'week_discuss': () => find.widgetWithIcon(PaperRow, Icons.forum_outlined),
   'thread_refreshed': () => find.byIcon(Icons.refresh),
   'account_code': () => find.byType(FilledButton).first,
 };
@@ -849,6 +855,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'sheet_display': (tester) => tester.tap(find.byIcon(Icons.text_format)),
   'scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -400)),
+  'parsha_scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -300)),
   'kit_ornaments': (tester) => _showGallery(tester, const OrnamentsGallery()),
   'kit_rows': (tester) => _showGallery(tester, const RowsGallery()),
   'kit_progress': (tester) => _showGallery(tester, const ProgressGallery()),
@@ -1020,6 +1027,8 @@ const _desktopScreens = {
   'today_divergence',
   'today_haftarah_left',
   'today_yomtov_oneday',
+  'parsha',
+  'parsha_scrolled',
   'week',
   'week_tab',
   'haftarah_tab',
@@ -1067,8 +1076,10 @@ const _desktopScreens = {
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
+const _narrowScreens = {'parsha', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
+  'parsha',
+  'week_combined',
   'today',
   'today_book',
   'today_shabbat',

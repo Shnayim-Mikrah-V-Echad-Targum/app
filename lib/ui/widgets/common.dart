@@ -129,12 +129,17 @@ class PageBody extends StatelessWidget {
 /// [PageBody]. The title is the page's heading, of level 1: [titleText], or
 /// [title] where it shows the same some other way. [titleText] also names
 /// the tab; [showTitle] false leaves the app bar without a title.
+///
+/// A page that sets its heading in its body, as a title page does, gives
+/// [titleRevealed]: the app bar's title then repeats that heading for the
+/// eye alone, once it has scrolled under the app bar.
 class PageScaffold extends StatelessWidget {
   const PageScaffold({
     super.key,
     required this.titleText,
     this.title,
     this.showTitle = true,
+    this.titleRevealed,
     this.actions,
     this.leading,
     required this.body,
@@ -148,6 +153,12 @@ class PageScaffold extends StatelessWidget {
   final String titleText;
   final Widget? title;
   final bool showTitle;
+
+  /// For a page whose heading is in its body: whether the app bar shows its
+  /// title, which fades in once the heading has scrolled under it. Screen
+  /// readers find the heading in the page, so the title is hidden from them.
+  /// Null for the usual title, always shown and the page's heading.
+  final bool? titleRevealed;
   final List<Widget>? actions;
 
   /// The app bar's leading button, if not the back button it adds itself.
@@ -174,14 +185,28 @@ class PageScaffold extends StatelessWidget {
           // A back button, where the app bar adds one: the test it makes, but
           // for local history entries, which pages don't use.
           final hasLeading = leading != null || (ModalRoute.canPopOf(context) ?? false);
+          final shown = title ?? Text(titleText);
           return Scaffold(
             appBar: showAppBar
                 ? AppBar(
                     leading: leading,
                     titleSpacing: hasLeading ? math.max(g, inset - _leadingWidth) : inset,
                     actionsPadding: EdgeInsetsDirectional.only(end: inset - g),
-                    // The app bar makes it a heading; this gives its level.
-                    title: showTitle ? Semantics(headingLevel: 1, child: title ?? Text(titleText)) : null,
+                    excludeHeaderSemantics: titleRevealed != null,
+                    title: !showTitle
+                        ? null
+                        : switch (titleRevealed) {
+                            // The app bar makes it a heading; this gives its level.
+                            null => Semantics(headingLevel: 1, child: shown),
+                            final revealed => ExcludeSemantics(
+                                child: AnimatedOpacity(
+                                  opacity: revealed ? 1 : 0,
+                                  duration: Motion.of(context).d(Motion.short),
+                                  curve: Motion.standard,
+                                  child: shown,
+                                ),
+                              ),
+                          },
                     actions: actions,
                     bottom: bottom,
                   )

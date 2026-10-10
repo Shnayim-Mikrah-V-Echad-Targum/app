@@ -103,7 +103,6 @@
       }
     }
   },
-  "passShortMikra": "Mikra",
   "passSemantics": "{pass}: {state}",
   "@passSemantics": {
     "placeholders": {
@@ -631,12 +630,14 @@
   "weekInProgress": "In progress",
   "plannedFor": "Planned for {day}",
   "@plannedFor": {
+    "description": "The day is the weekday's name (Names.weekday): 'Monday', in Hebrew 'יום שני', which takes ל directly.",
     "placeholders": {
       "day": {
         "type": "String"
       }
     }
   },
+  "plannedForToday": "Planned for today",
   "plannedForShabbat": "Shabbat morning — log it after Shabbat",
   "markWholeWeek": "Mark the whole parsha as read",
   "clearWeek": "Clear this week's progress",
@@ -655,10 +656,11 @@
   "whenPickDate": "Choose a date",
   "markedRead": "Marked as read",
   "markedUnread": "Marked as not read",
-  "aliyahNote": "Note: {note}",
-  "@aliyahNote": {
+  "aliyahOtherDivision": "Some sources use {range}",
+  "@aliyahOtherDivision": {
+    "description": "Under an aliyah whose verses some sources divide differently: the verses they give it instead, without the book ('4:19–26'; in Hebrew 'ד, יט–כו').",
     "placeholders": {
-      "note": {
+      "range": {
         "type": "String"
       }
     }

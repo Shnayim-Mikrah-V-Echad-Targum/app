@@ -190,9 +190,6 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get passShortMikra => 'מקרא';
-
-  @override
   String passSemantics(String pass, String state) {
     return '$pass: $state';
   }
@@ -678,8 +675,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String plannedFor(String day) {
-    return 'מתוכנן ליום $day';
+    return 'מתוכנן ל$day';
   }
+
+  @override
+  String get plannedForToday => 'מתוכנן להיום';
 
   @override
   String get plannedForShabbat => 'שבת בבוקר — לרשום אחרי שבת';
@@ -717,8 +717,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get markedUnread => 'סומן כלא נקרא';
 
   @override
-  String aliyahNote(String note) {
-    return 'הערה: $note';
+  String aliyahOtherDivision(String range) {
+    return 'לפי חלק מהמקורות: $range';
   }
 
   @override

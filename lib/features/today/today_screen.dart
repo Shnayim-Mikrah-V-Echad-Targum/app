@@ -20,12 +20,14 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fonts_change_scope.dart';
 import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/ledger.dart';
+import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
 import '../community/ui/community_ui.dart';
 import '../parsha/week_context.dart';
+import '../parsha/week_rows.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
@@ -158,41 +160,13 @@ class TodayScreen extends ConsumerWidget {
       ],
       GroupHeader(l.thisWeek),
       PaperGroup(
+        ruleInset: PaperGroup.iconInset,
         children: [
-          if (settings.haftarahEnabled || ctx.haftarahRequired) _haftarahRow(context, ctx),
-          WeeklyThreadOpener(
-            portion: ctx.portion,
-            hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
-            builder: (context, progress, open) => PaperRow(
-              icon: Icons.forum_outlined,
-              title: l.discussThisWeek,
-              trailing: progress,
-              onTap: open,
-            ),
-          ),
+          if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
+          DiscussRow(ctx: ctx),
         ],
       ),
     ];
-  }
-
-  /// The week's haftarah: its reference, and a line for a special haftarah
-  /// and for the regular one its page also offers.
-  PaperRow _haftarahRow(BuildContext context, WeekContext ctx) {
-    final l = context.l10n;
-    final names = Names(context);
-    final h = ctx.haftarah;
-    return PaperRow(
-      icon: Icons.auto_stories_outlined,
-      title: ctx.progress.haftarah != null ? l.haftarahRead : l.haftarahLabel,
-      subtitle: [
-        h.parts.map((p) => names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse)).join(' · '),
-        if (h.specialKey case final key?) l.specialHaftarah(names.specialHaftarah(key)),
-        if (h.regular != null) l.alsoRegularHaftarah,
-      ].join('\n'),
-      // A line for each fact, none cut short.
-      subtitleMaxLines: null,
-      onTap: () => context.push('/today/haftarah/${ctx.id}'),
-    );
   }
 }
 
@@ -218,7 +192,7 @@ class _TodayHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _DotLine(
+              DotLine(
                 runningHead,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w500,
@@ -443,10 +417,10 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
           else
             // The heading already says it.
             ExcludeSemantics(
-              child: _WholeWords(name, style: theme.textTheme.headlineLarge?.copyWith(color: scheme.onSurface)),
+              child: WholeWords(name, style: theme.textTheme.headlineLarge?.copyWith(color: scheme.onSurface)),
             ),
           const Gap(Space.xs),
-          _DotLine(
+          DotLine(
             [
               names.range(portion.book, range.start.chapter, range.start.verse, range.end.chapter, range.end.verse),
               names.readOnLabel(week),
@@ -568,7 +542,7 @@ class _ParshaHeading extends StatelessWidget {
         child: ExcludeSemantics(
           child: Lang(
             const Locale('he'),
-            child: _WholeWords(
+            child: WholeWords(
               Names(context).portionPointed(portion),
               style: style,
               textDirection: TextDirection.rtl,
@@ -847,41 +821,6 @@ class _BookSheetState extends State<_BookSheet> {
   }
 }
 
-/// [parts] on one line, between middle dots, where they fit; otherwise each
-/// on a line of its own, so that a line breaks between them rather than
-/// inside one ("Read on Shabbat, October / 10").
-class _DotLine extends StatelessWidget {
-  const _DotLine(this.parts, {required this.style, this.textAlign = TextAlign.start});
-
-  final List<String> parts;
-  final TextStyle? style;
-  final TextAlign textAlign;
-
-  @override
-  Widget build(BuildContext context) {
-    // Measured again when a font arrives.
-    FontsChangeScope.watch(context);
-    final joined = parts.join(' · ');
-    return LayoutBuilder(builder: (context, constraints) {
-      final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
-      final painter = TextPainter(
-        text: TextSpan(text: joined, style: style?.merge(bold) ?? bold),
-        textDirection: Directionality.of(context),
-        textScaler: MediaQuery.textScalerOf(context),
-        locale: Localizations.maybeLocaleOf(context),
-        maxLines: 1,
-      )..layout(maxWidth: constraints.maxWidth);
-      final fits = !painter.didExceedMaxLines;
-      painter.dispose();
-      if (fits) return Text(joined, style: style, textAlign: textAlign);
-      return Column(
-        crossAxisAlignment: textAlign == TextAlign.center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-        children: [for (final p in parts) Text(p, style: style, textAlign: textAlign)],
-      );
-    });
-  }
-}
-
 /// [text] wrapped as evenly as its lines allow: as narrow as it can be set
 /// in as few lines as the full width takes, so that a word is never left
 /// alone on its last line, as a title page sets its lines. Centred unless
@@ -997,47 +936,6 @@ class _FlushTextButton extends StatelessWidget {
     final shift = (end ? 1 : -1) * padding.left * (Directionality.of(context) == TextDirection.rtl ? -1 : 1);
     return Transform.translate(offset: Offset(shift, 0), child: button);
   }
-}
-
-/// [text] wrapped between its words, never inside one: a word too wide for
-/// the line on its own, as with large text, is set just small enough to fit.
-/// Centred.
-class _WholeWords extends StatelessWidget {
-  const _WholeWords(this.text, {required this.style, this.textDirection, this.locale});
-
-  final String text;
-  final TextStyle? style;
-  final TextDirection? textDirection;
-  final Locale? locale;
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
-        final scaler = MediaQuery.textScalerOf(context);
-        final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
-        var widest = 0.0;
-        for (final word in text.split(' ')) {
-          final painter = TextPainter(
-            text: TextSpan(text: word, style: style?.merge(bold) ?? bold),
-            textDirection: textDirection ?? Directionality.of(context),
-            textScaler: scaler,
-            locale: locale,
-            maxLines: 1,
-          )..layout();
-          widest = math.max(widest, painter.width);
-          painter.dispose();
-        }
-        final size = style?.fontSize ?? 14;
-        // A hair under, so rounding never breaks the word after all.
-        final share = widest > constraints.maxWidth ? (constraints.maxWidth - 1) / widest : 1.0;
-        return Text(
-          text,
-          style: style,
-          textAlign: TextAlign.center,
-          textDirection: textDirection,
-          locale: locale,
-          textScaler: share < 1 ? TextScaler.linear(scaler.scale(size) / size * share) : null,
-        );
-      });
 }
 
 /// Today on Shabbat or Yom Tov ([restDayProvider], §9 Today, 8): candles, a

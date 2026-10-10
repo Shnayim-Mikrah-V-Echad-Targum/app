@@ -247,8 +247,8 @@ void main() {
       expect(find.text('Parshat HaShavua'), findsOneWidget);
       expect(find.text('בְּרֵאשִׁית'), findsOneWidget);
       expect(find.text('Bereshit'), findsOneWidget);
-      expect(find.textContaining('Genesis 1:1–6:8'), findsOneWidget);
-      expect(find.textContaining('Read on Shabbat, October 10'), findsOneWidget);
+      expect(findWords('Genesis 1:1–6:8'), findsOneWidget);
+      expect(findWords('Read on Shabbat, October 10'), findsOneWidget);
       expect(find.text('Shabbat begins this evening'), findsOneWidget);
       final heading = tester.getSemantics(find.bySemanticsLabel('Parshat Bereshit'));
       expect(heading, isSemantics(label: 'Parshat Bereshit', isHeader: true));
@@ -264,9 +264,9 @@ void main() {
       final handle = tester.ensureSemantics();
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew), progress: _bereshit());
       expect(find.text('פרשת השבוע'), findsOneWidget);
-      expect(find.textContaining('יום שישי, כ״ח בתשרי תשפ״ז'), findsOneWidget);
-      expect(find.textContaining('9 באוקטובר'), findsOneWidget);
-      expect(find.textContaining('נקראת בשבת, כ״ט בתשרי'), findsOneWidget);
+      expect(findWords('יום שישי, כ״ח בתשרי תשפ״ז'), findsOneWidget);
+      expect(findWords('9 באוקטובר'), findsOneWidget);
+      expect(findWords('נקראת בשבת, כ״ט בתשרי'), findsOneWidget);
       expect(find.text('שבת נכנסת הערב'), findsOneWidget);
       expect(tester.getSemantics(find.bySemanticsLabel('פרשת בראשית')), isSemantics(isHeader: true));
       final latin = tester.getSemantics(find.text('Bereshit')).getSemanticsData();

@@ -30,6 +30,7 @@ import 'package:shnayim_mikra/features/settings/screens/display_settings_screen.
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../helpers.dart';
 
@@ -359,7 +360,7 @@ void main() {
       expect(selectedTab(tester), 0);
       expect(find.byType(BackButton), findsOneWidget);
 
-      final haftarah = find.widgetWithText(ListTile, 'Haftarah');
+      final haftarah = find.widgetWithText(PaperRow, 'Haftarah');
       await tester.ensureVisible(haftarah);
       await tester.pumpAndSettle();
       await tester.tap(haftarah);
@@ -451,7 +452,7 @@ void main() {
     });
 
     Future<void> tapHaftarah(WidgetTester tester) async {
-      final haftarah = find.widgetWithText(ListTile, 'Haftarah');
+      final haftarah = find.widgetWithText(PaperRow, 'Haftarah');
       await tester.ensureVisible(haftarah);
       await tester.pumpAndSettle();
       await tester.tap(haftarah);
@@ -525,7 +526,7 @@ void main() {
       await _pump(tester);
       await tester.tap(find.widgetWithText(TextButton, 'All aliyot'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Rishon · aliyah 1'));
+      await tester.tap(find.text('Rishon'));
       await _loadTexts(tester);
       expect(find.byType(ReaderScreen), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);

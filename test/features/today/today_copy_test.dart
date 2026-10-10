@@ -71,30 +71,35 @@ void main() {
 
     // The running head and the hero's line each set their parts on one line
     // between middle dots where they fit, and on lines of their own where
-    // they don't: so each part is found as part of a text.
+    // they don't, a part too long for a line keeping its clauses whole with
+    // no-break spaces: so each part is found as part of a text, its spaces
+    // either kind.
     testWidgets('in English, are Gregorian, with the Hebrew date beside them', (tester) async {
       final c = await openToday(tester, _diaspora, wednesday);
-      expect(find.textContaining(RegExp(r'^Wednesday, October 7( · 26 Tishrei 5787)?$')), findsOneWidget);
-      expect(find.textContaining(RegExp(r'^(Wednesday, October 7 · )?26 Tishrei 5787$')), findsOneWidget);
-      expect(find.textContaining('Read on Shabbat, October 10'), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^Wednesday, October 7( · 26 Tishrei 5787)?$')), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^(Wednesday, October 7 · )?26 Tishrei 5787$')), findsOneWidget);
+      expect(findWords('Read on Shabbat, October 10'), findsOneWidget);
 
+      // The week page: when it is read, then the Hebrew date.
       c.read(routerProvider).go('/week/5787:1');
       await tester.pumpAndSettle();
-      expect(find.text('Read on Shabbat, October 10'), findsOneWidget);
-      expect(find.textContaining(RegExp(r'^\d+ verses · 29 Tishrei 5787$')), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^Read on Shabbat, October 10( · 29 Tishrei 5787)?$')), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^(Read on Shabbat, October 10 · )?29 Tishrei 5787$')), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^(Genesis 1:1–6:8 · )?146 verses$')), findsOneWidget);
     });
 
     testWidgets('in Hebrew, take ב before the month, and the week page gives the Gregorian date', (tester) async {
       final c = await openToday(tester, _diaspora.copyWith(language: AppLanguage.hebrew), wednesday);
       // The Hebrew date first, in the Hebrew UI.
-      expect(find.textContaining(RegExp(r'^יום רביעי, כ״ו בתשרי תשפ״ז( · 7 באוקטובר)?$')), findsOneWidget);
-      expect(find.textContaining(RegExp(r'^(יום רביעי, כ״ו בתשרי תשפ״ז · )?7 באוקטובר$')), findsOneWidget);
-      expect(find.textContaining('נקראת בשבת, כ״ט בתשרי'), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^יום רביעי, כ״ו בתשרי תשפ״ז( · 7 באוקטובר)?$')), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^(יום רביעי, כ״ו בתשרי תשפ״ז · )?7 באוקטובר$')), findsOneWidget);
+      expect(findWords('נקראת בשבת, כ״ט בתשרי'), findsOneWidget);
 
       c.read(routerProvider).go('/week/5787:1');
       await tester.pumpAndSettle();
-      expect(find.text('נקראת בשבת, כ״ט בתשרי'), findsOneWidget);
-      expect(find.textContaining(RegExp(r'^\d+ פסוקים · 10 באוקטובר 2026$')), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^נקראת בשבת, כ״ט בתשרי( · 10 באוקטובר 2026)?$')), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^(נקראת בשבת, כ״ט בתשרי · )?10 באוקטובר 2026$')), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^(בראשית א, א–ו, ח · )?146 פסוקים$')), findsOneWidget);
     });
   });
 

@@ -190,9 +190,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get passShortMikra => 'Mikra';
-
-  @override
   String passSemantics(String pass, String state) {
     return '$pass: $state';
   }
@@ -673,6 +670,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get plannedForToday => 'Planned for today';
+
+  @override
   String get plannedForShabbat => 'Shabbat morning — log it after Shabbat';
 
   @override
@@ -708,8 +708,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markedUnread => 'Marked as not read';
 
   @override
-  String aliyahNote(String note) {
-    return 'Note: $note';
+  String aliyahOtherDivision(String range) {
+    return 'Some sources use $range';
   }
 
   @override

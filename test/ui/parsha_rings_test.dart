@@ -295,8 +295,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('2/7'), findsOneWidget);
 
-      // Shlishi is finished while another page covers Today.
-      c.read(routerProvider).push('/week/5787:1');
+      // Shlishi is finished while another page covers Today: next week's,
+      // whose rings are another week's. (This week's page has rings of its
+      // own, which would show the sweep first.)
+      c.read(routerProvider).push('/week/5787:2');
       await tester.pumpAndSettle();
       c.read(progressProvider.notifier).markAliyah('5787:1', 2, LocalDate(2026, 10, 9));
       await tester.pumpAndSettle();

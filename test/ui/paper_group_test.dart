@@ -136,6 +136,22 @@ void main() {
     );
   });
 
+  testWidgets('rows of another kind inset their hairlines where the group is told', (tester) async {
+    await pumpThemed(
+      tester,
+      const SizedBox(
+        width: 400,
+        child: PaperGroup(ruleInset: 72, children: [SizedBox(height: 84), SizedBox(height: 84)]),
+      ),
+      hebrew: true,
+    );
+    // Mirrored in Hebrew, where the text starts at the right.
+    expect(
+      tester.renderObject(find.byWidgetPredicate((w) => w is CustomPaint && w.child is SizedBox)),
+      paints..rect(rect: const Rect.fromLTRB(0, 83, 400 - 72, 84)),
+    );
+  });
+
   testWidgets('high contrast: 2 px hairlines in the outline colour', (tester) async {
     await pumpThemed(
       tester,

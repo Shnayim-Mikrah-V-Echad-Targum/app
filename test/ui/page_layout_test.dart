@@ -126,6 +126,33 @@ void main() {
       expect(title.getSemanticsData().headingLevel, 1);
       handle.dispose();
     });
+
+    testWidgets("a page whose heading is in its body shows the title once it is revealed, for the eye alone",
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      Future<void> pump({required bool revealed}) => pumpThemed(
+            tester,
+            PageScaffold(
+              titleText: 'Parshat Bereshit',
+              titleRevealed: revealed,
+              body: const PageBody(children: [Text('Body')]),
+            ),
+          );
+      double opacity() => tester
+          .widget<AnimatedOpacity>(find.ancestor(of: _title('Parshat Bereshit'), matching: find.byType(AnimatedOpacity)))
+          .opacity;
+
+      await pump(revealed: false);
+      expect(opacity(), 0);
+      // Screen readers find the heading in the page instead.
+      expect(find.bySemanticsLabel('Parshat Bereshit'), findsNothing);
+
+      await pump(revealed: true);
+      await tester.pumpAndSettle();
+      expect(opacity(), 1);
+      expect(find.bySemanticsLabel('Parshat Bereshit'), findsNothing);
+      handle.dispose();
+    });
   });
 
   group('DocumentTitle', () {

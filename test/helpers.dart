@@ -229,3 +229,11 @@ class PhoneNotifications extends NotificationService {
 }
 
 class _NoPlugin extends Fake implements FlutterLocalNotificationsPlugin {}
+
+/// Finds a text that contains [words], any of whose spaces may be no-break
+/// spaces, as a line of parts sets them to keep a clause together when a
+/// part is too long for a line of its own (DotLine).
+Finder findWords(String words) => find.textContaining(wordsRegExp(RegExp.escape(words)));
+
+/// [pattern] with each space matching a no-break space too (see [findWords]).
+RegExp wordsRegExp(String pattern) => RegExp(pattern.replaceAll(' ', '[ \u00A0]'));

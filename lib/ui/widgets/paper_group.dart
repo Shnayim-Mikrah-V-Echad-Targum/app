@@ -9,12 +9,16 @@ import 'ornaments.dart';
 /// cards and list tiles.
 ///
 /// A hairline starts where the text of the row above it does: 54 in under a
-/// [PaperRow] with an icon, 16 under any other row. It runs to the card's end
-/// edge.
+/// [PaperRow] with an icon and 16 under any other row, unless [ruleInset]
+/// says where. It runs to the card's end edge.
 class PaperGroup extends StatelessWidget {
-  const PaperGroup({super.key, required this.children});
+  const PaperGroup({super.key, required this.children, this.ruleInset});
 
   final List<Widget> children;
+
+  /// Where every hairline starts, for rows of another kind whose text
+  /// starts past a leading mark of their own.
+  final double? ruleInset;
 
   static const double iconInset = PaperRow._start + PaperRow._iconSlot;
   static const double plainInset = PaperRow._start;
@@ -52,7 +56,7 @@ class PaperGroup extends StatelessWidget {
                       painter: _RowRule(
                         color: sefer.hairline,
                         width: sefer.hairlineWidth,
-                        inset: child is PaperRow && child.icon != null ? iconInset : plainInset,
+                        inset: ruleInset ?? (child is PaperRow && child.icon != null ? iconInset : plainInset),
                         direction: direction,
                       ),
                       child: child,

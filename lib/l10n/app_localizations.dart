@@ -435,12 +435,6 @@ abstract class AppLocalizations {
   /// **'{count} of {total}'**
   String countOfTotal(int count, int total);
 
-  /// No description provided for @passShortMikra.
-  ///
-  /// In en, this message translates to:
-  /// **'Mikra'**
-  String get passShortMikra;
-
   /// No description provided for @passSemantics.
   ///
   /// In en, this message translates to:
@@ -1095,11 +1089,17 @@ abstract class AppLocalizations {
   /// **'In progress'**
   String get weekInProgress;
 
-  /// No description provided for @plannedFor.
+  /// The day is the weekday's name (Names.weekday): 'Monday', in Hebrew 'יום שני', which takes ל directly.
   ///
   /// In en, this message translates to:
   /// **'Planned for {day}'**
   String plannedFor(String day);
+
+  /// No description provided for @plannedForToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned for today'**
+  String get plannedForToday;
 
   /// No description provided for @plannedForShabbat.
   ///
@@ -1167,11 +1167,11 @@ abstract class AppLocalizations {
   /// **'Marked as not read'**
   String get markedUnread;
 
-  /// No description provided for @aliyahNote.
+  /// Under an aliyah whose verses some sources divide differently: the verses they give it instead, without the book ('4:19–26'; in Hebrew 'ד, יט–כו').
   ///
   /// In en, this message translates to:
-  /// **'Note: {note}'**
-  String aliyahNote(String note);
+  /// **'Some sources use {range}'**
+  String aliyahOtherDivision(String range);
 
   /// No description provided for @browseAll.
   ///

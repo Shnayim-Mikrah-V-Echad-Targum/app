@@ -115,16 +115,20 @@ class Names {
     return _he ? (_prophetsHe[english] ?? english) : english;
   }
 
-  /// "Genesis 7:17–8:14" / "בראשית ז, יז – ח, יד".
-  String range(String bookName, int c1, int v1, int c2, int v2) {
+  /// "Genesis 7:17–8:14" / "בראשית ז, יז–ח, יד".
+  String range(String bookName, int c1, int v1, int c2, int v2) => '${book(bookName)} ${verseRange(c1, v1, c2, v2)}';
+
+  /// [range] without the book, for a range in a book named nearby:
+  /// "7:17–8:14" / "ז, יז–ח, יד".
+  String verseRange(int c1, int v1, int c2, int v2) {
     if (_he) {
       final g = HebrewText.gematria;
       final start = '${g(c1, punctuate: false)}, ${g(v1, punctuate: false)}';
       final end = c1 == c2 ? g(v2, punctuate: false) : '${g(c2, punctuate: false)}, ${g(v2, punctuate: false)}';
-      return '${book(bookName)} $start–$end';
+      return '$start–$end';
     }
     final end = c1 == c2 ? '$v2' : '$c2:$v2';
-    return '${book(bookName)} $c1:$v1–$end';
+    return '$c1:$v1–$end';
   }
 
   /// One verse: "Genesis 28:10" / "בראשית כח, י".

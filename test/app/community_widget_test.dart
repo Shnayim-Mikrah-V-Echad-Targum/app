@@ -20,6 +20,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../helpers.dart';
 
@@ -231,8 +232,8 @@ Future<ProviderContainer> _pump(
 
 String _location(ProviderContainer c) => c.read(routerProvider).state.uri.toString();
 
-/// The week page's Discuss button, in either language.
-final _discuss = find.descendant(of: find.byType(WeeklyThreadOpener), matching: find.byType(OutlinedButton));
+/// The week page's Discuss row, in either language.
+final _discuss = find.descendant(of: find.byType(WeeklyThreadOpener), matching: find.byType(PaperRow));
 
 Future<void> _tapDiscuss(WidgetTester tester) async {
   await tester.ensureVisible(_discuss);
@@ -550,7 +551,7 @@ void main() {
       expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
       expect(find.byType(WeekOverviewScreen), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(tester.widget<OutlinedButton>(_discuss).onPressed, isNotNull);
+      expect(tester.widget<PaperRow>(_discuss).onTap, isNotNull);
     });
 
     testWidgets('shows that it is opening, and opens once however often it is tapped', (tester) async {

@@ -982,7 +982,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 1. **TodayHeader** (12 top):
    - Row of `Expanded(Column)` and a help IconButton (help_outline, tooltip `guideTitle`).
    - The column holds a running head in bodySmall w500 onSurfaceVariant (`'${names.dateLong(today)} · ${names.hebrewDate(today)}'`; in the Hebrew UI the Hebrew date first, `'${names.weekday(today)}, ${names.hebrewDate(today)} · ${names.dateMonthDay(today)}'`), a 2 gap, and the masthead `appTitle` in headlineMedium.
-   - A line of parts between middle dots (the running head, and the hero's reference and reading day) stays one line where it fits, and otherwise sets each part on a line of its own, so it never breaks inside a part ("October / 10").
+   - A line of parts between middle dots (the running head, and the hero's reference and reading day) sets as many parts to a line as fit, so it breaks between parts rather than inside one ("October / 10"), and starts no line with a dot. A part too long for a line of its own, as with large text, breaks after a comma before anywhere else ("Read on Shabbat, / October 10") (`DotLine`, lib/ui/widgets/lines.dart).
    - The masthead is not a heading; the parsha name stays heading level 1.
 2. Paused banner and open-previous-week card: NoticeBanner style.
    - Resuming from the paused banner says `pauseEnded` in a status message. A pause that ended while the app was closed is welcomed instead, on the first reading day the app is opened after it, until the reader puts it away (a close button, `actionDismiss`; `pauseEndSeen`) or reads again: a NoticeBanner titled `pauseEnded` with `pauseEndedOn(date)`, a Tonal `pauseEndedStart` or `pauseEndedContinue` to `/read/{id}/{next}`, and a TextButton `catchUpOn(name)` to last week while it can still count. It offers last week itself, so the open-previous-week card waits until it is put away.
@@ -1043,19 +1043,22 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 ### Parsha tab / Week overview (week_overview_screen.dart, parsha_tab.dart; phonetall_parsha, phonetall_week, he_parsha)
 
 1. **Header** (no card, start-aligned):
-   - Hebrew pointed name in hebrewDisplay 36/48 primary; in the English UI, the Latin name in headlineMedium;
-   - bodyMedium onSurfaceVariant "Genesis 1:1–6:8 · 146 verses · Read on Shabbat, 10 October" (`names.readOnLabel(week)`, as on Today);
+   - Hebrew pointed name in hebrewDisplay 36/48 primary, the page's level-1 heading, labelled `parshaLabel(name)`, which names the route; in the English UI, the Latin name in headlineMedium (the Hebrew UI gives it in bodyMedium onSurfaceVariant, tagged `en`, as on Today);
+   - bodyMedium onSurfaceVariant "Genesis 1:1–6:8 · 146 verses", then "Read on Shabbat, 10 October · 29 Tishrei 5787": `names.readOnLabel(week)`, as on Today, and the date in the other calendar (the Gregorian one with its year in the Hebrew UI);
    - the status line (icon plus label) in bodySmall;
-   - ParshaRings 88 with RingLegend in a Row at ≥360.
-2. **GroupHeader** with `aliyotProgress` ("2 of 7 aliyot", no digits in the eyebrow, so render it as titleSmall onSurfaceVariant instead of an eyebrow).
-3. **One PaperGroup with seven rows** (replaces seven cards):
-   - Leading 40 disc: done = primary fill with an onPrimary check 20; otherwise ringTrack fill with the Hebrew ordinal (FRL 600 18, onSurface).
-   - Title in titleMedium, e.g. "Rishon"; subtitle bodySmall "Genesis 1:1–2:3 · 34 verses · about 15 min"; a second line bodySmall "Planned for Monday".
-   - The alternative-division note becomes a third line in marginalia at 17/24 ("Some sources use 4:19–26").
-   - Trailing: PassPips (size 12) above the existing overflow menu.
-   - Tap opens the reader.
-4. **Second PaperGroup:** Haftarah and Discuss rows.
-5. **Footer:** a centred TextButton "Mark the whole parsha as read".
+   - ParshaRings 88 with RingLegend (`RingsWithLegend`), beside it where it fits and under it otherwise.
+   - The app bar shows no title while the name is in sight; once it has scrolled under the app bar, the title (`parshaLabel(name)`) fades in over `Motion.short`, for the eye alone (`PageScaffold.titleRevealed`). The Parsha tab's actions: a TextButton `browseAll` ("All parshiyot") to Browse, labelled rather than an icon (its label set smaller rather than crowd the app bar with very large text on a phone), the search button, and the week's menu.
+2. **GroupHeader** with `aliyotProgress` ("2 of 7 aliyot", no digits in the eyebrow, so render it as titleSmall onSurfaceVariant instead of an eyebrow, inset 4 as a GroupHeader is).
+3. **One PaperGroup with seven rows** (replaces seven cards), its hairlines inset 72, where the rows' text starts:
+   - Leading 40 disc, 16 from the start and 16 before the text: done = primary fill with an onPrimary check 20; otherwise ringTrack fill with the Hebrew ordinal (FRL 600 18, onSurface).
+   - Title in titleMedium, e.g. "Rishon" (read out as `aliyahWithName`, "Rishon · aliyah 1"); subtitle bodySmall "1:1–2:3 · 34 verses · about 15 min", without the book, which the header names, so that it keeps to one line on a phone; a second line bodySmall "Planned for Monday":
+     - today's aliyot: `plannedForToday` ("Planned for today") in onSurface w700;
+     - an aliyah still to read after its day (not a day before the reader joined): its day in `overdue`, after a 14 px `history` icon.
+   - The alternative-division note becomes a third line in marginalia ("Some sources use 4:19–26", `aliyahOtherDivision`, in either UI, its verses kept on one line). It keeps marginalia's own size, the EB Garamond floor of §4.5.
+   - Trailing: PassPips (size 12) on the title's line, the reading under way ringed in the row of the aliyah the reading continues at, above the existing overflow menu, in a 52 column 4 from the text and 10 from the end.
+   - Tap opens the reader. The row is one button whose value is the state of each reading; the menu keeps its own item.
+4. **Second PaperGroup**, 28 below: Haftarah and Discuss rows, as on Today (`HaftarahRow`, `DiscussRow`).
+5. **Footer:** a centred TextButton "Mark the whole parsha as read", while the week is open and unfinished.
 
 **Browse** (browse_screen.dart):
 - One PaperGroup per book under a book header ("בראשית" FRL 600 20 + "Genesis" titleSmall).
