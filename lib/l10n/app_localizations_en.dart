@@ -1036,19 +1036,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get methodVerse => 'Verse by verse';
 
   @override
-  String get methodVerseDesc => 'Each verse twice, then its Targum';
+  String methodVerseDesc(String second) {
+    return 'Each verse twice, then its $second';
+  }
 
   @override
   String get methodSection => 'Section by section';
 
   @override
-  String get methodSectionDesc => 'Each paragraph twice, then its Targum';
+  String methodSectionDesc(String second) {
+    return 'Each paragraph twice, then its $second';
+  }
 
   @override
   String get methodAliyah => 'Aliyah by aliyah';
 
   @override
-  String get methodAliyahDesc => 'The whole aliyah twice, then its Targum';
+  String methodAliyahDesc(String second) {
+    return 'The whole aliyah twice, then its $second';
+  }
 
   @override
   String get secondLabel => 'Targum or Rashi';
@@ -1304,6 +1310,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get divineAdonai => 'Ado-nai';
+
+  @override
+  String get divineAdonaiSpoken => 'Adonai';
 
   @override
   String get divineHashem => 'HaShem';

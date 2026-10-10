@@ -1767,11 +1767,11 @@ abstract class AppLocalizations {
   /// **'Verse by verse'**
   String get methodVerse;
 
-  /// No description provided for @methodVerseDesc.
+  /// {second} is the reading after the Torah's two, as the reader set it: Targum, Rashi, or Onkelos and Rashi.
   ///
   /// In en, this message translates to:
-  /// **'Each verse twice, then its Targum'**
-  String get methodVerseDesc;
+  /// **'Each verse twice, then its {second}'**
+  String methodVerseDesc(String second);
 
   /// No description provided for @methodSection.
   ///
@@ -1779,11 +1779,11 @@ abstract class AppLocalizations {
   /// **'Section by section'**
   String get methodSection;
 
-  /// No description provided for @methodSectionDesc.
+  /// As methodVerseDesc.
   ///
   /// In en, this message translates to:
-  /// **'Each paragraph twice, then its Targum'**
-  String get methodSectionDesc;
+  /// **'Each paragraph twice, then its {second}'**
+  String methodSectionDesc(String second);
 
   /// No description provided for @methodAliyah.
   ///
@@ -1791,11 +1791,11 @@ abstract class AppLocalizations {
   /// **'Aliyah by aliyah'**
   String get methodAliyah;
 
-  /// No description provided for @methodAliyahDesc.
+  /// As methodVerseDesc.
   ///
   /// In en, this message translates to:
-  /// **'The whole aliyah twice, then its Targum'**
-  String get methodAliyahDesc;
+  /// **'The whole aliyah twice, then its {second}'**
+  String methodAliyahDesc(String second);
 
   /// No description provided for @secondLabel.
   ///
@@ -2282,6 +2282,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ado-nai'**
   String get divineAdonai;
+
+  /// What screen readers say for divineAdonai, which is written with a hyphen out of respect, and would be spelled out letter by letter as written.
+  ///
+  /// In en, this message translates to:
+  /// **'Adonai'**
+  String get divineAdonaiSpoken;
 
   /// No description provided for @divineHashem.
   ///

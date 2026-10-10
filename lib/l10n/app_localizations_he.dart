@@ -1035,20 +1035,25 @@ class AppLocalizationsHe extends AppLocalizations {
   String get methodVerse => 'פסוק פסוק';
 
   @override
-  String get methodVerseDesc => 'כל פסוק פעמיים ואחריו התרגום';
+  String methodVerseDesc(String second) {
+    return 'כל פסוק פעמיים, ואז $second';
+  }
 
   @override
   String get methodSection => 'פרשה פרשה';
 
   @override
-  String get methodSectionDesc =>
-      'כל פרשה (פתוחה או סתומה) פעמיים ואחריה התרגום';
+  String methodSectionDesc(String second) {
+    return 'כל פרשה (פתוחה או סתומה) פעמיים, ואז $second';
+  }
 
   @override
   String get methodAliyah => 'עלייה עלייה';
 
   @override
-  String get methodAliyahDesc => 'כל העלייה פעמיים ואחריה התרגום';
+  String methodAliyahDesc(String second) {
+    return 'כל העלייה פעמיים, ואז $second';
+  }
 
   @override
   String get secondLabel => 'תרגום או רש״י';
@@ -1304,6 +1309,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get divineAdonai => 'א-דני';
+
+  @override
+  String get divineAdonaiSpoken => 'שם אדנות';
 
   @override
   String get divineHashem => 'השם';
@@ -1768,7 +1776,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideTargumBody =>
-      'פירוש רש״י יכול לבוא במקום התרגום, מפני שהוא מפרש את המקרא; וירא שמים יקרא את שניהם (שו״ע רפה, ב). תרגום פשוט הוא עזר מועיל ללימוד, אך אינו תחליף לתרגום. מי שאינו מבין את לשונו של רש״י רשאי לקרוא את רש״י בשפה שהוא מבין (מ״ב רפה, ה; הרב משה פיינשטיין). יש לשאול רב.';
+      'פירוש רש״י יכול לבוא במקום התרגום, מפני שהוא מפרש את המקרא; וירא שמים יקרא את שניהם (שו״ע רפה, ב). תרגום פשוט הוא עזר מועיל ללימוד, אך אינו תחליף לתרגום. אם לשונו של רש״י אינה מובנת, אפשר לקרוא את רש״י בשפה מובנת (מ״ב רפה, ה; הרב משה פיינשטיין). יש לשאול רב.';
 
   @override
   String get guideSpecialTitle => 'מקרים מיוחדים';

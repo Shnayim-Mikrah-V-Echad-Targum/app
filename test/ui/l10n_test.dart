@@ -61,7 +61,9 @@ void main() {
       expect(names.specialHaftarah('Not a key'), 'Not a key', reason: 'an unknown key is shown as it is');
 
       names = Names(await _page(tester, hebrew: true));
-      expect(names.specialHaftarah('Pinchas occurring after 17 Tammuz'), 'פנחס אחרי י״ז בתמוז');
+      expect(names.specialHaftarah('Pinchas occurring after 17 Tammuz'), 'ראשונה דפורענותא (״דברי ירמיהו״)');
+      expect(names.specialHaftarah('Masei on Shabbat Rosh Chodesh'), 'מסעי בראש חודש אב');
+      expect(names.specialHaftarah('Matot-Masei on Shabbat Rosh Chodesh'), 'מטות־מסעי בראש חודש אב');
       expect(names.specialHaftarah('Chanukah Day 8 (on Shabbat)'), 'שבת חנוכה השנייה');
     });
   });
@@ -143,12 +145,31 @@ void main() {
       '1,234 verses read twice with Rashi',
     );
 
+    expect(
+      context.l10n.methodVerseDesc(names.secondReading(SecondReading.onkelosAndRashi)),
+      'Each verse twice, then its Onkelos and Rashi',
+    );
+
     context = await _page(tester, hebrew: true);
     names = Names(context);
+    final l = context.l10n;
     expect(
       [for (final s in SecondReading.values) names.secondReading(s)],
       ['תרגום', 'רש״י', 'אונקלוס ורש״י', 'רש״י'],
     );
+    // The ו joins the name directly, as Hebrew writes it.
+    expect(l.versesRead('1,234', names.secondReading(SecondReading.rashi)), '1,234 פסוקים בשניים מקרא ורש״י');
+    expect(l.versesRead('5', names.secondReading(SecondReading.onkelos)), '5 פסוקים בשניים מקרא ותרגום');
+    expect(
+      l.firstAliyahDone('בראשית א, א–ב, ג', names.secondReading(SecondReading.onkelos)),
+      'יישר כוח! העלייה הראשונה שלך הושלמה — בראשית א, א–ב, ג, שניים מקרא ותרגום.',
+    );
+    expect(
+      l.firstAliyahDone('בראשית א, א–ב, ג', names.secondReading(SecondReading.onkelosAndRashi)),
+      'יישר כוח! העלייה הראשונה שלך הושלמה — בראשית א, א–ב, ג, שניים מקרא ואונקלוס ורש״י.',
+    );
+    expect(l.methodVerseDesc(names.secondReading(SecondReading.rashi)), 'כל פסוק פעמיים, ואז רש״י');
+    expect(l.methodAliyahDesc(names.secondReading(SecondReading.onkelos)), 'כל העלייה פעמיים, ואז תרגום');
   });
 
   testWidgets('the streak explainer gives the late window the reader chose', (tester) async {

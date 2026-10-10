@@ -388,6 +388,8 @@ class _MethodStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
+    // Each method's description names the reading chosen below.
+    final second = Names(context).secondReading(s.secondReading);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -395,8 +397,8 @@ class _MethodStep extends ConsumerWidget {
           title: l.onbMethodTitle,
           value: s.method,
           choices: [
-            Choice(ReadingMethod.verseByVerse, l.methodVerse, subtitle: l.methodVerseDesc),
-            Choice(ReadingMethod.sectionBySection, l.methodSection, subtitle: l.methodSectionDesc),
+            Choice(ReadingMethod.verseByVerse, l.methodVerse, subtitle: l.methodVerseDesc(second)),
+            Choice(ReadingMethod.sectionBySection, l.methodSection, subtitle: l.methodSectionDesc(second)),
           ],
           onChanged: (v) => _update(ref, (s) => s.copyWith(method: v)),
         ),

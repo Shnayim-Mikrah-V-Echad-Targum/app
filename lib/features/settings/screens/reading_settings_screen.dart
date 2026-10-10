@@ -16,6 +16,8 @@ class ReadingSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
+    // Each method's description names the reading after the Torah's two.
+    final second = Names(context).secondReading(s.secondReading);
     void update(AppSettings Function(AppSettings) f) {
       final before = ref.read(settingsProvider).planSettings;
       ref.read(settingsProvider.notifier).update(f);
@@ -57,9 +59,9 @@ class ReadingSettingsScreen extends ConsumerWidget {
           title: l.methodLabel,
           value: s.method,
           choices: [
-            Choice(ReadingMethod.verseByVerse, l.methodVerse, subtitle: l.methodVerseDesc),
-            Choice(ReadingMethod.sectionBySection, l.methodSection, subtitle: l.methodSectionDesc),
-            Choice(ReadingMethod.aliyahByAliyah, l.methodAliyah, subtitle: l.methodAliyahDesc),
+            Choice(ReadingMethod.verseByVerse, l.methodVerse, subtitle: l.methodVerseDesc(second)),
+            Choice(ReadingMethod.sectionBySection, l.methodSection, subtitle: l.methodSectionDesc(second)),
+            Choice(ReadingMethod.aliyahByAliyah, l.methodAliyah, subtitle: l.methodAliyahDesc(second)),
           ],
           onChanged: (v) => update((s) => s.copyWith(method: v)),
         ),

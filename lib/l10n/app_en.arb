@@ -800,11 +800,38 @@
   "planErevShabbatDesc": "The whole parsha on Erev Shabbat — after Shacharit (Arizal) or after midday (Shelah; Shulchan Aruch HaRav)",
   "methodLabel": "Reading method",
   "methodVerse": "Verse by verse",
-  "methodVerseDesc": "Each verse twice, then its Targum",
+  "methodVerseDesc": "Each verse twice, then its {second}",
+  "@methodVerseDesc": {
+    "description": "{second} is the reading after the Torah's two, as the reader set it: Targum, Rashi, or Onkelos and Rashi.",
+    "placeholders": {
+      "second": {
+        "type": "String",
+        "example": "Targum"
+      }
+    }
+  },
   "methodSection": "Section by section",
-  "methodSectionDesc": "Each paragraph twice, then its Targum",
+  "methodSectionDesc": "Each paragraph twice, then its {second}",
+  "@methodSectionDesc": {
+    "description": "As methodVerseDesc.",
+    "placeholders": {
+      "second": {
+        "type": "String",
+        "example": "Targum"
+      }
+    }
+  },
   "methodAliyah": "Aliyah by aliyah",
-  "methodAliyahDesc": "The whole aliyah twice, then its Targum",
+  "methodAliyahDesc": "The whole aliyah twice, then its {second}",
+  "@methodAliyahDesc": {
+    "description": "As methodVerseDesc.",
+    "placeholders": {
+      "second": {
+        "type": "String",
+        "example": "Targum"
+      }
+    }
+  },
   "secondLabel": "Targum or Rashi",
   "secondOnkelos": "Targum Onkelos",
   "secondRashi": "Rashi",
@@ -912,6 +939,10 @@
   "srAllMarks": "All marks (for braille displays)",
   "divineNameLabel": "Speaking the Divine Name",
   "divineAdonai": "Ado-nai",
+  "divineAdonaiSpoken": "Adonai",
+  "@divineAdonaiSpoken": {
+    "description": "What screen readers say for divineAdonai, which is written with a hyphen out of respect, and would be spelled out letter by letter as written."
+  },
   "divineHashem": "HaShem",
   "speechRate": "Speech rate",
   "presetsTitle": "Quick setups",

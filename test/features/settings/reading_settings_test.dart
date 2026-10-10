@@ -103,6 +103,15 @@ void main() {
     expect(find.text(_applies), findsNothing);
   });
 
+  testWidgets("each method's description names the reading after the Torah's two", (tester) async {
+    await openReadingSettings(tester);
+    expect(find.text('Each verse twice, then its Targum'), findsOneWidget);
+    await tapText(tester, 'Rashi');
+    expect(find.text('Each verse twice, then its Rashi'), findsOneWidget);
+    expect(find.text('The whole aliyah twice, then its Rashi'), findsOneWidget);
+    expect(find.textContaining('then its Targum'), findsNothing);
+  });
+
   testWidgets('changes that don\'t affect how weeks are planned or judged say nothing', (tester) async {
     await openReadingSettings(tester);
     await tapText(tester, 'Section by section');
