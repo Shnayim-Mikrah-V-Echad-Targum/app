@@ -165,6 +165,11 @@ abstract final class AppTheme {
     // The navigation indicator's pale fill barely shows on a high-contrast
     // bar or rail, so there it is outlined too, as tonal buttons are.
     final indicatorEdge = floatingEdge;
+    // Navigation labels: labelSmall, at its own weight when unselected (500,
+    // or 400 in an accessibility font in the English UI, which has no 500),
+    // and without tracking, so the longest, "Community", fits a 360 dp
+    // phone's 72 px slot in bold.
+    final navLabel = text.labelSmall!.copyWith(letterSpacing: 0);
     return base.copyWith(
       // §6.2. Scrolled content slips under a hairline-thin shadow in
       // outlineVariant; in high contrast the bar has a 2 px rule instead.
@@ -451,11 +456,9 @@ abstract final class AppTheme {
               size: 24,
               color: states.contains(WidgetState.selected) ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
             )),
-        // labelSmall's own weight when unselected: 500, or 400 in an
-        // accessibility font in the English UI (it has no 500).
         labelTextStyle: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected)
-            ? text.labelSmall!.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w700)
-            : text.labelSmall!.copyWith(color: scheme.onSurfaceVariant)),
+            ? navLabel.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w700)
+            : navLabel.copyWith(color: scheme.onSurfaceVariant)),
         // The bar draws no focus ring, so keyboard focus is a strong wash over
         // the indicator's stadium.
         overlayColor: WidgetStateProperty.resolveWith((states) {
@@ -479,8 +482,8 @@ abstract final class AppTheme {
         elevation: 0,
         selectedIconTheme: IconThemeData(size: 24, color: scheme.onPrimaryContainer),
         unselectedIconTheme: IconThemeData(size: 24, color: scheme.onSurfaceVariant),
-        selectedLabelTextStyle: text.labelSmall!.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w700),
-        unselectedLabelTextStyle: text.labelSmall!.copyWith(color: scheme.onSurfaceVariant),
+        selectedLabelTextStyle: navLabel.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w700),
+        unselectedLabelTextStyle: navLabel.copyWith(color: scheme.onSurfaceVariant),
       ),
       // §6.19: sheets are paper with 20 px top corners and a drag handle, at
       // most 640 wide (centred on wider screens).

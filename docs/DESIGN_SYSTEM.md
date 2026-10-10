@@ -588,7 +588,9 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Height 72; background surfaceContainer; 1 px hairline top border.
 - Indicator primaryContainer 64×32 (stadium, the platform idiom).
 - Icons 24, outlined; filled when selected.
-- Labels always shown, labelSmall: selected onSurface w700, unselected onSurfaceVariant w500 (6.51:1).
+- Labels always shown, labelSmall with letter spacing 0, so "Community" fits a 360 dp phone's 72 px slot in bold: selected onSurface w700, unselected onSurfaceVariant w500 (6.51:1).
+- Large text: the labels grow (Material allows up to 1.3×) only while the widest, in bold, still fits its slot on one line, so no word ever breaks; a font too wide even at its normal size shrinks them, to 70% at most. The bar grows to fit them (72 at 1×).
+- Keyboard focus: an onSurface wash at 32% over the indicator (the bar draws no ring). The indicator moves over Material's 500 ms, or at once under Reduce Motion.
 - Icons: Today `today`; Parsha `menu_book`; Progress `donut_large_outlined`/`donut_large` (echoes the rings; replaces the sparkle `insights`); Community `forum`; Settings `settings`.
 
 ### 6.10 Navigation rail (≥600)
@@ -596,7 +598,8 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Background surface, with a 1 px hairline end border (replaces surfaceContainer and the VerticalDivider in shell.dart).
 - Leading: the app mark (icon.png at 40×40, ClipRRect radius 10).
 - Extended at ≥1200: the mark plus a 12 gap plus the wordmark "Shnayim Mikra" (EBG 500 20/24) or "שניים מקרא" (FRL 500 20/24) in onSurface. Semantics header. Replaces "SM" / "ש״מ".
-- Indicator primaryContainer radius 12; destination height 56.
+- Indicator primaryContainer radius 12; destination height 56 in the extended rail. The compact rail keeps Material's 64 (the 32 indicator, 4, a 16 px label and 12 below), spacing the framework fixes.
+- Keyboard focus: the bar's onSurface wash at 32% (the rail draws no ring either).
 
 ### 6.11 ParshaRings and RingLegend (progress_widgets.dart)
 

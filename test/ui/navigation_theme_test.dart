@@ -62,6 +62,8 @@ void main() {
           expect(_metrics(unselected), _metrics(labelSmall));
           expect((selected.color, selected.fontWeight), (scheme.onSurface, FontWeight.w700));
           expect((unselected.color, unselected.fontWeight), (scheme.onSurfaceVariant, FontWeight.w500));
+          // No tracking: "Community" fits a 360 dp phone's 72 px slot in bold.
+          expect((selected.letterSpacing, unselected.letterSpacing), (0, 0));
         });
 
         test('bar: keyboard focus is a strong wash; press and hover the usual ones', () {

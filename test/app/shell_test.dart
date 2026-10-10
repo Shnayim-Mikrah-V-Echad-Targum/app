@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/app/shell.dart';
@@ -76,6 +77,69 @@ void main() {
       });
     }
 
+    // Large text grows the labels only while the longest still fits its slot
+    // on one line, and the bar grows with them: nothing spills over its top
+    // hairline or below it, and no word breaks.
+    for (final (window, scales) in [
+      (phone, [1.0, 1.15, 1.3, 2.0]),
+      (const Size(360, 800), [1.0, 1.3, 2.0]),
+    ]) {
+      for (final scale in scales) {
+        for (final (name, settings) in [
+          ('English', const AppSettings(onboardingComplete: true)),
+          ('Hebrew', hebrew),
+          ('OpenDyslexic', const AppSettings(onboardingComplete: true, uiFont: UiFont.openDyslexic)),
+        ]) {
+          testWidgets('${window.width.round()} dp, $name, text ×$scale: every label and indicator inside the bar',
+              (tester) async {
+            await open(tester, window, settings: settings, textScale: scale);
+            final bar = tester.getRect(find.byType(NavigationBar));
+            expect(bar.height, greaterThanOrEqualTo(72));
+            expect(bar.bottom, window.height);
+            final labels = tester.widgetList<Text>(inBar(find.byType(Text))).toList();
+            expect(labels, hasLength(5));
+            for (final label in labels) {
+              final text = find.byWidget(label);
+              final rect = tester.getRect(text);
+              expect(bar.contains(rect.topLeft) && bar.contains(rect.bottomRight - const Offset(0.01, 0.01)), isTrue,
+                  reason: '${label.data}: $rect in $bar');
+              // One line: no word broken across two.
+              final paragraph = tester.renderObject<RenderParagraph>(text);
+              final lineHeight = paragraph.text.style!.fontSize! * paragraph.text.style!.height!;
+              expect(rect.height, lessThan(paragraph.textScaler.scale(lineHeight) * 1.5),
+                  reason: '${label.data} wraps');
+            }
+            for (final indicator in tester.widgetList(inBar(find.byType(NavigationIndicator)))) {
+              final rect = tester.getRect(find.byWidget(indicator));
+              expect(rect.top, greaterThanOrEqualTo(bar.top), reason: '$rect in $bar');
+              expect(rect.bottom, lessThanOrEqualTo(bar.bottom));
+            }
+            expect(tester.takeException(), isNull);
+          });
+        }
+      }
+    }
+
+    testWidgets('at 1× on a 360 dp phone, the bar is 72 high and its labels 12 sp', (tester) async {
+      await open(tester, const Size(360, 800));
+      expect(tester.getSize(find.byType(NavigationBar)).height, 72);
+      final community = tester.renderObject<RenderParagraph>(inBar(find.text('Community')));
+      expect(community.textScaler.scale(12), 12);
+    });
+
+    testWidgets('with motion reduced, the indicator moves at once', (tester) async {
+      await open(tester, phone, settings: const AppSettings(onboardingComplete: true, reduceMotion: true));
+      await tester.tap(inBar(find.text('Parsha')));
+      await tester.pump();
+      await tester.pump();
+      final destination =
+          find.ancestor(of: inBar(find.text('Parsha')), matching: find.byWidgetPredicate((w) => w is InkResponse));
+      final indicator = tester.widget<NavigationIndicator>(
+        find.descendant(of: destination.first, matching: find.byType(NavigationIndicator)),
+      );
+      expect(indicator.animation.value, 1);
+    });
+
     testWidgets('the selected label is bold', (tester) async {
       await open(tester, phone);
       FontWeight? weight(String label) => tester.widget<Text>(inBar(find.text(label))).style?.fontWeight;
@@ -121,6 +185,35 @@ void main() {
       await open(tester, tablet);
       expect(tester.getSize(rail).width, AppShell.railWidth);
     });
+
+    testWidgets("destinations keep Material's 64, which the framework's spacing fixes", (tester) async {
+      await open(tester, tablet);
+      for (final label in ['Today', 'Parsha', 'Progress', 'Community', 'Settings']) {
+        expect(tester.getSize(destinationOf(label)).height, 64, reason: label);
+      }
+    });
+
+    for (final mode in [AppThemeMode.light, AppThemeMode.highContrastDark]) {
+      testWidgets('${mode.name}: keyboard focus on a destination is the bar\'s strong wash', (tester) async {
+        FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+        addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+        await open(tester, tablet, settings: AppSettings(onboardingComplete: true, theme: mode));
+        final parsha = destinationOf('Parsha');
+        final scheme = Theme.of(tester.element(parsha)).colorScheme;
+        final wash = scheme.onSurface.withValues(alpha: 0.32);
+        expect(Theme.of(tester.element(parsha)).focusColor, wash);
+        Focus.of(tester.element(find.descendant(of: parsha, matching: find.byType(Icon)).first)).requestFocus();
+        await tester.pumpAndSettle();
+        // The ink highlight stores its colour in bytes, so allow for rounding.
+        bool isWash(Color c) => [
+              (c.r, wash.r),
+              (c.g, wash.g),
+              (c.b, wash.b),
+              (c.a, wash.a),
+            ].every((pair) => (pair.$1 - pair.$2).abs() < 0.01);
+        expect(rail, paints..something((_, arguments) => arguments.whereType<Paint>().any((p) => isWash(p.color))));
+      });
+    }
 
     // OpenDyslexic's "Community" is wider than the rail, so the rail grows to
     // fit it, but by the same amount whether or not it is bold.

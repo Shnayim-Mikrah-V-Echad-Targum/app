@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
@@ -27,6 +28,10 @@ class AppShell extends StatelessWidget {
   static const railWidth = 80.0;
   static const extendedRailWidth = 256.0;
 
+  /// The rail's keyboard focus wash, in onSurface at this opacity: the bar's
+  /// (see AppTheme's navigationBarTheme), as neither draws a ring.
+  static const _focusWash = 0.32;
+
   void _go(int index) => shell.goBranch(index, initialLocation: index == shell.currentIndex);
 
   @override
@@ -52,9 +57,9 @@ class AppShell extends StatelessWidget {
           decoration: BoxDecoration(border: Border(top: hairline)),
           child: Padding(
             padding: EdgeInsets.only(top: hairline.width),
-            child: NavigationBar(
+            child: _NavBar(
               selectedIndex: shell.currentIndex,
-              onDestinationSelected: _go,
+              onSelected: _go,
               destinations: [
                 for (final (icon, selected, label) in items)
                   NavigationDestination(icon: Icon(icon), selectedIcon: Icon(selected), label: label),
@@ -66,43 +71,49 @@ class AppShell extends StatelessWidget {
     }
 
     final extended = width >= Breakpoints.expanded;
+    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
         child: Row(
           children: [
             // Keyboard users reach the rail first, then the page.
             FocusTraversalGroup(
-              child: DecoratedBox(
-                decoration: BoxDecoration(border: BorderDirectional(end: hairline)),
-                child: Padding(
-                  padding: EdgeInsetsDirectional.only(end: hairline.width),
-                  child: NavigationRail(
-                    extended: extended,
-                    minWidth: railWidth,
-                    minExtendedWidth: extendedRailWidth,
-                    // A phone held sideways, or large text, can need more
-                    // height than the window has.
-                    scrollable: true,
-                    selectedIndex: shell.currentIndex,
-                    onDestinationSelected: _go,
-                    labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
-                    leading: _RailHeader(extended: extended),
-                    destinations: [
-                      for (final (icon, selected, label) in items)
-                        NavigationRailDestination(
-                          icon: Icon(icon),
-                          selectedIcon: Icon(selected),
-                          label: _RailLabel(label, extended: extended),
-                          // Beside their labels, destinations are 56 high
-                          // (Material's 44 is short of a tap target). Under
-                          // them, they keep Material's height and leave the
-                          // labels 76 of the rail's 80, which the longest
-                          // needs in bold.
-                          padding: extended
-                              ? const EdgeInsets.symmetric(vertical: 6)
-                              : const EdgeInsets.symmetric(horizontal: 2),
-                        ),
-                    ],
+              // The rail draws no ring either, so keyboard focus is the bar's
+              // strong wash rather than the theme's 24% tint.
+              child: Theme(
+                data: theme.copyWith(focusColor: theme.colorScheme.onSurface.withValues(alpha: _focusWash)),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(border: BorderDirectional(end: hairline)),
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.only(end: hairline.width),
+                    child: NavigationRail(
+                      extended: extended,
+                      minWidth: railWidth,
+                      minExtendedWidth: extendedRailWidth,
+                      // A phone held sideways, or large text, can need more
+                      // height than the window has.
+                      scrollable: true,
+                      selectedIndex: shell.currentIndex,
+                      onDestinationSelected: _go,
+                      labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
+                      leading: _RailHeader(extended: extended),
+                      destinations: [
+                        for (final (icon, selected, label) in items)
+                          NavigationRailDestination(
+                            icon: Icon(icon),
+                            selectedIcon: Icon(selected),
+                            label: _RailLabel(label, extended: extended),
+                            // Beside their labels, destinations are 56 high
+                            // (Material's 44 is short of a tap target). Under
+                            // them, they keep Material's 64, whose spacing the
+                            // framework fixes (§6.10), and leave the labels 76
+                            // of the rail's 80, which the longest needs in bold.
+                            padding: extended
+                                ? const EdgeInsets.symmetric(vertical: 6)
+                                : const EdgeInsets.symmetric(horizontal: 2),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -112,6 +123,77 @@ class AppShell extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// The phone's navigation bar (§6.9): 72 high, and taller only as far as its
+/// labels need when the system text is large.
+///
+/// NavigationBar scales its labels up to 1.3× and wraps them within their
+/// fifth of the width, so a long one ("Community") would break inside the
+/// word and spill out of a fixed height. Here the labels grow with the text
+/// size only while the widest of them, in bold, still fits its slot on one
+/// line. A font too wide for that at its normal size shrinks them, to 70% at
+/// most, rather than break a word; past that they wrap. The bar is as tall as
+/// the tallest label needs.
+class _NavBar extends StatelessWidget {
+  const _NavBar({required this.selectedIndex, required this.onSelected, required this.destinations});
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final List<NavigationDestination> destinations;
+
+  static const _minHeight = 72.0;
+
+  /// Everything but the label: the icon's 32, the label's 4 px gap above it,
+  /// and 10 above and below (72 = 32 + 4 + 16 + 20).
+  static const _chrome = 32 + 4 + 20.0;
+
+  /// The most Material scales a label, and the least this bar shrinks one.
+  static const _maxScale = 1.3;
+  static const _minScale = 0.7;
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    // Selected labels are bold, so every label is measured that way.
+    final style = NavigationBarTheme.of(context).labelTextStyle!.resolve({WidgetState.selected})!;
+    final direction = Directionality.of(context);
+    final locale = Localizations.maybeLocaleOf(context);
+    return LayoutBuilder(builder: (context, constraints) {
+      final slot = (constraints.maxWidth - mq.padding.horizontal) / destinations.length;
+      double measure(double Function(TextPainter) value, TextScaler scaler, {double maxWidth = double.infinity}) {
+        var most = 0.0;
+        for (final d in destinations) {
+          final painter = TextPainter(
+            text: TextSpan(text: d.label, style: style),
+            textDirection: direction,
+            locale: locale,
+            textScaler: scaler,
+          )..layout(maxWidth: maxWidth);
+          most = math.max(most, value(painter));
+          painter.dispose();
+        }
+        return most;
+      }
+
+      final fontSize = style.fontSize!;
+      final fits = slot / measure((p) => p.width, TextScaler.noScaling);
+      final scale = math.min(math.min(mq.textScaler.scale(fontSize) / fontSize, _maxScale), math.max(fits, _minScale));
+      final scaler = TextScaler.linear(scale);
+      final height = _chrome + measure((p) => p.height, scaler, maxWidth: slot);
+      return MediaQuery(
+        data: mq.copyWith(textScaler: scaler),
+        child: NavigationBar(
+          height: math.max(height, _minHeight),
+          // Material's own 500 ms, or none while motion is reduced.
+          animationDuration: Motion.of(context).d(const Duration(milliseconds: 500)),
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onSelected,
+          destinations: destinations,
+        ),
+      );
+    });
   }
 }
 
@@ -134,10 +216,12 @@ class _RailHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final animation = NavigationRail.extendedAnimation(context);
+    final reduced = Motion.of(context).reduced;
     return AnimatedBuilder(
       animation: animation,
       builder: (context, _) {
-        final t = extended ? animation.value : 0.0;
+        // With motion reduced, the name is simply there or not.
+        final t = extended ? (reduced ? 1.0 : animation.value) : 0.0;
         // Compact: the mark alone, centred, announced as the app's name.
         if (t == 0) {
           return Padding(padding: _padding, child: AppMark(size: _markSize, semanticLabel: l.appTitle));
