@@ -256,6 +256,8 @@ final _modes = [
   _Mode('sepia', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.sepia)),
   _Mode('hcl', const Size(412, 915), (s) => s.copyWith(theme: AppThemeMode.highContrastLight)),
   _Mode('lexend', const Size(412, 915), (s) => s.copyWith(uiFont: UiFont.lexend)),
+  // Its Hebrew falls back to Noto Sans Hebrew, Medium where the role is.
+  _Mode('lexhe', const Size(412, 915), (s) => s.copyWith(uiFont: UiFont.lexend, language: AppLanguage.hebrew)),
   // Long pages in full, for the screens in [_tallScreens].
   _Mode('phonetall', const Size(412, 2600), (s) => s),
   // System text at 200%, tall, for the screens in [_bigTextScreens].

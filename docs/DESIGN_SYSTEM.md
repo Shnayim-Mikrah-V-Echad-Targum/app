@@ -326,7 +326,7 @@ Unchanged:
 - **NSH** = `'NotoSansHebrew'`, fallback `['NotoSans', 'NotoSerifHebrew']`.
 - **Accessibility fonts** (Atkinson, Lexend, OpenDyslexic) use fallback `['NotoSansHebrew', 'NotoSerifHebrew']`.
 - Every style sets an explicit `height` and `leadingDistribution: TextLeadingDistribution.even`.
-- Never request a weight that isn't bundled. EBG and FRL: 500, 600, 700. NS and NSH: 400, 500, 700. Never w600 on NS or NSH.
+- Never request a weight that isn't bundled. EBG and FRL: 500, 600, 700. NS and NSH: 400, 500, 700. Never w600 on NS or NSH. Accessibility fonts: 400 and 700, except that in the Hebrew UI their 500 roles keep 500: the Hebrew is drawn by the fallback, Noto Sans Hebrew, in its Medium, and a Latin word falls to the font's 400.
 
 ### 4.3 Text theme: English UI
 
@@ -392,7 +392,7 @@ Rules:
   - longformBody 18/30 w400;
   - ledgerNumeral and ringNumeral w700 with tabular figures;
   - hebrewDisplay is NOT overridden: Hebrew titles stay FRL, because those fonts have no Hebrew.
-- **UiFont.system** changes only the NS/NSH roles.
+- **UiFont.system** changes only the NS/NSH roles, and only their Latin: the family is left to the platform, with fallback `['NotoSansHebrew', 'NotoSerifHebrew']` in both UIs, so Hebrew and nikud still come from the bundled fonts (§13.1). Segoe UI, which has Hebrew of its own, draws the Hebrew on Windows.
 - **High contrast:**
   - EBG roles use w600 (w700 when bold text is on); FRL roles use w700;
   - eyebrow w700;

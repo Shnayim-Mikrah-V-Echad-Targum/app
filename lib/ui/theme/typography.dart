@@ -15,11 +15,17 @@ const _Face _frl = (family: 'FrankRuhlLibre', fallback: ['EBGaramond', 'NotoSeri
 const _Face _ns = (family: 'NotoSans', fallback: ['NotoSansHebrew', 'NotoSerifHebrew']);
 const _Face _nsh = (family: 'NotoSansHebrew', fallback: ['NotoSans', 'NotoSerifHebrew']);
 
-/// Leaves both unset, so the platform's own typography shows through.
-const _Face _device = (family: null, fallback: null);
+/// For a face with little or no Hebrew of its own (§4.2).
+const _hebrewFallback = ['NotoSansHebrew', 'NotoSerifHebrew'];
 
-/// Atkinson, Lexend and OpenDyslexic have no Hebrew.
-const _accessibleFallback = ['NotoSansHebrew', 'NotoSerifHebrew'];
+/// The platform's own font ("Device font"): no family, so ThemeData fills in
+/// the platform's. It changes the Latin text only. Hebrew falls back to the
+/// bundled Noto Sans Hebrew, with Noto Serif Hebrew for any mark it lacks, as
+/// in every other face (§13.1), so nikud never depends on the system's fonts.
+/// (In both UIs: Noto Sans Hebrew's own list starts with Noto Sans, which
+/// would set the Latin text in Noto Sans again.) Segoe UI, which has Hebrew
+/// of its own, draws the Hebrew on Windows.
+const _Face _device = (family: null, fallback: _hebrewFallback);
 
 /// Serif numbers line up in columns and sit on the baseline (§4.5): EB
 /// Garamond's default old-style figures make "1" read as "I".
@@ -32,7 +38,8 @@ const _figures = [FontFeature.liningFigures(), FontFeature.tabularFigures()];
 ///
 /// Only bundled weights are ever requested: 500, 600 and 700 for the serifs;
 /// 400, 500 and 700 for Noto Sans and Noto Sans Hebrew; 400 and 700 for the
-/// accessibility fonts. Bold text needs nothing here: [Text] itself switches
+/// accessibility fonts, except their Medium roles in the Hebrew UI (see
+/// [_Typesetter.sans]). Bold text needs nothing here: [Text] itself switches
 /// to w700 when `MediaQuery.boldTextOf` is true, and every family bundles it.
 abstract final class AppTypography {
   static TextTheme textTheme({
@@ -164,7 +171,8 @@ class _Typesetter {
   /// Whether an accessibility font replaces the serifs and the sans.
   bool get accessible => uiFont.family != null;
 
-  _Face get accessibleFace => (family: uiFont.family, fallback: _accessibleFallback);
+  /// Atkinson, Lexend and OpenDyslexic have no Hebrew.
+  _Face get accessibleFace => (family: uiFont.family, fallback: _hebrewFallback);
 
   /// A display, headline or title role: the UI language's serif, or the
   /// accessibility font in bold.
@@ -202,8 +210,13 @@ class _Typesetter {
     final _Face face;
     if (accessible) {
       face = accessibleFace;
-      // These fonts bundle 400 and 700 only; 500 would quietly render as 400.
-      if (weight == FontWeight.w500) weight = FontWeight.w400;
+      // These fonts bundle 400 and 700 only. In the English UI a Medium role
+      // asks for their Regular, which is what 500 would quietly render as.
+      // The Hebrew UI keeps 500: its Hebrew is drawn by the fallback, Noto
+      // Sans Hebrew, which has a Medium, so row titles and buttons keep their
+      // weight; a Latin word among it still falls to the Regular, the nearest
+      // weight its font has.
+      if (weight == FontWeight.w500 && !hebrewUi) weight = FontWeight.w400;
     } else if (uiFont == UiFont.system && !kIsWeb) {
       face = _device;
     } else {

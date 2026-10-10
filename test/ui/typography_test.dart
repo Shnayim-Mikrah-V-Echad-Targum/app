@@ -186,6 +186,15 @@ const _bundled = {
   null: {400, 500, 700},
 };
 
+/// The accessibility fonts, which have no Hebrew: in the Hebrew UI their
+/// Medium roles ask for 500, which the fallback that draws the Hebrew, Noto
+/// Sans Hebrew, bundles. Their Latin falls to the nearest weight, 400.
+const _accessibilityFonts = {'AtkinsonHyperlegibleNext', 'Lexend', 'OpenDyslexic'};
+
+Set<int> _weightsFor(String? family, {required bool hebrewUi}) => hebrewUi && _accessibilityFonts.contains(family)
+    ? {..._bundled[family]!, ..._bundled['NotoSansHebrew']!}
+    : _bundled[family]!;
+
 const _fallbacks = {
   'EBGaramond': ['FrankRuhlLibre', 'NotoSerifHebrew'],
   'FrankRuhlLibre': ['EBGaramond', 'NotoSerifHebrew'],
@@ -194,7 +203,7 @@ const _fallbacks = {
   'AtkinsonHyperlegibleNext': ['NotoSansHebrew', 'NotoSerifHebrew'],
   'Lexend': ['NotoSansHebrew', 'NotoSerifHebrew'],
   'OpenDyslexic': ['NotoSansHebrew', 'NotoSerifHebrew'],
-  null: null,
+  null: ['NotoSansHebrew', 'NotoSerifHebrew'],
 };
 
 TextTheme _theme({UiFont uiFont = UiFont.standard, bool hebrewUi = false, bool highContrast = false}) =>
@@ -261,13 +270,18 @@ void main() {
           expect(style.fontFamilyFallback, ['NotoSansHebrew', 'NotoSerifHebrew'], reason: role);
           expect(style.fontSize, plain[role]!.fontSize, reason: role);
           expect(style.height, plain[role]!.height, reason: role);
+          final plainWeight = plain[role]!.fontWeight;
           expect(
             style.fontWeight,
             _serifRoles.contains(role)
                 ? FontWeight.w700
-                // Only 400 and 700 are bundled: Medium roles ask for Regular.
-                : FontWeight.w400,
-            reason: role,
+                // Only 400 and 700 are bundled: in English, Medium roles ask
+                // for Regular. In Hebrew they keep 500 for the Hebrew, which
+                // Noto Sans Hebrew draws in its Medium.
+                : plainWeight == FontWeight.w500 && !hebrewUi
+                    ? FontWeight.w400
+                    : plainWeight,
+            reason: '$role he=$hebrewUi',
           );
         }
       }
@@ -281,8 +295,10 @@ void main() {
           if (_serifRoles.contains(role)) {
             expect(style, plain[role], reason: role);
           } else {
+            // The platform's font for the Latin; Hebrew still falls back to
+            // the bundled fonts, in either UI.
             expect(style.fontFamily, isNull, reason: role);
-            expect(style.fontFamilyFallback, isNull, reason: role);
+            expect(style.fontFamilyFallback, ['NotoSansHebrew', 'NotoSerifHebrew'], reason: role);
             final bundled = plain[role]!;
             expect(style.copyWith(fontFamily: bundled.fontFamily, fontFamilyFallback: bundled.fontFamilyFallback),
                 bundled,
@@ -290,11 +306,15 @@ void main() {
           }
         }
       }
-      // ThemeData fills the family in from the platform's typography.
-      final theme =
-          AppTheme.build(mode: AppThemeMode.light, uiFont: UiFont.system, hebrewUi: false, reduceMotion: false);
-      expect(theme.textTheme.bodyMedium!.fontFamily, 'Roboto');
-      expect(theme.textTheme.titleLarge!.fontFamily, 'EBGaramond');
+      // ThemeData fills the family in from the platform's typography, and
+      // keeps the fallbacks.
+      for (final hebrewUi in [false, true]) {
+        final theme =
+            AppTheme.build(mode: AppThemeMode.light, uiFont: UiFont.system, hebrewUi: hebrewUi, reduceMotion: false);
+        expect(theme.textTheme.bodyMedium!.fontFamily, 'Roboto');
+        expect(theme.textTheme.bodyMedium!.fontFamilyFallback, ['NotoSansHebrew', 'NotoSerifHebrew']);
+        expect(theme.textTheme.titleLarge!.fontFamily, hebrewUi ? 'FrankRuhlLibre' : 'EBGaramond');
+      }
     });
 
     test('serif roles use lining, tabular figures', () {
@@ -423,7 +443,7 @@ void main() {
             final where = '$combo $name';
             expect(s.height, isNotNull, reason: where);
             expect(s.leadingDistribution, TextLeadingDistribution.even, reason: where);
-            expect(_bundled[s.fontFamily], contains(s.fontWeight!.value), reason: where);
+            expect(_weightsFor(s.fontFamily, hebrewUi: hebrewUi), contains(s.fontWeight!.value), reason: where);
             if (name != 'hebrewDisplay') expect(s.fontFamilyFallback, _fallbacks[s.fontFamily], reason: where);
             if (s.fontStyle == FontStyle.italic) {
               // The one italic face: EB Garamond Medium Italic.
