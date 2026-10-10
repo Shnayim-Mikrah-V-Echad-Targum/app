@@ -1304,7 +1304,11 @@
   },
   "demoAboutTitle": "About the demo",
   "demoAboutBody": "No community server is connected, so the community runs as a demo on this device alone. The discussions in it are examples.",
-  "demoAboutPosts": "Anything you post stays on this device, and everything resets when the app restarts. To try it, sign in with any email address and any 6 digits as the code.",
+  "demoAboutPosts": "Anything you post stays on this device, and everything resets when the app restarts.",
+  "demoAboutSignIn": "To try it, sign in with any email address and any 6 digits as the code.",
+  "@demoAboutSignIn": {
+    "description": "After demoAboutPosts in the demo's explanation, to a reader not signed in."
+  },
   "dismissNotice": "Dismiss notice",
   "forumsHeading": "Forums",
   "forumNotFound": "This forum couldn't be found. It may have moved or closed.",
@@ -1514,6 +1518,10 @@
     "description": "Heading over a forum's other discussions, the most recently active first."
   },
   "lockedLabel": "Locked",
+  "pinnedLabel": "Pinned",
+  "@pinnedLabel": {
+    "description": "Tag above the title of a pinned discussion in a forum's list."
+  },
   "lockThread": "Lock discussion",
   "unlockThread": "Unlock discussion",
   "pinThread": "Pin to top",
@@ -1527,6 +1535,10 @@
   "guidelinesPrompt": "Before your first post, please read the community guidelines.",
   "readGuidelines": "Read the guidelines",
   "emptyForum": "No discussions yet — begin the first.",
+  "emptyLockedForum": "No discussions here yet.",
+  "@emptyLockedForum": {
+    "description": "An empty forum, to a member who may not begin a discussion in it (it is locked)."
+  },
   "noPostsYet": "No posts yet — share a thought on Parshat {name}.",
   "@noPostsYet": {
     "description": "An empty weekly thread. {name} is the parsha; a no-break space keeps it with \"Parshat\".",

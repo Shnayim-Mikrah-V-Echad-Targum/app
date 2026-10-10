@@ -67,6 +67,114 @@ class PaperGroup extends StatelessWidget {
   }
 }
 
+/// One row of a [PaperGroup], built on its own: for a list long enough to be
+/// built only as it scrolls into view (a forum's threads), whose rows can't
+/// all sit in one card. Each draws its share of the card: the paper, the
+/// outline at its sides, the outline's rounded top on the [first] row and
+/// its rounded foot on the [last], and the hairline under every row but the
+/// last, inset as [PaperGroup] insets it. Rows one after another read as one
+/// group.
+class PaperGroupRow extends StatelessWidget {
+  const PaperGroupRow({super.key, required this.first, required this.last, this.ruleInset, required this.child});
+
+  final bool first;
+  final bool last;
+
+  /// Where the hairline under the row starts, as [PaperGroup.ruleInset].
+  final double? ruleInset;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sefer = SeferColors.of(context);
+    final card = theme.cardTheme;
+    final side = switch (card.shape) {
+      RoundedRectangleBorder(:final side) => side,
+      _ => BorderSide.none,
+    };
+    final corners = BorderRadius.vertical(
+      top: first ? PaperGroup._corner : Radius.zero,
+      bottom: last ? PaperGroup._corner : Radius.zero,
+    );
+    final child = this.child;
+    return _RowPlace(
+      corners: corners,
+      child: CustomPaint(
+        painter: _PaperShare(
+          color: card.color ?? sefer.paper,
+          side: side,
+          corners: corners,
+          first: first,
+          last: last,
+          rule: last
+              ? null
+              : _RowRule(
+                  color: sefer.hairline,
+                  width: sefer.hairlineWidth,
+                  inset: ruleInset ?? (child is PaperRow && child.icon != null ? PaperGroup.iconInset : PaperGroup.plainInset),
+                  direction: Directionality.of(context),
+                ),
+        ),
+        // The row's ink shows on its own paper, as on the card's.
+        child: Material(type: MaterialType.transparency, child: child),
+      ),
+    );
+  }
+}
+
+/// A [PaperGroupRow]'s share of the card: its paper, and the outline at its
+/// sides, closed at the top of the first row and the foot of the last.
+class _PaperShare extends CustomPainter {
+  const _PaperShare({
+    required this.color,
+    required this.side,
+    required this.corners,
+    required this.first,
+    required this.last,
+    this.rule,
+  });
+
+  final Color color;
+  final BorderSide side;
+  final BorderRadius corners;
+  final bool first;
+  final bool last;
+  final _RowRule? rule;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRRect(corners.toRRect(rect), Paint()..color = color);
+    rule?.paint(canvas, size);
+    if (side.style == BorderStyle.none || side.width == 0) return;
+    // The outline inside the edge, as the card draws it, run on past an end
+    // that a row continues and clipped there, so that rows join seamlessly.
+    final w = side.width;
+    final run = Rect.fromLTRB(0, first ? 0 : -2 * w, size.width, last ? size.height : size.height + 2 * w);
+    canvas.save();
+    canvas.clipRect(rect);
+    canvas.drawRRect(
+      corners.toRRect(run).deflate(w / 2),
+      Paint()
+        ..color = side.color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_PaperShare old) =>
+      old.color != color ||
+      old.side != side ||
+      old.corners != corners ||
+      old.first != first ||
+      old.last != last ||
+      (old.rule == null) != (rule == null) ||
+      (rule != null && rule!.shouldRepaint(old.rule!));
+}
+
 /// The corners a row of a [PaperGroup] rounds its ink and focus ring to: the
 /// card's, at the top of the first row and the bottom of the last.
 class _RowPlace extends InheritedWidget {

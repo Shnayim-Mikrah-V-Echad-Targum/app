@@ -14,12 +14,16 @@ import 'models.dart';
 /// signs in.
 ///
 /// Every forum starts with a few sample discussions in Hebrew and English,
-/// dated back from now. With [samples] false, the forums start empty but for
-/// the question in Questions & answers (thread 1).
+/// dated back from now ([clock], for tests). With [samples] false, the
+/// forums start empty but for the question in Questions & answers (thread
+/// 1).
 class DemoForumRepository implements ForumRepository {
-  DemoForumRepository({bool samples = true}) {
+  DemoForumRepository({bool samples = true, DateTime Function()? clock}) : _clock = clock ?? DateTime.now {
     _seed(samples: samples);
   }
+
+  /// The time the samples are dated back from.
+  final DateTime Function() _clock;
 
   @override
   bool get isDemo => true;
@@ -92,7 +96,7 @@ class DemoForumRepository implements ForumRepository {
         descriptionHe: 'רעיונות, תקלות ומשוב על נגישות.',
       ),
     ]);
-    final now = DateTime.now();
+    final now = _clock();
     for (final sample in samples ? _samples : _samples.where((s) => s.id == '1')) {
       _addSample(sample, now);
     }
@@ -291,7 +295,7 @@ class DemoForumRepository implements ForumRepository {
   Future<String> weeklyThread({required int parshaNumber, required int hebrewYear, required String title}) async {
     final existing = _threads.where((t) => t.kind == ThreadKind.weekly && t.parshaNumber == parshaNumber && t.hebrewYear == hebrewYear);
     if (existing.isNotEmpty) return existing.first.id;
-    final now = DateTime.now();
+    final now = _clock();
     final id = '${_nextId++}';
     // This week's starts with a few posts; any other is empty.
     final posts = (isCurrentWeek?.call(parshaNumber, hebrewYear) ?? false) ? _weeklyPosts(id, now) : const <Post>[];
@@ -311,13 +315,43 @@ class DemoForumRepository implements ForumRepository {
     return id;
   }
 
-  /// The posts this week's discussion starts with, in thread [threadId].
+  /// The posts this week's discussion starts with, in thread [threadId]:
+  /// all written this week, since the Sunday before [now], in the time when
+  /// one may post. Opened early in the week, they are drawn closer together;
+  /// opened before there has been any such time (on a Yom Tov that begins
+  /// the week), the discussion starts empty.
   List<Post> _weeklyPosts(String threadId, DateTime now) {
+    final sunday = LocalDate.fromDateTime(now).onOrBefore(0);
+    final available = _postableMinutes(DateTime(sunday.year, sunday.month, sunday.day), now);
+    if (available == 0) return const [];
+    final oldest = _weeklySamples.map((p) => p.ago.inMinutes).reduce(max);
+    // A little short of the week's start, so that none is dated on it.
+    final share = min(1.0, available * 0.95 / oldest);
     final ids = {for (final p in _weeklySamples) p.id: '${_nextId++}'};
     return [
       for (final p in _weeklySamples)
-        p.post(threadId, _sampleTime(now, p.ago), id: ids[p.id], replyTo: ids[p.replyTo]),
+        p.post(
+          threadId,
+          _sampleTime(now, Duration(minutes: (p.ago.inMinutes * share).round())),
+          id: ids[p.id],
+          replyTo: ids[p.replyTo],
+        ),
     ];
+  }
+
+  /// The minutes from [from] to [to] when one may post, as [_sampleTime]
+  /// counts them.
+  int _postableMinutes(DateTime from, DateTime to) {
+    var minutes = 0;
+    for (var t = from; t.isBefore(to);) {
+      var next = DateTime(t.year, t.month, t.day, t.hour + 1);
+      // A change of the clocks can leave no next hour on the hour.
+      if (!next.isAfter(t)) next = t.add(const Duration(hours: 1));
+      if (next.isAfter(to)) next = to;
+      if (_postable(t)) minutes += next.difference(t).inMinutes;
+      t = next;
+    }
+    return minutes;
   }
 
   // --- Writing ----------------------------------------------------------------
@@ -701,7 +735,7 @@ const _samples = [
         '717',
         'דוד',
         Duration(days: 3),
-        'אונקלוס מתרגם ׳וירא אליו ה׳׳ (בראשית יח, א) ׳ואתגלי ליה ה׳׳, כלומר ׳ונגלה אליו׳. בכל מקום הוא מרחיק '
+        'אונקלוס מתרגם ״וירא אליו ה׳״ (בראשית יח, א) ״ואתגלי ליה ה׳״, כלומר ׳ונגלה אליו׳. בכל מקום הוא מרחיק '
             'מהכתוב תיאורים גשמיים, כך שקריאת התרגום מלמדת גם אמונה, לא רק מילים.',
         todah: 4,
       ),

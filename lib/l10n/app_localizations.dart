@@ -3089,8 +3089,14 @@ abstract class AppLocalizations {
   /// No description provided for @demoAboutPosts.
   ///
   /// In en, this message translates to:
-  /// **'Anything you post stays on this device, and everything resets when the app restarts. To try it, sign in with any email address and any 6 digits as the code.'**
+  /// **'Anything you post stays on this device, and everything resets when the app restarts.'**
   String get demoAboutPosts;
+
+  /// After demoAboutPosts in the demo's explanation, to a reader not signed in.
+  ///
+  /// In en, this message translates to:
+  /// **'To try it, sign in with any email address and any 6 digits as the code.'**
+  String get demoAboutSignIn;
 
   /// No description provided for @dismissNotice.
   ///
@@ -3602,6 +3608,12 @@ abstract class AppLocalizations {
   /// **'Locked'**
   String get lockedLabel;
 
+  /// Tag above the title of a pinned discussion in a forum's list.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get pinnedLabel;
+
   /// No description provided for @lockThread.
   ///
   /// In en, this message translates to:
@@ -3679,6 +3691,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No discussions yet — begin the first.'**
   String get emptyForum;
+
+  /// An empty forum, to a member who may not begin a discussion in it (it is locked).
+  ///
+  /// In en, this message translates to:
+  /// **'No discussions here yet.'**
+  String get emptyLockedForum;
 
   /// An empty weekly thread. {name} is the parsha; a no-break space keeps it with "Parshat".
   ///

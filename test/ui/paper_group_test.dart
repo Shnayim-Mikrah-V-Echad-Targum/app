@@ -327,6 +327,49 @@ void main() {
     expect(tester.widget<Text>(find.text('Ask about a verse, a Targum or a Rashi.')).style, text.bodySmall);
   });
 
+  testWidgets('rows built on their own, for a list built as it scrolls, lay out as a group does', (tester) async {
+    List<Widget> rows() => [
+          for (final title in ['Rishon', 'Sheni', 'Shlishi']) PaperRow(icon: Icons.menu_book_outlined, title: title, onTap: () {}),
+        ];
+    await pumpThemed(tester, Align(alignment: Alignment.topCenter, child: SizedBox(width: 400, child: PaperGroup(children: rows()))));
+    final grouped = [for (final t in ['Rishon', 'Sheni', 'Shlishi']) tester.getRect(find.text(t))];
+    final height = tester.getSize(find.byType(PaperGroup)).height;
+
+    final corners = <BorderRadius>[];
+    await pumpThemed(
+      tester,
+      Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 400,
+          child: Column(
+            key: const Key('rows'),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (i, row) in rows().indexed)
+                PaperGroupRow(
+                  first: i == 0,
+                  last: i == 2,
+                  child: Builder(builder: (context) {
+                    corners.add(PaperGroup.rowCorners(context));
+                    return row;
+                  }),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect([for (final t in ['Rishon', 'Sheni', 'Shlishi']) tester.getRect(find.text(t))], grouped);
+    expect(tester.getSize(find.byKey(const Key('rows'))).height, height);
+    // Each rounds its ink and ring to the corners of the card it shares.
+    expect(corners, [
+      const BorderRadius.vertical(top: Radius.circular(12)),
+      BorderRadius.zero,
+      const BorderRadius.vertical(bottom: Radius.circular(12)),
+    ]);
+  });
+
   testWidgets('a style given in part keeps the rest of the row\'s own', (tester) async {
     await pumpThemed(
       tester,

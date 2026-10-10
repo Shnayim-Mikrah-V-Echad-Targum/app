@@ -69,7 +69,9 @@ void main() {
   });
 
   test("starts this week's discussion with a few posts as it is first opened, and no other week's", () async {
-    final repo = DemoForumRepository()..isCurrentWeek = (parsha, year) => parsha == 1 && year == 5787;
+    // Friday of Bereshit 5787.
+    final repo = DemoForumRepository(clock: () => DateTime(2026, 10, 9, 11))
+      ..isCurrentWeek = (parsha, year) => parsha == 1 && year == 5787;
     final noach = await repo.weeklyThread(parshaNumber: 2, hebrewYear: 5787, title: 'Noach · נח · 5787');
     expect(await repo.posts(noach), isEmpty);
 
@@ -83,6 +85,33 @@ void main() {
     // Opened again, it is the same discussion, with nothing added.
     expect(await repo.weeklyThread(parshaNumber: 1, hebrewYear: 5787, title: 'Bereshit · בראשית · 5787'), bereshit);
     expect(await repo.posts(bereshit), hasLength(3));
+  });
+
+  test("dates this week's discussion within the week, however early in it it is opened", () async {
+    // Sunday morning after Shabbat Noach, 18 October 2026: since midnight, 9
+    // hours to post in.
+    final sunday = DateTime(2026, 10, 18);
+    final now = sunday.add(const Duration(hours: 9));
+    final repo = DemoForumRepository(clock: () => now)..isCurrentWeek = (parsha, year) => parsha == 3 && year == 5787;
+    final id = await repo.weeklyThread(parshaNumber: 3, hebrewYear: 5787, title: 'Lech-Lecha · לך לך · 5787');
+    final posts = await repo.posts(id);
+    expect(posts, hasLength(3));
+    for (final post in posts) {
+      expect(post.createdAt.isBefore(sunday), isFalse, reason: '${post.createdAt}, in last week');
+      expect(post.createdAt.isAfter(now), isFalse);
+    }
+    expect((await repo.thread(id)).createdAt.isBefore(sunday), isFalse);
+    // Still in order, the reply last.
+    expect(posts.map((p) => p.createdAt).toList(), orderedEquals([...posts.map((p) => p.createdAt)]..sort()));
+  });
+
+  test('starts this week\'s discussion empty on a Yom Tov that begins the week', () async {
+    // Simchat Torah, Sunday 4 October 2026, in the Diaspora: no one has
+    // posted since Shabbat.
+    final repo = DemoForumRepository(clock: () => DateTime(2026, 10, 4, 10))
+      ..isCurrentWeek = (parsha, year) => parsha == 54 && year == 5786;
+    final id = await repo.weeklyThread(parshaNumber: 54, hebrewYear: 5786, title: 'Vezot HaBerakhah · וזאת הברכה · 5786');
+    expect(await repo.posts(id), isEmpty);
   });
 
   test('starts no weekly discussion until the app says which week is this one', () async {

@@ -1798,7 +1798,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get demoAboutPosts =>
-      'Anything you post stays on this device, and everything resets when the app restarts. To try it, sign in with any email address and any 6 digits as the code.';
+      'Anything you post stays on this device, and everything resets when the app restarts.';
+
+  @override
+  String get demoAboutSignIn =>
+      'To try it, sign in with any email address and any 6 digits as the code.';
 
   @override
   String get dismissNotice => 'Dismiss notice';
@@ -2098,6 +2102,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lockedLabel => 'Locked';
 
   @override
+  String get pinnedLabel => 'Pinned';
+
+  @override
   String get lockThread => 'Lock discussion';
 
   @override
@@ -2136,6 +2143,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyForum => 'No discussions yet — begin the first.';
+
+  @override
+  String get emptyLockedForum => 'No discussions here yet.';
 
   @override
   String noPostsYet(String name) {

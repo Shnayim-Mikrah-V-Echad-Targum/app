@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -134,6 +135,19 @@ class _FlakyForum extends DemoForumRepository {
     if (offline) throw Exception('offline');
     return super.threads(forumId: forumId, parshaNumber: parshaNumber, after: after, limit: limit);
   }
+}
+
+/// A community whose App feedback forum is locked to moderators, and empty.
+class _LockedFeedback extends DemoForumRepository {
+  _LockedFeedback() : super(samples: false);
+
+  @override
+  Future<List<Forum>> forums() async => [
+        for (final f in await super.forums())
+          f.slug == 'feedback'
+              ? Forum(id: f.id, slug: f.slug, nameEn: f.nameEn, nameHe: f.nameHe, locked: true)
+              : f,
+      ];
 }
 
 /// A community on a server: no demo.
@@ -1459,7 +1473,8 @@ void main() {
     expect(tester.takeException(), isNull);
     // As its forum lists it: under Pinned, before the rest.
     final top = tester.getTopLeft(find.text('Why read the Targum rather than a translation?')).dy;
-    expect(top, inExclusiveRange(tester.getTopLeft(find.text('Pinned')).dy, tester.getTopLeft(find.text('Recent')).dy));
+    final heading = find.descendant(of: find.byType(GroupHeader), matching: find.text('Pinned'));
+    expect(top, inExclusiveRange(tester.getTopLeft(heading).dy, tester.getTopLeft(find.text('Recent')).dy));
 
     await tester.tap(find.text('Why read the Targum rather than a translation?'));
     await tester.pumpAndSettle();
@@ -1661,18 +1676,107 @@ void main() {
         // A small tag, but a whole 48 to tap.
         expect(tester.getSize(tag).height, greaterThanOrEqualTo(48));
         expect(tester.getSize(tag).width, greaterThanOrEqualTo(48));
-        expect(tester.getSemantics(tag), isSemantics(label: 'Demo', isButton: true, hasTapAction: true));
+        // Named by what it does too: "Demo" alone could be taken for a
+        // switch to a demo.
+        expect(
+          tester.getSemantics(tag),
+          isSemantics(label: 'Demo', tooltip: 'About the demo', isButton: true, hasTapAction: true),
+        );
 
         await tester.tap(tag);
         await tester.pumpAndSettle();
         expect(find.text('About the demo'), findsOneWidget);
         expect(find.textContaining('Anything you post stays on this device'), findsOneWidget);
+        expect(find.textContaining('sign in with any email address'), findsOneWidget, reason: 'signed out');
         semantics.dispose();
       });
     }
+
+    testWidgets('tells a member signed in nothing of how to sign in', (tester) async {
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/new?forum=questions');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DemoTag));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Anything you post stays on this device'), findsOneWidget);
+      expect(find.textContaining('sign in'), findsNothing);
+    });
+
+    testWidgets('is in Hebrew in the Hebrew UI', (tester) async {
+      final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(TextButton, 'הדגמה')), findsOneWidget);
+      await tester.tap(find.byType(DemoTag));
+      await tester.pumpAndSettle();
+      expect(find.text('על ההדגמה'), findsWidgets);
+    });
   });
 
   group('a forum page', () {
+    testWidgets('lists a thread as one button for screen readers, its tags, title and activity read together',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/forum/feedback');
+      await tester.pumpAndSettle();
+      const title = 'A warmer theme for reading at night?';
+      final tile = find.widgetWithText(ThreadTile, title);
+      final node = tester.getSemantics(tile);
+      expect(node, isSemantics(isButton: true, hasTapAction: true));
+      expect(node.label, startsWith('Locked\n\u2068Avraham\u2069 · '));
+      expect(node.label, endsWith(' · 1\u00a0reply'));
+      expect(tester.getSemantics(find.descendant(of: tile, matching: find.text('Locked'))).id, node.id);
+      // The title, tagged with its own language, is read within the row, and
+      // is no item to stop on of its own.
+      final heading = tester.getSemantics(find.text(title));
+      expect(heading.label, title);
+      expect(heading.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+      expect(heading.getSemanticsData().flagsCollection.isButton, isFalse);
+      SemanticsNode? up = heading;
+      while (up != null && up.id != node.id) {
+        up = up.parent;
+      }
+      expect(up, isNotNull, reason: 'within the row');
+      semantics.dispose();
+    });
+
+    testWidgets('in Hebrew, sets an English title from the right, and keeps an English name in its place', (tester) async {
+      final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
+      c.read(routerProvider).go('/community/forum/feedback');
+      await tester.pumpAndSettle();
+      const title = 'A warmer theme for reading at night?';
+      final english = tester.widget<Text>(find.text(title));
+      expect(english.textDirection, TextDirection.ltr, reason: 'so its question mark ends it');
+      expect(english.textAlign, TextAlign.right, reason: "from the Hebrew page's edge");
+      expect(tester.getRect(find.text(title)).right, closeTo(tester.getRect(find.widgetWithText(ThreadTile, title)).right - 16, 1));
+      // The meta line runs right to left: the name, isolated, first, at the
+      // right, then the time and the replies.
+      final meta = find.descendant(of: find.widgetWithText(ThreadTile, title), matching: find.textContaining('\u2068Avraham\u2069 · '));
+      expect(meta, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(meta);
+      final text = paragraph.text.toPlainText();
+      Rect boxOf(String part) {
+        final start = text.indexOf(part);
+        return paragraph.getBoxesForSelection(TextSelection(baseOffset: start, extentOffset: start + part.length)).first.toRect();
+      }
+      expect(boxOf('Avraham').left, greaterThan(boxOf('יום').right));
+      // Its lock tag in Hebrew too.
+      expect(find.descendant(of: find.widgetWithText(ThreadTile, title), matching: find.text('נעול')), findsOneWidget);
+    });
+
+    testWidgets('locked and empty, invites no one who may not begin a discussion', (tester) async {
+      final c = await _pump(tester, forums: _LockedFeedback());
+      c.read(routerProvider).go('/community/forum/feedback');
+      await tester.pumpAndSettle();
+      final empty = find.byType(EmptyState);
+      expect(find.descendant(of: empty, matching: find.text('No discussions here yet.')), findsOneWidget);
+      expect(find.text('No discussions yet — begin the first.'), findsNothing);
+      expect(find.descendant(of: empty, matching: find.byType(ButtonStyleButton)), findsNothing);
+      expect(find.byType(FloatingActionButton), findsNothing);
+    });
+
     testWidgets("of the week's parsha opens on this week's discussion, and is never empty", (tester) async {
       final c = await _pump(tester, forums: DemoForumRepository(samples: false));
       c.read(routerProvider).go('/community/forum/parsha');
@@ -1700,8 +1804,17 @@ void main() {
       final c = await _pump(tester);
       c.read(routerProvider).go('/community/forum/parsha');
       await tester.pumpAndSettle();
-      final welcome = tester.getTopLeft(find.text('Welcome: how the weekly discussions work')).dy;
-      expect(welcome, inExclusiveRange(tester.getTopLeft(find.text('Pinned')).dy, tester.getTopLeft(find.text('Recent')).dy));
+      const welcomeTitle = 'Welcome: how the weekly discussions work';
+      final welcome = tester.getTopLeft(find.text(welcomeTitle)).dy;
+      final heading = find.descendant(of: find.byType(GroupHeader), matching: find.text('Pinned'));
+      expect(welcome, inExclusiveRange(tester.getTopLeft(heading).dy, tester.getTopLeft(find.text('Recent')).dy));
+      // Tagged pinned above its title too, so that the row says so wherever
+      // it is met, as a locked one says it is locked.
+      final pinned = find.widgetWithText(ThreadTile, welcomeTitle);
+      final pinTag = find.descendant(of: pinned, matching: find.text('Pinned'));
+      expect(pinTag, findsOneWidget);
+      expect(find.descendant(of: pinned, matching: find.byIcon(Icons.push_pin_outlined)), findsOneWidget);
+      expect(tester.getTopLeft(pinTag).dy, lessThan(welcome));
 
       c.read(routerProvider).go('/community/forum/feedback');
       await tester.pumpAndSettle();

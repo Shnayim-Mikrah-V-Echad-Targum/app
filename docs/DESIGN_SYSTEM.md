@@ -802,12 +802,13 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 - **Action below** (`actionBelow`): for a text longer than a line or two, which a trailing button would squeeze. The icon and text align to the top, and the TextButton sits under the text at the end, with 4 bottom padding.
 - **Action ink:** the TextButton is `primary` where primary on secondaryContainer meets AA (4.5:1); otherwise, as in the high-contrast themes, it is `onSecondaryContainer`, with a 3 px focus ring in the same colour.
 
-**Demo notice** (community_ui.dart:139-155)
+**Demo notice** (`DemoBanner` and `DemoTag`, community_ui.dart)
 - A NoticeBanner with `info_outline` (replaces the pink `tertiaryContainer` strip and the flask icon).
 - Shown on the Community home only, dismissible for the session.
-- Forum, Thread and Compose instead show a small "Demo" tag in the app bar actions:
+- Forum, Thread, Compose and Account instead show a small "Demo" tag in the app bar actions:
   - labelSmall, secondaryContainer fill, radius 6, padding 6/2;
-  - tapping it opens a sheet with the full explanation.
+  - tapping it opens a sheet with the full explanation (how to sign in to try it only to a reader signed out);
+  - its tooltip, "About the demo", says what it does, to screen readers too ("Demo, About the demo, button"), so it isn't taken for a switch to a demo.
 
 ### 6.21 Forum posts as "letters" (thread_screen.dart)
 
@@ -1140,8 +1141,9 @@ In order:
 **Forum**
 - The description in bodyMedium onSurfaceVariant.
 - Parshat HaShavua first shows this week's card, as on Home, so that forum is never empty.
-- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines), then bodySmall "Rivka · 3 hours ago · 4 replies" with the name isolated. A locked thread has a 16 px lock and a labelSmall "Locked" above its title; a pinned one needs no tag under "Pinned". No leading icon or chevron.
-- Empty state per §6.22 with `emptyForum`, its action New discussion.
+- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines), then bodySmall "Rivka · 3 hours ago · 4 replies" with the name isolated. A pinned or locked thread has a 16 px icon (`push_pin_outlined`, `lock_outline`) and a labelSmall tag ("Pinned", "Locked") above its title, so that the row says so wherever it is met, not only under its group's heading; screen readers hear the tags first. No leading icon or chevron.
+- The rows are built only as they scroll into view, each its share of its group's paper (`PaperGroupRow`), as a forum paged through may hold hundreds.
+- Empty state per §6.22 with `emptyForum`, its action New discussion; in a locked forum, to a member who may not begin one there, `emptyLockedForum` ("No discussions here yet.") with no action.
 - FAB: extended "New discussion", primaryContainer / onPrimaryContainer, radius 12, elevation 2.
 
 **Thread**
@@ -1164,7 +1166,7 @@ In order:
 - Until the guidelines are accepted, one line in bodySmall onSurfaceVariant, start-aligned, ending with the link to them (`LinkedText`).
 - Then a full-width Filled "Post", and Discard draft (Text, centred) once anything is written.
 
-**Inline links** (`LinkedText`, community_ui.dart): a sentence in bodySmall onSurfaceVariant ending with a link in primary w500, always underlined. The link is a WidgetSpan holding a SeferInkWell, so it takes the keyboard focus with the ring (2 px of room either side) and Enter follows it; screen readers read it as a link after the sentence. As a link in running text it is as tall as the line (WCAG 2.5.8's inline exception).
+**Inline links** (`LinkedText`, community_ui.dart): a sentence in bodySmall onSurfaceVariant ending with a link in primary w500, always underlined. The link is a WidgetSpan holding a SeferInkWell, so it takes the keyboard focus with the ring (4 px of room either side: the 3 px ring, drawn outside the link, and a hairline clear of the words) and Enter follows it; screen readers read it as a link after the sentence. As a link in running text it is as tall as the line (WCAG 2.5.8's inline exception).
 
 **Account**
 - Centred, max width 440 (the app bar's title too). The app bar says "Account & community" in every state.

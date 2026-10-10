@@ -143,33 +143,38 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
             data: (page) {
-              final pinned = <Widget>[];
-              final recent = <Widget>[];
-              for (final (i, t) in page.threads.indexed) {
-                (t.pinned ? pinned : recent).add(ThreadTile(
-                  key: ValueKey(t.id),
-                  thread: t,
-                  focusNode: i == _firstLoaded ? _firstLoadedFocus : null,
-                ));
+              // The pinned threads, then the rest, each group as rows of one
+              // sheet of paper, built only as they scroll into view: a forum
+              // paged through holds hundreds.
+              final items = <Widget Function()>[];
+              void group(String heading, List<(int, ThreadSummary)> threads) {
+                if (threads.isEmpty) return;
+                items.add(() => GroupHeader(heading));
+                for (final (n, (i, t)) in threads.indexed) {
+                  items.add(() => PaperGroupRow(
+                        first: n == 0,
+                        last: n == threads.length - 1,
+                        child: ThreadTile(
+                          key: ValueKey(t.id),
+                          thread: t,
+                          focusNode: i == _firstLoaded ? _firstLoadedFocus : null,
+                        ),
+                      ));
+                }
               }
-              return PageBody(
-                children: [
-                  if (description.isNotEmpty)
-                    Text(description, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  if (weekly) ...[
-                    if (description.isNotEmpty) const Gap(Rhythm.cardGap),
-                    const ThisWeekCard(),
-                  ],
-                  if (pinned.isNotEmpty) ...[GroupHeader(l.pinnedHeading), PaperGroup(children: pinned)],
-                  if (recent.isNotEmpty) ...[GroupHeader(l.recentHeading), PaperGroup(children: recent)],
-                  if (page.threads.isEmpty && !weekly)
-                    EmptyState(
-                      message: l.emptyForum,
+
+              group(l.pinnedHeading, [for (final (i, t) in page.threads.indexed) if (t.pinned) (i, t)]);
+              group(l.recentHeading, [for (final (i, t) in page.threads.indexed) if (!t.pinned) (i, t)]);
+              if (page.threads.isEmpty && !weekly) {
+                // An invitation only to one who may begin a discussion here.
+                items.add(() => EmptyState(
+                      message: canStart ? l.emptyForum : l.emptyLockedForum,
                       actionLabel: canStart ? l.newThread : null,
                       onAction: canStart ? compose : null,
-                    ),
-                  if (page.hasMore)
-                    Padding(
+                    ));
+              }
+              if (page.hasMore) {
+                items.add(() => Padding(
                       padding: const EdgeInsets.only(top: Space.lg),
                       child: Center(
                         child: OutlinedButton(
@@ -185,10 +190,21 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
                               : Text(l.loadMore),
                         ),
                       ),
-                    ),
-                  // Room at the end for the button over it.
-                  if (canStart) const Gap(72),
+                    ));
+              }
+              // Room at the end for the button over it.
+              if (canStart) items.add(() => const Gap(72));
+              return PageBody.builder(
+                header: [
+                  if (description.isNotEmpty)
+                    Text(description, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  if (weekly) ...[
+                    if (description.isNotEmpty) const Gap(Rhythm.cardGap),
+                    const ThisWeekCard(),
+                  ],
                 ],
+                itemCount: items.length,
+                itemBuilder: (context, i) => items[i](),
               );
             },
           ),
@@ -199,9 +215,10 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
 }
 
 /// A thread in a forum's list (§9 Community): its title, run in the direction
-/// of its own language, under a Locked tag if it is locked; then who started
-/// it, when it was last active, and how many replies it has had. One item for
-/// screen readers, which opens the thread.
+/// of its own language, under a Pinned or Locked tag if it is pinned or
+/// locked; then who started it, when it was last active, and how many replies
+/// it has had. One item for screen readers, which opens the thread, and says
+/// each tag too.
 class ThreadTile extends ConsumerWidget {
   const ThreadTile({super.key, required this.thread, this.focusNode});
   final ThreadSummary thread;
@@ -225,6 +242,14 @@ class ThreadTile extends ConsumerWidget {
     final enlarged = MediaQuery.textScalerOf(context).scale(1) > 1;
     // Starting with the time, as a weekly thread's does, it starts with a
     // capital: "Just now".
+    Widget tag(IconData icon, String label) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: muted),
+            const Gap(Space.xs),
+            Flexible(child: Text(label, style: text.labelSmall?.copyWith(color: muted))),
+          ],
+        );
     final meta = toBeginningOfSentenceCase(
       [
         // A weekly thread is the community's, started by no one.
@@ -249,14 +274,14 @@ class ThreadTile extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (thread.locked)
+                if (thread.pinned || thread.locked)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: Row(
+                    child: Wrap(
+                      spacing: Space.md,
                       children: [
-                        Icon(Icons.lock_outline, size: 16, color: muted),
-                        const Gap(Space.xs),
-                        Flexible(child: Text(l.lockedLabel, style: text.labelSmall?.copyWith(color: muted))),
+                        if (thread.pinned) tag(Icons.push_pin_outlined, l.pinnedLabel),
+                        if (thread.locked) tag(Icons.lock_outline, l.lockedLabel),
                       ],
                     ),
                   ),

@@ -1791,7 +1791,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get demoAboutPosts =>
-      'כל מה שמפרסמים נשאר במכשיר הזה, והכול מתאפס כשהאפליקציה מופעלת מחדש. כדי לנסות, אפשר להתחבר עם כל כתובת דוא״ל וכל קוד בן 6 ספרות.';
+      'כל מה שמפרסמים נשאר במכשיר הזה, והכול מתאפס כשהאפליקציה מופעלת מחדש.';
+
+  @override
+  String get demoAboutSignIn =>
+      'כדי לנסות, אפשר להתחבר עם כל כתובת דוא״ל וכל קוד בן 6 ספרות.';
 
   @override
   String get dismissNotice => 'סגירת ההודעה';
@@ -2095,6 +2099,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get lockedLabel => 'נעול';
 
   @override
+  String get pinnedLabel => 'נעוץ';
+
+  @override
   String get lockThread => 'נעילת הדיון';
 
   @override
@@ -2133,6 +2140,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get emptyForum => 'עדיין אין דיונים — אפשר לפתוח את הראשון.';
+
+  @override
+  String get emptyLockedForum => 'עדיין אין כאן דיונים.';
 
   @override
   String noPostsYet(String name) {

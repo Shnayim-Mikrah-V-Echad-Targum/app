@@ -416,7 +416,9 @@ class _DemoBannerState extends ConsumerState<DemoBanner> {
 }
 
 /// A small "Demo" tag for the app bar of a community page (§6.20), while the
-/// community is the demo. It opens a sheet that explains the demo.
+/// community is the demo. It opens a sheet that explains the demo, which its
+/// tooltip names, for screen readers too: "Demo" alone could be taken for
+/// a switch to a demo.
 class DemoTag extends ConsumerWidget {
   const DemoTag({super.key});
 
@@ -435,26 +437,32 @@ class DemoTag extends ConsumerWidget {
       // Its end where an icon button's glyph would end: at the page's edge,
       // and clear of the action after it.
       padding: const EdgeInsetsDirectional.only(start: Space.sm, end: Space.md),
-      child: TextButton(
-        style: TextButton.styleFrom(
-          backgroundColor: scheme.secondaryContainer,
-          foregroundColor: scheme.onSecondaryContainer,
-          textStyle: theme.textTheme.labelSmall,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          minimumSize: Size.zero,
-          // A small tag, but a whole 48 to tap.
-          tapTargetSize: MaterialTapTargetSize.padded,
-        ).copyWith(
-          // The theme's keyboard focus ring (§6.1), around the tag's corners.
-          shape: WidgetStateProperty.resolveWith(
-            (states) => switch (themed?.shape?.resolve(states)) {
-              final FocusRingBorder ring => ring.copyWith(borderRadius: _corners, side: side),
-              _ => RoundedRectangleBorder(borderRadius: _corners, side: side),
-            },
+      // Its tooltip is the button's own for screen readers, beside the word
+      // it shows.
+      child: Tooltip(
+        message: context.l10n.demoAboutTitle,
+        excludeFromSemantics: true,
+        child: TextButton(
+          style: TextButton.styleFrom(
+            backgroundColor: scheme.secondaryContainer,
+            foregroundColor: scheme.onSecondaryContainer,
+            textStyle: theme.textTheme.labelSmall,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            minimumSize: Size.zero,
+            // A small tag, but a whole 48 to tap.
+            tapTargetSize: MaterialTapTargetSize.padded,
+          ).copyWith(
+            // The theme's keyboard focus ring (§6.1), around the tag's corners.
+            shape: WidgetStateProperty.resolveWith(
+              (states) => switch (themed?.shape?.resolve(states)) {
+                final FocusRingBorder ring => ring.copyWith(borderRadius: _corners, side: side),
+                _ => RoundedRectangleBorder(borderRadius: _corners, side: side),
+              },
+            ),
           ),
+          onPressed: () => showDemoAbout(context),
+          child: Semantics(tooltip: context.l10n.demoAboutTitle, child: Text(context.l10n.demoTag)),
         ),
-        onPressed: () => showDemoAbout(context),
-        child: Text(context.l10n.demoTag),
       ),
     );
   }
@@ -462,12 +470,13 @@ class DemoTag extends ConsumerWidget {
 
 /// What the demo is: that it runs on this device alone, with example
 /// discussions; that what is posted stays on the device until the app
-/// restarts; and how to sign in to try it.
+/// restarts; and, to a reader signed out, how to sign in to try it.
 Future<void> showDemoAbout(BuildContext context) => showAppSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) {
         final l = context.l10n;
+        final signedIn = ProviderScope.containerOf(context, listen: false).read(communityUserProvider).value != null;
         final theme = Theme.of(context);
         final padding = sheetPadding(context);
         final body = theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface);
@@ -486,7 +495,7 @@ Future<void> showDemoAbout(BuildContext context) => showAppSheet<void>(
                     children: [
                       Text(l.demoAboutBody, style: body),
                       const Gap(Space.md),
-                      Text(l.demoAboutPosts, style: body),
+                      Text(signedIn ? l.demoAboutPosts : '${l.demoAboutPosts} ${l.demoAboutSignIn}', style: body),
                     ],
                   ),
                 ),
@@ -626,18 +635,23 @@ class LinkedText extends StatelessWidget {
           WidgetSpan(
             alignment: PlaceholderAlignment.baseline,
             baseline: TextBaseline.alphabetic,
-            child: Semantics(
-              container: true,
-              link: true,
-              child: SeferInkWell(
-                onTap: onTap,
-                borderRadius: const BorderRadius.all(Radius.circular(4)),
-                child: Padding(
-                  // Room for the focus ring, clear of the words either side.
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  // The line scales what it holds with the text, so the link
-                  // isn't scaled a second time.
-                  child: Text(link, style: linkStyle, textScaler: TextScaler.noScaling),
+            child: Padding(
+              // Room for the focus ring, which is drawn 3 px outside the
+              // link, and a hairline, clear of the words either side.
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Semantics(
+                container: true,
+                link: true,
+                child: SeferInkWell(
+                  onTap: onTap,
+                  borderRadius: const BorderRadius.all(Radius.circular(4)),
+                  child: Padding(
+                    // So that the ring never touches the letters.
+                    padding: const EdgeInsets.symmetric(horizontal: 1),
+                    // The line scales what it holds with the text, so the
+                    // link isn't scaled a second time.
+                    child: Text(link, style: linkStyle, textScaler: TextScaler.noScaling),
+                  ),
                 ),
               ),
             ),
