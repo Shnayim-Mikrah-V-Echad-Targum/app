@@ -520,8 +520,9 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Leading icon 22 in onSurfaceVariant, in a 38 slot (icon then 16 gap).
 - Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max. Once the system text is enlarged, the subtitle is never cut short (WCAG 1.4.4).
 - Trailing: an optional value in bodyMedium onSurfaceVariant, then `Icons.chevron_right` 20 in outline (mirrors in RTL automatically).
-  - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it.
+  - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it. With a subtitle under them, the icon and chevron line up with the title's line too.
 - Tap via SeferInkWell.
+- Semantics: the row is one item, its text and its tap. A trailing control (a menu or text button) keeps an item of its own beside it, so both actions can be reached; a switch or checkbox that the row's tap also toggles merges into the row (`mergeTrailing`).
 
 **GroupHeader**
 - Eyebrow, 28 above and 8 below, start inset 4.

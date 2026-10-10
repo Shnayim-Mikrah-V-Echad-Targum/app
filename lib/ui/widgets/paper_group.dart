@@ -98,8 +98,15 @@ class _RowRule extends CustomPainter {
 /// the end an optional value, a [trailing] widget and a chevron.
 ///
 /// It is 56 high with one line and 72 with a subtitle, and reads to a screen
-/// reader as one item. The chevron shows when the row can be tapped, unless
-/// [chevron] says otherwise; it points the other way in Hebrew.
+/// reader as one item: its text, and its tap if it has one. The chevron shows
+/// when the row can be tapped, unless [chevron] says otherwise; it points the
+/// other way in Hebrew.
+///
+/// A [trailing] control, such as a menu button or a text button, keeps an item
+/// of its own beside the row's, so a screen reader reaches both actions:
+/// merged into the row, its action would replace the row's. Set
+/// [mergeTrailing] for a switch or checkbox that the row's tap also toggles,
+/// so that the row and its state read as one item.
 class PaperRow extends StatelessWidget {
   const PaperRow({
     super.key,
@@ -108,6 +115,7 @@ class PaperRow extends StatelessWidget {
     this.subtitle,
     this.value,
     this.trailing,
+    this.mergeTrailing = false,
     this.onTap,
     bool? chevron,
   }) : chevron = chevron ?? onTap != null;
@@ -121,6 +129,11 @@ class PaperRow extends StatelessWidget {
   /// The current setting, such as a language, at the end of the row.
   final String? value;
   final Widget? trailing;
+
+  /// Whether [trailing] reads as part of the row (a switch the row toggles)
+  /// rather than as a control of its own.
+  final bool mergeTrailing;
+
   final VoidCallback? onTap;
   final bool chevron;
 
@@ -133,25 +146,42 @@ class PaperRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
     final muted = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
-    final titleStyle = text.bodyLarge?.copyWith(color: scheme.onSurface);
+    final titleStyle = text.bodyLarge!.copyWith(color: scheme.onSurface);
     final end = <Widget>[
       ?trailing,
       if (chevron) Icon(Icons.chevron_right, size: 20, color: scheme.outline),
     ];
+    final scaler = MediaQuery.textScalerOf(context);
     // Text is never cut short once it is enlarged (WCAG 1.4.4).
-    final enlarged = MediaQuery.textScalerOf(context).scale(1) > 1;
+    final enlarged = scaler.scale(1) > 1;
+    // A value ends the title's line. With a subtitle under them, the icon and
+    // the end of the row line up with that line too, rather than with the
+    // middle of the row, so the value and chevron stay side by side.
+    final onTitleLine = value != null && subtitle != null;
+    final titleLine = scaler.scale(titleStyle.fontSize!) * titleStyle.height!;
+    Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
+        ? ConstrainedBox(
+            constraints: BoxConstraints(minHeight: titleLine),
+            child: Align(alignment: alignment, widthFactor: 1, heightFactor: 1, child: child),
+          )
+        : child;
     final content = ConstrainedBox(
       constraints: BoxConstraints(minHeight: subtitle == null ? 56 : 72),
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(_start, 12, 12, 12),
         child: Row(
+          crossAxisAlignment: onTitleLine ? CrossAxisAlignment.start : CrossAxisAlignment.center,
           children: [
             if (icon != null)
               SizedBox(
                 width: _iconSlot,
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Icon(icon, size: 22, color: scheme.onSurfaceVariant),
+                child: place(
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    heightFactor: 1,
+                    child: Icon(icon, size: 22, color: scheme.onSurfaceVariant),
+                  ),
+                  AlignmentDirectional.centerStart,
                 ),
               ),
             Expanded(
@@ -187,24 +217,26 @@ class PaperRow extends StatelessWidget {
               Padding(
                 // A chevron straight after a value stays close to it.
                 padding: EdgeInsetsDirectional.only(start: i == 0 && (value == null || trailing != null) ? 12 : 4),
-                child: widget,
+                child: place(widget, Alignment.center),
               ),
           ],
         ),
       ),
     );
-    return MergeSemantics(
-      child: Semantics(
-        button: onTap != null,
-        child: onTap == null
-            ? content
-            : SeferInkWell(
-                onTap: onTap,
-                borderRadius: _RowPlace.of(context) ?? const BorderRadius.all(PaperGroup._corner),
-                child: content,
-              ),
-      ),
+    final row = Semantics(
+      // Its own item: the text and the tap gather here, while a trailing
+      // control below keeps its own (unless merged, below).
+      container: true,
+      button: onTap != null,
+      child: onTap == null
+          ? content
+          : SeferInkWell(
+              onTap: onTap,
+              borderRadius: _RowPlace.of(context) ?? const BorderRadius.all(PaperGroup._corner),
+              child: content,
+            ),
     );
+    return trailing != null && mergeTrailing ? MergeSemantics(child: row) : row;
   }
 }
 

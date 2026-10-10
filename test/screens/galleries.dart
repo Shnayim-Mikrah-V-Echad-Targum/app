@@ -152,6 +152,7 @@ class RowsGallery extends StatelessWidget {
                 icon: Icons.visibility_outlined,
                 title: l.showStreaks,
                 trailing: Switch(value: true, onChanged: (_) {}),
+                mergeTrailing: true,
               ),
             ],
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
@@ -164,6 +165,99 @@ void main() {
     expect(tester.getSemantics(row(2)), isSemantics(label: 'Version', isButton: false, hasTapAction: false));
     handle.dispose();
   });
+
+  testWidgets('a trailing control keeps its own item, so the row and the control can both be reached',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    final taps = <String>[];
+    await pumpThemed(
+      tester,
+      SizedBox(
+        width: 400,
+        child: PaperGroup(children: [
+          PaperRow(
+            title: 'Rishon',
+            subtitle: 'Genesis 1:1–2:3',
+            onTap: () => taps.add('row'),
+            trailing: IconButton(
+              tooltip: 'More options',
+              icon: const Icon(Icons.more_vert),
+              onPressed: () => taps.add('menu'),
+            ),
+          ),
+        ]),
+      ),
+    );
+    final row = tester.getSemantics(find.byType(PaperRow));
+    final menu = tester.getSemantics(find.byType(IconButton));
+    expect(row, isSemantics(label: 'Rishon\nGenesis 1:1–2:3', isButton: true, hasTapAction: true));
+    expect(menu, isSemantics(tooltip: 'More options', isButton: true, hasTapAction: true));
+    expect(menu.id, isNot(row.id));
+
+    // A screen reader's double tap on each item does what it says.
+    final owner = tester.binding.pipelineOwner.semanticsOwner!;
+    owner.performAction(row.id, SemanticsAction.tap);
+    owner.performAction(menu.id, SemanticsAction.tap);
+    await tester.pump();
+    expect(taps, ['row', 'menu']);
+    handle.dispose();
+  });
+
+  testWidgets('a switch the row toggles reads as part of it', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpThemed(
+      tester,
+      SizedBox(
+        width: 400,
+        child: PaperGroup(children: [
+          PaperRow(
+            title: 'Show streak numbers',
+            onTap: () {},
+            chevron: false,
+            mergeTrailing: true,
+            trailing: Switch(value: true, onChanged: (_) {}),
+          ),
+        ]),
+      ),
+    );
+    final row = tester.getSemantics(find.byType(PaperRow));
+    expect(row, isSemantics(label: 'Show streak numbers', hasToggledState: true, isToggled: true, hasTapAction: true));
+    expect(tester.getSemantics(find.byType(Switch)).id, row.id);
+    handle.dispose();
+  });
+
+  for (final hebrew in [false, true]) {
+    testWidgets('${hebrew ? 'he' : 'en'}: with a subtitle, the icon, value and chevron share the title\'s line',
+        (tester) async {
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 400,
+            child: PaperRow(
+              icon: Icons.translate_outlined,
+              title: 'Language',
+              subtitle: 'For menus and buttons',
+              value: 'English',
+              onTap: () {},
+            ),
+          ),
+        ),
+        hebrew: hebrew,
+      );
+      final title = tester.getCenter(find.text('Language')).dy;
+      expect(tester.getCenter(find.text('English')).dy, moreOrLessEquals(title, epsilon: 0.5));
+      expect(tester.getCenter(find.byIcon(Icons.chevron_right)).dy, moreOrLessEquals(title, epsilon: 0.5));
+      expect(tester.getCenter(find.byIcon(Icons.translate_outlined)).dy, moreOrLessEquals(title, epsilon: 0.5));
+      // And still 4 apart.
+      final value = tester.getRect(find.text('English'));
+      final chevron = tester.getRect(find.byIcon(Icons.chevron_right));
+      expect(hebrew ? value.left - chevron.right : chevron.left - value.right, 4);
+      final subtitle = tester.getRect(find.text('For menus and buttons'));
+      expect(subtitle.top, greaterThanOrEqualTo(tester.getRect(find.text('Language')).bottom));
+    });
+  }
 
   testWidgets('a value moves under the title rather than squeeze it, at 200%', (tester) async {
     await pumpGroup(tester);
