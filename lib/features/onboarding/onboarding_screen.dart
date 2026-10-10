@@ -5,13 +5,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../core/calendar/local_date.dart';
+import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/motion.dart';
 import '../../ui/widgets/common.dart';
+import '../community/data/backend.dart';
+import '../community/data/community_providers.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/reading_plan.dart';
 import '../settings/app_settings.dart';
+import '../settings/screens/data_settings_screen.dart';
 import '../settings/widgets/settings_widgets.dart';
 
 /// The decisions that follow the welcome, each a page of its own under
@@ -55,7 +59,13 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
+/// Where a reader who already uses the app restores their progress from.
+enum _RestoreFrom { account, file }
+
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+  /// Whether progress is being restored from the account's backup.
+  bool _restoring = false;
+
   @override
   void initState() {
     super.initState();
@@ -83,13 +93,127 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  /// For a reader who already uses the app, on a new device say: restores
+  /// their progress, from their account's backup or a backup file, and with
+  /// it their streaks, and opens Today.
+  Future<void> _restore() async {
+    // The demo community keeps nothing from one run to the next, so it has
+    // no backup to sign in to.
+    final cloud = !ref.read(forumRepositoryProvider).isDemo;
+    final from = await showAppSheet<_RestoreFrom>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _RestoreSheet(cloud: cloud),
+    );
+    if (!mounted) return;
+    switch (from) {
+      case _RestoreFrom.account:
+        await _restoreFromAccount();
+      case _RestoreFrom.file:
+        await _restoreFromFile();
+      case null:
+        break;
+    }
+  }
+
+  /// Signs in, unless already signed in, then turns backup on and syncs.
+  /// With progress restored, onboarding is done. An account with no backup
+  /// goes on to the first step, keeping backup on for what is read from now.
+  Future<void> _restoreFromAccount() async {
+    final l = context.l10n;
+    final repo = ref.read(forumRepositoryProvider);
+    if (repo.currentUser == null) {
+      await context.push('/welcome/account');
+      if (!mounted || repo.currentUser == null) return;
+    }
+    setState(() => _restoring = true);
+    _update(ref, (s) => s.copyWith(cloudSync: true));
+    final synced = await ref.read(progressSyncProvider.notifier).syncNow();
+    if (!mounted) return;
+    setState(() => _restoring = false);
+    final progress = ref.read(progressProvider);
+    if (!synced) {
+      showStatus(context, ref.read(syncBlockedByNewerFormatProvider) ? l.syncNeedsUpdate : l.syncFailed);
+    } else if (progress.weeks.isNotEmpty || progress.pauses.isNotEmpty) {
+      showStatus(context, l.onbRestoreDone);
+      _finishRestoring();
+    } else {
+      showStatus(context, l.onbRestoreNone);
+      context.push(OnboardingStep.location.path);
+    }
+  }
+
+  /// Restores a backup file in place of everything here.
+  Future<void> _restoreFromFile() async {
+    final l = context.l10n;
+    final restored = await askToImportBackup(context, ref);
+    if (restored == null || !mounted) return;
+    if (!restored) {
+      showStatus(context, l.importFailed);
+      return;
+    }
+    showStatus(context, l.onbRestoreDone);
+    _finishRestoring();
+  }
+
+  /// Ends onboarding, keeping the join date that came with the progress, and
+  /// so opens Today (see the router's redirect).
+  void _finishRestoring() {
+    final today = ref.read(todayProvider);
+    _update(ref, (s) => s.copyWith(onboardingComplete: true, joinDate: s.joinDate ?? today));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: PageBody(
           padding: const EdgeInsets.only(bottom: 24),
-          children: [_Welcome(onStart: () => context.push(OnboardingStep.location.path))],
+          children: [
+            _Welcome(
+              onStart: _restoring ? null : () => context.push(OnboardingStep.location.path),
+              onRestore: _restoring ? null : _restore,
+              restoring: _restoring,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The ways back in for a reader who already uses the app.
+class _RestoreSheet extends StatelessWidget {
+  const _RestoreSheet({required this.cloud});
+
+  /// Whether there is an account's backup to sign in to.
+  final bool cloud;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SheetTitle(l.onbRestoreTitle),
+            if (cloud)
+              ListTile(
+                leading: const Icon(Icons.cloud_download_outlined),
+                title: Text(l.onbRestoreSignIn),
+                subtitle: Text(l.onbRestoreSignInDesc),
+                onTap: () => Navigator.pop(context, _RestoreFrom.account),
+              ),
+            ListTile(
+              leading: const Icon(Icons.restore_page_outlined),
+              title: Text(l.onbRestoreFile),
+              subtitle: Text(l.onbRestoreFileDesc),
+              onTap: () => Navigator.pop(context, _RestoreFrom.file),
+            ),
+          ],
         ),
       ),
     );
@@ -347,8 +471,14 @@ class _PlanStep extends ConsumerWidget {
 }
 
 class _Welcome extends ConsumerWidget {
-  const _Welcome({required this.onStart});
-  final VoidCallback onStart;
+  const _Welcome({required this.onStart, required this.onRestore, required this.restoring});
+  final VoidCallback? onStart;
+
+  /// For a reader who already uses the app (see [_RestoreSheet]).
+  final VoidCallback? onRestore;
+
+  /// Whether progress is being restored from the account's backup.
+  final bool restoring;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -397,7 +527,33 @@ class _Welcome extends ConsumerWidget {
           const Gap(12),
           Text(l.onbWelcomeBody, textAlign: TextAlign.center, style: theme.textTheme.bodyLarge),
           const Gap(48),
-          FilledButton(onPressed: onStart, child: Text(l.onbStart)),
+          // Centred like the text around them, also when large text wraps them.
+          FilledButton(onPressed: onStart, child: Text(l.onbStart, textAlign: TextAlign.center)),
+          const Gap(8),
+          if (restoring)
+            // In the button's place, as tall, until the backup is in.
+            Semantics(
+              liveRegion: true,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                    const Gap(12),
+                    Flexible(
+                      child: Text(
+                        l.onbRestoring,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            TextButton(onPressed: onRestore, child: Text(l.onbRestore, textAlign: TextAlign.center)),
           const Gap(16),
           Text(l.disclaimer, textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
         ],

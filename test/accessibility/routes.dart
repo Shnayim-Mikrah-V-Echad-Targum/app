@@ -26,9 +26,10 @@ const a11yRoutes = [
   '/community/forum/xyz',
 ];
 
-/// The welcome and the steps of onboarding, visited before it is done. On
-/// [a11yMonday] the plan step also asks about the week of joining.
-const a11yOnboardingRoutes = ['/welcome', '/welcome/location', '/welcome/method', '/welcome/plan'];
+/// The welcome and the steps of onboarding, visited before it is done, and
+/// signing in from the welcome to restore a backup. On [a11yMonday] the plan
+/// step also asks about the week of joining.
+const a11yOnboardingRoutes = ['/welcome', '/welcome/location', '/welcome/method', '/welcome/plan', '/welcome/account'];
 
 /// A reading-week Monday, so Today shows a reading prompt.
 final a11yMonday = DateTime(2026, 10, 12, 10);

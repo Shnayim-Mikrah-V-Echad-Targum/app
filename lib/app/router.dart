@@ -79,6 +79,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       _route('/welcome', (_) => const OnboardingScreen(), routes: [
         for (final step in OnboardingStep.values) _route(step.name, (_) => OnboardingStepScreen(step: step)),
+        // Signing in to restore a backup, back to the welcome once signed in.
+        _route('account', (_) => const AccountScreen(returnWhenSignedIn: true)),
       ]),
       StatefulShellRoute.indexedStack(
         pageBuilder: (context, state, shell) => _page(state, AppShell(shell: shell)),

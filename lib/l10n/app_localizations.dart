@@ -2594,6 +2594,12 @@ abstract class AppLocalizations {
   /// **'Backup copied to the clipboard.'**
   String get exportCopied;
 
+  /// No description provided for @cloudBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud backup'**
+  String get cloudBackup;
+
   /// No description provided for @resetProgress.
   ///
   /// In en, this message translates to:
@@ -2779,6 +2785,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Full plan from next week'**
   String get onbStarterTodayDesc;
+
+  /// No description provided for @onbRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'I already use Shnayim Mikra'**
+  String get onbRestore;
+
+  /// No description provided for @onbRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore your progress'**
+  String get onbRestoreTitle;
+
+  /// No description provided for @onbRestoreSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to restore'**
+  String get onbRestoreSignIn;
+
+  /// No description provided for @onbRestoreSignInDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'From the backup kept with your account'**
+  String get onbRestoreSignInDesc;
+
+  /// No description provided for @onbRestoreFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from a backup file'**
+  String get onbRestoreFile;
+
+  /// No description provided for @onbRestoreFileDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'A backup exported from Settings'**
+  String get onbRestoreFileDesc;
+
+  /// No description provided for @onbRestoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring your progress…'**
+  String get onbRestoring;
+
+  /// No description provided for @onbRestoreDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Your progress is restored.'**
+  String get onbRestoreDone;
+
+  /// No description provided for @onbRestoreNone.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has no backup yet. Let\'s set up your reading.'**
+  String get onbRestoreNone;
 
   /// No description provided for @guideWhatTitle.
   ///

@@ -64,6 +64,11 @@ const _screens = {
   'welcome_method': '/welcome/method',
   'welcome_plan': '/welcome/plan',
   'welcome_plan_midweek': '/welcome/plan',
+  // "I already use Shnayim Mikra": the ways to restore, with an account's
+  // backup to sign in to.
+  'welcome_restore': '/welcome',
+  // Signed in, while the account's backup comes in.
+  'welcome_restoring': '/welcome',
   'today': '/today',
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
@@ -287,6 +292,12 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
   'week_discuss': () async => _OpeningForever(),
+  'welcome_restore': () async => _Cloud(),
+  'welcome_restoring': () async {
+    final repo = _CloudForever();
+    await repo.verifyCode('reader@example.org', '123456');
+    return repo;
+  },
 };
 
 /// The demo with a thread of 250 posts in Divrei Torah, thread 5000.
@@ -335,6 +346,18 @@ Future<ForumRepository> _withWeeklyThread() async {
   final repo = DemoForumRepository();
   await repo.weeklyThread(parshaNumber: 1, hebrewYear: 5787, title: 'Bereshit · בראשית · 5787');
   return repo;
+}
+
+/// The demo, standing in for a real community, which keeps backups.
+class _Cloud extends DemoForumRepository {
+  @override
+  bool get isDemo => false;
+}
+
+/// A community whose backups never finish coming in.
+class _CloudForever extends _Cloud {
+  @override
+  Future<Map<String, dynamic>?> loadProgress() => Completer<Map<String, dynamic>?>().future;
 }
 
 /// A community whose weekly threads never finish opening.
@@ -490,6 +513,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The end of the main list: the spaces around section marks.
   'reader_gaps': _scrollToEnd,
   'reader_gaps_spaced': _scrollToEnd,
+  // The restore sheet: the welcome's last text button.
+  'welcome_restore': (tester) => tester.tap(find.byType(TextButton).last),
+  'welcome_restoring': _tapInTurn([() => find.byType(TextButton).last, () => find.byType(ListTile).first]),
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.byIcon(Icons.delete_forever_outlined)),
   // The week strip, in the middle of the page.
@@ -593,6 +619,7 @@ const _desktopScreens = {
   'settings',
   'welcome',
   'welcome_plan',
+  'welcome_restore',
   'dialog',
   'sheet_display',
   'focus_nav',
@@ -609,6 +636,8 @@ const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week'};
 const _bigTextScreens = {
   'today',
+  'welcome',
+  'welcome_restore',
   'progress',
   'reader',
   'kit_ornaments',

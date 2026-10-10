@@ -1459,6 +1459,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get exportCopied => 'הגיבוי הועתק ללוח.';
 
   @override
+  String get cloudBackup => 'גיבוי בענן';
+
+  @override
   String get resetProgress => 'איפוס כל ההתקדמות';
 
   @override
@@ -1567,6 +1570,34 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get onbStarterTodayDesc => 'התוכנית המלאה מהשבוע הבא';
+
+  @override
+  String get onbRestore => 'כבר יש לי נתונים באפליקציה';
+
+  @override
+  String get onbRestoreTitle => 'שחזור ההתקדמות';
+
+  @override
+  String get onbRestoreSignIn => 'כניסה לחשבון ושחזור';
+
+  @override
+  String get onbRestoreSignInDesc => 'מהגיבוי שנשמר בחשבון';
+
+  @override
+  String get onbRestoreFile => 'שחזור מקובץ גיבוי';
+
+  @override
+  String get onbRestoreFileDesc => 'גיבוי שיוצא מההגדרות';
+
+  @override
+  String get onbRestoring => 'משחזרים את ההתקדמות…';
+
+  @override
+  String get onbRestoreDone => 'ההתקדמות שוחזרה.';
+
+  @override
+  String get onbRestoreNone =>
+      'לחשבון הזה אין עדיין גיבוי. נמשיך בהגדרת הקריאה.';
 
   @override
   String get guideWhatTitle => 'מהו שניים מקרא?';

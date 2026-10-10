@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/providers.dart';
@@ -11,6 +13,7 @@ import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../community/data/backend.dart';
+import '../../progress/domain/progress_merge.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -30,6 +33,10 @@ String exportBackup(WidgetRef ref) {
 
 /// Restores a backup made by [exportBackup]. A file with anything this
 /// version can't read exactly is rejected whole, rather than half imported.
+///
+/// The join date comes with the settings. A backup without one counts as
+/// joined on the day of its earliest reading, as a cloud backup does (see
+/// [mergeSyncPayload]), so that the history it restores counts.
 bool importBackup(WidgetRef ref, String raw) {
   try {
     final j = jsonDecode(raw.trim()) as Map<String, dynamic>;
@@ -39,18 +46,47 @@ bool importBackup(WidgetRef ref, String raw) {
     final settings = j['settings'] is Map<String, dynamic>
         ? AppSettings.fromJson(j['settings'] as Map<String, dynamic>)
         : null;
+    final current = ref.read(settingsProvider);
+    final joinDate = settings?.joinDate ?? [current.joinDate, earliestReadDate(progress)].nonNulls.minOrNull;
     ref.read(progressProvider.notifier).restore(
           progress,
           unknownWeeks: (unreadable['weeks'] ?? const <String, dynamic>{}) as Map<String, dynamic>,
           unknownPauses: (unreadable['pauses'] ?? const []) as List,
         );
     if (settings != null) {
-      ref.read(settingsProvider.notifier).replace(settings.copyWith(onboardingComplete: true));
+      ref.read(settingsProvider.notifier).replace(settings.copyWith(onboardingComplete: true, joinDate: joinDate));
+    } else if (joinDate != current.joinDate) {
+      ref.read(settingsProvider.notifier).update((s) => s.copyWith(joinDate: joinDate));
     }
     return true;
   } catch (_) {
     return false;
   }
+}
+
+/// Asks for a backup, as the text of the file, and restores it in place of
+/// all progress (see [importBackup]). Null if the reader cancels; otherwise
+/// whether it was restored, for the caller to say.
+Future<bool?> askToImportBackup(BuildContext context, WidgetRef ref) async {
+  final l = context.l10n;
+  final controller = TextEditingController();
+  final ok = await showAppDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l.importData),
+      content: TextField(
+        controller: controller,
+        maxLines: 8,
+        decoration: InputDecoration(labelText: l.importPrompt, alignLabelWithHint: true),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
+        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.importData)),
+      ],
+    ),
+  );
+  if (ok != true) return null;
+  return importBackup(ref, controller.text);
 }
 
 class DataSettingsScreen extends ConsumerWidget {
@@ -62,6 +98,13 @@ class DataSettingsScreen extends ConsumerWidget {
     return SettingsPage(
       title: l.settingsData,
       children: [
+        ListTile(
+          leading: const Icon(Icons.cloud_outlined),
+          title: Text(l.cloudBackup),
+          subtitle: Text(l.syncProgressDesc),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/settings/account'),
+        ),
         ListTile(
           leading: const Icon(Icons.upload_file),
           title: Text(l.exportData),
@@ -83,24 +126,9 @@ class DataSettingsScreen extends ConsumerWidget {
           title: Text(l.importData),
           subtitle: Text(l.importDataDesc),
           onTap: () async {
-            final controller = TextEditingController();
-            final ok = await showAppDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text(l.importData),
-                content: TextField(
-                  controller: controller,
-                  maxLines: 8,
-                  decoration: InputDecoration(labelText: l.importPrompt, alignLabelWithHint: true),
-                ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
-                  FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.importData)),
-                ],
-              ),
-            );
-            if (ok != true || !context.mounted) return;
-            showStatus(context, importBackup(ref, controller.text) ? l.importSuccess : l.importFailed);
+            final ok = await askToImportBackup(context, ref);
+            if (ok == null || !context.mounted) return;
+            showStatus(context, ok ? l.importSuccess : l.importFailed);
           },
         ),
         const Divider(height: 32),

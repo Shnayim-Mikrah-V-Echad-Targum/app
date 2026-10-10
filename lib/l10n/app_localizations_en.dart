@@ -1464,6 +1464,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportCopied => 'Backup copied to the clipboard.';
 
   @override
+  String get cloudBackup => 'Cloud backup';
+
+  @override
   String get resetProgress => 'Reset all progress';
 
   @override
@@ -1572,6 +1575,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onbStarterTodayDesc => 'Full plan from next week';
+
+  @override
+  String get onbRestore => 'I already use Shnayim Mikra';
+
+  @override
+  String get onbRestoreTitle => 'Restore your progress';
+
+  @override
+  String get onbRestoreSignIn => 'Sign in to restore';
+
+  @override
+  String get onbRestoreSignInDesc => 'From the backup kept with your account';
+
+  @override
+  String get onbRestoreFile => 'Restore from a backup file';
+
+  @override
+  String get onbRestoreFileDesc => 'A backup exported from Settings';
+
+  @override
+  String get onbRestoring => 'Restoring your progress…';
+
+  @override
+  String get onbRestoreDone => 'Your progress is restored.';
+
+  @override
+  String get onbRestoreNone =>
+      'This account has no backup yet. Let\'s set up your reading.';
 
   @override
   String get guideWhatTitle => 'What is Shnayim Mikra?';
