@@ -183,8 +183,18 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 ## Web
 
 - [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /<path>/`, then `node tool/legal/build_html.mjs build/web` for the static pages and, last, `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` for the offline service worker (`sw.js`). The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
+- [ ] Set the repository variable `WEB_URL` to the site's public address, such as `https://example.org/app/`. CI then makes the link previews' URLs absolute, as most sites that show previews require.
 - [ ] Serve it over HTTPS. Cache `canvaskit/` and fonts for a long time. Don't cache `index.html`, `flutter_bootstrap.js`, `sw.js` or `flutter_service_worker.js` (the browsers of earlier visitors still check it, and Flutter's version now unregisters itself).
+- [ ] In Chrome DevTools (*Application → Manifest*), the app has no installability errors, and installing it shows the richer dialog, with screenshots. The screenshots are `web/screenshots/`, taken from the capture harness; after a redesign, take them again:
+  ```sh
+  CAPTURE=1 SCREENS=today,reader MODES=phone,desktop flutter test test/screens/capture_test.dart
+  cp build/screens/phone_today.png web/screenshots/today-narrow.png
+  cp build/screens/phone_reader.png web/screenshots/reader-narrow.png
+  cp build/screens/desktop_today.png web/screenshots/today-wide.png
+  ```
 - [ ] Offline: install the app, open a book, then in DevTools (*Network → Offline*) reload. The app opens, and so does that book.
+- [ ] With the app's theme set to Dark, the installed app's title bar (and the browser's toolbar on Android) turns dark once the app has drawn its first frame. The loading screen before it already shows the app's theme and language.
+- [ ] Sharing the address in a messaging app shows the preview card (`web/og.png`).
 - [ ] If you use a Content-Security-Policy, allow:
   - `'wasm-unsafe-eval'` for CanvasKit
   - your Supabase URL in `connect-src`

@@ -79,11 +79,23 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     final followSystem = settings.theme == AppThemeMode.system;
     final ThemeData light;
     final ThemeData dark;
+    ThemeData? highContrastLight;
+    ThemeData? highContrastDark;
+    // The theme MaterialApp shows, picked as it picks one. Its surface is the
+    // colour the platform gives the app: the web's theme-color (the browser's
+    // toolbar, or the installed app's title bar) and Android's recents.
+    final ThemeData shown;
     if (followSystem) {
       light = themeFor(AppThemeMode.light);
       dark = themeFor(AppThemeMode.dark);
+      highContrastLight = themeFor(AppThemeMode.highContrastLight);
+      highContrastDark = themeFor(AppThemeMode.highContrastDark);
+      final platformDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+      shown = systemHighContrast
+          ? (platformDark ? highContrastDark : highContrastLight)
+          : (platformDark ? dark : light);
     } else {
-      light = dark = themeFor(settings.theme);
+      light = dark = shown = themeFor(settings.theme);
     }
 
     final locale = switch (settings.language) {
@@ -94,6 +106,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
 
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+      color: shown.colorScheme.surface,
       debugShowCheckedModeBanner: false,
       routerConfig: router,
       locale: locale,
@@ -107,8 +120,8 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
       theme: light,
       darkTheme: dark,
       // When following the system, honor the OS high-contrast request too.
-      highContrastTheme: followSystem ? themeFor(AppThemeMode.highContrastLight) : null,
-      highContrastDarkTheme: followSystem ? themeFor(AppThemeMode.highContrastDark) : null,
+      highContrastTheme: highContrastLight,
+      highContrastDarkTheme: highContrastDark,
       themeMode: followSystem
           ? ThemeMode.system
           : (light.brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light),

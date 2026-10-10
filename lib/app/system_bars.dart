@@ -37,6 +37,10 @@ class SystemBars extends StatelessWidget {
 /// (android/app/src/main/res/values*/styles.xml) start the bars the same way,
 /// so nothing changes when the first frame arrives.
 ///
+/// On the [web], the status bar's colour is the page's theme-color: the
+/// browser's toolbar, or the installed app's title bar. There it is the
+/// surface, as MaterialApp's color is; a transparent one would turn it black.
+///
 /// Android 9 and earlier can't draw an app beneath the navigation bar, so
 /// unless the app is [behindNavigationBar], the bar is painted the theme's
 /// surface colour: what shows through a transparent one is the window's
@@ -44,10 +48,10 @@ class SystemBars extends StatelessWidget {
 /// theme. (Flutter can't style that bar at all before Android 8.0, and a
 /// theme can give it dark icons only from 8.1, so until then the light launch
 /// theme keeps it black.)
-SystemUiOverlayStyle systemBarsStyle(ThemeData theme, {required bool behindNavigationBar}) {
+SystemUiOverlayStyle systemBarsStyle(ThemeData theme, {required bool behindNavigationBar, bool web = kIsWeb}) {
   final icons = theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark;
   return SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
+    statusBarColor: web ? theme.colorScheme.surface : Colors.transparent,
     statusBarIconBrightness: icons,
     // iOS asks for the brightness of what lies behind the status bar instead.
     statusBarBrightness: theme.brightness,

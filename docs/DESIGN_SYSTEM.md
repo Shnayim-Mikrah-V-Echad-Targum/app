@@ -253,7 +253,7 @@ Notes:
 ### 3.6 Platform colours
 
 - `web/manifest.json`: theme_color #1D3F75, background_color #FAF7F0.
-- `web/index.html`: `<meta name="theme-color" content="#1D3F75">`, and body background #FAF7F0.
+- `web/index.html`: `<meta name="theme-color" content="#1D3F75" class="boot-theme">` until the first frame, when it is removed and the app's surface takes over (`MaterialApp.color`, and the status bar's colour on the web). The loading screen before it has the saved theme's surface as its background (#FAF7F0 by default), with the mark and a 3 px bar in primary on ringTrack.
 - `pubspec.yaml` flutter_launcher_icons:
   - `adaptive_icon_background: "#1D3F75"`;
   - web `background_color: "#FAF7F0"`, `theme_color: "#1D3F75"`;
@@ -884,6 +884,9 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - The Windows .ico also carries 40, 48, 64 and 256, and favicon.ico carries 48: the master's art on the gradient, with the same 18.75% corners (transparent outside them) rather than the master's square. Every entry then has one shape, so the icon doesn't change outline as Windows switches entries between views and DPI settings.
    - The MSIX package matches the .ico size for size. The msix tool makes every icon from `windows/msix/logo.png`: the .ico's larger tile at 1240², the size of the largest icon the tool makes (the large tile at 400%). `tool/windows/make_msix.sh` then replaces the app icons of 32 px and below (`windows/msix/Images`: 16, 20, 24, 30 and 32, plated and unplated) with the three rules alone.
    - Launch screens (`splash_logo.png`, read at 4×, so 288 dp or pt): a transparent 1152² canvas with the in-app mark's tile in the middle, the master on the gradient, 576 px wide with 22% corners. The corners reach 355 px from the centre, inside the 384 px (192 dp) circle that Android 12 and later show.
+   - Web link preview (`web/og.png`, 1200×630): the About header on surface (#FAF7F0) in a TitlePageFrame at 2×. The mark's tile at 168, then "שניים מקרא ואחד תרגום" in Frank Ruhl Libre Medium 58 primary, a SeferDivider at 2×, and "Shnayim Mikra v’Echad Targum" in EB Garamond Medium 36 onSurfaceVariant, all within the middle 630 px so a square crop keeps them.
+   - Web shortcut icons (`web/icons/shortcut-*.png`, 192²): the navigation's `today` and `donut_large` glyphs in #F6F0E2, their em box 58% of the favicons' tile.
+   - Web loading screen: the in-app mark's tile as inline SVG in `web/index.html`, 96 px.
 
    Then run `dart run flutter_launcher_icons`, `dart run flutter_native_splash:create` and `make_icon.py --post` (the full command is above `flutter_launcher_icons` in pubspec.yaml).
 

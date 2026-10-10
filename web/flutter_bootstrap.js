@@ -30,3 +30,12 @@ if ('serviceWorker' in navigator) {
       .catch(function (error) { console.warn('Offline support is unavailable:', error); });
   }, { once: true });
 }
+
+// The installed app opens in its existing window (manifest.json's
+// launch_handler); a shortcut's page, such as #/progress, is shown there.
+if ('launchQueue' in window) {
+  window.launchQueue.setConsumer(function (params) {
+    var hash = params.targetURL ? new URL(params.targetURL).hash : '';
+    if (hash && hash !== location.hash) location.hash = hash;
+  });
+}

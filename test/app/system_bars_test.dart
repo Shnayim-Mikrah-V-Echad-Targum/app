@@ -58,6 +58,54 @@ void main() {
         expect(style.statusBarColor, Colors.transparent, reason: '$mode');
       }
     });
+
+    // There the status bar's colour is the page's theme-color: the browser's
+    // toolbar, or the installed app's title bar. Transparent would be black.
+    test('on the web, the status bar takes the surface colour', () {
+      for (final mode in AppThemeMode.values.where((m) => m != AppThemeMode.system)) {
+        final t = theme(mode);
+        final style = systemBarsStyle(t, behindNavigationBar: true, web: true);
+        expect(style.statusBarColor, t.colorScheme.surface, reason: '$mode');
+      }
+    });
+  });
+
+  // MaterialApp's color is what the platform shows for the app: the web's
+  // theme-color after the first frame, and Android's recents. It is the
+  // surface of the theme on screen.
+  group("the app's colour", () {
+    Color colour(WidgetTester tester) => tester.widget<Title>(find.byType(Title).first).color;
+
+    testWidgets("is the chosen theme's surface", (tester) async {
+      for (final (mode, surface) in [
+        (AppThemeMode.light, Palettes.light.surface),
+        (AppThemeMode.dark, Palettes.dark.surface),
+        (AppThemeMode.sepia, Palettes.sepia.surface),
+        (AppThemeMode.highContrastLight, Palettes.hcLight.surface),
+        (AppThemeMode.highContrastDark, Palettes.hcDark.surface),
+      ]) {
+        await pumpApp(tester, settings: AppSettings(onboardingComplete: true, theme: mode));
+        expect(colour(tester), surface, reason: '$mode');
+      }
+    });
+
+    testWidgets("follows the system's brightness and contrast", (tester) async {
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await pumpApp(tester);
+      expect(colour(tester), Palettes.light.surface);
+
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      await tester.pump();
+      expect(colour(tester), Palettes.dark.surface);
+
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(highContrast: true);
+      await tester.pump();
+      expect(colour(tester), Palettes.hcDark.surface);
+
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+      await tester.pump();
+      expect(colour(tester), Palettes.hcLight.surface);
+    });
   });
 
   group('the app', () {

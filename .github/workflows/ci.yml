@@ -75,6 +75,19 @@ jobs:
         env:
           SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
         run: node tool/legal/build_html.mjs build/web
+      # Link previews want absolute URLs; vars.WEB_URL is the site's public
+      # address (for example https://example.org/app/).
+      - name: Absolute link-preview URLs
+        if: vars.WEB_URL != ''
+        env:
+          WEB_URL: ${{ vars.WEB_URL }}
+        run: |
+          url="${WEB_URL%/}/"
+          sed -i \
+            -e "s|<link rel=\"canonical\" href=\"./\">|<link rel=\"canonical\" href=\"$url\">\n  <meta property=\"og:url\" content=\"$url\">|" \
+            -e "s|<meta property=\"og:image\" content=\"og.png\">|<meta property=\"og:image\" content=\"${url}og.png\">|" \
+            build/web/index.html
+          grep -q "content=\"${url}og.png\"" build/web/index.html
       # Last, so it precaches the finished files (workbox-config.cjs).
       - name: Offline service worker
         run: npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs

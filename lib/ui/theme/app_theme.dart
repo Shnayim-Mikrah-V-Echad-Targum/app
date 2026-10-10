@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../features/settings/app_settings.dart';
 import 'focus.dart';
@@ -186,6 +188,10 @@ abstract final class AppTheme {
         titleTextStyle: text.titleLarge!.copyWith(color: scheme.onSurface),
         iconTheme: onSurfaceVariantIcons,
         actionsIconTheme: onSurfaceVariantIcons,
+        // On the web the status bar's colour is the page's theme-color (the
+        // browser's toolbar, or the installed app's title bar): the bar's own
+        // surface, where Material's transparent one would turn it black.
+        systemOverlayStyle: kIsWeb ? SystemUiOverlayStyle(statusBarColor: scheme.surface) : null,
       ),
       // §6.3: paper with a full-strength hairline (2 px outline in high
       // contrast). Cards clip, so a list tile's ink stays inside the corners.
