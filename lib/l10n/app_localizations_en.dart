@@ -1818,6 +1818,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadMore => 'Load more';
 
   @override
+  String loadedMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Loaded $count more discussions',
+      one: 'Loaded 1 more discussion',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get showEarlierPosts => 'Show earlier posts';
 
   @override

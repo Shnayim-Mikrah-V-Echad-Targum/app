@@ -28,6 +28,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   final _email = TextEditingController();
   final _code = TextEditingController();
   final _name = TextEditingController();
+  // The email and code fields stand in for each other: each takes the
+  // keyboard focus as it appears.
+  final _emailFocus = FocusNode();
+  final _codeFocus = FocusNode();
   bool _codeSent = false;
   bool _busy = false;
 
@@ -36,7 +40,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     _email.dispose();
     _code.dispose();
     _name.dispose();
+    _emailFocus.dispose();
+    _codeFocus.dispose();
     super.dispose();
+  }
+
+  /// Gives [node] the focus once the frame that builds its field is done.
+  void _focusAfterFrame(FocusNode node) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && node.context != null) node.requestFocus();
+    });
   }
 
   Future<void> _run(Future<void> Function() f, {String? success}) async {
@@ -81,6 +94,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         AutofillGroup(
           child: TextField(
             controller: _email,
+            focusNode: _emailFocus,
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
             textDirection: TextDirection.ltr,
@@ -96,6 +110,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         const Gap(12),
         TextField(
           controller: _code,
+          focusNode: _codeFocus,
           keyboardType: TextInputType.number,
           autofillHints: const [AutofillHints.oneTimeCode],
           inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
@@ -105,24 +120,48 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         ),
         const Gap(16),
         FilledButton(onPressed: _busy ? null : _verify, child: Text(l.verifyAction)),
-        TextButton(onPressed: () => setState(() => _codeSent = false), child: Text(l.useDifferentEmail)),
+        TextButton(
+          onPressed: () {
+            setState(() => _codeSent = false);
+            _focusAfterFrame(_emailFocus);
+          },
+          child: Text(l.useDifferentEmail),
+        ),
       ],
       const Gap(24),
       TextButton(onPressed: () => context.push('/legal/privacy'), child: Text(l.privacyTitle)),
     ];
   }
 
-  Future<void> _sendCode() => _run(() async {
-        await ref.read(forumRepositoryProvider).sendCode(_email.text.trim());
-        setState(() => _codeSent = true);
-      });
+  /// Sends the code, and moves on to the code field, saying where the code
+  /// went.
+  Future<void> _sendCode() {
+    final email = _email.text.trim();
+    return _run(() async {
+      await ref.read(forumRepositoryProvider).sendCode(email);
+      if (!mounted) return;
+      setState(() => _codeSent = true);
+      _focusAfterFrame(_codeFocus);
+    }, success: context.l10n.codeSentTo(email));
+  }
 
+  /// Signs in, and says as whom.
   Future<void> _verify() => _run(() async {
-        await ref.read(forumRepositoryProvider).verifyCode(_email.text.trim(), _code.text.trim());
+        final email = _email.text.trim();
+        final repo = ref.read(forumRepositoryProvider);
+        await repo.verifyCode(email, _code.text.trim());
         ref.invalidate(myProfileProvider);
         _code.clear();
         _codeSent = false;
-        if (mounted && widget.returnWhenSignedIn && context.canPop()) context.pop();
+        // Signed in, whether or not the profile loads: by its name, or else
+        // the email.
+        String? name;
+        try {
+          name = (await repo.myProfile())?.displayName;
+        } catch (_) {}
+        if (!mounted) return;
+        showStatus(context, context.l10n.signedInAs(name ?? email));
+        if (widget.returnWhenSignedIn && context.canPop()) context.pop();
       });
 
   List<Widget> _signedIn(BuildContext context, Profile? profile) {

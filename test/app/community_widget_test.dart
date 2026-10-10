@@ -17,6 +17,7 @@ import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart';
 
 import '../helpers.dart';
 
@@ -93,6 +94,27 @@ class _FirstPageOnly extends DemoForumRepository {
   }) async {
     if (after != null) throw Exception('offline');
     return super.threads(forumId: forumId, parshaNumber: parshaNumber, limit: limit);
+  }
+}
+
+/// A community whose pages after the first wait for [gate], and are
+/// counted ([pages]).
+class _SlowPaging extends DemoForumRepository {
+  Completer<void>? gate;
+  int pages = 0;
+
+  @override
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) async {
+    if (after != null) {
+      pages++;
+      await gate?.future;
+    }
+    return super.threads(forumId: forumId, parshaNumber: parshaNumber, after: after, limit: limit);
   }
 }
 
@@ -180,11 +202,21 @@ void main() {
     await tester.enterText(find.byType(TextField), 'reader@example.org');
     await tester.tap(find.text('Email me a code'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('reader@example.org'), findsOneWidget);
+    // Said on the page, and once in a status message.
+    const sent = 'We sent a 6-digit code to reader@example.org.';
+    expect(find.descendant(of: find.byType(PageBody), matching: find.text(sent)), findsOneWidget);
+    expect(find.descendant(of: find.byType(SnackBar), matching: find.text(sent)), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isTrue, reason: 'the code field takes the focus');
     await tester.enterText(find.byType(TextField), '123456');
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Signed in as'), findsOneWidget);
+    final signedIn = find.textContaining('Signed in as');
+    expect(find.descendant(of: find.byType(PageBody), matching: signedIn), findsOneWidget);
+    expect(find.descendant(of: find.byType(SnackBar), matching: signedIn), findsOneWidget);
+    // Let the status message clear the composer.
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
 
     c.read(routerProvider).go('/community/thread/1');
     await tester.pumpAndSettle();
@@ -583,6 +615,38 @@ void main() {
       expect({for (final t in shown) t.id}, hasLength(80));
       await tester.scrollUntilVisible(find.text('Thread 100'), 400, scrollable: list);
       expect(find.text('Thread 100'), findsOneWidget);
+    });
+
+    testWidgets('loaded from the keyboard says how many came, and gives the first of them the focus', (tester) async {
+      final repo = _SlowPaging()..seed(threads: [for (var i = 0; i < 70; i++) _thread(100 + i, minutes: i)]);
+      final c = await _pump(tester, forums: repo);
+      c.read(routerProvider).go('/community/forum/divrei-torah');
+      await tester.pumpAndSettle();
+      final list = find.descendant(of: find.byType(ForumScreen), matching: find.byType(Scrollable)).first;
+      await tester.scrollUntilVisible(find.text('Load more'), 400, scrollable: list);
+      await tester.pumpAndSettle();
+      final button = find.descendant(of: find.byType(ForumScreen), matching: find.byType(OutlinedButton));
+      expect(button, findsOneWidget);
+      Focus.of(tester.element(find.text('Load more'))).requestFocus();
+      await tester.pump();
+
+      // Pressed again while it loads, it keeps the focus and loads once.
+      repo.gate = Completer<void>();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(find.descendant(of: button, matching: find.byType(CircularProgressIndicator)), findsOneWidget);
+      expect(tester.widget<OutlinedButton>(button).onPressed, isNotNull);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(Focus.of(tester.element(find.byType(CircularProgressIndicator))).hasPrimaryFocus, isTrue);
+      repo.gate!.complete();
+      await tester.pumpAndSettle();
+      expect(repo.pages, 1);
+      expect(c.read(threadsProvider(3)).requireValue.threads, hasLength(60));
+      expect(find.text('Loaded 30 more discussions'), findsOneWidget);
+      // The latest of those loaded is in the button's place, with the focus.
+      expect(Focus.of(tester.element(find.text('Thread 139'))).hasPrimaryFocus, isTrue);
+      expect(tester.getRect(find.text('Thread 139')).bottom, lessThanOrEqualTo(915));
     });
 
     testWidgets('that cannot load more says so, and offers it again', (tester) async {

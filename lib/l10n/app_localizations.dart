@@ -3206,6 +3206,12 @@ abstract class AppLocalizations {
   /// **'Load more'**
   String get loadMore;
 
+  /// No description provided for @loadedMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Loaded 1 more discussion} other{Loaded {count} more discussions}}'**
+  String loadedMore(int count);
+
   /// Above the first post shown in a long thread, which opens on its latest posts: loads the posts before it.
   ///
   /// In en, this message translates to:

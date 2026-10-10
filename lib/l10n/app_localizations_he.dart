@@ -1811,6 +1811,17 @@ class AppLocalizationsHe extends AppLocalizations {
   String get loadMore => 'טעינת עוד';
 
   @override
+  String loadedMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'נטענו עוד $count דיונים',
+      one: 'נטען עוד דיון אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get showEarlierPosts => 'הצגת הודעות קודמות';
 
   @override

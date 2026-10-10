@@ -519,6 +519,7 @@ HE = {
   "noPostsYet": "אין עדיין הודעות — אפשר לשתף מחשבה על פרשת\u00a0{name}.",
   "noReplies": "אין עדיין תגובות.",
   "loadMore": "טעינת עוד",
+  "loadedMore": "{count, plural, =1{נטען עוד דיון אחד} other{נטענו עוד {count} דיונים}}",
   "showEarlierPosts": "הצגת הודעות קודמות",
   "postsCount": "{count, plural, =0{אין עדיין הודעות} =1{הודעה אחת} other{{count} הודעות}}",
   "timeJustNow": "הרגע",

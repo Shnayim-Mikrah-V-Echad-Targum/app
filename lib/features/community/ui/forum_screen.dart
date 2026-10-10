@@ -23,12 +23,39 @@ class ForumScreen extends ConsumerStatefulWidget {
 class _ForumScreenState extends ConsumerState<ForumScreen> {
   bool _loadingMore = false;
 
+  // Load more keeps the keyboard focus while it loads. Then it moves down
+  // past the threads loaded, out of view, and the first of them, in its
+  // place, takes the focus.
+  final _loadMoreFocus = FocusNode();
+  final _firstLoadedFocus = FocusNode();
+  int? _firstLoaded;
+
+  @override
+  void dispose() {
+    _loadMoreFocus.dispose();
+    _firstLoadedFocus.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadMore(Forum forum) async {
     if (_loadingMore) return;
     final l = context.l10n;
+    final threads = threadsProvider(forum.id);
+    final before = ref.read(threads).value?.threads.length ?? 0;
     setState(() => _loadingMore = true);
     try {
-      await ref.read(threadsProvider(forum.id).notifier).loadMore();
+      await ref.read(threads.notifier).loadMore();
+      final loaded = (ref.read(threads).value?.threads.length ?? before) - before;
+      if (!mounted || loaded <= 0) return;
+      if (_loadMoreFocus.hasFocus) {
+        setState(() => _firstLoaded = before);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _firstLoadedFocus.context == null) return;
+          _firstLoadedFocus.requestFocus();
+          _firstLoadedFocus.context!.findRenderObject()?.showOnScreen();
+        });
+      }
+      showStatus(context, l.loadedMore(loaded));
     } catch (e) {
       if (mounted) showStatus(context, communityError(l, e));
     } finally {
@@ -109,12 +136,20 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
                       // The last item makes room for the button over it.
                       itemCount: list.length + 1,
                       itemBuilder: (context, i) {
-                        if (i < list.length) return ThreadTile(key: ValueKey(list[i].id), thread: list[i]);
+                        if (i < list.length) {
+                          return ThreadTile(
+                            key: ValueKey(list[i].id),
+                            thread: list[i],
+                            focusNode: i == _firstLoaded ? _firstLoadedFocus : null,
+                          );
+                        }
                         if (!page.hasMore) return const Gap(72);
                         return Padding(
                           padding: const EdgeInsets.only(top: 8, bottom: 72),
                           child: OutlinedButton(
-                            // Enabled while it loads, so that it keeps the keyboard focus.
+                            // Enabled while it loads, so that it keeps the
+                            // keyboard focus; presses meanwhile do nothing.
+                            focusNode: _loadMoreFocus,
                             onPressed: () => _loadMore(forum),
                             child: _loadingMore
                                 ? SizedBox.square(
@@ -138,8 +173,9 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
 }
 
 class ThreadTile extends ConsumerWidget {
-  const ThreadTile({super.key, required this.thread});
+  const ThreadTile({super.key, required this.thread, this.focusNode});
   final ThreadSummary thread;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -155,6 +191,7 @@ class ThreadTile extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        focusNode: focusNode,
         leading: Icon(thread.pinned ? Icons.push_pin_outlined : (thread.locked ? Icons.lock_outline : Icons.chat_bubble_outline)),
         title: Text(title, textDirection: autoDirection(title)),
         subtitle: Text(meta, style: theme.textTheme.bodySmall),

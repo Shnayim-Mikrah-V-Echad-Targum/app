@@ -1130,6 +1130,14 @@
   },
   "noReplies": "No replies yet.",
   "loadMore": "Load more",
+  "loadedMore": "{count, plural, =1{Loaded 1 more discussion} other{Loaded {count} more discussions}}",
+  "@loadedMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "showEarlierPosts": "Show earlier posts",
   "@showEarlierPosts": {
     "description": "Above the first post shown in a long thread, which opens on its latest posts: loads the posts before it."
