@@ -673,7 +673,7 @@ class AppLocalizationsHe extends AppLocalizations {
       'chag': 'חג שמח!',
       'other': 'שבת שלום!',
     });
-    return 'השאר לשבת בבוקר. $_temp0';
+    return 'את השאר קוראים בשבת בבוקר. $_temp0';
   }
 
   @override
@@ -688,7 +688,7 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get graceDayEarned => 'יום חסד נוסף';
+  String get graceDayEarned => 'יום חסד נוסף';
 
   @override
   String get parshaDoneLate => 'אחרי שבת — וזה עדיין נחשב.';
@@ -730,7 +730,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String tabPartial(int done) {
-    return '$done מתוך 3 קריאות';
+    return 'הושלמו $done מתוך 3 קריאות';
   }
 
   @override

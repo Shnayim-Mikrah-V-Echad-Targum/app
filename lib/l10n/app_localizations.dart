@@ -1133,7 +1133,7 @@ abstract class AppLocalizations {
   /// After the parsha streak on the finished panel, when finishing on time earned a grace day.
   ///
   /// In en, this message translates to:
-  /// **'+1 grace day'**
+  /// **'+1 grace day'**
   String get graceDayEarned;
 
   /// No description provided for @parshaDoneLate.

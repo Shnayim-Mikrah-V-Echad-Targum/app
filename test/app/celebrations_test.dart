@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shnayim_mikra/app/celebrations.dart';
@@ -93,10 +94,78 @@ void main() {
     await tester.tap(find.text('Mark this aliyah as read'));
     await settle(tester);
     expect(find.byType(SeferCompleteScreen), findsOneWidget);
+    // The page over the reader has the focus, which the reader never takes
+    // back while it is over it...
+    final celebration = ModalRoute.of(tester.element(find.byType(SeferCompleteScreen)));
+    expect(ModalRoute.of(FocusManager.instance.primaryFocus!.context!), celebration);
 
     await tester.tap(find.text('Continue'));
     await settle(tester);
     expect(find.text('Parshat Vayechi is complete'), findsOneWidget);
+    // ... and the panel's first button has it again once the page closes.
+    expect(Focus.of(tester.element(find.text('Read the haftarah'))).hasPrimaryFocus, isTrue);
+  });
+
+  testWidgets('a book finished on another device, arriving by sync, is recorded without a celebration', (tester) async {
+    final c = await pumpApp(
+      tester,
+      settings: AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 4)),
+      now: DateTime(friday.year, friday.month, friday.day, 10),
+      progress: genesisBut(1),
+    );
+    final router = c.read(routerProvider);
+    await settle(tester);
+    // Finished an hour ago on the tablet, and merged in here.
+    final now = c.read(progressProvider);
+    final vayechi = now.weeks['5787:12']!.withAliyah(6, friday);
+    c.read(progressProvider.notifier).replaceAll(now.copyWith(weeks: {...now.weeks, '5787:12': vayechi}));
+    await settle(tester);
+    expect(location(router), '/today');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getStringList(CelebrationKeys.storageKey), ['sefer:5787:0'], reason: 'recorded, so never celebrated later');
+
+    // Read again here, it is celebrated already.
+    c.read(progressProvider.notifier).markAliyah('5787:12', 6, null);
+    await settle(tester);
+    c.read(progressProvider.notifier).markAliyah('5787:12', 6, friday);
+    await settle(tester);
+    expect(location(router), '/today');
+  });
+
+  testWidgets('a book finished before onboarding is complete is recorded without a celebration', (tester) async {
+    final c = await pumpApp(
+      tester,
+      settings: AppSettings(joinDate: LocalDate(2026, 10, 4)),
+      now: DateTime(friday.year, friday.month, friday.day, 10),
+      progress: genesisBut(1),
+    );
+    await settle(tester);
+    c.read(progressProvider.notifier).markAliyah('5787:12', 6, friday);
+    await settle(tester);
+    expect(find.byType(SeferCompleteScreen), findsNothing);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getStringList(CelebrationKeys.storageKey), ['sefer:5787:0']);
+  });
+
+  testWidgets("a book of the last year's cycle, finished now, is celebrated", (tester) async {
+    // The week of Bereshit 5787, with Deuteronomy 5786 read but for the last
+    // aliyah of Vezot HaBerakhah.
+    final day = LocalDate(2026, 10, 7);
+    final c = await pumpApp(
+      tester,
+      settings: AppSettings(onboardingComplete: true, joinDate: LocalDate(2025, 10, 1)),
+      now: DateTime(2026, 10, 7, 10),
+      progress: ProgressState(weeks: {
+        for (var n = 44; n <= 53; n++) '5786:$n': WeekProgress(weekId: '5786:$n').withAll(day.addDays(-40)),
+        '5786:54': [0, 1, 2, 3, 4, 5].fold(WeekProgress(weekId: '5786:54'), (w, a) => w.withAliyah(a, day.addDays(-4))),
+      }),
+    );
+    final router = c.read(routerProvider);
+    await settle(tester);
+    c.read(progressProvider.notifier).markAliyah('5786:54', 6, day);
+    await settle(tester);
+    expect(location(router), '/celebrate/sefer:5786:4');
+    expect(find.text(SeferCompleteScreen.chazak), findsOneWidget);
   });
 
   testWidgets('a book finished before the app starts, or restored long after, is never celebrated', (tester) async {

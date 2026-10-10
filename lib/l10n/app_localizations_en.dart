@@ -685,7 +685,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get graceDayEarned => '+1 grace day';
+  String get graceDayEarned => '+1 grace day';
 
   @override
   String get parshaDoneLate => 'After Shabbat — and it still counts.';

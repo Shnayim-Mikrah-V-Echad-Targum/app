@@ -621,7 +621,7 @@
       }
     }
   },
-  "graceDayEarned": "+1 grace day",
+  "graceDayEarned": "+1\u00A0grace\u00A0day",
   "@graceDayEarned": {
     "description": "After the parsha streak on the finished panel, when finishing on time earned a grace day."
   },

@@ -108,6 +108,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   int _chunk = 0;
   int _step = 0;
   bool _finished = false;
+
+  /// Whether finishing completed the parsha just now, rather than stepping
+  /// once more through a parsha read already: only then does the finished
+  /// panel tell of the streak and a grace day earned.
+  bool _justCompleted = false;
   bool _positioned = false;
 
   // Another aliyah was chosen: once the step it resumes at is known, it is
@@ -263,6 +268,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     ref.read(ttsProvider).stop();
     final steps = flow.stepsFor(_chunk);
     final hadCompletedBefore = ref.read(progressProvider).weeks.values.any((w) => w.completedAliyot > 0);
+    final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     _record(ctx, flow, _chunk, _step);
     hapticTap(ref);
     setState(() {
@@ -273,6 +279,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _step = 0;
       } else {
         _finished = true;
+        _justCompleted = !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete;
       }
     });
     if (_finished) {
@@ -854,6 +861,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   child: _FinishedPanel(
                                     ctx: ctx,
                                     aliyah: _aliyah,
+                                    justCompleted: _justCompleted,
                                     firstFocus: _finishFocus,
                                     onGoToAliyah: _goToAliyah,
                                   ),
@@ -895,7 +903,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   void _markAliyahRead(WeekContext ctx) {
     final today = ref.read(todayProvider);
+    final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     ref.read(progressProvider.notifier).markAliyah(ctx.id, _aliyah, today);
+    _justCompleted = !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete;
     final verses = ref.read(parshaRepositoryProvider).aliyahVerseCount(ctx.portion, _aliyah);
     ref.read(progressProvider.notifier).savePosition(ctx.id, _aliyah, [verses, verses, verses]);
     hapticSuccess(ref);
@@ -1329,10 +1339,21 @@ class _Note extends StatelessWidget {
 /// line about what comes next, and the way on. Once the parsha is read, it
 /// says how the week stands and offers the haftarah.
 class _FinishedPanel extends ConsumerStatefulWidget {
-  const _FinishedPanel({required this.ctx, required this.aliyah, required this.firstFocus, required this.onGoToAliyah});
+  const _FinishedPanel({
+    required this.ctx,
+    required this.aliyah,
+    required this.justCompleted,
+    required this.firstFocus,
+    required this.onGoToAliyah,
+  });
 
   final WeekContext ctx;
   final int aliyah;
+
+  /// Whether this finish completed the parsha. Stepping once more through a
+  /// parsha read already (weeks ago, say) earns nothing new, so the panel
+  /// tells only how it stands.
+  final bool justCompleted;
 
   /// For the first of its buttons, which the reader gives the focus.
   final FocusNode firstFocus;
@@ -1395,7 +1416,11 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
     final day = ctx.plan.dayFor(today);
     if (day == null || day.aliyot.isEmpty || !day.aliyot.every(ctx.progress.isAliyahDone)) return null;
     if (ctx.dueAliyot().isNotEmpty) return null;
-    final later = ctx.plan.days.where((d) => d.date > today).firstOrNull;
+    // The next day with reading left: aliyot read ahead leave their days
+    // with none.
+    final later = ctx.plan.days
+        .where((d) => d.date > today && d.aliyot.any((a) => !ctx.progress.isAliyahDone(a)))
+        .firstOrNull;
     if (later != null) {
       return later.date == today.addDays(1) ? l.todayReadingDone : l.todayReadingDoneOn(Names(context).weekday(later.date));
     }
@@ -1407,13 +1432,16 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
   }
 
   /// How the finished parsha stands (on time, after Shabbat, or doubled up),
-  /// with the streak where streaks are shown; null for any other standing.
+  /// with the streak where streaks are shown and the parsha was completed
+  /// just now; null for any other standing.
   (WeekStatus, String)? _standing(AppSettings settings) {
     final l = context.l10n;
     final summary = ref.watch(streakSummaryProvider);
     final evaluation = summary.weeks.where((e) => e.plan.weekId == ctx.id).lastOrNull;
     if (evaluation == null) return null;
-    final streaks = settings.showStreaks;
+    // The streak is today's, and the grace day the week's: told only as they
+    // are earned, not as a parsha read already is stepped through again.
+    final streaks = settings.showStreaks && widget.justCompleted;
     final status = evaluation.status;
     final text = switch (status) {
       WeekStatus.onTime when streaks => [

@@ -18,8 +18,11 @@ import 'router.dart';
 ///
 /// The books celebrated are kept on this device alone ([storageKey]): they
 /// are the interface's state, never synced or backed up. Books already
-/// finished when the app starts are taken as celebrated, as is a book that
-/// arrives finished long ago (restored from a backup, say): only a book
+/// finished when the app starts are taken as celebrated, and so is a book
+/// that arrives finished from elsewhere, through a sync with another device
+/// or a backup restored ([ProgressController.logChangeArrived]): the reader
+/// finished it there, and a full-screen page pushed over whatever they are
+/// doing here would interrupt them. Of the reader's own reading, only a book
 /// finished in the last week is celebrated.
 final celebrationListenerProvider = Provider<void>((ref) {
   final prefs = ref.read(sharedPreferencesProvider);
@@ -52,6 +55,7 @@ final celebrationListenerProvider = Provider<void>((ref) {
     final fresh = finished().entries.where((e) => !seen.contains(e.key)).toList();
     if (fresh.isEmpty) return;
     record(seen, fresh.map((e) => e.key));
+    if (ref.read(progressProvider.notifier).logChangeArrived) return;
     final since = ref.read(todayProvider).addDays(-CelebrationKeys.recentDays);
     final recent = fresh.where((e) => e.value >= since).toList()..sort((a, b) => a.value.compareTo(b.value));
     if (recent.isEmpty || !ref.read(settingsProvider).onboardingComplete) return;
