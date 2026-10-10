@@ -263,7 +263,7 @@ Notes:
   - web `background_color: "#FAF7F0"`, `theme_color: "#1D3F75"`;
   - `remove_alpha_ios: true`.
 - Launch screens (`pubspec.yaml` flutter_native_splash, Android and iOS): `color: "#FAF7F0"`, `color_dark: "#14120F"`, the same on Android 12 and later, with the mark's tile (§7.8) and no icon background. Android's window background behind the app (`NormalTheme`) is `@color/app_bg`, the same two surfaces, so nothing changes colour between the launch screen and the first frame.
-- System bars: edge to edge and transparent, with dark icons over the light, sepia and high-contrast light themes and light icons over the dark ones; no contrast scrim (`lib/app/system_bars.dart`, and the launch themes in `android/app/src/main/res/values*/styles.xml`). Where the app can't run beneath Android's navigation bar (Android 9 and earlier), the bar is painted `surface`. A theme can give that bar dark icons only from Android 8.1, so before then the light launch theme leaves it black.
+- System bars: edge to edge and transparent, with dark icons over the light, sepia and high-contrast light themes and light icons over the dark ones; no contrast scrim (`lib/app/system_bars.dart`, and the launch themes in `android/app/src/main/res/values*/styles.xml`). Where the app can't run beneath Android's navigation bar (Android 9 and earlier), the bar is painted the colour of what lies just above it: `surfaceContainer` below the phone's navigation bar (§6.9), which wraps itself in its own `SystemBars`, and `surface` elsewhere. A theme can give that bar dark icons only from Android 8.1, so before then the light launch theme leaves it black.
 
 ## 4. Typography
 

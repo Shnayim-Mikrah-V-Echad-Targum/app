@@ -160,13 +160,40 @@ void main() {
       expect(style.systemNavigationBarIconBrightness, Brightness.dark);
     }, variant: android);
 
-    testWidgets('a navigation bar beside the app is painted the surface colour', (tester) async {
+    // Android 9 and earlier: the bar takes the colour of what lies above it.
+    testWidgets("a navigation bar beside a tab is painted the app's navigation bar colour", (tester) async {
+      for (final (mode, container) in [
+        (AppThemeMode.light, Palettes.light.surfaceContainer),
+        (AppThemeMode.dark, Palettes.dark.surfaceContainer),
+      ]) {
+        phone(tester, behindNavigationBar: false);
+        await pumpApp(tester, settings: AppSettings(onboardingComplete: true, theme: mode));
+        await tester.pumpAndSettle();
+        expect(find.byType(NavigationBar), findsOneWidget);
+        final style = SystemChrome.latestStyle!;
+        expect(style.systemNavigationBarColor, container, reason: '$mode');
+        expect(style.systemNavigationBarIconBrightness, mode == AppThemeMode.dark ? Brightness.light : Brightness.dark);
+        // The status bar still follows the app bar at the top.
+        expect(style.statusBarColor, Colors.transparent);
+      }
+    }, variant: android);
+
+    testWidgets('a navigation bar beside a page without one is painted the surface colour', (tester) async {
       phone(tester, behindNavigationBar: false);
       await pumpApp(tester, settings: const AppSettings(theme: AppThemeMode.dark));
       await tester.pumpAndSettle();
+      expect(find.byType(NavigationBar), findsNothing, reason: 'Welcome');
       final style = SystemChrome.latestStyle!;
       expect(style.systemNavigationBarColor, Palettes.dark.surface);
       expect(style.systemNavigationBarIconBrightness, Brightness.light);
+    }, variant: android);
+
+    testWidgets("over the app, the navigation bar stays transparent beside the app's own", (tester) async {
+      phone(tester);
+      await pumpApp(tester, settings: const AppSettings(onboardingComplete: true));
+      await tester.pumpAndSettle();
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(SystemChrome.latestStyle!.systemNavigationBarColor, Colors.transparent);
     }, variant: android);
   });
 

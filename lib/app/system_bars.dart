@@ -12,8 +12,16 @@ Future<void> enableEdgeToEdge() async {
 
 /// Styles the system bars for the app's theme, wherever an app bar doesn't
 /// style the status bar itself (see [systemBarsStyle]).
+///
+/// The navigation bar takes its style from the region at the bottom of the
+/// screen, so a bar of the app's own drawn there (the shell's navigation bar)
+/// wraps itself in another SystemBars with its [navigationBarColor].
 class SystemBars extends StatelessWidget {
-  const SystemBars({super.key, required this.child});
+  const SystemBars({super.key, this.navigationBarColor, required this.child});
+
+  /// The colour of the app just above Android's navigation bar, which the bar
+  /// takes where it can't be see-through; the theme's surface by default.
+  final Color? navigationBarColor;
 
   final Widget child;
 
@@ -26,6 +34,7 @@ class SystemBars extends StatelessWidget {
       value: systemBarsStyle(
         Theme.of(context),
         behindNavigationBar: inset.bottom > 0 || inset.left > 0 || inset.right > 0,
+        navigationBarColor: navigationBarColor,
       ),
       child: child,
     );
@@ -42,13 +51,19 @@ class SystemBars extends StatelessWidget {
 /// surface, as MaterialApp's color is; a transparent one would turn it black.
 ///
 /// Android 9 and earlier can't draw an app beneath the navigation bar, so
-/// unless the app is [behindNavigationBar], the bar is painted the theme's
-/// surface colour: what shows through a transparent one is the window's
+/// unless the app is [behindNavigationBar], the bar is painted the colour of
+/// what lies just above it, [navigationBarColor] (the theme's surface by
+/// default): what shows through a transparent one is the window's
 /// background, which follows the system's dark mode rather than the app's
 /// theme. (Flutter can't style that bar at all before Android 8.0, and a
 /// theme can give it dark icons only from 8.1, so until then the light launch
 /// theme keeps it black.)
-SystemUiOverlayStyle systemBarsStyle(ThemeData theme, {required bool behindNavigationBar, bool web = kIsWeb}) {
+SystemUiOverlayStyle systemBarsStyle(
+  ThemeData theme, {
+  required bool behindNavigationBar,
+  Color? navigationBarColor,
+  bool web = kIsWeb,
+}) {
   final icons = theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark;
   return SystemUiOverlayStyle(
     statusBarColor: web ? theme.colorScheme.surface : Colors.transparent,
@@ -56,7 +71,8 @@ SystemUiOverlayStyle systemBarsStyle(ThemeData theme, {required bool behindNavig
     // iOS asks for the brightness of what lies behind the status bar instead.
     statusBarBrightness: theme.brightness,
     systemStatusBarContrastEnforced: false,
-    systemNavigationBarColor: behindNavigationBar ? Colors.transparent : theme.colorScheme.surface,
+    systemNavigationBarColor:
+        behindNavigationBar ? Colors.transparent : navigationBarColor ?? theme.colorScheme.surface,
     systemNavigationBarDividerColor: Colors.transparent,
     systemNavigationBarIconBrightness: icons,
     // No translucent scrim behind three-button navigation.

@@ -8,9 +8,11 @@
     <!-- Keep the screen on while reading (optional setting). -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
-    <!-- Predictive back: Android 14 and later preview the screen a back
-         gesture leads to, home included. The system backup keeps only the
-         settings and reading progress (res/xml/*_rules.xml). -->
+    <!-- Predictive back: Android 15 and later (14 with the developer
+         option) preview the screen a back gesture leads to, home included.
+         The system backup keeps only the shared preferences: the settings
+         and reading progress, and with them the community sign-in and any
+         unsent draft, as the privacy policy says (res/xml/*_rules.xml). -->
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"

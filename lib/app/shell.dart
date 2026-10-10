@@ -8,6 +8,7 @@ import '../features/search/go_to_verse_sheet.dart';
 import '../ui/l10n.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/app_mark.dart';
+import 'system_bars.dart';
 
 /// Breakpoints follow Material 3 window size classes.
 abstract final class Breakpoints {
@@ -57,17 +58,22 @@ class AppShell extends StatelessWidget {
     if (width < Breakpoints.medium) {
       return Scaffold(
         body: shell,
-        bottomNavigationBar: DecoratedBox(
-          decoration: BoxDecoration(border: Border(top: hairline)),
-          child: Padding(
-            padding: EdgeInsets.only(top: hairline.width),
-            child: _NavBar(
-              selectedIndex: shell.currentIndex,
-              onSelected: _go,
-              destinations: [
-                for (final (icon, selected, label) in items)
-                  NavigationDestination(icon: Icon(icon), selectedIcon: Icon(selected), label: label),
-              ],
+        // Where Android's navigation bar can't be see-through, it takes the
+        // colour of this bar rather than the page's.
+        bottomNavigationBar: SystemBars(
+          navigationBarColor: NavigationBarTheme.of(context).backgroundColor,
+          child: DecoratedBox(
+            decoration: BoxDecoration(border: Border(top: hairline)),
+            child: Padding(
+              padding: EdgeInsets.only(top: hairline.width),
+              child: _NavBar(
+                selectedIndex: shell.currentIndex,
+                onSelected: _go,
+                destinations: [
+                  for (final (icon, selected, label) in items)
+                    NavigationDestination(icon: Icon(icon), selectedIcon: Icon(selected), label: label),
+                ],
+              ),
             ),
           ),
         ),
