@@ -20,12 +20,15 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
-import '../../ui/widgets/sefer_choice_chip.dart';
+import '../../ui/widgets/ornaments.dart' show Eyebrow;
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../settings/app_settings.dart';
+import 'aliyah_ribbon.dart';
 import 'display_sheet.dart';
 import 'notification_prompt.dart';
+import 'pass_track.dart';
+import 'reader_bottom_bar.dart';
 import 'reader_flow.dart';
 import 'scripture_text.dart';
 import 'verse_anchor.dart';
@@ -297,6 +300,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     // disabled: the control with the focus goes, and Next takes it.
     if (fromPanel || (fromBack && _chunk == 0 && _step == 0)) _focusAfterFrame(_nextFocus);
     _announceStep(flow);
+    // Each step opens at its top, as Next opens it.
+    if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
   /// Page Down and Page Up: the text scrolls by most of a screen, and once
@@ -376,16 +381,24 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   /// Announces the new step, in one message, where the platform takes
-  /// announcements. Elsewhere the step header is a live region instead.
+  /// announcements: what to read, which reading it is, where it is in the
+  /// aliyah, and the verses it shows ("Genesis 3:22"). Elsewhere the step's
+  /// instruction is a live region instead.
   void _announceStep(ReaderFlow flow) {
     if (!mounted || !MediaQuery.supportsAnnounceOf(context)) return;
     final l = context.l10n;
+    final names = Names(context);
     final steps = flow.stepsFor(_chunk);
     final c = flow.chunks[_chunk];
     final where = flow.method == ReadingMethod.verseByVerse
         ? l.verseOf(c.start + 1, flow.verses.length)
         : l.sectionOf(_chunk + 1, flow.chunks.length);
-    final message = '${_stepTitle(steps[_step])}. ${l.stepOf(_step + 1, steps.length)}. $where';
+    final shown = flow.stepVerses(_chunk, steps[_step]);
+    final (first, last) = (shown.first, shown.last);
+    final verses = first == last
+        ? names.reference(flow.book, first.chapter, first.verse)
+        : names.range(flow.book, first.chapter, first.verse, last.chapter, last.verse);
+    final message = '${_stepTitle(steps[_step])}. ${l.stepOf(_step + 1, steps.length)}. $where. $verses';
     SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
   }
 
@@ -513,11 +526,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       title: title,
       child: textsAsync.when(
         loading: () => Scaffold(
-          appBar: AppBar(leading: homeLeading(context), title: Text(title)),
+          appBar: _appBar(context, ctx, s),
           body: Center(child: Semantics(label: l.loading, child: const CircularProgressIndicator())),
         ),
         error: (e, _) => Scaffold(
-          appBar: AppBar(leading: homeLeading(context), title: Text(title)),
+          appBar: _appBar(context, ctx, s),
           body: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -567,13 +580,71 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           // Settings changes can reshape the flow; keep indices in range.
           if (_chunk >= flow.chunks.length) _chunk = flow.chunks.length - 1;
           if (_step >= flow.stepsFor(_chunk).length) _step = flow.stepsFor(_chunk).length - 1;
-          return _buildReader(context, ctx, texts, flow, s, title);
+          return _buildReader(context, ctx, texts, flow, s);
         },
       ),
     );
   }
 
-  Widget _buildReader(BuildContext context, WeekContext ctx, ReaderTexts texts, ReaderFlow flow, AppSettings s, String title) {
+  /// The side padding of the reading column.
+  static const _columnPadding = 20.0;
+
+  /// The reader's app bar (DESIGN_SYSTEM.md §6.2), in two lines: the parsha
+  /// as an eyebrow over the aliyah, which the English UI names in Hebrew too
+  /// ("Revi'i · רביעי"). Its title starts where the text does, and its
+  /// actions end where the text does, however wide the window. Screen
+  /// readers hear the title as the page names itself ("Bereshit · Revi'i").
+  ///
+  /// [scrolledUnder] is false while the aliyah ribbon, with its own rule, is
+  /// what the text scrolls under.
+  PreferredSizeWidget _appBar(
+    BuildContext context,
+    WeekContext ctx,
+    AppSettings s, {
+    List<Widget>? actions,
+    bool scrolledUnder = true,
+  }) {
+    final names = Names(context);
+    final theme = Theme.of(context);
+    final eyebrow = SeferType.of(context).eyebrow;
+    final titleStyle = theme.appBarTheme.titleTextStyle ?? theme.textTheme.titleLarge!;
+    final parsha = names.portion(ctx.portion, ashkenazi: s.ashkenaziNames);
+    final aliyah = names.aliyah(_aliyah);
+    // The app bar sets its title at most 1.34 times its normal size, as
+    // Flutter's AppBar does, and grows to hold both lines at that size.
+    final scaler = MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.34);
+    double line(TextStyle style) => scaler.scale(style.fontSize!) * (style.height ?? 1.2);
+    final height = max(64.0, line(eyebrow) + line(titleStyle) + 12);
+    // Where the text starts: at the column's padding, or with the column
+    // centred.
+    final width = MediaQuery.sizeOf(context).width;
+    final start = max(_columnPadding, (width - ScriptureStyles(context, s).maxLineWidth) / 2);
+    final leading = homeLeading(context);
+    final hasLeading = leading != null || (ModalRoute.canPopOf(context) ?? false);
+    return AppBar(
+      leading: leading,
+      toolbarHeight: height,
+      titleSpacing: hasLeading ? max(NavigationToolbar.kMiddleSpacing, start - kToolbarHeight) : start,
+      actionsPadding: EdgeInsetsDirectional.only(end: start - _columnPadding),
+      notificationPredicate: scrolledUnder ? defaultScrollNotificationPredicate : (_) => false,
+      title: Semantics(
+        label: '$parsha · $aliyah',
+        child: ExcludeSemantics(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Eyebrow(parsha),
+              Text(context.isHebrewUi ? aliyah : '$aliyah · ${Names.aliyahHebrew(_aliyah)}'),
+            ],
+          ),
+        ),
+      ),
+      actions: actions,
+    );
+  }
+
+  Widget _buildReader(BuildContext context, WeekContext ctx, ReaderTexts texts, ReaderFlow flow, AppSettings s) {
     final l = context.l10n;
     final isMac = defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.iOS;
     final tts = ref.watch(ttsProvider);
@@ -627,6 +698,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       SingleActivator(LogicalKeyboardKey.slash, control: !isMac, meta: isMac): help,
     };
 
+    final columnWidth = ScriptureStyles(context, s).maxLineWidth;
+    // Focus mode reads the full text alone: the overflow menu still switches
+    // modes and marks the aliyah read.
+    final showRibbon = !(_fullText && s.focusMode);
+
     // The text scrolls by keyboard as well: with ↑, ↓, Page Up, Page Down
     // and Space on the web, and Ctrl (⌘) with ↑ or ↓ elsewhere, the keys
     // that scroll whatever has no focus of its own.
@@ -639,9 +715,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           focusNode: _readerFocus,
           autofocus: true,
           child: Scaffold(
-            appBar: AppBar(
-              leading: homeLeading(context),
-              title: Text(title, overflow: TextOverflow.ellipsis),
+            appBar: _appBar(
+              context,
+              ctx,
+              s,
+              scrolledUnder: !showRibbon,
               actions: [
                 ValueListenableBuilder<bool>(
                   valueListenable: tts.speaking,
@@ -697,20 +775,31 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 ),
               ],
             ),
+            // The bottom bar runs under the gesture bar itself; above it, the
+            // page keeps clear of the notch and the screen's rounded sides.
             body: SafeArea(
+              bottom: false,
               child: Column(
                 children: [
-                  _AliyahSelector(
-                    ctx: ctx,
-                    selected: _aliyah,
-                    onSelected: _goToAliyah,
-                  ),
+                  if (showRibbon)
+                    AliyahRibbon(
+                      week: ctx.progress,
+                      aliyahVerses: ctx.aliyahVerses,
+                      selected: _aliyah,
+                      onSelected: _goToAliyah,
+                      maxWidth: columnWidth,
+                    ),
                   if (!ctx.isOpen)
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(Gutter.of(context), 4, Gutter.of(context), 0),
-                      child: NoticeBanner(
-                        icon: Icons.visibility_outlined,
-                        text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: columnWidth + 2 * _columnPadding),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(_columnPadding, 12, _columnPadding, 0),
+                          child: NoticeBanner(
+                            icon: Icons.visibility_outlined,
+                            text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
+                          ),
+                        ),
                       ),
                     ),
                   Expanded(
@@ -740,36 +829,46 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         : _finished
                             ? Focus(
                                 focusNode: _panelFocus,
-                                child: _FinishedPanel(
-                                  ctx: ctx,
-                                  aliyah: _aliyah,
-                                  firstFocus: _finishFocus,
-                                  onGoToAliyah: _goToAliyah,
+                                // With no bottom bar beneath it, the panel
+                                // keeps clear of the gesture bar itself.
+                                child: SafeArea(
+                                  top: false,
+                                  child: _FinishedPanel(
+                                    ctx: ctx,
+                                    aliyah: _aliyah,
+                                    firstFocus: _finishFocus,
+                                    onGoToAliyah: _goToAliyah,
+                                  ),
                                 ),
                               )
                             : _GuidedStep(
                                 flow: flow,
                                 texts: texts,
                                 settings: s,
+                                aliyah: _aliyah,
                                 chunk: _chunk,
                                 step: _step,
                                 scroll: _scroll,
                                 stepTitle: _stepTitle(flow.stepsFor(_chunk)[_step]),
                               ),
                   ),
-                  if (!_fullText && !_finished)
-                    _BottomBar(
-                      flow: flow,
-                      chunk: _chunk,
-                      step: _step,
-                      onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
-                      onNext: () => _next(ctx, flow),
-                      backFocus: _backFocus,
-                      nextFocus: _nextFocus,
-                    ),
                 ],
               ),
             ),
+            // In the scaffold's own slot, so that status messages rise above
+            // it rather than cover it.
+            bottomNavigationBar: !_fullText && !_finished
+                ? ReaderBottomBar(
+                    flow: flow,
+                    chunk: _chunk,
+                    step: _step,
+                    onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
+                    onNext: () => _next(ctx, flow),
+                    backFocus: _backFocus,
+                    nextFocus: _nextFocus,
+                    maxWidth: columnWidth,
+                  )
+                : null,
           ),
         ),
       ),
@@ -947,111 +1046,15 @@ class _KeyCombos extends StatelessWidget {
   }
 }
 
-/// Chips to switch between the seven aliyot, each marked read or in
-/// progress. A check means only "read": the open aliyah is set apart by its
-/// fill, border and weight alone (DESIGN_SYSTEM.md §6.6).
-class _AliyahSelector extends StatefulWidget {
-  const _AliyahSelector({required this.ctx, required this.selected, required this.onSelected});
-
-  final WeekContext ctx;
-  final int selected;
-  final ValueChanged<int> onSelected;
-
-  @override
-  State<_AliyahSelector> createState() => _AliyahSelectorState();
-}
-
-class _AliyahSelectorState extends State<_AliyahSelector> {
-  // One key per chip, never moved, so that selecting a chip keeps its focus.
-  final _chipKeys = List.generate(kAliyot, (_) => GlobalKey());
-
-  @override
-  void initState() {
-    super.initState();
-    _revealSelected(animate: false);
-  }
-
-  @override
-  void didUpdateWidget(_AliyahSelector oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selected != widget.selected) _revealSelected(animate: true);
-  }
-
-  /// Centres the open aliyah's chip unless it is already in full view: on a
-  /// phone, Shevi'i's starts off screen.
-  void _revealSelected({required bool animate}) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final chip = _chipKeys[widget.selected].currentContext;
-      if (!mounted || chip == null) return;
-      final box = chip.findRenderObject();
-      final viewport = box == null ? null : RenderAbstractViewport.maybeOf(box);
-      final position = Scrollable.maybeOf(chip)?.position;
-      if (box == null || viewport == null || position == null) return;
-      final startAligned = viewport.getOffsetToReveal(box, 0).offset;
-      final endAligned = viewport.getOffsetToReveal(box, 1).offset;
-      if (position.pixels >= endAligned && position.pixels <= startAligned) return;
-      Scrollable.ensureVisible(
-        chip,
-        alignment: 0.5,
-        duration: animate ? Motion.of(context).d(Motion.medium) : Duration.zero,
-        curve: Motion.standard,
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final names = Names(context);
-    final scheme = Theme.of(context).colorScheme;
-    final doneColor = StatusColors.of(context).done;
-    final week = widget.ctx.progress;
-    return SizedBox(
-      height: 60,
-      // Seven chips at most, all built, so that any of them can be revealed.
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Row(
-          children: [
-            for (var a = 0; a < kAliyot; a++)
-              Padding(
-                key: _chipKeys[a],
-                padding: const EdgeInsetsDirectional.only(end: 8),
-                child: Builder(builder: (context) {
-                  final name = names.aliyah(a);
-                  final done = week.isAliyahDone(a);
-                  final partial = !done && week.isAliyahStarted(a, widget.ctx.aliyahVerses[a]);
-                  // The theme hides the selected check, fills the open chip and
-                  // borders it, and SeferChoiceChip sets its label in bold.
-                  return SeferChoiceChip(
-                    avatar: done
-                        ? Icon(Icons.check_circle, size: 18, color: doneColor)
-                        : (partial ? Icon(Icons.timelapse, size: 18, color: scheme.primary) : null),
-                    label: Text(
-                      name,
-                      semanticsLabel:
-                          '$name, ${done ? l.aliyahStatusRead : (partial ? l.aliyahStatusPartial : l.aliyahStatusUnread)}',
-                    ),
-                    selected: widget.selected == a,
-                    onSelected: (_) => widget.onSelected(a),
-                  );
-                }),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// The current step of guided reading: one verse, section or aliyah, in the
-/// layer to be read now.
+/// layer to be read now (DESIGN_SYSTEM.md §6.17). The pass track, one line
+/// saying what to read, and then the verses: nothing else comes before them.
 class _GuidedStep extends StatelessWidget {
   const _GuidedStep({
     required this.flow,
     required this.texts,
     required this.settings,
+    required this.aliyah,
     required this.chunk,
     required this.step,
     required this.scroll,
@@ -1061,10 +1064,22 @@ class _GuidedStep extends StatelessWidget {
   final ReaderFlow flow;
   final ReaderTexts texts;
   final AppSettings settings;
+  final int aliyah;
   final int chunk;
   final int step;
   final ScrollController scroll;
   final String stepTitle;
+
+  /// How long one step takes to fade into the next (§8): opacity alone, with
+  /// no slide.
+  static const _fade = Duration(milliseconds: 180);
+
+  /// The steps cross-fading in place from the top, where the default would
+  /// centre a short step halfway down a long one.
+  static Widget _fromTop(Widget? current, List<Widget> previous) => Stack(
+        alignment: AlignmentDirectional.topStart,
+        children: [...previous, ?current],
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -1116,7 +1131,7 @@ class _GuidedStep extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    LayerLabel(l.mikraLabel, icon: Icons.menu_book),
+                    LayerLabel(l.mikraLabel),
                     ScriptureVerse(verse: texts.mikra.verse(r), kind: ScriptureKind.mikra, settings: settings),
                     if (settings.showTranslation && texts.english != null)
                       Padding(
@@ -1127,7 +1142,7 @@ class _GuidedStep extends StatelessWidget {
                   ],
                 ),
               ),
-              if (r != refs.last) LayerLabel(l.targumLabel, icon: Icons.translate),
+              if (r != refs.last) LayerLabel(l.targumLabel),
             ],
           );
         case StepKind.rashi:
@@ -1159,47 +1174,52 @@ class _GuidedStep extends StatelessWidget {
       }
     }
 
-    final layerName = switch (kind) {
-      StepKind.targum => l.targumLabel,
-      StepKind.rashi => l.rashiLabel,
-      _ => l.mikraLabel,
-    };
-
     return Scrollbar(
       controller: scroll,
       child: SingleChildScrollView(
         controller: scroll,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: styles.maxLineWidth),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _StepHeader(
-                  title: stepTitle,
-                  stepNumber: step + 1,
-                  totalSteps: steps.length,
-                  kind: kind,
-                ),
+                // It stays as the step changes, and its bars fill as it does.
+                PassTrack(steps: steps, step: step),
                 const Gap(8),
-                LayerLabel(layerName, icon: kind == StepKind.targum || kind == StepKind.rashi ? Icons.translate : Icons.menu_book),
-                for (final r in refs) ...[
-                  if (r.verse == 1 || r == refs.first)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, bottom: 4),
-                      child: Text(
-                        l.chapterLabel(context.isHebrewUi ? HebrewText.gematria(r.chapter, punctuate: false) : '${r.chapter}'),
-                        style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                      ),
+                AnimatedSwitcher(
+                  duration: Motion.of(context).d(_fade),
+                  layoutBuilder: _fromTop,
+                  child: KeyedSubtree(
+                    key: ValueKey((aliyah, chunk, step)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Semantics(
+                          container: true,
+                          // Spoken by the reader's announcement where there
+                          // is one, and elsewhere as it appears.
+                          liveRegion: !MediaQuery.supportsAnnounceOf(context),
+                          label: '$stepTitle\n${l.stepOf(step + 1, steps.length)}',
+                          child: ExcludeSemantics(child: Text(stepTitle, style: theme.textTheme.bodyLarge)),
+                        ),
+                        const Gap(12),
+                        for (final r in refs) ...[
+                          layerFor(r),
+                          if (settings.showRashi &&
+                              kind != StepKind.rashi &&
+                              texts.rashi != null &&
+                              texts.rashi!.on(r).isNotEmpty) ...[
+                            LayerLabel(l.rashiLabel),
+                            RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
+                          ],
+                          const Gap(8),
+                        ],
+                      ],
                     ),
-                  layerFor(r),
-                  if (settings.showRashi && kind != StepKind.rashi && texts.rashi != null && texts.rashi!.on(r).isNotEmpty) ...[
-                    LayerLabel(l.rashiLabel),
-                    RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
-                  ],
-                  const Gap(8),
-                ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -1209,165 +1229,17 @@ class _GuidedStep extends StatelessWidget {
   }
 }
 
-class _StepHeader extends StatelessWidget {
-  const _StepHeader({required this.title, required this.stepNumber, required this.totalSteps, required this.kind});
-
-  final String title;
-  final int stepNumber;
-  final int totalSteps;
-  final StepKind kind;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final theme = Theme.of(context);
-    return Card(
-      color: theme.colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            ExcludeSemantics(
-              child: Row(
-                children: [
-                  for (var i = 1; i <= totalSteps; i++)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 4),
-                      child: Icon(
-                        i < stepNumber ? Icons.check_circle : (i == stepNumber ? Icons.radio_button_checked : Icons.radio_button_unchecked),
-                        size: 18,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const Gap(8),
-            Expanded(
-              child: Semantics(
-                // Spoken by the reader's announcement where there is one.
-                liveRegion: !MediaQuery.supportsAnnounceOf(context),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w700,
-                        )),
-                    Text(l.stepOf(stepNumber, totalSteps),
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
+/// A note under a verse: why it is read a third time, or that Rashi is
+/// silent on it.
 class _Note extends StatelessWidget {
   const _Note({required this.text});
   final String text;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: scheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline, color: scheme.onSecondaryContainer, size: 20),
-          const Gap(8),
-          Expanded(child: Text(text, style: TextStyle(color: scheme.onSecondaryContainer))),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomBar extends StatelessWidget {
-  const _BottomBar({
-    required this.flow,
-    required this.chunk,
-    required this.step,
-    required this.onBack,
-    required this.onNext,
-    required this.backFocus,
-    required this.nextFocus,
-  });
-
-  final ReaderFlow flow;
-  final int chunk;
-  final int step;
-  final VoidCallback? onBack;
-  final VoidCallback onNext;
-  final FocusNode backFocus;
-  final FocusNode nextFocus;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final c = flow.chunks[chunk];
-    final position = flow.method == ReadingMethod.verseByVerse
-        ? l.verseOf(c.start + 1, flow.verses.length)
-        : l.sectionOf(chunk + 1, flow.chunks.length);
-    // Progress through the whole aliyah, for the visual bar.
-    var done = 0;
-    for (var i = 0; i < chunk; i++) {
-      done += flow.stepsFor(i).length;
-    }
-    done += step;
-    final fraction = done / flow.totalSteps;
-    return Material(
-      color: Theme.of(context).colorScheme.surfaceContainer,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Semantics(
-              label: position,
-              value: '${(fraction * 100).round()}%',
-              child: LinearProgressIndicator(value: fraction, minHeight: 6, borderRadius: BorderRadius.circular(3)),
-            ),
-            const Gap(8),
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  focusNode: backFocus,
-                  onPressed: onBack,
-                  icon: const BackButtonIcon(),
-                  label: Text(l.actionBack),
-                ),
-                Expanded(
-                  child: Text(
-                    position,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-                FilledButton.icon(
-                  focusNode: nextFocus,
-                  onPressed: onNext,
-                  icon: const Icon(Icons.check),
-                  label: Text(l.actionNext),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: NoticeBanner(icon: Icons.info_outline, text: text),
+      );
 }
 
 class _FinishedPanel extends ConsumerWidget {
@@ -1600,7 +1472,8 @@ class _FullText extends StatelessWidget {
         // can be scrolled to, and Tab reaches the button at the end.
         child: SingleChildScrollView(
           controller: scroll,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          // With no bottom bar beneath it, its end clears the gesture bar.
+          padding: EdgeInsets.fromLTRB(20, 8, 20, 32 + MediaQuery.paddingOf(context).bottom),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

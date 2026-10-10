@@ -28,6 +28,7 @@ import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -182,7 +183,7 @@ const _screens = {
   'focus_slider': '/settings/display',
   'focus_switch': '/settings/display',
   'focus_field': '/community/account',
-  'focus_chip': '/read/5787:1/2',
+  'focus_tab': '/read/5787:1/2',
   'focus_menu': '/week/5787:1',
   'focus_nav': '/today',
   'focus_segment': '/welcome',
@@ -511,7 +512,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'focus_slider': (tester) => _keyboardFocus(tester, find.byType(Slider).first),
   'focus_switch': (tester) => _keyboardFocus(tester, find.byType(SwitchListTile).first),
   'focus_field': (tester) => _keyboardFocus(tester, find.byType(TextField).first),
-  'focus_chip': (tester) => _keyboardFocus(tester, find.byType(ChoiceChip).at(1)),
+  // Sheni's tab in the reader's aliyah ribbon.
+  'focus_tab': (tester) =>
+      _keyboardFocus(tester, find.descendant(of: find.byType(AliyahRibbon), matching: find.byType(SeferInkWell)).at(1)),
   // A menu button inside a card, which clips: the ring must still show.
   'focus_menu': (tester) => _keyboardFocus(
         tester,
@@ -735,7 +738,7 @@ const _desktopScreens = {
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week'};
+const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week', 'reader'};
 const _bigTextScreens = {
   'today',
   'goto_verse',

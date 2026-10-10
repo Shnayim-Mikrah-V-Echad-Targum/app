@@ -974,6 +974,24 @@ abstract class AppLocalizations {
   /// **'Reading {step} of {total}'**
   String stepOf(int step, int total);
 
+  /// A segment of the reader's pass track: the reading's number and what is read, e.g. "1 · Mikra", "3 · Targum".
+  ///
+  /// In en, this message translates to:
+  /// **'{n} · {name}'**
+  String passTrackLabel(int n, String name);
+
+  /// The Hebrew text of the Torah, as a reading on the reader's pass track ("1 · Mikra").
+  ///
+  /// In en, this message translates to:
+  /// **'Mikra'**
+  String get passTrackMikra;
+
+  /// The reader's Next button on the last step of an aliyah.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get finishStep;
+
   /// No description provided for @verseOf.
   ///
   /// In en, this message translates to:
@@ -1070,23 +1088,29 @@ abstract class AppLocalizations {
   /// **'Continue with {aliyah}'**
   String continueWithAliyah(String aliyah);
 
-  /// Spoken after an aliyah's name on its chip in the reader, e.g. "Rishon, read".
+  /// Spoken for an aliyah's tab in the reader's ribbon, before its state, e.g. "Revi'i, aliyah 4 of 7, not started".
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, aliyah {n} of 7'**
+  String aliyahTabLabel(String name, int n);
+
+  /// Spoken after an aliyah tab's label in the reader: all three of its readings are done.
   ///
   /// In en, this message translates to:
   /// **'read'**
-  String get aliyahStatusRead;
+  String get tabRead;
 
-  /// Spoken after an aliyah's name on its chip in the reader: some of its readings are done.
+  /// Spoken after an aliyah tab's label in the reader: how many of its three readings (Mikra, Mikra again, Targum) are done.
   ///
   /// In en, this message translates to:
-  /// **'in progress'**
-  String get aliyahStatusPartial;
+  /// **'{done} of 3 readings done'**
+  String tabPartial(int done);
 
-  /// Spoken after an aliyah's name on its chip in the reader: none of its readings are done.
+  /// Spoken after an aliyah tab's label in the reader: none of its readings is done or under way.
   ///
   /// In en, this message translates to:
   /// **'not started'**
-  String get aliyahStatusUnread;
+  String get tabNotStarted;
 
   /// No description provided for @backToWeek.
   ///

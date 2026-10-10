@@ -714,8 +714,9 @@ A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled 
 ### 6.16 AliyahRibbon (replaces _AliyahSelector, reader_screen.dart:517-549; fixes D5)
 
 **Layout**
-- Height 76, with a 1 px hairline below. Horizontal padding 8.
-- `LayoutBuilder`: if `maxWidth >= 7 × 56`, use a Row of 7 Expanded tabs. Otherwise use a horizontal ListView with tabs 64 wide that auto-scrolls the selected tab into view (`Scrollable.ensureVisible`, duration `Motion.medium`).
+- At least 76 high, growing with the text, with a 1 px hairline below. Horizontal padding 8.
+- `LayoutBuilder`: if a seventh of the width is at least 56 and holds the widest name in bold (labelSmall without tracking, as the navigation bar's labels), use a Row of 7 Expanded tabs. Otherwise (a narrow phone, or large text) the tabs scroll, each 64 wide or as wide as the widest name needs, and the selected tab is scrolled into view (`Scrollable.ensureVisible`, duration `Motion.medium`). No name is ever cut.
+- Hidden in the full text while focus mode is on; the overflow menu still switches modes and marks the aliyah read.
 
 **Each tab** (SeferInkWell, min 56 wide), top to bottom:
 - the Hebrew ordinal א–ז in `ordinal` style (selected onSurface, else onSurfaceVariant);
@@ -740,10 +741,10 @@ Row of three Expanded segments with an 8 gap. Each segment is a Column:
   - Upcoming: ringTrack.
 
 Below the track:
-- 8 gap, then ONE instruction line in bodyLarge onSurface: the existing step title ("Read the Hebrew", "Read the Hebrew again", "Read the Targum"), with `liveRegion: true`.
+- 8 gap, then ONE instruction line in bodyLarge onSurface: the existing step title ("Read the Hebrew", "Read the Hebrew again", "Read the Targum"). Screen readers hear it with the step's count ("Read the Hebrew again, Reading 2 of 3"), as a live region where the platform takes no announcements; they skip the track, which shows the same.
 - 12 gap, then the chapter heading (§4.7) when a chapter starts, then the verse.
 
-Nothing else sits above the first verse.
+Nothing else sits above the first verse. A label stays on one line, set a little smaller should large text need it. The third segment is named for what is read in it: the Targum or Rashi, or "Mikra" for a verse read a third time in Hebrew. Ending with the last verse once more comes after all three.
 
 ### 6.18 Reader bottom bar (replaces _BottomBar, reader_screen.dart:762-824)
 
@@ -759,8 +760,9 @@ Nothing else sits above the first verse.
   - **Centre:** `Expanded(Center(Text('Verse 1 of 21', labelMedium, onSurfaceVariant, tabular figures)))`.
   - **Next:** `FilledButton` min 128×52, label "Next" with a trailing `Icons.chevron_right` (mirrored).
   - On the final step of the aliyah, the label becomes `finishStep` ("Finish") with a leading check.
+- Below 400 wide, or when large text sets 14sp past 24, "Verse 1 of 21" goes above Back and Next, which share the width.
 
-Keep the keyboard shortcuts.
+It sits in the scaffold's bottom slot, so status messages rise above it, and runs under the gesture bar in surface, so no strip of another colour shows beneath it. Keep the keyboard shortcuts.
 
 ### 6.19 Sheets, dialogs, snackbars, tooltips
 
@@ -1060,6 +1062,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
   - Eyebrow: the parsha name;
   - titleLarge: "Revi'i · רביעי" in the English UI, "רביעי" in the Hebrew UI.
   - Actions unchanged (Listen, Aa, more).
+  - On a wide screen the title starts, and the actions end, where the text does. Screen readers hear the title as the page names itself ("Bereshit · Revi'i").
 - Then the AliyahRibbon (§6.16), then a 16 gap, then the PassTrack (§6.17), then the verse.
 - Text column: max per LineWidth; side padding 20; top 16.
 - Typesetting per §4.7: gold hanging verse number, centred chapter head, section-break marks.

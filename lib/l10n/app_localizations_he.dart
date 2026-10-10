@@ -553,6 +553,17 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String passTrackLabel(int n, String name) {
+    return '$n · $name';
+  }
+
+  @override
+  String get passTrackMikra => 'מקרא';
+
+  @override
+  String get finishStep => 'סיום';
+
+  @override
   String verseOf(int current, int total) {
     return 'פסוק $current מתוך $total';
   }
@@ -629,13 +640,20 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get aliyahStatusRead => 'נקראה';
+  String aliyahTabLabel(String name, int n) {
+    return '$name, עלייה $n מתוך 7';
+  }
 
   @override
-  String get aliyahStatusPartial => 'בתהליך';
+  String get tabRead => 'נקראה';
 
   @override
-  String get aliyahStatusUnread => 'טרם התחילה';
+  String tabPartial(int done) {
+    return '$done מתוך 3 קריאות';
+  }
+
+  @override
+  String get tabNotStarted => 'טרם התחילה';
 
   @override
   String get backToWeek => 'חזרה לפרשה';

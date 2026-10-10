@@ -46,6 +46,11 @@ class Names {
         _ => _l.aliyah7,
       };
 
+  /// The aliyah's own Hebrew name, the same in either UI: "רביעי".
+  static String aliyahHebrew(int index) => _aliyotHebrew[index.clamp(0, _aliyotHebrew.length - 1)];
+
+  static const _aliyotHebrew = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שביעי'];
+
   /// "Revi'i" or "Chamishi and Shishi".
   String aliyot(List<int> indices) {
     if (indices.isEmpty) return '';

@@ -103,12 +103,12 @@ void main() {
       }
       final note = find.textContaining('Rashi does not comment on this verse');
       expect(note, findsOneWidget);
-      final box = tester.widget<Container>(find.ancestor(of: note, matching: find.byType(Container)).first);
-      expect((box.decoration! as BoxDecoration).color, scheme.secondaryContainer);
+      // A notice, as every page's are (§6.20).
+      final notice = find.ancestor(of: note, matching: find.byType(NoticeBanner));
+      final card = tester.widget<Card>(find.descendant(of: notice, matching: find.byType(Card)));
+      expect(card.color, scheme.secondaryContainer);
       expect(tester.widget<Text>(note).style?.color, scheme.onSecondaryContainer);
-      final icon = tester.widget<Icon>(
-        find.descendant(of: find.byWidget(box), matching: find.byIcon(Icons.info_outline)),
-      );
+      final icon = tester.widget<Icon>(find.descendant(of: notice, matching: find.byIcon(Icons.info_outline)));
       expect(icon.color, scheme.onSecondaryContainer);
     });
   }

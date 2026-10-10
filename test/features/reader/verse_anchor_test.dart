@@ -145,7 +145,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(marked(), findsOneWidget, reason: 'a drag is not a tap');
 
-    await tester.tap(find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == const VerseRef(3, 8)).first);
+    // On the part of the verse still in view, below the aliyah ribbon.
+    final verse = find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == const VerseRef(3, 8)).first;
+    await tester.tapAt(tester.getRect(verse).intersect(tester.getRect(text())).center);
     await tester.pump();
     expect(marked(), findsNothing);
   });

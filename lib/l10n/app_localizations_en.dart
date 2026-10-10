@@ -550,6 +550,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String passTrackLabel(int n, String name) {
+    return '$n · $name';
+  }
+
+  @override
+  String get passTrackMikra => 'Mikra';
+
+  @override
+  String get finishStep => 'Finish';
+
+  @override
   String verseOf(int current, int total) {
     return 'Verse $current of $total';
   }
@@ -626,13 +637,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get aliyahStatusRead => 'read';
+  String aliyahTabLabel(String name, int n) {
+    return '$name, aliyah $n of 7';
+  }
 
   @override
-  String get aliyahStatusPartial => 'in progress';
+  String get tabRead => 'read';
 
   @override
-  String get aliyahStatusUnread => 'not started';
+  String tabPartial(int done) {
+    return '$done of 3 readings done';
+  }
+
+  @override
+  String get tabNotStarted => 'not started';
 
   @override
   String get backToWeek => 'Back to the week';
