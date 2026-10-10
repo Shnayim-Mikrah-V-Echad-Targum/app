@@ -33,6 +33,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   bool _loadingEarlier = false;
   Timer? _draftTimer;
 
+  // Show earlier posts keeps the keyboard focus while it loads, and, once
+  // the earliest are in and it goes, the first post takes it.
+  final _earlierFocus = FocusNode();
+  final _firstPostFocus = FocusNode(skipTraversal: true);
+  String? _firstPostFocused;
+
   String get _draftKey => 'draft.thread.${widget.threadId}';
 
   @override
@@ -60,6 +66,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     _reply.dispose();
     _focus.dispose();
     _scroll.dispose();
+    _earlierFocus.dispose();
+    _firstPostFocus.dispose();
     super.dispose();
   }
 
@@ -117,14 +125,19 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 
   Future<void> _moderate(String action) async {
+    final l = context.l10n;
+    final threadId = widget.threadId;
+    // This page may close while the change is made, and its ref with it.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final repo = ref.read(forumRepositoryProvider);
     try {
-      await ref.read(forumRepositoryProvider).moderate(action, widget.threadId);
-      ref
-        ..invalidate(threadProvider(widget.threadId))
+      await repo.moderate(action, threadId);
+      container
+        ..invalidate(threadProvider(threadId))
         // Pinned or not, locked or not, as its forum lists it.
         ..invalidate(threadsProvider);
     } catch (e) {
-      if (mounted) showStatus(context, communityError(context.l10n, e));
+      if (mounted) showStatus(context, communityError(l, e));
     }
   }
 
@@ -139,9 +152,21 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   Future<void> _loadEarlier() async {
     if (_loadingEarlier) return;
     final l = context.l10n;
+    final posts = postsProvider(widget.threadId);
+    final hadFocus = _earlierFocus.hasFocus;
     setState(() => _loadingEarlier = true);
     try {
-      await ref.read(postsProvider(widget.threadId).notifier).loadEarlier();
+      await ref.read(posts.notifier).loadEarlier();
+      // Once the earliest posts are in, the button goes, and the first of
+      // them, at the top in its place, takes the focus it had.
+      final page = ref.read(posts).value;
+      if (!mounted || !hadFocus || page == null || page.hasEarlier || page.posts.isEmpty) return;
+      setState(() => _firstPostFocused = page.posts.first.id);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _firstPostFocus.context == null) return;
+        _firstPostFocus.requestFocus();
+        _firstPostFocus.context!.findRenderObject()?.showOnScreen();
+      });
     } catch (e) {
       if (mounted) showStatus(context, communityError(l, e));
     } finally {
@@ -160,7 +185,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final t = thread.value;
     final title = t == null ? '' : threadDisplayTitle(context, ref, t);
 
-    return RefreshablePage(
+    final content = RefreshablePage(
       refresh: _refresh,
       builder: (context, refreshButton) => Scaffold(
         appBar: AppBar(
@@ -199,6 +224,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                   data: (page) {
                     final list = page.posts;
                     final byId = {for (final p in list) p.id: p};
+                    // With earlier posts not yet loaded, the thread's own
+                    // count, and each post numbered within the whole thread.
+                    // Loaded in full, the count of those shown: the server's
+                    // counts posts the reader can't see, such as a blocked
+                    // member's.
+                    final total = page.hasEarlier ? max(t?.postCount ?? 0, list.length) : list.length;
+                    final offset = total - list.length;
                     return PageBody.builder(
                       controller: _scroll,
                       header: [
@@ -208,11 +240,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             headingLevel: 1,
                             child: Text(title, textDirection: autoDirection(title), style: Theme.of(context).textTheme.headlineSmall),
                           ),
-                          // An empty thread says so below. The count is the
-                          // thread's, with any earlier posts not yet shown.
+                          // An empty thread says so below.
                           if (list.isNotEmpty) ...[
                             const Gap(4),
-                            Text(l.postsCount(max(t.postCount, list.length)), style: Theme.of(context).textTheme.bodySmall),
+                            Text(l.postsCount(total), style: Theme.of(context).textTheme.bodySmall),
                           ],
                           if (t.locked) ...[const Gap(8), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
                           const Gap(12),
@@ -228,6 +259,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                             child: Center(
                               child: TextButton.icon(
                                 // Enabled while it loads, so that it keeps the keyboard focus.
+                                focusNode: _earlierFocus,
                                 onPressed: _loadEarlier,
                                 icon: _loadingEarlier
                                     ? SizedBox.square(
@@ -244,9 +276,14 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                       itemBuilder: (context, i) => PostCard(
                         key: ValueKey(list[i].id),
                         post: list[i],
-                        index: i,
-                        total: list.length,
-                        replyTo: byId[list[i].replyToId],
+                        number: offset + i + 1,
+                        total: total,
+                        focusNode: list[i].id == _firstPostFocused ? _firstPostFocus : null,
+                        // As loaded, or else as fetched with the reply.
+                        quote: switch (byId[list[i].replyToId]) {
+                          final p? => QuotedPost(authorName: p.authorName, body: p.body),
+                          null => list[i].quote,
+                        },
                         isMine: user != null && list[i].authorId == user.id,
                         isModerator: isMod,
                         onReply: () {
@@ -272,6 +309,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         ),
       ),
     );
+    // The thread's list, which a tap on the iOS status bar scrolls to the
+    // top. No other list takes it up by itself.
+    return PrimaryScrollController(controller: _scroll, automaticallyInheritForPlatforms: const {}, child: content);
   }
 }
 
@@ -350,21 +390,30 @@ class PostCard extends ConsumerWidget {
   const PostCard({
     super.key,
     required this.post,
-    required this.index,
+    required this.number,
     required this.total,
     required this.isMine,
     required this.isModerator,
     required this.onReply,
-    this.replyTo,
+    this.quote,
+    this.focusNode,
   });
 
   final Post post;
-  final int index;
+
+  /// Its place in the thread, from 1, of [total].
+  final int number;
   final int total;
-  final Post? replyTo;
+
+  /// The post it replies to.
+  final QuotedPost? quote;
   final bool isMine;
   final bool isModerator;
   final VoidCallback onReply;
+
+  /// Makes the post itself take the keyboard focus when it is given to it,
+  /// though it is no stop of its own for Tab.
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -448,11 +497,11 @@ class PostCard extends ConsumerWidget {
     final time = relativeTime(context, post.createdAt);
     final header = '${l.postedBy(name, time)}${post.editedAt != null ? ' · ${l.edited}' : ''}';
 
-    return Card(
+    final card = Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Semantics(
         container: true,
-        label: l.postNofM(index + 1, total),
+        label: l.postNofM(number, total),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
           child: Column(
@@ -489,7 +538,7 @@ class PostCard extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(l.pendingReview, style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
                 ),
-              if (replyTo != null)
+              if (quote case final quote?)
                 Container(
                   margin: const EdgeInsetsDirectional.only(end: 12, bottom: 8),
                   padding: const EdgeInsets.all(8),
@@ -498,10 +547,10 @@ class PostCard extends ConsumerWidget {
                     color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   ),
                   child: Text(
-                    '${replyTo!.authorName}: ${replyTo!.body}',
+                    '${quote.authorName.isEmpty ? l.anonymousMember : quote.authorName}: ${quote.body}',
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    textDirection: autoDirection(replyTo!.body),
+                    textDirection: autoDirection(quote.body),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -522,7 +571,31 @@ class PostCard extends ConsumerWidget {
         ),
       ),
     );
+    final focusNode = this.focusNode;
+    if (focusNode == null) return card;
+    // Ringed while it has the focus, like every control.
+    return Focus(
+      focusNode: focusNode,
+      child: ListenableBuilder(
+        listenable: focusNode,
+        builder: (context, child) => DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: focusNode.hasFocus
+              ? BoxDecoration(
+                  border: Border.all(color: _focusColor(theme), width: 3, strokeAlign: BorderSide.strokeAlignOutside),
+                  borderRadius: BorderRadius.circular(16),
+                )
+              : const BoxDecoration(),
+          child: child,
+        ),
+        child: card,
+      ),
+    );
   }
+
+  /// The theme's focus ring colour, as its buttons draw it.
+  static Color _focusColor(ThemeData theme) =>
+      theme.textButtonTheme.style?.side?.resolve({WidgetState.focused})?.color ?? theme.colorScheme.primary;
 }
 
 /// "Todah" (thanks) for a post. A tap shows at once, and is undone if it
@@ -559,15 +632,21 @@ class _TodahButtonState extends ConsumerState<_TodahButton> {
     final l = context.l10n;
     final container = ProviderScope.containerOf(context, listen: false);
     final repo = ref.read(forumRepositoryProvider);
-    if (!await ensureSignedIn(context, ref) || !mounted || _busy) return;
+    // What the tap asks for, as it was shown. Signing in fetches the posts
+    // again, as the member sees them: thanks they gave before stay given,
+    // and their own post takes none.
+    final want = !_given;
+    if (!await ensureSignedIn(context, ref) || !mounted || _busy || _given == want) return;
+    final author = widget.post.authorId;
+    if (widget.isMine || (author != null && repo.currentUser?.id == author)) return;
     final (given, count) = (_given, _count);
     setState(() {
       _busy = true;
-      _given = !given;
-      _count = count + (given ? -1 : 1);
+      _given = want;
+      _count = count + (want ? 1 : -1);
     });
     try {
-      await repo.setTodah(widget.post.id, !given);
+      await repo.setTodah(widget.post.id, want);
     } catch (e) {
       if (!alreadyDone(e)) {
         if (mounted) {

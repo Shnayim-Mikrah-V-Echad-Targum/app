@@ -120,6 +120,14 @@ class ThreadSummary {
       );
 }
 
+/// The post a reply answers, as quoted above the reply: fetched with it, so
+/// that it shows even when that post is on an earlier page, not loaded.
+class QuotedPost {
+  const QuotedPost({required this.authorName, required this.body});
+  final String authorName;
+  final String body;
+}
+
 class Post {
   const Post({
     required this.id,
@@ -131,6 +139,7 @@ class Post {
     this.editedAt,
     this.hidden = false,
     this.replyToId,
+    this.quote,
     this.todah = 0,
     this.myTodah = false,
   });
@@ -147,6 +156,9 @@ class Post {
   final bool hidden;
   final String? replyToId;
 
+  /// The post [replyToId] names, if the reader may see it.
+  final QuotedPost? quote;
+
   /// "Todah" (thanks) reactions.
   final int todah;
   final bool myTodah;
@@ -157,7 +169,7 @@ class Post {
     return byTime != 0 ? byTime : compareIds(a.id, b.id);
   }
 
-  Post copyWith({int? todah, bool? myTodah, String? body, DateTime? editedAt}) => Post(
+  Post copyWith({int? todah, bool? myTodah, String? body, DateTime? editedAt, QuotedPost? quote}) => Post(
         id: id,
         threadId: threadId,
         authorId: authorId,
@@ -167,6 +179,7 @@ class Post {
         editedAt: editedAt ?? this.editedAt,
         hidden: hidden,
         replyToId: replyToId,
+        quote: quote ?? this.quote,
         todah: todah ?? this.todah,
         myTodah: myTodah ?? this.myTodah,
       );

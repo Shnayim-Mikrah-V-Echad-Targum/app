@@ -121,7 +121,18 @@ class SupabaseForumRepository implements ForumRepository {
       'id, category_id, parasha_id, hebrew_year, kind, title, author_id, is_pinned, is_locked, post_count, '
       'last_post_at, created_at, author:profiles(display_name)';
 
-  static ThreadSummary _thread(Map<String, dynamic> r) => ThreadSummary(
+  /// The exact times PostgREST gave, by row: `thread:ID` for a thread's
+  /// last post, `post:ID` for a post. A page follows on from the last row
+  /// shown at its exact time: a DateTime on the web keeps only milliseconds,
+  /// and a cursor cut short would skip rows that share its time.
+  final _exactTimes = <String, String>{};
+
+  ThreadSummary _thread(Map<String, dynamic> r) {
+    _exactTimes['thread:${r['id']}'] = r['last_post_at'] as String;
+    return _threadFrom(r);
+  }
+
+  static ThreadSummary _threadFrom(Map<String, dynamic> r) => ThreadSummary(
         id: '${r['id']}',
         forumId: r['category_id'] as int,
         title: r['title'] as String,
@@ -138,11 +149,13 @@ class SupabaseForumRepository implements ForumRepository {
       );
 
   /// A filter for the rows that come after [cursor] (a time in [column], and
-  /// an id) when ordered newest first, then by the higher id: those earlier
-  /// than it, or as early with a lower id.
-  static String _olderThan(String column, (DateTime, String) cursor) {
+  /// the id of a row of [kind]) when ordered newest first, then by the
+  /// higher id: those earlier than it, or as early with a lower id. The time
+  /// is the one PostgREST gave for that row, while the row is as it was.
+  String _olderThan(String column, String kind, (DateTime, String) cursor) {
     final (time, id) = cursor;
-    final ts = time.toUtc().toIso8601String();
+    final exact = _exactTimes['$kind:$id'];
+    final ts = exact != null && DateTime.parse(exact).isAtSameMomentAs(time) ? exact : time.toUtc().toIso8601String();
     final n = int.parse(id);
     return '$column.lt.$ts,and($column.eq.$ts,id.lt.$n)';
   }
@@ -166,7 +179,7 @@ class SupabaseForumRepository implements ForumRepository {
         final pages = await Future.wait([
           // Pinned threads come once, on the first page, however many there are.
           if (after == null) query(pinned: true),
-          query(pinned: false, after: after == null ? null : _olderThan('last_post_at', after)).limit(limit),
+          query(pinned: false, after: after == null ? null : _olderThan('last_post_at', 'thread', after)).limit(limit),
         ]);
         return [for (final r in pages.expand((rows) => rows)) _thread(r)];
       });
@@ -180,13 +193,16 @@ class SupabaseForumRepository implements ForumRepository {
   @override
   Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) =>
       _call(() async {
+        // With the post each one answers, which may be on an earlier page.
+        // The policies leave it out where the reader may not see it.
         var q = _db
             .from('posts')
             .select('id, thread_id, author_id, reply_to_post_id, body, created_at, edited_at, hidden_at, '
-                'author:profiles(display_name)')
+                'author:profiles(display_name), '
+                'reply_to:reply_to_post_id(body, deleted_at, author:profiles(display_name))')
             .eq('thread_id', int.parse(threadId))
             .isFilter('deleted_at', null);
-        if (before != null) q = q.or(_olderThan('created_at', before));
+        if (before != null) q = q.or(_olderThan('created_at', 'post', before));
         final latest = await q.order('created_at', ascending: false).order('id', ascending: false).limit(limit);
         final rows = latest.reversed.toList();
         final ids = [for (final r in rows) r['id'] as int];
@@ -201,6 +217,12 @@ class SupabaseForumRepository implements ForumRepository {
             if (r['user_id'] == me) mine.add(id);
           }
         }
+        QuotedPost? quote(Map<String, dynamic>? q) => q == null || q['deleted_at'] != null
+            ? null
+            : QuotedPost(
+                authorName: (q['author'] as Map<String, dynamic>?)?['display_name'] as String? ?? '',
+                body: q['body'] as String,
+              );
         return [
           for (final r in rows)
             Post(
@@ -209,10 +231,11 @@ class SupabaseForumRepository implements ForumRepository {
               authorId: r['author_id'] as String?,
               authorName: (r['author'] as Map<String, dynamic>?)?['display_name'] as String? ?? '',
               body: r['body'] as String,
-              createdAt: DateTime.parse(r['created_at'] as String),
+              createdAt: DateTime.parse(_exactTimes['post:${r['id']}'] = r['created_at'] as String),
               editedAt: r['edited_at'] == null ? null : DateTime.parse(r['edited_at'] as String),
               hidden: r['hidden_at'] != null,
               replyToId: r['reply_to_post_id'] == null ? null : '${r['reply_to_post_id']}',
+              quote: quote(r['reply_to'] as Map<String, dynamic>?),
               todah: todah[r['id']] ?? 0,
               myTodah: mine.contains(r['id']),
             ),

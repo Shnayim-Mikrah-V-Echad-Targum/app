@@ -105,14 +105,22 @@ class ThreadPosts {
 /// ([loadEarlier]).
 ///
 /// Fetched again (when invalidated, after a reply say), it reaches back as
-/// far as before. It is fetched again too when the account changes: what the
-/// reader has given todah to, and whom they have blocked, are their own.
+/// far as before, in as few requests as it can. It is fetched again too when
+/// the account changes: what the reader has given todah to, and whom they
+/// have blocked, are their own.
 class ThreadPostsNotifier extends AsyncNotifier<ThreadPosts> {
   ThreadPostsNotifier(this.threadId);
   final String threadId;
 
-  /// The earliest post shown.
+  /// The most posts asked for in one request when fetching again: one less
+  /// than the rows the server returns at most (max_rows in
+  /// supabase/config.toml), for the one more fetched to learn whether any
+  /// remain.
+  static const refetchChunk = 400;
+
+  /// The earliest post shown, and how many are.
   Post? _earliest;
+  int _count = 0;
   Future<void>? _loadingEarlier;
 
   @override
@@ -120,19 +128,27 @@ class ThreadPostsNotifier extends AsyncNotifier<ThreadPosts> {
     ref.watch(communityUserProvider.select((v) => v.value?.id));
     final repo = ref.watch(forumRepositoryProvider);
     final earliest = _earliest;
-    var page = await _page(repo);
+    // The latest page, or as many posts as were shown, at once if it can.
+    var page = await _page(repo, size: max(ForumRepository.postsPageSize, min(_count, refetchChunk)));
     final posts = [...page.posts];
+    // Replies since may push the earliest shown further back.
     while (page.hasEarlier && earliest != null && Post.chronological(posts.first, earliest) > 0) {
-      page = await _page(repo, before: posts.first);
+      page = await _page(repo, before: posts.first, size: refetchChunk);
       posts.insertAll(0, page.posts);
     }
-    return _shown(posts, hasEarlier: page.hasEarlier);
+    var hasEarlier = page.hasEarlier;
+    // No further back than before, though.
+    final from = earliest == null ? -1 : posts.indexWhere((p) => Post.chronological(p, earliest) >= 0);
+    if (from > 0) {
+      posts.removeRange(0, from);
+      hasEarlier = true;
+    }
+    return _shown(posts, hasEarlier: hasEarlier);
   }
 
-  /// A page of posts: those just before [before], or the latest. One more
-  /// is fetched, to learn whether any remain before them.
-  Future<ThreadPosts> _page(ForumRepository repo, {Post? before}) async {
-    const size = ForumRepository.postsPageSize;
+  /// A page of [size] posts: those just before [before], or the latest. One
+  /// more is fetched, to learn whether any remain before them.
+  Future<ThreadPosts> _page(ForumRepository repo, {Post? before, int size = ForumRepository.postsPageSize}) async {
     final posts = await repo.posts(
       threadId,
       before: before == null ? null : (before.createdAt, before.id),
@@ -143,6 +159,7 @@ class ThreadPostsNotifier extends AsyncNotifier<ThreadPosts> {
 
   ThreadPosts _shown(List<Post> posts, {required bool hasEarlier}) {
     _earliest = posts.firstOrNull;
+    _count = posts.length;
     return ThreadPosts(posts, hasEarlier: hasEarlier);
   }
 

@@ -254,15 +254,23 @@ class _RefreshablePageState extends State<RefreshablePage> {
   }
 }
 
-/// The parsha a weekly thread discusses, as the reader's schedule reads it
-/// that year: a combined pair when the two are read together, whose thread
-/// is the first one's. Null for any other thread.
-PortionInfo? weeklyThreadPortion(WidgetRef ref, ThreadSummary t) {
-  final (n, year) = (t.parshaNumber, t.hebrewYear);
-  if (t.kind != ThreadKind.weekly || n == null || year == null || n < 1 || n > kParshaCount) return null;
+/// The parsha discussed by a weekly thread, keyed by (the year its cycle
+/// began, its parsha's number), as the reader's schedule reads it that year:
+/// a combined pair when the two are read together, whose thread is the first
+/// one's. Kept, as finding the week walks the year's schedule.
+final weeklyThreadPortionProvider = Provider.family<PortionInfo, (int, int)>((ref, key) {
+  final (year, n) = key;
   final repo = ref.watch(parshaRepositoryProvider);
   final week = findWeekById(ref.watch(scheduleProvider), '$year:$n');
   return week != null && week.portion.number == n ? repo.portion(week.portion) : repo.byNumber(n);
+});
+
+/// The parsha a weekly thread discusses (see [weeklyThreadPortionProvider]).
+/// Null for any other thread.
+PortionInfo? weeklyThreadPortion(WidgetRef ref, ThreadSummary t) {
+  final (n, year) = (t.parshaNumber, t.hebrewYear);
+  if (t.kind != ThreadKind.weekly || n == null || year == null || n < 1 || n > kParshaCount) return null;
+  return ref.watch(weeklyThreadPortionProvider((year, n)));
 }
 
 /// A thread's title as shown. A weekly thread's is in the reader's language

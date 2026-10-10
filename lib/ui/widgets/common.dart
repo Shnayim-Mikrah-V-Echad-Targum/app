@@ -38,6 +38,9 @@ class PageBody extends StatelessWidget {
       final p = (padding ?? _defaultPadding).resolve(Directionality.of(context));
       return ListView.builder(
         controller: controller,
+        // Scrollable even when it fits, as it is without a controller of its
+        // own: so that it can be pulled to refresh.
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.only(top: p.top, bottom: p.bottom),
         itemCount: header.length + itemCount,
         itemBuilder: (context, i) => Center(
@@ -57,6 +60,7 @@ class PageBody extends StatelessWidget {
     }
     return ListView(
       controller: controller,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       children: [
         Center(

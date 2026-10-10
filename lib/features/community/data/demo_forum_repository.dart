@@ -239,8 +239,17 @@ class DemoForumRepository implements ForumRepository {
         p.copyWith(
           todah: p.todah + (_todah[p.id]?.length ?? 0),
           myTodah: _user != null && (_todah[p.id]?.contains(_user!.id) ?? false),
+          quote: _quote(p.replyToId),
         ),
     ];
+  }
+
+  /// The post [id] as a reply quotes it, unless it is gone or its author
+  /// blocked, as the server's policies hide it.
+  QuotedPost? _quote(String? id) {
+    final p = id == null ? null : _posts.where((p) => p.id == id).firstOrNull;
+    if (p == null || _blocked.contains(p.authorId)) return null;
+    return QuotedPost(authorName: p.authorName, body: p.body);
   }
 
   @override

@@ -66,6 +66,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   - Continuing from the panel, leaving it with Back, or reaching the first step, where Back is disabled, gives it to Next.
   - After *Email me a code*, the code field takes it, and a status message says where the code went.
   - *Load more* keeps it while it loads. Then the first discussion loaded, in the button's place, takes it, and a status message says how many came.
+  - *Show earlier posts* keeps it while it loads, and while more remain. Once the earliest posts are in and the button goes, the first post, in its place, takes it.
 - Reader shortcuts. In the app, the display shortcuts are Ctrl chords. On the web they are single keys, because Chrome and Edge keep Ctrl+Shift+T, Ctrl+Shift+N and Ctrl+= for themselves. On macOS and iOS, use ⌘ in place of Ctrl and ⌥ in place of Alt. *Settings → Accessibility → Single-key shortcuts*, shown on the web only, turns the single keys off for speech input and screen-reader quick keys (WCAG 2.1.4).
 
   | Action | Windows, macOS, Linux, Android and iOS | Web |

@@ -100,6 +100,17 @@ void main() {
       );
       expect(asked.queryParameters['limit'], '31');
     });
+
+    test('a later page follows on from the exact time the server gave, which a DateTime on the web cuts short', () async {
+      serve((url) => url.queryParameters['is_pinned'] == 'eq.true' ? [] : [_threadRow(9), _threadRow(8)]);
+      final last = (await repo.threads(forumId: 1)).last;
+      requests.clear();
+      await repo.threads(forumId: 1, after: (last.lastPostAt, last.id));
+      expect(
+        to('threads').single.queryParameters['or'],
+        '(last_post_at.lt.2026-10-09T12:00:00.123456+00:00,and(last_post_at.eq.2026-10-09T12:00:00.123456+00:00,id.lt.8))',
+      );
+    });
   });
 
   group('posts', () {
@@ -114,6 +125,30 @@ void main() {
       expect(asked.queryParameters['order'], contains(',id.desc'));
       expect(asked.queryParameters['limit'], '3');
       expect(asked.queryParameters.containsKey('or'), isFalse);
+    });
+
+    test('come with the post each one answers, where it may be seen', () async {
+      serve((url) => url.path.endsWith('/posts')
+          ? [
+              {
+                ..._postRow(30),
+                'reply_to_post_id': 3,
+                'reply_to': {'body': 'Post 3', 'deleted_at': null, 'author': {'display_name': 'Rivka'}},
+              },
+              {
+                ..._postRow(31),
+                'reply_to_post_id': 4,
+                'reply_to': {'body': 'Post 4', 'deleted_at': '2026-10-01T13:00:00+00:00', 'author': null},
+              },
+              {..._postRow(32), 'reply_to_post_id': 5, 'reply_to': null},
+            ].reversed.toList()
+          : []);
+      final posts = await repo.posts('7');
+      expect(to('posts').single.queryParameters['select'], contains('reply_to:reply_to_post_id(body,deleted_at,author:profiles(display_name))'));
+      expect([for (final p in posts) p.replyToId], ['3', '4', '5']);
+      expect((posts[0].quote?.authorName, posts[0].quote?.body), ('Rivka', 'Post 3'));
+      expect(posts[1].quote, isNull, reason: 'deleted, as a moderator may still see it');
+      expect(posts[2].quote, isNull, reason: 'hidden from the reader');
     });
 
     test('before a post, are those just before it', () async {

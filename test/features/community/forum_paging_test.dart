@@ -48,6 +48,17 @@ DemoForumRepository _longThread() => DemoForumRepository()
     posts: [for (var i = 0; i < 250; i++) _post(i + 1, minutes: i ~/ 3)],
   );
 
+/// Counts the posts asked for in each request ([limits]).
+class _CountingPosts extends DemoForumRepository {
+  final limits = <int>[];
+
+  @override
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) {
+    limits.add(limit);
+    return super.posts(threadId, before: before, limit: limit);
+  }
+}
+
 ProviderContainer _container(ForumRepository repo) {
   final c = ProviderContainer(overrides: [backendProvider.overrideWithValue(Backend(repo))]);
   addTearDown(c.dispose);
@@ -151,6 +162,39 @@ void main() {
       expect(page.posts.first.id, '1');
       expect(page.posts.last.body, 'The latest word.');
       expect(page.hasEarlier, isFalse);
+    });
+
+    test('fetched again, reach as far back in one request, and no further', () async {
+      final repo = _CountingPosts()
+        ..seed(
+          threads: [_thread(5000, minutes: 250).copyWith(postCount: 250)],
+          posts: [for (var i = 0; i < 250; i++) _post(i + 1, minutes: i ~/ 3)],
+        );
+      final c = _container(repo);
+      final provider = postsProvider('5000');
+      await c.read(provider.future);
+      await c.read(provider.notifier).loadEarlier();
+      var page = c.read(provider).requireValue;
+      expect(page.posts.first.id, '51');
+      expect(page.hasEarlier, isTrue);
+
+      repo.limits.clear();
+      c.invalidate(provider);
+      page = await c.read(provider.future);
+      expect(repo.limits, [201], reason: 'the 200 shown, and one more');
+      expect(page.posts.first.id, '51');
+      expect(page.posts, hasLength(200));
+      expect(page.hasEarlier, isTrue);
+
+      // Replies since push the earliest shown back: still no further.
+      await repo.verifyCode('reader@example.org', '123456');
+      await repo.acceptGuidelines();
+      await repo.reply('5000', 'The latest word.');
+      c.invalidate(provider);
+      page = await c.read(provider.future);
+      expect(page.posts.first.id, '51');
+      expect(page.posts.last.body, 'The latest word.');
+      expect(page.hasEarlier, isTrue);
     });
 
     test('a page that is exactly full has nothing before it', () async {
