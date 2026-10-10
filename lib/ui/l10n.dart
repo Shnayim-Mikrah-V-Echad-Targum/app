@@ -65,6 +65,15 @@ class Names {
         SecondReading.onkelosAndRashi => _l.secondBoth,
       };
 
+  /// The routine [anchor] as it completes "After I…": "finish Shacharit".
+  String habitAnchor(HabitAnchor anchor) => switch (anchor) {
+        HabitAnchor.shacharit => _l.anchorShacharit,
+        HabitAnchor.breakfast => _l.anchorBreakfast,
+        HabitAnchor.commute => _l.anchorCommute,
+        HabitAnchor.dinner => _l.anchorDinner,
+        HabitAnchor.bed => _l.anchorBed,
+      };
+
   /// The parsha name in the UI language. In Hebrew, the Hebrew name without
   /// vowels; in English, the transliteration in the chosen style.
   String portion(PortionInfo p, {required bool ashkenazi}) =>

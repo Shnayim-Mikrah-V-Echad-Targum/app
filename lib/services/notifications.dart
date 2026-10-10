@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show File, Platform;
 import 'dart:ui';
 
+import 'package:app_settings/app_settings.dart' as system;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart' show SchedulerBinding, Priority;
 import 'package:flutter/widgets.dart' show WidgetsBinding;
@@ -14,6 +15,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../app/providers.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/parsha_repository.dart';
+import '../features/progress/domain/reading_plan.dart' show kSecondsPerVerse;
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 import '../ui/theme/palette.dart';
@@ -159,6 +161,24 @@ class NotificationService {
     return true;
   }
 
+  /// Whether [openSystemSettings] can take the reader to the device's
+  /// notification settings for the app. Windows never refuses permission.
+  bool get canOpenSystemSettings =>
+      supported &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS);
+
+  /// Opens the device's notification settings for the app, where
+  /// notifications once refused can be allowed again.
+  Future<void> openSystemSettings() async {
+    try {
+      await system.AppSettings.openAppSettings(type: system.AppSettingsType.notification);
+    } catch (e) {
+      debugPrint('Could not open the notification settings: $e');
+    }
+  }
+
   String _lastSignature = '';
   Future<void> _queue = Future.value();
   int _latest = 0;
@@ -277,25 +297,33 @@ String reminderRoute(PlannedReminder r) => switch (r.kind) {
     };
 
 /// The words of reminder [r] in [l]'s language: for the daily reading, the
-/// aliyot due as the title and the portion and length as the body.
+/// aliyot due as the title, and the portion and length as the body, ending
+/// with the routine the reader tied the reading to, [anchor], if any.
 ReminderCopy reminderCopy(
   PlannedReminder r, {
   required AppLocalizations l,
   required ParshaRepository repo,
   required bool ashkenaziNames,
+  HabitAnchor? anchor,
 }) {
   final info = repo.portion(r.plan.portion);
   final parsha =
       l.localeName.startsWith('he') ? HebrewText.stripNikud(info.nameHe) : info.displayName(ashkenazi: ashkenaziNames);
   switch (r.kind) {
     case ReminderKind.daily:
-      final verses = l.versesCount(r.aliyot.fold<int>(0, (n, a) => n + repo.aliyahVerseCount(info, a)));
+      final count = r.aliyot.fold<int>(0, (n, a) => n + repo.aliyahVerseCount(info, a));
+      final verses = l.versesCount(count);
+      // All three readings of each verse, as Today estimates them.
+      final minutes = (count * kSecondsPerVerse / 60).ceil();
+      final cue = anchor == null ? '' : ' · ${l.notifDailyAnchor(anchorCue(anchor, l))}';
       // The whole portion in one day: named once, in the title.
-      if (r.aliyot.length == 7) return (title: l.notifDailyTitle(l.parshaLabel(parsha)), body: verses);
+      if (r.aliyot.length == 7) {
+        return (title: l.notifDailyTitle(l.parshaLabel(parsha)), body: '$verses · ${l.minutesEstimate(minutes)}$cue');
+      }
       final names = [l.aliyah1, l.aliyah2, l.aliyah3, l.aliyah4, l.aliyah5, l.aliyah6, l.aliyah7];
       return (
         title: l.notifDailyTitle(r.aliyot.map((a) => names[a]).join(', ')),
-        body: l.notifDailyBody(parsha, verses),
+        body: '${l.notifDailyBody(parsha, verses, minutes)}$cue',
       );
     case ReminderKind.erevShabbat:
       return (title: l.notifFridayTitle(parsha), body: l.notifFridayBody);
@@ -305,6 +333,15 @@ ReminderCopy reminderCopy(
       return (title: l.notifPausedTitle, body: l.notifPausedBody(parsha));
   }
 }
+
+/// How the daily reminder names [anchor]: "After Shacharit".
+String anchorCue(HabitAnchor anchor, AppLocalizations l) => switch (anchor) {
+      HabitAnchor.shacharit => l.anchorCueShacharit,
+      HabitAnchor.breakfast => l.anchorCueBreakfast,
+      HabitAnchor.commute => l.anchorCueCommute,
+      HabitAnchor.dinner => l.anchorCueDinner,
+      HabitAnchor.bed => l.anchorCueBed,
+    };
 
 final notificationServiceProvider = Provider<NotificationService>((ref) => NotificationService.disabled());
 
@@ -322,6 +359,7 @@ final reminderSchedulerProvider = Provider<void>((ref) {
         fridayReminder: s.fridayReminder,
         fridayReminderMinutes: s.fridayReminderMinutes,
         checkInReminder: s.checkInReminder,
+        habitAnchor: s.habitAnchor,
         language: s.language,
         ashkenaziNames: s.ashkenaziNames,
       )));
@@ -362,6 +400,6 @@ final reminderSchedulerProvider = Provider<void>((ref) {
   unawaited(service.reschedule(
     reminders,
     l,
-    (r) => reminderCopy(r, l: l, repo: repo, ashkenaziNames: settings.ashkenaziNames),
+    (r) => reminderCopy(r, l: l, repo: repo, ashkenaziNames: settings.ashkenaziNames, anchor: settings.habitAnchor),
   ));
 });

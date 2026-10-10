@@ -1367,6 +1367,21 @@ class AppLocalizationsHe extends AppLocalizations {
   String get anchorBed => 'אתכונן לשינה';
 
   @override
+  String get anchorCueShacharit => 'אחרי שחרית';
+
+  @override
+  String get anchorCueBreakfast => 'אחרי ארוחת הבוקר';
+
+  @override
+  String get anchorCueCommute => 'בדרך';
+
+  @override
+  String get anchorCueDinner => 'אחרי ארוחת הערב';
+
+  @override
+  String get anchorCueBed => 'לפני השינה';
+
+  @override
   String get notificationsUnsupported =>
       'תזכורות אינן זמינות בגרסת הדפדפן. אפשר להתקין את האפליקציה בטלפון או במחשב כדי לקבל אותן.';
 
@@ -1378,11 +1393,18 @@ class AppLocalizationsHe extends AppLocalizations {
   String get notificationsDeniedTitle => 'ההתראות כבויות';
 
   @override
+  String get openSystemSettings => 'פתיחת ההגדרות';
+
+  @override
   String get primingTitle => 'רוצה תזכורת יומית עדינה?';
 
   @override
-  String primingBody(String time) {
-    return 'בשעה $time. לעולם לא בשבת וביום טוב, ולכל היותר אחת ביום. אפשר לשנות בכל עת.';
+  String get primingBody =>
+      'לעולם לא בשבת וביום טוב, ולכל היותר אחת ביום. אפשר לשנות בכל עת.';
+
+  @override
+  String reminderAtTime(String time) {
+    return 'בשעה $time';
   }
 
   @override
@@ -1415,8 +1437,13 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String notifDailyBody(String parsha, String verses) {
-    return 'פרשת $parsha · $verses';
+  String notifDailyBody(String parsha, String verses, int minutes) {
+    return 'פרשת $parsha · $verses · כ־$minutes דק׳';
+  }
+
+  @override
+  String notifDailyAnchor(String cue) {
+    return '$cue — זה הזמן שלך.';
   }
 
   @override

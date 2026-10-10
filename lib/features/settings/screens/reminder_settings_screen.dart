@@ -5,8 +5,8 @@ import '../../../app/providers.dart';
 import '../../../services/notifications.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/common.dart';
-import '../../../ui/widgets/sefer_choice_chip.dart';
 import '../app_settings.dart';
+import '../widgets/habit_anchor_chips.dart';
 import '../widgets/settings_widgets.dart';
 
 /// Asks for a reminder's time of day, starting from [minutes] after
@@ -44,7 +44,18 @@ class ReminderSettingsScreen extends ConsumerWidget {
             builder: (context) => AlertDialog(
               title: Text(l.notificationsDeniedTitle),
               content: Text(l.notificationsDenied),
-              actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionOk))],
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionOk)),
+                // Where notifications once refused can be allowed again.
+                if (service.canOpenSystemSettings)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      service.openSystemSettings();
+                    },
+                    child: Text(l.openSystemSettings),
+                  ),
+              ],
             ),
           );
         }
@@ -57,8 +68,6 @@ class ReminderSettingsScreen extends ConsumerWidget {
       final minutes = await pickReminderTime(context, current);
       if (minutes != null) onPicked(minutes);
     }
-
-    final anchors = [l.anchorShacharit, l.anchorBreakfast, l.anchorCommute, l.anchorDinner, l.anchorBed];
 
     return SettingsPage(
       title: l.settingsReminders,
@@ -93,18 +102,9 @@ class ReminderSettingsScreen extends ConsumerWidget {
                 children: [
                   Text(l.habitAnchorPrompt, style: Theme.of(context).textTheme.bodySmall),
                   const Gap(6),
-                  Text(l.habitAnchorLabel, style: Theme.of(context).textTheme.titleSmall),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      for (final a in anchors)
-                        SeferChoiceChip(
-                          label: Text(a),
-                          selected: s.habitAnchor == a,
-                          onSelected: (sel) => update((s) => s.copyWith(habitAnchor: sel ? a : null)),
-                        ),
-                    ],
+                  HabitAnchorChips(
+                    selected: s.habitAnchor,
+                    onChanged: (a) => update((s) => s.copyWith(habitAnchor: a)),
                   ),
                 ],
               ),

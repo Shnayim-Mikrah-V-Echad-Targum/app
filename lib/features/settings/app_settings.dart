@@ -88,6 +88,34 @@ enum LineWidth { narrow, medium, wide }
 /// portion.
 enum ReadingSchedule { israel, diaspora }
 
+/// The daily routine the reader ties the day's reading to ("After I finish
+/// Shacharit"), which the daily reminder names. Persisted by name.
+enum HabitAnchor {
+  shacharit,
+  breakfast,
+  commute,
+  dinner,
+  bed;
+
+  /// The anchor saved as [raw]: its name or, from versions that saved the
+  /// chip's label instead, that label in English or Hebrew. Anything else
+  /// is no anchor.
+  static HabitAnchor? parse(Object? raw) => values.where((a) => a.name == raw).firstOrNull ?? _legacyLabels[raw];
+
+  static const _legacyLabels = {
+    'finish Shacharit': shacharit,
+    'eat breakfast': breakfast,
+    'start my commute': commute,
+    'finish dinner': dinner,
+    'get ready for bed': bed,
+    'אסיים שחרית': shacharit,
+    'אאכל ארוחת בוקר': breakfast,
+    'אצא לדרך': commute,
+    'אסיים ארוחת ערב': dinner,
+    'אתכונן לשינה': bed,
+  };
+}
+
 /// Every user preference, persisted as JSON.
 class AppSettings {
   const AppSettings({
@@ -243,8 +271,9 @@ class AppSettings {
   /// After Shabbat, a reminder to log reading done from a printed Chumash.
   final bool checkInReminder;
 
-  /// The routine the daily reading is anchored to ("after Shacharit").
-  final String? habitAnchor;
+  /// The routine the daily reading is tied to, which the daily reminder
+  /// names; null if none is chosen.
+  final HabitAnchor? habitAnchor;
 
   // Shabbat times
 
@@ -443,7 +472,7 @@ class AppSettings {
         fridayReminder: fridayReminder ?? this.fridayReminder,
         fridayReminderMinutes: fridayReminderMinutes ?? this.fridayReminderMinutes,
         checkInReminder: checkInReminder ?? this.checkInReminder,
-        habitAnchor: identical(habitAnchor, _keep) ? this.habitAnchor : habitAnchor as String?,
+        habitAnchor: identical(habitAnchor, _keep) ? this.habitAnchor : habitAnchor as HabitAnchor?,
         city: identical(city, _keep) ? this.city : city as City?,
         language: language ?? this.language,
         onboardingComplete: onboardingComplete ?? this.onboardingComplete,
@@ -505,7 +534,7 @@ class AppSettings {
         'fridayReminder': fridayReminder,
         'fridayReminderMinutes': fridayReminderMinutes,
         'checkInReminder': checkInReminder,
-        'habitAnchor': habitAnchor,
+        'habitAnchor': habitAnchor?.name,
         'city': city?.toJson(),
         'language': language.name,
         'onboardingComplete': onboardingComplete,
@@ -586,7 +615,7 @@ class AppSettings {
       fridayReminder: b('fridayReminder', d.fridayReminder),
       fridayReminderMinutes: i('fridayReminderMinutes', d.fridayReminderMinutes),
       checkInReminder: b('checkInReminder', d.checkInReminder),
-      habitAnchor: j['habitAnchor'] as String?,
+      habitAnchor: HabitAnchor.parse(j['habitAnchor']),
       city: _readCity(j['city']),
       language: e(AppLanguage.values, j['language'], d.language),
       onboardingComplete: b('onboardingComplete', d.onboardingComplete),

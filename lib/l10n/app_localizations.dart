@@ -2415,6 +2415,36 @@ abstract class AppLocalizations {
   /// **'get ready for bed'**
   String get anchorBed;
 
+  /// The reader's chosen routine, named in the daily reminder: 'After Shacharit — it's yours.'
+  ///
+  /// In en, this message translates to:
+  /// **'After Shacharit'**
+  String get anchorCueShacharit;
+
+  /// The reader's chosen routine, named in the daily reminder: 'After breakfast — it's yours.'
+  ///
+  /// In en, this message translates to:
+  /// **'After breakfast'**
+  String get anchorCueBreakfast;
+
+  /// The reader's chosen routine, named in the daily reminder: 'On your commute — it's yours.'
+  ///
+  /// In en, this message translates to:
+  /// **'On your commute'**
+  String get anchorCueCommute;
+
+  /// The reader's chosen routine, named in the daily reminder: 'After dinner — it's yours.'
+  ///
+  /// In en, this message translates to:
+  /// **'After dinner'**
+  String get anchorCueDinner;
+
+  /// The reader's chosen routine, named in the daily reminder: 'Before bed — it's yours.'
+  ///
+  /// In en, this message translates to:
+  /// **'Before bed'**
+  String get anchorCueBed;
+
   /// No description provided for @notificationsUnsupported.
   ///
   /// In en, this message translates to:
@@ -2433,6 +2463,12 @@ abstract class AppLocalizations {
   /// **'Notifications are off'**
   String get notificationsDeniedTitle;
 
+  /// Opens the device's notification settings for this app, from the dialog saying notifications are off.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get openSystemSettings;
+
   /// No description provided for @primingTitle.
   ///
   /// In en, this message translates to:
@@ -2442,8 +2478,14 @@ abstract class AppLocalizations {
   /// No description provided for @primingBody.
   ///
   /// In en, this message translates to:
-  /// **'At {time}. Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.'**
-  String primingBody(String time);
+  /// **'Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.'**
+  String get primingBody;
+
+  /// The daily reminder's time in the offer of reminders; tapping it changes the time.
+  ///
+  /// In en, this message translates to:
+  /// **'At {time}'**
+  String reminderAtTime(String time);
 
   /// No description provided for @primingYes.
   ///
@@ -2496,8 +2538,14 @@ abstract class AppLocalizations {
   /// No description provided for @notifDailyBody.
   ///
   /// In en, this message translates to:
-  /// **'Parshat {parsha} · {verses}'**
-  String notifDailyBody(String parsha, String verses);
+  /// **'Parshat {parsha} · {verses} · about {minutes} min'**
+  String notifDailyBody(String parsha, String verses, int minutes);
+
+  /// Ends the daily reminder when the reader has tied the reading to a routine, after ' · '.
+  ///
+  /// In en, this message translates to:
+  /// **'{cue} — it\'s yours.'**
+  String notifDailyAnchor(String cue);
 
   /// No description provided for @notifFridayTitle.
   ///

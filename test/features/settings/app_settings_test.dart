@@ -30,7 +30,7 @@ void main() {
       secondReading: SecondReading.onkelosAndRashi,
       joinDate: LocalDate(2026, 10, 9),
       starterCatchUp: false,
-      habitAnchor: 'finish Shacharit',
+      habitAnchor: HabitAnchor.shacharit,
       singleKeyShortcuts: false,
     );
     final back = AppSettings.fromJson(s.toJson());
@@ -40,6 +40,41 @@ void main() {
     expect(AppSettings.fromJson({}).singleKeyShortcuts, isTrue, reason: 'on unless turned off');
     expect(back.readingSchedule, ReadingSchedule.israel);
     expect(back.oneDayYomTov, isFalse);
+    expect(back.habitAnchor, HabitAnchor.shacharit);
+  });
+
+  group('habit anchor', () {
+    test('is saved by name, so it stays chosen whatever the language', () {
+      for (final a in HabitAnchor.values) {
+        final json = const AppSettings().copyWith(habitAnchor: a).toJson();
+        expect(json['habitAnchor'], a.name);
+        expect(AppSettings.fromJson(json).habitAnchor, a);
+      }
+      expect(const AppSettings().toJson()['habitAnchor'], isNull);
+      expect(AppSettings.fromJson(const AppSettings().toJson()).habitAnchor, isNull);
+    });
+
+    test("saved as the chip's label by earlier versions, in English or Hebrew, is read as its anchor", () {
+      AppSettings read(String label) => AppSettings.fromJson({'habitAnchor': label});
+      expect(read('finish Shacharit').habitAnchor, HabitAnchor.shacharit);
+      expect(read('eat breakfast').habitAnchor, HabitAnchor.breakfast);
+      expect(read('start my commute').habitAnchor, HabitAnchor.commute);
+      expect(read('finish dinner').habitAnchor, HabitAnchor.dinner);
+      expect(read('get ready for bed').habitAnchor, HabitAnchor.bed);
+      expect(read('אסיים שחרית').habitAnchor, HabitAnchor.shacharit);
+      expect(read('אאכל ארוחת בוקר').habitAnchor, HabitAnchor.breakfast);
+      expect(read('אצא לדרך').habitAnchor, HabitAnchor.commute);
+      expect(read('אסיים ארוחת ערב').habitAnchor, HabitAnchor.dinner);
+      expect(read('אתכונן לשינה').habitAnchor, HabitAnchor.bed);
+      // And saved again by name.
+      expect(read('finish Shacharit').toJson()['habitAnchor'], 'shacharit');
+    });
+
+    test('anything else is no anchor', () {
+      for (final raw in ['after lunch', 'Shacharit', '', 3, true, <String, dynamic>{}]) {
+        expect(AppSettings.fromJson({'habitAnchor': raw}).habitAnchor, isNull, reason: '$raw');
+      }
+    });
   });
 
   group('reading schedule and days of Yom Tov', () {
@@ -150,7 +185,7 @@ void main() {
   });
 
   test('copyWith can clear nullable fields', () {
-    final s = const AppSettings(habitAnchor: 'x', city: _jerusalem).copyWith(habitAnchor: null, city: null);
+    final s = const AppSettings(habitAnchor: HabitAnchor.bed, city: _jerusalem).copyWith(habitAnchor: null, city: null);
     expect(s.habitAnchor, isNull);
     expect(s.city, isNull);
   });

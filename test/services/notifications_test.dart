@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -244,6 +246,41 @@ void main() {
     });
   });
 
+  group("the device's notification settings", () {
+    const channel = MethodChannel('com.spencerccf.app_settings/methods');
+    tearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    });
+
+    test('can be opened on Android, iOS and macOS, where notifications can be refused', () {
+      for (final platform in TargetPlatform.values) {
+        debugDefaultTargetPlatformOverride = platform;
+        expect(
+          _service(_FakePlugin()).canOpenSystemSettings,
+          {TargetPlatform.android, TargetPlatform.iOS, TargetPlatform.macOS}.contains(platform),
+          reason: '$platform',
+        );
+      }
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      expect(NotificationService.disabled().canOpenSystemSettings, isFalse, reason: 'nothing to allow there');
+    });
+
+    test("open at the app's notifications, and a platform that can't open them is no error", () async {
+      final calls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        calls.add(call);
+        return null;
+      });
+      await _service(_FakePlugin()).openSystemSettings();
+      expect(calls.single.method, 'openSettings');
+      expect((calls.single.arguments as Map)['type'], 'notification');
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+      await _service(_FakePlugin()).openSystemSettings();
+    });
+  });
+
   group('the time zones', () {
     late List<PlannedReminder> reminders;
 
@@ -341,6 +378,9 @@ void main() {
       expect(service.reschedules, 4);
       change((s) => s.copyWith(nameStyle: NameStyle.ashkenazi));
       expect(service.reschedules, 5);
+      // The daily reminder names it.
+      change((s) => s.copyWith(habitAnchor: HabitAnchor.dinner));
+      expect(service.reschedules, 6);
     });
   });
 
@@ -352,8 +392,69 @@ void main() {
       expect(friday.aliyot, [5, 6]);
       final info = repo.portion(friday.plan.portion);
       final verses = repo.aliyahVerseCount(info, 5) + repo.aliyahVerseCount(info, 6);
-      expect(copyIn(en)(friday), (title: "Today: Shishi, Shevi'i", body: 'Parshat Noach · $verses verses'));
-      expect(copyIn(he)(friday).body, he.notifDailyBody('נח', he.versesCount(verses)));
+      final minutes = (verses * 25 / 60).ceil();
+      expect(
+        copyIn(en)(friday),
+        (title: "Today: Shishi, Shevi'i", body: 'Parshat Noach · $verses verses · about $minutes min'),
+      );
+      expect(copyIn(he)(friday).body, he.notifDailyBody('נח', he.versesCount(verses), minutes));
+    });
+
+    group("the reader's routine", () {
+      // Revi'i of Bereshit 5787 (Genesis 3:22–4:18), on its Thursday.
+      late PlannedReminder revii;
+      setUpAll(() {
+        final plan = planner.planFor(planner.schedule.weekFor(LocalDate(2026, 10, 8)));
+        revii = PlannedReminder(
+          kind: ReminderKind.daily,
+          date: LocalDate(2026, 10, 8),
+          minutes: 7 * 60,
+          plan: plan,
+          aliyot: const [3],
+        );
+      });
+
+      ReminderCopy describe(PlannedReminder r, AppLocalizations l, HabitAnchor? anchor) =>
+          reminderCopy(r, l: l, repo: repo, ashkenaziNames: false, anchor: anchor);
+
+      test('ends the daily reminder, after its length', () {
+        final copy = describe(revii, en, HabitAnchor.shacharit);
+        expect(copy.title, "Today: Revi'i");
+        expect(copy.body, contains('After Shacharit'));
+        expect(copy.body, contains('about 9 min'));
+        expect(copy.body, "Parshat Bereshit · 21 verses · about 9 min · After Shacharit — it's yours.");
+        expect(describe(revii, he, HabitAnchor.shacharit).body, 'פרשת בראשית · 21 פסוקים · כ־9 דק׳ · אחרי שחרית — זה הזמן שלך.');
+      });
+
+      test('is left out when none is chosen', () {
+        expect(describe(revii, en, null).body, 'Parshat Bereshit · 21 verses · about 9 min');
+      });
+
+      test('ends a day of the whole portion too', () {
+        final r = PlannedReminder(
+          kind: ReminderKind.daily,
+          date: revii.date,
+          minutes: revii.minutes,
+          plan: revii.plan,
+          aliyot: const [0, 1, 2, 3, 4, 5, 6],
+        );
+        expect(describe(r, en, HabitAnchor.bed).body, endsWith(" · Before bed — it's yours."));
+      });
+
+      test('is named in every language, each routine its own way', () {
+        for (final l in [en, he]) {
+          final cues = {for (final a in HabitAnchor.values) anchorCue(a, l)};
+          expect(cues, hasLength(HabitAnchor.values.length), reason: l.localeName);
+        }
+        expect(anchorCue(HabitAnchor.commute, en), 'On your commute');
+      });
+
+      test('is only in the daily reminder', () {
+        final plan = planFrom(DateTime(2026, 10, 11, 8));
+        for (final r in plan.where((r) => r.kind != ReminderKind.daily)) {
+          expect(describe(r, en, HabitAnchor.shacharit), copyIn(en)(r), reason: '$r');
+        }
+      });
     });
 
     test('a day that holds the whole portion names it once', () {
@@ -370,7 +471,7 @@ void main() {
       final verses = [for (var a = 0; a < 7; a++) repo.aliyahVerseCount(info, a)].reduce((a, b) => a + b);
       final copy = copyIn(en)(r);
       expect(copy.title, 'Today: Parshat ${info.displayName(ashkenazi: false)}');
-      expect(copy.body, '$verses verses');
+      expect(copy.body, '$verses verses · about ${(verses * 25 / 60).ceil()} min');
     });
 
     test("the paused message keeps the reader's place, in Hebrew without nikud", () {

@@ -1371,6 +1371,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get anchorBed => 'get ready for bed';
 
   @override
+  String get anchorCueShacharit => 'After Shacharit';
+
+  @override
+  String get anchorCueBreakfast => 'After breakfast';
+
+  @override
+  String get anchorCueCommute => 'On your commute';
+
+  @override
+  String get anchorCueDinner => 'After dinner';
+
+  @override
+  String get anchorCueBed => 'Before bed';
+
+  @override
   String get notificationsUnsupported =>
       'Reminders aren\'t available in the web version. Install the app on your phone or computer to get them.';
 
@@ -1382,11 +1397,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsDeniedTitle => 'Notifications are off';
 
   @override
+  String get openSystemSettings => 'Open settings';
+
+  @override
   String get primingTitle => 'Want a gentle daily nudge?';
 
   @override
-  String primingBody(String time) {
-    return 'At $time. Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.';
+  String get primingBody =>
+      'Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.';
+
+  @override
+  String reminderAtTime(String time) {
+    return 'At $time';
   }
 
   @override
@@ -1419,8 +1441,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String notifDailyBody(String parsha, String verses) {
-    return 'Parshat $parsha · $verses';
+  String notifDailyBody(String parsha, String verses, int minutes) {
+    return 'Parshat $parsha · $verses · about $minutes min';
+  }
+
+  @override
+  String notifDailyAnchor(String cue) {
+    return '$cue — it\'s yours.';
   }
 
   @override

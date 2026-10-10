@@ -938,15 +938,42 @@
   "anchorCommute": "start my commute",
   "anchorDinner": "finish dinner",
   "anchorBed": "get ready for bed",
+  "anchorCueShacharit": "After Shacharit",
+  "@anchorCueShacharit": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'After Shacharit — it's yours.'"
+  },
+  "anchorCueBreakfast": "After breakfast",
+  "@anchorCueBreakfast": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'After breakfast — it's yours.'"
+  },
+  "anchorCueCommute": "On your commute",
+  "@anchorCueCommute": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'On your commute — it's yours.'"
+  },
+  "anchorCueDinner": "After dinner",
+  "@anchorCueDinner": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'After dinner — it's yours.'"
+  },
+  "anchorCueBed": "Before bed",
+  "@anchorCueBed": {
+    "description": "The reader's chosen routine, named in the daily reminder: 'Before bed — it's yours.'"
+  },
   "notificationsUnsupported": "Reminders aren't available in the web version. Install the app on your phone or computer to get them.",
   "notificationsDenied": "Notifications are turned off for this app in your device settings.",
   "notificationsDeniedTitle": "Notifications are off",
+  "openSystemSettings": "Open settings",
+  "@openSystemSettings": {
+    "description": "Opens the device's notification settings for this app, from the dialog saying notifications are off."
+  },
   "primingTitle": "Want a gentle daily nudge?",
-  "primingBody": "At {time}. Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.",
-  "@primingBody": {
+  "primingBody": "Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.",
+  "reminderAtTime": "At {time}",
+  "@reminderAtTime": {
+    "description": "The daily reminder's time in the offer of reminders; tapping it changes the time.",
     "placeholders": {
       "time": {
-        "type": "String"
+        "type": "String",
+        "example": "8:00 PM"
       }
     }
   },
@@ -974,14 +1001,28 @@
       }
     }
   },
-  "notifDailyBody": "Parshat {parsha} · {verses}",
+  "notifDailyBody": "Parshat {parsha} · {verses} · about {minutes} min",
   "@notifDailyBody": {
     "placeholders": {
       "parsha": {
         "type": "String"
       },
       "verses": {
-        "type": "String"
+        "type": "String",
+        "example": "21 verses"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "notifDailyAnchor": "{cue} — it's yours.",
+  "@notifDailyAnchor": {
+    "description": "Ends the daily reminder when the reader has tied the reading to a routine, after ' · '.",
+    "placeholders": {
+      "cue": {
+        "type": "String",
+        "example": "After Shacharit"
       }
     }
   },
