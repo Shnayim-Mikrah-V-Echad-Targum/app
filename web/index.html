@@ -108,6 +108,7 @@
     @media (prefers-reduced-motion: reduce) { #loading .bar::before { animation: none; left: 30%; } }
     :root[data-reduce-motion] #loading .bar::before { animation: none; left: 30%; }
     .noscript { max-width: 32rem; margin: 0 auto; padding: 48px 16px; font: 18px/1.5 system-ui, sans-serif; color: var(--muted); }
+    .noscript p { margin: 0 0 24px; }
     .noscript a { color: var(--primary); }
   </style>
   <noscript><style>#loading { display: none; }</style></noscript>
@@ -121,7 +122,10 @@
     <p id="loading-text">Loading…</p>
   </div>
   <noscript>
-    <p class="noscript">Shnayim Mikra needs JavaScript to run in the browser. The <a href="legal/privacy.html">privacy policy</a>, <a href="legal/support.html">support</a> and <a href="legal/delete-account.html">account deletion</a> pages work without it.</p>
+    <div class="noscript">
+      <p>Shnayim Mikra needs JavaScript to run in the browser. The <a href="legal/privacy.html">privacy policy</a>, <a href="legal/support.html">support</a> and <a href="legal/delete-account.html">account deletion</a> pages work without it.</p>
+      <p lang="he" dir="rtl">כדי לפתוח את שניים מקרא בדפדפן צריך JavaScript. הדפים <a href="legal/privacy.he.html">מדיניות הפרטיות</a>, <a href="legal/support.he.html">תמיכה</a> ו<a href="legal/delete-account.he.html">מחיקת החשבון</a> פועלים גם בלעדיו.</p>
+    </div>
   </noscript>
   <script>
     (function () {

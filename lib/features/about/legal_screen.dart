@@ -61,7 +61,7 @@ const _en = <LegalDoc, List<(String, String)>>{
     ('If you create a community account',
         'Signing in to the community uses your email address, which is used only to sign you in. Your display name and the posts you write are visible to other users. If you choose to sync your progress, it is stored with your account so you can restore it on another device.'),
     ('Deleting your data',
-        'You can reset your progress at any time in Settings → Your data. You can delete your community account in Settings → Account & community; this deletes your profile, your posts and any synced progress.'),
+        'You can reset your progress at any time in Settings → Your data. You can delete your community account in Settings → Account & community; this deletes your profile, your posts and any synced progress. Topics you started that others replied to stay, without your name, so that their replies still make sense.'),
     ('Contact', 'Questions or requests: {contact}'),
   ],
   LegalDoc.terms: [
@@ -115,7 +115,7 @@ const _he = <LegalDoc, List<(String, String)>>{
     ('אם פתחת חשבון בקהילה',
         'הכניסה לקהילה משתמשת בכתובת הדוא״ל שלך לצורך הכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. אם בחרת לסנכרן את ההתקדמות, היא נשמרת עם החשבון כדי שתוכל/י לשחזר אותה במכשיר אחר.'),
     ('מחיקת המידע',
-        'אפשר לאפס את ההתקדמות בכל עת בהגדרות ← הנתונים שלך. אפשר למחוק את החשבון בהגדרות ← חשבון וקהילה; פעולה זו מוחקת את הפרופיל, ההודעות וההתקדמות המסונכרנת.'),
+        'אפשר לאפס את ההתקדמות בכל עת בהגדרות ← הנתונים שלך. אפשר למחוק את החשבון בהגדרות ← חשבון וקהילה; פעולה זו מוחקת את הפרופיל, ההודעות וההתקדמות המסונכרנת. נושאים שפתחת ואחרים הגיבו בהם נשארים, בלי שמך, כדי שהתגובות שלהם יישארו מובנות.'),
     ('יצירת קשר', 'שאלות ובקשות: {contact}'),
   ],
   LegalDoc.terms: [

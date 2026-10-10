@@ -8,19 +8,19 @@
 // Precached: the app shell, its start-up fonts and data. Cached on first use:
 // the engine (only the variant the browser loads), the books, the fonts
 // loaded on demand, and the policy pages.
-const { readFileSync } = require('node:fs');
+//
+// The engine's and the books' caches are named after the engine and the
+// texts this version was built with, so a new version never reads, or
+// refreshes, another's. Its worker fills them while it installs, online,
+// from the older versions' caches (tool/web/sw_update.js): an update
+// downloads again the engine and the books read so far, and finishes
+// installing only with them, so the app still opens, and opens those books,
+// offline after it.
 const { join } = require('node:path');
+const { cacheNames, writeUpdateScript } = require('./tool/web/sw_build.cjs');
 
 const web = join(__dirname, 'build', 'web');
-
-// The engine's files keep their names from one Flutter release to the next,
-// so their cache is named after the engine that built them.
-function engineRevision() {
-  const bootstrap = readFileSync(join(web, 'flutter_bootstrap.js'), 'utf8');
-  const revision = /"engineRevision":"([0-9a-f]+)"/.exec(bootstrap)?.[1];
-  if (!revision) throw new Error('build/web/flutter_bootstrap.js names no engine revision; build the app first');
-  return revision.slice(0, 12);
-}
+const runtimeCaches = cacheNames(web);
 
 module.exports = {
   globDirectory: web,
@@ -58,6 +58,7 @@ module.exports = {
   clientsClaim: true,
   cleanupOutdatedCaches: true,
   sourcemap: false,
+  importScripts: [writeUpdateScript(web, runtimeCaches)],
   runtimeCaching: [
     {
       // CanvasKit, in whichever variant the browser loads; not precached, as
@@ -65,28 +66,17 @@ module.exports = {
       urlPattern: /\/canvaskit\//,
       handler: 'CacheFirst',
       options: {
-        cacheName: `canvaskit-${engineRevision()}`,
+        cacheName: runtimeCaches.engine,
         cacheableResponse: { statuses: [200] },
-        plugins: [
-          {
-            // Once a new engine is cached, the older engines' caches go.
-            cacheDidUpdate: async ({ cacheName }) => {
-              for (const name of await caches.keys()) {
-                if (name.startsWith('canvaskit-') && name !== cacheName) await caches.delete(name);
-              }
-            },
-          },
-        ],
       },
     },
     {
       // The books, the fonts loaded on demand and the licences: served from
-      // the cache, and refreshed in the background, so a corrected text
-      // arrives the next time the book opens.
+      // the cache, and refreshed in the background.
       urlPattern: /\/assets\/(?:NOTICES$|assets\/(?:text|fonts\/(?:optional|rashi|licenses))\/)/,
       handler: 'StaleWhileRevalidate',
       options: {
-        cacheName: 'content',
+        cacheName: runtimeCaches.content,
         cacheableResponse: { statuses: [200] },
       },
     },

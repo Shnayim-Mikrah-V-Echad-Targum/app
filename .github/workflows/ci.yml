@@ -47,8 +47,8 @@ jobs:
         run: |
           python3 tool/l10n/build_he.py
           git diff --exit-code lib/l10n/app_he.arb
-      - name: Check the static policy pages build
-        run: node --test tool/legal/build_html.test.mjs
+      - name: Check the static policy pages build, and the web build's scripts
+        run: node --test tool/legal/build_html.test.mjs tool/web/web.test.mjs
       - run: flutter analyze
       - run: flutter test
       - name: Community database tests (PostgreSQL)

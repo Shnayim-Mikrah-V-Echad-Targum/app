@@ -265,7 +265,7 @@ export function loadTexts(root = ROOT) {
       if (!title) throw new Error(`no ${lang} title for ${doc}: add it to "titles" in assets/legal/legal.json`);
       titles[doc] = title;
     }
-    texts[lang] = { docs, titles, appTitle: arb.appTitle, appTitleFull: arb.appTitleFull };
+    texts[lang] = { docs, titles, appTitle: arb.appTitle };
   }
   return texts;
 }
@@ -362,13 +362,14 @@ const CSS = `
   :root { color-scheme: dark; --surface: #14120F; --on-surface: #EDE6D6; --muted: #C4BAA8; --primary: #AFC6EE;
     --hairline: #4A443A; --gold-leaf: #B8954B; --focus: #AFC6EE; }
 }
+/* High contrast draws ornaments in onSurface, with no gold leaf (§3.1). */
 @media (prefers-contrast: more) {
   :root { --surface: #FFFFFF; --on-surface: #000000; --muted: #1F1F1F; --primary: #0A2A5E;
-    --hairline: #000000; --gold-leaf: #4F3500; --focus: #000000; --rule: 2px; }
+    --hairline: #000000; --gold-leaf: #000000; --focus: #000000; --rule: 2px; }
 }
 @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
   :root { --surface: #000000; --on-surface: #FFFFFF; --muted: #EBEBEB; --primary: #B5CEFF;
-    --hairline: #FFFFFF; --gold-leaf: #FFD970; --focus: #FFFFFF; }
+    --hairline: #FFFFFF; --gold-leaf: #FFFFFF; --focus: #FFFFFF; }
 }
 :lang(he) { --serif: 'Frank Ruhl Libre', 'EB Garamond', 'David', 'Times New Roman', serif; }
 * { box-sizing: border-box; }
@@ -401,7 +402,7 @@ footer { padding: 1.5rem 0 3rem; border-top: var(--rule) solid var(--hairline); 
 footer h2 { margin: 0; font: inherit; font-weight: 500; color: var(--muted); }
 footer ul { display: flex; flex-wrap: wrap; gap: 0 1.5rem; margin: 0.25rem 0 0; padding: 0; list-style: none; }
 footer li + li { margin: 0; }
-footer a { display: inline-block; padding: 0.75rem 0; }
+footer a { display: inline-flex; align-items: center; min-height: 48px; }
 footer [aria-current] { color: var(--on-surface); text-decoration: none; }
 /* High contrast: EB Garamond at 600, Frank Ruhl Libre at 700 (§4.5). */
 @media (prefers-contrast: more) {

@@ -10,6 +10,7 @@ import 'package:shnayim_mikra/ui/theme/palette.dart';
 /// The web build's page, manifest and bootstrap (web/), which no widget test
 /// renders: the loading screen in the app's theme, link previews, the
 /// installed app's metadata, and the offline service worker's registration.
+/// tool/web/web.test.mjs runs their scripts against fixtures.
 void main() {
   final html = File('web/index.html').readAsStringSync();
   final manifest = jsonDecode(File('web/manifest.json').readAsStringSync()) as Map<String, dynamic>;
@@ -90,10 +91,13 @@ void main() {
       expect(html, contains('@media (prefers-reduced-motion: reduce)'));
     });
 
-    test('points readers without JavaScript to the static pages', () {
+    test('points readers without JavaScript to the static pages, in both languages', () {
+      final noscript = html.substring(html.indexOf('<noscript>\n'), html.indexOf('</noscript>', html.indexOf('<noscript>\n')));
       for (final page in ['privacy', 'support', 'delete-account']) {
-        expect(html, contains('href="legal/$page.html"'));
+        expect(noscript, contains('href="legal/$page.html"'));
+        expect(noscript, contains('href="legal/$page.he.html"'));
       }
+      expect(noscript, contains('<p lang="he" dir="rtl">'));
     });
   });
 

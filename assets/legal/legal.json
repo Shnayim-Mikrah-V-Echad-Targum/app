@@ -68,9 +68,10 @@
         "heading": "What is deleted",
         "blocks": [
           {"type": "bullet", "text": "Your profile, display name and email address"},
-          {"type": "bullet", "text": "Everything you've posted in the community"},
+          {"type": "bullet", "text": "Your posts in the community"},
           {"type": "bullet", "text": "The backup of your progress, if you turned it on"},
           {"type": "bullet", "text": "Your reports, and your list of blocked members"},
+          {"type": "para", "text": "Topics you started that others replied to stay, without your name, so that their replies still make sense."},
           {"type": "para", "text": "The progress kept on your device is not affected. You can reset it in Settings → Your data, or remove it by uninstalling the app."}
         ]
       }
@@ -133,9 +134,10 @@
         "heading": "מה נמחק",
         "blocks": [
           {"type": "bullet", "text": "הפרופיל, שם התצוגה וכתובת הדוא״ל"},
-          {"type": "bullet", "text": "כל מה שפרסמתם בקהילה"},
+          {"type": "bullet", "text": "ההודעות שפרסמתם בקהילה"},
           {"type": "bullet", "text": "גיבוי ההתקדמות, אם הפעלתם אותו"},
           {"type": "bullet", "text": "הדיווחים שלכם ורשימת המשתמשים שחסמתם"},
+          {"type": "para", "text": "נושאים שפתחתם ואחרים הגיבו בהם נשארים, בלי שמכם, כדי שהתגובות שלהם יישארו מובנות."},
           {"type": "para", "text": "ההתקדמות השמורה במכשיר אינה נפגעת. אפשר לאפס אותה בהגדרות ← הנתונים שלך, או למחוק אותה בהסרת האפליקציה."}
         ]
       }

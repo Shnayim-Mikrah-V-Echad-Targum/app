@@ -99,8 +99,33 @@ describe('the pages', () => {
     assert.match(page('support'), /<a href="https:\/\/github\.com\/[^"]+\/issues">GitHub issue tracker<\/a>/);
     assert.match(page('support'), /<a href="delete-account\.html">Delete your account<\/a>/);
     assert.match(page('support', 'he'), /<a href="delete-account\.he\.html">מחיקת החשבון<\/a>/);
-    // The in-app texts' bullets become a list.
-    assert.equal(page('accessibility').match(/<li>/g).length, 8 + DOCS.length);
+    // The in-app texts' bullets become a list item each, beside the footer's
+    // one for each page.
+    const bullets = parseDartLegal(read('lib/features/about/legal_screen.dart'))
+      .en.accessibility.flatMap(({ body }) => body.split('\n'))
+      .filter((line) => line.startsWith('• ')).length;
+    assert.ok(bullets > 0);
+    const main = page('accessibility').split('<main>')[1].split('</main>')[0];
+    assert.equal(main.match(/<li>/g).length, bullets);
+    assert.equal(main.match(/<ul>/g).length, 1);
+    assert.equal(page('accessibility').match(/<li>/g).length, bullets + DOCS.length);
+  });
+
+  it('draw the gold rule in the text colour in high contrast', () => {
+    const css = buildInto({})('privacy').split('<style>')[1].split('</style>')[0];
+    const contrast = [...css.matchAll(/@media \(prefers-contrast: more\)[^{]*\{\s*:root \{([^}]*)\}/g)];
+    assert.equal(contrast.length, 2);
+    for (const [, vars] of contrast) {
+      const value = (name) => new RegExp(`--${name}: (#[0-9A-F]{6})`).exec(vars)[1];
+      assert.equal(value('gold-leaf'), value('on-surface'));
+    }
+  });
+
+  it('give every link a 48 px target', () => {
+    const css = buildInto({})('privacy').split('<style>')[1].split('</style>')[0];
+    for (const selector of ['header a', 'footer a']) {
+      assert.match(css, new RegExp(`\\n${selector} \\{[^}]*min-height: 48px`), selector);
+    }
   });
 
   it('point to the issue tracker without a support address', () => {

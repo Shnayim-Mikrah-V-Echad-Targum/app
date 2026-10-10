@@ -68,6 +68,19 @@ void main() {
         expect(style.statusBarColor, t.colorScheme.surface, reason: '$mode');
       }
     });
+
+    // An app bar sets the status bar's style beneath it, so on the web its
+    // own must be the surface too.
+    test("on the web, an app bar's status bar takes the surface colour", () {
+      for (final mode in AppThemeMode.values.where((m) => m != AppThemeMode.system)) {
+        final web = AppTheme.build(mode: mode, uiFont: UiFont.standard, hebrewUi: false, reduceMotion: false, web: true);
+        expect(web.appBarTheme.systemOverlayStyle?.statusBarColor, web.colorScheme.surface, reason: '$mode');
+        // Elsewhere the app bar leaves the bars to Material: transparent.
+        final native =
+            AppTheme.build(mode: mode, uiFont: UiFont.standard, hebrewUi: false, reduceMotion: false, web: false);
+        expect(native.appBarTheme.systemOverlayStyle, isNull, reason: '$mode');
+      }
+    });
   });
 
   // MaterialApp's color is what the platform shows for the app: the web's
