@@ -797,7 +797,7 @@ const _samples = [
         '725',
         'Chana',
         Duration(days: 7),
-        'Thank you for the idea! Settings → Display now has a Sepia theme, and a dark one. I’m locking this '
+        'Thank you for the idea! The Display settings now have a Sepia theme, and a dark one. I’m locking this '
             'discussion now that it’s done.',
         todah: 10,
         replyTo: '724',

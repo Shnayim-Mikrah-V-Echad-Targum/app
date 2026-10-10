@@ -309,11 +309,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           if (t.locked) ...[const Gap(Space.md), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
                           const Gap(Space.lg),
                         ],
-                        if (list.isEmpty && t != null)
-                          Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Text(emptyThreadMessage(context, ref, t), textAlign: TextAlign.center),
-                          ),
+                        // The reply box beneath is its action.
+                        if (list.isEmpty && t != null) EmptyState(message: emptyThreadMessage(context, ref, t)),
                         if (page.hasEarlier)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 10),

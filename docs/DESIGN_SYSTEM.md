@@ -1150,7 +1150,7 @@ In order:
 **Thread**
 - App bar title: the forum's name (Community where it can't be found), which is no heading and doesn't name the page to a screen reader as it opens. The thread's title is the page's one heading of level 1, in its own language, which names the page (`namesRoute`) and the browser's tab; it is never cut short (fixes D13).
 - headlineSmall title with `autoDirection`, tagged with its language and starting at the page's start edge as its forum lists it, then "2 posts" in bodySmall onSurfaceVariant.
-- Posts as letters (§6.21).
+- Posts as letters (§6.21). A thread with none yet (a week's discussion before its first post) shows an empty state (§6.22) with no button, the reply box beneath being its action: `noPostsYet`, "No posts yet — share a thought on Parshat Bereshit."
 - Composer docked on surface with a top hairline across the pane, apart from the navigation bar's surfaceContainer below it; its content in the 720 column, within the gutters, so it lines up with the posts:
   - a radius-10 outlined field (max 5 lines) labelled "Write a reply", in the direction of what is typed, or the interface's while empty;
   - a Filled "Reply" 48 high, level with a one-line field and by the last line as it grows, disabled until there is a reply (2 characters); while it is sent, a 20 px spinner read as "Sending…";
