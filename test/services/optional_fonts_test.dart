@@ -141,9 +141,19 @@ void main() {
     expect(OptionalFonts.isRequested('NotoRashiHebrew'), isTrue);
   });
 
-  testWidgets('the app loads the Rashi script at start when it is on', (tester) async {
-    await pumpApp(tester, settings: const AppSettings(onboardingComplete: true, rashiScript: true));
+  testWidgets('the app loads the Rashi script at start when it is on, and Rashi shown', (tester) async {
+    await pumpApp(tester, settings: const AppSettings(onboardingComplete: true, rashiScript: true, showRashi: true));
     expect(OptionalFonts.isRequested('NotoRashiHebrew'), isTrue);
+  });
+
+  // Turned on, but with Rashi shown nowhere, it would change nothing seen.
+  testWidgets('the app loads the Rashi script only once Rashi is shown', (tester) async {
+    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true, rashiScript: true));
+    expect(OptionalFonts.isRequested('NotoRashiHebrew'), isFalse);
+
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(secondReading: SecondReading.rashi));
+    await tester.pump();
+    expect(OptionalFonts.isRequested('NotoRashiHebrew'), isTrue, reason: 'Rashi read as the second reading');
   });
 
   // Over the web, a family of two files costs one round trip, not two.
