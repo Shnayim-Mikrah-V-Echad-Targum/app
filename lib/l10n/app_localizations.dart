@@ -380,6 +380,18 @@ abstract class AppLocalizations {
   /// **'Rashi'**
   String get passRashi;
 
+  /// Under the count of finished aliyot ("2/7") in the centre of the parsha rings.
+  ///
+  /// In en, this message translates to:
+  /// **'aliyot'**
+  String get aliyotWord;
+
+  /// A count against its total, e.g. readings done out of the seven aliyot.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total}'**
+  String countOfTotal(int done, int total);
+
   /// No description provided for @passShortMikra.
   ///
   /// In en, this message translates to:
@@ -626,6 +638,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 day} other{{count} days}}'**
   String daysCount(int count);
 
+  /// On the streak card, in place of a parsha streak of 0: the streak starts when this parsha is finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Begins with {name}'**
+  String streakBeginsWith(String name);
+
+  /// On the streak card, in place of 0 days on track.
+  ///
+  /// In en, this message translates to:
+  /// **'Begins with today\'s reading'**
+  String get daysBeginToday;
+
   /// No description provided for @graceDays.
   ///
   /// In en, this message translates to:
@@ -697,6 +721,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No reading planned'**
   String get dayNoReading;
+
+  /// In the week-strip legend, beside the mark for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dayToday;
+
+  /// Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide, and a longer word is shrunk to fit one line.
+  ///
+  /// In en, this message translates to:
+  /// **'Yom Tov'**
+  String get yomTovShort;
 
   /// No description provided for @dayChipLabel.
   ///
@@ -1184,6 +1220,48 @@ abstract class AppLocalizations {
   /// **'{count} verses read twice with Targum'**
   String versesRead(String count);
 
+  /// Screen-reader label of the bar of the year's parshiyot, when none is being read now.
+  ///
+  /// In en, this message translates to:
+  /// **'This year: {done} of {total} parshiyot complete'**
+  String yearBarSemantics(int done, int total);
+
+  /// Screen-reader label of the bar of the year's parshiyot; name is this week's parsha.
+  ///
+  /// In en, this message translates to:
+  /// **'This year: {done} of {total} parshiyot complete; {name} in progress'**
+  String yearBarSemanticsCurrent(int done, int total, String name);
+
+  /// Short name of the book under its part of the year bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Gen'**
+  String get bookAbbrGenesis;
+
+  /// No description provided for @bookAbbrExodus.
+  ///
+  /// In en, this message translates to:
+  /// **'Exo'**
+  String get bookAbbrExodus;
+
+  /// No description provided for @bookAbbrLeviticus.
+  ///
+  /// In en, this message translates to:
+  /// **'Lev'**
+  String get bookAbbrLeviticus;
+
+  /// No description provided for @bookAbbrNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Num'**
+  String get bookAbbrNumbers;
+
+  /// No description provided for @bookAbbrDeuteronomy.
+  ///
+  /// In en, this message translates to:
+  /// **'Deu'**
+  String get bookAbbrDeuteronomy;
+
   /// No description provided for @torahMap.
   ///
   /// In en, this message translates to:
@@ -1195,6 +1273,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Each tile is one parsha of this year\'s cycle.'**
   String get torahMapHelp;
+
+  /// Screen-reader label of a book's header on the Torah map; the header expands or collapses that book.
+  ///
+  /// In en, this message translates to:
+  /// **'{book}: {done} of {total} parshiyot'**
+  String torahMapBook(String book, int done, int total);
 
   /// No description provided for @recentWeeks.
   ///
@@ -1826,6 +1910,18 @@ abstract class AppLocalizations {
   /// **'{percent}%'**
   String readingSizeValue(int percent);
 
+  /// Tooltip and spoken name of the minus button beside a settings slider. title is the slider's name, such as 'Reading size'.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}: decrease'**
+  String sliderDecrease(String title);
+
+  /// Tooltip and spoken name of the plus button beside a settings slider. title is the slider's name, such as 'Reading size'.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}: increase'**
+  String sliderIncrease(String title);
+
   /// No description provided for @lineSpacing.
   ///
   /// In en, this message translates to:
@@ -1939,6 +2035,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenDyslexic'**
   String get uiFontOpenDyslexic;
+
+  /// No description provided for @uiFontSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Device font'**
+  String get uiFontSystem;
 
   /// No description provided for @boldText.
   ///

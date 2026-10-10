@@ -8,6 +8,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/providers.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/app_theme.dart';
+import '../../../ui/widgets/common.dart';
 import '../../community/data/backend.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
@@ -82,7 +84,7 @@ class DataSettingsScreen extends ConsumerWidget {
           subtitle: Text(l.importDataDesc),
           onTap: () async {
             final controller = TextEditingController();
-            final ok = await showDialog<bool>(
+            final ok = await showAppDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
                 title: Text(l.importData),
@@ -111,7 +113,7 @@ class DataSettingsScreen extends ConsumerWidget {
             // must not erase the backup of whoever signs in next.
             final everywhere =
                 ref.read(settingsProvider).cloudSync && ref.read(forumRepositoryProvider).currentUser != null;
-            final ok = await showDialog<bool>(
+            final ok = await showAppDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
                 title: Text(l.resetProgress),
@@ -119,10 +121,7 @@ class DataSettingsScreen extends ConsumerWidget {
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
                   FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      foregroundColor: Theme.of(context).colorScheme.onError,
-                    ),
+                    style: AppButtons.destructive(context),
                     onPressed: () => Navigator.pop(context, true),
                     child: Text(l.resetProgress),
                   ),

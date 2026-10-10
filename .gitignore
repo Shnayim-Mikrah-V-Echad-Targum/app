@@ -50,6 +50,7 @@ app.*.map.json
 # Data-generation tooling
 /tool/data/node_modules/
 /tool/data/.cache/
+/tool/fonts/.cache/
 
 # Release signing (never commit)
 /android/key.properties

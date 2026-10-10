@@ -131,11 +131,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             child: AutofillGroup(
               child: PageBody(
                 children: [
-                  DropdownButtonFormField<int>(
-                    initialValue: _forumId,
-                    decoration: InputDecoration(labelText: l.forumLabel),
-                    items: [for (final f in available) DropdownMenuItem(value: f.id, child: Text(f.name(he)))],
-                    onChanged: (v) => setState(() => _forumId = v),
+                  // A select-only DropdownMenu rather than DropdownButtonFormField,
+                  // whose menu always fades in over 300 ms: this one opens at
+                  // once, so Reduce Motion holds here too (§8). It can be
+                  // focused, and Enter or the arrow keys open it.
+                  DropdownMenu<int>(
+                    initialSelection: _forumId,
+                    label: Text(l.forumLabel),
+                    selectOnly: true,
+                    requestFocusOnTap: true,
+                    expandedInsets: EdgeInsets.zero,
+                    dropdownMenuEntries: [
+                      for (final f in available) DropdownMenuEntry(value: f.id, label: f.name(he)),
+                    ],
+                    onSelected: (v) => setState(() => _forumId = v),
                   ),
                   const Gap(16),
                   TextField(

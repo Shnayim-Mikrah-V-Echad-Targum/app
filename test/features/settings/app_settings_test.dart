@@ -291,4 +291,12 @@ void main() {
       expect(c.read(settingsProvider).settingsAt(joined).plan, ReadingPlanType.erevShabbat);
     });
   });
+
+  test('interface fonts keep their persisted names, and the device font round-trips', () {
+    expect(UiFont.values.map((f) => f.name), ['standard', 'atkinson', 'lexend', 'openDyslexic', 'system']);
+    expect(AppSettings.fromJson({'uiFont': 'standard'}).uiFont, UiFont.standard);
+    expect(AppSettings.fromJson({'uiFont': 'lexend'}).uiFont, UiFont.lexend);
+    final device = const AppSettings(uiFont: UiFont.system);
+    expect(AppSettings.fromJson(device.toJson()).uiFont, UiFont.system);
+  });
 }

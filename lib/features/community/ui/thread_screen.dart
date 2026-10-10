@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/motion.dart';
 import '../../../ui/widgets/common.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
@@ -104,6 +105,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
           if (isMod && t != null)
             PopupMenuButton<String>(
               tooltip: l.actionMore,
+              popUpAnimationStyle: Motion.of(context).style,
               onSelected: _moderate,
               itemBuilder: (context) => [
                 PopupMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
@@ -287,7 +289,7 @@ class PostCard extends ConsumerWidget {
           onReply();
         case 'edit':
           final controller = TextEditingController(text: post.body);
-          final ok = await showDialog<bool>(
+          final ok = await showAppDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
               title: Text(l.editPostTitle),
@@ -329,7 +331,8 @@ class PostCard extends ConsumerWidget {
         container: true,
         label: '${index + 1}/$total',
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+          // Room at the end for the menu button's focus ring: the card clips.
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 8, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -347,6 +350,7 @@ class PostCard extends ConsumerWidget {
                   ),
                   PopupMenuButton<String>(
                     tooltip: l.actionMore,
+                    popUpAnimationStyle: Motion.of(context).style,
                     onSelected: onMenu,
                     itemBuilder: (context) => [
                       PopupMenuItem(value: 'reply', child: Text(l.replyAction)),
@@ -414,7 +418,7 @@ class PostCard extends ConsumerWidget {
 }
 
 Future<bool> _confirm(BuildContext context, String message, String action) async =>
-    await showDialog<bool>(
+    await showAppDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         content: Text(message),
@@ -431,7 +435,7 @@ Future<(ReportReason, String?)?> showReportDialog(BuildContext context) {
   final l = context.l10n;
   var reason = ReportReason.spam;
   final details = TextEditingController();
-  return showDialog<(ReportReason, String?)>(
+  return showAppDialog<(ReportReason, String?)>(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(

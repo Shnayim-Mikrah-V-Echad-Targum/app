@@ -157,6 +157,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passRashi => 'Rashi';
 
   @override
+  String get aliyotWord => 'aliyot';
+
+  @override
+  String countOfTotal(int done, int total) {
+    return '$done of $total';
+  }
+
+  @override
   String get passShortMikra => 'Mikra';
 
   @override
@@ -349,6 +357,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String streakBeginsWith(String name) {
+    return 'Begins with $name';
+  }
+
+  @override
+  String get daysBeginToday => 'Begins with today\'s reading';
+
+  @override
   String get graceDays => 'Grace days';
 
   @override
@@ -392,6 +408,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dayNoReading => 'No reading planned';
+
+  @override
+  String get dayToday => 'Today';
+
+  @override
+  String get yomTovShort => 'Yom Tov';
 
   @override
   String dayChipLabel(String day, String status) {
@@ -684,10 +706,40 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String yearBarSemantics(int done, int total) {
+    return 'This year: $done of $total parshiyot complete';
+  }
+
+  @override
+  String yearBarSemanticsCurrent(int done, int total, String name) {
+    return 'This year: $done of $total parshiyot complete; $name in progress';
+  }
+
+  @override
+  String get bookAbbrGenesis => 'Gen';
+
+  @override
+  String get bookAbbrExodus => 'Exo';
+
+  @override
+  String get bookAbbrLeviticus => 'Lev';
+
+  @override
+  String get bookAbbrNumbers => 'Num';
+
+  @override
+  String get bookAbbrDeuteronomy => 'Deu';
+
+  @override
   String get torahMap => 'Torah map';
 
   @override
   String get torahMapHelp => 'Each tile is one parsha of this year\'s cycle.';
+
+  @override
+  String torahMapBook(String book, int done, int total) {
+    return '$book: $done of $total parshiyot';
+  }
 
   @override
   String get recentWeeks => 'Recent weeks';
@@ -1035,6 +1087,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String sliderDecrease(String title) {
+    return '$title: decrease';
+  }
+
+  @override
+  String sliderIncrease(String title) {
+    return '$title: increase';
+  }
+
+  @override
   String get lineSpacing => 'Line spacing';
 
   @override
@@ -1090,6 +1152,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uiFontOpenDyslexic => 'OpenDyslexic';
+
+  @override
+  String get uiFontSystem => 'Device font';
 
   @override
   String get boldText => 'Bold text';

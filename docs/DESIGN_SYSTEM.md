@@ -97,7 +97,8 @@ New and changed files:
 - `lib/ui/widgets/common.dart`:
   - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5;
   - `SectionHeader` is restyled as an eyebrow (§6.4);
-  - `NoticeBanner` per §6.20.
+  - `NoticeBanner` per §6.20;
+  - `EmptyState` per §6.22.
 - `lib/features/reader/aliyah_ribbon.dart`, `pass_track.dart` and `reader_bottom_bar.dart`: extracted from reader_screen.dart.
 - `tool/fonts/build_fonts.sh` (§4.1) and `tool/branding/make_icon.py` (§7.8).
 - `test/ui/palette_contrast_test.dart` (§11).
@@ -325,7 +326,7 @@ Unchanged:
 - **NSH** = `'NotoSansHebrew'`, fallback `['NotoSans', 'NotoSerifHebrew']`.
 - **Accessibility fonts** (Atkinson, Lexend, OpenDyslexic) use fallback `['NotoSansHebrew', 'NotoSerifHebrew']`.
 - Every style sets an explicit `height` and `leadingDistribution: TextLeadingDistribution.even`.
-- Never request a weight that isn't bundled. EBG and FRL: 500, 600, 700. NS and NSH: 400, 500, 700. Never w600 on NS or NSH.
+- Never request a weight that isn't bundled. EBG and FRL: 500, 600, 700. NS and NSH: 400, 500, 700. Never w600 on NS or NSH. Accessibility fonts: 400 and 700, except that in the Hebrew UI their 500 roles keep 500: the Hebrew is drawn by the fallback, Noto Sans Hebrew, in its Medium, and a Latin word falls to the font's 400.
 
 ### 4.3 Text theme: English UI
 
@@ -391,7 +392,7 @@ Rules:
   - longformBody 18/30 w400;
   - ledgerNumeral and ringNumeral w700 with tabular figures;
   - hebrewDisplay is NOT overridden: Hebrew titles stay FRL, because those fonts have no Hebrew.
-- **UiFont.system** changes only the NS/NSH roles.
+- **UiFont.system** changes only the NS/NSH roles, and only their Latin: the family is left to the platform, with fallback `['NotoSansHebrew', 'NotoSerifHebrew']` in both UIs, so Hebrew and nikud still come from the bundled fonts (§13.1). Segoe UI, which has Hebrew of its own, draws the Hebrew on Windows.
 - **High contrast:**
   - EBG roles use w600 (w700 when bold text is on); FRL roles use w700;
   - eyebrow w700;
@@ -485,13 +486,18 @@ Every ButtonStyle:
 
 This fixes D3: the ring paints on the surface, outside the fill (9.72:1 in light).
 
-Chips use `side: WidgetStateBorderSide.resolveWith` → focused gives `BorderSide(color: focus, width: 3, strokeAlign: BorderSide.strokeAlignOutside)`.
+Chips draw every border outside the chip (`strokeAlign: BorderSide.strokeAlignOutside`), so selecting or focusing one never resizes it. Their `shape` is a `WidgetStateOutlinedBorder` that resolves focused to `FocusRingBorder(borderRadius: 8, …)`, which starts its gap past an outside border. The selection border stays visible under focus, and in high contrast the ring is not confused with the 2 px outline. `SeferChoiceChip` also clears the chip's focus tint, which would read as a selection fill.
+
+Icon buttons keep Material's circle; focused, they take a `FocusRingBorder` of radius 24. The slider rings its thumb the same way (`FocusRingSliderOverlay`), and the FAB takes the ring at its own radius, 12.
+
+Controls pick the ring as they build, but Material rebuilds them only when their own states change, and a switch between touch and keyboard is not one of them. `FocusHighlightScope`, in `MaterialApp.builder`, records the highlight mode in the theme, so a control that keeps its focus shows or drops its ring the moment the user switches.
 
 `SeferInkWell` is used for cards, PaperRows, week cells, map tiles and ribbon tabs:
 - an InkWell with `onFocusChange`;
-- when focused and `FocusManager.instance.highlightMode == FocusHighlightMode.traditional`, a foreground `ShapeDecoration(RoundedRectangleBorder(radius, side: BorderSide(color: focus, width: 3, strokeAlign: outside)))`.
+- when focused and `FocusManager.instance.highlightMode == FocusHighlightMode.traditional`, a foreground `ShapeDecoration(RoundedRectangleBorder(radius, side: BorderSide(color: focus, width: 3, strokeAlign: outside)))`;
+- only for its own focus: `onFocusChange` also fires while a control inside it (a PaperRow's trailing menu or text button) has focus, and that control draws its own ring, so the row draws none.
 
-Text fields: focused border 2 px primary (was 3). The ring appears instantly.
+Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7). The ring appears instantly.
 
 ### 6.2 App bar
 
@@ -513,9 +519,11 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 **PaperRow**
 - Min height 56 (one line) or 72 (two lines); padding start 16, end 12, vertical 12.
 - Leading icon 22 in onSurfaceVariant, in a 38 slot (icon then 16 gap).
-- Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max.
+- Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max. Once the system text is enlarged, the subtitle is never cut short (WCAG 1.4.4).
 - Trailing: an optional value in bodyMedium onSurfaceVariant, then `Icons.chevron_right` 20 in outline (mirrors in RTL automatically).
+  - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it. With a subtitle under them, the icon and chevron line up with the title's line too.
 - Tap via SeferInkWell.
+- Semantics: the row is one item, its text and its tap. A trailing control (a menu or text button) keeps an item of its own beside it, so both actions can be reached; a switch or checkbox that the row's tap also toggles merges into the row (`mergeTrailing`).
 
 **GroupHeader**
 - Eyebrow, 28 above and 8 below, start inset 4.
@@ -557,6 +565,7 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 ### 6.7 Inputs
 
 - Outlined, radius 10; enabled 1 px outline (2 px in high contrast); focused 2 px primary; error 2 px error.
+- High contrast: focused (and focused error) borders are 3 px. The enabled border is already 2 px there, and primary is only about 1.5:1 from outline, so the width has to change as well as the colour.
 - Label bodyLarge onSurfaceVariant; helper and counter bodySmall with tabular figures.
 - Code entry (account): six 48×56 boxes, radius 10, titleLarge NS w500 with tabular figures; auto-advance; paste fills all six.
 
@@ -568,27 +577,31 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 - High contrast: icons on both states (keep the check/close thumbIcon, app_theme.dart:258).
 
 **Slider**
-- `year2023: false`; active track primary, inactive surfaceContainerHighest, height 4; thumb primary 20.
+- Active track primary, inactive surfaceContainerHighest, height 4; round thumb primary 20 (`RoundSliderThumbShape(enabledThumbRadius: 10)`). Every shape is named in the theme, so the deprecated `year2023` flag is left unset and neither Material slider generation shows through.
 - `tickMarkShape: SliderTickMarkShape.noTickMark`.
 - Value at the end in labelLarge with tabular figures; −/+ IconButtons 48.
 
 **SegmentedButton**
 - Radius 10, height 48; selected primaryContainer with label w700 and a check icon (keep the M3 check here; it's the non-colour cue); unselected transparent with 1 px outline.
+- Focus: the ring goes around the whole group (Flutter gives each segment a plain shape of its own), so the focused segment is also washed in its ink at 24% and its label is underlined.
 
 ### 6.9 Navigation bar (phone)
 
 - Height 72; background surfaceContainer; 1 px hairline top border.
 - Indicator primaryContainer 64×32 (stadium, the platform idiom).
 - Icons 24, outlined; filled when selected.
-- Labels always shown, labelSmall: selected onSurface w700, unselected onSurfaceVariant w500 (6.51:1).
+- Labels always shown, labelSmall with letter spacing 0, so "Community" fits a 360 dp phone's 72 px slot in bold: selected onSurface w700, unselected onSurfaceVariant w500 (6.51:1).
+- Large text: the labels grow (Material allows up to 1.3×) only while the widest, in bold, still fits its slot on one line, so no word ever breaks; a font too wide even at its normal size shrinks them, to 70% at most. The bar grows to fit them (72 at 1×).
+- Keyboard focus: an onSurface wash at 32% over the indicator (the bar draws no ring). The indicator moves over Material's 500 ms, or at once under Reduce Motion.
 - Icons: Today `today`; Parsha `menu_book`; Progress `donut_large_outlined`/`donut_large` (echoes the rings; replaces the sparkle `insights`); Community `forum`; Settings `settings`.
 
 ### 6.10 Navigation rail (≥600)
 
 - Background surface, with a 1 px hairline end border (replaces surfaceContainer and the VerticalDivider in shell.dart).
-- Leading: the app mark (icon.png at 40×40, ClipRRect radius 10).
+- Leading: the app mark (`AppMark`, 40×40, ClipRRect radius 10). It draws mark_128.png wherever 128 px covers the pixels drawn and icon.png above that: decoding the 1024 px master straight to 40 px breaks up the letters.
 - Extended at ≥1200: the mark plus a 12 gap plus the wordmark "Shnayim Mikra" (EBG 500 20/24) or "שניים מקרא" (FRL 500 20/24) in onSurface. Semantics header. Replaces "SM" / "ש״מ".
-- Indicator primaryContainer radius 12; destination height 56.
+- Indicator primaryContainer radius 12; destination height 56 in the extended rail. The compact rail keeps Material's 64 (the 32 indicator, 4, a 16 px label and 12 below), spacing the framework fixes.
+- Keyboard focus: the bar's onSurface wash at 32% (the rail draws no ring either).
 
 ### 6.11 ParshaRings and RingLegend (progress_widgets.dart)
 
@@ -598,16 +611,17 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 - Arc weights by verse count, as now. Gap 0.042 rad between aliyot; butt caps.
 - Start at −π/2 and sweep CLOCKWISE in both directions. Do not mirror.
 - Colours: ring 0 ringMikra1, ring 1 ringMikra2, ring 2 ringTargum; track ringTrack.
-- Centre: "2/7" in ringNumeral, plus "aliyot" in labelSmall onSurfaceVariant.
+- Centre: "2/7" in ringNumeral, plus "aliyot" in labelSmall onSurfaceVariant, scaled down as needed to fit the square inscribed in the hole (with 5% clearance), so large, bold or accessibility-font text never reaches the Targum ring.
 - Wrap in RepaintBoundary. Existing semantics stay.
 
 **RingLegend** (always beside or under rings of size 88 or more)
 - Three rows, each 24 high: a 9 px dot in the ring colour, a 10 gap, the label in bodyMedium (`passMikra1`, `passMikra2`, `passTargum`/`passRashi`), and the count end-aligned "3 of 7" in bodyMedium onSurfaceVariant with tabular figures.
 - Excluded from semantics: the rings' label already says it.
+- `RingsWithLegend` sets the legend beside the rings whenever it fits there, each count under its name if the two can't share a line (as on a 360 dp phone); otherwise, on a narrower phone or with large text, the rings sit centred above it. Beside the rings on a wide card, the legend grows at most 40 past its natural width, so the counts stay near their names.
 
 ### 6.12 LedgerCard (replaces the two streak cards, today_screen.dart:300-325)
 
-- One card with `IntrinsicHeight(Row([col, VerticalDivider(width: 1, color: hairline), col]))`.
+- One card with two equal columns and a full-height hairline between them. Lay it out as a `Table` with a `verticalInside` hairline border rather than `IntrinsicHeight(Row(...))`, so the labels still line up when a sentence in place of a count wraps.
 - Each column: padding 16; ledgerNumeral (the count), then bodySmall label (`streakParsha`, `streakDays`); on Progress, an extra bodySmall "Longest: …".
 - When the value is 0, the numeral slot shows titleMedium text instead:
   - parsha streak: `streakBeginsWith(name)` = "Begins with Bereshit";
@@ -617,11 +631,13 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 
 ### 6.13 WeekStrip
 
-- Seven equal cells; min 48×68; radius 10; horizontal margin 2.
+- Seven equal cells; min 48×68; radius 10; horizontal margin 2. The 48 is the day's slot, margins included: the day's Semantics node covers the whole slot, and a tap on its margins opens the day too, so the whole slot is the 48 dp target.
 - Weekday label in labelMedium onSurfaceVariant (today: onSurface w700). Icon 22, 8 below the label.
+- Under the icon, 4 below it, the day's planned aliyot as Hebrew ordinals in labelSmall onSurfaceVariant: "א", "ד·ה" for two, "א–ז" for a run. Shabbat shows the plan's Shabbat-morning aliyot, if any; a day before the join date shows none. A Yom Tov that is not Shabbat (Yom Kippur and Rosh Hashana included) shows `yomTovShort` ("Yom Tov" / "יו״ט") instead, so Simchat Torah is not taken for Shabbat. It keeps to one line across the day, untracked, 2 clear of the wash on each side and shrunk to fit if need be, so a Yom Tov week is no taller than any other.
+- Cells in a row are as tall as the tallest (`IntrinsicHeight`).
 - Cell states:
-  - Today: primaryContainer fill at 100% (was 35%) plus a 1.5 px primary border. Icon: a 2 px primary ring with an 8 px centre dot.
-  - Rest (Shabbat or Yom Tov): restWash fill plus candles (§7.6) in `rest`.
+  - Today: primaryContainer fill at 100% (was 35%) plus a 1.5 px primary border, drawn over the cell so its content sits where the other days' does. Icon: a 2 px primary ring with an 8 px centre dot (`TodayMark`).
+  - Rest (Shabbat or Yom Tov): restWash fill plus candles (§7.6) in `rest`. A rest day that is today keeps the wash and takes today's border. The days of Yom Tov are the reader's own custom (`oneDayYomTov`), not the reading schedule's.
   - Kept: a filled 20 px circle in `done` with a 14 px onDone check.
   - Ahead / caught up: the same disc with the existing fast_forward / published_with_changes glyph.
   - Grace: `shield_outlined` in grace.
@@ -629,17 +645,23 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
   - Open (past, unread): `radio_button_unchecked` in onSurfaceVariant.
   - Upcoming: `circle_outlined` in **outline** (was outlineVariant, D16).
   - No reading: `horizontal_rule` in outline.
-- Keep the existing Tooltip and Semantics labels.
+- Fills are `Ink`, so a press shows on them. A glyph that changes cross-fades over `Motion.medium` (§8).
+- `LayoutBuilder`: when a seventh of the width is under 48, or under the widest weekday label at the current text size, the strip takes two rows, Sunday to Wednesday and then Thursday to Shabbat, in a four-column grid.
+- A card around the strip alone uses `WeekStrip.cardPadding` (8), so the days stay in one row on a 412 dp phone (52 each).
+- `WeekStripLegendButton`: an `info_outline` IconButton (tooltip `statusLegend`) for the strip's card or section header. It opens a sheet that shows every glyph beside its label, today and rest days on their fills.
+- Keep the existing Tooltip and Semantics labels. Each day is one node with the ink well's tap and focus.
 
 ### 6.14 Torah map (progress_screen.dart tile())
 
 **Layout**
 - Fixed grid: 3 columns under 600, 4 at 600 and up, 6 at 1200 and up; gap 6.
+- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha'alotcha on a 360 dp phone or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
 - Build each row as `IntrinsicHeight(Row([Expanded(tile) …]))` so tiles grow with text scale. No GridView aspect ratio.
 
 **Tile**
 - minHeight 52; radius 6; padding 8/6.
-- `Row(mainAxisAlignment: center)`: an optional 14 px icon, a 4 gap, then `Flexible(Text(maxLines: 2, textAlign: center))` in labelMedium.
+- `Row(mainAxisAlignment: center)`: an optional 14 px icon, a 4 gap, then `Flexible(Text(maxLines: 2, textAlign: center))` in labelMedium (a Column instead, as above, for a word too long). Once the system text is enlarged, a name is never cut short.
+- The fill is `Ink`; the border is drawn over the tile, so every tile's content sits in the same place.
 
 **States**
 
@@ -647,20 +669,27 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 |---|---|---|---|---|
 | on time | done | none | onDone | check |
 | late / restored | late | none | onLate (5.49) | check_circle_outline |
-| made up | paper | 1.5 px late | onSurface | history |
-| missed | paper | 1 px outline | onSurfaceVariant | remove 14 in neutral (the non-colour cue, D8) |
+| made up | paper | 1.5 px late | onSurface | history in late |
+| missed (and overdue) | paper | 1 px outline (2 in high contrast) | onSurfaceVariant | remove 14 in neutral (the non-colour cue, D8) |
 | current | primaryContainer | 2 px primary | onPrimaryContainer w700 | timelapse |
-| upcoming / untracked | paper | 1 px hairline | onSurfaceVariant | none |
+| upcoming | paper | hairline | onSurfaceVariant | none |
+| untracked | paper | hairline | onSurfaceVariant | pause_circle_outline |
+
+A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled up", "Lech-Lecha: Can still be restored").
 
 **Book header row**
-- Hebrew book name (FRL 600 18), a 8 gap, the Latin name (titleSmall), and "3 of 12" end-aligned in bodySmall with tabular figures.
+- Hebrew book name (FRL 600 18), a 8 gap, the Latin name (titleSmall), and "3 of 12" end-aligned in bodySmall with tabular figures, then an `expand_more` chevron that turns over `Motion.short`. The two names are one paragraph, so with large text the Latin name wraps under the Hebrew one.
 - In the Hebrew UI, the Latin name is dropped.
+- The row (min 48) is a SeferInkWell that folds or opens its book. Only the book with the current portion starts open, so the map is the current book plus four headers. Semantics: a level-3 heading and a button with an expanded state, labelled `torahMapBook` ("Genesis: 3 of 12 parshiyot").
+
+**Help:** the section header's `info_outline` IconButton (tooltip `torahMapHelp`) opens a sheet with `torahMapHelp` and each state's swatch (fill, border and icon) beside its label.
 
 ### 6.15 YearBar
 
 - 54 segments across the content width; segment gap 2; an extra 4 px between books; height 8; radius 1.5.
 - Colours: on time = done; late = late; made up = paper with a 1 px late border; current = primaryContainer with a 1 px primary border; everything else = ringTrack.
-- Below it, book abbreviations in labelSmall onSurfaceVariant at each book's start: "Gen Exo Lev Num Deu" / "בר׳ שמ׳ וי׳ במ׳ דב׳".
+- Below it, book abbreviations in labelSmall onSurfaceVariant at each book's start: "Gen Exo Lev Num Deu" / "בר׳ שמ׳ וי׳ במ׳ דב׳". If very large text would run one into the next book's, all five shrink together to the size the tightest needs.
+- Its states and the Torah map's come from one function (`parshaStandings`), so the two never disagree.
 - One Semantics node: "This year: 0 of 54 parshiyot complete; Bereshit in progress". RepaintBoundary.
 
 ### 6.16 AliyahRibbon (replaces _AliyahSelector, reader_screen.dart:517-549; fixes D5)
@@ -732,6 +761,10 @@ Keep the keyboard shortcuts.
 - Sits above the reader bottom bar.
 
 **Tooltip:** inverseSurface, radius 6, bodySmall in onInverseSurface; waitDuration 400 ms (existing).
+
+**High contrast:** paper and surface are the same colour there, so sheets and dialogs (including the date and time pickers) also take a 2 px outline, and the drag handle, which is also a dismiss button, is drawn in full `outline`.
+
+**Code:** open dialogs with `showAppDialog` and sheets with `showAppSheet` (common.dart; a sheet's heading is `SheetTitle`), and status messages with `showStatus` (feedback.dart). They carry the timing and Reduce Motion; test/ui/motion_usage_test.dart fails on a direct `showDialog`, `showModalBottomSheet`, picker or `showSnackBar`, and on a `DropdownButton`, whose menu always fades in: a picker field is a select-only `DropdownMenu`, which opens at once.
 
 ### 6.20 NoticeBanner (common.dart) and the demo notice
 
@@ -845,8 +878,8 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - Monochrome: the foreground with every shape #FFFFFF.
    - iOS: the master without alpha.
    - Web: Icon-192/512 from the master; maskable 192/512 with the group scaled 0.90 on the full-bleed gradient.
-   - Sizes ≤32 px (favicon.png, Windows .ico entries at 16/24/32): the three rules only, each 62.5% of the canvas wide and 9.4% high, gaps 7.8%, vertically centred, on the gradient with corner radius 18.75%.
-   - The Windows .ico also carries 48, 64 and 256 from the master.
+   - Sizes ≤32 px (favicon.png, and the favicon.ico and Windows .ico entries at 16/20/24/32): the three rules only, each 62.5% of the canvas wide and 9.4% high, gaps 7.8%, vertically centred, on the gradient with corner radius 18.75%.
+   - The Windows .ico also carries 40, 48, 64 and 256, and favicon.ico carries 48: the master's art on the gradient, with the same 18.75% corners (transparent outside them) rather than the master's square. Every entry then has one shape, so the icon doesn't change outline as Windows switches entries between views and DPI settings.
 
    Then run `dart run flutter_launcher_icons`.
 
@@ -865,6 +898,10 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - iOS and macOS: Cupertino.
 - Web, Windows and Linux: fade-through. Incoming page opacity 0→1 over 250 ms (decelerate) with a rise of 8 px; no zoom.
 - Reduce Motion keeps `_NoTransitionsBuilder`.
+- The Android slides mirror in RTL, as Android's own do: in Hebrew the next page arrives from the left (`FadeForwardsDirectionalPageTransitionsBuilder`).
+- An Android back swipe keeps the predictive back gesture (on by default from Android 16 for apps targeting it): the page follows the finger and reveals the one beneath, in the framework's `PredictiveBackPageTransitionsBuilder`. Every other push and pop uses the directional slides.
+
+**Reduce Motion everywhere:** dialogs, sheets, snackbars and every `PopupMenuButton` (`popUpAnimationStyle: Motion.of(context).style`) appear at once, and `ThemeData.splashFactory` is `NoSplash`.
 
 **Reader**
 - Step and verse change: `AnimatedSwitcher`, 180 ms, opacity only, keyed by (chunk, step). No horizontal slides.
@@ -1168,11 +1205,11 @@ The literal "חֲזַק חֲזַק וְנִתְחַזֵּק" is not translated.
    - asserts every pair in §3.5 meets 4.5 (text) or 3.0 (UI) in light, dark and sepia;
    - asserts 7.0 (text) and 4.5 (UI) in both high-contrast themes;
    - asserts that no ColorScheme role equals a `fromSeed` default.
-2. **`test/accessibility/screens_a11y_test.dart`:**
+2. **`test/accessibility/screens_a11y_test.dart`** (and `text_contrast_test.dart` for contrast):
    - run `textContrastGuideline` for /today, the reader, /parsha, /progress, /community and /settings/display in all five themes;
    - add 200%-text-scale overflow tests for the Hebrew locale on /today, /progress and the reader;
    - add a focus-traversal test asserting that a focused FilledButton paints `FocusRingBorder`.
-3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family.
+3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family. Pixel-sampled contrast checks (`textContrastGuideline`) stay on the test font: with real glyphs, anti-aliased edge pixels can outnumber the text colour (test/accessibility/text_contrast_test.dart).
 4. **Goldens** (`matchesGoldenFile`): Today, Reader guided, Parsha, Progress and Community × 5 themes × {en, he}. Plus the mixed headings "Revi'i · רביעי" and "בְּרֵאשִׁית" in titleLarge and hebrewDisplay (catches fallback tofu).
 5. **Update tests that depend on removed visuals:**
    - reader_widget_test.dart:39 expects 'Targum Onkelos' (the removed LayerLabel). Change it to expect the PassTrack label '3 · Targum'.
@@ -1207,7 +1244,7 @@ The literal "חֲזַק חֲזַק וְנִתְחַזֵּק" is not translated.
 1. **Cross-script fallback.** A single TextStyle relies on `fontFamilyFallback` for mixed Latin and Hebrew, and for nikud on fallback letters. The fallback lists in §4.2 are mandatory; goldens (§11.4) guard them on CanvasKit, Android, iOS and Windows.
 2. **Variable fonts.** Never drive the wght axis; ship the static instances. A missing weight silently snaps to the nearest one, which is the current w600 → Bold bug.
 3. **EB Garamond x-height (0.40 em).** The floors in §4.5 are mandatory. Test the ribbon and two-line map tiles at 200% text scale.
-4. **Bundle size and web start-up.** About 571 KB is loaded eagerly; Rashi is lazy. Subset exactly as in §4.1. Add `<link rel="preload" as="font" crossorigin>` in web/index.html for EBGaramond-Medium and FrankRuhlLibre-Medium.
+4. **Bundle size and web start-up.** About 571 KB is loaded eagerly; Rashi is lazy. Subset exactly as in §4.1. Add `<link rel="preload" as="fetch" crossorigin>` in web/index.html for EBGaramond-Medium and FrankRuhlLibre-Medium. The engine reads fonts with `fetch()`, so `as="font"` would not match and the files would download twice.
 5. **User-chosen fonts must win.** Every serif role maps to Atkinson, Lexend or OpenDyslexic when one is selected (§4.5).
 6. **Departing from M3 defaults.** Every ColorScheme role is explicit (§3.2) so stock widgets don't pull seeded lavender. Button `animationDuration` is zero for the focus ring.
 7. **High-contrast dark primary.** It moves from yellow to light techelet (13.24:1, AAA) to keep one meaning per colour across themes. Gold-yellow #FFD970 remains for the rubric. Collect feedback from low-vision testers.

@@ -7,27 +7,34 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Shnayim Mikra v'Echad Targum: read the weekly parsha twice in Hebrew and once in Targum, with daily and weekly streaks, community forums and extensive accessibility options.">
-  <meta name="theme-color" content="#1E4B8F">
+  <meta name="theme-color" content="#1D3F75">
 
-  <!-- iOS meta tags & icons -->
+  <!-- iOS meta tags -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Shnayim Mikra">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <!-- Icons: written by tool/branding/make_icon.py --post -->
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
   <title>Shnayim Mikra · שניים מקרא</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Start downloading the two display fonts while the engine loads. The
+       engine reads font assets with fetch(), so as="fetch" (not "font") is
+       what lets it reuse these responses instead of downloading them twice. -->
+  <link rel="preload" href="assets/assets/fonts/EBGaramond-Medium.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="assets/assets/fonts/FrankRuhlLibre-Medium.ttf" as="fetch" crossorigin>
   <style>
-    html, body { margin: 0; background: #FBF9F5; }
-    @media (prefers-color-scheme: dark) { html, body { background: #111318; } }
+    html, body { margin: 0; background: #FAF7F0; }
+    @media (prefers-color-scheme: dark) { html, body { background: #14120F; } }
     #loading {
       position: fixed; inset: 0; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 12px;
-      font: 18px/1.5 system-ui, sans-serif; color: #1E4B8F;
+      font: 18px/1.5 system-ui, sans-serif; color: #1D3F75;
     }
-    @media (prefers-color-scheme: dark) { #loading { color: #AFC6FF; } }
+    @media (prefers-color-scheme: dark) { #loading { color: #AFC6EE; } }
     #loading .he { font-size: 32px; }
   </style>
 </head>

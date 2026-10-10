@@ -8,6 +8,7 @@ import '../../core/calendar/local_date.dart';
 import '../../core/calendar/parsha_schedule.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
@@ -82,6 +83,7 @@ class TodayScreen extends ConsumerWidget {
           _TodayCard(ctx: ctx, settings: settings),
           const Gap(12),
           InfoCard(
+            padding: WeekStrip.cardPadding,
             child: WeekStrip(
               plan: ctx.plan,
               today: today,
@@ -176,45 +178,34 @@ class _ParshaCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Semantics(
-                      header: true,
-                      headingLevel: 1,
-                      child: Text(
-                        l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
-                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    Text(
-                      names.portionAlt(ctx.portion, ashkenazi: settings.ashkenaziNames),
-                      style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                    const Gap(8),
-                    Text(readOn, style: theme.textTheme.bodyMedium),
-                    if (daysLeft >= 0 && !ctx.progress.isComplete)
-                      Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
-                  ],
+              Semantics(
+                header: true,
+                headingLevel: 1,
+                child: Text(
+                  l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
+                  style: theme.textTheme.headlineSmall,
                 ),
               ),
-              const Gap(12),
-              ParshaRings(
-                progress: ctx.progress,
-                aliyahWeights: weights,
-                size: 96,
-                secondLabel: settings.usesRashi && !settings.usesOnkelos ? l.passRashi : null,
-                center: Text(
-                  '${ctx.progress.completedAliyot}/7',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
+              Text(
+                names.portionAlt(ctx.portion, ashkenazi: settings.ashkenaziNames),
+                style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
+              const Gap(8),
+              Text(readOn, style: theme.textTheme.bodyMedium),
+              if (daysLeft >= 0 && !ctx.progress.isComplete)
+                Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
             ],
           ),
-          const Gap(16),
+          const Gap(20),
+          RingsWithLegend(
+            progress: ctx.progress,
+            aliyahWeights: weights,
+            thirdLabel: settings.usesRashi && !settings.usesOnkelos ? l.passRashi : null,
+          ),
+          const Gap(20),
           if (ctx.progress.isComplete)
             Row(
               children: [
@@ -289,6 +280,7 @@ class _TodayCard extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 FilledButton.tonalIcon(
+                  style: AppButtons.tonal(context),
                   icon: const Icon(Icons.play_arrow),
                   label: Text(l.readTodaysAliyah),
                   onPressed: () => context.push('/read/${ctx.id}/$first'),
