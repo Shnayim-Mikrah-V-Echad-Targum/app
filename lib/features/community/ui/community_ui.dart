@@ -12,6 +12,7 @@ import '../../../data/models/parsha.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/layout.dart';
 import '../../../ui/widgets/common.dart';
 import '../../about/legal_screen.dart';
 import '../../parsha/week_context.dart';
@@ -297,23 +298,25 @@ String emptyThreadMessage(BuildContext context, WidgetRef ref, ThreadSummary t) 
 String _portionName(BuildContext context, WidgetRef ref, PortionInfo portion) =>
     Names(context).portion(portion, ashkenazi: ref.watch(settingsProvider.select((s) => s.ashkenaziNames)));
 
+/// Says that the community is the demo, on the device alone: a notice at
+/// the top of the page, within its gutters and column (§6.20).
 class DemoBanner extends ConsumerWidget {
   const DemoBanner({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(forumRepositoryProvider).isDemo) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      color: scheme.secondaryContainer,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Icon(Icons.science_outlined, color: scheme.onSecondaryContainer),
-          const SizedBox(width: 12),
-          Expanded(child: Text(context.l10n.demoModeBanner, style: TextStyle(color: scheme.onSecondaryContainer))),
-        ],
+    final g = Gutter.of(context);
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: ContentWidth.list),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(g, Space.sm, g, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: NoticeBanner(icon: Icons.info_outline, text: context.l10n.demoModeBanner),
+          ),
+        ),
       ),
     );
   }

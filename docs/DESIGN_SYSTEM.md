@@ -548,8 +548,10 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 ### 6.4 SectionHeader (common.dart)
 
-- Restyle as an Eyebrow in `secondary` (was titleMedium in blue w600).
+- Restyle as an Eyebrow in `secondary` (was titleMedium in blue w600), 28 above and 8 below.
 - Keep the `header`/`headingLevel` semantics and the trailing slot.
+- A header with digits in it ("2 of 7 aliyot") is `SectionHeader.plain`, titleSmall in onSurfaceVariant: eyebrows never hold digits (§4.5).
+- An eyebrow set in capitals (an accessibility font, §4.5) is read as written.
 
 ### 6.5 Buttons (all radius 10; never a stadium)
 

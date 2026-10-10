@@ -250,31 +250,39 @@ class _DocumentTitleState extends State<DocumentTitle> {
 }
 
 /// A heading for a group of content, exposed to assistive technology as a
-/// heading so screen reader users can jump between sections.
+/// heading so screen reader users can jump between sections: an [Eyebrow] in
+/// gold ink (§6.4), with an optional [trailing] control, such as an info
+/// button, at the end.
 class SectionHeader extends StatelessWidget {
-  const SectionHeader(this.text, {super.key, this.level = 2, this.trailing, this.padding});
+  const SectionHeader(this.text, {super.key, this.level = 2, this.trailing, this.padding}) : _plain = false;
+
+  /// A heading in plain type, titleSmall in onSurfaceVariant, for a heading
+  /// with digits in it ("2 of 7 aliyot"): an eyebrow's old-style small-cap
+  /// figures make "1" read as "I".
+  const SectionHeader.plain(this.text, {super.key, this.level = 2, this.trailing, this.padding}) : _plain = true;
 
   final String text;
   final int level;
   final Widget? trailing;
+
+  /// 28 above, a section's gap, and 8 below, unless given.
   final EdgeInsetsGeometry? padding;
+  final bool _plain;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: padding ?? const EdgeInsetsDirectional.only(top: 24, bottom: 8),
+      padding: padding ?? const EdgeInsetsDirectional.only(top: Rhythm.sectionGap, bottom: Space.sm),
       child: Row(
         children: [
           Expanded(
             child: Semantics(
               headingLevel: level,
               header: true,
-              child: Text(
-                text,
-                style: (level <= 2 ? theme.textTheme.titleMedium : theme.textTheme.titleSmall)
-                    ?.copyWith(color: theme.colorScheme.primary),
-              ),
+              child: _plain
+                  ? Text(text, style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant))
+                  : Eyebrow(text),
             ),
           ),
           ?trailing,
@@ -324,7 +332,9 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-/// A banner for important, non-blocking information.
+/// A banner for important, non-blocking information (§6.20): bodyMedium on
+/// a secondaryContainer wash, radius 12, with no border but high contrast's
+/// 2 px outline. Place it within the page's gutters, never full-bleed.
 class NoticeBanner extends StatelessWidget {
   const NoticeBanner({super.key, required this.icon, required this.text, this.action, this.actionBelow = false});
 
@@ -367,8 +377,9 @@ class NoticeBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final message = Text(text, style: TextStyle(color: scheme.onSecondaryContainer));
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final message = Text(text, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSecondaryContainer));
     final action = _legible(context);
     final below = actionBelow ? action : null;
     return Card(

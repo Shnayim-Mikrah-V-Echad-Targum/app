@@ -26,7 +26,9 @@ class Eyebrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = SeferType.of(context);
-    return Text(type.eyebrowText(text), style: type.eyebrow, textAlign: textAlign);
+    final shown = type.eyebrowText(text);
+    // Capitals are for the eye: a screen reader may spell them out.
+    return Text(shown, style: type.eyebrow, textAlign: textAlign, semanticsLabel: shown == text ? null : text);
   }
 }
 

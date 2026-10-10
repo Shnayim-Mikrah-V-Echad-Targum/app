@@ -124,7 +124,8 @@ class WeekOverview extends ConsumerWidget {
             const Gap(12),
             NoticeBanner(icon: Icons.visibility_outlined, text: l.previewNotOpen(names.dateLong(ctx.week.start))),
           ],
-          SectionHeader(l.aliyotProgress(ctx.progress.completedAliyot, kAliyot)),
+          // Digits, which an eyebrow never holds.
+          SectionHeader.plain(l.aliyotProgress(ctx.progress.completedAliyot, kAliyot)),
           for (var a = 0; a < kAliyot; a++) _AliyahTile(ctx: ctx, aliyah: a),
           if (settings.haftarahEnabled || ctx.haftarahRequired) ...[
             const Gap(8),
