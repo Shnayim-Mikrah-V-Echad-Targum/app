@@ -258,6 +258,7 @@ Notes:
   - `adaptive_icon_background: "#1D3F75"`;
   - web `background_color: "#FAF7F0"`, `theme_color: "#1D3F75"`;
   - `remove_alpha_ios: true`.
+- Android reminders: the status-bar glyph (§7.8) tinted primary #1D3F75 (`Palettes.light.primary`).
 
 ## 4. Typography
 

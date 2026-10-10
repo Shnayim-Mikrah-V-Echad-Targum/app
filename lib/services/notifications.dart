@@ -14,6 +14,7 @@ import '../core/text/hebrew_text.dart';
 import '../data/parsha_repository.dart';
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
+import '../ui/theme/palette.dart';
 import 'reminder_planner.dart';
 
 /// What a reminder says.
@@ -179,7 +180,8 @@ class NotificationService {
               importance: Importance.defaultImportance,
               category: AndroidNotificationCategory.reminder,
               icon: _statusBarIcon,
-              color: const Color(0xFF1D3F75),
+              // Techelet, the brand colour (DESIGN_SYSTEM.md §3.6).
+              color: Palettes.light.primary,
               // Shows the whole message when expanded, not one truncated line.
               styleInformation: BigTextStyleInformation(body),
             ),
