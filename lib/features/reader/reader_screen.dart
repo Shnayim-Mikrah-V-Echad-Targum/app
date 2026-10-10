@@ -632,19 +632,28 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     return AppBar(
       leading: leading,
       toolbarHeight: height,
-      titleSpacing: hasLeading ? max(NavigationToolbar.kMiddleSpacing, start - kToolbarHeight) : start,
+      // The inset goes before the title alone (as PageScaffold's does): as
+      // titleSpacing it would be kept after it too, and a wide window would
+      // leave the title no room beside the actions.
+      titleSpacing: 0,
       actionsPadding: EdgeInsetsDirectional.only(end: start - _columnPadding),
       notificationPredicate: scrolledUnder ? defaultScrollNotificationPredicate : (_) => false,
-      title: Semantics(
-        label: '$parsha · $aliyah',
-        child: ExcludeSemantics(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Eyebrow(parsha),
-              Text(context.isHebrewUi ? aliyah : '$aliyah · ${Names.aliyahHebrew(_aliyah)}'),
-            ],
+      title: Padding(
+        padding: EdgeInsetsDirectional.only(
+          start: hasLeading ? max(NavigationToolbar.kMiddleSpacing, start - kToolbarHeight) : start,
+          end: NavigationToolbar.kMiddleSpacing,
+        ),
+        // The app bar makes it a heading; this gives its level, as every
+        // page's title has.
+        child: Semantics(
+          headingLevel: 1,
+          label: '$parsha · $aliyah',
+          child: ExcludeSemantics(
+            child: _ReaderTitle(
+              parsha: parsha,
+              aliyah: aliyah,
+              hebrew: context.isHebrewUi ? null : Names.aliyahHebrew(_aliyah),
+            ),
           ),
         ),
       ),
@@ -978,6 +987,50 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       },
     );
   }
+}
+
+/// The reader's title in its app bar: the parsha as an eyebrow over the
+/// aliyah, and in the English UI the aliyah's Hebrew name after it ("Revi'i ·
+/// רביעי"). Where the line has no room for both (a narrow phone, a wider
+/// interface font), the Hebrew goes; and a name that still has no room, as
+/// a long double parsha's eyebrow may not, is set a little smaller rather
+/// than cut short.
+class _ReaderTitle extends StatelessWidget {
+  const _ReaderTitle({required this.parsha, required this.aliyah, this.hebrew});
+
+  final String parsha;
+  final String aliyah;
+
+  /// The aliyah's Hebrew name, shown after [aliyah] where it fits.
+  final String? hebrew;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final hebrew = this.hebrew;
+          var line = aliyah;
+          if (hebrew != null) {
+            final both = '$aliyah · $hebrew';
+            // As the app bar sets it: its style, and its text size, which it
+            // keeps from growing past 1.34 times.
+            final painter = TextPainter(
+              text: TextSpan(text: both, style: DefaultTextStyle.of(context).style),
+              textDirection: Directionality.of(context),
+              textScaler: MediaQuery.textScalerOf(context),
+              maxLines: 1,
+            )..layout();
+            if (painter.width <= constraints.maxWidth) line = both;
+            painter.dispose();
+          }
+          Widget fitted(Widget child) =>
+              FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: child);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [fitted(Eyebrow(parsha)), fitted(Text(line))],
+          );
+        },
+      );
 }
 
 /// A key as the shortcuts dialog names it, and draws it when [icon] is set.

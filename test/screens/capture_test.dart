@@ -84,7 +84,10 @@ const _screens = {
   'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
   // Revi'i open after Rishon and Sheni, with Shlishi under way.
-  'reader_chips': '/read/5787:1/3',
+  'reader_ribbon': '/read/5787:1/3',
+  // Chamishi of Acharei Mot-Kedoshim (5786), the longest title the reader's
+  // app bar sets.
+  'reader_long': '/read/5786:29-30/4',
   // Shlishi of Matot-Masei (Numbers 32:1–19) read by section: the Targum
   // step of 32:1–4, with the third reading of 32:3.
   'reader_third': '/read/5787:42-43/2',
@@ -913,10 +916,13 @@ final _modes = [
   _Mode('bighe', const Size(412, 2600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 2),
   // A 360 dp phone, tall, for the screens in [_narrowScreens].
   _Mode('narrow', const Size(360, 2600), (s) => s),
+  // A 1920 dp desktop, where a column's inset is widest.
+  _Mode('wide', const Size(1920, 1080), (s) => s),
 ];
 
 const _desktopScreens = {
   'today',
+  'parsha',
   'today_divergence',
   'today_haftarah_left',
   'today_yomtov_oneday',
@@ -972,10 +978,10 @@ const _desktopScreens = {
   'reader_verse',
 };
 // The wide modes render only the screens above.
-const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
+const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc', 'wide'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 'progress_years', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'progress', 'progress_map', 'progress_years', 'kit_week', 'reader'};
+const _narrowScreens = {'today', 'progress', 'progress_map', 'progress_years', 'kit_week', 'reader', 'reader_long'};
 const _bigTextScreens = {
   'today',
   'community',

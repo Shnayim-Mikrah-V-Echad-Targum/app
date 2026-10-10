@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/features/parsha/week_context.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/theme/layout.dart';
@@ -26,6 +29,9 @@ Rect _firstTileIcon(WidgetTester tester) =>
     tester.getRect(find.descendant(of: find.byType(ListTile).first, matching: find.byType(Icon)).first);
 
 void main() {
+  // Real glyphs, so that a title is as wide as it is on a screen.
+  setUpAll(loadBundledFonts);
+
   group('layout tokens', () {
     test('the gutters follow the window: 20, 24 from 600 and 32 from 1200', () {
       expect(Gutter.forWidth(360), 20);
@@ -127,6 +133,40 @@ void main() {
         expect(tester.getTopLeft(_title(_en.settingsDisplay)).dx, pane + 56 + gutter);
       });
     }
+
+    group('on a 1920 dp desktop', () {
+      // Within a tab, the extended rail (256 and its hairline) is beside a
+      // pane of 1663, whose 720 column's content starts 503.5 in; a page over
+      // the tabs has the whole window. The inset goes before the title alone:
+      // kept after it too, it would leave a title beside actions a few dozen
+      // pixels.
+      const size = Size(1920, 1080);
+      const inTab = 257 + (1663 - 720) / 2 + 32;
+      const overTabs = (1920 - 720) / 2 + 32;
+      // The week of Vayakhel-Pekudei 5786, read together: the Parsha tab's
+      // longest title, beside its three actions.
+      final combined = findWeekById(const ParshaSchedule(israel: false), '5786:22-23')!.occasion.addDays(-2);
+      final inCombinedWeek = DateTime(combined.year, combined.month, combined.day, 10);
+
+      for (final (route, title, start, now) in [
+        ('/parsha', 'Parshat Vayakhel-Pekudei', inTab, inCombinedWeek),
+        ('/week/5786:22-23', 'Parshat Vayakhel-Pekudei', overTabs, null),
+        ('/community', 'Community', inTab, null),
+        ('/community/forum/chavruta', 'Chavruta & encouragement', inTab, null),
+        // A thread, named for its forum.
+        ('/community/thread/41', 'Chavruta & encouragement', inTab, null),
+      ]) {
+        testWidgets('the title of $route starts on the content edge and runs whole', (tester) async {
+          await openRoute(tester, route, size: size, now: now);
+          final text = _title(title);
+          expect(text, findsOneWidget);
+          expect(tester.getTopLeft(text).dx, start);
+          final paragraph = tester.renderObject<RenderParagraph>(text);
+          expect(paragraph.didExceedMaxLines, isFalse, reason: 'never cut short');
+          expect(paragraph.size.width, greaterThanOrEqualTo(paragraph.getMaxIntrinsicWidth(double.infinity) - 0.5));
+        });
+      }
+    });
 
     testWidgets('the title is the heading of the page, of level 1', (tester) async {
       final handle = tester.ensureSemantics();

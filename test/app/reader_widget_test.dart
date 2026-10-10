@@ -39,6 +39,13 @@ void main() {
   // step.
   final forward = find.byWidgetPredicate((w) => w is Text && (w.data == 'Next' || w.data == 'Finish'));
 
+  // The app bar's title, naming [aliyah]: in the English UI followed by its
+  // Hebrew name where that fits.
+  Finder titled(String aliyah) => find.descendant(
+        of: find.byType(AppBar),
+        matching: find.textContaining(RegExp('^${RegExp.escape(aliyah)}(\$| · )')),
+      );
+
   // An aliyah's tab in the ribbon, by its name.
   Finder tab(String name) =>
       find.ancestor(of: find.descendant(of: find.byType(AliyahRibbon), matching: find.text(name)), matching: find.byType(SeferInkWell));
@@ -324,7 +331,7 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Done'), findsOneWidget);
     await tester.tap(find.widgetWithText(TextButton, 'Keep going: Shlishi'));
     await tester.pumpAndSettle();
-    expect(find.text('Shlishi · שלישי'), findsOneWidget);
+    expect(titled('Shlishi'), findsOneWidget);
     expect(find.text('Read the Hebrew'), findsOneWidget);
 
     // Once every aliyah is read, there is nothing to continue with.
@@ -741,7 +748,7 @@ void main() {
         // So is the step another aliyah opens on, chosen from its tab.
         await tester.tap(tab('Sheni'));
         await tester.pumpAndSettle();
-        expect(find.text('Sheni · שני'), findsOneWidget);
+        expect(titled('Sheni'), findsOneWidget);
         expect([for (final a in tester.takeAnnouncements()) a.message], [
           if (announces) matches(RegExp(r'^Read the Hebrew\. Reading 1 of 3\. Verse 1 of \d+\. Genesis \d+:\d+$')),
         ]);
@@ -910,7 +917,7 @@ void main() {
       return c;
     }
 
-    // The text's own scrollable: the aliyah chips scroll across.
+    // The text's own scrollable: the aliyah ribbon may scroll across.
     ScrollPosition text(WidgetTester tester) => tester
         .stateList<ScrollableState>(find.byType(Scrollable))
         .firstWhere((s) => s.position.axis == Axis.vertical)
@@ -1019,7 +1026,7 @@ void main() {
         // Continued from the keyboard, the next aliyah opens with the focus
         // on Next.
         await press(tester, LogicalKeyboardKey.enter);
-        expect(find.text('Sheni · שני'), findsOneWidget);
+        expect(titled('Sheni'), findsOneWidget);
         expect(focused(tester, 'Next'), isTrue);
         handle.dispose();
       });
@@ -1045,7 +1052,7 @@ void main() {
       await tester.pump();
       await press(tester, LogicalKeyboardKey.enter);
       expect(find.byType(AlertDialog), findsNothing);
-      expect(find.text('Rishon · ראשון'), findsOneWidget);
+      expect(titled('Rishon'), findsOneWidget);
       expect(focused(tester, 'Next aliyah · Sheni'), isTrue, reason: "the panel's first button takes the focus back");
     });
 
@@ -1349,28 +1356,8 @@ void main() {
       });
     }
 
-    for (final hebrew in [false, true]) {
-      testWidgets('the app bar sets the parsha over the aliyah${hebrew ? ', in Hebrew alone' : ''}', (tester) async {
-        final handle = tester.ensureSemantics();
-        await open(
-          tester,
-          '/read/5787:2/3',
-          settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.english),
-        );
-        final bar = find.byType(AppBar);
-        final parsha = find.descendant(of: bar, matching: find.text(hebrew ? 'נח' : 'Noach'));
-        final aliyah = find.descendant(of: bar, matching: find.text(hebrew ? 'רביעי' : "Revi'i · רביעי"));
-        expect(find.descendant(of: bar, matching: find.byType(Eyebrow)), findsOneWidget);
-        expect(tester.getBottomLeft(parsha).dy, lessThanOrEqualTo(tester.getTopLeft(aliyah).dy));
-        expect(tester.getSize(bar).height, 64);
-        // Heard as the page names itself.
-        expect(
-          tester.getSemantics(aliyah),
-          isSemantics(label: hebrew ? 'נח · רביעי' : "Noach · Revi'i", isHeader: true),
-        );
-        handle.dispose();
-      });
-    }
+    // The app bar's title: test/features/reader/reader_title_test.dart, in
+    // the bundled fonts, whose metrics decide what fits beside the actions.
 
     testWidgets('the first verse begins in the top quarter of a phone', (tester) async {
       await open(tester, '/read/5787:2/0');

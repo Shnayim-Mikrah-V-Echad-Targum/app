@@ -36,20 +36,21 @@ class Names {
   AppLocalizations get _l => context.l10n;
   bool get _he => context.isHebrewUi;
 
-  String aliyah(int index) => switch (index) {
-        0 => _l.aliyah1,
-        1 => _l.aliyah2,
-        2 => _l.aliyah3,
-        3 => _l.aliyah4,
-        4 => _l.aliyah5,
-        5 => _l.aliyah6,
-        _ => _l.aliyah7,
+  String aliyah(int index) => _aliyahIn(_l, index);
+
+  /// The aliyah's own Hebrew name, the same in either UI, as the Hebrew UI
+  /// names it: "רביעי".
+  static String aliyahHebrew(int index) => _aliyahIn(lookupAppLocalizations(const Locale('he')), index);
+
+  static String _aliyahIn(AppLocalizations l, int index) => switch (index) {
+        0 => l.aliyah1,
+        1 => l.aliyah2,
+        2 => l.aliyah3,
+        3 => l.aliyah4,
+        4 => l.aliyah5,
+        5 => l.aliyah6,
+        _ => l.aliyah7,
       };
-
-  /// The aliyah's own Hebrew name, the same in either UI: "רביעי".
-  static String aliyahHebrew(int index) => _aliyotHebrew[index.clamp(0, _aliyotHebrew.length - 1)];
-
-  static const _aliyotHebrew = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שביעי'];
 
   /// "Revi'i" or "Chamishi and Shishi".
   String aliyot(List<int> indices) {
