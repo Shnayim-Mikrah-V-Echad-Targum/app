@@ -10,6 +10,7 @@ import '../services/app_shortcuts.dart';
 import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
 import '../ui/theme/app_theme.dart';
+import '../ui/widgets/fonts_change_scope.dart';
 import 'pending_saves.dart';
 import 'providers.dart';
 import 'router.dart';
@@ -26,10 +27,20 @@ class ShnayimMikraApp extends ConsumerStatefulWidget {
 class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsBindingObserver {
   PendingSaves? _pendingSaves;
 
+  // The interface font the theme is built in: the one chosen, once it has
+  // loaded, and until then the one shown before it. Text measured as it is
+  // built (the navigation bar's labels, say) is then never measured in a
+  // stand-in font, and nothing flashes in one.
+  UiFont _uiFont = UiFont.standard;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // main() loaded the opt-in fonts the settings choose, or gave up waiting
+    // for them: this tries again for one that failed, and shows it once it
+    // has loaded.
+    _loadFonts();
     // Shortcuts on the app's icon open once Today is up, the one that
     // launched the app first, so each has somewhere to go back to.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -53,6 +64,21 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     WidgetsBinding.instance.removeObserver(this);
     _pendingSaves?.dispose();
     super.dispose();
+  }
+
+  // A font that couldn't load (a network blip on the web) is tried again.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadFonts();
+  }
+
+  /// Loads the opt-in fonts the settings choose, if they haven't loaded, and
+  /// builds the theme in the interface font once it has.
+  void _loadFonts() {
+    final settings = ref.read(settingsProvider);
+    OptionalFonts.ensureAll([settings.uiFont.family, settings.scriptureFont.family]).then((_) {
+      if (mounted && OptionalFonts.isLoaded(ref.read(settingsProvider).uiFont.family)) setState(() {});
+    });
   }
 
   // The text theme follows the platform's language when the app does, and
@@ -108,10 +134,9 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
       final route = next.value;
       if (route != null) router.go(route);
     });
-    // Opt-in fonts load when first chosen; main() loaded the stored ones.
-    ref.listen(settingsProvider.select((s) => (s.uiFont.family, s.scriptureFont.family)), (_, fonts) {
-      OptionalFonts.ensureAll([fonts.$1, fonts.$2]);
-    });
+    // Opt-in fonts load when first chosen (and at start, in initState).
+    ref.listen(settingsProvider.select((s) => (s.uiFont.family, s.scriptureFont.family)), (_, _) => _loadFonts());
+    if (OptionalFonts.isLoaded(settings.uiFont.family)) _uiFont = settings.uiFont;
 
     final systemHighContrast = MediaQuery.highContrastOf(context);
     final reduceMotion = settings.reduceMotion || MediaQuery.disableAnimationsOf(context);
@@ -122,7 +147,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     // picks among the light, dark and high-contrast themes built below.
     ThemeData themeFor(AppThemeMode mode) => AppTheme.build(
           mode: mode,
-          uiFont: settings.uiFont,
+          uiFont: _uiFont,
           hebrewUi: hebrewUi,
           reduceMotion: reduceMotion,
         );
@@ -184,7 +209,9 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
             disableAnimations: reduceMotion,
             highContrast: systemHighContrast || AppTheme.isHighContrast(settings.theme),
           ),
-          child: SystemBars(child: WindowTitleBar(child: FocusHighlightScope(child: child!))),
+          child: SystemBars(
+            child: WindowTitleBar(child: FontsChangeScope(child: FocusHighlightScope(child: child!))),
+          ),
         );
       },
     );

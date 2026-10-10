@@ -8,6 +8,7 @@ import '../features/search/go_to_verse_sheet.dart';
 import '../ui/l10n.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/app_mark.dart';
+import '../ui/widgets/fonts_change_scope.dart';
 import 'system_bars.dart';
 
 /// Breakpoints follow Material 3 window size classes.
@@ -165,6 +166,8 @@ class _NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Measured again when a font arrives.
+    FontsChangeScope.watch(context);
     final mq = MediaQuery.of(context);
     // Selected labels are bold, so every label is measured that way.
     final style = NavigationBarTheme.of(context).labelTextStyle!.resolve({WidgetState.selected})!;

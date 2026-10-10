@@ -302,7 +302,7 @@ I verified that the small-caps lookups survive subsetting (smcp: 209 mappings, c
 Bundle impact:
 - About 571 KB is loaded eagerly: EB Garamond 4 files at about 417 KB, plus Frank Ruhl Libre 3 files at about 154 KB.
 - Noto Rashi Hebrew is NOT declared in pubspec `fonts:`. It is a plain asset, loaded on first use with `FontLoader('NotoRashiHebrew')..addFont(rootBundle.load('assets/fonts/rashi/NotoRashiHebrew-Regular.ttf'))`, so web does not download it at startup.
-- The opt-in fonts (Taamey Frank CLM, Ezra SIL, Atkinson Hyperlegible Next, Lexend and OpenDyslexic, about 874 KB) are plain assets in `assets/fonts/optional/` too, registered by `OptionalFonts` (lib/services/optional_fonts.dart): the chosen ones before the first frame, and any other when it is chosen.
+- The opt-in fonts (Taamey Frank CLM, Ezra SIL, Atkinson Hyperlegible Next, Lexend and OpenDyslexic, about 874 KB) are plain assets in `assets/fonts/optional/` too, registered by `OptionalFonts` (lib/services/optional_fonts.dart): the chosen ones before the first frame, and any other when it is chosen (each family's files requested at once, and one that failed tried again as the app resumes). The theme switches to a chosen interface font only once it has loaded, so nothing is drawn or measured in a stand-in; and what measures text while building (the navigation bar's labels, the week strip and legend, the Torah map) depends on `FontsChangeScope`, so it measures again when a font arrives.
 - While doing this, re-instance NotoSansHebrew-Regular/Medium/Bold with `--update-name-table` (their name table still says "Thin").
 
 pubspec families:

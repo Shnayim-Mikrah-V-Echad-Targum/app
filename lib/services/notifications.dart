@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding, Priority;
 import 'package:flutter/widgets.dart' show WidgetsBinding;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart' hide Priority;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -18,13 +19,20 @@ import 'reminder_planner.dart';
 /// Local notifications on Android, iOS, macOS and Windows. Scheduled
 /// notifications aren't available in browsers, so the web build has none.
 class NotificationService {
-  NotificationService._(this._plugin, {required this.supported, required this._timeZones});
+  NotificationService._(this._plugin, {required this.supported, Future<void> Function()? loadTimeZones})
+      : _loadTimeZones = loadTimeZones ?? _loadTimeZoneDatabase;
 
   /// For tests and unsupported platforms.
   NotificationService.disabled()
       : _plugin = null,
         supported = false,
-        _timeZones = Future.value();
+        _loadTimeZones = _loadTimeZoneDatabase;
+
+  /// A service that schedules through [plugin], with [loadTimeZones] in place
+  /// of loading the time-zone database.
+  @visibleForTesting
+  NotificationService.forTesting(FlutterLocalNotificationsPlugin plugin, {required Future<void> Function() loadTimeZones})
+      : this._(plugin, supported: true, loadTimeZones: loadTimeZones);
 
   static Future<NotificationService> create() async {
     final supported = !kIsWeb &&
@@ -36,7 +44,7 @@ class NotificationService {
 
     try {
       final plugin = FlutterLocalNotificationsPlugin();
-      final service = NotificationService._(plugin, supported: true, timeZones: _loadTimeZones());
+      final service = NotificationService._(plugin, supported: true);
       await plugin.initialize(
         settings: const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -69,13 +77,16 @@ class NotificationService {
   }
 
   /// Loads the time-zone database and finds the device's zone, which only
-  /// scheduling needs: started at launch but not waited for there, and after
-  /// the first frame, as decoding the database takes a while.
-  static Future<void> _loadTimeZones() async {
+  /// scheduling a reminder needs. Decoding the database blocks the UI for a
+  /// while, so it waits for the first frame and then for a moment when
+  /// nothing is animating.
+  static Future<void> _loadTimeZoneDatabase() async {
     await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
     try {
       // Zmanim may have loaded it already.
-      if (!tz.timeZoneDatabase.isInitialized) tzdata.initializeTimeZones();
+      if (!tz.timeZoneDatabase.isInitialized) {
+        await SchedulerBinding.instance.scheduleTask(tzdata.initializeTimeZones, Priority.idle);
+      }
       final info = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(info.identifier));
     } catch (_) {
@@ -86,8 +97,11 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin? _plugin;
   final bool supported;
 
-  /// Completes once [_loadTimeZones] has.
-  final Future<void> _timeZones;
+  final Future<void> Function() _loadTimeZones;
+
+  /// The time-zone database loading, from the first reminder to schedule:
+  /// most readers have none, and never load it.
+  Future<void>? _timeZones;
 
   /// The route to open if the app was launched from a notification.
   String? launchRoute;
@@ -132,9 +146,11 @@ class NotificationService {
     final signature = reminders.map((r) => '${r.id}@${r.localDateTime}:${describe(r)}').join('|');
     if (signature == _lastSignature) return;
     _lastSignature = signature;
-    await _timeZones;
-    // A later call has taken over while this one waited.
-    if (signature != _lastSignature) return;
+    if (reminders.isNotEmpty) {
+      await (_timeZones ??= _loadTimeZones());
+      // A later call has taken over while this one waited.
+      if (signature != _lastSignature) return;
+    }
     try {
       await p.cancelAll();
       for (final r in reminders) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Writes a value to storage, as JSON under [key], a moment after the last
@@ -24,6 +25,7 @@ class DelayedSave {
   Object? Function()? _pending;
 
   /// Whether a value is waiting to be written.
+  @visibleForTesting
   bool get isPending => _pending != null;
 
   /// Writes the value [toJson] gives after [delay], unless another one is
