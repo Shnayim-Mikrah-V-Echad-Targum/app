@@ -161,6 +161,12 @@ void main() {
         await push(tester, TargetPlatform.android, direction: direction);
         await tester.pump(const Duration(milliseconds: 100));
         final x = tester.getTopLeft(find.text('Next')).dx;
+        // One slide and one fade: the predictive back transition, always
+        // there to catch a back swipe, stands still.
+        final above = find.ancestor(of: find.text('Next'), matching: find.byType(SlideTransition));
+        expect(tester.widgetList<SlideTransition>(above).where((t) => t.position.value != Offset.zero), hasLength(1));
+        final fades = find.ancestor(of: find.text('Next'), matching: find.byType(FadeTransition));
+        expect(tester.widgetList<FadeTransition>(fades).where((t) => t.opacity.value < 1), hasLength(1));
         await tester.pumpAndSettle();
         final settled = tester.getTopLeft(find.text('Next')).dx;
         // Right of its place in English, left of it in Hebrew.
@@ -173,6 +179,89 @@ void main() {
         await tester.pumpAndSettle();
         final home = tester.getTopLeft(find.text('Open')).dx;
         expect(under, direction == TextDirection.ltr ? lessThan(home) : greaterThan(home));
+      });
+    }
+  });
+
+  group('Android predictive back', () {
+    Future<void> gesture(WidgetTester tester, String method, [Map<String, Object>? arguments]) =>
+        tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          'flutter/backgesture',
+          const StandardMethodCodec().encodeMethodCall(MethodCall(method, arguments)),
+          (_) {},
+        );
+
+    Future<void> swipe(WidgetTester tester, double progress) => gesture(tester, 'updateBackGestureProgress', {
+          'x': 400 * progress,
+          'y': 300.0,
+          'progress': progress,
+          'swipeEdge': 0,
+        });
+
+    Future<ModalRoute<Object?>> pushNext(WidgetTester tester, TextDirection direction) async {
+      final theme = _theme().copyWith(platform: TargetPlatform.android);
+      await tester.pumpWidget(_launcher(
+        theme,
+        (context) => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Center(child: Text('Next'))),
+        )),
+        direction: direction,
+      ));
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      return ModalRoute.of(tester.element(find.text('Next')))!;
+    }
+
+    final predictive =
+        find.byWidgetPredicate((w) => w.runtimeType.toString() == '_PredictiveBackSharedElementPageTransition');
+
+    for (final direction in TextDirection.values) {
+      testWidgets('${direction.name}: a back swipe previews the page beneath, and pops when released',
+          (tester) async {
+        final route = await pushNext(tester, direction);
+        final settled = tester.getRect(find.text('Next'));
+        expect(predictive, findsNothing);
+
+        await gesture(tester, 'startBackGesture', {
+          'touchOffset': [5.0, 300.0],
+          'progress': 0.0,
+          'swipeEdge': 0,
+        });
+        await tester.pump();
+        expect(route.popGestureInProgress, isTrue);
+        await swipe(tester, 0.35);
+        await tester.pump();
+
+        // The page follows the finger, in the framework's predictive
+        // transition, and the page beneath shows.
+        expect(route.animation!.value, closeTo(0.65, 0.001));
+        expect(predictive, findsWidgets);
+        expect(tester.getRect(find.text('Next')), isNot(settled));
+        expect(find.text('Open'), findsOneWidget);
+
+        await gesture(tester, 'commitBackGesture');
+        await tester.pumpAndSettle();
+        expect(find.text('Next'), findsNothing);
+        expect(tester.getCenter(find.text('Open')), const Offset(400, 300));
+        expect(predictive, findsNothing);
+      });
+
+      testWidgets('${direction.name}: a cancelled swipe puts the page back where it was', (tester) async {
+        final route = await pushNext(tester, direction);
+        final settled = tester.getRect(find.text('Next'));
+        await gesture(tester, 'startBackGesture', {
+          'touchOffset': [5.0, 300.0],
+          'progress': 0.0,
+          'swipeEdge': 0,
+        });
+        await tester.pump();
+        await swipe(tester, 0.2);
+        await tester.pump();
+        await gesture(tester, 'cancelBackGesture');
+        await tester.pumpAndSettle();
+        expect(route.popGestureInProgress, isFalse);
+        expect(route.isCurrent, isTrue);
+        expect(tester.getRect(find.text('Next')), settled);
       });
     }
   });

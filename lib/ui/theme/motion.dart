@@ -155,8 +155,17 @@ class _Rise extends AnimatedWidget {
 /// horizontal slides mirrored in a right-to-left layout, as Android mirrors
 /// them: in Hebrew the next page arrives from the left. Timing, curves and
 /// fades are the framework's.
+///
+/// A back swipe is Android's predictive back gesture (on by default from
+/// Android 16 for apps targeting it): the page follows the finger and reveals
+/// the one beneath before the swipe is released. That part is the
+/// framework's own [PredictiveBackPageTransitionsBuilder], which also listens
+/// for the gesture, so it is always in the tree; each of the two transitions
+/// stands still while the other is in charge.
 class FadeForwardsDirectionalPageTransitionsBuilder extends PageTransitionsBuilder {
   const FadeForwardsDirectionalPageTransitionsBuilder();
+
+  static const _predictiveBack = PredictiveBackPageTransitionsBuilder();
 
   static const _curve = Curves.easeInOutCubicEmphasized;
 
@@ -206,6 +215,26 @@ class FadeForwardsDirectionalPageTransitionsBuilder extends PageTransitionsBuild
   @override
   Widget buildTransitions<T>(PageRoute<T> route, BuildContext context, Animation<double> animation,
       Animation<double> secondaryAnimation, Widget child) {
+    // Outside a back gesture the predictive transition sees a settled page
+    // (and falls back to a fade-forwards that then does nothing); during one,
+    // the directional slides do.
+    final directional = _directional(
+      context,
+      _GestureGate(route, animation, duringGesture: false, rest: 1),
+      _GestureGate(route, secondaryAnimation, duringGesture: false, rest: 0),
+      child,
+    );
+    return _predictiveBack.buildTransitions(
+      route,
+      context,
+      _GestureGate(route, animation, duringGesture: true, rest: 1),
+      _GestureGate(route, secondaryAnimation, duringGesture: true, rest: 0),
+      directional,
+    );
+  }
+
+  static Widget _directional(
+      BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
     return DualTransitionBuilder(
       animation: animation,
       forwardBuilder: (context, animation, child) => FadeTransition(
@@ -222,4 +251,29 @@ class FadeForwardsDirectionalPageTransitionsBuilder extends PageTransitionsBuild
       child: _beneath(context, secondaryAnimation, child),
     );
   }
+}
+
+/// A route's animation while a back gesture is in progress on its navigator
+/// ([duringGesture]) or while none is, and otherwise held at [rest]: 1 for a
+/// page's own animation (on screen, in place), 0 for its secondary one
+/// (nothing above it).
+class _GestureGate extends Animation<double> with AnimationWithParentMixin<double> {
+  _GestureGate(this.route, this.parent, {required this.duringGesture, required this.rest});
+
+  final PageRoute<dynamic> route;
+  final bool duringGesture;
+  final double rest;
+
+  @override
+  final Animation<double> parent;
+
+  // The navigator is gone once the route is disposed.
+  bool get _live => (route.navigator?.userGestureInProgress ?? false) == duringGesture;
+
+  @override
+  double get value => _live ? parent.value : rest;
+
+  @override
+  AnimationStatus get status =>
+      _live ? parent.status : (rest == 1 ? AnimationStatus.completed : AnimationStatus.dismissed);
 }

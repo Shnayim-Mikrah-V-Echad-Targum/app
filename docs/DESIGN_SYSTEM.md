@@ -757,7 +757,7 @@ Keep the keyboard shortcuts.
 
 **High contrast:** paper and surface are the same colour there, so sheets and dialogs (including the date and time pickers) also take a 2 px outline, and the drag handle, which is also a dismiss button, is drawn in full `outline`.
 
-**Code:** open dialogs with `showAppDialog` and sheets with `showAppSheet` (common.dart; a sheet's heading is `SheetTitle`), and status messages with `showStatus` (feedback.dart). They carry the timing and Reduce Motion; test/ui/motion_usage_test.dart fails on a direct `showDialog`, `showModalBottomSheet`, picker or `showSnackBar`.
+**Code:** open dialogs with `showAppDialog` and sheets with `showAppSheet` (common.dart; a sheet's heading is `SheetTitle`), and status messages with `showStatus` (feedback.dart). They carry the timing and Reduce Motion; test/ui/motion_usage_test.dart fails on a direct `showDialog`, `showModalBottomSheet`, picker or `showSnackBar`, and on a `DropdownButton`, whose menu always fades in: a picker field is a select-only `DropdownMenu`, which opens at once.
 
 ### 6.20 NoticeBanner (common.dart) and the demo notice
 
@@ -889,6 +889,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - Web, Windows and Linux: fade-through. Incoming page opacity 0→1 over 250 ms (decelerate) with a rise of 8 px; no zoom.
 - Reduce Motion keeps `_NoTransitionsBuilder`.
 - The Android slides mirror in RTL, as Android's own do: in Hebrew the next page arrives from the left (`FadeForwardsDirectionalPageTransitionsBuilder`).
+- An Android back swipe keeps the predictive back gesture (on by default from Android 16 for apps targeting it): the page follows the finger and reveals the one beneath, in the framework's `PredictiveBackPageTransitionsBuilder`. Every other push and pop uses the directional slides.
 
 **Reduce Motion everywhere:** dialogs, sheets, snackbars and every `PopupMenuButton` (`popUpAnimationStyle: Motion.of(context).style`) appear at once, and `ThemeData.splashFactory` is `NoSplash`.
 

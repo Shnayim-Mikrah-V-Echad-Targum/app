@@ -9,6 +9,21 @@ import '../../../ui/widgets/sefer_choice_chip.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
+/// Asks for a reminder's time of day, starting from [minutes] after
+/// midnight, and returns the chosen one the same way, or null if the reader
+/// cancels. It is showTimePicker's dialog, shown the app's way (instantly
+/// under Reduce Motion), and typed rather than dialled.
+Future<int?> pickReminderTime(BuildContext context, int minutes) async {
+  final time = await showAppDialog<TimeOfDay>(
+    context: context,
+    builder: (_) => TimePickerDialog(
+      initialTime: TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
+      initialEntryMode: TimePickerEntryMode.inputOnly,
+    ),
+  );
+  return time == null ? null : time.hour * 60 + time.minute;
+}
+
 class ReminderSettingsScreen extends ConsumerWidget {
   const ReminderSettingsScreen({super.key});
 
@@ -38,16 +53,8 @@ class ReminderSettingsScreen extends ConsumerWidget {
     }
 
     Future<void> pickTime(int current, void Function(int) onPicked) async {
-      // showTimePicker's dialog, shown the app's way (instantly under Reduce
-      // Motion).
-      final t = await showAppDialog<TimeOfDay>(
-        context: context,
-        builder: (_) => TimePickerDialog(
-          initialTime: TimeOfDay(hour: current ~/ 60, minute: current % 60),
-          initialEntryMode: TimePickerEntryMode.inputOnly,
-        ),
-      );
-      if (t != null) onPicked(t.hour * 60 + t.minute);
+      final minutes = await pickReminderTime(context, current);
+      if (minutes != null) onPicked(minutes);
     }
 
     final anchors = [l.anchorShacharit, l.anchorBreakfast, l.anchorCommute, l.anchorDinner, l.anchorBed];
