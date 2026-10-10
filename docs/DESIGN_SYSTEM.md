@@ -806,16 +806,20 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 
 ### 6.21 Forum posts as "letters" (thread_screen.dart)
 
-- No card per post. Posts are separated by full-width 1 px hairlines, with 16 vertical padding.
+- No card per post. Posts are separated by full-width 1 px hairlines (2 px outline in high contrast), the first under the thread's title. About 20 of air above the initial and below the last line: 12 and 6 of padding, plus what the header's and footer's 48 dp rows leave around their text.
 - **Header row:**
-  - 32 px initial disc in secondaryContainer, initial in EBG 600 16 onSecondaryContainer;
+  - 32 px initial disc in secondaryContainer, initial in EBG 600 16 onSecondaryContainer (`InitialDisc`, excluded from semantics; a person when the name is empty);
   - 12 gap, then the author in titleSmall in its OWN Text with `textDirection: autoDirection(name)`;
-  - then " · " and the relative time in bodySmall onSurfaceVariant in a separate Text;
-  - then the overflow menu.
-  - Separate widgets fix the mixed-direction header in he_thread.png.
-- **Body:** bodyLarge 16/26 (Hebrew 16/26 NSH), `autoDirection`, start-inset 44 to align with the name.
-- **Footer:** TextButton "Todah" with `volunteer_activism_outlined` 18 (filled `volunteer_activism` when given) and the count with tabular figures. Replaces favorite/favorite_border at thread_screen.dart:400.
-- The opening post gets a 3 px primary start rule.
+  - on the posts of the member who began the thread, a tag in labelSmall on secondaryContainer, radius 6 (outlined in high contrast): "Asked" in a question, "Author" in any other discussion, none in a weekly thread;
+  - then " · " and the relative time in bodySmall onSurfaceVariant in a separate Text, with the full date in a tooltip; enlarged text moves it under the name;
+  - then the overflow menu, its glyph pulled 12 into the end gutter so it lines up with the column's edge, as the app bar's do with the screen's. Reply is not in it.
+  - Separate widgets fix the mixed-direction header in he_thread.png. Screen readers hear one label: name, tag, full date and "edited".
+- **Body:** bodyLarge 16/26 in both UIs (NSH in Hebrew), `autoDirection`, tagged with its language, start-inset 44 to align with the name. A quoted post sits above it on surfaceContainerLow with a 2 px gold-ink (`secondary`) start rule, in bodySmall onSurfaceVariant.
+- **Footer**, its icons in line with the text:
+  - TextButton "Todah" with `volunteer_activism_outlined` 18 (filled `volunteer_activism` when given), then the count in tabular figures once there is one. A toggle for screen readers, named for what a tap does and how many have thanked.
+  - 8 gap, then TextButton "Reply" with `Icons.reply` 18 ("Reply to Rivka" for screen readers), on every post the reader can answer; none in a locked thread, except for moderators.
+  - Under your own post, no Todah button: the icon and count in onSurfaceVariant, once it has been thanked.
+- The opening post gets a 3 px primary start rule, from the top of the initial to the foot of the footer's label, and its content moves 15 in. A weekly thread opens with no post of its own, so none takes the rule; nor does a long thread's first post shown until its earliest posts are loaded.
 
 ### 6.22 Empty states
 
@@ -1135,10 +1139,14 @@ In order:
 - FAB: extended "New discussion", primaryContainer / onPrimaryContainer, radius 12, elevation 2.
 
 **Thread**
-- App bar title gets `textDirection: autoDirection(t.title)` plus `overflow: ellipsis` (fixes D13 at thread_screen.dart:102).
-- headlineSmall title with `autoDirection` (existing), then "2 posts" in bodySmall.
+- App bar title: the forum's name (Community where it can't be found). The thread's title is the page's heading, and still names the browser's tab; it is never cut short (fixes D13).
+- headlineSmall title with `autoDirection`, tagged with its language and starting at the page's start edge as its forum lists it, then "2 posts" in bodySmall onSurfaceVariant.
 - Posts as letters (§6.21).
-- Composer docked on surface with a top hairline: a radius-10 outlined field (max 5 lines) and a Filled "Reply" 48 high, disabled until there is text.
+- Composer docked on surface with a top hairline across the pane, apart from the navigation bar's surfaceContainer below it; its content in the 720 column, within the gutters, so it lines up with the posts:
+  - a radius-10 outlined field (max 5 lines) labelled "Write a reply", in the direction of what is typed, or the interface's while empty;
+  - a Filled "Reply" 48 high, level with a one-line field and by the last line as it grows, disabled until there is a reply (2 characters); while it is sent, a 20 px spinner read as "Sending…";
+  - above them, while answering a post, a strip on surfaceContainerLow with a 3 px primary start rule: the reply icon, "Replying to Rivka" (the name isolated) and a close button.
+- Editing a post: a dialog whose field is labelled "Your message", up to 10,000 characters, and takes the focus.
 
 **Compose**
 - App bar: leading close, trailing Filled "Post" (height 40, radius 10, disabled per M3).
@@ -1251,6 +1259,10 @@ In order:
 | recordTitle | Finished so far | הושלם עד כה |
 | demoTag | Demo | הדגמה |
 | emptyForum | No discussions yet — begin the first. | עדיין אין דיונים — אפשר לפתוח את הראשון. |
+| askedTag / authorTag | Asked / Author | שואל/ת / פותח/ת הדיון |
+| todahAction | Todah | תודה |
+| replyToName | Reply to {name} | תגובה ל{name} |
+| sending | Sending… | בשליחה… |
 | passTrackLabel | {n} · {name} | {n} · {name} |
 | aliyahTabLabel | {name}, aliyah {n} of 7 | {name}, עלייה {n} מתוך 7 |
 | tabRead / tabPartial / tabNotStarted | read / {done} of 3 readings done / not started | נקראה / {done} מתוך 3 קריאות / טרם התחילה |

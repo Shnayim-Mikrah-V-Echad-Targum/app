@@ -3314,11 +3314,41 @@ abstract class AppLocalizations {
   /// **'Reply'**
   String get replyAction;
 
+  /// Read by screen readers for a post's Reply button.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to {name}'**
+  String replyToName(String name);
+
   /// No description provided for @replyingTo.
   ///
   /// In en, this message translates to:
   /// **'Replying to {name}'**
   String replyingTo(String name);
+
+  /// No description provided for @sending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get sending;
+
+  /// A small tag beside a member's name on their posts in a question they asked.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked'**
+  String get askedTag;
+
+  /// A small tag beside a member's name on their posts in a discussion they started.
+  ///
+  /// In en, this message translates to:
+  /// **'Author'**
+  String get authorTag;
+
+  /// The label of a post's thanks button: the Hebrew word for thanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Todah'**
+  String get todahAction;
 
   /// No description provided for @todahCount.
   ///

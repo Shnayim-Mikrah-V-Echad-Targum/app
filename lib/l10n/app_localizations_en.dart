@@ -1925,9 +1925,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get replyAction => 'Reply';
 
   @override
+  String replyToName(String name) {
+    return 'Reply to $name';
+  }
+
+  @override
   String replyingTo(String name) {
     return 'Replying to $name';
   }
+
+  @override
+  String get sending => 'Sending…';
+
+  @override
+  String get askedTag => 'Asked';
+
+  @override
+  String get authorTag => 'Author';
+
+  @override
+  String get todahAction => 'Todah';
 
   @override
   String todahCount(int count) {

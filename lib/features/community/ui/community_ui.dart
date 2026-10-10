@@ -72,13 +72,14 @@ String absoluteTime(BuildContext context, DateTime time) {
 }
 
 /// Text direction from the first strong character, so Hebrew and English
-/// posts each display correctly.
-TextDirection autoDirection(String text) {
+/// posts each display correctly. Text with none, such as an empty field, takes
+/// [fallback].
+TextDirection autoDirection(String text, {TextDirection fallback = TextDirection.ltr}) {
   for (final rune in text.runes) {
     if (rune >= 0x0590 && rune <= 0x08FF) return TextDirection.rtl;
     if ((rune >= 0x41 && rune <= 0x5A) || (rune >= 0x61 && rune <= 0x7A)) return TextDirection.ltr;
   }
-  return TextDirection.ltr;
+  return fallback;
 }
 
 /// Sends the user to sign in if needed. Returns whether they are signed in.

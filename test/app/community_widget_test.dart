@@ -257,10 +257,18 @@ Future<void> _goBack(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _tapTodah(WidgetTester tester, String label) async {
-  await tester.ensureVisible(find.text(label));
+/// The Todah button that counts [count] thanks. In the demo's first thread,
+/// Rivka's post has 4.
+Finder _todahWith(int count) => find.ancestor(of: find.text('$count'), matching: find.bySubtype<TextButton>());
+
+/// The Todah buttons, and the Reply buttons, of the posts.
+final _todahButton = find.ancestor(of: find.text('Todah'), matching: find.bySubtype<TextButton>());
+final _replyButton = find.ancestor(of: find.text('Reply'), matching: find.bySubtype<TextButton>());
+
+Future<void> _tapTodah(WidgetTester tester, int count) async {
+  await tester.ensureVisible(_todahWith(count));
   await tester.pump();
-  await tester.tap(find.text(label));
+  await tester.tap(_todahWith(count));
 }
 
 /// The thread's list, which builds its posts only as they scroll into view.
@@ -420,8 +428,9 @@ void main() {
       expect(_location(c), matches(RegExp(r'^/community/thread/\d+$')));
       expect(find.byType(ThreadScreen), findsOneWidget);
       expect(forums.asked, [(42, 5787)]);
-      // In the app bar and as the heading.
-      expect(find.text('Parshat Matot-Masei 5787'), findsNWidgets(2));
+      // The heading, under its forum's name in the app bar.
+      expect(find.text('Parshat Matot-Masei 5787'), findsOneWidget);
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Parshat HaShavua')), findsOneWidget);
       expect(find.text('No posts yet — share a thought on Parshat\u00a0Matot-Masei.'), findsOneWidget);
     });
 
@@ -434,7 +443,7 @@ void main() {
       await _tapDiscuss(tester);
       await tester.pumpAndSettle();
       expect(forums.asked, [(2, 5787)]);
-      expect(find.text('Parshat Noach 5787'), findsNWidgets(2));
+      expect(find.text('Parshat Noach 5787'), findsOneWidget);
     });
 
     testWidgets("opens from Today for this week's parsha", (tester) async {
@@ -447,7 +456,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(forums.asked, [(1, 5787)]);
       expect(_location(c), matches(RegExp(r'^/community/thread/\d+$')));
-      expect(find.text('Parshat Bereshit 5787'), findsNWidgets(2));
+      expect(find.text('Parshat Bereshit 5787'), findsOneWidget);
     });
 
     testWidgets('offline says so, rather than loading forever', (tester) async {
@@ -492,16 +501,18 @@ void main() {
       await tester.pumpAndSettle();
       await _tapDiscuss(tester);
       await tester.pumpAndSettle();
-      expect(find.text('פרשת בראשית תשפ״ז'), findsNWidgets(2));
       Text appBarTitle() =>
           tester.widget<Text>(find.descendant(of: find.byType(AppBar), matching: find.byType(Text)).first);
-      expect(appBarTitle().textDirection, TextDirection.rtl);
+      expect(appBarTitle().data, 'פרשת השבוע');
+      expect(tester.widget<Text>(find.text('פרשת בראשית תשפ״ז')).textDirection, TextDirection.rtl);
 
       c.read(routerProvider).go('/community/thread/1');
       await tester.pumpAndSettle();
-      expect(appBarTitle().data, 'Why read the Targum rather than a translation?');
-      expect(appBarTitle().textDirection, TextDirection.ltr);
-      expect(appBarTitle().overflow, TextOverflow.ellipsis);
+      expect(appBarTitle().data, 'שאלות ותשובות');
+      // English, from the page's start edge, as the forum lists it.
+      final heading = tester.widget<Text>(find.text('Why read the Targum rather than a translation?'));
+      expect(heading.textDirection, TextDirection.ltr);
+      expect(heading.textAlign, TextAlign.right);
     });
   });
 
@@ -588,17 +599,17 @@ void main() {
       await tester.pumpAndSettle();
 
       forums.gate = Completer<void>();
-      await _tapTodah(tester, '4 thanks');
+      await _tapTodah(tester, 4);
       await tester.pump();
-      expect(find.text('5 thanks'), findsOneWidget);
-      await _tapTodah(tester, '5 thanks');
+      expect(_todahWith(5), findsOneWidget);
+      await _tapTodah(tester, 5);
       await tester.pump();
       expect(forums.todahCalls, 1);
 
       forums.gate!.complete();
       await tester.pumpAndSettle();
-      expect(find.text('5 thanks'), findsOneWidget);
-      expect(find.byIcon(Icons.favorite), findsOneWidget);
+      expect(_todahWith(5), findsOneWidget);
+      expect(find.byIcon(Icons.volunteer_activism), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
     });
 
@@ -611,13 +622,13 @@ void main() {
       forums
         ..gate = Completer<void>()
         ..failTodah = true;
-      await _tapTodah(tester, '4 thanks');
+      await _tapTodah(tester, 4);
       await tester.pump();
-      expect(find.text('5 thanks'), findsOneWidget);
+      expect(_todahWith(5), findsOneWidget);
       forums.gate!.complete();
       await tester.pumpAndSettle();
-      expect(find.text('4 thanks'), findsOneWidget);
-      expect(find.byIcon(Icons.favorite), findsNothing);
+      expect(_todahWith(4), findsOneWidget);
+      expect(find.byIcon(Icons.volunteer_activism), findsNothing);
       expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
     });
 
@@ -639,13 +650,13 @@ void main() {
       final c = await _pump(tester, forums: forums);
       c.read(routerProvider).go('/community/thread/1');
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.favorite), findsNothing, reason: 'signed out, none are yours');
+      expect(find.byIcon(Icons.volunteer_activism), findsNothing, reason: 'signed out, none are yours');
 
-      await _tapTodah(tester, '5 thanks');
+      await _tapTodah(tester, 5);
       await tester.pumpAndSettle();
       await signInFromThePrompt(tester);
-      expect(find.byIcon(Icons.favorite), findsOneWidget);
-      expect(find.text('5 thanks'), findsOneWidget);
+      expect(find.byIcon(Icons.volunteer_activism), findsOneWidget);
+      expect(_todahWith(5), findsOneWidget);
       expect((await forums.posts('1')).firstWhere((p) => p.id == '2').myTodah, isTrue);
     });
 
@@ -660,7 +671,7 @@ void main() {
       await _scrollThreadTo(tester, find.text('My own thought'));
       final mine = find.descendant(
         of: find.ancestor(of: find.text('My own thought'), matching: find.byType(PostCard)),
-        matching: find.text('Say thanks'),
+        matching: find.text('Todah'),
       );
       await tester.tap(mine);
       await tester.pumpAndSettle();
@@ -674,14 +685,14 @@ void main() {
       final c = await _pump(tester, forums: forums);
       c.read(routerProvider).go('/community/thread/1');
       await tester.pumpAndSettle();
-      await _tapTodah(tester, '4 thanks');
+      await _tapTodah(tester, 4);
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.favorite), findsOneWidget);
+      expect(find.byIcon(Icons.volunteer_activism), findsOneWidget);
 
       await forums.signOut();
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.favorite), findsNothing);
-      expect(find.text('5 thanks'), findsOneWidget);
+      expect(find.byIcon(Icons.volunteer_activism), findsNothing);
+      expect(_todahWith(5), findsOneWidget);
     });
   });
 
@@ -694,18 +705,200 @@ void main() {
     expect(find.bySemanticsLabel(RegExp(r'^Post 2 of 2\n')), findsOneWidget);
     expect(find.byTooltip('More options for Rivka'), findsOneWidget);
 
-    final todah = find.descendant(of: find.byType(PostCard).at(1), matching: find.bySubtype<TextButton>());
+    Finder todahOf(int post) => find.descendant(of: find.byType(PostCard).at(post), matching: _todahButton);
+    final todah = todahOf(1);
     expect(
       tester.getSemantics(todah),
       isSemantics(label: 'Say thanks to Rivka. 4 thanks', isButton: true, hasToggledState: true, isToggled: false),
     );
-    await _tapTodah(tester, '4 thanks');
+    await _tapTodah(tester, 4);
     await tester.pumpAndSettle();
     expect(
       tester.getSemantics(todah),
       isSemantics(label: 'Remove your thanks to Rivka. 5 thanks', isButton: true, hasToggledState: true, isToggled: true),
     );
+    // Thanked by no one yet, it names only what a tap does.
+    expect(
+      tester.getSemantics(todahOf(0)),
+      isSemantics(label: 'Say thanks to Avraham', isButton: true, hasToggledState: true, isToggled: false),
+    );
     semantics.dispose();
+  });
+
+  group('a post, set as a letter,', () {
+    testWidgets('names its writer, tagged in a question they asked, and when it was written', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      // Avraham asked; Rivka answered.
+      final asked = find.ancestor(of: find.text('Asked'), matching: find.byType(PostCard));
+      expect(asked, findsOneWidget);
+      expect(find.descendant(of: asked, matching: find.text('Avraham')), findsOneWidget);
+      // The name, the tag and the time, each a text of its own, are read as
+      // one, with the full date.
+      expect(find.bySemanticsLabel(RegExp(r'^Post 1 of 2\nAvraham, Asked, \w+day, ')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^Post 2 of 2\nRivka, \w+day, ')), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('by the member who began a discussion is tagged Author, in each of their posts', (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/11');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Parshat HaShavua')), findsOneWidget);
+      await _scrollThreadTo(tester, find.text('Of course. Hebrew and English are both welcome here.'));
+      final tagged = find.ancestor(of: find.text('Author'), matching: find.byType(PostCard));
+      expect(tagged, findsNWidgets(2), reason: "Chana's welcome and her answer");
+      expect(find.descendant(of: tagged, matching: find.text('Chana')), findsNWidgets(2));
+      expect(find.text('Asked'), findsNothing);
+    });
+
+    testWidgets('offers Reply, which answers it in the reply box, until let go', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final replies = find.descendant(of: find.byType(PostCard), matching: _replyButton);
+      expect(replies, findsNWidgets(2), reason: 'one under each post');
+      expect(tester.getSemantics(replies.last), isSemantics(label: 'Reply to Rivka', isButton: true));
+
+      await tester.ensureVisible(replies.last);
+      await tester.pumpAndSettle();
+      await tester.tap(replies.last);
+      await tester.pumpAndSettle();
+      expect(find.text('Replying to \u2068Rivka\u2069'), findsOneWidget);
+      final field = find.descendant(of: find.byType(TextField), matching: find.byType(EditableText));
+      expect(tester.widget<EditableText>(field).focusNode.hasFocus, isTrue, reason: 'the reply box takes the focus');
+
+      await tester.tap(find.byTooltip('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Replying to'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('in a locked thread offers no Reply, but to a moderator', (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/51');
+      await tester.pumpAndSettle();
+      expect(find.text('This discussion is locked.'), findsOneWidget);
+      expect(find.byType(PostCard), findsNWidgets(2));
+      expect(find.descendant(of: find.byType(PostCard), matching: _replyButton), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+
+      // The demo's members are moderators.
+      final forums = await _Member().signIn();
+      final m = await _pump(tester, forums: forums);
+      m.read(routerProvider).go('/community/thread/51');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(PostCard), matching: _replyButton), findsNWidgets(2));
+      expect(find.byType(TextField), findsOneWidget);
+    });
+
+    testWidgets('of your own shows the thanks it was given, without a button, once it has any', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final forums = await _Member().signIn();
+      forums.seed(posts: [
+        Post(id: '9100', threadId: '1', authorId: 'me', authorName: 'Leah', body: 'Thanked', createdAt: DateTime.now(), todah: 3),
+        Post(id: '9101', threadId: '1', authorId: 'me', authorName: 'Leah', body: 'Not yet', createdAt: DateTime.now()),
+      ]);
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      Finder post(String body) => find.ancestor(of: find.text(body), matching: find.byType(PostCard));
+
+      await _scrollThreadTo(tester, find.text('Not yet'));
+      expect(find.descendant(of: post('Thanked'), matching: _todahButton), findsNothing);
+      expect(find.descendant(of: post('Thanked'), matching: find.text('3')), findsOneWidget);
+      // Read with the post, as its last line.
+      expect(tester.getSemantics(post('Thanked')).label, endsWith('\n3 thanks'));
+      expect(find.descendant(of: post('Not yet'), matching: _todahButton), findsNothing);
+      expect(find.descendant(of: post('Not yet'), matching: find.byIcon(Icons.volunteer_activism_outlined)), findsNothing);
+      // Each can still be answered.
+      expect(find.descendant(of: post('Not yet'), matching: _replyButton), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('is edited in a labelled field that takes the focus', (tester) async {
+      final forums = await _Member().signIn();
+      forums.seed(posts: [
+        Post(id: '9100', threadId: '1', authorId: 'me', authorName: 'Leah', body: 'A first thought', createdAt: DateTime.now()),
+      ]);
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await _scrollThreadTo(tester, find.text('A first thought'));
+      await tester.tap(find.descendant(
+        of: find.ancestor(of: find.text('A first thought'), matching: find.byType(PostCard)),
+        matching: find.byTooltip('More options for Leah'),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(PopupMenuItem<String>, 'Edit'), findsOneWidget);
+      expect(find.widgetWithText(PopupMenuItem<String>, 'Reply'), findsNothing, reason: 'Reply is under each post instead');
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      final dialog = find.byType(AlertDialog);
+      final field = tester.widget<TextField>(find.descendant(of: dialog, matching: find.byType(TextField)));
+      expect(field.decoration?.labelText, 'Your message');
+      expect(field.maxLength, 10000);
+      expect(tester.widget<EditableText>(find.descendant(of: dialog, matching: find.byType(EditableText))).focusNode.hasFocus, isTrue);
+      await tester.enterText(find.descendant(of: dialog, matching: find.byType(TextField)), 'A second thought');
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      expect(find.text('A second thought'), findsOneWidget);
+    });
+  });
+
+  group('the reply box', () {
+    testWidgets('waits for a reply, and says while it is sent', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final send = find.widgetWithText(FilledButton, 'Reply');
+      FilledButton button() => tester.widget<FilledButton>(find.byType(FilledButton));
+      expect(button().onPressed, isNull, reason: 'nothing to send yet');
+      await tester.enterText(find.widgetWithText(TextField, 'Write a reply'), 'Agreed.');
+      await tester.pump();
+      expect(button().onPressed, isNotNull);
+
+      forums.gate = Completer<void>();
+      await tester.tap(send);
+      await tester.pump();
+      expect(find.descendant(of: find.byType(FilledButton), matching: find.byType(CircularProgressIndicator)), findsOneWidget);
+      expect(find.bySemanticsLabel('Sending…'), findsOneWidget);
+      forums.gate!.complete();
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('Sending…'), findsNothing);
+      expect(find.text('Agreed.'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('starts at the interface\'s edge, and follows what is typed', (tester) async {
+      const hebrew = AppSettings(onboardingComplete: true, language: AppLanguage.hebrew);
+      final c = await _pump(tester, settings: hebrew);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      TextDirection? direction() => tester.widget<TextField>(find.byType(TextField)).textDirection;
+      expect(direction(), TextDirection.rtl);
+      await tester.enterText(find.byType(TextField), 'Thank you');
+      await tester.pump();
+      expect(direction(), TextDirection.ltr);
+    });
+
+    testWidgets('lines up with the column of posts on a wide screen', (tester) async {
+      final c = await _pump(tester);
+      tester.view.physicalSize = const Size(1366, 860);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final field = tester.getRect(find.byType(TextField));
+      final send = tester.getRect(find.byType(FilledButton));
+      final body = tester.getRect(find.byType(PostCard).first);
+      expect(field.left, body.left);
+      expect(send.right, moreOrLessEquals(body.right));
+    });
   });
 
   group('refreshing', () {
@@ -1208,7 +1401,7 @@ void main() {
       await tester.tap(card);
       await tester.pumpAndSettle();
       expect(find.byType(ThreadScreen), findsOneWidget);
-      expect(find.text('Parshat Bereshit 5787'), findsNWidgets(2));
+      expect(find.text('Parshat Bereshit 5787'), findsOneWidget);
       expect(find.byType(PostCard), findsNWidgets(3));
     });
 
@@ -1279,7 +1472,7 @@ void main() {
       expect(find.byType(EmptyState), findsNothing);
       await tester.tap(find.byType(ThisWeekCard));
       await tester.pumpAndSettle();
-      expect(find.text('Parshat Bereshit 5787'), findsNWidgets(2));
+      expect(find.text('Parshat Bereshit 5787'), findsOneWidget);
     });
 
     testWidgets('with no discussions says so, and offers to begin the first', (tester) async {

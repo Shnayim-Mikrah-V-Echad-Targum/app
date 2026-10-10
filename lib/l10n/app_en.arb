@@ -1367,6 +1367,15 @@
   "postAction": "Post",
   "replyLabel": "Write a reply",
   "replyAction": "Reply",
+  "replyToName": "Reply to {name}",
+  "@replyToName": {
+    "description": "Read by screen readers for a post's Reply button.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "replyingTo": "Replying to {name}",
   "@replyingTo": {
     "placeholders": {
@@ -1375,7 +1384,20 @@
       }
     }
   },
-  "todahCount": "{count, plural, =0{Say thanks} =1{1 thanks} other{{count} thanks}}",
+  "sending": "Sending…",
+  "askedTag": "Asked",
+  "@askedTag": {
+    "description": "A small tag beside a member's name on their posts in a question they asked."
+  },
+  "authorTag": "Author",
+  "@authorTag": {
+    "description": "A small tag beside a member's name on their posts in a discussion they started."
+  },
+  "todahAction": "Todah",
+  "@todahAction": {
+    "description": "The label of a post's thanks button: the Hebrew word for thanks."
+  },
+  "todahCount":"{count, plural, =0{Say thanks} =1{1 thanks} other{{count} thanks}}",
   "@todahCount": {
     "placeholders": {
       "count": {

@@ -161,6 +161,17 @@ const _screens = {
   'demo_about': '/community/forum/questions',
   // Reporting a post, before a reason is chosen.
   'thread_report': '/community/thread/1',
+  // Letters that quote the posts they answer, and the member who began the
+  // discussion answering under an Author tag.
+  'thread_letters': '/community/thread/11',
+  // A discussion in Hebrew.
+  'thread_hebrew': '/community/thread/12',
+  // Answering a post: the strip above the reply box, and the reply typed.
+  'thread_replying': '/community/thread/1',
+  // Signed in, under your own post: its thanks counted, with no button.
+  'thread_mine': '/community/thread/1',
+  // Locked: no reply box, and no Reply under the posts.
+  'thread_locked': '/community/thread/51',
   // A thread of 250 posts, open on its latest hundred, and at its end.
   'thread_long': '/community/thread/5000',
   'thread_long_end': '/community/thread/5000',
@@ -428,7 +439,10 @@ ProgressState _readThrough(int last, {required int partly, LocalDate? on}) {
 const _webKeys = {'reader_keys_web', 's_a11y_web'};
 
 /// Screens captured after typing into their only text field.
-const _typed = {'account_code': 'reader@example.org'};
+const _typed = {
+  'account_code': 'reader@example.org',
+  'thread_replying': 'Thank you — that settles it for me.',
+};
 
 /// Screens shown signed in with backup on, where a newer version of the app
 /// has written the backup, so syncing has stopped.
@@ -462,8 +476,27 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'forum_empty': () async => DemoForumRepository(samples: false),
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
+  'thread_mine': _withOwnPost,
   'week_discuss': () async => _OpeningForever(),
 };
+
+/// Signed in, with a post of your own in thread 1 that three have thanked.
+Future<ForumRepository> _withOwnPost() async {
+  final repo = DemoForumRepository();
+  await repo.verifyCode('reader@example.org', '123456');
+  return repo
+    ..seed(posts: [
+      Post(
+        id: '9100',
+        threadId: '1',
+        authorId: 'me',
+        authorName: 'Leah',
+        body: 'Rashi on the Targum of 1:1 is a good place to see the difference.',
+        createdAt: DateTime.now().subtract(const Duration(minutes: 40)),
+        todah: 3,
+      ),
+    ]);
+}
 
 /// The demo with a thread of 250 posts in Divrei Torah, thread 5000.
 Future<ForumRepository> _withLongThread() async {
@@ -613,6 +646,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'haftarah_read': _scrollToEnd,
   'reader_third': _scrollToEnd,
   'thread_long_end': _scrollToEnd,
+  // Reply on the last post.
+  'thread_replying': (tester) async {
+    final reply = find.descendant(of: find.byType(PostCard).last, matching: find.widgetWithIcon(TextButton, Icons.reply));
+    await tester.ensureVisible(reply);
+    await tester.tap(reply);
+  },
+  'thread_mine': _scrollToEnd,
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
   's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),
@@ -856,6 +896,8 @@ const _desktopScreens = {
   'progress',
   'progress_years',
   'thread',
+  'thread_letters',
+  'thread_replying',
   'thread_long',
   'legal',
   'not_found',
@@ -890,6 +932,8 @@ const _narrowScreens = {'today', 'progress', 'progress_map', 'progress_years', '
 const _bigTextScreens = {
   'today',
   'community',
+  'thread',
+  'thread_replying',
   'forum_questions',
   'reader_finished_day',
   'reader_finished_week',
