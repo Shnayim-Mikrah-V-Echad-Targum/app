@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/services/notifications.dart';
 
 import '../helpers.dart';
 
@@ -42,6 +43,7 @@ void main() {
     AppSettings? settings,
     Size size = const Size(412, 915),
     double textScale = 1,
+    NotificationService? notifications,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -52,6 +54,7 @@ void main() {
       tester,
       settings: settings ?? AppSettings(onboardingComplete: true, joinDate: null),
       now: monday,
+      notifications: notifications,
     );
     container.read(routerProvider).go(route);
     await tester.pumpAndSettle();
@@ -73,6 +76,23 @@ void main() {
       handle.dispose();
     });
   }
+
+  testWidgets('a11y guidelines: reminders, where they can be scheduled, with all of them on', (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(
+      tester,
+      '/settings/reminders',
+      settings: const AppSettings(onboardingComplete: true, dailyReminder: true, fridayReminder: true, checkInReminder: true),
+      notifications: PhoneNotifications(),
+    );
+    expect(find.text('Daily reminder time'), findsOneWidget);
+    expect(find.text('Erev Shabbat reminder time'), findsOneWidget);
+    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(textContrastGuideline));
+    handle.dispose();
+  });
 
   for (final theme in [AppThemeMode.dark, AppThemeMode.sepia, AppThemeMode.highContrastLight, AppThemeMode.highContrastDark]) {
     testWidgets('text contrast in the ${theme.name} theme', (tester) async {

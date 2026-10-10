@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -13,7 +14,9 @@ import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/services/reminder_planner.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 
 ParshaRepository? _repo;
@@ -81,3 +84,15 @@ class _SilentEngine extends Fake implements FlutterTts {
   @override
   Future<dynamic> stop() async => 1;
 }
+
+/// Reminders as on a phone, where they are available: for pages that show
+/// their settings. Schedules nothing.
+class PhoneNotifications extends NotificationService {
+  PhoneNotifications() : super.withPlugin(_NoPlugin());
+
+  @override
+  Future<void> reschedule(
+          List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) async {}
+}
+
+class _NoPlugin extends Fake implements FlutterLocalNotificationsPlugin {}

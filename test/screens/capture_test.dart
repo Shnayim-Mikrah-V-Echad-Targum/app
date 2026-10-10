@@ -116,6 +116,8 @@ const _screens = {
   's_a11y': '/settings/accessibility',
   's_a11y_web': '/settings/accessibility',
   's_reminders': '/settings/reminders',
+  // As on a phone, where reminders can be scheduled, with all three on.
+  's_reminders_on': '/settings/reminders',
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
   'about': '/settings/about',
@@ -143,6 +145,7 @@ final _scenes = <String, (DateTime, AppSettings Function(AppSettings))>{
   'reader_gaps_spaced': (_now, (s) => s.copyWith(wordSpacing: 16, justify: true)),
   'reader_dots': (_now, (s) => s.copyWith(showTeamim: false)),
   'reader_focus': (_now, (s) => s.copyWith(focusMode: true)),
+  's_reminders_on': (_now, (s) => s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true)),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
   'today_haftarah_left': (DateTime(2026, 10, 13, 11), (s) => s.copyWith(haftarahRequired: true)),
   // Tuesday of Matot-Masei 5787, reading by section.
@@ -199,6 +202,9 @@ Future<ForumRepository> _accountWithNewerBackup() async {
 /// Screens shown signed in with backup on.
 const _backupOn = {'s_data_reset'};
 
+/// Screens shown where reminders are available.
+const _remindersSupported = {'s_reminders_on'};
+
 Future<ForumRepository> _signedIn() async {
   final repo = DemoForumRepository();
   await repo.verifyCode('reader@example.org', '123456');
@@ -225,7 +231,9 @@ Future<ForumRepository> _withLongThread() async {
     'Thank you — I had never noticed that before.',
     'Which edition of the Targum are you reading from?',
   ];
-  final start = _now.subtract(const Duration(days: 20));
+  // On the clock that posts' relative times are told by.
+  final now = DateTime.now();
+  final start = now.subtract(const Duration(days: 20));
   return DemoForumRepository()
     ..seed(
       threads: [
@@ -236,7 +244,7 @@ Future<ForumRepository> _withLongThread() async {
           kind: ThreadKind.discussion,
           authorName: names.first,
           postCount: 250,
-          lastPostAt: _now.subtract(const Duration(minutes: 20)),
+          lastPostAt: now.subtract(const Duration(minutes: 20)),
           createdAt: start,
         ),
       ],
@@ -248,7 +256,7 @@ Future<ForumRepository> _withLongThread() async {
             authorId: 'demo-${i % names.length}',
             authorName: names[i % names.length],
             body: bodies[i % bodies.length],
-            createdAt: i == 249 ? _now.subtract(const Duration(minutes: 20)) : start.add(Duration(hours: i)),
+            createdAt: i == 249 ? now.subtract(const Duration(minutes: 20)) : start.add(Duration(hours: i)),
           ),
       ],
     );
@@ -391,51 +399,59 @@ void main() {
         tester.view.physicalSize = mode.size;
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
-        if (_webKeys.contains(entry.key)) {
-          ReaderScreen.singleKeyPlatform = true;
-          addTearDown(() => ReaderScreen.singleKeyPlatform = false);
-        }
-        final blocked = _syncBlocked.contains(entry.key);
-        final base = AppSettings(
-          onboardingComplete: !entry.key.startsWith('welcome'),
-          joinDate: _join,
-          cloudSync: blocked || _backupOn.contains(entry.key),
-        );
-        final scene = _scenes[entry.key];
-        final c = await pumpApp(
-          tester,
-          settings: mode.settings(scene?.$2(base) ?? base),
-          now: scene?.$1 ?? _now,
-          progress: (_sceneProgress[entry.key] ?? _progress)(),
-          forums: blocked
-              ? await _accountWithNewerBackup()
-              : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
-        );
-        if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
-        await _settle(tester);
-        if (_scrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);
-        if (_dialogs[entry.key] case final icon?) {
-          await tester.tap(find.byIcon(icon));
+        // Shadows as on a device, rather than the outlines tests draw for
+        // them, which no theme has.
+        debugDisableShadows = false;
+        try {
+          if (_webKeys.contains(entry.key)) {
+            ReaderScreen.singleKeyPlatform = true;
+            addTearDown(() => ReaderScreen.singleKeyPlatform = false);
+          }
+          final blocked = _syncBlocked.contains(entry.key);
+          final base = AppSettings(
+            onboardingComplete: !entry.key.startsWith('welcome'),
+            joinDate: _join,
+            cloudSync: blocked || _backupOn.contains(entry.key),
+          );
+          final scene = _scenes[entry.key];
+          final c = await pumpApp(
+            tester,
+            settings: mode.settings(scene?.$2(base) ?? base),
+            now: scene?.$1 ?? _now,
+            progress: (_sceneProgress[entry.key] ?? _progress)(),
+            forums: blocked
+                ? await _accountWithNewerBackup()
+                : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
+            notifications: _remindersSupported.contains(entry.key) ? PhoneNotifications() : null,
+          );
+          if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
           await _settle(tester);
-          if (_sheetsScrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);
+          if (_scrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);
+          if (_dialogs[entry.key] case final icon?) {
+            await tester.tap(find.byIcon(icon));
+            await _settle(tester);
+            if (_sheetsScrolledToEnd.contains(entry.key)) await _scrollToEnd(tester);
+          }
+          if (_typed[entry.key] case final text?) {
+            await tester.enterText(find.byType(TextField), text);
+            await tester.pump();
+          }
+          if (_taps[entry.key] case final target?) {
+            await tester.tap(target());
+            // Long enough for a snackbar to appear, not to leave again, and
+            // for the focus to move where it is moved after a frame.
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 500));
+            await tester.pump(const Duration(milliseconds: 200));
+          }
+          for (final step in _tapSteps[entry.key] ?? const <Finder Function()>[]) {
+            await tester.tap(step());
+            await _settle(tester);
+          }
+          await _write(tester, '${mode.tag}_${entry.key}');
+        } finally {
+          debugDisableShadows = true;
         }
-        if (_typed[entry.key] case final text?) {
-          await tester.enterText(find.byType(TextField), text);
-          await tester.pump();
-        }
-        if (_taps[entry.key] case final target?) {
-          await tester.tap(target());
-          // Long enough for a snackbar to appear, not to leave again, and
-          // for the focus to move where it is moved after a frame.
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 500));
-          await tester.pump(const Duration(milliseconds: 200));
-        }
-        for (final step in _tapSteps[entry.key] ?? const <Finder Function()>[]) {
-          await tester.tap(step());
-          await _settle(tester);
-        }
-        await _write(tester, '${mode.tag}_${entry.key}');
       }, skip: !_capture);
     }
   }
