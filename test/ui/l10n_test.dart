@@ -96,13 +96,13 @@ void main() {
     const israel = ParshaSchedule(israel: true);
     // Bereshit, read on Shabbat 10 October 2026, 29 Tishrei 5787.
     final bereshit = diaspora.weekFor(LocalDate(2026, 10, 9));
-    // Vezot HaBerakhah, read on Simchat Torah: Sunday 4 October 2026
+    // Vezot HaBerachah, read on Simchat Torah: Sunday 4 October 2026
     // (23 Tishrei) in the Diaspora, and Shabbat 3 October (22 Tishrei) in
     // Israel, where it is still Simchat Torah rather than Shabbat.
     final vezot = diaspora.weekFor(LocalDate(2026, 10, 1));
     final vezotIsrael = israel.weekFor(LocalDate(2026, 10, 1));
 
-    test('is the Shabbat of Bereshit, and Simchat Torah for Vezot HaBerakhah', () {
+    test('is the Shabbat of Bereshit, and Simchat Torah for Vezot HaBerachah', () {
       expect(bereshit.portion, const PortionId(1));
       expect(bereshit.occasion, LocalDate(2026, 10, 10));
       expect(vezot.portion.isVezotHaberakhah, isTrue);

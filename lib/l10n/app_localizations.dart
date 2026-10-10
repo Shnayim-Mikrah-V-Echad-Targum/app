@@ -495,7 +495,7 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Shabbat is today} =1{Shabbat is tomorrow} other{Shabbat in {count} days}}'**
   String shabbatInDays(int count);
 
-  /// On Today, in place of shabbatInDays in the week of Vezot HaBerakhah, which is read on Simchat Torah: the days left until then.
+  /// On Today, in place of shabbatInDays in the week of Vezot HaBerachah, which is read on Simchat Torah: the days left until then.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =0{Simchat Torah is today} =1{Simchat Torah is tomorrow} other{Simchat Torah in {count} days}}'**
@@ -3066,7 +3066,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideSpecialBody.
   ///
   /// In en, this message translates to:
-  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
+  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.

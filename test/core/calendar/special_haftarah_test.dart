@@ -63,7 +63,7 @@ void main() {
         specialHaftarahKey(d, schedule.portionOnShabbat(d)!, nusach: nusach);
 
     // Re'eh (47) 5782 was read on 30 Av, the first day of Rosh Chodesh Elul,
-    // and Ki Teitzei (49) two weeks later.
+    // and Ki Tetze (49) two weeks later.
     final reeh = LocalDate(2022, 8, 27);
     final kiTeitzei = LocalDate(2022, 9, 10);
     // Kedoshim (30) 5782, a week after Acharei Mot was Shabbat Machar Chodesh.
@@ -76,14 +76,14 @@ void main() {
       expect(key(kedoshim.addDays(-7), HaftarahNusach.ashkenazi), 'Shabbat Machar Chodesh');
     });
 
-    test("Ashkenazim read the Rosh Chodesh haftarah for Re'eh, then Re'eh's with Ki Teitzei's", () {
+    test("Ashkenazim read the Rosh Chodesh haftarah for Re'eh, then Re'eh's with Ki Tetze's", () {
       expect(key(reeh, HaftarahNusach.ashkenazi), 'Shabbat Rosh Chodesh');
       expect(key(kiTeitzei, HaftarahNusach.ashkenazi), 'Ki Teitzei with 3rd Haftarah of Consolation');
       expect(key(kedoshim, HaftarahNusach.ashkenazi), 'Kedoshim following Special Shabbat');
     });
 
     for (final nusach in [HaftarahNusach.sephardi, HaftarahNusach.chabad]) {
-      test("the ${nusach.name} custom keeps Re'eh's own haftarah, and Ki Teitzei's", () {
+      test("the ${nusach.name} custom keeps Re'eh's own haftarah, and Ki Tetze's", () {
         expect(key(reeh, nusach), "Re'eh on Shabbat Rosh Chodesh");
         expect(key(kiTeitzei, nusach), isNull);
       });

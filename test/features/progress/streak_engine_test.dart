@@ -354,7 +354,7 @@ void main() {
       expect(weekIdFor(a.portion, a.occasion), '5787:2');
     });
 
-    test('Vezot HaBerakhah belongs to the cycle that is ending', () {
+    test('Vezot HaBerachah belongs to the cycle that is ending', () {
       final w = diaspora.weekFor(d('2026-09-30'));
       expect(weekIdFor(w.portion, w.occasion), '5786:54');
     });

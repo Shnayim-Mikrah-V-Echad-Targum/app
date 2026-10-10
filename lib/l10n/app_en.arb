@@ -182,7 +182,7 @@
   },
   "simchatTorahInDays": "{count, plural, =0{Simchat Torah is today} =1{Simchat Torah is tomorrow} other{Simchat Torah in {count} days}}",
   "@simchatTorahInDays": {
-    "description": "On Today, in place of shabbatInDays in the week of Vezot HaBerakhah, which is read on Simchat Torah: the days left until then.",
+    "description": "On Today, in place of shabbatInDays in the week of Vezot HaBerachah, which is read on Simchat Torah: the days left until then.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -1221,7 +1221,7 @@
   "guideTargumTitle": "Targum or Rashi",
   "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn't understand Rashi's Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.",
   "guideSpecialTitle": "Special cases",
-  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once. Reading quietly along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
+  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once. Reading quietly along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
   "guideShabbatTitle": "Shabbat and Yom Tov",
   "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
   "guideSourcesTitle": "Sources",

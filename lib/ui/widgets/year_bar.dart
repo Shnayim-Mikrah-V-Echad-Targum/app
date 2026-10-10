@@ -38,7 +38,7 @@ enum YearSegment {
 class YearBar extends StatelessWidget {
   const YearBar({super.key, required this.segments, this.currentName});
 
-  /// The state of each parsha, from Bereshit to Vezot HaBerakhah.
+  /// The state of each parsha, from Bereshit to Vezot HaBerachah.
   final List<YearSegment> segments;
 
   /// This week's parsha in the UI language, named to screen readers while

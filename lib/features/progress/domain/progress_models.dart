@@ -68,7 +68,7 @@ String weekIdFor(PortionId portion, LocalDate occasion) =>
 /// (the year whose Simchat Torah started it with Bereshit).
 int cycleYearOf(PortionId portion, LocalDate occasion) {
   final h = HebrewDate.fromLocalDate(occasion);
-  // Vayeilech (when separate), Ha'azinu and Vezot HaBerakhah are read in
+  // Vayelech (when separate), Ha'azinu and Vezot HaBerachah are read in
   // Tishrei, after Rosh Hashana of the next year.
   if (h.month == HebrewMonth.tishrei && portion.number >= 52) return h.year - 1;
   return h.year;

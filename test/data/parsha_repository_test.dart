@@ -59,14 +59,14 @@ void main() {
     final reeh = LocalDate(2022, 8, 27);
     final kiTeitzei = LocalDate(2022, 9, 10);
 
-    test("has the Rosh Chodesh haftarah for Ashkenazim, Re'eh's apart, and then both with Ki Teitzei", () {
+    test("has the Rosh Chodesh haftarah for Ashkenazim, Re'eh's apart, and then both with Ki Tetze", () {
       final h = repo.haftarahFor(const PortionId(47), reeh, HaftarahNusach.ashkenazi);
       expect(h.specialKey, 'Shabbat Rosh Chodesh');
       expect(refs(h.parts), 'Isaiah 66:1-66:24');
       expect(refs(h.regular), 'Isaiah 54:11-55:5');
       final next = repo.haftarahFor(const PortionId(49), kiTeitzei, HaftarahNusach.ashkenazi);
       expect(refs(next.parts), 'Isaiah 54:1-54:10, Isaiah 54:11-55:5');
-      expect(next.regular, isNull, reason: "Ki Teitzei's own haftarah is its first part");
+      expect(next.regular, isNull, reason: "Ki Tetze's own haftarah is its first part");
     });
 
     for (final n in [HaftarahNusach.sephardi, HaftarahNusach.chabad]) {
@@ -128,6 +128,23 @@ void main() {
       expect([for (final n in [3, 5, 26, 29, 35, 37, 54]) repo.byNumber(n).displayName(ashkenazi: false)],
           ['Lech Lecha', 'Chayei Sarah', 'Shemini', 'Acharei Mot', 'Naso', 'Shelach', 'Vezot HaBerachah']);
       expect(repo.byNumber(54).displayName(ashkenazi: true), 'Vezos HaBerachah');
+    });
+
+    test('write tsere as each pronunciation says it', () {
+      // Sephardi: "e", and "ei" only where a yod is written after it, at the
+      // end of a word (Chayei, Pekudei, Acharei, Masei).
+      for (final p in repo.all) {
+        final name = p.displayName(ashkenazi: false);
+        expect(name, isNot(contains(RegExp(r'ei\B'))), reason: '$name: tsere is "e"');
+      }
+      const tsere = [1, 4, 7, 9, 10, 14, 46, 49, 52];
+      expect([for (final n in tsere) repo.byNumber(n).displayName(ashkenazi: false)],
+          ['Bereshit', 'Vayera', 'Vayetze', 'Vayeshev', 'Miketz', "Va'era", 'Ekev', 'Ki Tetze', 'Vayelech']);
+      // Ashkenazi: "ei".
+      expect([for (final n in tsere) repo.byNumber(n).displayName(ashkenazi: true)],
+          ['Bereishis', 'Vayeira', 'Vayeitzei', 'Vayeishev', 'Mikeitz', "Va'eira", 'Eikev', 'Ki Seitzei', 'Vayeilech']);
+      expect([for (final n in [5, 23, 29, 43]) repo.byNumber(n).displayName(ashkenazi: false)],
+          ['Chayei Sarah', 'Pekudei', 'Acharei Mot', 'Masei']);
     });
 
     test('of a combined portion join its parts with a hyphen', () {

@@ -54,7 +54,7 @@ abstract final class JewishHolidays {
     return false;
   }
 
-  /// The day the Torah reading cycle is completed (Vezot HaBerakhah is read).
+  /// The day the Torah reading cycle is completed (Vezot HaBerachah is read).
   static LocalDate simchatTorah(int hebrewYear, {required bool israel}) =>
       HebrewDate(hebrewYear, HebrewMonth.tishrei, israel ? 22 : 23).toLocalDate();
 

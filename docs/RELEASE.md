@@ -39,7 +39,7 @@
 ### Calendar and content spot-checks
 - [ ] For the coming year, compare the app's parsha for 10 or so Shabbatot against a printed luach, for both Israel and the Diaspora. Include any weeks where the two diverge and every double portion.
 - [ ] Special haftarot for the coming year: Shekalim, Zachor, Parah, HaChodesh, HaGadol, Shabbat Rosh Chodesh, Machar Chodesh, Chanukah and Shuva.
-- [ ] Simchat Torah: Vezot HaBerakhah opens and closes correctly in Israel and the Diaspora.
+- [ ] Simchat Torah: Vezot HaBerachah opens and closes correctly in Israel and the Diaspora.
 - [ ] Bamidbar 32:3 shows the third-reading prompt.
 - [ ] A Hebrew reader checks every icon on a device at home-screen size and at 1024 px: it reads שמו״ת with ש on the right. Regenerate icons only with `tool/branding/make_icon.py` (see the comment above `flutter_launcher_icons` in `pubspec.yaml`).
 

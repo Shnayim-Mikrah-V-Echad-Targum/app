@@ -88,7 +88,7 @@ class ParshaRepository {
   PortionInfo byNumber(int number) => _singles[number - 1];
 
   /// The haftarah read on [occasion] for [portion] by [nusach], accounting
-  /// for special Shabbatot. Vezot HaBerakhah's haftarah is that of Simchat
+  /// for special Shabbatot. Vezot HaBerachah's haftarah is that of Simchat
   /// Torah.
   WeekHaftarah haftarahFor(PortionId portion, LocalDate occasion, HaftarahNusach nusach) {
     final own = this.portion(portion).haftarah;

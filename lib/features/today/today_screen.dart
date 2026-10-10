@@ -181,7 +181,7 @@ class _ParshaCard extends ConsumerWidget {
     final started = ctx.progress.isStarted;
     final daysLeft = occasion.differenceInDays(ctx.today);
     // The days until the portion is read in synagogue: on Shabbat, or for
-    // Vezot HaBerakhah on Simchat Torah, which is seldom a Shabbat.
+    // Vezot HaBerachah on Simchat Torah, which is seldom a Shabbat.
     final countdown = daysLeft < 0 || ctx.progress.isComplete
         ? null
         : ctx.week.portion.isVezotHaberakhah

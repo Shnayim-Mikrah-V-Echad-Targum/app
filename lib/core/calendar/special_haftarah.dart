@@ -73,7 +73,7 @@ String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required Hafta
     // Re'eh on Rosh Chodesh Elul: Sephardim and Chabad read its own
     // haftarah, the third of consolation (Shulchan Aruch OC 425:1), adding
     // the first and last verses of the Rosh Chodesh haftarah. Ashkenazim read
-    // the Rosh Chodesh haftarah (Rema ibid.), and Re'eh's with Ki Teitzei's.
+    // the Rosh Chodesh haftarah (Rema ibid.), and Re'eh's with Ki Tetze's.
     if (portion.number == _P.reeh && !ashkenazi) return "Re'eh on Shabbat Rosh Chodesh";
     return 'Shabbat Rosh Chodesh';
   }
@@ -96,7 +96,7 @@ String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required Hafta
   }
 
   // When Re'eh fell on Rosh Chodesh Elul, Ashkenazim join its haftarah (the
-  // third of consolation) to Ki Teitzei's, which continues it in Isaiah 54.
+  // third of consolation) to Ki Tetze's, which continues it in Isaiah 54.
   if (portion.number == _P.kiTeitzei && ashkenazi) {
     final reeh = HebrewDate.fromRd(rd - 14);
     if (JewishHolidays.isRoshChodesh(reeh)) {

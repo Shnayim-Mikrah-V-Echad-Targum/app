@@ -96,7 +96,7 @@ void main() {
       expect(daysOf(joinedOn('2026-10-17').planFor(noach)), daysOf(usual.planFor(noach)));
     });
 
-    test('joining on Simchat Torah leaves Bereshit, and Vezot HaBerakhah, as usual', () {
+    test('joining on Simchat Torah leaves Bereshit, and Vezot HaBerachah, as usual', () {
       // 4 Oct 2026 is Simchat Torah in the Diaspora, so Bereshit's week
       // begins the next day.
       final bereshit = diaspora.weekFor(d('2026-10-09'));

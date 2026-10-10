@@ -132,7 +132,7 @@ class Names {
   }
 
   /// When [week]'s portion is read in synagogue: "Read on Shabbat,
-  /// 10 October", or for Vezot HaBerakhah "Read on Simchat Torah, Sunday,
+  /// 10 October", or for Vezot HaBerachah "Read on Simchat Torah, Sunday,
   /// 4 October". The Hebrew UI dates it in the Hebrew calendar, without the
   /// year: "נקראת בשבת, כ״ט בתשרי".
   String readOnLabel(ReadingWeek week) {
@@ -222,7 +222,7 @@ class Names {
     'Kedoshim following Special Shabbat': 'Kedoshim (haftarah of Acharei Mot)',
     'Masei on Shabbat Rosh Chodesh': 'Masei on Rosh Chodesh Av',
     'Matot-Masei on Shabbat Rosh Chodesh': 'Matot-Masei on Rosh Chodesh Av',
-    'Ki Teitzei with 3rd Haftarah of Consolation': "Ki Teitzei, with Aniyah So'arah",
+    'Ki Teitzei with 3rd Haftarah of Consolation': "Ki Tetze, with Aniyah So'arah",
     "Re'eh on Shabbat Rosh Chodesh": "Re'eh on Rosh Chodesh Elul",
   };
 }

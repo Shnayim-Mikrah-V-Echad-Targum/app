@@ -75,7 +75,7 @@ void main() {
       ('Chayei Sarah: On time', status.done, null, Icons.check, status.onDone),
       ('Toldot: In progress', scheme.primaryContainer, BorderSide(color: scheme.primary, width: 2), Icons.timelapse,
           scheme.onPrimaryContainer),
-      ('Vayetzei: Upcoming', sefer.paper, BorderSide(color: sefer.hairline), null, null),
+      ('Vayetze: Upcoming', sefer.paper, BorderSide(color: sefer.hairline), null, null),
     ]) {
       final tile = find.bySemanticsLabel(label);
       expect(tile, findsOneWidget, reason: label);
@@ -195,7 +195,7 @@ void main() {
       return names.takeWhile((n) => tester.getRect(tileOf(n)).top == top).length;
     }
 
-    const genesis = ['Bereshit', 'Noach', 'Lech Lecha', 'Vayera', 'Chayei Sarah', 'Toldot', 'Vayetzei'];
+    const genesis = ['Bereshit', 'Noach', 'Lech Lecha', 'Vayera', 'Chayei Sarah', 'Toldot', 'Vayetze'];
 
     testWidgets('three columns on a phone, each row as tall as its tallest tile', (tester) async {
       await openProgress(tester);

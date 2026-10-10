@@ -46,12 +46,15 @@ const BOOK_HE = {
 // The English names shown, in one style: words apart, never hyphenated; "ch"
 // for both ח and כ; a vowel the keys drop written out (Acharei, Shemini,
 // Shelach); an apostrophe between two vowels for an aleph or ayin; no doubled
-// letters; a final heh after a vowel; and otherwise the usual spellings.
+// letters; a final heh after a vowel; tsere as "e", as it is said in the
+// Sephardi pronunciation these names follow (Bereshit, Vayetze, Miketz,
+// Ekev, Ki Tetze), and "ei" only where a yod is written after it (Chayei,
+// Pekudei, Acharei, Masei); and otherwise the usual spellings.
 // Keyed by the stable keys used throughout the app and its data (@hebcal's
 // parsha names), which are never shown.
 const ENGLISH = {
   'Bereshit': 'Bereshit', 'Noach': 'Noach', 'Lech-Lecha': 'Lech Lecha', 'Vayera': 'Vayera',
-  'Chayei Sara': 'Chayei Sarah', 'Toldot': 'Toldot', 'Vayetzei': 'Vayetzei',
+  'Chayei Sara': 'Chayei Sarah', 'Toldot': 'Toldot', 'Vayetzei': 'Vayetze',
   'Vayishlach': 'Vayishlach', 'Vayeshev': 'Vayeshev', 'Miketz': 'Miketz', 'Vayigash': 'Vayigash',
   'Vayechi': 'Vayechi', 'Shemot': 'Shemot', 'Vaera': "Va'era", 'Bo': 'Bo', 'Beshalach': 'Beshalach',
   'Yitro': 'Yitro', 'Mishpatim': 'Mishpatim', 'Terumah': 'Terumah', 'Tetzaveh': 'Tetzaveh',
@@ -61,12 +64,14 @@ const ENGLISH = {
   'Bechukotai': 'Bechukotai', 'Bamidbar': 'Bamidbar', 'Nasso': 'Naso',
   "Beha'alotcha": "Beha'alotcha", "Sh'lach": 'Shelach', 'Korach': 'Korach', 'Chukat': 'Chukat',
   'Balak': 'Balak', 'Pinchas': 'Pinchas', 'Matot': 'Matot', 'Masei': 'Masei', 'Devarim': 'Devarim',
-  'Vaetchanan': "Va'etchanan", 'Eikev': 'Eikev', "Re'eh": "Re'eh", 'Shoftim': 'Shoftim',
-  'Ki Teitzei': 'Ki Teitzei', 'Ki Tavo': 'Ki Tavo', 'Nitzavim': 'Nitzavim', 'Vayeilech': 'Vayeilech',
+  'Vaetchanan': "Va'etchanan", 'Eikev': 'Ekev', "Re'eh": "Re'eh", 'Shoftim': 'Shoftim',
+  'Ki Teitzei': 'Ki Tetze', 'Ki Tavo': 'Ki Tavo', 'Nitzavim': 'Nitzavim', 'Vayeilech': 'Vayelech',
   "Ha'azinu": "Ha'azinu", 'Vezot Haberakhah': 'Vezot HaBerachah',
 };
 
-// The same names in Ashkenazi pronunciation and the same style.
+// The same names in Ashkenazi pronunciation and the same style, where tsere
+// is "ei" (Bereishis, Vayeitzei, Mikeitz, Eikev, Ki Seitzei); Re'eh keeps its
+// usual spelling.
 const ASHKENAZI = {
   'Bereshit': 'Bereishis', 'Noach': 'Noach', 'Lech-Lecha': 'Lech Lecha', 'Vayera': 'Vayeira',
   'Chayei Sara': 'Chayei Sarah', 'Toldot': 'Toldos', 'Vayetzei': 'Vayeitzei',

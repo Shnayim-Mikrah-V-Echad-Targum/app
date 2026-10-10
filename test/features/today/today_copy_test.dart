@@ -8,7 +8,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import '../../helpers.dart';
 
 /// Hoshana Rabbah 5787, Friday 2 October 2026, in the week of Vezot
-/// HaBerakhah. Simchat Torah is on Shabbat in Israel, and on Sunday outside it.
+/// HaBerachah. Simchat Torah is on Shabbat in Israel, and on Sunday outside it.
 final _hoshanaRabbah = DateTime(2026, 10, 2, 10);
 
 final _israel = AppSettings(

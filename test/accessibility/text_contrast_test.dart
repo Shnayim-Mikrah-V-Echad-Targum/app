@@ -87,7 +87,7 @@ void main() {
         'Lech Lecha: Not completed',
         'Vayera: Made up',
         'Toldot: In progress',
-        'Vayetzei: Upcoming',
+        'Vayetze: Upcoming',
       ]) {
         final tile = find.bySemanticsLabel(label);
         final ink = tester.widget<Ink>(find.descendant(of: tile, matching: find.byType(Ink)));
