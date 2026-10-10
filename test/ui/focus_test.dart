@@ -6,6 +6,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
@@ -281,6 +282,47 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
     await tester.pump();
     expect(_inkWellRing(tester, inkWell), isNotNull);
+  });
+
+  testWidgets('SeferInkWell leaves the ring to a focused control inside it', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: _theme(AppThemeMode.light),
+      home: Scaffold(
+        body: PaperGroup(children: [
+          PaperRow(
+            icon: Icons.menu_book_outlined,
+            title: 'Rishon',
+            onTap: () {},
+            trailing: IconButton(onPressed: () {}, tooltip: 'More', icon: const Icon(Icons.more_vert)),
+          ),
+        ]),
+      ),
+    ));
+    final row = find.byType(SeferInkWell);
+
+    // Tab reaches the row first: it is ringed.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(_inkWellRing(tester, row), isNotNull);
+
+    // Then its menu button, which rings itself; the row, which still holds
+    // focus through it, drops its ring rather than show a second one.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    final button = find.byType(IconButton);
+    expect(Focus.of(tester.element(find.byIcon(Icons.more_vert))).hasPrimaryFocus, isTrue);
+    expect(_inkWellRing(tester, row), isNull);
+    expect(
+      find.descendant(of: button, matching: find.byWidgetPredicate((w) => w is Material && w.shape is FocusRingBorder)),
+      findsOneWidget,
+    );
+
+    // And back to the row.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pump();
+    expect(_inkWellRing(tester, row), isNotNull);
   });
 
   testWidgets('a tappable InfoCard leaves room for the ring around it', (tester) async {

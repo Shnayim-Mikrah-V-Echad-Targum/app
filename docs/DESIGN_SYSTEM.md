@@ -494,7 +494,8 @@ Controls pick the ring as they build, but Material rebuilds them only when their
 
 `SeferInkWell` is used for cards, PaperRows, week cells, map tiles and ribbon tabs:
 - an InkWell with `onFocusChange`;
-- when focused and `FocusManager.instance.highlightMode == FocusHighlightMode.traditional`, a foreground `ShapeDecoration(RoundedRectangleBorder(radius, side: BorderSide(color: focus, width: 3, strokeAlign: outside)))`.
+- when focused and `FocusManager.instance.highlightMode == FocusHighlightMode.traditional`, a foreground `ShapeDecoration(RoundedRectangleBorder(radius, side: BorderSide(color: focus, width: 3, strokeAlign: outside)))`;
+- only for its own focus: `onFocusChange` also fires while a control inside it (a PaperRow's trailing menu or text button) has focus, and that control draws its own ring, so the row draws none.
 
 Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7). The ring appears instantly.
 

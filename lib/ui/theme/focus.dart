@@ -182,6 +182,10 @@ class FocusRingBorder extends RoundedRectangleBorder {
 /// The ring is painted outside the widget, so nothing between it and the
 /// ink well's [Material] may clip; [borderRadius] should match the corners of
 /// the shape it sits on.
+///
+/// Only the ink well's own focus is ringed: a control inside it, such as a
+/// paper row's trailing menu button, shows just its own ring when it takes
+/// focus, not a second one around the whole row.
 class SeferInkWell extends StatefulWidget {
   const SeferInkWell({
     super.key,
@@ -207,7 +211,12 @@ class SeferInkWell extends StatefulWidget {
 }
 
 class _SeferInkWellState extends State<SeferInkWell> {
+  FocusNode? _ownFocusNode;
   bool _focused = false;
+
+  /// The ink well's node: the caller's, or one of its own, so that its own
+  /// focus can be told apart from a descendant's.
+  FocusNode get _focusNode => widget.focusNode ?? (_ownFocusNode ??= FocusNode(debugLabel: 'SeferInkWell'));
 
   @override
   void initState() {
@@ -216,8 +225,20 @@ class _SeferInkWellState extends State<SeferInkWell> {
   }
 
   @override
+  void didUpdateWidget(SeferInkWell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != null && _ownFocusNode != null) {
+      // The caller's node takes over once the ink well has moved to it.
+      final own = _ownFocusNode!;
+      _ownFocusNode = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) => own.dispose());
+    }
+  }
+
+  @override
   void dispose() {
     FocusManager.instance.removeHighlightModeListener(_highlightModeChanged);
+    _ownFocusNode?.dispose();
     super.dispose();
   }
 
@@ -227,9 +248,12 @@ class _SeferInkWellState extends State<SeferInkWell> {
     if (_focused) setState(() {});
   }
 
-  void _focusChanged(bool focused) {
-    setState(() => _focused = focused);
-    widget.onFocusChange?.call(focused);
+  // Called when focus enters or leaves the ink well or anything inside it,
+  // and whenever it moves between the two.
+  void _focusChanged(bool hasFocus) {
+    final focused = hasFocus && _focusNode.hasPrimaryFocus;
+    if (focused != _focused) setState(() => _focused = focused);
+    widget.onFocusChange?.call(hasFocus);
   }
 
   @override
@@ -254,7 +278,7 @@ class _SeferInkWellState extends State<SeferInkWell> {
       child: InkWell(
         onTap: widget.onTap,
         onLongPress: widget.onLongPress,
-        focusNode: widget.focusNode,
+        focusNode: _focusNode,
         autofocus: widget.autofocus,
         onFocusChange: _focusChanged,
         borderRadius: widget.borderRadius,
