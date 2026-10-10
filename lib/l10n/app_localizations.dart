@@ -2607,6 +2607,18 @@ abstract class AppLocalizations {
   /// **'Paste the contents of your backup file.'**
   String get importPrompt;
 
+  /// The label of the field a backup is pasted into; importPrompt is its helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup text'**
+  String get importBackupText;
+
+  /// Under the backup text field, when 'Paste from clipboard' finds no text, or the browser won't let the app read the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t paste from the clipboard. Paste into the field instead.'**
+  String get importPasteFailed;
+
   /// No description provided for @importSuccess.
   ///
   /// In en, this message translates to:
@@ -2664,7 +2676,7 @@ abstract class AppLocalizations {
   /// No description provided for @importMergeBody.
   ///
   /// In en, this message translates to:
-  /// **'Merge this backup with the progress on this device? Nothing on either side is lost.'**
+  /// **'Merge this backup with the progress on this device? Merging keeps everything from both.'**
   String get importMergeBody;
 
   /// No description provided for @importAlsoSettings.
@@ -2685,11 +2697,35 @@ abstract class AppLocalizations {
   /// **'Replace instead'**
   String get importReplace;
 
-  /// No description provided for @importRemindersOff.
+  /// No description provided for @importReplaceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reminders are off, since notifications aren\'t allowed for this app.'**
-  String get importRemindersOff;
+  /// **'Replace the progress here?'**
+  String get importReplaceTitle;
+
+  /// No description provided for @importReplaceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This erases the reading history and streaks on this device, and keeps only what the backup holds. It can\'t be undone.'**
+  String get importReplaceConfirm;
+
+  /// No description provided for @importReplaceConfirmSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'This erases the reading history and streaks on this device, in your cloud backup, and on your other devices when they next sync, and keeps only what this backup holds. It can\'t be undone.'**
+  String get importReplaceConfirmSynced;
+
+  /// No description provided for @importReplaceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get importReplaceAction;
+
+  /// After importing a backup whose settings had reminders on, when the device refused the app's notifications. Shown with a 'Reminders' action that opens their settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress imported. Reminders are off, since notifications aren\'t allowed for this app.'**
+  String get importSuccessRemindersOff;
 
   /// No description provided for @cloudBackup.
   ///
@@ -2942,6 +2978,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your progress is restored.'**
   String get onbRestoreDone;
+
+  /// As importSuccessRemindersOff, after restoring a backup during onboarding.
+  ///
+  /// In en, this message translates to:
+  /// **'Your progress is restored. Reminders are off, since notifications aren\'t allowed for this app.'**
+  String get onbRestoreDoneRemindersOff;
 
   /// No description provided for @onbRestoreNone.
   ///

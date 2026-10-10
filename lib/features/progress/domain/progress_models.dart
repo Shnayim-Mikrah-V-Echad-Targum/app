@@ -583,6 +583,37 @@ class WeekProgress {
     return w;
   }
 
+  /// This week with what decides it that was recorded before [reset]
+  /// recorded again, as a change made now: each reading's and the
+  /// haftarah's day, and each saved place. Merged with a copy reset then,
+  /// the week reads the same. Call it within [ProgressClock.above] [reset].
+  WeekProgress renewedBefore(int reset) {
+    final r = [for (final row in records) [...row]];
+    var changed = false;
+    for (var a = 0; a < kAliyot; a++) {
+      for (var p = 0; p < 3; p++) {
+        if (r[a][p].marks.firstOrNull case final m? when m.at < reset) {
+          r[a][p] = r[a][p].changedTo(m.day);
+          changed = true;
+        }
+      }
+    }
+    var haftarah = haftarahRecord;
+    if (haftarah.marks.firstOrNull case final m? when m.at < reset) {
+      haftarah = haftarah.changedTo(m.day);
+      changed = true;
+    }
+    final stamps = {...positionStamps};
+    for (final a in positions.keys) {
+      final t = stamps[a] ?? 0;
+      if (t < reset) {
+        stamps[a] = ProgressClock.after(t);
+        changed = true;
+      }
+    }
+    return changed ? _copy(records: r, haftarahRecord: haftarah, positionStamps: stamps) : this;
+  }
+
   static bool _sameList(List<int> a, List<int> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {

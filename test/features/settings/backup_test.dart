@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -23,6 +25,12 @@ final _bereshitFriday = LocalDate(2026, 10, 9);
 
 /// The Monday of Noach, the day this device was set up.
 final _monday = LocalDate(2026, 10, 12);
+
+/// A community that keeps backups.
+class _Cloud extends DemoForumRepository {
+  @override
+  bool get isDemo => false;
+}
 
 /// Reminders that can be scheduled, where the OS [allows] them or not.
 class _AskingNotifications extends PhoneNotifications {
@@ -232,6 +240,7 @@ void main() {
       NotificationService? notifications,
       double textScale = 1,
       AppSettings? settings,
+      ForumRepository? forums,
     }) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
@@ -250,6 +259,7 @@ void main() {
             ProgressState(weeks: {'5787:2': WeekProgress(weekId: '5787:2').withAliyah(0, _monday)}),
         now: DateTime(2026, 10, 12, 10),
         notifications: notifications,
+        forums: forums,
         overrides: [backupFilesProvider.overrideWithValue(fake)],
       );
       c.read(routerProvider).go('/settings/data');
@@ -267,7 +277,7 @@ void main() {
       await chooseFile(tester);
       expect(find.text('Backup from October 11, 2026: 1\u00a0week logged, 1\u00a0pause.'), findsOneWidget);
       expect(
-        find.text('Merge this backup with the progress on this device? Nothing on either side is lost.'),
+        find.text('Merge this backup with the progress on this device? Merging keeps everything from both.'),
         findsOneWidget,
       );
       expect(find.widgetWithText(FilledButton, 'Merge'), findsOneWidget);
@@ -293,10 +303,48 @@ void main() {
       expect(c.read(streakSummaryProvider).parshaStreak, 1);
     });
 
+    testWidgets('replacing asks first, saying what it erases', (tester) async {
+      final (c, _) = await open(tester);
+      final before = c.read(progressProvider);
+      await chooseFile(tester);
+      await tester.tap(find.widgetWithText(TextButton, 'Replace instead'));
+      await tester.pumpAndSettle();
+      expect(find.text('Replace the progress here?'), findsOneWidget);
+      expect(
+        find.text('This erases the reading history and streaks on this device, and keeps only what the backup holds. '
+            "It can't be undone."),
+        findsOneWidget,
+      );
+      final replace = find.widgetWithText(FilledButton, 'Replace');
+      expect(
+        tester.widget<FilledButton>(replace).style?.backgroundColor?.resolve({}),
+        Theme.of(tester.element(replace)).colorScheme.error,
+        reason: 'the destructive button of a confirm dialog',
+      );
+
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Replace the progress here?'), findsNothing);
+      expect(find.text('Replace instead'), findsOneWidget, reason: 'back to the choice');
+      expect(c.read(progressProvider), before);
+    });
+
+    testWidgets('replacing with backup on says that it erases the cloud backup too', (tester) async {
+      final cloud = _Cloud();
+      await cloud.verifyCode('reader@example.org', '123456');
+      await open(tester, settings: setUpHere.copyWith(cloudSync: true), forums: cloud);
+      await chooseFile(tester);
+      await tester.tap(find.widgetWithText(TextButton, 'Replace instead'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('on this device, in your cloud backup, and on your other devices'), findsOneWidget);
+    });
+
     testWidgets('replacing keeps only the backup', (tester) async {
       final (c, _) = await open(tester);
       await chooseFile(tester);
       await tester.tap(find.widgetWithText(TextButton, 'Replace instead'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Replace'));
       await tester.pumpAndSettle();
 
       expect(find.text('Progress imported.'), findsOneWidget);
@@ -336,6 +384,41 @@ void main() {
       final synced = mergeProgress(imported, account);
       expect(synced.week('5787:1').isComplete, isTrue);
       expect(synced.pauses.map((p) => p.id), ['trip']);
+    });
+
+    testWidgets("merges a backup made after a reset elsewhere, keeping what is here through the next sync", (tester) async {
+      // Bereshit, read here. Then progress was reset everywhere on another
+      // device, which this one hasn't synced with since, Rishon of Noach
+      // read there, and a backup made.
+      final here = ProgressState(weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAll(_bereshitFriday)});
+      later();
+      final resetAt = ProgressClock.after(here.latestStamp);
+      later();
+      final elsewhere = ProgressClock.above(
+        resetAt,
+        () => ProgressState(
+          resetAt: resetAt,
+          weeks: {'5787:2': WeekProgress(weekId: '5787:2').withAliyah(0, _monday)},
+        ),
+      );
+      final file = encodeBackup(elsewhere, savedSettings, now: DateTime.utc(2026, 10, 11, 12));
+      final (c, _) = await open(tester, file: file, progress: () => here);
+      await chooseFile(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Merge'));
+      await tester.pumpAndSettle();
+
+      final imported = c.read(progressProvider);
+      expect(imported.week('5787:1').isComplete, isTrue);
+      expect(imported.week('5787:2').isAliyahDone(0), isTrue);
+      expect(c.read(settingsProvider).joinDate, _simchatTorah);
+      // The account's backup, which the reset reached, as the next sync
+      // merges it.
+      later();
+      final synced = mergeProgress(imported, elsewhere);
+      expect(synced.week('5787:1').isComplete, isTrue, reason: 'kept, as the merge promised');
+      expect(synced.week('5787:2').isAliyahDone(0), isTrue);
+      c.read(progressProvider.notifier).replaceAll(synced);
+      expect(c.read(settingsProvider).joinDate, _simchatTorah, reason: 'the reset is no news here, to restart from');
     });
 
     testWidgets('can restore the settings too, keeping whether reminders were offered here', (tester) async {
@@ -378,6 +461,11 @@ void main() {
               : "Progress imported. Reminders are off, since notifications aren't allowed for this app."),
           findsOneWidget,
         );
+        if (allows) return;
+        // A change the reader didn't ask for, with the way to undo it.
+        await tester.tap(find.widgetWithText(SnackBarAction, 'Reminders'));
+        await tester.pumpAndSettle();
+        expect(c.read(routerProvider).state.uri.path, '/settings/reminders');
       });
     }
 
@@ -459,6 +547,60 @@ void main() {
       await tester.pumpAndSettle();
       expect(c.read(progressProvider).week('5787:1').isComplete, isTrue);
       expect(c.read(progressProvider).week('5787:2').isAliyahDone(0), isTrue);
+    });
+
+    group('pasting', () {
+      /// Opens the paste dialog with the clipboard answering as [clipboard]
+      /// does.
+      Future<void> openPaste(WidgetTester tester, Future<Object?> Function() clipboard) async {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.getData') return clipboard();
+          return null;
+        });
+        addTearDown(
+            () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+        await open(tester);
+        await tester.tap(find.text('Paste backup text'));
+        await tester.pumpAndSettle();
+      }
+
+      const failed = "Couldn't paste from the clipboard. Paste into the field instead.";
+
+      testWidgets('says so when the browser won\'t give the clipboard', (tester) async {
+        await openPaste(tester, () async => throw PlatformException(code: 'denied'));
+        await tester.tap(find.text('Paste from clipboard'));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(find.text(failed), findsOneWidget);
+        expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
+
+        // Typing clears it.
+        await tester.enterText(find.byType(TextField), '{');
+        await tester.pump();
+        expect(find.text(failed), findsNothing);
+      });
+
+      testWidgets('says so when the clipboard holds no text', (tester) async {
+        for (final empty in [null, {'text': ''}, {'text': '  '}]) {
+          await openPaste(tester, () async => empty);
+          await tester.tap(find.text('Paste from clipboard'));
+          await tester.pump();
+          expect(find.text(failed), findsOneWidget, reason: '$empty');
+        }
+      });
+
+      testWidgets('the field keeps its name once filled, and the dialog meets the guidelines', (tester) async {
+        final handle = tester.ensureSemantics();
+        await openPaste(tester, () async => null);
+        expect(find.text('Paste the contents of your backup file.'), findsOneWidget);
+        await tester.enterText(find.byType(TextField), '{"app": "shnayim_mikra"}');
+        await tester.pump();
+        expect(tester.getSemantics(find.byType(EditableText)).label, contains('Backup text'));
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        handle.dispose();
+      });
     });
 
     group('exporting', () {

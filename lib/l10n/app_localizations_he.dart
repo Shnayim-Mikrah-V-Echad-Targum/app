@@ -1488,6 +1488,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get importPrompt => 'יש להדביק את תוכן קובץ הגיבוי.';
 
   @override
+  String get importBackupText => 'טקסט הגיבוי';
+
+  @override
+  String get importPasteFailed =>
+      'לא ניתן היה להדביק מהלוח. אפשר להדביק ישירות בשדה.';
+
+  @override
   String get importSuccess => 'ההתקדמות יובאה.';
 
   @override
@@ -1552,7 +1559,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get importMergeBody =>
-      'למזג את הגיבוי עם ההתקדמות שבמכשיר הזה? שום דבר לא יאבד, לא מהגיבוי ולא מהמכשיר.';
+      'למזג את הגיבוי עם ההתקדמות שבמכשיר הזה? המיזוג שומר את כל מה שיש בשניהם.';
 
   @override
   String get importAlsoSettings => 'לשחזר גם את ההגדרות';
@@ -1564,8 +1571,22 @@ class AppLocalizationsHe extends AppLocalizations {
   String get importReplace => 'החלפה במקום מיזוג';
 
   @override
-  String get importRemindersOff =>
-      'התזכורות כבויות, כי לאפליקציה אין הרשאה לשלוח התראות.';
+  String get importReplaceTitle => 'להחליף את ההתקדמות שבמכשיר?';
+
+  @override
+  String get importReplaceConfirm =>
+      'פעולה זו מוחקת את היסטוריית הקריאה והרצפים במכשיר זה, ומשאירה רק את מה שבגיבוי. אי אפשר לבטל אותה.';
+
+  @override
+  String get importReplaceConfirmSynced =>
+      'פעולה זו מוחקת את היסטוריית הקריאה והרצפים במכשיר זה, בגיבוי בענן ובמכשירים האחרים שלך כשיסונכרנו בפעם הבאה, ומשאירה רק את מה שבגיבוי הזה. אי אפשר לבטל אותה.';
+
+  @override
+  String get importReplaceAction => 'החלפה';
+
+  @override
+  String get importSuccessRemindersOff =>
+      'ההתקדמות יובאה. התזכורות כבויות, כי לאפליקציה אין הרשאה לשלוח התראות.';
 
   @override
   String get cloudBackup => 'גיבוי בענן';
@@ -1712,6 +1733,10 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get onbRestoreDone => 'ההתקדמות שוחזרה.';
+
+  @override
+  String get onbRestoreDoneRemindersOff =>
+      'ההתקדמות שוחזרה. התזכורות כבויות, כי לאפליקציה אין הרשאה לשלוח התראות.';
 
   @override
   String get onbRestoreNone =>

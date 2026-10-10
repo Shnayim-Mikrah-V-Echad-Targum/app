@@ -475,6 +475,9 @@ void main() {
       final c = await paste(tester, _roundTrip(theirs));
       await tester.tap(find.text('Replace instead'));
       await tester.pumpAndSettle();
+      // Replacing erases the progress here, so it asks first.
+      await tester.tap(find.widgetWithText(FilledButton, 'Replace'));
+      await tester.pumpAndSettle();
       final backup = ProgressState(
         weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAliyah(3, _d1)},
         resetAt: resetAt,

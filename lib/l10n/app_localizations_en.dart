@@ -1491,6 +1491,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importPrompt => 'Paste the contents of your backup file.';
 
   @override
+  String get importBackupText => 'Backup text';
+
+  @override
+  String get importPasteFailed =>
+      'Couldn\'t paste from the clipboard. Paste into the field instead.';
+
+  @override
   String get importSuccess => 'Progress imported.';
 
   @override
@@ -1551,7 +1558,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importMergeBody =>
-      'Merge this backup with the progress on this device? Nothing on either side is lost.';
+      'Merge this backup with the progress on this device? Merging keeps everything from both.';
 
   @override
   String get importAlsoSettings => 'Also restore settings';
@@ -1563,8 +1570,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importReplace => 'Replace instead';
 
   @override
-  String get importRemindersOff =>
-      'Reminders are off, since notifications aren\'t allowed for this app.';
+  String get importReplaceTitle => 'Replace the progress here?';
+
+  @override
+  String get importReplaceConfirm =>
+      'This erases the reading history and streaks on this device, and keeps only what the backup holds. It can\'t be undone.';
+
+  @override
+  String get importReplaceConfirmSynced =>
+      'This erases the reading history and streaks on this device, in your cloud backup, and on your other devices when they next sync, and keeps only what this backup holds. It can\'t be undone.';
+
+  @override
+  String get importReplaceAction => 'Replace';
+
+  @override
+  String get importSuccessRemindersOff =>
+      'Progress imported. Reminders are off, since notifications aren\'t allowed for this app.';
 
   @override
   String get cloudBackup => 'Cloud backup';
@@ -1711,6 +1732,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onbRestoreDone => 'Your progress is restored.';
+
+  @override
+  String get onbRestoreDoneRemindersOff =>
+      'Your progress is restored. Reminders are off, since notifications aren\'t allowed for this app.';
 
   @override
   String get onbRestoreNone =>

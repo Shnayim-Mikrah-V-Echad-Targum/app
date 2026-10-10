@@ -1023,6 +1023,14 @@
   "importData": "Import progress",
   "importDataDesc": "Restore from a backup file",
   "importPrompt": "Paste the contents of your backup file.",
+  "importBackupText": "Backup text",
+  "@importBackupText": {
+    "description": "The label of the field a backup is pasted into; importPrompt is its helper text."
+  },
+  "importPasteFailed": "Couldn't paste from the clipboard. Paste into the field instead.",
+  "@importPasteFailed": {
+    "description": "Under the backup text field, when 'Paste from clipboard' finds no text, or the browser won't let the app read the clipboard."
+  },
   "importSuccess": "Progress imported.",
   "importFailed": "That backup couldn't be read.",
   "exportCopied": "Backup copied to the clipboard.",
@@ -1057,11 +1065,18 @@
       }
     }
   },
-  "importMergeBody": "Merge this backup with the progress on this device? Nothing on either side is lost.",
+  "importMergeBody": "Merge this backup with the progress on this device? Merging keeps everything from both.",
   "importAlsoSettings": "Also restore settings",
   "importMerge": "Merge",
   "importReplace": "Replace instead",
-  "importRemindersOff": "Reminders are off, since notifications aren't allowed for this app.",
+  "importReplaceTitle": "Replace the progress here?",
+  "importReplaceConfirm": "This erases the reading history and streaks on this device, and keeps only what the backup holds. It can't be undone.",
+  "importReplaceConfirmSynced": "This erases the reading history and streaks on this device, in your cloud backup, and on your other devices when they next sync, and keeps only what this backup holds. It can't be undone.",
+  "importReplaceAction": "Replace",
+  "importSuccessRemindersOff": "Progress imported. Reminders are off, since notifications aren't allowed for this app.",
+  "@importSuccessRemindersOff": {
+    "description": "After importing a backup whose settings had reminders on, when the device refused the app's notifications. Shown with a 'Reminders' action that opens their settings."
+  },
   "cloudBackup": "Cloud backup",
   "resetProgress": "Reset all progress",
   "resetProgressConfirm": "This erases your reading history and streaks on this device. It can't be undone.",
@@ -1153,6 +1168,10 @@
   "onbRestoreFileDesc": "A backup exported from Settings",
   "onbRestoring": "Restoring your progress…",
   "onbRestoreDone": "Your progress is restored.",
+  "onbRestoreDoneRemindersOff": "Your progress is restored. Reminders are off, since notifications aren't allowed for this app.",
+  "@onbRestoreDoneRemindersOff": {
+    "description": "As importSuccessRemindersOff, after restoring a backup during onboarding."
+  },
   "onbRestoreNone": "This account has no backup yet. Let's set up your reading.",
   "guideWhatTitle": "What is Shnayim Mikra?",
   "guideWhatBody": "The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.",

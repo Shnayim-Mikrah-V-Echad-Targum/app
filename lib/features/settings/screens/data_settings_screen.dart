@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/calendar/local_date.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../services/backup_files.dart';
 import '../../../services/feedback.dart';
 import '../../../services/notifications.dart';
@@ -43,7 +42,7 @@ Future<void> exportBackupFile(BuildContext context, WidgetRef ref) async {
 }
 
 /// How restoring a backup went, for the caller to say (see
-/// [backupImportStatus]).
+/// [showBackupImportStatus]).
 enum BackupImport {
   restored,
 
@@ -55,16 +54,38 @@ enum BackupImport {
   unreadable,
 }
 
-/// What to say once a backup is restored as [result]: [restored] if it was.
-String backupImportStatus(AppLocalizations l, BackupImport result, {required String restored}) => switch (result) {
-      BackupImport.restored => restored,
-      BackupImport.remindersOff => '$restored ${l.importRemindersOff}',
-      BackupImport.unreadable => l.importFailed,
-    };
+/// Says how restoring a backup went: [restored] if it was, or
+/// [remindersOff] if its reminders had to be turned off. That is a change
+/// the reader didn't ask for, so the message leads to the reminders'
+/// settings, and stays as long as a message with an action does.
+void showBackupImportStatus(
+  BuildContext context,
+  BackupImport result, {
+  required String restored,
+  required String remindersOff,
+}) {
+  final l = context.l10n;
+  switch (result) {
+    case BackupImport.restored:
+      showStatus(context, restored);
+    case BackupImport.remindersOff:
+      // The router, not this page, which may be gone by then: onboarding
+      // ends on Today.
+      final router = GoRouter.of(context);
+      showStatus(
+        context,
+        remindersOff,
+        action: SnackBarAction(label: l.settingsReminders, onPressed: () => router.push('/settings/reminders')),
+      );
+    case BackupImport.unreadable:
+      showStatus(context, l.importFailed);
+  }
+}
 
 /// Restores [backup], merged with the progress here (see [mergeBackup]), or
 /// with [replace], in its place. Either way it counts as a new change, which
-/// the next sync keeps (see [ProgressController.restore]).
+/// the next sync keeps (see [ProgressController.restore]), even where the
+/// backup has seen a reset made elsewhere that this device hasn't.
 ///
 /// The join date is the earlier of this device's and the backup's (see
 /// [Backup.joinDate]), so that the history from both counts; replacing, it
@@ -91,6 +112,7 @@ Future<BackupImport> importBackup(
     replace ? backup.progress : mergeBackup(ref.read(progressProvider), backup.progress),
     unknownWeeks: backup.unknownWeeks,
     unknownPauses: backup.unknownPauses,
+    outlast: backup.progress.resetAt,
   );
   final restored = withSettings ? backup.settings : null;
   if (restored == null) {
@@ -150,6 +172,9 @@ Future<BackupImport?> _confirmImport(BuildContext context, WidgetRef ref, Backup
       merge: holdsProgress(ref.read(progressProvider)),
       // A reader still setting up has no settings of their own to keep.
       withSettings: !ref.read(settingsProvider).onboardingComplete,
+      // Replacing removes what the backup lacks as a change, which the next
+      // sync takes to the account (see importBackup).
+      synced: ref.read(settingsProvider).cloudSync && ref.read(forumRepositoryProvider).currentUser != null,
     ),
   );
   if (choice == null || !context.mounted) return null;
@@ -159,7 +184,7 @@ Future<BackupImport?> _confirmImport(BuildContext context, WidgetRef ref, Backup
 /// What a backup holds, and how to restore it: merged with the progress
 /// here, or in its place, and whether with its settings.
 class _ImportDialog extends StatefulWidget {
-  const _ImportDialog({required this.backup, required this.merge, required this.withSettings});
+  const _ImportDialog({required this.backup, required this.merge, required this.withSettings, required this.synced});
 
   final Backup backup;
 
@@ -169,6 +194,10 @@ class _ImportDialog extends StatefulWidget {
 
   /// Whether its settings come too, until the reader says.
   final bool withSettings;
+
+  /// Whether progress is backed up to an account, which replacing would
+  /// erase too.
+  final bool synced;
 
   @override
   State<_ImportDialog> createState() => _ImportDialogState();
@@ -181,6 +210,27 @@ class _ImportDialogState extends State<_ImportDialog> {
         context,
         (replace: replace, withSettings: _withSettings && widget.backup.settings != null),
       );
+
+  /// Replacing erases what is here, so it asks first.
+  Future<void> _replace() async {
+    final l = context.l10n;
+    final ok = await showAppDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.importReplaceTitle),
+        content: Text(widget.synced ? l.importReplaceConfirmSynced : l.importReplaceConfirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
+          FilledButton(
+            style: AppButtons.destructive(context),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.importReplaceAction),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) _choose(replace: true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -214,7 +264,7 @@ class _ImportDialogState extends State<_ImportDialog> {
       actionsOverflowDirection: VerticalDirection.up,
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
-        if (widget.merge) TextButton(onPressed: () => _choose(replace: true), child: Text(l.importReplace)),
+        if (widget.merge) TextButton(onPressed: _replace, child: Text(l.importReplace)),
         FilledButton(
           onPressed: () => _choose(replace: !widget.merge),
           child: Text(widget.merge ? l.importMerge : l.importData),
@@ -242,12 +292,24 @@ class _PasteDialogState extends State<_PasteDialog> {
     super.dispose();
   }
 
+  /// Fills the field from the clipboard, or says that it can't: a browser
+  /// may refuse to let a page read it (Firefox always does), and the
+  /// clipboard may hold no text.
   Future<void> _paste() async {
-    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
-    if (text == null || text.trim().isEmpty || !mounted) return;
+    String? text;
+    try {
+      text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    } catch (_) {
+      text = null;
+    }
+    if (!mounted) return;
     setState(() {
-      _text.text = text;
-      _error = null;
+      if (text == null || text.trim().isEmpty) {
+        _error = context.l10n.importPasteFailed;
+      } else {
+        _text.text = text;
+        _error = null;
+      }
     });
   }
 
@@ -279,10 +341,14 @@ class _PasteDialogState extends State<_PasteDialog> {
               onChanged: (_) {
                 if (_error != null) setState(() => _error = null);
               },
-              // A hint rather than a label, which would be cut short.
+              // A short label, which stays once the field is filled, and
+              // the instruction below, where it can wrap.
               decoration: InputDecoration(
-                hintText: l.importPrompt,
-                hintMaxLines: 3,
+                labelText: l.importBackupText,
+                // At the top of the tall field, not in its middle.
+                alignLabelWithHint: true,
+                helperText: l.importPrompt,
+                helperMaxLines: 3,
                 errorText: _error,
                 errorMaxLines: 3,
               ),
@@ -314,7 +380,7 @@ class DataSettingsScreen extends ConsumerWidget {
     Future<void> import(Future<BackupImport?> Function(BuildContext, WidgetRef) ask) async {
       final result = await ask(context, ref);
       if (result == null || !context.mounted) return;
-      showStatus(context, backupImportStatus(l, result, restored: l.importSuccess));
+      showBackupImportStatus(context, result, restored: l.importSuccess, remindersOff: l.importSuccessRemindersOff);
     }
 
     return SettingsPage(

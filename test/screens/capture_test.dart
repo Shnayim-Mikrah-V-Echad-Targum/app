@@ -171,6 +171,11 @@ const _screens = {
   's_data_import': '/settings/data',
   // Pasting a backup, which can't be read.
   's_data_paste': '/settings/data',
+  // The paste dialog as it opens: the field's label and instruction.
+  's_data_paste_open': '/settings/data',
+  // Choosing to replace the progress here with a backup: the confirm
+  // dialog, with backup on.
+  's_data_replace': '/settings/data',
   'about': '/settings/about',
   'guide': '/guide',
   // The special cases, Shabbat and the sources, at its end.
@@ -323,10 +328,10 @@ Future<ForumRepository> _accountWithNewerBackup() async {
 }
 
 /// Screens shown signed in with backup on.
-const _backupOn = {'s_data_reset'};
+const _backupOn = {'s_data_reset', 's_data_replace'};
 
 /// Screens where the reader chooses [_backupFile] to restore.
-const _choosesBackup = {'s_data_import', 'welcome_import'};
+const _choosesBackup = {'s_data_import', 's_data_replace', 'welcome_import'};
 
 /// A backup made on another phone on the Thursday of Bereshit: the last
 /// eleven weeks of 5786 read, and a pause over Sukkot.
@@ -603,6 +608,12 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   's_data_paste': _tapInTurn([
     () => find.byIcon(Icons.content_paste),
     () => find.byType(FilledButton),
+  ]),
+  's_data_paste_open': (tester) => tester.tap(find.byIcon(Icons.content_paste)),
+  's_data_replace': _tapInTurn([
+    () => find.byIcon(Icons.download),
+    // "Replace instead", the dialog's last text button.
+    () => find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextButton)).last,
   ]),
   'welcome_import': _tapInTurn([
     () => find.byType(TextButton).last,

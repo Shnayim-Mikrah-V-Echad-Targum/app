@@ -162,7 +162,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final l = context.l10n;
     final result = await ask(context, ref);
     if (result == null || !mounted) return;
-    showStatus(context, backupImportStatus(l, result, restored: l.onbRestoreDone));
+    showBackupImportStatus(context, result, restored: l.onbRestoreDone, remindersOff: l.onbRestoreDoneRemindersOff);
     if (result != BackupImport.unreadable) _finishRestoring();
   }
 
