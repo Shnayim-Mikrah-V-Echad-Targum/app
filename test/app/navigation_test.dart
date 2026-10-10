@@ -179,7 +179,7 @@ void main() {
         router.go(link);
         await _loadTexts(tester);
         expect(find.text('Page not found'), findsOneWidget);
-        expect(find.text("This link doesn't lead anywhere in the app."), findsOneWidget);
+        expect(find.text('This link leads nowhere in the app.'), findsOneWidget);
         expect(find.byType(LegalScreen), findsNothing, reason: 'no policy stands in for the one asked for');
 
         await tester.tap(find.text('Go to Today'));
@@ -210,7 +210,7 @@ void main() {
     router.go('/nope');
     await tester.pumpAndSettle();
     expect(find.text('Page not found'), findsOneWidget);
-    expect(find.text("This link doesn't lead anywhere in the app."), findsOneWidget);
+    expect(find.text('This link leads nowhere in the app.'), findsOneWidget);
 
     // The page's one action, a Tonal button (DESIGN_SYSTEM.md §6.22).
     final button = find.ancestor(of: find.text('Go to Today'), matching: find.bySubtype<FilledButton>());

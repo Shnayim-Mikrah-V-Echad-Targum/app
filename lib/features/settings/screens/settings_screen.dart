@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/widgets/app_icon.dart';
 import '../../../ui/widgets/common.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
@@ -17,7 +18,7 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     // Every page opens over Settings and goes back to it.
     Widget item(IconData icon, String title, String? subtitle, String route) => ListTile(
-          leading: Icon(icon),
+          leading: AppIcon(icon),
           title: Text(title),
           subtitle: subtitle == null ? null : Text(subtitle),
           trailing: const Icon(Icons.chevron_right),

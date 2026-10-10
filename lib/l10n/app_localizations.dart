@@ -254,6 +254,12 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get actionDelete;
 
+  /// No description provided for @actionClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get actionClear;
+
   /// No description provided for @actionReport.
   ///
   /// In en, this message translates to:
@@ -323,7 +329,7 @@ abstract class AppLocalizations {
   /// No description provided for @notFoundBody.
   ///
   /// In en, this message translates to:
-  /// **'This link doesn\'t lead anywhere in the app.'**
+  /// **'This link leads nowhere in the app.'**
   String get notFoundBody;
 
   /// No description provided for @goToToday.

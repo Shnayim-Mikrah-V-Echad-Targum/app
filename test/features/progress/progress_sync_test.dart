@@ -504,7 +504,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text("Clear this week's progress"));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, "Clear this week's progress"));
+      await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
       await tester.pumpAndSettle();
     }
 

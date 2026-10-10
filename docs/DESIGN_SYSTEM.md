@@ -826,6 +826,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - nav `insights`: becomes `donut_large`;
    - the streak-tile icons, the repeated `menu_book` on the 54 Browse rows, and the reader LayerLabel icons: removed.
    - The grace shield and `auto_stories_outlined` for the haftarah stay.
+   - `help_outline` is drawn with `AppIcon` (lib/ui/widgets/app_icon.dart), which keeps it unmirrored in the Hebrew UI: Material mirrors its question mark for Arabic, but Hebrew writes "?" as English does.
 8. **App icon** (critical, D1). `tool/branding/make_icon.py` writes `assets/branding/icon.svg` plus all PNGs.
 
    **Shaping**

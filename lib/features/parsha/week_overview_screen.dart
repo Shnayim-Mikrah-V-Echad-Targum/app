@@ -66,7 +66,7 @@ class WeekOverview extends ConsumerWidget {
           title: Text(l.clearWeekConfirm(name)),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.clearWeek)),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.actionClear)),
           ],
         ),
       );

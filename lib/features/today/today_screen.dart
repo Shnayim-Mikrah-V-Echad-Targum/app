@@ -8,6 +8,7 @@ import '../../core/calendar/local_date.dart';
 import '../../core/calendar/parsha_schedule.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
+import '../../ui/widgets/app_icon.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
@@ -49,7 +50,7 @@ class TodayScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: l.guideTitle,
-            icon: const Icon(Icons.help_outline),
+            icon: const AppIcon(Icons.help_outline),
             onPressed: () => context.push('/guide'),
           ),
         ],

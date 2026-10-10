@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../ui/l10n.dart';
+import '../../ui/widgets/app_icon.dart';
 import '../../ui/widgets/common.dart';
 
 final _version = PackageInfo.fromPlatform().then((i) => '${i.version} (${i.buildNumber})').catchError((_) => '');
@@ -27,7 +28,7 @@ class AboutScreen extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     Widget link(IconData icon, String title, VoidCallback onTap) =>
-        ListTile(leading: Icon(icon), title: Text(title), trailing: const Icon(Icons.chevron_right), onTap: onTap);
+        ListTile(leading: AppIcon(icon), title: Text(title), trailing: const Icon(Icons.chevron_right), onTap: onTap);
     return Scaffold(
       appBar: AppBar(title: Text(l.aboutTitle)),
       body: PageBody(
@@ -40,8 +41,11 @@ class AboutScreen extends StatelessWidget {
                 Text('שניים מקרא ואחד תרגום',
                     textDirection: TextDirection.rtl,
                     style: TextStyle(fontFamily: 'NotoSerifHebrew', fontSize: 28, color: theme.colorScheme.primary)),
-                const Gap(8),
-                Text(l.appTitleFull, style: theme.textTheme.titleMedium),
+                // The name as read in English; in Hebrew it would repeat the title.
+                if (!context.isHebrewUi) ...[
+                  const Gap(8),
+                  Text(l.appTitleFull, style: theme.textTheme.titleMedium),
+                ],
                 FutureBuilder<String>(
                   future: _version,
                   builder: (context, snap) => Text(

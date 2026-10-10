@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/widgets/app_icon.dart';
 import '../../../ui/widgets/common.dart';
 import '../../parsha/week_context.dart';
 import '../../progress/domain/progress_models.dart';
@@ -113,7 +114,7 @@ class CommunityScreen extends ConsumerWidget {
                             Card(
                               margin: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
-                                leading: Icon(_iconFor(f.slug)),
+                                leading: AppIcon(_iconFor(f.slug)),
                                 title: Text(f.name(he)),
                                 subtitle: f.description(he).isEmpty ? null : Text(f.description(he)),
                                 trailing: const Icon(Icons.chevron_right),

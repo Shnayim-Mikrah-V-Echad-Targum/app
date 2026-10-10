@@ -88,6 +88,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get actionDelete => 'מחיקה';
 
   @override
+  String get actionClear => 'ניקוי';
+
+  @override
   String get actionReport => 'דיווח';
 
   @override
@@ -123,7 +126,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get notFoundTitle => 'הדף לא נמצא';
 
   @override
-  String get notFoundBody => 'הקישור הזה אינו מוביל לשום מקום באפליקציה.';
+  String get notFoundBody => 'הקישור הזה לא מוביל לשום דף באפליקציה.';
 
   @override
   String get goToToday => 'מעבר למסך היום';

@@ -460,7 +460,7 @@ void main() {
     await tester.tap(find.text("Clear this week's progress"));
     await tester.pumpAndSettle();
     expect(find.text('Clear all progress for Bereshit?'), findsOneWidget, reason: "the dialog's title");
-    await tester.tap(find.widgetWithText(FilledButton, "Clear this week's progress"));
+    await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
     await tester.pumpAndSettle();
     expect(c.read(progressProvider).week('5787:1').completedUnits, 0);
 

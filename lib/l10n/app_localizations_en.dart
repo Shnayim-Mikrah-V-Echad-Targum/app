@@ -88,6 +88,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionDelete => 'Delete';
 
   @override
+  String get actionClear => 'Clear';
+
+  @override
   String get actionReport => 'Report';
 
   @override
@@ -123,7 +126,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notFoundTitle => 'Page not found';
 
   @override
-  String get notFoundBody => 'This link doesn\'t lead anywhere in the app.';
+  String get notFoundBody => 'This link leads nowhere in the app.';
 
   @override
   String get goToToday => 'Go to Today';
