@@ -302,6 +302,7 @@ I verified that the small-caps lookups survive subsetting (smcp: 209 mappings, c
 Bundle impact:
 - About 571 KB is loaded eagerly: EB Garamond 4 files at about 417 KB, plus Frank Ruhl Libre 3 files at about 154 KB.
 - Noto Rashi Hebrew is NOT declared in pubspec `fonts:`. It is a plain asset, loaded on first use with `FontLoader('NotoRashiHebrew')..addFont(rootBundle.load('assets/fonts/rashi/NotoRashiHebrew-Regular.ttf'))`, so web does not download it at startup.
+- The opt-in fonts (Taamey Frank CLM, Ezra SIL, Atkinson Hyperlegible Next, Lexend and OpenDyslexic, about 874 KB) are plain assets in `assets/fonts/optional/` too, registered by `OptionalFonts` (lib/services/optional_fonts.dart): the chosen ones before the first frame, and any other when it is chosen.
 - While doing this, re-instance NotoSansHebrew-Regular/Medium/Bold with `--update-name-table` (their name table still says "Thin").
 
 pubspec families:
@@ -1250,7 +1251,7 @@ The literal "חֲזַק חֲזַק וְנִתְחַזֵּק" is not translated.
    - run `textContrastGuideline` for /today, the reader, /parsha, /progress, /community and /settings/display in all five themes;
    - add 200%-text-scale overflow tests for the Hebrew locale on /today, /progress and the reader;
    - add a focus-traversal test asserting that a focused FilledButton paints `FocusRingBorder`.
-3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family. Pixel-sampled contrast checks (`textContrastGuideline`) stay on the test font: with real glyphs, anti-aliased edge pixels can outnumber the text colour (test/accessibility/text_contrast_test.dart).
+3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family, then loads the fonts `OptionalFonts` loads on demand. Pixel-sampled contrast checks (`textContrastGuideline`) stay on the test font: with real glyphs, anti-aliased edge pixels can outnumber the text colour (test/accessibility/text_contrast_test.dart).
 4. **Goldens** (`matchesGoldenFile`): Today, Reader guided, Parsha, Progress and Community × 5 themes × {en, he}. Plus the mixed headings "Revi'i · רביעי" and "בְּרֵאשִׁית" in titleLarge and hebrewDisplay (catches fallback tofu).
 5. **Update tests that depend on removed visuals:**
    - reader_widget_test.dart:39 expects 'Targum Onkelos' (the removed LayerLabel). Change it to expect the PassTrack label '3 · Targum'.

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -17,12 +18,13 @@ import 'reminder_planner.dart';
 /// Local notifications on Android, iOS, macOS and Windows. Scheduled
 /// notifications aren't available in browsers, so the web build has none.
 class NotificationService {
-  NotificationService._(this._plugin, {required this.supported});
+  NotificationService._(this._plugin, {required this.supported, required this._timeZones});
 
   /// For tests and unsupported platforms.
   NotificationService.disabled()
       : _plugin = null,
-        supported = false;
+        supported = false,
+        _timeZones = Future.value();
 
   static Future<NotificationService> create() async {
     final supported = !kIsWeb &&
@@ -33,15 +35,8 @@ class NotificationService {
     if (!supported) return NotificationService.disabled();
 
     try {
-      tzdata.initializeTimeZones();
-      try {
-        final info = await FlutterTimezone.getLocalTimezone();
-        tz.setLocalLocation(tz.getLocation(info.identifier));
-      } catch (_) {
-        // Falls back to UTC offsets; reminders may be off by DST at worst.
-      }
       final plugin = FlutterLocalNotificationsPlugin();
-      final service = NotificationService._(plugin, supported: true);
+      final service = NotificationService._(plugin, supported: true, timeZones: _loadTimeZones());
       await plugin.initialize(
         settings: const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -73,8 +68,26 @@ class NotificationService {
     }
   }
 
+  /// Loads the time-zone database and finds the device's zone, which only
+  /// scheduling needs: started at launch but not waited for there, and after
+  /// the first frame, as decoding the database takes a while.
+  static Future<void> _loadTimeZones() async {
+    await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
+    try {
+      // Zmanim may have loaded it already.
+      if (!tz.timeZoneDatabase.isInitialized) tzdata.initializeTimeZones();
+      final info = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(info.identifier));
+    } catch (_) {
+      // Falls back to UTC offsets; reminders may be off by DST at worst.
+    }
+  }
+
   final FlutterLocalNotificationsPlugin? _plugin;
   final bool supported;
+
+  /// Completes once [_loadTimeZones] has.
+  final Future<void> _timeZones;
 
   /// The route to open if the app was launched from a notification.
   String? launchRoute;
@@ -119,6 +132,9 @@ class NotificationService {
     final signature = reminders.map((r) => '${r.id}@${r.localDateTime}:${describe(r)}').join('|');
     if (signature == _lastSignature) return;
     _lastSignature = signature;
+    await _timeZones;
+    // A later call has taken over while this one waited.
+    if (signature != _lastSignature) return;
     try {
       await p.cancelAll();
       for (final r in reminders) {

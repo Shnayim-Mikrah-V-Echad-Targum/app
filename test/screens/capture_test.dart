@@ -76,6 +76,9 @@ const _screens = {
   'reader_gaps': '/read/5787:17/5?mode=full',
   'reader_gaps_spaced': '/read/5787:17/5?mode=full',
   'reader_focus': '/read/5787:1/2?mode=full',
+  // The opt-in scripture fonts, which load on demand.
+  'reader_taamey': '/read/5787:1/2?mode=full',
+  'reader_ezra': '/read/5787:1/2?mode=full',
   'haftarah': '/haftarah/5787:1',
   'progress': '/progress',
   'community': '/community',
@@ -170,6 +173,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
       s.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true, joinDate: LocalDate(2029, 4, 22)),
   // The widest word spacing, justified: the spaces around a section mark.
   'reader_gaps_spaced': (s) => s.copyWith(wordSpacing: 16, justify: true),
+  'reader_taamey': (s) => s.copyWith(scriptureFont: ScriptureFont.taameyFrank),
+  'reader_ezra': (s) => s.copyWith(scriptureFont: ScriptureFont.ezra),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
   'today_haftarah_left': (s) => s.copyWith(haftarahRequired: true),
   // The Tuesday after Shavuot 5789 (Sunday and Monday, 20 and 21 May) on

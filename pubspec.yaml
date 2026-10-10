@@ -122,23 +122,20 @@ flutter:
     - assets/text/rashi_en/
     - assets/fonts/licenses/
     # Optional fonts: plain assets that OptionalFonts registers on first use,
-    # so the web build does not download them at start-up.
+    # so the web build does not download them at start-up. optional/ holds
+    # the scripture and interface fonts a reader may choose.
     - assets/fonts/rashi/
+    - assets/fonts/optional/
 
   fonts:
-    # Scripture fonts. All support nikud and the full set of ta'amim.
+    # The default scripture font, with nikud and the full set of ta'amim.
+    # The other scripture fonts (Taamey Frank, Ezra SIL) load on demand from
+    # assets/fonts/optional/ (lib/services/optional_fonts.dart).
     - family: NotoSerifHebrew
       fonts:
         - asset: assets/fonts/NotoSerifHebrew-Regular.ttf
         - asset: assets/fonts/NotoSerifHebrew-Bold.ttf
           weight: 700
-    - family: TaameyFrank
-      fonts:
-        # Medium only: the Bold file renders cantillation marks invisibly.
-        - asset: assets/fonts/TaameyFrankCLM-Medium.ttf
-    - family: EzraSIL
-      fonts:
-        - asset: assets/fonts/EzraSIL-Regular.ttf
     # Display serifs: static instances built by tool/fonts/build_fonts.sh.
     # There is no 400. Bold is needed because Text switches to FontWeight.bold
     # when the platform's bold-text setting is on.
@@ -161,7 +158,8 @@ flutter:
           weight: 600
         - asset: assets/fonts/FrankRuhlLibre-Bold.ttf
           weight: 700
-    # Interface fonts.
+    # Interface fonts. Atkinson Hyperlegible Next, Lexend and OpenDyslexic
+    # load on demand from assets/fonts/optional/.
     - family: NotoSans
       fonts:
         - asset: assets/fonts/NotoSans-Regular.ttf
@@ -175,19 +173,4 @@ flutter:
         - asset: assets/fonts/NotoSansHebrew-Medium.ttf
           weight: 500
         - asset: assets/fonts/NotoSansHebrew-Bold.ttf
-          weight: 700
-    - family: AtkinsonHyperlegibleNext
-      fonts:
-        - asset: assets/fonts/AtkinsonHyperlegibleNext-Regular.ttf
-        - asset: assets/fonts/AtkinsonHyperlegibleNext-Bold.ttf
-          weight: 700
-    - family: Lexend
-      fonts:
-        - asset: assets/fonts/Lexend-Regular.ttf
-        - asset: assets/fonts/Lexend-Bold.ttf
-          weight: 700
-    - family: OpenDyslexic
-      fonts:
-        - asset: assets/fonts/OpenDyslexic-Regular.otf
-        - asset: assets/fonts/OpenDyslexic-Bold.otf
           weight: 700

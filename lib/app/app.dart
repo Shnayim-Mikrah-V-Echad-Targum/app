@@ -8,6 +8,7 @@ import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 import '../services/app_shortcuts.dart';
 import '../services/notifications.dart';
+import '../services/optional_fonts.dart';
 import '../ui/theme/app_theme.dart';
 import 'pending_saves.dart';
 import 'providers.dart';
@@ -102,6 +103,10 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     ref.listen(notificationTapsProvider, (_, next) {
       final route = next.value;
       if (route != null) router.go(route);
+    });
+    // Opt-in fonts load when first chosen; main() loaded the stored ones.
+    ref.listen(settingsProvider.select((s) => (s.uiFont.family, s.scriptureFont.family)), (_, fonts) {
+      OptionalFonts.ensureAll([fonts.$1, fonts.$2]);
     });
 
     final systemHighContrast = MediaQuery.highContrastOf(context);
