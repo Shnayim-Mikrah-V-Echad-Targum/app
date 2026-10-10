@@ -37,6 +37,27 @@ void main() {
       expect(communityError(l, const CommunityException('name_taken')), 'That name is taken.');
     });
 
+    test('for an error about a field is shown under that field', () {
+      expect(fieldFor('title_too_short'), CommunityField.title);
+      for (final code in ['too_short', 'too_many_links', 'content_rejected', 'duplicate_post']) {
+        expect(fieldFor(code), CommunityField.body, reason: code);
+      }
+      expect(fieldFor('invalid_email'), CommunityField.email);
+      expect(fieldFor('email_address_invalid'), CommunityField.email);
+      expect(fieldFor('invalid_code'), CommunityField.code);
+      expect(fieldFor('otp_expired'), CommunityField.code);
+      expect(fieldFor('invalid_name'), CommunityField.name);
+      expect(fieldFor('name_taken'), CommunityField.name);
+    });
+
+    test('for a rate limit, or anything else about no one field, is a status message', () {
+      for (final code in ['rate_limited', 'slow_mode', 'banned', 'shabbat_closed', 'forbidden', 'nonsense']) {
+        expect(fieldFor(code), isNull, reason: code);
+      }
+      expect(fieldOf(Exception('offline')), isNull);
+      expect(fieldOf(const CommunityException('too_short')), CommunityField.body);
+    });
+
     test('is not needed when the change was there already', () {
       expect(alreadyDone(const CommunityException('duplicate')), isTrue);
       expect(alreadyDone(const CommunityException('name_taken')), isFalse);

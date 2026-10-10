@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,6 +57,49 @@ String communityError(AppLocalizations l, Object e) {
 /// second tap crosses the first: the action succeeded.
 bool alreadyDone(Object e) => e is CommunityException && e.code == 'duplicate';
 
+/// The fields of the community's forms that an error from the server can be
+/// about.
+enum CommunityField { title, body, email, code, name }
+
+/// The field that the error [code] is about, where the form shows it under
+/// that field and gives the field the focus; null for an error about no one
+/// field (a rate limit, say, or a network failure), which a status message
+/// reports instead.
+CommunityField? fieldFor(String code) => switch (code) {
+      'title_too_short' => CommunityField.title,
+      'too_short' || 'too_many_links' || 'content_rejected' || 'duplicate_post' => CommunityField.body,
+      'invalid_email' || 'email_address_invalid' => CommunityField.email,
+      'invalid_code' || 'otp_expired' => CommunityField.code,
+      'invalid_name' || 'name_taken' => CommunityField.name,
+      _ => null,
+    };
+
+/// The field that the error [e] is about (see [fieldFor]).
+CommunityField? fieldOf(Object e) => e is CommunityException ? fieldFor(e.code) : null;
+
+/// Says [message], a field's error just shown under it, where the platform
+/// takes announcements. Elsewhere (Android) the error's text is a live
+/// region, which says it as it appears (Material's InputDecorator), so it is
+/// said once either way. The field also reads it as its hint once focused.
+void announceFieldError(BuildContext context, String message) {
+  if (MediaQuery.supportsAnnounceOf(context)) {
+    SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
+  }
+}
+
+/// A text field's counter, kept out of sight until the text reaches 80% of
+/// [maxLength]: then "8,000/10,000" in the reader's number format, read by
+/// screen readers as the characters left, as Material's own counter is.
+Widget? quietCounter(BuildContext context, {required int currentLength, required bool isFocused, required int? maxLength}) {
+  if (maxLength == null || currentLength < maxLength * 0.8) return null;
+  final m = MaterialLocalizations.of(context);
+  return Text(
+    context.ltrRun('${m.formatDecimal(currentLength)}/${m.formatDecimal(maxLength)}'),
+    semanticsLabel: m.remainingTextFieldCharacterCount(math.max(0, maxLength - currentLength)),
+    style: Theme.of(context).inputDecorationTheme.counterStyle,
+  );
+}
+
 /// "5 minutes ago", or a date for older times.
 String relativeTime(BuildContext context, DateTime time) {
   final l = context.l10n;
@@ -83,11 +129,25 @@ TextDirection autoDirection(String text, {TextDirection fallback = TextDirection
 }
 
 /// Sends the user to sign in if needed. Returns whether they are signed in.
-Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref) async {
+///
+/// Before a post, [named] asks for a display name too: an account starts
+/// with a machine's ("user_1a2b3c4d"), which no post is ever signed with. The
+/// account page asks for one once signed in, and goes back only once it is
+/// saved. Fails as the backend does when [named] (offline, say), for the
+/// caller to report.
+Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref, {bool named = false}) async {
+  // The page may close while this waits, and its ref with it.
+  final container = ProviderScope.containerOf(context, listen: false);
   final repo = ref.read(forumRepositoryProvider);
-  if (repo.currentUser != null) return true;
+  Future<bool> ready() async {
+    if (repo.currentUser == null) return false;
+    return !named || ((await container.read(myProfileProvider.future))?.hasChosenName ?? false);
+  }
+
+  if (await ready()) return true;
+  if (!context.mounted) return false;
   await context.push('/community/account?then=back');
-  return repo.currentUser != null;
+  return ready();
 }
 
 /// Before a first post: the community guidelines. Returns whether accepted.
@@ -529,6 +589,63 @@ class ThisWeekCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A sentence in bodySmall that ends with a link (§9 Compose and Account):
+/// "We use your email only to sign you in. Privacy". The link is part of
+/// the line, as a link in a sentence is, and still a control of its own: it
+/// takes the keyboard focus, with the focus ring, Enter follows it, and
+/// screen readers read it as a link after the sentence. Like any link in
+/// running text it is as tall as the line (WCAG 2.5.8's inline exception),
+/// and always underlined, so that it never relies on its colour.
+class LinkedText extends StatelessWidget {
+  const LinkedText({super.key, required this.text, required this.link, required this.onTap, this.textAlign});
+
+  final String text;
+  final String link;
+  final VoidCallback onTap;
+  final TextAlign? textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final style = theme.textTheme.bodySmall!.copyWith(color: scheme.onSurfaceVariant);
+    final linkStyle = style.copyWith(
+      color: scheme.primary,
+      fontWeight: FontWeight.w500,
+      decoration: TextDecoration.underline,
+      decorationColor: scheme.primary,
+    );
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: '$text '),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: Semantics(
+              container: true,
+              link: true,
+              child: SeferInkWell(
+                onTap: onTap,
+                borderRadius: const BorderRadius.all(Radius.circular(4)),
+                child: Padding(
+                  // Room for the focus ring, clear of the words either side.
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  // The line scales what it holds with the text, so the link
+                  // isn't scaled a second time.
+                  child: Text(link, style: linkStyle, textScaler: TextScaler.noScaling),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      style: style,
+      textAlign: textAlign,
     );
   }
 }

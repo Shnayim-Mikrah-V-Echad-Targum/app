@@ -486,7 +486,7 @@ Rules:
   - sheets 20 (top only);
   - the nav indicator is the only stadium shape.
 - **Elevation:** 0 everywhere. Separation comes from paper on surface plus a 1 px hairline. FAB and menus are 2, with `shadowColor` = shadow token.
-- **App bar title alignment on wide screens:** `PageScaffold` reads the pane's width with a `LayoutBuilder` (the window less the rail and its hairline) and computes `inset = max(gutter, (paneWidth - contentMaxWidth) / 2 + gutter)`, where the column's content starts. `titleSpacing` is `inset`, or `max(gutter, inset - 56)` after a back or home button, and `actionsPadding` ends `inset - gutter` from the pane's end, at the column's edge, as a phone's end at the screen's. This puts the title edge on the content edge, fixing D11. The title is a level-1 heading. Pages of list tiles pad the column `gutter - 16` at the sides (`PageBody.tilePadding`), so the tiles' own 16 brings their text to the same edge.
+- **App bar title alignment on wide screens:** `PageScaffold` reads the pane's width with a `LayoutBuilder` (the window less the rail and its hairline) and computes `inset = max(gutter, (paneWidth - contentMaxWidth) / 2 + gutter)`, where the column's content starts. The title is padded `inset` at its start, or `max(gutter, inset - 56)` after a back or home button, and a gutter at its end (as `titleSpacing` the inset would be kept after it too, leaving a narrow column's title no room on a wide screen), and `actionsPadding` ends `inset - gutter` from the pane's end, at the column's edge, as a phone's end at the screen's. This puts the title edge on the content edge, fixing D11. The title is a level-1 heading. Pages of list tiles pad the column `gutter - 16` at the sides (`PageBody.tilePadding`), so the tiles' own 16 brings their text to the same edge.
 - **Document title:** on the web, the page on show names the browser's tab, its history and bookmarks: "Settings · Shnayim Mikra" (`DocumentTitle`, which `PageScaffold` applies; the reader, Today and Welcome apply it themselves). A page names it again whenever it comes back into view, as the page over it closes or its tab is chosen again. Its colour is the app's (`MaterialApp.color`, the surface), since the web takes it for the theme-color (§3.6). Elsewhere the platform keeps the app's name.
 
 ## 6. Components
@@ -587,7 +587,8 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Outlined, radius 10; enabled 1 px outline (2 px in high contrast); focused 2 px primary; error 2 px error.
 - High contrast: focused (and focused error) borders are 3 px. The enabled border is already 2 px there, and primary is only about 1.5:1 from outline, so the width has to change as well as the colour.
 - Label bodyLarge onSurfaceVariant; helper and counter bodySmall with tabular figures.
-- Code entry (account): six 48×56 boxes, radius 10, titleLarge NS w500 with tabular figures; auto-advance; paste fills all six.
+- Code entry (account): six 48×56 boxes (narrower on a phone too small for them, taller with enlarged text), radius 10, titleLarge's size in NS w500 with tabular figures; auto-advance; paste fills all six. Borders as a field's: 1 px outline, 2 px primary on the box the next digit goes in while focused, 2 px error with an error (3 px focused in high contrast).
+- Counters (`quietCounter`): hidden until 80% of the limit, then in the locale's number format.
 
 ### 6.8 Switch, slider, segmented control
 
@@ -1149,14 +1150,26 @@ In order:
 - Editing a post: a dialog whose field is labelled "Your message", up to 10,000 characters, and takes the focus.
 
 **Compose**
-- App bar: leading close, trailing Filled "Post" (height 40, radius 10, disabled per M3).
-- Fields in a paper group.
-- The guidelines line as bodySmall with an inline TextButton.
+- App bar: leading close, trailing Filled "Post" (height 40, radius 10, its end on the column's edge).
+- Post is enabled whenever a forum is chosen and nothing is being sent; while it is sent, a 20 px spinner read as "Sending…". Pressed too soon, it shows under each field what it needs ("The title needs at least 5 characters."), gives the first such field the focus and says the error where the platform takes announcements (elsewhere the error's live region says it). Each error then follows the text and goes once the field is long enough. Ctrl+Enter (⌘Enter) posts too.
+- An error from the server about a field (`fieldFor` in community_ui.dart: the title's length; the message's length, links, wording or a duplicate) is shown the same way. Only what is about no one field, a rate limit or a failed connection, is a status message.
+- The forum: "Forum" in titleSmall onSurfaceVariant over a row of ChoiceChips with the forums' icons (`CommunityScreen.iconFor`), which scrolls sideways out to the column's edges, the one asked for brought into view. From 600 dp, where a mouse can't drag the row, they wrap.
+- The fields in a paper group (a Card, padding 20), outlined, with helpers "At least 5 characters" and "At least 2 characters". Counters stay hidden until 80% of the limit, then "8,000/10,000" in the locale's number format.
+- Signed in with a name, the paper begins with "Posting as Rivka" after a 24 px initial disc.
+- Until the guidelines are accepted, one line in bodySmall onSurfaceVariant, start-aligned, ending with the link to them (`LinkedText`).
+- Then a full-width Filled "Post", and Discard draft (Text, centred) once anything is written.
+
+**Inline links** (`LinkedText`, community_ui.dart): a sentence in bodySmall onSurfaceVariant ending with a link in primary w500, always underlined. The link is a WidgetSpan holding a SeferInkWell, so it takes the keyboard focus with the ring (2 px of room either side) and Enter follows it; screen readers read it as a link after the sentence. As a link in running text it is as tall as the line (WCAG 2.5.8's inline exception).
 
 **Account**
-- Centred, max width 440. The app mark at 56, headlineSmall title, explanation in marginalia.
-- Email field, then Filled "Email me a code" (the existing label, used by tests).
-- Code boxes per §6.7.
+- Centred, max width 440 (the app bar's title too). The app bar says "Account & community" in every state.
+- Signed out: the app mark at 56, headlineSmall "Sign in", the explanation in marginalia; the email field, then Filled "Email me a code" (the existing label, used by tests); then, centred, "We use your email only to sign you in. Privacy" with the policy as its link.
+- The code: the mark and heading again, "We sent a 6-digit code to …" in marginalia (and the demo's hint), the boxes per §6.7, Filled "Sign in", then Text "Resend in 30s", which counts down to "Resend code", and "Use a different email". One field lies under the boxes, so typing moves on box by box, a pasted code fills all six (digits only), the platform can fill a code it has read, and screen readers meet one field, "6-digit code". The box the next digit goes in shows the focus. The sixth digit signs in. A wrong code is said under the boxes, which keep the focus, and what is typed next replaces it.
+- A new account starts with a machine's name ("user_1a2b3c4d"), so signing in leads to a name step: the member's initial at 56 as the name is typed, headlineSmall "Display name", the field (named by the heading, so it shows no label of its own) with the helper "Shown with your posts. 2–40 characters.", and Filled "Save name". Opened to sign in before a post, the page goes back only once the name is saved; a post never goes out under a machine's name (`ensureSignedIn(named: true)` asks for one first).
+- Signed in: a card with the initial on a 56 px disc, the name in titleLarge (or the email until a name is chosen), the email in bodySmall, a Moderator chip, and an edit button that opens a dialog titled "Display name" with the field and Save.
+  - Cloud backup: one row, "Back up my progress", with its switch (the row toggles it, one item for screen readers), "Last synced …" as its subtitle and Sync now (`Icons.sync`) beside the switch while backup is on; what backing up does in bodySmall under the group; the notice to update when a newer version wrote the backup.
+  - Privacy & safety: "Blocked members (n)", with "You haven't blocked anyone." under it when there are none, and otherwise a sheet that lists them with Unblock; a moderator's reports.
+  - Account: Sign out, and Delete my account in error's ink, whose confirmation is Filled error / onError.
 
 ### Settings (settings_screen.dart and screens/)
 

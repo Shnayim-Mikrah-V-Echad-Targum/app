@@ -84,7 +84,7 @@ class CommunityScreen extends ConsumerWidget {
                         children: [
                           for (final f in list)
                             PaperRow(
-                              icon: _iconFor(f.slug),
+                              icon: iconFor(f.slug),
                               title: f.name(he),
                               titleStyle: text.titleMedium,
                               subtitle: f.description(he).isEmpty ? null : f.description(he),
@@ -101,7 +101,9 @@ class CommunityScreen extends ConsumerWidget {
     );
   }
 
-  static IconData _iconFor(String slug) => switch (slug) {
+  /// The icon of the forum [slug], here and where a new discussion picks
+  /// its forum.
+  static IconData iconFor(String slug) => switch (slug) {
         'parsha' => Icons.menu_book_outlined,
         'questions' => Icons.help_outline,
         'divrei-torah' => Icons.lightbulb_outline,

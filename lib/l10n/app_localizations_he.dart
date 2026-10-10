@@ -1840,6 +1840,23 @@ class AppLocalizationsHe extends AppLocalizations {
   String get useDifferentEmail => 'שימוש בכתובת אחרת';
 
   @override
+  String get resendCode => 'שליחת הקוד שוב';
+
+  @override
+  String resendCodeIn(int seconds) {
+    String _temp0 = intl.Intl.pluralLogic(
+      seconds,
+      locale: localeName,
+      other: 'שליחה חוזרת בעוד $seconds שניות',
+      one: 'שליחה חוזרת בעוד שנייה',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get signInPrivacy => 'נשתמש בכתובת הדוא״ל רק לצורך הכניסה לחשבון.';
+
+  @override
   String get demoCodeHint => 'מצב הדגמה: כל 6 ספרות יעבדו.';
 
   @override
@@ -1855,6 +1872,18 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get saveName => 'שמירת השם';
+
+  @override
+  String get editDisplayName => 'עריכת שם התצוגה';
+
+  @override
+  String get cloudBackupTitle => 'גיבוי בענן';
+
+  @override
+  String get privacySafetyTitle => 'פרטיות ובטיחות';
+
+  @override
+  String get accountGroupTitle => 'חשבון';
 
   @override
   String get nameSaved => 'השם נשמר.';
@@ -1908,6 +1937,17 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get postAction => 'פרסום';
+
+  @override
+  String postingAs(String name) {
+    return 'פרסום בשם $name';
+  }
+
+  @override
+  String get titleMinHelp => 'לפחות 5 תווים';
+
+  @override
+  String get bodyMinHelp => 'לפחות 2 תווים';
 
   @override
   String get replyLabel => 'כתיבת תגובה';
@@ -2007,6 +2047,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get blockedUsersTitle => 'משתמשים חסומים';
+
+  @override
+  String blockedMembersCount(int count) {
+    return 'משתמשים חסומים ($count)';
+  }
+
+  @override
+  String get noBlockedMembers => 'לא חסמת אף אחד.';
 
   @override
   String get edited => 'נערך';
@@ -2222,6 +2270,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get errTitleTooShort => 'הכותרת צריכה להכיל לפחות 5 תווים.';
+
+  @override
+  String get errBodyTooShort => 'ההודעה צריכה להכיל לפחות 2 תווים.';
 
   @override
   String get errNetwork =>

@@ -82,8 +82,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final prefs = ref.read(sharedPreferencesProvider);
     final container = ProviderScope.containerOf(context, listen: false);
     final repo = ref.read(forumRepositoryProvider);
-    if (!await ensureSignedIn(context, ref) || !mounted) return;
     try {
+      if (!await ensureSignedIn(context, ref, named: true) || !mounted) return;
       if (!await ensureGuidelines(context, ref) || !mounted) return;
       setState(() => _sending = true);
       await repo.reply(threadId, _reply.text, replyToId: _replyTo?.id);

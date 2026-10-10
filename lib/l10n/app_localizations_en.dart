@@ -1849,6 +1849,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get useDifferentEmail => 'Use a different email';
 
   @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'Resend in ${seconds}s';
+  }
+
+  @override
+  String get signInPrivacy => 'We use your email only to sign you in.';
+
+  @override
   String get demoCodeHint => 'Demo mode: any 6 digits will work.';
 
   @override
@@ -1864,6 +1875,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveName => 'Save name';
+
+  @override
+  String get editDisplayName => 'Edit display name';
+
+  @override
+  String get cloudBackupTitle => 'Cloud backup';
+
+  @override
+  String get privacySafetyTitle => 'Privacy & safety';
+
+  @override
+  String get accountGroupTitle => 'Account';
 
   @override
   String get nameSaved => 'Name saved.';
@@ -1917,6 +1940,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get postAction => 'Post';
+
+  @override
+  String postingAs(String name) {
+    return 'Posting as $name';
+  }
+
+  @override
+  String get titleMinHelp => 'At least 5 characters';
+
+  @override
+  String get bodyMinHelp => 'At least 2 characters';
 
   @override
   String get replyLabel => 'Write a reply';
@@ -2016,6 +2050,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get blockedUsersTitle => 'Blocked members';
+
+  @override
+  String blockedMembersCount(int count) {
+    return 'Blocked members ($count)';
+  }
+
+  @override
+  String get noBlockedMembers => 'You haven\'t blocked anyone.';
 
   @override
   String get edited => 'edited';
@@ -2234,6 +2276,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errTitleTooShort => 'The title needs at least 5 characters.';
+
+  @override
+  String get errBodyTooShort => 'The message needs at least 2 characters.';
 
   @override
   String get errNetwork =>

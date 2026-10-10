@@ -1330,6 +1330,16 @@
   "codeLabel": "6-digit code",
   "verifyAction": "Sign in",
   "useDifferentEmail": "Use a different email",
+  "resendCode": "Resend code",
+  "resendCodeIn": "Resend in {seconds}s",
+  "@resendCodeIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "signInPrivacy": "We use your email only to sign you in.",
   "demoCodeHint": "Demo mode: any 6 digits will work.",
   "signedInAs": "Signed in as {name}",
   "@signedInAs": {
@@ -1342,6 +1352,10 @@
   "displayNameLabel": "Display name",
   "displayNameHelp": "Shown with your posts. 2–40 characters.",
   "saveName": "Save name",
+  "editDisplayName": "Edit display name",
+  "cloudBackupTitle": "Cloud backup",
+  "privacySafetyTitle": "Privacy & safety",
+  "accountGroupTitle": "Account",
   "nameSaved": "Name saved.",
   "syncProgress": "Back up my progress",
   "syncProgressDesc": "Keep your reading progress with your account and restore it on other devices.",
@@ -1365,6 +1379,16 @@
   "threadBodyLabel": "Your message",
   "forumLabel": "Forum",
   "postAction": "Post",
+  "postingAs": "Posting as {name}",
+  "@postingAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "titleMinHelp": "At least 5 characters",
+  "bodyMinHelp": "At least 2 characters",
   "replyLabel": "Write a reply",
   "replyAction": "Reply",
   "replyToName": "Reply to {name}",
@@ -1450,6 +1474,15 @@
   "blockedDone": "Blocked.",
   "unblock": "Unblock",
   "blockedUsersTitle": "Blocked members",
+  "blockedMembersCount": "Blocked members ({count})",
+  "@blockedMembersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noBlockedMembers": "You haven't blocked anyone.",
   "edited": "edited",
   "editPostTitle": "Edit post",
   "deletePostConfirm": "Delete this post?",
@@ -1578,6 +1611,7 @@
   "errShabbat": "Posting is closed for Shabbat.",
   "errTooShort": "Please write a little more.",
   "errTitleTooShort": "The title needs at least 5 characters.",
+  "errBodyTooShort": "The message needs at least 2 characters.",
   "errNetwork": "Couldn't reach the server. Check your connection and try again.",
   "moderatorBadge": "Moderator",
   "draftRestored": "Your draft was restored.",

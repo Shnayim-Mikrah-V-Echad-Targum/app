@@ -182,9 +182,25 @@ const _screens = {
   // Just refreshed from the app bar.
   'thread_refreshed': '/community/thread/1',
   'compose': '/community/new',
+  // Post pressed with nothing written: what each field needs.
+  'compose_errors': '/community/new',
+  // A member with a name, who has accepted the guidelines, near the
+  // title's limit: signed with their name, and its counter shown.
+  'compose_member': '/community/new',
   'account': '/community/account',
   // Just after "Email me a code".
   'account_code': '/community/account',
+  // Three digits, then Sign in: the code's error under its boxes.
+  'account_code_error': '/community/account',
+  // Signed in to post, with a machine's name: the name step.
+  'account_name': '/community/account?then=back',
+  // A moderator with a name, who has blocked a member; the name's dialog,
+  // and the blocked members.
+  'account_member': '/community/account',
+  'account_edit': '/community/account',
+  'account_blocked': '/community/account',
+  // Keyboard focus on the privacy link in its sentence.
+  'focus_link': '/community/account',
   'account_settings': '/settings/account',
   'account_sync': '/community/account',
   'settings': '/settings',
@@ -467,12 +483,25 @@ Future<ForumRepository> _signedIn() async {
   return repo;
 }
 
+/// Signed in as Rivka, who has accepted the guidelines and blocked a member.
+Future<ForumRepository> _member() async {
+  final repo = DemoForumRepository();
+  await repo.verifyCode('rivka@example.org', '123456');
+  await repo.updateDisplayName('Rivka Levi');
+  await repo.acceptGuidelines();
+  final other = (await repo.posts('1')).map((p) => p.authorId).firstWhere((id) => id != null && id != 'me');
+  await repo.block(other!);
+  return repo;
+}
+
 /// Screens shown with another community than the plain demo.
 final _communities = <String, Future<ForumRepository> Function()>{
   'thread_weekly': _withWeeklyThread,
   'forum_weekly': _withWeeklyThread,
   'thread_report': _signedIn,
   'community_member': _signedIn,
+  'account_name': _signedIn,
+  for (final screen in ['compose_member', 'account_member', 'account_edit', 'account_blocked']) screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
@@ -566,6 +595,7 @@ final _taps = {
   'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
   'thread_refreshed': () => find.byIcon(Icons.refresh),
   'account_code': () => find.byType(FilledButton).first,
+  'compose_errors': () => find.byType(FilledButton).last,
 };
 
 /// Taps what each finder finds in turn, settling after each.
@@ -670,6 +700,20 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'focus_slider': (tester) => _keyboardFocus(tester, find.byType(Slider).first),
   'focus_switch': (tester) => _keyboardFocus(tester, find.byType(SwitchListTile).first),
   'focus_field': (tester) => _keyboardFocus(tester, find.byType(TextField).first),
+  'focus_link': (tester) => _keyboardFocus(tester, find.byType(LinkedText)),
+  'compose_member': (tester) async {
+    await tester.enterText(find.byType(TextField).first, 'On the order of the second reading: verse by verse, section by section, or the whole aliyah at once — and which do you find you keep?');
+    await tester.enterText(find.byType(TextField).last, 'I have been reading verse by verse.');
+  },
+  'account_code_error': (tester) async {
+    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.tap(find.byType(FilledButton).first);
+    await _settle(tester);
+    await tester.enterText(find.byType(TextField), '123');
+    await tester.tap(find.byType(FilledButton).first);
+  },
+  'account_edit': (tester) => tester.tap(find.byIcon(Icons.edit_outlined)),
+  'account_blocked': (tester) => tester.tap(find.byIcon(Icons.block)),
   // Sheni's tab in the reader's aliyah ribbon.
   'focus_tab': (tester) =>
       _keyboardFocus(tester, find.descendant(of: find.byType(AliyahRibbon), matching: find.byType(SeferInkWell)).at(1)),
@@ -908,6 +952,9 @@ const _desktopScreens = {
   'forum',
   'forum_questions',
   'account',
+  'account_code',
+  'account_member',
+  'compose',
   'browse',
   'guide',
   'welcome',
@@ -932,6 +979,12 @@ const _narrowScreens = {'today', 'progress', 'progress_map', 'progress_years', '
 const _bigTextScreens = {
   'today',
   'community',
+  'compose',
+  'compose_errors',
+  'account',
+  'account_code',
+  'account_name',
+  'account_member',
   'thread',
   'thread_replying',
   'forum_questions',

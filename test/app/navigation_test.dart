@@ -296,7 +296,8 @@ void main() {
       final router = await _pump(tester);
       router.go('/community/account');
       await tester.pumpAndSettle();
-      final privacy = find.widgetWithText(TextButton, 'Privacy');
+      // The link in the sentence under the sign-in button.
+      final privacy = find.text('Privacy');
       await tester.ensureVisible(privacy);
       await tester.pumpAndSettle();
       await tester.tap(privacy);
@@ -662,6 +663,7 @@ void main() {
   testWidgets('the guidelines open in front of the dialog that asks to accept them', (tester) async {
     final forums = DemoForumRepository();
     await forums.verifyCode('reader@example.org', '123456');
+    await forums.updateDisplayName('Reader');
     final router = await _pump(tester, forums: forums);
     router.go('/community/thread/1');
     await tester.pumpAndSettle();

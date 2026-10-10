@@ -3176,6 +3176,24 @@ abstract class AppLocalizations {
   /// **'Use a different email'**
   String get useDifferentEmail;
 
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get resendCode;
+
+  /// No description provided for @resendCodeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {seconds}s'**
+  String resendCodeIn(int seconds);
+
+  /// No description provided for @signInPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'We use your email only to sign you in.'**
+  String get signInPrivacy;
+
   /// No description provided for @demoCodeHint.
   ///
   /// In en, this message translates to:
@@ -3205,6 +3223,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save name'**
   String get saveName;
+
+  /// No description provided for @editDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit display name'**
+  String get editDisplayName;
+
+  /// No description provided for @cloudBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud backup'**
+  String get cloudBackupTitle;
+
+  /// No description provided for @privacySafetyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & safety'**
+  String get privacySafetyTitle;
+
+  /// No description provided for @accountGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountGroupTitle;
 
   /// No description provided for @nameSaved.
   ///
@@ -3301,6 +3343,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Post'**
   String get postAction;
+
+  /// No description provided for @postingAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting as {name}'**
+  String postingAs(String name);
+
+  /// No description provided for @titleMinHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 5 characters'**
+  String get titleMinHelp;
+
+  /// No description provided for @bodyMinHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 2 characters'**
+  String get bodyMinHelp;
 
   /// No description provided for @replyLabel.
   ///
@@ -3457,6 +3517,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Blocked members'**
   String get blockedUsersTitle;
+
+  /// No description provided for @blockedMembersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked members ({count})'**
+  String blockedMembersCount(int count);
+
+  /// No description provided for @noBlockedMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t blocked anyone.'**
+  String get noBlockedMembers;
 
   /// No description provided for @edited.
   ///
@@ -3787,6 +3859,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The title needs at least 5 characters.'**
   String get errTitleTooShort;
+
+  /// No description provided for @errBodyTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'The message needs at least 2 characters.'**
+  String get errBodyTooShort;
 
   /// No description provided for @errNetwork.
   ///

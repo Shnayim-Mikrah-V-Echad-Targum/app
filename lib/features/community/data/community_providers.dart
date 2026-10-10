@@ -200,6 +200,14 @@ final blockedUsersProvider = FutureProvider<Set<String>>((ref) async {
   return ref.watch(forumRepositoryProvider).blockedUsers();
 });
 
+/// The members the reader has blocked, with their names, for managing the
+/// list. Fetched again with [blockedUsersProvider].
+final blockedMembersProvider = FutureProvider<List<(String id, String name)>>((ref) async {
+  final blocked = await ref.watch(blockedUsersProvider.future);
+  if (blocked.isEmpty) return const [];
+  return ref.watch(forumRepositoryProvider).blockedMembers();
+});
+
 /// Posts reported in this session, whose Report action is hidden. They are
 /// the account's own, so another account starts afresh.
 class ReportedPostIds extends Notifier<Set<String>> {

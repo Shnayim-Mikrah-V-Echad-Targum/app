@@ -7,6 +7,7 @@ const a11yRoutes = [
   '/parsha/browse',
   '/progress',
   '/community',
+  '/community/new',
   '/settings',
   '/settings/reading',
   '/settings/reading/city',

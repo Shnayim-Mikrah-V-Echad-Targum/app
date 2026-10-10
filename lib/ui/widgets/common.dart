@@ -178,10 +178,22 @@ class PageScaffold extends StatelessWidget {
             appBar: showAppBar
                 ? AppBar(
                     leading: leading,
-                    titleSpacing: hasLeading ? math.max(g, inset - _leadingWidth) : inset,
+                    // The title's inset goes before it, and a gutter after it:
+                    // as the app bar's titleSpacing, the inset would be kept
+                    // after it too, which leaves a narrow column's title (the
+                    // account's) no room at all on a wide screen.
+                    titleSpacing: 0,
                     actionsPadding: EdgeInsetsDirectional.only(end: inset - g),
-                    // The app bar makes it a heading; this gives its level.
-                    title: showTitle ? Semantics(headingLevel: 1, child: title ?? Text(titleText)) : null,
+                    title: showTitle
+                        ? Padding(
+                            padding: EdgeInsetsDirectional.only(
+                              start: hasLeading ? math.max(g, inset - _leadingWidth) : inset,
+                              end: g,
+                            ),
+                            // The app bar makes it a heading; this gives its level.
+                            child: Semantics(headingLevel: 1, child: title ?? Text(titleText)),
+                          )
+                        : null,
                     actions: actions,
                     bottom: bottom,
                   )

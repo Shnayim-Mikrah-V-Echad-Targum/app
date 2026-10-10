@@ -97,6 +97,16 @@ void main() {
       });
     }
 
+    testWidgets("on a desktop, a narrow column's title shows, starting where its content does", (tester) async {
+      await openRoute(tester, '/community/account', size: const Size(1366, 860));
+      final title = _title(_en.settingsAccount);
+      expect(title, findsOneWidget);
+      final field = tester.getRect(find.byType(TextField));
+      expect(field.left, 257 + (1109 - ContentWidth.account) / 2 + 32);
+      expect(tester.getTopLeft(title).dx, field.left);
+      expect(tester.getSize(title).width, greaterThan(100), reason: 'room for the title, not squeezed out');
+    });
+
     testWidgets("on a desktop, the actions end at the column's edge", (tester) async {
       await openRoute(tester, '/community', size: const Size(1366, 860));
       final column = 257 + (1109 + 720) / 2;
