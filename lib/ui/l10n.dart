@@ -195,6 +195,7 @@ class Names {
     'Masei on Shabbat Rosh Chodesh': 'מסעי בשבת ראש חודש',
     'Matot-Masei on Shabbat Rosh Chodesh': 'מטות־מסעי בשבת ראש חודש',
     'Ki Teitzei with 3rd Haftarah of Consolation': 'כי תצא עם ״עניה סוערה״',
+    "Re'eh on Shabbat Rosh Chodesh": 'ראה בשבת ראש חודש אלול',
   };
 
   @visibleForTesting
@@ -222,5 +223,6 @@ class Names {
     'Masei on Shabbat Rosh Chodesh': 'Masei on Rosh Chodesh Av',
     'Matot-Masei on Shabbat Rosh Chodesh': 'Matot-Masei on Rosh Chodesh Av',
     'Ki Teitzei with 3rd Haftarah of Consolation': "Ki Teitzei, with Aniyah So'arah",
+    "Re'eh on Shabbat Rosh Chodesh": "Re'eh on Rosh Chodesh Elul",
   };
 }

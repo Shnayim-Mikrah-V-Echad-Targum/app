@@ -444,6 +444,20 @@ async function main() {
       allHaftarahRefs.push(...entry.ashkenazi, ...(entry.sephardi || []));
     }
   }
+  // hebcal follows the Ashkenazi custom for Re'eh on Rosh Chodesh Elul (the
+  // Rosh Chodesh haftarah). Sephardim and Chabad read Re'eh's own, the third
+  // of consolation (Shulchan Aruch OC 425:1), adding the first and last
+  // verses of the Rosh Chodesh haftarah. Only they are given this key
+  // (lib/core/calendar/special_haftarah.dart), so every custom lists it.
+  {
+    const reeh = [
+      {k: 'Isaiah', b: '54:11', e: '55:5'},
+      {k: 'Isaiah', b: '66:1', e: '66:1'},
+      {k: 'Isaiah', b: '66:23', e: '66:23'},
+    ];
+    special["Re'eh on Shabbat Rosh Chodesh"] = {ashkenazi: reeh, sephardi: reeh, chabad: reeh};
+    allHaftarahRefs.push(...reeh);
+  }
 
   const chapterLengths = Object.fromEntries(TORAH.map((b) => [b, mikraChapters[b].map((c) => c.length)]));
   writeJson('assets/data/parshiyot.json', {parshiyot, combined, specialHaftarot: special, chapterLengths});

@@ -1,8 +1,8 @@
 import '../../core/calendar/parsha_schedule.dart';
+import '../../core/calendar/special_haftarah.dart' show HaftarahNusach;
 import 'verse_ref.dart';
 
-/// Which tradition's haftarah to read.
-enum HaftarahNusach { ashkenazi, sephardi, chabad }
+export '../../core/calendar/special_haftarah.dart' show HaftarahNusach;
 
 /// A passage from the Prophets, possibly one of several read together.
 class HaftarahPart {

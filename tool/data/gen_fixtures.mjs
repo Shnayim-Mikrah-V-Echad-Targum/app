@@ -148,3 +148,45 @@ for (const k of Object.keys(special)) {
   };
 }
 write('test/fixtures/special_haftarot.json', compact);
+
+// ---------------------------------------------------------------------------
+// 5. Special haftarot by custom, 5780–5800
+//
+// hebcal gives the Ashkenazi custom. Sephardim and Chabad differ in three
+// cases, which lib/core/calendar/special_haftarah.dart must find on its own:
+//  - Re'eh on Rosh Chodesh Elul: Re'eh's own haftarah with the first and last
+//    verses of the Rosh Chodesh haftarah (Shulchan Aruch OC 425:1), rather
+//    than the Rosh Chodesh haftarah;
+//  - Ki Teitzei two weeks later: its own haftarah, not joined to Re'eh's;
+//  - Kedoshim after a special Shabbat: its own haftarah.
+
+function forCustom(nusach, parsha, reason) {
+  if (nusach === 'ashkenazi' || !reason) return reason;
+  if (parsha === "Re'eh" && reason === 'Shabbat Rosh Chodesh') return "Re'eh on Shabbat Rosh Chodesh";
+  if (reason === 'Ki Teitzei with 3rd Haftarah of Consolation') return null;
+  if (reason === 'Kedoshim following Special Shabbat') return null;
+  return reason;
+}
+
+const byCustom = {};
+for (const il of [false, true]) {
+  const place = il ? 'il' : 'diaspora';
+  let d = new HDate(1, 'Tishrei', 5780).onOrAfter(6);
+  const end = new HDate(1, 'Tishrei', 5801);
+  const from = iso(d);
+  let to = from;
+  const out = {ashkenazi: {}, sephardi: {}, chabad: {}};
+  for (; d.deltaDays(end) < 0; d = d.add(7, 'd')) {
+    const res = new Sedra(d.getFullYear(), il).lookup(d);
+    if (res.chag) continue;
+    to = iso(d);
+    const reason = getLeyningOnDate(d, il)?.reason?.haftara ?? null;
+    const parsha = res.parsha.join('-');
+    for (const nusach of Object.keys(out)) {
+      const key = forCustom(nusach, parsha, reason);
+      if (key) out[nusach][iso(d)] = key;
+    }
+  }
+  byCustom[place] = {from, to, ...out};
+}
+write('test/fixtures/special_haftarot_by_custom.json', byCustom);

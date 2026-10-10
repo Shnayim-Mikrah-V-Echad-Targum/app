@@ -25,13 +25,17 @@ Future<BuildContext> _page(WidgetTester tester, {required bool hebrew}) async {
 void main() {
   group('special haftarot', () {
     // Every key in the data file, and every key the calendar gives a Shabbat
-    // in 2000–2100, in Israel and outside it.
+    // in 2000–2100 (by every custom in 5780–5800), in Israel and outside it.
     final data = jsonDecode(File('assets/data/parshiyot.json').readAsStringSync()) as Map<String, dynamic>;
     final fixture = loadFixture('special_haftarot.json') as Map<String, dynamic>;
+    final byCustom = loadFixture('special_haftarot_by_custom.json') as Map<String, dynamic>;
     final keys = {
       ...(data['specialHaftarot'] as Map<String, dynamic>).keys,
-      for (final place in ['il', 'diaspora'])
+      for (final place in ['il', 'diaspora']) ...[
         ...((fixture[place] as Map<String, dynamic>)['special'] as Map<String, dynamic>).values.cast<String>(),
+        for (final nusach in HaftarahNusach.values)
+          ...((byCustom[place] as Map<String, dynamic>)[nusach.name] as Map<String, dynamic>).values.cast<String>(),
+      ],
     };
 
     test('each has a name in Hebrew and in English', () {
