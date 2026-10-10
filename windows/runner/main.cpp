@@ -5,8 +5,36 @@
 #include "flutter_window.h"
 #include "utils.h"
 
+namespace {
+
+// Held while the app runs, to keep it to one instance per user session:
+// shared_preferences_windows rewrites its whole file on every change, so a
+// second instance would overwrite progress logged in the first.
+constexpr const wchar_t kInstanceMutexName[] = L"Local\\org.shnayimmikra.app";
+
+// Brings the window of the instance already running to the front.
+void ActivateRunningInstance() {
+  HWND window = ::FindWindowW(kWindowClassName, nullptr);
+  if (window == nullptr) {
+    return;
+  }
+  if (::IsIconic(window)) {
+    ::ShowWindow(window, SW_RESTORE);
+  }
+  ::SetForegroundWindow(window);
+}
+
+}  // namespace
+
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
+  HANDLE instance_mutex = ::CreateMutexW(nullptr, TRUE, kInstanceMutexName);
+  if (instance_mutex != nullptr && ::GetLastError() == ERROR_ALREADY_EXISTS) {
+    ActivateRunningInstance();
+    ::CloseHandle(instance_mutex);
+    return EXIT_SUCCESS;
+  }
+
   // Attach to console when present (e.g., 'flutter run') or create a
   // new console when running with a debugger.
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {
@@ -39,5 +67,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   }
 
   ::CoUninitialize();
+  if (instance_mutex != nullptr) {
+    ::ReleaseMutex(instance_mutex);
+    ::CloseHandle(instance_mutex);
+  }
   return EXIT_SUCCESS;
 }

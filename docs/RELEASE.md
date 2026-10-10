@@ -148,6 +148,7 @@
 - [ ] Package it as MSIX for the Microsoft Store or for sideloading (for example with the `msix` package), or wrap it in an installer.
 - [ ] Sign it with a code-signing certificate; unsigned apps trigger SmartScreen warnings. Store submissions are signed by Microsoft.
 - [ ] Check with Narrator and NVDA, using the keyboard only, at 200% display scaling.
+- [ ] Launching the app while it is already running brings the open window forward, restoring it if minimized, and opens no second window.
 - [ ] A reminder toast carries the three-rule mark as its icon.
 
 ## Web
