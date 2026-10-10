@@ -11,6 +11,7 @@ import '../../data/text_repository.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../parsha/week_context.dart';
 import '../settings/app_settings.dart';
@@ -164,7 +165,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.searchTitle)),
+      // Opened from a link or a web reload, with nothing beneath: a way home.
+      appBar: AppBar(leading: homeLeading(context), title: Text(l.searchTitle)),
       body: Column(
         children: [
           _Width(

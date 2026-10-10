@@ -223,6 +223,32 @@ void main() {
     expect(find.textContaining('Find a word or phrase'), findsOneWidget);
   });
 
+  group('opened', () {
+    final home = find.widgetWithIcon(IconButton, Icons.home_outlined);
+
+    testWidgets('from a link or a web reload, with nothing beneath, has a home button to Today', (tester) async {
+      final c = await open(tester, route: '/search?q=ladder');
+      await tester.pumpAndSettle();
+      expect(find.byType(BackButton), findsNothing);
+      expect(home, findsOneWidget);
+      expect(find.text(_ladder), findsOneWidget, reason: 'the search it was opened with');
+
+      await tester.tap(home);
+      await tester.pumpAndSettle();
+      expect(c.read(routerProvider).state.uri.path, '/today');
+      expect(find.byType(NavigationBar), findsOneWidget);
+    });
+
+    testWidgets('from the app has the usual back button instead', (tester) async {
+      final c = await open(tester, route: '/today');
+      await tester.pumpAndSettle();
+      c.read(routerProvider).push('/search');
+      await tester.pumpAndSettle();
+      expect(find.byType(BackButton), findsOneWidget);
+      expect(home, findsNothing);
+    });
+  });
+
   testWidgets('keeps the index for the rest of the session', (tester) async {
     final c = await open(tester, buildIndex: true);
     await untilIndexed(tester);
