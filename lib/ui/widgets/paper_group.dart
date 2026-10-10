@@ -125,6 +125,12 @@ class PaperGroupRow extends StatelessWidget {
 
 /// A [PaperGroupRow]'s share of the card: its paper, and the outline at its
 /// sides, closed at the top of the first row and the foot of the last.
+///
+/// A row's focus ring is drawn just outside it, so its foot lies over the
+/// next row, which is painted after it. Every row but the last therefore
+/// lays its paper [_overlap] past its foot, and every row but the first
+/// leaves as much of its own top to the row above, so the next row's paper
+/// never covers the ring.
 class _PaperShare extends CustomPainter {
   const _PaperShare({
     required this.color,
@@ -142,16 +148,20 @@ class _PaperShare extends CustomPainter {
   final bool last;
   final _RowRule? rule;
 
+  /// As far as a focus ring reaches outside its row: [SeferInkWell]'s 3, or
+  /// a button's ring with its gap.
+  static const double _overlap = 6;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
+    final rect = Rect.fromLTRB(0, first ? 0 : _overlap, size.width, last ? size.height : size.height + _overlap);
     canvas.drawRRect(corners.toRRect(rect), Paint()..color = color);
     rule?.paint(canvas, size);
     if (side.style == BorderStyle.none || side.width == 0) return;
     // The outline inside the edge, as the card draws it, run on past an end
     // that a row continues and clipped there, so that rows join seamlessly.
     final w = side.width;
-    final run = Rect.fromLTRB(0, first ? 0 : -2 * w, size.width, last ? size.height : size.height + 2 * w);
+    final run = Rect.fromLTRB(0, first ? 0 : -2 * w, size.width, last ? size.height : rect.bottom + 2 * w);
     canvas.save();
     canvas.clipRect(rect);
     canvas.drawRRect(

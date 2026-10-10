@@ -1,5 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
@@ -368,6 +371,56 @@ void main() {
       BorderRadius.zero,
       const BorderRadius.vertical(bottom: Radius.circular(12)),
     ]);
+  });
+
+  testWidgets('a row built on its own keeps its focus ring whole over the row below it', (tester) async {
+    FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+    const titles = ['Rishon', 'Sheni', 'Shlishi'];
+    await pumpThemed(
+      tester,
+      Align(
+        alignment: Alignment.topCenter,
+        child: RepaintBoundary(
+          key: const Key('rows'),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: SizedBox(
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final (i, title) in titles.indexed)
+                    PaperGroupRow(first: i == 0, last: i == 2, child: PaperRow(title: title, onTap: () {})),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    // The keyboard's focus on the middle row.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+
+    final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const Key('rows')));
+    final image = (await tester.runAsync(() => boundary.toImage()))!;
+    final data = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+    Color pixel(Offset global) {
+      final p = boundary.globalToLocal(global);
+      final i = (p.dy.floor() * image.width + p.dx.floor()) * 4;
+      return Color.fromARGB(data.getUint8(i + 3), data.getUint8(i), data.getUint8(i + 1), data.getUint8(i + 2));
+    }
+
+    final row = tester.getRect(find.byType(PaperGroupRow).at(1));
+    // The ring, 3 px wide outside the row: over the row above it, which is
+    // painted before it, and over the row below it, which is painted after.
+    expect(pixel(Offset(row.center.dx, row.top - 1.5)), light.focus);
+    expect(pixel(Offset(row.center.dx, row.bottom + 1.5)), light.focus);
+    // Below the ring, the next row's paper as ever.
+    expect(pixel(Offset(row.center.dx, row.bottom + 8)), light.paper);
+    image.dispose();
   });
 
   testWidgets('a style given in part keeps the rest of the row\'s own', (tester) async {
