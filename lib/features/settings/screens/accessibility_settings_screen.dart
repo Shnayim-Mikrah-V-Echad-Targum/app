@@ -148,6 +148,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           onTap: () => context.push('/settings/display'),
         ),
         ChoiceGroup<ScreenReaderText>(
+          // On a page of list tiles: in to the gutters, as they are.
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.screenReaderText,
           value: s.screenReaderText,
           choices: [
@@ -158,6 +160,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           onChanged: (v) => update((s) => s.copyWith(screenReaderText: v)),
         ),
         ChoiceGroup<DivineNameSpeech>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.divineNameLabel,
           value: s.divineName,
           choices: [

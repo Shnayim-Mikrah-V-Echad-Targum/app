@@ -115,7 +115,7 @@ class _RowRule extends CustomPainter {
 /// of its own beside the row's, so a screen reader reaches both actions:
 /// merged into the row, its action would replace the row's. Set
 /// [mergeTrailing] for a switch or checkbox that the row's tap also toggles,
-/// so that the row and its state read as one item.
+/// so that the row and its state read as one item, in the control's role.
 class PaperRow extends StatelessWidget {
   const PaperRow({
     super.key,
@@ -128,6 +128,8 @@ class PaperRow extends StatelessWidget {
     this.mergeTrailing = false,
     this.onTap,
     this.selected,
+    this.liveRegion = false,
+    this.destructive = false,
     bool? chevron,
   }) : chevron = chevron ?? onTap != null;
 
@@ -155,6 +157,14 @@ class PaperRow extends StatelessWidget {
   /// for a row that isn't one of a choice.
   final bool? selected;
 
+  /// Whether a screen reader reads the row out as it changes, as a value
+  /// moved by another control does.
+  final bool liveRegion;
+
+  /// Sets the title in error ink, for the one row of a page that erases
+  /// (§9 Your data). Such a row has no icon.
+  final bool destructive;
+
   final bool chevron;
 
   static const double _start = 16;
@@ -166,7 +176,7 @@ class PaperRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
     final muted = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
-    final titleStyle = text.bodyLarge!.copyWith(color: scheme.onSurface);
+    final titleStyle = text.bodyLarge!.copyWith(color: destructive ? scheme.error : scheme.onSurface);
     final end = <Widget>[
       ?trailing,
       if (chevron) Icon(Icons.chevron_right, size: 20, color: scheme.outline),
@@ -243,12 +253,15 @@ class PaperRow extends StatelessWidget {
         ),
       ),
     );
+    final merged = trailing != null && mergeTrailing;
     final row = Semantics(
       // Its own item: the text and the tap gather here, while a trailing
-      // control below keeps its own (unless merged, below).
+      // control below keeps its own (unless merged, below). A merged switch
+      // or checkbox gives the row its role.
       container: true,
-      button: onTap != null,
+      button: onTap != null && !merged,
       selected: selected,
+      liveRegion: liveRegion,
       child: onTap == null
           ? content
           : SeferInkWell(
@@ -257,7 +270,7 @@ class PaperRow extends StatelessWidget {
               child: content,
             ),
     );
-    return trailing != null && mergeTrailing ? MergeSemantics(child: row) : row;
+    return merged ? MergeSemantics(child: row) : row;
   }
 }
 

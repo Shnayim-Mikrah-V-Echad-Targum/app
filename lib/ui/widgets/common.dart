@@ -363,7 +363,8 @@ class InfoCard extends StatelessWidget {
 class NoticeBanner extends StatelessWidget {
   const NoticeBanner({
     super.key,
-    required this.icon,
+    this.icon,
+    this.leading,
     required this.text,
     this.title,
     this.action,
@@ -371,9 +372,13 @@ class NoticeBanner extends StatelessWidget {
     this.liveRegion = false,
     this.onDismiss,
     this.dismissLabel,
-  });
+  }) : assert((icon == null) != (leading == null), 'An icon or a mark of its own, not both');
 
-  final IconData icon;
+  final IconData? icon;
+
+  /// A mark of its own in place of [icon], 20 square: the Shabbat candles,
+  /// say, which are drawn rather than an icon of the font.
+  final Widget? leading;
   final String text;
 
   /// Puts the notice away: a close button at its top end, whose tooltip and
@@ -460,7 +465,7 @@ class NoticeBanner extends StatelessWidget {
           crossAxisAlignment:
               below == null && title == null && dismiss == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 20, color: ink),
+            leading ?? Icon(icon, size: 20, color: ink),
             const Gap(12),
             Expanded(
               child: below == null

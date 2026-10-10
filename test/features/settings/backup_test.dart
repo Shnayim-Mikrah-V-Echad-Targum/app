@@ -16,6 +16,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/services/backup_files.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../../fake_backup_files.dart';
 import '../../helpers.dart';
@@ -647,7 +648,7 @@ void main() {
         expect(backup.progress, c.read(progressProvider));
         expect(backup.settings!.toJson(), c.read(settingsProvider).toJson());
         // The row, where the iPad anchors the share sheet.
-        final row = tester.getRect(find.widgetWithText(ListTile, 'Export my progress'));
+        final row = tester.getRect(find.widgetWithText(PaperRow, 'Export my progress'));
         expect(saved.origin, row);
         expect(find.text('Backup saved.'), findsOneWidget);
       });
@@ -690,17 +691,17 @@ void main() {
       for (final hebrew in [false, true]) {
         testWidgets('the dialogs fit at 200% text${hebrew ? ', in Hebrew' : ''}', (tester) async {
           await open(tester, textScale: 2, settings: setUpHere.copyWith(language: hebrew ? AppLanguage.hebrew : null));
-          await tester.ensureVisible(find.byIcon(Icons.download));
+          await tester.ensureVisible(find.byIcon(Icons.download_outlined));
           await tester.pumpAndSettle();
-          await tester.tap(find.byIcon(Icons.download));
+          await tester.tap(find.byIcon(Icons.download_outlined));
           await tester.pumpAndSettle();
           expect(find.byType(CheckboxListTile), findsOneWidget);
           expect(tester.takeException(), isNull);
           await tester.tap(find.byType(FilledButton));
           await tester.pumpAndSettle();
-          await tester.ensureVisible(find.byIcon(Icons.content_paste));
+          await tester.ensureVisible(find.byIcon(Icons.content_paste_outlined));
           await tester.pumpAndSettle();
-          await tester.tap(find.byIcon(Icons.content_paste));
+          await tester.tap(find.byIcon(Icons.content_paste_outlined));
           await tester.pumpAndSettle();
           expect(find.byType(TextField), findsOneWidget);
           expect(tester.takeException(), isNull);

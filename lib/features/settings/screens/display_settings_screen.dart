@@ -26,6 +26,8 @@ class DisplaySettingsScreen extends ConsumerWidget {
       children: [
         const _Preview(),
         ChoiceGroup<AppThemeMode>(
+          // On a page of list tiles: in to the gutters, as they are.
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.themeLabel,
           value: s.theme,
           choices: [
@@ -103,6 +105,7 @@ class DisplaySettingsScreen extends ConsumerWidget {
           onChanged: (v) => update((s) => s.copyWith(keepScreenOn: v)),
         ),
         ChoiceGroup<LineWidth>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.lineWidthLabel,
           value: s.lineWidth,
           choices: [
@@ -113,6 +116,7 @@ class DisplaySettingsScreen extends ConsumerWidget {
           onChanged: (v) => update((s) => s.copyWith(lineWidth: v)),
         ),
         ChoiceGroup<ScriptureFont>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.scriptureFontLabel,
           value: s.scriptureFont,
           choices: [
@@ -124,6 +128,7 @@ class DisplaySettingsScreen extends ConsumerWidget {
           onChanged: (v) => update((s) => s.copyWith(scriptureFont: v)),
         ),
         ChoiceGroup<UiFont>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.uiFontLabel,
           value: s.uiFont,
           choices: [

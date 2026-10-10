@@ -17,5 +17,9 @@ abstract final class AppConfig {
     defaultValue: 'https://github.com/Shnayim-Mikrah-V-Echad-Targum/app',
   );
 
+  /// Where the installed app can be had, offered on the web where reminders
+  /// need it. Empty → not offered.
+  static const installUrl = String.fromEnvironment('INSTALL_URL');
+
   static bool get hasBackend => supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty;
 }

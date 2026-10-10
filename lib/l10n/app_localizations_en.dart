@@ -1165,6 +1165,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDataDesc => 'Back up, restore or reset your progress';
 
   @override
+  String get settingsGroupPractice => 'Practice';
+
+  @override
+  String get settingsGroupReading => 'Reading';
+
+  @override
+  String get settingsGroupYou => 'You';
+
+  @override
+  String get settingsAboutDesc => 'Version, sources, privacy';
+
+  @override
+  String get settingsPauseDesc =>
+      'Illness, travel, mourning, a new baby: nothing resets while paused';
+
+  @override
   String get locationIsrael => 'In Israel';
 
   @override
@@ -1333,6 +1349,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nameAshkenazi => 'Ashkenazi (Bereishis)';
+
+  @override
+  String get readingGroupWhere => 'Where & when';
+
+  @override
+  String get readingGroupHow => 'How I read';
+
+  @override
+  String get readingGroupSpecialDays => 'Special days';
 
   @override
   String get themeLabel => 'Theme';
@@ -1572,11 +1597,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get remindersShabbatNote =>
-      'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.';
+      'Never on Shabbat or Yom Tov, and at most once a day.';
 
   @override
   String remindersShabbatNoteCity(String city) {
-    return 'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in $city.';
+    return 'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in $city.';
   }
 
   @override
@@ -1629,7 +1654,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsUnsupported =>
-      'Reminders aren\'t available in the web version. Install the app on your phone or computer to get them.';
+      'Reminders need the installed app, on your phone or computer. Below are the reminders it can send.';
+
+  @override
+  String get getTheApp => 'Get the app';
 
   @override
   String get notificationsDenied =>
@@ -1768,6 +1796,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageHebrew => 'עברית';
+
+  @override
+  String get languageDevice => 'Device';
+
+  @override
+  String get dataGroupBackup => 'Backup & restore';
+
+  @override
+  String get resetProgressDesc => 'This can\'t be undone.';
 
   @override
   String get aboutTitle => 'About';

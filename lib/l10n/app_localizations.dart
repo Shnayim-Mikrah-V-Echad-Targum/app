@@ -1911,6 +1911,36 @@ abstract class AppLocalizations {
   /// **'Back up, restore or reset your progress'**
   String get settingsDataDesc;
 
+  /// Heading of the settings group with Reading & customs, Reminders and the streaks.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice'**
+  String get settingsGroupPractice;
+
+  /// Heading of the settings group with Display and Accessibility: how the text reads on the screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading'**
+  String get settingsGroupReading;
+
+  /// Heading of the settings group with the account, the reader's data and the language.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get settingsGroupYou;
+
+  /// No description provided for @settingsAboutDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Version, sources, privacy'**
+  String get settingsAboutDesc;
+
+  /// Under pauseAction in Settings, which opens the pause dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Illness, travel, mourning, a new baby: nothing resets while paused'**
+  String get settingsPauseDesc;
+
   /// No description provided for @locationIsrael.
   ///
   /// In en, this message translates to:
@@ -2216,6 +2246,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ashkenazi (Bereishis)'**
   String get nameAshkenazi;
+
+  /// Heading in Reading & customs over the reading heard, the days of Yom Tov, Shabbat times, the plan and the after-Shabbat window.
+  ///
+  /// In en, this message translates to:
+  /// **'Where & when'**
+  String get readingGroupWhere;
+
+  /// Heading in Reading & customs over the reading method, the second reading and the prompts to read again.
+  ///
+  /// In en, this message translates to:
+  /// **'How I read'**
+  String get readingGroupHow;
+
+  /// Heading in Reading & customs over the switches for Tisha B'Av and Chol HaMoed.
+  ///
+  /// In en, this message translates to:
+  /// **'Special days'**
+  String get readingGroupSpecialDays;
 
   /// No description provided for @themeLabel.
   ///
@@ -2664,13 +2712,13 @@ abstract class AppLocalizations {
   /// No description provided for @remindersShabbatNote.
   ///
   /// In en, this message translates to:
-  /// **'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.'**
+  /// **'Never on Shabbat or Yom Tov, and at most once a day.'**
   String get remindersShabbatNote;
 
   /// In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.
   ///
   /// In en, this message translates to:
-  /// **'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in {city}.'**
+  /// **'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.'**
   String remindersShabbatNoteCity(String city);
 
   /// Offered under the reminders while any of them is on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow.
@@ -2766,8 +2814,14 @@ abstract class AppLocalizations {
   /// No description provided for @notificationsUnsupported.
   ///
   /// In en, this message translates to:
-  /// **'Reminders aren\'t available in the web version. Install the app on your phone or computer to get them.'**
+  /// **'Reminders need the installed app, on your phone or computer. Below are the reminders it can send.'**
   String get notificationsUnsupported;
+
+  /// Under notificationsUnsupported on the web, where the app can be installed from (INSTALL_URL).
+  ///
+  /// In en, this message translates to:
+  /// **'Get the app'**
+  String get getTheApp;
 
   /// No description provided for @notificationsDenied.
   ///
@@ -3002,6 +3056,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'עברית'**
   String get languageHebrew;
+
+  /// The Language row's value in Settings when the app follows the device's language.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get languageDevice;
+
+  /// No description provided for @dataGroupBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & restore'**
+  String get dataGroupBackup;
+
+  /// Under resetProgress in Your data.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone.'**
+  String get resetProgressDesc;
 
   /// No description provided for @aboutTitle.
   ///

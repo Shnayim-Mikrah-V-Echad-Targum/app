@@ -15,10 +15,12 @@ env:
   # Optional community backend. The publishable key is public by design
   # (row-level security protects the data); set these as repository
   # variables. Without them the app runs its on-device demo community.
+  # INSTALL_URL, also optional, is where the web offers the installed app.
   DART_DEFINES: >-
     --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
     --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     --dart-define=SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}
+    --dart-define=INSTALL_URL=${{ vars.INSTALL_URL }}
 
 jobs:
   test:

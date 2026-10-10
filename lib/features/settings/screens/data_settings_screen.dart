@@ -12,6 +12,7 @@ import '../../../services/notifications.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/paper_group.dart';
 import '../../community/data/backend.dart';
 import '../../progress/domain/progress_merge.dart';
 import '../backup.dart';
@@ -386,66 +387,83 @@ class DataSettingsScreen extends ConsumerWidget {
       showBackupImportStatus(context, result, restored: l.importSuccess, remindersOff: l.importSuccessRemindersOff);
     }
 
+    Future<void> reset() async {
+      // With backup on, the reset reaches the backup and other devices, but
+      // only for the account signed in now: a reset made signed out must not
+      // erase the backup of whoever signs in next.
+      final everywhere = ref.read(settingsProvider).cloudSync && ref.read(forumRepositoryProvider).currentUser != null;
+      final ok = await showAppDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l.resetProgress),
+          content: Text(everywhere ? l.resetProgressConfirmSynced : l.resetProgressConfirm),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
+            FilledButton(
+              style: AppButtons.destructive(context),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l.resetProgress),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !context.mounted) return;
+      ref.read(progressProvider.notifier).resetAll(ref.read(todayProvider), everywhere: everywhere);
+      showStatus(context, l.resetDone);
+    }
+
     return SettingsPage(
       title: l.settingsData,
+      paper: true,
       children: [
-        ListTile(
-          leading: const Icon(Icons.cloud_outlined),
-          title: Text(l.cloudBackup),
-          subtitle: Text(l.syncProgressDesc),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push('/settings/account'),
-        ),
-        Builder(
-          // The row's own context, where the iPad anchors the share sheet.
-          builder: (context) => ListTile(
-            leading: const Icon(Icons.upload_file),
-            title: Text(l.exportData),
-            subtitle: Text(l.exportDataDesc),
-            onTap: () => exportBackupFile(context, ref),
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.download),
-          title: Text(l.importData),
-          subtitle: Text(l.importDataDesc),
-          onTap: () => import(askToImportBackup),
-        ),
-        ListTile(
-          leading: const Icon(Icons.content_paste),
-          title: Text(l.importPaste),
-          subtitle: Text(l.importPasteDesc),
-          onTap: () => import(askToPasteBackup),
-        ),
-        const Divider(height: 32),
-        ListTile(
-          leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
-          title: Text(l.resetProgress),
-          onTap: () async {
-            // With backup on, the reset reaches the backup and other devices,
-            // but only for the account signed in now: a reset made signed out
-            // must not erase the backup of whoever signs in next.
-            final everywhere =
-                ref.read(settingsProvider).cloudSync && ref.read(forumRepositoryProvider).currentUser != null;
-            final ok = await showAppDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text(l.resetProgress),
-                content: Text(everywhere ? l.resetProgressConfirmSynced : l.resetProgressConfirm),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
-                  FilledButton(
-                    style: AppButtons.destructive(context),
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(l.resetProgress),
-                  ),
-                ],
+        GroupHeader(l.dataGroupBackup),
+        PaperGroup(
+          children: [
+            PaperRow(
+              icon: Icons.cloud_outlined,
+              title: l.cloudBackup,
+              subtitle: l.syncProgressDesc,
+              subtitleMaxLines: null,
+              onTap: () => context.push('/settings/account'),
+            ),
+            Builder(
+              // The row's own context, where the iPad anchors the share sheet.
+              builder: (context) => PaperRow(
+                icon: Icons.ios_share_outlined,
+                title: l.exportData,
+                subtitle: l.exportDataDesc,
+                chevron: false,
+                onTap: () => exportBackupFile(context, ref),
               ),
-            );
-            if (ok != true || !context.mounted) return;
-            ref.read(progressProvider.notifier).resetAll(ref.read(todayProvider), everywhere: everywhere);
-            showStatus(context, l.resetDone);
-          },
+            ),
+            PaperRow(
+              icon: Icons.download_outlined,
+              title: l.importData,
+              subtitle: l.importDataDesc,
+              chevron: false,
+              onTap: () => import(askToImportBackup),
+            ),
+            PaperRow(
+              icon: Icons.content_paste_outlined,
+              title: l.importPaste,
+              subtitle: l.importPasteDesc,
+              chevron: false,
+              onTap: () => import(askToPasteBackup),
+            ),
+          ],
+        ),
+        // Apart from the rest, and with no icon: the one row that erases.
+        const Gap(Rhythm.sectionGap),
+        PaperGroup(
+          children: [
+            PaperRow(
+              title: l.resetProgress,
+              subtitle: l.resetProgressDesc,
+              destructive: true,
+              chevron: false,
+              onTap: reset,
+            ),
+          ],
         ),
       ],
     );

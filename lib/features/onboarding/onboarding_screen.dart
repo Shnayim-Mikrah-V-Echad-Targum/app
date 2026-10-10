@@ -262,6 +262,8 @@ class OnboardingStepScreen extends ConsumerWidget {
               OnboardingStep.method => const _MethodStep(),
               OnboardingStep.plan => const _PlanStep(),
             },
+            // Clear of a question's paper above it.
+            const Gap(12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(l.onbChangeAnytime, style: theme.textTheme.bodySmall),
@@ -331,6 +333,8 @@ class _LocationStepState extends ConsumerState<_LocationStep> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ChoiceGroup<ReadingSchedule>(
+          // On a page of list tiles: in to the gutters, as they are.
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.onbLocationTitle,
           value: schedule,
           choices: [
@@ -398,6 +402,7 @@ class _MethodStep extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ChoiceGroup<ReadingMethod>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.onbMethodTitle,
           value: s.method,
           choices: [
@@ -407,6 +412,7 @@ class _MethodStep extends ConsumerWidget {
           onChanged: (v) => _update(ref, (s) => s.copyWith(method: v)),
         ),
         ChoiceGroup<SecondReading>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.secondLabel,
           help: l.secondHelp,
           value: s.secondReading,
@@ -462,6 +468,7 @@ class _PlanStep extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ChoiceGroup<ReadingPlanType>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.onbPlanTitle,
           value: s.plan,
           choices: [
@@ -475,6 +482,7 @@ class _PlanStep extends ConsumerWidget {
         // over the days left, or only what the usual plan has from today on.
         if (catchUp != null)
           ChoiceGroup<bool>(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
             title: l.onbStarterTitle,
             value: s.starterCatchUp,
             choices: [

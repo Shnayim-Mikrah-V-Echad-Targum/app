@@ -1169,6 +1169,22 @@ class AppLocalizationsHe extends AppLocalizations {
   String get settingsDataDesc => 'גיבוי, שחזור או איפוס ההתקדמות';
 
   @override
+  String get settingsGroupPractice => 'שגרת הקריאה';
+
+  @override
+  String get settingsGroupReading => 'קריאה במסך';
+
+  @override
+  String get settingsGroupYou => 'אישי';
+
+  @override
+  String get settingsAboutDesc => 'גרסה, מקורות, פרטיות';
+
+  @override
+  String get settingsPauseDesc =>
+      'מחלה, נסיעה, אבלות, תינוק חדש: דבר אינו מתאפס בזמן ההשהיה';
+
+  @override
   String get locationIsrael => 'בארץ ישראל';
 
   @override
@@ -1337,6 +1353,15 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get nameAshkenazi => 'אשכנזי (Bereishis)';
+
+  @override
+  String get readingGroupWhere => 'מקום וזמן';
+
+  @override
+  String get readingGroupHow => 'אופן הקריאה';
+
+  @override
+  String get readingGroupSpecialDays => 'ימים מיוחדים';
 
   @override
   String get themeLabel => 'ערכת צבעים';
@@ -1574,11 +1599,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get remindersShabbatNote =>
-      'תזכורות לעולם אינן נשלחות בשבת וביום טוב, ולעולם לא יותר מאחת ביום.';
+      'לעולם לא בשבת וביום טוב, ולכל היותר פעם ביום.';
 
   @override
   String remindersShabbatNoteCity(String city) {
-    return 'תזכורות לעולם אינן נשלחות בשבת וביום טוב, ולעולם לא יותר מאחת ביום. הן מותאמות לזמני השבת של $city.';
+    return 'לעולם לא בשבת וביום טוב, ולכל היותר פעם ביום. התזכורות מותאמות לזמני השבת של $city.';
   }
 
   @override
@@ -1631,7 +1656,10 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notificationsUnsupported =>
-      'תזכורות אינן זמינות בגרסת הדפדפן. אפשר להתקין את האפליקציה בטלפון או במחשב כדי לקבל אותן.';
+      'תזכורות דורשות את האפליקציה המותקנת, בטלפון או במחשב. כאן אפשר לראות אילו תזכורות היא שולחת.';
+
+  @override
+  String get getTheApp => 'להורדת האפליקציה';
 
   @override
   String get notificationsDenied =>
@@ -1769,6 +1797,15 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get languageHebrew => 'עברית';
+
+  @override
+  String get languageDevice => 'לפי המכשיר';
+
+  @override
+  String get dataGroupBackup => 'גיבוי ושחזור';
+
+  @override
+  String get resetProgressDesc => 'אי אפשר לבטל פעולה זו.';
 
   @override
   String get aboutTitle => 'אודות';

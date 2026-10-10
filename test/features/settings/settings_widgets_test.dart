@@ -1,0 +1,241 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikra/ui/theme/app_theme.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+
+import '../../helpers.dart';
+
+/// The rows of the redesigned settings pages (docs/DESIGN_SYSTEM.md §9
+/// Settings): choices as paper radio rows or segments, their headings and
+/// source notes, and switch rows.
+void main() {
+  /// A choice of three, [width] wide, whose choices are recorded.
+  Future<List<String>> pumpChoice(
+    WidgetTester tester, {
+    bool segmented = false,
+    String? help,
+    bool helpIsSource = false,
+    int headingLevel = 2,
+    double width = 372,
+    double textScale = 1,
+    List<String> labels = const ['Ashkenazi', 'Sephardi', 'Chabad'],
+    AppThemeMode theme = AppThemeMode.light,
+  }) async {
+    final chosen = <String>[];
+    var value = labels.first;
+    await pumpThemed(
+      tester,
+      Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: width,
+          child: StatefulBuilder(
+            builder: (context, setState) => ChoiceGroup<String>(
+              title: 'Haftarah custom',
+              help: help,
+              helpIsSource: helpIsSource,
+              headingLevel: headingLevel,
+              segmented: segmented,
+              value: value,
+              choices: [for (final label in labels) Choice(label, label)],
+              onChanged: (v) => setState(() {
+                chosen.add(v);
+                value = v;
+              }),
+            ),
+          ),
+        ),
+      ),
+      textScale: textScale,
+      theme: theme,
+    );
+    return chosen;
+  }
+
+  group('ChoiceGroup', () {
+    testWidgets('sets its options as radio rows on one sheet of paper, 56 high, chosen by a tap', (tester) async {
+      final chosen = await pumpChoice(tester);
+      expect(find.byType(PaperGroup), findsOneWidget);
+      final rows = find.byWidgetPredicate((w) => w is RadioListTile<String>);
+      expect(rows, findsNWidgets(3));
+      for (var i = 0; i < 3; i++) {
+        expect(tester.getSize(rows.at(i)).height, 56);
+      }
+      // The text starts where a paper row's does, after its icon.
+      final card = tester.getRect(find.byType(PaperGroup));
+      expect(tester.getTopLeft(find.text('Sephardi')).dx - card.left, PaperGroup.iconInset);
+
+      await tester.tap(find.text('Chabad'));
+      await tester.pump();
+      expect(chosen, ['Chabad']);
+    });
+
+    testWidgets('reads as one radio group: checked, one of several, and moved through with the arrow keys',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final chosen = await pumpChoice(tester);
+      expect(
+        tester.getSemantics(find.text('Ashkenazi')),
+        isSemantics(label: 'Ashkenazi', hasCheckedState: true, isChecked: true, isInMutuallyExclusiveGroup: true),
+      );
+      expect(tester.getSemantics(find.text('Sephardi')), isSemantics(hasCheckedState: true, isChecked: false));
+
+      FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+      addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(chosen, ['Sephardi']);
+      handle.dispose();
+    });
+
+    testWidgets('a focused row is ringed as a paper row is, not washed', (tester) async {
+      await pumpChoice(tester);
+      FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+      addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final focus = SeferColors.of(tester.element(find.byType(PaperGroup))).focus;
+      final ringed = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((box) => box.decoration)
+          .whereType<ShapeDecoration>()
+          .where((d) => (d.shape as RoundedRectangleBorder).side.color == focus);
+      expect(ringed, hasLength(1));
+      final tile = find.byWidgetPredicate((w) => w is RadioListTile<String>).first;
+      expect(Theme.of(tester.element(find.descendant(of: tile, matching: find.byType(InkWell)))).focusColor,
+          Colors.transparent);
+    });
+
+    testWidgets('a level-3 heading is a subheading, and its source note is marginalia on a quiet wash',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      const source = 'Reading finished after Shabbat still counts (Shulchan Aruch OC 285:4).';
+      await pumpChoice(tester, help: source, helpIsSource: true, headingLevel: 3);
+      final context = tester.element(find.byType(ChoiceGroup<String>));
+      final theme = Theme.of(context);
+      final heading = tester.widget<Text>(find.text('Haftarah custom'));
+      expect(heading.style?.fontSize, theme.textTheme.titleMedium?.fontSize);
+      expect(tester.getSemantics(find.text('Haftarah custom')).getSemanticsData().headingLevel, 3);
+
+      expect(find.byType(SourceNote), findsOneWidget);
+      expect(tester.widget<Text>(find.text(source)).style, SeferType.of(context).marginalia);
+      final wash = tester.widget<DecoratedBox>(
+        find.descendant(of: find.byType(SourceNote), matching: find.byType(DecoratedBox)).first,
+      );
+      expect((wash.decoration as BoxDecoration).color, theme.colorScheme.surfaceContainerLow);
+      handle.dispose();
+    });
+
+    testWidgets('plain help is bodyMedium in onSurfaceVariant', (tester) async {
+      await pumpChoice(tester, help: 'Visitors usually keep their home custom.');
+      final theme = Theme.of(tester.element(find.byType(ChoiceGroup<String>)));
+      final style = tester.widget<Text>(find.text('Visitors usually keep their home custom.')).style!;
+      expect(style.fontSize, theme.textTheme.bodyMedium!.fontSize);
+      expect(style.color, theme.colorScheme.onSurfaceVariant);
+      expect(find.byType(SourceNote), findsNothing);
+    });
+
+    group('segmented', () {
+      SegmentedButton<String> segments(WidgetTester tester) =>
+          tester.widget<SegmentedButton<String>>(find.byType(SegmentedButton<String>));
+
+      testWidgets('lies across the column with a check where the labels fit beside it', (tester) async {
+        final chosen = await pumpChoice(tester, segmented: true, width: 600);
+        expect(segments(tester).direction, Axis.horizontal);
+        expect(segments(tester).showSelectedIcon, isTrue);
+        expect(tester.getSize(find.byType(SegmentedButton<String>)).width, 600);
+        await tester.tap(find.text('Sephardi'));
+        await tester.pump();
+        expect(chosen, ['Sephardi']);
+      });
+
+      testWidgets('goes without the check where only that keeps a word whole, but not in high contrast',
+          (tester) async {
+        // In the test font every letter is as wide as the text is high, 15:
+        // "Ashkenazi" fits a third of 520 alone, but not beside a check.
+        await pumpChoice(tester, segmented: true, width: 520);
+        expect(segments(tester).direction, Axis.horizontal);
+        expect(segments(tester).showSelectedIcon, isFalse);
+
+        // The same control, turned: it lays itself out anew.
+        await pumpChoice(tester, segmented: true, width: 520, theme: AppThemeMode.highContrastDark);
+        expect(tester.takeException(), isNull);
+        expect(segments(tester).direction, Axis.vertical);
+        expect(segments(tester).showSelectedIcon, isTrue);
+      });
+
+      testWidgets('stands one segment under another at 200% text', (tester) async {
+        await pumpChoice(tester, segmented: true, textScale: 2);
+        expect(segments(tester).direction, Axis.vertical);
+        expect(segments(tester).showSelectedIcon, isTrue);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('keeps the same lines whichever segment bears the check', (tester) async {
+        // "Out side" (120 in the test font) takes one line of its segment's
+        // 130 alone, but two beside the check: so it goes without.
+        await pumpChoice(tester, segmented: true, width: 320, labels: const ['In', 'Out side']);
+        expect(segments(tester).showSelectedIcon, isFalse);
+        expect(segments(tester).direction, Axis.horizontal);
+      });
+    });
+  });
+
+  group('SwitchRow', () {
+    testWidgets('the whole row toggles it, and it reads as one switch, never cut short', (tester) async {
+      final handle = tester.ensureSemantics();
+      var on = false;
+      const description = 'Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) '
+          'or Rashi is silent, so that the reading never rests on names alone';
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 360,
+            child: StatefulBuilder(
+              builder: (context, setState) => PaperGroup(children: [
+                SwitchRow(
+                  title: 'Third-reading prompts',
+                  subtitle: description,
+                  value: on,
+                  onChanged: (v) => setState(() => on = v),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Third-reading prompts'));
+      await tester.pump();
+      expect(on, isTrue);
+      final row = tester.getSemantics(find.byType(SwitchRow));
+      expect(row, isSemantics(hasToggledState: true, isToggled: true, hasTapAction: true, hasEnabledState: true));
+      expect(row, isSemantics(isButton: false));
+      expect(tester.widget<Text>(find.text(description)).maxLines, isNull);
+      // One stop for the keyboard: the row, not the switch inside it as well.
+      expect(find.descendant(of: find.byType(SwitchRow), matching: find.byType(ExcludeFocus)), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('without onChanged, shows its state disabled', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpThemed(
+        tester,
+        SizedBox(
+          width: 360,
+          child: PaperGroup(children: [SwitchRow(title: 'Daily reminder', value: false, onChanged: null)]),
+        ),
+      );
+      final row = tester.getSemantics(find.byType(SwitchRow));
+      expect(row, isSemantics(hasEnabledState: true, isEnabled: false, hasToggledState: true, isToggled: false));
+      expect(tester.widget<Switch>(find.byType(Switch)).onChanged, isNull);
+      handle.dispose();
+    });
+  });
+}

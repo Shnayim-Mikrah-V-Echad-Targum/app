@@ -1050,6 +1050,23 @@
   "settingsAccessibilityDesc": "Motion, screen readers, speech, quick setups",
   "settingsRemindersDesc": "Gentle reminders, never on Shabbat or Yom Tov",
   "settingsDataDesc": "Back up, restore or reset your progress",
+  "settingsGroupPractice": "Practice",
+  "@settingsGroupPractice": {
+    "description": "Heading of the settings group with Reading & customs, Reminders and the streaks."
+  },
+  "settingsGroupReading": "Reading",
+  "@settingsGroupReading": {
+    "description": "Heading of the settings group with Display and Accessibility: how the text reads on the screen."
+  },
+  "settingsGroupYou": "You",
+  "@settingsGroupYou": {
+    "description": "Heading of the settings group with the account, the reader's data and the language."
+  },
+  "settingsAboutDesc": "Version, sources, privacy",
+  "settingsPauseDesc": "Illness, travel, mourning, a new baby: nothing resets while paused",
+  "@settingsPauseDesc": {
+    "description": "Under pauseAction in Settings, which opens the pause dialog."
+  },
   "locationIsrael": "In Israel",
   "locationDiaspora": "Outside Israel",
   "locationHelp": "Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days. Visiting? You can set the days of Yom Tov you keep separately in Settings.",
@@ -1131,6 +1148,18 @@
   "nameStyleLabel": "Parsha names",
   "nameSephardi": "Sephardi (Bereshit)",
   "nameAshkenazi": "Ashkenazi (Bereishis)",
+  "readingGroupWhere": "Where & when",
+  "@readingGroupWhere": {
+    "description": "Heading in Reading & customs over the reading heard, the days of Yom Tov, Shabbat times, the plan and the after-Shabbat window."
+  },
+  "readingGroupHow": "How I read",
+  "@readingGroupHow": {
+    "description": "Heading in Reading & customs over the reading method, the second reading and the prompts to read again."
+  },
+  "readingGroupSpecialDays": "Special days",
+  "@readingGroupSpecialDays": {
+    "description": "Heading in Reading & customs over the switches for Tisha B'Av and Chol HaMoed."
+  },
   "themeLabel": "Theme",
   "themeSystem": "Match device",
   "themeLight": "Light",
@@ -1244,8 +1273,8 @@
   "@checkInReminderDescCity": {
     "description": "In place of checkInReminderDesc when a city is chosen for Shabbat times: on Motzaei Shabbat, unless that is after 10:30 PM."
   },
-  "remindersShabbatNote": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.",
-  "remindersShabbatNoteCity": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in {city}.",
+  "remindersShabbatNote": "Never on Shabbat or Yom Tov, and at most once a day.",
+  "remindersShabbatNoteCity": "Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.",
   "@remindersShabbatNoteCity": {
     "description": "In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.",
     "placeholders": {
@@ -1293,7 +1322,11 @@
   "@anchorCueBed": {
     "description": "The reader's chosen routine, named in the daily reminder: 'Before bed — it's yours.'"
   },
-  "notificationsUnsupported": "Reminders aren't available in the web version. Install the app on your phone or computer to get them.",
+  "notificationsUnsupported": "Reminders need the installed app, on your phone or computer. Below are the reminders it can send.",
+  "getTheApp": "Get the app",
+  "@getTheApp": {
+    "description": "Under notificationsUnsupported on the web, where the app can be installed from (INSTALL_URL)."
+  },
   "notificationsDenied": "Notifications are turned off for this app in your device settings.",
   "notificationsDeniedTitle": "Notifications are off",
   "openSystemSettings": "Open settings",
@@ -1401,6 +1434,15 @@
   "languageSystem": "Device language",
   "languageEnglish": "English",
   "languageHebrew": "עברית",
+  "languageDevice": "Device",
+  "@languageDevice": {
+    "description": "The Language row's value in Settings when the app follows the device's language."
+  },
+  "dataGroupBackup": "Backup & restore",
+  "resetProgressDesc": "This can't be undone.",
+  "@resetProgressDesc": {
+    "description": "Under resetProgress in Your data."
+  },
   "aboutTitle": "About",
   "versionLabel": "Version {version}",
   "@versionLabel": {

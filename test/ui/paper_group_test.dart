@@ -235,8 +235,33 @@ void main() {
       ),
     );
     final row = tester.getSemantics(find.byType(PaperRow));
-    expect(row, isSemantics(label: 'Show streak numbers', hasToggledState: true, isToggled: true, hasTapAction: true));
+    expect(
+      row,
+      isSemantics(label: 'Show streak numbers', hasToggledState: true, isToggled: true, hasTapAction: true),
+    );
+    // A switch, in the switch's role rather than a button's.
+    expect(row, isSemantics(isButton: false));
     expect(tester.getSemantics(find.byType(Switch)).id, row.id);
+    handle.dispose();
+  });
+
+  testWidgets('the row that erases is set in error ink, and a live row is read out as it changes', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpThemed(
+      tester,
+      SizedBox(
+        width: 400,
+        child: PaperGroup(children: [
+          PaperRow(title: 'Reset all progress', destructive: true, chevron: false, onTap: () {}),
+          PaperRow(title: 'Daily reminder time', value: '7:30 AM', liveRegion: true, onTap: () {}),
+        ]),
+      ),
+    );
+    final scheme = Theme.of(tester.element(find.byType(PaperGroup))).colorScheme;
+    expect(tester.widget<Text>(find.text('Reset all progress')).style?.color, scheme.error);
+    expect(find.descendant(of: find.byType(PaperRow).first, matching: find.byType(Icon)), findsNothing);
+    expect(tester.getSemantics(find.text('Daily reminder time')), isSemantics(isLiveRegion: true, isButton: true));
+    expect(tester.getSemantics(find.text('Reset all progress')), isSemantics(isLiveRegion: false));
     handle.dispose();
   });
 

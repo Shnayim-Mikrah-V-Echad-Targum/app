@@ -540,7 +540,8 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Trailing: an optional value in bodyMedium onSurfaceVariant, then `Icons.chevron_right` 20 in outline (mirrors in RTL automatically).
   - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it. With a subtitle under them, the icon and chevron line up with the title's line too.
 - Tap via SeferInkWell.
-- Semantics: the row is one item, its text and its tap. A trailing control (a menu or text button) keeps an item of its own beside it, so both actions can be reached; a switch or checkbox that the row's tap also toggles merges into the row (`mergeTrailing`).
+- Semantics: the row is one item, its text and its tap. A trailing control (a menu or text button) keeps an item of its own beside it, so both actions can be reached; a switch or checkbox that the row's tap also toggles merges into the row (`mergeTrailing`), which then reads in the control's role rather than as a button. A row whose value another control moves is a live region (`liveRegion`).
+- The one row of a page that erases sets its title in `error` (`destructive`), with no icon.
 
 **GroupHeader**
 - Eyebrow, 28 above and 8 below, start inset 4.
@@ -603,6 +604,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 **SegmentedButton**
 - Radius 10, height 48; selected primaryContainer with label w700 and a check icon (keep the M3 check here; it's the non-colour cue); unselected transparent with 1 px outline.
 - Focus: the ring goes around the whole group (Flutter gives each segment a plain shape of its own), so the focused segment is also washed in its ink at 24% and its label is underlined.
+- A settings choice (`ChoiceGroup.segmented`) lies across the column while every label fits its segment in two lines, no word broken, and in as many lines whichever segment bears the check. Where they fit only without the check, they go without it, the fill and bold label marking the selected one, except in high contrast, where the fill is close to the paper; otherwise the segments stand one under another, checked.
 
 ### 6.9 Navigation bar (phone)
 
@@ -1156,14 +1158,19 @@ In order:
 
 ### Settings (settings_screen.dart and screens/)
 
-**Top level:** three PaperGroups with GroupHeaders.
-- **Practice:** Reading & customs; Reminders; the "Show streak numbers" switch row.
+**Top level:** three PaperGroups with GroupHeaders, every leading icon outlined.
+- **Practice:** Reading & customs; Reminders; the "Show streak numbers" switch row; "Pause streaks", which opens the pause dialog (no chevron) and, while a pause lasts, says until when.
 - **Reading:** Display; Accessibility.
-- **You:** Account & community; Your data; Language. Language is ONE row whose value is Device / English / עברית; it opens a sheet with RadioGroup rows and replaces the three inline radios.
+- **You:** Account & community ("Signed in as …", or the prompt to sign in); Your data; Language. Language is ONE row whose value is Device / English / עברית; it opens a sheet, over the navigation bar, with RadioGroup rows (each language's name tagged with its own language), which closes as one is chosen, and replaces the three inline radios.
 - **About:**
-  - "How it works": the guide, `guideTitle` value changed (§10);
-  - "About this app": `settingsAbout` value changed.
+  - "How it works": the guide (`school_outlined`), `guideTitle` value changed (§10);
+  - "About this app": `settingsAbout` value changed, with "Version, sources, privacy" under it.
   - This resolves D15.
+
+**Rows of a settings page** (`settings_widgets.dart`)
+- `SettingsPage(paper: true)` stands its paper on the gutters; pages not yet set in paper keep `PageBody.tilePadding`, and a `ChoiceGroup` on them takes a 16 margin.
+- `ChoiceGroup`: a `SettingHeading` (level 2, a GroupHeader; or level 3, a subheading in titleMedium onSurface for one of several settings in a section), its help in bodyMedium onSurfaceVariant or, with `helpIsSource`, a `SourceNote` (marginalia on surfaceContainerLow, radius 12, padding 12; outlined in high contrast), then radio rows on one PaperGroup (a RadioListTile underneath, its text where a PaperRow's starts, ringed rather than washed when focused) or, `segmented`, a SegmentedButton (§6.8).
+- `SwitchRow`: a PaperRow whose whole row toggles its switch, read as one switch; its description is never cut short; disabled with no `onChanged`.
 
 **Display**
 - The preview becomes a paper "page" showing a chapter head, two verses, a Targum line and a setumah mark. It reflects settings live and is pinned at the top: `SliverPersistentHeader`, collapsing 220 → 140.
@@ -1176,8 +1183,16 @@ In order:
 - Line width as a SegmentedButton.
 
 **Reading & customs**
+- Sections with GroupHeaders, their settings 24 apart:
+  - **Where & when:** the reading heard and the days of Yom Tov as SegmentedButtons, Shabbat times (the city), the weekly plan, the after-Shabbat window;
+  - **How I read:** the method, the second reading, then End with Mikra and the third-reading prompts as switch rows;
+  - **Haftarah:** its switch ("Read the week's haftarah once", the section naming it); while it is on, set in by 16 behind a 2 px outlineVariant start rule, the custom as a SegmentedButton [Ashkenazi | Sephardi | Chabad] and "Count the haftarah toward completion";
+  - **Special days:** Tisha B'Av and Chol HaMoed;
+  - **Parsha names:** a SegmentedButton.
 - Radio groups inside PaperGroups with 56/72 rows.
-- Source citations, e.g. "(Shulchan Aruch OC 285:2)", in marginalia at 17/24.
+- Source citations, e.g. "(Shulchan Aruch OC 285:2)", in SourceNotes: the second reading's and the after-Shabbat window's. The marginalia keep their own size (EB Garamond's 19 sp floor, §4.5; Frank Ruhl Libre 17/26 in Hebrew).
+- A segment's label and its gloss ("One, as in Israel"; "Sephardi (Bereshit)") are set on two lines, so that the label breaks there or nowhere, whichever segment bears the check.
+- The customs disclaimer closes the page in marginalia.
 
 **Accessibility**
 - Quick setups as a 2×2 grid of cards 88 high, radius 12: icon 24 in primary, titleSmall, one bodySmall line.
@@ -1185,13 +1200,13 @@ In order:
 - The remaining rows in PaperGroups.
 
 **Reminders**
-- Native: rows per type.
-- The Shabbat note is a NoticeBanner with candles: "Never on Shabbat or Yom Tov, and at most once a day."
-- Web: one NoticeBanner explaining that reminders need the installed app (replaces two stacked banners).
+- Native: a PaperGroup for each reminder: its switch row and, once on, its time as a row's value (and for the daily reminder, the routine chips), 12 apart; the offer of a city below them, 28 apart.
+- The Shabbat note is a NoticeBanner with candles (§7.6, in `rest`): "Never on Shabbat or Yom Tov, and at most once a day."
+- Web: one NoticeBanner (`install_mobile`) saying that reminders need the installed app, with "Get the app" where the build gives `INSTALL_URL`, over the three reminders' switch rows, disabled (replaces two stacked banners).
 
 **Your data**
-- Group 1: a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export, Import, and "Paste backup text".
-- Group 2: "Reset all progress" in error-coloured text with no icon tile. The confirm dialog uses the destructive Filled button.
+- Group 1, "Backup & restore": a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export (`ios_share_outlined`), Import (`download_outlined`) and "Paste backup text" (`content_paste_outlined`), which open dialogs and have no chevron.
+- Group 2, apart: "Reset all progress" in error-coloured text with no icon tile, and "This can't be undone." under it. The confirm dialog uses the destructive Filled button.
 
 ### Onboarding (onboarding_screen.dart; phone_welcome, he_welcome, dark_welcome, desktop_welcome)
 

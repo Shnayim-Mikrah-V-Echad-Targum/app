@@ -688,6 +688,8 @@ void main() {
       final router = await _pump(tester);
       router.go('/settings');
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Account & community'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Account & community'));
       await tester.pumpAndSettle();
       expect(find.byType(AccountScreen), findsOneWidget);

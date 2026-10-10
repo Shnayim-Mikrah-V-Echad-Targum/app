@@ -3,13 +3,17 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../app/config.dart';
 import '../../../app/providers.dart';
 import '../../../services/notifications.dart';
 import '../../../services/reminder_planner.dart';
 import '../../../ui/l10n.dart';
-import '../../../ui/theme/motion.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/paper_group.dart';
+import '../../../ui/widgets/progress_widgets.dart' show ShabbatCandlesIcon;
 import '../app_settings.dart';
 import '../widgets/habit_anchor_chips.dart';
 import '../widgets/settings_widgets.dart';
@@ -33,9 +37,12 @@ Future<int?> pickReminderTime(BuildContext context, int minutes) async {
 /// is on without a city, until the offer is answered.
 bool _offersCity(AppSettings s) => anyReminderOn(s) && s.city == null && !s.cityOfferAnswered;
 
-/// The reminders, in Settings. With a city chosen for Shabbat times they
-/// follow its times. While any is on without one, however it was turned on,
-/// the list of cities is offered until the offer is answered.
+/// The reminders, in Settings: a sheet of paper for each, under a note that
+/// none comes on Shabbat or Yom Tov. With a city chosen for Shabbat times
+/// they follow its times. While any is on without one, however it was turned
+/// on, the list of cities is offered until the offer is answered. Where
+/// reminders can't be sent (the web), one notice says they need the
+/// installed app, over the reminders it would send, disabled.
 class ReminderSettingsScreen extends ConsumerStatefulWidget {
   const ReminderSettingsScreen({super.key});
 
@@ -92,11 +99,13 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
     final fridayMinutes = city == null
         ? math.min(s.fridayReminderMinutes, kErevShabbatLatestMinutes)
         : s.fridayReminderMinutes;
-    // The times read as a row's value and the routines' prompt as a
-    // subtitle does (DESIGN_SYSTEM.md §6.3), rather than in ListTile's small
-    // label style and in small ink.
+    // The routines' prompt reads as a subtitle does (DESIGN_SYSTEM.md §6.3),
+    // rather than in small print.
     final theme = Theme.of(context);
     final secondary = theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    // Where reminders can't be sent (the web), they show what they would do,
+    // disabled.
+    final supported = service.supported;
 
     Future<void> enable(AppSettings Function(AppSettings) f) async {
       final granted = await service.requestPermission();
@@ -139,115 +148,142 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
 
     return SettingsPage(
       title: l.settingsReminders,
+      paper: true,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: NoticeBanner(
-            icon: Icons.nights_stay_outlined,
+        if (supported)
+          NoticeBanner(
+            leading: const ShabbatCandlesIcon(size: 20),
             // A name in either script keeps its own direction in the sentence.
             text: city == null ? l.remindersShabbatNote : l.remindersShabbatNoteCity('\u2068$city\u2069'),
-          ),
-        ),
-        if (!service.supported)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: NoticeBanner(icon: Icons.info_outline, text: l.notificationsUnsupported),
           )
-        else ...[
-          SwitchListTile(
-            title: Text(l.dailyReminder),
-            subtitle: Text(city == null ? l.dailyReminderDesc : l.dailyReminderDescCity),
-            value: s.dailyReminder,
-            onChanged: (v) => v ? enable((s) => s.copyWith(dailyReminder: true)) : update((s) => s.copyWith(dailyReminder: false)),
-          ),
-          if (s.dailyReminder) ...[
-            ListTile(
-              contentPadding: const EdgeInsetsDirectional.only(start: 32, end: 16),
-              title: Text(l.dailyReminderTime),
-              leadingAndTrailingTextStyle: secondary,
-              trailing: Semantics(liveRegion: _timeMoved, child: Text(names.time(s.dailyReminderMinutes))),
-              onTap: () => pickTime(s.dailyReminderMinutes, (m) => update((s) => s.copyWith(dailyReminderMinutes: m))),
-            ),
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 32, end: 16, bottom: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l.habitAnchorPrompt, style: secondary),
-                  const Gap(6),
-                  HabitAnchorChips(
-                    selected: s.habitAnchor,
-                    // A time that is still only a suggestion follows the
-                    // routine, so that the reminder never names a morning
-                    // routine in the evening.
-                    onChanged: (a) {
-                      final minutes =
-                          HabitAnchor.reminderMinutes(s.dailyReminderMinutes, previous: s.habitAnchor, next: a);
-                      if (minutes != s.dailyReminderMinutes) setState(() => _timeMoved = true);
-                      update((s) => s.copyWith(habitAnchor: a, dailyReminderMinutes: minutes));
-                    },
+        else
+          NoticeBanner(
+            icon: Icons.install_mobile,
+            text: l.notificationsUnsupported,
+            actionBelow: AppConfig.installUrl.isNotEmpty,
+            action: AppConfig.installUrl.isEmpty
+                ? null
+                : TextButton(
+                    onPressed: () => launchUrl(Uri.parse(AppConfig.installUrl)),
+                    child: Text(l.getTheApp),
                   ),
-                ],
-              ),
-            ),
-          ],
-          SwitchListTile(
-            title: Text(l.fridayReminder),
-            subtitle: Text(city == null ? l.fridayReminderDesc : l.fridayReminderDescCity),
-            value: s.fridayReminder,
-            onChanged: (v) => v ? enable((s) => s.copyWith(fridayReminder: true)) : update((s) => s.copyWith(fridayReminder: false)),
           ),
-          if (s.fridayReminder)
-            ListTile(
-              contentPadding: const EdgeInsetsDirectional.only(start: 32, end: 16),
-              title: Text(l.fridayReminderTime),
-              leadingAndTrailingTextStyle: secondary,
-              trailing: Text(names.time(fridayMinutes)),
-              // With a city, any time: the reminder comes three hours before
-              // candle-lighting at the latest.
-              onTap: () => pickTime(
-                fridayMinutes,
-                (m) => update((s) => s.copyWith(
-                    fridayReminderMinutes: s.city == null ? math.min(m, kErevShabbatLatestMinutes) : m)),
-              ),
+        const Gap(Space.lg),
+        // A sheet for each reminder: its switch, and once it is on, when it
+        // comes.
+        PaperGroup(
+          children: [
+            SwitchRow(
+              title: l.dailyReminder,
+              subtitle: city == null ? l.dailyReminderDesc : l.dailyReminderDescCity,
+              value: s.dailyReminder,
+              onChanged: !supported
+                  ? null
+                  : (v) => v ? enable((s) => s.copyWith(dailyReminder: true)) : update((s) => s.copyWith(dailyReminder: false)),
             ),
-          SwitchListTile(
-            title: Text(l.checkInReminder),
-            subtitle: Text(city == null ? l.checkInReminderDesc : l.checkInReminderDescCity),
-            value: s.checkInReminder,
-            onChanged: (v) => v ? enable((s) => s.copyWith(checkInReminder: true)) : update((s) => s.copyWith(checkInReminder: false)),
-          ),
-          // Below the switches, so that nothing moves under the one tapped.
-          if (_offersCity(s))
-            Padding(
-              key: _offerKey,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: NoticeBanner(
-                icon: Icons.place_outlined,
-                text: l.reminderCityOffer,
-                actionBelow: true,
-                liveRegion: _offerMade,
-                // Stacked at large text sizes, the main action comes
-                // first, as in a dialog.
-                action: OverflowBar(
-                  alignment: MainAxisAlignment.end,
-                  spacing: 8,
-                  overflowAlignment: OverflowBarAlignment.end,
-                  overflowDirection: VerticalDirection.up,
+            if (supported && s.dailyReminder) ...[
+              PaperRow(
+                title: l.dailyReminderTime,
+                value: names.time(s.dailyReminderMinutes),
+                liveRegion: _timeMoved,
+                onTap: () => pickTime(s.dailyReminderMinutes, (m) => update((s) => s.copyWith(dailyReminderMinutes: m))),
+              ),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextButton(
-                      onPressed: () => update((s) => s.copyWith(cityOfferAnswered: true)),
-                      child: Text(l.actionNotNow),
-                    ),
-                    TextButton(
-                      onPressed: () => context.push(ReminderSettingsScreen.cityRoute),
-                      child: Text(l.reminderCityChoose),
+                    Text(l.habitAnchorPrompt, style: secondary),
+                    const Gap(8),
+                    HabitAnchorChips(
+                      selected: s.habitAnchor,
+                      // A time that is still only a suggestion follows the
+                      // routine, so that the reminder never names a morning
+                      // routine in the evening.
+                      onChanged: (a) {
+                        final minutes =
+                            HabitAnchor.reminderMinutes(s.dailyReminderMinutes, previous: s.habitAnchor, next: a);
+                        if (minutes != s.dailyReminderMinutes) setState(() => _timeMoved = true);
+                        update((s) => s.copyWith(habitAnchor: a, dailyReminderMinutes: minutes));
+                      },
                     ),
                   ],
                 ),
               ),
+            ],
+          ],
+        ),
+        const Gap(Rhythm.cardGap),
+        PaperGroup(
+          children: [
+            SwitchRow(
+              title: l.fridayReminder,
+              subtitle: city == null ? l.fridayReminderDesc : l.fridayReminderDescCity,
+              value: s.fridayReminder,
+              onChanged: !supported
+                  ? null
+                  : (v) =>
+                      v ? enable((s) => s.copyWith(fridayReminder: true)) : update((s) => s.copyWith(fridayReminder: false)),
             ),
-        ],
+            if (supported && s.fridayReminder)
+              PaperRow(
+                title: l.fridayReminderTime,
+                value: names.time(fridayMinutes),
+                // With a city, any time: the reminder comes three hours before
+                // candle-lighting at the latest.
+                onTap: () => pickTime(
+                  fridayMinutes,
+                  (m) => update((s) => s.copyWith(
+                      fridayReminderMinutes: s.city == null ? math.min(m, kErevShabbatLatestMinutes) : m)),
+                ),
+              ),
+          ],
+        ),
+        const Gap(Rhythm.cardGap),
+        PaperGroup(
+          children: [
+            SwitchRow(
+              title: l.checkInReminder,
+              subtitle: city == null ? l.checkInReminderDesc : l.checkInReminderDescCity,
+              value: s.checkInReminder,
+              onChanged: !supported
+                  ? null
+                  : (v) => v
+                      ? enable((s) => s.copyWith(checkInReminder: true))
+                      : update((s) => s.copyWith(checkInReminder: false)),
+            ),
+          ],
+        ),
+        // Below the switches, so that nothing moves under the one tapped.
+        if (supported && _offersCity(s))
+          Padding(
+            padding: const EdgeInsets.only(top: Rhythm.sectionGap),
+            child: NoticeBanner(
+              key: _offerKey,
+              icon: Icons.place_outlined,
+              text: l.reminderCityOffer,
+              actionBelow: true,
+              liveRegion: _offerMade,
+              // Stacked at large text sizes, the main action comes
+              // first, as in a dialog.
+              action: OverflowBar(
+                alignment: MainAxisAlignment.end,
+                spacing: 8,
+                overflowAlignment: OverflowBarAlignment.end,
+                overflowDirection: VerticalDirection.up,
+                children: [
+                  TextButton(
+                    onPressed: () => update((s) => s.copyWith(cityOfferAnswered: true)),
+                    child: Text(l.actionNotNow),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push(ReminderSettingsScreen.cityRoute),
+                    child: Text(l.reminderCityChoose),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }

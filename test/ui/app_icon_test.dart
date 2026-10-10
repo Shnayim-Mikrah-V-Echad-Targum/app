@@ -32,12 +32,9 @@ void main() {
   });
 
   testWidgets('in the Hebrew interface, no help icon is mirrored', (tester) async {
-    // Tall enough to build the help row at the end of Settings.
-    tester.view.physicalSize = const Size(800, 2400);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
     final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
-    for (final page in ['/today', '/settings', '/settings/about', '/community']) {
+    // Settings opens the guide with a cap (school_outlined), not a question mark.
+    for (final page in ['/today', '/settings/about', '/community']) {
       c.read(routerProvider).go(page);
       await tester.pumpAndSettle();
       final help = find.byIcon(Icons.help_outline);

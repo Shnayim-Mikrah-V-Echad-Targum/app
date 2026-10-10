@@ -36,6 +36,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
 import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
@@ -243,8 +244,12 @@ const _screens = {
   'account_settings': '/settings/account',
   'account_sync': '/community/account',
   'settings': '/settings',
+  // The language, chosen in a sheet.
+  'settings_language': '/settings',
   's_reading': '/settings/reading',
   's_reading_changed': '/settings/reading',
+  // Its end: the haftarah, special days and parsha names.
+  's_reading_end': '/settings/reading',
   // The city for Shabbat times, and its list: as it opens, searched, and
   // searched for a place that isn't there.
   's_reading_city': '/settings/reading',
@@ -772,8 +777,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     () => find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)),
   ]),
   // The daily reminder's switch.
-  's_reminders_denied': (tester) => tester.tap(find.byType(SwitchListTile).first),
-  's_reminders_offer': (tester) => tester.tap(find.byType(SwitchListTile).first),
+  's_reminders_denied': (tester) => tester.tap(find.byType(SwitchRow).first),
+  's_reminders_offer': (tester) => tester.tap(find.byType(SwitchRow).first),
   // The last post's menu, then Report.
   'thread_report': _tapInTurn([
     () => find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)),
@@ -794,6 +799,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await _scrollToEnd(tester);
   },
   'reader_dots': _scrollToEnd,
+  's_reading_end': _scrollToEnd,
   'reader_third': _scrollToEnd,
   // The haftarah, near the end of Today.
   'today_three_weeks': _scrollToEnd,
@@ -820,7 +826,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   's_reading_customs': (tester) =>
       Scrollable.ensureVisible(tester.element(find.byType(RadioListTile<ReadingMethod>).last)),
   's_reading_chabad': (tester) =>
-      Scrollable.ensureVisible(tester.element(find.byType(SwitchListTile).first), alignment: 0.3),
+      Scrollable.ensureVisible(tester.element(find.byType(SegmentedButton<HaftarahNusach>)), alignment: 0.3),
   'thread_long_end': _scrollToEnd,
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
@@ -912,7 +918,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'welcome_restore': (tester) => tester.tap(find.byType(TextButton).last),
   'welcome_restoring': _tapInTurn([() => find.byType(TextButton).last, () => find.byType(ListTile).first]),
   // The reset dialog.
-  's_data_reset': (tester) => tester.tap(find.byIcon(Icons.delete_forever_outlined)),
+  's_data_reset': (tester) => tester.tap(find.text(tester.element(find.byType(Scaffold).last).l10n.resetProgress)),
   's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
   'city': _untilLoaded,
   'city_search': (tester) async {
@@ -944,14 +950,19 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'goto_phrase': (tester) => _goTo(tester, 'שלח לו'),
   // Nothing to go to or search for: what the sheet takes.
   'goto_help': (tester) => _goTo(tester, '28'),
-  's_data_import': (tester) => tester.tap(find.byIcon(Icons.download)),
+  's_data_import': (tester) => tester.tap(find.byIcon(Icons.download_outlined)),
+  'settings_language': (tester) async {
+    await tester.ensureVisible(find.byIcon(Icons.translate_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.translate_outlined));
+  },
   's_data_paste': _tapInTurn([
-    () => find.byIcon(Icons.content_paste),
+    () => find.byIcon(Icons.content_paste_outlined),
     () => find.byType(FilledButton),
   ]),
-  's_data_paste_open': (tester) => tester.tap(find.byIcon(Icons.content_paste)),
+  's_data_paste_open': (tester) => tester.tap(find.byIcon(Icons.content_paste_outlined)),
   's_data_replace': _tapInTurn([
-    () => find.byIcon(Icons.download),
+    () => find.byIcon(Icons.download_outlined),
     // "Replace instead", the dialog's last text button.
     () => find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextButton)).last,
   ]),
@@ -1100,9 +1111,23 @@ const _desktopScreens = {
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
-const _tallScreens = {'today', 'parsha', 'week', 'browse', 'progress', 's_display', 'sources'};
+const _tallScreens = {
+  'today',
+  'parsha',
+  'week',
+  'browse',
+  'progress',
+  'settings',
+  's_reading',
+  's_reading_end',
+  's_reminders',
+  's_reminders_on',
+  's_data',
+  's_display',
+  'sources',
+};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'parsha', 'browse', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
+const _narrowScreens = {'settings', 's_reading', 'parsha', 'browse', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
   'parsha',
   'browse',
@@ -1127,6 +1152,8 @@ const _bigTextScreens = {
   'search_many',
   'search_none',
   's_reading_city',
+  'settings',
+  's_reading',
   'city',
   'today_paused',
   'welcome',

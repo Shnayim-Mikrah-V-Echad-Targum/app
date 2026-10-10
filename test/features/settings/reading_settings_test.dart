@@ -7,10 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikra/ui/theme/app_theme.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
 
@@ -19,6 +23,9 @@ final _now = DateTime(2026, 10, 13, 10);
 final _today = LocalDate(2026, 10, 13);
 final _joined = LocalDate(2026, 9, 1);
 const _applies = 'Applies from this week on';
+
+/// The haftarah's switch, under the Haftarah section's heading.
+const _haftarahSwitch = "Read the week's haftarah once";
 
 void main() {
   late ProviderContainer c;
@@ -63,7 +70,8 @@ void main() {
     var s = c.read(settingsProvider);
     expect((s.readingSchedule, s.oneDayYomTov), (ReadingSchedule.israel, false));
 
-    await tapText(tester, 'One, as in Israel');
+    // The segment sets its gloss on a line of its own.
+    await tapText(tester, 'One,\nas in Israel');
     s = c.read(settingsProvider);
     expect((s.readingSchedule, s.oneDayYomTov), (ReadingSchedule.israel, true));
 
@@ -75,6 +83,55 @@ void main() {
     );
     expect((saved.readingSchedule, saved.oneDayYomTov), (ReadingSchedule.diaspora, true));
     expect(find.text(_applies), findsNothing);
+  });
+
+  testWidgets('is set in sections, its choices of two or three as segments, and its sources as notes',
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 4000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await openReadingSettings(tester);
+    for (final section in ['Where & when', 'How I read', 'Haftarah', 'Special days', 'Parsha names']) {
+      expect(find.widgetWithText(GroupHeader, section), findsOneWidget, reason: section);
+    }
+    expect(find.byType(SegmentedButton<ReadingSchedule>), findsOneWidget);
+    expect(find.byType(SegmentedButton<bool>), findsOneWidget);
+    expect(find.byType(SegmentedButton<HaftarahNusach>), findsOneWidget);
+    expect(find.byType(SegmentedButton<NameStyle>), findsOneWidget);
+    // The plan, the window, the method and the second reading stay radios.
+    expect(find.byType(RadioListTile<ReadingPlanType>), findsNWidgets(3));
+    expect(find.byType(RadioListTile<LateWindow>), findsNWidgets(3));
+
+    // The citations are notes in the margin, in its type.
+    final notes = tester.widgetList<SourceNote>(find.byType(SourceNote)).map((n) => n.text);
+    expect(notes, [
+      'Reading finished after Shabbat, until this time, still counts (Shulchan Aruch OC 285:4).',
+      startsWith('The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum'),
+    ]);
+    final context = tester.element(find.byType(SourceNote).first);
+    expect(
+      tester.widget<Text>(find.descendant(of: find.byType(SourceNote).first, matching: find.byType(Text))).style,
+      SeferType.of(context).marginalia,
+    );
+  });
+
+  testWidgets("the haftarah's custom and whether it counts show only while it is read, set in under it",
+      (tester) async {
+    await openReadingSettings(tester);
+    final custom = find.byType(SegmentedButton<HaftarahNusach>);
+    const counts = 'Count the haftarah toward completion';
+    await tester.ensureVisible(custom);
+    await tester.pumpAndSettle();
+    expect(find.text(counts), findsOneWidget);
+    // In by 16 behind its rule, from the haftarah's own switch.
+    final haftarah = tester.getRect(find.widgetWithText(SwitchRow, _haftarahSwitch));
+    expect(tester.getRect(custom).left, haftarah.left + 16 + 2);
+    expect(tester.getRect(find.widgetWithText(SwitchRow, counts)).left, haftarah.left + 16 + 2);
+
+    await tapText(tester, _haftarahSwitch);
+    expect(c.read(settingsProvider).haftarahEnabled, isFalse);
+    expect(custom, findsNothing);
+    expect(find.text(counts), findsNothing);
   });
 
   testWidgets("the last verse's repeat follows the Chabad custom until the reader sets it", (tester) async {
@@ -125,7 +182,7 @@ void main() {
   testWidgets('changes that don\'t affect how weeks are planned or judged say nothing', (tester) async {
     await openReadingSettings(tester);
     await tapText(tester, 'Section by section');
-    await tapText(tester, 'Haftarah');
+    await tapText(tester, _haftarahSwitch);
     expect(c.read(settingsProvider).method, ReadingMethod.sectionBySection);
     expect(c.read(settingsProvider).haftarahEnabled, isFalse);
     expect(find.text(_applies), findsNothing, reason: 'the haftarah did not count toward completion');
@@ -226,7 +283,7 @@ void main() {
 
   testWidgets('a past week that counted the haftarah still shows it after the haftarah is turned off', (tester) async {
     await openReadingSettings(tester, haftarahRequired: true);
-    await tapText(tester, 'Haftarah');
+    await tapText(tester, _haftarahSwitch);
     expect(find.text(_applies), findsOneWidget);
 
     c.read(routerProvider).go('/week/5787:1');
