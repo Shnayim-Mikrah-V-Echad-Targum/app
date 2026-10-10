@@ -1250,6 +1250,12 @@ abstract class AppLocalizations {
   /// **'Each tile is one parsha of this year\'s cycle.'**
   String get torahMapHelp;
 
+  /// Screen-reader label of a book's header on the Torah map; the header expands or collapses that book.
+  ///
+  /// In en, this message translates to:
+  /// **'{book}: {done} of {total} parshiyot'**
+  String torahMapBook(String book, int done, int total);
+
   /// No description provided for @recentWeeks.
   ///
   /// In en, this message translates to:

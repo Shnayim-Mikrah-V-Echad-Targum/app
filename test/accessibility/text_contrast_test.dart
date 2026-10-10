@@ -1,4 +1,8 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
@@ -28,6 +32,57 @@ void main() {
   for (final theme in [AppThemeMode.dark, AppThemeMode.sepia, AppThemeMode.highContrastLight, AppThemeMode.highContrastDark]) {
     testWidgets('text contrast in the ${theme.name} theme', (tester) async {
       await expectReadableText(tester, '/today', settings: AppSettings(onboardingComplete: true, theme: theme));
+    });
+  }
+
+  // The Torah map with a tile in every past state. textContrastGuideline
+  // finds text by its node's label, and a tile's label also names its state
+  // ("Noach: Made up"), so the guideline checks the rest of the page and each
+  // tile's own colours are checked here: the name against the tile's fill,
+  // and its icon against the fill as a graphic.
+  for (final theme in [AppThemeMode.light, AppThemeMode.sepia]) {
+    testWidgets('Torah map tiles are readable in the ${theme.name} theme', (tester) async {
+      final handle = tester.ensureSemantics();
+      tester.view.physicalSize = const Size(412, 2600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, theme: theme, joinDate: historyJoinDate),
+        now: historyNow,
+        progress: historyProgress(),
+      );
+      c.read(routerProvider).go('/progress');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.bySemanticsLabel(RegExp('^Genesis: ')));
+      await tester.pumpAndSettle();
+
+      double contrast(Color a, Color b) {
+        final (la, lb) = (a.computeLuminance(), b.computeLuminance());
+        return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
+      }
+
+      for (final label in [
+        'Bereshit: On time',
+        'Noach: After Shabbat — still counts',
+        'Lech-Lecha: Not completed',
+        'Vayera: Made up',
+        'Toldot: In progress',
+        'Vayetzei: Upcoming',
+      ]) {
+        final tile = find.bySemanticsLabel(label);
+        final ink = tester.widget<Ink>(find.descendant(of: tile, matching: find.byType(Ink)));
+        final fill = (ink.decoration! as BoxDecoration).color!;
+        final name = label.substring(0, label.indexOf(':'));
+        final text = tester.widget<Text>(find.descendant(of: tile, matching: find.text(name)));
+        expect(fill.a, 1, reason: '$label: text on a translucent fill');
+        expect(contrast(text.style!.color!, fill), greaterThanOrEqualTo(4.5), reason: label);
+        for (final icon in tester.widgetList<Icon>(find.descendant(of: tile, matching: find.byType(Icon)))) {
+          expect(contrast(icon.color!, fill), greaterThanOrEqualTo(3), reason: '$label icon');
+        }
+      }
+      await expectLater(tester, meetsGuideline(textContrastGuideline));
+      handle.dispose();
     });
   }
 }

@@ -99,8 +99,11 @@ const _screens = {
   'kit_focus': '/today',
   'kit_progress': '/today',
   'kit_week': '/today',
-  // The legend behind the week strip's info button.
+  // The legends behind the info buttons, and the Torah map in every tile
+  // state (see [_screenProgress]).
   'legend_week': '/progress',
+  'legend_map': '/progress',
+  'progress_map': '/progress',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -108,6 +111,12 @@ const _screens = {
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
 };
+
+/// Screens shown on another day, with another history: the Torah map in
+/// every tile state.
+final _screenNow = <String, DateTime>{'progress_map': historyNow};
+final _screenProgress = <String, ProgressState Function()>{'progress_map': historyProgress};
+
 final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // Focus the second verse (each verse is followed by its Targum), so there
   // are dimmed verses above and below it.
@@ -169,6 +178,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.ensureVisible(find.byType(WeekStripLegendButton));
     await tester.tap(find.byType(WeekStripLegendButton));
   },
+  // The map's info button is the page's last.
+  'legend_map': (tester) async {
+    await tester.ensureVisible(find.byIcon(Icons.info_outline).last);
+    await tester.tap(find.byIcon(Icons.info_outline).last);
+  },
+  // The map's section heading at the top of the page.
+  'progress_map': (tester) => Scrollable.ensureVisible(tester.element(find.byIcon(Icons.info_outline).last)),
   // The middle row of a paper group: its ring must clear the hairlines.
   'kit_focus': (tester) async {
     await _showGallery(tester, const RowsGallery());
@@ -265,13 +281,23 @@ const _desktopScreens = {
   'kit_rows',
   'kit_progress',
   'kit_week',
+  'progress_map',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'progress', 'kit_week'};
-const _bigTextScreens = {'today', 'progress', 'reader', 'kit_ornaments', 'kit_rows', 'kit_progress', 'kit_week'};
+const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week'};
+const _bigTextScreens = {
+  'today',
+  'progress',
+  'reader',
+  'kit_ornaments',
+  'kit_rows',
+  'kit_progress',
+  'kit_week',
+  'progress_map',
+};
 
 Future<void> _settle(WidgetTester tester) async {
   // Text assets load on real async I/O; spinners never "settle".
@@ -320,7 +346,12 @@ void main() {
         final base = (_screenSettings[entry.key] ?? (s) => s)(
           AppSettings(onboardingComplete: entry.key != 'welcome', joinDate: _join),
         );
-        final c = await pumpApp(tester, settings: mode.settings(base), now: _now, progress: _progress());
+        final c = await pumpApp(
+          tester,
+          settings: mode.settings(base),
+          now: _screenNow[entry.key] ?? _now,
+          progress: (_screenProgress[entry.key] ?? _progress)(),
+        );
         if (entry.key != 'welcome') c.read(routerProvider).go(entry.value);
         await _settle(tester);
         final setup = _screenSetup[entry.key];

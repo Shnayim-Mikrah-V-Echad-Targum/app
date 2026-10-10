@@ -562,6 +562,21 @@
   "bookAbbrDeuteronomy": "Deu",
   "torahMap": "Torah map",
   "torahMapHelp": "Each tile is one parsha of this year's cycle.",
+  "torahMapBook": "{book}: {done} of {total} parshiyot",
+  "@torahMapBook": {
+    "description": "Screen-reader label of a book's header on the Torah map; the header expands or collapses that book.",
+    "placeholders": {
+      "book": {
+        "type": "String"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "recentWeeks": "Recent weeks",
   "makeUpTitle": "Make up before Simchat Torah",
   "makeUpBody": "Optional. Make-ups count toward this year's siyum.",

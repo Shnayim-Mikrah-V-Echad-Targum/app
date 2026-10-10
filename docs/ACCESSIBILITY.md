@@ -21,7 +21,8 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 **Structure and state**
 - Screen titles and section headers are marked as headings with levels, so heading navigation works.
 - Progress, streak rings and status badges have text equivalents. Colour is never the only signal.
-- Each aliyah tile announces the state of all three readings. The week strip announces each day's status.
+- Each aliyah tile announces the state of all three readings. The week strip announces each day's status, and each Torah-map tile its parsha's.
+- The Torah map's book headers are headings and buttons that say whether their book is expanded. Only the current book starts expanded.
 
 **Announcements and controls**
 - Steps in the guided reader and a completed aliyah are announced as live updates where the platform supports them. Elsewhere they appear in a SnackBar that is read aloud.

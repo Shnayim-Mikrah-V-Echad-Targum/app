@@ -192,6 +192,7 @@
   "bookAbbrDeuteronomy": "דב׳",
   "torahMap": "מפת התורה",
   "torahMapHelp": "כל משבצת היא פרשה אחת במחזור של השנה.",
+  "torahMapBook": "{book}: {done} מתוך {total} פרשות",
   "recentWeeks": "שבועות אחרונים",
   "makeUpTitle": "השלמה עד שמחת תורה",
   "makeUpBody": "לא חובה. השלמות נחשבות לסיום התורה של השנה.",

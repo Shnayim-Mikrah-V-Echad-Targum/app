@@ -719,6 +719,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get torahMapHelp => 'Each tile is one parsha of this year\'s cycle.';
 
   @override
+  String torahMapBook(String book, int done, int total) {
+    return '$book: $done of $total parshiyot';
+  }
+
+  @override
   String get recentWeeks => 'Recent weeks';
 
   @override

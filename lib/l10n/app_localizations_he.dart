@@ -721,6 +721,11 @@ class AppLocalizationsHe extends AppLocalizations {
   String get torahMapHelp => 'כל משבצת היא פרשה אחת במחזור של השנה.';
 
   @override
+  String torahMapBook(String book, int done, int total) {
+    return '$book: $done מתוך $total פרשות';
+  }
+
+  @override
   String get recentWeeks => 'שבועות אחרונים';
 
   @override

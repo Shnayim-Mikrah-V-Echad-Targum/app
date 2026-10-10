@@ -273,7 +273,8 @@ void main() {
       final c = await pumpApp(tester, now: now);
       c.read(routerProvider).go('/progress');
       await tester.pumpAndSettle();
-      final tiles = find.ancestor(of: find.text('Noach'), matching: find.byType(Wrap));
+      // The map's first row: Bereshit, Noach and Lech-Lecha.
+      final tiles = find.ancestor(of: find.text('Noach'), matching: find.byType(IntrinsicHeight));
       final tile = await tabInto(tester, tiles);
       expect(tester.widget<SeferInkWell>(tile).borderRadius, const BorderRadius.all(Radius.circular(6)));
       expect(_inkWellRing(tester, tile)?.color, Palettes.seferLight.focus);

@@ -9,9 +9,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/app.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
@@ -44,6 +46,27 @@ Future<void> loadBundledFonts() => _fonts ??= () async {
     }();
 
 Future<ParshaRepository> loadRepo() async => _repo ??= await ParshaRepository.load();
+
+/// A history with every past state of the Torah map, as of [historyNow]: a
+/// reader who joined on [historyJoinDate] read Bereshit and Chayei Sara on
+/// time, finished Noach after its Shabbat, never finished Lech-Lecha, and
+/// made Vayera up a week late. Toldot is this week's.
+ProgressState historyProgress() {
+  WeekProgress week(int parsha, LocalDate done) => WeekProgress(weekId: '5787:$parsha').withAll(done);
+  final weeks = [
+    week(1, LocalDate(2026, 10, 8)),
+    week(2, LocalDate(2026, 10, 19)),
+    week(4, LocalDate(2026, 11, 9)),
+    week(5, LocalDate(2026, 11, 5)),
+  ];
+  return ProgressState(weeks: {for (final w in weeks) w.weekId: w});
+}
+
+/// Wednesday 11 November 2026, in the week of Toldot (see [historyProgress]).
+final historyNow = DateTime(2026, 11, 11, 10);
+
+/// Sunday 4 October 2026, Simchat Torah in the Diaspora.
+final historyJoinDate = LocalDate(2026, 10, 4);
 
 /// Pumps the whole app with in-memory storage and the demo backend.
 Future<ProviderContainer> pumpApp(

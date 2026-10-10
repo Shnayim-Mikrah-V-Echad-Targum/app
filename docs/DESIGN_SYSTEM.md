@@ -645,11 +645,13 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 
 **Layout**
 - Fixed grid: 3 columns under 600, 4 at 600 and up, 6 at 1200 and up; gap 6.
+- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha'alotcha on a 360 dp phone or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. Only when the longest word of any name, set bold, would not fit a tile's width at all (large text) does the grid take fewer columns.
 - Build each row as `IntrinsicHeight(Row([Expanded(tile) …]))` so tiles grow with text scale. No GridView aspect ratio.
 
 **Tile**
 - minHeight 52; radius 6; padding 8/6.
-- `Row(mainAxisAlignment: center)`: an optional 14 px icon, a 4 gap, then `Flexible(Text(maxLines: 2, textAlign: center))` in labelMedium.
+- `Row(mainAxisAlignment: center)`: an optional 14 px icon, a 4 gap, then `Flexible(Text(maxLines: 2, textAlign: center))` in labelMedium (a Column instead, as above, for a word too long). Once the system text is enlarged, a name is never cut short.
+- The fill is `Ink`; the border is drawn over the tile, so every tile's content sits in the same place.
 
 **States**
 
@@ -657,14 +659,20 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 |---|---|---|---|---|
 | on time | done | none | onDone | check |
 | late / restored | late | none | onLate (5.49) | check_circle_outline |
-| made up | paper | 1.5 px late | onSurface | history |
-| missed | paper | 1 px outline | onSurfaceVariant | remove 14 in neutral (the non-colour cue, D8) |
+| made up | paper | 1.5 px late | onSurface | history in late |
+| missed (and overdue) | paper | 1 px outline (2 in high contrast) | onSurfaceVariant | remove 14 in neutral (the non-colour cue, D8) |
 | current | primaryContainer | 2 px primary | onPrimaryContainer w700 | timelapse |
-| upcoming / untracked | paper | 1 px hairline | onSurfaceVariant | none |
+| upcoming | paper | hairline | onSurfaceVariant | none |
+| untracked | paper | hairline | onSurfaceVariant | pause_circle_outline |
+
+A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled up", "Lech-Lecha: Can still be restored").
 
 **Book header row**
-- Hebrew book name (FRL 600 18), a 8 gap, the Latin name (titleSmall), and "3 of 12" end-aligned in bodySmall with tabular figures.
+- Hebrew book name (FRL 600 18), a 8 gap, the Latin name (titleSmall), and "3 of 12" end-aligned in bodySmall with tabular figures, then an `expand_more` chevron that turns over `Motion.short`. The two names are one paragraph, so with large text the Latin name wraps under the Hebrew one.
 - In the Hebrew UI, the Latin name is dropped.
+- The row (min 48) is a SeferInkWell that folds or opens its book. Only the book with the current portion starts open, so the map is the current book plus four headers. Semantics: a level-3 heading and a button with an expanded state, labelled `torahMapBook` ("Genesis: 3 of 12 parshiyot").
+
+**Help:** the section header's `info_outline` IconButton (tooltip `torahMapHelp`) opens a sheet with `torahMapHelp` and each state's swatch (fill, border and icon) beside its label.
 
 ### 6.15 YearBar
 
