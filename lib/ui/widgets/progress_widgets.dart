@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 
 import '../../core/calendar/jewish_holidays.dart';
 import '../../core/calendar/local_date.dart';
+import '../../core/text/hebrew_text.dart';
 import '../../features/progress/domain/progress_models.dart';
 import '../../features/progress/domain/reading_plan.dart';
 import '../../features/progress/domain/streak_engine.dart';
 import '../l10n.dart';
 import '../theme/app_theme.dart';
+import 'common.dart';
 
 /// The geometry of the parsha rings at one size (docs/DESIGN_SYSTEM.md
 /// §6.11): three strokes of `size × 0.055`, 1.6 strokes apart.
@@ -649,17 +651,20 @@ extension DayDisplayX on DayDisplay {
     };
   }
 
+  /// The day's glyph in the week strip (docs/DESIGN_SYSTEM.md §6.13), [size]
+  /// square: a filled disc for a day that counts, a ring and dot for today,
+  /// outlines for days still open or to come, the candles for a rest day.
   Widget icon(BuildContext context, {double size = 22}) {
     final scheme = Theme.of(context).colorScheme;
     final status = StatusColors.of(context);
     return switch (this) {
-      DayDisplay.kept => Icon(Icons.check_circle, size: size, color: status.done),
-      DayDisplay.ahead => Icon(Icons.fast_forward_rounded, size: size, color: status.done),
-      DayDisplay.caughtUp => Icon(Icons.published_with_changes, size: size, color: status.done),
+      DayDisplay.kept => _DayDisc(Icons.check, size: size),
+      DayDisplay.ahead => _DayDisc(Icons.fast_forward_rounded, size: size),
+      DayDisplay.caughtUp => _DayDisc(Icons.published_with_changes, size: size),
       DayDisplay.grace => Icon(Icons.shield_outlined, size: size, color: status.grace),
       DayDisplay.paused => Icon(Icons.pause_circle_outline, size: size, color: scheme.onSurfaceVariant),
       DayDisplay.open => Icon(Icons.radio_button_unchecked, size: size, color: scheme.onSurfaceVariant),
-      DayDisplay.today => Icon(Icons.adjust, size: size, color: scheme.primary),
+      DayDisplay.today => TodayMark(size: size),
       DayDisplay.missed => Icon(Icons.remove_circle_outline, size: size, color: status.neutral),
       DayDisplay.rest => ShabbatCandlesIcon(size: size, color: status.rest),
       DayDisplay.upcoming => Icon(Icons.circle_outlined, size: size, color: scheme.outline),
@@ -668,9 +673,95 @@ extension DayDisplayX on DayDisplay {
   }
 }
 
+/// A day that counts: at the default size, a 20 px disc in the done colour
+/// with a 14 px [glyph] in onDone.
+class _DayDisc extends StatelessWidget {
+  const _DayDisc(this.glyph, {required this.size});
+
+  final IconData glyph;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = StatusColors.of(context);
+    final disc = size * 20 / 22;
+    return SizedBox.square(
+      dimension: size,
+      child: Center(
+        child: Container(
+          width: disc,
+          height: disc,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: status.done, shape: BoxShape.circle),
+          child: Icon(glyph, size: size * 14 / 22, color: status.onDone),
+        ),
+      ),
+    );
+  }
+}
+
+/// Today, not yet read: a 2 px ring in primary around an 8 px dot, on a 22
+/// grid scaled to [size].
+class TodayMark extends StatelessWidget {
+  const TodayMark({super.key, this.size = 22});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+        dimension: size,
+        child: CustomPaint(painter: _TodayMarkPainter(Theme.of(context).colorScheme.primary)),
+      );
+}
+
+class _TodayMarkPainter extends CustomPainter {
+  _TodayMarkPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final unit = size.shortestSide / 22;
+    final centre = size.center(Offset.zero);
+    // The ring is 20 across, as wide as a kept day's disc.
+    canvas
+      ..drawCircle(
+        centre,
+        9 * unit,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2 * unit
+          ..color = color,
+      )
+      ..drawCircle(centre, 4 * unit, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_TodayMarkPainter old) => old.color != color;
+}
+
+/// The aliyot planned for a day as the week strip prints them, in Hebrew
+/// ordinals: "א", "ד·ה" for two, "א–ז" for a run of three or more.
+String aliyahOrdinals(List<int> aliyot) {
+  final sorted = [...aliyot]..sort();
+  final letters = [for (final a in sorted) HebrewText.gematria(a + 1, punctuate: false)];
+  if (sorted.length > 2 && sorted.last - sorted.first == sorted.length - 1) return '${letters.first}–${letters.last}';
+  return letters.join('·');
+}
+
 const _dayRadius = BorderRadius.all(Radius.circular(10));
 
-/// Sunday through Shabbat of a week, with the day's plan and status.
+/// Sunday through Shabbat of a week, with each day's plan and status
+/// (docs/DESIGN_SYSTEM.md §6.13): the weekday, a glyph for how the day went,
+/// and the aliyot planned for it in Hebrew ordinals. Today is filled in the
+/// primary container colour and edged in primary; Shabbat and Yom Tov are
+/// washed in the rest colour.
+///
+/// Where seven days would each be narrower than [minDayWidth] (or than the
+/// weekday names at the current text size), the week takes two rows: Sunday
+/// to Wednesday, then Thursday to Shabbat.
+///
+/// [WeekStripLegendButton] explains the glyphs.
 class WeekStrip extends StatelessWidget {
   const WeekStrip({
     super.key,
@@ -689,77 +780,260 @@ class WeekStrip extends StatelessWidget {
   final LocalDate? joinDate;
   final void Function(PlanDay day)? onDayTap;
 
+  /// The narrowest a day may be, margins included: a 48 dp target.
+  static const double minDayWidth = 48;
+
+  /// The padding of a card around the strip: tighter than a card's usual
+  /// 20, so the days stay in one row on more phones.
+  static const cardPadding = EdgeInsets.all(8);
+
+  static const double _margin = 2;
+  static const double _inset = 2;
+
   @override
   Widget build(BuildContext context) {
-    final names = Names(context);
     final end = plan.week.occasion.isShabbat ? plan.week.occasion : plan.week.occasion.onOrAfter(6);
     final days = [for (var i = 6; i >= 0; i--) end.addDays(-i)];
-    final theme = Theme.of(context);
+    final cells = [for (final d in days) _day(context, d)];
     return Semantics(
       label: context.l10n.weekStripLabel,
       container: true,
       explicitChildNodes: true,
-      child: Row(
+      // The filled days are ink, so their ripples show; this keeps it moving
+      // with them wherever the strip scrolls.
+      child: Material(
+        type: MaterialType.transparency,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth / 7 >= _dayWidthNeeded(context, days)) return _row(cells);
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _row(cells.sublist(0, 4)),
+                const SizedBox(height: 2 * _margin),
+                // Thursday under Sunday, and Shabbat under Tuesday.
+                _row([...cells.sublist(4), const SizedBox.shrink()]),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// The width each day needs to set its weekday on one line, margins
+  /// included, and never less than [minDayWidth].
+  double _dayWidthNeeded(BuildContext context, List<LocalDate> days) {
+    final names = Names(context);
+    // Today's is bold; measure every name as if it were.
+    final style = Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700);
+    var widest = 0.0;
+    for (final d in days) {
+      final painter = TextPainter(
+        text: TextSpan(text: names.weekdayShort(d), style: style),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        locale: Localizations.maybeLocaleOf(context),
+        maxLines: 1,
+      )..layout();
+      widest = math.max(widest, painter.width);
+      painter.dispose();
+    }
+    return math.max(minDayWidth, widest.ceilToDouble() + 2 * (_inset + _margin));
+  }
+
+  /// Days side by side, all as tall as the tallest.
+  static Widget _row(List<Widget> cells) => IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [for (final c in cells) Expanded(child: c)],
+        ),
+      );
+
+  Widget _day(BuildContext context, LocalDate d) {
+    final l = context.l10n;
+    final names = Names(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final planned = plan.dayFor(d);
+    final rest = JewishHolidays.isRestDay(d, israel: israel);
+    final display = dayDisplayFor(
+      date: d,
+      today: today,
+      status: statuses[d],
+      rest: rest,
+      planned: planned != null,
+      joinDate: joinDate,
+    );
+    // The aliyot planned for the day, Shabbat morning's included; none on a
+    // day before the reader joined.
+    final dayAliyot = display == DayDisplay.noReading
+        ? const <int>[]
+        : planned?.aliyot ?? (d == plan.week.occasion ? plan.shabbatAliyot : const <int>[]);
+    final isToday = d == today;
+    final semantic = [
+      l.dayChipLabel(names.weekday(d), display.label(context)),
+      if (dayAliyot.isNotEmpty) names.aliyot(dayAliyot),
+    ].join('. ');
+    // Under the glyph, those aliyot as ordinals; on a Yom Tov that is not
+    // Shabbat, that it is one, so Simchat Torah is not taken for Shabbat.
+    final yomTov = rest && !d.isShabbat;
+    final note = yomTov ? l.yomTovShort : (dayAliyot.isEmpty ? null : aliyahOrdinals(dayAliyot));
+    final content = Container(
+      constraints: const BoxConstraints(minHeight: 68),
+      padding: const EdgeInsets.symmetric(horizontal: _inset, vertical: 8),
+      // A foreground border, so today's content sits exactly where the
+      // other days' does.
+      foregroundDecoration: isToday
+          ? BoxDecoration(borderRadius: _dayRadius, border: Border.all(color: scheme.primary, width: 1.5))
+          : null,
+      child: Column(
         children: [
-          for (final d in days)
-            Expanded(
-              child: Builder(builder: (context) {
-                final planned = plan.dayFor(d);
-                final rest = JewishHolidays.isRestDay(d, israel: israel);
-                final display = dayDisplayFor(
-                  date: d,
-                  today: today,
-                  status: statuses[d],
-                  rest: rest,
-                  planned: planned != null,
-                  joinDate: joinDate,
-                );
-                final aliyot = planned == null ? '' : names.aliyot(planned.aliyot);
-                final isToday = d == today;
-                final semantic = [
-                  context.l10n.dayChipLabel(names.weekday(d), display.label(context)),
-                  if (aliyot.isNotEmpty) aliyot,
-                ].join('. ');
-                final chip = Container(
-                  constraints: const BoxConstraints(minHeight: 48),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: _dayRadius,
-                    border: isToday ? Border.all(color: theme.colorScheme.primary, width: 2) : null,
-                    color: isToday ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35) : null,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        names.weekdayShort(d),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      display.icon(context),
-                    ],
-                  ),
-                );
-                return Padding(
-                  // Outside the ink well, so its focus ring hugs the day.
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Semantics(
-                    label: semantic,
-                    button: planned != null && onDayTap != null,
-                    excludeSemantics: true,
-                    child: Tooltip(
-                      message: semantic,
-                      child: planned != null && onDayTap != null
-                          ? SeferInkWell(borderRadius: _dayRadius, onTap: () => onDayTap!(planned), child: chip)
-                          : chip,
-                    ),
-                  ),
-                );
-              }),
+          Text(
+            names.weekdayShort(d),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: isToday ? scheme.onSurface : scheme.onSurfaceVariant,
+              fontWeight: isToday ? FontWeight.w700 : null,
             ),
+          ),
+          const SizedBox(height: 8),
+          // A day that changes state cross-fades to its new glyph; nothing
+          // grows or bounces.
+          AnimatedSwitcher(
+            duration: Motion.of(context).d(Motion.medium),
+            child: KeyedSubtree(key: ValueKey(display), child: display.icon(context)),
+          ),
+          if (note != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              note,
+              textAlign: TextAlign.center,
+              // Ordinals read right to left in either UI.
+              textDirection: yomTov ? null : TextDirection.rtl,
+              style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
         ],
+      ),
+    );
+    final fill = rest ? SeferColors.of(context).restWash : (isToday ? scheme.primaryContainer : null);
+    final interactive = planned != null && onDayTap != null;
+    final body = interactive
+        ? SeferInkWell(
+            borderRadius: _dayRadius,
+            onTap: () => onDayTap!(planned),
+            child: ExcludeSemantics(child: content),
+          )
+        : ExcludeSemantics(child: content);
+    // One node per day, the size of its slot (margins and all), carrying the
+    // ink well's tap and focus.
+    return Semantics(
+      container: true,
+      button: interactive,
+      label: semantic,
+      child: Padding(
+        // Outside the ink well, so its focus ring hugs the day.
+        padding: const EdgeInsets.symmetric(horizontal: _margin),
+        child: Tooltip(
+          message: semantic,
+          excludeFromSemantics: true,
+          child: fill == null
+              ? body
+              : Ink(decoration: BoxDecoration(color: fill, borderRadius: _dayRadius), child: body),
+        ),
+      ),
+    );
+  }
+}
+
+/// An info button for the header of a card that holds a [WeekStrip]. It
+/// opens a sheet naming each of the strip's glyphs.
+class WeekStripLegendButton extends StatelessWidget {
+  const WeekStripLegendButton({super.key});
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+        icon: const Icon(Icons.info_outline),
+        tooltip: context.l10n.statusLegend,
+        onPressed: () => showWeekStripLegend(context),
+      );
+}
+
+/// Shows what each glyph in a [WeekStrip] means.
+Future<void> showWeekStripLegend(BuildContext context) => showAppSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const _WeekStripLegend(),
+    );
+
+class _WeekStripLegend extends StatelessWidget {
+  const _WeekStripLegend();
+
+  /// Roughly in the order a week fills in.
+  static const _order = [
+    DayDisplay.today,
+    DayDisplay.kept,
+    DayDisplay.ahead,
+    DayDisplay.caughtUp,
+    DayDisplay.grace,
+    DayDisplay.open,
+    DayDisplay.missed,
+    DayDisplay.paused,
+    DayDisplay.upcoming,
+    DayDisplay.noReading,
+    DayDisplay.rest,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final padding = sheetPadding(context);
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SheetTitle(l.statusLegend),
+            for (final d in _order)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: padding, vertical: 6),
+                child: Row(
+                  children: [
+                    // Today and rest days with their fills, as the strip
+                    // shows them.
+                    Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: switch (d) {
+                        DayDisplay.today => BoxDecoration(
+                            color: scheme.primaryContainer,
+                            borderRadius: _dayRadius,
+                            border: Border.all(color: scheme.primary, width: 1.5),
+                          ),
+                        DayDisplay.rest =>
+                          BoxDecoration(color: SeferColors.of(context).restWash, borderRadius: _dayRadius),
+                        _ => null,
+                      },
+                      child: d.icon(context),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        d == DayDisplay.today ? l.dayToday : d.label(context),
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

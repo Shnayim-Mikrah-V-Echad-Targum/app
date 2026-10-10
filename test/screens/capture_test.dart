@@ -98,6 +98,9 @@ const _screens = {
   'kit_rows': '/today',
   'kit_focus': '/today',
   'kit_progress': '/today',
+  'kit_week': '/today',
+  // The legend behind the week strip's info button.
+  'legend_week': '/progress',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -161,6 +164,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'kit_ornaments': (tester) => _showGallery(tester, const OrnamentsGallery()),
   'kit_rows': (tester) => _showGallery(tester, const RowsGallery()),
   'kit_progress': (tester) => _showGallery(tester, const ProgressGallery()),
+  'kit_week': (tester) => _showGallery(tester, const WeekGallery()),
+  'legend_week': (tester) async {
+    await tester.ensureVisible(find.byType(WeekStripLegendButton));
+    await tester.tap(find.byType(WeekStripLegendButton));
+  },
   // The middle row of a paper group: its ring must clear the hairlines.
   'kit_focus': (tester) async {
     await _showGallery(tester, const RowsGallery());
@@ -237,6 +245,8 @@ final _modes = [
   // System text at 200%, tall, for the screens in [_bigTextScreens].
   _Mode('big', const Size(412, 2600), (s) => s, textScale: 2),
   _Mode('bighe', const Size(412, 2600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 2),
+  // A 360 dp phone, tall, for the screens in [_narrowScreens].
+  _Mode('narrow', const Size(360, 2600), (s) => s),
 ];
 
 const _desktopScreens = {
@@ -254,12 +264,14 @@ const _desktopScreens = {
   'kit_ornaments',
   'kit_rows',
   'kit_progress',
+  'kit_week',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
 const _bigTextModes = {'big', 'bighe'};
-const _bigTextScreens = {'today', 'progress', 'reader', 'kit_ornaments', 'kit_rows', 'kit_progress'};
+const _narrowScreens = {'today', 'progress', 'kit_week'};
+const _bigTextScreens = {'today', 'progress', 'reader', 'kit_ornaments', 'kit_rows', 'kit_progress', 'kit_week'};
 
 Future<void> _settle(WidgetTester tester) async {
   // Text assets load on real async I/O; spinners never "settle".
@@ -293,6 +305,7 @@ void main() {
       if (_wideModes.contains(mode.tag) && !_desktopScreens.contains(entry.key)) continue;
       if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
+      if (mode.tag == 'narrow' && !_narrowScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {

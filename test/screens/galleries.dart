@@ -2,8 +2,11 @@
 // the design-system pieces can be reviewed in every mode before the screens
 // that use them are rebuilt. Not part of the app.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/features/parsha/week_context.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
@@ -248,6 +251,62 @@ class ProgressGallery extends StatelessWidget {
                   child: SizedBox(width: 280, child: YearBar(segments: year)),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The week strip in every day state, and on a 320 dp phone, where it takes
+/// two rows. The plan is the harness's week of Bereshit: Sunday is Simchat
+/// Torah in the Diaspora, and Monday to Friday have reading.
+class WeekGallery extends ConsumerWidget {
+  const WeekGallery({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final plan = ref.watch(currentWeekContextProvider).plan;
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final mon = LocalDate(2026, 10, 5);
+    Widget strip(LocalDate today, List<DayStatus> statuses, {LocalDate? joinDate}) => WeekStrip(
+          plan: plan,
+          today: today,
+          statuses: {for (var i = 0; i < statuses.length; i++) mon.addDays(i): statuses[i]},
+          israel: false,
+          joinDate: joinDate,
+          onDayTap: (_) {},
+        );
+    return Scaffold(
+      appBar: AppBar(title: const Text('Week strip'), actions: const [WeekStripLegendButton()]),
+      body: PageBody(
+        children: [
+          // Yom Tov, kept, ahead, caught up, grace, today, Shabbat.
+          InfoCard(
+            padding: WeekStrip.cardPadding,
+            child: strip(mon.addDays(4), [DayStatus.kept, DayStatus.ahead, DayStatus.caughtUp, DayStatus.grace]),
+          ),
+          const Gap(12),
+          // Before joining, missed, paused, not yet read, and today kept.
+          InfoCard(
+            padding: WeekStrip.cardPadding,
+            child: strip(
+              mon.addDays(4),
+              [DayStatus.missed, DayStatus.missed, DayStatus.paused, DayStatus.open, DayStatus.kept],
+              joinDate: mon.addDays(1),
+            ),
+          ),
+          const Gap(12),
+          Text('320 dp', style: muted),
+          const Gap(4),
+          // A 320 dp phone's card: today on Tuesday, the rest to come.
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: SizedBox(
+              width: 288,
+              child: InfoCard(padding: WeekStrip.cardPadding, child: strip(mon.addDays(1), [DayStatus.kept])),
             ),
           ),
         ],

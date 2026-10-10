@@ -395,6 +395,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dayNoReading => 'אין קריאה מתוכננת';
 
   @override
+  String get dayToday => 'היום';
+
+  @override
+  String get yomTovShort => 'חג';
+
+  @override
   String dayChipLabel(String day, String status) {
     return '$day: $status';
   }

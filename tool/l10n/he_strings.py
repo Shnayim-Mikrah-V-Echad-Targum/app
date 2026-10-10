@@ -101,6 +101,8 @@ HE = {
   "dayRest": "שבת או יום טוב",
   "dayUpcoming": "בהמשך",
   "dayNoReading": "אין קריאה מתוכננת",
+  "dayToday": "היום",
+  "yomTovShort": "חג",
   "dayChipLabel": "{day}: {status}",
   "weekStripLabel": "התוכנית לשבוע זה",
   "weekOnTime": "בזמן",

@@ -77,6 +77,7 @@ class TodayScreen extends ConsumerWidget {
           _TodayCard(ctx: ctx, settings: settings),
           const Gap(12),
           InfoCard(
+            padding: WeekStrip.cardPadding,
             child: WeekStrip(
               plan: ctx.plan,
               today: today,

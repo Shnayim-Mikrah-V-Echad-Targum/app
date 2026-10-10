@@ -698,6 +698,18 @@ abstract class AppLocalizations {
   /// **'No reading planned'**
   String get dayNoReading;
 
+  /// In the week-strip legend, beside the mark for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dayToday;
+
+  /// Under a Yom Tov day in the week strip, so it is not taken for Shabbat. Keep it to a word or two: the day is about 44 dp wide.
+  ///
+  /// In en, this message translates to:
+  /// **'Yom Tov'**
+  String get yomTovShort;
+
   /// No description provided for @dayChipLabel.
   ///
   /// In en, this message translates to:

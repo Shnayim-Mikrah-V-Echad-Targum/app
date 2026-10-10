@@ -121,8 +121,9 @@ class ProgressScreen extends ConsumerWidget {
               ],
             ),
           ),
-          SectionHeader(l.weekStripLabel),
+          SectionHeader(l.weekStripLabel, trailing: const WeekStripLegendButton()),
           InfoCard(
+            padding: WeekStrip.cardPadding,
             child: WeekStrip(
               plan: current.plan,
               today: current.today,

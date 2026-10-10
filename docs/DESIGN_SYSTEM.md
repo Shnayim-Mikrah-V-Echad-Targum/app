@@ -621,11 +621,13 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
 
 ### 6.13 WeekStrip
 
-- Seven equal cells; min 48×68; radius 10; horizontal margin 2.
+- Seven equal cells; min 48×68; radius 10; horizontal margin 2. The 48 is the day's slot, margins included: the day's Semantics node covers the whole slot, so it is the 48 dp target.
 - Weekday label in labelMedium onSurfaceVariant (today: onSurface w700). Icon 22, 8 below the label.
+- Under the icon, 4 below it, the day's planned aliyot as Hebrew ordinals in labelSmall onSurfaceVariant: "א", "ד·ה" for two, "א–ז" for a run. Shabbat shows the plan's Shabbat-morning aliyot, if any; a day before the join date shows none. A Yom Tov that is not Shabbat shows `yomTovShort` ("Yom Tov" / "חג") instead, so Simchat Torah is not taken for Shabbat.
+- Cells in a row are as tall as the tallest (`IntrinsicHeight`).
 - Cell states:
-  - Today: primaryContainer fill at 100% (was 35%) plus a 1.5 px primary border. Icon: a 2 px primary ring with an 8 px centre dot.
-  - Rest (Shabbat or Yom Tov): restWash fill plus candles (§7.6) in `rest`.
+  - Today: primaryContainer fill at 100% (was 35%) plus a 1.5 px primary border, drawn over the cell so its content sits where the other days' does. Icon: a 2 px primary ring with an 8 px centre dot (`TodayMark`).
+  - Rest (Shabbat or Yom Tov): restWash fill plus candles (§7.6) in `rest`. A rest day that is today keeps the wash and takes today's border.
   - Kept: a filled 20 px circle in `done` with a 14 px onDone check.
   - Ahead / caught up: the same disc with the existing fast_forward / published_with_changes glyph.
   - Grace: `shield_outlined` in grace.
@@ -633,7 +635,11 @@ Text fields: focused border 2 px primary (was 3). The ring appears instantly.
   - Open (past, unread): `radio_button_unchecked` in onSurfaceVariant.
   - Upcoming: `circle_outlined` in **outline** (was outlineVariant, D16).
   - No reading: `horizontal_rule` in outline.
-- Keep the existing Tooltip and Semantics labels.
+- Fills are `Ink`, so a press shows on them. A glyph that changes cross-fades over `Motion.medium` (§8).
+- `LayoutBuilder`: when a seventh of the width is under 48, or under the widest weekday label at the current text size, the strip takes two rows, Sunday to Wednesday and then Thursday to Shabbat, in a four-column grid.
+- A card around the strip alone uses `WeekStrip.cardPadding` (8), so the days stay in one row on a 412 dp phone (52 each).
+- `WeekStripLegendButton`: an `info_outline` IconButton (tooltip `statusLegend`) for the strip's card or section header. It opens a sheet that shows every glyph beside its label, today and rest days on their fills.
+- Keep the existing Tooltip and Semantics labels. Each day is one node with the ink well's tap and focus.
 
 ### 6.14 Torah map (progress_screen.dart tile())
 
