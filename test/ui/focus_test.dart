@@ -139,6 +139,49 @@ void main() {
     });
   }
 
+  // §6.20: the banner's action is primary where that meets AA on the banner,
+  // with the usual ring; otherwise it is in the banner's own ink, and so is
+  // its ring. One ring either way.
+  for (final legible in [true, false]) {
+    testWidgets('a NoticeBanner action ${legible ? 'in primary' : 'in the banner ink'} takes one focus ring',
+        (tester) async {
+      _keyboardMode();
+      final light = _theme(AppThemeMode.light);
+      // A banner the colour of primary leaves primary unreadable on it.
+      final theme = legible
+          ? light
+          : light.copyWith(colorScheme: light.colorScheme.copyWith(secondaryContainer: light.colorScheme.primary));
+      final scheme = theme.colorScheme;
+      final sefer = theme.extension<SeferColors>()!;
+      final ink = legible ? scheme.primary : scheme.onSecondaryContainer;
+      await tester.pumpWidget(MaterialApp(
+        theme: theme,
+        home: Scaffold(
+          body: NoticeBanner(
+            icon: Icons.info_outline,
+            text: 'Notice',
+            action: TextButton(onPressed: () {}, child: const Text('Open')),
+          ),
+        ),
+      ));
+      Material material() =>
+          tester.widget<Material>(find.descendant(of: find.byType(TextButton), matching: find.byType(Material)));
+      expect(material().textStyle?.color, ink);
+      expect(material().shape, isNot(isA<FocusRingBorder>()));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(
+        material().shape,
+        isA<FocusRingBorder>()
+            .having((b) => b.ring, 'ring', legible ? sefer.focus : ink)
+            .having((b) => b.gap, 'gap', sefer.focusGap)
+            .having((b) => b.side, 'side', BorderSide.none)
+            .having((b) => b.borderRadius, 'radius', _r10),
+      );
+    });
+  }
+
   testWidgets('a focused button in touch mode shows no ring', (tester) async {
     FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTouch;
     addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);

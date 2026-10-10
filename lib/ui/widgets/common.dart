@@ -135,13 +135,23 @@ class NoticeBanner extends StatelessWidget {
     final scheme = theme.colorScheme;
     double luminance(Color c) => c.computeLuminance() + 0.05;
     final a = luminance(scheme.primary), b = luminance(scheme.secondaryContainer);
-    final color = (a > b ? a / b : b / a) >= 4.5 ? scheme.primary : scheme.onSecondaryContainer;
-    final style = TextButton.styleFrom(foregroundColor: color).copyWith(
-      side: WidgetStateProperty.resolveWith(
-        (states) => states.contains(WidgetState.focused) ? BorderSide(color: color, width: 3) : null,
-      ),
-    );
-    return TextButtonTheme(data: TextButtonThemeData(style: style.merge(theme.textButtonTheme.style)), child: action);
+    final legible = (a > b ? a / b : b / a) >= 4.5;
+    final color = legible ? scheme.primary : scheme.onSecondaryContainer;
+    final themed = theme.textButtonTheme.style;
+    var style = TextButton.styleFrom(foregroundColor: color);
+    if (!legible) {
+      // The theme's keyboard focus ring (§6.1), drawn in the banner's ink.
+      style = style.copyWith(
+        shape: WidgetStateProperty.resolveWith(
+          (states) => switch (themed?.shape?.resolve(states)) {
+            final FocusRingBorder focused =>
+              FocusRingBorder(side: focused.side, borderRadius: focused.borderRadius, ring: color, gap: focused.gap),
+            final shape => shape,
+          },
+        ),
+      );
+    }
+    return TextButtonTheme(data: TextButtonThemeData(style: style.merge(themed)), child: action);
   }
 
   @override
