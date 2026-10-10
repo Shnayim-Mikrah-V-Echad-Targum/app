@@ -161,7 +161,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           name = (await ref.read(myProfileProvider.future).timeout(const Duration(seconds: 2)))?.displayName;
         } catch (_) {}
         if (!mounted) return;
-        final message = context.l10n.signedInAs(name ?? email);
+        final message = context.l10n.signedInNow(name ?? context.ltrRun(email));
         if (widget.returnWhenSignedIn && context.canPop()) {
           // Back to what they signed in for, with nothing over it.
           announceStatus(context, message);

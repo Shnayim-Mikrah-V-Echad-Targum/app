@@ -62,6 +62,9 @@ class TodayScreen extends ConsumerWidget {
             NoticeBanner(
               icon: Icons.pause_circle_outline,
               text: l.pausedBanner(names.dateLong(pauses.firstWhere((p) => p.contains(today)).end)),
+              // Two sentences, which beside the button would wrap into a
+              // narrow column.
+              actionBelow: true,
               action: TextButton(
                 onPressed: () {
                   ref.read(progressProvider.notifier).endPause(today);

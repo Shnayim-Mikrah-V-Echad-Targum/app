@@ -1878,6 +1878,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String signedInNow(String name) {
+    return 'Signed in as $name';
+  }
+
+  @override
   String get displayNameLabel => 'Display name';
 
   @override

@@ -471,7 +471,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get weekLate => 'אחרי שבת — עדיין נחשב';
 
   @override
-  String get weekRestored => 'הושלם בשבוע הבא';
+  String get weekRestored => 'הושלם עם הפרשה הבאה';
 
   @override
   String get weekMadeUp => 'הושלם מאוחר';
@@ -1876,6 +1876,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String signedInNow(String name) {
+    return 'התחברת בשם $name';
+  }
+
+  @override
   String get displayNameLabel => 'שם תצוגה';
 
   @override
@@ -2007,7 +2012,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String blockConfirm(String name) {
-    return 'ההודעות של $name לא יוצגו. לא תישלח על כך הודעה.';
+    return 'ההודעות של $name לא יוצגו, ולא תישלח על כך התראה ל־$name.';
   }
 
   @override
@@ -2035,7 +2040,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get posted => 'פורסם.';
 
   @override
-  String get pendingReview => 'מוסתר — ממתין לבדיקת צוות הניהול';
+  String get pendingReview => 'מוסתרת — ממתינה לבדיקת צוות הניהול';
 
   @override
   String get lockedThread => 'הדיון נעול.';

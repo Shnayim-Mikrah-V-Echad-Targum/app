@@ -3201,11 +3201,17 @@ abstract class AppLocalizations {
   /// **'Demo mode: any 6 digits will work.'**
   String get demoCodeHint;
 
-  /// No description provided for @signedInAs.
+  /// The heading of the account page, naming the member signed in.
   ///
   /// In en, this message translates to:
   /// **'Signed in as {name}'**
   String signedInAs(String name);
+
+  /// The message once the email code is accepted, confirming the sign-in worked; also announced to screen readers on the page signed in for.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String signedInNow(String name);
 
   /// No description provided for @displayNameLabel.
   ///

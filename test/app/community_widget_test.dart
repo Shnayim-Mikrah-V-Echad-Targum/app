@@ -465,6 +465,25 @@ void main() {
     expect(find.text("I'll follow the community guidelines"), findsOneWidget);
   });
 
+  testWidgets('in Hebrew, signing in says that it worked, and the page is headed by the account', (tester) async {
+    final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
+    c.read(routerProvider).go('/community/account');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    expect(find.descendant(of: find.byType(SnackBar), matching: find.textContaining(RegExp('^התחברת בשם '))), findsOneWidget);
+    expect(find.descendant(of: find.byType(PageBody), matching: find.textContaining(RegExp('^החשבון: '))), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('"Use a different email" gives the email field the focus', (tester) async {
     final c = await _pump(tester);
     c.read(routerProvider).go('/community/account');

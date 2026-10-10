@@ -1278,9 +1278,20 @@
   "demoCodeHint": "Demo mode: any 6 digits will work.",
   "signedInAs": "Signed in as {name}",
   "@signedInAs": {
+    "description": "The heading of the account page, naming the member signed in.",
     "placeholders": {
       "name": {
         "type": "String"
+      }
+    }
+  },
+  "signedInNow": "Signed in as {name}",
+  "@signedInNow": {
+    "description": "The message once the email code is accepted, confirming the sign-in worked; also announced to screen readers on the page signed in for.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Rivka"
       }
     }
   },

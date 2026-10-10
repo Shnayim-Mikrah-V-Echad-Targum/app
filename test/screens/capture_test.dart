@@ -741,9 +741,10 @@ const _desktopScreens = {
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
 const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week', 's_data_import'};
+const _narrowScreens = {'today', 'today_paused', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
   'today',
+  'today_paused',
   'welcome',
   'welcome_restore',
   's_data',
