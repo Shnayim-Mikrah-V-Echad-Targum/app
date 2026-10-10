@@ -161,7 +161,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String aliyahWithName(String name, int number) {
-    return '$name · עלייה $number';
+    return '$name';
   }
 
   @override
@@ -272,7 +272,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get todayDone => 'הקריאה של היום הושלמה';
 
   @override
-  String get todayAhead => 'את/ה מקדים/ה את התוכנית. כל הכבוד!';
+  String get todayAhead => 'מקדימים את התוכנית. כל הכבוד!';
 
   @override
   String get todayNothingPlanned =>
@@ -317,7 +317,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String openWeekLate(String date) {
-    return 'אם תסיים/י עד $date, היא עדיין נחשבת.';
+    return 'סיום עד $date עדיין נחשב.';
   }
 
   @override
@@ -343,11 +343,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String pausedBanner(String date) {
-    return 'בהשהיה עד $date. דבר אינו מתאפס בזמן השהיה.';
+    return 'בהשהיה עד $date. דבר אינו מתאפס בזמן ההשהיה.';
   }
 
   @override
-  String get resume => 'חידוש';
+  String get resume => 'סיום ההשהיה';
 
   @override
   String readingDivergence(String israel, String diaspora) {
@@ -413,9 +413,9 @@ class AppLocalizationsHe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count זמינים',
-      one: 'אחד זמין',
-      zero: 'אין זמינים',
+      other: 'נותרו $count',
+      one: 'נותר יום אחד',
+      zero: 'לא נותרו',
     );
     return '$_temp0';
   }
@@ -471,7 +471,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get weekLate => 'אחרי שבת — עדיין נחשב';
 
   @override
-  String get weekRestored => 'הושלם בכפל';
+  String get weekRestored => 'הושלם בשבוע הבא';
 
   @override
   String get weekMadeUp => 'הושלם מאוחר';
@@ -831,11 +831,11 @@ class AppLocalizationsHe extends AppLocalizations {
   String get makeUpBody => 'לא חובה. השלמות נחשבות לסיום התורה של השנה.';
 
   @override
-  String get pauseTitle => 'החיים קורים';
+  String get pauseTitle => 'הפסקה זמנית';
 
   @override
   String get pauseBody =>
-      'אפשר להשהות עד 30 יום — דבר אינו מתאפס בזמן השהיה. מחלה, נסיעה, אבלות, תינוק חדש: החיים קודמים.';
+      'אפשר להשהות עד 30 יום — דבר אינו מתאפס בזמן ההשהיה. מחלה, נסיעה, אבלות, תינוק חדש: החיים קודמים.';
 
   @override
   String get pauseAction => 'השהיית רצפים';
@@ -852,7 +852,7 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get pauseEnded => 'ברוך שובך! המקום שלך שמור.';
+  String get pauseEnded => 'ברוכים השבים! המקום שלך שמור.';
 
   @override
   String get streaksHidden => 'מספרי הרצף מוסתרים. ההתקדמות שלך עדיין נשמרת.';
@@ -878,7 +878,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get statusLegend => 'מקרא';
 
   @override
-  String get noHistory => 'השבועות שלך יופיעו כאן כשתקרא/י.';
+  String get noHistory => 'השבועות יופיעו כאן עם תחילת הקריאה.';
 
   @override
   String get milestoneFirstAliyah => 'עלייה ראשונה';
@@ -908,7 +908,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get milestoneSiyum => 'סיום התורה';
 
   @override
-  String get milestoneComeback => 'ברוך שובך';
+  String get milestoneComeback => 'ברוכים השבים';
 
   @override
   String get milestoneLocked => 'טרם הושג';
@@ -1617,10 +1617,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get onbStart => 'להתחיל את פרשת השבוע';
 
   @override
-  String get onbLocationTitle => 'איפה תהיה/י בשבת הקרובה?';
+  String get onbLocationTitle => 'היכן תהיו בשבת הקרובה?';
 
   @override
-  String get onbMethodTitle => 'איך את/ה קורא/ת?';
+  String get onbMethodTitle => 'איך לקרוא?';
 
   @override
   String get onbPlanTitle => 'התוכנית שלך לשבוע';
@@ -1732,7 +1732,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideShabbatBody =>
-      'האפליקציה לעולם אינה מבקשת שתפתח/י אותה בשבת וביום טוב. הרצפים מושהים בימים אלה, אין תזכורות, ואת מה שקראת מתוך חומש מודפס אפשר לרשום אחר כך.';
+      'האפליקציה לעולם אינה מבקשת לפתוח אותה בשבת וביום טוב. הרצפים מושהים בימים אלה, אין תזכורות, ואת מה שנקרא מתוך חומש מודפס אפשר לרשום אחר כך.';
 
   @override
   String get guideSourcesTitle => 'מקורות';
@@ -1814,7 +1814,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String signedInAs(String name) {
-    return 'מחובר/ת בשם $name';
+    return 'החשבון: $name';
   }
 
   @override
@@ -1940,7 +1940,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get reportDetails => 'פרטים (לא חובה)';
 
   @override
-  String get reportSent => 'תודה. מנהל/ת יבדקו זאת.';
+  String get reportSent => 'תודה. צוות הניהול יבדוק את הדיווח.';
 
   @override
   String blockUser(String name) {
@@ -1949,7 +1949,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String blockConfirm(String name) {
-    return 'לא תראה/י הודעות של $name. הם לא יקבלו הודעה על כך.';
+    return 'ההודעות של $name לא יוצגו. לא תישלח על כך הודעה.';
   }
 
   @override
@@ -1977,7 +1977,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get posted => 'פורסם.';
 
   @override
-  String get pendingReview => 'מוסתר — ממתין לבדיקת מנהל';
+  String get pendingReview => 'מוסתר — ממתין לבדיקת צוות הניהול';
 
   @override
   String get lockedThread => 'הדיון נעול.';
@@ -2102,10 +2102,10 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get anonymousMember => 'חבר/ה לשעבר';
+  String get anonymousMember => 'חשבון שנמחק';
 
   @override
-  String get errRateLimited => 'את/ה כותב/ת מהר — נא להמתין כמה שניות.';
+  String get errRateLimited => 'הודעות נשלחות מהר מדי — נא להמתין כמה שניות.';
 
   @override
   String get errThreadLocked => 'הדיון נעול.';
@@ -2166,7 +2166,7 @@ class AppLocalizationsHe extends AppLocalizations {
       'לא ניתן להתחבר לשרת. נא לבדוק את החיבור ולנסות שוב.';
 
   @override
-  String get moderatorBadge => 'מנהל/ת';
+  String get moderatorBadge => 'צוות ניהול';
 
   @override
   String get draftRestored => 'הטיוטה שלך שוחזרה.';
