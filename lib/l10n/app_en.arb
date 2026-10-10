@@ -180,6 +180,15 @@
       }
     }
   },
+  "simchatTorahInDays": "{count, plural, =0{Simchat Torah is today} =1{Simchat Torah is tomorrow} other{Simchat Torah in {count} days}}",
+  "@simchatTorahInDays": {
+    "description": "On Today, in place of shabbatInDays in the week of Vezot HaBerakhah, which is read on Simchat Torah: the days left until then.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "parshaLabel": "Parshat {name}",
   "@parshaLabel": {
     "placeholders": {
@@ -203,7 +212,7 @@
   "readTodaysAliyah": "Read today's reading",
   "continueReading": "Continue reading",
   "startReading": "Start reading",
-  "readFromBook": "I read it from a book",
+  "readFromBook": "I read it in a Chumash",
   "weekComplete": "This week's parsha is complete. Yasher koach!",
   "haftarahLabel": "Haftarah",
   "haftarahRead": "Haftarah read",
@@ -526,11 +535,15 @@
       }
     }
   },
-  "firstAliyahDone": "Yasher koach! Your first aliyah is done — {verses}, twice, with Targum.",
+  "firstAliyahDone": "Yasher koach! Your first aliyah is done — {verses}, twice, with {second}.",
   "@firstAliyahDone": {
     "placeholders": {
       "verses": {
         "type": "String"
+      },
+      "second": {
+        "type": "String",
+        "description": "What the reader reads after the two readings, as their setting says: passTargum, passRashi or secondBoth."
       }
     }
   },
@@ -568,7 +581,7 @@
   "markAliyahRead": "Mark this aliyah as read",
   "keyboardShortcuts": "Keyboard shortcuts",
   "translationDisclaimer": "A translation is a study aid. It does not take the place of the Targum.",
-  "mikraLabel": "Torah",
+  "mikraLabel": "Mikra",
   "targumLabel": "Targum Onkelos",
   "rashiLabel": "Rashi",
   "translationLabel": "Translation (JPS 1917)",
@@ -615,11 +628,15 @@
       }
     }
   },
-  "versesRead": "{count} verses read twice with Targum",
+  "versesRead": "{count} verses read twice with {second}",
   "@versesRead": {
     "placeholders": {
       "count": {
         "type": "String"
+      },
+      "second": {
+        "type": "String",
+        "description": "What the reader reads after the two readings, as their setting says: passTargum, passRashi or secondBoth."
       }
     }
   },
@@ -695,7 +712,15 @@
   "streaksHidden": "Streak numbers are hidden. Your progress is still saved.",
   "milestonesTitle": "Milestones",
   "graceExplainer": "Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.",
-  "streakExplainer": "Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.",
+  "streakExplainer": "Your parsha streak counts portions finished before Shabbat{deadline, select, tuesday{ — or by Tuesday night, which still counts} wednesday{ — or by the end of Wednesday, which still counts} other{}}. Shabbat and Yom Tov never break a streak.",
+  "@streakExplainer": {
+    "description": "On Progress. The deadline is the reader's after-Shabbat window (lateWindowLabel): tuesday, wednesday or none.",
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
   "statusLegend": "Legend",
   "noHistory": "Your weeks will appear here as you read.",
   "milestoneFirstAliyah": "First aliyah",
@@ -717,7 +742,7 @@
       }
     }
   },
-  "milestoneSefer": "Sefer {book} complete — Chazak!",
+  "milestoneSefer": "{book} complete — Chazak!",
   "@milestoneSefer": {
     "placeholders": {
       "book": {
@@ -737,7 +762,7 @@
   "settingsAccount": "Account & community",
   "settingsData": "Your data",
   "settingsLanguage": "Language",
-  "settingsAbout": "About",
+  "settingsAbout": "About this app",
   "settingsReadingDesc": "Israel or abroad, plan, Targum or Rashi, haftarah",
   "settingsDisplayDesc": "Theme, fonts, text size, vowels and cantillation",
   "settingsAccessibilityDesc": "Motion, screen readers, speech, quick setups",
@@ -754,11 +779,11 @@
   "yomTovDaysHelp": "Visitors usually keep their home custom. Ask your rav.",
   "planLabel": "Weekly plan",
   "planAliyahPerDay": "An aliyah a day",
-  "planAliyahPerDayDesc": "One aliyah Sunday–Thursday; the 6th and 7th on Friday",
+  "planAliyahPerDayDesc": "One aliyah a day; two on the last day before Shabbat",
   "planShevii": "Shevi'i on Shabbat morning",
-  "planSheviiDesc": "Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal",
+  "planSheviiDesc": "Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal (Vilna Gaon, MB 285:8)",
   "planErevShabbat": "All on Friday",
-  "planErevShabbatDesc": "The whole parsha on Erev Shabbat (Arizal; Shulchan Aruch HaRav)",
+  "planErevShabbatDesc": "The whole parsha on Erev Shabbat — after Shacharit (Arizal) or after midday (Shelah; Shulchan Aruch HaRav)",
   "methodLabel": "Reading method",
   "methodVerse": "Verse by verse",
   "methodVerseDesc": "Each verse twice, then its Targum",
@@ -766,7 +791,7 @@
   "methodSectionDesc": "Each paragraph twice, then its Targum",
   "methodAliyah": "Aliyah by aliyah",
   "methodAliyahDesc": "The whole aliyah twice, then its Targum",
-  "secondLabel": "Targum",
+  "secondLabel": "Targum or Rashi",
   "secondOnkelos": "Targum Onkelos",
   "secondRashi": "Rashi",
   "secondBoth": "Onkelos and Rashi",
@@ -785,7 +810,7 @@
   "haftarahRequired": "Count the haftarah toward completion",
   "lateWindowLabel": "After-Shabbat window",
   "lateTuesday": "Until Tuesday night",
-  "lateWednesday": "Until Wednesday night",
+  "lateWednesday": "Until the end of Wednesday",
   "lateNone": "No window",
   "lateWindowDesc": "Reading finished after Shabbat, until this time, still counts (Shulchan Aruch OC 285:4).",
   "tishaBavQuiet": "No reading planned on Tisha B'Av",
@@ -871,7 +896,7 @@
   "srConsonants": "Letters only",
   "srAllMarks": "All marks (for braille displays)",
   "divineNameLabel": "Speaking the Divine Name",
-  "divineAdonai": "Adonai",
+  "divineAdonai": "Ado-nai",
   "divineHashem": "HaShem",
   "speechRate": "Speech rate",
   "presetsTitle": "Quick setups",
@@ -1045,7 +1070,7 @@
   "termsTitle": "Terms of use",
   "guidelinesTitle": "Community guidelines",
   "contactTitle": "Contact us",
-  "guideTitle": "About Shnayim Mikra",
+  "guideTitle": "How it works",
   "disclaimer": "Customs vary. For practical questions, ask your rav.",
   "onbWelcomeBody": "Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.",
   "onbStart": "Start this week's parsha",
@@ -1097,13 +1122,13 @@
   "guideWhatTitle": "What is Shnayim Mikra?",
   "guideWhatBody": "The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.",
   "guideWhenTitle": "When",
-  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon, after the community reads the next portion at Mincha). Ideally finish before the Shabbat meal. If not, it may still be completed until Tuesday night (\"until Wednesday\", SA 285:4), and missed portions may be made up until Simchat Torah.",
+  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
   "guideHowTitle": "How",
   "guideHowBody": "Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.",
   "guideTargumTitle": "Targum or Rashi",
-  "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum.",
+  "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn't understand Rashi's Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.",
   "guideSpecialTitle": "Special cases",
-  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once.",
+  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once. Reading quietly along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
   "guideShabbatTitle": "Shabbat and Yom Tov",
   "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
   "guideSourcesTitle": "Sources",
@@ -1116,7 +1141,7 @@
       }
     }
   },
-  "bookOfTorah": "Sefer {book}",
+  "bookOfTorah": "{book}",
   "@bookOfTorah": {
     "placeholders": {
       "book": {

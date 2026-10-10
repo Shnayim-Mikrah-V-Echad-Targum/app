@@ -56,9 +56,9 @@ The JPS translation is offered only as a study aid and is labelled so. It never 
 **Progress is stored per unit:** (aliyah × pass), plus the haftarah. The guided reader saves the reader's position within each pass. This makes resuming exact, and lets the streak engine see partial days.
 
 **Three default plans:**
-- an aliyah a day, with Friday doubled (Gra)
-- Shevi'i on Shabbat morning, logged afterwards
-- everything on Erev Shabbat (Arizal, Shulchan Aruch HaRav)
+- an aliyah a day, with two on the last day before Shabbat
+- an aliyah a day and Shevi'i on Shabbat morning, logged afterwards (Gra, MB 285:8)
+- everything on Erev Shabbat: after Shacharit (Arizal) or after midday (Shelah, Shulchan Aruch HaRav)
 
 Tisha B'Av is always a quiet day. Chol HaMoed can optionally be quiet.
 

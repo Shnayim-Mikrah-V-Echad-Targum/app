@@ -9,15 +9,16 @@ const kSecondsPerVerse = 25;
 
 /// How a user spreads the week's reading.
 enum ReadingPlanType {
-  /// One aliyah a day, Sunday–Thursday, and the 6th and 7th on Friday
-  /// (the Vilna Gaon's practice, MB 285:8).
+  /// One aliyah a day, and two on the last day before Shabbat: usually
+  /// Sunday–Thursday, and the 6th and 7th on Friday.
   aliyahPerDay,
 
   /// Aliyot 1–6 Sunday–Friday, the 7th on Shabbat morning before the meal,
-  /// logged after Shabbat.
+  /// logged after Shabbat (the Vilna Gaon's practice, MB 285:8).
   sheviiOnShabbat,
 
-  /// The whole portion on Friday (Arizal; Shulchan Aruch HaRav).
+  /// The whole portion on Friday: after Shacharit (Arizal), or after midday
+  /// (Shelah; Shulchan Aruch HaRav).
   erevShabbat,
 }
 

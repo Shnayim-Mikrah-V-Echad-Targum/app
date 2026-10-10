@@ -179,6 +179,15 @@ class _ParshaCard extends ConsumerWidget {
     final next = ctx.nextAliyah;
     final started = ctx.progress.isStarted;
     final daysLeft = occasion.differenceInDays(ctx.today);
+    // The days until the portion is read in synagogue: on Shabbat, or for
+    // Vezot HaBerakhah on Simchat Torah, which is seldom a Shabbat.
+    final countdown = daysLeft < 0 || ctx.progress.isComplete
+        ? null
+        : ctx.week.portion.isVezotHaberakhah
+            ? l.simchatTorahInDays(daysLeft)
+            : occasion.isShabbat
+                ? l.shabbatInDays(daysLeft)
+                : null;
 
     return InfoCard(
       child: Column(
@@ -205,8 +214,7 @@ class _ParshaCard extends ConsumerWidget {
                 ),
                 const Gap(8),
                 Text(readOn, style: theme.textTheme.bodyMedium),
-                if (daysLeft >= 0 && !ctx.progress.isComplete)
-                  Text(l.shabbatInDays(daysLeft), style: theme.textTheme.bodySmall),
+                if (countdown != null) Text(countdown, style: theme.textTheme.bodySmall),
               ],
             ),
           ),

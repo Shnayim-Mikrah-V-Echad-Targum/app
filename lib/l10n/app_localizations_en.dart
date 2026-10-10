@@ -247,6 +247,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String simchatTorahInDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Simchat Torah in $count days',
+      one: 'Simchat Torah is tomorrow',
+      zero: 'Simchat Torah is today',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String parshaLabel(String name) {
     return 'Parshat $name';
   }
@@ -285,7 +297,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startReading => 'Start reading';
 
   @override
-  String get readFromBook => 'I read it from a book';
+  String get readFromBook => 'I read it in a Chumash';
 
   @override
   String get weekComplete => 'This week\'s parsha is complete. Yasher koach!';
@@ -618,8 +630,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String firstAliyahDone(String verses) {
-    return 'Yasher koach! Your first aliyah is done — $verses, twice, with Targum.';
+  String firstAliyahDone(String verses, String second) {
+    return 'Yasher koach! Your first aliyah is done — $verses, twice, with $second.';
   }
 
   @override
@@ -682,7 +694,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'A translation is a study aid. It does not take the place of the Targum.';
 
   @override
-  String get mikraLabel => 'Torah';
+  String get mikraLabel => 'Mikra';
 
   @override
   String get targumLabel => 'Targum Onkelos';
@@ -767,8 +779,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String versesRead(String count) {
-    return '$count verses read twice with Targum';
+  String versesRead(String count, String second) {
+    return '$count verses read twice with $second';
   }
 
   @override
@@ -853,8 +865,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.';
 
   @override
-  String get streakExplainer =>
-      'Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.';
+  String streakExplainer(String deadline) {
+    String _temp0 = intl.Intl.selectLogic(deadline, {
+      'tuesday': ' — or by Tuesday night, which still counts',
+      'wednesday': ' — or by the end of Wednesday, which still counts',
+      'other': '',
+    });
+    return 'Your parsha streak counts portions finished before Shabbat$_temp0. Shabbat and Yom Tov never break a streak.';
+  }
 
   @override
   String get statusLegend => 'Legend';
@@ -883,7 +901,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String milestoneSefer(String book) {
-    return 'Sefer $book complete — Chazak!';
+    return '$book complete — Chazak!';
   }
 
   @override
@@ -923,7 +941,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLanguage => 'Language';
 
   @override
-  String get settingsAbout => 'About';
+  String get settingsAbout => 'About this app';
 
   @override
   String get settingsReadingDesc =>
@@ -983,21 +1001,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get planAliyahPerDayDesc =>
-      'One aliyah Sunday–Thursday; the 6th and 7th on Friday';
+      'One aliyah a day; two on the last day before Shabbat';
 
   @override
   String get planShevii => 'Shevi\'i on Shabbat morning';
 
   @override
   String get planSheviiDesc =>
-      'Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal';
+      'Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal (Vilna Gaon, MB 285:8)';
 
   @override
   String get planErevShabbat => 'All on Friday';
 
   @override
   String get planErevShabbatDesc =>
-      'The whole parsha on Erev Shabbat (Arizal; Shulchan Aruch HaRav)';
+      'The whole parsha on Erev Shabbat — after Shacharit (Arizal) or after midday (Shelah; Shulchan Aruch HaRav)';
 
   @override
   String get methodLabel => 'Reading method';
@@ -1021,7 +1039,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get methodAliyahDesc => 'The whole aliyah twice, then its Targum';
 
   @override
-  String get secondLabel => 'Targum';
+  String get secondLabel => 'Targum or Rashi';
 
   @override
   String get secondOnkelos => 'Targum Onkelos';
@@ -1081,7 +1099,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lateTuesday => 'Until Tuesday night';
 
   @override
-  String get lateWednesday => 'Until Wednesday night';
+  String get lateWednesday => 'Until the end of Wednesday';
 
   @override
   String get lateNone => 'No window';
@@ -1269,7 +1287,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get divineNameLabel => 'Speaking the Divine Name';
 
   @override
-  String get divineAdonai => 'Adonai';
+  String get divineAdonai => 'Ado-nai';
 
   @override
   String get divineHashem => 'HaShem';
@@ -1585,7 +1603,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactTitle => 'Contact us';
 
   @override
-  String get guideTitle => 'About Shnayim Mikra';
+  String get guideTitle => 'How it works';
 
   @override
   String get disclaimer =>
@@ -1685,7 +1703,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideWhenBody =>
-      'You may begin on Sunday (some say from Shabbat afternoon, after the community reads the next portion at Mincha). Ideally finish before the Shabbat meal. If not, it may still be completed until Tuesday night (\"until Wednesday\", SA 285:4), and missed portions may be made up until Simchat Torah.';
+      'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).';
 
   @override
   String get guideHowTitle => 'How';
@@ -1699,14 +1717,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideTargumBody =>
-      'Rashi\'s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum.';
+      'Rashi\'s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn\'t understand Rashi\'s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.';
 
   @override
   String get guideSpecialTitle => 'Special cases';
 
   @override
   String get guideSpecialBody =>
-      'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.';
+      'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.';
 
   @override
   String get guideShabbatTitle => 'Shabbat and Yom Tov';
@@ -1729,7 +1747,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String bookOfTorah(String book) {
-    return 'Sefer $book';
+    return '$book';
   }
 
   @override

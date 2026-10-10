@@ -81,6 +81,10 @@ const _screens = {
   'today_yomtov_oneday': '/today',
   'today_yomtov_twoday': '/today',
   'today_joined_midweek': '/today',
+  // Hoshana Rabbah in Israel, counting down to Simchat Torah.
+  'today_simchat_torah': '/today',
+  // The week of Pinchas after 17 Tammuz, with its special haftarah.
+  'today_three_weeks': '/today',
   'parsha': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
@@ -139,6 +143,8 @@ const _screens = {
   'settings': '/settings',
   's_reading': '/settings/reading',
   's_reading_changed': '/settings/reading',
+  // Its customs: the second reading, the haftarah and the late window.
+  's_reading_customs': '/settings/reading',
   's_display': '/settings/display',
   's_fonts': '/settings/display',
   's_a11y': '/settings/accessibility',
@@ -154,6 +160,8 @@ const _screens = {
   's_data_paste': '/settings/data',
   'about': '/settings/about',
   'guide': '/guide',
+  // The special cases, Shabbat and the sources, at its end.
+  'guide_end': '/guide',
   'sources': '/sources',
   'legal': '/legal/privacy',
   'legal_a11y': '/legal/accessibility',
@@ -223,6 +231,9 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: false, joinDate: LocalDate(2029, 5, 1)),
   // Joined on the Wednesday of Bereshit: the days before have no reading.
   'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
+  'today_simchat_torah': (s) =>
+      s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true, joinDate: LocalDate(2026, 9, 20)),
+  'today_three_weeks': (s) => s.copyWith(joinDate: LocalDate(2027, 7, 18)),
 };
 
 /// Screens shown on another day, with another history: the Torah map in
@@ -234,6 +245,10 @@ final _screenNow = <String, DateTime>{
   'today_haftarah_left': DateTime(2026, 10, 13, 11),
   'today_yomtov_oneday': DateTime(2029, 5, 22, 11),
   'today_yomtov_twoday': DateTime(2029, 5, 22, 11),
+  // Hoshana Rabbah 5787; Simchat Torah is on Shabbat in Israel.
+  'today_simchat_torah': DateTime(2026, 10, 2, 11),
+  // Tuesday of Pinchas 5787, read on 24 July 2027.
+  'today_three_weeks': DateTime(2027, 7, 20, 11),
   // Tuesday of Matot-Masei 5787.
   'reader_third': DateTime(2027, 7, 27, 11),
   // The Wednesday of Bereshit, which began on Monday.
@@ -245,6 +260,8 @@ final _screenProgress = <String, ProgressState Function()>{
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
   'today_joined_midweek': () => ProgressState(weeks: {}),
+  'today_simchat_torah': () => ProgressState(weeks: {}),
+  'today_three_weeks': () => ProgressState(weeks: {}),
   // All three readings of Shlishi (from Genesis 2:20) have reached 3:1,
   // its seventh verse, where the guided reader resumes and focus mode opens.
   'reader_focus': () => ProgressState(weeks: {
@@ -461,6 +478,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'reader_dots': _scrollToEnd,
   'reader_third': _scrollToEnd,
+  // The haftarah, near the end of Today.
+  'today_three_weeks': _scrollToEnd,
+  'guide_end': _scrollToEnd,
+  's_reading_customs': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(RadioListTile<ReadingMethod>).last)),
   'thread_long_end': _scrollToEnd,
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.

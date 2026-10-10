@@ -4,7 +4,7 @@
 
 - [ ] **Rabbinic review.** A rav reviews:
   - the defaults and copy listed in [DESIGN.md §11](DESIGN.md#11-things-for-the-rabbinic-advisor)
-  - the in-app guide (*About → About Shnayim Mikra*)
+  - the in-app guide (*Settings → How it works*)
   - the halachic notes shown in settings
 - [ ] **License for the app's source code.** No license has been chosen yet; choose one and add a `LICENSE` file. The bundled texts keep their own licenses:
   - The MAM Hebrew text is CC BY-SA 4.0. Its attribution is shown under *About → Texts & sources*, and changes to that text must stay under the same license.

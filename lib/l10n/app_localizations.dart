@@ -495,6 +495,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Shabbat is today} =1{Shabbat is tomorrow} other{Shabbat in {count} days}}'**
   String shabbatInDays(int count);
 
+  /// On Today, in place of shabbatInDays in the week of Vezot HaBerakhah, which is read on Simchat Torah: the days left until then.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Simchat Torah is today} =1{Simchat Torah is tomorrow} other{Simchat Torah in {count} days}}'**
+  String simchatTorahInDays(int count);
+
   /// No description provided for @parshaLabel.
   ///
   /// In en, this message translates to:
@@ -552,7 +558,7 @@ abstract class AppLocalizations {
   /// No description provided for @readFromBook.
   ///
   /// In en, this message translates to:
-  /// **'I read it from a book'**
+  /// **'I read it in a Chumash'**
   String get readFromBook;
 
   /// No description provided for @weekComplete.
@@ -1062,8 +1068,8 @@ abstract class AppLocalizations {
   /// No description provided for @firstAliyahDone.
   ///
   /// In en, this message translates to:
-  /// **'Yasher koach! Your first aliyah is done — {verses}, twice, with Targum.'**
-  String firstAliyahDone(String verses);
+  /// **'Yasher koach! Your first aliyah is done — {verses}, twice, with {second}.'**
+  String firstAliyahDone(String verses, String second);
 
   /// No description provided for @continueWithAliyah.
   ///
@@ -1176,7 +1182,7 @@ abstract class AppLocalizations {
   /// No description provided for @mikraLabel.
   ///
   /// In en, this message translates to:
-  /// **'Torah'**
+  /// **'Mikra'**
   String get mikraLabel;
 
   /// No description provided for @targumLabel.
@@ -1332,8 +1338,8 @@ abstract class AppLocalizations {
   /// No description provided for @versesRead.
   ///
   /// In en, this message translates to:
-  /// **'{count} verses read twice with Targum'**
-  String versesRead(String count);
+  /// **'{count} verses read twice with {second}'**
+  String versesRead(String count, String second);
 
   /// Screen-reader label of the bar of the year's parshiyot, when none is being read now.
   ///
@@ -1473,11 +1479,11 @@ abstract class AppLocalizations {
   /// **'Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.'**
   String get graceExplainer;
 
-  /// No description provided for @streakExplainer.
+  /// On Progress. The deadline is the reader's after-Shabbat window (lateWindowLabel): tuesday, wednesday or none.
   ///
   /// In en, this message translates to:
-  /// **'Your parsha streak counts portions finished before Shabbat — or by Tuesday night, which still counts. Shabbat and Yom Tov never break a streak.'**
-  String get streakExplainer;
+  /// **'Your parsha streak counts portions finished before Shabbat{deadline, select, tuesday{ — or by Tuesday night, which still counts} wednesday{ — or by the end of Wednesday, which still counts} other{}}. Shabbat and Yom Tov never break a streak.'**
+  String streakExplainer(String deadline);
 
   /// No description provided for @statusLegend.
   ///
@@ -1524,7 +1530,7 @@ abstract class AppLocalizations {
   /// No description provided for @milestoneSefer.
   ///
   /// In en, this message translates to:
-  /// **'Sefer {book} complete — Chazak!'**
+  /// **'{book} complete — Chazak!'**
   String milestoneSefer(String book);
 
   /// No description provided for @milestoneSiyum.
@@ -1602,7 +1608,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAbout.
   ///
   /// In en, this message translates to:
-  /// **'About'**
+  /// **'About this app'**
   String get settingsAbout;
 
   /// No description provided for @settingsReadingDesc.
@@ -1704,7 +1710,7 @@ abstract class AppLocalizations {
   /// No description provided for @planAliyahPerDayDesc.
   ///
   /// In en, this message translates to:
-  /// **'One aliyah Sunday–Thursday; the 6th and 7th on Friday'**
+  /// **'One aliyah a day; two on the last day before Shabbat'**
   String get planAliyahPerDayDesc;
 
   /// No description provided for @planShevii.
@@ -1716,7 +1722,7 @@ abstract class AppLocalizations {
   /// No description provided for @planSheviiDesc.
   ///
   /// In en, this message translates to:
-  /// **'Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal'**
+  /// **'Aliyot 1–6 Sunday–Friday; the 7th before the Shabbat meal (Vilna Gaon, MB 285:8)'**
   String get planSheviiDesc;
 
   /// No description provided for @planErevShabbat.
@@ -1728,7 +1734,7 @@ abstract class AppLocalizations {
   /// No description provided for @planErevShabbatDesc.
   ///
   /// In en, this message translates to:
-  /// **'The whole parsha on Erev Shabbat (Arizal; Shulchan Aruch HaRav)'**
+  /// **'The whole parsha on Erev Shabbat — after Shacharit (Arizal) or after midday (Shelah; Shulchan Aruch HaRav)'**
   String get planErevShabbatDesc;
 
   /// No description provided for @methodLabel.
@@ -1776,7 +1782,7 @@ abstract class AppLocalizations {
   /// No description provided for @secondLabel.
   ///
   /// In en, this message translates to:
-  /// **'Targum'**
+  /// **'Targum or Rashi'**
   String get secondLabel;
 
   /// No description provided for @secondOnkelos.
@@ -1890,7 +1896,7 @@ abstract class AppLocalizations {
   /// No description provided for @lateWednesday.
   ///
   /// In en, this message translates to:
-  /// **'Until Wednesday night'**
+  /// **'Until the end of Wednesday'**
   String get lateWednesday;
 
   /// No description provided for @lateNone.
@@ -2250,7 +2256,7 @@ abstract class AppLocalizations {
   /// No description provided for @divineAdonai.
   ///
   /// In en, this message translates to:
-  /// **'Adonai'**
+  /// **'Ado-nai'**
   String get divineAdonai;
 
   /// No description provided for @divineHashem.
@@ -2760,7 +2766,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideTitle.
   ///
   /// In en, this message translates to:
-  /// **'About Shnayim Mikra'**
+  /// **'How it works'**
   String get guideTitle;
 
   /// No description provided for @disclaimer.
@@ -2928,7 +2934,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhenBody.
   ///
   /// In en, this message translates to:
-  /// **'You may begin on Sunday (some say from Shabbat afternoon, after the community reads the next portion at Mincha). Ideally finish before the Shabbat meal. If not, it may still be completed until Tuesday night (\"until Wednesday\", SA 285:4), and missed portions may be made up until Simchat Torah.'**
+  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
   String get guideWhenBody;
 
   /// No description provided for @guideHowTitle.
@@ -2952,7 +2958,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideTargumBody.
   ///
   /// In en, this message translates to:
-  /// **'Rashi\'s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum.'**
+  /// **'Rashi\'s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn\'t understand Rashi\'s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.'**
   String get guideTargumBody;
 
   /// No description provided for @guideSpecialTitle.
@@ -2964,7 +2970,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideSpecialBody.
   ///
   /// In en, this message translates to:
-  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once.'**
+  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerakhah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.
@@ -3000,7 +3006,7 @@ abstract class AppLocalizations {
   /// No description provided for @bookOfTorah.
   ///
   /// In en, this message translates to:
-  /// **'Sefer {book}'**
+  /// **'{book}'**
   String bookOfTorah(String book);
 
   /// No description provided for @communityTitle.

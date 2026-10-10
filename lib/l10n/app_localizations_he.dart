@@ -248,6 +248,19 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String simchatTorahInDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'שמחת תורה בעוד $count ימים',
+      two: 'שמחת תורה בעוד יומיים',
+      one: 'שמחת תורה מחר',
+      zero: 'שמחת תורה היום',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String parshaLabel(String name) {
     return 'פרשת $name';
   }
@@ -286,7 +299,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get startReading => 'התחלת קריאה';
 
   @override
-  String get readFromBook => 'קראתי מתוך ספר';
+  String get readFromBook => 'קראתי בחומש';
 
   @override
   String get weekComplete => 'הפרשה של השבוע הושלמה. יישר כוח!';
@@ -621,8 +634,8 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String firstAliyahDone(String verses) {
-    return 'יישר כוח! העלייה הראשונה שלך הושלמה — $verses, שניים מקרא ואחד תרגום.';
+  String firstAliyahDone(String verses, String second) {
+    return 'יישר כוח! העלייה הראשונה שלך הושלמה — $verses, שניים מקרא ו$second.';
   }
 
   @override
@@ -768,8 +781,8 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String versesRead(String count) {
-    return '$count פסוקים בשניים מקרא ואחד תרגום';
+  String versesRead(String count, String second) {
+    return '$count פסוקים בשניים מקרא ו$second';
   }
 
   @override
@@ -852,8 +865,14 @@ class AppLocalizationsHe extends AppLocalizations {
       'ימי חסד מכסים אוטומטית יום מתוכנן שהוחמץ. מתחילים עם 2, מקבלים 1 בכל פעם שמסיימים פרשה לפני שבת (עד 3), ומשתמשים לכל היותר ב־2 בשבוע. אי אפשר לקנות אותם.';
 
   @override
-  String get streakExplainer =>
-      'רצף הפרשות סופר פרשות שהושלמו לפני שבת — או עד ליל רביעי, שגם זה נחשב. שבת ויום טוב לעולם אינם שוברים רצף.';
+  String streakExplainer(String deadline) {
+    String _temp0 = intl.Intl.selectLogic(deadline, {
+      'tuesday': ' — או עד ליל רביעי, שגם זה נחשב',
+      'wednesday': ' — או עד סוף יום רביעי, שגם זה נחשב',
+      'other': '',
+    });
+    return 'רצף הפרשות סופר פרשות שהושלמו לפני שבת$_temp0. שבת ויום טוב לעולם אינם שוברים רצף.';
+  }
 
   @override
   String get statusLegend => 'מקרא';
@@ -922,7 +941,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get settingsLanguage => 'שפה';
 
   @override
-  String get settingsAbout => 'אודות';
+  String get settingsAbout => 'אודות האפליקציה';
 
   @override
   String get settingsReadingDesc =>
@@ -981,21 +1000,21 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get planAliyahPerDayDesc =>
-      'עלייה אחת בימים א׳–ה׳; שישי ושביעי ביום ו׳';
+      'עלייה אחת ביום; שתיים ביום האחרון שלפני שבת';
 
   @override
   String get planShevii => 'שביעי בשבת בבוקר';
 
   @override
   String get planSheviiDesc =>
-      'עליות ⁦1–6⁩ בימים א׳–ו׳; השביעית לפני סעודת שבת';
+      'עליות ⁦1–6⁩ בימים א׳–ו׳; השביעית לפני סעודת שבת (הגר״א, מ״ב רפה, ח)';
 
   @override
   String get planErevShabbat => 'הכול ביום שישי';
 
   @override
   String get planErevShabbatDesc =>
-      'כל הפרשה בערב שבת (האריז״ל; שולחן ערוך הרב)';
+      'כל הפרשה בערב שבת — אחרי שחרית (האריז״ל) או אחרי חצות היום (השל״ה; שולחן ערוך הרב)';
 
   @override
   String get methodLabel => 'שיטת קריאה';
@@ -1020,7 +1039,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get methodAliyahDesc => 'כל העלייה פעמיים ואחריה התרגום';
 
   @override
-  String get secondLabel => 'תרגום';
+  String get secondLabel => 'תרגום או רש״י';
 
   @override
   String get secondOnkelos => 'תרגום אונקלוס';
@@ -1268,7 +1287,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get divineNameLabel => 'הגיית השם';
 
   @override
-  String get divineAdonai => 'אדני';
+  String get divineAdonai => 'א-דני';
 
   @override
   String get divineHashem => 'השם';
@@ -1585,7 +1604,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get contactTitle => 'יצירת קשר';
 
   @override
-  String get guideTitle => 'על שניים מקרא';
+  String get guideTitle => 'איך זה עובד';
 
   @override
   String get disclaimer => 'המנהגים שונים. בשאלות מעשיות יש לשאול רב.';
@@ -1685,7 +1704,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideWhenBody =>
-      'אפשר להתחיל ביום ראשון (ויש אומרים כבר משבת אחר הצהריים, משקראו הציבור במנחה את הפרשה הבאה). לכתחילה יש לסיים לפני סעודת שבת. אם לא סיים, יכול להשלים עד ליל רביעי (״עד יום רביעי״, שו״ע רפה, ד), ופרשות שהוחמצו אפשר להשלים עד שמחת תורה.';
+      'אפשר להתחיל ביום ראשון (ויש אומרים כבר משבת אחר הצהריים). לכתחילה מסיימים לפני סעודת שחרית של שבת, ואם לא, אחרי הסעודה עד מנחה. אחר כך אפשר עדיין להשלים עד ליל רביעי (״עד יום רביעי״), ופרשות שהוחמצו אפשר להשלים עד שמחת תורה (שו״ע רפה, ד; מ״ב רפה, יב).';
 
   @override
   String get guideHowTitle => 'כיצד';
@@ -1699,14 +1718,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideTargumBody =>
-      'פירוש רש״י יכול לבוא במקום התרגום, מפני שהוא מפרש את המקרא; וירא שמים יקרא את שניהם (שו״ע רפה, ב). תרגום פשוט הוא עזר מועיל ללימוד, אך אינו תחליף לתרגום.';
+      'פירוש רש״י יכול לבוא במקום התרגום, מפני שהוא מפרש את המקרא; וירא שמים יקרא את שניהם (שו״ע רפה, ב). תרגום פשוט הוא עזר מועיל ללימוד, אך אינו תחליף לתרגום. מי שאינו מבין את לשונו של רש״י רשאי לקרוא את רש״י בשפה שהוא מבין (מ״ב רפה, ה; הרב משה פיינשטיין). יש לשאול רב.';
 
   @override
   String get guideSpecialTitle => 'מקרים מיוחדים';
 
   @override
   String get guideSpecialBody =>
-      'בפסוק ״עטרות ודיבון״ (במדבר לב, ג) אונקלוס מביא בעיקר את שמות המקומות בארמית, ובעקבות רש״י (ברכות ח, ב) רבים קוראים אותו גם פעם שלישית בעברית. את פרשת וזאת הברכה קוראים לפני שמחת תורה, ובמיוחד בהושענא רבה. רבים קוראים גם את הפטרת השבוע פעם אחת.';
+      'בפסוק ״עטרות ודיבון״ (במדבר לב, ג) אונקלוס מביא בעיקר את שמות המקומות בארמית, ובעקבות רש״י (ברכות ח, ב) רבים קוראים אותו גם פעם שלישית בעברית. את פרשת וזאת הברכה קוראים לפני שמחת תורה, ובמיוחד בהושענא רבה. רבים קוראים גם את הפטרת השבוע פעם אחת. קריאה בלחש עם בעל הקורא, מילה במילה, נחשבת לאחת מקריאות המקרא (מ״ב רפה, יד). בשבוע שבו שתי פרשות מחוברות קוראים את שתיהן. כשבארץ ישראל ובחוץ לארץ קוראים פרשות שונות, הנוסעים נוהגים בדרך כלל לקרוא את שתיהן. אין מברכים על הקריאה. נשים וילדים שמקבלים על עצמם את המנהג עושים זאת כמצווה שאינה חובה.';
 
   @override
   String get guideShabbatTitle => 'שבת ויום טוב';

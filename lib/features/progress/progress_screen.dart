@@ -99,7 +99,7 @@ class ProgressScreen extends ConsumerWidget {
                         const Gap(4),
                         Text(l.graceExplainer, style: Theme.of(context).textTheme.bodySmall),
                         const Gap(4),
-                        Text(l.streakExplainer, style: Theme.of(context).textTheme.bodySmall),
+                        Text(l.streakExplainer(settings.lateWindow.name), style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
                   ),
@@ -121,7 +121,10 @@ class ProgressScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(l.thisCycle(doneThisCycle.length), style: Theme.of(context).textTheme.titleMedium),
-                Text(l.versesRead(NumberFormat.decimalPattern(context.localeName).format(versesRead))),
+                Text(l.versesRead(
+                  NumberFormat.decimalPattern(context.localeName).format(versesRead),
+                  names.secondReading(settings.secondReading),
+                )),
               ],
             ),
           ),
