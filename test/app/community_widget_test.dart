@@ -1203,7 +1203,8 @@ void main() {
       expect(header, findsOneWidget);
       expect(inset(find.descendant(of: post, matching: find.byType(Card)), header), greaterThanOrEqualTo(12));
 
-      final notice = find.byType(NoticeBanner);
+      // The locked thread's notice, below the demo's, which is one too.
+      final notice = find.widgetWithIcon(NoticeBanner, Icons.lock_outline);
       expect(notice, findsOneWidget, reason: 'the thread is locked');
       final icon = find.descendant(of: notice, matching: find.byIcon(Icons.lock_outline));
       expect(inset(find.descendant(of: notice, matching: find.byType(Card)), icon), greaterThanOrEqualTo(12));
