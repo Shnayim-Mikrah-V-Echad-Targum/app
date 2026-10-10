@@ -35,24 +35,41 @@ class LegalScreen extends StatelessWidget {
       LegalDoc.accessibility => l.accessibilityStatement,
     };
     final sections = (he ? _he : _en)[doc]!;
-    // Isolated in Hebrew, where it has a line of its own: so it keeps its
-    // order, and where it wraps, at one of its hyphens say, the hyphen isn't
-    // left against the Hebrew before it.
-    final contact = context.ltrRun(AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '$issueTrackerUri');
+    final contact = AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '$issueTrackerUri';
+    final style = Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6);
     return Scaffold(
       appBar: AppBar(leading: homeLeading(context), title: Text(title)),
       body: PageBody(
         children: [
           for (final (heading, body) in sections) ...[
             if (heading.isNotEmpty) SectionHeader(heading),
-            SelectableText(
-              body.replaceAll('{contact}', contact),
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6),
-            ),
+            ..._paragraph(context, body, contact, style),
           ],
         ],
       ),
     );
+  }
+
+  /// [body], with [contact] in place of `{contact}`. Where the address has a
+  /// line of its own, as in Hebrew, it is a paragraph of its own, left to
+  /// right at the start of the line: so it keeps its order, a hyphen where
+  /// it wraps isn't left against the Hebrew before it, and copied, it holds
+  /// no invisible direction marks to break it in a mail client or a
+  /// browser. Within a sentence it is isolated in Hebrew (see [ltrRun]).
+  static List<Widget> _paragraph(BuildContext context, String body, String contact, TextStyle? style) {
+    final own = body.split('\n{contact}');
+    if (own.length == 1) return [SelectableText(body.replaceAll('{contact}', context.ltrRun(contact)), style: style)];
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    return [
+      SelectableText(own.first, style: style),
+      SelectableText(
+        contact,
+        textDirection: TextDirection.ltr,
+        textAlign: rtl ? TextAlign.right : TextAlign.left,
+        style: style,
+      ),
+      if (own.last.trim().isNotEmpty) SelectableText(own.last.trimLeft(), style: style),
+    ];
   }
 }
 

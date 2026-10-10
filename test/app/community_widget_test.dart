@@ -370,7 +370,8 @@ void main() {
       final (title, body) = (field(150), field(10000));
       expect(direction(title), ui);
       expect(direction(body), ui);
-      // The counter at the field's end: on the left in Hebrew.
+      // The decoration follows the UI, whatever the text's direction: the
+      // counter is at the field's end, on the left in Hebrew.
       final counter = tester.getCenter(find.text('0/150')).dx;
       expect(rtl ? counter < tester.getCenter(title).dx : counter > tester.getCenter(title).dx, isTrue);
 
@@ -1220,7 +1221,75 @@ void main() {
     expect(prefs.getString('draft.newThread'), isNull);
   });
 
+  testWidgets('the display name starts right to left in the Hebrew UI, and runs the way of the name', (tester) async {
+    // A member who hasn't chosen a name yet, so the field starts empty.
+    final forums = await _Member().signIn();
+    final c = await _pump(
+      tester,
+      forums: forums,
+      settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew),
+    );
+    c.read(routerProvider).go('/community/account');
+    await tester.pumpAndSettle();
+    final field = find.descendant(
+      of: find.byWidgetPredicate((w) => w is TextField && w.maxLength == 40),
+      matching: find.byType(EditableText),
+    );
+    TextDirection direction() => tester.widget<EditableText>(field).textDirection!;
+    expect(tester.widget<EditableText>(field).controller.text, isEmpty);
+    expect(direction(), TextDirection.rtl);
+    await tester.enterText(field, 'Rivka');
+    await tester.pump();
+    expect(direction(), TextDirection.ltr);
+    await tester.enterText(field, '');
+    await tester.pump();
+    expect(direction(), TextDirection.rtl);
+  });
+
+  testWidgets('a post with no letters, such as "+1", runs the way of the Hebrew UI', (tester) async {
+    final forums = await _Member().signIn();
+    forums.seed(
+      threads: [_thread(7200)],
+      posts: [
+        Post(id: '1', threadId: '7200', authorId: 'r', authorName: 'Rivka', body: 'שלום לכולם', createdAt: DateTime(2026, 10, 1)),
+        Post(id: '2', threadId: '7200', authorId: 'm', authorName: 'Moshe', body: '+1', createdAt: DateTime(2026, 10, 2)),
+        Post(id: '3', threadId: '7200', authorId: 'n', authorName: 'Nina', body: 'Привет!', createdAt: DateTime(2026, 10, 3)),
+      ],
+    );
+    final c = await _pump(
+      tester,
+      forums: forums,
+      settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew),
+    );
+    c.read(routerProvider).go('/community/thread/7200');
+    await tester.pumpAndSettle();
+    TextDirection bodyDirection(String body) =>
+        tester.widget<SelectableText>(find.byWidgetPredicate((w) => w is SelectableText && w.data == body)).textDirection!;
+    expect(bodyDirection('+1'), TextDirection.rtl, reason: 'no strong character: the UI direction');
+    expect(bodyDirection('Привет!'), TextDirection.ltr, reason: 'Cyrillic runs left to right');
+    expect(bodyDirection('שלום לכולם'), TextDirection.rtl);
+  });
+
   group('a report', () {
+    testWidgets('has details that run the way of their text', (tester) async {
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await _openPostMenu(tester, 1);
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      final field = find.descendant(of: find.byType(AlertDialog), matching: find.byType(EditableText));
+      TextDirection direction() => tester.widget<EditableText>(field).textDirection!;
+      expect(direction(), TextDirection.ltr, reason: "empty, the English UI's way");
+      await tester.enterText(field, 'לשון הרע על אדם אחר');
+      await tester.pump();
+      expect(direction(), TextDirection.rtl);
+      await tester.enterText(field, '');
+      await tester.pump();
+      expect(direction(), TextDirection.ltr);
+    });
+
     testWidgets('needs a reason, and is made once', (tester) async {
       final forums = await _Member().signIn();
       final c = await _pump(tester, forums: forums);

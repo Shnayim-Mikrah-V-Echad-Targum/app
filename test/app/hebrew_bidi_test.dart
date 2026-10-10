@@ -43,6 +43,31 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The editing render object of the SelectableText showing [text] (or,
+  /// with [ending], ending with it).
+  RenderEditable editableOf(WidgetTester tester, String text, {bool ending = false}) {
+    final widget = find.byWidgetPredicate(
+      (w) => w is SelectableText && (ending ? w.data?.endsWith(text) ?? false : w.data == text),
+    );
+    RenderEditable? found;
+    void visit(RenderObject o) {
+      if (o is RenderEditable) found ??= o;
+      o.visitChildren(visit);
+    }
+
+    visit(tester.renderObject(widget));
+    return found!;
+  }
+
+  /// Where [editable] draws its text, in global coordinates.
+  Rect drawn(RenderEditable editable) {
+    final boxes = editable.getBoxesForSelection(
+      TextSelection(baseOffset: 0, extentOffset: editable.text!.toPlainText().length),
+    );
+    final local = boxes.map((b) => b.toRect()).reduce((a, b) => a.expandToInclude(b));
+    return local.shift(editable.localToGlobal(Offset.zero));
+  }
+
   /// The left edge of [part] where the text of [text] draws it.
   double leftOf(WidgetTester tester, Finder text, String part) {
     final paragraph = tester.renderObject<RenderParagraph>(text);
@@ -74,11 +99,21 @@ void main() {
   });
 
   for (final doc in ['privacy', 'accessibility']) {
-    testWidgets('$doc: the contact address is isolated on a line of its own in Hebrew', (tester) async {
+    testWidgets('$doc: the contact address has a line of its own in Hebrew, without direction marks', (tester) async {
       await open(tester, '/legal/$doc', AppLanguage.hebrew);
-      final line = find.textContaining('\n${ltr('$issueTrackerUri')}');
-      await tester.ensureVisible(line);
-      expect(line, findsOneWidget);
+      // Its own paragraph, so that copied, it holds nothing but the address.
+      final address = find.text('$issueTrackerUri');
+      await tester.ensureVisible(address);
+      await tester.pumpAndSettle();
+      expect(address, findsOneWidget);
+      expect(find.textContaining(RegExp('[\u2066-\u2069]')), findsNothing);
+      final field = editableOf(tester, '$issueTrackerUri');
+      expect(field.textDirection, TextDirection.ltr);
+      // Under the Hebrew line before it, at the start of the line: the right.
+      final before = editableOf(tester, doc == 'privacy' ? 'שאלות ובקשות:' : 'אפשר לכתוב לנו:', ending: true);
+      final (line, lineBefore) = (drawn(field), drawn(before));
+      expect(line.top, greaterThanOrEqualTo(lineBefore.bottom));
+      expect(line.right, moreOrLessEquals(lineBefore.right, epsilon: 1));
     });
 
     testWidgets('$doc: the contact address is as it is in English', (tester) async {
