@@ -27,6 +27,7 @@ import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
+import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
@@ -102,6 +103,16 @@ const _screens = {
   'privacy': '/settings/about/legal/privacy',
   'sources': '/settings/about/sources',
   'guide': '/guide',
+  // Search: the index being built the first time, then the page as it
+  // opens, a phrase, a word in many verses, a word found only in the
+  // Targum, English, and a spelling the Torah doesn't use.
+  'search_preparing': '/search',
+  'search': '/search',
+  'search_results': '/search',
+  'search_many': '/search',
+  'search_targum': '/search',
+  'search_english': '/search',
+  'search_none': '/search',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
   'focus_day': '/today',
@@ -180,7 +191,14 @@ const _jerusalem = City(
 final _screenOverrides = <String, List<Override>>{
   for (final screen in ['city', 'city_search', 'city_none'])
     screen: [deviceTimeZoneProvider.overrideWith((ref) async => 'Asia/Jerusalem')],
+  'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
 };
+
+/// A verse index that stays two fifths built.
+class _PreparingIndex extends VerseIndexLoader {
+  @override
+  VerseIndexState build() => const VerseIndexState(progress: 0.4);
+}
 
 /// Screens shown on another day, with another history: the Torah map in
 /// every tile state, and the days and histories of [_screenSettings].
@@ -228,6 +246,16 @@ final _taps = {
   // The second page of onboarding: where the reader will be this Shabbat.
   'welcome_location': () => find.byType(FilledButton).first,
 };
+
+/// Waits for the verse index, built from every book of the Torah, and
+/// searches for [query].
+Future<void> _search(WidgetTester tester, String query) async {
+  for (var i = 0; i < 100 && find.byType(LinearProgressIndicator).evaluate().isNotEmpty; i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  if (query.isNotEmpty) await tester.enterText(find.byType(TextField), query);
+}
 
 /// Waits for the list of cities, which loads from a large asset.
 Future<void> _untilLoaded(WidgetTester tester) async {
@@ -349,6 +377,12 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await _untilLoaded(tester);
     await tester.enterText(find.byType(TextField), 'Atlantis');
   },
+  'search': (tester) => _search(tester, ''),
+  'search_results': (tester) => _search(tester, 'ויצא יעקב'),
+  'search_many': (tester) => _search(tester, 'אברהם'),
+  'search_targum': (tester) => _search(tester, 'בקדמין'),
+  'search_english': (tester) => _search(tester, 'ladder'),
+  'search_none': (tester) => _search(tester, 'אהרון'),
   // The week strip, in the middle of the page.
   'today_yomtov_oneday': _showWeekStrip,
   'today_yomtov_twoday': _showWeekStrip,
@@ -448,6 +482,7 @@ const _desktopScreens = {
   'kit_week',
   'progress_map',
   'city_search',
+  'search_many',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
@@ -456,6 +491,8 @@ const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week'};
 const _bigTextScreens = {
   'today',
+  'search_many',
+  'search_none',
   's_reading_city',
   'city',
   'progress',

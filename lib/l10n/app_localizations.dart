@@ -1682,6 +1682,78 @@ abstract class AppLocalizations {
   /// **'The list has every place of 100,000 people or more, and every city in Israel. If yours isn\'t there, choose the nearest one.'**
   String get cityListNote;
 
+  /// No description provided for @searchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the Torah'**
+  String get searchTitle;
+
+  /// No description provided for @searchFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'A word or phrase'**
+  String get searchFieldLabel;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get searchClear;
+
+  /// No description provided for @searchIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a word or phrase in the Torah, in Targum Onkelos, or in the English translation.'**
+  String get searchIntro;
+
+  /// Shown with a progress bar the first time search opens, while every verse is read and indexed.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the text for search…'**
+  String get searchPreparing;
+
+  /// Above the results of a search: how many verses hold what was searched for.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 verse} other{{count} verses}}'**
+  String searchResultsCount(int count);
+
+  /// Above the results of a search that found more verses than are listed. shown is how many are listed, count how many there are.
+  ///
+  /// In en, this message translates to:
+  /// **'The first {shown} of {count} verses'**
+  String searchResultsFirst(int shown, int count);
+
+  /// No description provided for @searchNarrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a word to narrow the search.'**
+  String get searchNarrow;
+
+  /// Shown when a search of the Torah finds nothing. query is what the reader typed.
+  ///
+  /// In en, this message translates to:
+  /// **'No verse matches “{query}”.'**
+  String searchNoResults(String query);
+
+  /// Under searchNoResults, after a search in Hebrew. The Torah's spelling is often defective (חסר): אהרן rather than אהרון.
+  ///
+  /// In en, this message translates to:
+  /// **'Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.'**
+  String get searchNoResultsHint;
+
+  /// Under searchNoResults, after a search in English. The translation is the JPS 1917.
+  ///
+  /// In en, this message translates to:
+  /// **'Try fewer words, or the older English of the 1917 translation, such as “hath” for “has”.'**
+  String get searchNoResultsHintEnglish;
+
+  /// Read out by screen readers once typing in the Torah search pauses.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No verses found} =1{1 verse found} other{{count} verses found}}'**
+  String searchResultsAnnounced(int count);
+
   /// No description provided for @planLabel.
   ///
   /// In en, this message translates to:

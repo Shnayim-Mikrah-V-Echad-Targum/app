@@ -20,6 +20,29 @@ void main() {
     expect(HebrewText.consonantsOnly('עַל־פְּנֵ֣י'), 'על־פני');
   });
 
+  test('isMark names exactly the marks consonantsOnly removes', () {
+    for (final c in [for (var c = 0x0590; c <= 0x05FF; c++) c, 0x034F]) {
+      // The paseq becomes a space rather than vanishing.
+      if (c == 0x05C0) {
+        expect(HebrewText.isMark(c), isFalse);
+        continue;
+      }
+      final removed = HebrewText.consonantsOnly('א${String.fromCharCode(c)}ב') == 'אב';
+      expect(HebrewText.isMark(c), removed, reason: 'U+${c.toRadixString(16)}');
+    }
+    for (final kept in ['־', '׃', 'א', 'ת', ' ']) {
+      expect(HebrewText.isMark(kept.codeUnitAt(0)), isFalse, reason: kept);
+    }
+  });
+
+  test('foldFinals writes final letters in their ordinary forms', () {
+    expect(HebrewText.foldFinals('ךםןףץ'), 'כמנפצ');
+    expect(HebrewText.foldFinals('הָאָרֶץ וַיֵּלֶךְ חָרָן'), 'הָאָרֶצ וַיֵּלֶכְ חָרָנ');
+    expect(HebrewText.foldFinals('Abraham'), 'Abraham');
+    expect(HebrewText.foldFinal('ם'.codeUnitAt(0)), 'מ'.codeUnitAt(0));
+    expect(HebrewText.foldFinal('ב'.codeUnitAt(0)), 'ב'.codeUnitAt(0));
+  });
+
   test('gematria', () {
     expect(HebrewText.gematria(1), 'א׳');
     expect(HebrewText.gematria(15), 'ט״ו');

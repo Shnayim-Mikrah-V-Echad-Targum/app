@@ -981,6 +981,66 @@ class AppLocalizationsHe extends AppLocalizations {
       'ברשימה כל מקום שגרים בו 100,000 איש ומעלה, וכל הערים בישראל. אם העיר שלך אינה ברשימה, אפשר לבחור את הקרובה אליה.';
 
   @override
+  String get searchTitle => 'חיפוש בתורה';
+
+  @override
+  String get searchFieldLabel => 'מילה או ביטוי';
+
+  @override
+  String get searchClear => 'ניקוי החיפוש';
+
+  @override
+  String get searchIntro =>
+      'אפשר למצוא מילה או ביטוי בתורה, בתרגום אונקלוס או בתרגום לאנגלית.';
+
+  @override
+  String get searchPreparing => 'מכינים את הטקסט לחיפוש…';
+
+  @override
+  String searchResultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פסוקים',
+      one: 'פסוק אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String searchResultsFirst(int shown, int count) {
+    return '$shown הפסוקים הראשונים מתוך $count';
+  }
+
+  @override
+  String get searchNarrow => 'אפשר להוסיף מילה כדי לצמצם את החיפוש.';
+
+  @override
+  String searchNoResults(String query) {
+    return 'לא נמצא פסוק עם ״$query״.';
+  }
+
+  @override
+  String get searchNoResultsHint =>
+      'כדאי לנסות פחות מילים, או את הכתיב שבתורה, שלעיתים קרובות אין בו ו׳ וי׳.';
+
+  @override
+  String get searchNoResultsHintEnglish =>
+      'כדאי לנסות פחות מילים, או את האנגלית הישנה של התרגום משנת 1917, למשל ״hath״ במקום ״has״.';
+
+  @override
+  String searchResultsAnnounced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'נמצאו $count פסוקים',
+      one: 'נמצא פסוק אחד',
+      zero: 'לא נמצאו פסוקים',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get planLabel => 'תוכנית שבועית';
 
   @override

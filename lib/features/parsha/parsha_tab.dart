@@ -17,6 +17,11 @@ class ParshaTab extends ConsumerWidget {
       ctx: ctx,
       actions: [
         IconButton(
+          tooltip: context.l10n.searchTitle,
+          icon: const Icon(Icons.search),
+          onPressed: () => context.push('/search'),
+        ),
+        IconButton(
           tooltip: context.l10n.browseAll,
           icon: const Icon(Icons.list_alt),
           onPressed: () => context.go('/parsha/browse'),

@@ -70,6 +70,15 @@ class Names {
     return '${book(bookName)} $c1:$v1–$end';
   }
 
+  /// One verse: "Genesis 28:10" / "בראשית כח, י".
+  String reference(String bookName, int chapter, int verse) {
+    if (_he) {
+      final g = HebrewText.gematria;
+      return '${book(bookName)} ${g(chapter, punctuate: false)}, ${g(verse, punctuate: false)}';
+    }
+    return '${book(bookName)} $chapter:$verse';
+  }
+
   String verseNumber(int n) => _he ? HebrewText.gematria(n, punctuate: false) : '$n';
 
   String weekday(LocalDate d) => DateFormat.EEEE(context.localeName).format(d.toDateTime());

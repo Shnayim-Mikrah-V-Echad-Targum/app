@@ -40,6 +40,34 @@ abstract final class HebrewText {
 
   static bool containsHebrew(String s) => RegExp('[֐-׿]').hasMatch(s);
 
+  /// Whether [codeUnit] is one of the marks [consonantsOnly] removes: a
+  /// cantillation mark, meteg, vowel point, dagesh, shin or sin dot, a
+  /// Masoretic dot, or the combining grapheme joiner. The paseq is not one:
+  /// it stands between words.
+  static bool isMark(int codeUnit) =>
+      (codeUnit >= 0x0591 && codeUnit <= 0x05BD) ||
+      codeUnit == 0x05BF ||
+      codeUnit == 0x05C1 ||
+      codeUnit == 0x05C2 ||
+      codeUnit == 0x05C4 ||
+      codeUnit == 0x05C5 ||
+      codeUnit == 0x05C7 ||
+      codeUnit == 0x034F;
+
+  static final _finals = RegExp('[ךםןףץ]');
+
+  /// Writes the five final letters (ך ם ן ף ץ) in their ordinary forms, so a
+  /// word compares alike whether or not it ends where they stand.
+  static String foldFinals(String s) =>
+      s.replaceAllMapped(_finals, (m) => String.fromCharCode(foldFinal(m[0]!.codeUnitAt(0))));
+
+  /// [foldFinals] for one UTF-16 code unit: a final letter's ordinary form,
+  /// which Unicode places straight after it, or [codeUnit] itself.
+  static int foldFinal(int codeUnit) => switch (codeUnit) {
+        0x05DA || 0x05DD || 0x05DF || 0x05E3 || 0x05E5 => codeUnit + 1,
+        _ => codeUnit,
+      };
+
   static const _hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת';
 
   /// Formats a number in Hebrew numerals (gematria), e.g. 15 → ט״ו.

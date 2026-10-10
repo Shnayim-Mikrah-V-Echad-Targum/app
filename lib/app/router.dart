@@ -19,6 +19,7 @@ import '../features/parsha/week_overview_screen.dart';
 import '../features/progress/progress_screen.dart';
 import '../features/reader/haftarah_screen.dart';
 import '../features/reader/reader_screen.dart';
+import '../features/search/search_screen.dart';
 import '../features/settings/screens/accessibility_settings_screen.dart';
 import '../features/settings/screens/city_picker_screen.dart';
 import '../features/settings/screens/data_settings_screen.dart';
@@ -96,6 +97,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       _route('/guide', (_) => const GuideScreen()),
+      _route('/search', (s) => SearchScreen(initialQuery: s.uri.queryParameters['q'] ?? '')),
       _route('/week/:id', (s) => WeekOverviewScreen(weekId: s.pathParameters['id']!)),
       _route('/read/:id/:aliyah', (s) => ReaderScreen(
             weekId: s.pathParameters['id']!,

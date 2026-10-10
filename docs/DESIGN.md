@@ -55,6 +55,8 @@ The JPS translation is offered only as a study aid and is labelled so. It never 
 - **The last verse of the parsha** can optionally be repeated so the reading ends with Mikra.
 - **Ketiv/qere:** the qere is read and the ketiv is shown on request.
 
+**Search finds a word or phrase in the Mikra, Targum Onkelos and the translation**, on the device and offline. The first search of a session reads every verse of the three layers, about 3.5 MB, with a progress bar, and keeps them folded for comparison: Hebrew without vowels or cantillation, final letters as ordinary ones, and the maqaf, paseq and sof pasuq as word spaces. A Hebrew search reads the Mikra and the Targum and matches anywhere in a word, since prefixes (ו, ה, ב, ל…) are written as part of it; an English one reads the translation and matches only from the start of a word, so "ram" doesn't find Abram. Words are matched as the Torah spells them: a search for אהרון finds nothing, and the page suggests the Torah's spelling, which often leaves out ו and י, rather than guess at looser matches. Up to 200 verses are listed, in order under their parsha, each opening the reader in full text at that verse, in the week of this year's cycle that reads it. A verse found only in its Targum shows the verse above it, as the reader does.
+
 **Progress is stored per unit:** (aliyah × pass), plus the haftarah. The guided reader saves the reader's position within each pass. This makes resuming exact, and lets the streak engine see partial days.
 
 **Three default plans:**

@@ -20,6 +20,11 @@ class PaperGroup extends StatelessWidget {
   static const double plainInset = PaperRow._start;
   static const _corner = Radius.circular(12);
 
+  /// The corners a row at [context] rounds its ink and focus ring to: the
+  /// card's own at the top of the first row and the bottom of the last. A
+  /// [PaperRow] rounds to them, and so can a row of another kind.
+  static BorderRadius rowCorners(BuildContext context) => _RowPlace.of(context) ?? const BorderRadius.all(_corner);
+
   @override
   Widget build(BuildContext context) {
     final sefer = SeferColors.of(context);
@@ -232,7 +237,7 @@ class PaperRow extends StatelessWidget {
           ? content
           : SeferInkWell(
               onTap: onTap,
-              borderRadius: _RowPlace.of(context) ?? const BorderRadius.all(PaperGroup._corner),
+              borderRadius: PaperGroup.rowCorners(context),
               child: content,
             ),
     );

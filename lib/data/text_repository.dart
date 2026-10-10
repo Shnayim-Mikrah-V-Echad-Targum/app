@@ -61,6 +61,20 @@ class TextRepository {
     });
   }
 
+  /// Reads one layer of [book] through [read], all of it off the UI thread
+  /// where isolates are available, and keeps nothing: for a pass over every
+  /// verse whose result is smaller than the book, such as the search index.
+  /// [read] must be a top-level or static function, so it can cross to the
+  /// isolate.
+  Future<T> readBook<T>(TextLayer layer, String book, T Function(BookText text) read) async {
+    final raw = await _bundle.loadString('assets/text/${layer.folder}/${book.toLowerCase()}.json', cache: false);
+    final job = (raw: raw, read: read);
+    return kIsWeb ? _readRaw(job) : compute(_readRaw<T>, job);
+  }
+
+  static T _readRaw<T>(({String raw, T Function(BookText) read}) job) =>
+      job.read(BookText.fromJson(_decode(job.raw)));
+
   Future<CommentaryText> commentary(CommentaryLayer layer, String book) {
     final key = '${layer.folder}/$book';
     return _commentaries.putIfAbsent(key, () async {

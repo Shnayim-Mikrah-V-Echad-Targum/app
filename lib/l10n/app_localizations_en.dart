@@ -982,6 +982,66 @@ class AppLocalizationsEn extends AppLocalizations {
       'The list has every place of 100,000 people or more, and every city in Israel. If yours isn\'t there, choose the nearest one.';
 
   @override
+  String get searchTitle => 'Search the Torah';
+
+  @override
+  String get searchFieldLabel => 'A word or phrase';
+
+  @override
+  String get searchClear => 'Clear search';
+
+  @override
+  String get searchIntro =>
+      'Find a word or phrase in the Torah, in Targum Onkelos, or in the English translation.';
+
+  @override
+  String get searchPreparing => 'Preparing the text for search…';
+
+  @override
+  String searchResultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verses',
+      one: '1 verse',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String searchResultsFirst(int shown, int count) {
+    return 'The first $shown of $count verses';
+  }
+
+  @override
+  String get searchNarrow => 'Add a word to narrow the search.';
+
+  @override
+  String searchNoResults(String query) {
+    return 'No verse matches “$query”.';
+  }
+
+  @override
+  String get searchNoResultsHint =>
+      'Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.';
+
+  @override
+  String get searchNoResultsHintEnglish =>
+      'Try fewer words, or the older English of the 1917 translation, such as “hath” for “has”.';
+
+  @override
+  String searchResultsAnnounced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verses found',
+      one: '1 verse found',
+      zero: 'No verses found',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get planLabel => 'Weekly plan';
 
   @override

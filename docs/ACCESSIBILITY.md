@@ -26,6 +26,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 
 **Announcements and controls**
 - Steps in the guided reader and a completed aliyah are announced as live updates where the platform supports them. Elsewhere they appear in a SnackBar that is read aloud.
+- Search says how many verses were found once typing pauses. Each verse found is one item: its reference, then its text, tagged `he` (or `en` for the translation) and spoken as verses are, with the Targum named.
 - Every icon button has a label and a tooltip.
 
 **Web**

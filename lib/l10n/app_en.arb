@@ -744,6 +744,62 @@
     }
   },
   "cityListNote": "The list has every place of 100,000 people or more, and every city in Israel. If yours isn't there, choose the nearest one.",
+  "searchTitle": "Search the Torah",
+  "searchFieldLabel": "A word or phrase",
+  "searchClear": "Clear search",
+  "searchIntro": "Find a word or phrase in the Torah, in Targum Onkelos, or in the English translation.",
+  "searchPreparing": "Preparing the text for search…",
+  "@searchPreparing": {
+    "description": "Shown with a progress bar the first time search opens, while every verse is read and indexed."
+  },
+  "searchResultsCount": "{count, plural, =1{1 verse} other{{count} verses}}",
+  "@searchResultsCount": {
+    "description": "Above the results of a search: how many verses hold what was searched for.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchResultsFirst": "The first {shown} of {count} verses",
+  "@searchResultsFirst": {
+    "description": "Above the results of a search that found more verses than are listed. shown is how many are listed, count how many there are.",
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchNarrow": "Add a word to narrow the search.",
+  "searchNoResults": "No verse matches “{query}”.",
+  "@searchNoResults": {
+    "description": "Shown when a search of the Torah finds nothing. query is what the reader typed.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNoResultsHint": "Try fewer words, or the Torah’s own spelling, which often leaves out ו\u00a0and\u00a0י.",
+  "@searchNoResultsHint": {
+    "description": "Under searchNoResults, after a search in Hebrew. The Torah's spelling is often defective (חסר): אהרן rather than אהרון."
+  },
+  "searchNoResultsHintEnglish": "Try fewer words, or the older English of the 1917 translation, such as “hath” for “has”.",
+  "@searchNoResultsHintEnglish": {
+    "description": "Under searchNoResults, after a search in English. The translation is the JPS 1917."
+  },
+  "searchResultsAnnounced": "{count, plural, =0{No verses found} =1{1 verse found} other{{count} verses found}}",
+  "@searchResultsAnnounced": {
+    "description": "Read out by screen readers once typing in the Torah search pauses.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "planLabel": "Weekly plan",
   "planAliyahPerDay": "An aliyah a day",
   "planAliyahPerDayDesc": "One aliyah Sunday–Thursday; the 6th and 7th on Friday",
