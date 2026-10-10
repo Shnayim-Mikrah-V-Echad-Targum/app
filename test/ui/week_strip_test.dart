@@ -29,6 +29,7 @@ void main() {
     LocalDate? today,
     Map<LocalDate, DayStatus> statuses = const {},
     LocalDate? joinDate,
+    bool oneDayYomTov = false,
     double width = 364,
     void Function(PlanDay day)? onDayTap,
   }) =>
@@ -39,7 +40,7 @@ void main() {
             plan: week ?? plan,
             today: today ?? day(5),
             statuses: statuses,
-            oneDayYomTov: false,
+            oneDayYomTov: oneDayYomTov,
             joinDate: joinDate,
             onDayTap: onDayTap ?? (_) {},
           ),
@@ -142,6 +143,34 @@ void main() {
       expect(text.left, greaterThanOrEqualTo(sunday.left + 4 - 0.01), reason: hebrew ? 'he' : 'en');
       expect(text.right, lessThanOrEqualTo(sunday.right - 4 + 0.01), reason: hebrew ? 'he' : 'en');
       expect(tester.widget<Text>(note).maxLines, 1);
+    }
+  });
+
+  testWidgets('the rest days follow the Yom Tov custom, not the reading schedule', (tester) async {
+    // Israel's reading, the week of Acharon shel Pesach 5787: 22 Nisan is
+    // Thursday 29 April 2027, Yom Tov only for one who keeps two days.
+    const israel = ParshaSchedule(israel: true);
+    final tuesday = LocalDate(2027, 4, 27);
+    for (final oneDay in [false, true]) {
+      final planner = ReadingPlanner(schedule: israel, oneDayYomTov: oneDay);
+      final week = planner.planFor(israel.weekFor(tuesday));
+      await pumpThemed(tester, strip(week: week, today: tuesday, oneDayYomTov: oneDay));
+      final thursday = dayOf('Thursday');
+      final candles = find.descendant(of: thursday, matching: find.byType(ShabbatCandlesIcon));
+      final note = find.descendant(of: thursday, matching: find.text('Yom Tov'));
+      if (oneDay) {
+        // In Israel, a reading day like any other.
+        expect(fillOf(tester, 'Thursday'), isNull);
+        expect(candles, findsNothing);
+        expect(note, findsNothing);
+        expect(find.bySemanticsLabel(RegExp(r'^Thursday: Upcoming\. ')), findsOneWidget);
+      } else {
+        // A visitor keeps the second day: washed, lit and named, no reading.
+        expect(fillOf(tester, 'Thursday'), sefer.restWash);
+        expect(candles, findsOneWidget);
+        expect(note, findsOneWidget);
+        expect(find.bySemanticsLabel('Thursday: Shabbat or Yom Tov'), findsOneWidget);
+      }
     }
   });
 

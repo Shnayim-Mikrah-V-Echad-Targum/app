@@ -637,7 +637,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Cells in a row are as tall as the tallest (`IntrinsicHeight`).
 - Cell states:
   - Today: primaryContainer fill at 100% (was 35%) plus a 1.5 px primary border, drawn over the cell so its content sits where the other days' does. Icon: a 2 px primary ring with an 8 px centre dot (`TodayMark`).
-  - Rest (Shabbat or Yom Tov): restWash fill plus candles (§7.6) in `rest`. A rest day that is today keeps the wash and takes today's border.
+  - Rest (Shabbat or Yom Tov): restWash fill plus candles (§7.6) in `rest`. A rest day that is today keeps the wash and takes today's border. The days of Yom Tov are the reader's own custom (`oneDayYomTov`), not the reading schedule's.
   - Kept: a filled 20 px circle in `done` with a 14 px onDone check.
   - Ahead / caught up: the same disc with the existing fast_forward / published_with_changes glyph.
   - Grace: `shield_outlined` in grace.
