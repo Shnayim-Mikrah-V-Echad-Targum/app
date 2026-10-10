@@ -5,6 +5,7 @@ import '../../core/calendar/jewish_holidays.dart';
 import '../../core/calendar/local_date.dart';
 import '../../core/calendar/parsha_schedule.dart';
 import '../../data/models/parsha.dart';
+import '../../data/models/verse_ref.dart';
 import '../../data/parsha_repository.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/reading_plan.dart';
@@ -30,6 +31,37 @@ ReadingWeek? findWeekById(ParshaSchedule schedule, String id) {
   }
   return null;
 }
+
+/// Where verse [r] of [book] is read in the cycle that began in [cycle]: the
+/// id of the week whose portion holds it, and the aliyah of that week's
+/// portion that holds it. A combined week divides its aliyot differently from
+/// either parsha alone, so the aliyah is counted in the week's own portion.
+/// Null for a verse that is not in the Torah.
+({String weekId, int aliyah})? locateVerse(
+  ParshaRepository repo,
+  ParshaSchedule schedule,
+  int cycle,
+  String book,
+  VerseRef r,
+) {
+  final parsha = repo.all.where((p) => p.book == book && p.range.contains(r)).firstOrNull;
+  if (parsha == null) return null;
+  final week = findWeekById(schedule, '$cycle:${parsha.id.number}');
+  if (week == null) return null;
+  final portion = repo.portion(week.portion);
+  final aliyah = portion.aliyot.indexWhere((a) => a.contains(r));
+  if (aliyah < 0) return null;
+  return (weekId: weekIdFor(week.portion, week.occasion), aliyah: aliyah);
+}
+
+/// [locateVerse] in the cycle of the current week, the one Browse lists.
+final verseLocatorProvider = Provider<({String weekId, int aliyah})? Function(String book, VerseRef r)>((ref) {
+  final repo = ref.watch(parshaRepositoryProvider);
+  final schedule = ref.watch(scheduleProvider);
+  final current = ref.watch(currentWeekProvider);
+  final cycle = cycleYearOf(current.portion, current.occasion);
+  return (book, r) => locateVerse(repo, schedule, cycle, book, r);
+});
 
 /// Everything the UI needs about one week, bundled.
 class WeekContext {
