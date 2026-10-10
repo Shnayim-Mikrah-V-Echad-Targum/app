@@ -59,6 +59,9 @@ const _screens = {
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
   'today_haftarah_left': '/today',
+  'today_yomtov_oneday': '/today',
+  'today_yomtov_twoday': '/today',
+  'today_joined_midweek': '/today',
   'parsha': '/parsha',
   'browse': '/parsha/browse',
   'week': '/week/5787:1',
@@ -136,6 +139,14 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_gaps_spaced': (s) => s.copyWith(wordSpacing: 16, justify: true),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
   'today_haftarah_left': (s) => s.copyWith(haftarahRequired: true),
+  // The Tuesday after Shavuot 5789 (Sunday and Monday, 20 and 21 May) on
+  // Israel's reading: one day of Yom Tov kept, then two (a visitor).
+  'today_yomtov_oneday': (s) =>
+      s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true, joinDate: LocalDate(2029, 5, 1)),
+  'today_yomtov_twoday': (s) =>
+      s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: false, joinDate: LocalDate(2029, 5, 1)),
+  // Joined on the Wednesday of Bereshit: the days before have no reading.
+  'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
 };
 
 /// Screens shown on another day, with another history: the Torah map in
@@ -145,12 +156,15 @@ final _screenNow = <String, DateTime>{
   'today_divergence': DateTime(2029, 4, 24, 11),
   'today_divergence_abroad': DateTime(2029, 4, 24, 11),
   'today_haftarah_left': DateTime(2026, 10, 13, 11),
+  'today_yomtov_oneday': DateTime(2029, 5, 22, 11),
+  'today_yomtov_twoday': DateTime(2029, 5, 22, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
   'today_haftarah_left': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
+  'today_joined_midweek': () => ProgressState(weeks: {}),
 };
 
 /// Screens shown signed in with backup on, where a newer version of the app
@@ -181,6 +195,9 @@ final _taps = {
   // The second page of onboarding: where the reader will be this Shabbat.
   'welcome_location': () => find.byType(FilledButton).first,
 };
+
+Future<void> _showWeekStrip(WidgetTester tester) =>
+    Scrollable.ensureVisible(tester.element(find.byType(WeekStrip)), alignment: 0.5);
 
 Future<void> _scrollToEnd(WidgetTester tester) async {
   // A lazily built list only learns its full extent as it scrolls.
@@ -281,6 +298,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_gaps_spaced': _scrollToEnd,
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.byIcon(Icons.delete_forever_outlined)),
+  // The week strip, in the middle of the page.
+  'today_yomtov_oneday': _showWeekStrip,
+  'today_yomtov_twoday': _showWeekStrip,
+  'today_joined_midweek': _showWeekStrip,
 };
 
 /// Opens [gallery] as a page over the current route.
@@ -358,6 +379,7 @@ const _desktopScreens = {
   'today',
   'today_divergence',
   'today_haftarah_left',
+  'today_yomtov_oneday',
   'week',
   'reader',
   'reader_full',
