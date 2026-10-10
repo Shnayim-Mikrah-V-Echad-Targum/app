@@ -1551,6 +1551,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onbWhyAsk => 'Why we ask';
 
   @override
+  String get onbStarterTitle => 'This week';
+
+  @override
+  String get onbStarterCatchUp => 'Read the whole parsha by Shabbat';
+
+  @override
+  String onbStarterCatchUpDesc(int verses, int minutes, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'over $days days',
+      one: 'today',
+    );
+    return '$verses verses · about $minutes min $_temp0';
+  }
+
+  @override
+  String get onbStarterToday => 'Start with today\'s reading';
+
+  @override
+  String get onbStarterTodayDesc => 'Full plan from next week';
+
+  @override
   String get guideWhatTitle => 'What is Shnayim Mikra?';
 
   @override

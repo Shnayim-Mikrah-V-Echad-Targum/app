@@ -2750,6 +2750,36 @@ abstract class AppLocalizations {
   /// **'Why we ask'**
   String get onbWhyAsk;
 
+  /// No description provided for @onbStarterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get onbStarterTitle;
+
+  /// No description provided for @onbStarterCatchUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the whole parsha by Shabbat'**
+  String get onbStarterCatchUp;
+
+  /// The whole parsha spread over the days left in the week the reader joins: its length, its reading time, and the number of days with reading.
+  ///
+  /// In en, this message translates to:
+  /// **'{verses} verses · about {minutes} min {days, plural, =1{today} other{over {days} days}}'**
+  String onbStarterCatchUpDesc(int verses, int minutes, int days);
+
+  /// No description provided for @onbStarterToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with today\'s reading'**
+  String get onbStarterToday;
+
+  /// No description provided for @onbStarterTodayDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Full plan from next week'**
+  String get onbStarterTodayDesc;
+
   /// No description provided for @guideWhatTitle.
   ///
   /// In en, this message translates to:

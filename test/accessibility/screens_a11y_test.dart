@@ -46,6 +46,30 @@ void main() {
     });
   }
 
+  for (final route in a11yOnboardingRoutes) {
+    for (final hebrew in [false, true]) {
+      testWidgets('a11y guidelines: $route${hebrew ? ', Hebrew' : ''}', (tester) async {
+        final handle = tester.ensureSemantics();
+        await open(tester, route, settings: AppSettings(language: hebrew ? AppLanguage.hebrew : AppLanguage.system));
+        expect(tester.takeException(), isNull);
+        if (route == '/welcome/location') {
+          // With the reason it is asked shown.
+          await tester.tap(find.byIcon(Icons.expand_more));
+          await tester.pumpAndSettle();
+        }
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        handle.dispose();
+      });
+    }
+
+    testWidgets('no overflow at 200% text size: $route', (tester) async {
+      await open(tester, route, settings: const AppSettings(), textScale: 2);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   // Text contrast on this page is checked in text_contrast_test.dart.
   testWidgets('a11y guidelines: reminders, where they can be scheduled, with all of them on', (tester) async {
     final handle = tester.ensureSemantics();

@@ -1545,6 +1545,30 @@ class AppLocalizationsHe extends AppLocalizations {
   String get onbWhyAsk => 'למה אנחנו שואלים';
 
   @override
+  String get onbStarterTitle => 'השבוע';
+
+  @override
+  String get onbStarterCatchUp => 'לקרוא את כל הפרשה עד שבת';
+
+  @override
+  String onbStarterCatchUpDesc(int verses, int minutes, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'על פני $days ימים',
+      two: 'על פני יומיים',
+      one: 'היום',
+    );
+    return '$verses פסוקים · כ־$minutes דק׳ $_temp0';
+  }
+
+  @override
+  String get onbStarterToday => 'להתחיל מהקריאה של היום';
+
+  @override
+  String get onbStarterTodayDesc => 'התוכנית המלאה מהשבוע הבא';
+
+  @override
   String get guideWhatTitle => 'מהו שניים מקרא?';
 
   @override

@@ -200,6 +200,11 @@ class ReadingPlanner {
   /// (see [planFor]); null plans that week like any other.
   final LocalDate? starterFrom;
 
+  /// This planner, with the reader's first week planned from [day] on (or,
+  /// with null, like any other).
+  ReadingPlanner startingFrom(LocalDate? day) =>
+      ReadingPlanner(schedule: schedule, oneDayYomTov: _oneDayYomTov, settingsAt: settingsAt, starterFrom: day);
+
   /// Whether [d] takes no reading under [settings]: Shabbat, Yom Tov, or a
   /// day the user has chosen to keep free.
   bool _isTransparent(LocalDate d, PlanSettingsEntry settings) {

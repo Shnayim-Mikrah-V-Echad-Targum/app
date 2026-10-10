@@ -55,8 +55,15 @@ ProgressState _progress() {
 }
 
 const _screens = {
+  // A new reader's onboarding, with no join date or progress yet, on the
+  // Friday of Bereshit; its plan step on the Wednesday too.
   'welcome': '/welcome',
-  'welcome_location': '/welcome',
+  'welcome_location': '/welcome/location',
+  // "Why we ask" open under the question.
+  'welcome_why': '/welcome/location',
+  'welcome_method': '/welcome/method',
+  'welcome_plan': '/welcome/plan',
+  'welcome_plan_midweek': '/welcome/plan',
   'today': '/today',
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
@@ -211,6 +218,8 @@ final _screenNow = <String, DateTime>{
   'today_yomtov_twoday': DateTime(2029, 5, 22, 11),
   // Tuesday of Matot-Masei 5787.
   'reader_third': DateTime(2027, 7, 27, 11),
+  // The Wednesday of Bereshit, which began on Monday.
+  'welcome_plan_midweek': DateTime(2026, 10, 7, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
@@ -340,8 +349,7 @@ class _OpeningForever extends DemoForumRepository {
 final _taps = {
   // Choosing "All on Friday" says that it applies from this week on.
   's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
-  // The second page of onboarding: where the reader will be this Shabbat.
-  'welcome_location': () => find.byType(FilledButton).first,
+  'welcome_why': () => find.byIcon(Icons.expand_more),
   // Next, on the last step of Shevi'i.
   'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
@@ -584,6 +592,7 @@ const _desktopScreens = {
   'not_found',
   'settings',
   'welcome',
+  'welcome_plan',
   'dialog',
   'sheet_display',
   'focus_nav',
@@ -659,10 +668,11 @@ void main() {
         debugDisableShadows = false;
         try {
           final blocked = _syncBlocked.contains(entry.key);
+          final onboarding = entry.key.startsWith('welcome');
           final base = (_screenSettings[entry.key] ?? (s) => s)(
             AppSettings(
-              onboardingComplete: !entry.key.startsWith('welcome'),
-              joinDate: _join,
+              onboardingComplete: !onboarding,
+              joinDate: onboarding ? null : _join,
               cloudSync: blocked || _backupOn.contains(entry.key),
             ),
           );
@@ -670,13 +680,13 @@ void main() {
             tester,
             settings: mode.settings(base),
             now: _screenNow[entry.key] ?? _now,
-            progress: (_screenProgress[entry.key] ?? _progress)(),
+            progress: onboarding ? const ProgressState() : (_screenProgress[entry.key] ?? _progress)(),
             forums: blocked
                 ? await _accountWithNewerBackup()
                 : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
             notifications: _remindersSupported.contains(entry.key) ? PhoneNotifications() : null,
           );
-          if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
+          c.read(routerProvider).go(entry.value);
           await _settle(tester);
           final setup = _screenSetup[entry.key];
           if (setup != null) {

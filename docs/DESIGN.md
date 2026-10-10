@@ -119,13 +119,17 @@ Permission is requested in context, after the reader finishes their first aliyah
 
 The goal is to reach the first verse in under a minute. Onboarding has four screens:
 1. Welcome, with a language toggle.
-2. Location: Israel or Diaspora, with the time zone guessed.
+2. Location: Israel or Diaspora, guessed from the device's time zone, with "Why we ask" a tap away.
 3. Reading method and second reading.
-4. Plan, with the honor statement.
+4. Plan, with the honor statement, and for a reader who joins midweek, how to read the first week.
 
-It ends by opening the reader on today's aliyah. Everything else is a setting with a sensible default.
+Each step after the welcome is a page of its own, so Back, the system's or the app bar's, returns a step rather than leaving the app, and screen readers announce each step as a new screen. Every choice is saved as it is made, so going back loses nothing. Everything else is a setting with a sensible default.
 
-**The first week starts on the day the reader does.** Most people join midweek. Rather than finding half the portion already due, they have the whole portion spread over the reading days left before it is read in synagogue: joining on Wednesday gives Rishon and Sheni that day, Shlishi and Revi'i on Thursday, and the rest on Friday. The first reading opens on Rishon, and the first week can still be finished on time. From the next week on, the usual plan applies.
+**Israel is guessed from the time zone's IANA name** (Asia/Jerusalem, or the older Asia/Tel_Aviv), which every platform gives, the web included. Abbreviations such as IST are not used: India and Ireland have one too. The guess is made once, on the welcome, and never overrides a choice the reader has made. It is right for those who live in Israel; "Why we ask" tells a visitor that the days of Yom Tov they keep can be set apart in Settings.
+
+**The first week starts on the day the reader does.** Most people join midweek. Rather than finding half the portion already due, they have the whole portion spread over the reading days left before it is read in synagogue: joining on Wednesday gives Rishon and Sheni that day, Shlishi and Revi'i on Thursday, and the rest on Friday, and joining on Friday gives all seven aliyot that day. The plan step says how long that is ("153 verses · about 64 min over 3 days"). Onboarding then opens the reader on Rishon, and the first week can still be finished on time. From the next week on, the usual plan applies.
+
+A reader who would rather not can choose instead to start with today's reading: the usual plan applies from that day on, the aliyot planned before it are not expected, and onboarding opens the reader on today's aliyah. Joining on the week's first day of reading, or with a plan that reads everything on Friday, the two are the same, and the plan step doesn't ask.
 
 ## 7. Community
 

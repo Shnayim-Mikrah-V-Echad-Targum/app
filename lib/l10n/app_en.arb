@@ -1029,6 +1029,25 @@
     }
   },
   "onbWhyAsk": "Why we ask",
+  "onbStarterTitle": "This week",
+  "onbStarterCatchUp": "Read the whole parsha by Shabbat",
+  "onbStarterCatchUpDesc": "{verses} verses · about {minutes} min {days, plural, =1{today} other{over {days} days}}",
+  "@onbStarterCatchUpDesc": {
+    "description": "The whole parsha spread over the days left in the week the reader joins: its length, its reading time, and the number of days with reading.",
+    "placeholders": {
+      "verses": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "onbStarterToday": "Start with today's reading",
+  "onbStarterTodayDesc": "Full plan from next week",
   "guideWhatTitle": "What is Shnayim Mikra?",
   "guideWhatBody": "The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.",
   "guideWhenTitle": "When",

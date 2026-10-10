@@ -1082,7 +1082,12 @@ void main() {
     await tester.tap(find.text("Start this week's parsha"));
     await tester.pumpAndSettle();
     expect(find.text('Where will you be this Shabbat?'), findsOneWidget);
-    expect(find.textContaining('Visiting? You can set the days of Yom Tov you keep separately in Settings.'), findsOneWidget);
+    // Why it is asked, and what a visitor can do, is a tap away.
+    final help = find.textContaining('Visiting? You can set the days of Yom Tov you keep separately in Settings.');
+    expect(help, findsNothing);
+    await tester.tap(find.text('Why we ask'));
+    await tester.pumpAndSettle();
+    expect(help, findsOneWidget);
     await tester.tap(find.text('In Israel'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
@@ -1090,6 +1095,9 @@ void main() {
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('Your plan this week'), findsOneWidget);
+    // Below the choice for the week of joining.
+    await tester.ensureVisible(find.text('Start reading'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Start reading'));
     await loadTexts(tester);
     final s = c.read(settingsProvider);
