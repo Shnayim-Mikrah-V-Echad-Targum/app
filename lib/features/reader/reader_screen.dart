@@ -282,11 +282,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   String _speechText(ReaderTexts texts, ReaderFlow flow, AppSettings s) {
     final kind = _currentKind(flow);
     final refs = _fullText || _finished ? flow.verses : flow.stepVerses(_chunk, kind);
-    String hebrew(Verse v) => HebrewSpeech.spoken(v.readText, divineName: s.divineName);
+    String hebrew(Verse v, {bool targum = false}) =>
+        HebrewSpeech.spoken(v.readText, divineName: s.divineName, targum: targum);
     return switch (kind) {
       StepKind.targum => refs
           .expand((r) => [
-                hebrew(texts.onkelos!.verse(r)),
+                hebrew(texts.onkelos!.verse(r), targum: true),
                 if (flow.thirdHebrewInTargum(_chunk, r)) hebrew(texts.mikra.verse(r)),
               ])
           .join(' '),
@@ -294,7 +295,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           .expand((r) => texts.rashi!.on(r))
           .map((c) => s.secondReading == SecondReading.rashiEnglish
               ? '${c.heading ?? ''} ${c.text}'
-              : HebrewSpeech.spoken('${c.heading ?? ''} ${c.text}', divineName: s.divineName))
+              : HebrewSpeech.spoken('${c.heading ?? ''} ${c.text}', divineName: s.divineName, rashi: true))
           .join(' '),
       _ => refs.map((r) => hebrew(texts.mikra.verse(r))).join(' '),
     };

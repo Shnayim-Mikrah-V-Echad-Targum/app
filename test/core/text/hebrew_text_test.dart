@@ -3,7 +3,6 @@ import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 
 void main() {
   const genesis11 = 'בְּרֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַשָּׁמַ֖יִם וְאֵ֥ת הָאָֽרֶץ׃';
-
   // Dots over every letter of וַיִּשָּׁקֵהוּ, as written in the scroll.
   const genesis33_4 = 'וַיָּ֨רׇץ עֵשָׂ֤ו לִקְרָאתוֹ֙ וַֽיְחַבְּקֵ֔הוּ וַיִּפֹּ֥ל עַל־צַוָּארָ֖ו וַׄיִּׄשָּׁׄקֵ֑ׄהׄוּׄ וַיִּבְכּֽוּ׃';
   // Set off by an inverted nun at its start.
@@ -67,6 +66,70 @@ void main() {
 
     test('HaShem mode', () {
       expect(HebrewSpeech.spoken('יְהֹוָ֖ה', divineName: DivineNameSpeech.hashem), 'הַשֵּׁם');
+    });
+
+    test('a prefix keeps its vowels, and punctuation stays', () {
+      expect(HebrewSpeech.spoken('לַֽיהֹוָ֔ה'), 'לַאֲדֹנָי');
+      expect(HebrewSpeech.spoken('וַֽיהֹוָ֔ה', divineName: DivineNameSpeech.hashem), 'וַהַשֵּׁם');
+      expect(HebrewSpeech.spoken('כִּ֛י אֲנִ֥י יְהֹוָֽה׃'), 'כִּי אֲנִי אֲדֹנָי.');
+      // Deuteronomy 32:6, with two prefix letters.
+      expect(HebrewSpeech.spoken('הַֽלְיהֹוָה֙ תִּגְמְלוּ־זֹ֔את'), 'הַלְאֲדֹנָי תִּגְמְלוּ זֹאת');
+    });
+
+    group('Targum', () {
+      test('the Name יְיָ is read as chosen', () {
+        expect(HebrewSpeech.spoken('וַאֲמַר יְיָ', targum: true), 'וַאֲמַר אֲדֹנָי');
+        expect(HebrewSpeech.spoken('וַאֲמַר יְיָ', targum: true, divineName: DivineNameSpeech.hashem), 'וַאֲמַר הַשֵּׁם');
+        expect(HebrewSpeech.spoken('וַאֲמַר יְיָ', targum: true, keepNikud: false), 'ואמר אדני');
+      });
+
+      test('with a prefix', () {
+        expect(HebrewSpeech.spoken('קֳדָם דַּיְיָ', targum: true), 'קֳדָם דַּאֲדֹנָי');
+        expect(HebrewSpeech.spoken('וְהֵימִין בְּמֵימְרָא דַיְיָ:', targum: true), 'וְהֵימִין בְּמֵימְרָא דַאֲדֹנָי:');
+        expect(HebrewSpeech.spoken('לַיָי', targum: true, divineName: DivineNameSpeech.hashem), 'לַהַשֵּׁם');
+      });
+
+      test('only when asked for', () {
+        expect(HebrewSpeech.spoken('וַאֲמַר יְיָ'), 'וַאֲמַר יְיָ');
+        expect(HebrewSpeech.spoken('וַאֲמַר יְיָ', rashi: true), 'וַאֲמַר יְיָ');
+      });
+    });
+
+    group('Rashi', () {
+      test("ה' is read as chosen, but not as a chapter number", () {
+        expect(HebrewSpeech.spoken("וַיֹּאמֶר ה' (שמות ה')", rashi: true), "וַיֹּאמֶר אֲדֹנָי (שמות ה')");
+        expect(
+          HebrewSpeech.spoken("עַד שַׁקַּמְתִּי דְּבוֹרָה (שופטים ה') כְּמוֹ", rashi: true),
+          "עַד שַׁקַּמְתִּי דְּבוֹרָה (שופטים ה') כְּמוֹ",
+        );
+        expect(HebrewSpeech.spoken("(פסוק יד) \"ה' יִלָּחֵם לָכֶם\"", rashi: true), '(פסוק יד) "אֲדֹנָי יִלָּחֵם לָכֶם"');
+      });
+
+      test('a remark in parentheses can name it too', () {
+        expect(
+          HebrewSpeech.spoken("(וְכֵן לִישׁוּעָה, ה' אִישׁ מִלְחָמָה ה' שְׁמוֹ, וְכֵן כֻּלָּם)", rashi: true),
+          '(וְכֵן לִישׁוּעָה, אֲדֹנָי אִישׁ מִלְחָמָה אֲדֹנָי שְׁמוֹ, וְכֵן כֻּלָּם)',
+        );
+        expect(HebrewSpeech.spoken("(שֶׁנֶּאֱמַר בָּנִים אַתֶּם לַה')", rashi: true), '(שֶׁנֶּאֱמַר בָּנִים אַתֶּם לַאֲדֹנָי)');
+      });
+
+      test('with a prefix, punctuation and quotation marks', () {
+        expect(HebrewSpeech.spoken("יוֹדוּ לַה' חַסְדּוֹ", rashi: true), 'יוֹדוּ לַאֲדֹנָי חַסְדּוֹ');
+        expect(HebrewSpeech.spoken("לפני ה'.", rashi: true, divineName: DivineNameSpeech.hashem), 'לפני הַשֵּׁם.');
+        expect(HebrewSpeech.spoken('"לַה׳", כְּמוֹ', rashi: true), '"לַאֲדֹנָי", כְּמוֹ');
+        expect(HebrewSpeech.spoken("וה' המטיר.", rashi: true), 'ואֲדֹנָי המטיר.');
+      });
+
+      test("ה' counting something is a number", () {
+        expect(HebrewSpeech.spoken("וּבֶן ע' כְּבֶן ה' בְּלֹא חֵטְא", rashi: true), "וּבֶן ע' כְּבֶן ה' בְּלֹא חֵטְא");
+        expect(HebrewSpeech.spoken("וְה' מֵאוֹת", rashi: true), "וְה' מֵאוֹת");
+        expect(HebrewSpeech.spoken("וּלְפִיכָךְ מֵת ה' שָׁנִים קֹדֶם זְמַנּוֹ", rashi: true), "וּלְפִיכָךְ מֵת ה' שָׁנִים קֹדֶם זְמַנּוֹ");
+      });
+
+      test('only when asked for', () {
+        expect(HebrewSpeech.spoken("וַיֹּאמֶר ה'"), "וַיֹּאמֶר ה'");
+        expect(HebrewSpeech.spoken("וַיֹּאמֶר ה'", targum: true), "וַיֹּאמֶר ה'");
+      });
     });
 
     test('cantillation is removed and maqaf becomes a space', () {

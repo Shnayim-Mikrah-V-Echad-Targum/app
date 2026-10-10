@@ -84,15 +84,41 @@ enum DivineNameSpeech {
 /// Builds text for speech output (screen readers and text-to-speech).
 abstract final class HebrewSpeech {
   static final _wordSplit = RegExp(r'(\s+|־)');
-  static final _tetragrammaton = RegExp('^([ובכלמשה]?)יהוה\$');
+  // Vowel points, any number. Cantillation is gone before words are matched.
+  static const _v = '[\u05b0-\u05bc\u05bf\u05c1\u05c2\u05c7]*';
+  // Each pattern for the Divine Name matches a whole word in three parts:
+  // what precedes the Name (punctuation, then any prefix letters with their
+  // vowels), the Name as written, and the punctuation after it.
+  static final _tetragrammaton =
+      RegExp('^(?<before>[^א-ת]*(?:[ובכלמשה]$_v){0,2})(?<name>י$_vה$_vו$_vה$_v)(?<after>[^א-ת]*)\$');
+  // Onkelos writes the Name יְיָ, with a prefix where it has one (דַּיְיָ).
+  static final _targumName =
+      RegExp('^(?<before>[^א-ת]*(?:[ודלבמכ]$_v)?)(?<name>י$_vי$_v)(?<after>[^א-ת]*)\$');
+  // Rashi abbreviates it ה' (or with a geresh), also after a prefix (לַה')
+  // and inside quotation marks or braces.
+  static final _rashiName = RegExp(
+    '^(?<before>["״“„{\\[]*(?<prefix>(?:[ובכלמש]$_v)?))(?<name>ה$_v[\'׳])(?<after>[.,:;!?)"״”}\\]]*)\$',
+  );
+  // But ה' is also the numeral 5. Rashi cites chapters by number, as in
+  // (ישעיהו ה') or (שם ה', ד'), and counts with it: "כְּבֶן ה'" (five years
+  // old), "ה' שָׁנִים" (five years), "וְה' מֵאוֹת" (five hundred). The nouns
+  // are those Rashi on the Torah counts this way.
+  static final _endsCitation = RegExp('[),:;]');
+  static final _beforeCount = RegExp('^כ?ב[ןת]\$');
+  static final _counted = RegExp('^(?:שנים|מאות|אלפים|מקומות|אברים)\$');
 
   /// Prepares one verse for speech: removes cantillation (screen readers
   /// mis-handle it) and the Masoretic dots, optionally removes vowels, and
   /// substitutes the Divine Name according to [divineName].
+  ///
+  /// Set [targum] for Targum Onkelos, which writes the Name יְיָ, and [rashi]
+  /// for Rashi, who writes ה'.
   static String spoken(
     String text, {
     bool keepNikud = true,
     DivineNameSpeech divineName = DivineNameSpeech.adonai,
+    bool targum = false,
+    bool rashi = false,
   }) {
     // A sof pasuq ends a sentence: speak it as a full stop, always followed
     // by a space so the next word is never run into it. The extraordinary
@@ -104,27 +130,41 @@ abstract final class HebrewSpeech {
     final parts = cleaned.split(_wordSplit);
     final seps = _wordSplit.allMatches(cleaned).map((m) => m.group(0)!).toList();
     final out = StringBuffer();
+    var parens = 0;
     for (var i = 0; i < parts.length; i++) {
-      out.write(_substituteName(parts[i], divineName));
+      final word = parts[i];
+      final inParens = parens > 0 || word.contains('(');
+      parens += '('.allMatches(word).length - ')'.allMatches(word).length;
+      if (parens < 0) parens = 0;
+      final m = _tetragrammaton.firstMatch(word) ??
+          (targum ? _targumName.firstMatch(word) : null) ??
+          (rashi ? _rashiName.firstMatch(word) : null);
+      final numeral = m != null && m.pattern == _rashiName && _isNumeral(m, parts, i, inParens: inParens);
+      out.write(m == null || numeral ? word : _substitute(m, divineName));
       if (i < seps.length) out.write(seps[i] == '־' ? ' ' : seps[i]);
     }
     final s = out.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
     return keepNikud ? s : HebrewText.stripNikud(s);
   }
 
-  static String _substituteName(String word, DivineNameSpeech mode) {
-    final bare = HebrewText.consonantsOnly(word).replaceAll(RegExp('[^א-ת]'), '');
-    final m = _tetragrammaton.firstMatch(bare);
-    if (m == null) return word;
-    final prefix = m.group(1)!;
-    // Vocalized with a hiriq in the Name itself (יֱהֹוִה) it is read "Elohim".
-    final nameStart = word.indexOf('י', prefix.isEmpty ? 0 : word.indexOf(prefix) + 1);
-    final readAsElohim = nameStart >= 0 && word.substring(nameStart).contains('ִ');
-    switch (mode) {
-      case DivineNameSpeech.adonai:
-        return '$prefix${readAsElohim ? 'אֱלֹהִים' : 'אֲדֹנָי'}';
-      case DivineNameSpeech.hashem:
-        return '$prefixהַשֵּׁם';
-    }
+  /// Whether Rashi's ה' in words[i] is the numeral: closing a citation
+  /// without a prefix, or counting what is next to it.
+  static bool _isNumeral(RegExpMatch m, List<String> words, int i, {required bool inParens}) {
+    if (inParens && m.namedGroup('prefix')!.isEmpty && _endsCitation.hasMatch(m.namedGroup('after')!)) return true;
+    return (i > 0 && _beforeCount.hasMatch(_letters(words[i - 1]))) ||
+        (i + 1 < words.length && _counted.hasMatch(_letters(words[i + 1])));
+  }
+
+  static String _letters(String word) => HebrewText.consonantsOnly(word).replaceAll(RegExp('[^א-ת]'), '');
+
+  static String _substitute(RegExpMatch m, DivineNameSpeech mode) {
+    final name = switch (mode) {
+      // Vocalized with a hiriq in the Name itself (יֱהֹוִה) it is read "Elohim".
+      DivineNameSpeech.adonai => m.namedGroup('name')!.contains('\u05b4') ? 'אֱלֹהִים' : 'אֲדֹנָי',
+      DivineNameSpeech.hashem => 'הַשֵּׁם',
+    };
+    // What precedes the Name is kept as written, so a prefix keeps its
+    // vowels: לַיהוָה is read לַאֲדֹנָי.
+    return '${m.namedGroup('before')}$name${m.namedGroup('after')}';
   }
 }

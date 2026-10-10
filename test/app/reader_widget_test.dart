@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
@@ -265,6 +267,38 @@ void main() {
     // Each verse has a spoken label: "Verse 9." (Noach begins at 6:9) followed by the Hebrew.
     expect(find.bySemanticsLabel(RegExp(r'^Verse 9\. ')), findsWidgets);
     handle.dispose();
+  });
+
+  group('screen-reader labels', () {
+    Future<void> openNoach(WidgetTester tester, {AppSettings settings = const AppSettings(onboardingComplete: true)}) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(tester, settings: settings, now: monday);
+      c.read(routerProvider).go('/read/5787:2/0');
+      await loadTexts(tester);
+    }
+
+    Future<void> next(WidgetTester tester, int steps) async {
+      for (var i = 0; i < steps; i++) {
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
+      }
+    }
+
+    SemanticsData labelled(WidgetTester tester, Pattern label) =>
+        tester.getSemantics(find.bySemanticsLabel(label).first).getSemanticsData();
+
+    testWidgets('a verse of Targum is labelled as Targum and reads the Name as chosen', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openNoach(tester, settings: const AppSettings(onboardingComplete: true, divineName: DivineNameSpeech.hashem));
+      await next(tester, 2);
+      expect(find.text('Read the Targum'), findsOneWidget);
+      // Onkelos writes the Name יְיָ, here with a prefix: דַּיְיָ.
+      final targum = labelled(tester, RegExp(r'^Targum, verse 9\. '));
+      expect(HebrewText.consonantsOnly(targum.label), contains(' בדחלתא דהשם הליך '));
+      handle.dispose();
+    });
   });
 
   testWidgets('full-text mode shows Torah and Targum together', (tester) async {

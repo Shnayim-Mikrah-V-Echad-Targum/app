@@ -529,6 +529,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String targumVerseLabel(String number) {
+    return 'Targum, verse $number';
+  }
+
+  @override
   String chapterLabel(String number) {
     return 'Chapter $number';
   }

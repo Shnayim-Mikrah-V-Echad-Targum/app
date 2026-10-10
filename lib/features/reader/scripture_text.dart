@@ -67,15 +67,16 @@ String displayHebrew(String text, AppSettings s) {
   return out;
 }
 
-/// The text a screen reader should speak for a verse.
-String spokenVerse(Verse verse, AppSettings s) {
-  final read = verse.readText;
-  return switch (s.screenReaderText) {
-    ScreenReaderText.simplified => HebrewSpeech.spoken(read, divineName: s.divineName),
-    ScreenReaderText.consonants => HebrewSpeech.spoken(read, keepNikud: false, divineName: s.divineName),
-    ScreenReaderText.allMarks => read,
-  };
-}
+/// The text a screen reader should speak for a verse of the Torah or of
+/// Targum Onkelos.
+String spokenVerse(Verse verse, AppSettings s, {required ScriptureKind kind}) =>
+    _spoken(verse.readText, s, targum: kind == ScriptureKind.targum);
+
+String _spoken(String text, AppSettings s, {bool targum = false}) => switch (s.screenReaderText) {
+      ScreenReaderText.simplified => HebrewSpeech.spoken(text, divineName: s.divineName, targum: targum),
+      ScreenReaderText.consonants => HebrewSpeech.spoken(text, keepNikud: false, divineName: s.divineName, targum: targum),
+      ScreenReaderText.allMarks => text,
+    };
 
 /// One verse of Hebrew or Aramaic, with its number.
 class ScriptureVerse extends StatelessWidget {
@@ -177,8 +178,9 @@ class ScriptureVerse extends StatelessWidget {
       }
     }
 
-    final spoken = spokenVerse(verse, settings);
-    final prefix = '${l.verseLabel('${verse.ref.verse}')}. ';
+    final number = '${verse.ref.verse}';
+    final prefix = '${kind == ScriptureKind.targum ? l.targumVerseLabel(number) : l.verseLabel(number)}. ';
+    final spoken = spokenVerse(verse, settings, kind: kind);
     final noteText = notes.map(l.noteLabel).join(' ');
     final label = '$prefix$spoken${noteText.isEmpty ? '' : '. $noteText'}';
 

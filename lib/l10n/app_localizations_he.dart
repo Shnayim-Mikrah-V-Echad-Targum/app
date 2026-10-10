@@ -532,6 +532,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String targumVerseLabel(String number) {
+    return 'תרגום, פסוק $number';
+  }
+
+  @override
   String chapterLabel(String number) {
     return 'פרק $number';
   }

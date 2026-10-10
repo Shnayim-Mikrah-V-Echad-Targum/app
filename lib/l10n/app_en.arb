@@ -395,6 +395,15 @@
       }
     }
   },
+  "targumVerseLabel": "Targum, verse {number}",
+  "@targumVerseLabel": {
+    "description": "Spoken by screen readers before the Aramaic of a verse of Targum Onkelos.",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "chapterLabel": "Chapter {number}",
   "@chapterLabel": {
     "placeholders": {

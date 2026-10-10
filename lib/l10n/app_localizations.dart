@@ -932,6 +932,12 @@ abstract class AppLocalizations {
   /// **'Verse {number}'**
   String verseLabel(String number);
 
+  /// Spoken by screen readers before the Aramaic of a verse of Targum Onkelos.
+  ///
+  /// In en, this message translates to:
+  /// **'Targum, verse {number}'**
+  String targumVerseLabel(String number);
+
   /// No description provided for @chapterLabel.
   ///
   /// In en, this message translates to:
