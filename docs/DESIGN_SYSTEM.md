@@ -453,8 +453,9 @@ Rules:
   - If `uiFont` is not standard or system, use uiFont at 17/26.
 
 **Focus mode**
-- The current verse gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`. No radius: Flutter forbids a radius with non-uniform borders.
-- Padding: start 12, vertical 4.
+- The current verse's whole block (Mikra, Targum, translation and Rashi, one tap target, `VerseGroup`) gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`, faded in over `Motion.short`. No radius: Flutter forbids a radius with non-uniform borders.
+- Padding, on every block whether highlighted or not, so that focus mode never moves a line: start 12 (the rule's 3 included), end 12, so the highlight frames a line that runs the full measure (the translation, or justified text), and vertical 4.
+- Start here, as for the Targum's rule, is the scripture's start: the right, in either language of the app.
 - All other verses, including their numbers and ketiv, use `dimInk`. Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
 
 **The verse opened at** (`TargetVerseMark`, lib/features/reader/verse_anchor.dart)

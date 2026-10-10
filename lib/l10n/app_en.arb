@@ -875,6 +875,10 @@
   "lineWide": "Wide",
   "showTranslation": "English translation (study aid)",
   "showRashi": "Show Rashi alongside",
+  "rashiScript": "Rashi script",
+  "@rashiScript": {
+    "description": "Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters."
+  },
   "uiFontLabel": "Interface font",
   "uiFontStandard": "Standard",
   "uiFontAtkinson": "Atkinson Hyperlegible",

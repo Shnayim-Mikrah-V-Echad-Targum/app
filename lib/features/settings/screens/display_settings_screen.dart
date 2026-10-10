@@ -50,8 +50,8 @@ class DisplaySettingsScreen extends ConsumerWidget {
         LabeledSlider(
           title: l.lineSpacing,
           value: s.lineHeight,
-          min: 1.5,
-          max: 3.0,
+          min: kMinLineHeight,
+          max: kMaxLineHeight,
           step: 0.1,
           format: (v) => v.toStringAsFixed(1),
           onChanged: (v) => update((s) => s.copyWith(lineHeight: v)),
@@ -159,13 +159,16 @@ class _Preview extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(l.previewLabel, style: Theme.of(context).textTheme.labelLarge),
-            const Gap(8),
+            const Gap(12),
             if (mikra.value != null) ...[
               ScriptureVerse(verse: mikra.value!.verse(const VerseRef(1, 1)), kind: ScriptureKind.mikra, settings: s),
+              const Gap(8),
               ScriptureVerse(verse: mikra.value!.verse(const VerseRef(1, 2)), kind: ScriptureKind.mikra, settings: s),
             ],
-            if (onkelos.value != null)
+            if (onkelos.value != null) ...[
+              const Gap(8),
               ScriptureVerse(verse: onkelos.value!.verse(const VerseRef(1, 1)), kind: ScriptureKind.targum, settings: s),
+            ],
           ],
         ),
       ),

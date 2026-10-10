@@ -16,6 +16,7 @@ import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
+import 'package:shnayim_mikra/ui/theme/motion.dart';
 import 'package:shnayim_mikra/ui/widgets/lang.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 
@@ -757,6 +758,9 @@ void main() {
     final slider = find.descendant(of: find.byType(BottomSheet), matching: find.byType(Slider));
     await tester.scrollUntilVisible(slider, 200, scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
     expect(tester.getSemantics(slider), isSemantics(label: 'Line spacing', value: '1.9', isSlider: true));
+    // Wholly in view, its buttons too.
+    await tester.ensureVisible(find.byTooltip('Increase Line spacing'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Increase Line spacing'));
     await tester.pumpAndSettle();
     expect(c.read(settingsProvider).lineHeight, closeTo(2.0, 1e-9));
@@ -770,9 +774,119 @@ void main() {
     final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
     c.read(routerProvider).go('/read/5787:2/0?mode=full');
     await loadTexts(tester);
+    // The aliyah opens mid-chapter, headed by its chapter.
+    expect(find.text('פרק ו'), findsOneWidget);
     expect(find.text('Chapter 6'), findsOneWidget);
+    // Each verse's Targum is ruled off beneath it, without its number.
+    final targum = tester.widgetList<ScriptureVerse>(find.byType(ScriptureVerse)).where((v) => v.kind == ScriptureKind.targum);
+    expect(targum, isNotEmpty);
+    expect(targum.every((v) => v.ruled && !v.showNumber), isTrue);
     // Built with the text, so that Tab reaches it, but at its end.
-    expect(tester.getTopLeft(find.text('Mark this aliyah as read')).dy, greaterThan(900), reason: 'the button is at the end of the text');
+    final button = find.text('Mark this aliyah as read');
+    expect(tester.getTopLeft(button).dy, greaterThan(900), reason: 'the button is at the end of the text');
+    // After a divider, a tonal button (§6.5), centred.
+    final scheme = Theme.of(tester.element(button)).colorScheme;
+    final tonal = find.ancestor(of: button, matching: find.byWidgetPredicate((w) => w is ButtonStyleButton));
+    expect(tester.widget<ButtonStyleButton>(tonal).style?.backgroundColor?.resolve({}), scheme.primaryContainer);
+    await tester.ensureVisible(button);
+    await tester.pumpAndSettle();
+    expect(tester.getBottomLeft(find.byType(SeferDivider)).dy, lessThan(tester.getTopLeft(button).dy));
+    expect(tester.getCenter(tonal).dx, closeTo(tester.getCenter(find.byType(SeferDivider)).dx, 1));
+  });
+
+  testWidgets('in focus mode, tapping verses moves no line of the text', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(
+      tester,
+      // Small enough that the first verses are on the screen together.
+      settings: const AppSettings(onboardingComplete: true, focusMode: true, showTranslation: true, readingScale: 0.6),
+      now: monday,
+    );
+    c.read(routerProvider).go('/read/5787:2/0?mode=full');
+    await loadTexts(tester);
+    // Every paragraph of the text, where it is and how it breaks.
+    List<(Rect, double)> layout() => [
+          for (final p in tester.renderObjectList<RenderParagraph>(
+            find.descendant(of: find.byType(VerseGroup), matching: find.byType(RichText)),
+          ))
+            (p.localToGlobal(Offset.zero) & p.size, p.getMaxIntrinsicWidth(double.infinity)),
+        ];
+    final before = layout();
+    final verses = find.byType(VerseGroup);
+    bool highlighted(int i) => tester.widget<VerseGroup>(verses.at(i)).highlighted;
+    // Focus mode opens on the first verse; a tap moves it, and a tap on the
+    // verse it is on lets it go.
+    int? focused = 0;
+    expect(highlighted(0), isTrue);
+    for (final i in [1, 0, 0]) {
+      expect(tester.getRect(verses.at(i)).top + 24, lessThan(915), reason: 'on the screen');
+      await tester.tapAt(tester.getRect(verses.at(i)).topCenter + const Offset(0, 24));
+      focused = focused == i ? null : i;
+      await tester.pump();
+      expect([highlighted(0), highlighted(1)], [focused == 0, focused == 1]);
+      await tester.pump(Motion.short ~/ 2);
+      expect(layout(), before, reason: 'as the highlight fades');
+      await tester.pumpAndSettle();
+      expect(layout(), before);
+    }
+  });
+
+  testWidgets('line spacing goes no lower than 1.6', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true, lineHeight: 1.6), now: monday);
+    c.read(routerProvider).go('/read/5787:2/0');
+    await loadTexts(tester);
+    await tester.tap(find.byTooltip('Display settings'));
+    await tester.pumpAndSettle();
+    final slider = find.descendant(of: find.byType(BottomSheet), matching: find.byType(Slider));
+    await tester.scrollUntilVisible(slider, 200, scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
+    final decrease = find.byTooltip('Decrease Line spacing');
+    await tester.ensureVisible(decrease);
+    await tester.pumpAndSettle();
+    final spacing = tester.widget<Slider>(slider);
+    expect((spacing.min, spacing.max, spacing.divisions), (1.6, 3.0, 14));
+    expect(tester.widget<IconButton>(find.ancestor(of: decrease, matching: find.byType(IconButton))).onPressed, isNull);
+    expect(c.read(settingsProvider).lineHeight, 1.6);
+  });
+
+  testWidgets('the display sheet turns the Rashi script on', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
+    c.read(routerProvider).go('/read/5787:2/0');
+    await loadTexts(tester);
+    await tester.tap(find.byTooltip('Display settings'));
+    await tester.pumpAndSettle();
+    final toggle = find.widgetWithText(SwitchListTile, 'Rashi script');
+    await tester.scrollUntilVisible(toggle, 200, scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(c.read(settingsProvider).rashiScript, isTrue);
+  });
+
+  testWidgets('the guided reader heads a chapter where one starts', (tester) async {
+    final handle = tester.ensureSemantics();
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
+    // Noach's Sheni opens on Genesis 7:1.
+    c.read(routerProvider).go('/read/5787:2/1');
+    await loadTexts(tester);
+    expect(find.text('פרק ז'), findsOneWidget);
+    expect(tester.getSemantics(find.byType(ChapterHeading)), isSemantics(label: 'Chapter 7', isHeader: true));
+    // Under the instruction, over the verse, whose number hangs at its start.
+    final heading = tester.getRect(find.byType(ChapterHeading));
+    expect(heading.top, greaterThan(tester.getRect(find.text('Read the Hebrew')).bottom));
+    final verse = tester.getRect(find.byType(ScriptureVerse));
+    expect(heading.bottom, lessThanOrEqualTo(verse.top));
+    expect(find.descendant(of: find.byType(ScriptureVerse), matching: find.text('א')), findsOneWidget);
+    handle.dispose();
   });
 
   group('the keyboard', () {
@@ -982,8 +1096,8 @@ void main() {
         settings: const AppSettings(onboardingComplete: true, focusMode: true, method: ReadingMethod.aliyahByAliyah),
         progress: progress,
       );
-      final current = find.byWidgetPredicate((w) => w is ScriptureVerse && w.highlighted);
-      expect(tester.widget<ScriptureVerse>(current).verse.ref.verse, 9);
+      final current = find.byWidgetPredicate((w) => w is VerseGroup && w.highlighted);
+      expect(tester.widget<VerseGroup>(current).verse.verse, 9);
     });
 
     testWidgets('in focus mode, ↓ and ↑ move the verse read and keep it in view', (tester) async {
@@ -995,8 +1109,8 @@ void main() {
         settings: const AppSettings(onboardingComplete: true, focusMode: true),
         progress: progress,
       );
-      Finder current() => find.byWidgetPredicate((w) => w is ScriptureVerse && w.highlighted);
-      int verse() => tester.widget<ScriptureVerse>(current()).verse.ref.verse;
+      Finder current() => find.byWidgetPredicate((w) => w is VerseGroup && w.highlighted);
+      int verse() => tester.widget<VerseGroup>(current()).verse.verse;
       void expectInView() {
         final rect = tester.getRect(current());
         expect(rect.top, greaterThanOrEqualTo(tester.getRect(find.byType(SingleChildScrollView).last).top));
@@ -1335,7 +1449,7 @@ void main() {
       await loadTexts(tester);
       // Focus mode opens on the reader's place, the first verse: every other
       // verse is dimmed.
-      expect(tester.widget<ScriptureVerse>(find.byType(ScriptureVerse).first).highlighted, isTrue);
+      expect(tester.widget<VerseGroup>(find.byType(VerseGroup).first).highlighted, isTrue);
 
       final dimmed = find.byWidgetPredicate(
         (w) => (w is ScriptureVerse && w.dimmed) || (w is TranslationVerse && w.dimmed),

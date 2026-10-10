@@ -1221,6 +1221,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showRashi => 'Show Rashi alongside';
 
   @override
+  String get rashiScript => 'Rashi script';
+
+  @override
   String get uiFontLabel => 'Interface font';
 
   @override

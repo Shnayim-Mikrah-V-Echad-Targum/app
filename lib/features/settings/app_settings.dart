@@ -80,7 +80,18 @@ enum UiFont {
   final String? family;
 }
 
+/// The reading column's measure (ScriptureStyles.maxLineWidth).
 enum LineWidth { narrow, medium, wide }
+
+/// The line spacing of scripture, as a multiple of its size: never below 1.6,
+/// so that lower vowels and cantillation marks are never clipped
+/// (DESIGN.md §8).
+const kMinLineHeight = 1.6;
+const kMaxLineHeight = 3.0;
+
+/// The Rashi script (DESIGN_SYSTEM.md §4.7), loaded only once it is chosen
+/// (OptionalFonts).
+const kRashiScriptFamily = 'NotoRashiHebrew';
 
 /// Whose public Torah reading the weeks follow. For a few weeks after Pesach
 /// or Shavuot, Israel can be a parsha ahead: when the last day of the
@@ -107,6 +118,7 @@ class AppSettings {
     this.thirdReadingPrompts = true,
     this.showTranslation = false,
     this.showRashi = false,
+    this.rashiScript = false,
     this.nameStyle = NameStyle.sephardi,
     this.theme = AppThemeMode.system,
     this.readingScale = 1.0,
@@ -185,6 +197,10 @@ class AppSettings {
 
   /// Show Rashi alongside, as commentary (independent of [secondReading]).
   final bool showRashi;
+
+  /// Set Rashi's commentary in Rashi script, as printed Chumashim do, rather
+  /// than in square letters.
+  final bool rashiScript;
   final NameStyle nameStyle;
 
   // Display
@@ -264,6 +280,10 @@ class AppSettings {
 
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
+  /// The opt-in font families these settings show text in, which are loaded
+  /// on demand (OptionalFonts); null for a bundled font.
+  List<String?> get optionalFonts => [uiFont.family, scriptureFont.family, if (rashiScript) kRashiScriptFamily];
+
   /// Whether the reading heard and the days of Yom Tov kept are those of
   /// different places, as for a visitor to or from Israel.
   bool get readingAndYomTovDiffer => (readingSchedule == ReadingSchedule.israel) != oneDayYomTov;
@@ -338,6 +358,7 @@ class AppSettings {
     bool? thirdReadingPrompts,
     bool? showTranslation,
     bool? showRashi,
+    bool? rashiScript,
     NameStyle? nameStyle,
     AppThemeMode? theme,
     double? readingScale,
@@ -393,6 +414,7 @@ class AppSettings {
         thirdReadingPrompts: thirdReadingPrompts ?? this.thirdReadingPrompts,
         showTranslation: showTranslation ?? this.showTranslation,
         showRashi: showRashi ?? this.showRashi,
+        rashiScript: rashiScript ?? this.rashiScript,
         nameStyle: nameStyle ?? this.nameStyle,
         theme: theme ?? this.theme,
         readingScale: readingScale ?? this.readingScale,
@@ -454,6 +476,7 @@ class AppSettings {
         'thirdReadingPrompts': thirdReadingPrompts,
         'showTranslation': showTranslation,
         'showRashi': showRashi,
+        'rashiScript': rashiScript,
         'nameStyle': nameStyle.name,
         'theme': theme.name,
         'readingScale': readingScale,
@@ -527,10 +550,12 @@ class AppSettings {
       thirdReadingPrompts: b('thirdReadingPrompts', d.thirdReadingPrompts),
       showTranslation: b('showTranslation', d.showTranslation),
       showRashi: b('showRashi', d.showRashi),
+      rashiScript: b('rashiScript', d.rashiScript),
       nameStyle: e(NameStyle.values, j['nameStyle'], d.nameStyle),
       theme: e(AppThemeMode.values, j['theme'], d.theme),
       readingScale: n('readingScale', d.readingScale, kMinReadingScale, kMaxReadingScale),
-      lineHeight: n('lineHeight', d.lineHeight, 1.5, 3.0),
+      // Spacing saved below the minimum (1.5 was once allowed) is raised to it.
+      lineHeight: n('lineHeight', d.lineHeight, kMinLineHeight, kMaxLineHeight),
       wordSpacing: n('wordSpacing', d.wordSpacing, 0, 16),
       letterSpacing: n('letterSpacing', d.letterSpacing, 0, 4),
       showNikud: b('showNikud', d.showNikud),

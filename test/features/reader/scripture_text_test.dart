@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,7 +7,9 @@ import 'package:shnayim_mikra/data/models/scripture.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/theme/motion.dart';
 import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show SectionBreakMark;
 
 import '../../helpers.dart';
 
@@ -108,5 +112,257 @@ void main() {
     await pumpVerse(tester, decalogue);
     expect(find.bySemanticsLabel('Verse 13. לא תרצח. לא תנאף. לא תגנב. לא תענה ברעך עד שקר.'), findsOneWidget);
     handle.dispose();
+  });
+
+  // Genesis 3:22, pointed: a verse whose number has two letters.
+  final serpent = Verse.fromJson(const VerseRef(3, 22), ['וַיֹּאמֶר יְהוָה אֱלֹהִים הֵן הָאָדָם הָיָה כְּאַחַד מִמֶּנּוּ']);
+
+  /// The style the verse's paragraph is set in: its own span's, within the
+  /// one Text gives it.
+  TextStyle? verseStyle(WidgetTester tester) =>
+      (tester.widget<RichText>(find.byType(RichText)).text as TextSpan).children!.whereType<TextSpan>().first.style;
+
+  TextSpan? spanOf(WidgetTester tester, String text) {
+    TextSpan? found;
+    for (final paragraph in tester.widgetList<RichText>(find.byType(RichText))) {
+      paragraph.text.visitChildren((span) {
+        if (span is TextSpan && span.text == text) found = span;
+        return found == null;
+      });
+    }
+    return found;
+  }
+
+  group('typesetting (DESIGN_SYSTEM.md §4.7)', () {
+    testWidgets('a verse number is gold Frank Ruhl Libre at 0.55 of the verse, joined to its first word', (tester) async {
+      await pumpVerse(tester, serpent);
+      final number = spanOf(tester, 'כב ');
+      expect(number, isNotNull, reason: 'a no-break space, so the number never ends a line alone');
+      final colors = Theme.of(tester.element(find.byType(ScriptureVerse))).colorScheme;
+      expect(number!.style?.fontFamily, 'FrankRuhlLibre');
+      expect(number.style?.fontSize, closeTo(26 * 0.55, 0.001));
+      expect(number.style?.fontWeight, FontWeight.w600);
+      expect(number.style?.color, colors.secondary, reason: 'gold ink, never techelet');
+      expect(verseStyle(tester)?.color, colors.onSurface);
+
+      await pumpVerse(tester, serpent, dimmed: true);
+      final dimInk = SeferColors.of(tester.element(find.byType(ScriptureVerse))).dimInk;
+      expect(spanOf(tester, 'כב ')!.style?.color, dimInk, reason: 'dimmed with its verse');
+      expect(verseStyle(tester)?.color, dimInk);
+    });
+
+    testWidgets('a strut keeps every line of a verse at its pitch', (tester) async {
+      await pumpVerse(tester, serpent, settings: const AppSettings(lineHeight: 2.2, readingScale: 1.5));
+      final strut = tester.widget<RichText>(find.byType(RichText)).strutStyle!;
+      expect(strut.fontFamily, 'NotoSerifHebrew');
+      expect(strut.fontSize, closeTo(26 * 1.5, 0.001));
+      expect(strut.height, 2.2);
+      expect(strut.leadingDistribution, TextLeadingDistribution.even);
+      expect(strut.forceStrutHeight, isFalse);
+    });
+
+    testWidgets('the guided reader hangs the number in a gutter at the verse\'s start', (tester) async {
+      await pumpThemed(
+        tester,
+        ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+      );
+      final verse = tester.getRect(find.byType(ScriptureVerse));
+      final number = find.text('כב');
+      expect(number, findsOneWidget);
+      expect(spanOf(tester, 'כב '), isNull, reason: 'not in the paragraph too');
+      // The gutter is on the right, the verse's start, 1.4 times its size.
+      final gutter = tester.getRect(find.ancestor(of: number, matching: find.byType(SizedBox)).first);
+      expect(gutter.right, verse.right);
+      expect(gutter.width, closeTo(1.4 * 26, 0.001));
+      final paragraph = tester.getRect(find.byType(RichText).last);
+      expect(paragraph.right, closeTo(verse.right - 1.4 * 26, 0.001));
+      final row = tester.widget<Row>(find.byType(Row));
+      expect(row.crossAxisAlignment, CrossAxisAlignment.baseline, reason: 'on the first line\'s baseline');
+    });
+
+    testWidgets('at a very large size, the number leads the first line rather than take a quarter of it', (tester) async {
+      await pumpThemed(
+        tester,
+        Center(
+          child: SizedBox(
+            width: 400,
+            child: ScriptureVerse(
+              verse: serpent,
+              kind: ScriptureKind.mikra,
+              settings: const AppSettings(readingScale: 4),
+              hangingNumber: true,
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(Row), findsNothing);
+      expect(spanOf(tester, 'כב '), isNotNull);
+    });
+
+    for (final theme in [AppThemeMode.light, AppThemeMode.highContrastDark]) {
+      testWidgets('the full text\'s Targum is set in from a gold-leaf rule: ${theme.name}', (tester) async {
+        final targum = Verse.fromJson(const VerseRef(3, 22), ['וַאֲמַר יְיָ אֱלֹהִים הָא אָדָם הֲוָה יְחִידַי בְּעָלְמָא']);
+        await pumpThemed(
+          tester,
+          ScriptureVerse(
+            verse: targum,
+            kind: ScriptureKind.targum,
+            settings: const AppSettings(),
+            secondary: true,
+            showNumber: false,
+            ruled: true,
+          ),
+          theme: theme,
+        );
+        final context = tester.element(find.byType(ScriptureVerse));
+        final sefer = SeferColors.of(context);
+        expect(spanOf(tester, 'כב '), isNull, reason: 'its verse has the number');
+        final box = tester.widget<Container>(find.descendant(of: find.byType(ScriptureVerse), matching: find.byType(Container)));
+        final rule = ((box.decoration! as BoxDecoration).border! as Border).right;
+        expect(rule.color, sefer.goldLeaf);
+        expect(rule.width, 2);
+        // A decoration, which high contrast leaves out (§3.1), but not its
+        // inset.
+        expect(rule.style, theme == AppThemeMode.light ? BorderStyle.solid : BorderStyle.none);
+        final text = tester.getRect(find.byType(RichText));
+        expect(text.right, tester.getRect(find.byType(ScriptureVerse)).right - 14);
+      });
+    }
+
+    testWidgets('the styles of each layer', (tester) async {
+      await pumpThemed(tester, const SizedBox());
+      final context = tester.element(find.byType(SizedBox));
+      final scheme = Theme.of(context).colorScheme;
+      ScriptureStyles styles([AppSettings settings = const AppSettings()]) => ScriptureStyles(context, settings);
+
+      final targum = styles().style(ScriptureKind.targum);
+      expect(targum.fontSize, closeTo(26 * 0.90, 0.001));
+      expect(targum.color, scheme.onSurfaceVariant);
+      expect(styles().heightFor(ScriptureKind.targum), closeTo(1.8, 1e-9));
+      expect(styles(const AppSettings(lineHeight: 1.6)).heightFor(ScriptureKind.targum), 1.6);
+
+      final rashi = styles().style(ScriptureKind.rashi);
+      expect((rashi.fontFamily, rashi.height, rashi.color), ('NotoSerifHebrew', 1.7, scheme.onSurfaceVariant));
+      expect(rashi.fontSize, closeTo(26 * 0.78, 0.001));
+      final dibbur = styles().dibburStyle();
+      expect((dibbur.fontFamily, dibbur.fontWeight, dibbur.color), ('FrankRuhlLibre', FontWeight.w700, scheme.onSurface));
+
+      final script = styles(const AppSettings(rashiScript: true)).style(ScriptureKind.rashi);
+      expect((script.fontFamily, script.height, script.fontWeight), ('NotoRashiHebrew', 1.75, FontWeight.w400));
+      expect(script.fontSize, closeTo(26 * 0.80, 0.001));
+      expect(script.fontFamilyFallback, ['NotoSerifHebrew'], reason: 'until the script has loaded');
+
+      final english = styles(const AppSettings(readingScale: 1.2)).style(ScriptureKind.translation);
+      expect((english.fontFamily, english.height, english.fontWeight), ('EBGaramond', 1.5, FontWeight.w500));
+      expect(english.fontSize, closeTo(24, 0.001), reason: '20 times the reading size');
+      expect(english.color, scheme.onSurfaceVariant);
+      final lexend = styles(const AppSettings(uiFont: UiFont.lexend)).style(ScriptureKind.translation);
+      expect((lexend.fontFamily, lexend.fontSize, lexend.fontWeight), ('Lexend', 17.0, FontWeight.w400));
+      expect(lexend.height, closeTo(26 / 17, 1e-9));
+
+      // The reading column's measure.
+      expect(styles(const AppSettings(lineWidth: LineWidth.narrow)).maxLineWidth, 560);
+      expect(styles().maxLineWidth, 680);
+      expect(styles(const AppSettings(lineWidth: LineWidth.wide)).maxLineWidth, 880);
+      // Spacing from an older version, below the minimum, is raised to it.
+      expect(styles(const AppSettings(lineHeight: 1.5)).lineHeight, kMinLineHeight);
+    });
+
+    testWidgets('a translation\'s number is gold, with lining figures', (tester) async {
+      await pumpThemed(tester, const TranslationVerse(text: 'And the LORD God said', number: 22, settings: AppSettings()));
+      final scheme = Theme.of(tester.element(find.byType(TranslationVerse))).colorScheme;
+      final number = spanOf(tester, '22 ')!;
+      expect(number.style?.fontWeight, FontWeight.w600);
+      expect(number.style?.color, scheme.secondary);
+      expect(number.style?.fontFeatures, contains(const FontFeature.liningFigures()));
+    });
+
+    testWidgets('a comment\'s opening words are in bold full ink, never techelet', (tester) async {
+      await pumpThemed(
+        tester,
+        const RashiComments(comments: [Comment('הן האדם', 'הֲרֵי הוּא יָחִיד')], settings: AppSettings(), english: false),
+      );
+      final scheme = Theme.of(tester.element(find.byType(RashiComments))).colorScheme;
+      final heading = spanOf(tester, 'הן האדם ')!;
+      expect(heading.style?.fontFamily, 'FrankRuhlLibre');
+      expect(heading.style?.color, scheme.onSurface);
+      expect(heading.style?.color, isNot(scheme.primary));
+    });
+
+    for (final hebrew in [false, true]) {
+      testWidgets('a chapter is headed at the centre, in Hebrew${hebrew ? ' alone' : ', and in English beneath'}',
+          (tester) async {
+        final handle = tester.ensureSemantics();
+        await pumpThemed(tester, const ChapterHeading(chapter: 3, settings: AppSettings(readingScale: 2.25)), hebrew: hebrew);
+        final head = find.text('פרק ג');
+        expect(head, findsOneWidget);
+        final style = tester.widget<Text>(head).style!;
+        final scheme = Theme.of(tester.element(head)).colorScheme;
+        expect((style.fontFamily, style.fontWeight, style.color), ('FrankRuhlLibre', FontWeight.w600, scheme.secondary));
+        expect(style.fontSize, closeTo(20 * math.sqrt(2.25), 0.001), reason: 'it grows more slowly than the text');
+        expect(tester.getCenter(head).dx, closeTo(tester.getCenter(find.byType(ChapterHeading)).dx, 0.5));
+        // Between two 32 px hairlines, 12 from it.
+        final rules = find.descendant(of: find.byType(ChapterHeading), matching: find.byType(ColoredBox));
+        expect(rules, findsNWidgets(2));
+        expect(tester.getSize(rules.first).width, 32);
+        expect(tester.getRect(head).left - tester.getRect(rules.last).right, closeTo(12, 0.5));
+        expect(find.text('Chapter 3'), hebrew ? findsNothing : findsOneWidget);
+        expect(
+          tester.getSemantics(find.byType(ChapterHeading)),
+          isSemantics(label: hebrew ? 'פרק ג' : 'Chapter 3', isHeader: true),
+        );
+        handle.dispose();
+      });
+    }
+
+    for (final (kind, space) in [(SectionBreak.open, 20.0), (SectionBreak.closed, 10.0)]) {
+      testWidgets('a ${kind.name} section is marked with $space px above and below', (tester) async {
+        await pumpThemed(tester, Column(children: [SectionGap(kind: kind, settings: const AppSettings())]));
+        final gap = tester.getRect(find.byType(SectionGap));
+        final mark = tester.getRect(find.byType(SectionBreakMark));
+        expect(mark.top - gap.top, space);
+        expect(gap.bottom - mark.bottom, space);
+        expect(find.text(kind == SectionBreak.open ? 'פ' : 'ס'), findsOneWidget);
+      });
+    }
+  });
+
+  group('focus mode', () {
+    Widget group({required bool highlighted}) => VerseGroup(
+          verse: serpent.ref,
+          highlighted: highlighted,
+          child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings()),
+        );
+
+    testWidgets('highlights the verse on the paper, with a rule at its start, and moves nothing', (tester) async {
+      await pumpThemed(tester, group(highlighted: false));
+      final before = tester.getRect(find.byType(RichText));
+      await pumpThemed(tester, group(highlighted: true));
+      // Half way through its fade, and at its end.
+      await tester.pump(Motion.short ~/ 2);
+      expect(tester.getRect(find.byType(RichText)), before);
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byType(RichText)), before);
+
+      final context = tester.element(find.byType(VerseGroup));
+      final box = tester.widget<Container>(
+        find.descendant(of: find.byType(VerseGroup), matching: find.byType(Container)).first,
+      );
+      final decoration = box.decoration! as BoxDecoration;
+      expect(decoration.color, SeferColors.of(context).verseHighlight);
+      final rule = (decoration.border! as Border).right;
+      expect((rule.color, rule.width, rule.style), (Theme.of(context).colorScheme.primary, 3.0, BorderStyle.solid));
+      expect(decoration.borderRadius, isNull, reason: 'Flutter draws no radius on a border of one side');
+      // Inset alike either way: 12 at the start and end, 4 above and below.
+      expect(tester.getRect(find.byType(VerseGroup)).right - before.right, 12);
+      expect(before.top - tester.getRect(find.byType(VerseGroup)).top, 4);
+    });
+
+    testWidgets('fades the highlight in over a short beat', (tester) async {
+      await pumpThemed(tester, group(highlighted: false));
+      await pumpThemed(tester, group(highlighted: true));
+      final container = tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      expect(container.duration, Motion.short);
+    });
   });
 }

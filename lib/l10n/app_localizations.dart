@@ -2144,6 +2144,12 @@ abstract class AppLocalizations {
   /// **'Show Rashi alongside'**
   String get showRashi;
 
+  /// Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters.
+  ///
+  /// In en, this message translates to:
+  /// **'Rashi script'**
+  String get rashiScript;
+
   /// No description provided for @uiFontLabel.
   ///
   /// In en, this message translates to:

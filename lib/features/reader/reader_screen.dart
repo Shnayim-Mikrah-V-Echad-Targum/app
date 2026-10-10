@@ -20,7 +20,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
-import '../../ui/widgets/ornaments.dart' show Eyebrow;
+import '../../ui/widgets/ornaments.dart' show Eyebrow, SeferDivider;
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../settings/app_settings.dart';
@@ -819,7 +819,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                               _quietFocus = null;
                             }),
                             footer: ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah)
-                                ? FilledButton.icon(
+                                ? FilledButton.tonalIcon(
+                                    style: AppButtons.tonal(context),
                                     icon: const Icon(Icons.check),
                                     label: Text(l.markAliyahRead),
                                     onPressed: () => _markAliyahRead(ctx),
@@ -1091,6 +1092,16 @@ class _GuidedStep extends StatelessWidget {
     final styles = ScriptureStyles(context, settings);
     final englishRashi = settings.secondReading == SecondReading.rashiEnglish;
 
+    // Every verse of the guided reader hangs its number in the gutter at its
+    // start (§4.7).
+    ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false}) =>
+        ScriptureVerse(verse: text.verse(r), kind: kind, settings: settings, secondary: secondary, hangingNumber: true);
+
+    Widget translation(VerseRef r) => Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: TranslationVerse(text: texts.english!.verse(r).readText, number: r.verse, settings: settings),
+        );
+
     Widget layerFor(VerseRef r) {
       switch (kind) {
         case StepKind.mikra1:
@@ -1100,30 +1111,26 @@ class _GuidedStep extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ScriptureVerse(verse: texts.mikra.verse(r), kind: ScriptureKind.mikra, settings: settings),
-              if (settings.showTranslation && texts.english != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 8),
-                  child: TranslationVerse(text: texts.english!.verse(r).readText, number: r.verse, settings: settings),
-                ),
+              verse(texts.mikra, r, ScriptureKind.mikra),
+              if (settings.showTranslation && texts.english != null) translation(r),
               if (kind == StepKind.thirdHebrew)
                 _Note(text: settings.usesOnkelos ? l.noTargumNote : l.noRashiNote),
             ],
           );
         case StepKind.targum:
-          final targum = ScriptureVerse(verse: texts.onkelos!.verse(r), kind: ScriptureKind.targum, settings: settings);
+          final targum = verse(texts.onkelos!, r, ScriptureKind.targum);
           if (!flow.thirdHebrewInTargum(chunk, r)) return targum;
           // Read with others, the verse has no step of its own for its third
           // reading: the Hebrew follows its Onkelos here instead, set apart
           // in a block of its own so that it can't be taken for Targum, nor
-          // the Targum after it for Torah, which is labelled again.
+          // the Targum after it for Torah, which is labelled again (below).
           final scheme = theme.colorScheme;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               targum,
               Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 4),
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
                 padding: const EdgeInsetsDirectional.only(start: 12),
                 decoration: BoxDecoration(
                   border: BorderDirectional(start: BorderSide(color: scheme.outline, width: 3)),
@@ -1132,17 +1139,12 @@ class _GuidedStep extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     LayerLabel(l.mikraLabel),
-                    ScriptureVerse(verse: texts.mikra.verse(r), kind: ScriptureKind.mikra, settings: settings),
-                    if (settings.showTranslation && texts.english != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: TranslationVerse(text: texts.english!.verse(r).readText, number: r.verse, settings: settings),
-                      ),
+                    verse(texts.mikra, r, ScriptureKind.mikra),
+                    if (settings.showTranslation && texts.english != null) translation(r),
                     _Note(text: l.noTargumNote),
                   ],
                 ),
               ),
-              if (r != refs.last) LayerLabel(l.targumLabel),
             ],
           );
         case StepKind.rashi:
@@ -1154,7 +1156,7 @@ class _GuidedStep extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ScriptureVerse(verse: texts.mikra.verse(r), kind: ScriptureKind.mikra, settings: settings),
+                verse(texts.mikra, r, ScriptureKind.mikra),
                 _Note(text: suggestThird ? l.noRashiNote : l.noRashiComment),
               ],
             );
@@ -1162,17 +1164,17 @@ class _GuidedStep extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ScriptureVerse(
-                verse: texts.mikra.verse(r),
-                kind: ScriptureKind.mikra,
-                settings: settings,
-                secondary: true,
-              ),
+              verse(texts.mikra, r, ScriptureKind.mikra, secondary: true),
+              const Gap(8),
               RashiComments(comments: comments, settings: settings, english: englishRashi),
             ],
           );
       }
     }
+
+    // The marks between sections stand in the Torah's text: under the steps
+    // that read it, not the Targum's or Rashi's.
+    final hebrewStep = kind != StepKind.targum && kind != StepKind.rashi;
 
     return Scrollbar(
       controller: scroll,
@@ -1205,16 +1207,25 @@ class _GuidedStep extends StatelessWidget {
                           child: ExcludeSemantics(child: Text(stepTitle, style: theme.textTheme.bodyLarge)),
                         ),
                         const Gap(12),
-                        for (final r in refs) ...[
+                        for (final (i, r) in refs.indexed) ...[
+                          if (r.verse == 1) ChapterHeading(chapter: r.chapter, settings: settings),
+                          // The Targum again, after the Hebrew of a verse read
+                          // a third time among it.
+                          if (kind == StepKind.targum && i > 0 && flow.thirdHebrewInTargum(chunk, refs[i - 1]))
+                            LayerLabel(l.targumLabel),
                           layerFor(r),
                           if (settings.showRashi &&
                               kind != StepKind.rashi &&
                               texts.rashi != null &&
                               texts.rashi!.on(r).isNotEmpty) ...[
+                            const Gap(4),
                             LayerLabel(l.rashiLabel),
                             RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
                           ],
-                          const Gap(8),
+                          if (texts.mikra.breaks[r] case final brk? when hebrewStep)
+                            SectionGap(kind: brk, settings: settings)
+                          else if (i < refs.length - 1)
+                            const Gap(20),
                         ],
                       ],
                     ),
@@ -1364,10 +1375,12 @@ class _FullText extends StatelessWidget {
   final ValueChanged<int> onVerseTap;
   final Widget? footer;
 
+  /// Between one verse's block and the next, which with the blocks' insets
+  /// sets their text 20 apart.
+  static const _verseGap = 12.0;
+
   @override
   Widget build(BuildContext context) {
-    final l = context.l10n;
-    final theme = Theme.of(context);
     final styles = ScriptureStyles(context, settings);
     final englishRashi = settings.secondReading == SecondReading.rashiEnglish;
 
@@ -1379,6 +1392,7 @@ class _FullText extends StatelessWidget {
       // stays off after the mark goes, until focus moves.
       final highlighted = settings.focusMode && focusedVerse == i && !targeted && quietFocus != i;
       final brk = texts.mikra.breaks[r];
+      final rashi = settings.showRashi || settings.usesRashi ? texts.rashi?.on(r) ?? const <Comment>[] : const <Comment>[];
       return Center(
         key: verseKey(i),
         child: ConstrainedBox(
@@ -1386,26 +1400,15 @@ class _FullText extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (r.verse == 1 || i == 0)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 4),
-                  child: Semantics(
-                    header: true,
-                    headingLevel: 2,
-                    child: Text(
-                      l.chapterLabel(context.isHebrewUi ? HebrewText.gematria(r.chapter, punctuate: false) : '${r.chapter}'),
-                      style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
-                    ),
-                  ),
-                ),
-              TargetVerseMark(
-                active: targeted,
-                child: InkWell(
-                  onTap: settings.focusMode ? () => onVerseTap(i) : null,
-                  // ↑ and ↓ move from verse to verse: a Tab stop on each
-                  // would put up to 72 before the button at the end.
-                  canRequestFocus: false,
-                  borderRadius: BorderRadius.circular(8),
+              // At each chapter's start, and at the aliyah's, to say where it
+              // begins.
+              if (r.verse == 1 || i == 0) ChapterHeading(chapter: r.chapter, settings: settings),
+              VerseGroup(
+                verse: r,
+                highlighted: highlighted,
+                onTap: settings.focusMode ? () => onVerseTap(i) : null,
+                child: TargetVerseMark(
+                  active: targeted,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -1414,50 +1417,41 @@ class _FullText extends StatelessWidget {
                         kind: ScriptureKind.mikra,
                         settings: settings,
                         dimmed: dimmed,
-                        highlighted: highlighted,
                       ),
-                      if (texts.onkelos != null)
+                      // Close beneath its verse, ruled off and without the
+                      // verse's number again.
+                      if (texts.onkelos != null) ...[
+                        const Gap(2),
                         ScriptureVerse(
                           verse: texts.onkelos!.verse(r),
                           kind: ScriptureKind.targum,
                           settings: settings,
                           dimmed: dimmed,
                           secondary: true,
+                          showNumber: false,
+                          ruled: true,
                         ),
-                      if (settings.showTranslation && texts.english != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: TranslationVerse(
-                            text: texts.english!.verse(r).readText,
-                            number: r.verse,
-                            settings: settings,
-                            dimmed: dimmed,
-                          ),
+                      ],
+                      if (settings.showTranslation && texts.english != null) ...[
+                        const Gap(6),
+                        TranslationVerse(
+                          text: texts.english!.verse(r).readText,
+                          number: r.verse,
+                          settings: settings,
+                          dimmed: dimmed,
                         ),
-                      if ((settings.showRashi || settings.usesRashi) && texts.rashi != null && texts.rashi!.on(r).isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: RashiComments(comments: texts.rashi!.on(r), settings: settings, english: englishRashi),
-                        ),
+                      ],
+                      if (rashi.isNotEmpty) ...[
+                        const Gap(10),
+                        RashiEyebrow(english: englishRashi),
+                        const Gap(2),
+                        RashiComments(comments: rashi, settings: settings, english: englishRashi, dimmed: dimmed),
+                      ],
                     ],
                   ),
                 ),
               ),
-              if (brk != null)
-                ExcludeSemantics(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: brk == SectionBreak.open ? 16 : 8),
-                    // A rubric, like the marks inside a verse
-                    // (DESIGN_SYSTEM.md §3.1).
-                    child: Text(
-                      brk == SectionBreak.open ? 'פ' : 'ס',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.secondary),
-                    ),
-                  ),
-                )
-              else
-                const Gap(10),
+              if (brk != null) SectionGap(kind: brk, settings: settings) else const Gap(_verseGap),
             ],
           ),
         ),
@@ -1478,7 +1472,10 @@ class _FullText extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (var i = 0; i < flow.verses.length; i++) verse(i),
-              if (footer case final footer?) Padding(padding: const EdgeInsets.only(top: 16), child: Center(child: footer)),
+              // The aliyah's end, as a book ends a section.
+              const Gap(12),
+              const SeferDivider(),
+              if (footer case final footer?) ...[const Gap(20), Center(child: footer)],
             ],
           ),
         ),

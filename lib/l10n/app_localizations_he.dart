@@ -1219,6 +1219,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get showRashi => 'הצגת רש״י לצד הטקסט';
 
   @override
+  String get rashiScript => 'כתב רש״י';
+
+  @override
   String get uiFontLabel => 'גופן הממשק';
 
   @override

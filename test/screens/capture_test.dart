@@ -86,6 +86,8 @@ const _screens = {
   // Shevi'i just finished, with Shlishi still under way.
   'reader_finished': '/read/5787:1/6',
   'reader_full': '/read/5787:1/2?mode=full',
+  // Its end, with the button that marks the aliyah read.
+  'reader_full_end': '/read/5787:1/2?mode=full',
   // The keyboard shortcuts, in the app and on the web.
   'reader_keys': '/read/5787:1/2',
   'reader_keys_web': '/read/5787:1/2',
@@ -96,6 +98,15 @@ const _screens = {
   'reader_gaps_spaced': '/read/5787:17/5?mode=full',
   // Focus mode, opened on the reader's place in Shlishi.
   'reader_focus': '/read/5787:1/2?mode=full',
+  // The guided reader at a chapter's start (Genesis 3:1), and reading by
+  // section: the verses up to a petuchah, and its mark.
+  'reader_chapter': '/read/5787:1/2',
+  'reader_section': '/read/5787:1/2',
+  // Rashi beside the full text, in square letters and in Rashi script, and
+  // read in the Targum's place in the guided reader.
+  'reader_rashi': '/read/5787:1/2?mode=full',
+  'reader_rashi_script': '/read/5787:1/2?mode=full',
+  'reader_rashi_step': '/read/5787:1/2',
   // Shlishi of Vayishlach with cantillation hidden: the dots written over
   // וישקהו (Genesis 33:4) stay.
   'reader_dots': '/read/5787:8/2?mode=full',
@@ -213,6 +224,10 @@ const _screens = {
 /// the screen has loaded.
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  'reader_section': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
+  'reader_rashi': (s) => s.copyWith(showRashi: true),
+  'reader_rashi_script': (s) => s.copyWith(showRashi: true, rashiScript: true),
+  'reader_rashi_step': (s) => s.copyWith(secondReading: SecondReading.rashi),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   's_reminders_on': (s) => s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true),
   // Reading by section, so that 32:3 is read with the verses around it.
@@ -294,6 +309,13 @@ final _screenProgress = <String, ProgressState Function()>{
   // its seventh verse, where the guided reader resumes and focus mode opens.
   'reader_focus': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 6]),
+      }),
+  'reader_chapter': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 6]),
+      }),
+  // Both Hebrew readings of Genesis 2:20 done: Rashi is next.
+  'reader_rashi_step': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [1, 1, 0]),
       }),
   // Both Hebrew readings of 32:1–4 done: the Targum is next.
   'reader_third': () => ProgressState(weeks: {
@@ -493,6 +515,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await _scrollToEnd(tester);
   },
   'reader_dots': _scrollToEnd,
+  'reader_full_end': _scrollToEnd,
   'reader_third': _scrollToEnd,
   'thread_long_end': _scrollToEnd,
   'week_discuss': _scrollToEnd,
@@ -703,7 +726,10 @@ const _desktopScreens = {
   'reader_third',
   'reader_finished',
   'reader_full',
+  'reader_full_end',
   'reader_focus',
+  'reader_section',
+  'reader_rashi',
   'reader_keys',
   'reader_keys_web',
   'reader_gaps',
@@ -750,6 +776,7 @@ const _bigTextScreens = {
   'city',
   'progress',
   'reader',
+  'reader_focus',
   'kit_ornaments',
   'kit_rows',
   'kit_progress',

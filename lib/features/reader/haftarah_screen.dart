@@ -85,9 +85,11 @@ class HaftarahScreen extends ConsumerWidget {
               if (i == 0 || list[i].book != list[i - 1].book)
                 SectionHeader(names.book(list[i].book)),
               ScriptureVerse(verse: list[i].hebrew, kind: ScriptureKind.mikra, settings: settings),
-              if (settings.showTranslation)
+              if (settings.showTranslation) ...[
+                const Gap(6),
                 TranslationVerse(text: list[i].english, number: list[i].hebrew.ref.verse, settings: settings),
-              const Gap(10),
+              ],
+              const Gap(20),
             ],
             const Gap(16),
             if (ctx.isOpen)

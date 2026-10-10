@@ -69,7 +69,8 @@ void main() {
     final block = tester.getRect(find.ancestor(of: marked(), matching: find.byType(Center)).first);
     expect(textScroll(tester).pixels, greaterThan(0));
     expect(block.top, closeTo(viewport.top + (viewport.height - block.height) * 0.2, 1));
-    expect(tester.getRect(marked()).top, block.top);
+    // The mark is painted around the verse's text, within its block's inset.
+    expect(tester.getRect(marked()).top, block.top + VerseGroup.padding.top);
   });
 
   testWidgets('the mark covers the Targum and translation, and nothing moves when it goes', (tester) async {
@@ -93,6 +94,9 @@ void main() {
     ScriptureVerse mikra(int verse) => tester.widget<ScriptureVerse>(
           find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == VerseRef(3, verse) && !w.secondary).first,
         );
+    // Focus mode highlights the verse's whole block.
+    VerseGroup group(int verse) =>
+        tester.widget<VerseGroup>(find.byWidgetPredicate((w) => w is VerseGroup && w.verse == VerseRef(3, verse)));
     final verse = find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == const VerseRef(3, 8)).first;
     expect(mikra(8).dimmed, isFalse);
     expect(mikra(9).dimmed, isTrue, reason: 'focus mode reads around the verse opened at');
@@ -104,7 +108,7 @@ void main() {
     await tester.pump();
     expect(marked(), findsNothing);
     expect(tester.getRect(verse), before);
-    expect(mikra(8).highlighted, isFalse);
+    expect(group(8).highlighted, isFalse);
     expect(mikra(9).dimmed, isTrue, reason: 'still focused');
 
     // Focus that moves shows its highlight as ever.
@@ -113,7 +117,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(nine);
     await tester.pump();
-    expect(mikra(9).highlighted, isTrue);
+    expect(group(9).highlighted, isTrue);
     expect(mikra(8).dimmed, isTrue);
   });
 
@@ -124,18 +128,21 @@ void main() {
     ScriptureVerse mikra(int verse) => tester.widget<ScriptureVerse>(
           find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == VerseRef(3, verse) && !w.secondary).first,
         );
+    // Focus mode highlights the verse's whole block.
+    VerseGroup group(int verse) =>
+        tester.widget<VerseGroup>(find.byWidgetPredicate((w) => w is VerseGroup && w.verse == VerseRef(3, verse)));
     expect(marked(), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pumpAndSettle();
     expect(marked(), findsNothing);
-    expect(mikra(9).highlighted, isTrue);
+    expect(group(9).highlighted, isTrue);
     expect(mikra(8).dimmed, isTrue);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pumpAndSettle();
     expect(marked(), findsNothing);
-    expect(mikra(8).highlighted, isTrue, reason: 'focus has moved, so its own highlight shows');
+    expect(group(8).highlighted, isTrue, reason: 'focus has moved, so its own highlight shows');
     expect(mikra(9).dimmed, isTrue);
   });
 
@@ -201,8 +208,10 @@ void main() {
     final verses = tester.widgetList<ScriptureVerse>(find.byType(ScriptureVerse)).toList();
     for (final v in verses) {
       expect(v.dimmed, v.verse.ref != const VerseRef(3, 8), reason: '${v.verse.ref}');
-      // The mark stands in for focus mode's own highlight.
-      expect(v.highlighted, isFalse, reason: '${v.verse.ref}');
+    }
+    // The mark stands in for focus mode's own highlight.
+    for (final g in tester.widgetList<VerseGroup>(find.byType(VerseGroup))) {
+      expect(g.highlighted, isFalse, reason: '${g.verse}');
     }
   });
 

@@ -130,6 +130,22 @@ void main() {
     expect(tester.getSize(find.text(text)).width, lessThan(before));
   });
 
+  // On the web it is a 20 KB download, asked for only by those who read it.
+  // (After the test above, which needs it not yet registered.)
+  testWidgets('the app loads the Rashi script only once it is turned on', (tester) async {
+    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true, showRashi: true));
+    expect(OptionalFonts.isRequested('NotoRashiHebrew'), isFalse);
+
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(rashiScript: true));
+    await tester.pump();
+    expect(OptionalFonts.isRequested('NotoRashiHebrew'), isTrue);
+  });
+
+  testWidgets('the app loads the Rashi script at start when it is on', (tester) async {
+    await pumpApp(tester, settings: const AppSettings(onboardingComplete: true, rashiScript: true));
+    expect(OptionalFonts.isRequested('NotoRashiHebrew'), isTrue);
+  });
+
   // Over the web, a family of two files costs one round trip, not two.
   testWidgets('asks for every file of a family at once', (tester) async {
     final assets = _GatedAssets();

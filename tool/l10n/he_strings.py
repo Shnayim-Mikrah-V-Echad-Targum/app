@@ -342,6 +342,7 @@ HE = {
   "lineWide": "רחב",
   "showTranslation": "תרגום לאנגלית (עזר ללימוד)",
   "showRashi": "הצגת רש״י לצד הטקסט",
+  "rashiScript": "כתב רש״י",
   "uiFontLabel": "גופן הממשק",
   "uiFontStandard": "רגיל",
   "uiFontAtkinson": "Atkinson Hyperlegible",
