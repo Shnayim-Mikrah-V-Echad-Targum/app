@@ -48,6 +48,29 @@ void main() {
     expect(HebrewText.consonantsOnly('עַל־פְּנֵ֣י'), 'על־פני');
   });
 
+  test('isMark names exactly the marks consonantsOnly removes', () {
+    for (final c in [for (var c = 0x0590; c <= 0x05FF; c++) c, 0x034F]) {
+      // The paseq becomes a space rather than vanishing.
+      if (c == 0x05C0) {
+        expect(HebrewText.isMark(c), isFalse);
+        continue;
+      }
+      final removed = HebrewText.consonantsOnly('א${String.fromCharCode(c)}ב') == 'אב';
+      expect(HebrewText.isMark(c), removed, reason: 'U+${c.toRadixString(16)}');
+    }
+    for (final kept in ['־', '׃', 'א', 'ת', ' ']) {
+      expect(HebrewText.isMark(kept.codeUnitAt(0)), isFalse, reason: kept);
+    }
+  });
+
+  test('foldFinals writes final letters in their ordinary forms', () {
+    expect(HebrewText.foldFinals('ךםןףץ'), 'כמנפצ');
+    expect(HebrewText.foldFinals('הָאָרֶץ וַיֵּלֶךְ חָרָן'), 'הָאָרֶצ וַיֵּלֶכְ חָרָנ');
+    expect(HebrewText.foldFinals('Abraham'), 'Abraham');
+    expect(HebrewText.foldFinal('ם'.codeUnitAt(0)), 'מ'.codeUnitAt(0));
+    expect(HebrewText.foldFinal('ב'.codeUnitAt(0)), 'ב'.codeUnitAt(0));
+  });
+
   test('gematria', () {
     expect(HebrewText.gematria(1), 'א׳');
     expect(HebrewText.gematria(15), 'ט״ו');
@@ -55,6 +78,44 @@ void main() {
     expect(HebrewText.gematria(28), 'כ״ח');
     expect(HebrewText.gematria(787), 'תשפ״ז');
     expect(HebrewText.gematria(31, punctuate: false), 'לא');
+  });
+
+  group('parseGematria', () {
+    test('reads numbers with or without a geresh or gershayim', () {
+      expect(HebrewText.parseGematria('כ״ח'), 28);
+      expect(HebrewText.parseGematria('כח'), 28);
+      expect(HebrewText.parseGematria('י״ב'), 12);
+      expect(HebrewText.parseGematria('א׳'), 1);
+      expect(HebrewText.parseGematria('ק׳'), 100);
+      expect(HebrewText.parseGematria('תשפ״ז'), 787);
+    });
+
+    test('takes the quotation marks typed for them', () {
+      expect(HebrewText.parseGematria('כ"ח'), 28);
+      expect(HebrewText.parseGematria("ג'"), 3);
+      expect(HebrewText.parseGematria('ט”ו'), 15);
+    });
+
+    test('reads 15 and 16 as they are written', () {
+      expect(HebrewText.parseGematria('ט״ו'), 15);
+      expect(HebrewText.parseGematria('טז'), 16);
+      expect(HebrewText.parseGematria('קט״ו'), 115);
+      expect(HebrewText.parseGematria('יה'), isNull);
+      expect(HebrewText.parseGematria('יו'), isNull);
+    });
+
+    test('takes no word for a number', () {
+      for (final word in ['בא', 'לך', 'ראה', 'עקב', 'חכ', 'אב', 'כך', '', '׳', 'abc', '12', 'כ ח']) {
+        expect(HebrewText.parseGematria(word), isNull, reason: word);
+      }
+    });
+
+    test('reads back every number gematria writes', () {
+      for (var n = 1; n < 1000; n++) {
+        expect(HebrewText.parseGematria(HebrewText.gematria(n)), n, reason: '$n');
+        expect(HebrewText.parseGematria(HebrewText.gematria(n, punctuate: false)), n, reason: '$n');
+      }
+    });
   });
 
   group('HebrewSpeech', () {

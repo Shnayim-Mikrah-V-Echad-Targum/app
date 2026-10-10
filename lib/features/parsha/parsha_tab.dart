@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../ui/l10n.dart';
+import '../search/go_to_verse_sheet.dart';
 import 'week_context.dart';
 import 'week_overview_screen.dart';
 
@@ -16,6 +17,12 @@ class ParshaTab extends ConsumerWidget {
     return WeekOverview(
       ctx: ctx,
       actions: [
+        // A verse by its reference, or words to search for.
+        IconButton(
+          tooltip: context.l10n.searchTitle,
+          icon: const Icon(Icons.search),
+          onPressed: () => showGoToVerse(context),
+        ),
         IconButton(
           tooltip: context.l10n.browseAll,
           icon: const Icon(Icons.list_alt),

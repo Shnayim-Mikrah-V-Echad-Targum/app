@@ -1,10 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Edge to edge: transparent system bars over the app's own surface, with
+         dark icons in the light theme. A theme can give the navigation bar dark
+         icons only from Android 8.1, so it stays black until EdgeToEdge.V27
+         (values-v27). EdgeToEdge.V29 (values-v29) drops Android 10's scrim
+         behind the bars and its forced dark mode. -->
+    <style name="EdgeToEdge" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+    <style name="EdgeToEdge.V27" parent="EdgeToEdge"/>
+    <style name="EdgeToEdge.V29" parent="EdgeToEdge.V27"/>
     <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
-    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+    <style name="LaunchTheme" parent="EdgeToEdge.V29">
         <!-- Show a splash screen on the activity. Automatically removed when
              the Flutter engine draws its first frame -->
         <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
     <!-- Theme applied to the Android Window as soon as the process has started.
          This theme determines the color of the Android Window while your
@@ -12,7 +27,7 @@
          running.
 
          This Theme is only used starting with V2 of Flutter's Android embedding. -->
-    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
+    <style name="NormalTheme" parent="EdgeToEdge.V29">
+        <item name="android:windowBackground">@color/app_bg</item>
     </style>
 </resources>

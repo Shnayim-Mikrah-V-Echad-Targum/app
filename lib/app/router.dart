@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/models/verse_ref.dart';
 import '../features/about/about_screen.dart';
 import '../features/about/guide_screen.dart';
 import '../features/about/legal_screen.dart';
@@ -19,7 +20,9 @@ import '../features/parsha/week_overview_screen.dart';
 import '../features/progress/progress_screen.dart';
 import '../features/reader/haftarah_screen.dart';
 import '../features/reader/reader_screen.dart';
+import '../features/search/search_screen.dart';
 import '../features/settings/screens/accessibility_settings_screen.dart';
+import '../features/settings/screens/city_picker_screen.dart';
 import '../features/settings/screens/data_settings_screen.dart';
 import '../features/settings/screens/display_settings_screen.dart';
 import '../features/settings/screens/reading_settings_screen.dart';
@@ -99,7 +102,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             _route('/settings', (_) => const SettingsScreen(), routes: [
-              _route('reading', (_) => const ReadingSettingsScreen()),
+              _route('reading', (_) => const ReadingSettingsScreen(), routes: [
+                _route('city', (_) => const CityPickerScreen()),
+              ]),
               _route('display', (_) => const DisplaySettingsScreen()),
               _route('accessibility', (_) => const AccessibilitySettingsScreen()),
               _route('reminders', (_) => const ReminderSettingsScreen()),
@@ -123,12 +128,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       // A week and its haftarah on their own, for links and notifications.
       _week('/week/:id'),
       _haftarah('/haftarah/:id'),
-      // The reader always fills the screen.
+      // Search fills the screen, as the reader does; ?q= searches at once.
+      _route('/search', (s) => SearchScreen(initialQuery: s.uri.queryParameters['q'] ?? '')),
+      // The reader always fills the screen. ?verse=28:12 opens the full
+      // text at that verse.
       _route('/read/:id/:aliyah', (s) => ReaderScreen(
             weekId: s.pathParameters['id']!,
             aliyah: int.tryParse(s.pathParameters['aliyah']!) ?? 0,
             fullText: s.uri.queryParameters['mode'] == 'full',
             fromWeek: s.uri.queryParameters['from'] == 'week',
+            targetVerse: VerseRef.tryParse(s.uri.queryParameters['verse']),
           )),
     ],
   );
@@ -138,7 +147,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 const _tabs = ['/today', '/parsha', '/progress', '/community', '/settings'];
 
 /// Opens [location] from outside the app's own navigation: a tapped
-/// notification, or one that launched the app. A tab, or a page within one,
+/// notification or a shortcut on the app's icon, or one that launched the
+/// app. A tab, or a page within one,
 /// opens in its place; any other page opens over Today, so it has a back
 /// button that leads to the navigation bar rather than a dead end. A week or
 /// a haftarah on its own, as notifications scheduled by earlier versions

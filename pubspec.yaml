@@ -20,6 +20,7 @@ dependencies:
   go_router: ^18.0.2
   intl: any
   package_info_plus: ^10.2.2
+  quick_actions: ^1.1.1
   share_plus: ^13.3.1
   shared_preferences: ^2.5.6
   supabase_flutter: ^2.18.0
@@ -33,10 +34,14 @@ dev_dependencies:
   fake_async: ^1.3.3
   flutter_launcher_icons: ^0.14.4
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.8
   http: ^1.6.0
+  msix: ^3.18.0
+  yaml: ^3.1.3
 
-# Platform icons. Regenerate all of them with:
+# Platform icons and launch screens. Regenerate all of them with:
 #   python3 tool/branding/make_icon.py && dart run flutter_launcher_icons \
+#     && dart run flutter_native_splash:create \
 #     && python3 tool/branding/make_icon.py --post
 flutter_launcher_icons:
   image_path: assets/branding/icon.png
@@ -58,6 +63,52 @@ flutter_launcher_icons:
     # make_icon.py --post writes the multi-size windows/runner/resources/app_icon.ico.
     generate: false
 
+# Android and iOS launch screens: the mark's tile on the app's own background
+# (DESIGN_SYSTEM.md §3.6), so a cold start never flashes white and the first
+# frame takes over without a jump. The web build has its own (web/index.html).
+flutter_native_splash:
+  color: "#FAF7F0"
+  color_dark: "#14120F"
+  image: assets/branding/splash_logo.png
+  android_12:
+    color: "#FAF7F0"
+    color_dark: "#14120F"
+    # The tile stays inside the 192 dp circle Android 12 shows; no icon
+    # background, so the tile sits straight on the screen's colour.
+    image: assets/branding/splash_logo.png
+  web: false
+  # The status bar stays visible, iOS's default, so Info.plist needs nothing:
+  # an empty list keeps the tool from rewriting (and reformatting) it.
+  info_plist_files: []
+
+# The Windows MSIX installer: build with `flutter build windows --release`,
+# then package with tool/windows/make_msix.sh (docs/RELEASE.md).
+msix_config:
+  # The app's name in each language, from windows/msix/Strings (Shnayim Mikra,
+  # שניים מקרא), which tool/windows/make_msix.sh indexes.
+  display_name: ms-resource:AppName
+  publisher_display_name: Shnayim Mikra
+  # The app id on every platform. The Microsoft Store assigns its own, passed
+  # with --identity-name when packaging for it.
+  identity_name: org.shnayimmikra.app
+  output_name: ShnayimMikra
+  # The rounded tile of app_icon.ico; make_icon.py --post writes it.
+  logo_path: windows/msix/logo.png
+  languages: en-us, he-il
+  # The community and cloud backup.
+  capabilities: internetClient
+  # Lets a reminder's notification come back to the running app. The class
+  # id is the guid in WindowsInitializationSettings
+  # (lib/services/notifications.dart).
+  toast_activator:
+    clsid: 7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57
+    display_name: ms-resource:AppName
+  # Package the build that was made with the release dart-defines, instead
+  # of building again without them.
+  build_windows: false
+  # Never ask to trust the test certificate (and never block CI asking).
+  install_certificate: false
+
 flutter:
   uses-material-design: true
   generate: true
@@ -74,23 +125,20 @@ flutter:
     - assets/text/rashi_en/
     - assets/fonts/licenses/
     # Optional fonts: plain assets that OptionalFonts registers on first use,
-    # so the web build does not download them at start-up.
+    # so the web build does not download them at start-up. optional/ holds
+    # the scripture and interface fonts a reader may choose.
     - assets/fonts/rashi/
+    - assets/fonts/optional/
 
   fonts:
-    # Scripture fonts. All support nikud and the full set of ta'amim.
+    # The default scripture font, with nikud and the full set of ta'amim.
+    # The other scripture fonts (Taamey Frank, Ezra SIL) load on demand from
+    # assets/fonts/optional/ (lib/services/optional_fonts.dart).
     - family: NotoSerifHebrew
       fonts:
         - asset: assets/fonts/NotoSerifHebrew-Regular.ttf
         - asset: assets/fonts/NotoSerifHebrew-Bold.ttf
           weight: 700
-    - family: TaameyFrank
-      fonts:
-        # Medium only: the Bold file renders cantillation marks invisibly.
-        - asset: assets/fonts/TaameyFrankCLM-Medium.ttf
-    - family: EzraSIL
-      fonts:
-        - asset: assets/fonts/EzraSIL-Regular.ttf
     # Display serifs: static instances built by tool/fonts/build_fonts.sh.
     # There is no 400. Bold is needed because Text switches to FontWeight.bold
     # when the platform's bold-text setting is on.
@@ -113,7 +161,8 @@ flutter:
           weight: 600
         - asset: assets/fonts/FrankRuhlLibre-Bold.ttf
           weight: 700
-    # Interface fonts.
+    # Interface fonts. Atkinson Hyperlegible Next, Lexend and OpenDyslexic
+    # load on demand from assets/fonts/optional/.
     - family: NotoSans
       fonts:
         - asset: assets/fonts/NotoSans-Regular.ttf
@@ -127,19 +176,4 @@ flutter:
         - asset: assets/fonts/NotoSansHebrew-Medium.ttf
           weight: 500
         - asset: assets/fonts/NotoSansHebrew-Bold.ttf
-          weight: 700
-    - family: AtkinsonHyperlegibleNext
-      fonts:
-        - asset: assets/fonts/AtkinsonHyperlegibleNext-Regular.ttf
-        - asset: assets/fonts/AtkinsonHyperlegibleNext-Bold.ttf
-          weight: 700
-    - family: Lexend
-      fonts:
-        - asset: assets/fonts/Lexend-Regular.ttf
-        - asset: assets/fonts/Lexend-Bold.ttf
-          weight: 700
-    - family: OpenDyslexic
-      fonts:
-        - asset: assets/fonts/OpenDyslexic-Regular.otf
-        - asset: assets/fonts/OpenDyslexic-Bold.otf
           weight: 700

@@ -16,8 +16,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
@@ -26,7 +29,10 @@ import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
+import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
+import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -92,6 +98,9 @@ const _screens = {
   // Shlishi of Vayishlach with cantillation hidden: the dots written over
   // וישקהו (Genesis 33:4) stay.
   'reader_dots': '/read/5787:8/2?mode=full',
+  // The opt-in scripture fonts, which load on demand.
+  'reader_taamey': '/read/5787:1/2?mode=full',
+  'reader_ezra': '/read/5787:1/2?mode=full',
   'haftarah': '/haftarah/5787:1',
   'progress': '/progress',
   'community': '/community',
@@ -120,6 +129,13 @@ const _screens = {
   'settings': '/settings',
   's_reading': '/settings/reading',
   's_reading_changed': '/settings/reading',
+  // The city for Shabbat times, and its list: as it opens, searched, and
+  // searched for a place that isn't there.
+  's_reading_city': '/settings/reading',
+  'city': '/settings/reading/city',
+  'city_search': '/settings/reading/city',
+  'city_many': '/settings/reading/city',
+  'city_none': '/settings/reading/city',
   's_display': '/settings/display',
   's_fonts': '/settings/display',
   's_a11y': '/settings/accessibility',
@@ -130,11 +146,34 @@ const _screens = {
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
   'about': '/settings/about',
+  'sources': '/sources',
   'guide': '/guide',
+  // The privacy policy, open to every visitor.
   'legal': '/legal/privacy',
   // Links that lead nowhere: a mistyped address, and a forum that is gone.
   'not_found': '/nope',
   'forum_missing': '/community/forum/xyz',
+  // Search: the index being built the first time, then the page as it
+  // opens, a phrase, a word in many verses, a word found only in the
+  // Targum, English, and a spelling the Torah doesn't use.
+  'search_preparing': '/search',
+  'search': '/search',
+  'search_results': '/search',
+  'search_many': '/search',
+  'search_targum': '/search',
+  'search_english': '/search',
+  'search_none': '/search',
+  // Go to verse, from the Parsha tab's search button: as it opens, a verse
+  // found, one past the end of its chapter, and words to search for. Then
+  // the verse in the reader, and in focus mode.
+  'goto': '/parsha',
+  'goto_verse': '/parsha',
+  'goto_missing': '/parsha',
+  'goto_words': '/parsha',
+  'goto_phrase': '/parsha',
+  'goto_help': '/parsha',
+  'reader_verse': '/read/5787:1/2?verse=3:8',
+  'reader_verse_focus': '/read/5787:1/2?verse=3:8',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
   'focus_day': '/today',
@@ -179,6 +218,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_third': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   // Reading by aliyah, so that one step finishes Shevi'i.
   'reader_finished': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, repeatLastVerse: false),
+  'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
   // Israel is a parsha ahead, and both pairs of portions are read together.
@@ -188,6 +228,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
       s.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true, joinDate: LocalDate(2029, 4, 22)),
   // The widest word spacing, justified: the spaces around a section mark.
   'reader_gaps_spaced': (s) => s.copyWith(wordSpacing: 16, justify: true),
+  'reader_taamey': (s) => s.copyWith(scriptureFont: ScriptureFont.taameyFrank),
+  'reader_ezra': (s) => s.copyWith(scriptureFont: ScriptureFont.ezra),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
   'today_haftarah_left': (s) => s.copyWith(haftarahRequired: true),
   // The Tuesday after Shavuot 5789 (Sunday and Monday, 20 and 21 May) on
@@ -198,7 +240,36 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: false, joinDate: LocalDate(2029, 5, 1)),
   // Joined on the Wednesday of Bereshit: the days before have no reading.
   'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
+  's_reading_city': (s) => s.copyWith(city: _jerusalem),
+  'city': (s) => s.copyWith(city: _jerusalem),
+  'city_search': (s) => s.copyWith(city: _jerusalem),
+  'city_many': (s) => s.copyWith(city: _jerusalem),
 };
+
+const _jerusalem = City(
+  id: 281184,
+  nameEn: 'Jerusalem',
+  nameHe: 'ירושלים',
+  countryCode: 'IL',
+  latitude: 31.769,
+  longitude: 35.2163,
+  timeZone: 'Asia/Jerusalem',
+  candleMinutes: 40,
+);
+
+/// Providers replaced for a screen: the device's time zone, which suggests
+/// cities.
+final _screenOverrides = <String, List<Override>>{
+  for (final screen in ['city', 'city_search', 'city_many', 'city_none'])
+    screen: [deviceTimeZoneProvider.overrideWith((ref) async => 'Asia/Jerusalem')],
+  'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
+};
+
+/// A verse index that stays two fifths built.
+class _PreparingIndex extends VerseIndexLoader {
+  @override
+  VerseIndexState build() => const VerseIndexState(progress: 0.4);
+}
 
 /// Screens shown on another day, with another history: the Torah map in
 /// every tile state, and the days and histories of [_screenSettings].
@@ -362,6 +433,31 @@ final _openShortcuts = _tapInTurn([
   () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'keys'),
 ]);
 
+/// Waits for the verse index, built from every book of the Torah, and
+/// searches for [query].
+Future<void> _search(WidgetTester tester, String query) async {
+  for (var i = 0; i < 100 && find.byType(LinearProgressIndicator).evaluate().isNotEmpty; i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  if (query.isNotEmpty) await tester.enterText(find.byType(TextField), query);
+}
+
+/// Opens Go to verse from the Parsha tab, and types [query].
+Future<void> _goTo(WidgetTester tester, String query) async {
+  await tester.tap(find.byIcon(Icons.search));
+  await tester.pumpAndSettle();
+  if (query.isNotEmpty) await tester.enterText(find.byType(TextField), query);
+}
+
+/// Waits for the list of cities, which loads from a large asset.
+Future<void> _untilLoaded(WidgetTester tester) async {
+  for (var i = 0; i < 100 && find.byType(PaperGroup).evaluate().isEmpty; i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+  }
+}
+
 Future<void> _showWeekStrip(WidgetTester tester) =>
     Scrollable.ensureVisible(tester.element(find.byType(WeekStrip)), alignment: 0.5);
 
@@ -484,6 +580,37 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_gaps_spaced': _scrollToEnd,
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.byIcon(Icons.delete_forever_outlined)),
+  's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
+  'city': _untilLoaded,
+  'city_search': (tester) async {
+    await _untilLoaded(tester);
+    await tester.enterText(find.byType(TextField), 'york');
+  },
+  'city_none': (tester) async {
+    await _untilLoaded(tester);
+    await tester.enterText(find.byType(TextField), 'Atlantis');
+  },
+  // More matches than are listed: the note at the end of the list.
+  'city_many': (tester) async {
+    await _untilLoaded(tester);
+    await tester.enterText(find.byType(TextField), tester.element(find.byType(TextField)).isHebrewUi ? 'בר' : 'an');
+    await tester.pump();
+    await _scrollToEnd(tester);
+  },
+  'search': (tester) => _search(tester, ''),
+  'search_results': (tester) => _search(tester, 'ויצא יעקב'),
+  'search_many': (tester) => _search(tester, 'אברהם'),
+  'search_targum': (tester) => _search(tester, 'בקדמין'),
+  'search_english': (tester) => _search(tester, 'ladder'),
+  'search_none': (tester) => _search(tester, 'אהרון'),
+  'goto': (tester) => _goTo(tester, ''),
+  'goto_verse': (tester) => _goTo(tester, 'בראשית כח יב'),
+  'goto_missing': (tester) => _goTo(tester, 'Gen 28:30'),
+  'goto_words': (tester) => _goTo(tester, 'ladder'),
+  // A name and a word that is also a numeral: the verse, and the search.
+  'goto_phrase': (tester) => _goTo(tester, 'שלח לו'),
+  // Nothing to go to or search for: what the sheet takes.
+  'goto_help': (tester) => _goTo(tester, '28'),
   // The week strip, in the middle of the page.
   'today_yomtov_oneday': _showWeekStrip,
   'today_yomtov_twoday': _showWeekStrip,
@@ -592,14 +719,25 @@ const _desktopScreens = {
   'kit_progress',
   'kit_week',
   'progress_map',
+  'city_search',
+  'search_many',
+  'goto_verse',
+  'reader_verse',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
-const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
+const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week'};
 const _bigTextScreens = {
   'today',
+  'goto_verse',
+  'goto_missing',
+  'reader_verse',
+  'search_many',
+  'search_none',
+  's_reading_city',
+  'city',
   'progress',
   'reader',
   'kit_ornaments',
@@ -675,6 +813,7 @@ void main() {
                 ? await _accountWithNewerBackup()
                 : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
             notifications: _remindersSupported.contains(entry.key) ? PhoneNotifications() : null,
+            overrides: _screenOverrides[entry.key] ?? const [],
           );
           if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
           await _settle(tester);

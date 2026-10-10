@@ -68,6 +68,7 @@ void main() {
     expect((s.readingSchedule, s.oneDayYomTov), (ReadingSchedule.israel, true));
 
     await tapText(tester, 'Outside Israel');
+    await c.read(settingsProvider.notifier).flush();
     final prefs = await SharedPreferences.getInstance();
     final saved = AppSettings.fromJson(
       jsonDecode(prefs.getString(SettingsController.storageKey)!) as Map<String, dynamic>,

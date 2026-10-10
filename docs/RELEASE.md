@@ -10,15 +10,16 @@
   - The MAM Hebrew text is CC BY-SA 4.0. Its attribution is shown under *About → Texts & sources*, and changes to that text must stay under the same license.
   - Taamey Frank is GPL-2.0 with a font exception. It is shipped as an unmodified separate file. If you'd rather ship only OFL fonts, remove it; [assets/fonts/licenses/README.md](../assets/fonts/licenses/README.md) lists every place to change.
 - [ ] **Identity:**
-  - The app id and bundle id are `org.shnayimmikra.app`. Change them now if you won't control that domain; they can't be changed after publishing.
+  - The app id, bundle id and MSIX identity name are `org.shnayimmikra.app`. Change them now if you won't control that domain; they can't be changed after publishing.
   - The display name is "Shnayim Mikra".
-- [ ] **Support address.** Set `SUPPORT_EMAIL`. Both stores and the accessibility statement need a working contact.
-- [ ] **Public pages.** Both stores need a public URL for each of these:
-  - the privacy policy
-  - a support page
-  - for Google Play, a page where users can **request account deletion**
+- [ ] **Support address.** Set `SUPPORT_EMAIL`, as a repository variable for CI. Both stores and the accessibility statement need a working contact, and without one the account-deletion page offers no way to ask by email.
+- [ ] **Public pages.** Both stores need a public URL for each of these, and the web build has them as static pages that work without JavaScript, in English and in Hebrew (add `.he` before `.html`):
+  - the privacy policy: `<web address>/legal/privacy.html`
+  - a support page: `<web address>/legal/support.html`
+  - for Google Play, a page where users can **request account deletion**: `<web address>/legal/delete-account.html`
+  - also the terms of use, the community guidelines and the accessibility statement: `legal/terms.html`, `legal/guidelines.html` and `legal/accessibility.html`
 
-  The texts are in `lib/features/about/legal_screen.dart`, in English and Hebrew. Publish them on the web build or a simple site. The web build shows them to every visitor, before onboarding too, at `/#/legal/privacy`, `/#/legal/terms`, `/#/legal/guidelines` and `/#/legal/accessibility`.
+  CI writes them after the web build with `node tool/legal/build_html.mjs build/web`. The texts the app shows come from `lib/features/about/legal_screen.dart`; the support and account-deletion pages, which only the web has, are in `assets/legal/legal.json`. The web app itself also shows the policies to every visitor, before onboarding too, at `/#/legal/privacy`, `/#/legal/terms`, `/#/legal/guidelines` and `/#/legal/accessibility`.
 - [ ] **Community backend.** Set it up per [BACKEND.md](BACKEND.md):
   - custom SMTP
   - the OTP email template
@@ -54,6 +55,12 @@
   - On Android, the status-bar icon is the three rules of the mark (two long over a shorter one), not a white square or a menu icon, and the Erev Shabbat reminder expands to show its whole message.
 - [ ] Listen is audible with the Silent switch on; music ducks and comes back up, and a paused podcast resumes, both when speech finishes and when it is stopped part-way or the reader is left (iOS).
 - [ ] Offline: reading, logging and streaks all work in airplane mode.
+- [ ] Launch and system bars, from a cold start, in light and dark mode: iOS, Android 11, and Android 14 or later.
+  - The launch screen is the mark's tile on cream (light) or lamplight brown (dark), with no white flash before or after it.
+  - The status and navigation bars are the colour of the screen beneath them, and their icons are legible: dark on Welcome's cream. Check three-button navigation on Android 9 and 10, gesture navigation on Android 14 or later, and an app theme that differs from the system's.
+- [ ] Predictive back, Android 15 or later (or Android 14 with *Developer options → Predictive back animations* on): a back gesture on Today previews the home screen.
+- [ ] Shortcuts on the app's icon, on Android and iOS, in English and Hebrew: long-pressing the icon shows Continue reading, Log reading from a book and This week's parsha, in the app's language and with the app's icon (on iOS, the mark). Each opens its page with back leading to Today: from a cold start, with the app in the background, and with its process stopped in the background (on Android, *Don't keep activities* in the developer options). Afterwards, the plain icon opens the app where it was left, not the shortcut's page again.
+- [ ] Android system backup: after `adb shell bmgr backupnow org.shnayimmikra.app`, reinstalling the app restores its settings and progress.
 - [ ] Community against the production backend:
   - sign in with a code
   - post, edit and delete
@@ -90,7 +97,7 @@
 
 **Build**
 
-- [ ] Run `flutter build appbundle --release` with the dart-defines from the README, or take the `android` artifact from CI.
+- [ ] Run `flutter build appbundle --release` with the dart-defines from the README, or take the `android` artifact from CI. A build without the keystore ends with "RELEASE BUILD SIGNED WITH DEBUG KEY", and CI names its artifact `android-debug-signed`: Google Play refuses it.
 
 **Play Console**
 
@@ -98,7 +105,7 @@
   - Collected only when the user uses the community: email address (account management), user-generated content (posts) and user IDs.
   - Collected only if the user opts in: app activity (reading progress, for backup).
   - Encrypted in transit.
-  - Users can delete their data in the app, and through the account-deletion URL.
+  - Users can delete their data in the app, and through the account-deletion URL (`legal/delete-account.html`).
   - No data is shared with third parties.
   - No ads and no analytics.
 - [ ] **Content rating questionnaire:** users can interact and share content (forums), with moderation, reporting and blocking.
@@ -145,17 +152,57 @@
 
 ## Windows
 
-- [ ] Run `flutter build windows --release`, or take the `windows` artifact from CI.
-- [ ] Package it as MSIX for the Microsoft Store or for sideloading (for example with the `msix` package), or wrap it in an installer.
-- [ ] Sign it with a code-signing certificate; unsigned apps trigger SmartScreen warnings. Store submissions are signed by Microsoft.
+The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yaml`, and its icons are in `windows/msix`, written by `tool/branding/make_icon.py --post`.
+
+**Version**
+
+- [ ] The package's version is `version:` from `pubspec.yaml` as `major.minor.patch.0`: the `+N` build number is ignored. Windows only installs an update over a lower version, so every Windows release needs a new `major.minor.patch`.
+
+**Signing**
+
+- [ ] For sideloading, get a code-signing certificate (`.pfx`). Its subject becomes the package's publisher, and must stay the same from release to release, or Windows treats the update as a different app.
+- [ ] For CI builds, add these repository secrets:
+  - `WINDOWS_CERTIFICATE_BASE64` (the output of `base64 -w0 certificate.pfx`)
+  - `WINDOWS_CERTIFICATE_PASSWORD`
+- [ ] Without the certificate, the package is signed with the msix tool's public test certificate, and CI names its artifact `windows-msix-test-signed`. Windows installs it only where that certificate is trusted. On a test machine, never a user's: open the `.msix` file's *Properties → Digital Signatures → Details → View Certificate → Install Certificate*, and place it in *Local Machine → Trusted People*.
+- [ ] For the Microsoft Store, reserve the app's name in Partner Center. Then package it with `--store` and the values under *Product identity*. The Store signs the package itself.
+  ```sh
+  bash tool/windows/make_msix.sh --store --identity-name … --publisher "CN=…" --publisher-display-name …
+  ```
+
+**Build**
+
+- [ ] Run `flutter build windows --release` with the dart-defines from the README. Then, in Git Bash, run `bash tool/windows/make_msix.sh`, adding `--certificate-path certificate.pfx --certificate-password …` to sign it. The installer is `build/windows/msix/ShnayimMikra.msix`.
+- [ ] Or take the `windows-msix` artifact from CI. The `windows` artifact is the same build unpackaged.
+
+**Checks**
+
+- [ ] Install the MSIX on Windows 10 and Windows 11:
+  - Start, the taskbar and *Settings → Apps* show the app's icon. At small sizes, such as the taskbar at 100% scaling, the icon is the three rules alone.
+  - They name the app in Windows's display language: Shnayim Mikra, or שניים מקרא with Hebrew first in *Settings → Time & language → Language*, as does the header of a reminder's notification. (`tool/windows/make_msix.sh` stops if the package's `resources.pri` lacks the Hebrew name.)
+  - The window opens centred on the screen it was launched from, and no larger than 90% of it. It can't be made smaller than 380 × 560 at 100% scaling, and scales that minimum at 150% and 200%.
+  - The title bar follows the app's theme: choosing *Dark* in the app darkens it, even when Windows is light, and the reverse. With the app following the system, switching Windows between light and dark switches it too. Check this on a Windows 10 older than version 2004 as well (1809, as in Enterprise LTSC 2019, up to 1909), which numbers the setting differently.
+  - A reminder's notification opens the app, also when it is already running.
 - [ ] Check with Narrator and NVDA, using the keyboard only, at 200% display scaling.
 - [ ] Launching the app while it is already running brings the open window forward, restoring it if minimized, and opens no second window. Closing it and launching it again at once opens it.
 - [ ] A reminder toast carries the three-rule mark as its icon.
 
 ## Web
 
-- [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /<path>/`. The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
-- [ ] Serve it over HTTPS. Cache `canvaskit/` and fonts for a long time. Don't cache `index.html`, `flutter_bootstrap.js` or `flutter_service_worker.js`.
+- [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /<path>/`, then `node tool/legal/build_html.mjs build/web` for the static pages and, last, `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` for the offline service worker (`sw.js`). The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
+- [ ] Set the repository variable `WEB_URL` to the site's public address, such as `https://example.org/app/`. CI then makes the link previews' URLs absolute, as most sites that show previews require.
+- [ ] Serve it over HTTPS. Let browsers keep `canvaskit/` and `assets/` only if they revalidate them (`Cache-Control: no-cache`, with an ETag or Last-Modified): their URLs stay the same from one release to the next, and the service worker keeps them for offline use anyway. Don't cache `index.html`, `flutter_bootstrap.js`, `sw.js`, `sw_update.js` or `flutter_service_worker.js` (the browsers of earlier visitors still check it, and Flutter's version now unregisters itself).
+- [ ] In Chrome DevTools (*Application → Manifest*), the app has no installability errors, and installing it shows the richer dialog, with screenshots. The screenshots are `web/screenshots/`, taken from the capture harness; after a redesign, take them again:
+  ```sh
+  CAPTURE=1 SCREENS=today,reader MODES=phone,desktop flutter test test/screens/capture_test.dart
+  cp build/screens/phone_today.png web/screenshots/today-narrow.png
+  cp build/screens/phone_reader.png web/screenshots/reader-narrow.png
+  cp build/screens/desktop_today.png web/screenshots/today-wide.png
+  ```
+- [ ] Offline: install the app, open a book, then in DevTools (*Network → Offline*) reload. The app opens, and so does that book.
+- [ ] Offline after an update: with that version installed, deploy one built with a newer Flutter or changed texts. Open the app online, and close it once *Application → Service workers* shows the new worker waiting; then open it offline. The new version opens, and so does the book. (While it installs, an update downloads again the engine and every book read so far, into caches named after its engine and texts, and it finishes installing only with them: tool/web/sw_update.js.)
+- [ ] With the app's theme set to Dark, the installed app's title bar (and the browser's toolbar on Android) turns dark once the app has drawn its first frame. The loading screen before it already shows the app's theme and language.
+- [ ] Sharing the address in a messaging app shows the preview card (`web/og.png`).
 - [ ] If you use a Content-Security-Policy, allow:
   - `'wasm-unsafe-eval'` for CanvasKit
   - your Supabase URL in `connect-src`

@@ -1,5 +1,6 @@
 // Generates (1) the parsha-schedule lookup table used by the app and
-// (2) test fixtures that validate the app's own Hebrew calendar code.
+// (2) test fixtures that validate the app's own Hebrew calendar and zmanim
+// code.
 //
 //   cd tool/data && npm ci && node gen_fixtures.mjs
 //
@@ -17,7 +18,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {HDate, HebrewCalendar, Sedra, parshiot, flags} from '@hebcal/core';
+import {
+  CandleLightingEvent,
+  HDate,
+  HavdalahEvent,
+  HebrewCalendar,
+  Location,
+  Sedra,
+  flags,
+  parshiot,
+} from '@hebcal/core';
 import {getLeyningOnDate} from '@hebcal/leyning';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -148,3 +158,88 @@ for (const k of Object.keys(special)) {
   };
 }
 write('test/fixtures/special_haftarot.json', compact);
+
+// ---------------------------------------------------------------------------
+// 5. Candle-lighting and Havdalah for places in assets/data/cities.json
+// (run tool/data/build_cities.mjs first), over two years: Shabbat and Yom
+// Tov, Israel and the Diaspora, both hemispheres, daylight-saving changes
+// and a clock far from its longitude (Honolulu, Auckland). None is far
+// enough north for nightfall to vanish in summer; near that latitude the
+// time swings by minutes with the slightest difference in the sun's
+// position, so the tests check those places on their own.
+
+const ZMANIM_CITIES = [
+  281184, // Jerusalem (40 minutes)
+  293397, // Tel Aviv (20 minutes, as elsewhere in Israel)
+  294801, // Haifa (30 minutes)
+  293067, // Zikhron Ya'akov (30 minutes)
+  295530, // Beersheba
+  295277, // Eilat
+  5128581, // New York City
+  5100280, // Lakewood
+  5368361, // Los Angeles
+  4887398, // Chicago
+  4164138, // Miami
+  6167865, // Toronto
+  6077243, // Montreal
+  2643743, // London
+  2643123, // Manchester
+  2988507, // Paris
+  2803138, // Antwerp
+  524901, // Moscow
+  993800, // Johannesburg
+  2158177, // Melbourne
+  3435910, // Buenos Aires
+  3530597, // Mexico City
+  5856195, // Honolulu
+  2193733, // Auckland
+];
+
+{
+  const {cities} = JSON.parse(fs.readFileSync(path.join(root, 'assets', 'data', 'cities.json'), 'utf8'));
+  const from = new Date(2026, 0, 1);
+  const to = new Date(2027, 11, 31);
+  const out = {from: '2026-01-01', to: '2027-12-31', cities: []};
+  for (const id of ZMANIM_CITIES) {
+    const city = cities.find((c) => c.id === id);
+    if (!city) throw new Error(`no city ${id} in cities.json`);
+    const il = city.cc === 'IL';
+    const location = new Location(city.lat, city.lon, il, city.tz, city.name_en, city.cc, String(city.id));
+    const options = (candleLightingMins) => ({
+      start: from, end: to, location, il, candlelighting: true, candleLightingMins,
+      noMinorFast: true, noModern: true, noRoshChodesh: true, noSpecialShabbat: true, shabbatMevarchim: false,
+    });
+    // Hebcal has its own minutes for Israel (by GeoNames id for Jerusalem,
+    // Haifa and Zikhron Ya'akov): the list must agree.
+    const events = HebrewCalendar.calendar(options(city.candleMinutes));
+    const own = HebrewCalendar.calendar(options(undefined));
+    const first = (evs) => evs.find((e) => e instanceof CandleLightingEvent).eventTime.getTime();
+    if (first(events) !== first(own)) throw new Error(`${city.name_en}: candle-lighting minutes differ from Hebcal's`);
+
+    // Minutes after the midnight that begins the event's date, on the
+    // place's clock (1440 or more after the next midnight).
+    const clock = new Intl.DateTimeFormat('en-CA', {
+      timeZone: city.tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    });
+    const minutesAfter = (isoDate, time) => {
+      const p = Object.fromEntries(clock.formatToParts(time).map(({type, value}) => [type, value]));
+      const days = (Date.UTC(+p.year, +p.month - 1, +p.day) - Date.parse(`${isoDate}T00:00:00Z`)) / 86400000;
+      return days * 1440 + +p.hour * 60 + +p.minute;
+    };
+    const times = new Map();
+    for (const ev of events) {
+      if (!(ev instanceof CandleLightingEvent) && !(ev instanceof HavdalahEvent)) continue;
+      // Candles are lit before sunset on a Friday, even on Yom Tov; after
+      // Shabbat, and from an existing flame on a second night of Yom Tov, at
+      // nightfall, the time of Havdalah.
+      const day = ev.getDate().getDay();
+      const atNightfall =
+        ev instanceof HavdalahEvent || (day !== 5 && (day === 6 || (ev.getFlags() & flags.LIGHT_CANDLES_TZEIS) !== 0));
+      const date = iso(ev.getDate());
+      times.set(`${date}|${atNightfall ? 'h' : 'c'}`, [date, atNightfall ? 'h' : 'c', minutesAfter(date, ev.eventTime)]);
+    }
+    out.cities.push({id: city.id, name: city.name_en, times: [...times.values()]});
+  }
+  write('test/fixtures/zmanim.json', out);
+}

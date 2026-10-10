@@ -924,7 +924,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get settingsReadingDesc =>
-      'ארץ ישראל או חו״ל, תוכנית, תרגום או רש״י, הפטרה';
+      'ארץ ישראל או חו״ל, זמני שבת, תוכנית, תרגום או רש״י, הפטרה';
 
   @override
   String get settingsDisplayDesc =>
@@ -2030,4 +2030,191 @@ class AppLocalizationsHe extends AppLocalizations {
   String charactersLeft(int count) {
     return 'נותרו $count תווים';
   }
+
+  @override
+  String get shabbatTimesLabel => 'זמני שבת';
+
+  @override
+  String get shabbatTimesHelp =>
+      'בחירת עיר מציגה מתי מדליקים נרות ומתי יוצאת השבת. הזמנים מחושבים במכשיר, והעיר נשמרת בו בלבד.';
+
+  @override
+  String get cityLabel => 'עיר';
+
+  @override
+  String get cityNotSet => 'לא נבחרה';
+
+  @override
+  String shabbatTimesSummary(String candles, String ends) {
+    return 'הדלקת נרות $candles\nצאת השבת $ends';
+  }
+
+  @override
+  String shabbatCandlesOnly(String candles) {
+    return 'הדלקת נרות $candles';
+  }
+
+  @override
+  String get shabbatNoSunset =>
+      'אין שם שקיעה בשבת הקרובה. על הזמנים יש לשאול רב.';
+
+  @override
+  String get shabbatTimesUnavailable =>
+      'המכשיר אינו יודע מה השעה בעיר הזו, ולכן אי אפשר להציג את הזמנים בה.';
+
+  @override
+  String get cityPickerTitle => 'בחירת עיר';
+
+  @override
+  String get citySearchLabel => 'חיפוש עיר';
+
+  @override
+  String get citySearchClear => 'ניקוי החיפוש';
+
+  @override
+  String get cityYours => 'העיר שלך';
+
+  @override
+  String get cityNone => 'ללא עיר';
+
+  @override
+  String get cityNoneDesc => 'זמני השבת לא יוצגו';
+
+  @override
+  String get cityNearYou => 'באזור הזמן שלך';
+
+  @override
+  String cityNoResults(String query) {
+    return 'לא נמצאה עיר בשם ״$query״.';
+  }
+
+  @override
+  String cityResultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'נמצאו $count ערים',
+      one: 'נמצאה עיר אחת',
+      zero: 'לא נמצאו ערים',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cityResultsMore(int shown, int count) {
+    return 'מוצגות $shown התוצאות הראשונות מתוך $count. אפשר להקליד עוד מהשם כדי למצוא את האחרות.';
+  }
+
+  @override
+  String get cityListNote =>
+      'ברשימה כל מקום שגרים בו 100,000 איש ומעלה, כל הערים בישראל והיישובים הישראליים הגדולים שמעבר לקו הירוק. אם המקום שלך אינו ברשימה, אפשר לבחור את הקרוב אליו; מעבר לקו הירוק, את היישוב הישראלי הקרוב.';
+
+  @override
+  String get searchTitle => 'חיפוש בתורה';
+
+  @override
+  String get searchFieldLabel => 'מילה או ביטוי';
+
+  @override
+  String get searchClear => 'ניקוי החיפוש';
+
+  @override
+  String get searchIntro =>
+      'אפשר למצוא מילה או ביטוי בתורה, בתרגום אונקלוס או בתרגום לאנגלית.';
+
+  @override
+  String get searchPreparing => 'מכינים את הטקסט לחיפוש…';
+
+  @override
+  String searchResultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פסוקים',
+      one: 'פסוק אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String searchResultsFirst(int shown, int count) {
+    return '$shown הפסוקים הראשונים מתוך $count';
+  }
+
+  @override
+  String get searchNarrow => 'אפשר להוסיף מילה כדי לצמצם את החיפוש.';
+
+  @override
+  String searchNoResults(String query) {
+    return 'לא נמצא פסוק עם ״$query״.';
+  }
+
+  @override
+  String get searchNoResultsHint =>
+      'כדאי לנסות פחות מילים, או את הכתיב שבתורה, שלעיתים קרובות אין בו ו׳ וי׳.';
+
+  @override
+  String get searchNoResultsHintEnglish =>
+      'כדאי לנסות פחות מילים, או את האנגלית הישנה של התרגום משנת 1917, למשל ״hath״ במקום ״has״.';
+
+  @override
+  String searchResultsAnnounced(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'נמצאו $count פסוקים',
+      one: 'נמצא פסוק אחד',
+      zero: 'לא נמצאו פסוקים',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goToVerseLabel => 'פסוק, מילה או ביטוי';
+
+  @override
+  String goToVerseHint(String book) {
+    return '$book כח, יב';
+  }
+
+  @override
+  String goToVerseHelp(String example) {
+    return 'אפשר לכתוב ספר או פרשה ואחריהם פרק ופסוק, למשל $example, או מילים לחיפוש.';
+  }
+
+  @override
+  String goToVerseSearch(String query) {
+    return 'חיפוש ״$query״';
+  }
+
+  @override
+  String goToVerseChapters(String book, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פרקים',
+      one: 'פרק אחד',
+    );
+    return 'בספר $book $_temp0.';
+  }
+
+  @override
+  String goToVerseVerses(String book, String chapter, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פסוקים',
+      one: 'פסוק אחד',
+    );
+    return 'בפרק $chapter בספר $book $_temp0.';
+  }
+
+  @override
+  String get shortcutContinueReading => 'המשך קריאה';
+
+  @override
+  String get shortcutLogFromBook => 'רישום קריאה מתוך ספר';
+
+  @override
+  String get shortcutThisWeek => 'פרשת השבוע';
 }

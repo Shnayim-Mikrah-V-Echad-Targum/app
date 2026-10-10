@@ -1,0 +1,146 @@
+{
+  "titles": {
+    "en": {
+      "privacy": "Privacy policy",
+      "support": "Support",
+      "delete-account": "Delete your account"
+    },
+    "he": {
+      "privacy": "מדיניות הפרטיות",
+      "support": "תמיכה",
+      "delete-account": "מחיקת החשבון"
+    }
+  },
+  "en": {
+    "support": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "Shnayim Mikra is a free app for reading the weekly parsha twice in Hebrew and once in Targum Onkelos. If something isn't working, or you have a question or an idea, we'd be glad to hear from you."}
+        ]
+      },
+      {
+        "heading": "Contact us",
+        "blocks": [
+          {"type": "contact", "text": "For questions and problems: {contact}. We aim to respond within five working days."},
+          {"type": "para", "when": "email", "text": "You can also report a problem or suggest an improvement in public, on the app's {issues|GitHub issue tracker}, where anyone can follow the work."}
+        ]
+      },
+      {
+        "heading": "Reminders",
+        "blocks": [
+          {"type": "para", "text": "Reminders are optional, and there is never more than one a day. None arrive on Shabbat or Yom Tov. You can choose them in Settings → Reminders."},
+          {"type": "para", "text": "If a reminder doesn't arrive, check that notifications are allowed for Shnayim Mikra in your device's settings, and that battery saving isn't stopping the app. The web version can't send reminders: for them, install the app on Android, iPhone or Windows."}
+        ]
+      },
+      {
+        "heading": "Your reading and your data",
+        "blocks": [
+          {"type": "para", "text": "Your progress, streaks and settings stay on your device. The app has no ads, no analytics and no tracking, and it works without an internet connection."},
+          {"type": "para", "text": "To move to a new device, export your progress in Settings → Your data and import it on the new one. Or sign in to the community and turn on Back up my progress."},
+          {"type": "para", "text": "To start over, reset your progress in Settings → Your data. To delete your community account and everything stored with it, see {link:delete-account}."},
+          {"type": "para", "text": "The full details are in the {link:privacy|privacy policy}."}
+        ]
+      }
+    ],
+    "delete-account": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "You can delete your Shnayim Mikra community account, and the data stored with it, at any time. You don't need an account to use the app: reading, progress and reminders all work without one."}
+        ]
+      },
+      {
+        "heading": "In the app",
+        "blocks": [
+          {"type": "para", "text": "Open Community → Account (the button at the top of the screen) and choose Delete my account. Settings → Account & community leads to the same place. The account is deleted straight away."}
+        ]
+      },
+      {
+        "heading": "By email",
+        "when": "email",
+        "blocks": [
+          {"type": "contact", "subject": "Delete my account", "text": "If you can't use the app, email {contact} from the address you sign in with, with the subject “Delete my account”."},
+          {"type": "para", "text": "We delete the account within 30 days, and write back once it's done."}
+        ]
+      },
+      {
+        "heading": "What is deleted",
+        "blocks": [
+          {"type": "bullet", "text": "Your profile, display name and email address"},
+          {"type": "bullet", "text": "Your posts in the community"},
+          {"type": "bullet", "text": "The backup of your progress, if you turned it on"},
+          {"type": "bullet", "text": "Your reports, and your list of blocked members"},
+          {"type": "para", "text": "Topics you started that others replied to stay, without your name, so that their replies still make sense."},
+          {"type": "para", "text": "The progress kept on your device is not affected. You can reset it in Settings → Your data, or remove it by uninstalling the app."}
+        ]
+      }
+    ]
+  },
+  "he": {
+    "support": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "שניים מקרא היא אפליקציה חינמית לקריאת פרשת השבוע שניים מקרא ואחד תרגום. אם משהו לא עובד, או שיש לכם שאלה או רעיון, נשמח לשמוע."}
+        ]
+      },
+      {
+        "heading": "יצירת קשר",
+        "blocks": [
+          {"type": "contact", "text": "לשאלות ולדיווח על תקלות: {contact}. נשתדל להשיב תוך חמישה ימי עבודה."},
+          {"type": "para", "when": "email", "text": "אפשר גם לדווח על תקלה או להציע שיפור בגלוי, ב{issues}, שבו כל אחד יכול לעקוב אחרי העבודה."}
+        ]
+      },
+      {
+        "heading": "תזכורות",
+        "blocks": [
+          {"type": "para", "text": "התזכורות הן לבחירתכם, ולעולם לא יותר מאחת ביום. בשבת וביום טוב לא מגיעות תזכורות כלל. אפשר לבחור אותן בהגדרות ← תזכורות."},
+          {"type": "para", "text": "אם תזכורת לא מגיעה, כדאי לבדוק שההתראות של שניים מקרא מותרות בהגדרות המכשיר, ושחיסכון בסוללה אינו עוצר את האפליקציה. גרסת הדפדפן אינה יכולה לשלוח תזכורות: לשם כך יש להתקין את האפליקציה ב־Android, ב־iPhone או ב־Windows."}
+        ]
+      },
+      {
+        "heading": "הקריאה והנתונים שלכם",
+        "blocks": [
+          {"type": "para", "text": "ההתקדמות, הרצפים וההגדרות נשמרים במכשיר שלכם. באפליקציה אין פרסומות, אנליטיקה או מעקב, והיא פועלת גם ללא חיבור לאינטרנט."},
+          {"type": "para", "text": "כדי לעבור למכשיר חדש, אפשר לייצא את ההתקדמות בהגדרות ← הנתונים שלך ולייבא אותה במכשיר החדש. אפשר גם להיכנס לקהילה ולהפעיל את גיבוי ההתקדמות שלי."},
+          {"type": "para", "text": "כדי להתחיל מחדש, אפשר לאפס את ההתקדמות בהגדרות ← הנתונים שלך. למחיקת החשבון בקהילה וכל מה שנשמר בו, ראו {link:delete-account}."},
+          {"type": "para", "text": "הפרטים המלאים מופיעים ב{link:privacy|מדיניות הפרטיות}."}
+        ]
+      }
+    ],
+    "delete-account": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "אפשר למחוק בכל עת את החשבון שלכם בקהילת שניים מקרא, ואת המידע שנשמר בו. אין צורך בחשבון כדי להשתמש באפליקציה: הקריאה, ההתקדמות והתזכורות פועלות גם בלעדיו."}
+        ]
+      },
+      {
+        "heading": "באפליקציה",
+        "blocks": [
+          {"type": "para", "text": "פותחים את קהילה ← חשבון (הלחצן בראש המסך) ובוחרים מחיקת החשבון. גם הגדרות ← חשבון וקהילה מובילות לאותו מקום. החשבון נמחק מיד."}
+        ]
+      },
+      {
+        "heading": "בדוא״ל",
+        "when": "email",
+        "blocks": [
+          {"type": "contact", "subject": "מחיקת החשבון", "text": "אם אין לכם גישה לאפליקציה, שלחו דוא״ל אל {contact} מהכתובת שבה אתם נכנסים, בנושא ״מחיקת החשבון״."},
+          {"type": "para", "text": "אנחנו מוחקים את החשבון תוך 30 יום, ומודיעים לכם כשהמחיקה הושלמה."}
+        ]
+      },
+      {
+        "heading": "מה נמחק",
+        "blocks": [
+          {"type": "bullet", "text": "הפרופיל, שם התצוגה וכתובת הדוא״ל"},
+          {"type": "bullet", "text": "ההודעות שפרסמתם בקהילה"},
+          {"type": "bullet", "text": "גיבוי ההתקדמות, אם הפעלתם אותו"},
+          {"type": "bullet", "text": "הדיווחים שלכם ורשימת המשתמשים שחסמתם"},
+          {"type": "para", "text": "נושאים שפתחתם ואחרים הגיבו בהם נשארים, בלי שמכם, כדי שהתגובות שלהם יישארו מובנות."},
+          {"type": "para", "text": "ההתקדמות השמורה במכשיר אינה נפגעת. אפשר לאפס אותה בהגדרות ← הנתונים שלך, או למחוק אותה בהסרת האפליקציה."}
+        ]
+      }
+    ]
+  }
+}

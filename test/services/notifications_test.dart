@@ -1,16 +1,24 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/services/reminder_planner.dart';
 import 'package:timezone/timezone.dart' as tz;
+
+import '../helpers.dart';
 
 typedef _Scheduled = ({String? title, String? body, NotificationDetails details, String? payload});
 
@@ -20,6 +28,7 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
   final scheduled = <int, _Scheduled>{};
   final android = _FakeAndroid();
   int cancels = 0;
+  int schedules = 0;
   bool failNextSchedule = false;
 
   @override
@@ -45,6 +54,7 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
       failNextSchedule = false;
       throw Exception('platform failure');
     }
+    schedules++;
     scheduled[id] = (title: title, body: body, details: notificationDetails, payload: payload);
   }
 
@@ -60,6 +70,32 @@ class _FakeAndroid extends Fake implements AndroidFlutterLocalNotificationsPlugi
   Future<void> createNotificationChannel(AndroidNotificationChannel notificationChannel) async {
     channels[notificationChannel.id] = notificationChannel;
   }
+}
+
+/// A service scheduling through [plugin], whose time zones (UTC, set in
+/// setUpAll) need no loading.
+NotificationService _service(_FakePlugin plugin) => NotificationService.forTesting(plugin, loadTimeZones: () async {});
+
+/// A service that counts how often reminders are handed to it.
+class _CountingService extends NotificationService {
+  _CountingService() : super.forTesting(_FakePlugin(), loadTimeZones: () async => tz.setLocalLocation(tz.UTC));
+
+  int reschedules = 0;
+
+  @override
+  Future<void> reschedule(
+      List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) {
+    reschedules++;
+    return super.reschedule(reminders, l, describe);
+  }
+}
+
+/// Monday of Noach 5787.
+final _monday = LocalDate(2026, 10, 12);
+
+class _Monday extends TodayController {
+  @override
+  LocalDate build() => _monday;
 }
 
 void main() {
@@ -88,10 +124,24 @@ void main() {
 
   Set<int> ids(List<PlannedReminder> plan) => {for (final r in plan) r.id};
 
+  Future<ProviderContainer> container(AppSettings settings, {NotificationService? service}) async {
+    SharedPreferences.setMockInitialValues({SettingsController.storageKey: jsonEncode(settings.toJson())});
+    final prefs = await SharedPreferences.getInstance();
+    final repo = await loadRepo();
+    final c = ProviderContainer(overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      parshaRepositoryProvider.overrideWithValue(repo),
+      todayProvider.overrideWith(_Monday.new),
+      if (service != null) notificationServiceProvider.overrideWithValue(service),
+    ]);
+    addTearDown(c.dispose);
+    return c;
+  }
+
   group('rescheduling', () {
     test('two quick calls leave exactly the second plan scheduled', () async {
       final plugin = _FakePlugin();
-      final service = NotificationService.withPlugin(plugin);
+      final service = _service(plugin);
       final first = planFrom(DateTime(2026, 10, 11, 8), prefs: const ReminderPrefs(daily: true));
       final second = planFrom(DateTime(2026, 10, 12, 8), prefs: const ReminderPrefs(erevShabbat: true));
       expect(ids(second).containsAll(ids(first)), isFalse);
@@ -105,7 +155,7 @@ void main() {
 
     test('a call made while another is scheduling waits for it to finish', () async {
       final plugin = _FakePlugin();
-      final service = NotificationService.withPlugin(plugin);
+      final service = _service(plugin);
       final first = planFrom(DateTime(2026, 10, 11, 8), prefs: const ReminderPrefs(daily: true));
       final second = planFrom(DateTime(2026, 10, 12, 8), prefs: const ReminderPrefs(erevShabbat: true));
 
@@ -125,7 +175,7 @@ void main() {
 
     test('an unchanged plan is not scheduled again, but a change of language is', () async {
       final plugin = _FakePlugin();
-      final service = NotificationService.withPlugin(plugin);
+      final service = _service(plugin);
       final plan = planFrom(DateTime(2026, 10, 11, 8));
 
       await service.reschedule(plan, en, copyIn(en));
@@ -139,7 +189,7 @@ void main() {
 
     test('a plan that failed to schedule is tried again', () async {
       final plugin = _FakePlugin()..failNextSchedule = true;
-      final service = NotificationService.withPlugin(plugin);
+      final service = _service(plugin);
       final plan = planFrom(DateTime(2026, 10, 11, 8));
 
       await service.reschedule(plan, en, copyIn(en));
@@ -150,7 +200,7 @@ void main() {
 
     test('channels are created with names and descriptions in the app language', () async {
       final plugin = _FakePlugin();
-      await NotificationService.withPlugin(plugin).reschedule(const [], he, copyIn(he));
+      await _service(plugin).reschedule(const [], he, copyIn(he));
 
       final channels = plugin.android.channels;
       expect(channels.keys, unorderedEquals(['daily', 'erev_shabbat', 'check_in']));
@@ -171,7 +221,7 @@ void main() {
     test('each reminder has the status-bar glyph, brand colour, reminder category and expandable text', () async {
       final plugin = _FakePlugin();
       final plan = planFrom(DateTime(2026, 10, 11, 8));
-      await NotificationService.withPlugin(plugin).reschedule(plan, en, copyIn(en));
+      await _service(plugin).reschedule(plan, en, copyIn(en));
 
       expect(plugin.scheduled, hasLength(plan.length));
       for (final r in plan) {
@@ -191,6 +241,106 @@ void main() {
         };
         expect(android.channelId, channel);
       }
+    });
+  });
+
+  group('the time zones', () {
+    late List<PlannedReminder> reminders;
+
+    setUpAll(() => reminders = planFrom(DateTime(2026, 10, 11, 8), prefs: const ReminderPrefs(daily: true)));
+
+    test('are never loaded without a reminder to schedule', () async {
+      var loads = 0;
+      final plugin = _FakePlugin();
+      final service = NotificationService.forTesting(plugin, loadTimeZones: () async => loads++);
+      await service.reschedule(reminders, en, copyIn(en));
+      await service.reschedule(const [], en, copyIn(en));
+      expect(loads, 1, reason: 'once, for the first reminders');
+      expect(plugin.cancels, 2, reason: 'clearing the reminders needs no time zones');
+
+      final none = NotificationService.forTesting(_FakePlugin(), loadTimeZones: () async => loads++);
+      await none.reschedule(const [], en, copyIn(en));
+      expect(loads, 1);
+    });
+
+    test('are waited for before scheduling', () async {
+      final loaded = Completer<void>();
+      final plugin = _FakePlugin();
+      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future);
+      final done = service.reschedule(reminders, en, copyIn(en));
+      for (var i = 0; i < 4; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect((plugin.cancels, plugin.schedules), (0, 0));
+      loaded.complete();
+      await done;
+      expect(plugin.cancels, 1);
+      expect(plugin.scheduled.keys.toSet(), ids(reminders));
+    });
+
+    test('a call taken over while it waited for them schedules nothing', () async {
+      final loaded = Completer<void>();
+      final plugin = _FakePlugin();
+      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future);
+      final first = service.reschedule(reminders, en, copyIn(en));
+      // Let the first start waiting for the time zones.
+      for (var i = 0; i < 4; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      final second = service.reschedule(reminders.sublist(0, 1), en, copyIn(en));
+      loaded.complete();
+      await Future.wait([first, second]);
+      expect(plugin.cancels, 1);
+      expect(plugin.schedules, 1, reason: 'only the later call’s one reminder');
+      expect(plugin.scheduled.keys.toSet(), ids(reminders.sublist(0, 1)));
+    });
+  });
+
+  group('the scheduler', () {
+    late ProviderContainer c;
+    late _CountingService service;
+
+    setUp(() async {
+      service = _CountingService();
+      c = await container(
+        AppSettings(onboardingComplete: true, dailyReminder: true, joinDate: LocalDate(2026, 9, 1)),
+        service: service,
+      );
+      c.listen(reminderSchedulerProvider, (_, _) {});
+      expect(service.reschedules, 1);
+    });
+
+    void change(AppSettings Function(AppSettings s) update) {
+      c.read(settingsProvider.notifier).update(update);
+      c.read(reminderSchedulerProvider);
+    }
+
+    test('passes over a saved place, and settings that reminders don’t use', () {
+      final progress = c.read(progressProvider.notifier);
+      for (var verse = 1; verse <= 5; verse++) {
+        progress.savePosition('5787:2', 0, [verse, verse, verse]);
+        c.read(reminderSchedulerProvider);
+      }
+      change((s) => s.copyWith(theme: AppThemeMode.dark));
+      change((s) => s.copyWith(readingScale: 1.4, uiFont: UiFont.lexend, showTranslation: true));
+      expect(service.reschedules, 1);
+    });
+
+    test('plans again when the reading log changes', () {
+      c.read(progressProvider.notifier).markUnit('5787:2', 0, ReadingPass.mikra1, _monday);
+      c.read(reminderSchedulerProvider);
+      expect(service.reschedules, 2);
+    });
+
+    test('plans again when a reminder setting or the language changes', () {
+      change((s) => s.copyWith(dailyReminderMinutes: 7 * 60));
+      expect(service.reschedules, 2);
+      change((s) => s.copyWith(fridayReminder: !s.fridayReminder));
+      expect(service.reschedules, 3);
+      change((s) => s.copyWith(language: AppLanguage.hebrew));
+      expect(service.reschedules, 4);
+      change((s) => s.copyWith(nameStyle: NameStyle.ashkenazi));
+      expect(service.reschedules, 5);
     });
   });
 

@@ -173,8 +173,8 @@ const _seferLexendHebrew = {
   'wordmark': 'Lexend 20/24 700 0',
 };
 
-/// The weights each family bundles (pubspec.yaml). The device font is
-/// asked for the sans weights only.
+/// The weights each family bundles (pubspec.yaml, or for the accessibility
+/// fonts, OptionalFonts). The device font is asked for the sans weights only.
 const _bundled = {
   'EBGaramond': {500, 600, 700},
   'FrankRuhlLibre': {500, 600, 700},

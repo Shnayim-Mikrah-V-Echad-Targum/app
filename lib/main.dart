@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -7,18 +9,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'app/providers.dart';
+import 'app/system_bars.dart';
 import 'data/parsha_repository.dart';
 import 'features/community/data/backend.dart';
+import 'services/app_shortcuts.dart';
 import 'services/notifications.dart';
+import 'services/optional_fonts.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _registerFontLicenses();
+  unawaited(enableEdgeToEdge());
 
-  final prefs = await SharedPreferences.getInstance();
-  final parshiyot = await ParshaRepository.load();
-  final backend = await Backend.initialize();
-  final notifications = await NotificationService.create();
+  // Independent of one another, so they all start at once.
+  final (prefs, parshiyot, backend, notifications, shortcuts) = await (
+    _preferencesWithFonts(),
+    ParshaRepository.load(),
+    Backend.initialize(),
+    NotificationService.create(),
+    AppShortcutsService.create(),
+  ).wait;
 
   runApp(ProviderScope(
     overrides: [
@@ -26,6 +36,7 @@ Future<void> main() async {
       parshaRepositoryProvider.overrideWithValue(parshiyot),
       backendProvider.overrideWithValue(backend),
       notificationServiceProvider.overrideWithValue(notifications),
+      appShortcutsServiceProvider.overrideWithValue(shortcuts),
     ],
     child: const ShnayimMikraApp(),
   ));
@@ -33,6 +44,18 @@ Future<void> main() async {
   // Flutter web builds its accessibility tree only on request; turn it on so
   // screen reader users never have to find the hidden "enable" button.
   if (kIsWeb) SemanticsBinding.instance.ensureSemantics();
+}
+
+/// The stored preferences, once the opt-in fonts their settings choose have
+/// loaded, so that the first frame already shows text in them. A font slow to
+/// arrive (over the web) holds the app back only so long; its text is laid
+/// out again when it comes.
+Future<SharedPreferences> _preferencesWithFonts() async {
+  final prefs = await SharedPreferences.getInstance();
+  final settings = SettingsController.readStored(prefs);
+  await OptionalFonts.ensureAll([settings.uiFont.family, settings.scriptureFont.family])
+      .timeout(const Duration(seconds: 2), onTimeout: () {});
+  return prefs;
 }
 
 void _registerFontLicenses() {

@@ -1,8 +1,13 @@
 {
+    "id": "./",
     "name": "Shnayim Mikra · שניים מקרא",
     "short_name": "Shnayim Mikra",
     "start_url": ".",
+    "scope": "./",
     "display": "standalone",
+    "launch_handler": {
+        "client_mode": "focus-existing"
+    },
     "background_color": "#FAF7F0",
     "theme_color": "#1D3F75",
     "description": "Read the weekly parsha twice in Hebrew and once in Targum, with streaks, community and extensive accessibility options.",
@@ -15,6 +20,55 @@
         "lifestyle"
     ],
     "prefer_related_applications": false,
+    "shortcuts": [
+        {
+            "name": "Today · היום",
+            "description": "This week's parsha and today's reading",
+            "url": "./#/today",
+            "icons": [
+                {
+                    "src": "icons/shortcut-today.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Progress · התקדמות",
+            "description": "Your streaks and the year's portions",
+            "url": "./#/progress",
+            "icons": [
+                {
+                    "src": "icons/shortcut-progress.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "screenshots/today-narrow.png",
+            "sizes": "412x915",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Today: this week's parsha, the three readings and today's reading"
+        },
+        {
+            "src": "screenshots/reader-narrow.png",
+            "sizes": "412x915",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "The reader, verse by verse, with your place in the three readings"
+        },
+        {
+            "src": "screenshots/today-wide.png",
+            "sizes": "1366x860",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Today on a computer, with the navigation rail"
+        }
+    ],
     "icons": [
         {
             "src": "icons/Icon-192.png",

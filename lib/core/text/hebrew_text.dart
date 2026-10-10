@@ -46,6 +46,34 @@ abstract final class HebrewText {
 
   static bool containsHebrew(String s) => RegExp('[֐-׿]').hasMatch(s);
 
+  /// Whether [codeUnit] is one of the marks [consonantsOnly] removes: a
+  /// cantillation mark, meteg, vowel point, dagesh, shin or sin dot, a
+  /// Masoretic dot, or the combining grapheme joiner. The paseq is not one:
+  /// it stands between words.
+  static bool isMark(int codeUnit) =>
+      (codeUnit >= 0x0591 && codeUnit <= 0x05BD) ||
+      codeUnit == 0x05BF ||
+      codeUnit == 0x05C1 ||
+      codeUnit == 0x05C2 ||
+      codeUnit == 0x05C4 ||
+      codeUnit == 0x05C5 ||
+      codeUnit == 0x05C7 ||
+      codeUnit == 0x034F;
+
+  static final _finals = RegExp('[ךםןףץ]');
+
+  /// Writes the five final letters (ך ם ן ף ץ) in their ordinary forms, so a
+  /// word compares alike whether or not it ends where they stand.
+  static String foldFinals(String s) =>
+      s.replaceAllMapped(_finals, (m) => String.fromCharCode(foldFinal(m[0]!.codeUnitAt(0))));
+
+  /// [foldFinals] for one UTF-16 code unit: a final letter's ordinary form,
+  /// which Unicode places straight after it, or [codeUnit] itself.
+  static int foldFinal(int codeUnit) => switch (codeUnit) {
+        0x05DA || 0x05DD || 0x05DF || 0x05E3 || 0x05E5 => codeUnit + 1,
+        _ => codeUnit,
+      };
+
   static const _hebrewLetters = 'אבגדהוזחטיכלמנסעפצקרשת';
 
   /// Formats a number in Hebrew numerals (gematria), e.g. 15 → ט״ו.
@@ -69,6 +97,37 @@ abstract final class HebrewText {
     if (!punctuate) return s;
     if (s.length == 1) return '$s׳';
     return '${s.substring(0, s.length - 1)}״${s.substring(s.length - 1)}';
+  }
+
+  // The geresh and gershayim, and the quotation marks typed for them.
+  static final _numeralMarks = RegExp('[׳״\'"`’‘”“]');
+
+  static final _letterValues = {
+    for (final (i, letter) in _hebrewLetters.split('').indexed)
+      letter.codeUnitAt(0): switch (i) {
+        < 9 => i + 1,
+        < 18 => (i - 8) * 10,
+        _ => (i - 17) * 100,
+      },
+  };
+
+  /// Reads a number in Hebrew numerals, with or without a geresh or
+  /// gershayim: כ״ח → 28, ט״ו → 15, ק׳ → 100.
+  ///
+  /// Only the form [gematria] writes counts, so that a word is not taken for
+  /// a number: letters from the largest down, 15 and 16 as טו and טז (never
+  /// יה and יו), and no final letters. Null for anything else, such as בא or
+  /// לך.
+  static int? parseGematria(String s) {
+    final letters = s.trim().replaceAll(_numeralMarks, '');
+    if (letters.isEmpty) return null;
+    var n = 0;
+    for (final unit in letters.codeUnits) {
+      final value = _letterValues[unit];
+      if (value == null) return null;
+      n += value;
+    }
+    return gematria(n, punctuate: false) == letters ? n : null;
   }
 }
 

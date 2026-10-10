@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What Android 12 and later back up to the user's Google account and carry
+     to a new device: only this one file of shared_preferences. It holds the
+     settings and reading progress, and also the community sign-in (the
+     session supabase_flutter stores there, with the email address) and any
+     unsent draft of a post; the privacy policy says so. Scheduled reminders
+     are left out; the app schedules them again from its settings. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="sharedpref" path="FlutterSharedPreferences.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="FlutterSharedPreferences.xml" />
+    </device-transfer>
+</data-extraction-rules>

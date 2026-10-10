@@ -8,7 +8,8 @@ plugins {
 
 // Release signing: create android/key.properties (never commit it) with
 // storeFile, storePassword, keyAlias and keyPassword. Without it, release
-// builds are signed with the debug key so they can still be run locally.
+// builds are signed with the debug key so they can still be run locally, and
+// each one ends with a warning that Google Play will refuse it.
 val keystoreProperties = Properties().apply {
     val file = rootProject.file("key.properties")
     if (file.exists()) file.inputStream().use { load(it) }
@@ -58,6 +59,16 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+        }
+    }
+}
+
+// logger.quiet, not warn: flutter build runs Gradle with -q, which hides
+// warnings.
+if (keystoreProperties.isEmpty()) {
+    tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }.configureEach {
+        doLast {
+            logger.quiet("RELEASE BUILD SIGNED WITH DEBUG KEY — not uploadable. See docs/RELEASE.md.")
         }
     }
 }
