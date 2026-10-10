@@ -50,8 +50,10 @@ The JPS translation is offered only as a study aid and is labelled so. It never 
 **Edge cases from the research are handled explicitly:**
 - **Bamidbar 32:3:** Onkelos is mostly names, so the reader suggests a third Mikra reading after the Targum, in every reading method.
 - **Verses with no Rashi** get a third Mikra reading too when Rashi replaces the Targum. Both suggestions can be turned off.
-- **The last verse of the parsha** can optionally be repeated so the reading ends with Mikra.
+- **The last verse of the parsha** can optionally be repeated so the reading ends with Mikra. It is on by default, except for Chabad, whose custom is not to repeat it; until the reader sets it, the switch follows the haftarah custom.
 - **Ketiv/qere:** the qere is read and the ketiv is shown on request.
+
+**The haftarah follows the reader's custom:** Ashkenazi, Sephardi or Chabad. Special haftarot differ by custom too: when Re'eh falls on Rosh Chodesh Elul, Sephardim and Chabad read Re'eh's own haftarah with the first and last verses of the Rosh Chodesh haftarah, and Ki Teitzei's alone two weeks later, and they read Kedoshim's own haftarah after a special Shabbat. When a special haftarah displaces the portion's own, the haftarah page offers the regular one too, folded, or open for Chabad, whose custom is to read both. Where a Chabad haftarah has not yet been sourced, the page shows the Ashkenazi one and says so.
 
 **Progress is stored per unit:** (aliyah × pass), plus the haftarah. The guided reader saves the reader's position within each pass. This makes resuming exact, and lets the streak engine see partial days.
 

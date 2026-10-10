@@ -720,6 +720,18 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String regularHaftarahOf(String portion) {
+    return 'וגם: ההפטרה הרגילה של פרשת $portion';
+  }
+
+  @override
+  String get alsoRegularHaftarah => 'וגם ההפטרה הרגילה';
+
+  @override
+  String get chabadFallbackNote =>
+      'הפטרות חב״ד עדיין בבדיקה, ולכן מוצגת ההפטרה לפי מנהג אשכנז.';
+
+  @override
   String get readerFinished => 'סיימת את העלייה הזו.';
 
   @override
@@ -1063,6 +1075,10 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get repeatLastVerseDesc =>
       'לחזור על הפסוק האחרון של הפרשה בעברית אחרי התרגום';
+
+  @override
+  String get repeatLastVerseDescChabad =>
+      'לחזור על הפסוק האחרון של הפרשה בעברית אחרי התרגום (במנהג חב״ד לא חוזרים עליו)';
 
   @override
   String get thirdReading => 'הצעה לקריאה שלישית';

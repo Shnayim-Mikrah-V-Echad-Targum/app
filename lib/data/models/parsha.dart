@@ -18,14 +18,25 @@ class HaftarahPart {
   final VerseRef start;
   final VerseRef end;
 
+  /// Whether [other] lies within this passage.
+  bool covers(HaftarahPart other) => other.book == book && other.start >= start && other.end <= end;
+
   @override
   String toString() => '$book $start-$end';
 }
 
 typedef Haftarah = List<HaftarahPart>;
 
+/// Whether every verse of [inner] is read in [outer].
+bool haftarahCovers(Haftarah outer, Haftarah inner) => inner.every((p) => outer.any((o) => o.covers(p)));
+
 /// Haftarah references by tradition. Sephardi and Chabad fall back to the
-/// Ashkenazi reading where they don't differ.
+/// Ashkenazi reading where they have none of their own.
+///
+/// Sephardi readings are listed wherever they differ, so a Sephardi
+/// fallback is the same reading. Chabad's are listed only where they have
+/// been sourced so far, so a Chabad fallback may not be the Chabad reading
+/// (see [fallsBack]).
 class HaftarahOptions {
   const HaftarahOptions({required this.ashkenazi, this.sephardi, this.chabad});
 
@@ -49,6 +60,11 @@ class HaftarahOptions {
         HaftarahNusach.sephardi => sephardi ?? ashkenazi,
         HaftarahNusach.chabad => chabad ?? ashkenazi,
       };
+
+  /// Whether [forNusach] gives [nusach] the Ashkenazi reading for want of
+  /// its own, rather than because the two are the same: so far, a Chabad
+  /// reading that isn't listed.
+  bool fallsBack(HaftarahNusach nusach) => nusach == HaftarahNusach.chabad && chabad == null;
 }
 
 /// Metadata for one weekly reading (a single parsha or a combined pair).

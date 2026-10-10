@@ -1221,6 +1221,24 @@ abstract class AppLocalizations {
   /// **'Special haftarah: {reason}'**
   String specialHaftarah(String reason);
 
+  /// Heads the portion's own haftarah, shown after the special haftarah that displaces it this week.
+  ///
+  /// In en, this message translates to:
+  /// **'Also: the regular haftarah of {portion}'**
+  String regularHaftarahOf(String portion);
+
+  /// A line under a special haftarah on Today: the haftarah page also has the portion's own haftarah.
+  ///
+  /// In en, this message translates to:
+  /// **'Also the regular haftarah'**
+  String get alsoRegularHaftarah;
+
+  /// No description provided for @chabadFallbackNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Chabad haftarot are being verified; showing the Ashkenazi reading.'**
+  String get chabadFallbackNote;
+
   /// No description provided for @readerFinished.
   ///
   /// In en, this message translates to:
@@ -1826,6 +1844,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Repeat the parsha\'s last verse in Hebrew after its Targum'**
   String get repeatLastVerseDesc;
+
+  /// No description provided for @repeatLastVerseDescChabad.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat the parsha\'s last verse in Hebrew after its Targum (Chabad custom: not repeated)'**
+  String get repeatLastVerseDescChabad;
 
   /// No description provided for @thirdReading.
   ///

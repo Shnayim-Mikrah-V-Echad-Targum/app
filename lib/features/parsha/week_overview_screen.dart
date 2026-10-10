@@ -141,6 +141,7 @@ class WeekOverview extends ConsumerWidget {
                     .map((p) => names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse))
                     .join(' · '),
                 if (ctx.haftarah.specialKey != null) l.specialHaftarah(names.specialHaftarah(ctx.haftarah.specialKey!)),
+                if (ctx.haftarah.regular != null) l.alsoRegularHaftarah,
               ].join('\n')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push(haftarahPath(context, ctx.id)),

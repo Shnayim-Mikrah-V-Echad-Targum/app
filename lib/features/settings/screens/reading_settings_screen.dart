@@ -78,9 +78,9 @@ class ReadingSettingsScreen extends ConsumerWidget {
         const Divider(height: 32),
         SwitchListTile(
           title: Text(l.repeatLastVerse),
-          subtitle: Text(l.repeatLastVerseDesc),
+          subtitle: Text(s.nusach == HaftarahNusach.chabad ? l.repeatLastVerseDescChabad : l.repeatLastVerseDesc),
           value: s.repeatLastVerse,
-          onChanged: (v) => update((s) => s.copyWith(repeatLastVerse: v)),
+          onChanged: (v) => update((s) => s.withRepeatLastVerse(v)),
         ),
         SwitchListTile(
           title: Text(l.thirdReading),
@@ -103,7 +103,8 @@ class ReadingSettingsScreen extends ConsumerWidget {
               Choice(HaftarahNusach.sephardi, l.nusachSephardi),
               Choice(HaftarahNusach.chabad, l.nusachChabad),
             ],
-            onChanged: (v) => update((s) => s.copyWith(nusach: v)),
+            // Also the last verse's repeat, while it follows the custom.
+            onChanged: (v) => update((s) => s.withNusach(v)),
           ),
           SwitchListTile(
             title: Text(l.haftarahRequired),

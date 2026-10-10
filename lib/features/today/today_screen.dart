@@ -400,6 +400,7 @@ class _HaftarahTile extends ConsumerWidget {
                 Text(done ? l.haftarahRead : l.haftarahLabel, style: Theme.of(context).textTheme.titleSmall),
                 Text(refs),
                 if (h.specialKey != null) Text(l.specialHaftarah(names.specialHaftarah(h.specialKey!))),
+                if (h.regular != null) Text(l.alsoRegularHaftarah),
               ],
             ),
           ),

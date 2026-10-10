@@ -19,6 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
@@ -116,6 +117,11 @@ const _screens = {
   // וישקהו (Genesis 33:4) stay.
   'reader_dots': '/read/5787:8/2?mode=full',
   'haftarah': '/haftarah/5787:1',
+  // Bereshit's own haftarah after Machar Chodesh's: folded, and for Chabad
+  // open, under the note that Chabad's haftarot are being verified.
+  'haftarah_regular': '/haftarah/5787:1',
+  'haftarah_chabad': '/haftarah/5787:1',
+  'haftarah_chabad_regular': '/haftarah/5787:1',
   'progress': '/progress',
   'community': '/community',
   'forum': '/community/forum/parsha',
@@ -147,6 +153,8 @@ const _screens = {
   's_reading_changed': '/settings/reading',
   // Its customs: the second reading, the haftarah and the late window.
   's_reading_customs': '/settings/reading',
+  // For Chabad: the last verse isn't repeated, as the switch says.
+  's_reading_chabad': '/settings/reading',
   's_display': '/settings/display',
   's_fonts': '/settings/display',
   's_a11y': '/settings/accessibility',
@@ -236,6 +244,9 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_simchat_torah': (s) =>
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true, joinDate: LocalDate(2026, 9, 20)),
   'today_three_weeks': (s) => s.copyWith(joinDate: LocalDate(2027, 7, 18)),
+  'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
+  's_reading_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
+  'haftarah_chabad_regular': (s) => s.withNusach(HaftarahNusach.chabad),
 };
 
 /// Screens shown on another day, with another history: the Torah map in
@@ -487,8 +498,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The haftarah, near the end of Today.
   'today_three_weeks': _scrollToEnd,
   'guide_end': _scrollToEnd,
+  // The regular haftarah's heading, with the special one's end above it.
+  'haftarah_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.6),
+  'haftarah_chabad_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.3),
   's_reading_customs': (tester) =>
       Scrollable.ensureVisible(tester.element(find.byType(RadioListTile<ReadingMethod>).last)),
+  's_reading_chabad': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(SwitchListTile).first), alignment: 0.3),
   'thread_long_end': _scrollToEnd,
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
@@ -595,6 +611,12 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'today_joined_midweek': _showWeekStrip,
 };
 
+/// Scrolls the haftarah page's regular haftarah heading to [alignment].
+Future<void> _showRegularHaftarah(WidgetTester tester, {required double alignment}) => Scrollable.ensureVisible(
+      tester.element(find.descendant(of: find.byType(ExpansionTile), matching: find.byType(ListTile))),
+      alignment: alignment,
+    );
+
 /// Opens [gallery] as a page over the current route.
 Future<void> _showGallery(WidgetTester tester, Widget gallery) async {
   unawaited(tester.state<NavigatorState>(find.byType(Navigator).first).push(
@@ -674,6 +696,7 @@ const _desktopScreens = {
   'week',
   'week_tab',
   'haftarah_tab',
+  'haftarah_regular',
   'reader',
   'reader_third',
   'reader_finished',
@@ -713,6 +736,7 @@ const _bigTextScreens = {
   's_data_import',
   'progress',
   'reader',
+  'haftarah_regular',
   'kit_ornaments',
   'kit_rows',
   'kit_progress',

@@ -103,6 +103,7 @@ class AppSettings {
     this.method = ReadingMethod.verseByVerse,
     this.secondReading = SecondReading.onkelos,
     this.repeatLastVerse = true,
+    this.repeatLastVerseTouched = false,
     this.thirdReadingPrompts = true,
     this.showTranslation = false,
     this.showRashi = false,
@@ -171,7 +172,12 @@ class AppSettings {
   final SecondReading secondReading;
 
   /// Repeat the final verse in Hebrew after its Targum, to end with Mikra.
+  /// Until the reader sets it ([repeatLastVerseTouched]), it follows the
+  /// custom (see [withNusach]).
   final bool repeatLastVerse;
+
+  /// Whether the reader has set [repeatLastVerse] themselves.
+  final bool repeatLastVerseTouched;
 
   /// Suggest a third Hebrew reading where Onkelos is mostly names (Numbers
   /// 32:3) or, when Rashi replaces the Targum, where Rashi is silent (MB
@@ -255,6 +261,18 @@ class AppSettings {
 
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
+  /// These settings with [nusach] as the reader's custom. Until the reader
+  /// sets [repeatLastVerse] themselves, it follows the custom: Chabad's is
+  /// not to repeat the last verse.
+  AppSettings withNusach(HaftarahNusach nusach) => copyWith(
+        nusach: nusach,
+        repeatLastVerse: repeatLastVerseTouched ? null : nusach != HaftarahNusach.chabad,
+      );
+
+  /// These settings with [repeatLastVerse] set by the reader, so that it no
+  /// longer follows the custom.
+  AppSettings withRepeatLastVerse(bool repeat) => copyWith(repeatLastVerse: repeat, repeatLastVerseTouched: true);
+
   /// Whether the reading heard and the days of Yom Tov kept are those of
   /// different places, as for a visitor to or from Israel.
   bool get readingAndYomTovDiffer => (readingSchedule == ReadingSchedule.israel) != oneDayYomTov;
@@ -326,6 +344,7 @@ class AppSettings {
     ReadingMethod? method,
     SecondReading? secondReading,
     bool? repeatLastVerse,
+    bool? repeatLastVerseTouched,
     bool? thirdReadingPrompts,
     bool? showTranslation,
     bool? showRashi,
@@ -380,6 +399,7 @@ class AppSettings {
         method: method ?? this.method,
         secondReading: secondReading ?? this.secondReading,
         repeatLastVerse: repeatLastVerse ?? this.repeatLastVerse,
+        repeatLastVerseTouched: repeatLastVerseTouched ?? this.repeatLastVerseTouched,
         thirdReadingPrompts: thirdReadingPrompts ?? this.thirdReadingPrompts,
         showTranslation: showTranslation ?? this.showTranslation,
         showRashi: showRashi ?? this.showRashi,
@@ -440,6 +460,7 @@ class AppSettings {
         'method': method.name,
         'secondReading': secondReading.name,
         'repeatLastVerse': repeatLastVerse,
+        'repeatLastVerseTouched': repeatLastVerseTouched,
         'thirdReadingPrompts': thirdReadingPrompts,
         'showTranslation': showTranslation,
         'showRashi': showRashi,
@@ -512,6 +533,9 @@ class AppSettings {
       method: e(ReadingMethod.values, j['method'], d.method),
       secondReading: e(SecondReading.values, j['secondReading'], d.secondReading),
       repeatLastVerse: b('repeatLastVerse', d.repeatLastVerse),
+      // Settings saved before this was kept may have turned the repeat off:
+      // that was the reader's choice, since it was on by default.
+      repeatLastVerseTouched: b('repeatLastVerseTouched', j['repeatLastVerse'] == false),
       thirdReadingPrompts: b('thirdReadingPrompts', d.thirdReadingPrompts),
       showTranslation: b('showTranslation', d.showTranslation),
       showRashi: b('showRashi', d.showRashi),

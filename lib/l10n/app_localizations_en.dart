@@ -717,6 +717,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String regularHaftarahOf(String portion) {
+    return 'Also: the regular haftarah of $portion';
+  }
+
+  @override
+  String get alsoRegularHaftarah => 'Also the regular haftarah';
+
+  @override
+  String get chabadFallbackNote =>
+      'Chabad haftarot are being verified; showing the Ashkenazi reading.';
+
+  @override
   String get readerFinished => 'You\'ve finished this aliyah.';
 
   @override
@@ -1063,6 +1075,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get repeatLastVerseDesc =>
       'Repeat the parsha\'s last verse in Hebrew after its Targum';
+
+  @override
+  String get repeatLastVerseDescChabad =>
+      'Repeat the parsha\'s last verse in Hebrew after its Targum (Chabad custom: not repeated)';
 
   @override
   String get thirdReading => 'Third-reading prompts';
