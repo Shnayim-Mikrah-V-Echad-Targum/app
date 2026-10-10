@@ -30,6 +30,8 @@ This document summarizes the decisions behind the app and the reasons for them. 
 
 A visitor usually hears the local reading but keeps their home custom for Yom Tov, so a visitor to Israel still has no reading and no reminder on the second day of Yom Tov. When the two schedules diverge after Pesach or Shavuot, the user sees the portion of the reading they hear. If their two settings follow different places, Today names both portions. A visitor to Israel is told that visitors usually read both, with a link to the home portion, and that someone who davens with a Diaspora minyan reads only that one and should set the reading they hear to match. Someone who hears the Diaspora's reading but keeps one day of Yom Tov is told that Israel is a parsha ahead.
 
+**Shabbat times are computed on the device too.** The reader chooses a city from a list (Settings → Reading & customs): every place of 100,000 people or more and every Israeli city, from GeoNames. The app never asks for the device's location; its time zone only suggests where to start, and the city stays on the device. Sunset uses NOAA's public-domain solar formulas, on the city's own clock. Candles are lit 18 minutes before sunset, 20 in Israel, 40 in Jerusalem and 30 in Haifa and Zikhron Ya'akov; Shabbat ends when the sun is 8.5° below the horizon. These are Hebcal's defaults, and the tests check every Shabbat and Yom Tov of two years in 24 cities against Hebcal. Candle-lighting is rounded down and the end of Shabbat up, so neither is ever late or early: candle-lighting matches Hebcal exactly, and the end of Shabbat is at most a minute after Hebcal's, which rounds to the nearest minute. Far enough north in summer the sky never gets that dark, and the app gives no time rather than a wrong one.
+
 ## 3. Reading
 
 **Three methods**, with sources shown in the app:
@@ -189,3 +191,4 @@ These defaults should be reviewed before a public release. Each is a setting:
 - Whether Chol HaMoed should be quiet by default.
 - How the Divine Name is spoken by text-to-speech and screen readers.
 - Whether posting on Shabbat should be blocked on the server.
+- The Shabbat times, which are not a setting yet: candle-lighting minutes (18 abroad, 20 in Israel, 40 in Jerusalem, 30 in Haifa; whether nearby places such as Ma'ale Adumim follow Jerusalem), and the end of Shabbat at 8.5°.

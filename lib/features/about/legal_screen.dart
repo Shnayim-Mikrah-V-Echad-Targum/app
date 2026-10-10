@@ -53,7 +53,7 @@ const _en = <LegalDoc, List<(String, String)>>{
   LegalDoc.privacy: [
     ('', 'Shnayim Mikra is built to need as little of your data as possible. Last updated: October 2026.'),
     ('What stays on your device',
-        'Your reading progress, streaks, settings and reminders are stored only on your device. The texts are bundled with the app, so reading works fully offline and nothing about what you read is sent anywhere.'),
+        'Your reading progress, streaks, settings and reminders are stored only on your device. The texts are bundled with the app, so reading works fully offline and nothing about what you read is sent anywhere. If you choose a city for Shabbat times, it stays on your device too: the times are worked out there, and the app never asks where you are.'),
     ('Your device\'s own backup',
         'If backup is turned on for your device, it can include the app\'s settings and reading progress, so they come back when you restore the device or set up a new one. Android keeps this backup in your Google account, and an iPhone in iCloud or on your computer. We have no access to it.'),
     ('No tracking',
@@ -108,7 +108,7 @@ const _he = <LegalDoc, List<(String, String)>>{
   LegalDoc.privacy: [
     ('', 'שניים מקרא בנויה כך שתזדקק למעט ככל האפשר מהמידע שלך. עודכן לאחרונה: אוקטובר 2026.'),
     ('מה נשאר במכשיר שלך',
-        'התקדמות הקריאה, הרצפים, ההגדרות והתזכורות נשמרים במכשיר שלך בלבד. הטקסטים כלולים באפליקציה, כך שהקריאה פועלת ללא חיבור לרשת, ושום מידע על מה שקראת אינו נשלח לשום מקום.'),
+        'התקדמות הקריאה, הרצפים, ההגדרות והתזכורות נשמרים במכשיר שלך בלבד. הטקסטים כלולים באפליקציה, כך שהקריאה פועלת ללא חיבור לרשת, ושום מידע על מה שקראת אינו נשלח לשום מקום. אם בחרת עיר לזמני השבת, גם היא נשמרת במכשיר בלבד: הזמנים מחושבים בו, והאפליקציה אינה מבקשת את מיקומך.'),
     ('הגיבוי של המכשיר',
         'אם הגיבוי מופעל במכשיר, הוא יכול לכלול את ההגדרות ואת התקדמות הקריאה באפליקציה, כך שהן יחזרו כשמשחזרים את המכשיר או מגדירים מכשיר חדש. ב־Android הגיבוי נשמר בחשבון Google שלך, וב־iPhone ב־iCloud או במחשב. אין לנו גישה אליו.'),
     ('ללא מעקב', 'אין באפליקציה פרסומות, אנליטיקה או מעקב של צד שלישי. איננו מוכרים או משתפים מידע.'),

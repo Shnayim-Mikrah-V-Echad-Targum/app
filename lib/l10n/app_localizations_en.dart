@@ -910,6 +910,78 @@ class AppLocalizationsEn extends AppLocalizations {
       'Visitors usually keep their home custom. Ask your rav.';
 
   @override
+  String get shabbatTimesLabel => 'Shabbat times';
+
+  @override
+  String get shabbatTimesHelp =>
+      'Choose your city to see when to light candles and when Shabbat ends. The times are worked out on this device, and your city stays on it.';
+
+  @override
+  String get cityLabel => 'City';
+
+  @override
+  String get cityNotSet => 'Not set';
+
+  @override
+  String shabbatTimesSummary(String candles, String ends) {
+    return 'Candle-lighting $candles\nShabbat ends $ends';
+  }
+
+  @override
+  String shabbatCandlesOnly(String candles) {
+    return 'Candle-lighting $candles';
+  }
+
+  @override
+  String get shabbatNoSunset =>
+      'The sun doesn\'t set there this Shabbat. Ask your rav about the times.';
+
+  @override
+  String get cityPickerTitle => 'Choose a city';
+
+  @override
+  String get citySearchLabel => 'Search for a city';
+
+  @override
+  String get citySearchClear => 'Clear search';
+
+  @override
+  String get cityYours => 'Your city';
+
+  @override
+  String get cityNone => 'No city';
+
+  @override
+  String get cityNoneDesc => 'Shabbat times aren\'t shown';
+
+  @override
+  String get cityNearYou => 'In your time zone';
+
+  @override
+  String get citySelected => 'Selected';
+
+  @override
+  String cityNoResults(String query) {
+    return 'No city matches “$query”.';
+  }
+
+  @override
+  String cityResultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cities found',
+      one: '1 city found',
+      zero: 'No cities found',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cityListNote =>
+      'The list has every place of 100,000 people or more, and every city in Israel. If yours isn\'t there, choose the nearest one.';
+
+  @override
   String get planLabel => 'Weekly plan';
 
   @override

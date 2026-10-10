@@ -20,6 +20,7 @@ import '../features/progress/progress_screen.dart';
 import '../features/reader/haftarah_screen.dart';
 import '../features/reader/reader_screen.dart';
 import '../features/settings/screens/accessibility_settings_screen.dart';
+import '../features/settings/screens/city_picker_screen.dart';
 import '../features/settings/screens/data_settings_screen.dart';
 import '../features/settings/screens/display_settings_screen.dart';
 import '../features/settings/screens/reading_settings_screen.dart';
@@ -79,7 +80,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             _route('/settings', (_) => const SettingsScreen(), routes: [
-              _route('reading', (_) => const ReadingSettingsScreen()),
+              _route('reading', (_) => const ReadingSettingsScreen(), routes: [
+                _route('city', (_) => const CityPickerScreen()),
+              ]),
               _route('display', (_) => const DisplaySettingsScreen()),
               _route('accessibility', (_) => const AccessibilitySettingsScreen()),
               _route('reminders', (_) => const ReminderSettingsScreen()),

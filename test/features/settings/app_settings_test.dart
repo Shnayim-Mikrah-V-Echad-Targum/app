@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -99,8 +100,44 @@ void main() {
   });
 
   test('copyWith can clear nullable fields', () {
-    final s = const AppSettings(habitAnchor: 'x').copyWith(habitAnchor: null);
+    final s = const AppSettings(habitAnchor: 'x', city: _jerusalem).copyWith(habitAnchor: null, city: null);
     expect(s.habitAnchor, isNull);
+    expect(s.city, isNull);
+  });
+
+  group('city', () {
+    test('none until one is chosen, also in settings saved before it existed', () {
+      expect(const AppSettings().city, isNull);
+      expect(AppSettings.fromJson(const AppSettings().toJson()..remove('city')).city, isNull);
+    });
+
+    test('round-trips through JSON, whole, so its times need no list', () {
+      final back = AppSettings.fromJson(
+        jsonDecode(jsonEncode(const AppSettings(city: _jerusalem).toJson())) as Map<String, dynamic>,
+      );
+      expect(back.city, _jerusalem);
+      expect(back.city!.candleMinutes, 40);
+      expect(back.city!.name(hebrew: true), 'ירושלים');
+    });
+
+    test('a city that can\'t be read is forgotten, and the rest of the settings kept', () {
+      for (final city in [
+        'Jerusalem',
+        {..._jerusalem.toJson(), 'lat': 'north'},
+        {..._jerusalem.toJson(), 'tz': null},
+        {..._jerusalem.toJson(), 'candleMinutes': 400},
+        {..._jerusalem.toJson()}..remove('name_en'),
+      ]) {
+        final s = AppSettings.fromJson({...const AppSettings(theme: AppThemeMode.dark).toJson(), 'city': city});
+        expect(s.city, isNull, reason: '$city');
+        expect(s.theme, AppThemeMode.dark);
+      }
+    });
+
+    test('isn\'t part of how weeks are planned', () {
+      const before = AppSettings();
+      expect(before.copyWith(city: _jerusalem).planSettings.sameSettingsAs(before.planSettings), isTrue);
+    });
   });
 
   group('plan history', () {
@@ -300,3 +337,14 @@ void main() {
     expect(AppSettings.fromJson(device.toJson()).uiFont, UiFont.system);
   });
 }
+
+const _jerusalem = City(
+  id: 281184,
+  nameEn: 'Jerusalem',
+  nameHe: 'ירושלים',
+  countryCode: 'IL',
+  latitude: 31.769,
+  longitude: 35.2163,
+  timeZone: 'Asia/Jerusalem',
+  candleMinutes: 40,
+);

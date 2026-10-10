@@ -909,6 +909,78 @@ class AppLocalizationsHe extends AppLocalizations {
       'מבקרים נוהגים בדרך כלל כמנהג מקומם הקבוע. יש לשאול רב.';
 
   @override
+  String get shabbatTimesLabel => 'זמני שבת';
+
+  @override
+  String get shabbatTimesHelp =>
+      'בחירת עיר מציגה מתי מדליקים נרות ומתי יוצאת השבת. הזמנים מחושבים במכשיר, והעיר נשמרת בו בלבד.';
+
+  @override
+  String get cityLabel => 'עיר';
+
+  @override
+  String get cityNotSet => 'לא נבחרה';
+
+  @override
+  String shabbatTimesSummary(String candles, String ends) {
+    return 'הדלקת נרות $candles\nצאת השבת $ends';
+  }
+
+  @override
+  String shabbatCandlesOnly(String candles) {
+    return 'הדלקת נרות $candles';
+  }
+
+  @override
+  String get shabbatNoSunset =>
+      'השמש אינה שוקעת שם בשבת הקרובה. על הזמנים יש לשאול רב.';
+
+  @override
+  String get cityPickerTitle => 'בחירת עיר';
+
+  @override
+  String get citySearchLabel => 'חיפוש עיר';
+
+  @override
+  String get citySearchClear => 'ניקוי החיפוש';
+
+  @override
+  String get cityYours => 'העיר שלך';
+
+  @override
+  String get cityNone => 'ללא עיר';
+
+  @override
+  String get cityNoneDesc => 'זמני השבת לא יוצגו';
+
+  @override
+  String get cityNearYou => 'באזור הזמן שלך';
+
+  @override
+  String get citySelected => 'נבחרה';
+
+  @override
+  String cityNoResults(String query) {
+    return 'לא נמצאה עיר בשם ״$query״.';
+  }
+
+  @override
+  String cityResultsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'נמצאו $count ערים',
+      one: 'נמצאה עיר אחת',
+      zero: 'לא נמצאו ערים',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cityListNote =>
+      'ברשימה כל מקום שגרים בו 100,000 איש ומעלה, וכל הערים בישראל. אם העיר שלך אינה ברשימה, אפשר לבחור את הקרובה אליה.';
+
+  @override
   String get planLabel => 'תוכנית שבועית';
 
   @override

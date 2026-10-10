@@ -1574,6 +1574,114 @@ abstract class AppLocalizations {
   /// **'Visitors usually keep their home custom. Ask your rav.'**
   String get yomTovDaysHelp;
 
+  /// No description provided for @shabbatTimesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat times'**
+  String get shabbatTimesLabel;
+
+  /// No description provided for @shabbatTimesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your city to see when to light candles and when Shabbat ends. The times are worked out on this device, and your city stays on it.'**
+  String get shabbatTimesHelp;
+
+  /// No description provided for @cityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get cityLabel;
+
+  /// No description provided for @cityNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get cityNotSet;
+
+  /// This week's Shabbat times in the reader's city, on two lines under the city in Settings. candles and ends are times of day, such as 6:07 PM.
+  ///
+  /// In en, this message translates to:
+  /// **'Candle-lighting {candles}\nShabbat ends {ends}'**
+  String shabbatTimesSummary(String candles, String ends);
+
+  /// This week's candle-lighting time, where the sky never gets dark enough to say when Shabbat ends (far north in summer).
+  ///
+  /// In en, this message translates to:
+  /// **'Candle-lighting {candles}'**
+  String shabbatCandlesOnly(String candles);
+
+  /// No description provided for @shabbatNoSunset.
+  ///
+  /// In en, this message translates to:
+  /// **'The sun doesn\'t set there this Shabbat. Ask your rav about the times.'**
+  String get shabbatNoSunset;
+
+  /// No description provided for @cityPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a city'**
+  String get cityPickerTitle;
+
+  /// No description provided for @citySearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a city'**
+  String get citySearchLabel;
+
+  /// No description provided for @citySearchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get citySearchClear;
+
+  /// No description provided for @cityYours.
+  ///
+  /// In en, this message translates to:
+  /// **'Your city'**
+  String get cityYours;
+
+  /// No description provided for @cityNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No city'**
+  String get cityNone;
+
+  /// No description provided for @cityNoneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat times aren\'t shown'**
+  String get cityNoneDesc;
+
+  /// No description provided for @cityNearYou.
+  ///
+  /// In en, this message translates to:
+  /// **'In your time zone'**
+  String get cityNearYou;
+
+  /// No description provided for @citySelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get citySelected;
+
+  /// Shown when a search of the city list finds nothing. query is what the reader typed.
+  ///
+  /// In en, this message translates to:
+  /// **'No city matches “{query}”.'**
+  String cityNoResults(String query);
+
+  /// Read out by screen readers after typing in the city search.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No cities found} =1{1 city found} other{{count} cities found}}'**
+  String cityResultsCount(int count);
+
+  /// No description provided for @cityListNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The list has every place of 100,000 people or more, and every city in Israel. If yours isn\'t there, choose the nearest one.'**
+  String get cityListNote;
+
   /// No description provided for @planLabel.
   ///
   /// In en, this message translates to:

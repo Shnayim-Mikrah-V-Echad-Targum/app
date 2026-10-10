@@ -9,6 +9,7 @@ const a11yRoutes = [
   '/community',
   '/settings',
   '/settings/reading',
+  '/settings/reading/city',
   '/settings/display',
   '/settings/accessibility',
   '/settings/reminders',

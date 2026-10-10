@@ -16,8 +16,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
@@ -25,6 +28,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -82,6 +86,12 @@ const _screens = {
   'settings': '/settings',
   's_reading': '/settings/reading',
   's_reading_changed': '/settings/reading',
+  // The city for Shabbat times, and its list: as it opens, searched, and
+  // searched for a place that isn't there.
+  's_reading_city': '/settings/reading',
+  'city': '/settings/reading/city',
+  'city_search': '/settings/reading/city',
+  'city_none': '/settings/reading/city',
   's_display': '/settings/display',
   's_fonts': '/settings/display',
   's_a11y': '/settings/accessibility',
@@ -90,6 +100,7 @@ const _screens = {
   's_data_reset': '/settings/data',
   'about': '/settings/about',
   'privacy': '/settings/about/legal/privacy',
+  'sources': '/settings/about/sources',
   'guide': '/guide',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
@@ -148,6 +159,27 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: false, joinDate: LocalDate(2029, 5, 1)),
   // Joined on the Wednesday of Bereshit: the days before have no reading.
   'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
+  's_reading_city': (s) => s.copyWith(city: _jerusalem),
+  'city': (s) => s.copyWith(city: _jerusalem),
+  'city_search': (s) => s.copyWith(city: _jerusalem),
+};
+
+const _jerusalem = City(
+  id: 281184,
+  nameEn: 'Jerusalem',
+  nameHe: 'ירושלים',
+  countryCode: 'IL',
+  latitude: 31.769,
+  longitude: 35.2163,
+  timeZone: 'Asia/Jerusalem',
+  candleMinutes: 40,
+);
+
+/// Providers replaced for a screen: the device's time zone, which suggests
+/// cities.
+final _screenOverrides = <String, List<Override>>{
+  for (final screen in ['city', 'city_search', 'city_none'])
+    screen: [deviceTimeZoneProvider.overrideWith((ref) async => 'Asia/Jerusalem')],
 };
 
 /// Screens shown on another day, with another history: the Torah map in
@@ -196,6 +228,14 @@ final _taps = {
   // The second page of onboarding: where the reader will be this Shabbat.
   'welcome_location': () => find.byType(FilledButton).first,
 };
+
+/// Waits for the list of cities, which loads from a large asset.
+Future<void> _untilLoaded(WidgetTester tester) async {
+  for (var i = 0; i < 100 && find.byType(PaperGroup).evaluate().isEmpty; i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+  }
+}
 
 Future<void> _showWeekStrip(WidgetTester tester) =>
     Scrollable.ensureVisible(tester.element(find.byType(WeekStrip)), alignment: 0.5);
@@ -299,6 +339,16 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_gaps_spaced': _scrollToEnd,
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.byIcon(Icons.delete_forever_outlined)),
+  's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
+  'city': _untilLoaded,
+  'city_search': (tester) async {
+    await _untilLoaded(tester);
+    await tester.enterText(find.byType(TextField), 'york');
+  },
+  'city_none': (tester) async {
+    await _untilLoaded(tester);
+    await tester.enterText(find.byType(TextField), 'Atlantis');
+  },
   // The week strip, in the middle of the page.
   'today_yomtov_oneday': _showWeekStrip,
   'today_yomtov_twoday': _showWeekStrip,
@@ -397,14 +447,17 @@ const _desktopScreens = {
   'kit_progress',
   'kit_week',
   'progress_map',
+  'city_search',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
-const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display'};
+const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {'today', 'progress', 'progress_map', 'kit_week'};
 const _bigTextScreens = {
   'today',
+  's_reading_city',
+  'city',
   'progress',
   'reader',
   'kit_ornaments',
@@ -474,6 +527,7 @@ void main() {
           forums: blocked
               ? await _accountWithNewerBackup()
               : (_backupOn.contains(entry.key) ? await _signedIn() : null),
+          overrides: _screenOverrides[entry.key] ?? const [],
         );
         if (!entry.key.startsWith('welcome')) c.read(routerProvider).go(entry.value);
         await _settle(tester);

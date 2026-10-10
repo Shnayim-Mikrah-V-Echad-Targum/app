@@ -1,3 +1,4 @@
+import '../../core/calendar/city.dart';
 import '../../core/calendar/local_date.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart';
@@ -136,6 +137,7 @@ class AppSettings {
     this.fridayReminderMinutes = 10 * 60,
     this.checkInReminder = false,
     this.habitAnchor,
+    this.city,
     this.language = AppLanguage.system,
     this.onboardingComplete = false,
     this.notificationPromptShown = false,
@@ -229,6 +231,13 @@ class AppSettings {
 
   /// The routine the daily reading is anchored to ("after Shacharit").
   final String? habitAnchor;
+
+  // Shabbat times
+
+  /// The place whose candle-lighting and Havdalah times are shown, chosen
+  /// from a list rather than found by location; null until one is chosen.
+  /// It stays on the device.
+  final City? city;
 
   // App
   final AppLanguage language;
@@ -351,6 +360,7 @@ class AppSettings {
     int? fridayReminderMinutes,
     bool? checkInReminder,
     Object? habitAnchor = _keep,
+    Object? city = _keep,
     AppLanguage? language,
     bool? onboardingComplete,
     bool? notificationPromptShown,
@@ -404,6 +414,7 @@ class AppSettings {
         fridayReminderMinutes: fridayReminderMinutes ?? this.fridayReminderMinutes,
         checkInReminder: checkInReminder ?? this.checkInReminder,
         habitAnchor: identical(habitAnchor, _keep) ? this.habitAnchor : habitAnchor as String?,
+        city: identical(city, _keep) ? this.city : city as City?,
         language: language ?? this.language,
         onboardingComplete: onboardingComplete ?? this.onboardingComplete,
         notificationPromptShown: notificationPromptShown ?? this.notificationPromptShown,
@@ -463,6 +474,7 @@ class AppSettings {
         'fridayReminderMinutes': fridayReminderMinutes,
         'checkInReminder': checkInReminder,
         'habitAnchor': habitAnchor,
+        'city': city?.toJson(),
         'language': language.name,
         'onboardingComplete': onboardingComplete,
         'notificationPromptShown': notificationPromptShown,
@@ -534,12 +546,24 @@ class AppSettings {
       fridayReminderMinutes: i('fridayReminderMinutes', d.fridayReminderMinutes),
       checkInReminder: b('checkInReminder', d.checkInReminder),
       habitAnchor: j['habitAnchor'] as String?,
+      city: _readCity(j['city']),
       language: e(AppLanguage.values, j['language'], d.language),
       onboardingComplete: b('onboardingComplete', d.onboardingComplete),
       notificationPromptShown: b('notificationPromptShown', d.notificationPromptShown),
       joinDate: j['joinDate'] is int ? LocalDate.fromRd(j['joinDate'] as int) : null,
       planHistory: _readPlanHistory(j['planHistory']),
     );
+  }
+
+  /// Reads [city], forgetting one that can't be read: choosing it again is
+  /// better than wrong times.
+  static City? _readCity(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    try {
+      return City.fromJson(raw);
+    } on FormatException {
+      return null;
+    }
   }
 
   /// Reads [planHistory], oldest first, skipping entries that can't be read.
