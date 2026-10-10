@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
-import '../../app/shell.dart' show Breakpoints;
 import '../../core/calendar/parsha_schedule.dart';
 import '../../data/models/parsha.dart';
 import '../../services/feedback.dart';
@@ -353,14 +352,16 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
   }
 
   /// A book's columns: the window's (3, 4 or 6), unless large text would
-  /// have to shrink the book's longest word below [_minNameScale] to fit a
-  /// tile. A name wraps between words, never inside one: a word a little too
-  /// long for its tile is set just small enough instead (see [_tile]).
-  static int _columns(BuildContext context, double width, double longestWord) {
+  /// have to shrink a name of the book below [_minNameScale] to fit a tile:
+  /// [leastShare] is the smallest share any of its names would be set at in
+  /// a tile of a given room. A name wraps between words, never inside one: a
+  /// word a little too long for its tile is set just small enough instead
+  /// (see [_tile]).
+  static int _columns(BuildContext context, double width, double Function(double room) leastShare) {
     final window = MediaQuery.sizeOf(context).width;
     final most = window >= Breakpoints.expanded ? 6 : (window >= Breakpoints.medium ? 4 : 3);
     for (var c = most; c > 1; c--) {
-      if (_room(width, c) >= longestWord * _minNameScale) return c;
+      if (leastShare(_room(width, c)) >= _minNameScale) return c;
     }
     return 1;
   }
@@ -400,7 +401,11 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
           // set in bold.
           final columns = [
             for (final book in books)
-              _columns(context, width, book.map((p) => words.longest(name(p), bold: true)).reduce(math.max)),
+              _columns(
+                context,
+                width,
+                (room) => book.map((p) => words.fit(name(p), bold: true, room: room)).reduce(math.min),
+              ),
           ];
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -473,8 +478,7 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
           onTap: () => context.push('/progress/week/${widget.cycle}:${p.id.number}'),
           name: name,
           stacked: look.icon != null && word > room - _tileIcon - _tileIconGap,
-          // A hair under, so rounding never wraps the word after all.
-          nameScale: word > room ? (room - 0.5) / word : 1,
+          nameScale: words.fit(name, bold: look.bold, room: room),
         ),
       ),
     );
@@ -496,15 +500,46 @@ class _WordWidths {
   static final _breaks = RegExp(r'(?<=-)|\s+');
 
   /// The width of the longest word in [name].
-  double longest(String name, {required bool bold}) =>
-      name.split(_breaks).map((word) => _widths[(word, bold)] ??= _measure(word, bold)).reduce(math.max);
+  double longest(String name, {required bool bold}) => _longestWord(name, bold).$2;
 
-  double _measure(String word, bool bold) {
+  /// The longest word in [name], and its width.
+  (String, double) _longestWord(String name, bool bold) {
+    var longest = ('', 0.0);
+    for (final word in name.split(_breaks)) {
+      final width = _widths[(word, bold)] ??= _measure(word, bold);
+      if (width > longest.$2) longest = (word, width);
+    }
+    return longest;
+  }
+
+  /// The share of the reader's text size [name] is set at so that its
+  /// longest word fits [room]: 1 where it fits already, and otherwise a hair
+  /// under, so rounding never wraps the word after all. The word is measured
+  /// again at the size it is set: letter spacing doesn't shrink with the
+  /// text, nor quite does each glyph's advance.
+  double fit(String name, {required bool bold, required double room}) {
+    final (word, width) = _longestWord(name, bold);
+    if (width <= room) return 1;
+    final target = room - 0.5;
+    var share = target / width;
+    for (var i = 0; i < 3; i++) {
+      final set = _measure(word, bold, share: share);
+      if (set <= target) break;
+      share *= target / set;
+    }
+    return share;
+  }
+
+  /// [word]'s width at [share] of the reader's text size, scaled as the
+  /// tile scales its name (see [_TileFace.nameScale]).
+  double _measure(String word, bool bold, {double share = 1}) {
     final style = Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: bold ? FontWeight.w700 : null);
+    final scaler = MediaQuery.textScalerOf(context);
+    final fontSize = style?.fontSize ?? 13;
     final painter = TextPainter(
       text: TextSpan(text: word, style: style),
       textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
+      textScaler: share == 1 ? scaler : TextScaler.linear(scaler.scale(fontSize) / fontSize * share),
       locale: Localizations.maybeLocaleOf(context),
       maxLines: 1,
     )..layout();

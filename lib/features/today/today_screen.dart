@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -347,7 +349,7 @@ class _StreakRow extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                        _WholeWords(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                         Text(label, style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
@@ -365,6 +367,35 @@ class _StreakRow extends StatelessWidget {
       ],
     );
   }
+}
+
+/// [text] wrapped between its words, never inside one: a word too wide for
+/// the line on its own, as with large text, is set just small enough to fit.
+class _WholeWords extends StatelessWidget {
+  const _WholeWords(this.text, {required this.style});
+
+  final String text;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
+        final scaler = MediaQuery.textScalerOf(context);
+        var widest = 0.0;
+        for (final word in text.split(' ')) {
+          final painter = TextPainter(
+            text: TextSpan(text: word, style: style),
+            textDirection: Directionality.of(context),
+            textScaler: scaler,
+            maxLines: 1,
+          )..layout();
+          widest = math.max(widest, painter.width);
+          painter.dispose();
+        }
+        final size = style?.fontSize ?? 14;
+        // A hair under, so rounding never breaks the word after all.
+        final share = widest > constraints.maxWidth ? (constraints.maxWidth - 1) / widest : 1.0;
+        return Text(text, style: style, textScaler: share < 1 ? TextScaler.linear(scaler.scale(size) / size * share) : null);
+      });
 }
 
 class _HaftarahTile extends ConsumerWidget {

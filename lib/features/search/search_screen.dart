@@ -209,10 +209,10 @@ class _Width extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
+          constraints: const BoxConstraints(maxWidth: ContentWidth.list),
           child: SizedBox(
             width: double.infinity,
-            child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: child),
+            child: Padding(padding: EdgeInsets.symmetric(horizontal: Gutter.of(context)), child: child),
           ),
         ),
       );
@@ -267,7 +267,8 @@ class _NoResults extends StatelessWidget {
     final theme = Theme.of(context);
     final hebrew = HebrewText.containsHebrew(query);
     return ListView(
-      padding: const EdgeInsets.only(bottom: 32),
+      // Clear of the gesture bar, as a PageBody is.
+      padding: EdgeInsets.only(bottom: Space.s40 + MediaQuery.paddingOf(context).bottom),
       children: [
         _Width(
           child: Padding(
@@ -316,7 +317,7 @@ class _Results extends ConsumerWidget {
     return ListView.builder(
       key: ValueKey(results.query),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.only(bottom: 32),
+      padding: EdgeInsets.only(bottom: Space.s40 + MediaQuery.paddingOf(context).bottom),
       itemCount: groups.length + (results.truncated ? 2 : 1),
       itemBuilder: (context, i) {
         if (i == 0) {

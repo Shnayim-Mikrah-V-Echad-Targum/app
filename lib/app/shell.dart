@@ -11,11 +11,9 @@ import '../ui/widgets/app_mark.dart';
 import '../ui/widgets/fonts_change_scope.dart';
 import 'system_bars.dart';
 
-/// Breakpoints follow Material 3 window size classes.
-abstract final class Breakpoints {
-  static const medium = 600.0;
-  static const expanded = 1200.0;
-}
+// Where the layout changes, with the other layout tokens; shared from here
+// too, as the shell is where it changes.
+export '../ui/theme/layout.dart' show Breakpoints;
 
 /// Bottom navigation on phones; a navigation rail on tablets and desktops
 /// (docs/DESIGN_SYSTEM.md §6.9 and §6.10).

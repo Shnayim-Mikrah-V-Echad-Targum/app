@@ -7,14 +7,20 @@ import 'ornaments.dart';
 
 /// Screens narrower than this pad cards and sheets 16 instead of 20 or 24
 /// (docs/DESIGN_SYSTEM.md §5).
-const kNarrowScreenWidth = 360.0;
+const kNarrowScreenWidth = Breakpoints.narrow;
 
 bool _isNarrow(BuildContext context) => MediaQuery.sizeOf(context).width < kNarrowScreenWidth;
 
 /// Constrains page content to a readable width and centers it on wide
 /// screens, so lines never get uncomfortably long (WCAG 1.4.8).
+///
+/// The column is [maxWidth] wide at most, gutters included, and by default
+/// padded with the gutters at the sides, 8 above and 40 below
+/// ([defaultPadding]). Below whatever padding it has, it clears the safe area,
+/// so the end of a page over the whole screen is never under the gesture bar
+/// (within the tabs, the navigation bar already keeps it clear).
 class PageBody extends StatelessWidget {
-  const PageBody({super.key, required this.children, this.maxWidth = 760, this.padding, this.controller})
+  const PageBody({super.key, required this.children, this.maxWidth = ContentWidth.list, this.padding, this.controller})
       : header = const [],
         itemCount = 0,
         itemBuilder = null;
@@ -27,7 +33,7 @@ class PageBody extends StatelessWidget {
     required this.itemCount,
     required IndexedWidgetBuilder this.itemBuilder,
     this.header = const [],
-    this.maxWidth = 760,
+    this.maxWidth = ContentWidth.list,
     this.padding,
     this.controller,
   }) : children = const [];
@@ -40,13 +46,18 @@ class PageBody extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final ScrollController? controller;
 
-  static const _defaultPadding = EdgeInsets.fromLTRB(16, 8, 16, 32);
+  /// A page's padding: the gutters at the sides, 8 above and 40 below.
+  static EdgeInsets defaultPadding(BuildContext context) {
+    final g = Gutter.of(context);
+    return EdgeInsets.fromLTRB(g, Space.sm, g, Space.s40);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final p = (padding ?? defaultPadding(context)).resolve(Directionality.of(context)) +
+        EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom);
     final itemBuilder = this.itemBuilder;
     if (itemBuilder != null) {
-      final p = (padding ?? _defaultPadding).resolve(Directionality.of(context));
       return ListView.builder(
         controller: controller,
         // Scrollable even when it fits, as it is without a controller of its
@@ -78,7 +89,7 @@ class PageBody extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Padding(
-              padding: padding ?? _defaultPadding,
+              padding: p,
               // The page is one item of its list. Its headings, texts and
               // controls are each a node of their own, never merged into one.
               child: Semantics(

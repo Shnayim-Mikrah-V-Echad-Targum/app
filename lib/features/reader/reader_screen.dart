@@ -703,7 +703,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   ),
                   if (!ctx.isOpen)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      padding: EdgeInsets.fromLTRB(Gutter.of(context), 4, Gutter.of(context), 0),
                       child: NoticeBanner(
                         icon: Icons.visibility_outlined,
                         text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),

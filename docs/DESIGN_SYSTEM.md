@@ -94,8 +94,9 @@ New and changed files:
 - `lib/ui/widgets/ledger.dart`: `LedgerCard`.
 - `lib/ui/widgets/year_bar.dart`: `YearBar`.
 - `lib/ui/widgets/progress_widgets.dart`: ParshaRings, the new `RingLegend`, WeekStrip and the candles, per §6.
+- `lib/ui/theme/layout.dart`: the layout tokens of §5 (`Space`, `Breakpoints`, `Gutter`, `ContentWidth`, `Rhythm`).
 - `lib/ui/widgets/common.dart`:
-  - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5;
+  - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5, plus the safe area below, so a page over the whole screen clears the gesture bar;
   - `SectionHeader` is restyled as an eyebrow (§6.4);
   - `NoticeBanner` per §6.20;
   - `EmptyState` per §6.22.
@@ -669,7 +670,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 **Layout**
 - Fixed grid: 3 columns under 600, 4 at 600 and up, 6 at 1200 and up; gap 6.
-- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha'alotcha on a 360 dp phone or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
+- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha'alotcha on a 360 or 412 dp phone, or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, measured at the size it is set (letter spacing doesn't shrink with the text), and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
 - Build each row as `IntrinsicHeight(Row([Expanded(tile) …]))` so tiles grow with text scale. No GridView aspect ratio.
 
 **Tile**
