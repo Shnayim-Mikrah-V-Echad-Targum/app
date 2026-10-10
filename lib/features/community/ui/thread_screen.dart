@@ -205,13 +205,21 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final forumName = forum?.name(context.isHebrewUi) ?? (forums.isLoading || t == null ? null : l.communityTitle);
     final canReply = t != null && (!t.locked || isMod);
 
+    // Posts reach into the gutter at their end, where their menu buttons end
+    // (see PostCard.menuBleed); everything else keeps to the column.
+    final g = Gutter.of(context);
+    Widget inColumn(Widget child) =>
+        Padding(padding: const EdgeInsetsDirectional.only(end: PostCard.menuBleed), child: child);
+
     final content = RefreshablePage(
       refresh: _refresh,
       builder: (context, refreshButton) => PageScaffold(
-        // The browser's tab is named for the thread.
+        // The browser's tab is named for the thread, and so is the page, by
+        // its heading below: the forum's name over it is no heading.
         titleText: title,
         title: Text(forumName ?? '', overflow: TextOverflow.ellipsis),
         showTitle: forumName != null,
+        titleNamesPage: false,
         actions: [
           const DemoTag(),
           refreshButton,
@@ -252,18 +260,34 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                     // member's.
                     final total = page.hasEarlier ? max(t?.postCount ?? 0, list.length) : list.length;
                     final offset = total - list.length;
-                    // The post that opened the thread, once it is loaded. A
-                    // weekly thread opens with none of its own.
-                    final opening = offset == 0 && t != null && t.kind != ThreadKind.weekly && list.isNotEmpty ? list.first.id : null;
+                    // The post that opened the thread, once it is loaded: the
+                    // first shown, if its member began the thread as it was
+                    // begun. A weekly thread opens with none of its own; nor
+                    // does a thread whose opening post is hidden (deleted, or
+                    // its member blocked).
+                    final first = list.firstOrNull;
+                    final opening = offset == 0 &&
+                            t != null &&
+                            t.kind != ThreadKind.weekly &&
+                            first != null &&
+                            first.authorId != null &&
+                            first.authorId == t.authorId &&
+                            first.createdAt.difference(t.createdAt).abs() < const Duration(minutes: 1)
+                        ? first.id
+                        : null;
                     return PageBody.builder(
                       controller: _scroll,
-                      header: [
+                      padding: EdgeInsetsDirectional.fromSTEB(g, Space.sm, g - PostCard.menuBleed, Space.s40),
+                      header: <Widget>[
                         if (t != null) ...[
-                          Semantics(
-                            header: true,
-                            headingLevel: 1,
-                            child: Lang(
-                              Locale(titleDirection == TextDirection.rtl ? 'he' : 'en'),
+                          // The page's one heading of level 1, which names it,
+                          // in its own language.
+                          Lang(
+                            Locale(titleDirection == TextDirection.rtl ? 'he' : 'en'),
+                            child: Semantics(
+                              header: true,
+                              headingLevel: 1,
+                              namesRoute: true,
                               child: Text(
                                 title,
                                 textDirection: titleDirection,
@@ -308,14 +332,14 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                               ),
                             ),
                           ),
-                      ],
+                      ].map(inColumn).toList(),
                       itemCount: list.length,
                       // Each post under a hairline, the first under the
                       // thread's title.
                       itemBuilder: (context, i) => Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const _Hairline(),
+                          inColumn(const _Hairline()),
                           PostCard(
                             key: ValueKey(list[i].id),
                             post: list[i],
@@ -555,16 +579,28 @@ class PostCard extends ConsumerWidget {
   static const double textInset = _discSize + Space.md;
   static const double _discSize = 32;
 
-  /// The start padding of a text button with an icon, which the footer pulls
-  /// back so that its icons stand in line with the text.
+  /// The start padding of the footer's text buttons, set whatever the text
+  /// size, which the footer pulls back so that their icons stand in line
+  /// with the text.
   static const double _buttonInset = 12;
+
+  /// How far a post reaches past the column into the gutter at its end: its
+  /// menu button's 48 dp box ends there, so that the glyph within it lines
+  /// up with the column's edge, as the app bar's do with the screen's. The
+  /// box is wholly within the post, so the whole of it takes a tap; the rest
+  /// of the post keeps to the column.
+  static const double menuBleed = 12;
 
   /// The width of the opening post's rule, and the gap after it.
   static const double _ruleWidth = 3;
   static const double _ruleGap = Space.md;
 
-  /// The room a footer button's 48 leaves under its label.
-  static const double _footerSlack = 14;
+  /// The footer's text buttons: their padding fixed, where Material's own
+  /// would shrink as the text grows and move their icons off the text's
+  /// line.
+  static final footerButtonStyle = TextButton.styleFrom(
+    padding: const EdgeInsetsDirectional.fromSTEB(_buttonInset, 8, 16, 8),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -650,47 +686,35 @@ class PostCard extends ConsumerWidget {
       if (isModerator && !isMine) PopupMenuItem(value: 'hide', child: Text(l.hidePost)),
     ];
 
-    // The name, the tag and the time are each a text of their own, so that
-    // each runs in its own direction: a Hebrew name keeps its place in an
-    // English line, and an English one in a Hebrew line. Enlarged, the time
-    // moves under the name rather than squeezing it.
+    // The header's first line is the name's: the initial is centred on it,
+    // and the menu on the 48 dp row it shares, however large the text.
+    final scaler = MediaQuery.textScalerOf(context);
+    final nameStyle = text.titleSmall!;
+    final nameLine = scaler.scale(nameStyle.fontSize!) * (nameStyle.height ?? 1.4);
+    final firstLine = max(kMinInteractiveDimension / 2, nameLine / 2);
+    final discTop = firstLine - _discSize / 2;
+
     final header = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InitialDisc(post.authorName, size: _discSize),
+        Padding(padding: EdgeInsets.only(top: discTop), child: InitialDisc(post.authorName, size: _discSize)),
         const Gap(Space.md),
         Expanded(
-          child: Semantics(
-            label: '${l.postedBy(tag == null ? name : '$name, $tag', when)}${edited ? ', ${l.edited}' : ''}',
-            excludeSemantics: true,
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(name, textDirection: autoDirection(name), style: text.titleSmall),
-                if (tag != null)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(start: Space.sm),
-                    child: _Tag(tag),
-                  ),
-                Tooltip(
-                  message: when,
-                  excludeFromSemantics: true,
-                  child: Text(' · $time', style: text.bodySmall?.copyWith(color: muted)),
-                ),
-              ],
+          child: Padding(
+            padding: EdgeInsets.only(top: firstLine - nameLine / 2),
+            child: Semantics(
+              label: '${l.postedBy(tag == null ? name : '$name, $tag', when)}${edited ? ', ${l.edited}' : ''}',
+              excludeSemantics: true,
+              child: _Byline(name: name, tag: tag, time: time, when: when),
             ),
           ),
         ),
         if (menu.isNotEmpty)
-          // Its glyph in line with the end of the column, as the app bar's
-          // are with the end of the screen.
-          Transform.translate(
-            offset: Offset(Directionality.of(context) == TextDirection.rtl ? -_buttonInset : _buttonInset, 0),
-            child: PopupMenuButton<String>(
-              tooltip: l.moreOptionsFor(name),
-              popUpAnimationStyle: Motion.of(context).style,
-              onSelected: onMenu,
-              itemBuilder: (context) => menu,
-            ),
+          PopupMenuButton<String>(
+            tooltip: l.moreOptionsFor(name),
+            popUpAnimationStyle: Motion.of(context).style,
+            onSelected: onMenu,
+            itemBuilder: (context) => menu,
           )
         else
           // As high as the button would be, so every header is.
@@ -700,18 +724,19 @@ class PostCard extends ConsumerWidget {
 
     final onReply = this.onReply;
     // Nothing beneath your own post until it is thanked, nor in a locked
-    // thread.
-    final hasFooter = !isMine || post.todah > 0 || onReply != null;
-    final todah = _TodahButton(post: post, authorName: name, isMine: isMine);
+    // thread; and under your own, Reply first until it is.
+    final showTodah = !isMine || post.todah > 0;
+    final hasFooter = showTodah || onReply != null;
     final footer = Padding(
-      padding: const EdgeInsetsDirectional.only(start: textInset - _buttonInset),
+      padding: const EdgeInsetsDirectional.only(start: textInset - _buttonInset, end: menuBleed),
       child: Wrap(
         spacing: Space.sm,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          todah,
+          if (showTodah) _TodahButton(post: post, authorName: name, isMine: isMine),
           if (onReply != null)
             TextButton.icon(
+              style: footerButtonStyle,
               onPressed: onReply,
               icon: const Icon(Icons.reply, size: 18),
               // Merged into the button's node, which names whom it answers.
@@ -720,13 +745,17 @@ class PostCard extends ConsumerWidget {
         ],
       ),
     );
+    // The room a footer button leaves under its label: 14 in a 48 dp row,
+    // less once large text makes the button taller than that.
+    final label = scaler.scale(text.labelLarge!.fontSize!) * (text.labelLarge!.height ?? 1.4);
+    final footerSlack = (max(kMinInteractiveDimension, label + 16) - label) / 2;
 
     Widget letter = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         header,
         Padding(
-          padding: const EdgeInsetsDirectional.only(start: textInset),
+          padding: const EdgeInsetsDirectional.only(start: textInset, end: menuBleed),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -759,15 +788,18 @@ class PostCard extends ConsumerWidget {
       ],
     );
     if (opening) {
-      // The rule runs from the top of the initial to the foot of the last
-      // line, so that it stands as far from the hairline above as below.
+      // The rule hangs in the gutter at the start, so that the opening post's
+      // text keeps the column every letter shares. It runs from the top of
+      // the initial to the foot of the last line, so that it stands as far
+      // from the hairline above as below.
       letter = Stack(
+        clipBehavior: Clip.none,
         children: [
-          Padding(padding: const EdgeInsetsDirectional.only(start: _ruleWidth + _ruleGap), child: letter),
+          letter,
           PositionedDirectional(
-            start: 0,
-            top: (kMinInteractiveDimension - _discSize) / 2,
-            bottom: hasFooter ? _footerSlack : 0,
+            start: -(_ruleWidth + _ruleGap),
+            top: discTop,
+            bottom: hasFooter ? footerSlack : 0,
             width: _ruleWidth,
             child: ColoredBox(color: scheme.primary),
           ),
@@ -779,9 +811,9 @@ class PostCard extends ConsumerWidget {
       container: true,
       label: l.postNofM(number, total),
       // 20 of air above the initial and below the last line, counting what
-      // the header's and footer's 48 dp rows leave around their text.
+      // the header's and footer's rows leave around their text.
       child: Padding(
-        padding: EdgeInsets.only(top: Space.md, bottom: hasFooter ? Space.xl - _footerSlack : Space.lg),
+        padding: EdgeInsets.only(top: Space.md, bottom: hasFooter ? Space.xl - footerSlack : Space.lg),
         child: letter,
       ),
     );
@@ -811,6 +843,63 @@ class PostCard extends ConsumerWidget {
         ),
         child: postWidget,
       ),
+    );
+  }
+}
+
+/// Who wrote a post, the tag beside their name, and when (§6.21): each a
+/// text of its own, so that each runs in its own direction, a Hebrew name
+/// keeping its place in an English line and an English one in a Hebrew line.
+/// The time follows the name after " · " while the three fit on one line;
+/// once they don't (large text, a long name), it goes on a line of its own
+/// under the name, without the separator, rather than squeeze it.
+class _Byline extends StatelessWidget {
+  const _Byline({required this.name, required this.tag, required this.time, required this.when});
+
+  final String name;
+  final String? tag;
+  final String time;
+
+  /// The full date and time, for the time's tooltip.
+  final String when;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final text = theme.textTheme;
+    final muted = text.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final scaler = MediaQuery.textScalerOf(context);
+    final tag = this.tag;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double width(String s, TextStyle? style) {
+          final painter = TextPainter(
+            text: TextSpan(text: s, style: style),
+            textDirection: autoDirection(s),
+            textScaler: scaler,
+            maxLines: 1,
+          )..layout();
+          final w = painter.width;
+          painter.dispose();
+          return w;
+        }
+
+        // The tag's gap, padding and outline, about its text.
+        final tagWidth = tag == null ? 0.0 : Space.sm + 2 * 6 + 4 + width(tag, text.labelSmall);
+        final oneLine = width(name, text.titleSmall) + tagWidth + width(' · $time', muted) <= constraints.maxWidth;
+        Widget timeText(String shown) =>
+            Tooltip(message: when, excludeFromSemantics: true, child: Text(shown, style: muted));
+        final nameAndTag = Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(name, textDirection: autoDirection(name), style: text.titleSmall),
+            if (tag != null) Padding(padding: const EdgeInsetsDirectional.only(start: Space.sm), child: _Tag(tag)),
+            if (oneLine) timeText(' · $time'),
+          ],
+        );
+        if (oneLine) return nameAndTag;
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [nameAndTag, timeText(time)]);
+      },
     );
   }
 }
@@ -877,17 +966,41 @@ class _Quote extends StatelessWidget {
 
 /// Edits [post] in a dialog. Returns the text to save, or null if it is
 /// left as it was.
-Future<String?> _editPost(BuildContext context, Post post) async {
-  final l = context.l10n;
-  final controller = TextEditingController(text: post.body);
-  final ok = await showAppDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(l.editPostTitle),
-      content: ValueListenableBuilder(
-        valueListenable: controller,
-        builder: (context, value, _) => TextField(
-          controller: controller,
+Future<String?> _editPost(BuildContext context, Post post) =>
+    showAppDialog<String>(context: context, builder: (context) => _EditPostDialog(body: post.body));
+
+/// The dialog that edits a post: its text in a labelled field, which takes
+/// the focus, and Save, which waits for a change of 2 characters at least,
+/// as a reply does. It closes with the new text, or with nothing.
+class _EditPostDialog extends StatefulWidget {
+  const _EditPostDialog({required this.body});
+
+  final String body;
+
+  @override
+  State<_EditPostDialog> createState() => _EditPostDialogState();
+}
+
+class _EditPostDialogState extends State<_EditPostDialog> {
+  late final _controller = TextEditingController(text: widget.body);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  bool _changed(String text) => text.trim().length >= 2 && text.trim() != widget.body.trim();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return ValueListenableBuilder(
+      valueListenable: _controller,
+      builder: (context, value, _) => AlertDialog(
+        title: Text(l.editPostTitle),
+        content: TextField(
+          controller: _controller,
           autofocus: true,
           minLines: 3,
           maxLines: 8,
@@ -896,14 +1009,16 @@ Future<String?> _editPost(BuildContext context, Post post) async {
           textDirection: autoDirection(value.text, fallback: Directionality.of(context)),
           decoration: InputDecoration(labelText: l.threadBodyLabel, alignLabelWithHint: true),
         ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
+          FilledButton(
+            onPressed: _changed(value.text) ? () => Navigator.pop(context, value.text) : null,
+            child: Text(l.actionSave),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.actionSave)),
-      ],
-    ),
-  );
-  return ok == true ? controller.text : null;
+    );
+  }
 }
 
 /// A hairline across the column of posts, between one post and the next.
@@ -1015,6 +1130,7 @@ class _TodahButtonState extends ConsumerState<_TodahButton> {
     }
     final action = _given ? l.todahRemove(widget.authorName) : l.todahSemantics(widget.authorName);
     return TextButton.icon(
+      style: PostCard.footerButtonStyle,
       onPressed: _toggle,
       icon: Icon(_given ? Icons.volunteer_activism : Icons.volunteer_activism_outlined, size: 18),
       // Merged into the button's node: a toggle, on once thanks are given.

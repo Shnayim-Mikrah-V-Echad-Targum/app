@@ -1440,24 +1440,27 @@
   "@todahAction": {
     "description": "The label of a post's thanks button: the Hebrew word for thanks."
   },
-  "todahCount":"{count, plural, =0{Say thanks} =1{1 thanks} other{{count} thanks}}",
+  "todahCount": "{count, plural, =1{1 thanks} other{{count} thanks}}",
   "@todahCount": {
+    "description": "How many have thanked a post: on its Todah button for screen readers, and under one's own post.",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "todahSemantics": "Say thanks to {name}",
+  "todahSemantics": "Say todah to {name}",
   "@todahSemantics": {
+    "description": "The Todah button's name for screen readers, which holds the word the button shows (Todah), so that voice control finds it by what it says.",
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "todahRemove": "Remove your thanks to {name}",
+  "todahRemove": "Remove your todah to {name}",
   "@todahRemove": {
+    "description": "The Todah button's name for screen readers once thanks are given; it holds the word the button shows.",
     "placeholders": {
       "name": {
         "type": "String"

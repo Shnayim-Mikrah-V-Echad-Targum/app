@@ -129,6 +129,12 @@ class PageBody extends StatelessWidget {
 /// [PageBody]. The title is the page's heading, of level 1: [titleText], or
 /// [title] where it shows the same some other way. [titleText] also names
 /// the tab; [showTitle] false leaves the app bar without a title.
+///
+/// A page whose app bar shows something other than the page's own name
+/// (a thread, under its forum's) sets [titleNamesPage] false: the app bar's
+/// title is then no heading, nor what names the page to a screen reader as
+/// it opens, and the page's body gives its own heading of level 1, which
+/// names the route.
 class PageScaffold extends StatelessWidget {
   const PageScaffold({
     super.key,
@@ -143,11 +149,13 @@ class PageScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.bottom,
     this.showAppBar = true,
+    this.titleNamesPage = true,
   });
 
   final String titleText;
   final Widget? title;
   final bool showTitle;
+  final bool titleNamesPage;
   final List<Widget>? actions;
 
   /// The app bar's leading button, if not the back button it adds itself.
@@ -184,6 +192,7 @@ class PageScaffold extends StatelessWidget {
                     // account's) no room at all on a wide screen.
                     titleSpacing: 0,
                     actionsPadding: EdgeInsetsDirectional.only(end: inset - g),
+                    excludeHeaderSemantics: !titleNamesPage,
                     title: showTitle
                         ? Padding(
                             padding: EdgeInsetsDirectional.only(
@@ -191,7 +200,9 @@ class PageScaffold extends StatelessWidget {
                               end: g,
                             ),
                             // The app bar makes it a heading; this gives its level.
-                            child: Semantics(headingLevel: 1, child: title ?? Text(titleText)),
+                            child: titleNamesPage
+                                ? Semantics(headingLevel: 1, child: title ?? Text(titleText))
+                                : title ?? Text(titleText),
                           )
                         : null,
                     actions: actions,

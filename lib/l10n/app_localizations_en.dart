@@ -1999,19 +1999,18 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count thanks',
       one: '1 thanks',
-      zero: 'Say thanks',
     );
     return '$_temp0';
   }
 
   @override
   String todahSemantics(String name) {
-    return 'Say thanks to $name';
+    return 'Say todah to $name';
   }
 
   @override
   String todahRemove(String name) {
-    return 'Remove your thanks to $name';
+    return 'Remove your todah to $name';
   }
 
   @override

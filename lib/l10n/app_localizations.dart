@@ -3428,22 +3428,22 @@ abstract class AppLocalizations {
   /// **'Todah'**
   String get todahAction;
 
-  /// No description provided for @todahCount.
+  /// How many have thanked a post: on its Todah button for screen readers, and under one's own post.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Say thanks} =1{1 thanks} other{{count} thanks}}'**
+  /// **'{count, plural, =1{1 thanks} other{{count} thanks}}'**
   String todahCount(int count);
 
-  /// No description provided for @todahSemantics.
+  /// The Todah button's name for screen readers, which holds the word the button shows (Todah), so that voice control finds it by what it says.
   ///
   /// In en, this message translates to:
-  /// **'Say thanks to {name}'**
+  /// **'Say todah to {name}'**
   String todahSemantics(String name);
 
-  /// No description provided for @todahRemove.
+  /// The Todah button's name for screen readers once thanks are given; it holds the word the button shows.
   ///
   /// In en, this message translates to:
-  /// **'Remove your thanks to {name}'**
+  /// **'Remove your todah to {name}'**
   String todahRemove(String name);
 
   /// No description provided for @reportTitle.

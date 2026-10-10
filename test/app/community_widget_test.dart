@@ -918,6 +918,24 @@ void main() {
     });
   });
 
+  testWidgets("a thread's one heading is its title, which names the page; its forum's over it is none", (tester) async {
+    final semantics = tester.ensureSemantics();
+    final c = await _pump(tester);
+    c.read(routerProvider).go('/community/thread/1');
+    await tester.pumpAndSettle();
+    const title = 'Why read the Targum rather than a translation?';
+    final headings = [
+      for (final node in find.semantics.byPredicate((node) => node.getSemanticsData().headingLevel == 1).evaluate())
+        node.getSemanticsData(),
+    ];
+    expect([for (final h in headings) h.label], [title]);
+    expect(headings.single.flagsCollection.namesRoute, isTrue);
+    final forum = tester.getSemantics(find.descendant(of: find.byType(AppBar), matching: find.text('Questions & answers')));
+    expect(forum.getSemanticsData().flagsCollection.isHeader, isFalse);
+    expect(forum.getSemanticsData().flagsCollection.namesRoute, isFalse);
+    semantics.dispose();
+  });
+
   testWidgets('a post is numbered, and its todah is a toggle named for what a tap does', (tester) async {
     final semantics = tester.ensureSemantics();
     final forums = await _Member().signIn();
@@ -929,21 +947,26 @@ void main() {
 
     Finder todahOf(int post) => find.descendant(of: find.byType(PostCard).at(post), matching: _todahButton);
     final todah = todahOf(1);
+    // Its name holds the word it shows, Todah, so that voice control finds it
+    // by what it says (WCAG 2.5.3).
     expect(
       tester.getSemantics(todah),
-      isSemantics(label: 'Say thanks to Rivka. 4 thanks', isButton: true, hasToggledState: true, isToggled: false),
+      isSemantics(label: 'Say todah to Rivka. 4 thanks', isButton: true, hasToggledState: true, isToggled: false),
     );
     await _tapTodah(tester, 4);
     await tester.pumpAndSettle();
     expect(
       tester.getSemantics(todah),
-      isSemantics(label: 'Remove your thanks to Rivka. 5 thanks', isButton: true, hasToggledState: true, isToggled: true),
+      isSemantics(label: 'Remove your todah to Rivka. 5 thanks', isButton: true, hasToggledState: true, isToggled: true),
     );
     // Thanked by no one yet, it names only what a tap does.
     expect(
       tester.getSemantics(todahOf(0)),
-      isSemantics(label: 'Say thanks to Avraham', isButton: true, hasToggledState: true, isToggled: false),
+      isSemantics(label: 'Say todah to Avraham', isButton: true, hasToggledState: true, isToggled: false),
     );
+    for (final i in [0, 1]) {
+      expect(tester.getSemantics(todahOf(i)).label.toLowerCase(), contains('todah'));
+    }
     semantics.dispose();
   });
 
@@ -1041,6 +1064,107 @@ void main() {
       semantics.dispose();
     });
 
+    /// The opening post's rule, in [post].
+    Finder ruleIn(Finder post) =>
+        find.descendant(of: post, matching: find.byWidgetPredicate((w) => w is PositionedDirectional && w.width == 3));
+
+    testWidgets('that opened the thread is ruled in the gutter, its text in the column the others share', (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final posts = find.byType(PostCard);
+      expect(ruleIn(posts.at(0)), findsOneWidget);
+      expect(ruleIn(posts.at(1)), findsNothing);
+      // The same column of text for every letter, the rule hung before it.
+      double textLeft(int i) => tester.getTopLeft(find.descendant(of: posts.at(i), matching: find.byType(SelectableText))).dx;
+      expect(textLeft(0), textLeft(1));
+      final rule = tester.getRect(ruleIn(posts.at(0)));
+      expect(rule.right, tester.getRect(posts.at(0)).left - 12);
+      // From the top of the initial.
+      expect(rule.top, tester.getTopLeft(find.descendant(of: posts.at(0), matching: find.byType(InitialDisc))).dy);
+    });
+
+    testWidgets('that opened the thread takes no rule once its member is blocked', (tester) async {
+      final forums = await _Member().signIn();
+      final avraham = (await forums.posts('1')).first.authorId!;
+      await forums.block(avraham);
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      expect(find.byType(PostCard), findsOneWidget, reason: "Rivka's answer alone");
+      expect(ruleIn(find.byType(PostCard)), findsNothing);
+    });
+
+    testWidgets('takes no rule while the earliest posts of a long thread are still to load', (tester) async {
+      final c = await _pump(tester, forums: _withLongThread(DemoForumRepository()));
+      c.read(routerProvider).go('/community/thread/5000');
+      await tester.pumpAndSettle();
+      expect(find.text('Show earlier posts'), findsOneWidget);
+      expect(ruleIn(find.byType(PostCard).first), findsNothing);
+    });
+
+    testWidgets('of a weekly thread takes no rule nor tag: the thread is the community\'s', (tester) async {
+      final forums = DemoForumRepository()..isCurrentWeek = (parsha, year) => true;
+      final id = await forums.weeklyThread(parshaNumber: 1, hebrewYear: 5787, title: 'Bereshit · בראשית · 5787');
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/$id');
+      await tester.pumpAndSettle();
+      expect(find.byType(PostCard), findsWidgets);
+      expect(ruleIn(find.byType(PostCard).first), findsNothing);
+      expect(find.text('Asked'), findsNothing);
+      expect(find.text('Author'), findsNothing);
+    });
+
+    testWidgets("opens its menu from the whole of its button, whose glyph ends on the column's edge", (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final post = find.byType(PostCard).first;
+      final button = find.descendant(of: post, matching: find.byType(PopupMenuButton<String>));
+      final box = tester.getRect(button);
+      expect(box.width, greaterThanOrEqualTo(48));
+      final text = tester.getRect(find.descendant(of: post, matching: find.byType(SelectableText)));
+      expect(tester.getRect(find.descendant(of: button, matching: find.byIcon(Icons.more_vert))).right, text.right);
+      // Its outer edge, in the gutter, takes the tap too.
+      await tester.tapAt(box.centerRight - const Offset(2, 0));
+      await tester.pumpAndSettle();
+      expect(find.byType(PopupMenuItem<String>), findsWidgets);
+    });
+
+    testWidgets('of your own, unthanked, puts Reply where the others put Todah, in line with the text', (tester) async {
+      final forums = await _Member().signIn();
+      forums.seed(posts: [
+        Post(id: '9101', threadId: '1', authorId: 'me', authorName: 'Leah', body: 'Not yet', createdAt: DateTime.now()),
+      ]);
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await _scrollThreadTo(tester, find.text('Not yet'));
+      Finder post(String body) => find.ancestor(of: find.text(body), matching: find.byType(PostCard));
+      final mine = tester.getRect(find.descendant(of: post('Not yet'), matching: find.byIcon(Icons.reply)));
+      final todah = tester.getRect(find.descendant(of: find.byType(PostCard).at(1), matching: find.byIcon(Icons.volunteer_activism_outlined)));
+      expect(mine.left, todah.left);
+      final text = tester.getRect(find.descendant(of: post('Not yet'), matching: find.byType(SelectableText)));
+      expect(mine.left, text.left);
+    });
+
+    testWidgets('at 200% text, puts the time under the name with no separator, the initial on the first line', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final post = find.byType(PostCard).first;
+      final name = tester.getRect(find.descendant(of: post, matching: find.text('Avraham')));
+      final times = tester.widgetList<Text>(find.descendant(of: post, matching: find.byType(Text))).where((t) => t.style?.fontSize == Theme.of(tester.element(post)).textTheme.bodySmall?.fontSize);
+      expect(times, isNotEmpty);
+      expect(times.first.data, isNot(startsWith(' · ')), reason: 'no separator leading a line of its own');
+      expect(tester.getTopLeft(find.byWidget(times.first)).dy, greaterThanOrEqualTo(name.bottom - 1));
+      final disc = tester.getRect(find.descendant(of: post, matching: find.byType(InitialDisc)));
+      expect(disc.center.dy, moreOrLessEquals(name.center.dy, epsilon: 1));
+      expect(tester.getRect(ruleIn(post)).top, disc.top, reason: 'the rule starts at the top of the initial');
+    });
+
     testWidgets('is edited in a labelled field that takes the focus', (tester) async {
       final forums = await _Member().signIn();
       forums.seed(posts: [
@@ -1065,7 +1189,15 @@ void main() {
       expect(field.decoration?.labelText, 'Your message');
       expect(field.maxLength, 10000);
       expect(tester.widget<EditableText>(find.descendant(of: dialog, matching: find.byType(EditableText))).focusNode.hasFocus, isTrue);
+      // Save waits for a change, of 2 characters at least, as a reply does.
+      FilledButton save() => tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'));
+      expect(save().onPressed, isNull, reason: 'nothing changed');
+      await tester.enterText(find.descendant(of: dialog, matching: find.byType(TextField)), 'A');
+      await tester.pump();
+      expect(save().onPressed, isNull, reason: 'too short');
       await tester.enterText(find.descendant(of: dialog, matching: find.byType(TextField)), 'A second thought');
+      await tester.pump();
+      expect(save().onPressed, isNotNull);
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await tester.pumpAndSettle();
       expect(find.text('A second thought'), findsOneWidget);
@@ -1119,7 +1251,8 @@ void main() {
       final send = tester.getRect(find.byType(FilledButton));
       final body = tester.getRect(find.byType(PostCard).first);
       expect(field.left, body.left);
-      expect(send.right, moreOrLessEquals(body.right));
+      // A post reaches past the column only by the box of its menu button.
+      expect(send.right, moreOrLessEquals(body.right - PostCard.menuBleed));
     });
   });
 

@@ -555,7 +555,7 @@
   "askedTag": "שואל/ת",
   "authorTag": "פותח/ת הדיון",
   "todahAction": "תודה",
-  "todahCount": "{count, plural, =0{תודה} =1{תודה אחת} other{{count} תודות}}",
+  "todahCount": "{count, plural, =1{תודה אחת} other{{count} תודות}}",
   "todahSemantics": "תודה ל{name}",
   "todahRemove": "ביטול התודה ל{name}",
   "reportTitle": "דיווח על ההודעה",

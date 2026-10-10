@@ -1996,7 +1996,6 @@ class AppLocalizationsHe extends AppLocalizations {
       locale: localeName,
       other: '$count תודות',
       one: 'תודה אחת',
-      zero: 'תודה',
     );
     return '$_temp0';
   }
