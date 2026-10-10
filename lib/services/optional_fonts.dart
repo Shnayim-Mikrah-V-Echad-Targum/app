@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Fonts bundled as plain assets instead of under `fonts:` in pubspec.yaml.
@@ -12,19 +13,17 @@ abstract final class OptionalFonts {
   };
   static final _loading = <String, Future<void>>{};
 
-  /// Whether [family] is loaded on demand rather than at start-up.
-  static bool isOptional(String? family) => _files.containsKey(family);
-
-  /// Registers [family] the first time it is asked for. Later calls return the
-  /// same future. Completes at once for null and for families that are always
+  /// Registers [family] the first time it is asked for, reading its files from
+  /// [bundle] (by default the app's [rootBundle]). Later calls return the same
+  /// future. Completes at once for null and for families that are always
   /// bundled. If loading fails, the error is passed on and the next call tries
   /// again.
-  static Future<void> ensure(String? family) {
+  static Future<void> ensure(String? family, {AssetBundle? bundle}) {
     final files = _files[family];
     if (family == null || files == null) return Future.value();
     final pending = _loading[family];
     if (pending != null) return pending;
-    final loading = _load(family, files);
+    final loading = _load(family, files, bundle ?? rootBundle);
     _loading[family] = loading;
     loading.then<void>((_) {}, onError: (Object _) {
       _loading.remove(family);
@@ -32,10 +31,17 @@ abstract final class OptionalFonts {
     return loading;
   }
 
-  static Future<void> _load(String family, List<String> files) async {
+  /// Forgets every load, finished or not, as if the app had just started. A
+  /// family the engine has already registered stays registered.
+  @visibleForTesting
+  static void reset() => _loading.clear();
+
+  static Future<void> _load(String family, List<String> files, AssetBundle bundle) async {
     // Read every file before registering any, so a missing one leaves no
-    // half-registered family behind.
-    final data = await Future.wait(files.map(rootBundle.load));
+    // half-registered family behind. One at a time: Future.wait drops the
+    // values of a SynchronousFuture, which some bundles (flutter_test's
+    // among them) return.
+    final data = [for (final file in files) await bundle.load(file)];
     final loader = FontLoader(family);
     for (final bytes in data) {
       loader.addFont(Future.value(bytes));

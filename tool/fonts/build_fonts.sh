@@ -36,13 +36,15 @@ EBG_ITALIC_FEATURES='kern,liga,clig,calt,ccmp,locl,mark,mkmk,lnum,pnum,tnum'
 
 die() { echo "build_fonts: $*" >&2; exit 1; }
 
+# Every fontTools step runs as `python3 -m`, through the interpreter checked
+# here, so a fonttools or pyftsubset script from another installation on PATH
+# can't write the fonts with a different version.
 have_version="$(python3 -c 'import fontTools; print(fontTools.version)' 2>/dev/null)" \
   || die 'fontTools is not installed (pip install -r tool/fonts/requirements.txt)'
 case "$have_version" in
   "$FONTTOOLS_VERSION" | "$FONTTOOLS_VERSION".*) ;;
   *) die "fontTools $FONTTOOLS_VERSION is required for reproducible output, found $have_version" ;;
 esac
-command -v pyftsubset > /dev/null || die 'pyftsubset is not on PATH'
 
 sha256() {
   if command -v sha256sum > /dev/null; then sha256sum "$1"; else shasum -a 256 "$1"; fi | cut -d' ' -f1
@@ -86,14 +88,14 @@ trap 'rm -rf "$TMP"' EXIT
 instance() {
   local src="$1" out="$2"
   shift 2
-  fonttools varLib.instancer "$src" "$@" --update-name-table --no-recalc-timestamp -q -o "$out"
+  python3 -m fontTools.varLib.instancer "$src" "$@" --update-name-table --no-recalc-timestamp -q -o "$out"
 }
 
 # subset <font> <unicodes> <features> <output>
 # Keeps the copyright and license names (0, 13, 14) and the typographic family
-# and style (16, 17) that pyftsubset drops by default.
+# and style (16, 17) that the subsetter drops by default.
 subset() {
-  pyftsubset "$1" --unicodes="$2" --layout-features="$3" \
+  python3 -m fontTools.subset "$1" --unicodes="$2" --layout-features="$3" \
     --name-IDs='0,1,2,3,4,5,6,13,14,16,17' --output-file="$4"
 }
 

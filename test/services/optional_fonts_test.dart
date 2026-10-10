@@ -1,37 +1,40 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/services/optional_fonts.dart';
 
+/// An asset bundle that has none of the files asked for.
+class _MissingAssets extends CachingAssetBundle {
+  int requests = 0;
+
+  @override
+  Future<ByteData> load(String key) async {
+    requests++;
+    throw FlutterError('Unable to load asset: "$key".');
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('only the lazily loaded families are optional', () {
-    expect(OptionalFonts.isOptional('NotoRashiHebrew'), isTrue);
-    expect(OptionalFonts.isOptional('EBGaramond'), isFalse);
-    expect(OptionalFonts.isOptional(null), isFalse);
-  });
+  // Each test starts as if the app had just launched, whatever ran before.
+  setUp(OptionalFonts.reset);
 
   test('bundled and missing families need no loading', () async {
-    await OptionalFonts.ensure(null);
-    await OptionalFonts.ensure('EBGaramond');
+    final assets = _MissingAssets();
+    await OptionalFonts.ensure(null, bundle: assets);
+    await OptionalFonts.ensure('EBGaramond', bundle: assets);
+    expect(assets.requests, 0);
   });
 
   test('a failed load is not cached, so the next call tries again', () async {
-    // Keep this before the test that loads the font for real.
-    var requests = 0;
-    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-    messenger.setMockMessageHandler('flutter/assets', (_) async {
-      requests++;
-      return null; // asset not found
-    });
-    addTearDown(() => messenger.setMockMessageHandler('flutter/assets', null));
-
-    final first = OptionalFonts.ensure('NotoRashiHebrew');
+    final assets = _MissingAssets();
+    final first = OptionalFonts.ensure('NotoRashiHebrew', bundle: assets);
     await expectLater(first, throwsA(isA<FlutterError>()));
-    final second = OptionalFonts.ensure('NotoRashiHebrew');
+    final second = OptionalFonts.ensure('NotoRashiHebrew', bundle: assets);
     expect(second, isNot(same(first)));
     await expectLater(second, throwsA(isA<FlutterError>()));
-    expect(requests, 2);
+    expect(assets.requests, 2);
   });
 
   testWidgets('the Rashi script loads once, on demand, and text already shown picks it up', (tester) async {
