@@ -9,11 +9,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../core/calendar/parsha_schedule.dart';
-import '../../core/text/hebrew_text.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../parsha/week_context.dart';
+import 'query_direction.dart';
 import 'reference_parser.dart';
 import 'verse_index.dart';
 
@@ -224,9 +224,9 @@ class _GoToVerseSheetState extends ConsumerState<GoToVerseSheet> {
                     textInputAction: TextInputAction.go,
                     autocorrect: false,
                     enableSuggestions: false,
-                    // Hebrew is written from the right, whatever the language
-                    // of the app.
-                    textDirection: HebrewText.containsHebrew(_query.text) ? TextDirection.rtl : null,
+                    // Hebrew is written from the right and English from the
+                    // left, whatever the language of the app.
+                    textDirection: queryDirection(_query.text),
                     decoration: InputDecoration(
                       labelText: l.goToVerseLabel,
                       hintText: l.goToVerseHint(bereshit),

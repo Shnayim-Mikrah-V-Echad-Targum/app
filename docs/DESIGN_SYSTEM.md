@@ -838,15 +838,15 @@ When a sefer is complete: a one-time full-screen panel. SeferDivider, then "חֲ
 
 ### 6.25 Search results (lib/features/search/)
 
-- The search field as in §6.7, at the content width, with `search` leading and a clear button once there is text. Hebrew in it runs right to left in either UI.
+- The search field as in §6.7, at the content width, with `search` leading and a clear button once there is text. Hebrew in it runs right to left and English left to right, in either UI; empty, it takes the UI's direction.
 - While the index is first built: a marginalia line over a determinate bar, 4 px with radius 2, primary on ringTrack; centred, at most 320 wide, 40 below the field.
 - With nothing to search yet: an empty state (§6.22) with `searchIntro`. With nothing found: `searchNoResults` in bodyLarge and a hint in bodyMedium onSurfaceVariant.
 - Results: the count in bodySmall onSurfaceVariant, then a GroupHeader (§6.3) per parsha over one PaperGroup of verses.
-- **Verse row:** min 72; padding start 16, end 12, vertical 12; a chevron 20 in outline at the end. On top the reference ("Genesis 28:10" / "בראשית כח, י") in titleSmall onSurfaceVariant with tabular figures, followed by " · Targum" when only the Targum holds the search. Then each layer, 4 apart:
+- **Verse row:** min 72; padding start 16, end 12, vertical 12; a chevron 20 in outline at the end. On top the reference ("Genesis 28:10" / "בראשית כח, י") in titleSmall onSurfaceVariant with tabular figures, followed by " · Targum" when only the Targum holds the search, or " · Translation (JPS 1917)" (`translationLabel`) for a verse found in the translation, a study aid labelled as such. Then each layer, 4 apart:
   - Mikra in the scripture font, 20 / 1.7, onSurface; Targum 18, onSurfaceVariant, under it as in the reader; the translation in bodyLarge onSurface. Never cantillation; vowels as the reader shows them.
-  - About 16 Hebrew or 26 English words around the first match, cut at word breaks; a verse up to a third longer stays whole. Ellipses mark a cut, joined to the text by a no-break space.
-  - **Match:** w700 in onSecondaryContainer on a secondaryContainer wash (11.24:1 in light) as tall as the letters, not the line (`MarkedText`, a tight text box with a 2 px bleed each side and radius 3), so washes on lines one above the other never meet. The weight is the non-colour cue, needed in high contrast where the wash is close to the paper.
-- Semantics: each row is one button whose label is the reference, then each layer tagged with its language and spoken as verses are (§8 of DESIGN.md), the Targum named.
+  - About 16 Hebrew or 26 English words around the first match, cut at word breaks; a verse up to a third longer stays whole. Ellipses mark a cut, joined to the text by a no-break space. A word joiner follows each maqaf, as in the reader, so joined words stay on one line.
+  - **Match:** w700 in onSecondaryContainer on a secondaryContainer wash (11.24:1 in light) as tall as the letters, not the line (`MarkedText`, a tight text box with a 2 px bleed each side and radius 3), so washes on lines one above the other never meet. The weight is the non-colour cue, needed in high contrast where the wash is close to the paper. With bold text on, where every letter is bold, and in high contrast, each wash is also outlined, 1.5 px in onSecondaryContainer. The washes are placed again when a font finishes loading.
+- Semantics: each row is one button whose label is the reference, then each layer tagged with its language and spoken as verses are (§8 of DESIGN.md), from the pointed words whether or not vowels are shown, the Targum and the translation named. A list of results opens at its top, with its count.
 
 ### 6.26 Go to verse (lib/features/search/go_to_verse_sheet.dart)
 

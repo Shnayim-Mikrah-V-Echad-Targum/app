@@ -26,7 +26,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 
 **Announcements and controls**
 - Steps in the guided reader and a completed aliyah are announced as live updates where the platform supports them. Elsewhere they appear in a SnackBar that is read aloud.
-- Search says how many verses were found once typing pauses. Each verse found is one item: its reference, then its text, tagged `he` (or `en` for the translation) and spoken as verses are, with the Targum named.
+- Search says how many verses were found once typing pauses, when the text is ready if it wasn't, and when Go to verse hands it a search. Each verse found is one item: its reference, then its text, tagged `he` (or `en` for the translation) and spoken as verses are, from the pointed words even when vowels are hidden, with the Targum and the translation named. With bold text or high contrast, matches are outlined as well as bold.
 - Go to verse says what its first row offers once typing pauses: the verse found and the week and aliyah that read it, why there is none, or the search. The reader then says the reference of the verse it opened at, which it marks with a rule as well as a wash, so the mark doesn't rest on colour.
 - Every icon button has a label and a tooltip.
 

@@ -15,6 +15,7 @@ import '../../ui/widgets/paper_group.dart';
 import '../parsha/week_context.dart';
 import '../settings/app_settings.dart';
 import 'marked_text.dart';
+import 'query_direction.dart';
 import 'verse_index.dart';
 
 /// The verse index while it is built: the share read so far, then the index
@@ -78,6 +79,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   // The last search, kept while nothing it depends on changes.
   SearchResults? _results;
   (String, bool, VerseIndex)? _searched;
+
+  @override
+  void initState() {
+    super.initState();
+    // Handed a search (by Go to verse): its count is said as it would be
+    // once typing paused.
+    if (isSearchable(widget.initialQuery)) _announceSoon();
+  }
 
   @override
   void dispose() {
@@ -168,9 +177,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 textInputAction: TextInputAction.search,
                 autocorrect: false,
                 enableSuggestions: false,
-                // Hebrew is written from the right, whatever the language of
-                // the app.
-                textDirection: HebrewText.containsHebrew(_query.text) ? TextDirection.rtl : null,
+                // Hebrew is written from the right and English from the left,
+                // whatever the language of the app.
+                textDirection: queryDirection(_query.text),
                 decoration: InputDecoration(
                   labelText: l.searchFieldLabel,
                   prefixIcon: const Icon(Icons.search),
@@ -300,8 +309,10 @@ class _Results extends ConsumerWidget {
     final summary = results.truncated
         ? l.searchResultsFirst(results.hits.length, results.total)
         : l.searchResultsCount(results.total);
-    // Built as they scroll into view: a search can list 200 verses.
+    // Built as they scroll into view: a search can list 200 verses. Each
+    // search's list starts at its top, with its count.
     return ListView.builder(
+      key: ValueKey(results.query),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.only(bottom: 32),
       itemCount: groups.length + (results.truncated ? 2 : 1),
@@ -359,8 +370,14 @@ class _HitRow extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final reference = Names(context).reference(hit.book, hit.ref.chapter, hit.ref.verse);
     // Found only in the Targum: say so, as the verse above it is unmarked.
+    // The translation is labelled as such, a study aid (DESIGN.md §3).
     final targumOnly = hit.snippets.length > 1 && !hit.snippets.first.matched;
-    final heading = targumOnly ? '$reference · ${l.passTargum}' : reference;
+    final english = hit.snippets.first.layer == TextLayer.english;
+    final heading = targumOnly
+        ? '$reference · ${l.passTargum}'
+        : english
+            ? '$reference · ${l.translationLabel}'
+            : reference;
 
     // One item for a screen reader: the reference, then each layer, each
     // tagged with its language and the Hebrew as the reader's verses are
@@ -372,8 +389,9 @@ class _HitRow extends ConsumerWidget {
       // A verse spoken whole already ends in a full stop.
       if (i > 0) label.write(label.toString().endsWith('.') ? ' ' : '. ');
       if (s.layer == TextLayer.onkelos) label.write('${l.targumLabel}: ');
-      if (s.layer == TextLayer.english && context.isHebrewUi) label.write('${l.translationLabel}: ');
-      final text = hebrew ? _spoken(s.snippet.text, settings) : s.snippet.text;
+      if (s.layer == TextLayer.english) label.write('${l.translationLabel}: ');
+      // From the pointed words, whether or not the vowels are shown.
+      final text = hebrew ? _spoken(s.spoken, settings) : s.snippet.text;
       languages.add(LocaleStringAttribute(
         range: TextRange(start: label.length, end: label.length + text.length),
         locale: Locale(hebrew ? 'he' : 'en'),
@@ -474,10 +492,14 @@ class _SnippetText extends StatelessWidget {
     }
     if (at < s.text.length) spans.add(TextSpan(text: s.text.substring(at)));
     if (s.clippedEnd) spans.add(const TextSpan(text: '\u00A0…'));
+    // With bold text every letter is bold, and in high contrast the wash is
+    // close to the paper: each mark is outlined too.
+    final outlined = MediaQuery.boldTextOf(context) || SeferColors.of(context).isHighContrast;
     return MarkedText(
       TextSpan(children: spans, style: base),
       marks: marks,
       color: scheme.secondaryContainer,
+      outline: outlined ? scheme.onSecondaryContainer : null,
       textDirection: hebrew ? TextDirection.rtl : TextDirection.ltr,
       locale: Locale(hebrew ? 'he' : 'en'),
     );

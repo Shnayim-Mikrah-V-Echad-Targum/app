@@ -58,6 +58,14 @@ void main() {
     expect(locateVerse(repo, diaspora, 5787, 'Joshua', const VerseRef(1, 1)), isNull);
   });
 
+  // They sort inside Bereshit and Bo, but no such verses exist.
+  test('finds nothing past the end of a chapter, or before its start', () {
+    expect(locateVerse(repo, diaspora, 5787, 'Genesis', const VerseRef(1, 40)), isNull);
+    expect(locateVerse(repo, diaspora, 5787, 'Exodus', const VerseRef(12, 99)), isNull);
+    expect(locateVerse(repo, diaspora, 5787, 'Genesis', const VerseRef(1, 0)), isNull);
+    expect(locateVerse(repo, diaspora, 5787, 'Genesis', const VerseRef(1, 31)), (weekId: '5787:1', aliyah: 0));
+  });
+
   test('the locator reads the cycle of the current week', () async {
     SharedPreferences.setMockInitialValues({
       SettingsController.storageKey: jsonEncode(const AppSettings(onboardingComplete: true).toJson()),

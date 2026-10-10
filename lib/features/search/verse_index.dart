@@ -191,10 +191,16 @@ class Snippet {
 
 /// One layer of a verse in a search result.
 class LayerSnippet {
-  const LayerSnippet(this.layer, this.snippet);
+  const LayerSnippet(this.layer, this.snippet, {String? spoken}) : spoken = spoken ?? '';
 
   final TextLayer layer;
   final Snippet snippet;
+
+  /// For the Mikra and the Targum, the same words of the verse with all its
+  /// marks, as a screen reader speaks the reader's verses: vowels whether or
+  /// not they are shown, which tell how the Name is read, and cantillation
+  /// for those who ask for every mark. Empty for the translation.
+  final String spoken;
 
   /// Whether the search found something in this layer. A Targum match also
   /// shows the start of the verse, unmatched, as the reader shows the Targum
@@ -324,14 +330,24 @@ class VerseIndex {
 
   LayerSnippet _snippet(TextLayer layer, int verse, String? query, bool nikud) {
     final text = _texts[layer]![verse];
-    final english = layer == TextLayer.english;
+    if (layer == TextLayer.english) {
+      return LayerSnippet(layer, Snippet.find(text, query, wordStart: true, lead: 6, span: 26));
+    }
+    // Without its cantillation the verse has no paseq either, so the spoken
+    // words leave it out too, and both are cut at the same words.
     return LayerSnippet(
       layer,
-      english
-          ? Snippet.find(text, query, wordStart: true, lead: 6, span: 26)
-          : Snippet.find(HebrewText.forDisplay(text, nikud: nikud, teamim: false), query, wordStart: false),
+      Snippet.find(joined(HebrewText.forDisplay(text, nikud: nikud, teamim: false)), query, wordStart: false),
+      spoken: Snippet.find(text.replaceAll(_paseq, ' '), query, wordStart: false).text,
     );
   }
+
+  static final _paseq = RegExp(r'\s*׀\s*');
+
+  /// [hebrew] with a word joiner after each maqaf, as the reader sets it
+  /// (displayHebrew), so that words joined by one stay on one line. Search
+  /// passes over the joiner.
+  static String joined(String hebrew) => hebrew.replaceAll('־', '־\u2060');
 }
 
 /// [hits] in runs by the parsha that holds them, in order. [parshiyot] are

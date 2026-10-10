@@ -36,7 +36,7 @@ ReadingWeek? findWeekById(ParshaSchedule schedule, String id) {
 /// id of the week whose portion holds it, and the aliyah of that week's
 /// portion that holds it. A combined week divides its aliyot differently from
 /// either parsha alone, so the aliyah is counted in the week's own portion.
-/// Null for a verse that is not in the Torah.
+/// Null for a verse that is not in the Torah, such as Genesis 1:40.
 ({String weekId, int aliyah})? locateVerse(
   ParshaRepository repo,
   ParshaSchedule schedule,
@@ -46,6 +46,9 @@ ReadingWeek? findWeekById(ParshaSchedule schedule, String id) {
 ) {
   final parsha = repo.all.where((p) => p.book == book && p.range.contains(r)).firstOrNull;
   if (parsha == null) return null;
+  // A verse number past its chapter's end still sorts inside a parsha.
+  final chapters = repo.chapterLengths(book);
+  if (r.chapter < 1 || r.chapter > chapters.length || r.verse < 1 || r.verse > chapters[r.chapter - 1]) return null;
   final week = findWeekById(schedule, '$cycle:${parsha.id.number}');
   if (week == null) return null;
   final portion = repo.portion(week.portion);
