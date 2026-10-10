@@ -34,6 +34,8 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_lints: ^6.0.0
   flutter_native_splash: ^2.4.8
+  msix: ^3.18.0
+  yaml: ^3.1.3
 
 # Platform icons and launch screens. Regenerate all of them with:
 #   python3 tool/branding/make_icon.py && dart run flutter_launcher_icons \
@@ -76,6 +78,32 @@ flutter_native_splash:
   # The status bar stays visible, iOS's default, so Info.plist needs nothing:
   # an empty list keeps the tool from rewriting (and reformatting) it.
   info_plist_files: []
+
+# The Windows MSIX installer: build with `flutter build windows --release`,
+# then package with tool/windows/make_msix.sh (docs/RELEASE.md).
+msix_config:
+  display_name: Shnayim Mikra
+  publisher_display_name: Shnayim Mikra
+  # The app id on every platform. The Microsoft Store assigns its own, passed
+  # with --identity-name when packaging for it.
+  identity_name: org.shnayimmikra.app
+  output_name: ShnayimMikra
+  # The rounded tile of app_icon.ico; make_icon.py --post writes it.
+  logo_path: windows/msix/logo.png
+  languages: en-us, he-il
+  # The community and cloud backup.
+  capabilities: internetClient
+  # Lets a reminder's notification come back to the running app. The class
+  # id is the guid in WindowsInitializationSettings
+  # (lib/services/notifications.dart).
+  toast_activator:
+    clsid: 7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57
+    display_name: Shnayim Mikra
+  # Package the build that was made with the release dart-defines, instead
+  # of building again without them.
+  build_windows: false
+  # Never ask to trust the test certificate (and never block CI asking).
+  install_certificate: false
 
 flutter:
   uses-material-design: true

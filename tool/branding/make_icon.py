@@ -12,8 +12,9 @@ From the repository root:
     python3 tool/branding/make_icon.py          # assets/branding/*
     dart run flutter_launcher_icons             # Android, iOS and web icons
     dart run flutter_native_splash:create       # Android and iOS launch screens
-    python3 tool/branding/make_icon.py --post   # maskable, favicons, Windows,
-                                                # launch screens' system bars
+    python3 tool/branding/make_icon.py --post   # maskable, favicons, Windows
+                                                # .ico and MSIX icons, launch
+                                                # screens' system bars
 
 A Hebrew reader checks the results by eye before every release.
 """
@@ -43,6 +44,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 BRANDING = ROOT / 'assets' / 'branding'
 ANDROID_RES = ROOT / 'android' / 'app' / 'src' / 'main' / 'res'
+MSIX = ROOT / 'windows' / 'msix'
 
 BUNDLED_FONT = ROOT / 'assets' / 'fonts' / 'FrankRuhlLibre-Bold.ttf'
 FONT_URL = ('https://raw.githubusercontent.com/google/fonts/'
@@ -86,6 +88,14 @@ TILE_RADIUS = 0.1875
 SPLASH_CANVAS = 1152
 SPLASH_SAFE_RADIUS = 384
 SPLASH_TILE = 576  # 144 dp or pt
+# The MSIX package's icons. The msix tool makes every size from one logo, up
+# to 1240 px (the large tile at 400%); tool/windows/make_msix.sh then
+# replaces the app icons of 32 px and below, which keep these msix file
+# names, with the three rules alone, as app_icon.ico has them.
+MSIX_LOGO = 1240
+MSIX_SMALL_SIZES = (16, 20, 24, 30, 32)
+MSIX_SMALL_FORMS = ('targetsize', 'altform-unplated_targetsize',
+                    'altform-lightunplated_targetsize')
 
 
 def fail(message: str) -> NoReturn:
@@ -391,6 +401,17 @@ def fix_launch_themes() -> None:
             report(path, 'LaunchTheme draws its system bars')
 
 
+def write_msix(tile: str) -> None:
+    """The MSIX package's logo, [tile] (the .ico's larger entries), and its
+    app icons of 32 px and below."""
+    write_png(MSIX / 'logo.png', render(tile, MSIX_LOGO))
+    for size in MSIX_SMALL_SIZES:
+        small = render(small_mark(size), size)
+        for form in MSIX_SMALL_FORMS:
+            write_png(MSIX / 'Images' / f'Square44x44Logo.{form}-{size}.png',
+                      small)
+
+
 def write_post(mark: Mark) -> None:
     """Outputs flutter_launcher_icons cannot make, and the launch themes'
     system bars after flutter_native_splash; run after both."""
@@ -412,6 +433,7 @@ def write_post(mark: Mark) -> None:
     write_ico(ROOT / 'windows' / 'runner' / 'resources' / 'app_icon.ico',
               [render(small_mark(s), s) for s in (16, 20, 24, 32)]
               + [render(tile, s) for s in (40, 48, 64, 256)])
+    write_msix(tile)
     fix_launch_themes()
 
 
@@ -419,8 +441,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     parser.add_argument(
         '--post', action='store_true',
-        help='write the web maskable icons, favicons and Windows .ico, and '
-             'fix the launch themes\' system bars; run after '
+        help='write the web maskable icons, favicons, Windows .ico and MSIX '
+             'icons, and fix the launch themes\' system bars; run after '
              '`dart run flutter_launcher_icons` and '
              '`dart run flutter_native_splash:create`')
     args = parser.parse_args()

@@ -1,5 +1,5 @@
-"""Checks make_icon.py's glyph-order assertion, the launch screens' logo and
-the launch themes' system bars.
+"""Checks make_icon.py's glyph-order assertion, the launch screens' logo,
+the launch themes' system bars and the MSIX icons.
 
     python3 -m unittest discover -s tool/branding
 
@@ -15,6 +15,7 @@ from unittest import mock
 
 import make_icon
 from fontTools.ttLib import TTFont
+from PIL import Image
 
 
 class GlyphOrderTest(unittest.TestCase):
@@ -72,6 +73,32 @@ class LaunchThemeTest(unittest.TestCase):
             self.assertEqual(styles.read_text(encoding='utf-8'),
                              make_icon.SPLASH_BARS_TRUE)
             self.assertEqual(other.read_text(encoding='utf-8'), '<resources/>')
+
+
+class MsixIconTest(unittest.TestCase):
+    def test_small_app_icons_are_the_rules_and_the_logo_is_the_tile(self):
+        tile = make_icon.document('', background='gradient',
+                                  radius=make_icon.TILE_RADIUS * make_icon.CANVAS)
+        with tempfile.TemporaryDirectory() as tmp:
+            msix = Path(tmp)
+            with mock.patch.object(make_icon, 'MSIX', msix), \
+                    mock.patch.object(make_icon, 'ROOT', msix):
+                make_icon.write_msix(tile)
+            with Image.open(msix / 'logo.png') as logo:
+                self.assertEqual(logo.size, (make_icon.MSIX_LOGO,) * 2)
+                self.assertEqual(logo.getpixel((0, 0))[3], 0)
+            names = sorted(p.name for p in (msix / 'Images').iterdir())
+            self.assertEqual(len(names), 15)
+            for size in make_icon.MSIX_SMALL_SIZES:
+                self.assertLessEqual(size, 32)
+                icons = [msix / 'Images' / f'Square44x44Logo.{form}-{size}.png'
+                         for form in make_icon.MSIX_SMALL_FORMS]
+                expected = make_icon.render(make_icon.small_mark(size), size)
+                for icon in icons:
+                    with Image.open(icon) as image:
+                        self.assertEqual(image.size, (size, size))
+                        self.assertEqual(image.convert('RGBA').tobytes(),
+                                         expected.tobytes(), icon.name)
 
 
 if __name__ == '__main__':

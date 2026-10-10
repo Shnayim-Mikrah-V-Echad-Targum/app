@@ -10,7 +10,7 @@
   - The MAM Hebrew text is CC BY-SA 4.0. Its attribution is shown under *About → Texts & sources*, and changes to that text must stay under the same license.
   - Taamey Frank is GPL-2.0 with a font exception. It is shipped as an unmodified separate file. If you'd rather ship only OFL fonts, remove it; [assets/fonts/licenses/README.md](../assets/fonts/licenses/README.md) lists every place to change.
 - [ ] **Identity:**
-  - The app id and bundle id are `org.shnayimmikra.app`. Change them now if you won't control that domain; they can't be changed after publishing.
+  - The app id, bundle id and MSIX identity name are `org.shnayimmikra.app`. Change them now if you won't control that domain; they can't be changed after publishing.
   - The display name is "Shnayim Mikra".
 - [ ] **Support address.** Set `SUPPORT_EMAIL`. Both stores and the accessibility statement need a working contact.
 - [ ] **Public pages.** Both stores need a public URL for each of these:
@@ -147,9 +147,36 @@
 
 ## Windows
 
-- [ ] Run `flutter build windows --release`, or take the `windows` artifact from CI.
-- [ ] Package it as MSIX for the Microsoft Store or for sideloading (for example with the `msix` package), or wrap it in an installer.
-- [ ] Sign it with a code-signing certificate; unsigned apps trigger SmartScreen warnings. Store submissions are signed by Microsoft.
+The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yaml`, and its icons are in `windows/msix`, written by `tool/branding/make_icon.py --post`.
+
+**Version**
+
+- [ ] The package's version is `version:` from `pubspec.yaml` as `major.minor.patch.0`: the `+N` build number is ignored. Windows only installs an update over a lower version, so every Windows release needs a new `major.minor.patch`.
+
+**Signing**
+
+- [ ] For sideloading, get a code-signing certificate (`.pfx`). Its subject becomes the package's publisher, and must stay the same from release to release, or Windows treats the update as a different app.
+- [ ] For CI builds, add these repository secrets:
+  - `WINDOWS_CERTIFICATE_BASE64` (the output of `base64 -w0 certificate.pfx`)
+  - `WINDOWS_CERTIFICATE_PASSWORD`
+- [ ] Without the certificate, the package is signed with the msix tool's public test certificate, and CI names its artifact `windows-msix-test-signed`. Windows installs it only where that certificate is trusted. On a test machine, never a user's: open the `.msix` file's *Properties → Digital Signatures → Details → View Certificate → Install Certificate*, and place it in *Local Machine → Trusted People*.
+- [ ] For the Microsoft Store, reserve the app's name in Partner Center. Then package it with `--store` and the values under *Product identity*. The Store signs the package itself.
+  ```sh
+  bash tool/windows/make_msix.sh --store --identity-name … --publisher "CN=…" --publisher-display-name …
+  ```
+
+**Build**
+
+- [ ] Run `flutter build windows --release` with the dart-defines from the README. Then, in Git Bash, run `bash tool/windows/make_msix.sh`, adding `--certificate-path certificate.pfx --certificate-password …` to sign it. The installer is `build/windows/msix/ShnayimMikra.msix`.
+- [ ] Or take the `windows-msix` artifact from CI. The `windows` artifact is the same build unpackaged.
+
+**Checks**
+
+- [ ] Install the MSIX on Windows 10 and Windows 11:
+  - Start, the taskbar and *Settings → Apps* show the app's icon. At small sizes, such as the taskbar at 100% scaling, the icon is the three rules alone.
+  - The window opens centred on the screen it was launched from, and no larger than 90% of it. It can't be made smaller than 380 × 560 at 100% scaling, and scales that minimum at 150% and 200%.
+  - The title bar follows the app's theme: choosing *Dark* in the app darkens it, even when Windows is light, and the reverse. With the app following the system, switching Windows between light and dark switches it too.
+  - A reminder's notification opens the app, also when it is already running.
 - [ ] Check with Narrator and NVDA, using the keyboard only, at 200% display scaling.
 
 ## Web
