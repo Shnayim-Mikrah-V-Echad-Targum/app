@@ -55,7 +55,11 @@ void main() {
     expect(find.textContaining('Rishon is complete'), findsWidgets);
   });
 
-  testWidgets('reader meets accessibility guidelines', (tester) async {
+  // Text contrast stays on the test font, whose solid glyphs show the
+  // guideline the exact text colour. Tap targets and labels are checked in
+  // the real fonts, whose metrics they depend on, in
+  // test/accessibility/screens_a11y_test.dart.
+  testWidgets('reader text is readable, and each verse is spoken', (tester) async {
     final handle = tester.ensureSemantics();
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
@@ -63,8 +67,6 @@ void main() {
     final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
     c.read(routerProvider).go('/read/5787:2/0');
     await loadTexts(tester);
-    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
     await expectLater(tester, meetsGuideline(textContrastGuideline));
     // Each verse has a spoken label: "Verse 9." (Noach begins at 6:9) followed by the Hebrew.
     expect(find.bySemanticsLabel(RegExp(r'^Verse 9\. ')), findsWidgets);

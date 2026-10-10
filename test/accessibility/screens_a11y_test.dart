@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
@@ -34,6 +35,56 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  // The reader, the most text-dense screen, in the real fonts: guided and
+  // full text, in English and Hebrew. Its text contrast and focus-mode ink
+  // are checked on the test font in test/app/reader_widget_test.dart.
+  group('reader', () {
+    /// Opens Noach's Rishon and waits for its texts to load.
+    Future<void> openReader(WidgetTester tester, {String mode = '', bool hebrew = false, double textScale = 1}) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = textScale;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.system),
+        now: a11yMonday,
+      );
+      // Not openRoute: its settling would wait on the loading spinner.
+      c.read(routerProvider).go('/read/5787:2/0$mode');
+      await tester.pump();
+      await tester.pump();
+      for (var i = 0; i < 30 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    }
+
+    for (final (mode, name) in [('', 'guided'), ('?mode=full', 'full text')]) {
+      for (final hebrew in [false, true]) {
+        testWidgets('a11y guidelines: $name${hebrew ? ', Hebrew' : ''}', (tester) async {
+          final handle = tester.ensureSemantics();
+          await openReader(tester, mode: mode, hebrew: hebrew);
+          expect(tester.takeException(), isNull);
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          handle.dispose();
+        });
+      }
+    }
+
+    for (final hebrew in [false, true]) {
+      testWidgets('no overflow at 200% text size${hebrew ? ', Hebrew' : ''}', (tester) async {
+        await openReader(tester, hebrew: hebrew, textScale: 2);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
 
   testWidgets('Hebrew interface is right-to-left and passes the guidelines', (tester) async {
     final handle = tester.ensureSemantics();

@@ -90,16 +90,16 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 ## How it is tested
 
 ### Automated (on every pull request, in CI)
-- `test/accessibility/screens_a11y_test.dart` lays 12 screens out in the bundled fonts, so text sizes are the real ones, and runs Flutter's accessibility guidelines on them:
+- `test/accessibility/screens_a11y_test.dart` lays 12 screens and the reader (guided and full text, in English and Hebrew) out in the bundled fonts, so text sizes are the real ones, and runs Flutter's accessibility guidelines on them:
   - `androidTapTargetGuideline`
   - `iOSTapTargetGuideline`
   - `labeledTapTargetGuideline`
 - The same test also checks:
-  - no overflow at 200% text on the busiest screens
+  - no overflow at 200% text on the busiest screens, the reader among them, in English and Hebrew
   - the Hebrew right-to-left layout
   - the desktop layout with a navigation rail
 - `test/accessibility/text_contrast_test.dart` runs `textContrastGuideline` on the same 12 screens, and on Today in all five themes: light, dark, sepia, high-contrast light and high-contrast dark. It keeps the test font: the guideline reads colours from rendered pixels, and the test font's solid glyphs show it the exact text colour where real glyphs show mostly anti-aliased edges.
-- `test/app/reader_widget_test.dart` runs the guidelines on the reader, checks the verse labels, and checks that focus mode's dimmed verses keep 4.5:1 in every theme.
+- `test/app/reader_widget_test.dart` runs `textContrastGuideline` on the reader (on the test font, for the reason above), checks the verse labels, and checks that focus mode's dimmed verses keep 4.5:1 in every theme.
 - `test/ui/palette_contrast_test.dart` computes the WCAG contrast of every text and graphics colour pair in the palette (docs/DESIGN_SYSTEM.md §3.5): 4.5:1 for text and 3:1 for graphics, 7:1 and 4.5:1 in the high-contrast themes, and 7:1 for scripture everywhere.
 - Unit tests check the spoken-label pipeline (`test/core/text/hebrew_text_test.dart`), including Divine Name substitution and stripping cantillation.
 
