@@ -1,3 +1,4 @@
+import '../../../core/calendar/local_date.dart';
 import 'progress_models.dart';
 import 'streak_engine.dart';
 
@@ -37,19 +38,7 @@ List<Milestone> computeMilestones({
       comeback = true;
     }
   }
-  bool bookDone(int b) {
-    final range = switch (b) {
-      0 => (1, 12),
-      1 => (13, 23),
-      2 => (24, 33),
-      3 => (34, 43),
-      _ => (44, 54),
-    };
-    for (var n = range.$1; n <= range.$2; n++) {
-      if (!parshiyotDoneThisCycle.contains(n)) return false;
-    }
-    return true;
-  }
+  bool bookDone(int b) => parshiyotOfBook(b).every(parshiyotDoneThisCycle.contains);
 
   return [
     Milestone(MilestoneKind.firstAliyah, achieved: anyAliyah),
@@ -65,16 +54,63 @@ List<Milestone> computeMilestones({
   ];
 }
 
+/// The numbers of the parshiyot of book [book] (0 Genesis … 4 Deuteronomy,
+/// Vezot HaBerakhah included).
+Iterable<int> parshiyotOfBook(int book) {
+  final (first, last) = switch (book) {
+    0 => (1, 12),
+    1 => (13, 23),
+    2 => (24, 33),
+    3 => (34, 43),
+    _ => (44, 54),
+  };
+  return [for (var n = first; n <= last; n++) n];
+}
+
 /// Parsha numbers completed (in any status) during the given cycle.
-Set<int> parshiyotDoneInCycle(Map<String, WeekProgress> progress, int cycleYear) {
-  final out = <int>{};
+Set<int> parshiyotDoneInCycle(Map<String, WeekProgress> progress, int cycleYear) =>
+    _completionsInCycle(progress, cycleYear).keys.toSet();
+
+/// Each parsha completed during the given cycle, with the day it was: the
+/// day the last reading of its week was marked.
+Map<int, LocalDate> _completionsInCycle(Map<String, WeekProgress> progress, int cycleYear) {
+  final out = <int, LocalDate>{};
   for (final e in progress.entries) {
     final colon = e.key.indexOf(':');
-    if (colon < 0 || e.key.substring(0, colon) != '$cycleYear' || !e.value.isComplete) continue;
+    if (colon < 0 || e.key.substring(0, colon) != '$cycleYear') continue;
+    final on = e.value.completedOn;
+    if (on == null) continue;
     for (final part in e.key.substring(colon + 1).split('-')) {
       final n = int.tryParse(part);
-      if (n != null) out.add(n);
+      if (n != null) out[n] = out[n] == null || on > out[n]! ? on : out[n]!;
     }
   }
   return out;
+}
+
+/// The books of the Torah finished during the cycle that began in
+/// [cycleYear] (every one of their parshiyot completed, in any status), by
+/// book index, each with the day it was finished: the day the last of its
+/// parshiyot was.
+Map<int, LocalDate> seferCompletions(Map<String, WeekProgress> progress, int cycleYear) {
+  final done = _completionsInCycle(progress, cycleYear);
+  return {
+    for (var b = 0; b < 5; b++)
+      if (parshiyotOfBook(b).every(done.containsKey))
+        b: parshiyotOfBook(b).map((n) => done[n]!).reduce((a, c) => c > a ? c : a),
+  };
+}
+
+/// A finished book as one key, the same on every device: "sefer:5787:0" for
+/// Genesis in the cycle that began in 5787.
+String seferKey(int cycleYear, int book) => 'sefer:$cycleYear:$book';
+
+/// The cycle and book of a [seferKey], or null if [key] isn't one.
+({int cycleYear, int book})? parseSeferKey(String key) {
+  final parts = key.split(':');
+  if (parts.length != 3 || parts[0] != 'sefer') return null;
+  final cycle = int.tryParse(parts[1]);
+  final book = int.tryParse(parts[2]);
+  if (cycle == null || book == null || book < 0 || book > 4) return null;
+  return (cycleYear: cycle, book: book);
 }

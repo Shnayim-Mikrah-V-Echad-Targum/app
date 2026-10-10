@@ -59,6 +59,23 @@ void main() {
     expect(s.graceBalance, 2, reason: 'one used, one earned for finishing on time');
   });
 
+  test('a week finished on time earns a grace day only while the balance is not full', () {
+    // Noach, Lech-Lecha and Vayera 5787, each finished on its first day:
+    // the balance goes from 2 to 3, and then stays there.
+    final log = Log(planner)
+      ..readAll('2026-10-12', '2026-10-11')
+      ..readAll('2026-10-19', '2026-10-18')
+      ..readAll('2026-10-26', '2026-10-25');
+    final s = engine.evaluate(progress: log.map, joinDate: d('2026-10-11'), today: d('2026-10-30'));
+    expect([for (final w in s.weeks) w.status], everyElement(WeekStatus.onTime));
+    expect([for (final w in s.weeks) w.earnedGrace], [true, false, false]);
+    expect(s.graceBalance, GraceRules.maxBalance);
+
+    // A week not finished on time earns nothing.
+    final open = engine.evaluate(progress: const {}, joinDate: d('2026-10-11'), today: d('2026-10-13'));
+    expect(open.weeks.single.earnedGrace, isFalse);
+  });
+
   test('reading ahead never costs anything', () {
     final log = Log(planner)..readAll('2026-10-12', '2026-10-11');
     final s = engine.evaluate(progress: log.map, joinDate: d('2026-10-11'), today: d('2026-10-16'));
