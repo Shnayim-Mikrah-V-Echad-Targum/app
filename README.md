@@ -55,7 +55,7 @@ Accessibility is a core requirement, not an add-on. See [docs/ACCESSIBILITY.md](
 - A progress screen with a map of the Torah, milestones and a list of portions to make up.
 
 **Reminders**
-- Daily, check-in and Erev Shabbat reminders. They never fire on Shabbat or Yom Tov, never after midday on the eve, and never more than one a day.
+- Daily, check-in and Erev Shabbat reminders. They never fire on Shabbat or Yom Tov, never after midday on the eve (or, with a city chosen for Shabbat times, from an hour before candle-lighting), and never more than one a day.
 
 **Community**
 - Forums, including an automatic thread for each week's parsha.

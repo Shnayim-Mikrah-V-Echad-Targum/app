@@ -987,7 +987,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - **Eyebrow:** `parshatHashavua` by default; `erevShabbat` on Friday at or after 12:00 local; "Simchat Torah" when the portion is Vezot HaBerachah.
    - 8 gap, then the Hebrew pointed name: new `Names.portionPointed(p)` = `HebrewText.forDisplay(p.nameHe, nikud: true, teamim: false)`, in hebrewDisplay 46/60 primary. Semantics header level 1 with label `parshaLabel(name)`.
    - English UI: the Latin name in headlineLarge onSurface. Hebrew UI: the Latin name in bodyMedium onSurfaceVariant.
-   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`.
+   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`; on Erev Shabbat and Erev Yom Tov, with a city chosen for Shabbat times, `todayCandleLighting` ("Candle-lighting 4:12 PM") in its place.
    - 16 gap, SeferDivider, 16 gap.
    - Row of ParshaRings 104, a 20 gap, and `Expanded(RingLegend)`. Under the legend, an end-aligned TextButton `allAliyot` ("All aliyot") with a chevron, to /today/week/{id} (within the Today tab). Under 360 dp the rings sit centred above the legend.
    - 20 gap, then a full-width Filled button (52) with `menu_book` and a label naming the destination. Let `next = ctx.nextAliyah` and `p` = the first ReadingPass of `next` that is not done:

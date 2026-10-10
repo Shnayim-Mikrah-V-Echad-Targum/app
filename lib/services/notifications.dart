@@ -12,6 +12,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../app/city_providers.dart';
 import '../app/providers.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/parsha_repository.dart';
@@ -360,6 +361,7 @@ final reminderSchedulerProvider = Provider<void>((ref) {
         fridayReminderMinutes: s.fridayReminderMinutes,
         checkInReminder: s.checkInReminder,
         habitAnchor: s.habitAnchor,
+        city: s.city,
         language: s.language,
         ashkenaziNames: s.ashkenaziNames,
       )));
@@ -377,7 +379,12 @@ final reminderSchedulerProvider = Provider<void>((ref) {
     erevShabbatMinutes: settings.fridayReminderMinutes,
     checkIn: settings.checkInReminder,
   );
-  final reminders = (prefs.daily || prefs.erevShabbat || prefs.checkIn)
+  final on = prefs.daily || prefs.erevShabbat || prefs.checkIn;
+  // With a city, reminders follow its Shabbat times, worked out once the
+  // time-zone database is in; scheduling them waits for it anyway.
+  final city = settings.city;
+  if (on && city != null && !timeZonesReady(ref)) return;
+  final reminders = on
       ? planReminders(
           prefs: prefs,
           planner: planner,
@@ -385,6 +392,7 @@ final reminderSchedulerProvider = Provider<void>((ref) {
           now: DateTime.now(),
           today: today,
           pauses: progress.pauses,
+          zmanim: city == null ? null : reminderZmanim(city),
         )
       : const <PlannedReminder>[];
 

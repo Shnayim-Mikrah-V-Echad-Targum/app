@@ -495,6 +495,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Shabbat is today} =1{Shabbat is tomorrow} other{Shabbat in {count} days}}'**
   String shabbatInDays(int count);
 
+  /// On Today, in place of shabbatInDays on the eve of Shabbat or Yom Tov, when a city is chosen for Shabbat times: when candles are lit there today. time is a time of day, such as 4:12 PM.
+  ///
+  /// In en, this message translates to:
+  /// **'Candle-lighting {time}'**
+  String todayCandleLighting(String time);
+
   /// No description provided for @parshaLabel.
   ///
   /// In en, this message translates to:
@@ -2331,6 +2337,12 @@ abstract class AppLocalizations {
   /// **'A gentle nudge at your chosen time'**
   String get dailyReminderDesc;
 
+  /// In place of dailyReminderDesc when a city is chosen for Shabbat times: a daily reminder set for later than an hour and a half before candle-lighting comes then instead.
+  ///
+  /// In en, this message translates to:
+  /// **'A gentle nudge at your chosen time, or before candle-lighting on the eve of Shabbat or Yom Tov'**
+  String get dailyReminderDescCity;
+
   /// No description provided for @dailyReminderTime.
   ///
   /// In en, this message translates to:
@@ -2348,6 +2360,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Friday morning, only if the parsha isn\'t finished'**
   String get fridayReminderDesc;
+
+  /// In place of fridayReminderDesc when a city is chosen for Shabbat times: the reminder comes at the time chosen, or three hours before candle-lighting if that is earlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday, at least three hours before candle-lighting, only if the parsha isn\'t finished'**
+  String get fridayReminderDescCity;
 
   /// No description provided for @fridayReminderTime.
   ///
@@ -2367,11 +2385,35 @@ abstract class AppLocalizations {
   /// **'Sunday morning, to log what you read on Shabbat'**
   String get checkInReminderDesc;
 
+  /// In place of checkInReminderDesc when a city is chosen for Shabbat times: on Motzaei Shabbat, unless that is after 10:30 PM.
+  ///
+  /// In en, this message translates to:
+  /// **'An hour after Shabbat ends, or Sunday morning when it ends late, to log what you read on Shabbat'**
+  String get checkInReminderDescCity;
+
   /// No description provided for @remindersShabbatNote.
   ///
   /// In en, this message translates to:
   /// **'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.'**
   String get remindersShabbatNote;
+
+  /// In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in {city}.'**
+  String remindersShabbatNoteCity(String city);
+
+  /// Offered under the reminders when the first of them is turned on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your city, and reminders will follow its Shabbat times: before candle-lighting on Friday, and after Shabbat ends.'**
+  String get reminderCityOffer;
+
+  /// Button: opens the list of cities for Shabbat times (see reminderCityOffer).
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a city'**
+  String get reminderCityChoose;
 
   /// No description provided for @habitAnchorLabel.
   ///
@@ -2520,7 +2562,7 @@ abstract class AppLocalizations {
   /// Android notification channel description, shown in the system's notification settings.
   ///
   /// In en, this message translates to:
-  /// **'The morning before Shabbat or Yom Tov, only if the parsha isn\'t finished'**
+  /// **'Before Shabbat or Yom Tov, only if the parsha isn\'t finished'**
   String get notifChannelErevShabbatDesc;
 
   /// Android notification channel description, shown in the system's notification settings.

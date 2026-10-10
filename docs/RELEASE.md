@@ -51,6 +51,7 @@
   - The daily reminder arrives.
   - The Erev Shabbat reminder arrives before midday.
   - Nothing fires on Shabbat.
+  - With the city for Shabbat times set to where the device is: a daily reminder set for the evening arrives on Friday an hour and a half before candle-lighting, Today shows candle-lighting that Friday, and the check-in arrives on Motzaei Shabbat an hour after Shabbat ends.
   - Tapping a reminder, with the app running and with it closed, opens Today. The Erev Shabbat reminder opens the week instead, and going back from it leads to Today.
   - Reminders survive a reboot (Android).
   - On Android, the status-bar icon is the three rules of the mark (two long over a shorter one), not a white square or a menu icon, and the Erev Shabbat reminder expands to show its whole message.

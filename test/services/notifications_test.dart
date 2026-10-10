@@ -9,8 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -381,6 +383,23 @@ void main() {
       // The daily reminder names it.
       change((s) => s.copyWith(habitAnchor: HabitAnchor.dinner));
       expect(service.reschedules, 6);
+    });
+
+    test('plans again when the city for Shabbat times changes, once its times can be worked out', () {
+      // As the app loads the time zones after its first frame.
+      Zmanim.timeZone('UTC');
+      const london = City(
+        id: 2643743,
+        nameEn: 'London',
+        countryCode: 'GB',
+        latitude: 51.5085,
+        longitude: -0.1257,
+        timeZone: 'Europe/London',
+      );
+      change((s) => s.copyWith(city: london));
+      expect(service.reschedules, 2);
+      change((s) => s.copyWith(city: null));
+      expect(service.reschedules, 3);
     });
   });
 

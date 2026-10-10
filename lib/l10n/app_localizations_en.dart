@@ -247,6 +247,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String todayCandleLighting(String time) {
+    return 'Candle-lighting $time';
+  }
+
+  @override
   String parshaLabel(String name) {
     return 'Parshat $name';
   }
@@ -1325,6 +1330,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyReminderDesc => 'A gentle nudge at your chosen time';
 
   @override
+  String get dailyReminderDescCity =>
+      'A gentle nudge at your chosen time, or before candle-lighting on the eve of Shabbat or Yom Tov';
+
+  @override
   String get dailyReminderTime => 'Daily reminder time';
 
   @override
@@ -1333,6 +1342,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get fridayReminderDesc =>
       'Friday morning, only if the parsha isn\'t finished';
+
+  @override
+  String get fridayReminderDescCity =>
+      'Friday, at least three hours before candle-lighting, only if the parsha isn\'t finished';
 
   @override
   String get fridayReminderTime => 'Erev Shabbat reminder time';
@@ -1345,8 +1358,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sunday morning, to log what you read on Shabbat';
 
   @override
+  String get checkInReminderDescCity =>
+      'An hour after Shabbat ends, or Sunday morning when it ends late, to log what you read on Shabbat';
+
+  @override
   String get remindersShabbatNote =>
       'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.';
+
+  @override
+  String remindersShabbatNoteCity(String city) {
+    return 'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in $city.';
+  }
+
+  @override
+  String get reminderCityOffer =>
+      'Choose your city, and reminders will follow its Shabbat times: before candle-lighting on Friday, and after Shabbat ends.';
+
+  @override
+  String get reminderCityChoose => 'Choose a city';
 
   @override
   String get habitAnchorLabel => 'After I…';
@@ -1429,7 +1458,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifChannelErevShabbatDesc =>
-      'The morning before Shabbat or Yom Tov, only if the parsha isn\'t finished';
+      'Before Shabbat or Yom Tov, only if the parsha isn\'t finished';
 
   @override
   String get notifChannelCheckInDesc =>

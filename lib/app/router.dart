@@ -112,7 +112,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               ]),
               _route('display', (_) => const DisplaySettingsScreen()),
               _route('accessibility', (_) => const AccessibilitySettingsScreen()),
-              _route('reminders', (_) => const ReminderSettingsScreen()),
+              _route('reminders', (_) => const ReminderSettingsScreen(), routes: [
+                _route('city', (_) => const CityPickerScreen()),
+              ]),
               _route('data', (_) => const DataSettingsScreen()),
               _route('account', _account),
               _route('about', (_) => const AboutScreen(), routes: [

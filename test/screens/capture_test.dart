@@ -85,6 +85,8 @@ const _screens = {
   // A backup file chosen: what it holds, with nothing here to merge with.
   'welcome_import': '/welcome',
   'today': '/today',
+  // With a city for Shabbat times: on Erev Shabbat, candle-lighting there.
+  'today_candles': '/today',
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
   'today_haftarah_left': '/today',
@@ -189,6 +191,10 @@ const _screens = {
   's_reminders_on': '/settings/reminders',
   // Turning the daily reminder on where the OS has refused notifications.
   's_reminders_denied': '/settings/reminders',
+  // Turning the first reminder on without a city: the list of cities offered.
+  's_reminders_offer': '/settings/reminders',
+  // All three on, following the Shabbat times of the city chosen.
+  's_reminders_city': '/settings/reminders',
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
   // A backup file chosen: what it holds, and whether to merge it.
@@ -302,6 +308,14 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   // Joined on the Wednesday of Bereshit: the days before have no reading.
   'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
   's_reading_city': (s) => s.copyWith(city: _jerusalem),
+  'today_candles': (s) => s.copyWith(city: _jerusalem),
+  's_reminders_city': (s) => s.copyWith(
+        dailyReminder: true,
+        fridayReminder: true,
+        checkInReminder: true,
+        habitAnchor: HabitAnchor.shacharit,
+        city: _jerusalem,
+      ),
   'city': (s) => s.copyWith(city: _jerusalem),
   'city_search': (s) => s.copyWith(city: _jerusalem),
   'city_many': (s) => s.copyWith(city: _jerusalem),
@@ -325,10 +339,12 @@ const _jerusalem = City(
 );
 
 /// Providers replaced for a screen: the device's time zone, which suggests
-/// cities.
+/// cities, and the time zones loaded, as the app loads them once its first
+/// frame is up (which tests never report).
 final _screenOverrides = <String, List<Override>>{
   for (final screen in ['city', 'city_search', 'city_many', 'city_none'])
     screen: [deviceTimeZoneProvider.overrideWith((ref) async => 'Asia/Jerusalem')],
+  'today_candles': [timeZoneDatabaseProvider.overrideWith((ref) async {})],
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
 };
 
@@ -436,7 +452,10 @@ String _backupFile() {
 }
 
 /// Screens shown where reminders are available.
-const _remindersSupported = {'s_reminders_on', 'reader_offer'};
+const _remindersSupported = {'s_reminders_on', 's_reminders_city', 'reader_offer'};
+
+/// Screens shown where reminders are available and the OS allows them.
+const _remindersAllowed = {'s_reminders_offer'};
 
 /// Screens shown where reminders are available but the OS refuses them.
 const _remindersRefused = {'s_reminders_denied'};
@@ -444,6 +463,11 @@ const _remindersRefused = {'s_reminders_denied'};
 class _RefusedNotifications extends PhoneNotifications {
   @override
   Future<bool> requestPermission() async => false;
+}
+
+class _AllowedNotifications extends PhoneNotifications {
+  @override
+  Future<bool> requestPermission() async => true;
 }
 
 Future<ForumRepository> _signedIn() async {
@@ -607,6 +631,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   ]),
   // The daily reminder's switch.
   's_reminders_denied': (tester) => tester.tap(find.byType(SwitchListTile).first),
+  's_reminders_offer': (tester) => tester.tap(find.byType(SwitchListTile).first),
   // The last post's menu, then Report.
   'thread_report': _tapInTurn([
     () => find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)),
@@ -860,6 +885,7 @@ final _modes = [
 
 const _desktopScreens = {
   'today',
+  'today_candles',
   'today_divergence',
   'today_haftarah_left',
   'today_yomtov_oneday',
@@ -907,6 +933,9 @@ const _bigTextScreens = {
   'today',
   'reader_offer',
   's_reminders_on',
+  's_reminders_offer',
+  's_reminders_city',
+  'today_candles',
   'goto_verse',
   'goto_missing',
   'reader_verse',
@@ -997,7 +1026,9 @@ void main() {
                 : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),
             notifications: _remindersRefused.contains(entry.key)
                 ? _RefusedNotifications()
-                : (_remindersSupported.contains(entry.key) ? PhoneNotifications() : null),
+                : _remindersAllowed.contains(entry.key)
+                    ? _AllowedNotifications()
+                    : (_remindersSupported.contains(entry.key) ? PhoneNotifications() : null),
             overrides: [
               ...?_screenOverrides[entry.key],
               if (_choosesBackup.contains(entry.key))

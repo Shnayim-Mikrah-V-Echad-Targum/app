@@ -168,6 +168,15 @@
       }
     }
   },
+  "todayCandleLighting": "Candle-lighting {time}",
+  "@todayCandleLighting": {
+    "description": "On Today, in place of shabbatInDays on the eve of Shabbat or Yom Tov, when a city is chosen for Shabbat times: when candles are lit there today. time is a time of day, such as 4:12 PM.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "parshaLabel": "Parshat {name}",
   "@parshaLabel": {
     "placeholders": {
@@ -924,13 +933,42 @@
   "sendFeedback": "Send feedback",
   "dailyReminder": "Daily reminder",
   "dailyReminderDesc": "A gentle nudge at your chosen time",
+  "dailyReminderDescCity": "A gentle nudge at your chosen time, or before candle-lighting on the eve of Shabbat or Yom Tov",
+  "@dailyReminderDescCity": {
+    "description": "In place of dailyReminderDesc when a city is chosen for Shabbat times: a daily reminder set for later than an hour and a half before candle-lighting comes then instead."
+  },
   "dailyReminderTime": "Daily reminder time",
   "fridayReminder": "Erev Shabbat reminder",
   "fridayReminderDesc": "Friday morning, only if the parsha isn't finished",
+  "fridayReminderDescCity": "Friday, at least three hours before candle-lighting, only if the parsha isn't finished",
+  "@fridayReminderDescCity": {
+    "description": "In place of fridayReminderDesc when a city is chosen for Shabbat times: the reminder comes at the time chosen, or three hours before candle-lighting if that is earlier."
+  },
   "fridayReminderTime": "Erev Shabbat reminder time",
   "checkInReminder": "After-Shabbat check-in",
   "checkInReminderDesc": "Sunday morning, to log what you read on Shabbat",
+  "checkInReminderDescCity": "An hour after Shabbat ends, or Sunday morning when it ends late, to log what you read on Shabbat",
+  "@checkInReminderDescCity": {
+    "description": "In place of checkInReminderDesc when a city is chosen for Shabbat times: on Motzaei Shabbat, unless that is after 10:30 PM."
+  },
   "remindersShabbatNote": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.",
+  "remindersShabbatNoteCity": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in {city}.",
+  "@remindersShabbatNoteCity": {
+    "description": "In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.",
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderCityOffer": "Choose your city, and reminders will follow its Shabbat times: before candle-lighting on Friday, and after Shabbat ends.",
+  "@reminderCityOffer": {
+    "description": "Offered under the reminders when the first of them is turned on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow."
+  },
+  "reminderCityChoose": "Choose a city",
+  "@reminderCityChoose": {
+    "description": "Button: opens the list of cities for Shabbat times (see reminderCityOffer)."
+  },
   "habitAnchorLabel": "After I…",
   "habitAnchorPrompt": "Tie your reading to something you already do every day.",
   "anchorShacharit": "finish Shacharit",
@@ -985,7 +1023,7 @@
   "@notifChannelDailyDesc": {
     "description": "Android notification channel description, shown in the system's notification settings."
   },
-  "notifChannelErevShabbatDesc": "The morning before Shabbat or Yom Tov, only if the parsha isn't finished",
+  "notifChannelErevShabbatDesc": "Before Shabbat or Yom Tov, only if the parsha isn't finished",
   "@notifChannelErevShabbatDesc": {
     "description": "Android notification channel description, shown in the system's notification settings."
   },
