@@ -1577,9 +1577,15 @@ final _modes = [
   // System text at 200% on a phone's own height, for the screens in
   // [_bigPhoneScreens]: what stays in view without scrolling.
   _Mode('bigphone', const Size(412, 915), (s) => s, textScale: 2),
+  // System text at 300% on a 320 dp phone, in English and Hebrew, for the
+  // screens in [_hugeScreens], as screens_a11y_test.dart lays them out.
+  _Mode('huge', const Size(320, 640), (s) => s, textScale: 3),
+  _Mode('hugehe', const Size(320, 640), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 3),
 ];
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
+const _hugeModes = {'huge', 'hugehe'};
+const _hugeScreens = {'today', 'reader'};
 
 const _desktopScreens = {
   'notes',
@@ -1845,6 +1851,7 @@ void main() {
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
       if (mode.tag == 'narrow' && !_narrowScreens.contains(entry.key)) continue;
       if (mode.tag == 'bigphone' && !_bigPhoneScreens.contains(entry.key)) continue;
+      if (_hugeModes.contains(mode.tag) && !_hugeScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {
