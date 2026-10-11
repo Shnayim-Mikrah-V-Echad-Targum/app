@@ -10,6 +10,7 @@ import '../../../ui/widgets/paper_group.dart';
 import '../../community/data/community_providers.dart';
 import '../../progress/progress_screen.dart' show showPauseDialog;
 import '../app_settings.dart';
+import '../widgets/pause_setting.dart';
 import '../widgets/settings_widgets.dart';
 
 /// Settings (docs/DESIGN_SYSTEM.md §9): the practice, the reading on the
@@ -24,12 +25,19 @@ class SettingsScreen extends ConsumerWidget {
     final names = Names(context);
     final settings = ref.watch(settingsProvider);
     final today = ref.watch(todayProvider);
-    // The pause covering today, if any: the row says until when.
-    final pause = ref.watch(progressProvider.select((p) => p.pauses.where((pause) => pause.contains(today)).firstOrNull));
+    // The pause covering today, if any, through any that run on from it: the
+    // row says until when.
+    final pause = ref.watch(progressProvider.select((p) => pauseCovering(p.pauses, today)));
     final user = ref.watch(communityUserProvider).value;
     final name = user == null ? null : ref.watch(myProfileProvider).value?.displayName ?? user.email;
-    PaperRow page(IconData icon, String title, String? subtitle, String route) =>
-        PaperRow(icon: icon, title: title, subtitle: subtitle, onTap: () => context.push(route));
+    // Subtitles in full, however narrow the phone and long the language's.
+    PaperRow page(IconData icon, String title, String? subtitle, String route) => PaperRow(
+          icon: icon,
+          title: title,
+          subtitle: subtitle,
+          subtitleMaxLines: null,
+          onTap: () => context.push(route),
+        );
 
     return SettingsPage(
       title: l.settingsTitle,
@@ -47,13 +55,15 @@ class SettingsScreen extends ConsumerWidget {
               value: settings.showStreaks,
               onChanged: (v) => ref.read(settingsProvider.notifier).update((s) => s.copyWith(showStreaks: v)),
             ),
-            // A dialog, not a page: no chevron.
+            // A dialog, not a page: no chevron. While paused, it offers to
+            // lengthen the pause or end it, rather than make another.
             PaperRow(
               icon: Icons.pause_circle_outline,
               title: l.pauseAction,
               subtitle: pause == null ? l.settingsPauseDesc : l.pausedBanner(names.dateLong(pause.end)),
+              subtitleMaxLines: null,
               chevron: false,
-              onTap: () => showPauseDialog(context, ref),
+              onTap: () => pause == null ? showPauseDialog(context, ref) : showPauseOptions(context, ref, pause),
             ),
           ],
         ),
@@ -83,6 +93,13 @@ class SettingsScreen extends ConsumerWidget {
                 AppLanguage.system => l.languageDevice,
                 AppLanguage.english => l.languageEnglish,
                 AppLanguage.hebrew => l.languageHebrew,
+              },
+              // A language's name in itself, read in its own voice, as in the
+              // sheet.
+              valueLocale: switch (settings.language) {
+                AppLanguage.system => null,
+                AppLanguage.english => const Locale('en'),
+                AppLanguage.hebrew => const Locale('he'),
               },
               onTap: () => _chooseLanguage(context, ref),
             ),

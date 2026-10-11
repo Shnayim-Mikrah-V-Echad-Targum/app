@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/focus.dart';
 import '../theme/sefer_colors.dart';
+import 'lang.dart';
 import 'ornaments.dart';
 
 /// Rows on one sheet of paper (docs/DESIGN_SYSTEM.md §6.3): a card with no
@@ -124,6 +125,7 @@ class PaperRow extends StatelessWidget {
     this.subtitle,
     this.subtitleMaxLines = 2,
     this.value,
+    this.valueLocale,
     this.trailing,
     this.mergeTrailing = false,
     this.onTap,
@@ -145,6 +147,11 @@ class PaperRow extends StatelessWidget {
 
   /// The current setting, such as a language, at the end of the row.
   final String? value;
+
+  /// The language [value] is written in, where it is not the interface's
+  /// (a language's own name), so that a screen reader reads it in its own
+  /// voice.
+  final Locale? valueLocale;
   final Widget? trailing;
 
   /// Whether [trailing] reads as part of the row (a switch the row toggles)
@@ -230,7 +237,13 @@ class PaperRow extends StatelessWidget {
                         alignment: WrapAlignment.spaceBetween,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         spacing: 12,
-                        children: [Text(title, style: titleStyle), Text(value!, style: muted)],
+                        children: [
+                          Text(title, style: titleStyle),
+                          if (valueLocale case final locale?)
+                            Lang(locale, child: Text(value!, style: muted))
+                          else
+                            Text(value!, style: muted),
+                        ],
                       ),
                     ),
                   if (subtitle != null)

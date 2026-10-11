@@ -1087,6 +1087,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pauseStarting => 'Starting';
 
   @override
+  String pauseManageTitle(String date) {
+    return 'Paused until $date';
+  }
+
+  @override
+  String get pauseManageBody => 'You can lengthen the pause, or resume now.';
+
+  @override
+  String get pauseExtendBy => 'Lengthen by';
+
+  @override
+  String get pauseExtend => 'Lengthen';
+
+  @override
+  String get pauseAtMost =>
+      'A pause lasts 30 days at most. You can resume now.';
+
+  @override
   String pauseStarted(String date) {
     return 'Paused until $date.';
   }
@@ -1317,8 +1335,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get secondRashiEnglish => 'Rashi in English';
 
   @override
-  String get secondHelp =>
-      'The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both. A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.';
+  String get secondSource =>
+      'The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both.';
+
+  @override
+  String get secondAdvice =>
+      'A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.';
 
   @override
   String get repeatLastVerse => 'End with Mikra';
@@ -1333,9 +1355,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get thirdReadingDesc =>
       'Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent';
-
-  @override
-  String get haftarahEnabled => 'Haftarah';
 
   @override
   String get haftarahEnabledDesc => 'Read the week\'s haftarah once';

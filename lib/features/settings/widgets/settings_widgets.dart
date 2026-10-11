@@ -34,12 +34,17 @@ class Choice<T> {
 /// cites its source, a [SourceNote]. The heading leaves the gap below it to
 /// the setting's controls.
 class SettingHeading extends StatelessWidget {
-  const SettingHeading(this.title, {super.key, this.help, this.helpIsSource = false, this.level = 2})
-      : assert(level == 2 || level == 3);
+  const SettingHeading(this.title, {super.key, this.help, this.helpIsSource = false, this.source, this.level = 2})
+      : assert(level == 2 || level == 3),
+        assert(source == null || !helpIsSource, 'A source of its own, or the help as one');
 
   final String title;
   final String? help;
   final bool helpIsSource;
+
+  /// The source the setting rests on, in a [SourceNote] before any [help]:
+  /// the citation in the margin's voice, and advice as plain help.
+  final String? source;
   final int level;
 
   @override
@@ -47,6 +52,7 @@ class SettingHeading extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final help = this.help;
+    final source = this.source;
     // In line with a group header's eyebrow, 4 in from the paper's edge.
     const inset = EdgeInsetsDirectional.symmetric(horizontal: 4);
     return Column(
@@ -63,16 +69,18 @@ class SettingHeading extends StatelessWidget {
               child: Text(title, style: theme.textTheme.titleMedium?.copyWith(color: scheme.onSurface)),
             ),
           ),
+        if (source != null)
+          Padding(padding: EdgeInsets.only(top: level == 2 ? 0 : Space.sm), child: SourceNote(source)),
         if (help != null)
           if (helpIsSource)
             Padding(padding: EdgeInsets.only(top: level == 2 ? 0 : Space.sm), child: SourceNote(help))
           else
             Padding(
-              padding: inset.add(EdgeInsets.only(top: level == 2 ? 0 : 2)),
+              padding: inset.add(EdgeInsets.only(top: source != null ? Space.sm : (level == 2 ? 0 : 2))),
               child: Text(help, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
             ),
         // A group header keeps 8 below itself.
-        Gap(help != null ? Space.md : (level == 2 ? 0 : Space.sm)),
+        Gap(help != null || source != null ? Space.md : (level == 2 ? 0 : Space.sm)),
       ],
     );
   }
@@ -110,7 +118,8 @@ class SourceNote extends StatelessWidget {
 /// move between them.
 ///
 /// Its heading is a [SettingHeading] of [headingLevel], with [help] under
-/// it, through a [SourceNote] where [helpIsSource]. [margin] surrounds the
+/// it, through a [SourceNote] where [helpIsSource], or after the [source]'s
+/// note. [margin] surrounds the
 /// whole: on a page still padded for list tiles (PageBody.tilePadding), 16
 /// at the sides brings the paper to the gutters.
 ///
@@ -128,11 +137,14 @@ class ChoiceGroup<T> extends StatelessWidget {
     required this.onChanged,
     this.help,
     this.helpIsSource = false,
+    this.source,
     this.segmented = false,
     this.prominent = false,
     this.headingLevel = 2,
     this.margin = EdgeInsets.zero,
-  }) : assert(!(segmented && prominent), 'Segments or cards, not both');
+  })  : assert(!(segmented && prominent), 'Segments or cards, not both'),
+        // A question asked on its own page has plain help, never a source.
+        assert(!(prominent && (helpIsSource || source != null)), 'A prominent question takes plain help');
 
   final String title;
   final T value;
@@ -140,6 +152,9 @@ class ChoiceGroup<T> extends StatelessWidget {
   final ValueChanged<T> onChanged;
   final String? help;
   final bool helpIsSource;
+
+  /// As [SettingHeading.source].
+  final String? source;
   final bool segmented;
   final bool prominent;
   final int headingLevel;
@@ -180,7 +195,7 @@ class ChoiceGroup<T> extends StatelessWidget {
           if (prominent)
             _Question(title, help: help, level: headingLevel)
           else
-            SettingHeading(title, help: help, helpIsSource: helpIsSource, level: headingLevel),
+            SettingHeading(title, help: help, helpIsSource: helpIsSource, source: source, level: headingLevel),
           options,
         ],
       ),
@@ -225,13 +240,12 @@ class _Question extends StatelessWidget {
 }
 
 /// A [ChoiceGroup]'s options as a segmented control across the column, each
-/// label in two lines at most, with no word broken, and in as many lines
-/// whichever segment is selected and bears the check, so that nothing moves
-/// as the choice changes. Where the labels don't fit so beside the check,
-/// they go without it, the selected segment's fill and bold label marking
-/// it; except in high contrast, where the fill is close to the paper and the
-/// check stays, as it does where they don't fit even so (large text, a
-/// narrow phone): then the segments stand one under another.
+/// label in two lines at most, with no word broken. The selected segment
+/// always bears the check, its non-colour cue (§6.8), and every other label
+/// keeps the check's room beside it, so that each is set as narrow as the
+/// selected one and nothing moves as the choice changes. Where the labels
+/// don't fit so (large text, a narrow phone), the segments stand one under
+/// another, each the column's width.
 class _Segments<T> extends StatelessWidget {
   const _Segments({required this.value, required this.choices, required this.onChanged});
 
@@ -240,34 +254,31 @@ class _Segments<T> extends StatelessWidget {
   final ValueChanged<T> onChanged;
 
   /// A segment's padding (12 at each side), its borders and a little to
-  /// spare, and the check before the selected one's label (18, then a gap of
-  /// 8).
+  /// spare; and the room the check takes in the selected one, which every
+  /// label keeps: the check (18), the gap after it (8), and the 4 more at
+  /// the end that a button with an icon pads itself by.
   static const _padding = 24.0 + 2 + 4;
-  static const _check = 18.0 + 8;
+  static const _check = 18.0 + 8 + 4;
 
-  /// Whether every label fits a segment [room] wide, beside a check or with
-  /// none, as above.
-  bool _fit(BuildContext context, double room, {required bool checked}) {
-    if (room - (checked ? _check : 0) <= 0) return false;
+  /// Whether every label fits beside the check in a segment [room] wide.
+  bool _fit(BuildContext context, double room) {
+    final width = room - _check;
+    if (width <= 0) return false;
     // Bold, as the selected segment sets it.
     final style = Theme.of(context).textTheme.labelLarge!.copyWith(fontWeight: FontWeight.w700);
     final painter = TextPainter(textDirection: Directionality.of(context), textScaler: MediaQuery.textScalerOf(context));
-    int lines(String text, double width) => (painter
-          ..text = TextSpan(text: text, style: style)
-          ..layout(maxWidth: width))
-        .computeLineMetrics()
-        .length;
-    double width(String word) => (painter
-          ..text = TextSpan(text: word, style: style)
-          ..layout())
-        .width;
     try {
       return choices.every((c) {
-        final narrowest = checked ? room - _check : room;
-        final n = lines(c.title, narrowest);
-        return n <= 2 &&
-            (!checked || n == lines(c.title, room)) &&
-            c.title.split(RegExp(r'\s')).every((word) => width(word) <= narrowest);
+        painter
+          ..text = TextSpan(text: c.title, style: style)
+          ..layout(maxWidth: width);
+        if (painter.computeLineMetrics().length > 2) return false;
+        return c.title.split(RegExp(r'\s')).every((word) {
+          painter
+            ..text = TextSpan(text: word, style: style)
+            ..layout();
+          return painter.width <= width;
+        });
       });
     } finally {
       painter.dispose();
@@ -279,9 +290,7 @@ class _Segments<T> extends StatelessWidget {
     // Measured as it builds: again when a font loaded on demand arrives.
     FontsChangeScope.watch(context);
     return LayoutBuilder(builder: (context, constraints) {
-      final segment = constraints.maxWidth / choices.length - _padding;
-      final checked = _fit(context, segment, checked: true);
-      final across = checked || (!SeferColors.of(context).isHighContrast && _fit(context, segment, checked: false));
+      final across = _fit(context, constraints.maxWidth / choices.length - _padding);
       return SizedBox(
         width: double.infinity,
         child: SegmentedButton<T>(
@@ -292,12 +301,17 @@ class _Segments<T> extends StatelessWidget {
             for (final c in choices)
               ButtonSegment<T>(
                 value: c.value,
-                label: Text(c.title, semanticsLabel: c.semanticsLabel, textAlign: TextAlign.center),
+                label: Padding(
+                  // The check's room, kept by the labels without it, half on
+                  // either side so that they stay centred.
+                  padding: EdgeInsets.symmetric(horizontal: across && c.value != value ? _check / 2 : 0),
+                  child: Text(c.title, semanticsLabel: c.semanticsLabel, textAlign: TextAlign.center),
+                ),
               ),
           ],
           selected: {value},
           onSelectionChanged: (selected) => onChanged(selected.single),
-          showSelectedIcon: checked || !across,
+          showSelectedIcon: true,
           // Across, the segments share the width; stacked, each takes it.
           expandedInsets: across ? EdgeInsets.zero : null,
           direction: across ? Axis.horizontal : Axis.vertical,
@@ -672,8 +686,55 @@ class SwitchRow extends PaperRow {
           mergeTrailing: true,
           // The row takes the focus and rings itself; the switch shows the
           // state, and toggles it when tapped itself.
-          trailing: ExcludeFocus(
-            child: Switch(value: value, onChanged: onChanged, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+          trailing: _Undimmed(
+            child: ExcludeFocus(
+              child: Switch(value: value, onChanged: onChanged, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+            ),
           ),
         );
+
+  @override
+  Widget build(BuildContext context) {
+    if (onTap != null) return super.build(context);
+    // Disabled: its words and icon dimmed as Material dims a disabled
+    // control's (38%), so that the row doesn't look as if a tap would do
+    // something. The switch shows it in its own way, undimmed again.
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return _UndimmedTheme(
+      theme: theme,
+      child: Theme(
+        data: theme.copyWith(
+          colorScheme: scheme.copyWith(
+            onSurface: scheme.onSurface.withValues(alpha: 0.38),
+            onSurfaceVariant: scheme.onSurfaceVariant.withValues(alpha: 0.38),
+          ),
+        ),
+        child: Builder(builder: super.build),
+      ),
+    );
+  }
+}
+
+/// The theme a disabled [SwitchRow] had before it dimmed its words.
+class _UndimmedTheme extends InheritedWidget {
+  const _UndimmedTheme({required this.theme, required super.child});
+
+  final ThemeData theme;
+
+  @override
+  bool updateShouldNotify(_UndimmedTheme old) => old.theme != theme;
+}
+
+/// [child] in the theme of the [SwitchRow] around it before it dimmed.
+class _Undimmed extends StatelessWidget {
+  const _Undimmed({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.dependOnInheritedWidgetOfExactType<_UndimmedTheme>()?.theme;
+    return theme == null ? child : Theme(data: theme, child: child);
+  }
 }

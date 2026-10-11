@@ -1743,6 +1743,36 @@ abstract class AppLocalizations {
   /// **'Starting'**
   String get pauseStarting;
 
+  /// The title of the dialog that Settings' pause row opens while a pause lasts.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused until {date}'**
+  String pauseManageTitle(String date);
+
+  /// No description provided for @pauseManageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can lengthen the pause, or resume now.'**
+  String get pauseManageBody;
+
+  /// Over the choices of how many days to lengthen a pause by (1 day, 3 days…).
+  ///
+  /// In en, this message translates to:
+  /// **'Lengthen by'**
+  String get pauseExtendBy;
+
+  /// The button that lengthens the pause under way.
+  ///
+  /// In en, this message translates to:
+  /// **'Lengthen'**
+  String get pauseExtend;
+
+  /// In place of pauseManageBody when the pause under way already runs its 30 days.
+  ///
+  /// In en, this message translates to:
+  /// **'A pause lasts 30 days at most. You can resume now.'**
+  String get pauseAtMost;
+
   /// No description provided for @pauseStarted.
   ///
   /// In en, this message translates to:
@@ -2133,11 +2163,17 @@ abstract class AppLocalizations {
   /// **'Rashi in English'**
   String get secondRashiEnglish;
 
-  /// No description provided for @secondHelp.
+  /// The source of the choice of second reading, set as a margin note under its heading.
   ///
   /// In en, this message translates to:
-  /// **'The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both. A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.'**
-  String get secondHelp;
+  /// **'The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both.'**
+  String get secondSource;
+
+  /// Advice on the choice of second reading, in plain help after secondSource.
+  ///
+  /// In en, this message translates to:
+  /// **'A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.'**
+  String get secondAdvice;
 
   /// No description provided for @repeatLastVerse.
   ///
@@ -2162,12 +2198,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent'**
   String get thirdReadingDesc;
-
-  /// No description provided for @haftarahEnabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Haftarah'**
-  String get haftarahEnabled;
 
   /// No description provided for @haftarahEnabledDesc.
   ///

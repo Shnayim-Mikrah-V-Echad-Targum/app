@@ -28,6 +28,7 @@ import '../parsha/week_rows.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
+import '../settings/widgets/pause_setting.dart';
 import '../settings/widgets/shabbat_times_setting.dart' show clockTime;
 import 'check_in.dart';
 import 'today_clock.dart';
@@ -91,17 +92,14 @@ class TodayScreen extends ConsumerWidget {
       if (paused) ...[
         NoticeBanner(
           icon: Icons.pause_circle_outline,
-          text: l.pausedBanner(names.dateLong(pauses.firstWhere((p) => p.contains(today)).end)),
+          // Until the last day of the pauses that run on from today's.
+          text: l.pausedBanner(names.dateLong(pauseCovering(pauses, today)!.end)),
           // Two sentences, which beside the button would wrap into a
           // narrow column.
           actionBelow: true,
           action: TextButton(
-            onPressed: () {
-              ref.read(progressProvider.notifier).endPause(today);
-              // Back by choice, and told so here: no welcome back.
-              ref.read(settingsProvider.notifier).update((s) => s.copyWith(pauseEndSeen: today.addDays(-1)));
-              showStatus(context, l.pauseEnded);
-            },
+            // Back by choice, and told so here: no welcome back.
+            onPressed: () => resumePause(context, ref),
             child: Text(l.resume),
           ),
         ),

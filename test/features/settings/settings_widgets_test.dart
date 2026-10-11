@@ -19,6 +19,7 @@ void main() {
     bool prominent = false,
     String? help,
     bool helpIsSource = false,
+    String? source,
     int headingLevel = 2,
     double width = 372,
     double textScale = 1,
@@ -38,6 +39,7 @@ void main() {
               title: 'Haftarah custom',
               help: help,
               helpIsSource: helpIsSource,
+              source: source,
               headingLevel: headingLevel,
               segmented: segmented,
               prominent: prominent,
@@ -157,6 +159,28 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('a source is a note in the margin, and the advice after it plain help', (tester) async {
+      const source = 'The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum.';
+      const advice = 'Ask your rav about translated Rashi.';
+      await pumpChoice(tester, source: source, help: advice, headingLevel: 3);
+      final context = tester.element(find.byType(ChoiceGroup<String>));
+      expect(find.descendant(of: find.byType(SourceNote), matching: find.text(source)), findsOneWidget);
+      expect(find.descendant(of: find.byType(SourceNote), matching: find.text(advice)), findsNothing);
+      expect(tester.widget<Text>(find.text(advice)).style?.fontSize, Theme.of(context).textTheme.bodyMedium?.fontSize);
+      expect(tester.getTopLeft(find.text(advice)).dy, greaterThan(tester.getBottomLeft(find.byType(SourceNote)).dy));
+    });
+
+    test('a prominent question takes plain help, never a source', () {
+      expect(
+        () => ChoiceGroup<int>(title: 'Q', value: 0, choices: const [], onChanged: (_) {}, prominent: true, help: 'x', helpIsSource: true),
+        throwsAssertionError,
+      );
+      expect(
+        () => ChoiceGroup<int>(title: 'Q', value: 0, choices: const [], onChanged: (_) {}, prominent: true, source: 'x'),
+        throwsAssertionError,
+      );
+    });
+
     testWidgets('plain help is bodyMedium in onSurfaceVariant', (tester) async {
       await pumpChoice(tester, help: 'Visitors usually keep their home custom.');
       final theme = Theme.of(tester.element(find.byType(ChoiceGroup<String>)));
@@ -180,19 +204,18 @@ void main() {
         expect(chosen, ['Sephardi']);
       });
 
-      testWidgets('goes without the check where only that keeps a word whole, but not in high contrast',
+      testWidgets('stands one segment under another, checked, where a word would not fit beside the check',
           (tester) async {
         // In the test font every letter is as wide as the text is high, 15:
-        // "Ashkenazi" fits a third of 520 alone, but not beside a check.
-        await pumpChoice(tester, segmented: true, width: 520);
-        expect(segments(tester).direction, Axis.horizontal);
-        expect(segments(tester).showSelectedIcon, isFalse);
-
-        // The same control, turned: it lays itself out anew.
-        await pumpChoice(tester, segmented: true, width: 520, theme: AppThemeMode.highContrastDark);
-        expect(tester.takeException(), isNull);
-        expect(segments(tester).direction, Axis.vertical);
-        expect(segments(tester).showSelectedIcon, isTrue);
+        // "Ashkenazi" fits a third of 520 alone, but not beside a check. The
+        // check is the selected segment's non-colour cue, kept in every
+        // theme (§6.8).
+        for (final theme in [AppThemeMode.light, AppThemeMode.highContrastDark]) {
+          await pumpChoice(tester, segmented: true, width: 520, theme: theme);
+          expect(tester.takeException(), isNull);
+          expect(segments(tester).direction, Axis.vertical, reason: theme.name);
+          expect(segments(tester).showSelectedIcon, isTrue, reason: theme.name);
+        }
       });
 
       testWidgets('stands one segment under another at 200% text', (tester) async {
@@ -202,12 +225,21 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('keeps the same lines whichever segment bears the check', (tester) async {
+      testWidgets('keeps the check, and every label its room, so that no label moves as the choice changes',
+          (tester) async {
         // "Out side" (120 in the test font) takes one line of its segment's
-        // 130 alone, but two beside the check: so it goes without.
+        // 130 alone, but two beside the check: set beside the check's room
+        // whether or not it bears the check, it keeps its two lines.
         await pumpChoice(tester, segmented: true, width: 320, labels: const ['In', 'Out side']);
-        expect(segments(tester).showSelectedIcon, isFalse);
+        expect(segments(tester).showSelectedIcon, isTrue);
         expect(segments(tester).direction, Axis.horizontal);
+        final unselected = tester.getRect(find.text('Out side'));
+        await tester.tap(find.text('Out side'));
+        await tester.pumpAndSettle();
+        final selected = tester.getRect(find.text('Out side'));
+        expect(selected.height, unselected.height);
+        expect(unselected.height, greaterThan(30), reason: 'two lines');
+        expect(selected.width, unselected.width);
       });
     });
 

@@ -604,7 +604,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 **SegmentedButton**
 - Radius 10, height 48; selected primaryContainer with label w700 and a check icon (keep the M3 check here; it's the non-colour cue); unselected transparent with 1 px outline.
 - Focus: the ring goes around the whole group (Flutter gives each segment a plain shape of its own), so the focused segment is also washed in its ink at 24% and its label is underlined.
-- A settings choice (`ChoiceGroup.segmented`) lies across the column while every label fits its segment in two lines, no word broken, and in as many lines whichever segment bears the check. Where they fit only without the check, they go without it, the fill and bold label marking the selected one, except in high contrast, where the fill is close to the paper; otherwise the segments stand one under another, checked.
+- A settings choice (`ChoiceGroup.segmented`) lies across the column while every label fits beside the check in two lines, no word broken. The selected segment always bears the check, and every other label keeps the check's room (30: the check, its gap, and the 4 more a button with an icon pads its end by) beside it, half on either side, so that all are set as narrow and none changes its lines as the choice changes. Otherwise the segments stand one under another, each the column's width, checked.
 
 ### 6.9 Navigation bar (phone)
 
@@ -1163,9 +1163,10 @@ In order:
 ### Settings (settings_screen.dart and screens/)
 
 **Top level:** three PaperGroups with GroupHeaders, every leading icon outlined.
-- **Practice:** Reading & customs; Reminders; the "Show streak numbers" switch row; "Pause streaks", which opens the pause dialog (no chevron) and, while a pause lasts, says until when.
+- **Practice:** Reading & customs; Reminders; the "Show streak numbers" switch row; "Pause streaks", which opens the pause dialog (no chevron) and, while a pause lasts, says until when (the last day of the pauses that run on from today's, `pauseCovering`) and opens instead a dialog titled `pauseManageTitle` that lengthens it from the day after (`pauseExtendBy`, 30 days in all at most) or resumes, as Today's banner does (`resumePause`).
+- The rows' subtitles are never cut short, however narrow the phone and long the language's.
 - **Reading:** Display; Accessibility.
-- **You:** Account & community ("Signed in as …", or the prompt to sign in); Your data; Language. Language is ONE row whose value is Device / English / עברית; it opens a sheet, over the navigation bar, with RadioGroup rows (each language's name tagged with its own language), which closes as one is chosen, and replaces the three inline radios.
+- **You:** Account & community ("Signed in as …", or the prompt to sign in); Your data; Language. Language is ONE row whose value is Device / English / עברית (a language's name tagged with its own language, `PaperRow.valueLocale`); it opens a sheet, over the navigation bar, with RadioGroup rows (each language's name tagged with its own language), which closes as one is chosen, and replaces the three inline radios.
 - **About:**
   - "How it works": the guide (`school_outlined`), `guideTitle` value changed (§10);
   - "About this app": `settingsAbout` value changed, with "Version, sources, privacy" under it.
@@ -1174,7 +1175,7 @@ In order:
 **Rows of a settings page** (`settings_widgets.dart`)
 - `SettingsPage(paper: true)` stands its paper on the gutters; pages not yet set in paper keep `PageBody.tilePadding`, and a `ChoiceGroup` on them takes a 16 margin.
 - `ChoiceGroup`: a `SettingHeading` (level 2, a GroupHeader; or level 3, a subheading in titleMedium onSurface for one of several settings in a section), its help in bodyMedium onSurfaceVariant or, with `helpIsSource`, a `SourceNote` (marginalia on surfaceContainerLow, radius 12, padding 12; outlined in high contrast), then radio rows on one PaperGroup (a RadioListTile underneath, its text where a PaperRow's starts, ringed rather than washed when focused) or, `segmented`, a SegmentedButton (§6.8).
-- `SwitchRow`: a PaperRow whose whole row toggles its switch, read as one switch; its description is never cut short; disabled with no `onChanged`.
+- `SwitchRow`: a PaperRow whose whole row toggles its switch, read as one switch; its description is never cut short; disabled with no `onChanged`, when its words and icon are dimmed to 38% as Material dims a disabled control's (the switch shows it in its own way).
 
 **Display**
 - The preview becomes a paper "page" showing a chapter head, two verses, a Targum line and a setumah mark. It reflects settings live and is pinned at the top: `SliverPersistentHeader`, collapsing 220 → 140.
@@ -1197,7 +1198,7 @@ In order:
   - **Special days:** Tisha B'Av and Chol HaMoed;
   - **Parsha names:** a SegmentedButton.
 - Radio groups inside PaperGroups with 56/72 rows.
-- Source citations, e.g. "(Shulchan Aruch OC 285:2)", in SourceNotes: the second reading's and the after-Shabbat window's. The marginalia keep their own size (EB Garamond's 19 sp floor, §4.5; Frank Ruhl Libre 17/26 in Hebrew).
+- Source citations, e.g. "(Shulchan Aruch OC 285:2)", in SourceNotes: the second reading's (its citation alone, `secondSource`, with the advice after it as plain help, `secondAdvice`; `ChoiceGroup.source`) and the after-Shabbat window's. The marginalia keep their own size (EB Garamond's 19 sp floor, §4.5; Frank Ruhl Libre 17/26 in Hebrew).
 - A segment's label and its gloss ("One, as in Israel"; "Sephardi (Bereshit)") are set on two lines, so that the label breaks there or nowhere, whichever segment bears the check.
 - The customs disclaimer closes the page in marginalia.
 
@@ -1217,7 +1218,7 @@ In order:
 **Reminders**
 - Native: a PaperGroup for each reminder: its switch row and, once on, its time as a row's value (and for the daily reminder, the routine chips), 12 apart; the offer of a city below them, 28 apart.
 - The Shabbat note is a NoticeBanner with candles (§7.6, in `rest`): "Never on Shabbat or Yom Tov, and at most once a day."
-- Web: one NoticeBanner (`install_mobile`) saying that reminders need the installed app, with "Get the app" where the build gives `INSTALL_URL`, over the three reminders' switch rows, disabled (replaces two stacked banners).
+- Web: one NoticeBanner (`install_mobile`) saying that reminders need the installed app, with "Get the app" where the build gives `INSTALL_URL`, over the three reminders' switch rows, disabled and off, whatever a backup from a phone brought (replaces two stacked banners).
 
 **Your data**
 - Group 1, "Backup & restore": a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export (`ios_share_outlined`), Import (`download_outlined`) and "Paste backup text" (`content_paste_outlined`), which open dialogs and have no chevron.

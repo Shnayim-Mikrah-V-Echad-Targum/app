@@ -113,6 +113,12 @@ void main() {
       tester.widget<Text>(find.descendant(of: find.byType(SourceNote).first, matching: find.byType(Text))).style,
       SeferType.of(context).marginalia,
     );
+    // The citation alone is marginalia; the advice after it is plain help.
+    const advice = 'A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.';
+    expect(find.descendant(of: find.byType(SourceNote), matching: find.text(advice)), findsNothing);
+    final help = tester.widget<Text>(find.text(advice)).style!;
+    expect(help.fontSize, Theme.of(context).textTheme.bodyMedium!.fontSize);
+    expect(help.fontStyle, isNot(FontStyle.italic));
   });
 
   testWidgets("the haftarah's custom and whether it counts show only while it is read, set in under it",

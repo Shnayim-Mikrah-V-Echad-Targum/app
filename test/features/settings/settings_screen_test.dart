@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/lang.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
@@ -141,6 +144,124 @@ void main() {
       );
     });
 
+    testWidgets('while paused, the row offers to lengthen the pause, and says the later day', (tester) async {
+      final c = await open(tester, '/settings');
+      await tester.tap(find.text('Pause streaks'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
+      await tester.pumpAndSettle();
+
+      // Again: lengthened by a week from the day after, not a second pause
+      // laid over the first.
+      await tester.tap(find.text('Pause streaks'));
+      await tester.pumpAndSettle();
+      expect(find.text('Paused until Sunday, October 18'), findsOneWidget);
+      expect(find.text('Lengthen by'), findsOneWidget);
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('7 days')));
+      await tester.tap(find.widgetWithText(FilledButton, 'Lengthen'));
+      await tester.pumpAndSettle();
+      final pauses = c.read(progressProvider).pauses;
+      expect([for (final p in pauses) (p.start, p.end)], [
+        (LocalDate(2026, 10, 12), LocalDate(2026, 10, 18)),
+        (LocalDate(2026, 10, 19), LocalDate(2026, 10, 25)),
+      ]);
+      expect(find.text('Paused until Sunday, October 25.'), findsOneWidget, reason: 'the status message');
+      expect(
+        find.descendant(
+          of: find.widgetWithText(PaperRow, 'Pause streaks'),
+          matching: find.text('Paused until Sunday, October 25. Nothing resets while paused.'),
+        ),
+        findsOneWidget,
+      );
+      // Today's banner says the same.
+      c.read(routerProvider).go('/today');
+      await tester.pumpAndSettle();
+      expect(find.text('Paused until Sunday, October 25. Nothing resets while paused.'), findsOneWidget);
+    });
+
+    testWidgets('the row says the later end of pauses laid one over another', (tester) async {
+      await open(
+        tester,
+        '/settings',
+        progress: ProgressState(pauses: [
+          Pause(LocalDate(2026, 10, 12), LocalDate(2026, 10, 18), id: 'a'),
+          Pause(LocalDate(2026, 10, 12), LocalDate(2026, 10, 25), id: 'b'),
+        ]),
+      );
+      expect(find.text('Paused until Sunday, October 25. Nothing resets while paused.'), findsOneWidget);
+    });
+
+    testWidgets('while paused, the row resumes, as Today does', (tester) async {
+      final c = await open(
+        tester,
+        '/settings',
+        progress: ProgressState(pauses: [Pause(LocalDate(2026, 10, 10), LocalDate(2026, 10, 18), id: 'a')]),
+      );
+      await tester.tap(find.text('Pause streaks'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Resume'));
+      await tester.pumpAndSettle();
+      expect(c.read(progressProvider).pauses.single.end, LocalDate(2026, 10, 11));
+      expect(c.read(settingsProvider).pauseEndSeen, LocalDate(2026, 10, 11));
+      expect(find.text('Welcome back! Your place is saved.'), findsOneWidget);
+      expect(find.text('Illness, travel, mourning, a new baby: nothing resets while paused'), findsOneWidget);
+    });
+
+    testWidgets('a pause already 30 days long can only be resumed', (tester) async {
+      await open(
+        tester,
+        '/settings',
+        progress: ProgressState(pauses: [Pause(LocalDate(2026, 10, 1), LocalDate(2026, 10, 30), id: 'a')]),
+      );
+      await tester.tap(find.text('Pause streaks'));
+      await tester.pumpAndSettle();
+      expect(find.text('A pause lasts 30 days at most. You can resume now.'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Lengthen'), findsNothing);
+      expect(find.widgetWithText(TextButton, 'Resume'), findsOneWidget);
+    });
+
+    for (final hebrew in [false, true]) {
+      testWidgets('no subtitle is cut short on a 320 dp phone${hebrew ? ', in Hebrew' : ''}', (tester) async {
+        tester.view.physicalSize = const Size(320, 2000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final c = await pumpApp(
+          tester,
+          settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.english),
+          now: now,
+          progress: ProgressState(pauses: [Pause(LocalDate(2026, 10, 12), LocalDate(2026, 10, 30), id: 'a')]),
+        );
+        c.read(routerProvider).go('/settings');
+        await tester.pumpAndSettle();
+        final rows = find.byWidgetPredicate((w) => w is PaperRow && w.subtitle != null);
+        expect(rows, findsWidgets);
+        for (final row in tester.widgetList<PaperRow>(rows)) {
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.descendant(of: find.byWidget(row), matching: find.text(row.subtitle!)).first,
+          );
+          expect(paragraph.didExceedMaxLines, isFalse, reason: row.subtitle);
+          expect(paragraph.maxLines, isNull, reason: row.subtitle);
+        }
+      });
+    }
+
+    testWidgets("the language's name is read in its own voice", (tester) async {
+      for (final (language, name, code) in [(AppLanguage.english, 'English', 'en'), (AppLanguage.hebrew, 'עברית', 'he')]) {
+        await open(tester, '/settings', settings: AppSettings(onboardingComplete: true, language: language));
+        final row = find.byWidgetPredicate((w) => w is PaperRow && w.value == name);
+        expect(
+          find.descendant(
+            of: row,
+            matching: find.byWidgetPredicate((w) => w is Lang && w.locale == Locale(code)),
+          ),
+          findsOneWidget,
+          reason: name,
+        );
+      }
+      await open(tester, '/settings');
+      expect(find.byWidgetPredicate((w) => w is Lang), findsNothing, reason: "the device's language is no name");
+    });
+
     testWidgets("the account's row asks to sign in, or names who is signed in", (tester) async {
       await open(tester, '/settings');
       expect(find.text('Sign in to post, say thanks or report.'), findsOneWidget);
@@ -189,11 +310,24 @@ void main() {
       for (final title in ['Daily reminder', 'Erev Shabbat reminder', 'After-Shabbat check-in']) {
         final row = find.widgetWithText(SwitchRow, title);
         expect(tester.getSemantics(row), isSemantics(hasEnabledState: true, isEnabled: false), reason: title);
+        // Its words dimmed as a disabled control's.
+        final color = tester.widget<Text>(find.text(title)).style!.color!;
+        expect(color.a, closeTo(0.38, 0.01), reason: title);
       }
       await tester.tap(find.text('Daily reminder'));
       await tester.pumpAndSettle();
       expect(find.byType(AlertDialog), findsNothing);
       handle.dispose();
+    });
+
+    testWidgets('on the web, reminders a backup brought from a phone show off, as none can come', (tester) async {
+      await open(
+        tester,
+        '/settings/reminders',
+        settings: const AppSettings(onboardingComplete: true, dailyReminder: true, fridayReminder: true),
+      );
+      expect([for (final s in tester.widgetList<Switch>(find.byType(Switch))) s.value], everyElement(isFalse));
+      expect(find.text('Daily reminder time'), findsNothing);
     });
   });
 
@@ -212,6 +346,14 @@ void main() {
         expect(find.descendant(of: backup, matching: find.byIcon(icon)), findsOneWidget, reason: '$icon');
       }
 
+      // Every hairline of the backup group starts where its rows' text does,
+      // Export's too, whose row is built in a context of its own.
+      final insets = [
+        for (final paint in tester.widgetList<CustomPaint>(find.descendant(of: backup, matching: find.byType(CustomPaint))))
+          if (paint.painter?.runtimeType.toString() == '_RowRule') (paint.painter! as dynamic).inset as double,
+      ];
+      expect(insets, [PaperGroup.iconInset, PaperGroup.iconInset, PaperGroup.iconInset]);
+
       final reset = find.byType(PaperGroup).last;
       final title = tester.widget<Text>(find.text('Reset all progress'));
       expect(title.style?.color, Theme.of(tester.element(reset)).colorScheme.error);
@@ -219,8 +361,21 @@ void main() {
       expect(find.text("This can't be undone."), findsOneWidget);
     });
 
-    testWidgets('the reset is confirmed with the destructive button', (tester) async {
-      final c = await open(tester, '/settings/data');
+    testWidgets('the reset is confirmed with the destructive button, and Cancel keeps everything', (tester) async {
+      final progress = ProgressState(
+        weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9))},
+        pauses: [Pause(LocalDate(2026, 9, 1), LocalDate(2026, 9, 3), id: 'a')],
+      );
+      final c = await open(tester, '/settings/data', progress: progress);
+      bool kept() => c.read(progressProvider).week('5787:1').isComplete && c.read(progressProvider).pauses.isNotEmpty;
+      expect(kept(), isTrue);
+
+      await tester.tap(find.text('Reset all progress'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+      expect(kept(), isTrue);
+
       await tester.tap(find.text('Reset all progress'));
       await tester.pumpAndSettle();
       final confirm = find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton));
@@ -229,7 +384,8 @@ void main() {
       expect(material.color, scheme.error);
       await tester.tap(confirm);
       await tester.pumpAndSettle();
-      expect(c.read(progressProvider).weeks, isEmpty);
+      expect(c.read(progressProvider).weeks.values.where((w) => w.completedUnits > 0), isEmpty);
+      expect(c.read(progressProvider).pauses.where((p) => !p.deleted), isEmpty);
       expect(find.text('Progress reset.'), findsOneWidget);
     });
   });

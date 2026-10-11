@@ -1091,6 +1091,24 @@ class AppLocalizationsHe extends AppLocalizations {
   String get pauseStarting => 'החל מ־';
 
   @override
+  String pauseManageTitle(String date) {
+    return 'בהשהיה עד $date';
+  }
+
+  @override
+  String get pauseManageBody => 'אפשר להאריך את ההשהיה או לסיים אותה עכשיו.';
+
+  @override
+  String get pauseExtendBy => 'להאריך בעוד';
+
+  @override
+  String get pauseExtend => 'הארכה';
+
+  @override
+  String get pauseAtMost =>
+      'השהיה נמשכת 30 יום לכל היותר. אפשר לסיים אותה עכשיו.';
+
+  @override
   String pauseStarted(String date) {
     return 'בהשהיה עד $date.';
   }
@@ -1319,8 +1337,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get secondRashiEnglish => 'רש״י באנגלית';
 
   @override
-  String get secondHelp =>
-      'השולחן ערוך (או״ח רפה, ב) מתיר לקרוא את פירוש רש״י במקום התרגום, וירא שמים יקרא את שניהם. תרגום פשוט הוא עזר ללימוד ואינו תחליף. על רש״י מתורגם יש לשאול רב.';
+  String get secondSource =>
+      'השולחן ערוך (או״ח רפה, ב) מתיר לקרוא את פירוש רש״י במקום התרגום, וירא שמים יקרא את שניהם.';
+
+  @override
+  String get secondAdvice =>
+      'תרגום פשוט הוא עזר ללימוד ואינו תחליף. על רש״י מתורגם יש לשאול רב.';
 
   @override
   String get repeatLastVerse => 'לסיים במקרא';
@@ -1335,9 +1357,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get thirdReadingDesc =>
       'להציע קריאה שלישית בעברית כשאונקלוס מביא בעיקר שמות (במדבר לב, ג) או כשרש״י אינו מפרש';
-
-  @override
-  String get haftarahEnabled => 'הפטרה';
 
   @override
   String get haftarahEnabledDesc => 'קריאת הפטרת השבוע פעם אחת';

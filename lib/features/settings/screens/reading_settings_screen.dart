@@ -104,8 +104,9 @@ class ReadingSettingsScreen extends ConsumerWidget {
           ),
           ChoiceGroup<SecondReading>(
             title: l.secondLabel,
-            help: l.secondHelp,
-            helpIsSource: true,
+            // The citation in the margin, and the advice as plain help.
+            source: l.secondSource,
+            help: l.secondAdvice,
             headingLevel: 3,
             value: s.secondReading,
             choices: [

@@ -500,7 +500,7 @@ class _MethodStep extends ConsumerWidget {
         ChoiceGroup<SecondReading>(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.secondLabel,
-          help: l.secondHelp,
+          help: '${l.secondSource} ${l.secondAdvice}',
           value: s.secondReading,
           choices: [
             Choice(SecondReading.onkelos, l.secondOnkelos),

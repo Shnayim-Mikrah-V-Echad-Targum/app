@@ -1021,6 +1021,28 @@
   "pauseAction": "Pause streaks",
   "pauseFor": "Pause for",
   "pauseStarting": "Starting",
+  "pauseManageTitle": "Paused until {date}",
+  "@pauseManageTitle": {
+    "description": "The title of the dialog that Settings' pause row opens while a pause lasts.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pauseManageBody": "You can lengthen the pause, or resume now.",
+  "pauseExtendBy": "Lengthen by",
+  "@pauseExtendBy": {
+    "description": "Over the choices of how many days to lengthen a pause by (1 day, 3 days…)."
+  },
+  "pauseExtend": "Lengthen",
+  "@pauseExtend": {
+    "description": "The button that lengthens the pause under way."
+  },
+  "pauseAtMost": "A pause lasts 30 days at most. You can resume now.",
+  "@pauseAtMost": {
+    "description": "In place of pauseManageBody when the pause under way already runs its 30 days."
+  },
   "pauseStarted": "Paused until {date}.",
   "@pauseStarted": {
     "placeholders": {
@@ -1161,12 +1183,18 @@
   "secondRashi": "Rashi",
   "secondBoth": "Onkelos and Rashi",
   "secondRashiEnglish": "Rashi in English",
-  "secondHelp": "The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both. A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.",
+  "secondSource": "The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both.",
+  "@secondSource": {
+    "description": "The source of the choice of second reading, set as a margin note under its heading."
+  },
+  "secondAdvice": "A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.",
+  "@secondAdvice": {
+    "description": "Advice on the choice of second reading, in plain help after secondSource."
+  },
   "repeatLastVerse": "End with Mikra",
   "repeatLastVerseDesc": "Repeat the parsha's last verse in Hebrew after its Targum",
   "thirdReading": "Third-reading prompts",
   "thirdReadingDesc": "Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent",
-  "haftarahEnabled": "Haftarah",
   "haftarahEnabledDesc": "Read the week's haftarah once",
   "nusachLabel": "Haftarah custom",
   "nusachAshkenazi": "Ashkenazi",

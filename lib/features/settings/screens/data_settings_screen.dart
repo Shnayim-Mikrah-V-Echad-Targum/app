@@ -418,6 +418,8 @@ class DataSettingsScreen extends ConsumerWidget {
       children: [
         GroupHeader(l.dataGroupBackup),
         PaperGroup(
+          // Every row has an icon; the Builder around Export hides its own.
+          ruleInset: PaperGroup.iconInset,
           children: [
             PaperRow(
               icon: Icons.cloud_outlined,

@@ -170,13 +170,14 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
           ),
         const Gap(Space.lg),
         // A sheet for each reminder: its switch, and once it is on, when it
-        // comes.
+        // comes. Where reminders can't be sent, each is off, whatever a
+        // backup from a phone brought with it.
         PaperGroup(
           children: [
             SwitchRow(
               title: l.dailyReminder,
               subtitle: city == null ? l.dailyReminderDesc : l.dailyReminderDescCity,
-              value: s.dailyReminder,
+              value: supported && s.dailyReminder,
               onChanged: !supported
                   ? null
                   : (v) => v ? enable((s) => s.copyWith(dailyReminder: true)) : update((s) => s.copyWith(dailyReminder: false)),
@@ -219,7 +220,7 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
             SwitchRow(
               title: l.fridayReminder,
               subtitle: city == null ? l.fridayReminderDesc : l.fridayReminderDescCity,
-              value: s.fridayReminder,
+              value: supported && s.fridayReminder,
               onChanged: !supported
                   ? null
                   : (v) =>
@@ -245,7 +246,7 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
             SwitchRow(
               title: l.checkInReminder,
               subtitle: city == null ? l.checkInReminderDesc : l.checkInReminderDescCity,
-              value: s.checkInReminder,
+              value: supported && s.checkInReminder,
               onChanged: !supported
                   ? null
                   : (v) => v
