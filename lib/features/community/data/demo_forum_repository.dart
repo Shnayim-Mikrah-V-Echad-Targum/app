@@ -238,6 +238,20 @@ class DemoForumRepository implements ForumRepository {
   Future<List<Forum>> forums() async => List.of(_forums);
 
   @override
+  Future<Map<int, ForumStats>> forumStats() async => {
+        for (final f in _forums)
+          f.id: ForumStats(
+            threadCount: _threads.where((t) => t.forumId == f.id).length,
+            // A thread not yet posted in (a weekly thread opened) is no sign
+            // of activity, as on the server.
+            lastPostAt: _threads
+                .where((t) => t.forumId == f.id && t.postCount > 0)
+                .map((t) => t.lastPostAt)
+                .fold<DateTime?>(null, (latest, t) => latest == null || t.isAfter(latest) ? t : latest),
+          ),
+      };
+
+  @override
   Future<List<ThreadSummary>> threads({
     int? forumId,
     int? parshaNumber,
@@ -249,10 +263,28 @@ class DemoForumRepository implements ForumRepository {
         .where((t) => parshaNumber == null || t.parshaNumber == parshaNumber)
         .toList()
       ..sort(ThreadSummary.byLatestActivity);
-    return [
+    final page = [
       if (after == null) ...list.where((t) => t.pinned),
       ...list.where((t) => !t.pinned && (after == null || _isBefore(t.lastPostAt, t.id, after))).take(limit),
     ];
+    final ids = {for (final t in page) t.id};
+    final posts = <String, List<Post>>{};
+    for (final p in _posts) {
+      if (ids.contains(p.threadId)) (posts[p.threadId] ??= []).add(p);
+    }
+    return [for (final t in page) _listed(t, posts[t.id] ?? const [])];
+  }
+
+  /// [thread] as the server's listing gives it, with [posts], its own: the
+  /// excerpt of its first post, unless the reader has blocked its author,
+  /// and the todah given to the posts of members the reader hasn't blocked.
+  ThreadSummary _listed(ThreadSummary thread, Iterable<Post> posts) {
+    final first = posts.isEmpty ? null : posts.reduce((a, b) => Post.chronological(a, b) <= 0 ? a : b);
+    final shown = posts.where((p) => !_blocked.contains(p.authorId));
+    return thread.copyWith(
+      excerpt: first == null || _blocked.contains(first.authorId) ? null : threadExcerpt(first.body),
+      todahTotal: shown.fold<int>(0, (sum, p) => sum + p.todah + (_todah[p.id]?.length ?? 0)),
+    );
   }
 
   /// Whether ([time], [id]) comes before [cursor], as the server compares
@@ -263,8 +295,10 @@ class DemoForumRepository implements ForumRepository {
   }
 
   @override
-  Future<ThreadSummary> thread(String id) async =>
-      _threads.firstWhere((t) => t.id == id, orElse: () => throw const CommunityException('thread_not_found'));
+  Future<ThreadSummary> thread(String id) async => _listed(
+        _threads.firstWhere((t) => t.id == id, orElse: () => throw const CommunityException('thread_not_found')),
+        _posts.where((p) => p.threadId == id),
+      );
 
   @override
   Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) async {
@@ -406,7 +440,7 @@ class DemoForumRepository implements ForumRepository {
     );
     _posts.add(post);
     final i = _threads.indexWhere((x) => x.id == threadId);
-    _threads[i] = t.copyWith(postCount: t.postCount + 1, lastPostAt: now);
+    _threads[i] = _threads[i].copyWith(postCount: _threads[i].postCount + 1, lastPostAt: now);
     return post;
   }
 

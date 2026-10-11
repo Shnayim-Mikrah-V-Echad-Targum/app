@@ -1401,6 +1401,48 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get stopListening;
 
+  /// No description provided for @listenPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get listenPause;
+
+  /// No description provided for @listenResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get listenResume;
+
+  /// No description provided for @listenPreviousVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous verse'**
+  String get listenPreviousVerse;
+
+  /// No description provided for @listenNextVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Next verse'**
+  String get listenNextVerse;
+
+  /// The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is a percentage, as Settings shows it: "45%".
+  ///
+  /// In en, this message translates to:
+  /// **'Speech rate: {rate}'**
+  String speechRateValue(String rate);
+
+  /// No description provided for @listenAlong.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen along'**
+  String get listenAlong;
+
+  /// No description provided for @listenAlongDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen goes on from each reading to the next by itself, to the end of the aliyah. An aid for following the text, not a substitute for reading it.'**
+  String get listenAlongDesc;
+
   /// No description provided for @ttsUnavailable.
   ///
   /// In en, this message translates to:
@@ -1424,6 +1466,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Full text'**
   String get fullTextMode;
+
+  /// No description provided for @wholeParsha.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole parsha'**
+  String get wholeParsha;
+
+  /// No description provided for @oneAliyahAtATime.
+  ///
+  /// In en, this message translates to:
+  /// **'One aliyah at a time'**
+  String get oneAliyahAtATime;
 
   /// No description provided for @markAliyahRead.
   ///
@@ -1530,8 +1584,14 @@ abstract class AppLocalizations {
   /// No description provided for @shortcutListen.
   ///
   /// In en, this message translates to:
-  /// **'Listen / stop'**
+  /// **'Listen / pause'**
   String get shortcutListen;
+
+  /// No description provided for @shortcutListenVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'While listening: previous or next verse'**
+  String get shortcutListenVerse;
 
   /// No description provided for @shortcutHelp.
   ///
@@ -1575,11 +1635,179 @@ abstract class AppLocalizations {
   /// **'Down arrow'**
   String get keyDown;
 
+  /// No description provided for @keyLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left arrow'**
+  String get keyLeft;
+
+  /// No description provided for @keyRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Right arrow'**
+  String get keyRight;
+
   /// No description provided for @keySpace.
   ///
   /// In en, this message translates to:
   /// **'Space'**
   String get keySpace;
+
+  /// A screen reader's action on a verse, which opens what can be done with it: bookmark it, write a note on it, copy, share or ask about it.
+  ///
+  /// In en, this message translates to:
+  /// **'Verse options'**
+  String get verseOptions;
+
+  /// No description provided for @shortcutVerseOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Verse options: bookmark, note, copy, share or ask'**
+  String get shortcutVerseOptions;
+
+  /// No description provided for @copyVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyVerse;
+
+  /// No description provided for @askAboutVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about this verse'**
+  String get askAboutVerse;
+
+  /// No description provided for @askAboutVerseDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'In Questions & answers'**
+  String get askAboutVerseDesc;
+
+  /// No description provided for @verseCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Verse copied'**
+  String get verseCopied;
+
+  /// No description provided for @shareCopiedInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing isn\'t available here, so the verse was copied.'**
+  String get shareCopiedInstead;
+
+  /// A switch in a verse's options that bookmarks the verse.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmark'**
+  String get bookmarkVerse;
+
+  /// No description provided for @addNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note'**
+  String get addNote;
+
+  /// A verse's options: the row that opens the reader's note on the verse, with the note beneath it. Also the label of the note's field.
+  ///
+  /// In en, this message translates to:
+  /// **'Your note'**
+  String get yourNote;
+
+  /// The title of the dialog that edits the reader's note on a verse, such as "Note on Genesis 3:22".
+  ///
+  /// In en, this message translates to:
+  /// **'Note on {reference}'**
+  String noteTitle(String reference);
+
+  /// No description provided for @noteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A question for the Shabbat table, or a thought'**
+  String get noteHint;
+
+  /// No description provided for @noteSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Note saved'**
+  String get noteSaved;
+
+  /// No description provided for @noteDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Note deleted'**
+  String get noteDeleted;
+
+  /// Said by screen readers after a verse the reader has bookmarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmarked'**
+  String get verseBookmarked;
+
+  /// Said by screen readers after a verse the reader has written a note on.
+  ///
+  /// In en, this message translates to:
+  /// **'With your note'**
+  String get verseWithNote;
+
+  /// Read by screen readers on the list of bookmarks and notes: the reader's own note on a verse.
+  ///
+  /// In en, this message translates to:
+  /// **'Your note: {text}'**
+  String yourNoteLabel(String text);
+
+  /// No description provided for @notesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmarks & notes'**
+  String get notesTitle;
+
+  /// No description provided for @notesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'To bookmark a verse or keep a question for the Shabbat table, press and hold the verse as you read.'**
+  String get notesEmpty;
+
+  /// No description provided for @notesEmptyParsha.
+  ///
+  /// In en, this message translates to:
+  /// **'No bookmarks or notes on this parsha yet.'**
+  String get notesEmptyParsha;
+
+  /// No description provided for @notesShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All bookmarks & notes'**
+  String get notesShowAll;
+
+  /// A row on a week's page that opens the reader's bookmarks and notes on its parsha.
+  ///
+  /// In en, this message translates to:
+  /// **'Your notes on this parsha'**
+  String get parshaNotes;
+
+  /// No description provided for @notesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 note} other{{count} notes}}'**
+  String notesCount(int count);
+
+  /// No description provided for @bookmarksCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 bookmark} other{{count} bookmarks}}'**
+  String bookmarksCount(int count);
+
+  /// No description provided for @copyDivineName.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the Divine Name as ה׳'**
+  String get copyDivineName;
+
+  /// No description provided for @copyDivineNameDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'In a verse copied, shared or quoted in a question'**
+  String get copyDivineNameDesc;
 
   /// No description provided for @progressTitle.
   ///
@@ -2553,6 +2781,18 @@ abstract class AppLocalizations {
   /// **'Highlight the current verse and dim the rest'**
   String get focusModeDesc;
 
+  /// No description provided for @sideBySide.
+  ///
+  /// In en, this message translates to:
+  /// **'Side by side'**
+  String get sideBySide;
+
+  /// No description provided for @sideBySideDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'On a wide screen, the full text shows the Targum, or the translation, in a column beside each verse'**
+  String get sideBySideDesc;
+
   /// No description provided for @keepScreenOn.
   ///
   /// In en, this message translates to:
@@ -3072,7 +3312,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportDataDesc.
   ///
   /// In en, this message translates to:
-  /// **'Save a backup you can restore later'**
+  /// **'Save a backup of your progress, bookmarks and notes to restore later'**
   String get exportDataDesc;
 
   /// No description provided for @importData.
@@ -3588,7 +3828,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncProgressDesc.
   ///
   /// In en, this message translates to:
-  /// **'Keep your reading progress with your account and restore it on other devices.'**
+  /// **'Keep your reading progress, bookmarks and notes with your account, and restore them on other devices.'**
   String get syncProgressDesc;
 
   /// No description provided for @syncNow.
@@ -3614,6 +3854,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your backup was saved by a newer version of the app. Update the app to keep syncing.'**
   String get syncNeedsUpdate;
+
+  /// On the account page, and as Sync now's reply, when what the backup would hold is more than the server takes: many long notes on verses.
+  ///
+  /// In en, this message translates to:
+  /// **'Your notes are too long to back up to your account, so nothing new is backed up. Shorten or delete some of them; a backup file, from Your data, keeps them all.'**
+  String get syncTooLarge;
 
   /// No description provided for @lastSynced.
   ///
@@ -3825,6 +4071,12 @@ abstract class AppLocalizations {
   /// **'Posted.'**
   String get posted;
 
+  /// The action of the "Posted." message after a question asked from the reader is posted, which goes back to the reader: opens the new discussion in Community.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewPostedThread;
+
   /// No description provided for @pendingReview.
   ///
   /// In en, this message translates to:
@@ -3956,6 +4208,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}'**
   String postsCount(int count);
+
+  /// In a forum's list, after a discussion's replies: the thanks (todah) given to its posts, once there are any. A no-break space keeps the count with its word.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 thanks} other{{count} thanks}}'**
+  String threadThanksCount(int count);
+
+  /// Under a forum's description on the Community page: how many discussions it has. A no-break space keeps the count with its word.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No discussions yet} =1{1 discussion} other{{count} discussions}}'**
+  String forumDiscussionsCount(int count);
+
+  /// After a forum's count of discussions on the Community page: when one was last posted in. {time} is "3 hours ago", "just now" or, after a day, a date ("Thu, Oct 8"): the phrase must read well with either.
+  ///
+  /// In en, this message translates to:
+  /// **'active {time}'**
+  String forumActive(String time);
 
   /// No description provided for @timeJustNow.
   ///
@@ -4130,6 +4400,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discard draft'**
   String get discardDraft;
+
+  /// The title a question about a verse starts with, such as "Question on Genesis 3:22".
+  ///
+  /// In en, this message translates to:
+  /// **'Question on {reference}'**
+  String questionOnVerse(String reference);
+
+  /// No description provided for @askDraftKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Your unsent draft is kept. Discard it to ask about {reference} instead.'**
+  String askDraftKept(String reference);
 
   /// No description provided for @charactersLeft.
   ///
@@ -4472,6 +4754,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{weeks, plural, =0{Nothing logged} =1{1 week logged} other{{weeks} weeks logged}}, {pauses, plural, =0{no pauses} =1{1 pause} other{{pauses} pauses}}.'**
   String importCounts(int weeks, int pauses);
+
+  /// What a backup holds besides the progress, under importSummary, when it holds any: the verses bookmarked, and the notes on verses. Each number is joined to its noun by a no-break space.
+  ///
+  /// In en, this message translates to:
+  /// **'{bookmarks, plural, =0{No bookmarks} =1{1 bookmark} other{{bookmarks} bookmarks}}, {notes, plural, =0{no notes} =1{1 note} other{{notes} notes}}.'**
+  String importMarks(int bookmarks, int notes);
 
   /// No description provided for @importMergeBody.
   ///

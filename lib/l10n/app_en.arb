@@ -883,10 +883,27 @@
   "textLarger": "Larger text",
   "listen": "Listen",
   "stopListening": "Stop",
+  "listenPause": "Pause",
+  "listenResume": "Resume",
+  "listenPreviousVerse": "Previous verse",
+  "listenNextVerse": "Next verse",
+  "speechRateValue": "Speech rate: {rate}",
+  "@speechRateValue": {
+    "description": "The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is a percentage, as Settings shows it: \"45%\".",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "listenAlong": "Listen along",
+  "listenAlongDesc": "Listen goes on from each reading to the next by itself, to the end of the aliyah. An aid for following the text, not a substitute for reading it.",
   "ttsUnavailable": "Text-to-speech isn't available on this device.",
   "ttsNoHebrewVoice": "No Hebrew voice is installed. You can add one in your device's speech settings.",
   "guidedMode": "Guided reading",
   "fullTextMode": "Full text",
+  "wholeParsha": "Whole parsha",
+  "oneAliyahAtATime": "One aliyah at a time",
   "markAliyahRead": "Mark this aliyah as read",
   "keyboardShortcuts": "Keyboard shortcuts",
   "translationDisclaimer": "A translation is a study aid. It does not take the place of the Targum.",
@@ -911,7 +928,8 @@
   "shortcutSmaller": "Smaller text",
   "shortcutTeamim": "Show or hide cantillation",
   "shortcutNikud": "Show or hide vowels",
-  "shortcutListen": "Listen / stop",
+  "shortcutListen": "Listen / pause",
+  "shortcutListenVerse": "While listening: previous or next verse",
   "shortcutHelp": "Show shortcuts",
   "shortcutScroll": "Scroll the text",
   "shortcutPageDown": "Down a page, then the next step",
@@ -919,7 +937,83 @@
   "shortcutFocusVerse": "Full text in focus mode: previous or next verse",
   "keyUp": "Up arrow",
   "keyDown": "Down arrow",
+  "keyLeft": "Left arrow",
+  "keyRight": "Right arrow",
   "keySpace": "Space",
+  "verseOptions": "Verse options",
+  "@verseOptions": {
+    "description": "A screen reader's action on a verse, which opens what can be done with it: bookmark it, write a note on it, copy, share or ask about it."
+  },
+  "shortcutVerseOptions": "Verse options: bookmark, note, copy, share or ask",
+  "copyVerse": "Copy",
+  "askAboutVerse": "Ask about this verse",
+  "askAboutVerseDesc": "In Questions & answers",
+  "verseCopied": "Verse copied",
+  "shareCopiedInstead": "Sharing isn't available here, so the verse was copied.",
+  "bookmarkVerse": "Bookmark",
+  "@bookmarkVerse": {
+    "description": "A switch in a verse's options that bookmarks the verse."
+  },
+  "addNote": "Add a note",
+  "yourNote": "Your note",
+  "@yourNote": {
+    "description": "A verse's options: the row that opens the reader's note on the verse, with the note beneath it. Also the label of the note's field."
+  },
+  "noteTitle": "Note on {reference}",
+  "@noteTitle": {
+    "description": "The title of the dialog that edits the reader's note on a verse, such as \"Note on Genesis 3:22\".",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "noteHint": "A question for the Shabbat table, or a thought",
+  "noteSaved": "Note saved",
+  "noteDeleted": "Note deleted",
+  "verseBookmarked": "Bookmarked",
+  "@verseBookmarked": {
+    "description": "Said by screen readers after a verse the reader has bookmarked."
+  },
+  "verseWithNote": "With your note",
+  "@verseWithNote": {
+    "description": "Said by screen readers after a verse the reader has written a note on."
+  },
+  "yourNoteLabel": "Your note: {text}",
+  "@yourNoteLabel": {
+    "description": "Read by screen readers on the list of bookmarks and notes: the reader's own note on a verse.",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "notesTitle": "Bookmarks & notes",
+  "notesEmpty": "To bookmark a verse or keep a question for the Shabbat table, press and hold the verse as you read.",
+  "notesEmptyParsha": "No bookmarks or notes on this parsha yet.",
+  "notesShowAll": "All bookmarks & notes",
+  "parshaNotes": "Your notes on this parsha",
+  "@parshaNotes": {
+    "description": "A row on a week's page that opens the reader's bookmarks and notes on its parsha."
+  },
+  "notesCount": "{count, plural, =1{1 note} other{{count} notes}}",
+  "@notesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookmarksCount": "{count, plural, =1{1 bookmark} other{{count} bookmarks}}",
+  "@bookmarksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "copyDivineName": "Write the Divine Name as ה׳",
+  "copyDivineNameDesc": "In a verse copied, shared or quoted in a question",
   "progressTitle": "Progress",
   "longest": "Longest: {value}",
   "@longest": {
@@ -1292,6 +1386,8 @@
   "boldText": "Bold text",
   "focusMode": "Focus mode",
   "focusModeDesc": "Highlight the current verse and dim the rest",
+  "sideBySide": "Side by side",
+  "sideBySideDesc": "On a wide screen, the full text shows the Targum, or the translation, in a column beside each verse",
   "keepScreenOn": "Keep the screen on while reading",
   "previewLabel": "Preview",
   "reduceMotion": "Reduce motion",
@@ -1509,7 +1605,7 @@
   "showStreaks": "Show streak numbers",
   "showStreaksDesc": "Hide them if you'd rather focus on the learning itself",
   "exportData": "Export my progress",
-  "exportDataDesc": "Save a backup you can restore later",
+  "exportDataDesc": "Save a backup of your progress, bookmarks and notes to restore later",
   "importData": "Import progress",
   "importDataDesc": "Restore from a backup file",
   "importPrompt": "Paste the contents of your backup file.",
@@ -1701,11 +1797,15 @@
   "saveName": "Save name",
   "nameSaved": "Name saved.",
   "syncProgress": "Back up my progress",
-  "syncProgressDesc": "Keep your reading progress with your account and restore it on other devices.",
+  "syncProgressDesc": "Keep your reading progress, bookmarks and notes with your account, and restore them on other devices.",
   "syncNow": "Sync now",
   "syncDone": "Progress synced.",
   "syncFailed": "Couldn't sync right now. We'll try again later.",
   "syncNeedsUpdate": "Your backup was saved by a newer version of the app. Update the app to keep syncing.",
+  "syncTooLarge": "Your notes are too long to back up to your account, so nothing new is backed up. Shorten or delete some of them; a backup file, from Your data, keeps them all.",
+  "@syncTooLarge": {
+    "description": "On the account page, and as Sync now's reply, when what the backup would hold is more than the server takes: many long notes on verses."
+  },
   "lastSynced": "Last synced {time}",
   "@lastSynced": {
     "placeholders": {
@@ -1793,6 +1893,10 @@
   "deletePostConfirm": "Delete this post?",
   "postDeleted": "Post deleted.",
   "posted": "Posted.",
+  "viewPostedThread": "View",
+  "@viewPostedThread": {
+    "description": "The action of the \"Posted.\" message after a question asked from the reader is posted, which goes back to the reader: opens the new discussion in Community."
+  },
   "pendingReview": "Hidden — waiting for a moderator",
   "lockedThread": "This discussion is locked.",
   "pinnedLabel": "Pinned",
@@ -1840,6 +1944,33 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "threadThanksCount": "{count, plural, =1{1 thanks} other{{count} thanks}}",
+  "@threadThanksCount": {
+    "description": "In a forum's list, after a discussion's replies: the thanks (todah) given to its posts, once there are any. A no-break space keeps the count with its word.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "forumDiscussionsCount": "{count, plural, =0{No discussions yet} =1{1 discussion} other{{count} discussions}}",
+  "@forumDiscussionsCount": {
+    "description": "Under a forum's description on the Community page: how many discussions it has. A no-break space keeps the count with its word.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "forumActive": "active {time}",
+  "@forumActive": {
+    "description": "After a forum's count of discussions on the Community page: when one was last posted in. {time} is \"3 hours ago\", \"just now\" or, after a day, a date (\"Thu, Oct 8\"): the phrase must read well with either.",
+    "placeholders": {
+      "time": {
+        "type": "String"
       }
     }
   },
@@ -1906,6 +2037,23 @@
   "moderatorBadge": "Moderator",
   "draftRestored": "Your draft was restored.",
   "discardDraft": "Discard draft",
+  "questionOnVerse": "Question on {reference}",
+  "@questionOnVerse": {
+    "description": "The title a question about a verse starts with, such as \"Question on Genesis 3:22\".",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "askDraftKept": "Your unsent draft is kept. Discard it to ask about {reference} instead.",
+  "@askDraftKept": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
   "charactersLeft": "{count} characters left",
   "@charactersLeft": {
     "placeholders": {
@@ -2182,6 +2330,18 @@
         "type": "int"
       },
       "pauses": {
+        "type": "int"
+      }
+    }
+  },
+  "importMarks": "{bookmarks, plural, =0{No bookmarks} =1{1 bookmark} other{{bookmarks} bookmarks}}, {notes, plural, =0{no notes} =1{1 note} other{{notes} notes}}.",
+  "@importMarks": {
+    "description": "What a backup holds besides the progress, under importSummary, when it holds any: the verses bookmarked, and the notes on verses. Each number is joined to its noun by a no-break space.",
+    "placeholders": {
+      "bookmarks": {
+        "type": "int"
+      },
+      "notes": {
         "type": "int"
       }
     }

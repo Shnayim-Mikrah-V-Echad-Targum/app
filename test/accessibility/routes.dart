@@ -8,6 +8,10 @@ const a11yRoutes = [
   '/progress',
   '/community',
   '/community/new',
+  // A question on a verse, over the tabs, as the reader opens it.
+  '/ask?verse=Genesis%203:22',
+  // The bookmarks and notes, with none yet.
+  '/notes',
   '/settings',
   '/settings/reading',
   '/settings/reading/city',

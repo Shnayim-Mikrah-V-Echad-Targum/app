@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/routes.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
@@ -445,6 +446,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final settings = ref.watch(settingsProvider);
     final lastSync = ref.watch(progressSyncProvider);
     final syncBlocked = ref.watch(syncBlockedByNewerFormatProvider);
+    final syncTooLarge = ref.watch(syncTooLargeProvider);
     // Counted once known: while they load, or can't, the row says no number,
     // and still opens the list, which says why.
     final blocked = ref.watch(blockedUsersProvider).value?.length;
@@ -501,6 +503,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       if (sync && syncBlocked) ...[
         const Gap(Rhythm.cardGap),
         NoticeBanner(icon: Icons.system_update_outlined, text: l.syncNeedsUpdate),
+      ] else if (sync && syncTooLarge) ...[
+        const Gap(Rhythm.cardGap),
+        NoticeBanner(icon: Icons.cloud_off_outlined, text: l.syncTooLarge),
       ],
       GroupHeader(l.privacySafetyTitle),
       PaperGroup(
@@ -515,7 +520,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             PaperRow(
               icon: Icons.shield_outlined,
               title: l.moderationQueue,
-              onTap: () => context.push('/community/moderation'),
+              // In Community, even from the account page over the tabs.
+              onTap: () => openTabPage(context, '/community/moderation'),
             ),
         ],
       ),
@@ -552,7 +558,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (!mounted) return;
     setState(() => _syncing = false);
     final blocked = ref.read(syncBlockedByNewerFormatProvider);
-    showStatus(context, ok ? l.syncDone : (blocked ? l.syncNeedsUpdate : l.syncFailed));
+    final tooLarge = ref.read(syncTooLargeProvider);
+    showStatus(context, ok ? l.syncDone : (blocked ? l.syncNeedsUpdate : (tooLarge ? l.syncTooLarge : l.syncFailed)));
   }
 
   Future<void> _editName(Profile profile) async {
@@ -592,7 +599,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     await _run(() async {
       await repo.deleteAccount();
       ref.read(settingsProvider.notifier).update((s) => s.copyWith(cloudSync: false));
-      ref.invalidate(myProfileProvider);
+      ref
+        ..invalidate(myProfileProvider)
+        // Its discussions that no one else posted in went with it.
+        ..invalidate(threadsProvider)
+        ..invalidate(forumStatsProvider);
     }, success: l.accountDeleted);
   }
 
@@ -971,7 +982,10 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
     });
     try {
       await ref.read(forumRepositoryProvider).unblock(id);
-      ref.invalidate(blockedUsersProvider);
+      ref
+        ..invalidate(blockedUsersProvider)
+        // Their words come back to the forums' excerpts.
+        ..invalidate(threadsProvider);
     } catch (e) {
       if (mounted) setState(() => _errors[id] = communityError(l, e));
     } finally {

@@ -18,6 +18,8 @@ import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
+import '../notes/notes_screen.dart';
+import '../notes/week_notes_row.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/reading_plan.dart' show kSecondsPerVerse;
 import '../progress/domain/streak_engine.dart' show WeekStatus;
@@ -120,12 +122,14 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
             'all' => markWeek(),
             'clear' => clearWeek(),
             'full' => context.push('/read/${ctx.id}/0?mode=full&from=week'),
+            'notes' => context.push(notesPath()),
             _ => null,
           },
           itemBuilder: (context) => [
             PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),
             if (open) PopupMenuItem(value: 'all', child: Text(l.markWholeWeek)),
             if (ctx.progress.completedUnits > 0) PopupMenuItem(value: 'clear', child: Text(l.clearWeek)),
+            PopupMenuItem(value: 'notes', child: Text(l.notesTitle)),
           ],
         ),
       ],
@@ -151,6 +155,8 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
               ruleInset: PaperGroup.iconInset,
               children: [
                 if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
+                // Once the reader has marked a verse of the parsha.
+                if (WeekNotesRow.shows(ref, ctx)) WeekNotesRow(ctx: ctx),
                 DiscussRow(ctx: ctx),
               ],
             ),

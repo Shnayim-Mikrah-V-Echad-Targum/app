@@ -33,6 +33,9 @@ void main() {
       habitAnchor: HabitAnchor.shacharit,
       singleKeyShortcuts: false,
       cityOfferAnswered: true,
+      listenAlong: true,
+      parallelColumns: false,
+      fullTextWholeParsha: true,
     );
     final back = AppSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
@@ -44,6 +47,12 @@ void main() {
     expect(back.habitAnchor, HabitAnchor.shacharit);
     expect(back.cityOfferAnswered, isTrue);
     expect(AppSettings.fromJson({}).cityOfferAnswered, isFalse, reason: 'offered until answered');
+    expect(back.listenAlong, isTrue);
+    expect(AppSettings.fromJson({}).listenAlong, isFalse, reason: 'Listen stops after the step unless asked');
+    expect(back.parallelColumns, isFalse);
+    expect(AppSettings.fromJson({}).parallelColumns, isTrue, reason: 'side by side on a wide screen unless turned off');
+    expect(back.fullTextWholeParsha, isTrue);
+    expect(AppSettings.fromJson({}).fullTextWholeParsha, isFalse, reason: 'the full text shows the aliyah opened');
   });
 
   test('what Today has asked and said round-trips through JSON, and can be cleared', () {
@@ -337,6 +346,14 @@ void main() {
       const AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.taameyFrank).optionalFonts,
       ['Lexend', 'TaameyFrank'],
     );
+  });
+
+  test('the Divine Name is copied as ה׳ unless the reader turns it off, also in settings saved before it existed', () {
+    expect(const AppSettings().copyDivineNameAsHashem, isTrue);
+    expect(AppSettings.fromJson({}).copyDivineNameAsHashem, isTrue);
+    const off = AppSettings(copyDivineNameAsHashem: false);
+    expect(AppSettings.fromJson(off.toJson()).copyDivineNameAsHashem, isFalse);
+    expect(const AppSettings().copyWith(copyDivineNameAsHashem: false).copyDivineNameAsHashem, isFalse);
   });
 
   test('copyWith can clear nullable fields', () {

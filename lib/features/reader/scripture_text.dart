@@ -50,6 +50,11 @@ class ScriptureStyles {
   /// put from one reading to the next.
   static const gutterScale = 1.4;
 
+  /// The least room the guided reader's gutter leaves between what it holds
+  /// (the number, and the reader's marks after it) and the verse, as a
+  /// fraction of the Torah's size: marks with less go beneath the number.
+  static const gutterClearance = 0.2;
+
   /// An accessibility font (Atkinson, Lexend or OpenDyslexic) replaces the
   /// translation's serif, as it replaces the interface's.
   bool get _accessibleFont => settings.uiFont.family != null;
@@ -218,19 +223,56 @@ class ScriptureStyles {
         LineWidth.wide => 880,
       };
 
+  /// The full text's measure in parallel columns: the Torah's column, the
+  /// gutter, and the column beside it ([ParallelVerse]).
+  static const parallelWidth = 1160.0;
+
+  /// The narrowest pane that sets the full text in parallel columns.
+  static const parallelMinPane = 960.0;
+
+  /// The largest the Torah may be, at the system text scale, for its column
+  /// to keep a measure of words rather than of one or two.
+  static const parallelMaxSize = 34.0;
+
+  /// The width of the reader's pane in [context]'s window: the window's,
+  /// within its side insets.
+  static double paneWidth(BuildContext context) =>
+      MediaQuery.sizeOf(context).width - MediaQuery.paddingOf(context).horizontal;
+
+  /// Whether the full text, in a pane [paneWidth] wide, has room to set the
+  /// Torah and what goes with it side by side, whether or not the reader has
+  /// turned that off: on a wide pane, at a measure other than the narrow one
+  /// and a size the column holds.
+  bool parallelFits(double paneWidth) =>
+      settings.lineWidth != LineWidth.narrow &&
+      paneWidth >= parallelMinPane &&
+      MediaQuery.textScalerOf(context).scale(sizeFor(ScriptureKind.mikra)) <= parallelMaxSize;
+
+  /// Whether the full text, in a pane [paneWidth] wide, sets the Torah and
+  /// what goes with it ([companion]: the Targum, or else the translation)
+  /// side by side: where it fits ([parallelFits]), unless the reader has
+  /// turned it off.
+  bool parallelColumns(double paneWidth, {required bool companion}) =>
+      companion && settings.parallelColumns && parallelFits(paneWidth);
+
+  /// The full text's measure: [parallelWidth] in parallel columns, and
+  /// otherwise the reading column's.
+  double fullTextWidth({required bool parallel}) => parallel ? parallelWidth : maxLineWidth;
+
   static const _hebrewFallback = ['NotoSerifHebrew', 'NotoSansHebrew', 'NotoSans'];
 }
 
 /// Prepares Hebrew for display: applies the vowel/cantillation preferences
 /// and keeps line breaks typographically sound.
-String displayHebrew(String text, AppSettings s) {
-  var out = HebrewText.forDisplay(text, nikud: s.showNikud, teamim: s.showTeamim);
-  // Never start a line with a paseq: bind it to the preceding word.
-  out = out.replaceAll(' ׀', ' ׀');
-  // Keep words joined by a maqaf on one line.
-  out = out.replaceAll('־', '־⁠');
-  return out;
-}
+String displayHebrew(String text, AppSettings s) =>
+    keepLinesSound(HebrewText.forDisplay(text, nikud: s.showNikud, teamim: s.showTeamim));
+
+/// [hebrew] as it may break into lines on screen: never with a paseq at a
+/// line's start, as it is bound to the word before it, and never between
+/// words joined by a maqaf. Only for display: the no-break space and word
+/// joiner would travel with a copy.
+String keepLinesSound(String hebrew) =>
+    hebrew.replaceAll(' ׀', ' ׀').replaceAll('־', '־⁠');
 
 /// The text a screen reader should speak for a verse of the Torah or of
 /// Targum Onkelos.
@@ -290,6 +332,10 @@ class ScriptureVerse extends StatelessWidget {
     this.showNumber = true,
     this.hangingNumber = false,
     this.ruled = false,
+    this.onLongPress,
+    this.ownGestures = true,
+    this.bookmarked = false,
+    this.hasNote = false,
   });
 
   final Verse verse;
@@ -312,6 +358,23 @@ class ScriptureVerse extends StatelessWidget {
   /// Set off by a gold rule at its start, as the Targum beneath each verse of
   /// the full text is.
   final bool ruled;
+
+  /// Opens the verse's options (copy, share, ask): on a long press or a
+  /// secondary click, and for screen readers as their own long press and as
+  /// the action "Verse options". Null where it has none.
+  final VoidCallback? onLongPress;
+
+  /// Whether the verse takes the long press and secondary click itself.
+  /// False where the block it stands in takes them for the whole of it
+  /// ([VerseGroup], in the full text), so that only the screen readers'
+  /// actions are here, on the verse they hear.
+  final bool ownGestures;
+
+  /// Whether the reader has bookmarked the verse, or written a note on it:
+  /// marked after its number ([VerseMarks]) wherever it [showNumber]s, and
+  /// said after it to screen readers.
+  final bool bookmarked;
+  final bool hasNote;
 
   /// Between the rule and the text.
   static const ruleGap = 12.0;
@@ -402,6 +465,13 @@ class ScriptureVerse extends StatelessWidget {
       hebrewSpans.add(TextRange(start: start, end: start + spokenNote.length));
       label += note;
     }
+    final marked = showNumber && (bookmarked || hasNote);
+    if (marked) {
+      label += [
+        if (bookmarked) '. ${labels.verseBookmarked}',
+        if (hasNote) '. ${labels.verseWithNote}',
+      ].join();
+    }
 
     // The number in gold, joined to the first word by a no-break space so
     // that it never ends a line alone. The space is the verse's, and the
@@ -411,14 +481,35 @@ class ScriptureVerse extends StatelessWidget {
     final numeral = showNumber && settings.showVerseNumbers ? HebrewText.gematria(verse.ref.verse, punctuate: false) : null;
     final numberStyle = styles.numberStyle(kind, dimmed: dimmed);
     final strut = styles.strut(kind);
+    // The reader's marks, after the number (or where it would be), in the
+    // number's size: the techelet of the scroll's own note marks, receding
+    // with a dimmed verse. The text scales them with the text, as the number
+    // is scaled, at the number's size.
+    final marks = marked
+        ? WidgetSpan(
+            alignment: PlaceholderAlignment.aboveBaseline,
+            baseline: TextBaseline.alphabetic,
+            style: TextStyle(fontSize: numberStyle.fontSize),
+            child: VerseMarks(
+              size: numberStyle.fontSize!,
+              bookmarked: bookmarked,
+              hasNote: hasNote,
+              color: dimmed ? dimInk : scheme.primary,
+              lead: numeral != null,
+            ),
+          )
+        : null;
 
     Widget paragraph({required bool withNumber}) {
       Widget text = Text.rich(
         TextSpan(
           style: base,
           children: [
-            if (withNumber && numeral != null) ...[
-              TextSpan(text: numeral, style: numberStyle),
+            if (withNumber && (numeral != null || marks != null)) ...[
+              if (numeral != null) TextSpan(text: numeral, style: numberStyle),
+              // Joined to the number, so that a line never breaks between
+              // them.
+              if (marks != null) ...[if (numeral != null) const TextSpan(text: '\u2060'), marks],
               TextSpan(text: '\u00A0', style: TextStyle(letterSpacing: settings.letterSpacing + settings.wordSpacing)),
             ],
             ...spans,
@@ -449,13 +540,29 @@ class ScriptureVerse extends StatelessWidget {
           // At a very large size a gutter would take too much of each line:
           // the number leads the first line instead, as in the full text.
           if (gutter == 0) return paragraph(withNumber: true);
+          // The room the marks keep from the verse, at their left.
+          final clearance = marks == null
+              ? 0.0
+              : MediaQuery.textScalerOf(context).scale(ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikra));
           // The verse begins on the right in either language of the app.
           return Row(
             textDirection: TextDirection.rtl,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              SizedBox(width: gutter, child: Text(numeral, style: numberStyle, textDirection: TextDirection.rtl)),
+              SizedBox(
+                width: gutter,
+                // The marks after the number, or beneath it where the gutter
+                // has no room for both and the room it keeps from the verse.
+                child: Padding(
+                  padding: EdgeInsets.only(left: clearance),
+                  child: Text.rich(
+                    TextSpan(text: numeral, children: [?marks]),
+                    style: numberStyle,
+                    textDirection: TextDirection.rtl,
+                  ),
+                ),
+              ),
               Expanded(child: paragraph(withNumber: false)),
             ],
           );
@@ -485,6 +592,20 @@ class ScriptureVerse extends StatelessWidget {
       );
     }
 
+    final onLongPress = this.onLongPress;
+    if (onLongPress != null && ownGestures) {
+      content = GestureDetector(
+        // The spaces between its words and lines are the verse's too.
+        behavior: HitTestBehavior.opaque,
+        onLongPress: () {
+          Feedback.forLongPress(context);
+          onLongPress();
+        },
+        onSecondaryTap: onLongPress,
+        child: content,
+      );
+    }
+
     return Semantics(
       container: true,
       // Only where the whole label is Hebrew: elsewhere the node's language
@@ -495,9 +616,106 @@ class ScriptureVerse extends StatelessWidget {
         attributes: [for (final range in hebrewSpans) LocaleStringAttribute(range: range, locale: _hebrew)],
       ),
       textDirection: TextDirection.rtl,
+      onLongPress: onLongPress,
+      customSemanticsActions: onLongPress == null ? null : {CustomSemanticsAction(label: l.verseOptions): onLongPress},
       child: ExcludeSemantics(child: content),
     );
   }
+}
+
+/// What the reader has marked on a verse, set after its number: a bookmark,
+/// a ribbon as tall as the number's letters, and a note, a dot at their
+/// middle. [size] is the number's size, at the system text scale; the marks
+/// stand on the baseline (a [WidgetSpan] aligned above it) and run right to
+/// left, as the verse does. A [lead]ing gap parts them from the number.
+class VerseMarks extends StatelessWidget {
+  const VerseMarks({
+    super.key,
+    required this.size,
+    required this.bookmarked,
+    required this.hasNote,
+    required this.color,
+    this.lead = true,
+  });
+
+  final double size;
+  final bool bookmarked;
+  final bool hasNote;
+  final Color color;
+  final bool lead;
+
+  static const _gap = 0.28;
+  static const _ribbonWidth = 0.46;
+  static const _height = 0.72;
+  static const _dot = 0.34;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = (lead ? _gap : 0) +
+        (bookmarked ? _ribbonWidth : 0) +
+        (bookmarked && hasNote ? _gap : 0) +
+        (hasNote ? _dot : 0);
+    return ExcludeSemantics(
+      child: CustomPaint(
+        size: Size(width * size, _height * size),
+        painter: _VerseMarksPainter(size: size, bookmarked: bookmarked, hasNote: hasNote, color: color, lead: lead),
+      ),
+    );
+  }
+}
+
+class _VerseMarksPainter extends CustomPainter {
+  const _VerseMarksPainter({
+    required this.size,
+    required this.bookmarked,
+    required this.hasNote,
+    required this.color,
+    required this.lead,
+  });
+
+  final double size;
+  final bool bookmarked;
+  final bool hasNote;
+  final Color color;
+  final bool lead;
+
+  @override
+  void paint(Canvas canvas, Size box) {
+    final paint = Paint()
+      ..color = color
+      ..isAntiAlias = true;
+    // From the right, where the number is.
+    var right = box.width - (lead ? VerseMarks._gap * size : 0);
+    if (bookmarked) {
+      final w = VerseMarks._ribbonWidth * size;
+      final h = box.height;
+      final left = right - w;
+      canvas.drawPath(
+        Path()
+          ..moveTo(left, 0)
+          ..lineTo(right, 0)
+          ..lineTo(right, h)
+          ..lineTo(left + w / 2, h - w * 0.42)
+          ..lineTo(left, h)
+          ..close(),
+        paint,
+      );
+      right = left - VerseMarks._gap * size;
+    }
+    if (hasNote) {
+      final r = VerseMarks._dot * size / 2;
+      // At the middle of the number's letters.
+      canvas.drawCircle(Offset(right - r, box.height - 0.36 * size), r, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_VerseMarksPainter old) =>
+      old.size != size ||
+      old.bookmarked != bookmarked ||
+      old.hasNote != hasNote ||
+      old.color != color ||
+      old.lead != lead;
 }
 
 /// One verse of the full text with all that goes with it (its Targum,
@@ -509,21 +727,35 @@ class ScriptureVerse extends StatelessWidget {
 /// the paper with a rule in techelet at its start; the others are dimmed by
 /// their own text.
 class VerseGroup extends StatelessWidget {
-  const VerseGroup({super.key, required this.verse, required this.child, this.highlighted = false, this.onTap});
+  const VerseGroup({
+    super.key,
+    required this.verse,
+    required this.child,
+    this.highlighted = false,
+    this.onTap,
+    this.onLongPress,
+  });
 
   final VerseRef verse;
   final Widget child;
 
-  /// The verse focus mode is on.
+  /// The verse focus mode is on, or the one Listen is reading.
   final bool highlighted;
   final VoidCallback? onTap;
+
+  /// Opens the verse's options, on a long press or a secondary click
+  /// anywhere in the block. Screen readers find them on its verses
+  /// ([ScriptureVerse.onLongPress]), which they hear.
+  final VoidCallback? onLongPress;
 
   /// Around every block's text: at its start, the right, in either language
   /// of the app, with the rule's width, and as much at its end, so that the
   /// highlight frames lines that run the full measure (the translation, or
   /// justified text) as it frames the rest.
   static const padding = EdgeInsets.fromLTRB(12, 4, 12, 4);
-  static const _rule = 3.0;
+
+  /// The width of the highlight's rule.
+  static const rule = 3.0;
 
   @override
   Widget build(BuildContext context) {
@@ -540,7 +772,7 @@ class VerseGroup extends StatelessWidget {
         border: Border(
           right: BorderSide(
             color: scheme.primary,
-            width: _rule,
+            width: rule,
             style: highlighted ? BorderStyle.solid : BorderStyle.none,
           ),
         ),
@@ -548,19 +780,272 @@ class VerseGroup extends StatelessWidget {
       // So that a tap's ink shows over the highlight.
       child: Material(
         type: MaterialType.transparency,
-        child: InkWell(
+        // Focus mode's tap, for screen readers, here; the verse's options
+        // on its verses, where they hear it.
+        child: Semantics(
           onTap: onTap,
-          // ↑ and ↓ move from verse to verse: a Tab stop on each would put
-          // up to 72 before the button at the end.
-          canRequestFocus: false,
-          child: Padding(
-            padding: padding.copyWith(right: padding.right - _rule),
-            child: child,
+          child: InkWell(
+            onTap: onTap,
+            onLongPress: onLongPress,
+            onSecondaryTap: onLongPress,
+            excludeFromSemantics: true,
+            // ↑ and ↓ move from verse to verse: a Tab stop on each would put
+            // up to 72 before the button at the end.
+            canRequestFocus: false,
+            // Outside focus mode a verse is text to read, not a button: no
+            // ink for a tap, which does nothing, no wash under the pointer
+            // and no hand over it. A long press opens the options at once.
+            splashFactory: onTap == null ? NoSplash.splashFactory : null,
+            highlightColor: onTap == null ? Colors.transparent : null,
+            hoverColor: onTap == null ? Colors.transparent : null,
+            mouseCursor: onTap == null ? MouseCursor.defer : null,
+            child: Padding(
+              padding: padding.copyWith(right: padding.right - rule),
+              child: child,
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// One verse of the full text in parallel columns, on a wide screen: the
+/// Torah's column at the right, as the verse begins in either language of
+/// the app, and beside it, across a gutter, the Targum (or the translation),
+/// their first lines on one baseline. What else goes with the verse (its
+/// translation, Rashi) follows it in its own column.
+///
+/// Screen readers hear it as they do the verse beneath each other: the
+/// verse, what is beside it, and then what follows it.
+class ParallelVerse extends StatelessWidget {
+  const ParallelVerse({super.key, required this.torah, required this.beside, this.below = const []});
+
+  /// The verse.
+  final Widget torah;
+
+  /// The Targum, or the translation where there is no Targum.
+  final Widget beside;
+
+  /// What follows the verse in its column, each with the space above it.
+  final List<Widget> below;
+
+  /// The columns' shares of the width: the Torah's a little the wider, as
+  /// its letters are larger.
+  static const torahFlex = 6;
+  static const besideFlex = 5;
+
+  /// Between the two columns.
+  static const gutter = 40.0;
+
+  @override
+  Widget build(BuildContext context) {
+    // In the order a screen reader takes them, whatever their place.
+    Widget ordered(int order, Widget child) =>
+        Semantics(container: true, sortKey: OrdinalSortKey(order.toDouble()), child: child);
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: Row(
+        textDirection: TextDirection.rtl,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Expanded(
+            flex: torahFlex,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ordered(0, torah),
+                for (final (i, child) in below.indexed) ordered(i + 2, child),
+              ],
+            ),
+          ),
+          const SizedBox(width: gutter),
+          Expanded(
+            flex: besideFlex,
+            // A verse of one short line is still a target as tall as a
+            // finger for its long press: no taller than the verse's own line
+            // beside it, which sets the row's height.
+            child: ordered(
+              1,
+              ConstrainedBox(constraints: const BoxConstraints(minHeight: kMinInteractiveDimension), child: beside),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The heads of the full text's parallel columns ([ParallelVerse]), above
+/// its first verse: "Mikra" over the Torah's column and "Targum Onkelos" (or
+/// the translation's name) over the other, each where its text begins, over
+/// a hairline as wide as its column. They are inset as the verses' text is
+/// within its block ([VerseGroup.padding]).
+class ParallelHeading extends StatelessWidget {
+  const ParallelHeading({super.key, required this.torah, required this.beside, this.besideDirection = TextDirection.rtl});
+
+  final String torah;
+  final String beside;
+
+  /// The direction of the text beside the Torah: the Targum's, right to
+  /// left, or the translation's.
+  final TextDirection besideDirection;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sefer = SeferColors.of(context);
+    final style = theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    Widget head(String label, TextDirection direction) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(label, style: style, textAlign: direction == TextDirection.rtl ? TextAlign.right : TextAlign.left),
+            const SizedBox(height: 6),
+            SizedBox(height: sefer.hairlineWidth, child: ColoredBox(color: sefer.hairline)),
+          ],
+        );
+    // Read as one, the Torah's first, whatever the language of the app.
+    return Semantics(
+      container: true,
+      label: '$torah, $beside',
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: VerseGroup.padding.left),
+          child: Row(
+            textDirection: TextDirection.rtl,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(flex: ParallelVerse.torahFlex, child: head(torah, TextDirection.rtl)),
+              const SizedBox(width: ParallelVerse.gutter),
+              Expanded(flex: ParallelVerse.besideFlex, child: head(beside, besideDirection)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The verse Listen is reading, where it is not one of the full text's
+/// blocks (the guided reader and the haftarah): focus mode's highlight, the
+/// paper and a techelet rule at the verse's start, the right in either
+/// language of the app (§4.7). It is painted [bleed] past the verse, as far
+/// as a block of the full text reaches, so that nothing moves as it comes and
+/// goes; and the text follows it ([FollowedVerse]).
+class SpeakingVerseMark extends StatelessWidget {
+  const SpeakingVerseMark({super.key, required this.active, required this.child});
+
+  final bool active;
+  final Widget child;
+
+  /// How far the highlight reaches past the text: as far as [VerseGroup]'s
+  /// padding, within the page's side padding and the gap between verses.
+  static const bleed = VerseGroup.padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final sefer = SeferColors.of(context);
+    return FollowedVerse(
+      active: active,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: active ? 1 : 0),
+        duration: Motion.of(context).d(Motion.short),
+        curve: Motion.standard,
+        child: child,
+        // The same widgets with the highlight or without, so that what
+        // [child] holds stays as it comes and goes.
+        builder: (context, shown, child) => CustomPaint(
+          painter: shown == 0 ? null : _SpeakingPainter(fill: sefer.verseHighlight, rule: scheme.primary, shown: shown),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeakingPainter extends CustomPainter {
+  const _SpeakingPainter({required this.fill, required this.rule, required this.shown});
+
+  final Color fill;
+  final Color rule;
+
+  /// How far it has faded in, from 0 to 1.
+  final double shown;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final area = SpeakingVerseMark.bleed.inflateRect(Offset.zero & size);
+    if (fill.a > 0) canvas.drawRect(area, Paint()..color = fill.withValues(alpha: fill.a * shown));
+    canvas.drawRect(
+      Rect.fromLTRB(area.right - VerseGroup.rule, area.top, area.right, area.bottom),
+      Paint()..color = rule.withValues(alpha: rule.a * shown),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SpeakingPainter old) => old.fill != fill || old.rule != rule || old.shown != shown;
+}
+
+/// Brings [child] into view as it becomes [active]: the verse Listen has
+/// reached, which the text follows. Unless it is in view already, it is
+/// scrolled a fifth of the way down the screen, as the verse opened at is,
+/// over Motion.medium, or at once under Reduce Motion. Nothing is scrolled
+/// under a finger that is scrolling the text.
+class FollowedVerse extends StatefulWidget {
+  const FollowedVerse({super.key, required this.active, required this.child});
+
+  final bool active;
+  final Widget child;
+
+  @override
+  State<FollowedVerse> createState() => _FollowedVerseState();
+}
+
+class _FollowedVerseState extends State<FollowedVerse> {
+  /// Room kept clear above and below the verse, for its highlight.
+  static const _margin = 4.0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.active) _reveal();
+  }
+
+  @override
+  void didUpdateWidget(FollowedVerse old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !old.active) _reveal();
+  }
+
+  void _reveal() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.active) return;
+      final box = context.findRenderObject();
+      final position = Scrollable.maybeOf(context)?.position;
+      if (box is! RenderBox || !box.hasSize || position == null || position.isScrollingNotifier.value) return;
+      final viewport = RenderAbstractViewport.maybeOf(box);
+      if (viewport == null) return;
+      // The scroll offsets that would set its top at the top of the view,
+      // and its foot at the foot.
+      final top = viewport.getOffsetToReveal(box, 0).offset;
+      final foot = viewport.getOffsetToReveal(box, 1).offset;
+      final inView = position.pixels <= math.max(position.minScrollExtent, top - _margin) + 0.5 &&
+          position.pixels >= math.min(position.maxScrollExtent, foot + _margin) - 0.5;
+      if (inView) return;
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.2,
+        duration: Motion.of(context).d(Motion.medium),
+        curve: Motion.standard,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// The head of a chapter, centred as a Chumash sets it (DESIGN_SYSTEM.md

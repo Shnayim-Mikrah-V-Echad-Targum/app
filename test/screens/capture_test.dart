@@ -10,11 +10,13 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -39,7 +41,8 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading;
+import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading, ScriptureVerse;
+import 'package:shnayim_mikra/features/reader/whole_parsha.dart';
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
@@ -49,6 +52,7 @@ import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/services/backup_files.dart';
+import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -221,6 +225,27 @@ const _screens = {
   'reader_full': '/read/5787:1/2?mode=full',
   // Its end, with the button that marks the aliyah read.
   'reader_full_end': '/read/5787:1/2?mode=full',
+  // With the translation: beneath the verse, or in parallel columns after it
+  // in its column, the Targum beside it.
+  'reader_full_english': '/read/5787:1/2?mode=full',
+  // Rashi read in the Targum's place, with the translation: the translation
+  // beside the verse in parallel columns.
+  'reader_full_rashi_english': '/read/5787:1/2?mode=full',
+  // The whole parsha, opened at Shlishi: its heading at the top.
+  'reader_parsha': '/read/5787:1/2?mode=full',
+  // Read on into Shlishi, its heading kept at the top.
+  'reader_parsha_pinned': '/read/5787:1/2?mode=full',
+  // The end of Shlishi and the start of Revi'i: the button that marks
+  // Shlishi read, then Revi'i's heading.
+  'reader_parsha_join': '/read/5787:1/2?mode=full',
+  // The parsha's end, Shevi'i read.
+  'reader_parsha_end': '/read/5787:1/2?mode=full',
+  // In focus mode, read on from Shlishi into Revi'i.
+  'reader_parsha_focus': '/read/5787:1/2?mode=full',
+  // The reader's menu in the full text: the whole parsha.
+  'reader_parsha_menu': '/read/5787:1/2?mode=full',
+  // The display sheet with the switch for parallel columns, on a wide screen.
+  'reader_display_side': '/read/5787:1/2?mode=full',
   // The keyboard shortcuts, in the app and on the web.
   'reader_keys': '/read/5787:1/2',
   'reader_keys_web': '/read/5787:1/2',
@@ -249,6 +274,17 @@ const _screens = {
   // Rishon of Pinchas, as the scrolls write it: the small yod of פינחס
   // (Numbers 25:11), and the note on the broken vav of shalom.
   'reader_pinchas': '/read/5787:41/0?mode=full',
+  // Listen, two verses on: in the guided reader, by section, and in the full
+  // text, where each verse is read with its Targum; then paused there, in
+  // focus mode, and the menu of speech rates.
+  'reader_listen': '/read/5787:1/2',
+  'reader_listen_full': '/read/5787:1/2?mode=full',
+  'reader_listen_paused': '/read/5787:1/2?mode=full',
+  'reader_listen_focus': '/read/5787:1/2?mode=full',
+  'reader_listen_rate': '/read/5787:1/2?mode=full',
+  // The haftarah read aloud, on its own and within its tab.
+  'haftarah_listen': '/haftarah/5787:1',
+  'haftarah_tab_listen': '/parsha/haftarah/5787:1',
   'haftarah': '/haftarah/5787:1',
   // Bereshit's own haftarah after Machar Chodesh's: folded, and for Chabad
   // open, under the note that Chabad's haftarot are being verified.
@@ -331,6 +367,8 @@ const _screens = {
   'focus_link': '/community/account',
   'account_settings': '/settings/account',
   'account_sync': '/community/account',
+  // Backup on, with notes too long for the server: why nothing is sent.
+  'account_sync_large': '/community/account',
   'settings': '/settings',
   // The language, chosen in a sheet.
   'settings_language': '/settings',
@@ -414,6 +452,27 @@ const _screens = {
   'goto_help': '/parsha',
   'reader_verse': '/read/5787:1/2?verse=3:8',
   'reader_verse_focus': '/read/5787:1/2?verse=3:8',
+  // A long press on Genesis 3:22, Revi'i's first verse, and on the
+  // haftarah's first: what can be done with it.
+  'reader_verse_actions': '/read/5787:1/3',
+  'haftarah_verse_actions': '/haftarah/5787:1',
+  // Bookmarks and notes (see [_annotations]): marked after the verse number
+  // in the guided reader and in the full text; Genesis 3:22's options, with
+  // its bookmark and note, and its note open; the list of every verse
+  // marked, of Bereshit's, and of none; and the row on the week's page.
+  'reader_marks': '/read/5787:1/3',
+  'reader_full_marks': '/read/5787:1/3?mode=full',
+  'reader_verse_actions_marked': '/read/5787:1/3',
+  'note_dialog': '/read/5787:1/3',
+  'notes': '/notes',
+  'notes_parsha': '/notes?week=5787:1',
+  'notes_empty': '/notes',
+  'week_notes': '/week/5787:1',
+  // "Ask about this verse": the question begun over the reader, and a draft
+  // kept instead; then posted, back in the reader.
+  'compose_verse': '/read/5787:1/3',
+  'compose_verse_draft': '/read/5787:1/3',
+  'compose_verse_posted': '/read/5787:1/3',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
   'focus_day': '/today',
@@ -469,6 +528,11 @@ const _screens = {
 /// the screen has loaded.
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  'reader_full_english': (s) => s.copyWith(showTranslation: true),
+  'reader_full_rashi_english': (s) => s.copyWith(showTranslation: true, secondReading: SecondReading.rashi),
+  for (final screen in ['reader_parsha', 'reader_parsha_pinned', 'reader_parsha_join', 'reader_parsha_end'])
+    screen: (s) => s.copyWith(fullTextWholeParsha: true),
+  'reader_parsha_focus': (s) => s.copyWith(fullTextWholeParsha: true, focusMode: true),
   'reader_section': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   'reader_rashi': (s) => s.copyWith(showRashi: true),
   'reader_rashi_script': (s) => s.copyWith(showRashi: true, rashiScript: true),
@@ -490,6 +554,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_finished_erev': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, plan: ReadingPlanType.sheviiOnShabbat),
   'reader_finished_week': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  'reader_listen': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
+  'reader_listen_focus': (s) => s.copyWith(focusMode: true),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
   // Israel is a parsha ahead, and both pairs of portions are read together.
@@ -564,7 +630,36 @@ final _screenOverrides = <String, List<Override>>{
       deviceClockProvider.overrideWithValue(_clockOf(_jerusalem)),
     ],
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
+  for (final screen in _listening) screen: [ttsProvider.overrideWithValue(_HeldTts())],
 };
+
+/// Screens shown while Listen reads.
+const _listening = {
+  'reader_listen',
+  'reader_listen_full',
+  'reader_listen_paused',
+  'reader_listen_focus',
+  'reader_listen_rate',
+  'haftarah_listen',
+  'haftarah_tab_listen',
+};
+
+/// Speech that says nothing, and never finishes what it is asked to say, so
+/// that Listen stays at the verse it has reached.
+class _HeldTts extends RecordingTts {
+  @override
+  Future<bool> speak(String text, {required String language, double rate = 0.45}) {
+    spoken.add((text, language));
+    return Completer<bool>().future;
+  }
+}
+
+/// Listen, then on two verses.
+final _listenOnTwo = _tapInTurn([
+  () => find.byIcon(Icons.volume_up_outlined),
+  () => find.byIcon(Icons.skip_next_rounded),
+  () => find.byIcon(Icons.skip_next_rounded),
+]);
 
 /// The clock of [city], for a device there.
 Duration Function(LocalDate) _clockOf(City city) {
@@ -751,7 +846,13 @@ Future<ForumRepository> _accountWithNewerBackup() async {
 }
 
 /// Screens shown signed in with backup on.
-const _backupOn = {'s_data_reset', 's_data_replace'};
+const _backupOn = {'s_data_reset', 's_data_replace', 'account_sync_large'};
+
+/// Notes too long, together, for the server to back up: 230 of 2,000
+/// Hebrew letters each.
+final _longNotes = jsonEncode({
+  for (var i = 1; i <= 230; i++) 'Genesis 1:$i': {'b': false, 'n': 'א' * 2000, 'u': i},
+});
 
 /// Screens where the reader chooses [_backupFile] to restore.
 const _choosesBackup = {'s_data_import', 's_data_replace', 'welcome_import'};
@@ -816,7 +917,8 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_report': _signedIn,
   'community_member': _signedIn,
   'account_name': _signedIn,
-  for (final screen in ['compose_member', 'account_member', 'account_edit', 'account_blocked']) screen: _member,
+  for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked'])
+    screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
@@ -984,7 +1086,58 @@ Future<void> _scrollToEnd(WidgetTester tester) async {
   }
 }
 
+/// Bookmarks and notes on Genesis and Exodus, in both languages, for the
+/// screens that show them.
+final _annotations = jsonEncode({
+  'Genesis 1:1': {'b': false, 'n': 'What does a world made “in the beginning” say about every new start?', 'u': 1},
+  'Genesis 1:27': {'b': true, 'n': null, 'u': 2},
+  'Genesis 3:9': {'b': true, 'n': 'Ayeka — “where are you?” A question for the table: when do we hide?', 'u': 3},
+  'Genesis 3:22': {
+    'b': true,
+    'n': 'Why “like one of us”? Onkelos and Rashi each read it another way: ask at the table.',
+    'u': 4,
+  },
+  'Genesis 3:24': {'b': true, 'n': null, 'u': 5},
+  'Genesis 4:1': {'b': false, 'n': 'קניתי איש את ה׳ — מה חוה מבקשת לומר בשם קין?', 'u': 6},
+  'Genesis 2:3': {'b': false, 'n': null, 'u': 7},
+  'Exodus 3:14': {'b': true, 'n': null, 'u': 8},
+});
+
+/// Screens that show [_annotations].
+const _annotated = {
+  'reader_marks',
+  'reader_full_marks',
+  'reader_verse_actions_marked',
+  'note_dialog',
+  'notes',
+  'notes_parsha',
+  'week_notes',
+};
+
 final _screenSetup = <String, Future<void> Function(WidgetTester)>{
+  'reader_verse_actions_marked': (tester) => tester.longPress(find.byType(ScriptureVerse).first),
+  'note_dialog': (tester) async {
+    await tester.longPress(find.byType(ScriptureVerse).first);
+    await _settle(tester);
+    await tester.tap(find.byIcon(Icons.sticky_note_2_outlined));
+  },
+  'week_notes': _scrollToEnd,
+  for (final screen in [
+    'reader_listen',
+    'reader_listen_full',
+    'reader_listen_focus',
+    'haftarah_listen',
+    'haftarah_tab_listen',
+  ])
+    screen: _listenOnTwo,
+  'reader_listen_paused': (tester) async {
+    await _listenOnTwo(tester);
+    await tester.tap(find.byIcon(Icons.pause_rounded));
+  },
+  'reader_listen_rate': (tester) async {
+    await _listenOnTwo(tester);
+    await tester.tap(find.text('45%'));
+  },
   // Next through Rishon's three readings, then a routine in the offer.
   'reader_offer': _tapInTurn([
     for (var i = 0; i < 3; i++) () => find.byWidgetPredicate((w) => w is FilledButton).last,
@@ -1019,6 +1172,48 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'reader_dots': _scrollToEnd,
   'reader_full_end': _scrollToEnd,
+  'reader_parsha_pinned': (tester) => tester.drag(find.byType(CustomScrollView), const Offset(0, -500)),
+  // Revi'i's heading three fifths of the way down: brought there again
+  // once the verses before it are built, whose height is till then
+  // reckoned.
+  'reader_parsha_join': (tester) async {
+    for (var i = 0; i < 3; i++) {
+      await Scrollable.ensureVisible(
+        tester.element(find.byWidgetPredicate((w) => w is AliyahHeader && w.aliyah == 3, skipOffstage: false)),
+        alignment: 0.6,
+      );
+      await _settle(tester);
+    }
+  },
+  'reader_parsha_end': _scrollToEnd,
+  // Focus mode opens on Shlishi's first verse (Genesis 2:20); ↓ through its
+  // 27 verses reaches Revi'i's first, 3:22.
+  'reader_parsha_focus': (tester) async {
+    for (var i = 0; i < 27; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  },
+  'reader_parsha_menu': _tapInTurn([
+    () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
+  ]),
+  // The sheet drawn up, with its switches in view: Side by side among them
+  // where the columns would show.
+  'reader_display_side': (tester) async {
+    await tester.tap(find.byIcon(Icons.text_format));
+    await _settle(tester);
+    await tester.drag(find.byType(SheetTitle), const Offset(0, -600));
+    await _settle(tester);
+    final l = _l10n(tester);
+    final focus = find.widgetWithText(SwitchRow, l.focusMode);
+    await tester.scrollUntilVisible(
+      focus,
+      200,
+      scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)).first,
+    );
+    final side = find.widgetWithText(SwitchRow, l.sideBySide);
+    await Scrollable.ensureVisible(tester.element(side.evaluate().isNotEmpty ? side : focus), alignment: 0.5);
+  },
   'haftarah_end': _scrollToEnd,
   'haftarah_chapter': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
   'haftarah_read': _scrollToEnd,
@@ -1242,6 +1437,33 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'goto_phrase': (tester) => _goTo(tester, 'שלח לו'),
   // Nothing to go to or search for: what the sheet takes.
   'goto_help': (tester) => _goTo(tester, '28'),
+  'reader_verse_actions': (tester) => tester.longPress(find.byType(ScriptureVerse).first),
+  'haftarah_verse_actions': (tester) => tester.longPress(find.byType(ScriptureVerse).first),
+  'compose_verse': (tester) async {
+    // Not awaited: the push completes only once the page is closed.
+    unawaited(ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+        .read(routerProvider)
+        .push('/ask?verse=Genesis%203:22'));
+  },
+  // Asked, written and posted: back at the verse, with the way to it.
+  'compose_verse_posted': (tester) async {
+    unawaited(ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+        .read(routerProvider)
+        .push('/ask?verse=Genesis%203:22'));
+    await _settle(tester);
+    final body = find.byType(TextField).last;
+    await tester.enterText(body, '${tester.widget<TextField>(body).controller!.text}Why “like one of us”?');
+    await tester.tap(find.byType(FilledButton).first);
+  },
+  // A draft left from before, then the verse asked about.
+  'compose_verse_draft': (tester) async {
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    await c.read(sharedPreferencesProvider).setString(
+          'draft.newThread',
+          '{"title":"Onkelos and the names of places","body":"Why does Onkelos keep some names"}',
+        );
+    unawaited(c.read(routerProvider).push('/ask?verse=Genesis%203:22'));
+  },
   's_data_import': (tester) => tester.tap(find.byIcon(Icons.download_outlined)),
   'settings_language': (tester) async {
     await tester.ensureVisible(find.byIcon(Icons.translate_outlined));
@@ -1360,6 +1582,8 @@ final _modes = [
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 
 const _desktopScreens = {
+  'notes',
+  'reader_full_marks',
   'today',
   'today_candles',
   'today_shabbat',
@@ -1384,6 +1608,15 @@ const _desktopScreens = {
   'celebrate',
   'reader_full',
   'reader_full_end',
+  'reader_full_english',
+  'reader_full_rashi_english',
+  'reader_parsha',
+  'reader_parsha_pinned',
+  'reader_parsha_join',
+  'reader_parsha_end',
+  'reader_parsha_focus',
+  'reader_parsha_menu',
+  'reader_display_side',
   'reader_focus',
   'reader_section',
   'reader_rashi',
@@ -1430,6 +1663,12 @@ const _desktopScreens = {
   'search_many',
   'goto_verse',
   'reader_verse',
+  'reader_verse_actions',
+  'compose_verse',
+  'reader_listen',
+  'reader_listen_full',
+  'haftarah_listen',
+  'haftarah_tab_listen',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc', 'wide'};
@@ -1453,6 +1692,11 @@ const _tallScreens = {
   'guide',
   'legal',
   'legal_a11y',
+  'week_notes',
+  'notes',
+  'notes_parsha',
+  // Every forum, with how busy it is.
+  'community',
 };
 const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {
@@ -1478,6 +1722,8 @@ const _narrowScreens = {
   's_data_import',
   'reader',
   'reader_long',
+  'reader_listen',
+  'reader_listen_full',
 };
 const _bigTextScreens = {
   's_display',
@@ -1486,6 +1732,10 @@ const _bigTextScreens = {
   'parsha',
   'browse',
   'week_combined',
+  'notes',
+  'reader_marks',
+  'reader_verse_actions_marked',
+  'note_dialog',
   'today',
   'today_book',
   'today_shabbat',
@@ -1518,6 +1768,8 @@ const _bigTextScreens = {
   'goto_verse',
   'goto_missing',
   'reader_verse',
+  'reader_verse_actions',
+  'compose_verse_draft',
   'search_many',
   'search_none',
   's_reading_city',
@@ -1545,6 +1797,10 @@ const _bigTextScreens = {
   'guide',
   'sources',
   'legal_a11y',
+  'reader_listen',
+  'reader_listen_full',
+  'haftarah_listen',
+  'reader_parsha',
 };
 
 Future<void> _settle(WidgetTester tester) async {
@@ -1621,6 +1877,10 @@ void main() {
             settings: mode.settings(base),
             now: _screenNow[entry.key] ?? _now,
             progress: onboarding ? const ProgressState() : (_screenProgress[entry.key] ?? _progress)(),
+            stored: {
+              if (_annotated.contains(entry.key)) AnnotationsController.storageKey: _annotations,
+              if (entry.key == 'account_sync_large') AnnotationsController.storageKey: _longNotes,
+            },
             forums: blocked
                 ? await _accountWithNewerBackup()
                 : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
+import '../../notes/domain/annotations.dart';
 import '../../progress/domain/progress_merge.dart';
 import '../../progress/domain/progress_models.dart';
 import 'backend.dart';
@@ -24,6 +25,11 @@ final myProfileProvider = FutureProvider<Profile?>((ref) async {
 });
 
 final forumsProvider = FutureProvider<List<Forum>>((ref) => ref.watch(forumRepositoryProvider).forums());
+
+/// How many discussions each forum lists, and when one was last posted in,
+/// by forum id, for the Community page. Fetched again with the forums'
+/// threads where a discussion or a post is added or removed.
+final forumStatsProvider = FutureProvider<Map<int, ForumStats>>((ref) => ref.watch(forumRepositoryProvider).forumStats());
 
 /// Whether the demo's notice on the Community page has been dismissed. It
 /// stays dismissed for the rest of the session; the other pages still say,
@@ -51,7 +57,9 @@ class ThreadsPage {
 /// and the next as the reader asks ([loadMore]).
 ///
 /// Fetched again (when invalidated, after a reply say), it shows as many
-/// threads as before, so that none the reader had paged to drops out.
+/// threads as before, so that none the reader had paged to drops out. It is
+/// fetched again too when the account changes: a thread's excerpt and thanks
+/// leave out the posts of members the reader has blocked.
 class ForumThreads extends AsyncNotifier<ThreadsPage> {
   ForumThreads(this.forumId);
   final int? forumId;
@@ -62,6 +70,7 @@ class ForumThreads extends AsyncNotifier<ThreadsPage> {
 
   @override
   Future<ThreadsPage> build() async {
+    ref.watch(communityUserProvider.select((v) => v.value?.id));
     final limit = max(ForumRepository.threadsPageSize, _unpinned);
     final list = await ref.watch(forumRepositoryProvider).threads(forumId: forumId, limit: limit + 1);
     return _shown(const [], list, limit);
@@ -227,7 +236,9 @@ final reportedPostIdsProvider = NotifierProvider<ReportedPostIds, Set<String>>(R
 /// change. Merging keeps every change made on either device, removals
 /// included (see [mergeProgress]). The join date goes with the progress,
 /// and the earliest wins, so that a new device counts the history it
-/// restores (see [mergeSyncPayload]).
+/// restores (see [mergeSyncPayload]). So do the reader's bookmarks and
+/// notes, verse by verse, the later change winning, a deletion included
+/// (see [Annotations.merge]).
 ///
 /// The state is the time of the last successful sync.
 class ProgressSync extends Notifier<DateTime?> {
@@ -259,6 +270,7 @@ class ProgressSync extends Notifier<DateTime?> {
 
     ref.listen(progressProvider, (_, _) => changed());
     ref.listen(settingsProvider.select((s) => s.joinDate), (_, _) => changed());
+    ref.listen(annotationsProvider, (_, _) => changed());
     return null;
   }
 
@@ -310,21 +322,36 @@ class ProgressSync extends Notifier<DateTime?> {
       // With no join date to give, this device keeps its own, which a reset
       // made elsewhere moves up (see ProgressController.replaceAll).
       final join = mergedJoin ?? localJoin;
+      final localNotes = syncRef.read(annotationsProvider);
+      final remoteNotes = remoteJson == null ? Annotations.empty : syncPayloadAnnotations(remoteJson);
+      final notes = Annotations.merge(localNotes, remoteNotes);
       // Apply and upload only real changes: a no-op that looked like a change
       // would wake the listeners above and sync again, forever.
-      if (merged != local || join != localJoin) {
+      if (merged != local || join != localJoin || notes != localNotes) {
         _applyingMerge = true;
         try {
           if (join != localJoin) syncRef.read(settingsProvider.notifier).update((s) => s.copyWith(joinDate: join));
           syncRef.read(progressProvider.notifier).replaceAll(merged);
+          syncRef.read(annotationsProvider.notifier).merge(remoteNotes);
         } finally {
           _applyingMerge = false;
         }
       }
       final joinDate = syncRef.read(settingsProvider).joinDate;
-      if (remoteJson == null || merged != remote || joinDate != syncPayloadJoinDate(remoteJson)) {
-        await repo.saveProgress(syncPayload(merged, joinDate));
+      if (remoteJson == null ||
+          merged != remote ||
+          joinDate != syncPayloadJoinDate(remoteJson) ||
+          notes != remoteNotes) {
+        final payload = syncPayload(merged, joinDate, annotations: notes);
+        // More than the server takes: every save would fail, and the reader
+        // is told why rather than only that it did.
+        final tooLarge = syncPayloadTooLarge(payload);
+        syncRef.read(syncTooLargeProvider.notifier).set(tooLarge);
+        if (tooLarge) return false;
+        await repo.saveProgress(payload);
         if (stale()) return false;
+      } else {
+        syncRef.read(syncTooLargeProvider.notifier).set(false);
       }
       state = DateTime.now();
       return true;
@@ -352,3 +379,20 @@ class SyncBlockedByNewerFormat extends Notifier<bool> {
 
 final syncBlockedByNewerFormatProvider =
     NotifierProvider<SyncBlockedByNewerFormat, bool>(SyncBlockedByNewerFormat.new);
+
+/// Whether syncing has stopped because what it would back up is more than
+/// the server takes ([syncPayloadTooLarge]): long notes, many of them. It
+/// clears when the setting or the account changes, or when a later sync
+/// finds the payload small enough.
+class SyncTooLarge extends Notifier<bool> {
+  @override
+  bool build() {
+    ref.watch(settingsProvider.select((s) => s.cloudSync));
+    ref.watch(communityUserProvider.select((u) => u.value?.id));
+    return false;
+  }
+
+  void set(bool tooLarge) => state = tooLarge;
+}
+
+final syncTooLargeProvider = NotifierProvider<SyncTooLarge, bool>(SyncTooLarge.new);

@@ -233,8 +233,14 @@ class RecordingTts extends TtsService {
   @override
   Future<bool?> hasHebrewVoice() async => true;
 
+  /// Each text asked for, joined as one voice would read them in turn.
+  String get spokenText => spoken.map((s) => s.$1).join(' ');
+
   @override
-  Future<void> speak(String text, {required String language, double rate = 0.45}) async => spoken.add((text, language));
+  Future<bool> speak(String text, {required String language, double rate = 0.45}) async {
+    spoken.add((text, language));
+    return true;
+  }
 }
 
 class _SilentEngine extends Fake implements FlutterTts {

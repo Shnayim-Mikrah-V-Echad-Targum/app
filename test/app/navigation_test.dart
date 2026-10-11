@@ -566,6 +566,10 @@ void main() {
       final display = find.widgetWithText(PaperRow, 'Display');
       await tester.scrollUntilVisible(display, 200,
           scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
+      // Wholly in view, so that the tap lands on it rather than below the
+      // sheet: the reader's sheet is longer, with Listen along.
+      await tester.ensureVisible(display);
+      await tester.pumpAndSettle();
       await tester.tap(display);
       await _loadTexts(tester);
       expect(tester.takeException(), isNull);

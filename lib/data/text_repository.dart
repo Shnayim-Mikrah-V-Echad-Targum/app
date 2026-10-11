@@ -87,6 +87,20 @@ class TextRepository {
     });
   }
 
+  /// One verse of the Torah or of a haftarah, in Hebrew: null for a verse
+  /// the app doesn't have, such as one past the end of its chapter, or one
+  /// of the Prophets that no haftarah reads.
+  Future<Verse?> hebrewVerse(BookVerse verse) async {
+    final BookVerse(:book, :ref) = verse;
+    if (kTorahBooks.contains(book)) {
+      final text = await this.book(TextLayer.mikra, book);
+      final chapters = text.chapterLengths;
+      return ref.chapter <= chapters.length && ref.verse <= chapters[ref.chapter - 1] ? text.verse(ref) : null;
+    }
+    final raw = (await (_haftarot ??= _loadHaftarot())).he[book]?['$ref'];
+    return raw == null ? null : Verse.fromJson(ref, raw as Object);
+  }
+
   /// The verses of a haftarah, in Hebrew and English.
   Future<List<HaftarahVerse>> haftarah(Haftarah parts) async {
     final h = await (_haftarot ??= _loadHaftarot());

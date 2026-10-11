@@ -524,9 +524,8 @@ void main() {
         steps: 2,
       );
       expect(find.text('Read the Targum'), findsOneWidget);
-      final (text, language) = tts.spoken.single;
-      expect(language, 'he-IL');
-      final plain = HebrewText.consonantsOnly(text);
+      expect({for (final (_, language) in tts.spoken) language}, {'he-IL'});
+      final plain = HebrewText.consonantsOnly(tts.spokenText);
       // Onkelos of 32:3, then its Hebrew, then the Onkelos of 32:4.
       final targum = plain.indexOf('מכללתא ומלבשתא');
       final hebrew = plain.indexOf('עטרות ודיבן ויעזר ונמרה');
@@ -559,7 +558,7 @@ void main() {
         steps: 2,
       );
       expect(find.text('Read the Targum'), findsOneWidget);
-      final plain = HebrewText.consonantsOnly(tts.spoken.single.$1);
+      final plain = HebrewText.consonantsOnly(tts.spokenText);
       expect(plain, contains('דהשם'));
       expect(plain, isNot(contains('יי')));
     });
@@ -578,7 +577,7 @@ void main() {
         steps: 2,
       );
       expect(find.text('Read Rashi'), findsOneWidget);
-      final plain = HebrewText.consonantsOnly(tts.spoken.single.$1);
+      final plain = HebrewText.consonantsOnly(tts.spokenText);
       expect(plain, contains('ויסגור השם בעדו'));
       expect(plain, isNot(contains("ויסגור ה'")));
     });
@@ -908,7 +907,14 @@ void main() {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
+    // The Targum beneath each verse, as a phone or a narrower window sets it:
+    // a window this wide sets it beside the verse unless that is turned off
+    // (test/features/reader/full_text_layout_test.dart).
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(onboardingComplete: true, parallelColumns: false),
+      now: monday,
+    );
     c.read(routerProvider).go('/read/5787:2/0?mode=full');
     await loadTexts(tester);
     // The aliyah opens mid-chapter, headed by its chapter.
@@ -1424,6 +1430,14 @@ void main() {
       expect(find.bySemanticsLabel('Show or hide cantillation\nCtrl + Shift + T'), findsOneWidget);
       expect(find.bySemanticsLabel('Show shortcuts\nF1, Ctrl + /'), findsOneWidget);
       expect(find.textContaining('focus mode'), findsNothing, reason: '↑ and ↓ move between verses only in focus mode');
+      // On a phone the list runs past the dialog's foot, and its scrollbar
+      // stays in sight, so that the rows below aren't taken to be missing.
+      final list = find.descendant(of: find.byType(AlertDialog), matching: find.byType(Scrollable));
+      expect(tester.state<ScrollableState>(list).position.maxScrollExtent, greaterThan(0));
+      expect(
+        tester.widget<Scrollbar>(find.descendant(of: find.byType(AlertDialog), matching: find.byType(Scrollbar))).thumbVisibility,
+        isTrue,
+      );
       handle.dispose();
       await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();

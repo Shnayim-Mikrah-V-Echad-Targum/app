@@ -468,6 +468,12 @@ Rules:
 - It is not focus mode's verse and shows with focus mode off. With focus mode on, it is also the focused verse, so the others dim around it, and focus mode's own highlight yields to the mark.
 - Where the platform takes announcements, its reference is said once the scroll ends ("Genesis 28:12").
 
+**The verse Listen reads** (§6.28)
+- Has focus mode's highlight, whether focus mode is on or not: in the full text, its block's own (`VerseGroup`); in the guided reader and the haftarah, where verses have no blocks, the same paper and 3 px primary rule painted around the verse and what goes with it, 12 past it at the sides and 4 above and below (`SpeakingVerseMark`), so nothing moves as it passes on. Faded in over `Motion.short`.
+- In focus mode it is the focused verse, so the others dim around it, never it.
+- Brought into view as the voice reaches it, unless it is wholly in view already: a fifth of the way down the text's viewport, over `Motion.medium`, at once under Reduce Motion, and never under a finger scrolling the text (`FollowedVerse`).
+- It replaces the mark of the verse opened at, which goes as Listen starts.
+
 **Line widths:** `LineWidth.narrow` 560, `medium` 680 (default), `wide` 880 (was 1040, about 80 characters at 26sp).
 
 ## 5. Layout tokens
@@ -542,6 +548,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Min height 56 (one line) or 72 (two lines); padding start 16, end 12, vertical 12.
 - Leading icon 22 in onSurfaceVariant, in a 38 slot (icon then 16 gap).
 - Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max. Once the system text is enlarged, the subtitle is never cut short (WCAG 1.4.4).
+- An optional detail line under the subtitle, 4 below it, in bodySmall onSurfaceVariant: a line of facts, such as how busy a forum is.
 - Trailing: an optional value in bodyMedium onSurfaceVariant, then `Icons.chevron_right` 20 in outline (mirrors in RTL automatically).
   - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it. With a subtitle under them, the icon and chevron line up with the title's line too.
   - A trailing button with a label (a TextButton, such as "About streaks" or "Sign in") goes with the title the same way: at the end of its line, or under it when the two don't fit, so that no word of the title ever breaks.
@@ -892,6 +899,40 @@ The Parsha tab's search button, and Ctrl+K (⌘K) on any tab, open one sheet (§
 - Enter takes the first row that leads somewhere; with none, the field keeps the focus.
 - Once typing pauses, the first row is announced where the platform takes announcements.
 
+### 6.27 Verse actions (lib/features/reader/verse_actions_sheet.dart)
+
+A long press on a verse, in the guided reader, the full text (anywhere in the verse's block, with no ink outside focus mode) or the haftarah, opens one sheet (§6.19); so do a secondary click, and Shift+F10 or the menu key for the verse focus mode is on, or the first in view:
+- `SheetTitle` with the verse's reference, as Names.reference writes it ("Genesis 3:22", "בראשית ג, כב").
+- The verse as it will go, at most three lines, in the scripture's font at 20 / 1.7 in onSurface, right to left, its lines broken as the reader breaks them (never after a maqaf, nor before a paseq; the copy carries none of that), set off as a quotation is (§6.21): a 2 px `secondary` rule at its right, 12 from the text. Screen readers skip it; the title has named the verse.
+- 16 below, for a verse of the Torah, a PaperGroup of the reader's own marks: Bookmark (`bookmark_border`, or `bookmark` in primary once on) with a switch, one item to screen readers that reads as a switch (the switch itself is no item or tab stop of its own, as Account's backup row); then `addNote` (`note_add_outlined`), or `yourNote` (`sticky_note_2_outlined`) with the note beneath it, in its own direction, which closes the sheet and opens the note (below). Neither has a chevron. A verse of the haftarah has no such group.
+- 12 below that (or 16 below the verse), one PaperGroup (§6.3): Copy (`content_copy_outlined`) and Share (`share_outlined`, or `ios_share` on Apple devices), with no chevron; then Ask about this verse (`help_outline`, the forum's icon) with `askAboutVerseDesc` beneath and a chevron, as it leads to a page.
+- Copy closes the sheet and says `verseCopied`. Share leaves the sheet open beneath the platform's share sheet, which points from its row, and closes it once that is done with; where nothing can share, the verse is copied and `shareCopiedInstead` says so.
+- Screen readers: each verse (in the full text, the verse and its Targum) carries the custom action `verseOptions` and a long press.
+- Bookmark changes at once, and the sheet stays, its switch showing it.
+- **The note** (lib/features/notes/note_dialog.dart): a dialog (§6.19) titled `noteTitle` ("Note on Genesis 3:22"), its field outlined, 4 to 10 lines, labelled `yourNote` with the hint `noteHint`, up to 2,000 characters (`quietCounter`), in the direction of what is written, and taking the focus. Actions: Delete (while there is a note), Cancel, and a Filled Save that waits for a change; Ctrl+Enter (⌘Enter) saves. Saved, the page says `noteSaved`; deleted, by Delete or by emptying it, `noteDeleted` with Undo.
+
+### 6.28 Listen bar (lib/features/reader/listen_bar.dart)
+
+While Listen reads, playing or paused, a player sits above the reader's bottom bar, or at the foot of the full text and of the haftarah's page (above a tab's navigation bar):
+- Background surface, 1 px hairline top border; it runs under the gesture bar where it is the page's last bar. Content constrained to the reading column and centred, as the bottom bar's; padding 4 above and below, the buttons' own padding bringing their glyphs to the column's edges.
+- At its start, the speech rate: a Text button in onSurfaceVariant, `speed` 18 and the rate as Settings shows it ("45%", labelLarge, tabular figures), tooltip `speechRate`, read as `speechRateValue` ("Speech rate: 45%"). The icon goes where the rate would have no room beside it, and the rate is set smaller before it is ever cut short. It opens a menu (paper, §6.19) of 25, 35, 45, 55, 65, 80 and 100%, with the rate set among them if it is another: each a radio icon (`radio_button_checked` in primary, unchecked in onSurfaceVariant) and its rate, the one chosen in w700. A rate chosen is the setting's (Settings → Accessibility → Speech rate), and the verse being read starts again at it.
+- At its centre, left to right in either language, as media controls are: `skip_previous_rounded` (`listenPreviousVerse`), 8, a tonal 48 dp icon button in primaryContainer / onPrimaryContainer with `pause_rounded` (`listenPause`) or `play_arrow_rounded` (`listenResume`), 8, and `skip_next_rounded` (`listenNextVerse`). Back and on are disabled where there is no verse to move to; between Listen along's readings, back reads the last verse again and on goes to the next reading.
+- At its end, `close` (`stopListening`).
+- The app bar's Listen button reads `stopListening` with `stop_circle_outlined` while the player shows.
+
+### 6.29 Bookmarks and notes (lib/features/notes/)
+
+**The verse's marks** (`VerseMarks`, scripture_text.dart): after the verse number, wherever the verse shows it (the Torah's verse, and the Targum in the guided reader's Targum step; never the full text's Targum beneath its verse), in the number's size and in primary, the techelet of the scroll's note marks (`dimInk` with a dimmed verse): a ribbon 0.46 × 0.72 of the number's size, notched at its foot, for a bookmark, and a dot 0.34 across at the middle of the number's letters for a note, ribbon first, 0.28 apart and 0.28 from the number. They stand on the baseline (a WidgetSpan above it). In the full text they are joined to the number by a word joiner, and to the verse by its no-break space; in the guided reader's margin they follow the number, or go beneath it where the margin has no room for both and 0.2 of the verse's size clear of the verse (`gutterClearance`; a number of two letters, and large text). They scale with the text once, as the number does. With numbers hidden, they lead the verse. The verse's label ends "Bookmarked", "With your note".
+
+**The list** (`/notes`, over the tabs; `/notes?week=5787:1` for a week's parsha): `notesTitle` in the app bar, in the 720 column.
+- A heading per book (one per parsha, filtered): the Hebrew name in FRL 600 20 onSurface, then in the English UI the English name in titleSmall onSurfaceVariant, one paragraph; a level-2 heading; 8 above the first, 28 above the rest, 4 below. Filtered, the parsha's name (`parshaLabel`).
+- Per chapter, `chapterLabel` ("Chapter 3", "פרק ג") in titleSmall onSurfaceVariant with tabular figures, a level-3 heading, 16 above and 8 below; then a PaperGroup of its verses, hairlines inset 54.
+- **Row:** padding start 16, vertical 12; where a row's icon sits (a 38 slot), centred on the reference's line, `bookmark` in primary for a bookmark, or `sticky_note_2_outlined` in onSurfaceVariant for a note alone; then the reference in titleSmall onSurfaceVariant with tabular figures, 4, the verse in the scripture font 20 / 1.7 onSurface, right to left, without cantillation (two lines), 4, and the note in bodyLarge onSurface in its own direction (four lines). Nothing is cut short once the text is enlarged. At the end, a `more_vert` IconButton (`verseOptions`), its glyph on the paper's edge as a paper row's menu's.
+- A tap opens the full text at the verse (§4.7): in the week of this year's cycle that reads it, or the filtered week. The menu button, a long press, a secondary click, Shift+F10 or the menu key open the verse's options (§6.27). One item to screen readers: the reference, `verseBookmarked`, the verse spoken as the reader's are, tagged `he`, and `yourNoteLabel`, with the `verseOptions` action and the long press; the menu button is an item of its own.
+- Empty: the empty state (§6.22) with `notesEmpty`, or filtered `notesEmptyParsha`. Filtered, a centred Text `notesShowAll` ends the page, 24 below.
+
+**On a week's page:** while its parsha has any, a PaperRow (`bookmarks_outlined`, `parshaNotes`, and beneath it `notesCount` · `bookmarksCount`) to the filtered list, in the page's second PaperGroup between the haftarah and the discussion (§9 Parsha). The week's menu, and so the Parsha tab's, offers the whole list (`notesTitle`), after its other items.
+
 ## 7. Motifs and iconography
 
 At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/ornaments.dart`, wrapped in ExcludeSemantics. In high contrast they draw in onSurface.
@@ -1085,7 +1126,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - The alternative-division note becomes a third line in marginalia ("Some sources use 4:19–26", `aliyahOtherDivision`, in either UI, its verses kept on one line). It keeps marginalia's own size, the EB Garamond floor of §4.5.
    - Trailing: PassPips (size 12) on the title's line, the reading under way ringed in the row of the aliyah the reading continues at, above the existing overflow menu, in a 52 column 4 from the text and 10 from the end.
    - Tap opens the reader. The row is one button whose value is the state of each reading; the menu keeps its own item.
-4. **Second PaperGroup**, 28 below: Haftarah and Discuss rows, as on Today (`HaftarahRow`, `DiscussRow`).
+4. **Second PaperGroup**, 28 below: Haftarah and Discuss rows, as on Today (`HaftarahRow`, `DiscussRow`), and between them, while the parsha has any bookmarks or notes, the row to them (`WeekNotesRow`, §6.29).
 5. **Footer:** a centred TextButton "Mark the whole parsha as read", while the week is open and unfinished.
 
 **Browse** (browse_screen.dart; phone_browse, phonetall_browse, phone_browse_summer):
@@ -1115,6 +1156,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 - **_Note** (no Targum or Rashi available; reader_screen.dart:736-760): a NoticeBanner with `info_outline` (replaces tertiaryContainer).
 - Bottom bar per §6.18; finished panel per §6.23.
 - Desktop: ribbon, track, text and bottom bar all share one centred column.
+- The keyboard shortcuts (F1, or the menu's Keyboard shortcuts): a dialog (§6.19) of rows, the action in bodyMedium and its keys as keycaps at the end. Where the rows run past the dialog's foot (a phone, large text), they scroll with their scrollbar kept in sight, in a 12 band of the end padding clear of the keys, so that a list cut off between two rows isn't taken to be complete.
 
 ### Reader, full text (phone_reader_full, desktop_reader_full)
 
@@ -1123,6 +1165,16 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 - Petuchah and setumah marks.
 - At the end: a SeferDivider, then a centred Tonal "Mark this aliyah as read" (the existing label, which the tests rely on).
 - Focus mode per §4.7.
+- **Parallel columns** (`ParallelVerse`, scripture_text.dart; desktop_reader_full): when the Targum (or, without it, the translation) is shown, the pane is at least 960 wide, the line width isn't narrow, the Torah is at most 34 px at the system text scale (`ScriptureStyles.parallelColumns`) and Display → Side by side is on (`AppSettings.parallelColumns`, default on; the switch shows in the full text's display sheet only where the columns would show, `ScriptureStyles.parallelFits`, measured on the reader's pane within the window's side insets):
+  - the measure is 1160, and the title, ribbon and listen bar keep to it;
+  - each verse is a row, right to left: the Torah (flex 6), with the translation and Rashi beneath it in its column, then a 40 gutter, then the Targum (flex 5) without its rule or number, at least 48 tall for its long press; first lines on one baseline;
+  - above the first row, the columns' names (`ParallelHeading`): `mikraLabel` and `targumLabel` (or `translationLabel`) in labelLarge onSurfaceVariant, each where its text begins, over a 1 px hairline as wide as its column, inset as the verses are;
+  - the chapter heading, section marks and the verse's block (focus mode, the verse opened at, Listen) span the row; screen readers hear the verse, the Targum, the translation and Rashi, in that order.
+- **Whole parsha** (the overflow menu's `wholeParsha` / `oneAliyahAtATime`, full text only; `AppSettings.fullTextWholeParsha`; phone_reader_parsha, desktop_reader_parsha*):
+  - one `SliverMainAxisGroup` per aliyah: the `AliyahHeader` pinned while its aliyah is read, its verses built lazily (`SliverList.builder`), then the SeferDivider and the Tonal Mark as read of that aliyah;
+  - `AliyahHeader` (whole_parsha.dart): surface, keeping to the text's measure, padding 10 vertical; the Hebrew ordinal in `ordinal` gold, 12, the name in titleMedium onSurface, 12, the verses in bodyMedium onSurfaceVariant with tabular figures (wrapping under the name when they don't fit), and at the end a 20 check in primary once the aliyah is read. A hairline beneath only while the text passes under it. One heading of level 2 to screen readers ("Revi'i, aliyah 4 of 7, Genesis 3:22–4:18, read"); the chapter headings beneath it are level 3;
+  - it opens at the aliyah chosen, out of sight until it is there; a ribbon tab scrolls to its aliyah's heading; the title, ribbon and menu follow the aliyah a quarter of the way down the text, or the verse focus mode moves to;
+  - focus mode's ↓ and ↑, Listen and the verse opened at run through the whole parsha; a button reached by Tab is brought into view again once the verses before it are built.
 
 ### Haftarah (haftarah_screen.dart)
 
@@ -1167,12 +1219,12 @@ In order:
 - Demo NoticeBanner (§6.20).
 - Featured row (a Card with SeferInkWell, no primaryContainer fill): the Hebrew parsha name in FRL 600 20 primary, titleMedium "This week: Parshat Bereshit", bodySmall "Open the discussion", and a chevron.
 - Sign-in: one PaperRow with `info_outline`, text, and a trailing TextButton "Sign in".
-- GroupHeader "Forums", then one PaperGroup: icons in onSurfaceVariant, titles titleMedium, descriptions bodySmall (2 lines).
+- GroupHeader "Forums", then one PaperGroup: icons in onSurfaceVariant, titles titleMedium, descriptions bodySmall onSurface (2 lines), as a thread's excerpt is, and under them, once it comes, the forum's activity as a detail line, "12 discussions · active 3 hours ago" ("No discussions yet" in an empty forum; no "active" until one has been posted in). As the page first loads, the forums wait a moment (1.5 s) for it, still loading, so that no row grows by a line under a finger or a screen reader's cursor as it comes; past that, a forum is listed without it until it comes, or where it can't be had. It is fetched again wherever a forum's discussions change: one begun, this week's opened (which may begin it), and an account deleted with its own.
 
 **Forum**
 - The description in bodyMedium onSurfaceVariant.
 - Parshat HaShavua first shows this week's card, as on Home, so that forum is never empty.
-- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines), then bodySmall "Rivka · 3 hours ago · 4 replies" with the name isolated. A pinned or locked thread has a 16 px icon (`push_pin_outlined`, `lock_outline`) and a labelSmall tag ("Pinned", "Locked") above its title, so that the row says so wherever it is met, not only under its group's heading; screen readers hear the tags first. No leading icon or chevron.
+- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines); 2 below it the excerpt of its first post, bodySmall onSurface, in its own direction and tagged with its language like the title, 2 lines (whole once the text is enlarged), and none where the reader may not see that post; then 4 below it (2 below the title where there is no excerpt), bodySmall onSurfaceVariant "Rivka · 3 hours ago · 4 replies · 12 thanks" with the name isolated, the thanks only once there are any. A pinned or locked thread has a 16 px icon (`push_pin_outlined`, `lock_outline`) and a labelSmall tag ("Pinned", "Locked") above its title, so that the row says so wherever it is met, not only under its group's heading; screen readers hear the tags first. No leading icon or chevron.
 - The rows are built only as they scroll into view, each its share of its group's paper (`PaperGroupRow`), as a forum paged through may hold hundreds. Each but the last lays its paper a little past its foot, and each but the first leaves as much of its top bare, so that the row below, painted after it, never covers the foot of its focus ring.
 - Empty state per §6.22 with `emptyForum`, its action New discussion; in a locked forum, to a member who may not begin one there, `emptyLockedForum` ("No discussions here yet.") with no action.
 - FAB: extended "New discussion", primaryContainer / onPrimaryContainer, radius 12, elevation 2.
@@ -1196,6 +1248,8 @@ In order:
 - Signed in with a name, the paper begins with "Posting as Rivka" after a 24 px initial disc.
 - Until the guidelines are accepted, one line in bodySmall onSurfaceVariant, start-aligned, ending with the link to them (`LinkedText`).
 - Then a full-width Filled "Post", and Discard draft (Text, centred) once anything is written.
+
+**Lines of facts** (`metaLine`, community_ui.dart): the facts of a thread's row and of a forum's activity are joined by " · ", the dot held to the fact before it by a no-break space, so that a line too long for its row wraps after a dot and none leads a line.
 
 **Inline links** (`LinkedText`, community_ui.dart): a sentence in bodySmall onSurfaceVariant ending with a link in primary w500, always underlined. The link is a WidgetSpan holding a SeferInkWell, so it takes the keyboard focus with the ring (4 px of room either side: the 3 px ring, drawn outside the link, and a hairline clear of the words) and Enter follows it; screen readers read it as a link after the sentence. As a link in running text it is as tall as the line (WCAG 2.5.8's inline exception).
 
@@ -1233,7 +1287,7 @@ In order:
 - A Match-device switch, then theme swatches (§6.24).
 - Sliders per §6.8.
 - Toggles in PaperGroups:
-  - Text: nikud, ta'amim, ketiv, verse numbers, justify;
+  - Text: nikud, ta'amim, ketiv, verse numbers, the Divine Name as ה׳ in a verse that leaves the app (`copyDivineName`, `DivineNameSwitch`), justify;
   - Study aids: English, Rashi, Rashi script (NEW);
   - Reading: focus mode, bold, keep screen on.
 - Line width as a SegmentedButton.
@@ -1262,7 +1316,7 @@ In order:
 - Opens at 42% of the screen over a light scrim (`Colors.black12`), so the verse it changes stays in view; drawn up, 95%.
 - Text size: outlined 56×48 buttons (`text_decrease`, `text_increase`, radius 10) either side of the size in titleMedium, which screen readers hear as it changes.
 - Scripture font: four ChoiceChips sharing the width, each "בְּרֵאשִׁית" at 18 in its font and named for screen readers; four across where the word fits, else two, or one under another. The sample keeps its font's weight, so the chosen chip's mark beyond its fill and border is a 24×2 primary rule under its word.
-- Theme: the compact swatches. Then a PaperGroup of switches (vowels, cantillation, translation, Rashi, Rashi script, focus mode) with line spacing (from 1.6), and a row to the Display page.
+- Theme: the compact swatches. Then a PaperGroup of switches (vowels, cantillation, translation, Rashi, Rashi script, Side by side, focus mode, Listen along) with line spacing (from 1.6), and a row to the Display page. Side by side shows only in the full text's sheet, where its columns would show (§9 Reader, full text); Listen along only in the reader's, not the haftarah's.
 
 **Reminders**
 - Native: a PaperGroup for each reminder: its switch row and, once on, its time as a row's value (and for the daily reminder, the routine chips), 12 apart; the offer of a city below them, 28 apart.

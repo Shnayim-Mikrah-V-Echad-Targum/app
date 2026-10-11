@@ -903,6 +903,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stopListening => 'Stop';
 
   @override
+  String get listenPause => 'Pause';
+
+  @override
+  String get listenResume => 'Resume';
+
+  @override
+  String get listenPreviousVerse => 'Previous verse';
+
+  @override
+  String get listenNextVerse => 'Next verse';
+
+  @override
+  String speechRateValue(String rate) {
+    return 'Speech rate: $rate';
+  }
+
+  @override
+  String get listenAlong => 'Listen along';
+
+  @override
+  String get listenAlongDesc =>
+      'Listen goes on from each reading to the next by itself, to the end of the aliyah. An aid for following the text, not a substitute for reading it.';
+
+  @override
   String get ttsUnavailable =>
       'Text-to-speech isn\'t available on this device.';
 
@@ -915,6 +939,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fullTextMode => 'Full text';
+
+  @override
+  String get wholeParsha => 'Whole parsha';
+
+  @override
+  String get oneAliyahAtATime => 'One aliyah at a time';
 
   @override
   String get markAliyahRead => 'Mark this aliyah as read';
@@ -971,7 +1001,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutNikud => 'Show or hide vowels';
 
   @override
-  String get shortcutListen => 'Listen / stop';
+  String get shortcutListen => 'Listen / pause';
+
+  @override
+  String get shortcutListenVerse => 'While listening: previous or next verse';
 
   @override
   String get shortcutHelp => 'Show shortcuts';
@@ -996,7 +1029,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keyDown => 'Down arrow';
 
   @override
+  String get keyLeft => 'Left arrow';
+
+  @override
+  String get keyRight => 'Right arrow';
+
+  @override
   String get keySpace => 'Space';
+
+  @override
+  String get verseOptions => 'Verse options';
+
+  @override
+  String get shortcutVerseOptions =>
+      'Verse options: bookmark, note, copy, share or ask';
+
+  @override
+  String get copyVerse => 'Copy';
+
+  @override
+  String get askAboutVerse => 'Ask about this verse';
+
+  @override
+  String get askAboutVerseDesc => 'In Questions & answers';
+
+  @override
+  String get verseCopied => 'Verse copied';
+
+  @override
+  String get shareCopiedInstead =>
+      'Sharing isn\'t available here, so the verse was copied.';
+
+  @override
+  String get bookmarkVerse => 'Bookmark';
+
+  @override
+  String get addNote => 'Add a note';
+
+  @override
+  String get yourNote => 'Your note';
+
+  @override
+  String noteTitle(String reference) {
+    return 'Note on $reference';
+  }
+
+  @override
+  String get noteHint => 'A question for the Shabbat table, or a thought';
+
+  @override
+  String get noteSaved => 'Note saved';
+
+  @override
+  String get noteDeleted => 'Note deleted';
+
+  @override
+  String get verseBookmarked => 'Bookmarked';
+
+  @override
+  String get verseWithNote => 'With your note';
+
+  @override
+  String yourNoteLabel(String text) {
+    return 'Your note: $text';
+  }
+
+  @override
+  String get notesTitle => 'Bookmarks & notes';
+
+  @override
+  String get notesEmpty =>
+      'To bookmark a verse or keep a question for the Shabbat table, press and hold the verse as you read.';
+
+  @override
+  String get notesEmptyParsha => 'No bookmarks or notes on this parsha yet.';
+
+  @override
+  String get notesShowAll => 'All bookmarks & notes';
+
+  @override
+  String get parshaNotes => 'Your notes on this parsha';
+
+  @override
+  String notesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes',
+      one: '1 note',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bookmarksCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bookmarks',
+      one: '1 bookmark',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get copyDivineName => 'Write the Divine Name as ה׳';
+
+  @override
+  String get copyDivineNameDesc =>
+      'In a verse copied, shared or quoted in a question';
 
   @override
   String get progressTitle => 'Progress';
@@ -1545,6 +1686,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get focusModeDesc => 'Highlight the current verse and dim the rest';
 
   @override
+  String get sideBySide => 'Side by side';
+
+  @override
+  String get sideBySideDesc =>
+      'On a wide screen, the full text shows the Targum, or the translation, in a column beside each verse';
+
+  @override
   String get keepScreenOn => 'Keep the screen on while reading';
 
   @override
@@ -1837,7 +1985,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportData => 'Export my progress';
 
   @override
-  String get exportDataDesc => 'Save a backup you can restore later';
+  String get exportDataDesc =>
+      'Save a backup of your progress, bookmarks and notes to restore later';
 
   @override
   String get importData => 'Import progress';
@@ -2130,7 +2279,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncProgressDesc =>
-      'Keep your reading progress with your account and restore it on other devices.';
+      'Keep your reading progress, bookmarks and notes with your account, and restore them on other devices.';
 
   @override
   String get syncNow => 'Sync now';
@@ -2144,6 +2293,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syncNeedsUpdate =>
       'Your backup was saved by a newer version of the app. Update the app to keep syncing.';
+
+  @override
+  String get syncTooLarge =>
+      'Your notes are too long to back up to your account, so nothing new is backed up. Shorten or delete some of them; a backup file, from Your data, keeps them all.';
 
   @override
   String lastSynced(String time) {
@@ -2272,6 +2425,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posted => 'Posted.';
 
   @override
+  String get viewPostedThread => 'View';
+
+  @override
   String get pendingReview => 'Hidden — waiting for a moderator';
 
   @override
@@ -2355,6 +2511,34 @@ class AppLocalizationsEn extends AppLocalizations {
       zero: 'No posts yet',
     );
     return '$_temp0';
+  }
+
+  @override
+  String threadThanksCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count thanks',
+      one: '1 thanks',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String forumDiscussionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count discussions',
+      one: '1 discussion',
+      zero: 'No discussions yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String forumActive(String time) {
+    return 'active $time';
   }
 
   @override
@@ -2468,6 +2652,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discardDraft => 'Discard draft';
+
+  @override
+  String questionOnVerse(String reference) {
+    return 'Question on $reference';
+  }
+
+  @override
+  String askDraftKept(String reference) {
+    return 'Your unsent draft is kept. Discard it to ask about $reference instead.';
+  }
 
   @override
   String charactersLeft(int count) {
@@ -2752,6 +2946,25 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$pauses pauses',
       one: '1 pause',
       zero: 'no pauses',
+    );
+    return '$_temp0, $_temp1.';
+  }
+
+  @override
+  String importMarks(int bookmarks, int notes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      bookmarks,
+      locale: localeName,
+      other: '$bookmarks bookmarks',
+      one: '1 bookmark',
+      zero: 'No bookmarks',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      notes,
+      locale: localeName,
+      other: '$notes notes',
+      one: '1 note',
+      zero: 'no notes',
     );
     return '$_temp0, $_temp1.';
   }

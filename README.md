@@ -25,7 +25,7 @@ Accessibility is a core requirement, not an add-on. See [docs/ACCESSIBILITY.md](
   - large and small letters
 - Every week's haftarah, including the special haftarot (Rosh Chodesh, the four parshiyot, Chanukah, Shabbat Shuva and others). Ashkenazi or Sephardi rite.
 - Choice of scripture font: Noto Serif Hebrew, Taamey Frank, Ezra SIL or Noto Sans Hebrew. Vowels and cantillation can each be shown or hidden. Settings for line height, word spacing and line width.
-- Text-to-speech, where a Hebrew voice is installed.
+- Listen: text-to-speech verse by verse, where a Hebrew voice is installed, with the verse being read highlighted, a player to pause, move a verse back or on and set the rate, and an optional hands-free mode that reads Mikra, Mikra and Targum in turn.
 
 **Calendar**
 - A Hebrew calendar and parsha schedule, validated against hebcal for every year from 5700 to 5900:

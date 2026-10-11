@@ -177,12 +177,16 @@ class AppSettings {
     this.showTeamim = true,
     this.showKetiv = true,
     this.showVerseNumbers = true,
+    this.copyDivineNameAsHashem = true,
     this.justify = false,
     this.lineWidth = LineWidth.medium,
     this.scriptureFont = ScriptureFont.notoSerif,
     this.uiFont = UiFont.standard,
     this.boldText = false,
     this.focusMode = false,
+    this.listenAlong = false,
+    this.parallelColumns = true,
+    this.fullTextWholeParsha = false,
     this.keepScreenOn = true,
     this.reduceMotion = false,
     this.haptics = true,
@@ -273,6 +277,10 @@ class AppSettings {
   final bool showTeamim;
   final bool showKetiv;
   final bool showVerseNumbers;
+
+  /// Write the Divine Name as ה׳ in a verse copied, shared or quoted in a
+  /// post, which may be erased or thrown away (DESIGN.md §3).
+  final bool copyDivineNameAsHashem;
   final bool justify;
   final LineWidth lineWidth;
   final ScriptureFont scriptureFont;
@@ -281,6 +289,19 @@ class AppSettings {
 
   /// Highlight the current verse and dim the rest.
   final bool focusMode;
+
+  /// In the guided reader, Listen goes on from each reading to the next by
+  /// itself, to the end of the aliyah: Mikra, Mikra, Targum, hands-free.
+  final bool listenAlong;
+
+  /// On a wide screen, the full text sets the Targum (or, without it, the
+  /// translation) in a column beside each verse rather than beneath it
+  /// (ScriptureStyles.parallelColumns).
+  final bool parallelColumns;
+
+  /// The full text shows the whole parsha, aliyah after aliyah, rather than
+  /// the one aliyah opened.
+  final bool fullTextWholeParsha;
   final bool keepScreenOn;
 
   // Accessibility
@@ -474,12 +495,16 @@ class AppSettings {
     bool? showTeamim,
     bool? showKetiv,
     bool? showVerseNumbers,
+    bool? copyDivineNameAsHashem,
     bool? justify,
     LineWidth? lineWidth,
     ScriptureFont? scriptureFont,
     UiFont? uiFont,
     bool? boldText,
     bool? focusMode,
+    bool? listenAlong,
+    bool? parallelColumns,
+    bool? fullTextWholeParsha,
     bool? keepScreenOn,
     bool? reduceMotion,
     bool? haptics,
@@ -536,12 +561,16 @@ class AppSettings {
         showTeamim: showTeamim ?? this.showTeamim,
         showKetiv: showKetiv ?? this.showKetiv,
         showVerseNumbers: showVerseNumbers ?? this.showVerseNumbers,
+        copyDivineNameAsHashem: copyDivineNameAsHashem ?? this.copyDivineNameAsHashem,
         justify: justify ?? this.justify,
         lineWidth: lineWidth ?? this.lineWidth,
         scriptureFont: scriptureFont ?? this.scriptureFont,
         uiFont: uiFont ?? this.uiFont,
         boldText: boldText ?? this.boldText,
         focusMode: focusMode ?? this.focusMode,
+        listenAlong: listenAlong ?? this.listenAlong,
+        parallelColumns: parallelColumns ?? this.parallelColumns,
+        fullTextWholeParsha: fullTextWholeParsha ?? this.fullTextWholeParsha,
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
         reduceMotion: reduceMotion ?? this.reduceMotion,
         haptics: haptics ?? this.haptics,
@@ -616,12 +645,16 @@ class AppSettings {
         'showTeamim': showTeamim,
         'showKetiv': showKetiv,
         'showVerseNumbers': showVerseNumbers,
+        'copyDivineNameAsHashem': copyDivineNameAsHashem,
         'justify': justify,
         'lineWidth': lineWidth.name,
         'scriptureFont': scriptureFont.name,
         'uiFont': uiFont.name,
         'boldText': boldText,
         'focusMode': focusMode,
+        'listenAlong': listenAlong,
+        'parallelColumns': parallelColumns,
+        'fullTextWholeParsha': fullTextWholeParsha,
         'keepScreenOn': keepScreenOn,
         'reduceMotion': reduceMotion,
         'haptics': haptics,
@@ -705,12 +738,16 @@ class AppSettings {
       showTeamim: b('showTeamim', d.showTeamim),
       showKetiv: b('showKetiv', d.showKetiv),
       showVerseNumbers: b('showVerseNumbers', d.showVerseNumbers),
+      copyDivineNameAsHashem: b('copyDivineNameAsHashem', d.copyDivineNameAsHashem),
       justify: b('justify', d.justify),
       lineWidth: e(LineWidth.values, j['lineWidth'], d.lineWidth),
       scriptureFont: e(ScriptureFont.values, j['scriptureFont'], d.scriptureFont),
       uiFont: e(UiFont.values, j['uiFont'], d.uiFont),
       boldText: b('boldText', d.boldText),
       focusMode: b('focusMode', d.focusMode),
+      listenAlong: b('listenAlong', d.listenAlong),
+      parallelColumns: b('parallelColumns', d.parallelColumns),
+      fullTextWholeParsha: b('fullTextWholeParsha', d.fullTextWholeParsha),
       keepScreenOn: b('keepScreenOn', d.keepScreenOn),
       reduceMotion: b('reduceMotion', d.reduceMotion),
       haptics: b('haptics', d.haptics),

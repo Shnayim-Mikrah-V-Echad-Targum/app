@@ -57,6 +57,25 @@ class Forum {
   String description(bool he) => he ? descriptionHe : descriptionEn;
 }
 
+/// How busy a forum is, as the Community page lists it.
+class ForumStats {
+  const ForumStats({required this.threadCount, this.lastPostAt});
+
+  /// The discussions the forum lists.
+  final int threadCount;
+
+  /// When one of them was last posted in; null while none has been (a
+  /// weekly thread opened, but not yet posted in, is no sign of activity).
+  final DateTime? lastPostAt;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ForumStats && other.threadCount == threadCount && other.lastPostAt == lastPostAt;
+
+  @override
+  int get hashCode => Object.hash(threadCount, lastPostAt);
+}
+
 /// Orders ids as the backend does: by number, as they are numbers in text.
 int compareIds(String a, String b) {
   final (x, y) = (int.tryParse(a), int.tryParse(b));
@@ -80,6 +99,8 @@ class ThreadSummary {
     this.hebrewYear,
     this.pinned = false,
     this.locked = false,
+    this.excerpt,
+    this.todahTotal = 0,
   });
 
   final String id;
@@ -96,6 +117,14 @@ class ThreadSummary {
   final bool pinned;
   final bool locked;
 
+  /// The opening of the thread's first post, as [threadExcerpt] cuts it;
+  /// null where there is none, or the reader may not see it (its author is
+  /// blocked, or it is hidden pending review).
+  final String? excerpt;
+
+  /// The todah given to the thread's posts that the reader can see.
+  final int todahTotal;
+
   /// Orders threads as the forum lists them: newest activity first, then
   /// the higher id.
   static int byLatestActivity(ThreadSummary a, ThreadSummary b) {
@@ -103,7 +132,15 @@ class ThreadSummary {
     return byTime != 0 ? byTime : compareIds(b.id, a.id);
   }
 
-  ThreadSummary copyWith({int? postCount, DateTime? lastPostAt, bool? pinned, bool? locked}) => ThreadSummary(
+  ThreadSummary copyWith({
+    int? postCount,
+    DateTime? lastPostAt,
+    bool? pinned,
+    bool? locked,
+    Object? excerpt = _keep,
+    int? todahTotal,
+  }) =>
+      ThreadSummary(
         id: id,
         forumId: forumId,
         title: title,
@@ -117,8 +154,35 @@ class ThreadSummary {
         hebrewYear: hebrewYear,
         pinned: pinned ?? this.pinned,
         locked: locked ?? this.locked,
+        excerpt: identical(excerpt, _keep) ? this.excerpt : excerpt as String?,
+        todahTotal: todahTotal ?? this.todahTotal,
       );
+
+  static const _keep = Object();
 }
+
+/// The excerpt of a thread whose first post is [body], as the server's
+/// listing (supabase/migrations/20261011000000_thread_stats.sql) gives it:
+/// the post with its spaces and line breaks run together, and past
+/// [threadExcerptLength] characters cut after the last whole word that fits
+/// (or one short of the length, where that would lose more than 40, as in a
+/// long link), with an ellipsis. Null for a post of nothing but spaces.
+String? threadExcerpt(String body) {
+  final text = body.trim().replaceAll(_spaces, ' ');
+  if (text.isEmpty) return null;
+  if (text.runes.length <= threadExcerptLength) return text;
+  // Counted in characters, as Postgres counts them, not UTF-16 units.
+  String take(int n) => String.fromCharCodes(text.runes.take(n));
+  final cut = RegExp(r'^(.*\S)\s', dotAll: true).firstMatch(take(threadExcerptLength + 1))?.group(1);
+  final word = cut != null && cut.runes.length >= threadExcerptLength - 40 ? cut : take(threadExcerptLength - 1);
+  return '$word…';
+}
+
+/// The most characters of a post a thread's excerpt holds, before its
+/// ellipsis.
+const threadExcerptLength = 140;
+
+final _spaces = RegExp(r'\s+');
 
 /// The post a reply answers, as quoted above the reply: fetched with it, so
 /// that it shows even when that post is on an earlier page, not loaded.

@@ -13,6 +13,7 @@ import '../features/community/ui/forum_screen.dart';
 import '../features/community/ui/account_screen.dart';
 import '../features/community/ui/moderation_screen.dart';
 import '../features/community/ui/thread_screen.dart';
+import '../features/notes/notes_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/parsha/browse_screen.dart';
 import '../features/parsha/parsha_tab.dart';
@@ -102,7 +103,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             _route('/community', (_) => const CommunityScreen(), routes: [
               _route('forum/:slug', (s) => ForumScreen(slug: s.pathParameters['slug']!)),
               _route('thread/:id', (s) => ThreadScreen(threadId: s.pathParameters['id']!)),
-              _route('new', (s) => ComposeScreen(forumSlug: s.uri.queryParameters['forum'])),
+              // ?verse=Genesis 3:22 begins a question on that verse.
+              _route('new', (s) => ComposeScreen(
+                    forumSlug: s.uri.queryParameters['forum'],
+                    verse: s.uri.queryParameters['verse'],
+                  )),
               _route('account', _account),
               _route('moderation', (_) => const ModerationScreen()),
             ]),
@@ -139,6 +144,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       _haftarah('/haftarah/:id'),
       // Search fills the screen, as the reader does; ?q= searches at once.
       _route('/search', (s) => SearchScreen(initialQuery: s.uri.queryParameters['q'] ?? '')),
+      // The bookmarks and notes, over the tabs as the reader they open is;
+      // ?week= those of one week's parsha.
+      _route('/notes', (s) => NotesScreen(weekId: s.uri.queryParameters['week'])),
+      // A question on a verse, asked over the reader, which closing it or
+      // posting goes back to: /ask?verse=Genesis 3:22.
+      _route('/ask', (s) => ComposeScreen(forumSlug: 'questions', verse: s.uri.queryParameters['verse'])),
+      // Signing in over the tabs, before such a question is posted; back to
+      // it once signed in.
+      _route('/account', _account),
       // The list of cities over the reader, offered once reminders are turned
       // on there; choosing one goes back to it.
       _route('/city', (_) => const CityPickerScreen()),

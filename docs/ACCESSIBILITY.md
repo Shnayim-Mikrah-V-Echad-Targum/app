@@ -86,11 +86,14 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   | Larger / smaller scripture text | Ctrl+= / Ctrl+− | + or = / − |
   | Show or hide cantillation | Ctrl+Shift+T | T |
   | Show or hide vowels | Ctrl+Shift+N | N |
-  | Listen / stop | Ctrl+Shift+L | L |
+  | Listen / pause | Ctrl+Shift+L | L |
+  | While listening: back or on a verse | Ctrl+Shift+← / Ctrl+Shift+→ | Ctrl+Shift+← / Ctrl+Shift+→ |
+  | A verse's options: bookmark, note, copy, share or ask | Shift+F10, or the menu key | Shift+F10, or the menu key |
   | Show shortcuts | F1, or Ctrl+/ | ?, F1, or Ctrl+/ |
 
-  Page Down and Page Up scroll a step that is longer than the screen before they move on, so nothing is skipped at a large reading size. In focus mode, the full text opens on the reader's place, the first verse of the step the guided reader would resume at, and the verse that ↓ or ↑ moves to is scrolled into view, nearer the top of the screen than the bottom. The shortcuts list shows ↑ and ↓ for focus mode only while it is on. Verses are not Tab stops of their own, so Tab reaches *Mark this aliyah as read* at the end of the text.
+  Page Down and Page Up scroll a step that is longer than the screen before they move on, so nothing is skipped at a large reading size. In focus mode, the full text opens on the reader's place, the first verse of the step the guided reader would resume at, and the verse that ↓ or ↑ moves to is scrolled into view, nearer the top of the screen than the bottom. The shortcuts list shows ↑ and ↓ for focus mode only while it is on. Verses are not Tab stops of their own, so Tab reaches *Mark this aliyah as read* at the end of the text. Shift+F10 opens the options of the verse focus mode is on, or else of the first verse in view; the haftarah's page takes it too.
 
+- A verse's options (bookmark, note, copy, share, ask) are among its actions for screen readers: "Verse options" in TalkBack's actions menu and VoiceOver's Actions rotor, and a long press. In the full text, where a long press anywhere in a verse's block opens them, the verse and its Targum each keep their own node and offer them, and focus mode's tap stays on the block.
 - On any of the five tabs, Ctrl+K (⌘K on macOS) opens Search, where a verse is reached by its reference or words are searched for. It is not bound in the reader, whose own shortcuts take the keyboard there.
 - In the community, F5 or Ctrl+R (⌘R on macOS) refreshes the forums, a forum, a thread or the moderation queue. On the web those keys stay the browser's. Each of these pages also has a Refresh button.
 - No action needs a swipe, drag or multi-finger gesture. Pull to refresh has a Refresh button beside it. Everything is a tap, click or key press, and nothing has a time limit.
@@ -107,6 +110,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - **Reduce motion** follows the system setting and can also be set in the app. It removes page transitions and celebration animations.
 - Haptics can be turned off.
 - Nothing plays sound without the user asking. Text-to-speech starts only on request.
+- **Listen** reads verse by verse, for readers who follow by ear: the verse being read is highlighted (a techelet rule at its start, which is the cue in high contrast too) and kept in view, scrolling at once under Reduce Motion. The player beneath the text pauses and goes on from the same verse, moves back or on a verse, sets the speech rate and stops; each of its buttons is named for screen readers and takes a 48 dp tap. *Listen along* reads the guided reader's steps one after another, hands-free, to the end of the aliyah.
 
 ### Language and direction
 - The interface is fully translated into Hebrew, with a mirrored right-to-left layout.
