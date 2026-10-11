@@ -468,6 +468,18 @@ void main() {
       expect(en.keys.toSet().containsAll(used), isTrue, reason: '${used.difference(en.keys.toSet())}');
     });
 
+    test("its text follows the reader's text size, to the largest standard size", () {
+      // The serifs (Font.custom(_:size:)) are scaled by the system, and the
+      // system's lines by @ScaledMetric: a literal size, or a fixed one,
+      // would hold a line at the default text size while the names grow.
+      expect(RegExp(r'\.system\(size: \d').hasMatch(swift), isFalse);
+      expect(swift, isNot(contains('fixedSize:')));
+      expect(RegExp(r'@ScaledMetric\(relativeTo: \.\w+\)').allMatches(swift), isNotEmpty);
+      // Beyond it the small widget has no room. Held outside the view, so
+      // that its own scaled sizes are held too.
+      expect(swift, contains('ParshaWidgetView(entry: entry)\n        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)'));
+    });
+
     test('its privacy manifest declares each reason it reads what the system asks one for', () {
       const path = 'ios/ParshaWidget/PrivacyInfo.xcprivacy';
       final manifest = File(path).readAsStringSync().replaceAll(RegExp(r'\s+'), '');

@@ -82,7 +82,7 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
   - Left for longer than its days (set the clock two weeks on, to a weekday), it shows the parsha and asks to open the app; set to a Shabbat three weeks on, it shows only the candles and Shabbat Shalom.
   - On the night the clocks go forward (set the zone and date just before a change), it turns to the new day three hours after midnight, at 4 o'clock on the new clock, not a day late.
   - TalkBack and VoiceOver read the widget as one sentence (the parsha, how far each reading has come and today's reading), and Continue as a button of its own.
-  - Nothing is cut short at the largest text size, nor at its smallest height (two rows, in landscape; Android 14 at 200%): the names shrink to fit, a long greeting (G'mar Chatimah Tovah, גמר חתימה טובה) takes two lines (three in the narrowest Android widget), and lines that don't fit are left out, the aliyot read first.
+  - Nothing is cut short at the largest text size, nor at its smallest height (two rows, in landscape; Android 14 at 200%): the names shrink to fit, a long greeting (G'mar Chatimah Tovah, גמר חתימה טובה) takes two lines (three in the narrowest Android widget), and on Android lines that don't fit are left out, the aliyot read first. On iOS its text grows with the text size up to xxxLarge and stays there at the accessibility sizes, set smaller where the small widget has no room.
 - [ ] Android system backup: after `adb shell bmgr backupnow org.shnayimmikra.app`, reinstalling the app restores its settings and progress.
 - [ ] Community against the production backend:
   - sign in with a code

@@ -250,7 +250,17 @@ private extension Color {
 
 struct ParshaWidgetView: View {
   @Environment(\.widgetFamily) private var family
+  // The lines in the system's font, at their sizes for the reader's text
+  // size, as the serifs (Font.custom) are scaled by the system.
+  @ScaledMetric(relativeTo: .caption) private var captionSize: CGFloat = 12
+  @ScaledMetric(relativeTo: .footnote) private var footnoteSize: CGFloat = 13
+  @ScaledMetric(relativeTo: .subheadline) private var lineSize: CGFloat = 14
+  @ScaledMetric(relativeTo: .caption2) private var chevronSize: CGFloat = 11
   let entry: ParshaEntry
+
+  init(entry: ParshaEntry) {
+    self.entry = entry
+  }
 
   var body: some View {
     Group {
@@ -277,9 +287,10 @@ struct ParshaWidgetView: View {
         .lineLimit(2)
         .minimumScaleFactor(0.7)
       Text(note)
-        .font(.system(size: 13))
+        .font(.system(size: footnoteSize))
         .foregroundColor(.inkMuted)
         .lineLimit(3)
+        .minimumScaleFactor(0.8)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     .accessibilityElement(children: .ignore)
@@ -361,7 +372,7 @@ struct ParshaWidgetView: View {
           // where the app's small capitals would be too small to read
           // (docs/DESIGN_SYSTEM.md §4).
           Text(shown.eyebrow)
-            .font(.system(size: 12, weight: .semibold, design: .serif))
+            .font(.system(size: captionSize, weight: .semibold, design: .serif))
             .kerning(0.6)
             .textCase(.uppercase)
         }
@@ -391,7 +402,7 @@ struct ParshaWidgetView: View {
         }
         .padding(.top, 10)
         Text(week.progress)
-          .font(.system(size: 12))
+          .font(.system(size: captionSize))
           .foregroundColor(.inkMuted)
           .lineLimit(1)
           .minimumScaleFactor(0.8)
@@ -409,7 +420,7 @@ struct ParshaWidgetView: View {
     } else if let day = day {
       VStack(alignment: .leading, spacing: 6) {
         Text(day.line)
-          .font(.system(size: 14, weight: .medium))
+          .font(.system(size: lineSize, weight: .medium))
           .foregroundColor(.ink)
           .lineLimit(2)
           .minimumScaleFactor(0.8)
@@ -421,10 +432,10 @@ struct ParshaWidgetView: View {
               Text(next).lineLimit(2).minimumScaleFactor(0.8)
               // Read as Today's button is, without the symbol's own name.
               Image(systemName: "chevron.forward")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: chevronSize, weight: .semibold))
                 .accessibilityHidden(true)
             }
-            .font(.system(size: 14, weight: .semibold))
+            .font(.system(size: lineSize, weight: .semibold))
             .foregroundColor(.techelet)
             .frame(minHeight: 44, alignment: .leading)
           }
@@ -449,9 +460,10 @@ struct ParshaWidgetView: View {
 
   private func note(_ text: String) -> some View {
     Text(text)
-      .font(.system(size: 12))
+      .font(.system(size: captionSize))
       .foregroundColor(.inkMuted)
       .lineLimit(3)
+      .minimumScaleFactor(0.8)
   }
 }
 
@@ -518,7 +530,12 @@ struct ParshaWidget: Widget {
 
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: kind, provider: Provider()) { entry in
+      // Its text follows the reader's text size to the largest of the
+      // standard sizes; beyond them the small widget has no room, and its
+      // lines would only be set smaller again, or cut. Applied outside the
+      // view, so that its scaled sizes are held to it too.
       ParshaWidgetView(entry: entry)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
     .configurationDisplayName("widget.name")
     .description("widget.description")
