@@ -67,14 +67,15 @@ Future<void> _finish(
   AppSettings settings = const AppSettings(),
   String week = '5787:1',
   bool settle = true,
+  bool repeat = false,
 }) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final c = await pumpApp(
     tester,
-    // The repeat set off as the reader sets it: untouched, it follows the
-    // haftarah custom, and is read back on.
+    // The repeat set as the reader sets it, off unless [repeat]: untouched,
+    // it follows the haftarah custom, and is read back on.
     settings: settings
         .copyWith(
           onboardingComplete: true,
@@ -82,7 +83,7 @@ Future<void> _finish(
           joinDate: LocalDate(2026, 10, 4),
           method: ReadingMethod.aliyahByAliyah,
         )
-        .withRepeatLastVerse(false),
+        .withRepeatLastVerse(repeat),
     now: day,
     progress: progress,
   );
@@ -210,6 +211,21 @@ void main() {
       expect(find.widgetWithText(TextButton, 'Done'), findsOneWidget);
       expect(find.textContaining('Next aliyah'), findsNothing);
       expect(_focused(tester, 'Read the haftarah'), isTrue);
+    });
+
+    testWidgets('on time, with the last verse repeated after its Targum, still tells of the streak', (tester) async {
+      // The Targum completes the parsha, and the repeat of its last verse,
+      // as the custom has it, finishes the aliyah after it.
+      await _finish(
+        tester,
+        aliyah: 6,
+        day: DateTime(2026, 10, 9, 10),
+        progress: _readThrough(5, partly: 6, on: _monday),
+        repeat: true,
+      );
+
+      expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
+      expect(find.textContaining('On time · 1-week parsha streak · +1\u00A0grace\u00A0day', findRichText: true), findsOneWidget);
     });
 
     testWidgets('on time, with streaks hidden, says only that', (tester) async {

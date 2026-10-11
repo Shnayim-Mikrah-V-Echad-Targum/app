@@ -113,6 +113,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// once more through a parsha read already: only then does the finished
   /// panel tell of the streak and a grace day earned.
   bool _justCompleted = false;
+
+  /// Whether a step of this visit to the aliyah completed the parsha: the
+  /// last Targum, say, with the last verse's repeat still to come, which
+  /// then finishes the aliyah.
+  bool _completedOnVisit = false;
   bool _positioned = false;
 
   // Another aliyah was chosen: once the step it resumes at is known, it is
@@ -198,6 +203,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _positioned = false;
       _announceWhenPositioned = true;
       _finished = false;
+      _completedOnVisit = false;
       _focusedVerse = null;
       _quietFocus = null;
       _targetVerse = null;
@@ -270,6 +276,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final hadCompletedBefore = ref.read(progressProvider).weeks.values.any((w) => w.completedAliyot > 0);
     final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     _record(ctx, flow, _chunk, _step);
+    if (!wasComplete && ref.read(progressProvider).week(ctx.id).isComplete) _completedOnVisit = true;
     hapticTap(ref);
     setState(() {
       if (_step + 1 < steps.length) {
@@ -279,7 +286,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _step = 0;
       } else {
         _finished = true;
-        _justCompleted = !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete;
+        _justCompleted = _completedOnVisit;
       }
     });
     if (_finished) {
