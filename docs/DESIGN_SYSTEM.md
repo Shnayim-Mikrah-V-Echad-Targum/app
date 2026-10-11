@@ -931,7 +931,7 @@ While Listen reads, playing or paused, a player sits above the reader's bottom b
 - A tap opens the full text at the verse (§4.7): in the week of this year's cycle that reads it, or the filtered week. The menu button, a long press, a secondary click, Shift+F10 or the menu key open the verse's options (§6.27). One item to screen readers: the reference, `verseBookmarked`, the verse spoken as the reader's are, tagged `he`, and `yourNoteLabel`, with the `verseOptions` action and the long press; the menu button is an item of its own.
 - Empty: the empty state (§6.22) with `notesEmpty`, or filtered `notesEmptyParsha`. Filtered, a centred Text `notesShowAll` ends the page, 24 below.
 
-**On a week's page:** while its parsha has any, a PaperGroup of one PaperRow (`bookmarks_outlined`, `parshaNotes`, and beneath it `notesCount` · `bookmarksCount`) to the filtered list. The week's menu offers the whole list (`notesTitle`).
+**On a week's page:** while its parsha has any, a PaperRow (`bookmarks_outlined`, `parshaNotes`, and beneath it `notesCount` · `bookmarksCount`) to the filtered list, in the page's second PaperGroup between the haftarah and the discussion (§9 Parsha). The week's menu, and so the Parsha tab's, offers the whole list (`notesTitle`), after its other items.
 
 ## 7. Motifs and iconography
 
@@ -1126,7 +1126,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - The alternative-division note becomes a third line in marginalia ("Some sources use 4:19–26", `aliyahOtherDivision`, in either UI, its verses kept on one line). It keeps marginalia's own size, the EB Garamond floor of §4.5.
    - Trailing: PassPips (size 12) on the title's line, the reading under way ringed in the row of the aliyah the reading continues at, above the existing overflow menu, in a 52 column 4 from the text and 10 from the end.
    - Tap opens the reader. The row is one button whose value is the state of each reading; the menu keeps its own item.
-4. **Second PaperGroup**, 28 below: Haftarah and Discuss rows, as on Today (`HaftarahRow`, `DiscussRow`).
+4. **Second PaperGroup**, 28 below: Haftarah and Discuss rows, as on Today (`HaftarahRow`, `DiscussRow`), and between them, while the parsha has any bookmarks or notes, the row to them (`WeekNotesRow`, §6.29).
 5. **Footer:** a centred TextButton "Mark the whole parsha as read", while the week is open and unfinished.
 
 **Browse** (browse_screen.dart; phone_browse, phonetall_browse, phone_browse_summer):
@@ -1287,7 +1287,7 @@ In order:
 - A Match-device switch, then theme swatches (§6.24).
 - Sliders per §6.8.
 - Toggles in PaperGroups:
-  - Text: nikud, ta'amim, ketiv, verse numbers, justify;
+  - Text: nikud, ta'amim, ketiv, verse numbers, the Divine Name as ה׳ in a verse that leaves the app (`copyDivineName`, `DivineNameSwitch`), justify;
   - Study aids: English, Rashi, Rashi script (NEW);
   - Reading: focus mode, bold, keep screen on.
 - Line width as a SegmentedButton.
@@ -1316,7 +1316,7 @@ In order:
 - Opens at 42% of the screen over a light scrim (`Colors.black12`), so the verse it changes stays in view; drawn up, 95%.
 - Text size: outlined 56×48 buttons (`text_decrease`, `text_increase`, radius 10) either side of the size in titleMedium, which screen readers hear as it changes.
 - Scripture font: four ChoiceChips sharing the width, each "בְּרֵאשִׁית" at 18 in its font and named for screen readers; four across where the word fits, else two, or one under another. The sample keeps its font's weight, so the chosen chip's mark beyond its fill and border is a 24×2 primary rule under its word.
-- Theme: the compact swatches. Then a PaperGroup of switches (vowels, cantillation, translation, Rashi, Rashi script, focus mode) with line spacing (from 1.6), and a row to the Display page.
+- Theme: the compact swatches. Then a PaperGroup of switches (vowels, cantillation, translation, Rashi, Rashi script, Side by side, focus mode, Listen along) with line spacing (from 1.6), and a row to the Display page. Side by side shows only in the full text's sheet, where its columns would show (§9 Reader, full text); Listen along only in the reader's, not the haftarah's.
 
 **Reminders**
 - Native: a PaperGroup for each reminder: its switch row and, once on, its time as a row's value (and for the daily reminder, the routine chips), 12 apart; the offer of a city below them, 28 apart.
