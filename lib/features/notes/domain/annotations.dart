@@ -102,9 +102,6 @@ class Annotations {
         _ => null,
       };
 
-  /// Whether nothing is marked anywhere.
-  bool get isEmpty => !entries.values.any((a) => !a.isRemoved);
-
   /// Every verse of the Torah marked, in the Torah's order, with what is
   /// marked on it. Entries for other books (which a later version may keep)
   /// are left out.

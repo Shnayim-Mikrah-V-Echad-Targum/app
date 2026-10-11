@@ -99,7 +99,7 @@ void main() {
         'Genesis 3:22': {'b': false, 'n': null, 'u': 2000},
       });
       expect(a[_genesis3_22], isNull);
-      expect(a.isEmpty, isTrue);
+      expect(a.entries.values.every((e) => e.isRemoved), isTrue, reason: 'only a tombstone');
       expect(a.inTorah, isEmpty);
 
       // A note emptied deletes it too; the bookmark beside it stays.

@@ -1615,7 +1615,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get exportData => 'ייצוא ההתקדמות שלי';
 
   @override
-  String get exportDataDesc => 'שמירת גיבוי שאפשר לשחזר מאוחר יותר';
+  String get exportDataDesc =>
+      'שמירת גיבוי של ההתקדמות, הסימניות וההערות, לשחזור מאוחר יותר';
 
   @override
   String get importData => 'ייבוא התקדמות';
@@ -1872,6 +1873,10 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get syncNeedsUpdate =>
       'הגיבוי נשמר בגרסה חדשה יותר של האפליקציה. יש לעדכן את האפליקציה כדי להמשיך לסנכרן.';
+
+  @override
+  String get syncTooLarge =>
+      'ההערות שלך ארוכות מכדי לגבות אותן בחשבון, ולכן שום דבר חדש אינו מגובה. כדאי לקצר או למחוק חלק מהן; קובץ גיבוי, מ״הנתונים שלך״, שומר את כולן.';
 
   @override
   String lastSynced(String time) {
@@ -2523,6 +2528,27 @@ class AppLocalizationsHe extends AppLocalizations {
       two: 'שתי השהיות',
       one: 'השהיה אחת',
       zero: 'ללא השהיות',
+    );
+    return '$_temp0, $_temp1.';
+  }
+
+  @override
+  String importMarks(int bookmarks, int notes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      bookmarks,
+      locale: localeName,
+      other: '$bookmarks סימניות',
+      two: 'שתי סימניות',
+      one: 'סימנייה אחת',
+      zero: 'ללא סימניות',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      notes,
+      locale: localeName,
+      other: '$notes הערות',
+      two: 'שתי הערות',
+      one: 'הערה אחת',
+      zero: 'ללא הערות',
     );
     return '$_temp0, $_temp1.';
   }

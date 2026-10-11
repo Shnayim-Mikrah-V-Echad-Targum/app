@@ -20,6 +20,7 @@ import '../reader/scripture_text.dart';
 import '../reader/verse_actions_sheet.dart';
 import '../settings/app_settings.dart';
 import 'domain/annotations.dart';
+import 'note_dialog.dart';
 
 /// Where the list of bookmarks and notes is: of every verse, or with [weekId]
 /// of that week's parsha alone.
@@ -84,7 +85,14 @@ class NotesScreen extends ConsumerWidget {
                   children: [
                     for (final (verse, marks) in marked)
                       if (verse.book == book && verse.ref.chapter == chapter)
-                        _NoteRow(verse: verse, marks: marks, texts: texts[book]!.requireValue, week: week),
+                        _NoteRow(
+                          key: ValueKey('$verse'),
+                          verse: verse,
+                          marks: marks,
+                          texts: texts[book]!.requireValue,
+                          week: week,
+                          page: context,
+                        ),
                   ],
                 ),
               ],
@@ -98,7 +106,9 @@ class NotesScreen extends ConsumerWidget {
         ],
       );
     }
-    return PageScaffold(titleText: l.notesTitle, leading: homeLeading(context), body: body);
+    // A right-click on a row opens its options, as on a verse in the
+    // reader: on the web, the browser's menu stays away.
+    return OwnContextMenu(child: PageScaffold(titleText: l.notesTitle, leading: homeLeading(context), body: body));
   }
 
   static bool _exists(List<int> chapters, VerseRef r) =>
@@ -199,11 +209,23 @@ class _ChapterLabel extends StatelessWidget {
 /// opens the reader at the verse; its menu button, a long press or a
 /// secondary click, the verse's options.
 class _NoteRow extends ConsumerWidget {
-  const _NoteRow({required this.verse, required this.marks, required this.texts, this.week});
+  const _NoteRow({
+    super.key,
+    required this.verse,
+    required this.marks,
+    required this.texts,
+    this.week,
+    required this.page,
+  });
 
   final BookVerse verse;
   final Annotation marks;
   final ReaderTexts texts;
+
+  /// The list's page, which the verse's options open over: unlike the row,
+  /// which goes once its bookmark is taken away in them, it stays to open
+  /// the note, ask about the verse or say that it was copied.
+  final BuildContext page;
 
   /// The week whose parsha the list is of, where the verse opens; otherwise
   /// the week of this year's cycle that reads it.
@@ -218,8 +240,8 @@ class _NoteRow extends ConsumerWidget {
     context.push('/read/${at.weekId}/${at.aliyah}?mode=full&verse=${verse.ref}');
   }
 
-  void _options(BuildContext context) => showVerseActions(
-        context,
+  void _options() => showVerseActions(
+        page,
         ChosenVerse(
           at: verse,
           hebrew: texts.mikra.verse(verse.ref),
@@ -256,22 +278,31 @@ class _NoteRow extends ConsumerWidget {
     );
 
     // One item for a screen reader: the reference, the marks, the verse
-    // spoken as the reader's are, tagged as Hebrew, and the note.
+    // spoken as the reader's are, tagged as Hebrew, and the note, tagged
+    // with its own language where it isn't the interface's.
     final spoken = spokenVerse(hebrew, s, kind: ScriptureKind.mikra);
     final label = StringBuffer('$reference. ');
     if (marks.bookmarked) label.write('${l.verseBookmarked}. ');
     final hebrewStart = label.length;
     label.write(spoken);
     final hebrewEnd = label.length;
-    if (note != null) label.write('. ${l.yourNoteLabel(note)}');
+    final attributes = <StringAttribute>[
+      LocaleStringAttribute(range: TextRange(start: hebrewStart, end: hebrewEnd), locale: const Locale('he')),
+    ];
+    if (note != null) {
+      final said = l.yourNoteLabel(note);
+      final start = label.length + 2 + said.indexOf(note);
+      label.write('. $said');
+      if (noteLocale(context, note) case final locale?) {
+        attributes.add(LocaleStringAttribute(range: TextRange(start: start, end: start + note.length), locale: locale));
+      }
+    }
 
-    void options() => _options(context);
+    void options() => _options();
     final row = Semantics(
       container: true,
       button: true,
-      attributedLabel: AttributedString(label.toString(), attributes: [
-        LocaleStringAttribute(range: TextRange(start: hebrewStart, end: hebrewEnd), locale: const Locale('he')),
-      ]),
+      attributedLabel: AttributedString(label.toString(), attributes: attributes),
       // The ink well's long press, which opens them too, is the row's.
       customSemanticsActions: {CustomSemanticsAction(label: l.verseOptions): options},
       child: GestureDetector(

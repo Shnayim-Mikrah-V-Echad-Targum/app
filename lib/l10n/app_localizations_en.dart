@@ -1620,7 +1620,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportData => 'Export my progress';
 
   @override
-  String get exportDataDesc => 'Save a backup you can restore later';
+  String get exportDataDesc =>
+      'Save a backup of your progress, bookmarks and notes to restore later';
 
   @override
   String get importData => 'Import progress';
@@ -1880,6 +1881,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syncNeedsUpdate =>
       'Your backup was saved by a newer version of the app. Update the app to keep syncing.';
+
+  @override
+  String get syncTooLarge =>
+      'Your notes are too long to back up to your account, so nothing new is backed up. Shorten or delete some of them; a backup file, from Your data, keeps them all.';
 
   @override
   String lastSynced(String time) {
@@ -2529,6 +2534,25 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$pauses pauses',
       one: '1 pause',
       zero: 'no pauses',
+    );
+    return '$_temp0, $_temp1.';
+  }
+
+  @override
+  String importMarks(int bookmarks, int notes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      bookmarks,
+      locale: localeName,
+      other: '$bookmarks bookmarks',
+      one: '1 bookmark',
+      zero: 'No bookmarks',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      notes,
+      locale: localeName,
+      other: '$notes notes',
+      one: '1 note',
+      zero: 'no notes',
     );
     return '$_temp0, $_temp1.';
   }

@@ -289,6 +289,8 @@ const _screens = {
   'focus_link': '/community/account',
   'account_settings': '/settings/account',
   'account_sync': '/community/account',
+  // Backup on, with notes too long for the server: why nothing is sent.
+  'account_sync_large': '/community/account',
   'settings': '/settings',
   's_reading': '/settings/reading',
   's_reading_changed': '/settings/reading',
@@ -684,7 +686,13 @@ Future<ForumRepository> _accountWithNewerBackup() async {
 }
 
 /// Screens shown signed in with backup on.
-const _backupOn = {'s_data_reset', 's_data_replace'};
+const _backupOn = {'s_data_reset', 's_data_replace', 'account_sync_large'};
+
+/// Notes too long, together, for the server to back up: 230 of 2,000
+/// Hebrew letters each.
+final _longNotes = jsonEncode({
+  for (var i = 1; i <= 230; i++) 'Genesis 1:$i': {'b': false, 'n': 'א' * 2000, 'u': i},
+});
 
 /// Screens where the reader chooses [_backupFile] to restore.
 const _choosesBackup = {'s_data_import', 's_data_replace', 'welcome_import'};
@@ -1577,7 +1585,10 @@ void main() {
             settings: mode.settings(base),
             now: _screenNow[entry.key] ?? _now,
             progress: onboarding ? const ProgressState() : (_screenProgress[entry.key] ?? _progress)(),
-            stored: {if (_annotated.contains(entry.key)) AnnotationsController.storageKey: _annotations},
+            stored: {
+              if (_annotated.contains(entry.key)) AnnotationsController.storageKey: _annotations,
+              if (entry.key == 'account_sync_large') AnnotationsController.storageKey: _longNotes,
+            },
             forums: blocked
                 ? await _accountWithNewerBackup()
                 : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),

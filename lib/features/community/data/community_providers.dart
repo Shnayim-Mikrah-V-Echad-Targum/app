@@ -342,8 +342,16 @@ class ProgressSync extends Notifier<DateTime?> {
           merged != remote ||
           joinDate != syncPayloadJoinDate(remoteJson) ||
           notes != remoteNotes) {
-        await repo.saveProgress(syncPayload(merged, joinDate, annotations: notes));
+        final payload = syncPayload(merged, joinDate, annotations: notes);
+        // More than the server takes: every save would fail, and the reader
+        // is told why rather than only that it did.
+        final tooLarge = syncPayloadTooLarge(payload);
+        syncRef.read(syncTooLargeProvider.notifier).set(tooLarge);
+        if (tooLarge) return false;
+        await repo.saveProgress(payload);
         if (stale()) return false;
+      } else {
+        syncRef.read(syncTooLargeProvider.notifier).set(false);
       }
       state = DateTime.now();
       return true;
@@ -371,3 +379,20 @@ class SyncBlockedByNewerFormat extends Notifier<bool> {
 
 final syncBlockedByNewerFormatProvider =
     NotifierProvider<SyncBlockedByNewerFormat, bool>(SyncBlockedByNewerFormat.new);
+
+/// Whether syncing has stopped because what it would back up is more than
+/// the server takes ([syncPayloadTooLarge]): long notes, many of them. It
+/// clears when the setting or the account changes, or when a later sync
+/// finds the payload small enough.
+class SyncTooLarge extends Notifier<bool> {
+  @override
+  bool build() {
+    ref.watch(settingsProvider.select((s) => s.cloudSync));
+    ref.watch(communityUserProvider.select((u) => u.value?.id));
+    return false;
+  }
+
+  void set(bool tooLarge) => state = tooLarge;
+}
+
+final syncTooLargeProvider = NotifierProvider<SyncTooLarge, bool>(SyncTooLarge.new);

@@ -243,6 +243,7 @@ class PaperRow extends StatelessWidget {
     this.iconColor,
     required this.title,
     this.subtitle,
+    this.subtitleLocale,
     this.titleStyle,
     this.subtitleStyle,
     this.detail,
@@ -264,6 +265,10 @@ class PaperRow extends StatelessWidget {
 
   /// At most two lines, unless the text is enlarged.
   final String? subtitle;
+
+  /// The language of [subtitle], for screen readers, where it isn't the
+  /// interface's (the reader's own note, say).
+  final Locale? subtitleLocale;
 
   /// bodyLarge in onSurface, merged with this where given: a list of places
   /// to go, such as the forums, sets its titles in titleMedium.
@@ -376,13 +381,21 @@ class PaperRow extends StatelessWidget {
                     titleWith(besideTitle)
                   else
                     Text(title, style: titleStyle),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      style: subtitleStyle,
-                      maxLines: enlarged ? null : 2,
-                      overflow: enlarged ? null : TextOverflow.ellipsis,
-                    ),
+                  if (subtitle case final subtitle?)
+                    if (subtitleLocale case final locale?)
+                      Text.rich(
+                        TextSpan(text: subtitle, locale: locale),
+                        style: subtitleStyle,
+                        maxLines: enlarged ? null : 2,
+                        overflow: enlarged ? null : TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        subtitle,
+                        style: subtitleStyle,
+                        maxLines: enlarged ? null : 2,
+                        overflow: enlarged ? null : TextOverflow.ellipsis,
+                      ),
                   if (detail != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),

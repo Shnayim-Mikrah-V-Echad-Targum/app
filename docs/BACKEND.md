@@ -23,7 +23,7 @@ The schema lives in `supabase/migrations/`. The first file below holds all the t
 | `reports` | Users file reports and can see their own; moderators see all. |
 | `user_blocks` | Each user's blocks. Private to that user. |
 | `moderation_log` | A record of every moderator action. |
-| `user_progress` | Optional backup of reading progress. Each user can only read and write their own row. |
+| `user_progress` | Optional backup of reading progress, with the reader's bookmarks and notes on verses (`data.annotations`). Each user can only read and write their own row, of under 1 MB (the app stops backing up, and says why, before a payload reaches it). |
 
 *Private schema*
 
@@ -157,7 +157,7 @@ On an Android emulator, use `http://10.0.2.2:54321` instead of `127.0.0.1`.
 
 ## Privacy notes
 
-- The backend holds: email addresses (in Supabase Auth), display names, posts, reactions, reports, blocks, and the optional progress backup.
-- Reading progress leaves the device only if the user turns on *Cloud backup*.
+- The backend holds: email addresses (in Supabase Auth), display names, posts, reactions, reports, blocks, and the optional progress backup, which includes the reader's bookmarks and notes: free text of up to 2,000 characters a note.
+- Reading progress, bookmarks and notes leave the device only if the user turns on *Cloud backup*. Resetting the progress leaves the bookmarks and notes; deleting the account removes the whole backup.
 - Account deletion is immediate. It covers all of the user's posts and the threads they started that have no other posts.
 - Update the privacy policy in the app (`lib/features/about/legal_screen.dart`) if you add analytics, crash reporting or any other processor. The current text says there is no advertising, analytics or tracking.

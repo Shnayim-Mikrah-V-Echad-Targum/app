@@ -107,7 +107,7 @@
 
 - [ ] **Data safety:**
   - Collected only when the user uses the community: email address (account management), user-generated content (posts) and user IDs.
-  - Collected only if the user opts in: app activity (reading progress, for backup).
+  - Collected only if the user opts in, for backup: app activity (reading progress) and user-generated content (bookmarks, and the notes the user writes on verses, up to 2,000 characters each). Neither is shared or shown to anyone else.
   - Encrypted in transit.
   - Users can delete their data in the app, and through the account-deletion URL (`legal/delete-account.html`).
   - No data is shared with third parties.
@@ -141,6 +141,7 @@
   - User content: posts, used for app functionality, linked to the user.
   - Identifiers: user ID, linked to the user.
   - Usage data (reading progress): only with opt-in backup, linked to the user.
+  - User content, other user content (bookmarks and notes on verses): only with opt-in backup, used for app functionality, linked to the user.
   - No tracking.
 - [ ] **Guideline 1.2 (user-generated content):** all of these are in the app. Mention them in the review notes:
   - content filtering

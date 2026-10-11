@@ -296,8 +296,10 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
                       PaperRow(
                         icon: note == null ? Icons.note_add_outlined : Icons.sticky_note_2_outlined,
                         title: note == null ? l.addNote : l.yourNote,
-                        // In its own direction, whatever the interface's.
+                        // In its own direction, whatever the interface's,
+                        // and read in its own language.
                         subtitle: note == null ? null : '\u2068$note\u2069',
+                        subtitleLocale: note == null ? null : noteLocale(context, note),
                         chevron: false,
                         onTap: _note,
                       ),

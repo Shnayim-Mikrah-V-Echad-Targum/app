@@ -11,6 +11,17 @@ import '../../ui/widgets/common.dart';
 import '../community/ui/community_ui.dart' show autoDirection, quietCounter;
 import 'domain/annotations.dart';
 
+/// The language a screen reader should read [note] in, where it is written
+/// in the other direction from [context]'s interface: Hebrew for a note
+/// written right to left in the English UI, English for one written left to
+/// right in the Hebrew UI. Null where the interface's own voice reads it.
+Locale? noteLocale(BuildContext context, String note) {
+  final ui = Directionality.of(context);
+  final written = autoDirection(note, fallback: ui);
+  if (written == ui) return null;
+  return written == TextDirection.rtl ? const Locale('he') : const Locale('en');
+}
+
 /// Opens the reader's note on [verse] for writing, over [context]'s page,
 /// and saves what they write: the page then says it was saved, or, for a
 /// note deleted, offers to undo that.

@@ -47,6 +47,16 @@ describe('reading legal_screen.dart', () => {
     assert.match(texts.en.privacy[0].body, /^Shnayim Mikra is built to need as little/);
     assert.equal(texts.en.privacy.length, texts.he.privacy.length);
   });
+
+  it('says that the opt-in backup holds the notes, which a reset leaves, in both languages', () => {
+    const texts = parseDartLegal(read('lib/features/about/legal_screen.dart'));
+    const privacy = (lang) => texts[lang].privacy.map(({ body }) => body).join('\n');
+    assert.match(privacy('en'), /together with your bookmarks and the notes you write on verses/);
+    assert.match(privacy('en'), /that leaves your bookmarks and notes/);
+    assert.match(privacy('en'), /backed-up progress, bookmarks and notes/);
+    assert.match(privacy('he'), /יחד עם הסימניות וההערות שכתבת על פסוקים/);
+    assert.match(privacy('he'), /האיפוס אינו נוגע בסימניות ובהערות/);
+  });
 });
 
 describe('the texts', () => {

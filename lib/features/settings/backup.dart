@@ -70,6 +70,10 @@ class Backup {
   /// How many pauses it holds, leaving out those cancelled before they began.
   int get pauses => progress.pauses.where((p) => !p.deleted).length;
 
+  /// How many verses it has bookmarked, and how many notes it holds.
+  int get bookmarks => annotations.entries.values.where((a) => a.bookmarked).length;
+  int get notes => annotations.entries.values.where((a) => a.hasNote).length;
+
   /// The day the reader joined, as saved with the settings. A backup
   /// without one counts as joined on the day of its earliest reading, as a
   /// cloud backup does (see [mergeSyncPayload]), so that the history it

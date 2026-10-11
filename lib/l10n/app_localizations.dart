@@ -2832,7 +2832,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportDataDesc.
   ///
   /// In en, this message translates to:
-  /// **'Save a backup you can restore later'**
+  /// **'Save a backup of your progress, bookmarks and notes to restore later'**
   String get exportDataDesc;
 
   /// No description provided for @importData.
@@ -3290,6 +3290,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your backup was saved by a newer version of the app. Update the app to keep syncing.'**
   String get syncNeedsUpdate;
+
+  /// On the account page, and as Sync now's reply, when what the backup would hold is more than the server takes: many long notes on verses.
+  ///
+  /// In en, this message translates to:
+  /// **'Your notes are too long to back up to your account, so nothing new is backed up. Shorten or delete some of them; a backup file, from Your data, keeps them all.'**
+  String get syncTooLarge;
 
   /// No description provided for @lastSynced.
   ///
@@ -4184,6 +4190,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{weeks, plural, =0{Nothing logged} =1{1 week logged} other{{weeks} weeks logged}}, {pauses, plural, =0{no pauses} =1{1 pause} other{{pauses} pauses}}.'**
   String importCounts(int weeks, int pauses);
+
+  /// What a backup holds besides the progress, under importSummary, when it holds any: the verses bookmarked, and the notes on verses. Each number is joined to its noun by a no-break space.
+  ///
+  /// In en, this message translates to:
+  /// **'{bookmarks, plural, =0{No bookmarks} =1{1 bookmark} other{{bookmarks} bookmarks}}, {notes, plural, =0{no notes} =1{1 note} other{{notes} notes}}.'**
+  String importMarks(int bookmarks, int notes);
 
   /// No description provided for @importMergeBody.
   ///

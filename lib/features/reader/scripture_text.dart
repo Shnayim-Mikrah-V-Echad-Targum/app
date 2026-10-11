@@ -50,6 +50,11 @@ class ScriptureStyles {
   /// put from one reading to the next.
   static const gutterScale = 1.4;
 
+  /// The least room the guided reader's gutter leaves between what it holds
+  /// (the number, and the reader's marks after it) and the verse, as a
+  /// fraction of the Torah's size: marks with less go beneath the number.
+  static const gutterClearance = 0.2;
+
   /// An accessibility font (Atkinson, Lexend or OpenDyslexic) replaces the
   /// translation's serif, as it replaces the interface's.
   bool get _accessibleFont => settings.uiFont.family != null;
@@ -477,13 +482,15 @@ class ScriptureVerse extends StatelessWidget {
     final strut = styles.strut(kind);
     // The reader's marks, after the number (or where it would be), in the
     // number's size: the techelet of the scroll's own note marks, receding
-    // with a dimmed verse.
+    // with a dimmed verse. The text scales them with the text, as the number
+    // is scaled, at the number's size.
     final marks = marked
         ? WidgetSpan(
             alignment: PlaceholderAlignment.aboveBaseline,
             baseline: TextBaseline.alphabetic,
+            style: TextStyle(fontSize: numberStyle.fontSize),
             child: VerseMarks(
-              size: MediaQuery.textScalerOf(context).scale(numberStyle.fontSize!),
+              size: numberStyle.fontSize!,
               bookmarked: bookmarked,
               hasNote: hasNote,
               color: dimmed ? dimInk : scheme.primary,
@@ -541,11 +548,20 @@ class ScriptureVerse extends StatelessWidget {
               SizedBox(
                 width: gutter,
                 // The marks after the number, or beneath it where the gutter
-                // has no room for both.
-                child: Text.rich(
-                  TextSpan(text: numeral, children: [?marks]),
-                  style: numberStyle,
-                  textDirection: TextDirection.rtl,
+                // has no room for both and the room it keeps from the verse.
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: marks == null
+                        ? 0
+                        : MediaQuery.textScalerOf(context).scale(
+                            ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikra),
+                          ),
+                  ),
+                  child: Text.rich(
+                    TextSpan(text: numeral, children: [?marks]),
+                    style: numberStyle,
+                    textDirection: TextDirection.rtl,
+                  ),
                 ),
               ),
               Expanded(child: paragraph(withNumber: false)),

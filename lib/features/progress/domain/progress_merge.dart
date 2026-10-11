@@ -114,6 +114,15 @@ Map<String, dynamic> syncPayload(
       if (annotations.entries.isNotEmpty || annotations.unknown.isNotEmpty) 'annotations': annotations.toJson(),
     };
 
+/// The most a sync payload may take, encoded as UTF-8 JSON: well under the
+/// server's bound on a backup (`pg_column_size(data) < 1000000`, measured
+/// after compression), so that what passes here is never refused there. A
+/// payload takes this much only with hundreds of long notes.
+const kSyncPayloadMaxBytes = 900000;
+
+/// Whether [payload] is too large to back up (see [kSyncPayloadMaxBytes]).
+bool syncPayloadTooLarge(Map<String, dynamic> payload) => utf8.encode(jsonEncode(payload)).length > kSyncPayloadMaxBytes;
+
 /// The bookmarks and notes a sync [payload] holds: none if it has none.
 Annotations syncPayloadAnnotations(Map<String, dynamic> payload) => Annotations.fromJson(payload['annotations']);
 

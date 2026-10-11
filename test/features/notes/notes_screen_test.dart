@@ -2,16 +2,19 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
+import 'package:shnayim_mikra/features/community/ui/compose_screen.dart';
 import 'package:shnayim_mikra/features/notes/domain/annotations.dart';
 import 'package:shnayim_mikra/features/notes/note_dialog.dart';
 import 'package:shnayim_mikra/features/notes/notes_screen.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
+import 'package:shnayim_mikra/features/reader/verse_actions_sheet.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/features/settings/screens/data_settings_screen.dart';
@@ -51,6 +54,7 @@ void main() {
     WidgetTester tester,
     String route, {
     bool marked = true,
+    String? annotations,
     AppSettings settings = const AppSettings(onboardingComplete: true),
     double textScale = 1,
     Size size = const Size(412, 915),
@@ -64,7 +68,7 @@ void main() {
       tester,
       settings: settings,
       now: friday,
-      stored: {if (marked) AnnotationsController.storageKey: _stored},
+      stored: {if (marked) AnnotationsController.storageKey: annotations ?? _stored},
     );
     c.read(routerProvider).go(route);
     await settle(tester);
@@ -169,6 +173,29 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('Ctrl+Enter saves the note, and Enter alone does not', (tester) async {
+      final c = await open(tester, '/read/5787:1/3', marked: false);
+      await tester.longPress(find.byType(ScriptureVerse).first);
+      await tester.pumpAndSettle();
+      await tester.tap(inSheet(find.text('Add a note')));
+      await tester.pumpAndSettle();
+      await tester.enterText(inDialog(find.byType(TextField)), 'A question for the table');
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.byType(NoteDialog), findsOneWidget, reason: 'Enter is a new line in a note');
+      expect(c.read(annotationsProvider)[_genesis3_22], isNull);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.byType(NoteDialog), findsNothing);
+      expect(find.text('Note saved'), findsOneWidget);
+      expect(c.read(annotationsProvider)[_genesis3_22]!.note, 'A question for the table');
+    });
+
     testWidgets('a note emptied is deleted; one unchanged waits for a change', (tester) async {
       final c = await open(tester, '/read/5787:1/3');
       await tester.longPress(find.byType(ScriptureVerse).first);
@@ -195,6 +222,30 @@ void main() {
       expect(targum.kind, ScriptureKind.targum);
       expect(find.descendant(of: find.byWidget(targum), matching: find.byType(VerseMarks)), findsNothing);
     });
+
+    for (final scale in [1.0, 1.3, 2.0]) {
+      for (final full in [false, true]) {
+        testWidgets('the marks keep to the number\'s size at ${(scale * 100).round()}% text, '
+            '${full ? 'in the full text' : 'clear of the verse in the guided reader\'s margin'}', (tester) async {
+          await open(tester, '/read/5787:1/3${full ? '?mode=full' : ''}', textScale: scale, size: const Size(412, 1400));
+          final marks = find.byType(VerseMarks).first;
+          final context = tester.element(marks);
+          final styles = ScriptureStyles(context, const AppSettings(onboardingComplete: true));
+          final number = MediaQuery.textScalerOf(context).scale(styles.numberStyle(ScriptureKind.mikra).fontSize!);
+          // The ribbon stands 0.72 of the number's size, scaled once with it.
+          expect(tester.getRect(marks).height, closeTo(0.72 * number, 0.5));
+          if (!full) {
+            // In the margin, after the number or beneath it, never closer
+            // to the verse than the margin keeps.
+            final gutter = tester.getRect(find.ancestor(of: marks, matching: find.byType(SizedBox)).first);
+            final clearance = MediaQuery.textScalerOf(context).scale(
+              ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikra),
+            );
+            expect(tester.getRect(marks).left - gutter.left, greaterThanOrEqualTo(clearance - 0.5));
+          }
+        });
+      }
+    }
 
     testWidgets('a verse of the haftarah has no bookmark or note', (tester) async {
       await open(tester, '/haftarah/5787:1');
@@ -263,6 +314,117 @@ void main() {
       await tester.pumpAndSettle();
       expect(inSheet(find.text('Genesis 1:1')), findsOneWidget);
     });
+
+    testWidgets('a bookmark taken away in the sheet leaves its options whole: the note, a copy, a question',
+        (tester) async {
+      tester.view.physicalSize = const Size(412, 3000);
+      final c = await open(tester, '/notes', size: const Size(412, 3000));
+      expect(OwnContextMenu.browserMenuAway, isTrue, reason: 'a right-click on a row opens its options');
+      Finder menuOf(String reference) => find.descendant(
+            of: find.ancestor(of: find.text(reference), matching: find.byType(CallbackShortcuts)).first,
+            matching: find.byTooltip('Verse options'),
+          );
+
+      // Genesis 12:1, a bookmark alone, the only verse of its chapter: its
+      // row goes as the bookmark does, and the sheet stays.
+      await tester.tap(menuOf('Genesis 12:1'));
+      await tester.pumpAndSettle();
+      await tester.tap(inSheet(find.byType(Switch)));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.descendant(of: find.byType(NotesScreen), matching: find.text('Genesis 12:1')), findsNothing);
+      await tester.tap(inSheet(find.text('Add a note')));
+      await tester.pumpAndSettle();
+      expect(inDialog(find.text('Note on Genesis 12:1')), findsOneWidget);
+      await tester.enterText(inDialog(find.byType(TextField)), 'Lech lecha');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      expect(find.text('Note saved'), findsOneWidget);
+      expect(c.read(annotationsProvider)[const BookVerse('Genesis', VerseRef(12, 1))]!.note, 'Lech lecha');
+      expect(find.text('Genesis 12:1'), findsOneWidget, reason: 'back, with its note');
+
+      // Exodus 3:14 likewise: copied, the page says so; asked about, the
+      // question opens.
+      await tester.tap(menuOf('Exodus 3:14'));
+      await tester.pumpAndSettle();
+      await tester.tap(inSheet(find.byType(Switch)));
+      await tester.pumpAndSettle();
+      await tester.tap(inSheet(find.text('Copy')));
+      await tester.pumpAndSettle();
+      expect(find.text('Verse copied'), findsOneWidget);
+      c.read(annotationsProvider.notifier).setBookmark(const BookVerse('Exodus', VerseRef(3, 14)), true);
+      await tester.pumpAndSettle();
+      await tester.tap(menuOf('Exodus 3:14'));
+      await tester.pumpAndSettle();
+      await tester.tap(inSheet(find.byType(Switch)));
+      await tester.pumpAndSettle();
+      await tester.tap(inSheet(find.text('Ask about this verse')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ComposeScreen), findsOneWidget);
+    });
+
+    testWidgets('Shift+F10 on a row with the keyboard focus opens its options', (tester) async {
+      await open(tester, '/notes');
+      final row = find.ancestor(of: find.text('Genesis 3:22'), matching: find.byType(CallbackShortcuts)).first;
+      bool focusedInRow() {
+        final focused = FocusManager.instance.primaryFocus?.context;
+        if (focused == null) return false;
+        var inside = false;
+        focused.visitAncestorElements((e) => !(inside = e == tester.element(row)));
+        return inside;
+      }
+
+      for (var i = 0; i < 20 && !focusedInRow(); i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
+      }
+      expect(focusedInRow(), isTrue);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
+      await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
+      await tester.pumpAndSettle();
+      expect(inSheet(find.text('Genesis 3:22')), findsOneWidget);
+    });
+
+    for (final hebrew in [false, true]) {
+      testWidgets('a note in the other language is read in its own${hebrew ? ', in the Hebrew UI' : ''}', (tester) async {
+        final handle = tester.ensureSemantics();
+        const other = 'למה דווקא לך לך?';
+        const english = 'Why “like one of us”?';
+        await open(
+          tester,
+          '/notes',
+          settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.system),
+          annotations: jsonEncode({
+            'Genesis 3:22': {'b': false, 'n': hebrew ? english : other, 'u': 3},
+          }),
+        );
+        final note = hebrew ? english : other;
+        final locale = Locale(hebrew ? 'en' : 'he');
+        bool tagged(AttributedString label) {
+          final start = label.string.indexOf(note);
+          return start >= 0 &&
+              label.attributes.any((a) =>
+                  a is LocaleStringAttribute &&
+                  a.locale == locale &&
+                  a.range.start <= start &&
+                  a.range.end >= start + note.length);
+        }
+
+        final row = tester.getSemantics(find.bySemanticsLabel(RegExp(hebrew ? r'^בראשית ג, כב\. ' : r'^Genesis 3:22\. ')));
+        expect(tagged(row.attributedLabel), isTrue, reason: row.attributedLabel.toString());
+
+        // And under Your note in the verse's options.
+        await tester.tap(find.byTooltip(hebrew ? 'אפשרויות לפסוק' : 'Verse options').first);
+        await tester.pumpAndSettle();
+        final yourNote = tester.getSemantics(
+          find.ancestor(of: inSheet(find.text(hebrew ? 'ההערה שלך' : 'Your note')), matching: find.byType(Semantics)).first,
+        );
+        expect(tagged(yourNote.attributedLabel), isTrue, reason: yourNote.attributedLabel.toString());
+        handle.dispose();
+      });
+    }
 
     testWidgets('of one parsha, lists its verses alone, which open in its week', (tester) async {
       final c = await open(tester, '/notes?week=5787:1');
@@ -395,4 +557,38 @@ void main() {
     expect(merged[_genesis3_22]!.note, 'Rewritten');
     expect(merged[const BookVerse('Exodus', VerseRef(3, 14))]!.bookmarked, isTrue, reason: 'restored from the backup');
   });
+
+  testWidgets('a backup merged in merges them too, verse by verse', (tester) async {
+    var c = await open(tester, '/settings/data');
+    WidgetRef ref() => tester.element(find.byType(DataSettingsScreen)) as WidgetRef;
+    final file = exportBackup(ref());
+    final elsewhere = jsonEncode({
+      'Genesis 1:1': {'b': false, 'n': null, 'u': 10},
+      'Leviticus 19:18': {'b': true, 'n': 'Love your neighbour', 'u': 12},
+    });
+    c = await pumpApp(tester, now: friday, stored: {AnnotationsController.storageKey: elsewhere});
+    c.read(routerProvider).go('/settings/data');
+    await tester.pumpAndSettle();
+    expect(await importBackup(ref(), parseBackup(file)!), BackupImport.restored);
+    final merged = c.read(annotationsProvider);
+    expect(merged[_genesis1_1], isNull, reason: 'deleted here after the backup');
+    expect(merged[_genesis3_22]!.note, 'Why “like one of us”?', reason: 'from the backup');
+    expect(merged[const BookVerse('Leviticus', VerseRef(19, 18))]!.note, 'Love your neighbour', reason: 'kept from here');
+  });
+
+  for (final everywhere in [false, true]) {
+    testWidgets('resetting the progress${everywhere ? ' everywhere' : ''} leaves them alone', (tester) async {
+      final c = await open(tester, '/settings/data');
+      final before = c.read(annotationsProvider);
+      expect(before.inTorah, isNotEmpty);
+      c.read(progressProvider.notifier).resetAll(c.read(todayProvider), everywhere: everywhere);
+      await tester.pumpAndSettle();
+      expect(c.read(annotationsProvider), before);
+      expect(
+        c.read(sharedPreferencesProvider).getString(AnnotationsController.storageKey),
+        isNotNull,
+        reason: 'still stored',
+      );
+    });
+  }
 }

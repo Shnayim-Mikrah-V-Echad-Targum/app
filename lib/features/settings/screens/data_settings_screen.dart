@@ -256,6 +256,8 @@ class _ImportDialogState extends State<_ImportDialog> {
           Text(made == null
               ? l.importCounts(weeks, pauses)
               : l.importSummary(Names(context).dateWithYear(LocalDate.fromDateTime(made)), weeks, pauses)),
+          // The bookmarks and notes it holds, which it may hold alone.
+          if (backup.bookmarks > 0 || backup.notes > 0) Text(l.importMarks(backup.bookmarks, backup.notes)),
           if (widget.merge) ...[const SizedBox(height: 12), Text(l.importMergeBody)],
           if (backup.settings != null) ...[
             const SizedBox(height: 8),
