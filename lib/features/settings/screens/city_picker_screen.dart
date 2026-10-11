@@ -104,9 +104,15 @@ class _CityPickerScreenState extends ConsumerState<CityPickerScreen> {
           Expanded(
             child: switch (directory) {
               AsyncData(:final value) => _Cities(directory: value, query: _query.text.trim(), onChoose: _choose),
-              AsyncError() => Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(l.errorGeneric, textAlign: TextAlign.center),
+              // In the column under the field, where no matches would be.
+              AsyncError() => PageBody(
+                  children: [
+                    const Gap(16),
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(4, 8, 4, 0),
+                      child: Text(l.errorGeneric, style: Theme.of(context).textTheme.bodyLarge),
+                    ),
+                  ],
                 ),
               // Loaded in a moment (and usually already, by Reading &
               // customs), so nothing stands in for it.

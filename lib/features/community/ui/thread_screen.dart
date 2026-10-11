@@ -250,7 +250,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                   // Fetched again, the posts shown stay until the new ones come.
                   skipError: posts.hasValue,
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
+                  // In the page's column, and pulled to try again.
+                  error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
                   data: (page) {
                     final list = page.posts;
                     final byId = {for (final p in list) p.id: p};
@@ -367,17 +368,20 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                 ),
               ),
             ),
-            if (canReply)
-              _Composer(
+          ],
+        ),
+        // In the page's bottom bar, as the reader's bar is, so that status
+        // messages the page shows stand above it rather than over it (§6.19).
+        bottomNavigationBar: canReply
+            ? _Composer(
                 controller: _reply,
                 focusNode: _focus,
                 replyTo: _replyTo,
                 sending: _sending,
                 onCancelReply: () => setState(() => _replyTo = null),
                 onSend: _reply.text.trim().length >= 2 && !_sending ? _send : null,
-              ),
-          ],
-        ),
+              )
+            : null,
       ),
     );
     // The thread's list, which a tap on the iOS status bar scrolls to the

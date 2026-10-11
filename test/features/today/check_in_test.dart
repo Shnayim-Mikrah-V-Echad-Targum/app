@@ -11,6 +11,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/check_in.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
 
 import '../../helpers.dart';
 
@@ -183,6 +184,22 @@ void main() {
       await tester.pumpAndSettle();
       expect(bereshit(c).units, before.units);
       expect(find.text(_checkIn), findsOneWidget);
+    });
+
+    testWidgets("sets its tonal button 12 from the notice's end and foot, clear of the corner", (tester) async {
+      Rect banner() =>
+          tester.getRect(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(Material)).first);
+      Rect button(String label) =>
+          tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(FilledButton)));
+
+      await openToday(tester);
+      expect(banner().right - button('I finished it on Shabbat').right, 12);
+      expect(banner().bottom - button('I finished it on Shabbat').bottom, 12);
+
+      // At the left in Hebrew.
+      await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
+      expect(button('סיימתי את הפרשה בשבת').left - banner().left, 12);
+      expect(banner().bottom - button('סיימתי את הפרשה בשבת').bottom, 12);
     });
 
     testWidgets('in Hebrew', (tester) async {

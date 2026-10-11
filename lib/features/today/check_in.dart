@@ -92,34 +92,37 @@ class PreviousWeekNotice extends ConsumerWidget {
       title: l.checkInTitle,
       text: l.checkInBody,
       actionBelow: true,
-      action: Wrap(
-        alignment: WrapAlignment.end,
-        spacing: Space.sm,
-        runSpacing: Space.xs,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          TextButton(
-            onPressed: () => _answer(ref.read(settingsProvider.notifier)),
-            child: Text(l.checkInNotThisTime),
-          ),
-          TextButton(onPressed: () => _choose(context, ref, name), child: Text(l.checkInPick)),
-          // Tonal: the hero's is the page's one filled button.
-          FilledButton.tonal(
-            // Room around a label that large text wraps.
-            style: AppButtons.tonal(context).merge(AppButtons.roomy(context, (24, 12, 6))),
-            onPressed: () => _log(
-              context,
-              ref,
-              name,
-              (progress) {
-                progress.markWeek(previous.id, previous.week.occasion);
-                // Finishing it includes the haftarah, where that counts.
-                if (previous.haftarahDue) progress.markHaftarah(previous.id, previous.week.occasion);
-              },
+      action: Padding(
+        padding: NoticeBanner.tonalActionInset,
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          spacing: Space.sm,
+          runSpacing: Space.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            TextButton(
+              onPressed: () => _answer(ref.read(settingsProvider.notifier)),
+              child: Text(l.checkInNotThisTime),
             ),
-            child: Text(l.checkInFinished, textAlign: TextAlign.center),
-          ),
-        ],
+            TextButton(onPressed: () => _choose(context, ref, name), child: Text(l.checkInPick)),
+            // Tonal: the hero's is the page's one filled button.
+            FilledButton.tonal(
+              // Room around a label that large text wraps.
+              style: AppButtons.tonal(context).merge(AppButtons.roomy(context, (24, 12, 6))),
+              onPressed: () => _log(
+                context,
+                ref,
+                name,
+                (progress) {
+                  progress.markWeek(previous.id, previous.week.occasion);
+                  // Finishing it includes the haftarah, where that counts.
+                  if (previous.haftarahDue) progress.markHaftarah(previous.id, previous.week.occasion);
+                },
+              ),
+              child: Text(l.checkInFinished, textAlign: TextAlign.center),
+            ),
+          ],
+        ),
       ),
     );
   }

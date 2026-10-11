@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/search/go_to_verse_sheet.dart';
+import '../services/feedback.dart' show StatusMessageArea;
 import '../ui/l10n.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/app_mark.dart';
@@ -81,7 +82,7 @@ class AppShell extends StatelessWidget {
 
     final extended = width >= Breakpoints.expanded;
     final theme = Theme.of(context);
-    return Scaffold(
+    return _RailFrame(
       body: SafeArea(
         child: Row(
           children: [
@@ -127,12 +128,32 @@ class AppShell extends StatelessWidget {
                 ),
               ),
             ),
-            Expanded(child: FocusTraversalGroup(child: shell)),
+            Expanded(child: StatusMessageArea.pane(child: FocusTraversalGroup(child: shell))),
           ],
         ),
       ),
     );
   }
+}
+
+/// What holds the rail and the pane beside it: the scaffold's colour, and
+/// room for the keyboard, as a Scaffold would make. A Scaffold itself would
+/// show status messages across the window, over both; without one, each
+/// page in the pane is the Scaffold that shows them, centred on the pane,
+/// above the page's own reply box or floating button (§6.19).
+class _RailFrame extends StatelessWidget {
+  const _RailFrame({required this.body});
+
+  final Widget body;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: MediaQuery.removeViewInsets(context: context, removeBottom: true, child: body),
+        ),
+      );
 }
 
 /// The phone's navigation bar (§6.9): 72 high, and taller only as far as its

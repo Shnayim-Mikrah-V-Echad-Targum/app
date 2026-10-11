@@ -7,9 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
+import 'package:shnayim_mikra/services/feedback.dart';
 import 'package:shnayim_mikra/ui/theme/layout.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -134,6 +138,62 @@ void main() {
       await openRoute(tester, '/community', size: const Size(1366, 860));
       final column = 257 + (1109 + 720) / 2;
       expect(tester.getRect(find.byTooltip(_en.signInTitle)).right, column);
+    });
+
+    testWidgets("on a desktop, the floating button ends where the column's content does", (tester) async {
+      await openRoute(tester, '/community/forum/questions', size: const Size(1366, 860));
+      final content = 257 + (1109 + 720) / 2 - 32;
+      expect(tester.getRect(find.byType(FloatingActionButton)).right, content);
+
+      // In Hebrew, at the left, with the rail at the right.
+      await openRoute(tester, '/community/forum/questions', size: const Size(1366, 860), settings: _hebrew);
+      expect(tester.getRect(find.byType(FloatingActionButton)).left, (1109 - 720) / 2 + 32);
+
+      // Where the column fills the pane, Material's 16 from its edge.
+      for (final size in [const Size(412, 915), const Size(800, 1180)]) {
+        await openRoute(tester, '/community/forum/questions', size: size);
+        expect(tester.getRect(find.byType(FloatingActionButton)).right, size.width - 16);
+      }
+    });
+
+    group("on a desktop, what can't load is said in the page's column", () {
+      /// Opens [route] at 1366 with the network down for threads, posts and
+      /// reports, while the forums load.
+      Future<void> openOffline(WidgetTester tester, String route, {bool hebrew = false}) async {
+        tester.view.physicalSize = const Size(1366, 860);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final container = await pumpApp(tester, settings: hebrew ? _hebrew : const AppSettings(onboardingComplete: true), forums: _Offline());
+        container.read(routerProvider).go(route);
+        await tester.pumpAndSettle();
+      }
+
+      for (final hebrew in [false, true]) {
+        final (l, language) = hebrew ? (_he, ', in Hebrew') : (_en, '');
+        testWidgets("a forum's threads start under its title$language", (tester) async {
+          await openOffline(tester, '/community/forum/questions', hebrew: hebrew);
+          final message = tester.getRect(find.text(l.errNetwork));
+          final title = tester.getRect(_title(hebrew ? 'שאלות ותשובות' : 'Questions & answers'));
+          if (hebrew) {
+            // The rail at the right, and the column's content ending 32 in.
+            expect(message.right, title.right);
+            expect(message.right, 1109 - (1109 - 720) / 2 - 32);
+          } else {
+            expect(message.left, title.left);
+            expect(message.left, 257 + (1109 - 720) / 2 + 32);
+          }
+          expect(message.width, lessThanOrEqualTo(720 - 2 * 32), reason: "a line no longer than the column's");
+        });
+      }
+
+      for (final route in ['/community/thread/1', '/community/moderation']) {
+        testWidgets('so are $route', (tester) async {
+          await openOffline(tester, route);
+          final message = tester.getRect(find.text(_en.errNetwork));
+          expect(message.left, 257 + (1109 - 720) / 2 + 32);
+          expect(message.width, lessThanOrEqualTo(720 - 2 * 32));
+        });
+      }
     });
 
     testWidgets('in Hebrew, the title ends where the content does, at the right', (tester) async {
@@ -267,6 +327,152 @@ void main() {
     });
   });
 
+  group('status messages', () {
+    /// The message's paper, within its margins, on the page on show.
+    Rect bar(WidgetTester tester) =>
+        tester.getRect(find.descendant(of: find.byType(SnackBar), matching: find.byType(Material)).first);
+
+    /// Shows a message from the page on show, and gives where it is set.
+    Future<Rect> show(WidgetTester tester) async {
+      showStatus(tester.element(find.byType(Scaffold).last), 'Updated');
+      await tester.pumpAndSettle();
+      return bar(tester);
+    }
+
+    /// Lets a page open over another, or close, without waiting for the
+    /// reader's text, whose spinner never settles.
+    Future<void> settleRoute(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+    }
+
+    testWidgets('on a phone, run 16 from the edges', (tester) async {
+      await openRoute(tester, '/settings');
+      final bar = await show(tester);
+      expect((bar.left, bar.right), (16, 412 - 16));
+    });
+
+    testWidgets("on a desktop, are a sheet's width at most, centred on the page beside the rail", (tester) async {
+      await openRoute(tester, '/settings', size: const Size(1366, 860));
+      final bar = await show(tester);
+      expect(bar.width, 640);
+      expect(bar.center.dx, 257 + 1109 / 2);
+      expect(bar.bottom, 860 - 16);
+
+      // In Hebrew, the rail is at the right.
+      await openRoute(tester, '/settings', size: const Size(1366, 860), settings: _hebrew);
+      expect((await show(tester)).center.dx, 1109 / 2);
+
+      // Over the tabs, the page is the window.
+      await openRoute(tester, '/guide', size: const Size(1366, 860));
+      expect((await show(tester)).center.dx, 1366 / 2);
+    });
+
+    testWidgets('on a tablet, keep 16 from the pane where it is narrower', (tester) async {
+      await openRoute(tester, '/settings', size: const Size(640, 900));
+      final bar = await show(tester);
+      // The compact rail (80 and its hairline) beside a pane of 559.
+      expect((bar.left, bar.right), (81 + 16, 640 - 16));
+    });
+
+    testWidgets('are set again on the page they are shown over: the reader over a tab, and the tab again',
+        (tester) async {
+      // With a page of another tab open beneath, whose copy of the message
+      // is no hero as the reader opens.
+      final container = await openRoute(tester, '/settings', size: const Size(1366, 860));
+      container.read(routerProvider).go('/today');
+      await tester.pumpAndSettle();
+      await show(tester);
+      expect(bar(tester).center.dx, 257 + 1109 / 2);
+      // The reader opens over the tabs, while the message is still shown:
+      // centred on the window, as the reader's column is.
+      container.read(routerProvider).push('/read/5787:1/0');
+      await settleRoute(tester);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(bar(tester).width, 640);
+      expect(bar(tester).center.dx, 1366 / 2);
+
+      // Shown from the reader, and still shown back on Today: on its pane.
+      showStatus(tester.element(find.byType(Scaffold).last), 'Marked as read');
+      await settleRoute(tester);
+      container.read(routerProvider).pop();
+      await settleRoute(tester);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(bar(tester).center.dx, 257 + 1109 / 2);
+    });
+
+    testWidgets('are set again as the window is resized', (tester) async {
+      await openRoute(tester, '/settings', size: const Size(1366, 860));
+      await show(tester);
+      tester.view.physicalSize = const Size(1920, 1080);
+      await tester.pump();
+      expect(bar(tester).width, 640);
+      expect(bar(tester).center.dx, 257 + 1663 / 2);
+      expect(bar(tester).bottom, 1080 - 16);
+      // Snapped to half the screen: the compact rail, beside a pane of 879.
+      tester.view.physicalSize = const Size(960, 1080);
+      await tester.pump();
+      expect(bar(tester).center.dx, 81 + 879 / 2);
+    });
+
+    group('on a phone held sideways, keep to the safe area', () {
+      // An iPhone's 932 x 430, with the notch's 59 at either side: the
+      // compact rail beside a pane of 733 within the safe area.
+      const size = Size(932, 430);
+
+      testWidgets('within a tab, centred on the pane', (tester) async {
+        tester.view.padding = const FakeViewPadding(left: 59, right: 59);
+        await openRoute(tester, '/settings', size: size);
+        final shown = await show(tester);
+        expect(shown.width, 640);
+        expect(shown.center.dx, 59 + 81 + 733 / 2);
+      });
+
+      testWidgets('over the tabs, centred on the window', (tester) async {
+        tester.view.padding = const FakeViewPadding(left: 59, right: 59);
+        await openRoute(tester, '/guide', size: size);
+        final shown = await show(tester);
+        expect(shown.width, 640);
+        expect(shown.center.dx, 932 / 2);
+      });
+
+      testWidgets('with a cutout at one side, centred on the window, clear of it', (tester) async {
+        tester.view.padding = const FakeViewPadding(left: 48);
+        await openRoute(tester, '/guide', size: const Size(800, 400));
+        final shown = await show(tester);
+        expect(shown.width, 640);
+        expect(shown.center.dx, 800 / 2);
+        expect(shown.left, greaterThanOrEqualTo(48 + 16));
+      });
+    });
+
+    group("stand above the page's own controls", () {
+      testWidgets("a forum's floating button", (tester) async {
+        await openRoute(tester, '/community/forum/questions', size: const Size(1366, 860));
+        final button = tester.getRect(find.byType(FloatingActionButton));
+        final shown = await show(tester);
+        expect(shown.bottom, button.top - 16);
+        expect(shown.center.dx, 257 + 1109 / 2);
+        expect(tester.getRect(find.byType(FloatingActionButton)), button, reason: 'the button stays where it is');
+      });
+
+      testWidgets("a thread's reply box", (tester) async {
+        await openRoute(tester, '/community/thread/1', size: const Size(1366, 860));
+        final box = tester.getRect(find.ancestor(of: find.byType(TextField), matching: find.byType(Material)).first);
+        final shown = await show(tester);
+        expect(shown.bottom, box.top - 16);
+        expect(shown.center.dx, 257 + 1109 / 2);
+      });
+
+      testWidgets('on a phone, the navigation bar, as before', (tester) async {
+        await openRoute(tester, '/community/thread/1');
+        final shown = await show(tester);
+        // The bar, under its hairline.
+        expect(shown.bottom, tester.getRect(find.byType(NavigationBar)).top - 1 - 16);
+      });
+    });
+  });
+
   group('DocumentTitle', () {
     /// The labels the app gives the platform, in order.
     List<String> recordTitles(WidgetTester tester) {
@@ -353,4 +559,24 @@ void main() {
       expect(labels, everyElement(_en.appTitle));
     });
   });
+}
+
+/// A community whose forums load, but whose threads, posts and reports
+/// can't: the network down.
+class _Offline extends DemoForumRepository {
+  @override
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) async =>
+      throw Exception('offline');
+
+  @override
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) async =>
+      throw Exception('offline');
+
+  @override
+  Future<List<Report>> openReports() async => throw Exception('offline');
 }

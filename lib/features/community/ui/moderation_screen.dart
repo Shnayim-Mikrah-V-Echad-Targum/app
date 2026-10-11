@@ -50,7 +50,8 @@ class ModerationScreen extends ConsumerWidget {
         actions: [refreshButton],
         body: reports.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text(communityError(l, e))),
+          // In the page's column, under the title.
+          error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
           data: (list) => RefreshIndicator(
             // A failure shows in place of the reports.
             onRefresh: () => refresh().catchError((Object _) {}),
