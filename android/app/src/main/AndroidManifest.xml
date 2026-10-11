@@ -3,7 +3,8 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Reading reminders (requested only after the user opts in). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <!-- Restore scheduled reminders after a reboot. -->
+    <!-- Restore scheduled reminders, and the home-screen widget's daily
+         update, after a reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Keep the screen on while reading (optional setting). -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
@@ -44,7 +45,43 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- A tap on the home-screen widget, whose link home_widget hands
+                 to the app (lib/services/home_widget_sync.dart). The app opens
+                 it over Today itself, so Flutter's own deep linking, which
+                 would also push the link as a route, is off: the app has no
+                 other links. -->
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.LAUNCH"/>
+            </intent-filter>
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="false"
+              />
         </activity>
+        <!-- The home-screen widget: this week's parsha and today's reading. -->
+        <receiver
+            android:name=".ParshaWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/parsha_widget_info"/>
+        </receiver>
+        <!-- Updates the widget as its day turns (inexact alarms, so no
+             exact-alarm permission), and arms those alarms again after a
+             reboot or an update of the app. -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetScheduledUpdateReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"/>
+            </intent-filter>
+        </receiver>
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
             <intent-filter>

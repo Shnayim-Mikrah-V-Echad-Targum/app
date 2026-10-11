@@ -2,6 +2,7 @@ package org.shnayimmikra.shnayim_mikra
 
 import android.content.Intent
 import android.os.Bundle
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity() {
@@ -13,15 +14,23 @@ class MainActivity : FlutterActivity() {
         // place of the one the user left, even from the plain icon.
         val reopened = savedInstanceState != null ||
             (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
-        if (reopened) intent.removeExtra(QUICK_ACTION_EXTRA)
+        if (reopened) {
+            intent.removeExtra(QUICK_ACTION_EXTRA)
+            // So too a tap on the home-screen widget, which home_widget
+            // reads from the intent's action and link.
+            if (intent.action == HomeWidgetLaunchIntent.HOME_WIDGET_LAUNCH_ACTION) {
+                intent.action = Intent.ACTION_MAIN
+                intent.data = null
+            }
+        }
         super.onCreate(savedInstanceState)
     }
 
     override fun onNewIntent(intent: Intent) {
-        // A shortcut chosen while the activity is being recreated comes as a
-        // new intent, perhaps before Flutter is listening. Keeping it as the
-        // activity's own lets quick_actions find it when the app asks which
-        // shortcut launched it.
+        // A shortcut chosen, or the widget tapped, while the activity is being
+        // recreated comes as a new intent, perhaps before Flutter is
+        // listening. Keeping it as the activity's own lets quick_actions and
+        // home_widget find it when the app asks what launched it.
         setIntent(intent)
         super.onNewIntent(intent)
     }

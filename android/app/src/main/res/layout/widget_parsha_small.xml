@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget at about 2×2 cells (docs/DESIGN_SYSTEM.md §6.30): the eyebrow,
+     the parsha's Hebrew name and its transliteration, then on a reading day
+     the three readings' bars and the aliyot read, on a day of rest the
+     candles and the day's greeting, or a note. ParshaWidgetProvider fills it
+     in, shows one of the three, and leaves out the lines the widget is too
+     short for. The whole card is one button for TalkBack, read as one
+     sentence (its content description). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:clipToOutline="true"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:padding="@dimen/widget_padding">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:importantForAccessibility="noHideDescendants"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_eyebrow"
+            style="@style/ParshaWidget.Text.Fitted.Eyebrow" />
+
+        <TextView
+            android:id="@+id/widget_eyebrow_he"
+            style="@style/ParshaWidget.Text.Fitted.Eyebrow.Hebrew"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_hebrew"
+            style="@style/ParshaWidget.Text.Fitted.Hebrew" />
+
+        <TextView
+            android:id="@+id/widget_name"
+            style="@style/ParshaWidget.Text.Fitted.Name" />
+
+        <LinearLayout
+            android:id="@+id/widget_bars"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/widget_section_gap"
+            android:orientation="vertical">
+
+            <ProgressBar
+                android:id="@+id/widget_bar_mikra1"
+                style="@style/ParshaWidget.Bar"
+                android:progressDrawable="@drawable/widget_bar_mikra1" />
+
+            <ProgressBar
+                android:id="@+id/widget_bar_mikra2"
+                style="@style/ParshaWidget.Bar"
+                android:layout_marginTop="@dimen/widget_bar_gap"
+                android:progressDrawable="@drawable/widget_bar_mikra2" />
+
+            <ProgressBar
+                android:id="@+id/widget_bar_targum"
+                style="@style/ParshaWidget.Bar"
+                android:layout_marginTop="@dimen/widget_bar_gap"
+                android:progressDrawable="@drawable/widget_bar_targum" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_progress"
+            style="@style/ParshaWidget.Text.Fitted.Progress" />
+
+        <LinearLayout
+            android:id="@+id/widget_rest"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/widget_section_gap"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="@dimen/widget_candles"
+                android:layout_height="@dimen/widget_candles"
+                android:src="@drawable/widget_candles" />
+
+            <TextView
+                android:id="@+id/widget_greeting"
+                style="@style/ParshaWidget.Text.Fitted.Greeting" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_note"
+            style="@style/ParshaWidget.Text.Note"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

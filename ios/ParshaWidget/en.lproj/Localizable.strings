@@ -1,0 +1,15 @@
+/* The home-screen widget (ParshaWidget.swift), in the widget gallery, and
+   before the app has given it anything to show. Everything else it shows
+   comes from the app, in the app's language. */
+"widget.name" = "This week's parsha";
+"widget.description" = "This week's parsha, how far you've read and today's reading, a tap away.";
+"widget.appName" = "Shnayim Mikra";
+"widget.empty" = "Open Shnayim Mikra to begin.";
+
+/* The widget as the gallery previews it, for a reader partway through Bereshit. */
+"preview.eyebrow" = "Parshat HaShavua";
+"preview.say" = "Bereshit";
+"preview.progress" = "2 of 7 aliyot";
+"preview.sayProgress" = "2 of 7 aliyot. First reading: 3 of 7. Second reading: 3 of 7. Targum: 2 of 7";
+"preview.today" = "Today: Shlishi";
+"preview.continue" = "Continue · Shlishi, Targum";

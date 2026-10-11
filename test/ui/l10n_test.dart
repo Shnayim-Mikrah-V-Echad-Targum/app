@@ -159,6 +159,7 @@ void main() {
 
     names = Names(await _page(tester, hebrew: true));
     expect(names.aliyotSpan([2, 3, 4, 5, 6]), 'שלישי – שביעי');
+    expect(names.aliyotSpan([0, 1, 2, 3, 4, 5, 6]), 'כל הפרשה');
   });
 
   testWidgets('a reading of an aliyah is named as the rings\' legend names it', (tester) async {

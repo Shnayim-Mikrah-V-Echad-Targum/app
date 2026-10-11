@@ -324,6 +324,10 @@
       }
     }
   },
+  "aliyotWholeParsha": "The whole parsha",
+  "@aliyotWholeParsha": {
+    "description": "All seven aliyot, where the aliyot of a day are named: on Today's reading card when a day's reading is the whole parsha, or all of it is still to catch up, and on the home-screen widget (\"Today: The whole parsha\")."
+  },
   "todayBehind": "{count, plural, =1{One aliyah to catch up — very normal midweek.} other{{count} aliyot to catch up — very normal midweek.}}",
   "@todayBehind": {
     "description": "On Today's reading card, under the aliyot to catch up, from Sunday to Wednesday. count is every aliyah the card names: those planned up to today and not yet read, today's included.",
@@ -2258,6 +2262,40 @@
   "shortcutThisWeek": "This week's parsha",
   "@shortcutThisWeek": {
     "description": "Shortcut shown when the app's icon is long-pressed; opens the Parsha tab. Keep it under 25 characters."
+  },
+  "widgetToday": "Today: {aliyot}",
+  "@widgetToday": {
+    "description": "On the home-screen widget, the day's reading: the aliyot planned for it, by name (\"Today: Shlishi\"). Keep it short: the widget gives it one line.",
+    "placeholders": {
+      "aliyot": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetCatchUp": "Catching up: {aliyot}",
+  "@widgetCatchUp": {
+    "description": "On the home-screen widget, in place of widgetToday while aliyot planned for earlier days are unread: every aliyah due, as Today's card names them (\"Catching up: Shlishi – Revi'i\"). Keep it short.",
+    "placeholders": {
+      "aliyot": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetNothingToday": "No reading planned today",
+  "@widgetNothingToday": {
+    "description": "On the home-screen widget, a reading day with nothing planned (the plan reads everything on Friday, say). Keep it short."
+  },
+  "widgetPaused": "Paused · read whenever you like",
+  "@widgetPaused": {
+    "description": "On the home-screen widget, on a day within a pause (\"Life happens\"): nothing counts against the reader. Keep it short."
+  },
+  "widgetWeekComplete": "Parsha complete · Yasher koach!",
+  "@widgetWeekComplete": {
+    "description": "On the home-screen widget, once every aliyah of the week is read. Keep it short."
+  },
+  "widgetStale": "Open the app to bring this up to date",
+  "@widgetStale": {
+    "description": "On the home-screen widget, on a weekday once the days it was given have passed without the app being opened: it then shows the last parsha it was given, and this line. (On Shabbat and Yom Tov it shows only the candles and the day's greeting, and asks nothing.)"
   },
   "simchatTorahInDays": "{count, plural, =0{Simchat Torah is today} =1{Simchat Torah is tomorrow} other{Simchat Torah in {count} days}}",
   "@simchatTorahInDays": {
