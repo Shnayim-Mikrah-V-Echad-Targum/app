@@ -76,9 +76,11 @@ String dashHeldToWord(String text) => text.replaceAll(' — ', '${DotLine.nbsp}�
 /// Centred unless [textAlign] says otherwise. Its [style] is merged with the
 /// ambient one, as a [Text]'s is, so it can label a button.
 ///
-/// A word joined by a hyphen or a maqaf, as a name of two parshiyot is
-/// ("Matot-Masei"), is kept whole too, unless [breakAtHyphens]: then a line
-/// may end after the hyphen, as in a sentence that names one.
+/// A word joined by a hyphen, a dash or a maqaf, as a name of two parshiyot
+/// is ("Matot-Masei"), is kept whole too: measured whole, and set with a word
+/// joiner after the hyphen, so that no line ends there, even among other
+/// words ("Acharei" over "Mot-Kedoshim"). Unless [breakAtHyphens]: then a
+/// line may end after the hyphen, as in a sentence that names one.
 ///
 /// It answers intrinsic size queries, unlike a [LayoutBuilder], so it may
 /// stand in a row that is as tall as its tallest cell ([IntrinsicHeight]).
@@ -101,6 +103,8 @@ class WholeWords extends StatelessWidget {
   final Locale? locale;
 
   /// What a screen reader says instead of [text], as [Text.semanticsLabel].
+  /// It hears [text] as it is written otherwise, without the joiners set to
+  /// keep its words whole.
   final String? semanticsLabel;
 
   /// Whether a line may end after a hyphen, a dash or a maqaf within a word.
@@ -108,6 +112,13 @@ class WholeWords extends StatelessWidget {
 
   static final _words = RegExp(r'[^ ]+');
   static final _hyphenated = RegExp(r'[^ \-–—־]+[\-–—־]?|[\-–—־]');
+  static final _hyphen = RegExp(r'[\-–—־]');
+
+  /// [text] with a word joiner after each hyphen, dash or maqaf, and before
+  /// an em dash, which a line may also end before: a line breaks at none of
+  /// them.
+  static String unbroken(String text) =>
+      text.replaceAllMapped(_hyphen, (m) => m[0] == '—' ? '\u2060—\u2060' : '${m[0]}\u2060');
 
   @override
   Widget build(BuildContext context) {
@@ -127,15 +138,16 @@ class WholeWords extends StatelessWidget {
       widest = math.max(widest, painter.width);
       painter.dispose();
     }
+    final shown = breakAtHyphens ? text : unbroken(text);
     return _FitWord(
       word: widest,
       child: Text(
-        text,
+        shown,
         style: style,
         textAlign: textAlign,
         textDirection: textDirection,
         locale: locale,
-        semanticsLabel: semanticsLabel,
+        semanticsLabel: semanticsLabel ?? (shown == text ? null : text),
       ),
     );
   }
@@ -171,8 +183,10 @@ class _RenderFitWord extends RenderProxyBox {
   double _scale = 1;
 
   /// The scale at which the widest word fits [width]: a hair under, so that
-  /// rounding never breaks the word after all.
-  double _scaleFor(double width) => width.isFinite && _word > width ? math.max(width - 1, 0) / _word : 1;
+  /// rounding never breaks the word after all. None where the width is a
+  /// pixel or less (a label squeezed to nothing, as in a collapse): no word
+  /// fits there at any size, and the text wraps as a plain Text would.
+  double _scaleFor(double width) => width.isFinite && width > 1 && _word > width ? (width - 1) / _word : 1;
 
   BoxConstraints _unscaled(BoxConstraints c, double scale) => scale == 1 ? c : c / scale;
 

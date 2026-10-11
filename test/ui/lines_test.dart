@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/ui/widgets/lines.dart';
 
@@ -119,6 +120,72 @@ void main() {
       expect(tester.getSize(find.byType(WholeWords)).height, lessThan(10), reason: 'one smaller line');
       await pump(tester, const WholeWords('aaa-bbb', style: style, breakAtHyphens: true), width: 50);
       expect(tester.getSize(find.byType(WholeWords)).height, 20, reason: 'two lines, at the full size');
+    });
+
+    // "Acharei Mot-Kedoshim" in a column too narrow for it on one line.
+    testWidgets('keeps a hyphenated name whole among other words, unless it may break at the hyphen', (tester) async {
+      final handle = tester.ensureSemantics();
+      int lineOf(RenderParagraph paragraph, String text, String word) {
+        final start = text.indexOf(word);
+        final tops = paragraph
+            .getBoxesForSelection(TextSelection(baseOffset: start, extentOffset: start + word.length))
+            .map((b) => b.top.round())
+            .toSet();
+        expect(tops, hasLength(1), reason: '"$word" on one line');
+        return tops.single;
+      }
+
+      // 110 wide, its widest word 70: "aaa bbb-" would fit the first line.
+      await pump(tester, const WholeWords('aaa bbb-ccc', style: style, textAlign: TextAlign.start), width: 90);
+      const shown = 'aaa bbb-\u2060ccc';
+      var paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
+      expect(paragraph.text.toPlainText(), shown);
+      expect(lineOf(paragraph, shown, 'bbb-\u2060ccc'), greaterThan(lineOf(paragraph, shown, 'aaa')));
+      expect(tester.getSize(find.byType(WholeWords)).height, 20, reason: 'two lines, at the full size');
+      // Heard as it is written.
+      expect(find.bySemanticsLabel('aaa bbb-ccc'), findsOneWidget);
+
+      // Narrower than the name: set smaller, and still whole.
+      await pump(tester, const WholeWords('aaa bbb-ccc', style: style, textAlign: TextAlign.start), width: 60);
+      paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
+      expect(lineOf(paragraph, shown, 'bbb-\u2060ccc'), greaterThan(lineOf(paragraph, shown, 'aaa')));
+      expect(tester.getRect(find.byType(RichText)).width, lessThanOrEqualTo(60));
+
+      // In a sentence, a line may end after the hyphen.
+      await pump(
+        tester,
+        const WholeWords('aaa bbb-ccc', style: style, textAlign: TextAlign.start, breakAtHyphens: true),
+        width: 90,
+      );
+      paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
+      expect(paragraph.text.toPlainText(), 'aaa bbb-ccc');
+      expect(lineOf(paragraph, 'aaa bbb-ccc', 'ccc'), greaterThan(lineOf(paragraph, 'aaa bbb-ccc', 'bbb-')));
+      handle.dispose();
+    });
+
+    test('unbroken joins each hyphen, dash and maqaf to the word after it, and an em dash to both', () {
+      expect(WholeWords.unbroken('Matot-Masei'), 'Matot-\u2060Masei');
+      expect(WholeWords.unbroken('1–2 a—b'), '1–\u20602 a\u2060—\u2060b');
+      expect(WholeWords.unbroken('מַטּוֹת־מַסְעֵי'), 'מַטּוֹת־\u2060מַסְעֵי');
+      expect(WholeWords.unbroken('Noach'), 'Noach');
+    });
+
+    // A label squeezed to nothing, as in a collapse, or next to a wide
+    // neighbour in a row with no room left.
+    testWidgets('lays out, and answers its intrinsic size, at a width of a pixel or less', (tester) async {
+      for (final width in [0.0, 0.5, 1.0]) {
+        await pump(tester, const WholeWords('aaaa bb', style: style), width: width);
+        expect(tester.takeException(), isNull, reason: 'at $width');
+        expect(tester.getSize(find.byType(WholeWords)).width, width);
+        final box = tester.renderObject<RenderBox>(find.byType(WholeWords));
+        for (final height in [box.getMinIntrinsicHeight(width), box.getMaxIntrinsicHeight(width)]) {
+          expect(height.isFinite, isTrue, reason: 'at $width');
+        }
+        expect(box.getDryLayout(BoxConstraints.tightFor(width: width)).isFinite, isTrue);
+      }
+      final box = tester.renderObject<RenderBox>(find.byType(WholeWords));
+      expect(box.getMinIntrinsicHeight(0).isFinite, isTrue);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('can stand in a row as tall as its tallest cell', (tester) async {

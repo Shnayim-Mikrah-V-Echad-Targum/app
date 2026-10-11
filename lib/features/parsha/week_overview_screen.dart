@@ -236,7 +236,8 @@ class _WeekHeader extends ConsumerWidget {
             if (hebrewUi)
               Lang(
                 const Locale('en'),
-                child: Text(
+                // Whole, as the name above it is.
+                child: WholeWords(
                   names.portionAlt(portion, ashkenazi: settings.ashkenaziNames),
                   style: muted,
                   textAlign: start,

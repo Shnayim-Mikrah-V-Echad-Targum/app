@@ -248,6 +248,7 @@ class PaperRow extends StatelessWidget {
     this.icon,
     this.iconColor,
     required this.title,
+    this.breakTitleAtHyphens = true,
     this.subtitle,
     this.subtitleMaxLines = 2,
     this.subtitleLocale,
@@ -272,6 +273,11 @@ class PaperRow extends StatelessWidget {
   /// onSurfaceVariant unless given: the grace shield is in its own colour.
   final Color? iconColor;
   final String title;
+
+  /// Whether the title may end a line after a hyphen in it, as a sentence
+  /// may ([WholeWords.breakAtHyphens]): false for a parsha's name, which
+  /// stays whole ("Vayakhel-Pekudei").
+  final bool breakTitleAtHyphens;
 
   /// At most [subtitleMaxLines] lines, unless the text is enlarged.
   final String? subtitle;
@@ -371,7 +377,8 @@ class PaperRow extends StatelessWidget {
         : child;
     // Each word whole, as very large text beside an icon and a chevron would
     // not keep it.
-    final titleText = WholeWords(title, style: titleStyle, textAlign: TextAlign.start, breakAtHyphens: true);
+    final titleText =
+        WholeWords(title, style: titleStyle, textAlign: TextAlign.start, breakAtHyphens: breakTitleAtHyphens);
     // The title, and at the end of its line a value or a labelled button,
     // which move under it when the two don't fit side by side.
     Widget titleWith(Widget other) => SizedBox(

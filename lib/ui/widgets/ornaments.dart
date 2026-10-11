@@ -20,13 +20,17 @@ Color _ink(BuildContext context, Color normal) =>
 /// as "I". Its spaced capitals never break inside a word: one too wide for
 /// the line, at a very large text size, is set just small enough to fit.
 class Eyebrow extends StatelessWidget {
-  const Eyebrow(this.text, {super.key, this.textAlign, this.color});
+  const Eyebrow(this.text, {super.key, this.textAlign, this.color, this.breakAtHyphens = true});
 
   final String text;
   final TextAlign? textAlign;
 
   /// Gold ink unless given: the dimmed ink of focus mode, say.
   final Color? color;
+
+  /// Whether a line may end after a hyphen in it, as [WholeWords.breakAtHyphens]:
+  /// false where it names a parsha, whose name stays whole ("Vayakhel-Pekudei").
+  final bool breakAtHyphens;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +43,7 @@ class Eyebrow extends StatelessWidget {
       style: style,
       textAlign: textAlign ?? TextAlign.start,
       semanticsLabel: shown == text ? null : text,
-      breakAtHyphens: true,
+      breakAtHyphens: breakAtHyphens,
     );
   }
 }

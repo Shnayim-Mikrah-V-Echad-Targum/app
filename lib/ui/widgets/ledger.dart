@@ -83,7 +83,9 @@ class LedgerCard extends StatelessWidget {
       children: [
         row(
           first: true,
-          (c) => c.count == 0 ? words(c.zero, theme.textTheme.titleMedium) : Text('${c.count}', style: numeral),
+          // A count is one word, set smaller where it is too wide for its
+          // column ("365" at the largest text on a small phone).
+          (c) => c.count == 0 ? words(c.zero, theme.textTheme.titleMedium) : words('${c.count}', numeral),
         ),
         row(last: !hasLongest, (c) => words(c.label, meta)),
         if (hasLongest) row(last: true, (c) => words(c.longest ?? '', meta)),

@@ -17,6 +17,7 @@ import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fonts_change_scope.dart';
 import '../../ui/widgets/lang.dart';
+import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ledger.dart';
 import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/paper_group.dart';
@@ -182,6 +183,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   PaperRow(
                     icon: Icons.history,
                     title: name(e.plan.portion),
+                    breakTitleAtHyphens: false,
                     subtitle: names.dateLong(e.plan.week.occasion),
                     onTap: () => context.push('/progress/week/${e.plan.weekId}'),
                   ),
@@ -466,7 +468,8 @@ class _WeekRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: theme.textTheme.titleMedium),
+                  // Whole, as a parsha's name stays, at any text size.
+                  WholeWords(name, style: theme.textTheme.titleMedium, textAlign: TextAlign.start),
                   const Gap(2),
                   Row(
                     children: [

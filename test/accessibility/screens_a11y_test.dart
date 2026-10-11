@@ -11,6 +11,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart' show WholeWords;
 
 import '../helpers.dart';
 import 'routes.dart';
@@ -144,6 +145,27 @@ void main() {
         textScale: 3,
       );
       expect(tester.takeException(), isNull);
+      expectWholeWords(tester);
+    });
+  }
+
+  // A name of two parshiyot, of more than one word, stays whole: "Acharei"
+  // over "Mot-Kedoshim", never "Acharei Mot-" over "Kedoshim". The Hebrew
+  // UI names it in English under the Hebrew.
+  for (final hebrew in [false, true]) {
+    testWidgets(
+        'no overflow or broken word at 300% on a 320 dp phone: /today in a week of two parshiyot${hebrew ? ', Hebrew' : ''}',
+        (tester) async {
+      await openRoute(
+        tester,
+        '/today',
+        settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.system),
+        now: DateTime(2028, 5, 1, 10),
+        size: const Size(320, 640),
+        textScale: 3,
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text(WholeWords.unbroken('Acharei Mot-Kedoshim')), findsOneWidget);
       expectWholeWords(tester);
     });
   }
@@ -421,13 +443,15 @@ void main() {
 /// label too large for its room is: each word's letters must all stand on
 /// one line. A line may end after a hyphen or a dash, as in a range ("54:1–"
 /// and "55:5"), or a maqaf, where the words it joins are too wide together
-/// for the column (joinWhereFits).
+/// for the column (joinWhereFits); but not after one that a word joiner
+/// holds to the word after it, as in a parsha's name ("Mot-Kedoshim") or
+/// a maqaf's words that fit a line.
 void expectWholeWords(WidgetTester tester) {
   final broken = <String>[];
   for (final paragraph in tester.allRenderObjects.whereType<RenderParagraph>()) {
     final text = paragraph.text.toPlainText(includeSemanticsLabels: false);
     // A placeholder (\uFFFC) is a widget, as a gap between two words.
-    for (final word in RegExp(r'[^\s\-–—־\uFFFC]+[\-–—־]?').allMatches(text)) {
+    for (final word in RegExp(r'(?:[^\s\-–—־\uFFFC]|[\-–—־]\u2060)+[\-–—־]?').allMatches(text)) {
       final lines = paragraph
           .getBoxesForSelection(
             TextSelection(baseOffset: word.start, extentOffset: word.end),

@@ -404,10 +404,10 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
           if (hebrewUi)
             Lang(
               const Locale('en'),
-              child: Text(
+              // Whole, as the name above it is: "Acharei" over "Mot-Kedoshim".
+              child: WholeWords(
                 names.portionAlt(portion, ashkenazi: settings.ashkenaziNames),
                 style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-                textAlign: TextAlign.center,
                 textDirection: TextDirection.ltr,
               ),
             )
