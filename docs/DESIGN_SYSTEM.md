@@ -1065,7 +1065,10 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - The wording goes to the rabbinic advisor (DESIGN.md §11).
 9. **Desktop ≥1200:**
    - A container of max width 1040 with columns 7/5 and a 24 gap.
-   - Left: header, hero, Today card. Right: week strip, ledger, "This week".
+   - Left: any notices, the hero and the Today card. Right: week strip, ledger, "This week".
+   - The header runs across the container above them, so its help button ends where the columns do, as an app bar's actions end on the column's edge, and the two columns start level under it.
+   - Each column is a focus traversal group, so Tab goes down the left column before the right, in the order a screen reader reads them, rather than across to the week strip, which stands higher on the page than the hero's controls.
+   - The day of rest keeps the single 720 column: its title page is all there is.
    - 600–1199: a single 720 column.
 
 ### Parsha tab / Week overview (week_overview_screen.dart, parsha_tab.dart; phonetall_parsha, phonetall_week, he_parsha)
