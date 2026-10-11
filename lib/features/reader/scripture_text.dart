@@ -539,6 +539,10 @@ class ScriptureVerse extends StatelessWidget {
           // At a very large size a gutter would take too much of each line:
           // the number leads the first line instead, as in the full text.
           if (gutter == 0) return paragraph(withNumber: true);
+          // The room the marks keep from the verse, at their left.
+          final clearance = marks == null
+              ? 0.0
+              : MediaQuery.textScalerOf(context).scale(ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikra));
           // The verse begins on the right in either language of the app.
           return Row(
             textDirection: TextDirection.rtl,
@@ -550,13 +554,7 @@ class ScriptureVerse extends StatelessWidget {
                 // The marks after the number, or beneath it where the gutter
                 // has no room for both and the room it keeps from the verse.
                 child: Padding(
-                  padding: EdgeInsets.only(
-                    left: marks == null
-                        ? 0
-                        : MediaQuery.textScalerOf(context).scale(
-                            ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikra),
-                          ),
-                  ),
+                  padding: EdgeInsets.only(left: clearance),
                   child: Text.rich(
                     TextSpan(text: numeral, children: [?marks]),
                     style: numberStyle,
