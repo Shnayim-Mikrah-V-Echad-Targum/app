@@ -940,6 +940,31 @@ While Listen reads, playing or paused, a player sits above the reader's bottom b
 
 **On a week's page:** while its parsha has any, a PaperRow (`bookmarks_outlined`, `parshaNotes`, and beneath it `notesCount` · `bookmarksCount`) to the filtered list, in the page's second PaperGroup between the haftarah and the discussion (§9 Parsha). The week's menu, and so the Parsha tab's, offers the whole list (`notesTitle`), after its other items.
 
+### 6.30 Home-screen widgets (Android and iOS)
+
+The week's title page in miniature, on the home screen: the calmest reminder there is, with nothing to tick and nothing asked on Shabbat (DESIGN.md §5). The app works out what it shows (`lib/services/home_widget_sync.dart`); the widgets only lay it out: Android's in `ParshaWidgetProvider.kt` with `res/layout/widget_parsha_small.xml` and `widget_parsha_medium.xml`, iOS's in `ios/ParshaWidget/ParshaWidget.swift`.
+
+**Sizes**
+- **Small** (about 2×2 cells; iOS `systemSmall`): the eyebrow (`parshatHashavua`; `erevShabbat` from midday on Friday; `simchatTorahEyebrow` for Vezot HaBerachah), the parsha's Hebrew name (pointed unless the reader hides vowels) and its transliteration in the reader's style, then three bars and `aliyotProgress` ("2 of 7 aliyot").
+- **Medium** (about 4×2; iOS `systemMedium`; where Android's widget opens): the small widget's column, a 1 px hairline with 16 either side, and beside it the day's reading in one line or two (`widgetToday` "Today: Shlishi", `widgetCatchUp` "Catching up: Shlishi – Revi'i" while aliyot planned before are unread, `todayDone`, `widgetNothingToday`, `widgetPaused`, `widgetWeekComplete`), and under it **Continue**: the label of Today's button ("Continue · Shlishi, Targum", `startAt` before anything is read), in primary with a forward chevron, 48 dp (44 pt) tall. It is gone once the week is complete.
+- **Day of rest** (Shabbat and Yom Tov, by the reader's days of Yom Tov): no bars and no Continue; the candles (§7.6) at 22 in `rest`, 6, and the day's greeting as Today's (`shabbatShalom`, `chagSameach`, `shanaTova`, `gmarChatimaTova`), with the parsha read that day.
+- **Days over** (the app not opened since the last day it gave): the last week's parsha and `widgetStale`, no bars. **Before onboarding:** the app's name in primary and "Open Shnayim Mikra to begin." (native strings, in the device's language).
+
+**Colour:** the app's light and dark tokens (§3), following the system's appearance (`values-night`, the colour assets' Dark appearance), never the wallpaper's dynamic colours: `paper`, the eyebrow in `secondary`, the Hebrew name in `primary`, the transliteration and the day's reading in `onSurface`, other lines in `onSurfaceVariant`, and the bars in `ringMikra1`, `ringMikra2` and `ringTargum` on `ringTrack`, the rings' order. Android draws the card with a 1 px `hairline`, at the system's widget radius from Android 12 (16 dp before it); iOS sets `paper` as the widget's container background, at the system's corners. `test/app/home_widget_platform_test.dart` checks every colour against `lib/ui/theme/palette.dart`.
+
+**Type**
+- iOS bundles the display serifs in the extension: the eyebrow EBG 600 14 in small caps, tracked 0.6 (FRL 600 14 in the Hebrew UI), the Hebrew name FRL 500 28, the transliteration EBG 500 17; the lines are the system's 12–14.
+- Android's launcher can't load an app's fonts, so the widget uses the system's: the eyebrow serif bold 11sp in capitals spaced 0.1 (13sp, unspaced, in Hebrew), the Hebrew name serif 24sp, the transliteration serif 15sp, the lines sans 12–13sp.
+- The eyebrow and the names keep to one line, set smaller rather than cut short (Android 8 and later autosize them, within boxes sized in sp; iOS scales them down), so a long name such as Vayakhel-Pekudei fits the small widget.
+
+**Layout:** padding 16; the bars 4 thick and 3 apart, with round ends, 10 below the names and filling from the start; `aliyotProgress` 4 below them. The whole widget follows the app's language, not the device's: in the Hebrew UI it is mirrored, the bars fill from the right and the chevron points left.
+
+**Turning:** the widget can't run the app's code, so the app sends a timeline: an entry for each day from today through next week's Shabbat (about 9 to 15, more over the festivals; under 8 KB), every string in the app's language and the week's progress as it stands, with a link for each tap. An entry is for the app's day, which turns at 3 a.m.; one may end sooner, at midday on Friday (the eyebrow), and with a city for Shabbat times on a day the device keeps its clock, at candle-lighting on the eve and at nightfall as the days of rest end, as Today turns. The app sends a new timeline at launch, on resuming, and within a second of any change to the progress or the settings it shows. Android updates the widget at each day boundary and each time an entry ends (inexact alarms, armed again by each update and after a reboot), and hourly as a safety net; iOS's timeline has an entry for each of those moments.
+
+**Taps:** the widget opens Today; Continue opens the reader where Today's button leads. Like a shortcut on the app's icon, each names a page (`shnayimmikra://widget/today`, `…/continue`), and the app opens it in the current week as it is when tapped, over Today.
+
+**Preview:** Android 12 and later show `widget_parsha_preview.xml` in the picker, the medium widget for a reader partway through Bereshit, in the device's language and theme; older launchers show `drawable-nodpi/widget_preview.png` (`tool/branding/make_widget_preview.py`). iOS's gallery shows the same reader, or the reader's own week once the app has sent it.
+
 ## 7. Motifs and iconography
 
 At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/ornaments.dart`, wrapped in ExcludeSemantics. In high contrast they draw in onSurface.
