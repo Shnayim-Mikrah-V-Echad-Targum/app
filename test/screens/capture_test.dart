@@ -1387,12 +1387,26 @@ final _modes = [
   _Mode('narrow', const Size(360, 2600), (s) => s),
   // A 1920 dp desktop, where a column's inset is widest.
   _Mode('wide', const Size(1920, 1080), (s) => s),
+  // The narrowest desktop, where Today's columns are narrowest, for the
+  // screens in [_narrowDesktopScreens].
+  _Mode('desk1200', const Size(1200, 800), (s) => s),
   // System text at 200% on a phone's own height, for the screens in
   // [_bigPhoneScreens]: what stays in view without scrolling.
   _Mode('bigphone', const Size(412, 915), (s) => s, textScale: 2),
 ];
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
+
+const _narrowDesktopScreens = {
+  'today',
+  'today_checkin',
+  'today_complete',
+  'today_grace',
+  'today_pause_ended',
+  'today_divergence',
+  'forum_questions',
+  'snackbar',
+};
 
 const _desktopScreens = {
   'today',
@@ -1651,6 +1665,7 @@ void main() {
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
       if (mode.tag == 'narrow' && !_narrowScreens.contains(entry.key)) continue;
       if (mode.tag == 'bigphone' && !_bigPhoneScreens.contains(entry.key)) continue;
+      if (mode.tag == 'desk1200' && !_narrowDesktopScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {
