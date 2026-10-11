@@ -1197,13 +1197,22 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_parsha_menu': _tapInTurn([
     () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
   ]),
+  // The sheet drawn up, with its switches in view: Side by side among them
+  // where the columns would show.
   'reader_display_side': (tester) async {
     await tester.tap(find.byIcon(Icons.text_format));
     await _settle(tester);
-    final side = find.widgetWithText(SwitchRow, _l10n(tester).sideBySide);
-    if (side.evaluate().isNotEmpty) {
-      await Scrollable.ensureVisible(tester.element(side), alignment: 0.5);
-    }
+    await tester.drag(find.byType(SheetTitle), const Offset(0, -600));
+    await _settle(tester);
+    final l = _l10n(tester);
+    final focus = find.widgetWithText(SwitchRow, l.focusMode);
+    await tester.scrollUntilVisible(
+      focus,
+      200,
+      scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)).first,
+    );
+    final side = find.widgetWithText(SwitchRow, l.sideBySide);
+    await Scrollable.ensureVisible(tester.element(side.evaluate().isNotEmpty ? side : focus), alignment: 0.5);
   },
   'haftarah_end': _scrollToEnd,
   'haftarah_chapter': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
