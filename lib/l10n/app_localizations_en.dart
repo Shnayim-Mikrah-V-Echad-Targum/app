@@ -2856,6 +2856,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutThisWeek => 'This week\'s parsha';
 
   @override
+  String widgetToday(String aliyot) {
+    return 'Today: $aliyot';
+  }
+
+  @override
+  String widgetCatchUp(String aliyot) {
+    return 'Catching up: $aliyot';
+  }
+
+  @override
+  String get widgetNothingToday => 'No reading planned today';
+
+  @override
+  String get widgetPaused => 'Paused · read whenever you like';
+
+  @override
+  String get widgetWeekComplete => 'Parsha complete · Yasher koach!';
+
+  @override
+  String get widgetStale => 'Open the app to bring this up to date';
+
+  @override
   String simchatTorahInDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

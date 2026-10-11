@@ -13,6 +13,7 @@ import 'app/system_bars.dart';
 import 'data/parsha_repository.dart';
 import 'features/community/data/backend.dart';
 import 'services/app_shortcuts.dart';
+import 'services/home_widget_sync.dart';
 import 'services/notifications.dart';
 import 'services/optional_fonts.dart';
 
@@ -22,12 +23,13 @@ Future<void> main() async {
   unawaited(enableEdgeToEdge());
 
   // Independent of one another, so they all start at once.
-  final (prefs, parshiyot, backend, notifications, shortcuts) = await (
+  final (prefs, parshiyot, backend, notifications, shortcuts, homeWidget) = await (
     _preferencesWithFonts(),
     ParshaRepository.load(),
     Backend.initialize(),
     NotificationService.create(),
     AppShortcutsService.create(),
+    HomeWidgetService.create(),
   ).wait;
 
   runApp(ProviderScope(
@@ -37,6 +39,7 @@ Future<void> main() async {
       backendProvider.overrideWithValue(backend),
       notificationServiceProvider.overrideWithValue(notifications),
       appShortcutsServiceProvider.overrideWithValue(shortcuts),
+      homeWidgetServiceProvider.overrideWithValue(homeWidget),
     ],
     child: const ShnayimMikraApp(),
   ));

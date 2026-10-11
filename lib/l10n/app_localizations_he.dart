@@ -2848,6 +2848,28 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shortcutThisWeek => 'פרשת השבוע';
 
   @override
+  String widgetToday(String aliyot) {
+    return 'היום: $aliyot';
+  }
+
+  @override
+  String widgetCatchUp(String aliyot) {
+    return 'משלימים: $aliyot';
+  }
+
+  @override
+  String get widgetNothingToday => 'אין קריאה מתוכננת להיום';
+
+  @override
+  String get widgetPaused => 'בהשהיה · אפשר לקרוא מתי שנוח';
+
+  @override
+  String get widgetWeekComplete => 'הפרשה הושלמה · יישר כוח!';
+
+  @override
+  String get widgetStale => 'יש לפתוח את האפליקציה כדי לעדכן';
+
+  @override
   String simchatTorahInDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
