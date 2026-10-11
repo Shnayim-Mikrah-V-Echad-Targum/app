@@ -7,6 +7,7 @@ const a11yRoutes = [
   '/parsha/browse',
   '/progress',
   '/community',
+  '/community/new',
   '/settings',
   '/settings/reading',
   '/settings/reading/city',
@@ -23,6 +24,8 @@ const a11yRoutes = [
   '/parsha/week/5787:2',
   // Opened directly, as on a web reload: with a home button.
   '/week/5787:1',
+  // A book of the Torah just finished.
+  '/celebrate/sefer:5787:0',
   // Links that lead nowhere.
   '/nope',
   '/community/forum/xyz',

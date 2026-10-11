@@ -314,15 +314,6 @@
   "@daysBeginToday": {
     "description": "On the streak card, in place of 0 days on track."
   },
-  "graceDays": "Grace days",
-  "graceDaysAvailable": "{count, plural, =0{none available} =1{1 available} other{{count} available}}",
-  "@graceDaysAvailable": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "dayKept": "Read",
   "dayAhead": "Ahead of plan",
   "dayCaughtUp": "Caught up",
@@ -536,26 +527,6 @@
       }
     }
   },
-  "continueWithAliyah": "Continue with {aliyah}",
-  "@continueWithAliyah": {
-    "placeholders": {
-      "aliyah": {
-        "type": "String"
-      }
-    }
-  },
-  "aliyahStatusRead": "read",
-  "@aliyahStatusRead": {
-    "description": "Spoken after an aliyah's name on its chip in the reader, e.g. \"Rishon, read\"."
-  },
-  "aliyahStatusPartial": "in progress",
-  "@aliyahStatusPartial": {
-    "description": "Spoken after an aliyah's name on its chip in the reader: some of its readings are done."
-  },
-  "aliyahStatusUnread": "not started",
-  "@aliyahStatusUnread": {
-    "description": "Spoken after an aliyah's name on its chip in the reader: none of its readings are done."
-  },
   "backToWeek": "Back to the week",
   "displaySettings": "Display settings",
   "textSize": "Text size",
@@ -606,14 +577,6 @@
     "placeholders": {
       "value": {
         "type": "String"
-      }
-    }
-  },
-  "thisCycle": "This year: {done} of 54 parshiyot",
-  "@thisCycle": {
-    "placeholders": {
-      "done": {
-        "type": "int"
       }
     }
   },
@@ -699,11 +662,10 @@
   },
   "pauseEnded": "Welcome back! Your place is saved.",
   "streaksHidden": "Streak numbers are hidden. Your progress is still saved.",
-  "milestonesTitle": "Milestones",
   "graceExplainer": "Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.",
   "streakExplainer": "Your parsha streak counts portions finished before Shabbat{deadline, select, tuesday{ — or by Tuesday night, which still counts} wednesday{ — or by the end of Wednesday, which still counts} other{}}. Shabbat and Yom Tov never break a streak.",
   "@streakExplainer": {
-    "description": "On Progress. The deadline is the reader's after-Shabbat window (lateWindowLabel): tuesday, wednesday or none.",
+    "description": "In Progress's About streaks sheet. The deadline is the reader's after-Shabbat window (lateWindowLabel): tuesday, wednesday or none.",
     "placeholders": {
       "deadline": {
         "type": "String"
@@ -731,17 +693,8 @@
       }
     }
   },
-  "milestoneSefer": "{book} complete — Chazak!",
-  "@milestoneSefer": {
-    "placeholders": {
-      "book": {
-        "type": "String"
-      }
-    }
-  },
   "milestoneSiyum": "Siyum HaTorah",
   "milestoneComeback": "Welcome back",
-  "milestoneLocked": "Not yet reached",
   "settingsTitle": "Settings",
   "settingsReading": "Reading & customs",
   "settingsDisplay": "Display",
@@ -1216,15 +1169,6 @@
   "verifyAction": "Sign in",
   "useDifferentEmail": "Use a different email",
   "demoCodeHint": "Demo mode: any 6 digits will work.",
-  "signedInAs": "Signed in as {name}",
-  "@signedInAs": {
-    "description": "The heading of the account page, naming the member signed in.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "displayNameLabel": "Display name",
   "displayNameHelp": "Shown with your posts. 2–40 characters.",
   "saveName": "Save name",
@@ -1261,24 +1205,27 @@
       }
     }
   },
-  "todahCount": "{count, plural, =0{Say thanks} =1{1 thanks} other{{count} thanks}}",
+  "todahCount": "{count, plural, =1{1 thanks} other{{count} thanks}}",
   "@todahCount": {
+    "description": "How many have thanked a post: on its Todah button for screen readers, and under one's own post.",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "todahSemantics": "Say thanks to {name}",
+  "todahSemantics": "Say todah to {name}",
   "@todahSemantics": {
+    "description": "The Todah button's name for screen readers, which holds the word the button shows (Todah), so that voice control finds it by what it says.",
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "todahRemove": "Remove your thanks to {name}",
+  "todahRemove": "Remove your todah to {name}",
   "@todahRemove": {
+    "description": "The Todah button's name for screen readers once thanks are given; it holds the word the button shows.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -1322,6 +1269,9 @@
   "pendingReview": "Hidden — waiting for a moderator",
   "lockedThread": "This discussion is locked.",
   "pinnedLabel": "Pinned",
+  "@pinnedLabel": {
+    "description": "Tag above the title of a pinned discussion in a forum's list."
+  },
   "lockedLabel": "Locked",
   "lockThread": "Lock discussion",
   "unlockThread": "Unlock discussion",
@@ -1335,7 +1285,6 @@
   "guidelinesAccept": "I'll follow the community guidelines",
   "guidelinesPrompt": "Before your first post, please read the community guidelines.",
   "readGuidelines": "Read the guidelines",
-  "noThreads": "No discussions yet. Start the first one!",
   "noPostsYet": "No posts yet — share a thought on Parshat {name}.",
   "@noPostsYet": {
     "description": "An empty weekly thread. {name} is the parsha; a no-break space keeps it with \"Parshat\".",
@@ -1784,5 +1733,380 @@
         "example": "Rivka"
       }
     }
-  }
+  },
+  "passTrackLabel": "{n} · {name}",
+  "@passTrackLabel": {
+    "description": "A segment of the reader's pass track: the reading's number and what is read, e.g. \"1 · Mikra\", \"3 · Targum\".",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "passTrackMikra": "Mikra",
+  "@passTrackMikra": {
+    "description": "The Hebrew text of the Torah, as a reading on the reader's pass track (\"1 · Mikra\")."
+  },
+  "finishStep": "Finish",
+  "@finishStep": {
+    "description": "The reader's Next button on the last step of an aliyah."
+  },
+  "aliyahDoneTitle": "{aliyah} is complete",
+  "@aliyahDoneTitle": {
+    "description": "The title of the reader's finished panel once an aliyah is read, e.g. \"Revi'i is complete\". Calm and short: aliyahComplete is what is spoken.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "parshaDoneTitle": "Parshat {name} is complete",
+  "@parshaDoneTitle": {
+    "description": "The title of the reader's finished panel once the whole parsha is read. parshaComplete is what is spoken.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nextAliyahLength": "{aliyah} is {count, plural, =1{one verse} other{{count} verses}}.",
+  "@nextAliyahLength": {
+    "description": "A gentle line on the finished panel about the aliyah to read next, e.g. \"Chamishi is 31 verses.\"",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextAliyahAction": "Next aliyah · {aliyah}",
+  "@nextAliyahAction": {
+    "description": "The finished panel's main button, naming the aliyah it opens.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "keepGoingAliyah": "Keep going: {aliyah}",
+  "@keepGoingAliyah": {
+    "description": "A quieter button on the finished panel once the day's reading is done, for reading on anyway.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "todayReadingDone": "That's today's reading. See you tomorrow.",
+  "@todayReadingDone": {
+    "description": "On the finished panel when every aliyah planned for today (and before) is read, and tomorrow has reading planned."
+  },
+  "todayReadingDoneOn": "That's today's reading. See you on {day}.",
+  "@todayReadingDoneOn": {
+    "description": "As todayReadingDone, when the next day with reading planned is later than tomorrow. {day} is a weekday, e.g. \"Sunday\".",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "erevShabbatDone": "That's this week's reading. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}",
+  "@erevShabbatDone": {
+    "description": "On the finished panel when the last day of the week's plan is done. {greeting} is chag when Yom Tov begins the next day.",
+    "placeholders": {
+      "greeting": {
+        "type": "String"
+      }
+    }
+  },
+  "erevShabbatDoneMorning": "The rest is for Shabbat morning. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}",
+  "@erevShabbatDoneMorning": {
+    "description": "As erevShabbatDone, when the plan leaves aliyot for Shabbat morning (read from a printed chumash).",
+    "placeholders": {
+      "greeting": {
+        "type": "String"
+      }
+    }
+  },
+  "parshaStreakLength": "{count, plural, =1{1-week parsha streak} other{{count}-week parsha streak}}",
+  "@parshaStreakLength": {
+    "description": "After \"On time · \" on the finished panel, once a parsha is finished before its Shabbat.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "graceDayEarned": "+1 grace day",
+  "@graceDayEarned": {
+    "description": "After the parsha streak on the finished panel, when finishing on time earned a grace day."
+  },
+  "parshaDoneLate": "After Shabbat — and it still counts.",
+  "parshaDoneLateStreak": "After Shabbat — and it still counts. Your streak continues.",
+  "parshaDoneRestored": "Finished together with the next parsha.",
+  "parshaDoneRestoredStreak": "Finished together with the next parsha — your streak continues.",
+  "readHaftarah": "Read the haftarah",
+  "seferDoneTitle": "{book} is complete",
+  "@seferDoneTitle": {
+    "description": "Names the page shown once a whole book of the Torah is read, e.g. in the browser's tab.",
+    "placeholders": {
+      "book": {
+        "type": "String"
+      }
+    }
+  },
+  "seferDoneBody": "{book} complete — {count} verses, twice, with {second}.",
+  "@seferDoneBody": {
+    "description": "Under \"Chazak chazak venitchazek\" once a whole book is read, e.g. \"Genesis complete — 1,533 verses, twice, with Targum.\" {second} is what was read after the Torah's two readings. A book has hundreds of verses.",
+    "placeholders": {
+      "book": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "aliyahTabLabel": "{name}, aliyah {n} of 7",
+  "@aliyahTabLabel": {
+    "description": "Spoken for an aliyah's tab in the reader's ribbon, before its state, e.g. \"Revi'i, aliyah 4 of 7, not started\".",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tabRead": "read",
+  "@tabRead": {
+    "description": "Spoken after an aliyah tab's label in the reader: all three of its readings are done."
+  },
+  "tabPartial": "{done} of 3 readings done",
+  "@tabPartial": {
+    "description": "Spoken after an aliyah tab's label in the reader: how many of its three readings (Mikra, Mikra again, Targum) are done.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      }
+    }
+  },
+  "tabNotStarted": "not started",
+  "@tabNotStarted": {
+    "description": "Spoken after an aliyah tab's label in the reader: none of its readings is done or under way."
+  },
+  "haftarahReadOn": "Read on {date}",
+  "@haftarahReadOn": {
+    "description": "At the end of the haftarah once it is marked read. {date} is dateLong, e.g. \"Friday, 9 October\".",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "torahMapOfYear": "Torah map · {year}",
+  "@torahMapOfYear": {
+    "description": "The Torah map's heading while it shows an earlier year, chosen by the year chips on Progress.",
+    "placeholders": {
+      "year": {
+        "type": "String",
+        "example": "5786"
+      }
+    }
+  },
+  "aboutStreaks": "About streaks",
+  "@aboutStreaks": {
+    "description": "On Progress, beside the grace days: opens a sheet explaining grace days and the parsha streak."
+  },
+  "graceAvailable": "{count, plural, =0{No grace days available} =1{1 grace day available} other{{count} grace days available}}",
+  "@graceAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "thisYear": "This year",
+  "@thisYear": {
+    "description": "Heading on Progress over this year's count of parshiyot and the year bar."
+  },
+  "earlierYear": "An earlier year",
+  "@earlierYear": {
+    "description": "The same heading while the reader looks at the parshiyot of a cycle before this one."
+  },
+  "parshiyotOfYear": "{done} of {total} parshiyot",
+  "@parshiyotOfYear": {
+    "description": "The parshiyot finished in a year's cycle, out of all of them.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "yearBarSemanticsYear": "{year}: {done} of {total} parshiyot complete",
+  "@yearBarSemanticsYear": {
+    "description": "Screen-reader label of the year bar for a cycle before this one; year is its Hebrew year (5786).",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "showAllWeeks": "Show all ({count})",
+  "@showAllWeeks": {
+    "description": "Under the recent weeks on Progress: shows the rest of them in place.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pauseRowBody": "Pause for up to 30 days. Nothing resets while paused.",
+  "endPause": "End pause",
+  "extendPause": "Extend",
+  "@extendPause": {
+    "description": "On Progress while streaks are paused: makes the pause longer."
+  },
+  "extendPauseTitle": "Extend the pause",
+  "extendPauseBy": "Extend by",
+  "@extendPauseBy": {
+    "description": "Over choices of 1, 3, 7 or 14 days."
+  },
+  "extendPauseUntil": "The pause will end on {date}.",
+  "@extendPauseUntil": {
+    "description": "In the dialog that extends a pause, before it is confirmed: when the pause would then end.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Tuesday, November 24"
+      }
+    }
+  },
+  "recordTitle": "Finished so far",
+  "@recordTitle": {
+    "description": "Heading on Progress over what the reader has done: first aliyah, books finished, the siyum."
+  },
+  "milestoneSiyumFrom": "Siyum from Parshat {name}",
+  "@milestoneSiyumFrom": {
+    "description": "In the Record: a reader who joined partway through the year finished every parsha from the one they began with to the end of the Torah.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Vayera"
+      }
+    }
+  },
+  "rashiScript": "Rashi script",
+  "@rashiScript": {
+    "description": "Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters."
+  },
+  "demoTag": "Demo",
+  "@demoTag": {
+    "description": "A small tag in the app bar of community pages when no community server is connected. Tapping it explains the demo."
+  },
+  "demoAboutTitle": "About the demo",
+  "demoAboutBody": "No community server is connected, so the community runs as a demo on this device alone. The discussions in it are examples.",
+  "demoAboutPosts": "Anything you post stays on this device, and everything resets when the app restarts.",
+  "demoAboutSignIn": "To try it, sign in with any email address and any 6 digits as the code.",
+  "@demoAboutSignIn": {
+    "description": "After demoAboutPosts in the demo's explanation, to a reader not signed in."
+  },
+  "dismissNotice": "Dismiss notice",
+  "resendCode": "Resend code",
+  "resendCodeIn": "Resend in {seconds}s",
+  "@resendCodeIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "signInPrivacy": "We use your email only to sign you in.",
+  "editDisplayName": "Edit display name",
+  "cloudBackupTitle": "Cloud backup",
+  "privacySafetyTitle": "Privacy & safety",
+  "accountGroupTitle": "Account",
+  "postingAs": "Posting as {name}",
+  "@postingAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "titleMinHelp": "At least 5 characters",
+  "bodyMinHelp": "At least 2 characters",
+  "replyToName": "Reply to {name}",
+  "@replyToName": {
+    "description": "Read by screen readers for a post's Reply button.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sending": "Sending…",
+  "askedTag": "Asked",
+  "@askedTag": {
+    "description": "A small tag beside a member's name on their posts in a question they asked."
+  },
+  "authorTag": "Author",
+  "@authorTag": {
+    "description": "A small tag beside a member's name on their posts in a discussion they started."
+  },
+  "todahAction": "Todah",
+  "@todahAction": {
+    "description": "The label of a post's thanks button: the Hebrew word for thanks."
+  },
+  "blockedMembersCount": "Blocked members ({count})",
+  "@blockedMembersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noBlockedMembers": "You haven't blocked anyone.",
+  "pinnedHeading": "Pinned",
+  "@pinnedHeading": {
+    "description": "Heading over a forum's pinned discussions."
+  },
+  "recentHeading": "Recent",
+  "@recentHeading": {
+    "description": "Heading over a forum's other discussions, the most recently active first."
+  },
+  "emptyForum": "No discussions yet — begin the first.",
+  "emptyLockedForum": "No discussions here yet.",
+  "@emptyLockedForum": {
+    "description": "An empty forum, to a member who may not begin a discussion in it (it is locked)."
+  },
+  "repliesCount": "{count, plural, =0{No replies yet} =1{1 reply} other{{count} replies}}",
+  "@repliesCount": {
+    "description": "In a forum's list, how many replies a discussion has had. A no-break space keeps the count with its word.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errBodyTooShort": "The message needs at least 2 characters."
 }

@@ -38,7 +38,7 @@ class ChoiceGroup<T> extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionHeader(title, level: 3, padding: const EdgeInsetsDirectional.only(top: 16, bottom: 4, start: 16, end: 16)),
+        SectionHeader(title, padding: const EdgeInsetsDirectional.only(top: 16, bottom: 4, start: 16, end: 16)),
         if (help != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
@@ -153,7 +153,8 @@ class LabeledSlider extends StatelessWidget {
   }
 }
 
-/// Settings pages share this scaffold with a readable max width.
+/// Settings pages share this scaffold with a readable max width. Their rows
+/// are list tiles, which line up with the title (PageBody.tilePadding).
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.title, required this.children});
 
@@ -161,8 +162,8 @@ class SettingsPage extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(title)),
-        body: PageBody(padding: const EdgeInsets.only(bottom: 32), children: children),
+  Widget build(BuildContext context) => PageScaffold(
+        titleText: title,
+        body: PageBody(padding: PageBody.tilePadding(context), children: children),
       );
 }

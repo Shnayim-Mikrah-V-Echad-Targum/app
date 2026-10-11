@@ -2,28 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/providers.dart';
 import '../../../ui/l10n.dart';
-import '../../../ui/widgets/app_icon.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
-import '../../parsha/week_context.dart';
-import '../../progress/domain/progress_models.dart';
+import '../../../ui/widgets/paper_group.dart';
 import '../data/community_providers.dart';
 import 'community_ui.dart';
 
+/// The community's front page (§9 Community): the demo's notice, this
+/// week's discussion, a way to sign in, and the forums.
 class CommunityScreen extends ConsumerWidget {
   const CommunityScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final names = Names(context);
     final he = context.isHebrewUi;
+    final text = Theme.of(context).textTheme;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     final user = ref.watch(communityUserProvider).value;
     final profile = ref.watch(myProfileProvider).value;
     final forums = ref.watch(forumsProvider);
-    final week = ref.watch(currentWeekContextProvider);
-    final settings = ref.watch(settingsProvider);
 
     Future<void> refresh() async {
       ref.invalidate(forumsProvider);
@@ -32,109 +31,79 @@ class CommunityScreen extends ConsumerWidget {
 
     return RefreshablePage(
       refresh: refresh,
-      builder: (context, refreshButton) => Scaffold(
-        appBar: AppBar(
-          title: Text(l.communityTitle),
-          actions: [
-            refreshButton,
-            IconButton(
-              tooltip: user == null ? l.signInTitle : l.settingsAccount,
-              icon: Icon(user == null ? Icons.login : Icons.account_circle_outlined),
-              onPressed: () => context.push('/community/account'),
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            const DemoBanner(),
-            Expanded(
-              child: RefreshIndicator(
-                // A failure shows in place of the forums.
-                onRefresh: () => refresh().catchError((Object _) {}),
-                child: PageBody(
+      builder: (context, refreshButton) => PageScaffold(
+        titleText: l.communityTitle,
+        actions: [
+          refreshButton,
+          IconButton(
+            tooltip: user == null ? l.signInTitle : l.settingsAccount,
+            // Signed in, the member's initial; until their profile comes, a
+            // person on the same disc.
+            icon: user == null ? const Icon(Icons.person_outline) : InitialDisc(profile?.displayName ?? ''),
+            onPressed: () => context.push('/community/account'),
+          ),
+        ],
+        body: RefreshIndicator(
+          // A failure shows in place of the forums.
+          onRefresh: () => refresh().catchError((Object _) {}),
+          child: PageBody(
+            children: [
+              const DemoBanner(),
+              const ThisWeekCard(),
+              if (user == null) ...[
+                const Gap(Rhythm.cardGap),
+                PaperGroup(
                   children: [
-                    WeeklyThreadOpener(
-                      portion: week.portion,
-                      hebrewYear: cycleYearOf(week.week.portion, week.week.occasion),
-                      builder: (context, progress, open) => InfoCard(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        onTap: open,
-                        child: Row(
-                          children: [
-                            SizedBox.square(
-                              dimension: 24,
-                              child: Center(child: progress ?? const Icon(Icons.local_library_outlined)),
-                            ),
-                            const Gap(12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l.thisWeeksThread(names.portion(week.portion, ashkenazi: settings.ashkenaziNames)),
-                                    style: Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                  Text(l.openDiscussion),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.chevron_right),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (user == null) ...[
-                      const Gap(12),
-                      InfoCard(
-                        child: Row(
-                          children: [
-                            const Icon(Icons.info_outline),
-                            const Gap(12),
-                            Expanded(child: Text(l.signInPrompt)),
-                            TextButton(onPressed: () => context.push('/community/account'), child: Text(l.signInTitle)),
-                          ],
-                        ),
-                      ),
-                    ],
-                    if (profile?.isModerator ?? false) ...[
-                      const Gap(12),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.shield_outlined),
-                        label: Text(l.moderationQueue),
-                        onPressed: () => context.push('/community/moderation'),
-                      ),
-                    ],
-                    SectionHeader(l.forumsHeading),
-                    forums.when(
-                      loading: () => const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-                      error: (e, _) => _Retry(message: communityError(l, e), onRetry: () => ref.invalidate(forumsProvider)),
-                      data: (list) => Column(
-                        children: [
-                          for (final f in list)
-                            Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                leading: AppIcon(_iconFor(f.slug)),
-                                title: Text(f.name(he)),
-                                subtitle: f.description(he).isEmpty ? null : Text(f.description(he)),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () => context.push('/community/forum/${f.slug}'),
-                              ),
-                            ),
-                        ],
-                      ),
+                    PaperRow(
+                      icon: Icons.info_outline,
+                      title: l.signInPrompt,
+                      trailing: TextButton(onPressed: () => context.push('/community/account'), child: Text(l.signInTitle)),
                     ),
                   ],
                 ),
+              ],
+              if (profile?.isModerator ?? false) ...[
+                const Gap(Rhythm.cardGap),
+                PaperGroup(
+                  children: [
+                    PaperRow(
+                      icon: Icons.shield_outlined,
+                      title: l.moderationQueue,
+                      onTap: () => context.push('/community/moderation'),
+                    ),
+                  ],
+                ),
+              ],
+              GroupHeader(l.forumsHeading),
+              forums.when(
+                loading: () => const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
+                error: (e, _) => _Retry(message: communityError(l, e), onRetry: () => ref.invalidate(forumsProvider)),
+                data: (list) => list.isEmpty
+                    ? const SizedBox.shrink()
+                    : PaperGroup(
+                        children: [
+                          for (final f in list)
+                            PaperRow(
+                              icon: iconFor(f.slug),
+                              title: f.name(he),
+                              titleStyle: text.titleMedium,
+                              subtitle: f.description(he).isEmpty ? null : f.description(he),
+                              subtitleStyle: text.bodySmall?.copyWith(color: muted),
+                              onTap: () => context.push('/community/forum/${f.slug}'),
+                            ),
+                        ],
+                      ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  static IconData _iconFor(String slug) => switch (slug) {
+  /// The icon of the forum [slug], here and where a new discussion picks
+  /// its forum.
+  static IconData iconFor(String slug) => switch (slug) {
         'parsha' => Icons.menu_book_outlined,
         'questions' => Icons.help_outline,
         'divrei-torah' => Icons.lightbulb_outline,

@@ -38,14 +38,20 @@ class Names {
   AppLocalizations get _l => context.l10n;
   bool get _he => context.isHebrewUi;
 
-  String aliyah(int index) => switch (index) {
-        0 => _l.aliyah1,
-        1 => _l.aliyah2,
-        2 => _l.aliyah3,
-        3 => _l.aliyah4,
-        4 => _l.aliyah5,
-        5 => _l.aliyah6,
-        _ => _l.aliyah7,
+  String aliyah(int index) => _aliyahIn(_l, index);
+
+  /// The aliyah's own Hebrew name, the same in either UI, as the Hebrew UI
+  /// names it: "רביעי".
+  static String aliyahHebrew(int index) => _aliyahIn(lookupAppLocalizations(const Locale('he')), index);
+
+  static String _aliyahIn(AppLocalizations l, int index) => switch (index) {
+        0 => l.aliyah1,
+        1 => l.aliyah2,
+        2 => l.aliyah3,
+        3 => l.aliyah4,
+        4 => l.aliyah5,
+        5 => l.aliyah6,
+        _ => l.aliyah7,
       };
 
   /// "Revi'i" or "Chamishi and Shishi".
@@ -112,6 +118,9 @@ class Names {
 
   String verseNumber(int n) => _he ? HebrewText.gematria(n, punctuate: false) : '$n';
 
+  /// A Hebrew year: "5787", or in the Hebrew UI "תשפ״ז".
+  String hebrewYear(int year) => _he ? HebrewText.gematria(year % 1000) : '$year';
+
   String weekday(LocalDate d) => DateFormat.EEEE(context.localeName).format(d.toDateTime());
 
   String weekdayShort(LocalDate d) {
@@ -130,6 +139,9 @@ class Names {
 
   /// "11 October 2026".
   String dateWithYear(LocalDate d) => DateFormat.yMMMMd(context.localeName).format(d.toDateTime());
+
+  /// "Oct 11, 2026".
+  String dateShortWithYear(LocalDate d) => DateFormat.yMMMd(context.localeName).format(d.toDateTime());
 
   String time(int minutesSinceMidnight) => DateFormat.jm(context.localeName)
       .format(DateTime(2000, 1, 1, minutesSinceMidnight ~/ 60, minutesSinceMidnight % 60));

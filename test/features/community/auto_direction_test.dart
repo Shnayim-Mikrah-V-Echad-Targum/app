@@ -12,6 +12,9 @@ void main() {
       expect(autoDirection('Shalom', fallback: fallback), ltr);
       expect(autoDirection('12, "Shalom" לכולם', fallback: fallback), ltr);
       expect(autoDirection('3 שאלות on Rashi', fallback: fallback), rtl);
+      // Quotation marks and numbers before the first letter count for nothing.
+      expect(autoDirection('“בקדמין”: Onkelos', fallback: fallback), rtl);
+      expect(autoDirection('3 פעמים: three times', fallback: fallback), rtl);
     }
   });
 
@@ -22,12 +25,12 @@ void main() {
     for (final text in ['مرحبا', 'ﬠﬡ', 'ﭐﭑ', 'ﹰﹱ', 'ܫܠܡܐ']) {
       expect(autoDirection(text, fallback: ltr), rtl, reason: text);
     }
-    expect(autoDirection('\u200F123', fallback: ltr), rtl, reason: 'the right-to-left mark');
-    expect(autoDirection('\u200E123', fallback: rtl), ltr, reason: 'the left-to-right mark');
+    expect(autoDirection('‏123', fallback: ltr), rtl, reason: 'the right-to-left mark');
+    expect(autoDirection('‎123', fallback: rtl), ltr, reason: 'the left-to-right mark');
   });
 
   test('a text with no strong character, an empty one included, takes the fallback', () {
-    for (final text in ['', '   ', '123', '?! 🙂', '+1', '🙏', '5787', '—…']) {
+    for (final text in ['', '   ', '123', '?! 🙂', '+1', '🙏', '5787', '—…', '285:2', ' 285:2 ']) {
       expect(autoDirection(text, fallback: ltr), ltr, reason: '"$text"');
       expect(autoDirection(text, fallback: rtl), rtl, reason: '"$text"');
     }

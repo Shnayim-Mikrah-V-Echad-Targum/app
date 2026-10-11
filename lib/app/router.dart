@@ -20,6 +20,7 @@ import '../features/parsha/week_overview_screen.dart';
 import '../features/progress/progress_screen.dart';
 import '../features/reader/haftarah_screen.dart';
 import '../features/reader/reader_screen.dart';
+import '../features/reader/sefer_complete_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/settings/screens/accessibility_settings_screen.dart';
 import '../features/settings/screens/city_picker_screen.dart';
@@ -82,8 +83,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       _route('/welcome', (_) => const OnboardingScreen(), routes: [
         for (final step in OnboardingStep.values) _route(step.name, (_) => OnboardingStepScreen(step: step)),
-        // Signing in to restore a backup, back to the welcome once signed in.
-        _route('account', (_) => const AccountScreen(returnWhenSignedIn: true)),
+        // Signing in to restore a backup, back to the welcome once signed in:
+        // without a display name, as nothing is posted.
+        _route('account', (_) => const AccountScreen(returnWhenSignedIn: true, needsName: false)),
       ]),
       StatefulShellRoute.indexedStack(
         pageBuilder: (context, state, shell) => _page(state, AppShell(shell: shell)),
@@ -140,6 +142,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // The list of cities over the reader, offered once reminders are turned
       // on there; choosing one goes back to it.
       _route('/city', (_) => const CityPickerScreen()),
+      // A book of the Torah just finished, once (see celebrations.dart):
+      // /celebrate/sefer:5787:0.
+      _route('/celebrate/:key', (s) => SeferCompleteScreen(celebrationKey: s.pathParameters['key']!)),
       // The reader always fills the screen. ?verse=28:12 opens the full
       // text at that verse.
       _route('/read/:id/:aliyah', (s) => ReaderScreen(

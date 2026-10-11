@@ -13,11 +13,13 @@ import 'package:shnayim_mikra/app/app.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
@@ -79,6 +81,36 @@ final historyNow = DateTime(2026, 11, 11, 10);
 
 /// Sunday 4 October 2026, Simchat Torah in the Diaspora.
 final historyJoinDate = LocalDate(2026, 10, 4);
+
+/// The Sunday of Vayera 5786, when the reader of [secondYearProgress]
+/// joined.
+final secondYearJoinDate = LocalDate(2025, 11, 2);
+
+/// A reader in their second year: they joined on [secondYearJoinDate] and
+/// read every aliyah of 5786 on its planned day, from Vayera to Vezot
+/// HaBerakhah, but for Vayakhel-Pekudei, finished on the Monday after its
+/// Shabbat. Before [historyNow] and the week of Bereshit 5787.
+Map<String, WeekProgress> secondYearProgress() {
+  const planner = ReadingPlanner(schedule: ParshaSchedule(israel: false));
+  final weeks = <String, WeekProgress>{};
+  for (var week = planner.schedule.weekFor(secondYearJoinDate);
+      week.occasion < LocalDate(2026, 10, 5);
+      week = planner.schedule.nextWeek(week)) {
+    final plan = planner.planFor(week);
+    final late = week.portion.number == 22;
+    var w = WeekProgress(weekId: plan.weekId);
+    for (final day in plan.days) {
+      for (final a in day.aliyot) {
+        w = w.withAliyah(a, late ? week.occasion.addDays(2) : day.date);
+      }
+    }
+    for (final a in plan.shabbatAliyot) {
+      w = w.withAliyah(a, week.occasion);
+    }
+    weeks[plan.weekId] = w;
+  }
+  return weeks;
+}
 
 /// Pumps the whole app with in-memory storage and the demo backend (or
 /// [forums], when given), and notifications disabled (or [notifications]),

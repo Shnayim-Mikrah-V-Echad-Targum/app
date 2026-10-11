@@ -364,5 +364,12 @@ void main() {
       await pumpThemed(tester, const Eyebrow('This week'), uiFont: UiFont.atkinson);
       expect(find.text('THIS WEEK'), findsOneWidget);
     });
+
+    testWidgets('reads its words as written, not its capitals', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpThemed(tester, const Eyebrow('This week'), uiFont: UiFont.atkinson);
+      expect(tester.getSemantics(find.text('THIS WEEK')), isSemantics(label: 'This week'));
+      handle.dispose();
+    });
   });
 }

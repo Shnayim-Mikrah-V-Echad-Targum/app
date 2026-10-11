@@ -6,6 +6,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
@@ -102,25 +103,29 @@ void main() {
       }
       final note = find.textContaining('Rashi does not comment on this verse');
       expect(note, findsOneWidget);
-      final box = tester.widget<Container>(find.ancestor(of: note, matching: find.byType(Container)).first);
-      expect((box.decoration! as BoxDecoration).color, scheme.secondaryContainer);
+      // A notice, as every page's are (§6.20).
+      final notice = find.ancestor(of: note, matching: find.byType(NoticeBanner));
+      final card = tester.widget<Card>(find.descendant(of: notice, matching: find.byType(Card)));
+      expect(card.color, scheme.secondaryContainer);
       expect(tester.widget<Text>(note).style?.color, scheme.onSecondaryContainer);
-      final icon = tester.widget<Icon>(
-        find.descendant(of: find.byWidget(box), matching: find.byIcon(Icons.info_outline)),
-      );
+      final icon = tester.widget<Icon>(find.descendant(of: notice, matching: find.byIcon(Icons.info_outline)));
       expect(icon.color, scheme.onSecondaryContainer);
     });
   }
 
-  testWidgets('the demo notice is a gold-ink notice, not a tertiary strip', (tester) async {
+  testWidgets('the demo notice is a gold-ink notice within the page, not a tertiary strip', (tester) async {
     final c = await pumpApp(tester);
     c.read(routerProvider).go('/community');
     await tester.pumpAndSettle();
-    final strip = tester.widget<Container>(
-      find.ancestor(of: find.textContaining('Demo mode'), matching: find.byType(Container)).first,
-    );
-    expect(strip.color, Palettes.light.secondaryContainer);
+    final notice = find.ancestor(of: find.textContaining('Demo mode'), matching: find.byType(NoticeBanner));
+    final card = tester.widget<Card>(find.descendant(of: notice, matching: find.byType(Card)));
+    expect(card.color, Palettes.light.secondaryContainer);
     final text = tester.widget<Text>(find.textContaining('Demo mode'));
     expect(text.style?.color, Palettes.light.onSecondaryContainer);
+    expect(find.descendant(of: notice, matching: find.byIcon(Icons.info_outline)), findsOneWidget);
+    // Within the gutters, as wide as the cards below it: never full-bleed.
+    final cards = tester.getRect(find.byType(InfoCard).first);
+    expect(tester.getRect(notice).left, cards.left);
+    expect(tester.getRect(notice).right, cards.right);
   });
 }

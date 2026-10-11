@@ -27,13 +27,18 @@ import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
+import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading;
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/services/backup_files.dart';
@@ -110,7 +115,10 @@ const _screens = {
   'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
   // Revi'i open after Rishon and Sheni, with Shlishi under way.
-  'reader_chips': '/read/5787:1/3',
+  'reader_ribbon': '/read/5787:1/3',
+  // Chamishi of Acharei Mot-Kedoshim (5786), the longest title the reader's
+  // app bar sets.
+  'reader_long': '/read/5786:29-30/4',
   // Shlishi of Matot-Masei (Numbers 32:1–19) read by section: the Targum
   // step of 32:1–4, with the third reading of 32:3.
   'reader_third': '/read/5787:42-43/2',
@@ -121,7 +129,19 @@ const _screens = {
   'reader_offer': '/read/5787:1/0',
   // Its first routine chosen, and Yes: the list of cities offered.
   'reader_offer_city': '/read/5787:1/0',
+  // Shlishi just finished on Friday, with Friday's own aliyot still to read:
+  // on to Revi'i.
+  'reader_finished_next': '/read/5787:1/2',
+  // Shlishi just finished on Wednesday, the day's reading: Done, or keep
+  // going.
+  'reader_finished_day': '/read/5787:1/2',
+  // Shishi just finished on Friday, with Shevi'i left for Shabbat morning.
+  'reader_finished_erev': '/read/5787:1/5',
+  // Shevi'i just finished on Friday, the rest read: the parsha, on time.
+  'reader_finished_week': '/read/5787:1/6',
   'reader_full': '/read/5787:1/2?mode=full',
+  // Its end, with the button that marks the aliyah read.
+  'reader_full_end': '/read/5787:1/2?mode=full',
   // The keyboard shortcuts, in the app and on the web.
   'reader_keys': '/read/5787:1/2',
   'reader_keys_web': '/read/5787:1/2',
@@ -132,6 +152,15 @@ const _screens = {
   'reader_gaps_spaced': '/read/5787:17/5?mode=full',
   // Focus mode, opened on the reader's place in Shlishi.
   'reader_focus': '/read/5787:1/2?mode=full',
+  // The guided reader at a chapter's start (Genesis 3:1), and reading by
+  // section: the verses up to a petuchah, and its mark.
+  'reader_chapter': '/read/5787:1/2',
+  'reader_section': '/read/5787:1/2',
+  // Rashi beside the full text, in square letters and in Rashi script, and
+  // read in the Targum's place in the guided reader.
+  'reader_rashi': '/read/5787:1/2?mode=full',
+  'reader_rashi_script': '/read/5787:1/2?mode=full',
+  'reader_rashi_step': '/read/5787:1/2',
   // Shlishi of Vayishlach with cantillation hidden: the dots written over
   // וישקהו (Genesis 33:4) stay.
   'reader_dots': '/read/5787:8/2?mode=full',
@@ -147,6 +176,16 @@ const _screens = {
   'haftarah_regular': '/haftarah/5787:1',
   'haftarah_chabad': '/haftarah/5787:1',
   'haftarah_chabad_regular': '/haftarah/5787:1',
+  // Nitzavim-Vayeilech 5786's (Isaiah 61:10–63:9): the head of its last
+  // chapter, and its end, with the divider and the button. Then Bereshit's
+  // once it is read.
+  'haftarah_chapter': '/haftarah/5786:51-52',
+  'haftarah_end': '/haftarah/5786:51-52',
+  'haftarah_read': '/haftarah/5787:1',
+  // Shabbat Shuva with Ha'azinu 5787: Hosea, then Joel.
+  'haftarah_books': '/haftarah/5786:53',
+  // A book of the Torah just finished: Genesis, in the cycle of 5787.
+  'celebrate': '/celebrate/sefer:5787:0',
   'progress': '/progress',
   'community': '/community',
   'forum': '/community/forum/parsha',
@@ -154,8 +193,32 @@ const _screens = {
   // An empty weekly thread, and the forum that lists it.
   'thread_weekly': '/community/thread/1000',
   'forum_weekly': '/community/forum/parsha',
+  // Signed in as a moderator: the initial on the account button, and the
+  // reports to review.
+  'community_member': '/community',
+  // This week's discussion, opened from its card, with the posts the demo
+  // starts it with.
+  'thread_this_week': '/community',
+  // Forums in both languages, one with a locked discussion, and one with
+  // none at all.
+  'forum_questions': '/community/forum/questions',
+  'forum_feedback': '/community/forum/feedback',
+  'forum_empty': '/community/forum/divrei-torah',
+  // What the Demo tag explains.
+  'demo_about': '/community/forum/questions',
   // Reporting a post, before a reason is chosen.
   'thread_report': '/community/thread/1',
+  // Letters that quote the posts they answer, and the member who began the
+  // discussion answering under an Author tag.
+  'thread_letters': '/community/thread/11',
+  // A discussion in Hebrew.
+  'thread_hebrew': '/community/thread/12',
+  // Answering a post: the strip above the reply box, and the reply typed.
+  'thread_replying': '/community/thread/1',
+  // Signed in, under your own post: its thanks counted, with no button.
+  'thread_mine': '/community/thread/1',
+  // Locked: no reply box, and no Reply under the posts.
+  'thread_locked': '/community/thread/51',
   // A thread of 250 posts, open on its latest hundred, and at its end.
   'thread_long': '/community/thread/5000',
   'thread_long_end': '/community/thread/5000',
@@ -168,9 +231,25 @@ const _screens = {
   'compose': '/community/new',
   // Its empty title field focused: the caret at the start of the UI's direction.
   'compose_focused': '/community/new',
+  // Post pressed with nothing written: what each field needs.
+  'compose_errors': '/community/new',
+  // A member with a name, who has accepted the guidelines, near the
+  // title's limit: signed with their name, and its counter shown.
+  'compose_member': '/community/new',
   'account': '/community/account',
   // Just after "Email me a code".
   'account_code': '/community/account',
+  // Three digits, then Sign in: the code's error under its boxes.
+  'account_code_error': '/community/account',
+  // Signed in to post, with a machine's name: the name step.
+  'account_name': '/community/account?then=back',
+  // A moderator with a name, who has blocked a member; the name's dialog,
+  // and the blocked members.
+  'account_member': '/community/account',
+  'account_edit': '/community/account',
+  'account_blocked': '/community/account',
+  // Keyboard focus on the privacy link in its sentence.
+  'focus_link': '/community/account',
   'account_settings': '/settings/account',
   'account_sync': '/community/account',
   'settings': '/settings',
@@ -251,11 +330,13 @@ const _screens = {
   'focus_slider': '/settings/display',
   'focus_switch': '/settings/display',
   'focus_field': '/community/account',
-  'focus_chip': '/read/5787:1/2',
+  'focus_tab': '/read/5787:1/2',
   'focus_menu': '/week/5787:1',
   'focus_nav': '/today',
   'focus_segment': '/welcome',
   'focus_fab': '/community/forum/parsha',
+  'focus_thread': '/community/forum/questions',
+  'focus_demo_tag': '/community/forum/questions',
   // Overlays (§6.19) and the app bar with content scrolled under it (§6.2).
   'menu': '/week/5787:1',
   'dialog': '/week/5787:1',
@@ -275,12 +356,26 @@ const _screens = {
   'legend_week': '/progress',
   'legend_map': '/progress',
   'progress_map': '/progress',
+  // Progress paused, and asked how long to extend the pause.
+  'progress_paused': '/progress',
+  'progress_extend': '/progress',
+  // The sheet behind the grace row's "About streaks".
+  'progress_about': '/progress',
+  // A reader in their second year (see [_secondYear]): the year chips, last
+  // year chosen, and what they have finished so far at the page's end.
+  'progress_years': '/progress',
+  'progress_past': '/progress',
+  'progress_record': '/progress',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
 /// the screen has loaded.
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  'reader_section': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
+  'reader_rashi': (s) => s.copyWith(showRashi: true),
+  'reader_rashi_script': (s) => s.copyWith(showRashi: true, rashiScript: true),
+  'reader_rashi_step': (s) => s.copyWith(secondReading: SecondReading.rashi),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   's_reminders_on': (s) =>
       s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true, habitAnchor: HabitAnchor.shacharit),
@@ -288,9 +383,13 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_offer_city': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   // Reading by section, so that 32:3 is read with the verses around it.
   'reader_third': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
-  // Reading by aliyah, so that one step finishes Shevi'i.
-  // Set as the reader sets it: untouched, it follows the haftarah custom.
+  // Reading by aliyah, so that one step finishes the aliyah. Set as the
+  // reader sets it: untouched, the repeat follows the haftarah custom.
   'reader_finished': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
+  'reader_finished_next': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
+  'reader_finished_day': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
+  'reader_finished_erev': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, plan: ReadingPlanType.sheviiOnShabbat),
+  'reader_finished_week': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
@@ -313,6 +412,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: false, joinDate: LocalDate(2029, 5, 1)),
   // Joined on the Wednesday of Bereshit: the days before have no reading.
   'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
+  for (final screen in ['progress_years', 'progress_past', 'progress_record'])
+    screen: (s) => s.copyWith(joinDate: secondYearJoinDate),
   's_reading_city': (s) => s.copyWith(city: _jerusalem),
   'today_candles': (s) => s.copyWith(city: _jerusalem),
   's_reminders_city': (s) => s.copyWith(
@@ -389,6 +490,7 @@ final _screenNow = <String, DateTime>{
   'welcome_plan_midweek': DateTime(2026, 10, 7, 11),
   // Thursday 12 August 2027, 9 Av 5787.
   'welcome_plan_tisha_bav': DateTime(2027, 8, 12, 11),
+  'reader_finished_day': DateTime(2026, 10, 7, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
@@ -405,10 +507,21 @@ final _screenProgress = <String, ProgressState Function()>{
         weeks: _progress().weeks,
         pauses: [Pause(LocalDate(2026, 10, 8), LocalDate(2026, 10, 18), id: 'travel')],
       ),
+  // Paused from Wednesday to the Friday after next.
+  for (final screen in ['progress_paused', 'progress_extend'])
+    screen: () => _progress().copyWith(pauses: [Pause(LocalDate(2026, 10, 7), LocalDate(2026, 10, 16))]),
+  for (final screen in ['progress_years', 'progress_past', 'progress_record']) screen: _secondYear,
   // All three readings of Shlishi (from Genesis 2:20) have reached 3:1,
   // its seventh verse, where the guided reader resumes and focus mode opens.
   'reader_focus': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 6]),
+      }),
+  'reader_chapter': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 6]),
+      }),
+  // Both Hebrew readings of Genesis 2:20 done: Rashi is next.
+  'reader_rashi_step': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [1, 1, 0]),
       }),
   // Both Hebrew readings of 32:1–4 done: the Targum is next.
   'reader_third': () => ProgressState(weeks: {
@@ -426,13 +539,44 @@ final _screenProgress = <String, ProgressState Function()>{
     }
     return ProgressState(weeks: {'5787:1': w.withPosition(6, const [16, 16, 0])});
   },
+  'haftarah_read': () {
+    final w = _progress().weeks['5787:1']!.withHaftarah(LocalDate(2026, 10, 8));
+    return ProgressState(weeks: {'5787:1': w});
+  },
+  'reader_finished_next': () => _readThrough(1, partly: 2),
+  'reader_finished_day': () => _readThrough(1, partly: 2, on: LocalDate(2026, 10, 7)),
+  'reader_finished_erev': () => _readThrough(4, partly: 5),
+  'reader_finished_week': () => _readThrough(5, partly: 6),
 };
+
+/// A reader in their second year, with Bereshit 5787 as in [_progress].
+ProgressState _secondYear() => ProgressState(weeks: {...secondYearProgress(), ..._progress().weeks});
+
+/// Bereshit with every aliyah up to [last] read on its planned day, and the
+/// Hebrew of aliyah [partly] read twice on [on], so that the guided reader
+/// resumes at its Targum.
+ProgressState _readThrough(int last, {required int partly, LocalDate? on}) {
+  final mon = LocalDate(2026, 10, 5);
+  var w = WeekProgress(weekId: '5787:1');
+  for (var a = 0; a <= last; a++) {
+    w = w.withAliyah(a, mon.addDays(a < 3 ? a : (a < 5 ? 3 : 4)));
+  }
+  final day = on ?? mon.addDays(4);
+  w = w
+      .withUnit(partly, ReadingPass.mikra1, day)
+      .withUnit(partly, ReadingPass.mikra2, day)
+      .withPosition(partly, const [99, 99, 0]);
+  return ProgressState(weeks: {'5787:1': w});
+}
 
 /// Screens shown as on the web, where the reader takes single keys.
 const _webKeys = {'reader_keys_web', 's_a11y_web'};
 
 /// Screens captured after typing into their only text field.
-const _typed = {'account_code': 'reader@example.org'};
+const _typed = {
+  'account_code': 'reader@example.org',
+  'thread_replying': 'Thank you — that settles it for me.',
+};
 
 /// Screens shown signed in with backup on, where a newer version of the app
 /// has written the backup, so syncing has stopped.
@@ -493,13 +637,29 @@ Future<ForumRepository> _signedIn() async {
   return repo;
 }
 
+/// Signed in as Rivka, who has accepted the guidelines and blocked a member.
+Future<ForumRepository> _member() async {
+  final repo = DemoForumRepository();
+  await repo.verifyCode('rivka@example.org', '123456');
+  await repo.updateDisplayName('Rivka Levi');
+  await repo.acceptGuidelines();
+  final other = (await repo.posts('1')).map((p) => p.authorId).firstWhere((id) => id != null && id != 'me');
+  await repo.block(other!);
+  return repo;
+}
+
 /// Screens shown with another community than the plain demo.
 final _communities = <String, Future<ForumRepository> Function()>{
   'thread_weekly': _withWeeklyThread,
   'forum_weekly': _withWeeklyThread,
   'thread_report': _signedIn,
+  'community_member': _signedIn,
+  'account_name': _signedIn,
+  for (final screen in ['compose_member', 'account_member', 'account_edit', 'account_blocked']) screen: _member,
+  'forum_empty': () async => DemoForumRepository(samples: false),
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
+  'thread_mine': _withOwnPost,
   'week_discuss': () async => _OpeningForever(),
   'welcome_restore': () async => _Cloud(),
   'welcome_restoring': () async {
@@ -508,6 +668,24 @@ final _communities = <String, Future<ForumRepository> Function()>{
     return repo;
   },
 };
+
+/// Signed in, with a post of your own in thread 1 that three have thanked.
+Future<ForumRepository> _withOwnPost() async {
+  final repo = DemoForumRepository();
+  await repo.verifyCode('reader@example.org', '123456');
+  return repo
+    ..seed(posts: [
+      Post(
+        id: '9100',
+        threadId: '1',
+        authorId: 'me',
+        authorName: 'Leah',
+        body: 'Rashi on the Targum of 1:1 is a good place to see the difference.',
+        createdAt: DateTime.now().subtract(const Duration(minutes: 40)),
+        todah: 3,
+      ),
+    ]);
+}
 
 /// The demo with a thread of 250 posts in Divrei Torah, thread 5000.
 Future<ForumRepository> _withLongThread() async {
@@ -582,11 +760,13 @@ final _taps = {
   // Choosing "All on Friday" says that it applies from this week on.
   's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
   'welcome_why': () => find.byIcon(Icons.expand_more),
-  // Next, on the last step of Shevi'i.
-  'reader_finished': () => find.byWidgetPredicate((w) => w is FilledButton).last,
+  // Finish, on the aliyah's last step.
+  for (final screen in ['reader_finished', 'reader_finished_next', 'reader_finished_day', 'reader_finished_erev', 'reader_finished_week'])
+    screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(OutlinedButton, Icons.forum_outlined),
   'thread_refreshed': () => find.byIcon(Icons.refresh),
   'account_code': () => find.byType(FilledButton).first,
+  'compose_errors': () => find.byType(FilledButton).last,
 };
 
 /// Taps what each finder finds in turn, settling after each.
@@ -674,6 +854,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await _scrollToEnd(tester);
   },
   'reader_dots': _scrollToEnd,
+  'reader_full_end': _scrollToEnd,
+  'haftarah_end': _scrollToEnd,
+  'haftarah_chapter': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
+  'haftarah_read': _scrollToEnd,
   'reader_third': _scrollToEnd,
   // The haftarah, near the end of Today.
   'today_three_weeks': _scrollToEnd,
@@ -686,6 +870,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   's_reading_chabad': (tester) =>
       Scrollable.ensureVisible(tester.element(find.byType(SwitchListTile).first), alignment: 0.3),
   'thread_long_end': _scrollToEnd,
+  // Reply on the last post.
+  'thread_replying': (tester) async {
+    final reply = find.descendant(of: find.byType(PostCard).last, matching: find.widgetWithIcon(TextButton, Icons.reply));
+    await tester.ensureVisible(reply);
+    await tester.tap(reply);
+  },
+  'thread_mine': _scrollToEnd,
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
   's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),
@@ -705,6 +896,23 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'focus_field': (tester) => _keyboardFocus(tester, find.byType(TextField).first),
   'compose_focused': (tester) => _keyboardFocus(tester, find.byWidgetPredicate((w) => w is TextField && w.maxLength == 150)),
   'focus_chip': (tester) => _keyboardFocus(tester, find.byType(ChoiceChip).at(1)),
+  'focus_link': (tester) => _keyboardFocus(tester, find.byType(LinkedText)),
+  'compose_member': (tester) async {
+    await tester.enterText(find.byType(TextField).first, 'On the order of the second reading: verse by verse, section by section, or the whole aliyah at once — and which do you find you keep?');
+    await tester.enterText(find.byType(TextField).last, 'I have been reading verse by verse.');
+  },
+  'account_code_error': (tester) async {
+    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.tap(find.byType(FilledButton).first);
+    await _settle(tester);
+    await tester.enterText(find.byType(TextField), '123');
+    await tester.tap(find.byType(FilledButton).first);
+  },
+  'account_edit': (tester) => tester.tap(find.byIcon(Icons.edit_outlined)),
+  'account_blocked': (tester) => tester.tap(find.byIcon(Icons.block)),
+  // Sheni's tab in the reader's aliyah ribbon.
+  'focus_tab': (tester) =>
+      _keyboardFocus(tester, find.descendant(of: find.byType(AliyahRibbon), matching: find.byType(SeferInkWell)).at(1)),
   // A menu button inside a card, which clips: the ring must still show.
   'focus_menu': (tester) => _keyboardFocus(
         tester,
@@ -730,6 +938,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
         find.descendant(of: find.byType(SegmentedButton<AppLanguage>), matching: find.byType(TextButton)).last,
       ),
   'focus_fab': (tester) => _keyboardFocus(tester, find.byType(FloatingActionButton)),
+  // A discussion in the middle of a forum's list: its ring clears the hairlines.
+  'focus_thread': (tester) => _keyboardFocus(tester, find.byType(ThreadTile).at(1)),
+  'focus_demo_tag': (tester) => _keyboardFocus(tester, find.byType(DemoTag)),
+  'demo_about': (tester) => tester.tap(find.byType(DemoTag)),
+  'thread_this_week': (tester) => tester.tap(find.byType(ThisWeekCard)),
   'menu': (tester) => _openWeekMenu(tester),
   // The week menu: full text, mark the whole parsha, clear the week.
   'dialog': (tester) => _openWeekMenu(tester, item: 2),
@@ -759,6 +972,20 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   // The map's section heading at the top of the page.
   'progress_map': (tester) => Scrollable.ensureVisible(tester.element(find.byIcon(Icons.info_outline).last)),
+  'progress_paused': _scrollToEnd,
+  'progress_extend': (tester) async {
+    await tester.ensureVisible(find.text(_l10n(tester).extendPause));
+    await tester.pump();
+    await tester.tap(find.text(_l10n(tester).extendPause));
+  },
+  'progress_about': (tester) => tester.tap(find.text(_l10n(tester).aboutStreaks)),
+  'progress_past': (tester) async {
+    final chip = find.byType(SeferChoiceChip).first;
+    await tester.tap(chip);
+    await _settle(tester);
+    await Scrollable.ensureVisible(tester.element(chip), alignment: 0.1);
+  },
+  'progress_record': _scrollToEnd,
   // The middle row of a paper group: its ring must clear the hairlines.
   'kit_focus': (tester) async {
     await _showGallery(tester, const RowsGallery());
@@ -777,6 +1004,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.byIcon(Icons.delete_forever_outlined)),
   's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
+  // The plan's last choice brought into view, so that the tap reaches it
+  // rather than the navigation bar over where it would be.
+  's_reading_changed': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(RadioListTile<ReadingPlanType>).last), alignment: 0.5),
   'city': _untilLoaded,
   'city_search': (tester) async {
     await _untilLoaded(tester);
@@ -833,6 +1064,9 @@ Future<void> _showRegularHaftarah(WidgetTester tester, {required double alignmen
       tester.element(find.descendant(of: find.byType(ExpansionTile), matching: find.byType(ListTile))),
       alignment: alignment,
     );
+
+/// The app's strings, in the language of the mode.
+AppLocalizations _l10n(WidgetTester tester) => tester.element(find.byType(Scaffold).first).l10n;
 
 /// Opens [gallery] as a page over the current route.
 Future<void> _showGallery(WidgetTester tester, Widget gallery) async {
@@ -903,11 +1137,14 @@ final _modes = [
   _Mode('bighe', const Size(412, 2600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 2),
   // A 360 dp phone, tall, for the screens in [_narrowScreens].
   _Mode('narrow', const Size(360, 2600), (s) => s),
+  // A 1920 dp desktop, where a column's inset is widest.
+  _Mode('wide', const Size(1920, 1080), (s) => s),
 ];
 
 const _desktopScreens = {
   'today',
   'today_candles',
+  'parsha',
   'today_divergence',
   'today_haftarah_left',
   'today_yomtov_oneday',
@@ -915,22 +1152,42 @@ const _desktopScreens = {
   'week_tab',
   'haftarah_tab',
   'haftarah_regular',
+  'haftarah_read',
   'reader',
   'reader_third',
   'reader_finished',
+  'reader_finished_week',
   'reader_offer',
   'reader_offer_city',
+  'celebrate',
   'reader_full',
+  'reader_full_end',
   'reader_focus',
+  'reader_section',
+  'reader_rashi',
   'reader_keys',
   'reader_keys_web',
   'reader_gaps',
   'progress',
+  'progress_years',
   'thread',
+  'thread_letters',
+  'thread_replying',
   'thread_long',
   'legal',
   'not_found',
   'settings',
+  // The app bar's title on the column's edge (§5), over pages of each kind.
+  's_display',
+  'community',
+  'forum',
+  'forum_questions',
+  'account',
+  'account_code',
+  'account_member',
+  'compose',
+  'browse',
+  'guide',
   'welcome',
   'welcome_plan',
   'welcome_restore',
@@ -948,10 +1205,20 @@ const _desktopScreens = {
   'reader_verse',
 };
 // The wide modes render only the screens above.
-const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc'};
-const _tallScreens = {'today', 'parsha', 'week', 'progress', 's_display', 'sources'};
+const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc', 'wide'};
+const _tallScreens = {'today', 'parsha', 'week', 'progress', 'progress_years', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'today', 'today_paused', 'progress', 'progress_map', 'kit_week', 's_data_import'};
+const _narrowScreens = {
+  'today',
+  'today_paused',
+  'progress',
+  'progress_map',
+  'progress_years',
+  'kit_week',
+  's_data_import',
+  'reader',
+  'reader_long',
+};
 const _bigTextScreens = {
   'today',
   'reader_offer',
@@ -960,6 +1227,21 @@ const _bigTextScreens = {
   's_reminders_offer',
   's_reminders_city',
   'today_candles',
+  'community',
+  'compose',
+  'compose_errors',
+  'account',
+  'account_code',
+  'account_name',
+  'account_member',
+  'thread',
+  'thread_replying',
+  'forum_questions',
+  'reader_finished_day',
+  'reader_finished_week',
+  'celebrate',
+  'haftarah',
+  'haftarah_read',
   'goto_verse',
   'goto_missing',
   'reader_verse',
@@ -973,8 +1255,10 @@ const _bigTextScreens = {
   's_data',
   's_data_import',
   'progress',
+  'progress_years',
   'reader',
   'haftarah_regular',
+  'reader_focus',
   'kit_ornaments',
   'kit_rows',
   'kit_progress',

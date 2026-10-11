@@ -79,10 +79,14 @@ abstract final class GraceRules {
 }
 
 class WeekEvaluation {
-  const WeekEvaluation(this.plan, this.status, this.completedOn);
+  const WeekEvaluation(this.plan, this.status, this.completedOn, {this.earnedGrace = false});
   final WeekPlan plan;
   final WeekStatus status;
   final LocalDate? completedOn;
+
+  /// Whether finishing this week on time earned a grace day: it did unless
+  /// the balance was already full.
+  final bool earnedGrace;
 }
 
 /// The result of evaluating a user's whole history.
@@ -285,8 +289,9 @@ class StreakEngine {
           status = WeekStatus.missed;
         }
       }
-      if (status == WeekStatus.onTime) grace = math.min(GraceRules.maxBalance, grace + 1);
-      evaluations.add(WeekEvaluation(plan, status, doneAt));
+      final earnedGrace = status == WeekStatus.onTime && grace < GraceRules.maxBalance;
+      if (earnedGrace) grace++;
+      evaluations.add(WeekEvaluation(plan, status, doneAt, earnedGrace: earnedGrace));
     }
 
     // Streak counts.

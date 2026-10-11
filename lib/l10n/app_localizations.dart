@@ -699,18 +699,6 @@ abstract class AppLocalizations {
   /// **'Begins with today\'s reading'**
   String get daysBeginToday;
 
-  /// No description provided for @graceDays.
-  ///
-  /// In en, this message translates to:
-  /// **'Grace days'**
-  String get graceDays;
-
-  /// No description provided for @graceDaysAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{none available} =1{1 available} other{{count} available}}'**
-  String graceDaysAvailable(int count);
-
   /// No description provided for @dayKept.
   ///
   /// In en, this message translates to:
@@ -1071,30 +1059,6 @@ abstract class AppLocalizations {
   /// **'Yasher koach! Your first aliyah is done — {verses}, twice, with {second}.'**
   String firstAliyahDone(String verses, String second);
 
-  /// No description provided for @continueWithAliyah.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue with {aliyah}'**
-  String continueWithAliyah(String aliyah);
-
-  /// Spoken after an aliyah's name on its chip in the reader, e.g. "Rishon, read".
-  ///
-  /// In en, this message translates to:
-  /// **'read'**
-  String get aliyahStatusRead;
-
-  /// Spoken after an aliyah's name on its chip in the reader: some of its readings are done.
-  ///
-  /// In en, this message translates to:
-  /// **'in progress'**
-  String get aliyahStatusPartial;
-
-  /// Spoken after an aliyah's name on its chip in the reader: none of its readings are done.
-  ///
-  /// In en, this message translates to:
-  /// **'not started'**
-  String get aliyahStatusUnread;
-
   /// No description provided for @backToWeek.
   ///
   /// In en, this message translates to:
@@ -1329,12 +1293,6 @@ abstract class AppLocalizations {
   /// **'Longest: {value}'**
   String longest(String value);
 
-  /// No description provided for @thisCycle.
-  ///
-  /// In en, this message translates to:
-  /// **'This year: {done} of 54 parshiyot'**
-  String thisCycle(int done);
-
   /// No description provided for @versesRead.
   ///
   /// In en, this message translates to:
@@ -1467,19 +1425,13 @@ abstract class AppLocalizations {
   /// **'Streak numbers are hidden. Your progress is still saved.'**
   String get streaksHidden;
 
-  /// No description provided for @milestonesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Milestones'**
-  String get milestonesTitle;
-
   /// No description provided for @graceExplainer.
   ///
   /// In en, this message translates to:
   /// **'Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.'**
   String get graceExplainer;
 
-  /// On Progress. The deadline is the reader's after-Shabbat window (lateWindowLabel): tuesday, wednesday or none.
+  /// In Progress's About streaks sheet. The deadline is the reader's after-Shabbat window (lateWindowLabel): tuesday, wednesday or none.
   ///
   /// In en, this message translates to:
   /// **'Your parsha streak counts portions finished before Shabbat{deadline, select, tuesday{ — or by Tuesday night, which still counts} wednesday{ — or by the end of Wednesday, which still counts} other{}}. Shabbat and Yom Tov never break a streak.'**
@@ -1527,12 +1479,6 @@ abstract class AppLocalizations {
   /// **'{count} days on track'**
   String milestoneDaysOnTrack(int count);
 
-  /// No description provided for @milestoneSefer.
-  ///
-  /// In en, this message translates to:
-  /// **'{book} complete — Chazak!'**
-  String milestoneSefer(String book);
-
   /// No description provided for @milestoneSiyum.
   ///
   /// In en, this message translates to:
@@ -1544,12 +1490,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Welcome back'**
   String get milestoneComeback;
-
-  /// No description provided for @milestoneLocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Not yet reached'**
-  String get milestoneLocked;
 
   /// No description provided for @settingsTitle.
   ///
@@ -3051,12 +2991,6 @@ abstract class AppLocalizations {
   /// **'Demo mode: any 6 digits will work.'**
   String get demoCodeHint;
 
-  /// The heading of the account page, naming the member signed in.
-  ///
-  /// In en, this message translates to:
-  /// **'Signed in as {name}'**
-  String signedInAs(String name);
-
   /// No description provided for @displayNameLabel.
   ///
   /// In en, this message translates to:
@@ -3189,22 +3123,22 @@ abstract class AppLocalizations {
   /// **'Replying to {name}'**
   String replyingTo(String name);
 
-  /// No description provided for @todahCount.
+  /// How many have thanked a post: on its Todah button for screen readers, and under one's own post.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Say thanks} =1{1 thanks} other{{count} thanks}}'**
+  /// **'{count, plural, =1{1 thanks} other{{count} thanks}}'**
   String todahCount(int count);
 
-  /// No description provided for @todahSemantics.
+  /// The Todah button's name for screen readers, which holds the word the button shows (Todah), so that voice control finds it by what it says.
   ///
   /// In en, this message translates to:
-  /// **'Say thanks to {name}'**
+  /// **'Say todah to {name}'**
   String todahSemantics(String name);
 
-  /// No description provided for @todahRemove.
+  /// The Todah button's name for screen readers once thanks are given; it holds the word the button shows.
   ///
   /// In en, this message translates to:
-  /// **'Remove your thanks to {name}'**
+  /// **'Remove your todah to {name}'**
   String todahRemove(String name);
 
   /// No description provided for @reportTitle.
@@ -3339,7 +3273,7 @@ abstract class AppLocalizations {
   /// **'This discussion is locked.'**
   String get lockedThread;
 
-  /// No description provided for @pinnedLabel.
+  /// Tag above the title of a pinned discussion in a forum's list.
   ///
   /// In en, this message translates to:
   /// **'Pinned'**
@@ -3422,12 +3356,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read the guidelines'**
   String get readGuidelines;
-
-  /// No description provided for @noThreads.
-  ///
-  /// In en, this message translates to:
-  /// **'No discussions yet. Start the first one!'**
-  String get noThreads;
 
   /// An empty weekly thread. {name} is the parsha; a no-break space keeps it with "Parshat".
   ///
@@ -4148,6 +4076,438 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signed in as {name}'**
   String signedInNow(String name);
+
+  /// A segment of the reader's pass track: the reading's number and what is read, e.g. "1 · Mikra", "3 · Targum".
+  ///
+  /// In en, this message translates to:
+  /// **'{n} · {name}'**
+  String passTrackLabel(int n, String name);
+
+  /// The Hebrew text of the Torah, as a reading on the reader's pass track ("1 · Mikra").
+  ///
+  /// In en, this message translates to:
+  /// **'Mikra'**
+  String get passTrackMikra;
+
+  /// The reader's Next button on the last step of an aliyah.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get finishStep;
+
+  /// The title of the reader's finished panel once an aliyah is read, e.g. "Revi'i is complete". Calm and short: aliyahComplete is what is spoken.
+  ///
+  /// In en, this message translates to:
+  /// **'{aliyah} is complete'**
+  String aliyahDoneTitle(String aliyah);
+
+  /// The title of the reader's finished panel once the whole parsha is read. parshaComplete is what is spoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Parshat {name} is complete'**
+  String parshaDoneTitle(String name);
+
+  /// A gentle line on the finished panel about the aliyah to read next, e.g. "Chamishi is 31 verses."
+  ///
+  /// In en, this message translates to:
+  /// **'{aliyah} is {count, plural, =1{one verse} other{{count} verses}}.'**
+  String nextAliyahLength(String aliyah, int count);
+
+  /// The finished panel's main button, naming the aliyah it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Next aliyah · {aliyah}'**
+  String nextAliyahAction(String aliyah);
+
+  /// A quieter button on the finished panel once the day's reading is done, for reading on anyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going: {aliyah}'**
+  String keepGoingAliyah(String aliyah);
+
+  /// On the finished panel when every aliyah planned for today (and before) is read, and tomorrow has reading planned.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s today\'s reading. See you tomorrow.'**
+  String get todayReadingDone;
+
+  /// As todayReadingDone, when the next day with reading planned is later than tomorrow. {day} is a weekday, e.g. "Sunday".
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s today\'s reading. See you on {day}.'**
+  String todayReadingDoneOn(String day);
+
+  /// On the finished panel when the last day of the week's plan is done. {greeting} is chag when Yom Tov begins the next day.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s this week\'s reading. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
+  String erevShabbatDone(String greeting);
+
+  /// As erevShabbatDone, when the plan leaves aliyot for Shabbat morning (read from a printed chumash).
+  ///
+  /// In en, this message translates to:
+  /// **'The rest is for Shabbat morning. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
+  String erevShabbatDoneMorning(String greeting);
+
+  /// After "On time · " on the finished panel, once a parsha is finished before its Shabbat.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1-week parsha streak} other{{count}-week parsha streak}}'**
+  String parshaStreakLength(int count);
+
+  /// After the parsha streak on the finished panel, when finishing on time earned a grace day.
+  ///
+  /// In en, this message translates to:
+  /// **'+1 grace day'**
+  String get graceDayEarned;
+
+  /// No description provided for @parshaDoneLate.
+  ///
+  /// In en, this message translates to:
+  /// **'After Shabbat — and it still counts.'**
+  String get parshaDoneLate;
+
+  /// No description provided for @parshaDoneLateStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'After Shabbat — and it still counts. Your streak continues.'**
+  String get parshaDoneLateStreak;
+
+  /// No description provided for @parshaDoneRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished together with the next parsha.'**
+  String get parshaDoneRestored;
+
+  /// No description provided for @parshaDoneRestoredStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished together with the next parsha — your streak continues.'**
+  String get parshaDoneRestoredStreak;
+
+  /// No description provided for @readHaftarah.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the haftarah'**
+  String get readHaftarah;
+
+  /// Names the page shown once a whole book of the Torah is read, e.g. in the browser's tab.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} is complete'**
+  String seferDoneTitle(String book);
+
+  /// Under "Chazak chazak venitchazek" once a whole book is read, e.g. "Genesis complete — 1,533 verses, twice, with Targum." {second} is what was read after the Torah's two readings. A book has hundreds of verses.
+  ///
+  /// In en, this message translates to:
+  /// **'{book} complete — {count} verses, twice, with {second}.'**
+  String seferDoneBody(String book, int count, String second);
+
+  /// Spoken for an aliyah's tab in the reader's ribbon, before its state, e.g. "Revi'i, aliyah 4 of 7, not started".
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, aliyah {n} of 7'**
+  String aliyahTabLabel(String name, int n);
+
+  /// Spoken after an aliyah tab's label in the reader: all three of its readings are done.
+  ///
+  /// In en, this message translates to:
+  /// **'read'**
+  String get tabRead;
+
+  /// Spoken after an aliyah tab's label in the reader: how many of its three readings (Mikra, Mikra again, Targum) are done.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of 3 readings done'**
+  String tabPartial(int done);
+
+  /// Spoken after an aliyah tab's label in the reader: none of its readings is done or under way.
+  ///
+  /// In en, this message translates to:
+  /// **'not started'**
+  String get tabNotStarted;
+
+  /// At the end of the haftarah once it is marked read. {date} is dateLong, e.g. "Friday, 9 October".
+  ///
+  /// In en, this message translates to:
+  /// **'Read on {date}'**
+  String haftarahReadOn(String date);
+
+  /// The Torah map's heading while it shows an earlier year, chosen by the year chips on Progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Torah map · {year}'**
+  String torahMapOfYear(String year);
+
+  /// On Progress, beside the grace days: opens a sheet explaining grace days and the parsha streak.
+  ///
+  /// In en, this message translates to:
+  /// **'About streaks'**
+  String get aboutStreaks;
+
+  /// No description provided for @graceAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No grace days available} =1{1 grace day available} other{{count} grace days available}}'**
+  String graceAvailable(int count);
+
+  /// Heading on Progress over this year's count of parshiyot and the year bar.
+  ///
+  /// In en, this message translates to:
+  /// **'This year'**
+  String get thisYear;
+
+  /// The same heading while the reader looks at the parshiyot of a cycle before this one.
+  ///
+  /// In en, this message translates to:
+  /// **'An earlier year'**
+  String get earlierYear;
+
+  /// The parshiyot finished in a year's cycle, out of all of them.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} parshiyot'**
+  String parshiyotOfYear(int done, int total);
+
+  /// Screen-reader label of the year bar for a cycle before this one; year is its Hebrew year (5786).
+  ///
+  /// In en, this message translates to:
+  /// **'{year}: {done} of {total} parshiyot complete'**
+  String yearBarSemanticsYear(String year, int done, int total);
+
+  /// Under the recent weeks on Progress: shows the rest of them in place.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all ({count})'**
+  String showAllWeeks(int count);
+
+  /// No description provided for @pauseRowBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause for up to 30 days. Nothing resets while paused.'**
+  String get pauseRowBody;
+
+  /// No description provided for @endPause.
+  ///
+  /// In en, this message translates to:
+  /// **'End pause'**
+  String get endPause;
+
+  /// On Progress while streaks are paused: makes the pause longer.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend'**
+  String get extendPause;
+
+  /// No description provided for @extendPauseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend the pause'**
+  String get extendPauseTitle;
+
+  /// Over choices of 1, 3, 7 or 14 days.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend by'**
+  String get extendPauseBy;
+
+  /// In the dialog that extends a pause, before it is confirmed: when the pause would then end.
+  ///
+  /// In en, this message translates to:
+  /// **'The pause will end on {date}.'**
+  String extendPauseUntil(String date);
+
+  /// Heading on Progress over what the reader has done: first aliyah, books finished, the siyum.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished so far'**
+  String get recordTitle;
+
+  /// In the Record: a reader who joined partway through the year finished every parsha from the one they began with to the end of the Torah.
+  ///
+  /// In en, this message translates to:
+  /// **'Siyum from Parshat {name}'**
+  String milestoneSiyumFrom(String name);
+
+  /// Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters.
+  ///
+  /// In en, this message translates to:
+  /// **'Rashi script'**
+  String get rashiScript;
+
+  /// A small tag in the app bar of community pages when no community server is connected. Tapping it explains the demo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo'**
+  String get demoTag;
+
+  /// No description provided for @demoAboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About the demo'**
+  String get demoAboutTitle;
+
+  /// No description provided for @demoAboutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No community server is connected, so the community runs as a demo on this device alone. The discussions in it are examples.'**
+  String get demoAboutBody;
+
+  /// No description provided for @demoAboutPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything you post stays on this device, and everything resets when the app restarts.'**
+  String get demoAboutPosts;
+
+  /// After demoAboutPosts in the demo's explanation, to a reader not signed in.
+  ///
+  /// In en, this message translates to:
+  /// **'To try it, sign in with any email address and any 6 digits as the code.'**
+  String get demoAboutSignIn;
+
+  /// No description provided for @dismissNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss notice'**
+  String get dismissNotice;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get resendCode;
+
+  /// No description provided for @resendCodeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {seconds}s'**
+  String resendCodeIn(int seconds);
+
+  /// No description provided for @signInPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'We use your email only to sign you in.'**
+  String get signInPrivacy;
+
+  /// No description provided for @editDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit display name'**
+  String get editDisplayName;
+
+  /// No description provided for @cloudBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud backup'**
+  String get cloudBackupTitle;
+
+  /// No description provided for @privacySafetyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & safety'**
+  String get privacySafetyTitle;
+
+  /// No description provided for @accountGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountGroupTitle;
+
+  /// No description provided for @postingAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting as {name}'**
+  String postingAs(String name);
+
+  /// No description provided for @titleMinHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 5 characters'**
+  String get titleMinHelp;
+
+  /// No description provided for @bodyMinHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 2 characters'**
+  String get bodyMinHelp;
+
+  /// Read by screen readers for a post's Reply button.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to {name}'**
+  String replyToName(String name);
+
+  /// No description provided for @sending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get sending;
+
+  /// A small tag beside a member's name on their posts in a question they asked.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked'**
+  String get askedTag;
+
+  /// A small tag beside a member's name on their posts in a discussion they started.
+  ///
+  /// In en, this message translates to:
+  /// **'Author'**
+  String get authorTag;
+
+  /// The label of a post's thanks button: the Hebrew word for thanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Todah'**
+  String get todahAction;
+
+  /// No description provided for @blockedMembersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked members ({count})'**
+  String blockedMembersCount(int count);
+
+  /// No description provided for @noBlockedMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t blocked anyone.'**
+  String get noBlockedMembers;
+
+  /// Heading over a forum's pinned discussions.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get pinnedHeading;
+
+  /// Heading over a forum's other discussions, the most recently active first.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get recentHeading;
+
+  /// No description provided for @emptyForum.
+  ///
+  /// In en, this message translates to:
+  /// **'No discussions yet — begin the first.'**
+  String get emptyForum;
+
+  /// An empty forum, to a member who may not begin a discussion in it (it is locked).
+  ///
+  /// In en, this message translates to:
+  /// **'No discussions here yet.'**
+  String get emptyLockedForum;
+
+  /// In a forum's list, how many replies a discussion has had. A no-break space keeps the count with its word.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No replies yet} =1{1 reply} other{{count} replies}}'**
+  String repliesCount(int count);
+
+  /// No description provided for @errBodyTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'The message needs at least 2 characters.'**
+  String get errBodyTooShort;
 }
 
 class _AppLocalizationsDelegate

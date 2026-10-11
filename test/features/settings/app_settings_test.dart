@@ -214,6 +214,33 @@ void main() {
     });
   });
 
+  test('line spacing is never below 1.6, so lower marks are never clipped', () {
+    // Versions before this allowed 1.5.
+    expect(AppSettings.fromJson({'lineHeight': 1.5}).lineHeight, kMinLineHeight);
+    expect(AppSettings.fromJson({'lineHeight': 1.6}).lineHeight, 1.6);
+    expect(AppSettings.fromJson({'lineHeight': 9}).lineHeight, kMaxLineHeight);
+    expect(kMinLineHeight, 1.6);
+  });
+
+  test('the Rashi script is off unless chosen, and is the only opt-in font it adds', () {
+    expect(AppSettings.fromJson({}).rashiScript, isFalse);
+    const on = AppSettings(rashiScript: true, showRashi: true);
+    expect(AppSettings.fromJson(on.toJson()).rashiScript, isTrue);
+    expect(const AppSettings().optionalFonts, [null, 'NotoSerifHebrew']);
+    expect(on.optionalFonts, [null, 'NotoSerifHebrew', 'NotoRashiHebrew']);
+    expect(
+      const AppSettings(rashiScript: true, secondReading: SecondReading.rashi).optionalFonts,
+      [null, 'NotoSerifHebrew', 'NotoRashiHebrew'],
+      reason: 'Rashi read as the second reading',
+    );
+    // Chosen, but with Rashi shown nowhere: nothing to load it for.
+    expect(const AppSettings(rashiScript: true).optionalFonts, [null, 'NotoSerifHebrew']);
+    expect(
+      const AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.taameyFrank).optionalFonts,
+      ['Lexend', 'TaameyFrank'],
+    );
+  });
+
   test('copyWith can clear nullable fields', () {
     final s = const AppSettings(habitAnchor: HabitAnchor.bed, city: _jerusalem).copyWith(habitAnchor: null, city: null);
     expect(s.habitAnchor, isNull);

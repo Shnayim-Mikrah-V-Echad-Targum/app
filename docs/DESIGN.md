@@ -114,6 +114,9 @@ The engine is a pure function of (progress, join date, today, pauses, and the pl
 
 **Syncing keeps every change, removals included.** Each reading, the haftarah, each saved place and each pause records when it last changed, and a removal keeps that time instead of disappearing. Merging two devices gives the same result in any order: where one device marked a reading as not read, cleared a week or ended a pause after the other last saw it, that change wins, and a reading marked again afterwards keeps its new day. Where both devices logged the same reading independently, the earliest date wins, so a sync never lowers a streak. With backup on and an account signed in, resetting all progress erases it everywhere, but keeps anything logged on another device after the reset. Signed out, a reset stays on the device, so it can't erase the backup of whoever signs in next.
 
+### What has been finished
+Progress lists what the reader has finished so far, newest first, each with the day it was first reached: the first aliyah and parsha, lengths of each streak, each book of the Torah and the siyum. Like the streaks, the list is worked out from the reading log every time and never stored, so a book or a siyum finished in one year stays finished when the next begins. A reader who joined partway through a year and then finished every parsha from the first they read through Vezot HaBerakhah has a siyum from that parsha, as long as it was before Deuteronomy: from there it would be one book or less, which its own entry marks. Nothing is shown as locked or still to reach.
+
 ## 5. Notifications
 
 The planner is a pure function. Its rules come from the research:
@@ -158,7 +161,7 @@ A reader who would rather not can choose instead to start with today's reading: 
 
 **Long lists come a page at a time.** A forum lists its pinned threads, then 30 others at a time, newest activity first. A thread opens on its latest 100 posts, so the newest reply is never cut off, and earlier posts are a tap away. Each post comes with the post it answers, so a reply quotes it even when it is on a page not loaded. Pages follow on from the last row shown (keyset paging), at the exact time the server gave, with ties broken by id, so none repeats or skips a row. A thread's post count leaves out deleted posts. While earlier posts are not loaded, the thread shows that count and numbers its posts within it; once all are, it counts those shown, since the server's count includes posts the reader can't see, such as a blocked member's.
 
-**Sign-in is a six-digit email code.** It needs no password and no deep links, which matters on Windows and in desktop browsers. The code arrives through Supabase's magic-link template, edited to show `{{ .Token }}`.
+**Sign-in is a six-digit email code.** It needs no password and no deep links, which matters on Windows and in desktop browsers. The code arrives through Supabase's magic-link template, edited to show `{{ .Token }}`. A new account starts with a machine's name ("user_1a2b3c4d"), so signing in asks for a display name, and nothing is posted until there is one: a first post is never signed with a machine's name.
 
 **Safety follows Apple guideline 1.2 and Google Play's user-generated-content (UGC) policy:**
 - guidelines to accept before the first post
@@ -174,7 +177,7 @@ A reader who would rather not can choose instead to start with today's reading: 
 
 **Posting on Shabbat** can optionally be blocked on the server, using a per-region table of Shabbat times. It is off by default: users span time zones, and the forum's moderators should make that call.
 
-**Without a backend**, a demo repository runs on the device. The app is fully usable without any server.
+**Without a backend**, a demo repository runs on the device. The app is fully usable without any server. Every forum starts with a few sample discussions in Hebrew and English, and this week's discussion with a few posts when it is first opened; no sample is dated on Shabbat or Yom Tov.
 
 ## 8. Accessibility
 

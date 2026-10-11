@@ -18,15 +18,21 @@ Color _ink(BuildContext context, Color normal) =>
 /// (§4.5). Never put digits in it; old-style small-cap figures make "1" read
 /// as "I".
 class Eyebrow extends StatelessWidget {
-  const Eyebrow(this.text, {super.key, this.textAlign});
+  const Eyebrow(this.text, {super.key, this.textAlign, this.color});
 
   final String text;
   final TextAlign? textAlign;
 
+  /// Gold ink unless given: the dimmed ink of focus mode, say.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final type = SeferType.of(context);
-    return Text(type.eyebrowText(text), style: type.eyebrow, textAlign: textAlign);
+    final shown = type.eyebrowText(text);
+    final style = color == null ? type.eyebrow : type.eyebrow.copyWith(color: color);
+    // Capitals are for the eye: a screen reader may spell them out.
+    return Text(shown, style: style, textAlign: textAlign, semanticsLabel: shown == text ? null : text);
   }
 }
 

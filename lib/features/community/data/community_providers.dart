@@ -25,6 +25,18 @@ final myProfileProvider = FutureProvider<Profile?>((ref) async {
 
 final forumsProvider = FutureProvider<List<Forum>>((ref) => ref.watch(forumRepositoryProvider).forums());
 
+/// Whether the demo's notice on the Community page has been dismissed. It
+/// stays dismissed for the rest of the session; the other pages still say,
+/// with their Demo tag, that the community is a demo.
+class DemoBannerDismissed extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void dismiss() => state = true;
+}
+
+final demoBannerDismissedProvider = NotifierProvider<DemoBannerDismissed, bool>(DemoBannerDismissed.new);
+
 /// A forum's threads as far as the reader has paged: every pinned thread,
 /// then the others, newest activity first.
 class ThreadsPage {
@@ -186,6 +198,14 @@ final blockedUsersProvider = FutureProvider<Set<String>>((ref) async {
   final user = await ref.watch(communityUserProvider.future);
   if (user == null) return <String>{};
   return ref.watch(forumRepositoryProvider).blockedUsers();
+});
+
+/// The members the reader has blocked, with their names, for managing the
+/// list. Fetched again with [blockedUsersProvider].
+final blockedMembersProvider = FutureProvider<List<(String id, String name)>>((ref) async {
+  final blocked = await ref.watch(blockedUsersProvider.future);
+  if (blocked.isEmpty) return const [];
+  return ref.watch(forumRepositoryProvider).blockedMembers();
 });
 
 /// Posts reported in this session, whose Report action is hidden. They are

@@ -276,6 +276,23 @@ void main() {
       expect(state().pauses.any((p) => p.contains(d2)), isFalse, reason: 'today is no longer paused');
     });
 
+    test('extending a pause moves its end in place, and never shortens it', () {
+      progress().replaceAll(ProgressState(pauses: [
+        Pause(d1, d2, id: 'a', updatedAt: now),
+        Pause(d3, d3, id: 'b', updatedAt: now),
+      ]));
+      now += 1000;
+      progress().extendPause(d2, d3);
+      final pauses = {for (final p in state().pauses) p.id: p};
+      expect(pauses, hasLength(2), reason: 'no pause is added or dropped');
+      expect((pauses['a']!.start, pauses['a']!.end, pauses['a']!.updatedAt), (d1, d3, now));
+      expect(pauses['b']!.updatedAt, now - 1000, reason: 'not covering today');
+
+      final before = state();
+      progress().extendPause(d2, d2);
+      expect(identical(state(), before), isTrue, reason: 'already paused that long');
+    });
+
     test('a reset stays on this device unless it is to reach everywhere', () async {
       final latest = state().latestStamp;
       progress().reset();

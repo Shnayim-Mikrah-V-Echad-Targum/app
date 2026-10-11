@@ -1,4 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
@@ -298,6 +302,193 @@ void main() {
 
     expect(await maxLines(1), 2);
     expect(await maxLines(2), isNull);
+  });
+
+  testWidgets('a row may set its title and subtitle in other styles, as the forums do', (tester) async {
+    late TextTheme text;
+    await pumpThemed(
+      tester,
+      Builder(builder: (context) {
+        text = Theme.of(context).textTheme;
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 400,
+            child: PaperRow(
+              icon: Icons.help_outline,
+              title: 'Questions & answers',
+              titleStyle: text.titleMedium,
+              subtitle: 'Ask about a verse, a Targum or a Rashi.',
+              subtitleStyle: text.bodySmall,
+              onTap: () {},
+            ),
+          ),
+        );
+      }),
+    );
+    expect(tester.widget<Text>(find.text('Questions & answers')).style, text.titleMedium);
+    expect(tester.widget<Text>(find.text('Ask about a verse, a Targum or a Rashi.')).style, text.bodySmall);
+  });
+
+  testWidgets('rows built on their own, for a list built as it scrolls, lay out as a group does', (tester) async {
+    List<Widget> rows() => [
+          for (final title in ['Rishon', 'Sheni', 'Shlishi']) PaperRow(icon: Icons.menu_book_outlined, title: title, onTap: () {}),
+        ];
+    await pumpThemed(tester, Align(alignment: Alignment.topCenter, child: SizedBox(width: 400, child: PaperGroup(children: rows()))));
+    final grouped = [for (final t in ['Rishon', 'Sheni', 'Shlishi']) tester.getRect(find.text(t))];
+    final height = tester.getSize(find.byType(PaperGroup)).height;
+
+    final corners = <BorderRadius>[];
+    await pumpThemed(
+      tester,
+      Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 400,
+          child: Column(
+            key: const Key('rows'),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final (i, row) in rows().indexed)
+                PaperGroupRow(
+                  first: i == 0,
+                  last: i == 2,
+                  child: Builder(builder: (context) {
+                    corners.add(PaperGroup.rowCorners(context));
+                    return row;
+                  }),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect([for (final t in ['Rishon', 'Sheni', 'Shlishi']) tester.getRect(find.text(t))], grouped);
+    expect(tester.getSize(find.byKey(const Key('rows'))).height, height);
+    // Each rounds its ink and ring to the corners of the card it shares.
+    expect(corners, [
+      const BorderRadius.vertical(top: Radius.circular(12)),
+      BorderRadius.zero,
+      const BorderRadius.vertical(bottom: Radius.circular(12)),
+    ]);
+  });
+
+  testWidgets('a row built on its own keeps its focus ring whole over the row below it', (tester) async {
+    FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+    const titles = ['Rishon', 'Sheni', 'Shlishi'];
+    await pumpThemed(
+      tester,
+      Align(
+        alignment: Alignment.topCenter,
+        child: RepaintBoundary(
+          key: const Key('rows'),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: SizedBox(
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final (i, title) in titles.indexed)
+                    PaperGroupRow(first: i == 0, last: i == 2, child: PaperRow(title: title, onTap: () {})),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    // The keyboard's focus on the middle row.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+
+    final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const Key('rows')));
+    final image = (await tester.runAsync(() => boundary.toImage()))!;
+    final data = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+    Color pixel(Offset global) {
+      final p = boundary.globalToLocal(global);
+      final i = (p.dy.floor() * image.width + p.dx.floor()) * 4;
+      return Color.fromARGB(data.getUint8(i + 3), data.getUint8(i), data.getUint8(i + 1), data.getUint8(i + 2));
+    }
+
+    final row = tester.getRect(find.byType(PaperGroupRow).at(1));
+    // The ring, 3 px wide outside the row: over the row above it, which is
+    // painted before it, and over the row below it, which is painted after.
+    expect(pixel(Offset(row.center.dx, row.top - 1.5)), light.focus);
+    expect(pixel(Offset(row.center.dx, row.bottom + 1.5)), light.focus);
+    // Below the ring, the next row's paper as ever.
+    expect(pixel(Offset(row.center.dx, row.bottom + 8)), light.paper);
+    image.dispose();
+  });
+
+  testWidgets('a style given in part keeps the rest of the row\'s own', (tester) async {
+    await pumpThemed(
+      tester,
+      const SizedBox(
+        width: 400,
+        child: PaperRow(
+          title: 'Reading',
+          titleStyle: TextStyle(fontWeight: FontWeight.w700),
+          subtitle: 'Location and plan',
+          subtitleStyle: TextStyle(fontStyle: FontStyle.italic),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    final context = tester.element(find.byType(PaperRow));
+    final text = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final title = tester.widget<Text>(find.text('Reading')).style!;
+    expect((title.fontSize, title.fontWeight, title.color), (text.bodyLarge!.fontSize, FontWeight.w700, scheme.onSurface));
+    final subtitle = tester.widget<Text>(find.text('Location and plan')).style!;
+    expect((subtitle.fontSize, subtitle.fontStyle, subtitle.color), (text.bodyMedium!.fontSize, FontStyle.italic, scheme.onSurfaceVariant));
+  });
+
+  for (final hebrew in [false, true]) {
+    testWidgets('${hebrew ? 'he' : 'en'}: a labelled button ends the title\'s line, or goes under it at 200%', (tester) async {
+      // In the test font, whose every letter is as wide as it is high.
+      Future<void> pump(double textScale) => pumpThemed(
+            tester,
+            Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: textScale == 1 ? 700 : 400,
+                child: PaperGroup(children: [
+                  PaperRow(
+                    icon: Icons.shield_outlined,
+                    title: '1 grace day available',
+                    trailing: TextButton(onPressed: () {}, child: const Text('About streaks')),
+                  ),
+                ]),
+              ),
+            ),
+            hebrew: hebrew,
+            textScale: textScale,
+          );
+      await pump(1);
+      final title = tester.getRect(find.text('1 grace day available'));
+      final button = tester.getRect(find.byType(TextButton));
+      expect(button.center.dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+      // At the row's end, 12 in, as a trailing control ends.
+      final row = tester.getRect(find.byType(PaperRow));
+      expect(hebrew ? button.left - row.left : row.right - button.right, 12);
+
+      await pump(2);
+      expect(tester.takeException(), isNull);
+      final paragraph = tester.renderObject<RenderParagraph>(find.text('1 grace day available'));
+      expect(paragraph.size.width, greaterThanOrEqualTo(paragraph.getMinIntrinsicWidth(double.infinity) - 0.5),
+          reason: 'no word broken');
+      expect(tester.getRect(find.byType(TextButton)).top, greaterThanOrEqualTo(tester.getRect(find.text('1 grace day available')).bottom - 1));
+    });
+  }
+
+  testWidgets('the help icon keeps its question mark the right way round in Hebrew', (tester) async {
+    await pumpThemed(tester, const PaperRow(icon: Icons.help_outline, title: 'שאלות ותשובות'), hebrew: true);
+    final icon = find.byIcon(Icons.help_outline);
+    expect(tester.widget<Icon>(icon).textDirection, TextDirection.ltr);
+    expect(find.descendant(of: icon, matching: find.byType(Transform)), findsNothing);
   });
 
   group('GroupHeader', () {

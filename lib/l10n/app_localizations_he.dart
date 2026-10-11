@@ -398,21 +398,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get daysBeginToday => 'יתחיל בקריאה של היום';
 
   @override
-  String get graceDays => 'ימי חסד';
-
-  @override
-  String graceDaysAvailable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'נותרו $count',
-      one: 'נותר יום אחד',
-      zero: 'לא נותרו',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get dayKept => 'נקרא';
 
   @override
@@ -631,20 +616,6 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String continueWithAliyah(String aliyah) {
-    return 'להמשיך עם $aliyah';
-  }
-
-  @override
-  String get aliyahStatusRead => 'נקראה';
-
-  @override
-  String get aliyahStatusPartial => 'בתהליך';
-
-  @override
-  String get aliyahStatusUnread => 'טרם התחילה';
-
-  @override
   String get backToWeek => 'חזרה לפרשה';
 
   @override
@@ -768,11 +739,6 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String thisCycle(int done) {
-    return 'השנה: $done מתוך 54 פרשות';
-  }
-
-  @override
   String versesRead(String count, String second) {
     return '$count פסוקים בשניים מקרא ו$second';
   }
@@ -850,9 +816,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get streaksHidden => 'מספרי הרצף מוסתרים. ההתקדמות שלך עדיין נשמרת.';
 
   @override
-  String get milestonesTitle => 'ציוני דרך';
-
-  @override
   String get graceExplainer =>
       'ימי חסד מכסים אוטומטית יום מתוכנן שהוחמץ. מתחילים עם 2, מקבלים 1 בכל פעם שמסיימים פרשה לפני שבת (עד 3), ומשתמשים לכל היותר ב־2 בשבוע. אי אפשר לקנות אותם.';
 
@@ -892,18 +855,10 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String milestoneSefer(String book) {
-    return 'חומש $book הושלם — חזק!';
-  }
-
-  @override
   String get milestoneSiyum => 'סיום התורה';
 
   @override
   String get milestoneComeback => 'ברוכים השבים';
-
-  @override
-  String get milestoneLocked => 'טרם הושג';
 
   @override
   String get settingsTitle => 'הגדרות';
@@ -1739,11 +1694,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get demoCodeHint => 'מצב הדגמה: כל 6 ספרות יעבדו.';
 
   @override
-  String signedInAs(String name) {
-    return 'החשבון: $name';
-  }
-
-  @override
   String get displayNameLabel => 'שם תצוגה';
 
   @override
@@ -1823,7 +1773,6 @@ class AppLocalizationsHe extends AppLocalizations {
       locale: localeName,
       other: '$count תודות',
       one: 'תודה אחת',
-      zero: 'תודה',
     );
     return '$_temp0';
   }
@@ -1950,9 +1899,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get readGuidelines => 'לכללי הקהילה';
-
-  @override
-  String get noThreads => 'אין עדיין דיונים. אפשר לפתוח את הראשון!';
 
   @override
   String noPostsYet(String name) {
@@ -2495,4 +2441,323 @@ class AppLocalizationsHe extends AppLocalizations {
   String signedInNow(String name) {
     return 'התחברת בשם $name';
   }
+
+  @override
+  String passTrackLabel(int n, String name) {
+    return '$n · $name';
+  }
+
+  @override
+  String get passTrackMikra => 'מקרא';
+
+  @override
+  String get finishStep => 'סיום';
+
+  @override
+  String aliyahDoneTitle(String aliyah) {
+    return 'עליית $aliyah הושלמה';
+  }
+
+  @override
+  String parshaDoneTitle(String name) {
+    return 'פרשת $name הושלמה';
+  }
+
+  @override
+  String nextAliyahLength(String aliyah, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'בעליית $aliyah $count פסוקים.',
+      one: 'בעליית $aliyah פסוק אחד.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String nextAliyahAction(String aliyah) {
+    return 'העלייה הבאה · $aliyah';
+  }
+
+  @override
+  String keepGoingAliyah(String aliyah) {
+    return 'להמשיך ל$aliyah';
+  }
+
+  @override
+  String get todayReadingDone => 'זו הקריאה של היום. נתראה מחר.';
+
+  @override
+  String todayReadingDoneOn(String day) {
+    return 'זו הקריאה של היום. נתראה ב$day.';
+  }
+
+  @override
+  String erevShabbatDone(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'חג שמח!',
+      'other': 'שבת שלום!',
+    });
+    return 'זו הקריאה של השבוע. $_temp0';
+  }
+
+  @override
+  String erevShabbatDoneMorning(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'חג שמח!',
+      'other': 'שבת שלום!',
+    });
+    return 'את השאר קוראים בשבת בבוקר. $_temp0';
+  }
+
+  @override
+  String parshaStreakLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פרשות ברצף',
+      one: 'פרשה אחת ברצף',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get graceDayEarned => 'יום חסד נוסף';
+
+  @override
+  String get parshaDoneLate => 'אחרי שבת — וזה עדיין נחשב.';
+
+  @override
+  String get parshaDoneLateStreak => 'אחרי שבת — וזה עדיין נחשב. הרצף נמשך.';
+
+  @override
+  String get parshaDoneRestored => 'הושלמה יחד עם הפרשה הבאה.';
+
+  @override
+  String get parshaDoneRestoredStreak =>
+      'הושלמה יחד עם הפרשה הבאה — הרצף נמשך.';
+
+  @override
+  String get readHaftarah => 'לקריאת ההפטרה';
+
+  @override
+  String seferDoneTitle(String book) {
+    return 'ספר $book הושלם';
+  }
+
+  @override
+  String seferDoneBody(String book, int count, String second) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'ספר $book הושלם — $countString פסוקים, שניים מקרא ו$second.';
+  }
+
+  @override
+  String aliyahTabLabel(String name, int n) {
+    return '$name, עלייה $n מתוך 7';
+  }
+
+  @override
+  String get tabRead => 'נקראה';
+
+  @override
+  String tabPartial(int done) {
+    return 'הושלמו $done מתוך 3 קריאות';
+  }
+
+  @override
+  String get tabNotStarted => 'טרם התחילה';
+
+  @override
+  String haftarahReadOn(String date) {
+    return 'נקראה ב$date';
+  }
+
+  @override
+  String torahMapOfYear(String year) {
+    return 'מפת התורה · $year';
+  }
+
+  @override
+  String get aboutStreaks => 'על הרצפים';
+
+  @override
+  String graceAvailable(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'נותרו $count ימי חסד',
+      one: 'נותר יום חסד אחד',
+      zero: 'לא נותרו ימי חסד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get thisYear => 'השנה';
+
+  @override
+  String get earlierYear => 'שנה קודמת';
+
+  @override
+  String parshiyotOfYear(int done, int total) {
+    return '$done מתוך $total פרשות';
+  }
+
+  @override
+  String yearBarSemanticsYear(String year, int done, int total) {
+    return '$year: הושלמו $done מתוך $total פרשות';
+  }
+
+  @override
+  String showAllWeeks(int count) {
+    return 'הצגת הכול ($count)';
+  }
+
+  @override
+  String get pauseRowBody =>
+      'אפשר להשהות עד 30 יום. דבר אינו מתאפס בזמן ההשהיה.';
+
+  @override
+  String get endPause => 'סיום ההשהיה';
+
+  @override
+  String get extendPause => 'הארכה';
+
+  @override
+  String get extendPauseTitle => 'הארכת ההשהיה';
+
+  @override
+  String get extendPauseBy => 'הארכה בעוד';
+
+  @override
+  String extendPauseUntil(String date) {
+    return 'ההשהיה תסתיים ב$date.';
+  }
+
+  @override
+  String get recordTitle => 'הושלם עד כה';
+
+  @override
+  String milestoneSiyumFrom(String name) {
+    return 'סיום התורה מפרשת $name';
+  }
+
+  @override
+  String get rashiScript => 'כתב רש״י';
+
+  @override
+  String get demoTag => 'הדגמה';
+
+  @override
+  String get demoAboutTitle => 'על ההדגמה';
+
+  @override
+  String get demoAboutBody =>
+      'לא מחובר שרת קהילה, ולכן הקהילה פועלת כהדגמה במכשיר הזה בלבד. הדיונים בה הם דוגמאות.';
+
+  @override
+  String get demoAboutPosts =>
+      'כל מה שמפרסמים נשאר במכשיר הזה, והכול מתאפס כשהאפליקציה מופעלת מחדש.';
+
+  @override
+  String get demoAboutSignIn =>
+      'כדי לנסות, אפשר להתחבר עם כל כתובת דוא״ל וכל קוד בן 6 ספרות.';
+
+  @override
+  String get dismissNotice => 'סגירת ההודעה';
+
+  @override
+  String get resendCode => 'שליחת הקוד שוב';
+
+  @override
+  String resendCodeIn(int seconds) {
+    String _temp0 = intl.Intl.pluralLogic(
+      seconds,
+      locale: localeName,
+      other: 'שליחה חוזרת בעוד $seconds שניות',
+      one: 'שליחה חוזרת בעוד שנייה',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get signInPrivacy => 'נשתמש בכתובת הדוא״ל רק לצורך הכניסה לחשבון.';
+
+  @override
+  String get editDisplayName => 'עריכת שם התצוגה';
+
+  @override
+  String get cloudBackupTitle => 'גיבוי בענן';
+
+  @override
+  String get privacySafetyTitle => 'פרטיות ובטיחות';
+
+  @override
+  String get accountGroupTitle => 'חשבון';
+
+  @override
+  String postingAs(String name) {
+    return 'פרסום בשם $name';
+  }
+
+  @override
+  String get titleMinHelp => 'לפחות 5 תווים';
+
+  @override
+  String get bodyMinHelp => 'לפחות 2 תווים';
+
+  @override
+  String replyToName(String name) {
+    return 'תגובה ל$name';
+  }
+
+  @override
+  String get sending => 'בשליחה…';
+
+  @override
+  String get askedTag => 'שאלה';
+
+  @override
+  String get authorTag => 'פתיחת הדיון';
+
+  @override
+  String get todahAction => 'תודה';
+
+  @override
+  String blockedMembersCount(int count) {
+    return 'משתמשים חסומים ($count)';
+  }
+
+  @override
+  String get noBlockedMembers => 'לא חסמת אף אחד.';
+
+  @override
+  String get pinnedHeading => 'נעוצים';
+
+  @override
+  String get recentHeading => 'פעילים לאחרונה';
+
+  @override
+  String get emptyForum => 'עדיין אין דיונים — אפשר לפתוח את הראשון.';
+
+  @override
+  String get emptyLockedForum => 'עדיין אין כאן דיונים.';
+
+  @override
+  String repliesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count תגובות',
+      one: 'תגובה אחת',
+      zero: 'אין עדיין תגובות',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get errBodyTooShort => 'ההודעה צריכה להכיל לפחות 2 תווים.';
 }

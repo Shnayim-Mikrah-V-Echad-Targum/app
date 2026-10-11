@@ -1,62 +1,224 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/scripture.dart';
+import '../../data/models/verse_ref.dart';
 import '../../l10n/app_localizations.dart';
 import '../../ui/l10n.dart';
-import '../../ui/theme/sefer_colors.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/lang.dart';
+import '../../ui/widgets/ornaments.dart' hide SectionBreak;
+import '../../ui/widgets/ornaments.dart' as ornaments show SectionBreak;
 import '../settings/app_settings.dart';
 
 /// Which kind of text is being rendered, for sizing and styling.
 enum ScriptureKind { mikra, targum, rashi, translation }
 
-/// Text styles for scripture, derived from the reader's settings. The
-/// in-app reading size multiplies the system text scale (applied by Text).
+/// Text styles for scripture, derived from the reader's settings
+/// (docs/DESIGN_SYSTEM.md §4.7). The in-app reading size multiplies the
+/// system text scale (applied by Text).
 class ScriptureStyles {
   ScriptureStyles(this.context, this.settings);
 
   final BuildContext context;
   final AppSettings settings;
 
+  /// The Torah's size before the reading size: every Hebrew size is a share
+  /// of it.
   static const baseHebrewSize = 26.0;
-  static const baseEnglishSize = 17.0;
 
-  double sizeFor(ScriptureKind kind) => switch (kind) {
+  /// The English translation's, in EB Garamond, and in an accessibility
+  /// font, whose larger letters need less.
+  static const baseEnglishSize = 20.0;
+  static const accessibleEnglishSize = 17.0;
+
+  static const targumScale = 0.90;
+  static const rashiScale = 0.78;
+  static const rashiScriptScale = 0.80;
+
+  /// Verse numbers, and the petuchah and setumah marks, to their verse.
+  static const numberScale = 0.55;
+
+  /// Ketiv and alternate readings, to their verse.
+  static const ketivScale = 0.62;
+
+  /// The guided reader's hanging verse numbers sit in a gutter this many
+  /// times the Torah's size wide, whatever the layer, so the text's edge stays
+  /// put from one reading to the next.
+  static const gutterScale = 1.4;
+
+  /// An accessibility font (Atkinson, Lexend or OpenDyslexic) replaces the
+  /// translation's serif, as it replaces the interface's.
+  bool get _accessibleFont => settings.uiFont.family != null;
+
+  bool get _bold => settings.boldText || MediaQuery.boldTextOf(context);
+
+  bool get _highContrast => SeferColors.of(context).isHighContrast;
+
+  /// The Torah's line spacing, never below the minimum: settings imported
+  /// from an older version may hold less.
+  double get lineHeight => settings.lineHeight.clamp(kMinLineHeight, kMaxLineHeight);
+
+  double sizeFor(ScriptureKind kind) =>
+      switch (kind) {
         ScriptureKind.mikra => baseHebrewSize,
-        ScriptureKind.targum => baseHebrewSize * 0.92,
-        ScriptureKind.rashi => baseHebrewSize * 0.78,
-        ScriptureKind.translation => baseEnglishSize,
+        ScriptureKind.targum => baseHebrewSize * targumScale,
+        ScriptureKind.rashi => baseHebrewSize * (settings.rashiScript ? rashiScriptScale : rashiScale),
+        ScriptureKind.translation => _accessibleFont ? accessibleEnglishSize : baseEnglishSize,
       } *
       settings.readingScale;
 
+  /// Pointed and cantillated text needs generous leading, split evenly above
+  /// and below so that lower marks are never clipped.
+  double heightFor(ScriptureKind kind) => switch (kind) {
+        ScriptureKind.mikra => lineHeight,
+        // A little closer than the Torah's, as befits the text beneath it.
+        ScriptureKind.targum => math.max(kMinLineHeight, lineHeight - 0.1),
+        ScriptureKind.rashi => settings.rashiScript ? 1.75 : 1.7,
+        ScriptureKind.translation => _accessibleFont ? 26 / 17 : 1.5,
+      };
+
   TextStyle style(ScriptureKind kind, {Color? color}) {
-    final theme = Theme.of(context);
-    final bold = settings.boldText || MediaQuery.boldTextOf(context);
-    final hebrew = kind != ScriptureKind.translation;
+    final scheme = Theme.of(context).colorScheme;
+    final bold = _bold;
+    final (String? family, List<String> fallback, FontWeight weight) = switch (kind) {
+      // Taamey Frank has only a Medium weight (its Bold hides the
+      // cantillation), so it is never asked for bold.
+      ScriptureKind.mikra || ScriptureKind.targum => (
+          settings.scriptureFont.family,
+          _hebrewFallback,
+          bold && settings.scriptureFont != ScriptureFont.taameyFrank ? FontWeight.w700 : FontWeight.w400,
+        ),
+      // The Rashi script has a single weight. Until it has loaded (it is
+      // loaded only once chosen), Noto Serif Hebrew stands in, and the text is
+      // laid out again as it arrives.
+      ScriptureKind.rashi when settings.rashiScript => (kRashiScriptFamily, const ['NotoSerifHebrew'], FontWeight.w400),
+      ScriptureKind.rashi => ('NotoSerifHebrew', _hebrewFallback, bold ? FontWeight.w700 : FontWeight.w400),
+      // The accessibility fonts bundle 400 and 700; EB Garamond 500 to 700.
+      ScriptureKind.translation when _accessibleFont => (
+          settings.uiFont.family,
+          const ['NotoSansHebrew', 'NotoSerifHebrew'],
+          bold ? FontWeight.w700 : FontWeight.w400,
+        ),
+      ScriptureKind.translation => (
+          'EBGaramond',
+          const ['FrankRuhlLibre', 'NotoSerifHebrew'],
+          bold ? FontWeight.w700 : (_highContrast ? FontWeight.w600 : FontWeight.w500),
+        ),
+    };
     return TextStyle(
-      fontFamily: hebrew ? settings.scriptureFont.family : settings.uiFont.family ?? 'NotoSans',
-      fontFamilyFallback: const ['NotoSerifHebrew', 'NotoSansHebrew', 'NotoSans'],
+      fontFamily: family,
+      fontFamilyFallback: fallback,
       fontSize: sizeFor(kind),
-      // Pointed and cantillated text needs generous leading, split evenly
-      // above and below so lower marks are never clipped.
-      height: hebrew ? settings.lineHeight : 1.5,
+      height: heightFor(kind),
       leadingDistribution: TextLeadingDistribution.even,
       wordSpacing: settings.wordSpacing,
       letterSpacing: settings.letterSpacing,
-      // Taamey Frank has only a Medium weight (its Bold hides the cantillation),
-      // so it is never asked for bold.
-      fontWeight: bold && settings.scriptureFont != ScriptureFont.taameyFrank ? FontWeight.w700 : FontWeight.w400,
-      color: color ?? theme.colorScheme.onSurface,
+      fontWeight: weight,
+      // The Torah in full ink; what accompanies it in the quieter one, which
+      // still meets 7:1 (§3.5).
+      color: color ?? (kind == ScriptureKind.mikra ? scheme.onSurface : scheme.onSurfaceVariant),
     );
   }
 
+  /// Every line of [kind]'s paragraphs at least its own pitch, so that a span
+  /// in another family or size (a verse number, a letter the Masorah writes
+  /// small) never makes one line closer than the rest.
+  StrutStyle strut(ScriptureKind kind) {
+    final s = style(kind);
+    return StrutStyle(
+      fontFamily: s.fontFamily,
+      fontFamilyFallback: s.fontFamilyFallback,
+      fontSize: s.fontSize,
+      height: s.height,
+      leadingDistribution: TextLeadingDistribution.even,
+      forceStrutHeight: false,
+    );
+  }
+
+  /// A verse number for a verse in [kind]: Frank Ruhl Libre in gold ink,
+  /// 0.55 of the verse's size, in [dimInk] when [dimmed].
+  TextStyle numberStyle(ScriptureKind kind, {bool dimmed = false}) => TextStyle(
+        fontFamily: 'FrankRuhlLibre',
+        fontFamilyFallback: const ['NotoSerifHebrew'],
+        fontSize: sizeFor(kind) * numberScale,
+        height: heightFor(kind),
+        leadingDistribution: TextLeadingDistribution.even,
+        // Frank Ruhl Libre is set bold in high contrast, as in every role.
+        fontWeight: _bold || _highContrast ? FontWeight.w700 : FontWeight.w600,
+        letterSpacing: 0,
+        color: dimmed ? SeferColors.of(context).dimInk : Theme.of(context).colorScheme.secondary,
+      );
+
+  /// A petuchah or setumah mark within a verse, drawn as [SectionBreakMark]
+  /// draws the marks between verses, so that the two match: an ornament, in
+  /// onSurface in high contrast.
+  TextStyle rubricStyle(ScriptureKind kind, {bool dimmed = false}) {
+    final number = numberStyle(kind, dimmed: dimmed);
+    return dimmed || !_highContrast ? number : number.copyWith(color: Theme.of(context).colorScheme.onSurface);
+  }
+
+  /// The words a comment of Rashi explains (the dibbur hamatchil): Frank Ruhl
+  /// Libre in full ink, never in techelet.
+  TextStyle dibburStyle({bool dimmed = false}) {
+    final rashi = style(ScriptureKind.rashi);
+    return rashi.copyWith(
+      fontFamily: 'FrankRuhlLibre',
+      fontFamilyFallback: const ['NotoSerifHebrew'],
+      fontWeight: FontWeight.w700,
+      color: dimmed ? SeferColors.of(context).dimInk : Theme.of(context).colorScheme.onSurface,
+    );
+  }
+
+  /// The width of the guided reader's verse-number gutter, before the system
+  /// text scale.
+  double get gutterWidth => gutterScale * sizeFor(ScriptureKind.mikra);
+
+  /// The gutter the guided reader hangs a verse's number in, in a column
+  /// [maxWidth] wide: [gutterWidth] at the system text scale, or none where
+  /// numbers are hidden, or where so wide a gutter would take more than a
+  /// quarter of each line and the number leads the first line instead.
+  double hangingGutter(double maxWidth) {
+    if (!settings.showVerseNumbers) return 0;
+    final gutter = MediaQuery.textScalerOf(context).scale(gutterWidth);
+    return gutter > maxWidth / 4 ? 0 : gutter;
+  }
+
+  /// The height for a run of letters [scale] times the size of [base] (the
+  /// Masorah's large letters) that sets the run's top no higher above the
+  /// baseline than [base]'s own, as a large letter stands in print: above the
+  /// line, without pushing it from the one above. Leading split evenly, as
+  /// the verse's is, would centre the larger letters' box on the line's and
+  /// so raise its top by (scale - 1) / 2 of the font's ascent less its
+  /// descent; the run's height takes that back.
+  double largeLetterHeight(TextStyle base, double scale, String letters) {
+    // At the font's own line height, which a style with no height keeps.
+    final natural = TextStyle(
+      fontFamily: base.fontFamily,
+      fontFamilyFallback: base.fontFamilyFallback,
+      fontWeight: base.fontWeight,
+      fontSize: 100,
+    );
+    final painter = TextPainter(text: TextSpan(text: letters, style: natural), textDirection: TextDirection.rtl)..layout();
+    final metrics = painter.computeLineMetrics();
+    painter.dispose();
+    // The font's own ascent and descent, as shares of its size.
+    final (ascent, descent) = metrics.isEmpty ? (0.8, 0.2) : (metrics.first.ascent / 100, metrics.first.descent / 100);
+    return (base.height! - (scale - 1) * (ascent - descent)) / scale;
+  }
+
+  /// The reading column's measure: about 80 characters at the Torah's size
+  /// at its widest.
   double get maxLineWidth => switch (settings.lineWidth) {
         LineWidth.narrow => 560,
-        LineWidth.medium => 760,
-        LineWidth.wide => 1040,
+        LineWidth.medium => 680,
+        LineWidth.wide => 880,
       };
+
+  static const _hebrewFallback = ['NotoSerifHebrew', 'NotoSansHebrew', 'NotoSans'];
 }
 
 /// Prepares Hebrew for display: applies the vowel/cantillation preferences
@@ -125,58 +287,55 @@ class ScriptureVerse extends StatelessWidget {
     required this.settings,
     this.dimmed = false,
     this.secondary = false,
-    this.highlighted = false,
     this.showNumber = true,
+    this.hangingNumber = false,
+    this.ruled = false,
   });
 
   final Verse verse;
   final ScriptureKind kind;
   final AppSettings settings;
 
-  /// De-emphasized (focus mode, not the current verse).
+  /// De-emphasized (focus mode, not the current verse): the whole verse, its
+  /// number and ketiv too, in the dimmed ink.
   final bool dimmed;
 
-  /// Supporting text (e.g. the Targum beneath the verse): a quieter color
-  /// that still meets text contrast requirements.
+  /// Supporting text (the Torah beside Rashi, the Targum beneath the verse):
+  /// a quieter ink that still meets text contrast requirements.
   final bool secondary;
-  final bool highlighted;
   final bool showNumber;
+
+  /// The number hangs in a gutter at the verse's start, as in the guided
+  /// reader, rather than leading its first line, as in the full text.
+  final bool hangingNumber;
+
+  /// Set off by a gold rule at its start, as the Targum beneath each verse of
+  /// the full text is.
+  final bool ruled;
+
+  /// Between the rule and the text.
+  static const ruleGap = 12.0;
+  static const ruleWidth = 2.0;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final sefer = SeferColors.of(context);
     // Dimmed text uses its own ink, never a fade: it stays at 4.5:1 or more.
-    final dimInk = SeferColors.of(context).dimInk;
+    final dimInk = sefer.dimInk;
     final styles = ScriptureStyles(context, settings);
     final base = styles.style(
       kind,
-      color: dimmed ? dimInk : (secondary ? theme.colorScheme.onSurfaceVariant : null),
+      color: dimmed ? dimInk : (secondary ? scheme.onSurfaceVariant : null),
     );
     final muted = base.copyWith(
-      color: dimmed ? dimInk : theme.colorScheme.onSurfaceVariant,
-      fontSize: base.fontSize! * 0.62,
+      color: dimmed ? dimInk : scheme.onSurfaceVariant,
+      fontSize: base.fontSize! * ScriptureStyles.ketivScale,
     );
-    // Petuchah and setumah marks are rubrics, drawn like SectionBreakMark
-    // (DESIGN_SYSTEM.md §7.3) so that marks inside and between verses match.
-    final rubric = base.copyWith(
-      color: dimmed ? dimInk : theme.colorScheme.secondary,
-      fontSize: base.fontSize! * 0.55,
-      fontWeight: FontWeight.w600,
-    );
+    final rubric = styles.rubricStyle(kind, dimmed: dimmed);
     final notes = <String>[];
     final spans = <InlineSpan>[];
-
-    if (showNumber && settings.showVerseNumbers) {
-      spans.add(TextSpan(
-        text: '${HebrewText.gematria(verse.ref.verse, punctuate: false)} ',
-        style: base.copyWith(
-          fontSize: base.fontSize! * 0.6,
-          color: dimmed ? dimInk : theme.colorScheme.primary,
-          fontWeight: FontWeight.w700,
-        ),
-      ));
-    }
 
     for (final seg in verse.segments) {
       switch (seg) {
@@ -185,16 +344,22 @@ class ScriptureVerse extends StatelessWidget {
         case KetivQere(:final ketiv, :final qere):
           if (qere.isNotEmpty) spans.add(TextSpan(text: displayHebrew(qere, settings)));
           if (settings.showKetiv && ketiv.isNotEmpty) {
-            spans.add(TextSpan(text: qere.isEmpty ? '[$ketiv]' : ' ($ketiv)', style: muted));
+            spans.add(TextSpan(text: qere.isEmpty ? '[$ketiv]' : ' ($ketiv)', style: muted));
           }
         case TextNote(:final text):
           notes.add(text);
-          spans.add(TextSpan(text: '*', style: dimmed ? muted : muted.copyWith(color: theme.colorScheme.primary)));
+          spans.add(TextSpan(text: '*', style: dimmed ? muted : muted.copyWith(color: scheme.primary)));
         case SizedLetters(:final text, :final size):
+          final scale = size == LetterSize.large ? 1.45 : 0.72;
+          final letters = displayHebrew(text, settings);
           spans.add(TextSpan(
-            text: displayHebrew(text, settings),
+            text: letters,
             style: base.copyWith(
-              fontSize: base.fontSize! * (size == LetterSize.large ? 1.45 : 0.72),
+              fontSize: base.fontSize! * scale,
+              // A large letter stands above the line, as in print, rather
+              // than push the line apart: it reaches no higher above the
+              // baseline than the verse's own letters' line box, nor lower.
+              height: scale > 1 ? styles.largeLetterHeight(base, scale, letters) : null,
             ),
           ));
         case AlternateReading(:final text):
@@ -238,20 +403,85 @@ class ScriptureVerse extends StatelessWidget {
       label += note;
     }
 
-    Widget text = Text.rich(
-      TextSpan(children: spans, style: base),
-      textDirection: TextDirection.rtl,
-      textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
-    );
+    // The number in gold, joined to the first word by a no-break space so
+    // that it never ends a line alone. The space is the verse's, and the
+    // text engine widens only spaces where a line may break, so it carries
+    // the reader's word spacing as letter spacing, as a section mark's does:
+    // the number stands as far from its word as words from each other.
+    final numeral = showNumber && settings.showVerseNumbers ? HebrewText.gematria(verse.ref.verse, punctuate: false) : null;
+    final numberStyle = styles.numberStyle(kind, dimmed: dimmed);
+    final strut = styles.strut(kind);
 
-    if (notes.isNotEmpty) {
-      text = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          text,
-          for (final n in notes)
-            Text('* $n', textDirection: TextDirection.rtl, style: muted.copyWith(height: 1.4)),
-        ],
+    Widget paragraph({required bool withNumber}) {
+      Widget text = Text.rich(
+        TextSpan(
+          style: base,
+          children: [
+            if (withNumber && numeral != null) ...[
+              TextSpan(text: numeral, style: numberStyle),
+              TextSpan(text: '\u00A0', style: TextStyle(letterSpacing: settings.letterSpacing + settings.wordSpacing)),
+            ],
+            ...spans,
+          ],
+        ),
+        textDirection: TextDirection.rtl,
+        textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+        strutStyle: strut,
+      );
+      if (notes.isNotEmpty) {
+        text = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            text,
+            for (final n in notes)
+              Text('* $n', textDirection: TextDirection.rtl, style: muted.copyWith(height: 1.4)),
+          ],
+        );
+      }
+      return text;
+    }
+
+    Widget content;
+    if (hangingNumber && numeral != null) {
+      content = LayoutBuilder(
+        builder: (context, constraints) {
+          final gutter = styles.hangingGutter(constraints.maxWidth);
+          // At a very large size a gutter would take too much of each line:
+          // the number leads the first line instead, as in the full text.
+          if (gutter == 0) return paragraph(withNumber: true);
+          // The verse begins on the right in either language of the app.
+          return Row(
+            textDirection: TextDirection.rtl,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              SizedBox(width: gutter, child: Text(numeral, style: numberStyle, textDirection: TextDirection.rtl)),
+              Expanded(child: paragraph(withNumber: false)),
+            ],
+          );
+        },
+      );
+    } else {
+      content = paragraph(withNumber: true);
+    }
+
+    if (ruled) {
+      // At the scripture's start, the right, in either language of the app.
+      // High contrast keeps the inset but not the rule, a decoration (§3.1).
+      // Dimmed, it recedes with its verse to a hairline, leaving the gold to
+      // the verse being read.
+      content = Container(
+        padding: const EdgeInsets.only(right: ruleGap),
+        decoration: BoxDecoration(
+          border: Border(
+            right: BorderSide(
+              color: dimmed ? sefer.hairline : sefer.goldLeaf,
+              width: ruleWidth,
+              style: sefer.isHighContrast ? BorderStyle.none : BorderStyle.solid,
+            ),
+          ),
+        ),
+        child: content,
       );
     }
 
@@ -265,17 +495,187 @@ class ScriptureVerse extends StatelessWidget {
         attributes: [for (final range in hebrewSpans) LocaleStringAttribute(range: range, locale: _hebrew)],
       ),
       textDirection: TextDirection.rtl,
-      child: ExcludeSemantics(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: highlighted ? theme.colorScheme.primaryContainer.withValues(alpha: 0.45) : null,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: highlighted ? 8 : 0, vertical: 4),
-            child: text,
+      child: ExcludeSemantics(child: content),
+    );
+  }
+}
+
+/// One verse of the full text with all that goes with it (its Targum,
+/// translation and Rashi) as one block, and in focus mode one place to tap
+/// (DESIGN_SYSTEM.md §4.7).
+///
+/// Every block is inset alike, highlighted or not, so that focus mode moves
+/// nothing as it moves from verse to verse: the verse being read is set on
+/// the paper with a rule in techelet at its start; the others are dimmed by
+/// their own text.
+class VerseGroup extends StatelessWidget {
+  const VerseGroup({super.key, required this.verse, required this.child, this.highlighted = false, this.onTap});
+
+  final VerseRef verse;
+  final Widget child;
+
+  /// The verse focus mode is on.
+  final bool highlighted;
+  final VoidCallback? onTap;
+
+  /// Around every block's text: at its start, the right, in either language
+  /// of the app, with the rule's width, and as much at its end, so that the
+  /// highlight frames lines that run the full measure (the translation, or
+  /// justified text) as it frames the rest.
+  static const padding = EdgeInsets.fromLTRB(12, 4, 12, 4);
+  static const _rule = 3.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final sefer = SeferColors.of(context);
+    return AnimatedContainer(
+      duration: Motion.of(context).d(Motion.short),
+      curve: Motion.standard,
+      // The rule keeps its width when it isn't drawn, so that it moves
+      // nothing as it comes and goes. No corner radius: Flutter draws none
+      // on a border of one side.
+      decoration: BoxDecoration(
+        color: highlighted ? sefer.verseHighlight : null,
+        border: Border(
+          right: BorderSide(
+            color: scheme.primary,
+            width: _rule,
+            style: highlighted ? BorderStyle.solid : BorderStyle.none,
           ),
         ),
+      ),
+      // So that a tap's ink shows over the highlight.
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          // ↑ and ↓ move from verse to verse: a Tab stop on each would put
+          // up to 72 before the button at the end.
+          canRequestFocus: false,
+          child: Padding(
+            padding: padding.copyWith(right: padding.right - _rule),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The head of a chapter, centred as a Chumash sets it (DESIGN_SYSTEM.md
+/// §4.7): "פרק ג" in gold between two hairlines and, in the English UI,
+/// "Chapter 3" beneath. One heading to a screen reader, in the UI language.
+class ChapterHeading extends StatelessWidget {
+  const ChapterHeading({super.key, required int this.chapter, required this.settings, this.headingLevel = 2})
+      : hebrewName = null,
+        name = null;
+
+  /// The head of a book's verses in a haftarah drawn from more than one
+  /// book, set as a chapter's: the book's [hebrewName] in gold and, in the
+  /// English UI, its [name] beneath. Screen readers hear [name].
+  const ChapterHeading.book({
+    super.key,
+    required String this.hebrewName,
+    required String this.name,
+    required this.settings,
+    this.headingLevel = 2,
+  }) : chapter = null;
+
+  final int? chapter;
+  final String? hebrewName;
+  final String? name;
+  final AppSettings settings;
+
+  /// Its level as a heading: 2, beneath the page's heading, or 3 beneath a
+  /// heading of level 2 (the regular haftarah's).
+  final int headingLevel;
+
+  static const _rule = 32.0;
+  static const _gap = 12.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final sefer = SeferColors.of(context);
+    final hebrewUi = context.isHebrewUi;
+    final chapter = this.chapter;
+    final numeral = chapter == null ? '' : HebrewText.gematria(chapter, punctuate: false);
+    final english = chapter == null ? name! : l.chapterLabel('$chapter');
+    final gold = chapter == null ? hebrewName! : lookupAppLocalizations(_hebrew).chapterLabel(numeral);
+    final label = chapter == null || !hebrewUi ? english : l.chapterLabel(numeral);
+    // The heading grows with the reading size, but more slowly than the
+    // text, so that it never outweighs it.
+    final style = SeferType.of(context).hebrewDisplay.copyWith(
+          fontSize: 20 * math.sqrt(settings.readingScale),
+          fontWeight: sefer.isHighContrast ? FontWeight.w700 : FontWeight.w600,
+          color: theme.colorScheme.secondary,
+        );
+    final rule = SizedBox(
+      width: _rule,
+      height: sefer.hairlineWidth,
+      child: ColoredBox(color: sefer.isHighContrast ? theme.colorScheme.onSurface : sefer.hairline),
+    );
+    return Semantics(
+      header: true,
+      headingLevel: headingLevel,
+      label: label,
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 16, bottom: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                textDirection: TextDirection.rtl,
+                children: [
+                  rule,
+                  const SizedBox(width: _gap),
+                  Flexible(
+                    child: Text(
+                      gold,
+                      style: style,
+                      textAlign: TextAlign.center,
+                      textDirection: TextDirection.rtl,
+                      locale: _hebrew,
+                    ),
+                  ),
+                  const SizedBox(width: _gap),
+                  rule,
+                ],
+              ),
+              if (!hebrewUi)
+                Text(
+                  english,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The space between two sections of the Torah, and its mark: פ for a
+/// petuchah, with more space, or ס for a setumah (DESIGN_SYSTEM.md §4.7).
+class SectionGap extends StatelessWidget {
+  const SectionGap({super.key, required this.kind, required this.settings});
+
+  final SectionBreak kind;
+  final AppSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    final open = kind == SectionBreak.open;
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: open ? 20 : 10),
+      child: SectionBreakMark(
+        open ? ornaments.SectionBreak.petuchah : ornaments.SectionBreak.setumah,
+        verseSize: ScriptureStyles(context, settings).sizeFor(ScriptureKind.mikra),
       ),
     );
   }
@@ -293,11 +693,11 @@ class TranslationVerse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dimInk = SeferColors.of(context).dimInk;
-    final style = ScriptureStyles(context, settings).style(
-      ScriptureKind.translation,
-      color: dimmed ? dimInk : theme.colorScheme.onSurfaceVariant,
-    );
+    final sefer = SeferColors.of(context);
+    final dimInk = sefer.dimInk;
+    final style = ScriptureStyles(context, settings).style(ScriptureKind.translation, color: dimmed ? dimInk : null);
+    final accessibleFont = settings.uiFont.family != null;
+    final bold = settings.boldText || MediaQuery.boldTextOf(context);
     return Lang(
       const Locale('en'),
       child: Directionality(
@@ -306,7 +706,12 @@ class TranslationVerse extends StatelessWidget {
           TextSpan(children: [
             TextSpan(
               text: '$number ',
-              style: style.copyWith(fontWeight: FontWeight.w700, color: dimmed ? dimInk : theme.colorScheme.primary),
+              style: style.copyWith(
+                fontWeight: accessibleFont || bold || sefer.isHighContrast ? FontWeight.w700 : FontWeight.w600,
+                color: dimmed ? dimInk : theme.colorScheme.secondary,
+                // EB Garamond's old-style figures make "1" read as "I".
+                fontFeatures: const [FontFeature.liningFigures()],
+              ),
             ),
             TextSpan(text: text),
           ]),
@@ -320,26 +725,39 @@ class TranslationVerse extends StatelessWidget {
 
 /// Rashi's comments on one verse.
 class RashiComments extends StatelessWidget {
-  const RashiComments({super.key, required this.comments, required this.settings, required this.english});
+  const RashiComments({
+    super.key,
+    required this.comments,
+    required this.settings,
+    required this.english,
+    this.dimmed = false,
+  });
 
   final List<Comment> comments;
   final AppSettings settings;
   final bool english;
 
+  /// De-emphasized with the rest of its verse (focus mode).
+  final bool dimmed;
+
   @override
   Widget build(BuildContext context) {
     final styles = ScriptureStyles(context, settings);
     final theme = Theme.of(context);
-    final style = english
-        ? styles.style(ScriptureKind.translation)
-        : styles.style(ScriptureKind.rashi).copyWith(height: 1.7);
+    final ink = dimmed ? SeferColors.of(context).dimInk : null;
+    final style = styles.style(english ? ScriptureKind.translation : ScriptureKind.rashi, color: ink);
+    // The words explained in bold full ink (never techelet): Frank Ruhl Libre
+    // over Rashi's Hebrew, the comment's own face over English.
+    final heading = english
+        ? style.copyWith(fontWeight: FontWeight.w700, color: ink ?? theme.colorScheme.onSurface)
+        : styles.dibburStyle(dimmed: dimmed);
     final dir = english ? TextDirection.ltr : TextDirection.rtl;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final c in comments)
+        for (final (i, c) in comments.indexed)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: EdgeInsets.only(top: i == 0 ? 0 : 8),
             // Each comment is one node in its own language, read like a verse
             // (the Divine Name as chosen); its Hebrew label is tagged as well
             // for Android and iOS.
@@ -351,16 +769,13 @@ class RashiComments extends StatelessWidget {
               child: ExcludeSemantics(
                 child: Text.rich(
                   TextSpan(children: [
-                    if (c.heading != null)
-                      TextSpan(
-                        text: '${c.heading} ',
-                        style: style.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
-                      ),
+                    if (c.heading != null) TextSpan(text: '${c.heading} ', style: heading),
                     TextSpan(text: english ? c.text : HebrewText.forDisplay(c.text, nikud: settings.showNikud, teamim: true)),
                   ]),
                   style: style,
                   textDirection: dir,
                   textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+                  strutStyle: english ? null : styles.strut(ScriptureKind.rashi),
                 ),
               ),
             ),
@@ -377,23 +792,64 @@ class RashiComments extends StatelessWidget {
   }
 }
 
-/// A small label above a block of text ("Targum Onkelos").
-class LayerLabel extends StatelessWidget {
-  const LayerLabel(this.text, {super.key, this.icon});
-  final String text;
-  final IconData? icon;
+/// The eyebrow over Rashi's comments in the full text: "רש״י" over Rashi in
+/// Hebrew, at the right, or "Rashi" over Rashi in English, at the left. A
+/// screen reader hears it in the UI language.
+class RashiEyebrow extends StatelessWidget {
+  const RashiEyebrow({super.key, required this.english, this.dimmed = false});
+
+  final bool english;
+
+  /// De-emphasized with the rest of its verse (focus mode): in the dimmed
+  /// ink rather than gold.
+  final bool dimmed;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 4),
-      child: Row(
-        children: [
-          if (icon != null) ...[Icon(icon, size: 16, color: theme.colorScheme.primary), const SizedBox(width: 6)],
-          Text(text, style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary)),
-        ],
+    final locale = english ? const Locale('en') : _hebrew;
+    return Semantics(
+      label: context.l10n.rashiLabel,
+      child: ExcludeSemantics(
+        child: Directionality(
+          textDirection: english ? TextDirection.ltr : TextDirection.rtl,
+          child: Eyebrow(
+            lookupAppLocalizations(locale).rashiLabel,
+            color: dimmed ? SeferColors.of(context).dimInk : null,
+          ),
+        ),
       ),
     );
   }
+}
+
+/// What goes with a verse in the guided reader (its translation, Rashi, a
+/// note or a label), set in at the right by the gutter the verse hangs its
+/// number in, so that every block shares the edge its text starts at, as on
+/// a chumash's page, with the number alone in the margin (§4.7).
+class HangingIndent extends StatelessWidget {
+  const HangingIndent({super.key, required this.settings, required this.child});
+
+  final AppSettings settings;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) => Padding(
+          padding: EdgeInsets.only(right: ScriptureStyles(context, settings).hangingGutter(constraints.maxWidth)),
+          child: child,
+        ),
+      );
+}
+
+/// A label above a block of text in the guided reader ("Targum Onkelos"): an
+/// eyebrow, in gold ink (§3.1).
+class LayerLabel extends StatelessWidget {
+  const LayerLabel(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 4),
+        child: Eyebrow(text),
+      );
 }

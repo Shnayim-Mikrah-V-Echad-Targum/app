@@ -13,6 +13,7 @@ import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/fonts_change_scope.dart';
+import 'celebrations.dart';
 import 'pending_saves.dart';
 import 'providers.dart';
 import 'router.dart';
@@ -94,7 +95,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
   /// builds the theme in the interface font once it has.
   void _loadFonts() {
     final settings = ref.read(settingsProvider);
-    OptionalFonts.ensureAll([settings.uiFont.family, settings.scriptureFont.family]).then((_) {
+    OptionalFonts.ensureAll(settings.optionalFonts).then((_) {
       if (mounted && OptionalFonts.isLoaded(ref.read(settingsProvider).uiFont.family)) setState(() {});
     });
   }
@@ -147,9 +148,12 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     // watched): its timestamp must not rebuild the app.
     ref.watch(reminderSchedulerProvider);
     ref.watch(appShortcutsProvider);
+    // A book of the Torah finished anywhere in the app is celebrated once.
+    ref.watch(celebrationListenerProvider);
     ref.listen(progressSyncProvider, (_, _) {});
-    // Opt-in fonts load when first chosen (and at start, in initState).
-    ref.listen(settingsProvider.select((s) => (s.uiFont.family, s.scriptureFont.family)), (_, _) => _loadFonts());
+    // Opt-in fonts load when first chosen (and at start, in initState): the
+    // Rashi script only once it is turned on, and Rashi shown.
+    ref.listen(settingsProvider.select((s) => (s.uiFont, s.scriptureFont, s.rashiScript && s.showsRashi)), (_, _) => _loadFonts());
     if (OptionalFonts.isLoaded(settings.uiFont.family)) _uiFont = settings.uiFont;
 
     final systemHighContrast = MediaQuery.highContrastOf(context);

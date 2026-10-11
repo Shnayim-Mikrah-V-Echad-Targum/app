@@ -83,6 +83,14 @@ class _DisplaySheet extends ConsumerWidget {
             value: s.showRashi,
             onChanged: (v) => update((s) => s.copyWith(showRashi: v)),
           ),
+          // Only while Rashi is shown, beside the Torah or as its second
+          // reading: otherwise it would change nothing to be seen.
+          if (s.showsRashi)
+            SwitchListTile(
+              title: Text(l.rashiScript),
+              value: s.rashiScript,
+              onChanged: (v) => update((s) => s.copyWith(rashiScript: v)),
+            ),
           SwitchListTile(
             title: Text(l.focusMode),
             subtitle: Text(l.focusModeDesc),
@@ -92,8 +100,8 @@ class _DisplaySheet extends ConsumerWidget {
           LabeledSlider(
             title: l.lineSpacing,
             value: s.lineHeight,
-            min: 1.5,
-            max: 3.0,
+            min: kMinLineHeight,
+            max: kMaxLineHeight,
             step: 0.1,
             format: (v) => v.toStringAsFixed(1),
             onChanged: (v) => update((s) => s.copyWith(lineHeight: v)),

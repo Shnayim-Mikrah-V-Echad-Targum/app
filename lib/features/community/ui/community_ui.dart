@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,9 +15,12 @@ import '../../../data/models/parsha.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/lang.dart';
 import '../../about/legal_screen.dart';
 import '../../parsha/week_context.dart';
+import '../../progress/domain/progress_models.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -50,6 +56,49 @@ String communityError(AppLocalizations l, Object e) {
 /// Whether [e] only says that the change had been made already, as when a
 /// second tap crosses the first: the action succeeded.
 bool alreadyDone(Object e) => e is CommunityException && e.code == 'duplicate';
+
+/// The fields of the community's forms that an error from the server can be
+/// about.
+enum CommunityField { title, body, email, code, name }
+
+/// The field that the error [code] is about, where the form shows it under
+/// that field and gives the field the focus; null for an error about no one
+/// field (a rate limit, say, or a network failure), which a status message
+/// reports instead.
+CommunityField? fieldFor(String code) => switch (code) {
+      'title_too_short' => CommunityField.title,
+      'too_short' || 'too_many_links' || 'content_rejected' || 'duplicate_post' => CommunityField.body,
+      'invalid_email' || 'email_address_invalid' => CommunityField.email,
+      'invalid_code' || 'otp_expired' => CommunityField.code,
+      'invalid_name' || 'name_taken' => CommunityField.name,
+      _ => null,
+    };
+
+/// The field that the error [e] is about (see [fieldFor]).
+CommunityField? fieldOf(Object e) => e is CommunityException ? fieldFor(e.code) : null;
+
+/// Says [message], a field's error just shown under it, where the platform
+/// takes announcements. Elsewhere (Android) the error's text is a live
+/// region, which says it as it appears (Material's InputDecorator), so it is
+/// said once either way. The field also reads it as its hint once focused.
+void announceFieldError(BuildContext context, String message) {
+  if (MediaQuery.supportsAnnounceOf(context)) {
+    SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
+  }
+}
+
+/// A text field's counter, kept out of sight until the text reaches 80% of
+/// [maxLength]: then "8,000/10,000" in the reader's number format, read by
+/// screen readers as the characters left, as Material's own counter is.
+Widget? quietCounter(BuildContext context, {required int currentLength, required bool isFocused, required int? maxLength}) {
+  if (maxLength == null || currentLength < maxLength * 0.8) return null;
+  final m = MaterialLocalizations.of(context);
+  return Text(
+    context.ltrRun('${m.formatDecimal(currentLength)}/${m.formatDecimal(maxLength)}'),
+    semanticsLabel: m.remainingTextFieldCharacterCount(math.max(0, maxLength - currentLength)),
+    style: Theme.of(context).inputDecorationTheme.counterStyle,
+  );
+}
 
 /// "5 minutes ago", or a date for older times.
 String relativeTime(BuildContext context, DateTime time) {
@@ -101,11 +150,25 @@ bool _asciiLetter(int rune) => (rune >= 0x41 && rune <= 0x5A) || (rune >= 0x61 &
 final _letter = RegExp(r'\p{L}', unicode: true);
 
 /// Sends the user to sign in if needed. Returns whether they are signed in.
-Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref) async {
+///
+/// Before a post, [named] asks for a display name too: an account starts
+/// with a machine's ("user_1a2b3c4d"), which no post is ever signed with. The
+/// account page asks for one once signed in, and goes back only once it is
+/// saved. Fails as the backend does when [named] (offline, say), for the
+/// caller to report.
+Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref, {bool named = false}) async {
+  // The page may close while this waits, and its ref with it.
+  final container = ProviderScope.containerOf(context, listen: false);
   final repo = ref.read(forumRepositoryProvider);
-  if (repo.currentUser != null) return true;
+  Future<bool> ready() async {
+    if (repo.currentUser == null) return false;
+    return !named || ((await container.read(myProfileProvider.future))?.hasChosenName ?? false);
+  }
+
+  if (await ready()) return true;
+  if (!context.mounted) return false;
   await context.push('/community/account?then=back');
-  return repo.currentUser != null;
+  return ready();
 }
 
 /// Before a first post: the community guidelines. Returns whether accepted.
@@ -319,24 +382,305 @@ String emptyThreadMessage(BuildContext context, WidgetRef ref, ThreadSummary t) 
 String _portionName(BuildContext context, WidgetRef ref, PortionInfo portion) =>
     Names(context).portion(portion, ashkenazi: ref.watch(settingsProvider.select((s) => s.ashkenaziNames)));
 
-class DemoBanner extends ConsumerWidget {
+/// [s] as a first-strong isolate, between U+2068 and U+2069: a name, which
+/// may be Hebrew or English, then keeps its own order inside a line in the
+/// other language, and the punctuation either side of it stays with the line.
+String isolate(String s) => '\u2068$s\u2069';
+
+/// Says on the Community page that the community is the demo, on the device
+/// alone (§6.20). It can be dismissed for the rest of the session; the other
+/// community pages say it with their [DemoTag].
+class DemoBanner extends ConsumerStatefulWidget {
   const DemoBanner({super.key});
+
+  @override
+  ConsumerState<DemoBanner> createState() => _DemoBannerState();
+}
+
+class _DemoBannerState extends ConsumerState<DemoBanner> {
+  final _dismiss = FocusNode();
+
+  @override
+  void dispose() {
+    _dismiss.dispose();
+    super.dispose();
+  }
+
+  void _onDismiss() {
+    // The button goes with the notice: the keyboard focus moves on to what
+    // follows it, rather than back to the top of the page.
+    if (_dismiss.hasPrimaryFocus) _dismiss.nextFocus();
+    ref.read(demoBannerDismissedProvider.notifier).dismiss();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!ref.watch(forumRepositoryProvider).isDemo || ref.watch(demoBannerDismissedProvider)) {
+      return const SizedBox.shrink();
+    }
+    final l = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Rhythm.cardGap),
+      child: NoticeBanner(
+        icon: Icons.info_outline,
+        text: l.demoModeBanner,
+        action: IconButton(
+          focusNode: _dismiss,
+          tooltip: l.dismissNotice,
+          color: Theme.of(context).colorScheme.onSecondaryContainer,
+          icon: const Icon(Icons.close, size: 20),
+          onPressed: _onDismiss,
+        ),
+      ),
+    );
+  }
+}
+
+/// A small "Demo" tag for the app bar of a community page (§6.20), while the
+/// community is the demo. It opens a sheet that explains the demo, which its
+/// tooltip names, for screen readers too: "Demo" alone could be taken for
+/// a switch to a demo.
+class DemoTag extends ConsumerWidget {
+  const DemoTag({super.key});
+
+  static const _corners = BorderRadius.all(Radius.circular(6));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(forumRepositoryProvider).isDemo) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      color: scheme.secondaryContainer,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final themed = theme.textButtonTheme.style;
+    // High contrast outlines it, as it does notices: the pale fill alone
+    // barely shows there.
+    final side = SeferColors.of(context).isHighContrast ? BorderSide(color: scheme.outline, width: 2) : BorderSide.none;
+    return Padding(
+      // Its end where an icon button's glyph would end: at the page's edge,
+      // and clear of the action after it.
+      padding: const EdgeInsetsDirectional.only(start: Space.sm, end: Space.md),
+      // Its tooltip is the button's own for screen readers, beside the word
+      // it shows.
+      child: Tooltip(
+        message: context.l10n.demoAboutTitle,
+        excludeFromSemantics: true,
+        child: TextButton(
+          style: TextButton.styleFrom(
+            backgroundColor: scheme.secondaryContainer,
+            foregroundColor: scheme.onSecondaryContainer,
+            textStyle: theme.textTheme.labelSmall,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            minimumSize: Size.zero,
+            // A small tag, but a whole 48 to tap.
+            tapTargetSize: MaterialTapTargetSize.padded,
+          ).copyWith(
+            // The theme's keyboard focus ring (§6.1), around the tag's corners.
+            shape: WidgetStateProperty.resolveWith(
+              (states) => switch (themed?.shape?.resolve(states)) {
+                final FocusRingBorder ring => ring.copyWith(borderRadius: _corners, side: side),
+                _ => RoundedRectangleBorder(borderRadius: _corners, side: side),
+              },
+            ),
+          ),
+          onPressed: () => showDemoAbout(context),
+          child: Semantics(tooltip: context.l10n.demoAboutTitle, child: Text(context.l10n.demoTag)),
+        ),
+      ),
+    );
+  }
+}
+
+/// What the demo is: that it runs on this device alone, with example
+/// discussions; that what is posted stays on the device until the app
+/// restarts; and, to a reader signed out, how to sign in to try it.
+Future<void> showDemoAbout(BuildContext context) => showAppSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        final l = context.l10n;
+        final signedIn = ProviderScope.containerOf(context, listen: false).read(communityUserProvider).value != null;
+        final theme = Theme.of(context);
+        final padding = sheetPadding(context);
+        final body = theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface);
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: Space.xxl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SheetTitle(l.demoAboutTitle),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: padding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(l.demoAboutBody, style: body),
+                      const Gap(Space.md),
+                      Text(signedIn ? l.demoAboutPosts : '${l.demoAboutPosts} ${l.demoAboutSignIn}', style: body),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+/// A member's initial on a disc of gold-ink paper (§6.21), standing for them
+/// beside their name, or for the account on its button. It is decorative:
+/// what shows it names the member too. Without a name yet, a person.
+class InitialDisc extends StatelessWidget {
+  const InitialDisc(this.name, {super.key, this.size = 32});
+
+  final String name;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final ink = scheme.onSecondaryContainer;
+    final initial = name.trim().characters.firstOrNull?.toUpperCase();
+    // The serif of titles, at 600 at least (§6.21): EB Garamond, with Frank
+    // Ruhl Libre for a Hebrew initial, or the chosen accessibility font.
+    final serif = theme.textTheme.titleLarge!;
+    final weight = (serif.fontWeight?.value ?? 400) >= 600 ? serif.fontWeight : FontWeight.w600;
+    return ExcludeSemantics(
+      child: Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: scheme.secondaryContainer, shape: BoxShape.circle),
+        child: initial == null
+            ? Icon(Icons.person_outline, size: size * 0.6, color: ink)
+            : Text(
+                initial,
+                // Sized to its disc, which keeps its size as text grows.
+                textScaler: TextScaler.noScaling,
+                style: serif.copyWith(fontSize: size / 2, height: 1, fontWeight: weight, color: ink),
+              ),
+      ),
+    );
+  }
+}
+
+/// This week's discussion on a card that opens it (§9 Community): the
+/// parsha's name in Hebrew, "This week: Parshat Bereshit" and "Open the
+/// discussion". While the discussion opens, a small spinner takes the
+/// chevron's place.
+class ThisWeekCard extends ConsumerWidget {
+  const ThisWeekCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final week = ref.watch(currentWeekContextProvider);
+    final portion = week.portion;
+    final hebrew = SeferType.of(context).hebrewDisplay.copyWith(
+          fontSize: 20,
+          // Frank Ruhl Libre is set heavier in high contrast.
+          fontWeight: SeferColors.of(context).isHighContrast ? FontWeight.w700 : FontWeight.w600,
+        );
+    return WeeklyThreadOpener(
+      portion: portion,
+      hebrewYear: cycleYearOf(week.week.portion, week.week.occasion),
+      builder: (context, progress, open) => InfoCard(
+        onTap: open,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Lang(
+                    const Locale('he'),
+                    child: Text(
+                      portion.nameHe,
+                      locale: const Locale('he'),
+                      // Read from its letters, as screen readers read verses.
+                      semanticsLabel: HebrewText.stripNikud(portion.nameHe),
+                      style: hebrew,
+                    ),
+                  ),
+                  const Gap(Space.xs),
+                  Text(l.thisWeeksThread(_portionName(context, ref, portion)), style: theme.textTheme.titleMedium),
+                  Text(l.openDiscussion, style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            const Gap(Space.md),
+            SizedBox.square(
+              dimension: 24,
+              child: Center(child: progress ?? Icon(Icons.chevron_right, size: 20, color: scheme.outline)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A sentence in bodySmall that ends with a link (§9 Compose and Account):
+/// "We use your email only to sign you in. Privacy". The link is part of
+/// the line, as a link in a sentence is, and still a control of its own: it
+/// takes the keyboard focus, with the focus ring, Enter follows it, and
+/// screen readers read it as a link after the sentence. Like any link in
+/// running text it is as tall as the line (WCAG 2.5.8's inline exception),
+/// and always underlined, so that it never relies on its colour.
+class LinkedText extends StatelessWidget {
+  const LinkedText({super.key, required this.text, required this.link, required this.onTap, this.textAlign});
+
+  final String text;
+  final String link;
+  final VoidCallback onTap;
+  final TextAlign? textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final style = theme.textTheme.bodySmall!.copyWith(color: scheme.onSurfaceVariant);
+    final linkStyle = style.copyWith(
+      color: scheme.primary,
+      fontWeight: FontWeight.w500,
+      decoration: TextDecoration.underline,
+      decorationColor: scheme.primary,
+    );
+    return Text.rich(
+      TextSpan(
         children: [
-          Icon(Icons.science_outlined, color: scheme.onSecondaryContainer),
-          const SizedBox(width: 12),
-          Expanded(child: Text(context.l10n.demoModeBanner, style: TextStyle(color: scheme.onSecondaryContainer))),
+          TextSpan(text: '$text '),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: Padding(
+              // Room for the focus ring, which is drawn 3 px outside the
+              // link, and a hairline, clear of the words either side.
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Semantics(
+                container: true,
+                link: true,
+                child: SeferInkWell(
+                  onTap: onTap,
+                  borderRadius: const BorderRadius.all(Radius.circular(4)),
+                  child: Padding(
+                    // So that the ring never touches the letters.
+                    padding: const EdgeInsets.symmetric(horizontal: 1),
+                    // The line scales what it holds with the text, so the
+                    // link isn't scaled a second time.
+                    child: Text(link, style: linkStyle, textScaler: TextScaler.noScaling),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
+      style: style,
+      textAlign: textAlign,
     );
   }
 }
