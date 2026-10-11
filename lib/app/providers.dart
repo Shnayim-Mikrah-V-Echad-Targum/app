@@ -731,13 +731,6 @@ final isPausedProvider = Provider<bool>((ref) {
 // ---------------------------------------------------------------------------
 // Bookmarks and notes
 
-/// The reader's bookmarks and notes on verses (see [Annotations]), stored as
-/// JSON under [storageKey] and saved as each changes: they change a tap at a
-/// time, unlike the reader's place.
-///
-/// They are backed up with the progress, and merge as it does, so a note
-/// written on one device reaches the others, and one deleted stays deleted
-/// (see [Annotations.merge]). Resetting the progress leaves them alone.
 /// Copies [raw], stored data the next save would replace, to a new key
 /// starting with [prefix] and ending with the time in milliseconds, unless
 /// an identical copy is already there.
@@ -751,6 +744,14 @@ void _copyAside(SharedPreferences prefs, String prefix, String raw) {
   prefs.setString('$prefix$ms', raw);
 }
 
+/// The reader's bookmarks and notes on verses (see [Annotations]), stored as
+/// JSON under [storageKey] and saved as each changes: they change a tap at a
+/// time, unlike the reader's place.
+///
+/// They are backed up with the progress, and merge verse by verse, so a note
+/// written on one device reaches the others, and one deleted stays deleted
+/// (see [Annotations.merge]); a backup file imported restores what it holds
+/// (see [restore]). Resetting the progress leaves them alone.
 class AnnotationsController extends Notifier<Annotations> {
   static const storageKey = 'annotations.v1';
 
@@ -786,11 +787,19 @@ class AnnotationsController extends Notifier<Annotations> {
   /// Saves [note] as [verse]'s note; a blank one deletes it.
   void setNote(BookVerse verse, String? note) => _set(state.withNote(verse, note));
 
-  /// Merges [other] in: a sync's or a backup's. Equal annotations change
-  /// nothing, so listeners hear only of real changes.
+  /// Merges [other] in: a sync's. Equal annotations change nothing, so
+  /// listeners hear only of real changes.
   void merge(Annotations other) {
     final merged = Annotations.merge(state, other);
     if (merged != state) _set(merged);
+  }
+
+  /// Restores [backup], a backup file's: what it holds comes back, even if
+  /// removed here since (see [Annotations.restoring]). Like [merge], changes
+  /// nothing where nothing would change.
+  void restore(Annotations backup) {
+    final next = state.restoring(backup);
+    if (next != state) _set(next);
   }
 }
 

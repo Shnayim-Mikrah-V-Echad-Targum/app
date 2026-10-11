@@ -96,8 +96,10 @@ void showBackupImportStatus(
 /// [Backup.joinDate]), so that the history from both counts; replacing, it
 /// is the one saved with the backup, if any.
 ///
-/// Its bookmarks and notes are merged with those here either way, as a sync
-/// merges them: replacing erases the reading history, never a note.
+/// Its bookmarks and notes are restored either way, alongside those here
+/// (see [AnnotationsController.restore]): one it holds comes back even if
+/// removed here since, and one changed here since keeps its change.
+/// Replacing erases the reading history, never a note.
 ///
 /// Its settings come too only [withSettings], keeping this device's record
 /// of having offered reminders and of what Today has asked and said here.
@@ -123,7 +125,7 @@ Future<BackupImport> importBackup(
     unknownPauses: backup.unknownPauses,
     outlast: backup.progress.resetAt,
   );
-  ref.read(annotationsProvider.notifier).merge(backup.annotations);
+  ref.read(annotationsProvider.notifier).restore(backup.annotations);
   final restored = withSettings ? backup.settings : null;
   if (restored == null) {
     if (joinDate != current.joinDate) settings.update((s) => s.copyWith(joinDate: joinDate));
