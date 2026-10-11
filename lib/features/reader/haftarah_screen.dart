@@ -218,7 +218,7 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
           data: (list) => PageBody(
             maxWidth: width,
             children: [
-              Eyebrow('${l.haftarahTitle} · $parsha'),
+              Eyebrow('${l.haftarahTitle} · $parsha', breakAtHyphens: false),
               const Gap(Space.xs),
               Semantics(
                 header: true,

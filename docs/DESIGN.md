@@ -201,7 +201,7 @@ See [ACCESSIBILITY.md](ACCESSIBILITY.md). The key decisions:
 - **The extraordinary points stay on the page.** The dots written over some words in the scroll are part of the text, not cantillation, so hiding cantillation keeps them. Speech leaves them out.
 - **Reading size multiplies the system text size**, up to 5× for scripture only. The interface follows the system setting alone, so layouts stay usable.
 - **Five display themes:** light, dark, sepia, and high-contrast light and dark. They can follow the system or be set manually. Colour is never the only signal: statuses also have icons and text.
-- **Line height of at least 1.6, split evenly above and below.** Lower vowels and cantillation marks must never be clipped. Typography details: a non-breaking space before a paseq, and a word joiner after a maqaf.
+- **Line height of at least 1.6, split evenly above and below.** Lower vowels and cantillation marks must never be clipped. Typography details: a non-breaking space before a paseq, and a word joiner after a maqaf, wherever the words it joins fit on a line together; where they don't (very large text on a phone), the line ends after the maqaf rather than inside a word.
 - **Keyboard shortcuts** for every reader action, with a visible focus ring everywhere: Ctrl chords in the app, and on the web single keys that can be turned off, because the browser keeps the chords. The text scrolls by keyboard, and the focus is never lost when a page changes in place.
 
 ## 9. Typography

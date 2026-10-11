@@ -42,7 +42,15 @@
 - [ ] Special haftarot for the coming year: Shekalim, Zachor, Parah, HaChodesh, HaGadol, Shabbat Rosh Chodesh, Machar Chodesh, Chanukah and Shuva.
 - [ ] Simchat Torah: Vezot HaBerachah opens and closes correctly in Israel and the Diaspora.
 - [ ] Bamidbar 32:3 shows the third-reading prompt.
-- [ ] A Hebrew reader checks every icon on a device at home-screen size and at 1024 px: it reads שמו״ת with ש on the right. Regenerate icons only with `tool/branding/make_icon.py` (see the comment above `flutter_launcher_icons` in `pubspec.yaml`).
+
+### Design checks
+The goldens in `test/goldens/` hold the main screens in every theme and in both languages, and CI fails when they change. These checks cover what they can't see ([DESIGN_SYSTEM.md §11.6](DESIGN_SYSTEM.md#11-tests-and-qa)):
+- [ ] **The icon,** on a device, at 48 px and at 1024 px: a Hebrew reader checks that every icon reads שמו״ת with ש on the right. Regenerate icons only with `tool/branding/make_icon.py` (see the comment above `flutter_launcher_icons` in `pubspec.yaml`).
+- [ ] **TalkBack and VoiceOver on the reader's aliyah ribbon and PassTrack,** in English and Hebrew:
+  - Each tab of the ribbon is read as one button, with its name, its number and how far it is read ("Shlishi, aliyah 3 of 7, …"), and the open one as selected. Swiping moves through the tabs in reading order, right to left in Hebrew, and scrolls the ribbon to keep each in view.
+  - The PassTrack itself is silent. Its step is read once, as it changes, in the step's announcement ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"), never twice.
+- [ ] **Windows Contrast Themes** (*Settings → Accessibility → Contrast themes*), with the app's theme following the system: choosing any of them (Aquatic, Desert, Dusk, Night sky) switches the app at once to its high-contrast theme, dark or light as Windows's own mode is, and choosing None switches it back. Text, focus rings, switches and the reader stay legible, and the title bar follows.
+- [ ] **Every `he_*` screen of the capture harness** (`CAPTURE=1 MODES=he flutter test test/screens/capture_test.dart`, then `build/screens/he_*.png`), reviewed by a Hebrew reader: chevrons and arrows point the Hebrew way, rules stand at the start (the right), pips run right to left, and the ribbon's underline sits under the open aliyah.
 
 ### Behaviour on real devices
 - [ ] Fresh install: onboarding reaches the first verse, and that aliyah can be read to completion.

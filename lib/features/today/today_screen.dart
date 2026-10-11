@@ -256,7 +256,7 @@ class _TodayHeader extends StatelessWidget {
               const Gap(2),
               // The app's name, not a heading: the parsha's name below is
               // the page's heading.
-              Text(l.appTitle, style: theme.textTheme.headlineMedium),
+              WholeWords(l.appTitle, style: theme.textTheme.headlineMedium, textAlign: TextAlign.start),
             ],
           ),
         ),
@@ -461,10 +461,10 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
           if (hebrewUi)
             Lang(
               const Locale('en'),
-              child: Text(
+              // Whole, as the name above it is: "Acharei" over "Mot-Kedoshim".
+              child: WholeWords(
                 names.portionAlt(portion, ashkenazi: settings.ashkenaziNames),
                 style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-                textAlign: TextAlign.center,
                 textDirection: TextDirection.ltr,
               ),
             )

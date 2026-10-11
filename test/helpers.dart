@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:ui' show BoxHeightStyle;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,6 +63,29 @@ Future<void> loadBundledFonts() => _fonts ??= () async {
     }();
 
 Future<ParshaRepository> loadRepo() async => _repo ??= await ParshaRepository.load();
+
+/// The day of the capture harness (test/screens/capture_test.dart) and of
+/// the goldens (test/goldens/): Friday 9 October 2026 (28 Tishrei 5787), in
+/// the week of Bereshit. Sunday was Simchat Torah in the Diaspora, so the
+/// reading week began on Monday.
+final captureNow = DateTime(2026, 10, 9, 11);
+
+/// When the reader of [captureProgress] joined: Simchat Torah, before the
+/// week of Bereshit.
+final captureJoinDate = LocalDate(2026, 10, 4);
+
+/// The reader of [captureNow]: Rishon and Sheni of Bereshit read in all three
+/// readings on Monday and Tuesday, and Shlishi twice on Wednesday, its
+/// Targum still to read.
+ProgressState captureProgress() {
+  final mon = LocalDate(2026, 10, 5);
+  var w = WeekProgress(weekId: '5787:1');
+  for (final p in ReadingPass.values) {
+    w = w.withUnit(0, p, mon).withUnit(1, p, mon.addDays(1));
+  }
+  w = w.withUnit(2, ReadingPass.mikra1, mon.addDays(2)).withUnit(2, ReadingPass.mikra2, mon.addDays(2));
+  return ProgressState(weeks: {'5787:1': w});
+}
 
 /// A history with every past state of the Torah map, as of [historyNow]: a
 /// reader who joined on [historyJoinDate] read Bereshit and Chayei Sara on
@@ -275,3 +300,49 @@ Finder findWords(String words) => find.textContaining(wordsRegExp(RegExp.escape(
 
 /// [pattern] with each space matching a no-break space too (see [findWords]).
 RegExp wordsRegExp(String pattern) => RegExp(pattern.replaceAll(' ', '[ \u00A0]'));
+
+/// Expects each word of [text], shown in a [Text], to stand on one line, as
+/// a word too wide for its room, broken across lines, would not.
+void expectWordsWhole(WidgetTester tester, String text) {
+  final paragraph = tester.renderObject<RenderParagraph>(
+    find.descendant(of: find.text(text), matching: find.byType(RichText)).first,
+  );
+  for (final word in RegExp(r'\S+').allMatches(text)) {
+    final lines = paragraph.getBoxesForSelection(
+      TextSelection(baseOffset: word.start, extentOffset: word.end),
+      boxHeightStyle: BoxHeightStyle.max,
+    );
+    expect({for (final box in lines) box.top.round()}, hasLength(1), reason: '"${word.group(0)}" of "$text"');
+  }
+}
+
+/// The words laid out on the screen that are broken across lines, as a
+/// label too large for its room is, each with the text it is in: a word's
+/// letters must all stand on one line. A line may end after a hyphen or a
+/// dash, as in a range ("54:1–" and "55:5"), or a maqaf, where the words it
+/// joins are too wide together for the column (joinWhereFits); but not after
+/// one that a word joiner holds to the word after it, as in a parsha's name
+/// ("Mot-Kedoshim") or a maqaf's words that fit a line.
+List<String> brokenWords(WidgetTester tester) {
+  final broken = <String>[];
+  for (final paragraph in tester.allRenderObjects.whereType<RenderParagraph>()) {
+    if (!paragraph.hasSize) continue;
+    final text = paragraph.text.toPlainText(includeSemanticsLabels: false);
+    // A placeholder (\uFFFC) is a widget, as a gap between two words.
+    for (final word in RegExp(r'(?:[^\s\-–—־\uFFFC]|[\-–—־]\u2060)+[\-–—־]?').allMatches(text)) {
+      final lines = paragraph
+          .getBoxesForSelection(
+            TextSelection(baseOffset: word.start, extentOffset: word.end),
+            boxHeightStyle: BoxHeightStyle.max,
+          )
+          .map((box) => box.top.round())
+          .toSet();
+      if (lines.length > 1) broken.add('"${word.group(0)}" in "$text"');
+    }
+  }
+  return broken;
+}
+
+/// Fails for a word laid out on the screen that is broken across lines
+/// ([brokenWords]).
+void expectWholeWords(WidgetTester tester) => expect(brokenWords(tester), isEmpty, reason: 'words broken across lines');

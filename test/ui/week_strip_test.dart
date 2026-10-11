@@ -228,6 +228,14 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('at the largest text on a 320 dp phone, each weekday stays whole', (tester) async {
+      await pumpThemed(tester, strip(width: 272), textScale: 3);
+      for (final weekday in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']) {
+        expectWordsWhole(tester, weekday);
+      }
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('right to left, Thursday sits under Sunday at the right', (tester) async {
       await pumpThemed(tester, strip(width: 272), hebrew: true);
       final sun = tester.getRect(dayOf('יום ראשון'));

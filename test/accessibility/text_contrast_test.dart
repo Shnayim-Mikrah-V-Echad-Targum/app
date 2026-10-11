@@ -10,7 +10,9 @@ import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 import '../helpers.dart';
 import 'routes.dart';
 
-/// Text contrast (WCAG 1.4.3) on every main screen and in every theme.
+/// Text contrast (WCAG 1.4.3) where a page needs more than opening it: the
+/// reminders as a phone schedules them, and the Torah map's tiles. Every
+/// route in every theme is checked in semantics_invariants_test.dart.
 ///
 /// textContrastGuideline reads the colours from the rendered pixels around
 /// each text and takes the most common dark and light ones. That only works
@@ -32,34 +34,10 @@ void main() {
     handle.dispose();
   }
 
-  for (final route in a11yRoutes) {
-    testWidgets('text contrast: $route', (tester) => expectReadableText(tester, route));
-  }
-
-  for (final route in a11yOnboardingRoutes) {
-    testWidgets('text contrast: $route', (tester) => expectReadableText(tester, route, settings: const AppSettings()));
-  }
-
-  // The welcome's title page, and a step's chosen card, washed in
-  // primaryContainer, in the darker themes.
-  for (final theme in [AppThemeMode.dark, AppThemeMode.highContrastDark]) {
-    for (final route in ['/welcome', '/welcome/plan']) {
-      testWidgets('text contrast: $route in the ${theme.name} theme', (tester) async {
-        await expectReadableText(tester, route, settings: AppSettings(theme: theme));
-      });
-    }
-  }
-
   testWidgets('text contrast: reminders, where they can be scheduled, with all of them on', (tester) async {
     await expectReadableText(tester, '/settings/reminders', settings: a11yRemindersOn, notifications: PhoneNotifications());
     expect(find.text('Daily reminder time'), findsOneWidget);
   });
-
-  for (final theme in [AppThemeMode.dark, AppThemeMode.sepia, AppThemeMode.highContrastLight, AppThemeMode.highContrastDark]) {
-    testWidgets('text contrast in the ${theme.name} theme', (tester) async {
-      await expectReadableText(tester, '/today', settings: AppSettings(onboardingComplete: true, theme: theme));
-    });
-  }
 
   // The Torah map with a tile in every past state, and the week strip above
   // it. textContrastGuideline finds text by its node's label, and a tile's

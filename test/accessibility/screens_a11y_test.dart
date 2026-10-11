@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/ui/theme/focus.dart';
+import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart' show WholeWords;
 
 import '../helpers.dart';
 import 'routes.dart';
+import 'semantics_invariants.dart';
 
 /// Automated accessibility checks for every main screen: tap targets
-/// (48dp Android / 44pt iOS) and labeled controls, in English and Hebrew, at
-/// phone and tablet sizes and at 200% text size. Text is laid out in the
-/// bundled fonts, so sizes and overflow are the real ones. Text contrast is
-/// checked in text_contrast_test.dart.
+/// (48dp Android / 44pt iOS), labeled controls and the [SemanticsInvariants],
+/// in English and Hebrew, at phone and desktop sizes and at 200% and 300%
+/// text size. Text is laid out in the bundled fonts, so sizes and overflow
+/// are the real ones. Text contrast, and these guidelines in every theme,
+/// are checked in semantics_invariants_test.dart.
 void main() {
   setUpAll(loadBundledFonts);
 
@@ -42,6 +51,7 @@ void main() {
       await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
       await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
       await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(semanticsInvariants));
       handle.dispose();
     });
   }
@@ -60,13 +70,15 @@ void main() {
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(semanticsInvariants));
         handle.dispose();
       });
     }
 
-    testWidgets('no overflow at 200% text size: $route', (tester) async {
+    testWidgets('no overflow or broken word at 200% text size: $route', (tester) async {
       await open(tester, route, settings: const AppSettings(), textScale: 2);
       expect(tester.takeException(), isNull);
+      expectWholeWords(tester);
     });
   }
 
@@ -92,15 +104,143 @@ void main() {
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(semanticsInvariants));
     handle.dispose();
   });
 
   for (final route in ['/today', '/parsha', '/progress', '/settings/display', '/nope']) {
-    testWidgets('no overflow at 200% text size: $route', (tester) async {
+    testWidgets('no overflow or broken word at 200% text size: $route', (tester) async {
       await open(tester, route, textScale: 2);
       expect(tester.takeException(), isNull);
+      expectWholeWords(tester);
     });
   }
+
+  // Hebrew sets the parsha's and the aliyot's names in larger letters.
+  for (final route in ['/today', '/progress', '/week/5787:2']) {
+    testWidgets('no overflow or broken word at 200% text size, Hebrew: $route', (tester) async {
+      await open(
+        tester,
+        route,
+        settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew),
+        textScale: 2,
+      );
+      expect(tester.takeException(), isNull);
+      expectWholeWords(tester);
+    });
+  }
+
+  // The largest text a phone offers (iOS's largest accessibility size), on
+  // the smallest phone the app is laid out for: nothing overflows, and no
+  // word breaks across lines.
+  for (final hebrew in [false, true]) {
+    testWidgets('no overflow or broken word at 300% on a 320 dp phone: /today${hebrew ? ', Hebrew' : ''}',
+        (tester) async {
+      await open(
+        tester,
+        '/today',
+        settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.system),
+        size: const Size(320, 640),
+        textScale: 3,
+      );
+      expect(tester.takeException(), isNull);
+      expectWholeWords(tester);
+    });
+  }
+
+  // A name of two parshiyot, of more than one word, stays whole: "Acharei"
+  // over "Mot-Kedoshim", never "Acharei Mot-" over "Kedoshim". The Hebrew
+  // UI names it in English under the Hebrew.
+  for (final hebrew in [false, true]) {
+    testWidgets(
+        'no overflow or broken word at 300% on a 320 dp phone: /today in a week of two parshiyot${hebrew ? ', Hebrew' : ''}',
+        (tester) async {
+      await openRoute(
+        tester,
+        '/today',
+        settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.system),
+        now: DateTime(2028, 5, 1, 10),
+        size: const Size(320, 640),
+        textScale: 3,
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text(WholeWords.unbroken('Acharei Mot-Kedoshim')), findsOneWidget);
+      expectWholeWords(tester);
+    });
+  }
+
+  // The same on the pages most read, as the capture harness's Friday of
+  // Bereshit shows them (test/helpers.dart): a grace day told under the
+  // week, a special haftarah, aliyot left from days gone by on the week's
+  // page, a year's Torah map, the forums' activity and a discussion. Each
+  // page is opened in English and then shown in Hebrew.
+  for (final route in ['/today', '/parsha', '/progress', '/community', '/settings', '/community/thread/1']) {
+    testWidgets('no overflow or broken word at 300% on a 320 dp phone, in either language, on Friday: $route',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: captureJoinDate),
+        now: captureNow,
+        progress: captureProgress(),
+        forums: DemoForumRepository(clock: () => captureNow),
+      );
+      c.read(routerProvider).go(route);
+      await tester.pumpAndSettle();
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+      await tester.pumpAndSettle();
+      if (route == '/today') {
+        expect(find.textContaining('covered by a grace day'), findsOneWidget);
+        expect(find.textContaining('Shabbat Machar Chodesh'), findsOneWidget);
+      }
+      if (route == '/parsha') expect(find.byIcon(Icons.history), findsWidgets);
+      for (final language in [AppLanguage.system, AppLanguage.hebrew]) {
+        c.read(settingsProvider.notifier).update((s) => s.copyWith(language: language));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: language.name);
+        expectWholeWords(tester);
+      }
+    });
+  }
+
+  // §6.1: Tab reaches Today's main button, which takes the ring.
+  testWidgets("Tab reaches Today's main button, which takes the focus ring", (tester) async {
+    FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+    await open(tester, '/today');
+    final hero = find.ancestor(
+      of: find.byIcon(Icons.menu_book),
+      matching: find.byWidgetPredicate((w) => w is FilledButton),
+    );
+    expect(hero, findsOneWidget);
+    bool focused() {
+      final focus = FocusManager.instance.primaryFocus?.context;
+      return focus != null &&
+          find.descendant(of: hero, matching: find.byElementPredicate((e) => e == focus)).evaluate().isNotEmpty;
+    }
+
+    for (var i = 0; i < 40 && !focused(); i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+    }
+    expect(focused(), isTrue, reason: 'Tab never reached the button');
+    final sefer = Theme.of(tester.element(hero)).extension<SeferColors>()!;
+    final shape = tester.widget<Material>(find.descendant(of: hero, matching: find.byType(Material)).first).shape;
+    expect(
+      shape,
+      isA<FocusRingBorder>().having((b) => b.ring, 'ring', sefer.focus).having((b) => b.gap, 'gap', sefer.focusGap),
+    );
+    expect(
+      hero,
+      paints
+        ..rrect(color: sefer.focusGap, strokeWidth: 2, style: PaintingStyle.stroke)
+        ..rrect(color: sefer.focus, strokeWidth: 3, style: PaintingStyle.stroke),
+    );
+  });
 
   // The reader, the most text-dense screen, in the real fonts: guided and
   // full text, in English and Hebrew. Its text contrast and focus-mode ink
@@ -113,6 +253,7 @@ void main() {
       bool hebrew = false,
       double textScale = 1,
       bool wholeParsha = false,
+      double readingScale = 1,
       Size size = const Size(412, 915),
     }) async {
       tester.view.physicalSize = size;
@@ -126,6 +267,7 @@ void main() {
           onboardingComplete: true,
           language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
           fullTextWholeParsha: wholeParsha,
+          readingScale: readingScale,
         ),
         now: a11yMonday,
       );
@@ -150,17 +292,48 @@ void main() {
           await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
           await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
           await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          // Verses, in the interface's language, which the invariants find.
+          expect(find.bySemanticsLabel(SemanticsInvariants.verseLabel), findsWidgets);
+          await expectLater(tester, meetsGuideline(semanticsInvariants));
           handle.dispose();
         });
       }
     }
 
     for (final hebrew in [false, true]) {
-      testWidgets('no overflow at 200% text size${hebrew ? ', Hebrew' : ''}', (tester) async {
+      testWidgets('no overflow or broken word at 200% text size${hebrew ? ', Hebrew' : ''}', (tester) async {
         await openReader(tester, hebrew: hebrew, textScale: 2);
         expect(tester.takeException(), isNull);
+        expectWholeWords(tester);
       });
     }
+
+    testWidgets('full text: no overflow or broken word at 200% text size, Hebrew', (tester) async {
+      await openReader(tester, mode: '?mode=full', hebrew: true, textScale: 2);
+      expect(tester.takeException(), isNull);
+      expectWholeWords(tester);
+    });
+
+    // Scripture too: where a maqaf's words are too wide together for the
+    // column, a line ends after the maqaf rather than inside a word.
+    for (final hebrew in [false, true]) {
+      testWidgets('no overflow or broken word at 300% on a 320 dp phone${hebrew ? ', Hebrew' : ''}', (tester) async {
+        await openReader(tester, hebrew: hebrew, textScale: 3, size: const Size(320, 640));
+        expect(tester.takeException(), isNull);
+        expect(find.byType(ScriptureVerse), findsWidgets);
+        expectWholeWords(tester);
+      });
+    }
+
+    // The reading size multiplies the system's, so a maqaf's words outgrow
+    // the column at 100% text too. (At the largest, 500%, a long word is
+    // wider than a phone's column on its own, and breaks.)
+    testWidgets('no overflow or broken word at a reading size of 400%', (tester) async {
+      await openReader(tester, readingScale: 4);
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ScriptureVerse), findsWidgets);
+      expectWholeWords(tester);
+    });
 
     // On a desktop, the full text in parallel columns, of one aliyah and of
     // the whole parsha under each aliyah's heading.
@@ -175,15 +348,18 @@ void main() {
           await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
           await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
           await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(semanticsInvariants));
           handle.dispose();
         });
       }
     }
 
     for (final hebrew in [false, true]) {
-      testWidgets('the whole parsha: no overflow at 200% text size${hebrew ? ', Hebrew' : ''}', (tester) async {
+      testWidgets('the whole parsha: no overflow or broken word at 200% text size${hebrew ? ', Hebrew' : ''}',
+          (tester) async {
         await openReader(tester, mode: '?mode=full', hebrew: hebrew, wholeParsha: true, textScale: 2);
         expect(tester.takeException(), isNull);
+        expectWholeWords(tester);
       });
     }
   });
@@ -196,6 +372,7 @@ void main() {
     expect(dir, TextDirection.rtl);
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(semanticsInvariants));
     handle.dispose();
   });
 

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/widgets/ledger.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 
 import '../../helpers.dart';
 
@@ -29,11 +30,14 @@ void main() {
           language: hebrew ? AppLanguage.hebrew : AppLanguage.english,
         ),
       );
-      for (final name in [if (!hebrew) 'Matot-Masei', 'מַטּוֹת־מַסְעֵי']) {
+      // Each set with a word joiner after its hyphen or maqaf, so that no
+      // line ends there; the Hebrew UI names it in English beneath.
+      for (final name in ['Matot-Masei', 'מַטּוֹת־מַסְעֵי']) {
+        final shown = WholeWords.unbroken(name);
         final paragraph = tester.renderObject<RenderParagraph>(
-          find.descendant(of: find.text(name), matching: find.byType(RichText)),
+          find.descendant(of: find.text(shown), matching: find.byType(RichText)),
         );
-        final boxes = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: name.length));
+        final boxes = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: shown.length));
         expect({for (final b in boxes) b.top}, hasLength(1), reason: name);
       }
       expect(find.byType(LedgerCard), findsOneWidget);

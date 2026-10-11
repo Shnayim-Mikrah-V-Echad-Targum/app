@@ -8,6 +8,9 @@ const a11yRoutes = [
   '/progress',
   '/community',
   '/community/new',
+  // A discussion with its posts, and signing in from the community.
+  '/community/thread/1',
+  '/community/account',
   // A question on a verse, over the tabs, as the reader opens it.
   '/ask?verse=Genesis%203:22',
   // The bookmarks and notes, with none yet.
@@ -34,6 +37,11 @@ const a11yRoutes = [
   '/nope',
   '/community/forum/xyz',
 ];
+
+/// Pages whose texts load behind a spinner, which never settles: the
+/// reader, guided at Revi'i and the full text of Rishon, and a haftarah.
+/// semantics_invariants_test.dart visits them with [a11yRoutes].
+const a11yLoadingRoutes = ['/read/5787:2/3', '/read/5787:2/0?mode=full', '/haftarah/5787:2'];
 
 /// The welcome and the steps of onboarding, visited before it is done, and
 /// signing in from the welcome to restore a backup. On [a11yMonday] the plan

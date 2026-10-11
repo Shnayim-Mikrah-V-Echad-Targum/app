@@ -419,6 +419,107 @@ void main() {
     }
   });
 
+  // The test font's letters, and its maqaf, are squares as wide as the type
+  // is high; its points and the word joiner take no room.
+  group("a maqaf's words", () {
+    const style = TextStyle(fontSize: 10, height: 1);
+    String fitted(String hebrew, double width, {TextScaler scaler = TextScaler.noScaling}) => joinWhereFits(
+          TextSpan(text: keepLinesSound(hebrew), style: style),
+          maxWidth: width,
+          textScaler: scaler,
+        ).toPlainText();
+
+    testWidgets('stay joined where the line has room for them', (tester) async {
+      final span = TextSpan(text: keepLinesSound('אאא־בבב גג'), style: style);
+      expect(joinWhereFits(span, maxWidth: 100, textScaler: TextScaler.noScaling), same(span));
+      expect(fitted('אַאַאַ־בָבָבָ גג', 100), 'אַאַאַ־\u2060בָבָבָ גג', reason: 'the points take no room');
+      expect(joinWhereFits(span, maxWidth: double.infinity, textScaler: TextScaler.noScaling), same(span));
+    });
+
+    testWidgets('are parted after the maqaf where they are too wide together for the line', (tester) async {
+      // 70 together.
+      expect(fitted('אאא־בבב גג', 60), 'אאא־בבב גג');
+      expect(fitted('אאא־בבב גג', 100, scaler: const TextScaler.linear(2)), 'אאא־בבב גג', reason: 'as the text scales');
+      // Every other maqaf keeps its joiner.
+      expect(fitted('אאא־בבב ג־ד', 60), 'אאא־בבב ג־\u2060ד');
+    });
+
+    testWidgets('one after another stay together as far as they fit, from the first', (tester) async {
+      // "אא־" and "בב־" are 30 wide, and "גג" 20.
+      expect(fitted('אא־בב־גג', 55), 'אא־בב־\u2060גג');
+      expect(fitted('אא־בב־גג', 75), 'אא־\u2060בב־גג');
+      expect(fitted('אא־בב־גג', 25), 'אא־בב־גג');
+    });
+
+    testWidgets('are measured in their own styles, with the widgets among them', (tester) async {
+      const big = TextStyle(fontSize: 20);
+      final widget = WidgetSpan(child: Container());
+      final span = TextSpan(style: style, children: [
+        const TextSpan(text: 'גג '),
+        widget,
+        TextSpan(text: keepLinesSound('אא־'), style: big),
+        const TextSpan(text: 'בב'),
+      ]);
+      // The widget 20, "אא־" 60 and "בב" 20: 100 together.
+      const placeholders = [PlaceholderDimensions(size: Size(20, 10), alignment: PlaceholderAlignment.middle)];
+      expect(
+        joinWhereFits(span, maxWidth: 110, textScaler: TextScaler.noScaling, placeholders: placeholders),
+        same(span),
+      );
+      final parted =
+          joinWhereFits(span, maxWidth: 90, textScaler: TextScaler.noScaling, placeholders: placeholders) as TextSpan;
+      expect(parted.toPlainText(), 'גג \uFFFCאא־בב');
+      expect(parted.children![1], same(widget));
+      expect((parted.children![2] as TextSpan).style, big);
+    });
+
+    // 8 letters and the maqaf, then 8 letters, of 26 px: 234 and 208, and
+    // 442 together.
+    final long = Verse.fromJson(const VerseRef(1, 1), ['גג אאאאאאאא־בבבבבבבב גג']);
+    Future<RenderParagraph> pumpAt(WidgetTester tester, double width) async {
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topRight,
+          child: SizedBox(
+            width: width,
+            child: ScriptureVerse(verse: long, kind: ScriptureKind.mikra, settings: const AppSettings()),
+          ),
+        ),
+      );
+      return tester.renderObject<RenderParagraph>(find.byType(RichText));
+    }
+
+    testWidgets('in a verse, stay on one line where the column has room', (tester) async {
+      final paragraph = await pumpAt(tester, 600);
+      final text = paragraph.text.toPlainText();
+      expect(text, contains('־\u2060'));
+      final pair = text.indexOf('אאא');
+      final lines = paragraph
+          .getBoxesForSelection(TextSelection(baseOffset: pair, extentOffset: text.lastIndexOf('ב') + 1))
+          .map((b) => b.top.round())
+          .toSet();
+      expect(lines, hasLength(1));
+    });
+
+    testWidgets('in a narrow column, a line ends after the maqaf, not inside a word', (tester) async {
+      final paragraph = await pumpAt(tester, 300);
+      final text = paragraph.text.toPlainText();
+      expect(text, isNot(contains('־\u2060')));
+      final rows = <String, int>{};
+      for (final word in RegExp(r'[^\s־]+־?').allMatches(text)) {
+        final lines = paragraph
+            .getBoxesForSelection(TextSelection(baseOffset: word.start, extentOffset: word.end))
+            .map((b) => b.top.round())
+            .toSet();
+        expect(lines, hasLength(1), reason: '"${word[0]}" whole');
+        rows[word[0]!] = lines.single;
+      }
+      expect(rows['בבבבבבבב'], greaterThan(rows['אאאאאאאא־']!), reason: 'a line ends after the maqaf');
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('focus mode', () {
     Widget group({required bool highlighted}) => VerseGroup(
           verse: serpent.ref,

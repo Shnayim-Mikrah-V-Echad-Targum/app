@@ -11,6 +11,7 @@ import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/lang.dart';
+import '../../../ui/widgets/lines.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -290,13 +291,18 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                               header: true,
                               headingLevel: 1,
                               namesRoute: true,
-                              child: Text(
+                              // Each word whole, set smaller where the largest
+                              // text leaves one too wide for the page, unless
+                              // too long to stay legible.
+                              child: WholeWords(
                                 title,
                                 textDirection: titleDirection,
                                 // In its own direction, from the page's start
                                 // edge, as its forum lists it.
                                 textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.left,
                                 style: theme.textTheme.headlineSmall,
+                                breakAtHyphens: true,
+                                minFontSize: WholeWords.smallestSize,
                               ),
                             ),
                           ),

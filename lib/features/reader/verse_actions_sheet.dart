@@ -266,12 +266,17 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
                       decoration: BoxDecoration(
                         border: BorderDirectional(start: BorderSide(color: scheme.secondary, width: 2)),
                       ),
-                      child: Text(
-                        keepLinesSound(verseText(widget.verse.hebrew, s)),
+                      child: JoinsThatFit(
+                        text: TextSpan(text: keepLinesSound(verseText(widget.verse.hebrew, s))),
                         style: style,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
                         locale: const Locale('he'),
+                        builder: (context, verse) => Text.rich(
+                          verse,
+                          style: style,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          locale: const Locale('he'),
+                        ),
                       ),
                     ),
                   ),

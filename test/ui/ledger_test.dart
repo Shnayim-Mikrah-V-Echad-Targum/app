@@ -101,6 +101,38 @@ void main() {
     expect(card.bottom - tester.getRect(find.text('Parsha streak')).bottom, 16);
   });
 
+  testWidgets('at the largest text on a small phone, every word stays whole', (tester) async {
+    await pumpThemed(
+      tester,
+      const Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(width: 288, child: LedgerCard(parshaStreak: 0, daysOnTrack: 0, beginsWith: 'Noach')),
+      ),
+      textScale: 3,
+    );
+    for (final text in ['Begins with Noach', "Begins with today's reading", 'Parsha streak', 'Days on track']) {
+      expectWordsWhole(tester, text);
+    }
+    expect(tester.takeException(), isNull);
+
+    // A count is one word too: "365" in ledger numerals is far wider than
+    // its column here.
+    await pumpThemed(
+      tester,
+      const Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(width: 288, child: LedgerCard(parshaStreak: 54, daysOnTrack: 365, beginsWith: 'Noach')),
+      ),
+      textScale: 3,
+    );
+    for (final text in ['54', '365', 'Parsha streak', 'Days on track']) {
+      expectWordsWhole(tester, text);
+    }
+    final column = tester.getSize(find.byType(LedgerCard)).width / 2 - 32;
+    expect(tester.getRect(find.text('365')).width, lessThanOrEqualTo(column));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('one tap target with a hairline between the columns', (tester) async {
     var taps = 0;
     await pumpLedger(tester, LedgerCard(parshaStreak: 1, daysOnTrack: 2, beginsWith: 'Noach', onTap: () => taps++));

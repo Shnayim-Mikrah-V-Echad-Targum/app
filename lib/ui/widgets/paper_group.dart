@@ -4,6 +4,7 @@ import '../theme/focus.dart';
 import '../theme/sefer_colors.dart';
 import 'app_icon.dart';
 import 'lang.dart';
+import 'lines.dart';
 import 'ornaments.dart';
 
 /// Rows on one sheet of paper (docs/DESIGN_SYSTEM.md §6.3): a card with no
@@ -247,6 +248,7 @@ class PaperRow extends StatelessWidget {
     this.icon,
     this.iconColor,
     required this.title,
+    this.breakTitleAtHyphens = true,
     this.subtitle,
     this.subtitleMaxLines = 2,
     this.subtitleLocale,
@@ -271,6 +273,11 @@ class PaperRow extends StatelessWidget {
   /// onSurfaceVariant unless given: the grace shield is in its own colour.
   final Color? iconColor;
   final String title;
+
+  /// Whether the title may end a line after a hyphen in it, as a sentence
+  /// may ([WholeWords.breakAtHyphens]): false for a parsha's name, which
+  /// stays whole ("Vayakhel-Pekudei").
+  final bool breakTitleAtHyphens;
 
   /// At most [subtitleMaxLines] lines, unless the text is enlarged.
   final String? subtitle;
@@ -346,6 +353,7 @@ class PaperRow extends StatelessWidget {
     final titleStyle =
         text.bodyLarge!.copyWith(color: destructive ? scheme.error : scheme.onSurface).merge(this.titleStyle);
     final subtitleStyle = muted?.merge(this.subtitleStyle);
+    final detailStyle = text.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
     // A labelled button goes with the title, as a value does, rather than
     // after it.
     final trailing = this.trailing;
@@ -368,6 +376,14 @@ class PaperRow extends StatelessWidget {
             child: Align(alignment: alignment, widthFactor: 1, heightFactor: 1, child: child),
           )
         : child;
+    // Each word whole, as very large text beside an icon and a chevron would
+    // not keep it.
+    final titleText =
+        WholeWords(title, style: titleStyle, textAlign: TextAlign.start, breakAtHyphens: breakTitleAtHyphens);
+    // So with the lines under it, once the text is enlarged: below that, a
+    // subtitle may be cut short at its last line instead.
+    Widget enlargedLine(String line, TextStyle? style) =>
+        WholeWords(line, style: style, textAlign: TextAlign.start, breakAtHyphens: true);
     // The title, and at the end of its line a value or a labelled button,
     // which move under it when the two don't fit side by side.
     Widget titleWith(Widget other) => SizedBox(
@@ -376,7 +392,7 @@ class PaperRow extends StatelessWidget {
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 12,
-            children: [Text(title, style: titleStyle), other],
+            children: [titleText, other],
           ),
         );
     final content = ConstrainedBox(
@@ -412,7 +428,7 @@ class PaperRow extends StatelessWidget {
                   else if (besideTitle != null)
                     titleWith(besideTitle)
                   else
-                    Text(title, style: titleStyle),
+                    titleText,
                   if (subtitle case final subtitle?)
                     if (subtitleLocale case final locale?)
                       Text.rich(
@@ -421,17 +437,19 @@ class PaperRow extends StatelessWidget {
                         maxLines: enlarged ? null : subtitleMaxLines,
                         overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
                       )
+                    else if (enlarged)
+                      enlargedLine(subtitle, subtitleStyle)
                     else
                       Text(
                         subtitle,
                         style: subtitleStyle,
-                        maxLines: enlarged ? null : subtitleMaxLines,
-                        overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
+                        maxLines: subtitleMaxLines,
+                        overflow: subtitleMaxLines == null ? null : TextOverflow.ellipsis,
                       ),
-                  if (detail != null)
+                  if (detail case final detail?)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(detail!, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                      child: enlarged ? enlargedLine(detail, detailStyle) : Text(detail, style: detailStyle),
                     ),
                 ],
               ),

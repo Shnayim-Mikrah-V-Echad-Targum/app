@@ -13,6 +13,7 @@ import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/app_mark.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
@@ -920,18 +921,24 @@ class _ProfileCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
+                // The name and address whole, as a word of the interface is:
+                // set a little smaller with large text rather than broken
+                // ("rivka@example." over "org"), unless too long to stay
+                // legible.
+                WholeWords(
                   title,
                   style: theme.textTheme.titleLarge,
                   textAlign: edge,
                   textDirection: name == null ? TextDirection.ltr : autoDirection(name, fallback: direction),
+                  minFontSize: WholeWords.smallestSize,
                 ),
                 if (name != null && email != null)
-                  Text(
+                  WholeWords(
                     email,
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                     textAlign: edge,
                     textDirection: TextDirection.ltr,
+                    minFontSize: WholeWords.smallestSize,
                   ),
                 if (moderator) ...[
                   const Gap(Space.sm),
