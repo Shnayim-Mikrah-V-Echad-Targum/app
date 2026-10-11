@@ -283,6 +283,11 @@ const _screens = {
   'forum_questions': '/community/forum/questions',
   'forum_feedback': '/community/forum/feedback',
   'forum_empty': '/community/forum/divrei-torah',
+  // Offline: a forum's threads, a discussion's posts and the reports that
+  // can't load, each said in the page's column.
+  'forum_error': '/community/forum/questions',
+  'thread_error': '/community/thread/1',
+  'moderation_error': '/community/moderation',
   // What the Demo tag explains.
   'demo_about': '/community/forum/questions',
   // Reporting a post, before a reason is chosen.
@@ -345,6 +350,8 @@ const _screens = {
   'city_search': '/settings/reading/city',
   'city_many': '/settings/reading/city',
   'city_none': '/settings/reading/city',
+  // The list of cities, which failed to load.
+  'city_error': '/settings/reading/city',
   // Its customs: the second reading, the haftarah and the late window.
   's_reading_customs': '/settings/reading',
   // For Chabad: the last verse isn't repeated, as the switch says.
@@ -564,6 +571,7 @@ final _screenOverrides = <String, List<Override>>{
       deviceClockProvider.overrideWithValue(_clockOf(_jerusalem)),
     ],
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
+  'city_error': [cityDirectoryProvider.overrideWith((ref) async => throw Exception('offline'))],
 };
 
 /// The clock of [city], for a device there.
@@ -818,6 +826,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'account_name': _signedIn,
   for (final screen in ['compose_member', 'account_member', 'account_edit', 'account_blocked']) screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
+  for (final screen in ['forum_error', 'thread_error', 'moderation_error']) screen: () async => _Offline(),
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
   'thread_mine': _withOwnPost,
@@ -908,6 +917,26 @@ class _CloudForever extends _Cloud {
   Future<Map<String, dynamic>?> loadProgress() => Completer<Map<String, dynamic>?>().future;
 }
 
+/// A community whose forums load, but whose threads, posts and reports
+/// can't.
+class _Offline extends DemoForumRepository {
+  @override
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) async =>
+      throw Exception('offline');
+
+  @override
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) async =>
+      throw Exception('offline');
+
+  @override
+  Future<List<Report>> openReports() async => throw Exception('offline');
+}
+
 /// A community whose weekly threads never finish opening.
 class _OpeningForever extends DemoForumRepository {
   @override
@@ -985,6 +1014,10 @@ Future<void> _scrollToEnd(WidgetTester tester) async {
 }
 
 final _screenSetup = <String, Future<void> Function(WidgetTester)>{
+  // Past the times what failed to load is tried again, so that none is
+  // still waiting as the test ends.
+  for (final screen in ['forum_error', 'thread_error', 'moderation_error', 'city_error'])
+    screen: (tester) => tester.pump(const Duration(minutes: 1)),
   // Next through Rishon's three readings, then a routine in the offer.
   'reader_offer': _tapInTurn([
     for (var i = 0; i < 3; i++) () => find.byWidgetPredicate((w) => w is FilledButton).last,
@@ -1421,6 +1454,11 @@ const _desktopScreens = {
   'forum_questions',
   // The button that begins a discussion, at the column's end.
   'forum_empty',
+  // What can't load, said under the title rather than at the pane's edge.
+  'forum_error',
+  'thread_error',
+  'moderation_error',
+  'city_error',
   'account',
   'account_code',
   'account_member',

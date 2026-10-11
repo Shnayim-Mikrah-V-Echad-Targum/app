@@ -249,7 +249,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                   // Fetched again, the posts shown stay until the new ones come.
                   skipError: posts.hasValue,
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
+                  // In the page's column, and pulled to try again.
+                  error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
                   data: (page) {
                     final list = page.posts;
                     final byId = {for (final p in list) p.id: p};

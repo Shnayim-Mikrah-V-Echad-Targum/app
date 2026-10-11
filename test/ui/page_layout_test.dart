@@ -7,6 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
@@ -150,6 +153,46 @@ void main() {
       for (final size in [const Size(412, 915), const Size(800, 1180)]) {
         await openRoute(tester, '/community/forum/questions', size: size);
         expect(tester.getRect(find.byType(FloatingActionButton)).right, size.width - 16);
+      }
+    });
+
+    group("on a desktop, what can't load is said in the page's column", () {
+      /// Opens [route] at 1366 with the network down for threads, posts and
+      /// reports, while the forums load.
+      Future<void> openOffline(WidgetTester tester, String route, {bool hebrew = false}) async {
+        tester.view.physicalSize = const Size(1366, 860);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final container = await pumpApp(tester, settings: hebrew ? _hebrew : const AppSettings(onboardingComplete: true), forums: _Offline());
+        container.read(routerProvider).go(route);
+        await tester.pumpAndSettle();
+      }
+
+      for (final hebrew in [false, true]) {
+        final (l, language) = hebrew ? (_he, ', in Hebrew') : (_en, '');
+        testWidgets("a forum's threads start under its title$language", (tester) async {
+          await openOffline(tester, '/community/forum/questions', hebrew: hebrew);
+          final message = tester.getRect(find.text(l.errNetwork));
+          final title = tester.getRect(_title(hebrew ? 'שאלות ותשובות' : 'Questions & answers'));
+          if (hebrew) {
+            // The rail at the right, and the column's content ending 32 in.
+            expect(message.right, title.right);
+            expect(message.right, 1109 - (1109 - 720) / 2 - 32);
+          } else {
+            expect(message.left, title.left);
+            expect(message.left, 257 + (1109 - 720) / 2 + 32);
+          }
+          expect(message.width, lessThanOrEqualTo(720 - 2 * 32), reason: "a line no longer than the column's");
+        });
+      }
+
+      for (final route in ['/community/thread/1', '/community/moderation']) {
+        testWidgets('so are $route', (tester) async {
+          await openOffline(tester, route);
+          final message = tester.getRect(find.text(_en.errNetwork));
+          expect(message.left, 257 + (1109 - 720) / 2 + 32);
+          expect(message.width, lessThanOrEqualTo(720 - 2 * 32));
+        });
       }
     });
 
@@ -409,4 +452,24 @@ void main() {
       expect(labels, everyElement(_en.appTitle));
     });
   });
+}
+
+/// A community whose forums load, but whose threads, posts and reports
+/// can't: the network down.
+class _Offline extends DemoForumRepository {
+  @override
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) async =>
+      throw Exception('offline');
+
+  @override
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) async =>
+      throw Exception('offline');
+
+  @override
+  Future<List<Report>> openReports() async => throw Exception('offline');
 }
