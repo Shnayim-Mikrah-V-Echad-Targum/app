@@ -2809,6 +2809,32 @@ void main() {
       expect(find.text('Name saved.'), findsOneWidget);
     });
 
+    // At 200% on a phone the address broke as "rivka@example." over "org"
+    // (here, in the test font's wide letters, a shorter one is as wide). One
+    // too long for the card even at the smallest size the interface is set
+    // in wraps at that size, rather than shrink out of sight.
+    testWidgets('signed in, keeps the email whole with large text, but no smaller than 12', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      for (final email in ['rivka@ex.org', 'rivka.levi.of.the.shabbat.table@example.org']) {
+        final forums = DemoForumRepository();
+        await forums.verifyCode(email, '123456');
+        await forums.updateDisplayName('Rivka Levi');
+        await account(tester, forums: forums);
+        expect(tester.takeException(), isNull);
+        final text = find.text(email);
+        // As drawn: the width it is set in, scaled.
+        final scale = tester.getRect(text).width / tester.getSize(text).width;
+        final size = tester.widget<Text>(text).style!.fontSize! * 2 * scale;
+        if (email.length < 20) {
+          expectWordsWhole(tester, email);
+          expect(size, lessThan(26), reason: 'set smaller to fit');
+        } else {
+          expect(size, moreOrLessEquals(12), reason: 'at the smallest size, wrapped');
+        }
+      }
+    });
+
     testWidgets('signed in with a machine\'s name, shows the email in its place', (tester) async {
       final forums = DemoForumRepository();
       await forums.verifyCode('reader@example.org', '123456');

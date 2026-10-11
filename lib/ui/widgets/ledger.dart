@@ -4,6 +4,7 @@ import '../l10n.dart';
 import '../theme/sefer_colors.dart';
 import '../theme/typography.dart';
 import 'common.dart';
+import 'lines.dart';
 
 /// The two streaks side by side on one card, like a ledger's columns
 /// (docs/DESIGN_SYSTEM.md §6.12): the parsha streak, a hairline, and the days
@@ -71,16 +72,23 @@ class LedgerCard extends StatelessWidget {
               child: Padding(padding: EdgeInsets.fromLTRB(16, first ? 16 : 0, 16, last ? 16 : 0), child: cell(c)),
             ),
         ]);
+    // Each word whole, as very large text in a narrow column would not keep
+    // it.
+    Widget words(String text, TextStyle? style) =>
+        WholeWords(text, style: style, textAlign: TextAlign.start, breakAtHyphens: true);
     // "Parsha streak: begins with Bereshit. Days on track: 2"
     final label = columns.map((c) => c.semanticsLabel).join('. ');
     final table = Table(
       border: TableBorder(verticalInside: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth)),
       children: [
-        row(first: true, (c) => c.count == 0
-            ? Text(c.zero, style: theme.textTheme.titleMedium)
-            : Text('${c.count}', style: numeral)),
-        row(last: !hasLongest, (c) => Text(c.label, style: meta)),
-        if (hasLongest) row(last: true, (c) => Text(c.longest ?? '', style: meta)),
+        row(
+          first: true,
+          // A count is one word, set smaller where it is too wide for its
+          // column ("365" at the largest text on a small phone).
+          (c) => c.count == 0 ? words(c.zero, theme.textTheme.titleMedium) : words('${c.count}', numeral),
+        ),
+        row(last: !hasLongest, (c) => words(c.label, meta)),
+        if (hasLongest) row(last: true, (c) => words(c.longest ?? '', meta)),
       ],
     );
     final onTap = this.onTap;

@@ -14,6 +14,7 @@ import '../l10n.dart';
 import '../theme/app_theme.dart';
 import 'common.dart';
 import 'fonts_change_scope.dart';
+import 'lines.dart';
 
 /// The geometry of the parsha rings at one size (docs/DESIGN_SYSTEM.md
 /// §6.11): three strokes of `size × 0.055`, 1.6 strokes apart.
@@ -913,9 +914,10 @@ class WeekStrip extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: _inset),
-            child: Text(
+            // Whole, and a little smaller, where even two rows leave a day
+            // too narrow for its name (very large text on a small phone).
+            child: WholeWords(
               names.weekdayShort(d),
-              textAlign: TextAlign.center,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: isToday ? scheme.onSurface : scheme.onSurfaceVariant,
                 fontWeight: isToday ? FontWeight.w700 : null,

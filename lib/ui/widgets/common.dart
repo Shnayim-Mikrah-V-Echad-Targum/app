@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../l10n.dart';
 import '../theme/app_theme.dart';
+import 'lines.dart';
 import 'ornaments.dart';
 
 /// Screens narrower than this pad cards and sheets 16 instead of 20 or 24
@@ -540,7 +541,9 @@ class NoticeBanner extends StatelessWidget {
     final scheme = theme.colorScheme;
     final ink = scheme.onSecondaryContainer;
     final style = (marginalia ? SeferType.of(context).marginalia : theme.textTheme.bodyMedium)?.copyWith(color: ink);
-    Widget message = Text(text, style: style);
+    // Each word whole, set smaller where the largest text leaves one too
+    // wide for the banner.
+    Widget message = WholeWords(text, style: style, textAlign: TextAlign.start, breakAtHyphens: true);
     if (title case final title?) {
       message = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -550,7 +553,12 @@ class NoticeBanner extends StatelessWidget {
           Semantics(
             container: true,
             header: true,
-            child: Text(title, style: theme.textTheme.titleSmall?.copyWith(color: ink)),
+            child: WholeWords(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(color: ink),
+              textAlign: TextAlign.start,
+              breakAtHyphens: true,
+            ),
           ),
           message,
         ],
