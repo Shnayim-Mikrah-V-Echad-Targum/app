@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse, TranslationVerse;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
@@ -188,6 +189,11 @@ void main() {
     testWidgets('every theme: $route', (tester) async {
       final handle = tester.ensureSemantics();
       final c = await open(tester, route);
+      // A page whose texts load shows them, not an error or an empty page on
+      // which every rule would pass: its verses, which rule 4 checks.
+      if (a11yLoadingRoutes.contains(route)) {
+        expect(find.bySemanticsLabel(SemanticsInvariants.verseLabel), findsWidgets);
+      }
       await expectInEveryTheme(tester, c);
       handle.dispose();
     });
@@ -213,6 +219,13 @@ void main() {
       '/read/5787:2/0?mode=full',
       settings: const AppSettings(onboardingComplete: true, focusMode: true, showTranslation: true),
     );
+    // The verses, the reader's in its ink and the rest dimmed, whose
+    // contrast this is for.
+    expect(find.bySemanticsLabel(SemanticsInvariants.verseLabel), findsWidgets);
+    bool dimmed(Widget w) => w is ScriptureVerse && w.dimmed;
+    expect(find.byWidgetPredicate(dimmed), findsWidgets);
+    expect(find.byWidgetPredicate((w) => w is ScriptureVerse && !w.dimmed), findsWidgets);
+    expect(find.byWidgetPredicate((w) => w is TranslationVerse && w.dimmed), findsWidgets);
     await expectInEveryTheme(tester, c, themes: const [AppThemeMode.light, AppThemeMode.sepia]);
     handle.dispose();
   });

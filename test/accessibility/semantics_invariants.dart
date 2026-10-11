@@ -20,8 +20,12 @@ import 'package:flutter_test/flutter_test.dart';
 ///    and the Hebrew, or the same in Hebrew), is tagged Hebrew, by its node's
 ///    locale or a span of its label, so it is read in a Hebrew voice.
 ///
-/// Nodes merged into a parent are skipped (the parent speaks for them), and
-/// so are hidden ones, which no screen reader reaches.
+/// Nodes merged into a parent are skipped: the parent speaks for them.
+/// Hidden ones are not. Flutter marks a node hidden when it is scrolled out
+/// of view but still built (within the scrollable's cache extent), so that
+/// TalkBack and VoiceOver can reach it by swiping and scroll to it; a control
+/// just below the fold is a control all the same. No rule depends on where a
+/// node is.
 class SemanticsInvariants extends AccessibilityGuideline {
   const SemanticsInvariants();
 
@@ -51,7 +55,7 @@ class SemanticsInvariants extends AccessibilityGuideline {
       result += _traverse(child);
       return true;
     });
-    if (node.isMergedIntoParent || node.flagsCollection.isHidden) return result;
+    if (node.isMergedIntoParent) return result;
 
     final data = node.getSemanticsData();
     final flags = data.flagsCollection;

@@ -128,14 +128,14 @@ The screens are opened as a phone shows them (412 × 915 dp) on a reading-week M
   - `androidTapTargetGuideline`
   - `labeledTapTargetGuideline`
 
-  It runs the same on the full text in focus mode, in the light and sepia themes, and on Progress with a parsha read on time, one finished after its Shabbat, one missed and one made up, in all five themes. It keeps the test font: `textContrastGuideline` reads colours from rendered pixels, and the test font's solid glyphs show it the exact text colour where real glyphs show mostly anti-aliased edges.
-- **`SemanticsInvariants`** (`test/accessibility/semantics_invariants.dart`) walks the whole semantics tree, skipping nodes merged into a parent and hidden ones, and fails when:
+  On the pages whose texts load (the reader and the haftarah), it first checks that their verses are shown, so that an error or an empty page can't pass. It runs the same on the full text in focus mode, in the light and sepia themes, once it has checked that the verses are there and that some are dimmed, and on Progress with a parsha read on time, one finished after its Shabbat, one missed and one made up, in all five themes. It keeps the test font: `textContrastGuideline` reads colours from rendered pixels, and the test font's solid glyphs show it the exact text colour where real glyphs show mostly anti-aliased edges.
+- **`SemanticsInvariants`** (`test/accessibility/semantics_invariants.dart`) walks the whole semantics tree, skipping only nodes merged into a parent, and fails when:
   1. an enabled button or link has no tap action;
   2. a slider's label is empty or the same as its value;
   3. a text field has no label;
   4. a verse, as the reader labels it ("Verse 9." or "Targum, verse 9." and the Hebrew, or the same in Hebrew), is tagged Hebrew neither by its node's locale nor by a span of its label.
 
-  Its own tests show that each rule fails where it should: a tile whose tap was removed fails the first. Two rules are scoped:
+  Nodes Flutter marks hidden are checked too: they are scrolled out of view but still built, and TalkBack and VoiceOver reach them by swiping, so the controls just below the fold on a long page (Settings, Progress, the full text's later verses) are held to the same rules. Its own tests show that each rule fails where it should: a node that says it is a button or a link but has no tap action, as a tile whose gesture was dropped would be, fails the first. Two rules are scoped:
   - Rule 3 applies to fields that take input. Flutter's `SelectableText`, which sets a post and the guide, is a read-only text field whose text is its value.
   - Rule 4 applies to the reader's label of a verse only. Labels such as "Verse 1 of 14", "Verse by verse", "Targum Onkelos" or "תרגום לאנגלית" name parts of the interface, in its own language.
 - **`test/accessibility/screens_a11y_test.dart`** lays the same screens out in the bundled fonts, so sizes and overflow are the real ones, and runs `androidTapTargetGuideline`, `iOSTapTargetGuideline`, `labeledTapTargetGuideline` and `SemanticsInvariants` on:
