@@ -328,12 +328,22 @@ void main() {
   });
 
   group('status messages', () {
+    /// The message's paper, within its margins, on the page on show.
+    Rect bar(WidgetTester tester) =>
+        tester.getRect(find.descendant(of: find.byType(SnackBar), matching: find.byType(Material)).first);
+
     /// Shows a message from the page on show, and gives where it is set.
     Future<Rect> show(WidgetTester tester) async {
-      showStatus(tester.element(find.byType(PageScaffold).last), 'Updated');
+      showStatus(tester.element(find.byType(Scaffold).last), 'Updated');
       await tester.pumpAndSettle();
-      // Its paper, within its margins.
-      return tester.getRect(find.descendant(of: find.byType(SnackBar), matching: find.byType(Material)).first);
+      return bar(tester);
+    }
+
+    /// Lets a page open over another, or close, without waiting for the
+    /// reader's text, whose spinner never settles.
+    Future<void> settleRoute(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
     }
 
     testWidgets('on a phone, run 16 from the edges', (tester) async {
@@ -363,6 +373,103 @@ void main() {
       final bar = await show(tester);
       // The compact rail (80 and its hairline) beside a pane of 559.
       expect((bar.left, bar.right), (81 + 16, 640 - 16));
+    });
+
+    testWidgets('are set again on the page they are shown over: the reader over a tab, and the tab again',
+        (tester) async {
+      // With a page of another tab open beneath, whose copy of the message
+      // is no hero as the reader opens.
+      final container = await openRoute(tester, '/settings', size: const Size(1366, 860));
+      container.read(routerProvider).go('/today');
+      await tester.pumpAndSettle();
+      await show(tester);
+      expect(bar(tester).center.dx, 257 + 1109 / 2);
+      // The reader opens over the tabs, while the message is still shown:
+      // centred on the window, as the reader's column is.
+      container.read(routerProvider).push('/read/5787:1/0');
+      await settleRoute(tester);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(bar(tester).width, 640);
+      expect(bar(tester).center.dx, 1366 / 2);
+
+      // Shown from the reader, and still shown back on Today: on its pane.
+      showStatus(tester.element(find.byType(Scaffold).last), 'Marked as read');
+      await settleRoute(tester);
+      container.read(routerProvider).pop();
+      await settleRoute(tester);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(bar(tester).center.dx, 257 + 1109 / 2);
+    });
+
+    testWidgets('are set again as the window is resized', (tester) async {
+      await openRoute(tester, '/settings', size: const Size(1366, 860));
+      await show(tester);
+      tester.view.physicalSize = const Size(1920, 1080);
+      await tester.pump();
+      expect(bar(tester).width, 640);
+      expect(bar(tester).center.dx, 257 + 1663 / 2);
+      expect(bar(tester).bottom, 1080 - 16);
+      // Snapped to half the screen: the compact rail, beside a pane of 879.
+      tester.view.physicalSize = const Size(960, 1080);
+      await tester.pump();
+      expect(bar(tester).center.dx, 81 + 879 / 2);
+    });
+
+    group('on a phone held sideways, keep to the safe area', () {
+      // An iPhone's 932 x 430, with the notch's 59 at either side: the
+      // compact rail beside a pane of 733 within the safe area.
+      const size = Size(932, 430);
+
+      testWidgets('within a tab, centred on the pane', (tester) async {
+        tester.view.padding = const FakeViewPadding(left: 59, right: 59);
+        await openRoute(tester, '/settings', size: size);
+        final shown = await show(tester);
+        expect(shown.width, 640);
+        expect(shown.center.dx, 59 + 81 + 733 / 2);
+      });
+
+      testWidgets('over the tabs, centred on the window', (tester) async {
+        tester.view.padding = const FakeViewPadding(left: 59, right: 59);
+        await openRoute(tester, '/guide', size: size);
+        final shown = await show(tester);
+        expect(shown.width, 640);
+        expect(shown.center.dx, 932 / 2);
+      });
+
+      testWidgets('with a cutout at one side, centred on the window, clear of it', (tester) async {
+        tester.view.padding = const FakeViewPadding(left: 48);
+        await openRoute(tester, '/guide', size: const Size(800, 400));
+        final shown = await show(tester);
+        expect(shown.width, 640);
+        expect(shown.center.dx, 800 / 2);
+        expect(shown.left, greaterThanOrEqualTo(48 + 16));
+      });
+    });
+
+    group("stand above the page's own controls", () {
+      testWidgets("a forum's floating button", (tester) async {
+        await openRoute(tester, '/community/forum/questions', size: const Size(1366, 860));
+        final button = tester.getRect(find.byType(FloatingActionButton));
+        final shown = await show(tester);
+        expect(shown.bottom, button.top - 16);
+        expect(shown.center.dx, 257 + 1109 / 2);
+        expect(tester.getRect(find.byType(FloatingActionButton)), button, reason: 'the button stays where it is');
+      });
+
+      testWidgets("a thread's reply box", (tester) async {
+        await openRoute(tester, '/community/thread/1', size: const Size(1366, 860));
+        final box = tester.getRect(find.ancestor(of: find.byType(TextField), matching: find.byType(Material)).first);
+        final shown = await show(tester);
+        expect(shown.bottom, box.top - 16);
+        expect(shown.center.dx, 257 + 1109 / 2);
+      });
+
+      testWidgets('on a phone, the navigation bar, as before', (tester) async {
+        await openRoute(tester, '/community/thread/1');
+        final shown = await show(tester);
+        // The bar, under its hairline.
+        expect(shown.bottom, tester.getRect(find.byType(NavigationBar)).top - 1 - 16);
+      });
     });
   });
 

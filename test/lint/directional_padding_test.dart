@@ -72,9 +72,9 @@ void main() {
 /// Physical paddings with unequal sides that are meant not to mirror, as
 /// `'path: call'`, the call without its spaces, with the reason.
 const _physical = <String, String>{
-  'lib/services/feedback.dart: EdgeInsets.fromLTRB(left,inset,right,inset)':
-      "A wide window's status message, placed under the page that shows it by the page's rect in the window, "
-          'which is already where the text direction put it.',
+  'lib/services/feedback.dart: EdgeInsets.fromLTRB(left,margin.top,right,margin.bottom)':
+      "A wide page's status message, centred on the page less the safe area's physical sides; centred, it "
+          'is the same in either direction.',
   'lib/features/reader/scripture_text.dart: EdgeInsets.only(right:ruleGap)':
       "A verse's gold rule, at the scripture's start: the right, in either language of the app (§4.7).",
   'lib/features/reader/scripture_text.dart: EdgeInsets.only(right:ScriptureStyles(context,settings).hangingGutter(constraints.maxWidth))':

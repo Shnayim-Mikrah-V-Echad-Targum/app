@@ -9,6 +9,7 @@ import '../features/parsha/week_context.dart';
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 import '../services/app_shortcuts.dart';
+import '../services/feedback.dart' show StatusMessageArea;
 import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
 import '../ui/theme/app_theme.dart';
@@ -228,7 +229,14 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
             highContrast: systemHighContrast || AppTheme.isHighContrast(settings.theme),
           ),
           child: SystemBars(
-            child: WindowTitleBar(child: FontsChangeScope(child: FocusHighlightScope(child: child!))),
+            child: WindowTitleBar(
+              child: FontsChangeScope(
+                // Status messages set for pages as wide as the window: those
+                // over the tabs, and a phone's (the shell sets them for the
+                // pane beside the rail).
+                child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+              ),
+            ),
           ),
         );
       },

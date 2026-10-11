@@ -272,31 +272,6 @@ class _ColumnEndFab extends StandardFabLocation with FabFloatOffsetY {
   int get hashCode => Object.hash(contentMaxWidth, gutter);
 }
 
-/// The pane beside the navigation rail, which a tab's pages fill (from
-/// [Breakpoints.medium]; the shell sets it). What is placed by the page
-/// rather than by the window finds the pane here: a status message, shown
-/// across the window, is centred on it.
-class RailPane extends StatefulWidget {
-  const RailPane({super.key, required this.child});
-
-  final Widget child;
-
-  /// The pane's rect in the window, where [context] is within it; null on a
-  /// phone, whose pages fill the window, and over the tabs.
-  static Rect? rectOf(BuildContext context) {
-    final box = context.findAncestorStateOfType<_RailPaneState>()?.context.findRenderObject();
-    return box is RenderBox && box.hasSize ? box.localToGlobal(Offset.zero) & box.size : null;
-  }
-
-  @override
-  State<RailPane> createState() => _RailPaneState();
-}
-
-class _RailPaneState extends State<RailPane> {
-  @override
-  Widget build(BuildContext context) => widget.child;
-}
-
 /// An app bar's title, in the app bar's style: set a little smaller where
 /// the line has no room for it (a wider interface font, or enlarged text,
 /// beside the Demo tag and a button), as the reader's title is, and cut short

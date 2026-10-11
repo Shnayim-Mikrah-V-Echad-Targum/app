@@ -367,17 +367,20 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                 ),
               ),
             ),
-            if (canReply)
-              _Composer(
+          ],
+        ),
+        // In the page's bottom bar, as the reader's bar is, so that status
+        // messages the page shows stand above it rather than over it (§6.19).
+        bottomNavigationBar: canReply
+            ? _Composer(
                 controller: _reply,
                 focusNode: _focus,
                 replyTo: _replyTo,
                 sending: _sending,
                 onCancelReply: () => setState(() => _replyTo = null),
                 onSend: _reply.text.trim().length >= 2 && !_sending ? _send : null,
-              ),
-          ],
-        ),
+              )
+            : null,
       ),
     );
     // The thread's list, which a tap on the iOS status bar scrolls to the

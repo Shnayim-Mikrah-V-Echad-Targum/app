@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -9,12 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/providers.dart';
 import '../ui/theme/layout.dart';
 import '../ui/theme/motion.dart';
-import '../ui/widgets/common.dart' show RailPane;
 
 /// Status messages that are both visible and announced to screen readers
 /// (WCAG 4.1.3), shown for 4 s, or 8 s when they offer an [action]
 /// (docs/DESIGN_SYSTEM.md §6.19). A screen reader user keeps an action's
-/// message until they dismiss it.
+/// message until they dismiss it. Each page shows it as its
+/// [StatusMessageArea] sets it, wherever it was shown from.
 void showStatus(BuildContext context, String message, {SnackBarAction? action}) {
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger != null) {
@@ -27,7 +25,6 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
       SnackBar(
         content: Text(message),
         action: action,
-        margin: _wideMargin(context),
         duration: Duration(seconds: action == null ? 4 : 8),
         persist: action != null && MediaQuery.accessibleNavigationOf(context),
       ),
@@ -47,26 +44,84 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
 
 /// The widest a status message is set from [Breakpoints.medium]: a sheet's
 /// width (§6.19), rather than a line across a desktop's whole window.
-const _maxWidth = 640.0;
+const statusMessageMaxWidth = 640.0;
 
-/// A status message's margin from [Breakpoints.medium]: at most [_maxWidth]
-/// wide, centred on the page that shows it (within a tab, the pane beside
-/// the navigation rail), 16 from the window's foot. Null on a phone, whose
-/// messages keep the theme's 16 all round.
-EdgeInsets? _wideMargin(BuildContext context) {
-  final window = MediaQuery.sizeOf(context);
-  // A margin is a floating message's alone.
-  final floating = SnackBarTheme.of(context).behavior == SnackBarBehavior.floating;
-  if (window.width < Breakpoints.medium || !floating) return null;
-  final page = RailPane.rectOf(context) ?? Offset.zero & window;
-  const inset = 16.0;
-  final width = math.min(_maxWidth, page.width - 2 * inset);
-  final start = page.left + (page.width - width) / 2;
-  // The message pads itself clear of the window's sides as well.
-  final view = MediaQuery.paddingOf(context);
-  final left = math.max(0.0, start - view.left);
-  final right = math.max(0.0, window.width - start - width - view.right);
-  return EdgeInsets.fromLTRB(left, inset, right, inset);
+/// The theme of the status messages shown by a page (a Scaffold) [width]
+/// wide, in a window [windowWidth] wide, whose sides the safe area insets by
+/// [padding]: from [Breakpoints.medium], at most [statusMessageMaxWidth]
+/// wide and centred on the page. On a phone, or on a page with no room for
+/// that, [theme] as it is: its margin all round, within the safe area.
+SnackBarThemeData statusMessageTheme(
+  SnackBarThemeData theme, {
+  required double windowWidth,
+  required double width,
+  required EdgeInsets padding,
+}) {
+  final margin = theme.insetPadding ?? const EdgeInsets.all(16);
+  final safe = width - padding.horizontal;
+  // A width or a margin is a floating message's alone.
+  if (windowWidth < Breakpoints.medium ||
+      theme.behavior != SnackBarBehavior.floating ||
+      safe - margin.horizontal <= statusMessageMaxWidth) {
+    return theme;
+  }
+  // With nothing at the page's sides, as on a desktop, a width, which the
+  // page centres. The theme then stays the same as the window is resized,
+  // where a margin would change, and rebuild the page, with every width.
+  if (padding.left == 0 && padding.right == 0) return theme.copyWith(width: statusMessageMaxWidth);
+  // Otherwise a margin, which the message sets within the safe area, so the
+  // sides of the safe area come off it: centred on the page where the
+  // safe area leaves room, and else as near as it does.
+  final left = ((width - statusMessageMaxWidth) / 2 - padding.left)
+      .clamp(margin.left, safe - statusMessageMaxWidth - margin.right);
+  final right = safe - statusMessageMaxWidth - left;
+  return theme.copyWith(insetPadding: EdgeInsets.fromLTRB(left, margin.top, right, margin.bottom));
+}
+
+/// Sets the status messages that the pages within [child] show
+/// ([statusMessageTheme]): pages as wide as the window ([window]), the
+/// reader and the others over the tabs; or as wide as [child] is laid out
+/// ([pane]), the pages of a tab, beside the navigation rail. Each page
+/// shows a message in its own Scaffold, so that it is placed by what it is
+/// shown over, and is set again as the window is resized.
+class StatusMessageArea extends StatelessWidget {
+  const StatusMessageArea.window({super.key, required this.child}) : _pane = false;
+  const StatusMessageArea.pane({super.key, required this.child}) : _pane = true;
+
+  final Widget child;
+  final bool _pane;
+
+  @override
+  Widget build(BuildContext context) => _pane
+      ? LayoutBuilder(builder: (context, constraints) => _themed(context, constraints.maxWidth))
+      : _themed(context, MediaQuery.sizeOf(context).width);
+
+  Widget _themed(BuildContext context, double width) {
+    final theme = Theme.of(context);
+    // Set from the app's own theme, rather than from what an area around
+    // this one (the window's, around the pane's) made of it.
+    final base = context.dependOnInheritedWidgetOfExactType<_StatusMessageBase>()?.theme ?? theme.snackBarTheme;
+    final messages = statusMessageTheme(
+      base,
+      windowWidth: MediaQuery.sizeOf(context).width,
+      width: width,
+      padding: MediaQuery.paddingOf(context),
+    );
+    return _StatusMessageBase(
+      theme: base,
+      child: Theme(data: messages == theme.snackBarTheme ? theme : theme.copyWith(snackBarTheme: messages), child: child),
+    );
+  }
+}
+
+/// The app's own theme for status messages, under a [StatusMessageArea].
+class _StatusMessageBase extends InheritedWidget {
+  const _StatusMessageBase({required this.theme, required super.child});
+
+  final SnackBarThemeData theme;
+
+  @override
+  bool updateShouldNotify(_StatusMessageBase old) => theme != old.theme;
 }
 
 /// A status message said to screen readers without being shown, for a

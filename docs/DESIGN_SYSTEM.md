@@ -788,9 +788,9 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 
 **Snackbar**
 - Floating; radius 10; margin 16; inverseSurface with onInverseSurface; action in inversePrimary.
-- From 600 dp, at most 640 wide (a sheet's width), centred on the page that shows it: within a tab, the pane beside the rail (`RailPane`), not the whole window.
+- From 600 dp, at most 640 wide (a sheet's width), centred on the page that shows it: within a tab, the pane beside the rail, not the whole window. The page on show sets it in its own Scaffold, as it lays out (`StatusMessageArea`, feedback.dart), so a message that stays on as another page opens, or as the window is resized, is set again for where it now is. Within the safe area, so a phone held sideways keeps it clear of the notch and centred on the page where it can.
 - Duration 4 s, or 8 s with an action. Flutter already holds action snackbars when `accessibleNavigation` is on.
-- Sits above the reader bottom bar.
+- Sits above the page's bottom bar (the reader's, a thread's reply box) and its floating button. On a tablet or desktop the shell has no Scaffold of its own around the rail and the pane, so that each page is the one that shows it; on a phone the shell shows it, above the navigation bar.
 
 **Tooltip:** inverseSurface, radius 6, bodySmall in onInverseSurface; waitDuration 400 ms (existing).
 

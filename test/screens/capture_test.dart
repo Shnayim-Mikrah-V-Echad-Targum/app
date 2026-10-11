@@ -310,8 +310,10 @@ const _screens = {
   'week_discuss': '/week/5787:1',
   // Asked to confirm clearing the week's progress.
   'week_clear': '/week/5787:1',
-  // Just refreshed from the app bar.
+  // Just refreshed from the app bar: the message above the reply box, and
+  // above the button that begins a discussion.
   'thread_refreshed': '/community/thread/1',
+  'forum_refreshed': '/community/forum/questions',
   'compose': '/community/new',
   // Its empty title field focused: the caret at the start of the UI's direction.
   'compose_focused': '/community/new',
@@ -954,7 +956,7 @@ final _taps = {
   for (final screen in ['reader_finished', 'reader_finished_next', 'reader_finished_day', 'reader_finished_erev', 'reader_finished_week'])
     screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(PaperRow, Icons.forum_outlined),
-  'thread_refreshed': () => find.byIcon(Icons.refresh),
+  for (final screen in ['thread_refreshed', 'forum_refreshed']) screen: () => find.byIcon(Icons.refresh),
   'account_code': () => find.byType(FilledButton).first,
   'compose_errors': () => find.byType(FilledButton).last,
 };
@@ -1477,6 +1479,7 @@ const _desktopScreens = {
   'snackbar',
   's_a11y_undo',
   'thread_refreshed',
+  'forum_refreshed',
   'sheet_display',
   'focus_nav',
   'kit_ornaments',
