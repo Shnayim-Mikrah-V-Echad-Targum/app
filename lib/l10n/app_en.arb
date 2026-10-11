@@ -1362,6 +1362,10 @@
   "deletePostConfirm": "Delete this post?",
   "postDeleted": "Post deleted.",
   "posted": "Posted.",
+  "viewPostedThread": "View",
+  "@viewPostedThread": {
+    "description": "The action of the \"Posted.\" message after a question asked from the reader is posted, which goes back to the reader: opens the new discussion in Community."
+  },
   "pendingReview": "Hidden — waiting for a moderator",
   "lockedThread": "This discussion is locked.",
   "pinnedLabel": "Pinned",

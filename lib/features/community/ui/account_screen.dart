@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/routes.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
@@ -515,7 +516,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             PaperRow(
               icon: Icons.shield_outlined,
               title: l.moderationQueue,
-              onTap: () => context.push('/community/moderation'),
+              // In Community, even from the account page over the tabs.
+              onTap: () => openTabPage(context, '/community/moderation'),
             ),
         ],
       ),

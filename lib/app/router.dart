@@ -147,6 +147,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       // The bookmarks and notes, over the tabs as the reader they open is;
       // ?week= those of one week's parsha.
       _route('/notes', (s) => NotesScreen(weekId: s.uri.queryParameters['week'])),
+      // A question on a verse, asked over the reader, which closing it or
+      // posting goes back to: /ask?verse=Genesis 3:22.
+      _route('/ask', (s) => ComposeScreen(forumSlug: 'questions', verse: s.uri.queryParameters['verse'])),
+      // Signing in over the tabs, before such a question is posted; back to
+      // it once signed in.
+      _route('/account', _account),
       // The list of cities over the reader, offered once reminders are turned
       // on there; choosing one goes back to it.
       _route('/city', (_) => const CityPickerScreen()),

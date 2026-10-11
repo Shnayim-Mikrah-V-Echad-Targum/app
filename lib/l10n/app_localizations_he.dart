@@ -866,7 +866,7 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get copyDivineName => 'כתיבת שם ההוויה כ־ה׳';
+  String get copyDivineName => 'כתיבת שם הוי״ה כ־ה׳';
 
   @override
   String get copyDivineNameDesc => 'בפסוק שמעתיקים, משתפים או מצטטים בשאלה';
@@ -1998,6 +1998,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get posted => 'פורסם.';
+
+  @override
+  String get viewPostedThread => 'לדיון';
 
   @override
   String get pendingReview => 'מוסתרת — ממתינה לבדיקת צוות הניהול';

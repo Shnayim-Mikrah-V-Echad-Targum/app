@@ -2008,6 +2008,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get posted => 'Posted.';
 
   @override
+  String get viewPostedThread => 'View';
+
+  @override
   String get pendingReview => 'Hidden — waiting for a moderator';
 
   @override

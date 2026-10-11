@@ -4,10 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/providers.dart';
-import '../../app/routes.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart' show kTorahBooks;
 import '../../data/models/scripture.dart';
@@ -83,9 +83,19 @@ String verseQuote(Verse verse, AppSettings s, {required bool leftToRight}) =>
     '${leftToRight ? '\u200E' : ''}> ${verseText(verse, s)}\n\n';
 
 /// Where "Ask about this verse" leads: a new discussion in Questions &
-/// answers, which begins with the verse ([ComposeScreen.verse]).
-String askAboutVersePath(BookVerse verse) =>
-    Uri(path: '/community/new', queryParameters: {'forum': 'questions', 'verse': '$verse'}).toString();
+/// answers, which begins with the verse ([ComposeScreen.verse]). Within
+/// Community, or [overTabs], over the page asked from (the reader), which
+/// closing it or posting goes back to.
+String askAboutVersePath(BookVerse verse, {bool overTabs = false}) => overTabs
+    ? Uri(path: '/ask', queryParameters: {'verse': '$verse'}).toString()
+    : Uri(path: '/community/new', queryParameters: {'forum': 'questions', 'verse': '$verse'}).toString();
+
+/// Opens the question on [verse] from [page]: from a page within a tab (the
+/// haftarah of Today's week, say), in Community, whose back button returns
+/// to it; from one shown over the tabs (the reader, a week's notes), over it
+/// too, so that the reader keeps its place, its mode and its scroll.
+void askAboutVerse(BuildContext page, BookVerse verse) =>
+    page.push(askAboutVersePath(verse, overTabs: StatefulNavigationShell.maybeOf(page) == null));
 
 /// Opens the options of [verse] (bookmark it or write a note on it, where it
 /// is a verse of the Torah; copy, share, or ask about it) from [context],
@@ -172,7 +182,8 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
   /// Shares the verse while the sheet stays open beneath the share sheet,
   /// which points from its row; once it is done with, the sheet closes. A
   /// browser lets a page share only straight from a tap, so nothing is
-  /// awaited before it.
+  /// awaited before it. A browser without one fails rather than open an
+  /// email in its place, and the verse is copied.
   Future<void> _shareVerse() async {
     if (_sharing) return;
     _sharing = true;
@@ -181,7 +192,9 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
     final row = _shareRow.currentContext?.findRenderObject();
     final origin = row is RenderBox ? row.localToGlobal(Offset.zero) & row.size : null;
     try {
-      await SharePlus.instance.share(ShareParams(text: text, subject: _reference, sharePositionOrigin: origin));
+      await SharePlus.instance.share(
+        ShareParams(text: text, subject: _reference, sharePositionOrigin: origin, mailToFallbackEnabled: false),
+      );
       if (mounted) Navigator.pop(context);
     } catch (_) {
       // Nothing here can share it: copied instead, as the page then says.
@@ -194,9 +207,8 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
 
   void _ask() {
     final page = widget.page;
-    final path = askAboutVersePath(widget.verse.at);
     Navigator.pop(context);
-    if (page.mounted) openTabPage(page, path);
+    if (page.mounted) askAboutVerse(page, widget.verse.at);
   }
 
   /// Bookmarks the verse, or takes the bookmark away. The sheet stays, its
@@ -343,30 +355,70 @@ class VerseOptionsKeys extends StatelessWidget {
   }
 }
 
-/// While shown on the web, a right-click on a verse opens its options, and
-/// the browser's own menu, which would open over them, stays away.
+/// While its page is shown on the web, a right-click on a verse opens its
+/// options, and the browser's own menu, which would open over them, stays
+/// away. It comes back while another page covers this one, or another tab
+/// is shown over this one's (which keeps it, out of sight), so that the
+/// fields of a discussion opened from a verse have the browser's menu.
+/// Sheets, menus and dialogs over the page leave it away.
 class OwnContextMenu extends StatefulWidget {
   const OwnContextMenu({super.key, required this.child});
 
   final Widget child;
+
+  /// Whether a page shown has the browser's menu kept away (on the web).
+  @visibleForTesting
+  static bool get browserMenuAway => _OwnContextMenuState._away > 0;
 
   @override
   State<OwnContextMenu> createState() => _OwnContextMenuState();
 }
 
 class _OwnContextMenuState extends State<OwnContextMenu> {
-  // Pages that want it off: the browser's menu comes back with the last.
-  static var _shown = 0;
+  // Pages shown that want it away: the browser's menu comes back once none
+  // does.
+  static var _away = 0;
+
+  bool _keepsAway = false;
+
+  /// Whether this page's tab is shown: a tab out of sight has its tickers
+  /// off.
+  bool _tabShown = true;
+
+  /// Runs forward as another page comes over this one; only pages drive it,
+  /// not sheets, menus or dialogs.
+  Animation<double>? _covering;
 
   @override
-  void initState() {
-    super.initState();
-    if (kIsWeb && _shown++ == 0) unawaited(BrowserContextMenu.disableContextMenu().catchError((_) {}));
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _tabShown = TickerMode.valuesOf(context).enabled;
+    final covering = ModalRoute.of(context)?.secondaryAnimation;
+    if (covering != _covering) {
+      _covering?.removeStatusListener(_coveringChanged);
+      _covering = covering?..addStatusListener(_coveringChanged);
+    }
+    _update();
+  }
+
+  void _coveringChanged(AnimationStatus _) => _update();
+
+  void _update() => _keepAway(_tabShown && (_covering?.isDismissed ?? true));
+
+  void _keepAway(bool away) {
+    if (away == _keepsAway) return;
+    _keepsAway = away;
+    if (away) {
+      if (_away++ == 0 && kIsWeb) unawaited(BrowserContextMenu.disableContextMenu().catchError((_) {}));
+    } else {
+      if (--_away == 0 && kIsWeb) unawaited(BrowserContextMenu.enableContextMenu().catchError((_) {}));
+    }
   }
 
   @override
   void dispose() {
-    if (kIsWeb && --_shown == 0) unawaited(BrowserContextMenu.enableContextMenu().catchError((_) {}));
+    _covering?.removeStatusListener(_coveringChanged);
+    _keepAway(false);
     super.dispose();
   }
 

@@ -375,9 +375,11 @@ const _screens = {
   'notes_parsha': '/notes?week=5787:1',
   'notes_empty': '/notes',
   'week_notes': '/week/5787:1',
-  // "Ask about this verse": the question begun, and a draft kept instead.
-  'compose_verse': '/community/new?forum=questions&verse=Genesis%203:22',
-  'compose_verse_draft': '/community/new?forum=questions&verse=Genesis%203:22',
+  // "Ask about this verse": the question begun over the reader, and a draft
+  // kept instead; then posted, back in the reader.
+  'compose_verse': '/read/5787:1/3',
+  'compose_verse_draft': '/read/5787:1/3',
+  'compose_verse_posted': '/read/5787:1/3',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
   'focus_day': '/today',
@@ -747,7 +749,8 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_report': _signedIn,
   'community_member': _signedIn,
   'account_name': _signedIn,
-  for (final screen in ['compose_member', 'account_member', 'account_edit', 'account_blocked']) screen: _member,
+  for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked'])
+    screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
@@ -1216,17 +1219,30 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'goto_help': (tester) => _goTo(tester, '28'),
   'reader_verse_actions': (tester) => tester.longPress(find.byType(ScriptureVerse).first),
   'haftarah_verse_actions': (tester) => tester.longPress(find.byType(ScriptureVerse).first),
+  'compose_verse': (tester) async {
+    // Not awaited: the push completes only once the page is closed.
+    unawaited(ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+        .read(routerProvider)
+        .push('/ask?verse=Genesis%203:22'));
+  },
+  // Asked, written and posted: back at the verse, with the way to it.
+  'compose_verse_posted': (tester) async {
+    unawaited(ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+        .read(routerProvider)
+        .push('/ask?verse=Genesis%203:22'));
+    await _settle(tester);
+    final body = find.byType(TextField).last;
+    await tester.enterText(body, '${tester.widget<TextField>(body).controller!.text}Why “like one of us”?');
+    await tester.tap(find.byType(FilledButton).first);
+  },
   // A draft left from before, then the verse asked about.
   'compose_verse_draft': (tester) async {
     final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
-    final router = c.read(routerProvider);
-    router.go('/community');
-    await _settle(tester);
     await c.read(sharedPreferencesProvider).setString(
           'draft.newThread',
           '{"title":"Onkelos and the names of places","body":"Why does Onkelos keep some names"}',
         );
-    router.go('/community/new?forum=questions&verse=Genesis%203:22');
+    unawaited(c.read(routerProvider).push('/ask?verse=Genesis%203:22'));
   },
   's_data_import': (tester) => tester.tap(find.byIcon(Icons.download)),
   's_data_paste': _tapInTurn([

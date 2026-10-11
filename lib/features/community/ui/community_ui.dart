@@ -173,7 +173,10 @@ Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref, {bool named = f
 
   if (await ready()) return true;
   if (!context.mounted) return false;
-  await context.push('/community/account?then=back');
+  // Over the tabs (a question asked from the reader), the account page
+  // opens over them too: a tab's page can't be shown above it.
+  final overTabs = StatefulNavigationShell.maybeOf(context) == null;
+  await context.push(overTabs ? '/account?then=back' : '/community/account?then=back');
   return ready();
 }
 

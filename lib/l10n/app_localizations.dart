@@ -3501,6 +3501,12 @@ abstract class AppLocalizations {
   /// **'Posted.'**
   String get posted;
 
+  /// The action of the "Posted." message after a question asked from the reader is posted, which goes back to the reader: opens the new discussion in Community.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewPostedThread;
+
   /// No description provided for @pendingReview.
   ///
   /// In en, this message translates to:

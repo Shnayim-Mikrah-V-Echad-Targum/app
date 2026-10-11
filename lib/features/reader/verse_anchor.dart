@@ -66,7 +66,8 @@ class _MarkPainter extends CustomPainter {
 
 /// Calls [onTap] when a pointer goes up close to where it went down, as a tap
 /// does, without taking part in the gesture arena: the taps and scrolls of
-/// what lies beneath work as before. A drag that scrolls is not a tap.
+/// what lies beneath work as before. A drag that scrolls is not a tap, nor
+/// is a long press or a secondary click, which open a verse's options.
 class TapObserver extends StatefulWidget {
   const TapObserver({super.key, required this.onTap, required this.child});
 
@@ -79,7 +80,8 @@ class TapObserver extends StatefulWidget {
 }
 
 class _TapObserverState extends State<TapObserver> {
-  final _down = <int, Offset>{};
+  /// Where and when each pointer that may tap went down.
+  final _down = <int, (Offset, Duration)>{};
 
   // Always a listener, whether or not there is anything to observe: were it
   // to come and go, what lies beneath would be built afresh, and a scroll
@@ -87,12 +89,16 @@ class _TapObserverState extends State<TapObserver> {
   @override
   Widget build(BuildContext context) => Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (e) => _down[e.pointer] = e.position,
+        onPointerDown: (e) {
+          if (e.buttons == kPrimaryButton) _down[e.pointer] = (e.position, e.timeStamp);
+        },
         onPointerCancel: (e) => _down.remove(e.pointer),
         onPointerUp: (e) {
-          final start = _down.remove(e.pointer);
-          final slop = computeHitSlop(e.kind, MediaQuery.maybeGestureSettingsOf(context));
-          if (start != null && (e.position - start).distance <= slop) widget.onTap?.call();
+          if (_down.remove(e.pointer) case (final start, final time)) {
+            final slop = computeHitSlop(e.kind, MediaQuery.maybeGestureSettingsOf(context));
+            final tap = (e.position - start).distance <= slop && e.timeStamp - time < kLongPressTimeout;
+            if (tap) widget.onTap?.call();
+          }
         },
         child: widget.child,
       );

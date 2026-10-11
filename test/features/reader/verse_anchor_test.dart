@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -157,6 +158,26 @@ void main() {
     await tester.tapAt(tester.getRect(verse).intersect(tester.getRect(text())).center);
     await tester.pump();
     expect(marked(), findsNothing);
+  });
+
+  testWidgets('a long press or a secondary click, which open the verse\'s options, keep the mark', (tester) async {
+    await open(tester, '$_shlishi?verse=3:8');
+    final verse = find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == const VerseRef(3, 8)).first;
+    final at = tester.getRect(verse).intersect(tester.getRect(text())).center;
+    await tester.longPressAt(at);
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(marked(), findsOneWidget, reason: 'a long press is not a tap');
+    Navigator.pop(tester.element(find.byType(BottomSheet)));
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(at, buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(marked(), findsOneWidget, reason: 'nor is a secondary click');
+    Navigator.pop(tester.element(find.byType(BottomSheet)));
+    await tester.pumpAndSettle();
+    expect(markedVerse(tester), const VerseRef(3, 8));
   });
 
   testWidgets('another aliyah clears the mark', (tester) async {
