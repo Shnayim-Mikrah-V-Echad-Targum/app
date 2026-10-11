@@ -140,7 +140,7 @@ void main() {
       expect(find.text('When did you read it?'), findsOneWidget);
       await tester.tap(find.widgetWithText(ListTile, 'Yesterday'));
       await tester.pumpAndSettle();
-      expect(find.text('Read on Sunday, October 11'), findsOneWidget);
+      expect(findWords('Read on Sunday, October 11'), findsOneWidget);
 
       await tester.tap(find.text('Log reading'));
       await tester.pumpAndSettle();

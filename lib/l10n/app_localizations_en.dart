@@ -414,6 +414,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String todayLastDayShabbatThenYomTov(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.',
+      one: 'One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomTovThenShabbat(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.',
+      one: 'One aliyah left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String todayLastDayYomKippur(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2021,7 +2045,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideWhenBody =>
-      'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).';
+      'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).';
 
   @override
   String get guideHowTitle => 'How';
@@ -2045,7 +2069,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideSpecialBody =>
-      'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.';
+      'In “Atarot v\'Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.';
 
   @override
   String get guideShabbatTitle => 'Shabbat and Yom Tov';
@@ -2716,10 +2740,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get repeatLastVerseFollowsChabad =>
-      '\"End with Mikra\" is now off, following the Chabad custom.';
+      '“End with Mikra” is now off, following the Chabad custom.';
 
   @override
-  String get repeatLastVerseBackOn => '\"End with Mikra\" is on again.';
+  String get repeatLastVerseBackOn => '“End with Mikra” is on again.';
 
   @override
   String get divineAdonaiSpoken => 'Adonai';

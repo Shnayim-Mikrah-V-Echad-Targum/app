@@ -414,6 +414,7 @@ Rules:
 - Hebrew numerals (גימטריה) are used for:
   - verse numbers, chapter heads and aliyah ordinals (א–ז);
   - Hebrew dates in the Hebrew UI.
+- A long date inside a sentence ("Paused until Sunday, October 18.") is `Names.dateInText`: it wraps after its weekday's comma or not at all, never between a day and its month ("October / 18", "18 / באוקטובר").
 - Add `String ltr(String s) => '⁦$s⁩'` in `lib/ui/l10n.dart`. Wrap every Latin-digit run that is interpolated into a Hebrew string with it: references "3:22–4:18", "2/7", times and counts. In Hebrew UI layouts, author names in post headers also go in their own Text widget (§9 Thread).
 
 ### 4.7 Scripture (`ScriptureStyles` and `ScriptureVerse`, lib/features/reader/scripture_text.dart)
@@ -1017,12 +1018,13 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - **Catching up** (aliyot planned for earlier days unread, and not paused): Eyebrow `todayCatchUpTitle`, then headlineSmall every aliyah due (`ctx.dueAliyot()`): a run of three or more as `Names.aliyahRange` ("Shlishi – Shevi'i"), otherwise by name; then bodyMedium "5 aliyot · 96 verses · about 33 min", the minutes counting only the readings not done (`remainingMinutes`); then a marginalia line honest about the day (§10), never "midweek" after Wednesday. Every line counts the same aliyot, those the card names, today's included:
      - Sunday to Wednesday: `todayBehind`;
      - Thursday: `todayBehindThursday`, that two days remain before Shabbat;
-     - Erev Shabbat or Erev Yom Tov (by the reader's days of Yom Tov): `todayLastDayShabbat` or `todayLastDayYomTov`, with the Chumash as the calm alternative;
+     - Erev Shabbat or Erev Yom Tov (by the reader's days of Yom Tov): `todayLastDayShabbat` or `todayLastDayYomTov`, with the Chumash as the calm alternative, logged after the day that ends the days of rest, as the rest-day page says (8): `todayLastDayShabbatThenYomTov` when Shabbat runs into Yom Tov, `todayLastDayYomTovThenShabbat` when Yom Tov runs into Shabbat;
      - Erev Yom Kippur, whatever the day (Yom Kippur is neither called Yom Tov nor the end of a week, which always has a reading day after it): `todayLastDayYomKippur`, that there is still time after it.
    - 16 gap, then actions:
      - a Tonal `readAliyah(firstUnreadToday)` = "Read Shishi", ONLY when `firstUnreadToday != next` (as while paused, when the hero's button leads to an aliyah planned before). In catch-up mode it is omitted: the hero's button already starts the backlog, at the first aliyah due;
      - a TextButton.icon `import_contacts` `readFromBook`, always. It opens a sheet (`readFromBookTitle`) of the aliyot the card names and has not seen read (every aliyah due when catching up; otherwise today's, paused or not), each a checked CheckboxListTile, then `pickReadDate`, and marks the checked ones in one change. Where it starts a line, it moves by its padding so its icon sits on the text's edge.
      - Never two Filled buttons; never two unlabelled CTAs to different places.
+   - Its marginalia lines, like the note under the week strip (5), set their lines evenly (`BalancedText`) and hold a dash to the word before it (`dashHeldToWord`), so that no line starts with one.
    - Done: a check_circle 20 in primary with titleSmall `todayDone`, and the verses without minutes.
    - No reading today: bodyMedium onSurfaceVariant `todayNothingPlanned`.
    - **Paused:** a marginalia line `pausedTodayNote` in place of the catching-up line, under today's reading.
@@ -1323,6 +1325,8 @@ In order:
   - `todayBehindThursday`: "{count} aliyot to catch up — and there are still two days before Shabbat." / "עוד {count} עליות להשלים — ויש עוד יומיים עד שבת."
   - `todayLastDayShabbat`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת."
   - `todayLastDayYomTov`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג."
+  - `todayLastDayShabbatThenYomTov`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג."
+  - `todayLastDayYomTovThenShabbat`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת."
   - `todayLastDayYomKippur`: "{count} aliyot to catch up before Yom Kippur — and there is still time after it, too." / "עוד {count} עליות להשלים לפני יום כיפור — ויש זמן גם אחריו."
   - Each has a singular form ("One aliyah…" / "עוד עלייה אחת…").
 - `openWeekRestore` takes the reader's parsha streak: "Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book." / "סיום {name} ו{next} עד שבת ימשיך את הרצף של {count} שבועות — השלמה כפולה אחת לכל חומש." (one week: "של שבוע אחד").

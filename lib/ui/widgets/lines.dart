@@ -66,6 +66,10 @@ class DotLine extends StatelessWidget {
   }
 }
 
+/// [text] with each spaced em dash held to the word before it, so that no
+/// line starts with a dash.
+String dashHeldToWord(String text) => text.replaceAll(' — ', '${DotLine.nbsp}— ');
+
 /// [text] wrapped between its words, never inside one: a word too wide for
 /// the line on its own, as with large text, is set just small enough to fit.
 /// Centred unless [textAlign] says otherwise.

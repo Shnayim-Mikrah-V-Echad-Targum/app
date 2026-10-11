@@ -67,7 +67,7 @@ void main() {
       // Shlishi's Targum, and all three readings of the other four.
       expect(find.text('5 aliyot · 96 verses · about 33 min'), findsOneWidget);
       expect(
-        find.text('5 aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after '
+        findWords('5 aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after '
             'Shabbat.'),
         findsOneWidget,
       );
@@ -134,31 +134,31 @@ void main() {
       expect(find.text('Rishon – Shlishi'), findsOneWidget);
       // Every aliyah the card names, today's too, counted alike.
       expect(find.textContaining(RegExp(r'^3 aliyot · \d+ verses')), findsOneWidget);
-      expect(find.text('3 aliyot to catch up — very normal midweek.'), findsOneWidget);
+      expect(findWords('3 aliyot to catch up — very normal midweek.'), findsOneWidget);
 
       await openToday(tester, now: DateTime(2026, 10, 14, 10));
       expect(find.text("Rishon – Revi'i"), findsOneWidget);
-      expect(find.text('4 aliyot to catch up — very normal midweek.'), findsOneWidget);
+      expect(findWords('4 aliyot to catch up — very normal midweek.'), findsOneWidget);
     });
 
     testWidgets('two aliyot are named, not spanned', (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 12, 10));
       expect(find.text('Rishon and Sheni'), findsOneWidget);
-      expect(find.text('2 aliyot to catch up — very normal midweek.'), findsOneWidget);
+      expect(findWords('2 aliyot to catch up — very normal midweek.'), findsOneWidget);
     });
 
     testWidgets('one aliyah behind is said in words', (tester) async {
       // Monday's Sheni read, and Sunday's Rishon not.
       await openToday(tester, now: DateTime(2026, 10, 12, 10), progress: _noach({1}));
       expect(find.text('Rishon'), findsOneWidget);
-      expect(find.text('One aliyah to catch up — very normal midweek.'), findsOneWidget);
+      expect(findWords('One aliyah to catch up — very normal midweek.'), findsOneWidget);
     });
 
     testWidgets('on Thursday, two days remain before Shabbat', (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 15, 10));
       expect(find.text('Rishon – Chamishi'), findsOneWidget);
       expect(find.textContaining(RegExp(r'^5 aliyot · \d+ verses')), findsOneWidget);
-      expect(find.text('5 aliyot to catch up — and there are still two days before Shabbat.'), findsOneWidget);
+      expect(findWords('5 aliyot to catch up — and there are still two days before Shabbat.'), findsOneWidget);
       expect(find.textContaining('midweek'), findsNothing);
     });
 
@@ -167,7 +167,7 @@ void main() {
       expect(find.text('The whole parsha'), findsOneWidget);
       expect(find.text('7 aliyot · 153 verses · about 64 min'), findsOneWidget);
       expect(
-        find.text('7 aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after '
+        findWords('7 aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after '
             'Shabbat.'),
         findsOneWidget,
       );
@@ -175,9 +175,27 @@ void main() {
     });
 
     testWidgets('on Erev Yom Tov, it counts every aliyah left before Yom Tov', (tester) async {
+      // Tuesday 30 May 2028, Erev Shavuot 5788, in the week of Naso, read on
+      // Shabbat 3 June: Friday is a reading day again. Nothing read since
+      // Sunday, and Rishon to Chamishi planned by today.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(joinDate: LocalDate(2028, 5, 1)),
+        now: DateTime(2028, 5, 30, 10),
+      );
+      expect(find.text('Rishon – Chamishi'), findsOneWidget);
+      expect(
+        findWords('5 aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('midweek'), findsNothing);
+      expect(find.textContaining('after Shabbat'), findsNothing);
+    });
+
+    testWidgets('on an Erev Yom Tov that runs into Shabbat, it is logged after Shabbat', (tester) async {
       // Wednesday 20 September 2028, Erev Rosh Hashanah 5789, in the week of
-      // Haazinu, which is read on Shabbat the 23rd, after both days of Yom
-      // Tov. Nothing read since Sunday.
+      // Haazinu, which is read on Shabbat the 23rd, straight after both days
+      // of Yom Tov. Nothing read since Sunday.
       await openToday(
         tester,
         settings: _settings.copyWith(joinDate: LocalDate(2028, 9, 1)),
@@ -185,11 +203,29 @@ void main() {
       );
       expect(find.text('The whole parsha'), findsOneWidget);
       expect(
-        find.text('7 aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.'),
+        findWords('7 aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it '
+            'after Shabbat.'),
         findsOneWidget,
       );
+      expect(find.textContaining('log it after Yom Tov'), findsNothing);
       expect(find.textContaining('midweek'), findsNothing);
-      expect(find.textContaining('before Shabbat'), findsNothing);
+    });
+
+    testWidgets('on an Erev Shabbat that runs into Yom Tov, it is logged after Yom Tov', (tester) async {
+      // Friday 18 May 2029, the eve of Shabbat Bamidbar, with Shavuot on
+      // Sunday and Monday. Nothing read since Sunday.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(joinDate: LocalDate(2029, 5, 1)),
+        now: DateTime(2029, 5, 18, 10),
+      );
+      expect(find.text('The whole parsha'), findsOneWidget);
+      expect(
+        findWords('7 aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after '
+            'Yom Tov.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('log it after Shabbat'), findsNothing);
     });
 
     testWidgets('on Erev Yom Kippur, it is neither Yom Tov nor the end of the week', (tester) async {
@@ -202,7 +238,7 @@ void main() {
       );
       expect(find.text('Rishon – Shlishi'), findsOneWidget);
       expect(
-        find.text('3 aliyot to catch up before Yom Kippur — and there is still time after it, too.'),
+        findWords('3 aliyot to catch up before Yom Kippur — and there is still time after it, too.'),
         findsOneWidget,
       );
       expect(find.textContaining('before Yom Tov'), findsNothing);
@@ -214,27 +250,47 @@ void main() {
       await openToday(tester, settings: hebrew, now: DateTime(2026, 10, 13, 10));
       expect(find.text('משלימים'), findsOneWidget);
       expect(find.text('ראשון – שלישי'), findsOneWidget);
-      expect(find.text('עוד 3 עליות להשלים — רגיל לגמרי באמצע השבוע.'), findsOneWidget);
+      expect(findWords('עוד 3 עליות להשלים — רגיל לגמרי באמצע השבוע.'), findsOneWidget);
 
       await openToday(tester, settings: hebrew, now: DateTime(2026, 10, 15, 10));
-      expect(find.text('עוד 5 עליות להשלים — ויש עוד יומיים עד שבת.'), findsOneWidget);
+      expect(findWords('עוד 5 עליות להשלים — ויש עוד יומיים עד שבת.'), findsOneWidget);
 
       await openToday(tester, settings: hebrew, progress: _bereshit());
-      expect(find.text('עוד 5 עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.'), findsOneWidget);
+      expect(findWords('עוד 5 עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.'), findsOneWidget);
+
+      await openToday(
+        tester,
+        settings: hebrew.copyWith(joinDate: LocalDate(2028, 5, 1)),
+        now: DateTime(2028, 5, 30, 10),
+      );
+      expect(findWords('עוד 5 עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג.'), findsOneWidget);
 
       await openToday(
         tester,
         settings: hebrew.copyWith(joinDate: LocalDate(2028, 9, 1)),
         now: DateTime(2028, 9, 20, 10),
       );
-      expect(find.text('עוד 7 עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג.'), findsOneWidget);
+      expect(
+        findWords('עוד 7 עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת.'),
+        findsOneWidget,
+      );
+
+      await openToday(
+        tester,
+        settings: hebrew.copyWith(joinDate: LocalDate(2029, 5, 1)),
+        now: DateTime(2029, 5, 18, 10),
+      );
+      expect(
+        findWords('עוד 7 עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג.'),
+        findsOneWidget,
+      );
 
       await openToday(
         tester,
         settings: hebrew.copyWith(joinDate: LocalDate(2029, 9, 1)),
         now: DateTime(2029, 9, 18, 10),
       );
-      expect(find.text('עוד 3 עליות להשלים לפני יום כיפור — ויש זמן גם אחריו.'), findsOneWidget);
+      expect(findWords('עוד 3 עליות להשלים לפני יום כיפור — ויש זמן גם אחריו.'), findsOneWidget);
       expect(find.textContaining('לפני החג'), findsNothing);
     });
 
@@ -242,34 +298,49 @@ void main() {
       final hebrew = _settings.copyWith(language: AppLanguage.hebrew);
       // Tuesday, with Monday's Sheni and Tuesday's Shlishi read.
       await openToday(tester, settings: hebrew, now: DateTime(2026, 10, 13, 10), progress: _noach({1, 2}));
-      expect(find.text('עוד עלייה אחת להשלים — רגיל לגמרי באמצע השבוע.'), findsOneWidget);
+      expect(findWords('עוד עלייה אחת להשלים — רגיל לגמרי באמצע השבוע.'), findsOneWidget);
       // Thursday, with all but Revi'i read up to today.
       await openToday(tester, settings: hebrew, now: DateTime(2026, 10, 15, 10), progress: _noach({0, 1, 2, 4}));
-      expect(find.text('עוד עלייה אחת להשלים — ויש עוד יומיים עד שבת.'), findsOneWidget);
+      expect(findWords('עוד עלייה אחת להשלים — ויש עוד יומיים עד שבת.'), findsOneWidget);
       // Erev Shabbat, with all but Chamishi read.
       await openToday(tester, settings: hebrew, now: DateTime(2026, 10, 16, 10), progress: _noach({0, 1, 2, 3, 5, 6}));
       expect(
-        find.text('עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.'),
+        findWords('עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.'),
         findsOneWidget,
       );
     });
 
-    test('only Sunday to Wednesday are midweek, and the eve of Shabbat or Yom Tov is its own', () {
+    test('only Sunday to Wednesday are midweek, and the eve of Shabbat or Yom Tov is its own, by the day that ends the rest',
+        () {
       // The week of Noach 5787.
       expect(catchUpDayFor(LocalDate(2026, 10, 11), oneDayYomTov: false), CatchUpDay.midweek);
       expect(catchUpDayFor(LocalDate(2026, 10, 14), oneDayYomTov: false), CatchUpDay.midweek);
       expect(catchUpDayFor(LocalDate(2026, 10, 15), oneDayYomTov: false), CatchUpDay.thursday);
       expect(catchUpDayFor(LocalDate(2026, 10, 16), oneDayYomTov: false), CatchUpDay.erevShabbat);
       // Pesach 5787 begins on Thursday 22 April 2027: its eve is a
-      // Wednesday, whatever the custom.
+      // Wednesday, whatever the custom. With two days of Yom Tov they run
+      // into Shabbat, and what is read then is logged after it.
       expect(catchUpDayFor(LocalDate(2027, 4, 21), oneDayYomTov: true), CatchUpDay.erevYomTov);
-      expect(catchUpDayFor(LocalDate(2027, 4, 21), oneDayYomTov: false), CatchUpDay.erevYomTov);
+      expect(catchUpDayFor(LocalDate(2027, 4, 21), oneDayYomTov: false), CatchUpDay.erevYomTovThenShabbat);
+      // Shavuot 5788 is on Wednesday 31 May 2028 (and Thursday): Friday is a
+      // reading day again.
+      expect(catchUpDayFor(LocalDate(2028, 5, 30), oneDayYomTov: false), CatchUpDay.erevYomTov);
+      expect(catchUpDayFor(LocalDate(2028, 5, 30), oneDayYomTov: true), CatchUpDay.erevYomTov);
+      // Shavuot 5789 is on Sunday 20 May 2029: Shabbat runs into it.
+      expect(catchUpDayFor(LocalDate(2029, 5, 18), oneDayYomTov: false), CatchUpDay.erevShabbatThenYomTov);
+      expect(catchUpDayFor(LocalDate(2029, 5, 18), oneDayYomTov: true), CatchUpDay.erevShabbatThenYomTov);
+      // Sukkot 5789 begins on Thursday 5 October 2028: in Israel Friday is a
+      // reading day; outside it, both days of Yom Tov run into Shabbat.
+      expect(catchUpDayFor(LocalDate(2028, 10, 4), oneDayYomTov: true), CatchUpDay.erevYomTov);
+      expect(catchUpDayFor(LocalDate(2028, 10, 4), oneDayYomTov: false), CatchUpDay.erevYomTovThenShabbat);
       // Yom Kippur is its own, on a weekday or on Shabbat (5785).
       expect(catchUpDayFor(LocalDate(2029, 9, 18), oneDayYomTov: false), CatchUpDay.erevYomKippur);
       expect(catchUpDayFor(LocalDate(2029, 9, 18), oneDayYomTov: true), CatchUpDay.erevYomKippur);
       expect(catchUpDayFor(LocalDate(2024, 10, 11), oneDayYomTov: false), CatchUpDay.erevYomKippur);
-      // Rosh Hashanah 5789 begins on Thursday 21 September 2028.
-      expect(catchUpDayFor(LocalDate(2028, 9, 20), oneDayYomTov: false), CatchUpDay.erevYomTov);
+      // Rosh Hashanah 5789 is on Thursday and Friday, 21 and 22 September
+      // 2028, everywhere: Shabbat follows.
+      expect(catchUpDayFor(LocalDate(2028, 9, 20), oneDayYomTov: false), CatchUpDay.erevYomTovThenShabbat);
+      expect(catchUpDayFor(LocalDate(2028, 9, 20), oneDayYomTov: true), CatchUpDay.erevYomTovThenShabbat);
       // In Israel the Friday after is a reading day, the eve of Shabbat.
       expect(catchUpDayFor(LocalDate(2027, 4, 23), oneDayYomTov: true), CatchUpDay.erevShabbat);
       // The seventh day is Wednesday 28 April: Tuesday is its eve. In
@@ -289,7 +360,7 @@ void main() {
       final joined = _settings.copyWith(joinDate: LocalDate(2026, 10, 7), starterCatchUp: false);
       await openToday(tester, settings: joined, now: DateTime(2026, 10, 8, 10));
       expect(find.text('Shlishi – Chamishi'), findsOneWidget);
-      expect(find.text('3 aliyot to catch up — and there are still two days before Shabbat.'), findsOneWidget);
+      expect(findWords('3 aliyot to catch up — and there are still two days before Shabbat.'), findsOneWidget);
       expect(find.text('Start · Shlishi'), findsOneWidget);
       expect(find.textContaining('Rishon'), findsNothing);
       expect(find.bySubtype<FilledButton>(), findsOneWidget, reason: 'no second button to another aliyah');

@@ -360,6 +360,24 @@
       }
     }
   },
+  "todayLastDayShabbatThenYomTov": "{count, plural, =1{One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.}}",
+  "@todayLastDayShabbatThenYomTov": {
+    "description": "As todayLastDayShabbat, on an Erev Shabbat whose Shabbat runs straight into Yom Tov, so that reading done then is logged once Yom Tov is over. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayLastDayYomTovThenShabbat": "{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.}}",
+  "@todayLastDayYomTovThenShabbat": {
+    "description": "As todayLastDayYomTov, on an Erev Yom Tov whose Yom Tov runs straight into Shabbat (Rosh Hashanah on Thursday and Friday, say), so that reading done then is logged once Shabbat is over. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "todayLastDayYomKippur": "{count, plural, =1{One aliyah to catch up before Yom Kippur — and there is still time after it, too.} other{{count} aliyot to catch up before Yom Kippur — and there is still time after it, too.}}",
   "@todayLastDayYomKippur": {
     "description": "As todayBehind, on the day before Yom Kippur, which is never the last reading day of a week. count is every aliyah planned up to today and not yet read.",
@@ -1647,7 +1665,7 @@
   },
   "guideWhatBody": "The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.",
   "guideWhenTitle": "When",
-  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
+  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
   "guideHowTitle": "How",
   "guideHowBody": "Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.",
   "guidePassesCaption": "1\u00a0·\u00a0Mikra  2\u00a0·\u00a0Mikra  3\u00a0·\u00a0Targum",
@@ -1657,7 +1675,7 @@
   "guideTargumTitle": "Targum or Rashi",
   "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn't understand Rashi's Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.",
   "guideSpecialTitle": "Special cases",
-  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once. Reading quietly along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
+  "guideSpecialBody": "In “Atarot v'Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once. Reading quietly along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
   "guideShabbatTitle": "Shabbat and Yom Tov",
   "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
   "guideSourcesTitle": "Sources",
@@ -2158,11 +2176,11 @@
   },
   "chabadFallbackNote": "Chabad haftarot are being verified; showing the Ashkenazi reading.",
   "repeatLastVerseDescChabad": "Repeat the parsha's last verse in Hebrew after its Targum (Chabad custom: not repeated)",
-  "repeatLastVerseFollowsChabad": "\"End with Mikra\" is now off, following the Chabad custom.",
+  "repeatLastVerseFollowsChabad": "“End with Mikra” is now off, following the Chabad custom.",
   "@repeatLastVerseFollowsChabad": {
     "description": "Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves."
   },
-  "repeatLastVerseBackOn": "\"End with Mikra\" is on again.",
+  "repeatLastVerseBackOn": "“End with Mikra” is on again.",
   "@repeatLastVerseBackOn": {
     "description": "Said when choosing another haftarah custom than Chabad turns repeatLastVerse back on."
   },

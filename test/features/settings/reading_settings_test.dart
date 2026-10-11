@@ -153,11 +153,11 @@ void main() {
     expect(find.text(chabadDesc), findsOneWidget);
     expect(find.text(desc), findsNothing);
     // The switch is further up the page, so the change is said.
-    expect(find.text('"End with Mikra" is now off, following the Chabad custom.'), findsOneWidget);
+    expect(find.text('“End with Mikra” is now off, following the Chabad custom.'), findsOneWidget);
     await tapText(tester, 'Ashkenazi');
     expect(repeat(), isTrue);
     expect(find.text(desc), findsOneWidget);
-    expect(find.text('"End with Mikra" is on again.'), findsOneWidget);
+    expect(find.text('“End with Mikra” is on again.'), findsOneWidget);
     // Between two customs that both repeat it, nothing changes, and nothing
     // is said.
     await tester.pump(const Duration(seconds: 10));

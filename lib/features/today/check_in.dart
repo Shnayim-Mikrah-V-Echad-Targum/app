@@ -69,7 +69,7 @@ class PreviousWeekNotice extends ConsumerWidget {
       text: [
         if (onlyHaftarah) l.openWeekHaftarahLeft,
         if (!overdue)
-          l.openWeekLate(names.dateLong(engine.lateDeadlineOf(previous.week)))
+          l.openWeekLate(names.dateInText(engine.lateDeadlineOf(previous.week)))
         else if (streak > 0)
           l.openWeekRestore(name, nextName, streak)
         else
@@ -253,7 +253,7 @@ class _CheckInSheetState extends State<CheckInSheet> {
                   Text(
                     onShabbat
                         ? l.checkInReadOnShabbat(names.dateMonthDay(_date))
-                        : l.checkInReadOn(names.dateLong(_date)),
+                        : l.checkInReadOn(names.dateInText(_date)),
                     style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   TextButton(onPressed: _changeDate, child: Text(l.changeDate)),

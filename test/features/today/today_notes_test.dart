@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../../helpers.dart';
@@ -62,9 +63,9 @@ void main() {
           pauses: [Pause(_d(10, 8), _d(10, 18), id: 'travel')],
         ),
       );
-      expect(find.text('Paused — read whenever you like; nothing counts against you.'), findsOneWidget);
+      expect(findWords('Paused — read whenever you like; nothing counts against you.'), findsOneWidget);
       expect(find.text('Catching up'), findsNothing);
-      expect(find.textContaining('before Shabbat — or'), findsNothing);
+      expect(findWords('before Shabbat — or'), findsNothing);
     });
 
     testWidgets('ending the pause by choice says so, without a welcome back', (tester) async {
@@ -92,8 +93,10 @@ void main() {
     testWidgets('welcomes the reader back, with this week and last week to read', (tester) async {
       final c = await openToday(tester, now: monday, progress: halfRead());
       expect(find.text('Welcome back! Your place is saved.'), findsOneWidget);
-      expect(find.text('Your pause ended on Sunday, October 11, and nothing during it counts against you.'),
+      expect(findWords('Your pause ended on Sunday, October 11, and nothing during it counts against you.'),
           findsOneWidget);
+      // The day and its month kept together on one line.
+      expect(find.textContaining('October\u00A011,'), findsOneWidget);
       // It offers last week itself, so the check-in waits.
       expect(find.text('Shavua tov! Did you read on Shabbat?'), findsNothing);
 
@@ -196,32 +199,32 @@ void main() {
 
     testWidgets('a grace day spent is explained, until put away', (tester) async {
       final c = await openToday(tester, now: friday, progress: graceWeek());
-      final note = find.text(grace);
+      final note = findWords(grace);
       await show(tester, note);
       expect(note, findsOneWidget);
       expect(find.byTooltip(RegExp('^Wednesday: Covered by a grace day')), findsOneWidget);
 
       await tester.tap(find.descendant(of: find.byType(Card), matching: find.byTooltip('Dismiss')).last);
       await tester.pumpAndSettle();
-      expect(find.text(grace), findsNothing);
+      expect(findWords(grace), findsNothing);
       expect(c.read(settingsProvider).lastStripAck, _d(10, 16));
 
       await openToday(tester, settings: c.read(settingsProvider), now: friday, progress: graceWeek());
-      expect(find.text(grace), findsNothing);
+      expect(findWords(grace), findsNothing);
     });
 
     testWidgets('a note seen is not told again the next day', (tester) async {
       final c = await openToday(tester, now: friday, progress: graceWeek());
-      await show(tester, find.text(grace));
+      await show(tester, findWords(grace));
       expect(c.read(settingsProvider).stripNoteShownOn, _d(10, 16));
       // Seen today, it stays for the day.
       await openToday(tester, settings: c.read(settingsProvider), now: friday, progress: graceWeek());
-      expect(find.text(grace), findsOneWidget);
+      expect(findWords(grace), findsOneWidget);
 
       final sunday = DateTime(2026, 10, 18, 9);
       await openToday(tester, settings: c.read(settingsProvider), now: sunday, progress: graceWeek());
-      expect(find.text(grace), findsNothing);
-      expect(find.textContaining('covered by a grace day —'), findsNothing);
+      expect(findWords(grace), findsNothing);
+      expect(findWords('covered by a grace day —'), findsNothing);
     });
 
     testWidgets('says so when today was read ahead', (tester) async {
@@ -249,13 +252,13 @@ void main() {
         }),
       );
       await show(tester, find.byType(WeekStrip));
-      expect(find.text('Caught up — doubling up repaired yesterday.'), findsOneWidget);
+      expect(findWords('Caught up — doubling up repaired yesterday.'), findsOneWidget);
     });
 
     testWidgets('in Hebrew', (tester) async {
       final hebrew = _settings.copyWith(language: AppLanguage.hebrew);
       await openToday(tester, settings: hebrew, now: friday, progress: graceWeek());
-      final note = find.text('יום רביעי כוסה ביום\u00A0חסד — הקצב נמשך. עם סיום פרשת נח עד שבת, יום\u00A0החסד יחזור.');
+      final note = findWords('יום רביעי כוסה ביום\u00A0חסד — הקצב נמשך. עם סיום פרשת נח עד שבת, יום\u00A0החסד יחזור.');
       await show(tester, note);
       expect(note, findsOneWidget);
     });
@@ -272,7 +275,7 @@ void main() {
             .withAliyah(4, _d(10, 15)),
       };
       await openToday(tester, now: friday, progress: ProgressState(weeks: weeks));
-      final note = find.text("Monday and Tuesday were covered by grace days — your rhythm continues. You'll earn one "
+      final note = findWords("Monday and Tuesday were covered by grace days — your rhythm continues. You'll earn one "
           'back when you finish Noach by Shabbat.');
       await show(tester, note);
       expect(note, findsOneWidget);
@@ -283,7 +286,7 @@ void main() {
         now: friday,
         progress: ProgressState(weeks: weeks),
       );
-      final hebrew = find.text(
+      final hebrew = findWords(
           'יום שני ויום שלישי כוסו בימי\u00A0חסד — הקצב נמשך. עם סיום פרשת נח עד שבת, יום\u00A0חסד אחד יחזור.');
       await show(tester, hebrew);
       expect(hebrew, findsOneWidget);
@@ -299,7 +302,7 @@ void main() {
               _d(10, 16),
             );
         await openToday(tester, now: friday, progress: ProgressState(weeks: {'5787:1': _bereshit(), '5787:2': week}));
-        final note = find.text(short);
+        final note = findWords(short);
         await show(tester, note);
         expect(note, findsOneWidget);
         expect(find.textContaining('earn one back'), findsNothing);
@@ -333,7 +336,7 @@ void main() {
 
       testWidgets('while every grace day is in hand', (tester) async {
         await openWith(tester, friday, withGrace(_d(10, 14), balance: GraceRules.maxBalance));
-        final note = find.text(short);
+        final note = findWords(short);
         await show(tester, note);
         expect(note, findsOneWidget);
       });
@@ -341,7 +344,7 @@ void main() {
       testWidgets("in Vezot HaBerachah's week, read on Simchat Torah", (tester) async {
         // Thursday 1 October 2026, Chol HaMoed Sukkot.
         await openWith(tester, DateTime(2026, 10, 1, 9), withGrace(_d(9, 29), balance: 1));
-        final note = find.text('Tuesday was covered by a grace day — your rhythm continues.');
+        final note = findWords('Tuesday was covered by a grace day — your rhythm continues.');
         await show(tester, note);
         expect(note, findsOneWidget);
       });
@@ -406,6 +409,11 @@ void main() {
       progress: const ProgressState(),
     );
     expect(find.text("Erev Tisha B'Av: many finish their learning before midday."), findsOneWidget);
+    // Set evenly, so that no word is left alone on its last line.
+    expect(
+      find.ancestor(of: find.text("Erev Tisha B'Av: many finish their learning before midday."), matching: find.byType(BalancedText)),
+      findsOneWidget,
+    );
 
     await openToday(
       tester,

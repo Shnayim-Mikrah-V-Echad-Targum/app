@@ -135,7 +135,7 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
             _WeekHeader(ctx: ctx, namesKey: headingKey),
             if (!ctx.isOpen) ...[
               const Gap(Space.xl),
-              NoticeBanner(icon: Icons.visibility_outlined, text: l.previewNotOpen(names.dateLong(ctx.week.start))),
+              NoticeBanner(icon: Icons.visibility_outlined, text: l.previewNotOpen(names.dateInText(ctx.week.start))),
             ],
             // Digits, which an eyebrow never holds; inset as a group's header.
             SectionHeader.plain(

@@ -126,6 +126,17 @@ void main() {
     });
   });
 
+  testWidgets('a date in a sentence wraps after its weekday or not at all', (tester) async {
+    final day = LocalDate(2026, 10, 11);
+    var names = Names(await _page(tester, hebrew: false));
+    expect(names.dateInText(day), 'Sunday, October\u00A011');
+    expect(names.dateInText(day).replaceAll('\u00A0', ' '), names.dateLong(day));
+
+    names = Names(await _page(tester, hebrew: true));
+    expect(names.dateInText(day), 'יום\u00A0ראשון, 11\u00A0באוקטובר');
+    expect(names.dateInText(day).replaceAll('\u00A0', ' '), names.dateLong(day));
+  });
+
   testWidgets("a book's parshiyot are counted beside its name: 12 parshiyot, and 12 פרשות", (tester) async {
     var context = await _page(tester, hebrew: false);
     expect(context.l10n.browseBookParshiyot(12), '12 parshiyot');

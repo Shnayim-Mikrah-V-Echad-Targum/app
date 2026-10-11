@@ -138,7 +138,7 @@ void main() {
       expect(
         find.descendant(
           of: find.widgetWithText(PaperRow, 'Pause streaks'),
-          matching: find.text('Paused until Sunday, October 18. Nothing resets while paused.'),
+          matching: findWords('Paused until Sunday, October 18. Nothing resets while paused.'),
         ),
         findsOneWidget,
       );
@@ -155,7 +155,8 @@ void main() {
       // laid over the first.
       await tester.tap(find.text('Pause streaks'));
       await tester.pumpAndSettle();
-      expect(find.text('Paused until Sunday, October 18'), findsOneWidget);
+      expect(find.descendant(of: find.byType(AlertDialog), matching: findWords('Paused until Sunday, October 18')),
+          findsOneWidget);
       expect(find.text('Lengthen by'), findsOneWidget);
       await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('7 days')));
       await tester.tap(find.widgetWithText(FilledButton, 'Lengthen'));
@@ -169,14 +170,14 @@ void main() {
       expect(
         find.descendant(
           of: find.widgetWithText(PaperRow, 'Pause streaks'),
-          matching: find.text('Paused until Sunday, October 25. Nothing resets while paused.'),
+          matching: findWords('Paused until Sunday, October 25. Nothing resets while paused.'),
         ),
         findsOneWidget,
       );
       // Today's banner says the same.
       c.read(routerProvider).go('/today');
       await tester.pumpAndSettle();
-      expect(find.text('Paused until Sunday, October 25. Nothing resets while paused.'), findsOneWidget);
+      expect(findWords('Paused until Sunday, October 25. Nothing resets while paused.'), findsOneWidget);
     });
 
     testWidgets('the row says the later end of pauses laid one over another', (tester) async {
@@ -188,7 +189,7 @@ void main() {
           Pause(LocalDate(2026, 10, 12), LocalDate(2026, 10, 25), id: 'b'),
         ]),
       );
-      expect(find.text('Paused until Sunday, October 25. Nothing resets while paused.'), findsOneWidget);
+      expect(findWords('Paused until Sunday, October 25. Nothing resets while paused.'), findsOneWidget);
     });
 
     testWidgets('while paused, the row resumes, as Today does', (tester) async {

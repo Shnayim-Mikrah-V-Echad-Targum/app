@@ -56,7 +56,7 @@ Future<void> showPauseOptions(BuildContext context, WidgetRef ref, ({LocalDate s
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
-        title: Text(l.pauseManageTitle(names.dateLong(pause.end))),
+        title: Text(l.pauseManageTitle(names.dateInText(pause.end))),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

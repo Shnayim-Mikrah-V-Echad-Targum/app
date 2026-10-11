@@ -139,10 +139,12 @@ const _screens = {
   'today_paused': '/today',
   // Friday afternoon: Erev Shabbat heads the title page.
   'today_afternoon': '/today',
-  // Behind on the Thursday of Noach, and on Erev Rosh Hashanah 5789: the
-  // catch-up line says so, rather than "midweek".
+  // Behind on the Thursday of Noach, and on Erev Rosh Hashanah 5789, whose
+  // two days run into Shabbat: the catch-up line says so, rather than
+  // "midweek". Then Erev Shabbat Bamidbar 5789, with Shavuot after it.
   'today_thursday': '/today',
   'today_erev_yomtov': '/today',
+  'today_erev_shabbat_yomtov': '/today',
   // Logging from a Chumash: the aliyot due, each checked.
   'today_book': '/today',
   // Shabbat Bereshit, and the first day of Shavuot 5789 (a Sunday, before a
@@ -401,7 +403,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_taamey': (s) => s.copyWith(scriptureFont: ScriptureFont.taameyFrank),
   'reader_ezra': (s) => s.copyWith(scriptureFont: ScriptureFont.ezra),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
-  'today_haftarah_left': (s) => s.copyWith(haftarahRequired: true),
+  // The check-in, answered on Sunday, gives way to the open week's notice.
+  'today_haftarah_left': (s) => s.copyWith(haftarahRequired: true, checkInAnsweredFor: '5787:1'),
   // The Tuesday after Shavuot 5789 (Sunday and Monday, 20 and 21 May) on
   // Israel's reading: one day of Yom Tov kept, then two (a visitor).
   'today_yomtov_oneday': (s) =>
@@ -426,6 +429,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true, joinDate: LocalDate(2026, 9, 20)),
   'today_three_weeks': (s) => s.copyWith(joinDate: LocalDate(2027, 7, 18)),
   'today_erev_yomtov': (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
+  'today_erev_shabbat_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_yom_kippur': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
   'today_friday_night': (s) => s.copyWith(city: _jerusalem),
@@ -490,6 +494,8 @@ final _screenNow = <String, DateTime>{
   'today_thursday': DateTime(2026, 10, 15, 11),
   // Wednesday 20 September 2028, before Rosh Hashanah and Haazinu's Shabbat.
   'today_erev_yomtov': DateTime(2028, 9, 20, 11),
+  // Friday 18 May 2029, with Shavuot on Sunday and Monday.
+  'today_erev_shabbat_yomtov': DateTime(2029, 5, 18, 11),
   'today_shabbat': DateTime(2026, 10, 10, 11),
   'today_yomtov': DateTime(2029, 5, 20, 11),
   'today_yom_kippur': DateTime(2026, 9, 21, 11),
@@ -522,6 +528,7 @@ final _screenProgress = <String, ProgressState Function()>{
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
   'today_erev_yomtov': () => ProgressState(weeks: {}),
+  'today_erev_shabbat_yomtov': () => ProgressState(weeks: {}),
   'today_yomtov': () => ProgressState(weeks: {}),
   'today_yom_kippur': () => ProgressState(weeks: {}),
   'today_erev_tisha_bav': () => ProgressState(weeks: {}),
@@ -781,6 +788,9 @@ Future<void> _untilLoaded(WidgetTester tester) async {
   }
 }
 
+Future<void> _showCatchUpLine(WidgetTester tester) =>
+    Scrollable.ensureVisible(tester.element(find.byIcon(Icons.import_contacts)), alignment: 0.7);
+
 Future<void> _showWeekStrip(WidgetTester tester) =>
     Scrollable.ensureVisible(tester.element(find.byType(WeekStrip)), alignment: 0.5);
 
@@ -853,6 +863,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The regular haftarah's heading, with the special one's end above it.
   'haftarah_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.6),
   'haftarah_chabad_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.3),
+  // "All on Friday", in view to be tapped.
+  's_reading_changed': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(RadioListTile<ReadingPlanType>).last), alignment: 0.5),
   's_reading_customs': (tester) =>
       Scrollable.ensureVisible(tester.element(find.byType(RadioListTile<ReadingMethod>).last)),
   's_reading_chabad': (tester) =>
@@ -1021,6 +1034,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     () => find.byType(TextButton).last,
     () => find.byIcon(Icons.restore_page_outlined),
   ]),
+  // The catch-up line, on the eve of days of rest.
+  'today_erev_yomtov': _showCatchUpLine,
+  'today_erev_shabbat_yomtov': _showCatchUpLine,
   // The week strip, in the middle of the page.
   'today_yomtov_oneday': _showWeekStrip,
   'today_yomtov_twoday': _showWeekStrip,

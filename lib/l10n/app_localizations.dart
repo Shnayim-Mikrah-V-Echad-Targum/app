@@ -675,6 +675,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.}}'**
   String todayLastDayYomTov(int count);
 
+  /// As todayLastDayShabbat, on an Erev Shabbat whose Shabbat runs straight into Yom Tov, so that reading done then is logged once Yom Tov is over. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.}}'**
+  String todayLastDayShabbatThenYomTov(int count);
+
+  /// As todayLastDayYomTov, on an Erev Yom Tov whose Yom Tov runs straight into Shabbat (Rosh Hashanah on Thursday and Friday, say), so that reading done then is logged once Shabbat is over. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.}}'**
+  String todayLastDayYomTovThenShabbat(int count);
+
   /// As todayBehind, on the day before Yom Kippur, which is never the last reading day of a week. count is every aliyah planned up to today and not yet read.
   ///
   /// In en, this message translates to:
@@ -3414,7 +3426,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhenBody.
   ///
   /// In en, this message translates to:
-  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
+  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
   String get guideWhenBody;
 
   /// No description provided for @guideHowTitle.
@@ -3456,7 +3468,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideSpecialBody.
   ///
   /// In en, this message translates to:
-  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
+  /// **'In “Atarot v\'Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.
@@ -4464,13 +4476,13 @@ abstract class AppLocalizations {
   /// Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves.
   ///
   /// In en, this message translates to:
-  /// **'\"End with Mikra\" is now off, following the Chabad custom.'**
+  /// **'“End with Mikra” is now off, following the Chabad custom.'**
   String get repeatLastVerseFollowsChabad;
 
   /// Said when choosing another haftarah custom than Chabad turns repeatLastVerse back on.
   ///
   /// In en, this message translates to:
-  /// **'\"End with Mikra\" is on again.'**
+  /// **'“End with Mikra” is on again.'**
   String get repeatLastVerseBackOn;
 
   /// What screen readers say for divineAdonai, which is written with a hyphen out of respect, and would be spelled out letter by letter as written.

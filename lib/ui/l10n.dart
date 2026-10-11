@@ -157,6 +157,12 @@ class Names {
   /// "Sunday, 11 October".
   String dateLong(LocalDate d) => DateFormat.MMMMEEEEd(context.localeName).format(d.toDateTime());
 
+  /// [dateLong] for a sentence: it wraps after its weekday's comma or not at
+  /// all, never between a day and its month ("October / 11", "11 /
+  /// באוקטובר").
+  String dateInText(LocalDate d) =>
+      [for (final part in dateLong(d).split(', ')) part.replaceAll(' ', '\u00A0')].join(', ');
+
   /// "11 October" (no weekday).
   String dateMonthDay(LocalDate d) => DateFormat.MMMMd(context.localeName).format(d.toDateTime());
 

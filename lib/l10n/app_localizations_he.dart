@@ -413,6 +413,30 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String todayLastDayShabbatThenYomTov(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'עוד $count עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג.',
+      one: 'עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomTovThenShabbat(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'עוד $count עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת.',
+      one: 'עוד עלייה אחת לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String todayLastDayYomKippur(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

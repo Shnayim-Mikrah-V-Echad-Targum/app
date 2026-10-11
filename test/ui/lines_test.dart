@@ -76,4 +76,10 @@ void main() {
       handle.dispose();
     });
   });
+
+  test('dashHeldToWord holds each spaced em dash to the word before it', () {
+    expect(dashHeldToWord('Two aliyot — very normal — midweek.'), 'Two aliyot\u00A0— very normal\u00A0— midweek.');
+    expect(dashHeldToWord('עוד 3 עליות להשלים — רגיל'), 'עוד 3 עליות להשלים\u00A0— רגיל');
+    expect(dashHeldToWord('1–2 and a—b'), '1–2 and a—b', reason: 'only a dash set between spaces');
+  });
 }

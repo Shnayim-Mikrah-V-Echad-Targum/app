@@ -93,7 +93,7 @@ class TodayScreen extends ConsumerWidget {
         NoticeBanner(
           icon: Icons.pause_circle_outline,
           // Until the last day of the pauses that run on from today's.
-          text: l.pausedBanner(names.dateLong(pauseCovering(pauses, today)!.end)),
+          text: l.pausedBanner(names.dateInText(pauseCovering(pauses, today)!.end)),
           // Two sentences, which beside the button would wrap into a
           // narrow column.
           actionBelow: true,
@@ -606,8 +606,17 @@ enum CatchUpDay {
   /// The last reading day before Shabbat.
   erevShabbat,
 
+  /// The last reading day before a Shabbat that runs straight into Yom Tov:
+  /// what is read then is logged after Yom Tov.
+  erevShabbatThenYomTov,
+
   /// The last reading day before a Yom Tov that is not Shabbat.
   erevYomTov,
+
+  /// The last reading day before a Yom Tov that runs straight into Shabbat
+  /// (Rosh Hashanah on Thursday and Friday, say): what is read then is
+  /// logged after Shabbat.
+  erevYomTovThenShabbat,
 
   /// The day before Yom Kippur, whatever day of the week it is: neither
   /// called Yom Tov nor the end of the week, which always has a reading day
@@ -621,9 +630,22 @@ CatchUpDay catchUpDayFor(LocalDate today, {required bool oneDayYomTov}) {
   final tomorrow = today.addDays(1);
   if (JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(tomorrow))) return CatchUpDay.erevYomKippur;
   if (JewishHolidays.isRestDay(tomorrow, israel: oneDayYomTov)) {
-    return tomorrow.isShabbat ? CatchUpDay.erevShabbat : CatchUpDay.erevYomTov;
+    // Logged once the days of rest are over, after whichever ends them.
+    final endsWithShabbat = _lastDayOfRest(tomorrow, oneDayYomTov: oneDayYomTov).isShabbat;
+    if (tomorrow.isShabbat) return endsWithShabbat ? CatchUpDay.erevShabbat : CatchUpDay.erevShabbatThenYomTov;
+    return endsWithShabbat ? CatchUpDay.erevYomTovThenShabbat : CatchUpDay.erevYomTov;
   }
   return today.weekday == _thursday ? CatchUpDay.thursday : CatchUpDay.midweek;
+}
+
+/// The last of the days of rest that run on from [day], a day of rest, by
+/// the reader's custom for the days of Yom Tov.
+LocalDate _lastDayOfRest(LocalDate day, {required bool oneDayYomTov}) {
+  var last = day;
+  while (JewishHolidays.isRestDay(last.addDays(1), israel: oneDayYomTov)) {
+    last = last.addDays(1);
+  }
+  return last;
 }
 
 /// Today's reading (§9 Today, 4), or while aliyot planned for earlier days
@@ -653,10 +675,12 @@ class _TodayCard extends ConsumerWidget {
       if (paused) l.pausedTodayNote,
       if (JewishHolidays.isTishaBav(ctx.today.addDays(1))) l.erevTishaBavNote,
     ];
+    // Set evenly, as the note under the week strip is, so that no word is
+    // left alone on a last line and no line starts with a dash.
     List<Widget> marginalia(List<String> lines) => [
           for (final (i, line) in lines.indexed) ...[
             Gap(i == 0 ? Space.sm : Space.xs),
-            Text(line, style: SeferType.of(context).marginalia),
+            BalancedText(dashHeldToWord(line), style: SeferType.of(context).marginalia, textAlign: TextAlign.start),
           ],
         ];
 
@@ -693,7 +717,9 @@ class _TodayCard extends ConsumerWidget {
         CatchUpDay.midweek => l.todayBehind(count),
         CatchUpDay.thursday => l.todayBehindThursday(count),
         CatchUpDay.erevShabbat => l.todayLastDayShabbat(count),
+        CatchUpDay.erevShabbatThenYomTov => l.todayLastDayShabbatThenYomTov(count),
         CatchUpDay.erevYomTov => l.todayLastDayYomTov(count),
+        CatchUpDay.erevYomTovThenShabbat => l.todayLastDayYomTovThenShabbat(count),
         CatchUpDay.erevYomKippur => l.todayLastDayYomKippur(count),
       };
       children = [
@@ -893,10 +919,7 @@ class _RestHero extends ConsumerWidget {
     final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
     bool yomTov(LocalDate d) => JewishHolidays.isYomTov(HebrewDate.fromLocalDate(d), israel: settings.oneDayYomTov);
     bool yomKippur(LocalDate d) => JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(d));
-    var last = date;
-    while (JewishHolidays.isRestDay(last.addDays(1), israel: settings.oneDayYomTov)) {
-      last = last.addDays(1);
-    }
+    final last = _lastDayOfRest(date, oneDayYomTov: settings.oneDayYomTov);
     // The day's own greeting, on Shabbat too: Yom Kippur is a fast, and Rosh
     // Hashanah has its wish for the year.
     final greeting = yomKippur(date)
@@ -1029,7 +1052,7 @@ class _PauseEndedNotice extends ConsumerWidget {
     return NoticeBanner(
       icon: Icons.play_circle_outline,
       title: l.pauseEnded,
-      text: l.pauseEndedOn(names.dateLong(end)),
+      text: l.pauseEndedOn(names.dateInText(end)),
       actionBelow: true,
       action: actions.isEmpty
           ? null
@@ -1166,7 +1189,11 @@ class _StripNote extends ConsumerWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: BalancedText(text, style: SeferType.of(context).marginalia, textAlign: TextAlign.start),
+              child: BalancedText(
+                dashHeldToWord(text),
+                style: SeferType.of(context).marginalia,
+                textAlign: TextAlign.start,
+              ),
             ),
           ),
           IconButton(
