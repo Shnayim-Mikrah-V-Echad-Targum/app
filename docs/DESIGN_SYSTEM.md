@@ -1119,6 +1119,16 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 - Petuchah and setumah marks.
 - At the end: a SeferDivider, then a centred Tonal "Mark this aliyah as read" (the existing label, which the tests rely on).
 - Focus mode per §4.7.
+- **Parallel columns** (`ParallelVerse`, scripture_text.dart; desktop_reader_full): when the Targum (or, without it, the translation) is shown, the pane is at least 960 wide, the line width isn't narrow, the Torah is at most 34 px at the system text scale (`ScriptureStyles.parallelColumns`) and Display → Side by side is on (`AppSettings.parallelColumns`, default on; the switch shows on wide screens only):
+  - the measure is 1160, and the title, ribbon and listen bar keep to it;
+  - each verse is a row, right to left: the Torah (flex 6), with the translation and Rashi beneath it in its column, then a 40 gutter, then the Targum (flex 5) without its rule or number, at least 48 tall for its long press; first lines on one baseline;
+  - above the first row, the columns' names (`ParallelHeading`): `mikraLabel` and `targumLabel` (or `translationLabel`) in labelLarge onSurfaceVariant, each where its text begins, over a 1 px hairline as wide as its column, inset as the verses are;
+  - the chapter heading, section marks and the verse's block (focus mode, the verse opened at, Listen) span the row; screen readers hear the verse, the Targum, the translation and Rashi, in that order.
+- **Whole parsha** (the overflow menu's `wholeParsha` / `oneAliyahAtATime`, full text only; `AppSettings.fullTextWholeParsha`; phone_reader_parsha, desktop_reader_parsha*):
+  - one `SliverMainAxisGroup` per aliyah: the `AliyahHeader` pinned while its aliyah is read, its verses built lazily (`SliverList.builder`), then the SeferDivider and the Tonal Mark as read of that aliyah;
+  - `AliyahHeader` (whole_parsha.dart): surface, keeping to the text's measure, padding 10 vertical; the Hebrew ordinal in `ordinal` gold, 12, the name in titleMedium onSurface, 12, the verses in bodyMedium onSurfaceVariant with tabular figures (wrapping under the name when they don't fit), and at the end a 20 check in primary once the aliyah is read. A hairline beneath only while the text passes under it. One heading of level 2 to screen readers ("Revi'i, aliyah 4 of 7, Genesis 3:22–4:18, read"); the chapter headings beneath it are level 3;
+  - it opens at the aliyah chosen, out of sight until it is there; a ribbon tab scrolls to its aliyah's heading; the title, ribbon and menu follow the aliyah a quarter of the way down the text, or the verse focus mode moves to;
+  - focus mode's ↓ and ↑, Listen and the verse opened at run through the whole parsha; a button reached by Tab is brought into view again once the verses before it are built.
 
 ### Haftarah (haftarah_screen.dart)
 

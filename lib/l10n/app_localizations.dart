@@ -1167,6 +1167,18 @@ abstract class AppLocalizations {
   /// **'Full text'**
   String get fullTextMode;
 
+  /// No description provided for @wholeParsha.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole parsha'**
+  String get wholeParsha;
+
+  /// No description provided for @oneAliyahAtATime.
+  ///
+  /// In en, this message translates to:
+  /// **'One aliyah at a time'**
+  String get oneAliyahAtATime;
+
   /// No description provided for @markAliyahRead.
   ///
   /// In en, this message translates to:
@@ -2234,6 +2246,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Highlight the current verse and dim the rest'**
   String get focusModeDesc;
+
+  /// No description provided for @sideBySide.
+  ///
+  /// In en, this message translates to:
+  /// **'Side by side'**
+  String get sideBySide;
+
+  /// No description provided for @sideBySideDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'On a wide screen, the full text shows the Targum, or the translation, in a column beside each verse'**
+  String get sideBySideDesc;
 
   /// No description provided for @keepScreenOn.
   ///

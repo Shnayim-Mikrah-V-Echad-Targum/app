@@ -185,6 +185,8 @@ class AppSettings {
     this.boldText = false,
     this.focusMode = false,
     this.listenAlong = false,
+    this.parallelColumns = true,
+    this.fullTextWholeParsha = false,
     this.keepScreenOn = true,
     this.reduceMotion = false,
     this.haptics = true,
@@ -287,6 +289,15 @@ class AppSettings {
   /// In the guided reader, Listen goes on from each reading to the next by
   /// itself, to the end of the aliyah: Mikra, Mikra, Targum, hands-free.
   final bool listenAlong;
+
+  /// On a wide screen, the full text sets the Targum (or, without it, the
+  /// translation) in a column beside each verse rather than beneath it
+  /// (ScriptureStyles.parallelColumns).
+  final bool parallelColumns;
+
+  /// The full text shows the whole parsha, aliyah after aliyah, rather than
+  /// the one aliyah opened.
+  final bool fullTextWholeParsha;
   final bool keepScreenOn;
 
   // Accessibility
@@ -466,6 +477,8 @@ class AppSettings {
     bool? boldText,
     bool? focusMode,
     bool? listenAlong,
+    bool? parallelColumns,
+    bool? fullTextWholeParsha,
     bool? keepScreenOn,
     bool? reduceMotion,
     bool? haptics,
@@ -526,6 +539,8 @@ class AppSettings {
         boldText: boldText ?? this.boldText,
         focusMode: focusMode ?? this.focusMode,
         listenAlong: listenAlong ?? this.listenAlong,
+        parallelColumns: parallelColumns ?? this.parallelColumns,
+        fullTextWholeParsha: fullTextWholeParsha ?? this.fullTextWholeParsha,
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
         reduceMotion: reduceMotion ?? this.reduceMotion,
         haptics: haptics ?? this.haptics,
@@ -592,6 +607,8 @@ class AppSettings {
         'boldText': boldText,
         'focusMode': focusMode,
         'listenAlong': listenAlong,
+        'parallelColumns': parallelColumns,
+        'fullTextWholeParsha': fullTextWholeParsha,
         'keepScreenOn': keepScreenOn,
         'reduceMotion': reduceMotion,
         'haptics': haptics,
@@ -678,6 +695,8 @@ class AppSettings {
       boldText: b('boldText', d.boldText),
       focusMode: b('focusMode', d.focusMode),
       listenAlong: b('listenAlong', d.listenAlong),
+      parallelColumns: b('parallelColumns', d.parallelColumns),
+      fullTextWholeParsha: b('fullTextWholeParsha', d.fullTextWholeParsha),
       keepScreenOn: b('keepScreenOn', d.keepScreenOn),
       reduceMotion: b('reduceMotion', d.reduceMotion),
       haptics: b('haptics', d.haptics),

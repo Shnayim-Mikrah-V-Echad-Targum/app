@@ -218,6 +218,32 @@ class ScriptureStyles {
         LineWidth.wide => 880,
       };
 
+  /// The full text's measure in parallel columns: the Torah's column, the
+  /// gutter, and the column beside it ([ParallelVerse]).
+  static const parallelWidth = 1160.0;
+
+  /// The narrowest pane that sets the full text in parallel columns.
+  static const parallelMinPane = 960.0;
+
+  /// The largest the Torah may be, at the system text scale, for its column
+  /// to keep a measure of words rather than of one or two.
+  static const parallelMaxSize = 34.0;
+
+  /// Whether the full text, in a pane [paneWidth] wide, sets the Torah and
+  /// what goes with it ([companion]: the Targum, or else the translation)
+  /// side by side: on a wide pane, at a measure other than the narrow one and
+  /// a size the column holds, unless the reader has turned it off.
+  bool parallelColumns(double paneWidth, {required bool companion}) =>
+      companion &&
+      settings.parallelColumns &&
+      settings.lineWidth != LineWidth.narrow &&
+      paneWidth >= parallelMinPane &&
+      MediaQuery.textScalerOf(context).scale(sizeFor(ScriptureKind.mikra)) <= parallelMaxSize;
+
+  /// The full text's measure: [parallelWidth] in parallel columns, and
+  /// otherwise the reading column's.
+  double fullTextWidth({required bool parallel}) => parallel ? parallelWidth : maxLineWidth;
+
   static const _hebrewFallback = ['NotoSerifHebrew', 'NotoSansHebrew', 'NotoSans'];
 }
 
@@ -614,6 +640,124 @@ class VerseGroup extends StatelessWidget {
               padding: padding.copyWith(right: padding.right - rule),
               child: child,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One verse of the full text in parallel columns, on a wide screen: the
+/// Torah's column at the right, as the verse begins in either language of
+/// the app, and beside it, across a gutter, the Targum (or the translation),
+/// their first lines on one baseline. What else goes with the verse (its
+/// translation, Rashi) follows it in its own column.
+///
+/// Screen readers hear it as they do the verse beneath each other: the
+/// verse, what is beside it, and then what follows it.
+class ParallelVerse extends StatelessWidget {
+  const ParallelVerse({super.key, required this.torah, required this.beside, this.below = const []});
+
+  /// The verse.
+  final Widget torah;
+
+  /// The Targum, or the translation where there is no Targum.
+  final Widget beside;
+
+  /// What follows the verse in its column, each with the space above it.
+  final List<Widget> below;
+
+  /// The columns' shares of the width: the Torah's a little the wider, as
+  /// its letters are larger.
+  static const torahFlex = 6;
+  static const besideFlex = 5;
+
+  /// Between the two columns.
+  static const gutter = 40.0;
+
+  @override
+  Widget build(BuildContext context) {
+    // In the order a screen reader takes them, whatever their place.
+    Widget ordered(int order, Widget child) =>
+        Semantics(container: true, sortKey: OrdinalSortKey(order.toDouble()), child: child);
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: Row(
+        textDirection: TextDirection.rtl,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Expanded(
+            flex: torahFlex,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ordered(0, torah),
+                for (final (i, child) in below.indexed) ordered(i + 2, child),
+              ],
+            ),
+          ),
+          const SizedBox(width: gutter),
+          Expanded(
+            flex: besideFlex,
+            // A verse of one short line is still a target as tall as a
+            // finger for its long press: no taller than the verse's own line
+            // beside it, which sets the row's height.
+            child: ordered(
+              1,
+              ConstrainedBox(constraints: const BoxConstraints(minHeight: kMinInteractiveDimension), child: beside),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The heads of the full text's parallel columns ([ParallelVerse]), above
+/// its first verse: "Mikra" over the Torah's column and "Targum Onkelos" (or
+/// the translation's name) over the other, each where its text begins, over
+/// a hairline as wide as its column. They are inset as the verses' text is
+/// within its block ([VerseGroup.padding]).
+class ParallelHeading extends StatelessWidget {
+  const ParallelHeading({super.key, required this.torah, required this.beside, this.besideDirection = TextDirection.rtl});
+
+  final String torah;
+  final String beside;
+
+  /// The direction of the text beside the Torah: the Targum's, right to
+  /// left, or the translation's.
+  final TextDirection besideDirection;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sefer = SeferColors.of(context);
+    final style = theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    Widget head(String label, TextDirection direction) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(label, style: style, textAlign: direction == TextDirection.rtl ? TextAlign.right : TextAlign.left),
+            const SizedBox(height: 6),
+            SizedBox(height: sefer.hairlineWidth, child: ColoredBox(color: sefer.hairline)),
+          ],
+        );
+    // Read as one, the Torah's first, whatever the language of the app.
+    return Semantics(
+      container: true,
+      label: '$torah, $beside',
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: VerseGroup.padding.left),
+          child: Row(
+            textDirection: TextDirection.rtl,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(flex: ParallelVerse.torahFlex, child: head(torah, TextDirection.rtl)),
+              const SizedBox(width: ParallelVerse.gutter),
+              Expanded(flex: ParallelVerse.besideFlex, child: head(beside, besideDirection)),
+            ],
           ),
         ),
       ),

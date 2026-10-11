@@ -672,6 +672,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullTextMode => 'Full text';
 
   @override
+  String get wholeParsha => 'Whole parsha';
+
+  @override
+  String get oneAliyahAtATime => 'One aliyah at a time';
+
+  @override
   String get markAliyahRead => 'Mark this aliyah as read';
 
   @override
@@ -1264,6 +1270,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get focusModeDesc => 'Highlight the current verse and dim the rest';
+
+  @override
+  String get sideBySide => 'Side by side';
+
+  @override
+  String get sideBySideDesc =>
+      'On a wide screen, the full text shows the Targum, or the translation, in a column beside each verse';
 
   @override
   String get keepScreenOn => 'Keep the screen on while reading';

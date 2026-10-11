@@ -674,6 +674,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get fullTextMode => 'טקסט מלא';
 
   @override
+  String get wholeParsha => 'הפרשה כולה';
+
+  @override
+  String get oneAliyahAtATime => 'עלייה אחת בכל פעם';
+
+  @override
   String get markAliyahRead => 'סימון העלייה כנקראה';
 
   @override
@@ -1260,6 +1266,13 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get focusModeDesc => 'הדגשת הפסוק הנוכחי ועמעום השאר';
+
+  @override
+  String get sideBySide => 'זה לצד זה';
+
+  @override
+  String get sideBySideDesc =>
+      'במסך רחב, הטקסט המלא מציג את תרגום אונקלוס, או את התרגום לאנגלית, בטור לצד כל פסוק';
 
   @override
   String get keepScreenOn => 'המסך יישאר דלוק בזמן קריאה';

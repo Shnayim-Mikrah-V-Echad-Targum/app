@@ -8,16 +8,20 @@ import '../../ui/widgets/sefer_choice_chip.dart';
 import '../settings/app_settings.dart';
 import '../settings/screens/display_settings_screen.dart';
 import '../settings/widgets/settings_widgets.dart';
+import 'scripture_text.dart' show ScriptureStyles;
 
 /// Quick display controls available while reading. The sheet and its scrim
 /// cover the whole screen, the navigation bar too when the page (the
 /// haftarah, say) is shown within a tab. The reader's, with [listenAlong],
-/// also offers Listen along, which reads its steps one after another.
-Future<void> showDisplaySheet(BuildContext context, {bool listenAlong = false}) => showAppSheet<void>(
+/// also offers Listen along, which reads its steps one after another, and
+/// with [sideBySide], on a screen wide enough, the full text's parallel
+/// columns.
+Future<void> showDisplaySheet(BuildContext context, {bool listenAlong = false, bool sideBySide = false}) =>
+    showAppSheet<void>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
-      builder: (_) => _DisplaySheet(listenAlong: listenAlong),
+      builder: (_) => _DisplaySheet(listenAlong: listenAlong, sideBySide: sideBySide),
     );
 
 void changeReadingScale(WidgetRef ref, double delta) {
@@ -27,9 +31,10 @@ void changeReadingScale(WidgetRef ref, double delta) {
 }
 
 class _DisplaySheet extends ConsumerWidget {
-  const _DisplaySheet({required this.listenAlong});
+  const _DisplaySheet({required this.listenAlong, required this.sideBySide});
 
   final bool listenAlong;
+  final bool sideBySide;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -93,6 +98,14 @@ class _DisplaySheet extends ConsumerWidget {
               title: Text(l.rashiScript),
               value: s.rashiScript,
               onChanged: (v) => update((s) => s.copyWith(rashiScript: v)),
+            ),
+          // Only where the screen is wide enough for the columns.
+          if (sideBySide && MediaQuery.sizeOf(context).width >= ScriptureStyles.parallelMinPane)
+            SwitchListTile(
+              title: Text(l.sideBySide),
+              subtitle: Text(l.sideBySideDesc),
+              value: s.parallelColumns,
+              onChanged: (v) => update((s) => s.copyWith(parallelColumns: v)),
             ),
           SwitchListTile(
             title: Text(l.focusMode),

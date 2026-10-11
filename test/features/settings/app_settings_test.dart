@@ -34,6 +34,8 @@ void main() {
       singleKeyShortcuts: false,
       cityOfferAnswered: true,
       listenAlong: true,
+      parallelColumns: false,
+      fullTextWholeParsha: true,
     );
     final back = AppSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
@@ -47,6 +49,10 @@ void main() {
     expect(AppSettings.fromJson({}).cityOfferAnswered, isFalse, reason: 'offered until answered');
     expect(back.listenAlong, isTrue);
     expect(AppSettings.fromJson({}).listenAlong, isFalse, reason: 'Listen stops after the step unless asked');
+    expect(back.parallelColumns, isFalse);
+    expect(AppSettings.fromJson({}).parallelColumns, isTrue, reason: 'side by side on a wide screen unless turned off');
+    expect(back.fullTextWholeParsha, isTrue);
+    expect(AppSettings.fromJson({}).fullTextWholeParsha, isFalse, reason: 'the full text shows the aliyah opened');
   });
 
   group('habit anchor', () {

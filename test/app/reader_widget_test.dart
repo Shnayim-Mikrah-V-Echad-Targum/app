@@ -822,7 +822,14 @@ void main() {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true), now: monday);
+    // The Targum beneath each verse, as a phone or a narrower window sets it:
+    // a window this wide sets it beside the verse unless that is turned off
+    // (test/features/reader/full_text_layout_test.dart).
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(onboardingComplete: true, parallelColumns: false),
+      now: monday,
+    );
     c.read(routerProvider).go('/read/5787:2/0?mode=full');
     await loadTexts(tester);
     // The aliyah opens mid-chapter, headed by its chapter.

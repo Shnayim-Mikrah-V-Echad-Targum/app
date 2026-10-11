@@ -15,6 +15,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -36,6 +37,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading, ScriptureVerse;
+import 'package:shnayim_mikra/features/reader/whole_parsha.dart';
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
@@ -144,6 +146,27 @@ const _screens = {
   'reader_full': '/read/5787:1/2?mode=full',
   // Its end, with the button that marks the aliyah read.
   'reader_full_end': '/read/5787:1/2?mode=full',
+  // With the translation: beneath the verse, or in parallel columns after it
+  // in its column, the Targum beside it.
+  'reader_full_english': '/read/5787:1/2?mode=full',
+  // Rashi read in the Targum's place, with the translation: the translation
+  // beside the verse in parallel columns.
+  'reader_full_rashi_english': '/read/5787:1/2?mode=full',
+  // The whole parsha, opened at Shlishi: its heading at the top.
+  'reader_parsha': '/read/5787:1/2?mode=full',
+  // Read on into Shlishi, its heading kept at the top.
+  'reader_parsha_pinned': '/read/5787:1/2?mode=full',
+  // The end of Shlishi and the start of Revi'i: the button that marks
+  // Shlishi read, then Revi'i's heading.
+  'reader_parsha_join': '/read/5787:1/2?mode=full',
+  // The parsha's end, Shevi'i read.
+  'reader_parsha_end': '/read/5787:1/2?mode=full',
+  // In focus mode, read on from Shlishi into Revi'i.
+  'reader_parsha_focus': '/read/5787:1/2?mode=full',
+  // The reader's menu in the full text: the whole parsha.
+  'reader_parsha_menu': '/read/5787:1/2?mode=full',
+  // The display sheet with the switch for parallel columns, on a wide screen.
+  'reader_display_side': '/read/5787:1/2?mode=full',
   // The keyboard shortcuts, in the app and on the web.
   'reader_keys': '/read/5787:1/2',
   'reader_keys_web': '/read/5787:1/2',
@@ -392,6 +415,11 @@ const _screens = {
 /// the screen has loaded.
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  'reader_full_english': (s) => s.copyWith(showTranslation: true),
+  'reader_full_rashi_english': (s) => s.copyWith(showTranslation: true, secondReading: SecondReading.rashi),
+  for (final screen in ['reader_parsha', 'reader_parsha_pinned', 'reader_parsha_join', 'reader_parsha_end'])
+    screen: (s) => s.copyWith(fullTextWholeParsha: true),
+  'reader_parsha_focus': (s) => s.copyWith(fullTextWholeParsha: true, focusMode: true),
   'reader_section': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   'reader_rashi': (s) => s.copyWith(showRashi: true),
   'reader_rashi_script': (s) => s.copyWith(showRashi: true, rashiScript: true),
@@ -922,6 +950,39 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'reader_dots': _scrollToEnd,
   'reader_full_end': _scrollToEnd,
+  'reader_parsha_pinned': (tester) => tester.drag(find.byType(CustomScrollView), const Offset(0, -500)),
+  // Revi'i's heading three fifths of the way down: brought there again
+  // once the verses before it are built, whose height is till then
+  // reckoned.
+  'reader_parsha_join': (tester) async {
+    for (var i = 0; i < 3; i++) {
+      await Scrollable.ensureVisible(
+        tester.element(find.byWidgetPredicate((w) => w is AliyahHeader && w.aliyah == 3, skipOffstage: false)),
+        alignment: 0.6,
+      );
+      await _settle(tester);
+    }
+  },
+  'reader_parsha_end': _scrollToEnd,
+  // Focus mode opens on Shlishi's first verse (Genesis 2:20); ↓ through its
+  // 27 verses reaches Revi'i's first, 3:22.
+  'reader_parsha_focus': (tester) async {
+    for (var i = 0; i < 27; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  },
+  'reader_parsha_menu': _tapInTurn([
+    () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
+  ]),
+  'reader_display_side': (tester) async {
+    await tester.tap(find.byIcon(Icons.text_format));
+    await _settle(tester);
+    final side = find.widgetWithText(SwitchListTile, _l10n(tester).sideBySide);
+    if (side.evaluate().isNotEmpty) {
+      await Scrollable.ensureVisible(tester.element(side), alignment: 0.5);
+    }
+  },
   'haftarah_end': _scrollToEnd,
   'haftarah_chapter': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
   'haftarah_read': _scrollToEnd,
@@ -1243,6 +1304,15 @@ const _desktopScreens = {
   'celebrate',
   'reader_full',
   'reader_full_end',
+  'reader_full_english',
+  'reader_full_rashi_english',
+  'reader_parsha',
+  'reader_parsha_pinned',
+  'reader_parsha_join',
+  'reader_parsha_end',
+  'reader_parsha_focus',
+  'reader_parsha_menu',
+  'reader_display_side',
   'reader_focus',
   'reader_section',
   'reader_rashi',
@@ -1358,6 +1428,7 @@ const _bigTextScreens = {
   'reader_listen',
   'reader_listen_full',
   'haftarah_listen',
+  'reader_parsha',
 };
 
 Future<void> _settle(WidgetTester tester) async {
