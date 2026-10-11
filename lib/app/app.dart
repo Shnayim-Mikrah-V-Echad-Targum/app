@@ -10,6 +10,7 @@ import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 import '../services/app_shortcuts.dart';
 import '../services/feedback.dart' show StatusMessageArea;
+import '../services/home_widget_sync.dart';
 import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
 import '../ui/theme/app_theme.dart';
@@ -51,13 +52,16 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     // has loaded.
     _loadFonts();
     // The app starts on Today; a notification that launched it opens over
-    // it. Shortcuts on the app's icon open once Today is up too, the one that
-    // launched the app first, so each has somewhere to go back to.
+    // it. Shortcuts on the app's icon and taps on the home-screen widget open
+    // once Today is up too, the one that launched the app first, so each has
+    // somewhere to go back to.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final route = notifications.launchRoute;
       notifications.launchRoute = null;
       if (route != null && route != '/today') _open(route);
-      if (mounted) ref.read(appShortcutsServiceProvider).listen(_openShortcut);
+      if (!mounted) return;
+      ref.read(appShortcutsServiceProvider).listen(_openShortcut);
+      ref.read(homeWidgetServiceProvider).listen(_openWidgetLink);
     });
   }
 
@@ -102,10 +106,11 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
   }
 
   // The text theme follows the platform's language when the app does, and
-  // so do the shortcuts' titles.
+  // so do the shortcuts' titles and the home-screen widget.
   @override
   void didChangeLocales(List<Locale>? locales) {
     ref.invalidate(appShortcutsProvider);
+    ref.invalidate(homeWidgetSyncProvider);
     setState(() {});
   }
 
@@ -117,6 +122,15 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     ref.read(todayProvider.notifier).refresh();
     final route = shortcut.route(ref.read(currentWeekContextProvider), justRead: ref.read(weekJustReadProvider));
     openFromOutside(ref.read(routerProvider), route);
+  }
+
+  void _openWidgetLink(WidgetLink link) {
+    // The widget shows nothing to tap before onboarding, which must come
+    // first anyway.
+    if (!mounted || !ref.read(settingsProvider).onboardingComplete) return;
+    // As for a shortcut, the app may not yet have heard it has resumed.
+    ref.read(todayProvider.notifier).refresh();
+    openFromOutside(ref.read(routerProvider), link.route(ref.read(currentWeekContextProvider)));
   }
 
   /// Whether the app shows in Hebrew, resolved the way MaterialApp resolves
@@ -144,11 +158,13 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
         )));
     final router = ref.watch(routerProvider);
     // Keep scheduled reminders in sync with settings and progress, the icon's
-    // shortcuts in the app's language, and the cloud backup (if enabled) in
-    // sync with progress. The sync is only kept alive (listened to, not
-    // watched): its timestamp must not rebuild the app.
+    // shortcuts in the app's language, the home-screen widget up to date, and
+    // the cloud backup (if enabled) in sync with progress. The sync is only
+    // kept alive (listened to, not watched): its timestamp must not rebuild
+    // the app.
     ref.watch(reminderSchedulerProvider);
     ref.watch(appShortcutsProvider);
+    ref.watch(homeWidgetSyncProvider);
     // A book of the Torah finished anywhere in the app is celebrated once.
     ref.watch(celebrationListenerProvider);
     ref.listen(progressSyncProvider, (_, _) {});

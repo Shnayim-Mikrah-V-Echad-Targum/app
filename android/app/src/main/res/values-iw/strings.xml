@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">שניים מקרא</string>
+
+    <string name="widget_label">פרשת השבוע</string>
+    <string name="widget_description">פרשת השבוע, כמה כבר נקרא והקריאה של היום, במרחק נגיעה.</string>
+    <string name="widget_empty">יש לפתוח את שניים מקרא כדי להתחיל.</string>
+
+    <string name="widget_preview_eyebrow">פרשת השבוע</string>
+    <string name="widget_preview_progress">2 מתוך 7 עליות</string>
+    <string name="widget_preview_today">היום: שלישי</string>
+    <string name="widget_preview_continue">המשך · שלישי, תרגום</string>
 </resources>

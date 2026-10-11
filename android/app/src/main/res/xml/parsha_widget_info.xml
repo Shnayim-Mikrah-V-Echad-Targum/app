@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home-screen widget (ParshaWidgetProvider, docs/DESIGN_SYSTEM.md
+     §6.30). It opens at about 4×2 cells, with today's reading and Continue,
+     and resizes down to about 2×2, the parsha and its bars alone. It turns
+     each day by itself (ParshaWidgetProvider.scheduleChanges); the hourly
+     update is only a safety net. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_parsha_medium"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:previewImage="@drawable/widget_preview"
+    android:previewLayout="@layout/widget_parsha_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="3600000"
+    android:widgetCategory="home_screen" />

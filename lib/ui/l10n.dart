@@ -30,22 +30,15 @@ extension L10nContext on BuildContext {
   String ltrRun(String s) => isHebrewUi ? ltr(s) : s;
 }
 
-/// Localized names and dates.
-class Names {
-  Names(this.context);
+/// The aliyot by name, and lists in a sentence, in [l]'s words. [Names] gives
+/// them so on a page, and the home-screen widget's timeline, which has no
+/// page to take its words from, gives them the same way.
+class AliyahNames {
+  const AliyahNames(this.l);
 
-  final BuildContext context;
+  final AppLocalizations l;
 
-  AppLocalizations get _l => context.l10n;
-  bool get _he => context.isHebrewUi;
-
-  String aliyah(int index) => _aliyahIn(_l, index);
-
-  /// The aliyah's own Hebrew name, the same in either UI, as the Hebrew UI
-  /// names it: "רביעי".
-  static String aliyahHebrew(int index) => _aliyahIn(lookupAppLocalizations(const Locale('he')), index);
-
-  static String _aliyahIn(AppLocalizations l, int index) => switch (index) {
+  String aliyah(int index) => switch (index) {
         0 => l.aliyah1,
         1 => l.aliyah2,
         2 => l.aliyah3,
@@ -61,15 +54,15 @@ class Names {
   /// The aliyot to read, by name: one alone, a run of three or more from its
   /// first to its last ([aliyahRange]), or else each of them ([aliyot]).
   String aliyotSpan(List<int> indices) {
-    if (indices.length > 2 && indices.length < 7 && indices.last - indices.first == indices.length - 1) {
+    if (indices.length > 2 && indices.length < kAliyot && indices.last - indices.first == indices.length - 1) {
       return aliyahRange(indices.first, indices.last);
     }
     return aliyot(indices);
   }
 
-  /// "Revi'i" or "Chamishi and Shishi".
+  /// "Revi'i", "Chamishi and Shishi", or all seven: "The whole parsha".
   String aliyot(List<int> indices) {
-    if (indices.length == 7) return _he ? 'כל הפרשה' : 'The whole parsha';
+    if (indices.length == kAliyot) return l.aliyotWholeParsha;
     return andList(indices.map(aliyah).toList());
   }
 
@@ -78,8 +71,37 @@ class Names {
   String andList(List<String> items) {
     if (items.isEmpty) return '';
     if (items.length == 1) return items.single;
-    return _l.andJoiner(items.sublist(0, items.length - 1).join(', '), items.last);
+    return l.andJoiner(items.sublist(0, items.length - 1).join(', '), items.last);
   }
+}
+
+/// Localized names and dates.
+class Names {
+  Names(this.context);
+
+  final BuildContext context;
+
+  AppLocalizations get _l => context.l10n;
+  bool get _he => context.isHebrewUi;
+  AliyahNames get _aliyot => AliyahNames(_l);
+
+  String aliyah(int index) => _aliyot.aliyah(index);
+
+  /// The aliyah's own Hebrew name, the same in either UI, as the Hebrew UI
+  /// names it: "רביעי".
+  static String aliyahHebrew(int index) => AliyahNames(lookupAppLocalizations(const Locale('he'))).aliyah(index);
+
+  /// See [AliyahNames.aliyahRange].
+  String aliyahRange(int first, int last) => _aliyot.aliyahRange(first, last);
+
+  /// See [AliyahNames.aliyotSpan].
+  String aliyotSpan(List<int> indices) => _aliyot.aliyotSpan(indices);
+
+  /// See [AliyahNames.aliyot].
+  String aliyot(List<int> indices) => _aliyot.aliyot(indices);
+
+  /// See [AliyahNames.andList].
+  String andList(List<String> items) => _aliyot.andList(items);
 
   /// What the reader reads after the Torah's two readings, as [reading]
   /// says: "Targum", "Rashi" or "Onkelos and Rashi".

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget picker's preview on a Hebrew device: its eyebrow without the
+     English UI's spaced capitals. (The widget itself follows the app's
+     language, and chooses between the two eyebrows as it is filled in.) -->
+<resources>
+    <style name="ParshaWidget.Text.Fitted.Eyebrow.Preview" parent="ParshaWidget.Text.Fitted.Eyebrow.Hebrew" />
+</resources>

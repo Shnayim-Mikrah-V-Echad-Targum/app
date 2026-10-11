@@ -50,6 +50,7 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
   - Each tab of the ribbon is read as one button, with its name, its number and how far it is read ("Shlishi, aliyah 3 of 7, …"), and the open one as selected. Swiping moves through the tabs in reading order, right to left in Hebrew, and scrolls the ribbon to keep each in view.
   - The PassTrack itself is silent. Its step is read once, as it changes, in the step's announcement ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"), never twice.
 - [ ] **Windows Contrast Themes** (*Settings → Accessibility → Contrast themes*), with the app's theme following the system: choosing any of them (Aquatic, Desert, Dusk, Night sky) switches the app at once to its high-contrast theme, dark or light as Windows's own mode is, and choosing None switches it back. Text, focus rings, switches and the reader stay legible, and the title bar follows.
+- [ ] **The home-screen widget's preview** for older Android launchers (`android/app/src/main/res/drawable-nodpi/widget_preview.png`, written by `tool/branding/make_widget_preview.py`): a Hebrew reader checks that בְּרֵאשִׁית is whole and reads right to left.
 - [ ] **Every `he_*` screen of the capture harness** (`CAPTURE=1 MODES=he flutter test test/screens/capture_test.dart`, then `build/screens/he_*.png`), reviewed by a Hebrew reader: chevrons and arrows point the Hebrew way, rules stand at the start (the right), pips run right to left, and the ribbon's underline sits under the open aliyah.
 
 ### Behaviour on real devices
@@ -72,6 +73,16 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
   - The status and navigation bars are the colour of the screen beneath them, and their icons are legible: dark on Welcome's cream. Check three-button navigation on Android 9 and 10, gesture navigation on Android 14 or later, and an app theme that differs from the system's.
 - [ ] Predictive back, Android 15 or later (or Android 14 with *Developer options → Predictive back animations* on): a back gesture on Today previews the home screen.
 - [ ] Shortcuts on the app's icon, on Android and iOS, in English and Hebrew: long-pressing the icon shows Continue reading, Log reading from a book and This week's parsha, in the app's language and with the app's icon (on iOS, the mark). Each opens its page with back leading to Today: from a cold start, with the app in the background, and with its process stopped in the background (on Android, *Don't keep activities* in the developer options). Afterwards, the plain icon opens the app where it was left, not the shortcut's page again.
+- [ ] **The home-screen widget**, on Android (a launcher of Android 12 or later, and one of Android 11 or earlier) and iOS, small and medium, in English and Hebrew, in light and dark mode ([DESIGN_SYSTEM.md §6.30](DESIGN_SYSTEM.md#630-home-screen-widgets-android-and-ios)):
+  - The picker or gallery shows its preview, with its name and description in the device's language.
+  - Added after onboarding, it shows this week's parsha, its three bars and today's reading at once; before onboarding, "Open Shnayim Mikra to begin."
+  - Marking a reading, or changing the language, the transliteration, vowels or Israel/Diaspora, changes it within a few seconds, and it follows the app's language, mirrored in Hebrew, whatever the device's.
+  - Tapping it opens Today, and Continue opens the reader where Today's button leads, with back leading to Today: from a cold start, with the app in the background, and with its process stopped (on Android, *Don't keep activities*). Afterwards the plain icon opens the app where it was left.
+  - Without opening the app, it turns to the next day after 3 a.m., and on Erev Shabbat to Shabbat Shalom with no bars or Continue (with a city for Shabbat times, at candle-lighting), back to the reading after Shabbat; on Android after a reboot too.
+  - Left for longer than its days (set the clock two weeks on, to a weekday), it shows the parsha and asks to open the app; set to a Shabbat three weeks on, it shows only the candles and Shabbat Shalom.
+  - On the night the clocks go forward (set the zone and date just before a change), it turns to the new day three hours after midnight, at 4 o'clock on the new clock, not a day late.
+  - TalkBack and VoiceOver read the widget as one sentence (the parsha, how far each reading has come and today's reading), and Continue as a button of its own.
+  - Nothing is cut short at the largest text size, nor at its smallest height (two rows, in landscape; Android 14 at 200%): the names shrink to fit, a long greeting (G'mar Chatimah Tovah, גמר חתימה טובה) takes two lines (three in the narrowest Android widget), and on Android lines that don't fit are left out, the aliyot read first. On iOS its text grows with the text size up to xxxLarge and stays there at the accessibility sizes, set smaller where the small widget has no room.
 - [ ] Android system backup: after `adb shell bmgr backupnow org.shnayimmikra.app`, reinstalling the app restores its settings and progress.
 - [ ] Community against the production backend:
   - sign in with a code
@@ -124,8 +135,8 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 - [ ] **Target audience:** not designed for children. If you list it for under-13s, the forum needs a review under the Families policy.
 - [ ] **Permissions:**
   - Notifications: requested in context, after the first reading.
-  - Boot completed: so reminders survive a reboot.
-  - No exact-alarm permission: from Android 12 reminders use inexact scheduling, which the planner allows an hour for, and before it exact alarms, which need no permission there. No special declaration is needed.
+  - Boot completed: so reminders, and the home-screen widget's turn to each new day, survive a reboot.
+  - No exact-alarm permission: from Android 12 reminders and the widget's updates use inexact scheduling, which the planner allows an hour for, and before it exact alarms, which need no permission there. No special declaration is needed.
 - [ ] **Store listing:**
   - screenshots in English and Hebrew, for phone and tablet
   - feature graphic
@@ -135,8 +146,10 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 
 **Xcode setup**
 
-- [ ] Open `ios/Runner.xcworkspace` and set the development team and bundle id.
+- [ ] Open `ios/Runner.xcworkspace` and set the development team and bundle id, for both targets: **Runner** (`org.shnayimmikra.app`) and **ParshaWidget** (`org.shnayimmikra.app.ParshaWidget`), the home-screen widget's extension, which is embedded in the app and must be signed by the same team. Its version follows the app's.
+- [ ] **App Group** `group.org.shnayimmikra.app`, through which the app hands the widget what it shows: register it in the Apple developer portal (*Identifiers → App Groups*), enable the App Groups capability for both App IDs with that group, and make sure both provisioning profiles (the app's and the extension's) include it. Xcode's automatic signing does all of this once the team is set. Both targets' entitlements already name the group (`ios/Runner/Runner.entitlements`, `ios/ParshaWidget/ParshaWidget.entitlements`). Without it the app still runs, but the widget never gets its days and shows "Open Shnayim Mikra to begin." CI's build is unsigned and needs none of this.
 - [ ] Enable the push notification capability only if you add remote push. Local notifications don't need it.
+- [ ] **Privacy manifests:** the widget extension's `ios/ParshaWidget/PrivacyInfo.xcprivacy` declares the one required-reason API it calls, reading the App Group's user defaults (`NSPrivacyAccessedAPICategoryUserDefaults`, reason `1C8F.1`), and that it collects and tracks nothing; without it App Store Connect refuses the upload (ITMS-91053). Declare there any such API the extension comes to call (`test/app/home_widget_platform_test.dart` checks the ones it knows). The app's own come from Flutter and its plugins, each with a manifest of its own; home_widget, which saves the widget's timeline in the App Group, has none, but shared_preferences declares the same category and reason in the app. If an upload is ever refused for the Runner binary's user defaults, add a `PrivacyInfo.xcprivacy` to Runner's resources declaring them with `1C8F.1`.
 
 **Build**
 

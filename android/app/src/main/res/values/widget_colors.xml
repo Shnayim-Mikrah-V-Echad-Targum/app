@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home-screen widget's colours: the light theme's tokens
+     (docs/DESIGN_SYSTEM.md §3, §6.30), and the dark theme's in values-night.
+     The widget keeps the brand rather than the wallpaper's dynamic colours. -->
+<resources>
+    <!-- paper and hairline (SeferColors) -->
+    <color name="widget_paper">#FFFDF8</color>
+    <color name="widget_hairline">#D8CFBF</color>
+    <!-- onSurface, onSurfaceVariant -->
+    <color name="widget_ink">#1E1A16</color>
+    <color name="widget_ink_muted">#575046</color>
+    <!-- primary: the parsha's Hebrew name, and Continue -->
+    <color name="widget_techelet">#1D3F75</color>
+    <!-- secondary: the eyebrow, and the candles of a day of rest -->
+    <color name="widget_gold">#7A5712</color>
+    <!-- The rings' colours (SeferColors), for the three readings' bars. -->
+    <color name="widget_mikra1">#1D3F75</color>
+    <color name="widget_mikra2">#55779F</color>
+    <color name="widget_targum">#946C1E</color>
+    <color name="widget_track">#E8E1D3</color>
+</resources>

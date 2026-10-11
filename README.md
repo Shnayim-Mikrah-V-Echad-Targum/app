@@ -56,6 +56,7 @@ Accessibility is a core requirement, not an add-on. See [docs/ACCESSIBILITY.md](
 
 **Reminders**
 - Daily, check-in and Erev Shabbat reminders. They never fire on Shabbat or Yom Tov, and never more than one a day. On the eve none is due after midday or, with a city chosen for Shabbat times, none arrives from an hour before candle-lighting, allowing for Android delivering a reminder up to an hour late.
+- On Android and iOS, shortcuts on the app's icon (Continue reading, Log reading from a book, This week's parsha) and a home-screen widget: this week's parsha, how far each of the three readings has come and today's reading, with Continue on the larger size. It rests on Shabbat and Yom Tov with the day's greeting, and turns to each new day by itself, from the days ahead the app sends it whenever it runs.
 
 **Community**
 - Forums, including an automatic thread for each week's parsha.
@@ -146,7 +147,7 @@ lib/
     settings/     settings model and screens
     onboarding/   first-run flow
     about/        guide, sources, legal texts
-  services/       notifications, reminder planner, text-to-speech, feedback, optional fonts
+  services/       notifications, reminder planner, home-screen widget, text-to-speech, feedback, optional fonts
   ui/             theme, localization helpers, shared widgets
   l10n/           ARB files (English source and generated Hebrew)
 assets/
@@ -159,6 +160,9 @@ tool/
   l10n/           Hebrew translations and the ARB builder
   fonts/          builds static font instances from pinned google/fonts sources
 docs/             design notes, research, backend and release guides
+android/, ios/    platform projects; the home-screen widget's native side is
+                  android/app/src/main/kotlin/…/ParshaWidgetProvider.kt with
+                  res/layout/widget_parsha_*.xml, and ios/ParshaWidget/
 ```
 
 State is managed with Riverpod and navigation with go_router. The calendar, plan, streak and reminder logic is pure Dart with no Flutter dependency, so it is tested directly.

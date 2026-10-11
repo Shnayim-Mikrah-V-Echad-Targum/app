@@ -38,6 +38,11 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - Every icon button has a label and a tooltip. Where there are several alike, each is named for what it acts on ("More options for Rishon", "Increase Reading size").
 - A slider is read by its setting and value ("Reading size, 100%"), with a button on either side to step it.
 
+**Home-screen widget (Android and iOS)**
+- The widget is one item, read as one sentence: its eyebrow and the parsha ("Parshat HaShavua: Bereshit"), how far each reading has come, as the rings' label says it ("2 of 7 aliyot. First reading: 3 of 7. …"), and today's reading ("Today: Shlishi"). On Shabbat and Yom Tov it is the parsha and the day's greeting. The sentence is in the app's language, as the widget is.
+- On the larger size, Continue is a button of its own, named as Today's button is ("Continue · Shlishi, Targum"), 48 dp (44 pt) tall. A double tap on the widget opens Today.
+- Its text follows the system's text size (on iOS up to the largest of the standard sizes, xxxLarge, beyond which the small widget has no room). The eyebrow and the parsha's names keep to one line, and the greeting to two (three in the narrowest Android widget), set smaller where they would not fit rather than cut short. Where Android's widget is too short for every line at the text size (two rows in landscape, or the largest sizes), it leaves lines out, the aliyot read first, rather than cut them; iOS's sets them smaller instead. TalkBack and VoiceOver still read the whole sentence.
+
 **Web**
 - On the web, Flutter's semantics tree is turned on at startup (`SemanticsBinding.ensureSemantics`), so screen readers work without the hidden "enable accessibility" button.
 
@@ -179,6 +184,7 @@ Each item below is tested with the screen reader named:
 8. **Keyboard:** repeat steps 2 and 5 with the keyboard only on Windows and the web. Check that the focus ring is always visible.
 9. **Hebrew:** repeat steps 1 and 2 with the interface in Hebrew.
 10. **Switch Access:** run Switch Access (Android) or Switch Control (iOS) on the reader.
+11. **Home-screen widget** (Android and iOS): add it in both sizes; check that it is read as one sentence with Continue as a button of its own, in English and Hebrew, and at the largest text size, at its smallest height too (two rows, in landscape), where no line may be cut.
 
 Record the results in the release checklist ([RELEASE.md](RELEASE.md)).
 
@@ -189,6 +195,7 @@ Record the results in the release checklist ([RELEASE.md](RELEASE.md)).
   - In that case the screen reader reads the Hebrew with its default voice, usually badly.
   - Before reading aloud, the app checks for a Hebrew text-to-speech voice. If there is none, it says so and points to the device's speech settings.
 - **Narrator and NVDA on Windows** can't switch voices within the app, because Flutter's Windows accessibility bridge has no language property. They read the Hebrew labels in the voice of the screen reader's own language. Choosing a Hebrew voice in the screen reader's settings while reading is the workaround.
+- **Home-screen widget themes:** the widget follows the system's light or dark appearance, but has no high-contrast or sepia theme of its own: a launcher draws it apart from the app, which can't pass it the theme chosen in the app. Its colours meet the contrast of the light and dark themes (§3.5 of [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)).
 - **Cantillation:** no screen reader can convey it. Reading with ta'amim needs sight or a teacher. The *every mark* label setting lets braille users get every mark.
 - **Flutter on the web** draws text on a canvas. The semantics tree is mirrored as accessible DOM nodes, but browser find-in-page and the browser's own text zoom do not apply to it. Use the in-app reading size instead.
 

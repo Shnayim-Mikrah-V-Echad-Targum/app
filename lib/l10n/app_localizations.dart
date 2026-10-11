@@ -651,6 +651,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 aliyah} other{{count} aliyot}}'**
   String aliyotCount(int count);
 
+  /// All seven aliyot, where the aliyot of a day are named: on Today's reading card when a day's reading is the whole parsha, or all of it is still to catch up, and on the home-screen widget ("Today: The whole parsha").
+  ///
+  /// In en, this message translates to:
+  /// **'The whole parsha'**
+  String get aliyotWholeParsha;
+
   /// On Today's reading card, under the aliyot to catch up, from Sunday to Wednesday. count is every aliyah the card names: those planned up to today and not yet read, today's included.
   ///
   /// In en, this message translates to:
@@ -4658,6 +4664,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This week\'s parsha'**
   String get shortcutThisWeek;
+
+  /// On the home-screen widget, the day's reading: the aliyot planned for it, by name ("Today: Shlishi"). Keep it short: the widget gives it one line.
+  ///
+  /// In en, this message translates to:
+  /// **'Today: {aliyot}'**
+  String widgetToday(String aliyot);
+
+  /// On the home-screen widget, in place of widgetToday while aliyot planned for earlier days are unread: every aliyah due, as Today's card names them ("Catching up: Shlishi – Revi'i"). Keep it short.
+  ///
+  /// In en, this message translates to:
+  /// **'Catching up: {aliyot}'**
+  String widgetCatchUp(String aliyot);
+
+  /// On the home-screen widget, a reading day with nothing planned (the plan reads everything on Friday, say). Keep it short.
+  ///
+  /// In en, this message translates to:
+  /// **'No reading planned today'**
+  String get widgetNothingToday;
+
+  /// On the home-screen widget, on a day within a pause ("Life happens"): nothing counts against the reader. Keep it short.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · read whenever you like'**
+  String get widgetPaused;
+
+  /// On the home-screen widget, once every aliyah of the week is read. Keep it short.
+  ///
+  /// In en, this message translates to:
+  /// **'Parsha complete · Yasher koach!'**
+  String get widgetWeekComplete;
+
+  /// On the home-screen widget, on a weekday once the days it was given have passed without the app being opened: it then shows the last parsha it was given, and this line. (On Shabbat and Yom Tov it shows only the candles and the day's greeting, and asks nothing.)
+  ///
+  /// In en, this message translates to:
+  /// **'Open the app to bring this up to date'**
+  String get widgetStale;
 
   /// On Today, in place of shabbatInDays in the week of Vezot HaBerachah, which is read on Simchat Torah: the days left until then.
   ///
