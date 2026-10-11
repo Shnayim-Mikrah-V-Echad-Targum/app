@@ -38,12 +38,13 @@ enum ParshaStanding {
 /// The standing of each of the 54 parshiyot in [cycle] (index 0 is
 /// Bereshit), from how each of its weeks ended in [weeks] (the last one
 /// wins), the parshiyot finished at any time in the cycle ([done], as
-/// `parshiyotDoneInCycle` gives them), and the [current] portion.
+/// `parshiyotDoneInCycle` gives them), and the [current] portion: null for a
+/// year gone by, in which nothing is in progress or still to come.
 List<ParshaStanding> parshaStandings({
   required Iterable<WeekEvaluation> weeks,
   required int cycle,
   required Set<int> done,
-  required PortionId current,
+  required PortionId? current,
 }) {
   final status = <int, WeekStatus>{};
   for (final e in weeks) {
@@ -59,11 +60,12 @@ List<ParshaStanding> parshaStandings({
         WeekStatus.late => ParshaStanding.late,
         WeekStatus.restored => ParshaStanding.restored,
         // This week's portion, finished already, is finished on time.
-        _ when current.parshiyot.contains(n) => done.contains(n) ? ParshaStanding.onTime : ParshaStanding.inProgress,
+        _ when current != null && current.parshiyot.contains(n) =>
+          done.contains(n) ? ParshaStanding.onTime : ParshaStanding.inProgress,
         final s when done.contains(n) || s == WeekStatus.madeUp => ParshaStanding.madeUp,
         WeekStatus.missed => ParshaStanding.missed,
         WeekStatus.overdue => ParshaStanding.overdue,
-        _ when n > current.number => ParshaStanding.upcoming,
+        _ when current != null && n > current.number => ParshaStanding.upcoming,
         _ => ParshaStanding.untracked,
       },
   ];

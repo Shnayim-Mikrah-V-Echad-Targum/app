@@ -296,7 +296,8 @@ void main() {
       final router = await _pump(tester);
       router.go('/community/account');
       await tester.pumpAndSettle();
-      final privacy = find.widgetWithText(TextButton, 'Privacy');
+      // The link in the sentence under the sign-in button.
+      final privacy = find.text('Privacy');
       await tester.ensureVisible(privacy);
       await tester.pumpAndSettle();
       await tester.tap(privacy);
@@ -583,7 +584,7 @@ void main() {
       await tester.tap(find.text('Mark this aliyah as read'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Haftarah'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Read the haftarah'));
       await _loadTexts(tester);
       expect(find.byType(HaftarahScreen), findsOneWidget);
       expect(selectedTab(tester), 0);
@@ -622,7 +623,7 @@ void main() {
       await tester.tap(find.text('Mark this aliyah as read'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Haftarah'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Read the haftarah'));
       await _loadTexts(tester);
       expect(find.byType(HaftarahScreen), findsOneWidget);
       expect(router.state.uri.toString(), '/progress/haftarah/5787:1');
@@ -662,6 +663,7 @@ void main() {
   testWidgets('the guidelines open in front of the dialog that asks to accept them', (tester) async {
     final forums = DemoForumRepository();
     await forums.verifyCode('reader@example.org', '123456');
+    await forums.updateDisplayName('Reader');
     final router = await _pump(tester, forums: forums);
     router.go('/community/thread/1');
     await tester.pumpAndSettle();

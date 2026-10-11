@@ -94,8 +94,10 @@ New and changed files:
 - `lib/ui/widgets/ledger.dart`: `LedgerCard`.
 - `lib/ui/widgets/year_bar.dart`: `YearBar`.
 - `lib/ui/widgets/progress_widgets.dart`: ParshaRings, the new `RingLegend`, WeekStrip and the candles, per §6.
+- `lib/ui/theme/layout.dart`: the layout tokens of §5 (`Space`, `Breakpoints`, `Gutter`, `ContentWidth`, `Rhythm`).
 - `lib/ui/widgets/common.dart`:
-  - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5;
+  - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5, plus the safe area below, so a page over the whole screen clears the gesture bar;
+  - `PageScaffold`, the scaffold of every routed page, and `DocumentTitle` (§5);
   - `SectionHeader` is restyled as an eyebrow (§6.4);
   - `NoticeBanner` per §6.20;
   - `EmptyState` per §6.22.
@@ -423,12 +425,12 @@ Rules:
 
 **Targum**
 - 0.90× (was 0.92×), `onSurfaceVariant`, height `max(1.6, lineHeight - 0.1)`.
-- In full-text mode, add a 2 px `goldLeaf` start-edge rule (`BorderDirectional(start:)`) with 12 px start padding. Remove the rule in high contrast.
+- In full-text mode, add a 2 px `goldLeaf` rule at the scripture's start, the right in either language of the app, with 12 px padding. Remove the rule in high contrast. The guided reader's block for a verse read a third time among the Targum is ruled at the right too (3 px `outline`), where the Hebrew begins.
 
 **Verse numbers**
 - FRL 600 at 0.55× of the verse size, colour `secondary` (`dimInk` when dimmed).
-- Follow the number with U+00A0 NO-BREAK SPACE instead of a plain space, so a number is never stranded at the end of a line.
-- Guided mode only: the number hangs in a start gutter 1.4 × verse size wide. Use `Row(textDirection: rtl, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic)` with the number Text, then `Expanded` verse Text.
+- Follow the number with U+00A0 NO-BREAK SPACE instead of a plain space, so a number is never stranded at the end of a line. The space is the verse's own and carries the reader's word spacing as letter spacing (the text engine widens only spaces a line may break at), so the number stands a word's space from its word however wide the spacing.
+- Guided mode only: the number hangs in a start gutter 1.4 × verse size wide. Use `Row(textDirection: rtl, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic)` with the number Text, then `Expanded` verse Text. What goes with the verse (its translation, Rashi, notes and layer labels) is set in by the same gutter at the right (`HangingIndent`), so every block shares the edge the text starts at and the number alone stands in the margin. Where the gutter would take more than a quarter of the line, or numbers are hidden, there is none.
 - Full-text mode keeps the number inline.
 
 **Chapter heading**
@@ -440,20 +442,24 @@ Rules:
 **Petuchah / setumah**
 - `SectionBreakMark` (§7.3) replaces the grey letter in reader_screen.dart full-text rendering.
 - Vertical space: petuchah 20 px above and below; setumah 10 px.
+- The full text's last verse takes none: the aliyah's SeferDivider follows it and marks the end, and two ornaments on one break would crowd it.
+- The guided reader marks them under the steps that read the Hebrew, never the Targum's or Rashi's.
 
 **Other text**
 - Ketiv and alternate readings: 0.62×, `onSurfaceVariant`, as now (dimmed: `dimInk`).
+- Large letters (the bet of Bereshit): 1.45× the verse, with a line height that sets their top no higher above the baseline than the verse's own line box, so they stand above the line, as in print, and move no line apart.
 - Rashi: Noto Serif Hebrew 0.78×, height 1.7, `onSurfaceVariant`.
-  - New Display switch "Rashi script" (off by default) switches to NotoRashiHebrew 400 at 0.80×, height 1.75.
+  - New Display switch "Rashi script" (off by default) switches to NotoRashiHebrew 400 at 0.80×, height 1.75. The switch shows only while Rashi is shown (beside the Torah or as the second reading), and the script loads only then.
   - Dibbur hamatchil: FRL 700 in `onSurface` (never primary).
 - English translation (study aid): EBG 500, 20sp × readingScale, height 1.5, `onSurfaceVariant`.
   - Verse number EBG 600 in `secondary` with lining figures.
   - If `uiFont` is not standard or system, use uiFont at 17/26.
 
 **Focus mode**
-- The current verse gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`. No radius: Flutter forbids a radius with non-uniform borders.
-- Padding: start 12, vertical 4.
-- All other verses, including their numbers and ketiv, use `dimInk`. Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
+- The current verse's whole block (Mikra, Targum, translation and Rashi, one tap target, `VerseGroup`) gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`, faded in over `Motion.short`. No radius: Flutter forbids a radius with non-uniform borders.
+- Padding, on every block whether highlighted or not, so that focus mode never moves a line: start 12 (the rule's 3 included), end 12, so the highlight frames a line that runs the full measure (the translation, or justified text), and vertical 4.
+- Start here, as for the Targum's rule, is the scripture's start: the right, in either language of the app.
+- All other verses, including their numbers, ketiv, Rashi and Rashi's eyebrow, use `dimInk`, and the Targum's gold rule recedes to the hairline colour, leaving the gold to the verse being read. Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
 
 **The verse opened at** (`TargetVerseMark`, lib/features/reader/verse_anchor.dart)
 - A verse the reader opens at, from a search result, Go to verse (§6.26) or a link (`/read/{week}/{aliyah}?verse=28:12`), opens the full text and is scrolled to a fifth of the way down the text's viewport (`Scrollable.ensureVisible`, alignment 0.2, 300 ms on `Motion.standard`, at once under Reduce Motion).
@@ -483,7 +489,8 @@ Rules:
   - sheets 20 (top only);
   - the nav indicator is the only stadium shape.
 - **Elevation:** 0 everywhere. Separation comes from paper on surface plus a 1 px hairline. FAB and menus are 2, with `shadowColor` = shadow token.
-- **App bar title alignment on wide screens:** `PageScaffold` computes `titleSpacing = max(gutter, (MediaQuery.sizeOf(context).width - railWidth - 1 - contentMaxWidth) / 2 + gutter)` and the same value for `actionsPadding` at the end. railWidth is 0, 80, or 256 when extended. This puts the title edge on the content edge, fixing D11.
+- **App bar title alignment on wide screens:** `PageScaffold` reads the pane's width with a `LayoutBuilder` (the window less the rail and its hairline) and computes `inset = max(gutter, (paneWidth - contentMaxWidth) / 2 + gutter)`, where the column's content starts. The title is padded `inset` at its start, or `max(gutter, inset - 56)` after a back or home button, and a gutter at its end (as `titleSpacing` the inset would be kept after it too, leaving a narrow column's title no room on a wide screen), and `actionsPadding` ends `inset - gutter` from the pane's end, at the column's edge, as a phone's end at the screen's. This puts the title edge on the content edge, fixing D11. The title is a level-1 heading. Pages of list tiles pad the column `gutter - 16` at the sides (`PageBody.tilePadding`), so the tiles' own 16 brings their text to the same edge.
+- **Document title:** on the web, the page on show names the browser's tab, its history and bookmarks: "Settings · Shnayim Mikra" (`DocumentTitle`, which `PageScaffold` applies; the reader, Today and Welcome apply it themselves). A page names it again whenever it comes back into view, as the page over it closes or its tab is chosen again. Its colour is the app's (`MaterialApp.color`, the surface), since the web takes it for the theme-color (§3.6). Elsewhere the platform keeps the app's name.
 
 ## 6. Components
 
@@ -517,7 +524,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 - Height 64; background surface; `surfaceTintColor` transparent; `scrolledUnderElevation: 1` with `shadowColor: outlineVariant`, giving a hairline when scrolled.
 - High contrast: no elevation and a 2 px bottom outline.
-- Title: titleLarge (serif), onSurface, start-aligned.
+- Title: titleLarge (serif), onSurface, start-aligned. Where it has no room beside the actions (a wider interface font, or enlarged text, beside the Demo tag), it is set a little smaller, to 75% at most, and cut short only past that.
 - Icons: 24, onSurfaceVariant, with 48 tap targets.
 - Two-line variant (reader, haftarah): an Eyebrow over titleLarge, `toolbarHeight: 64`.
 
@@ -536,6 +543,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max. Once the system text is enlarged, the subtitle is never cut short (WCAG 1.4.4).
 - Trailing: an optional value in bodyMedium onSurfaceVariant, then `Icons.chevron_right` 20 in outline (mirrors in RTL automatically).
   - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it. With a subtitle under them, the icon and chevron line up with the title's line too.
+  - A trailing button with a label (a TextButton, such as "About streaks" or "Sign in") goes with the title the same way: at the end of its line, or under it when the two don't fit, so that no word of the title ever breaks.
 - Tap via SeferInkWell.
 - Semantics: the row is one item, its text and its tap. A trailing control (a menu or text button) keeps an item of its own beside it, so both actions can be reached; a switch or checkbox that the row's tap also toggles merges into the row (`mergeTrailing`).
 
@@ -545,8 +553,10 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 ### 6.4 SectionHeader (common.dart)
 
-- Restyle as an Eyebrow in `secondary` (was titleMedium in blue w600).
+- Restyle as an Eyebrow in `secondary` (was titleMedium in blue w600), 28 above and 8 below.
 - Keep the `header`/`headingLevel` semantics and the trailing slot.
+- A header with digits in it ("2 of 7 aliyot") is `SectionHeader.plain`, titleSmall in onSurfaceVariant: eyebrows never hold digits (§4.5).
+- An eyebrow set in capitals (an accessibility font, §4.5) is read as written.
 
 ### 6.5 Buttons (all radius 10; never a stadium)
 
@@ -581,7 +591,8 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Outlined, radius 10; enabled 1 px outline (2 px in high contrast); focused 2 px primary; error 2 px error.
 - High contrast: focused (and focused error) borders are 3 px. The enabled border is already 2 px there, and primary is only about 1.5:1 from outline, so the width has to change as well as the colour.
 - Label bodyLarge onSurfaceVariant; helper and counter bodySmall with tabular figures.
-- Code entry (account): six 48×56 boxes, radius 10, titleLarge NS w500 with tabular figures; auto-advance; paste fills all six.
+- Code entry (account): six 48×56 boxes (narrower on a phone too small for them, taller with enlarged text), radius 10, titleLarge's size in NS w500 with tabular figures; auto-advance; paste fills all six. Borders as a field's: 1 px outline, 2 px primary on the box the next digit goes in while focused, 2 px error with an error (3 px focused in high contrast).
+- Counters (`quietCounter`): hidden until 80% of the limit, then in the locale's number format.
 
 ### 6.8 Switch, slider, segmented control
 
@@ -669,7 +680,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 **Layout**
 - Fixed grid: 3 columns under 600, 4 at 600 and up, 6 at 1200 and up; gap 6.
-- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha'alotcha on a 360 dp phone or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
+- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha'alotcha on a 360 or 412 dp phone, or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, measured at the size it is set (letter spacing doesn't shrink with the text), and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
 - Build each row as `IntrinsicHeight(Row([Expanded(tile) …]))` so tiles grow with text scale. No GridView aspect ratio.
 
 **Tile**
@@ -709,8 +720,9 @@ A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled 
 ### 6.16 AliyahRibbon (replaces _AliyahSelector, reader_screen.dart:517-549; fixes D5)
 
 **Layout**
-- Height 76, with a 1 px hairline below. Horizontal padding 8.
-- `LayoutBuilder`: if `maxWidth >= 7 × 56`, use a Row of 7 Expanded tabs. Otherwise use a horizontal ListView with tabs 64 wide that auto-scrolls the selected tab into view (`Scrollable.ensureVisible`, duration `Motion.medium`).
+- At least 76 high, growing with the text, with a 1 px hairline below. Horizontal padding 8.
+- `LayoutBuilder`: if a seventh of the width is at least 56 and holds the widest name in bold (labelSmall without tracking, as the navigation bar's labels), use a Row of 7 Expanded tabs. Otherwise (a narrow phone, or large text) the tabs scroll, each 64 wide or as wide as the widest name needs, and the selected tab is scrolled into view (`Scrollable.ensureVisible`, duration `Motion.medium`). No name is ever cut.
+- Hidden in the full text while focus mode is on; the overflow menu still switches modes and marks the aliyah read.
 
 **Each tab** (SeferInkWell, min 56 wide), top to bottom:
 - the Hebrew ordinal א–ז in `ordinal` style (selected onSurface, else onSurfaceVariant);
@@ -735,10 +747,10 @@ Row of three Expanded segments with an 8 gap. Each segment is a Column:
   - Upcoming: ringTrack.
 
 Below the track:
-- 8 gap, then ONE instruction line in bodyLarge onSurface: the existing step title ("Read the Hebrew", "Read the Hebrew again", "Read the Targum"), with `liveRegion: true`.
+- 8 gap, then ONE instruction line in bodyLarge onSurface: the existing step title ("Read the Hebrew", "Read the Hebrew again", "Read the Targum"). Screen readers hear it with the step's count ("Read the Hebrew again, Reading 2 of 3"), as a live region where the platform takes no announcements; they skip the track, which shows the same.
 - 12 gap, then the chapter heading (§4.7) when a chapter starts, then the verse.
 
-Nothing else sits above the first verse.
+Nothing else sits above the first verse. A label stays on one line, set a little smaller should large text need it. The third segment is named for what is read in it: the Targum or Rashi, or "Mikra" for a verse read a third time in Hebrew. Ending with the last verse once more comes after all three.
 
 ### 6.18 Reader bottom bar (replaces _BottomBar, reader_screen.dart:762-824)
 
@@ -754,8 +766,9 @@ Nothing else sits above the first verse.
   - **Centre:** `Expanded(Center(Text('Verse 1 of 21', labelMedium, onSurfaceVariant, tabular figures)))`.
   - **Next:** `FilledButton` min 128×52, label "Next" with a trailing `Icons.chevron_right` (mirrored).
   - On the final step of the aliyah, the label becomes `finishStep` ("Finish") with a leading check.
+- Below 400 wide, or when large text sets 14sp past 24, "Verse 1 of 21" goes above Back and Next, which share the width.
 
-Keep the keyboard shortcuts.
+It sits in the scaffold's bottom slot, so status messages rise above it, and runs under the gesture bar in surface, so no strip of another colour shows beneath it. Keep the keyboard shortcuts.
 
 ### 6.19 Sheets, dialogs, snackbars, tooltips
 
@@ -789,25 +802,31 @@ Keep the keyboard shortcuts.
 - **Action below** (`actionBelow`): for a text longer than a line or two, which a trailing button would squeeze. The icon and text align to the top, and the TextButton sits under the text at the end, with 4 bottom padding.
 - **Action ink:** the TextButton is `primary` where primary on secondaryContainer meets AA (4.5:1); otherwise, as in the high-contrast themes, it is `onSecondaryContainer`, with a 3 px focus ring in the same colour.
 
-**Demo notice** (community_ui.dart:139-155)
+**Demo notice** (`DemoBanner` and `DemoTag`, community_ui.dart)
 - A NoticeBanner with `info_outline` (replaces the pink `tertiaryContainer` strip and the flask icon).
 - Shown on the Community home only, dismissible for the session.
-- Forum, Thread and Compose instead show a small "Demo" tag in the app bar actions:
+- Forum, Thread, Compose and Account instead show a small "Demo" tag in the app bar actions:
   - labelSmall, secondaryContainer fill, radius 6, padding 6/2;
-  - tapping it opens a sheet with the full explanation.
+  - tapping it opens a sheet with the full explanation (how to sign in to try it only to a reader signed out);
+  - its tooltip, "About the demo", says what it does, to screen readers too ("Demo, About the demo, button"), so it isn't taken for a switch to a demo.
 
 ### 6.21 Forum posts as "letters" (thread_screen.dart)
 
-- No card per post. Posts are separated by full-width 1 px hairlines, with 16 vertical padding.
+- No card per post. Posts are separated by full-width 1 px hairlines (2 px outline in high contrast), the first under the thread's title. About 20 of air above the initial and below the last line: 12 and 6 of padding, plus what the header's and footer's 48 dp rows leave around their text.
 - **Header row:**
-  - 32 px initial disc in secondaryContainer, initial in EBG 600 16 onSecondaryContainer;
+  - 32 px initial disc in secondaryContainer, initial in EBG 600 16 onSecondaryContainer (`InitialDisc`, excluded from semantics; a person when the name is empty), centred on the name's first line however large the text;
   - 12 gap, then the author in titleSmall in its OWN Text with `textDirection: autoDirection(name)`;
-  - then " · " and the relative time in bodySmall onSurfaceVariant in a separate Text;
-  - then the overflow menu.
-  - Separate widgets fix the mixed-direction header in he_thread.png.
-- **Body:** bodyLarge 16/26 (Hebrew 16/26 NSH), `autoDirection`, start-inset 44 to align with the name.
-- **Footer:** TextButton "Todah" with `volunteer_activism_outlined` 18 (filled `volunteer_activism` when given) and the count with tabular figures. Replaces favorite/favorite_border at thread_screen.dart:400.
-- The opening post gets a 3 px primary start rule.
+  - on the posts of the member who began the thread, a tag in labelSmall on secondaryContainer, radius 6 (outlined in high contrast): "Asked" in a question, "Author" in any other discussion, none in a weekly thread;
+  - then " · " and the relative time in bodySmall onSurfaceVariant in a separate Text, with the full date in a tooltip; when the three don't fit on one line (enlarged text, a long name) the time goes under the name, without the separator;
+  - then the overflow menu, its 48 dp box reaching 12 into the end gutter so that its glyph lines up with the column's edge, as the app bar's do with the screen's. The post itself reaches into the gutter by as much (`PostCard.menuBleed`), so the whole box takes a tap; the rest of the post keeps to the column. Reply is not in it.
+  - Separate widgets fix the mixed-direction header in he_thread.png. Screen readers hear one label: name, tag, full date and "edited".
+- **Body:** bodyLarge 16/26 in both UIs (NSH in Hebrew), `autoDirection`, tagged with its language, start-inset 44 to align with the name. A quoted post sits above it on surfaceContainerLow with a 2 px gold-ink (`secondary`) start rule, in bodySmall onSurfaceVariant.
+- **Footer**, its icons in line with the text:
+  - TextButton "Todah" with `volunteer_activism_outlined` 18 (filled `volunteer_activism` when given), then the count in tabular figures once there is one. A toggle for screen readers, named for what a tap does and how many have thanked, in words that hold the one it shows ("Say todah to Rivka. 4 thanks"), so that voice control finds it by them.
+  - The footer's buttons keep their 12 start padding at any text size (Material's would shrink), so their icons stay in line with the text.
+  - 8 gap, then TextButton "Reply" with `Icons.reply` 18 ("Reply to Rivka" for screen readers), on every post the reader can answer; none in a locked thread, except for moderators.
+  - Under your own post, no Todah button: the icon and count in onSurfaceVariant, once it has been thanked; until then Reply comes first.
+- The opening post gets a 3 px primary start rule, from the top of the initial to the foot of the footer's label, hung in the start gutter 12 before the column, so that its text keeps the 44 px column every letter shares. It is the first post shown only if its member began the thread, as it began: a weekly thread opens with no post of its own, so none takes the rule; nor does a long thread's first post shown until its earliest posts are loaded, nor a reply shown first because the opening post is hidden (deleted, or its member blocked).
 
 ### 6.22 Empty states
 
@@ -816,16 +835,22 @@ Centred, max width 320, 40 top padding:
 2. 12 gap, then one marginalia sentence;
 3. 16 gap, then a Tonal button.
 
-### 6.23 Finished panel (reader_screen.dart:826-884; replaces the celebration icon)
+### 6.23 Finished panel (reader_screen.dart `_FinishedPanel`; replaces the celebration icon)
 
 Centred, max width 480:
 1. SeferDivider at 200 wide (animated, §8).
-2. 16 gap, then the title in headlineMedium: "Revi'i is complete" (existing string).
-3. 8 gap, then a marginalia line, e.g. "Chamishi is four verses."
-4. 24 gap, then actions: Filled "Next aliyah · Chamishi" and Text "Done".
-5. When the parsha is complete: the title becomes `weekComplete` and a Tonal "Read the haftarah" (if enabled) is added.
+2. 16 gap, then the title in headlineMedium (displaySmall from 600 dp): `aliyahDoneTitle`, "Revi'i is complete". The warmer `aliyahComplete` ("Yasher koach! Revi'i is complete.") is what is spoken, by the announcement or, where the platform takes none, the title's live region.
+3. 8 gap, then a marginalia line about the aliyah to continue with (the first after this one not yet read, then the first before it): `nextAliyahLength`, "Chamishi is 31 verses."
+4. 24 gap, then actions: Filled "Next aliyah · Chamishi" (52 high, a trailing chevron) and Text "Done". The first button takes the focus.
+5. Once everything planned for today and before is read, with the parsha unfinished, a marginalia line comes first: `todayReadingDone`, "That's today's reading. See you tomorrow." (or "See you on Sunday." when the next day with reading is later; a day whose aliyot were read ahead has none left), or on the plan's last day `erevShabbatDone`, "That's this week's reading. Shabbat shalom!" ("The rest is for Shabbat morning." when the plan leaves aliyot for it, and "Chag sameach!" when Yom Tov begins the next day). Done is then the Filled button, and continuing a Text "Keep going: Chamishi". While anything planned is still unread, the panel stays as in 4.
+6. When the parsha is complete:
+   - the title becomes `parshaDoneTitle`, "Parshat Bereshit is complete" (`parshaComplete` is spoken);
+   - a status line, bodyMedium onSurfaceVariant after the status's icon in its colour (§6.14), says how the week stands, from its WeekEvaluation: on time, "On time · 3-week parsha streak · +1 grace day" (the grace day only when finishing earned one; the streak and the grace day are left out while streak numbers are hidden, and when the finish completed nothing new, as stepping again through a parsha read weeks ago, which shows the plain status); late, "After Shabbat — and it still counts. Your streak continues."; doubled up, "Finished together with the next parsha — your streak continues.";
+   - a Tonal "Read the haftarah" (if enabled and not read) over a Text "Done", or else a Filled "Done".
 
-When a sefer is complete: a one-time full-screen panel. SeferDivider, then "חֲזַק חֲזַק וְנִתְחַזֵּק" in hebrewDisplay 40/56 primary, then SeferDivider, then a Filled "Continue". It never auto-dismisses.
+**Sefer complete** (`lib/features/reader/sefer_complete_screen.dart`, `/celebrate/sefer:5787:0`): a one-time full-screen page, centred, max width 480. SeferDivider, then "חֲזַק חֲזַק וְנִתְחַזֵּק" in hebrewDisplay 40/56 primary, untranslated (a level-1 heading, read from its letters), then SeferDivider, then bodyMedium onSurfaceVariant `seferDoneBody`, "Genesis complete — 1,533 verses, twice, with Targum.", then a Filled "Continue". It fades in over 400 ms (at once under Reduce Motion) and never auto-dismisses.
+- `celebrationListenerProvider` (`lib/app/celebrations.dart`), which the app watches, opens it whenever the reading log changes and a book of this cycle or the last is newly finished, however it was finished: in the reader, from Today, on the week's page or by the check-in.
+- The books celebrated are kept on the device alone (`celebrated.v1`), never synced or backed up, so each is celebrated once on each device that sees it finished there. Books already finished when the app starts, and a book that arrives finished from elsewhere (a sync with another device, or a backup restored: `ProgressController.logChangeArrived`), are recorded without a celebration, which would otherwise be pushed over whatever the reader is doing; so is a book of the reader's own reading finished more than a week before (logged late with an earlier day), or finished before onboarding is complete.
 
 ### 6.24 Theme swatches (Display settings)
 
@@ -1055,6 +1080,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
   - Eyebrow: the parsha name;
   - titleLarge: "Revi'i · רביעי" in the English UI, "רביעי" in the Hebrew UI.
   - Actions unchanged (Listen, Aa, more).
+  - On a wide screen the title starts, and the actions end, where the text does. Screen readers hear the title as the page names itself ("Bereshit · Revi'i").
 - Then the AliyahRibbon (§6.16), then a 16 gap, then the PassTrack (§6.17), then the verse.
 - Text column: max per LineWidth; side padding 20; top 16.
 - Typesetting per §4.7: gold hanging verse number, centred chapter head, section-break marks.
@@ -1072,31 +1098,39 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 
 ### Haftarah (haftarah_screen.dart)
 
-- The same paper layout and verse styling.
-- Header: Eyebrow "Haftarah", headlineSmall reference "I Samuel 20:18–42", and the special-haftarah line in marginalia.
-- Book labels become chapter heads.
-- At the end: a SeferDivider and a Tonal "Mark the haftarah as read".
+- The same paper layout and verse styling as the full text: the reader's measure between the page's gutters, verses 20 apart.
+- Header, under an app bar with no title of its own: Eyebrow "Haftarah · Bereshit", then the reference in headlineSmall, "I Samuel 20:18–42" (the page's level-1 heading), then the special haftarah, "Shabbat Machar Chodesh", in marginalia.
+- A chapter's head (§4.7) where the chapter changes from one verse to the next. A haftarah drawn from more than one book heads each book's verses with its name, set the same way ("הושע" over "Hosea"); one drawn from a single book doesn't name it again.
+- For Chabad, in a week whose Chabad haftarah isn't listed, a NoticeBanner under the header says the Ashkenazi reading is shown (`chabadFallbackNote`).
+- In a week a special haftarah displaces the portion's own, the regular one follows the verses, before the divider: an ExpansionTile under a hairline, titled `regularHaftarahOf` in titleMedium (a level-2 heading) over its reference, folded but open for Chabad, whose custom is to read both. Open, its verses are set as above, their chapters' heads at level 3.
+- At the end: a SeferDivider and a centred Tonal "Mark the haftarah as read", at most 360 wide. Once read, a check_circle in primary and `haftarahReadOn`, "Read on Thursday, 8 October", over a Text "Mark as not read", which clears it and offers Undo in its status message. The focus moves from one button to the one that takes its place.
 
 ### Progress (progress_screen.dart; phonetall_progress, dark_progress, he_progress, desktop_progress)
 
 In order:
 1. **LedgerCard** with "Longest" lines.
-2. **Grace PaperRow:** `shield_outlined` in grace, `graceAvailable(n)` = "1 grace day available", trailing TextButton `aboutStreaks`. That opens a sheet holding the two explanatory paragraphs, which leave the page.
-3. **This year:**
+2. **Grace PaperRow:** `shield_outlined` in grace, `graceAvailable(n)` = "1 grace day available", trailing TextButton `aboutStreaks` (under the title at large text, §6.3). That opens a sheet holding the two explanatory paragraphs, which leave the page; the streak's names the reader's window after Shabbat (`streakExplainer`, by the setting: "by Tuesday night", "by the end of Wednesday", or no clause).
+3. **This year**, a card:
    - Eyebrow `thisYear`;
+   - when the log holds more than one cycle, ChoiceChips (§6.6) of their years ("5786", "תשפ״ו" in the Hebrew UI) choose the year this card and the Torah map show; for an earlier one the eyebrow reads `earlierYear`, the year bar names its year to screen readers, the map's heading names it too (`torahMapOfYear`, "Torah map · 5786", in plain type as it holds digits; "מפת התורה · תשפ״ו" as an eyebrow in the Hebrew UI), and nothing in the map is current or still to come. The chips sit here rather than over the map, so the first thing they change is under them;
    - headlineSmall `parshiyotOfYear(0, 54)`;
-   - bodySmall "5787 · 50 verses read twice with Targum";
+   - bodySmall "5787 · 50 verses read twice with Targum", the verses of the year shown;
    - YearBar.
 4. **This week's plan:** WeekStrip card.
 5. **Torah map** (§6.14), keeping the info button.
-6. **Make-up list:** unchanged content, as a PaperGroup.
-7. **Recent weeks:** a PaperGroup. Rows show the name in titleMedium, a status icon plus label in bodySmall, and the date end-aligned in bodySmall with tabular figures.
-8. **"Life happens":** a PaperRow with a pause icon that opens the existing pause flow. Its ChoiceChips follow §6.6.
+6. **Make-up list:** unchanged content, as a PaperGroup, for this year's weeks only.
+7. **Recent weeks:** a PaperGroup. Rows show the name in titleMedium, a status icon plus label in bodySmall, and the date end-aligned in bodySmall with tabular figures (with the year for a week of another year), then a chevron.
+   - A week before the join date with nothing read is left out (the Vezot HaBerakhah of a reader who joined on Simchat Torah).
+   - Ten rows, then a centred TextButton `showAllWeeks` ("Show all (45)") that shows the rest in place, passing the keyboard's focus to the first week it adds.
+8. **"Life happens":** a PaperRow with a pause icon and `pauseRowBody` that opens the existing pause flow. Its ChoiceChips follow §6.6. While a pause covers today, the row says `pausedBanner` under its title, over a Tonal `endPause` and a Text `extendPause`, which asks how many days more (1, 3, 7 or 14, as long as the pause then ends within 30 days of today) and shows the new end as the choice changes (`extendPauseUntil`, "The pause will end on …", until it is confirmed). The keyboard's focus moves on to what takes a button's place: the row once End pause ends the pause, End pause once an extension uses up the room for another.
 9. **Record** (replaces Milestones, progress_screen.dart:337-376):
    - GroupHeader `recordTitle`;
-   - achieved items only, newest first;
-   - each row: an 8 px lozenge, the title in bodyLarge, the date in bodySmall;
+   - achieved items only, newest first (on the same day, a siyum before the book that completed it), dated by the day each was first reached and never stored (DESIGN.md §4);
+   - each row: an 8 px lozenge where a row's icon sits, the title in bodyLarge, the date in bodySmall; hairlines inset 54;
    - a completed sefer adds "חֲזַק חֲזַק וְנִתְחַזֵּק" in FRL 500 17 in `secondary` under its row;
+   - a reader who joined partway through a year has `milestoneSiyumFrom`, "Siyum from Parshat Vayera";
+   - "Welcome back" (`milestoneComeback`) follows a week missed, made up or paused, never the week the reader joined after it began;
+   - with streak numbers hidden, the streak lengths are left out;
    - no locked items, trophies or counts of what remains.
 
 ### Community (community_screen.dart, forum_screen.dart, thread_screen.dart, compose_screen.dart, account_screen.dart)
@@ -1109,25 +1143,43 @@ In order:
 
 **Forum**
 - The description in bodyMedium onSurfaceVariant.
-- Thread rows in one PaperGroup: title titleMedium with `autoDirection`; bodySmall "Rivka · 3 hours ago · 4 replies".
-- Empty state per §6.22 with `emptyForum`.
+- Parshat HaShavua first shows this week's card, as on Home, so that forum is never empty.
+- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines), then bodySmall "Rivka · 3 hours ago · 4 replies" with the name isolated. A pinned or locked thread has a 16 px icon (`push_pin_outlined`, `lock_outline`) and a labelSmall tag ("Pinned", "Locked") above its title, so that the row says so wherever it is met, not only under its group's heading; screen readers hear the tags first. No leading icon or chevron.
+- The rows are built only as they scroll into view, each its share of its group's paper (`PaperGroupRow`), as a forum paged through may hold hundreds. Each but the last lays its paper a little past its foot, and each but the first leaves as much of its top bare, so that the row below, painted after it, never covers the foot of its focus ring.
+- Empty state per §6.22 with `emptyForum`, its action New discussion; in a locked forum, to a member who may not begin one there, `emptyLockedForum` ("No discussions here yet.") with no action.
 - FAB: extended "New discussion", primaryContainer / onPrimaryContainer, radius 12, elevation 2.
 
 **Thread**
-- App bar title gets `textDirection: autoDirection(t.title)` plus `overflow: ellipsis` (fixes D13 at thread_screen.dart:102).
-- headlineSmall title with `autoDirection` (existing), then "2 posts" in bodySmall.
-- Posts as letters (§6.21).
-- Composer docked on surface with a top hairline: a radius-10 outlined field (max 5 lines) and a Filled "Reply" 48 high, disabled until there is text.
+- App bar title: the forum's name (Community where it can't be found), which is no heading and doesn't name the page to a screen reader as it opens. The thread's title is the page's one heading of level 1, in its own language, which names the page (`namesRoute`) and the browser's tab; it is never cut short (fixes D13).
+- headlineSmall title with `autoDirection`, tagged with its language and starting at the page's start edge as its forum lists it, then "2 posts" in bodySmall onSurfaceVariant.
+- Posts as letters (§6.21). A thread with none yet (a week's discussion before its first post) shows an empty state (§6.22) with no button, the reply box beneath being its action: `noPostsYet`, "No posts yet — share a thought on Parshat Bereshit."
+- Composer docked on surface with a top hairline across the pane, apart from the navigation bar's surfaceContainer below it; its content in the 720 column, within the gutters, so it lines up with the posts:
+  - a radius-10 outlined field (max 5 lines) labelled "Write a reply", in the direction of what is typed, or the interface's while empty;
+  - a Filled "Reply" 48 high, level with a one-line field and by the last line as it grows, disabled until there is a reply (2 characters); while it is sent, a 20 px spinner read as "Sending…";
+  - above them, while answering a post, a strip on surfaceContainerLow with a 3 px primary start rule: the reply icon, "Replying to Rivka" (the name isolated) and a close button.
+- Editing a post: a dialog whose field is labelled "Your message", up to 10,000 characters, and takes the focus. Save waits for a change, of 2 characters at least, as Reply does.
 
 **Compose**
-- App bar: leading close, trailing Filled "Post" (height 40, radius 10, disabled per M3).
-- Fields in a paper group.
-- The guidelines line as bodySmall with an inline TextButton.
+- App bar: leading close, trailing Filled "Post" (height 40, radius 10, its end on the column's edge).
+- Post is enabled whenever a forum is chosen and nothing is being sent; while it is sent, a 20 px spinner read as "Sending…". Pressed too soon, it shows under each field what it needs ("The title needs at least 5 characters."), gives the first such field the focus and says the error where the platform takes announcements (elsewhere the error's live region says it). Each error then follows the text and goes once the field is long enough. Ctrl+Enter (⌘Enter) posts too.
+- An error from the server about a field (`fieldFor` in community_ui.dart: the title's length; the message's length, links, wording or a duplicate) is shown the same way, and stays until that field's own text changes (not the other field's, nor the window). Only what is about no one field, a rate limit or a failed connection, is a status message.
+- The forum: "Forum" in titleSmall onSurfaceVariant over a row of ChoiceChips with the forums' icons (`CommunityScreen.iconFor`), which scrolls sideways out to the column's edges, the one asked for brought into view. From 600 dp, where a mouse can't drag the row, they wrap.
+- The fields in a paper group (a Card, padding 20), outlined, with helpers "At least 5 characters" and "At least 2 characters". Counters stay hidden until 80% of the limit, then "8,000/10,000" in the locale's number format.
+- Signed in with a name, the paper begins with "Posting as Rivka" after a 24 px initial disc.
+- Until the guidelines are accepted, one line in bodySmall onSurfaceVariant, start-aligned, ending with the link to them (`LinkedText`).
+- Then a full-width Filled "Post", and Discard draft (Text, centred) once anything is written.
+
+**Inline links** (`LinkedText`, community_ui.dart): a sentence in bodySmall onSurfaceVariant ending with a link in primary w500, always underlined. The link is a WidgetSpan holding a SeferInkWell, so it takes the keyboard focus with the ring (4 px of room either side: the 3 px ring, drawn outside the link, and a hairline clear of the words) and Enter follows it; screen readers read it as a link after the sentence. As a link in running text it is as tall as the line (WCAG 2.5.8's inline exception).
 
 **Account**
-- Centred, max width 440. The app mark at 56, headlineSmall title, explanation in marginalia.
-- Email field, then Filled "Email me a code" (the existing label, used by tests).
-- Code boxes per §6.7.
+- Centred, max width 440 (the app bar's title too). The app bar says "Account & community" in every state.
+- Signed out: the app mark at 56, headlineSmall "Sign in", the explanation in marginalia; the email field, then Filled "Email me a code" (the existing label, used by tests); then, centred, "We use your email only to sign you in. Privacy" with the policy as its link.
+- The code: the mark and heading again, "We sent a 6-digit code to …" in marginalia (and the demo's hint), the boxes per §6.7, Filled "Sign in", then Text "Resend in 30s", which counts down to "Resend code", and "Use a different email". One field lies under the boxes, so typing moves on box by box, a pasted code fills all six (digits only), the platform can fill a code it has read, and screen readers meet one field, "6-digit code". The box the next digit goes in shows the focus. The sixth digit signs in. A wrong code is said under the boxes, which keep the focus, and what is typed next replaces it.
+- A new account starts with a machine's name ("user_1a2b3c4d"), so signing in leads to a name step: the member's initial at 56 as the name is typed, headlineSmall "Display name", the field (named by the heading, so it shows no label of its own) with the helper "Shown with your posts. 2–40 characters.", and Filled "Save name". The field takes the focus as the step appears, after the code or as the page opens on it. Opened to sign in before a post, the page goes back only once the name is saved; a post never goes out under a machine's name (`ensureSignedIn(named: true)` asks for one first).
+- Signed in: a card with the initial on a 56 px disc, the name in titleLarge (or the email until a name is chosen), the email in bodySmall, a Moderator chip, and an edit button that opens a dialog titled "Display name" with the field and Save.
+  - Cloud backup: one row, "Back up my progress", with its switch (the row toggles it, and reads as one switch to screen readers: the switch itself, beside Sync now, is no item or tab stop of its own), "Last synced …" as its subtitle and Sync now (`Icons.sync`) beside the switch while backup is on; what backing up does in bodySmall under the group; the notice to update when a newer version wrote the backup.
+  - Privacy & safety: "Blocked members (n)", with "You haven't blocked anyone." under it when there are none, and otherwise a sheet that lists them with Unblock; a moderator's reports. The count shows once it is known: while it loads, or can't, the row says "Blocked members" and still opens the sheet, which says why and offers Try again. An Unblock that fails says why under its member, in the sheet (a status message would sit behind it), and its button waits while it is sent.
+  - Account: Sign out, and Delete my account in error's ink, whose confirmation is Filled error / onError.
 
 ### Settings (settings_screen.dart and screens/)
 
@@ -1226,12 +1278,16 @@ In order:
 | restDayBody | Reading from a printed chumash today? You can log it after Shabbat. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת. |
 | restDayBodyChag | Reading from a printed chumash today? You can log it after Yom Tov. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג. |
 | aboutStreaks | About streaks | על הרצפים |
-| graceAvailable | plural: 1 grace day available / {count} grace days available | plural: יום חסד אחד זמין / {count} ימי חסד זמינים |
+| graceAvailable | plural: 1 grace day available / {count} grace days available | plural: נותר יום חסד אחד / נותרו {count} ימי חסד |
 | thisYear | This year | השנה |
 | parshiyotOfYear | {done} of {total} parshiyot | {done} מתוך {total} פרשות |
 | recordTitle | Finished so far | הושלם עד כה |
 | demoTag | Demo | הדגמה |
 | emptyForum | No discussions yet — begin the first. | עדיין אין דיונים — אפשר לפתוח את הראשון. |
+| askedTag / authorTag | Asked / Author | שאלה / פתיחת הדיון (no slashed gender forms) |
+| todahAction | Todah | תודה |
+| replyToName | Reply to {name} | תגובה ל{name} |
+| sending | Sending… | בשליחה… |
 | passTrackLabel | {n} · {name} | {n} · {name} |
 | aliyahTabLabel | {name}, aliyah {n} of 7 | {name}, עלייה {n} מתוך 7 |
 | tabRead / tabPartial / tabNotStarted | read / {done} of 3 readings done / not started | נקראה / {done} מתוך 3 קריאות / טרם התחילה |

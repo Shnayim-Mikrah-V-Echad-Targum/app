@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/focus.dart';
 import '../theme/sefer_colors.dart';
+import 'app_icon.dart';
 import 'ornaments.dart';
 
 /// Rows on one sheet of paper (docs/DESIGN_SYSTEM.md §6.3): a card with no
@@ -9,12 +10,14 @@ import 'ornaments.dart';
 /// cards and list tiles.
 ///
 /// A hairline starts where the text of the row above it does: 54 in under a
-/// [PaperRow] with an icon, 16 under any other row. It runs to the card's end
-/// edge.
+/// [PaperRow] with an icon, 16 under any other row, or [ruleInset] where
+/// given, for rows of another kind with something before their text. It runs
+/// to the card's end edge.
 class PaperGroup extends StatelessWidget {
-  const PaperGroup({super.key, required this.children});
+  const PaperGroup({super.key, required this.children, this.ruleInset});
 
   final List<Widget> children;
+  final double? ruleInset;
 
   static const double iconInset = PaperRow._start + PaperRow._iconSlot;
   static const double plainInset = PaperRow._start;
@@ -52,7 +55,7 @@ class PaperGroup extends StatelessWidget {
                       painter: _RowRule(
                         color: sefer.hairline,
                         width: sefer.hairlineWidth,
-                        inset: child is PaperRow && child.icon != null ? iconInset : plainInset,
+                        inset: ruleInset ?? (child is PaperRow && child.icon != null ? iconInset : plainInset),
                         direction: direction,
                       ),
                       child: child,
@@ -62,6 +65,124 @@ class PaperGroup extends StatelessWidget {
       ),
     );
   }
+}
+
+/// One row of a [PaperGroup], built on its own: for a list long enough to be
+/// built only as it scrolls into view (a forum's threads), whose rows can't
+/// all sit in one card. Each draws its share of the card: the paper, the
+/// outline at its sides, the outline's rounded top on the [first] row and
+/// its rounded foot on the [last], and the hairline under every row but the
+/// last, inset as [PaperGroup] insets it. Rows one after another read as one
+/// group.
+class PaperGroupRow extends StatelessWidget {
+  const PaperGroupRow({super.key, required this.first, required this.last, this.ruleInset, required this.child});
+
+  final bool first;
+  final bool last;
+
+  /// Where the hairline under the row starts, as [PaperGroup.ruleInset].
+  final double? ruleInset;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sefer = SeferColors.of(context);
+    final card = theme.cardTheme;
+    final side = switch (card.shape) {
+      RoundedRectangleBorder(:final side) => side,
+      _ => BorderSide.none,
+    };
+    final corners = BorderRadius.vertical(
+      top: first ? PaperGroup._corner : Radius.zero,
+      bottom: last ? PaperGroup._corner : Radius.zero,
+    );
+    final child = this.child;
+    return _RowPlace(
+      corners: corners,
+      child: CustomPaint(
+        painter: _PaperShare(
+          color: card.color ?? sefer.paper,
+          side: side,
+          corners: corners,
+          first: first,
+          last: last,
+          rule: last
+              ? null
+              : _RowRule(
+                  color: sefer.hairline,
+                  width: sefer.hairlineWidth,
+                  inset: ruleInset ?? (child is PaperRow && child.icon != null ? PaperGroup.iconInset : PaperGroup.plainInset),
+                  direction: Directionality.of(context),
+                ),
+        ),
+        // The row's ink shows on its own paper, as on the card's.
+        child: Material(type: MaterialType.transparency, child: child),
+      ),
+    );
+  }
+}
+
+/// A [PaperGroupRow]'s share of the card: its paper, and the outline at its
+/// sides, closed at the top of the first row and the foot of the last.
+///
+/// A row's focus ring is drawn just outside it, so its foot lies over the
+/// next row, which is painted after it. Every row but the last therefore
+/// lays its paper [_overlap] past its foot, and every row but the first
+/// leaves as much of its own top to the row above, so the next row's paper
+/// never covers the ring.
+class _PaperShare extends CustomPainter {
+  const _PaperShare({
+    required this.color,
+    required this.side,
+    required this.corners,
+    required this.first,
+    required this.last,
+    this.rule,
+  });
+
+  final Color color;
+  final BorderSide side;
+  final BorderRadius corners;
+  final bool first;
+  final bool last;
+  final _RowRule? rule;
+
+  /// As far as a focus ring reaches outside its row: [SeferInkWell]'s 3, or
+  /// a button's ring with its gap.
+  static const double _overlap = 6;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTRB(0, first ? 0 : _overlap, size.width, last ? size.height : size.height + _overlap);
+    canvas.drawRRect(corners.toRRect(rect), Paint()..color = color);
+    rule?.paint(canvas, size);
+    if (side.style == BorderStyle.none || side.width == 0) return;
+    // The outline inside the edge, as the card draws it, run on past an end
+    // that a row continues and clipped there, so that rows join seamlessly.
+    final w = side.width;
+    final run = Rect.fromLTRB(0, first ? 0 : -2 * w, size.width, last ? size.height : rect.bottom + 2 * w);
+    canvas.save();
+    canvas.clipRect(rect);
+    canvas.drawRRect(
+      corners.toRRect(run).deflate(w / 2),
+      Paint()
+        ..color = side.color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_PaperShare old) =>
+      old.color != color ||
+      old.side != side ||
+      old.corners != corners ||
+      old.first != first ||
+      old.last != last ||
+      (old.rule == null) != (rule == null) ||
+      (rule != null && rule!.shouldRepaint(old.rule!));
 }
 
 /// The corners a row of a [PaperGroup] rounds its ink and focus ring to: the
@@ -111,26 +232,44 @@ class _RowRule extends CustomPainter {
 /// of its own beside the row's, so a screen reader reaches both actions:
 /// merged into the row, its action would replace the row's. Set
 /// [mergeTrailing] for a switch or checkbox that the row's tap also toggles,
-/// so that the row and its state read as one item.
+/// so that the row and its state read as one item. A trailing button with a
+/// label (a [TextButton], say) ends the title's line as a value does, and
+/// moves under the title when the two don't fit side by side, rather than
+/// squeeze the title until its words break (large text).
 class PaperRow extends StatelessWidget {
   const PaperRow({
     super.key,
     this.icon,
+    this.iconColor,
     required this.title,
     this.subtitle,
+    this.titleStyle,
+    this.subtitleStyle,
     this.value,
     this.trailing,
     this.mergeTrailing = false,
     this.onTap,
     this.selected,
+    this.toggled,
+    this.focusNode,
     bool? chevron,
   }) : chevron = chevron ?? onTap != null;
 
   final IconData? icon;
+
+  /// onSurfaceVariant unless given: the grace shield is in its own colour.
+  final Color? iconColor;
   final String title;
 
   /// At most two lines, unless the text is enlarged.
   final String? subtitle;
+
+  /// bodyLarge in onSurface, merged with this where given: a list of places
+  /// to go, such as the forums, sets its titles in titleMedium.
+  final TextStyle? titleStyle;
+
+  /// bodyMedium in onSurfaceVariant, merged with this where given.
+  final TextStyle? subtitleStyle;
 
   /// The current setting, such as a language, at the end of the row.
   final String? value;
@@ -146,7 +285,18 @@ class PaperRow extends StatelessWidget {
   /// for a row that isn't one of a choice.
   final bool? selected;
 
+  /// Whether what the row's tap toggles is on, for screen readers, which
+  /// then hear the row as a switch: for a row whose switch can't be merged
+  /// into it (it has another control beside it), and is left out of the
+  /// semantics and the focus order instead. Null for a row that toggles
+  /// nothing.
+  final bool? toggled;
+
   final bool chevron;
+
+  /// The focus node of the row's ink well, for a row given the focus when
+  /// the control that had it goes; null for its own.
+  final FocusNode? focusNode;
 
   static const double _start = 16;
   static const double _iconSlot = 38;
@@ -157,9 +307,14 @@ class PaperRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
     final muted = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
-    final titleStyle = text.bodyLarge!.copyWith(color: scheme.onSurface);
+    final titleStyle = text.bodyLarge!.copyWith(color: scheme.onSurface).merge(this.titleStyle);
+    final subtitleStyle = muted?.merge(this.subtitleStyle);
+    // A labelled button goes with the title, as a value does, rather than
+    // after it.
+    final trailing = this.trailing;
+    final besideTitle = value == null && trailing is ButtonStyleButton ? trailing : null;
     final end = <Widget>[
-      ?trailing,
+      if (besideTitle == null) ?trailing,
       if (chevron) Icon(Icons.chevron_right, size: 20, color: scheme.outline),
     ];
     final scaler = MediaQuery.textScalerOf(context);
@@ -169,13 +324,23 @@ class PaperRow extends StatelessWidget {
     // the end of the row line up with that line too, rather than with the
     // middle of the row, so the value and chevron stay side by side.
     final onTitleLine = value != null && subtitle != null;
-    final titleLine = scaler.scale(titleStyle.fontSize!) * titleStyle.height!;
     Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
         ? ConstrainedBox(
-            constraints: BoxConstraints(minHeight: titleLine),
+            constraints: BoxConstraints(minHeight: scaler.scale(titleStyle.fontSize ?? 16) * (titleStyle.height ?? 1.5)),
             child: Align(alignment: alignment, widthFactor: 1, heightFactor: 1, child: child),
           )
         : child;
+    // The title, and at the end of its line a value or a labelled button,
+    // which move under it when the two don't fit side by side.
+    Widget titleWith(Widget other) => SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            children: [Text(title, style: titleStyle), other],
+          ),
+        );
     final content = ConstrainedBox(
       constraints: BoxConstraints(minHeight: subtitle == null ? 56 : 72),
       child: Padding(
@@ -190,7 +355,7 @@ class PaperRow extends StatelessWidget {
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     heightFactor: 1,
-                    child: Icon(icon, size: 22, color: scheme.onSurfaceVariant),
+                    child: AppIcon(icon!, size: 22, color: iconColor ?? scheme.onSurfaceVariant),
                   ),
                   AlignmentDirectional.centerStart,
                 ),
@@ -200,24 +365,16 @@ class PaperRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (value == null)
-                    Text(title, style: titleStyle)
+                  if (value case final value?)
+                    titleWith(Text(value, style: muted))
+                  else if (besideTitle != null)
+                    titleWith(besideTitle)
                   else
-                    // The value sits at the end of the title's line, or under
-                    // the title when the two don't fit side by side.
-                    SizedBox(
-                      width: double.infinity,
-                      child: Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 12,
-                        children: [Text(title, style: titleStyle), Text(value!, style: muted)],
-                      ),
-                    ),
+                    Text(title, style: titleStyle),
                   if (subtitle != null)
                     Text(
                       subtitle!,
-                      style: muted,
+                      style: subtitleStyle,
                       maxLines: enlarged ? null : 2,
                       overflow: enlarged ? null : TextOverflow.ellipsis,
                     ),
@@ -240,9 +397,11 @@ class PaperRow extends StatelessWidget {
       container: true,
       button: onTap != null,
       selected: selected,
+      toggled: toggled,
       child: onTap == null
           ? content
           : SeferInkWell(
+              focusNode: focusNode,
               onTap: onTap,
               borderRadius: PaperGroup.rowCorners(context),
               child: content,

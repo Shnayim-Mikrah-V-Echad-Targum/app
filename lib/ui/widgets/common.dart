@@ -1,20 +1,30 @@
+import 'dart:math' as math;
 import 'dart:ui' show SemanticsHitTestBehavior;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../l10n.dart';
 import '../theme/app_theme.dart';
 import 'ornaments.dart';
 
 /// Screens narrower than this pad cards and sheets 16 instead of 20 or 24
 /// (docs/DESIGN_SYSTEM.md §5).
-const kNarrowScreenWidth = 360.0;
+const kNarrowScreenWidth = Breakpoints.narrow;
 
 bool _isNarrow(BuildContext context) => MediaQuery.sizeOf(context).width < kNarrowScreenWidth;
 
 /// Constrains page content to a readable width and centers it on wide
 /// screens, so lines never get uncomfortably long (WCAG 1.4.8).
+///
+/// The column is [maxWidth] wide at most, gutters included, and by default
+/// padded with the gutters at the sides, 8 above and 40 below
+/// ([defaultPadding]). Below whatever padding it has, it clears the safe area,
+/// so the end of a page over the whole screen is never under the gesture bar
+/// (within the tabs, the navigation bar already keeps it clear).
 class PageBody extends StatelessWidget {
-  const PageBody({super.key, required this.children, this.maxWidth = 760, this.padding, this.controller})
+  const PageBody({super.key, required this.children, this.maxWidth = ContentWidth.list, this.padding, this.controller})
       : header = const [],
         itemCount = 0,
         itemBuilder = null;
@@ -27,7 +37,7 @@ class PageBody extends StatelessWidget {
     required this.itemCount,
     required IndexedWidgetBuilder this.itemBuilder,
     this.header = const [],
-    this.maxWidth = 760,
+    this.maxWidth = ContentWidth.list,
     this.padding,
     this.controller,
   }) : children = const [];
@@ -40,13 +50,29 @@ class PageBody extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final ScrollController? controller;
 
-  static const _defaultPadding = EdgeInsets.fromLTRB(16, 8, 16, 32);
+  /// A page's padding: the gutters at the sides, 8 above and 40 below.
+  static EdgeInsets defaultPadding(BuildContext context) {
+    final g = Gutter.of(context);
+    return EdgeInsets.fromLTRB(g, Space.sm, g, Space.s40);
+  }
+
+  /// The padding of a page of list tiles, which pad themselves 16 at the
+  /// sides: the rest of the gutter, so that their text starts where the app
+  /// bar's title and every other page's content do.
+  static EdgeInsets tilePadding(BuildContext context) {
+    final side = Gutter.of(context) - _tileInset;
+    return EdgeInsets.fromLTRB(side, Space.sm, side, Space.s40);
+  }
+
+  /// A list tile's own padding at its start.
+  static const _tileInset = Space.lg;
 
   @override
   Widget build(BuildContext context) {
+    final p = (padding ?? defaultPadding(context)).resolve(Directionality.of(context)) +
+        EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom);
     final itemBuilder = this.itemBuilder;
     if (itemBuilder != null) {
-      final p = (padding ?? _defaultPadding).resolve(Directionality.of(context));
       return ListView.builder(
         controller: controller,
         // Scrollable even when it fits, as it is without a controller of its
@@ -78,7 +104,7 @@ class PageBody extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Padding(
-              padding: padding ?? _defaultPadding,
+              padding: p,
               // The page is one item of its list. Its headings, texts and
               // controls are each a node of their own, never merged into one.
               child: Semantics(
@@ -93,32 +119,234 @@ class PageBody extends StatelessWidget {
   }
 }
 
+/// A page of the app (docs/DESIGN_SYSTEM.md §5): a [Scaffold] whose app bar
+/// lines up with the page's column, however wide the window. Its title starts
+/// where the column's content does, and its actions end where the column
+/// does, rather than at the window's edges; and the page names the browser's
+/// tab ([DocumentTitle]).
+///
+/// [contentMaxWidth] is the width of the page's column, as given to its
+/// [PageBody]. The title is the page's heading, of level 1: [titleText], or
+/// [title] where it shows the same some other way. [titleText] also names
+/// the tab; [showTitle] false leaves the app bar without a title.
+///
+/// A page whose app bar shows something other than the page's own name
+/// (a thread, under its forum's) sets [titleNamesPage] false: the app bar's
+/// title is then no heading, nor what names the page to a screen reader as
+/// it opens, and the page's body gives its own heading of level 1, which
+/// names the route.
+class PageScaffold extends StatelessWidget {
+  const PageScaffold({
+    super.key,
+    required this.titleText,
+    this.title,
+    this.showTitle = true,
+    this.actions,
+    this.leading,
+    required this.body,
+    this.contentMaxWidth = ContentWidth.list,
+    this.floatingActionButton,
+    this.bottomNavigationBar,
+    this.bottom,
+    this.showAppBar = true,
+    this.titleNamesPage = true,
+  });
+
+  final String titleText;
+  final Widget? title;
+  final bool showTitle;
+  final bool titleNamesPage;
+  final List<Widget>? actions;
+
+  /// The app bar's leading button, if not the back button it adds itself.
+  final Widget? leading;
+  final Widget body;
+  final double contentMaxWidth;
+  final Widget? floatingActionButton;
+  final Widget? bottomNavigationBar;
+  final PreferredSizeWidget? bottom;
+  final bool showAppBar;
+
+  /// The width of the app bar's leading button.
+  static const _leadingWidth = 56.0;
+
+  @override
+  Widget build(BuildContext context) => DocumentTitle(
+        title: titleText,
+        // The pane's width, which leaves out the navigation rail beside it.
+        child: LayoutBuilder(builder: (context, constraints) {
+          final g = Gutter.of(context);
+          // Where the column's content starts, from the pane's edge: as in a
+          // PageBody of this width.
+          final inset = math.max(g, (constraints.maxWidth - contentMaxWidth) / 2 + g);
+          // A back button, where the app bar adds one: the test it makes, but
+          // for local history entries, which pages don't use.
+          final hasLeading = leading != null || (ModalRoute.canPopOf(context) ?? false);
+          return Scaffold(
+            appBar: showAppBar
+                ? AppBar(
+                    leading: leading,
+                    // The title's inset goes before it, and a gutter after it:
+                    // as the app bar's titleSpacing, the inset would be kept
+                    // after it too, which leaves a narrow column's title (the
+                    // account's) no room at all on a wide screen.
+                    titleSpacing: 0,
+                    actionsPadding: EdgeInsetsDirectional.only(end: inset - g),
+                    excludeHeaderSemantics: !titleNamesPage,
+                    title: showTitle
+                        ? Padding(
+                            padding: EdgeInsetsDirectional.only(
+                              start: hasLeading ? math.max(g, inset - _leadingWidth) : inset,
+                              end: g,
+                            ),
+                            // The app bar makes it a heading; this gives its level.
+                            child: titleNamesPage
+                                ? Semantics(headingLevel: 1, child: title ?? AppBarTitle(titleText))
+                                : title ?? AppBarTitle(titleText),
+                          )
+                        : null,
+                    actions: actions,
+                    bottom: bottom,
+                  )
+                : null,
+            body: body,
+            floatingActionButton: floatingActionButton,
+            bottomNavigationBar: bottomNavigationBar,
+          );
+        }),
+      );
+}
+
+/// An app bar's title, in the app bar's style: set a little smaller where
+/// the line has no room for it (a wider interface font, or enlarged text,
+/// beside the Demo tag and a button), as the reader's title is, and cut short
+/// only once it would have to be smaller still. [PageScaffold] sets its
+/// [PageScaffold.titleText] so; a page whose app bar shows another name (a
+/// thread, its forum's) gives it as its [PageScaffold.title].
+class AppBarTitle extends StatelessWidget {
+  const AppBarTitle(this.text, {super.key});
+
+  final String text;
+
+  /// The smallest the title is set, of its size, before it is cut short.
+  static const double minScale = 0.75;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
+        // As the app bar sets it: its style, and its text size, which it
+        // keeps from growing past 1.34 times.
+        final style = DefaultTextStyle.of(context).style;
+        final size = MediaQuery.textScalerOf(context).scale(style.fontSize ?? 22);
+        final painter = TextPainter(
+          text: TextSpan(text: text, style: style.copyWith(fontSize: size)),
+          textDirection: Directionality.of(context),
+          locale: Localizations.maybeLocaleOf(context),
+          maxLines: 1,
+        )..layout();
+        final width = painter.width;
+        painter.dispose();
+        if (width <= constraints.maxWidth) return Text(text, maxLines: 1, softWrap: false);
+        final scale = math.max(minScale, constraints.maxWidth / width);
+        return Text(
+          text,
+          style: TextStyle(fontSize: size * scale),
+          textScaler: TextScaler.noScaling,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        );
+      });
+}
+
+/// Names the page in the browser: its tab, history and bookmarks ("Settings
+/// · Shnayim Mikra"). Only the page on show names it, the one on top in the
+/// tab on show, and it names it again whenever it is shown again: when the
+/// page over it closes, or its tab is chosen.
+class DocumentTitle extends StatefulWidget {
+  const DocumentTitle({super.key, required this.title, required this.child});
+
+  /// The page's own title, before the app's name; empty for the app's name
+  /// alone.
+  final String title;
+  final Widget child;
+
+  /// Whether pages name the document: on the web, where it is the tab's
+  /// title. Elsewhere the platform keeps the app's name, where it shows one
+  /// (Android's recent apps, for one).
+  @visibleForTesting
+  static bool enabled = kIsWeb;
+
+  @override
+  State<DocumentTitle> createState() => _DocumentTitleState();
+}
+
+class _DocumentTitleState extends State<DocumentTitle> {
+  /// What this page last gave the document while on show, or null while it
+  /// isn't.
+  ({String label, Color color})? _given;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!DocumentTitle.enabled) return widget.child;
+    // Each depends on what it reads, so the page builds this again when it
+    // comes into view or leaves it. A page beneath an opaque route has its
+    // tickers off, as does every page of a tab not on show.
+    final shown = (ModalRoute.isCurrentOf(context) ?? true) && TickerMode.valuesOf(context).enabled;
+    if (!shown) {
+      _given = null;
+      return widget.child;
+    }
+    final app = context.l10n.appTitle;
+    final label = widget.title.isEmpty || widget.title == app ? app : '${widget.title} · $app';
+    // The colour the app gives the platform (MaterialApp.color): on the web
+    // the browser's theme-color, which the app's own title sets again when
+    // the theme changes.
+    final color = Theme.of(context).colorScheme.surface;
+    final given = (label: label, color: color);
+    if (given != _given) {
+      _given = given;
+      SystemChrome.setApplicationSwitcherDescription(
+        ApplicationSwitcherDescription(label: label, primaryColor: color.toARGB32()),
+      );
+    }
+    return widget.child;
+  }
+}
+
 /// A heading for a group of content, exposed to assistive technology as a
-/// heading so screen reader users can jump between sections.
+/// heading so screen reader users can jump between sections: an [Eyebrow] in
+/// gold ink (§6.4), with an optional [trailing] control, such as an info
+/// button, at the end.
 class SectionHeader extends StatelessWidget {
-  const SectionHeader(this.text, {super.key, this.level = 2, this.trailing, this.padding});
+  const SectionHeader(this.text, {super.key, this.level = 2, this.trailing, this.padding}) : _plain = false;
+
+  /// A heading in plain type, titleSmall in onSurfaceVariant, for a heading
+  /// with digits in it ("2 of 7 aliyot"): an eyebrow's old-style small-cap
+  /// figures make "1" read as "I".
+  const SectionHeader.plain(this.text, {super.key, this.level = 2, this.trailing, this.padding}) : _plain = true;
 
   final String text;
   final int level;
   final Widget? trailing;
+
+  /// 28 above, a section's gap, and 8 below, unless given.
   final EdgeInsetsGeometry? padding;
+  final bool _plain;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: padding ?? const EdgeInsetsDirectional.only(top: 24, bottom: 8),
+      padding: padding ?? const EdgeInsetsDirectional.only(top: Rhythm.sectionGap, bottom: Space.sm),
       child: Row(
         children: [
           Expanded(
             child: Semantics(
               headingLevel: level,
               header: true,
-              child: Text(
-                text,
-                style: (level <= 2 ? theme.textTheme.titleMedium : theme.textTheme.titleSmall)
-                    ?.copyWith(color: theme.colorScheme.primary),
-              ),
+              child: _plain
+                  ? Text(text, style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant))
+                  : Eyebrow(text),
             ),
           ),
           ?trailing,
@@ -168,7 +396,9 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-/// A banner for important, non-blocking information.
+/// A banner for important, non-blocking information (§6.20): bodyMedium on
+/// a secondaryContainer wash, radius 12, with no border but high contrast's
+/// 2 px outline. Place it within the page's gutters, never full-bleed.
 class NoticeBanner extends StatelessWidget {
   const NoticeBanner({
     super.key,
@@ -222,8 +452,9 @@ class NoticeBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    Widget message = Text(text, style: TextStyle(color: scheme.onSecondaryContainer));
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    Widget message = Text(text, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSecondaryContainer));
     if (liveRegion) message = Semantics(liveRegion: true, child: message);
     final action = _legible(context);
     final below = actionBelow ? action : null;

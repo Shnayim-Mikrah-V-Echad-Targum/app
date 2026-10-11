@@ -70,9 +70,15 @@ void main() {
 }
 
 /// Physical paddings with unequal sides that are meant not to mirror, as
-/// `'path: call'`, the call without its spaces, with the reason. None at
-/// present.
-const _physical = <String, String>{};
+/// `'path: call'`, the call without its spaces, with the reason.
+const _physical = <String, String>{
+  'lib/features/reader/scripture_text.dart: EdgeInsets.only(right:ruleGap)':
+      "A verse's gold rule, at the scripture's start: the right, in either language of the app (§4.7).",
+  'lib/features/reader/scripture_text.dart: EdgeInsets.only(right:ScriptureStyles(context,settings).hangingGutter(constraints.maxWidth))':
+      "The gutter a verse's number hangs in, at the right of the Hebrew in either language of the app (§4.7).",
+  'lib/features/reader/reader_screen.dart: EdgeInsets.only(right:12)':
+      "The rule of the Hebrew's block among the Targum, where the Hebrew begins: at the right in either language.",
+};
 
 /// The EdgeInsets.fromLTRB and EdgeInsets.only calls in [source] whose left
 /// and right sides differ, with the line each starts on, and the call without

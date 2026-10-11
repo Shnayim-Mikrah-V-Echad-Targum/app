@@ -480,6 +480,13 @@ class ProgressController extends Notifier<ProgressState> {
 
   late DelayedSave _storage;
 
+  /// Whether the latest change to the reading log arrived from elsewhere,
+  /// through [replaceAll]: a merge with the backup another device wrote, or
+  /// a backup restored. What reacts to the reader's own reading (the
+  /// celebration of a finished book) lets such a change pass quietly.
+  bool get logChangeArrived => _logChangeArrived;
+  bool _logChangeArrived = false;
+
   @override
   ProgressState build() {
     final prefs = ref.read(sharedPreferencesProvider);
@@ -537,7 +544,7 @@ class ProgressController extends Notifier<ProgressState> {
   /// that loses out in a merge. Unless [placeOnly] (only a saved place in an
   /// aliyah changed), the reading log has changed (see
   /// [ProgressState.logRevision]).
-  void _set(ProgressState s, {bool erasing = false, bool placeOnly = false}) {
+  void _set(ProgressState s, {bool erasing = false, bool placeOnly = false, bool arrived = false}) {
     final prefs = ref.read(sharedPreferencesProvider);
     final shadowed = s.shadowedWeeks.toSet();
     final next = shadowed.isEmpty
@@ -549,6 +556,7 @@ class ProgressController extends Notifier<ProgressState> {
       }
     }
     final saved = next.copyWith(logRevision: placeOnly ? state.logRevision : ++_revisions);
+    if (!placeOnly) _logChangeArrived = arrived;
     state = saved;
     _storage.save(saved.toJson);
   }
@@ -615,13 +623,22 @@ class ProgressController extends Notifier<ProgressState> {
         ));
       });
 
+  /// Moves the end of any pause covering [today] out to [end]. A pause that
+  /// already lasts that long is left as it is.
+  void extendPause(LocalDate today, LocalDate end) => ProgressClock.above(state.resetAt, () {
+        bool lengthens(Pause p) => p.contains(today) && p.end < end;
+        if (!state.pauses.any(lengthens)) return;
+        _set(state.copyWith(pauses: [for (final p in state.pauses) lengthens(p) ? p.endingOn(end) : p]));
+      });
+
   /// Replaces all progress with a cloud merge. Equal progress is ignored, so
-  /// listeners only hear about real changes. A reset made on another device
-  /// restarts the join date here too, as [resetAll] does there.
+  /// listeners only hear about real changes, which [logChangeArrived] marks
+  /// as from elsewhere. A reset made on another device restarts the join
+  /// date here too, as [resetAll] does there.
   void replaceAll(ProgressState s) {
     if (s == state) return;
     final resetElsewhere = s.resetAt > state.resetAt;
-    _set(s);
+    _set(s, arrived: true);
     if (resetElsewhere) _joinNoEarlierThan(s.resetAt);
   }
 

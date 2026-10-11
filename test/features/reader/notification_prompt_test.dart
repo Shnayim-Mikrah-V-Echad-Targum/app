@@ -58,8 +58,9 @@ void main() {
       await tester.pump();
     }
     await tester.pumpAndSettle();
+    // Next, and on the aliyah's last step Finish.
     for (var i = 0; i < 3; i++) {
-      await tester.tap(find.text('Next'));
+      await tester.tap(find.byWidgetPredicate((w) => w is Text && (w.data == 'Next' || w.data == 'Finish')));
       await tester.pumpAndSettle();
     }
     expect(find.text('Want a gentle daily nudge?'), findsOneWidget);

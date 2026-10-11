@@ -395,21 +395,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get daysBeginToday => 'Begins with today\'s reading';
 
   @override
-  String get graceDays => 'Grace days';
-
-  @override
-  String graceDaysAvailable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count available',
-      one: '1 available',
-      zero: 'none available',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get dayKept => 'Read';
 
   @override
@@ -628,20 +613,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String continueWithAliyah(String aliyah) {
-    return 'Continue with $aliyah';
-  }
-
-  @override
-  String get aliyahStatusRead => 'read';
-
-  @override
-  String get aliyahStatusPartial => 'in progress';
-
-  @override
-  String get aliyahStatusUnread => 'not started';
-
-  @override
   String get backToWeek => 'Back to the week';
 
   @override
@@ -767,11 +738,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String thisCycle(int done) {
-    return 'This year: $done of 54 parshiyot';
-  }
-
-  @override
   String versesRead(String count, String second) {
     return '$count verses read twice with $second';
   }
@@ -851,9 +817,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Streak numbers are hidden. Your progress is still saved.';
 
   @override
-  String get milestonesTitle => 'Milestones';
-
-  @override
   String get graceExplainer =>
       'Grace days cover a missed planned day automatically. You start with 2, earn 1 each time you finish a parsha before Shabbat (up to 3), and use at most 2 a week. They can never be bought.';
 
@@ -893,18 +856,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String milestoneSefer(String book) {
-    return '$book complete — Chazak!';
-  }
-
-  @override
   String get milestoneSiyum => 'Siyum HaTorah';
 
   @override
   String get milestoneComeback => 'Welcome back';
-
-  @override
-  String get milestoneLocked => 'Not yet reached';
 
   @override
   String get settingsTitle => 'Settings';
@@ -1747,11 +1702,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get demoCodeHint => 'Demo mode: any 6 digits will work.';
 
   @override
-  String signedInAs(String name) {
-    return 'Signed in as $name';
-  }
-
-  @override
   String get displayNameLabel => 'Display name';
 
   @override
@@ -1831,19 +1781,18 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count thanks',
       one: '1 thanks',
-      zero: 'Say thanks',
     );
     return '$_temp0';
   }
 
   @override
   String todahSemantics(String name) {
-    return 'Say thanks to $name';
+    return 'Say todah to $name';
   }
 
   @override
   String todahRemove(String name) {
-    return 'Remove your thanks to $name';
+    return 'Remove your todah to $name';
   }
 
   @override
@@ -1958,9 +1907,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readGuidelines => 'Read the guidelines';
-
-  @override
-  String get noThreads => 'No discussions yet. Start the first one!';
 
   @override
   String noPostsYet(String name) {
@@ -2500,4 +2446,318 @@ class AppLocalizationsEn extends AppLocalizations {
   String signedInNow(String name) {
     return 'Signed in as $name';
   }
+
+  @override
+  String passTrackLabel(int n, String name) {
+    return '$n · $name';
+  }
+
+  @override
+  String get passTrackMikra => 'Mikra';
+
+  @override
+  String get finishStep => 'Finish';
+
+  @override
+  String aliyahDoneTitle(String aliyah) {
+    return '$aliyah is complete';
+  }
+
+  @override
+  String parshaDoneTitle(String name) {
+    return 'Parshat $name is complete';
+  }
+
+  @override
+  String nextAliyahLength(String aliyah, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verses',
+      one: 'one verse',
+    );
+    return '$aliyah is $_temp0.';
+  }
+
+  @override
+  String nextAliyahAction(String aliyah) {
+    return 'Next aliyah · $aliyah';
+  }
+
+  @override
+  String keepGoingAliyah(String aliyah) {
+    return 'Keep going: $aliyah';
+  }
+
+  @override
+  String get todayReadingDone => 'That\'s today\'s reading. See you tomorrow.';
+
+  @override
+  String todayReadingDoneOn(String day) {
+    return 'That\'s today\'s reading. See you on $day.';
+  }
+
+  @override
+  String erevShabbatDone(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'Chag sameach!',
+      'other': 'Shabbat shalom!',
+    });
+    return 'That\'s this week\'s reading. $_temp0';
+  }
+
+  @override
+  String erevShabbatDoneMorning(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'Chag sameach!',
+      'other': 'Shabbat shalom!',
+    });
+    return 'The rest is for Shabbat morning. $_temp0';
+  }
+
+  @override
+  String parshaStreakLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count-week parsha streak',
+      one: '1-week parsha streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get graceDayEarned => '+1 grace day';
+
+  @override
+  String get parshaDoneLate => 'After Shabbat — and it still counts.';
+
+  @override
+  String get parshaDoneLateStreak =>
+      'After Shabbat — and it still counts. Your streak continues.';
+
+  @override
+  String get parshaDoneRestored => 'Finished together with the next parsha.';
+
+  @override
+  String get parshaDoneRestoredStreak =>
+      'Finished together with the next parsha — your streak continues.';
+
+  @override
+  String get readHaftarah => 'Read the haftarah';
+
+  @override
+  String seferDoneTitle(String book) {
+    return '$book is complete';
+  }
+
+  @override
+  String seferDoneBody(String book, int count, String second) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$book complete — $countString verses, twice, with $second.';
+  }
+
+  @override
+  String aliyahTabLabel(String name, int n) {
+    return '$name, aliyah $n of 7';
+  }
+
+  @override
+  String get tabRead => 'read';
+
+  @override
+  String tabPartial(int done) {
+    return '$done of 3 readings done';
+  }
+
+  @override
+  String get tabNotStarted => 'not started';
+
+  @override
+  String haftarahReadOn(String date) {
+    return 'Read on $date';
+  }
+
+  @override
+  String torahMapOfYear(String year) {
+    return 'Torah map · $year';
+  }
+
+  @override
+  String get aboutStreaks => 'About streaks';
+
+  @override
+  String graceAvailable(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count grace days available',
+      one: '1 grace day available',
+      zero: 'No grace days available',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get thisYear => 'This year';
+
+  @override
+  String get earlierYear => 'An earlier year';
+
+  @override
+  String parshiyotOfYear(int done, int total) {
+    return '$done of $total parshiyot';
+  }
+
+  @override
+  String yearBarSemanticsYear(String year, int done, int total) {
+    return '$year: $done of $total parshiyot complete';
+  }
+
+  @override
+  String showAllWeeks(int count) {
+    return 'Show all ($count)';
+  }
+
+  @override
+  String get pauseRowBody =>
+      'Pause for up to 30 days. Nothing resets while paused.';
+
+  @override
+  String get endPause => 'End pause';
+
+  @override
+  String get extendPause => 'Extend';
+
+  @override
+  String get extendPauseTitle => 'Extend the pause';
+
+  @override
+  String get extendPauseBy => 'Extend by';
+
+  @override
+  String extendPauseUntil(String date) {
+    return 'The pause will end on $date.';
+  }
+
+  @override
+  String get recordTitle => 'Finished so far';
+
+  @override
+  String milestoneSiyumFrom(String name) {
+    return 'Siyum from Parshat $name';
+  }
+
+  @override
+  String get rashiScript => 'Rashi script';
+
+  @override
+  String get demoTag => 'Demo';
+
+  @override
+  String get demoAboutTitle => 'About the demo';
+
+  @override
+  String get demoAboutBody =>
+      'No community server is connected, so the community runs as a demo on this device alone. The discussions in it are examples.';
+
+  @override
+  String get demoAboutPosts =>
+      'Anything you post stays on this device, and everything resets when the app restarts.';
+
+  @override
+  String get demoAboutSignIn =>
+      'To try it, sign in with any email address and any 6 digits as the code.';
+
+  @override
+  String get dismissNotice => 'Dismiss notice';
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'Resend in ${seconds}s';
+  }
+
+  @override
+  String get signInPrivacy => 'We use your email only to sign you in.';
+
+  @override
+  String get editDisplayName => 'Edit display name';
+
+  @override
+  String get cloudBackupTitle => 'Cloud backup';
+
+  @override
+  String get privacySafetyTitle => 'Privacy & safety';
+
+  @override
+  String get accountGroupTitle => 'Account';
+
+  @override
+  String postingAs(String name) {
+    return 'Posting as $name';
+  }
+
+  @override
+  String get titleMinHelp => 'At least 5 characters';
+
+  @override
+  String get bodyMinHelp => 'At least 2 characters';
+
+  @override
+  String replyToName(String name) {
+    return 'Reply to $name';
+  }
+
+  @override
+  String get sending => 'Sending…';
+
+  @override
+  String get askedTag => 'Asked';
+
+  @override
+  String get authorTag => 'Author';
+
+  @override
+  String get todahAction => 'Todah';
+
+  @override
+  String blockedMembersCount(int count) {
+    return 'Blocked members ($count)';
+  }
+
+  @override
+  String get noBlockedMembers => 'You haven\'t blocked anyone.';
+
+  @override
+  String get pinnedHeading => 'Pinned';
+
+  @override
+  String get recentHeading => 'Recent';
+
+  @override
+  String get emptyForum => 'No discussions yet — begin the first.';
+
+  @override
+  String get emptyLockedForum => 'No discussions here yet.';
+
+  @override
+  String repliesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count replies',
+      one: '1 reply',
+      zero: 'No replies yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get errBodyTooShort => 'The message needs at least 2 characters.';
 }

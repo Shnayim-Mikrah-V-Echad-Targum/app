@@ -53,7 +53,7 @@ Future<void> main() async {
 Future<SharedPreferences> _preferencesWithFonts() async {
   final prefs = await SharedPreferences.getInstance();
   final settings = SettingsController.readStored(prefs);
-  await OptionalFonts.ensureAll([settings.uiFont.family, settings.scriptureFont.family])
+  await OptionalFonts.ensureAll(settings.optionalFonts)
       .timeout(const Duration(seconds: 2), onTimeout: () {});
   return prefs;
 }

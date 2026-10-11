@@ -816,7 +816,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(message), findsOneWidget);
 
-    await tester.tap(find.text('Sync now'));
+    await tester.tap(find.byTooltip('Sync now'));
     await tester.pumpAndSettle();
     expect(find.text(message), findsNWidgets(2), reason: 'the notice, and the reply to Sync now');
     expect(c.read(progressProvider), const ProgressState());
