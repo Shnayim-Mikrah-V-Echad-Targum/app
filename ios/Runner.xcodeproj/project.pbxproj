@@ -7,7 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		09CC84A94DBA5E762BF3C6E6 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7DC3AD2F544AD720B20FE3E1 /* Localizable.strings */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		2A8A20CF813EDD6049379AEE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 05AE7B664234210762E694E8 /* Assets.xcassets */; };
+		2DD45379C8329D31D1799E02 /* FrankRuhlLibre-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DBA750215A0F03CF392FCDC3 /* FrankRuhlLibre-Medium.ttf */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		45AAA7584AE34D675C0636B1 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 332FE42B0646306EB76A7CB5 /* InfoPlist.strings */; };
@@ -17,6 +20,11 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		A2605B829BDA6609361476BE /* ParshaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9B2D5BB61BF157555C9963B7 /* ParshaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A6B30D0FDA6602DCE3577F8A /* EBGaramond-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C96F8ABAD5D5999884788776 /* EBGaramond-Medium.ttf */; };
+		AE942787CA74F0EEA6AA6FF0 /* ParshaWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F483EC8B4B51EE357061C3CA /* ParshaWidget.swift */; };
+		C10603FC2403FD79885B317B /* EBGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8BDC9D29CBA5CFC2ADCD55C6 /* EBGaramond-SemiBold.ttf */; };
+		C802FE255E226D7A5C1690DD /* FrankRuhlLibre-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2A424BDC523ADA28E85F1878 /* FrankRuhlLibre-SemiBold.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,6 +34,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		E275CFD81449813451577480 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 166303B9E0469507A1543D61;
+			remoteInfo = ParshaWidget;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -40,19 +55,35 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CAB622B39C3E88ADA9E09C61 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A2605B829BDA6609361476BE /* ParshaWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		05AE7B664234210762E694E8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
+		1658D0EBCB3BA454B4B65388 /* he */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = he; path = he.lproj/Localizable.strings; sourceTree = "<group>"; };
+		2A424BDC523ADA28E85F1878 /* FrankRuhlLibre-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "FrankRuhlLibre-SemiBold.ttf"; path = "../assets/fonts/FrankRuhlLibre-SemiBold.ttf"; sourceTree = SOURCE_ROOT; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		6D5CDE6FFCCB2AB1768C2C99 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
+		8BDC9D29CBA5CFC2ADCD55C6 /* EBGaramond-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "EBGaramond-SemiBold.ttf"; path = "../assets/fonts/EBGaramond-SemiBold.ttf"; sourceTree = SOURCE_ROOT; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -60,11 +91,25 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9B2D5BB61BF157555C9963B7 /* ParshaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ParshaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C6F3C0D309DE5383C035C4C /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		BDA94CB93C3BAB1414ACE30B /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		C91B2013696AA72E823346FE /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C96F8ABAD5D5999884788776 /* EBGaramond-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "EBGaramond-Medium.ttf"; path = "../assets/fonts/EBGaramond-Medium.ttf"; sourceTree = SOURCE_ROOT; };
+		DBA750215A0F03CF392FCDC3 /* FrankRuhlLibre-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "FrankRuhlLibre-Medium.ttf"; path = "../assets/fonts/FrankRuhlLibre-Medium.ttf"; sourceTree = SOURCE_ROOT; };
 		EEE04EE71FE1E883F27255F1 /* he */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = he; path = he.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		F483EC8B4B51EE357061C3CA /* ParshaWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParshaWidget.swift; sourceTree = "<group>"; };
+		FF4DC33A107C7678C81E787D /* ParshaWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ParshaWidget.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		3E0D71F181A52399F9A70907 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -76,12 +121,36 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2FE7AE04FE1B4FAD5615FE25 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				C96F8ABAD5D5999884788776 /* EBGaramond-Medium.ttf */,
+				8BDC9D29CBA5CFC2ADCD55C6 /* EBGaramond-SemiBold.ttf */,
+				DBA750215A0F03CF392FCDC3 /* FrankRuhlLibre-Medium.ttf */,
+				2A424BDC523ADA28E85F1878 /* FrankRuhlLibre-SemiBold.ttf */,
+			);
+			name = Fonts;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 			);
 			path = RunnerTests;
+			sourceTree = "<group>";
+		};
+		38C2DAA0FBA739945F1ABDC4 /* ParshaWidget */ = {
+			isa = PBXGroup;
+			children = (
+				F483EC8B4B51EE357061C3CA /* ParshaWidget.swift */,
+				05AE7B664234210762E694E8 /* Assets.xcassets */,
+				7DC3AD2F544AD720B20FE3E1 /* Localizable.strings */,
+				6D5CDE6FFCCB2AB1768C2C99 /* Info.plist */,
+				FF4DC33A107C7678C81E787D /* ParshaWidget.entitlements */,
+				2FE7AE04FE1B4FAD5615FE25 /* Fonts */,
+			);
+			path = ParshaWidget;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -101,6 +170,7 @@
 			children = (
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
+				38C2DAA0FBA739945F1ABDC4 /* ParshaWidget */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 			);
@@ -111,6 +181,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				9B2D5BB61BF157555C9963B7 /* ParshaWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -122,6 +193,7 @@
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
 				97C147021CF9000F007C117D /* Info.plist */,
+				9C6F3C0D309DE5383C035C4C /* Runner.entitlements */,
 				332FE42B0646306EB76A7CB5 /* InfoPlist.strings */,
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
@@ -135,6 +207,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		166303B9E0469507A1543D61 /* ParshaWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D26DD442F90916C870A4DBC7 /* Build configuration list for PBXNativeTarget "ParshaWidget" */;
+			buildPhases = (
+				5134864EC6FB19CDA0B065AB /* Sources */,
+				3E0D71F181A52399F9A70907 /* Frameworks */,
+				7222C2D5FB3A2A7EC3012161 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ParshaWidget;
+			productName = ParshaWidget;
+			productReference = 9B2D5BB61BF157555C9963B7 /* ParshaWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
@@ -161,11 +250,13 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				CAB622B39C3E88ADA9E09C61 /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				8DFEBDD4E3EAB3E2C391DC6E /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -193,6 +284,9 @@
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
 					};
+					166303B9E0469507A1543D61 = {
+						CreatedOnToolsVersion = 15.0;
+					};
 				};
 			};
 			buildConfigurationList = 97C146E91CF9000F007C117D /* Build configuration list for PBXProject "Runner" */;
@@ -214,6 +308,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				166303B9E0469507A1543D61 /* ParshaWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +318,19 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7222C2D5FB3A2A7EC3012161 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A8A20CF813EDD6049379AEE /* Assets.xcassets in Resources */,
+				09CC84A94DBA5E762BF3C6E6 /* Localizable.strings in Resources */,
+				A6B30D0FDA6602DCE3577F8A /* EBGaramond-Medium.ttf in Resources */,
+				C10603FC2403FD79885B317B /* EBGaramond-SemiBold.ttf in Resources */,
+				2DD45379C8329D31D1799E02 /* FrankRuhlLibre-Medium.ttf in Resources */,
+				C802FE255E226D7A5C1690DD /* FrankRuhlLibre-SemiBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -283,6 +391,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5134864EC6FB19CDA0B065AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AE942787CA74F0EEA6AA6FF0 /* ParshaWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EA1CF9000F007C117D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -301,6 +417,11 @@
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
 		};
+		8DFEBDD4E3EAB3E2C391DC6E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 166303B9E0469507A1543D61 /* ParshaWidget */;
+			targetProxy = E275CFD81449813451577480 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
@@ -311,6 +432,15 @@
 				EEE04EE71FE1E883F27255F1 /* he */,
 			);
 			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		7DC3AD2F544AD720B20FE3E1 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C91B2013696AA72E823346FE /* en */,
+				1658D0EBCB3BA454B4B65388 /* he */,
+			);
+			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 		97C146FA1CF9000F007C117D /* Main.storyboard */ = {
@@ -391,6 +521,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -452,6 +583,62 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
 			name = Profile;
+		};
+		479F253FF233BD6FFEAF4D6B /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetPaper;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ParshaWidget/ParshaWidget.entitlements;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				INFOPLIST_FILE = ParshaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = org.shnayimmikra.app.ParshaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Profile;
+		};
+		75D838BC4CF64BB48C658DD2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetPaper;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ParshaWidget/ParshaWidget.entitlements;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				INFOPLIST_FILE = ParshaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = org.shnayimmikra.app.ParshaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
 		};
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -572,6 +759,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -594,6 +782,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -606,6 +795,34 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		B47CED927BAC181382E3BD4F /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetPaper;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ParshaWidget/ParshaWidget.entitlements;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				INFOPLIST_FILE = ParshaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = org.shnayimmikra.app.ParshaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -638,6 +855,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D26DD442F90916C870A4DBC7 /* Build configuration list for PBXNativeTarget "ParshaWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				75D838BC4CF64BB48C658DD2 /* Debug */,
+				B47CED927BAC181382E3BD4F /* Release */,
+				479F253FF233BD6FFEAF4D6B /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,0 +1,14 @@
+/* The home-screen widget (ParshaWidget.swift), in the widget gallery, and
+   before the app has given it anything to show. */
+"widget.name" = "פרשת השבוע";
+"widget.description" = "פרשת השבוע, כמה כבר נקרא והקריאה של היום, במרחק נגיעה.";
+"widget.appName" = "שניים מקרא";
+"widget.empty" = "יש לפתוח את שניים מקרא כדי להתחיל.";
+
+/* The widget as the gallery previews it, for a reader partway through Bereshit. */
+"preview.eyebrow" = "פרשת השבוע";
+"preview.say" = "בראשית";
+"preview.progress" = "2 מתוך 7 עליות";
+"preview.sayProgress" = "2 מתוך 7 עליות. קריאה ראשונה: 3 מתוך 7. קריאה שנייה: 3 מתוך 7. תרגום: 2 מתוך 7";
+"preview.today" = "היום: שלישי";
+"preview.continue" = "המשך · שלישי, תרגום";
