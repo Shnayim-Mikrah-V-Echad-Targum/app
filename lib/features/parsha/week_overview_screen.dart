@@ -12,6 +12,8 @@ import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
 import '../community/ui/community_ui.dart';
+import '../notes/notes_screen.dart';
+import '../notes/week_notes_row.dart';
 import '../progress/domain/progress_models.dart';
 import 'week_context.dart';
 
@@ -98,12 +100,14 @@ class WeekOverview extends ConsumerWidget {
             'all' => markWeek(),
             'clear' => clearWeek(),
             'full' => context.push('/read/${ctx.id}/0?mode=full&from=week'),
+            'notes' => context.push(notesPath()),
             _ => null,
           },
           itemBuilder: (context) => [
             PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),
             if (ctx.isOpen && !ctx.progress.isComplete) PopupMenuItem(value: 'all', child: Text(l.markWholeWeek)),
             if (ctx.progress.completedUnits > 0) PopupMenuItem(value: 'clear', child: Text(l.clearWeek)),
+            PopupMenuItem(value: 'notes', child: Text(l.notesTitle)),
           ],
         ),
       ],
@@ -146,6 +150,7 @@ class WeekOverview extends ConsumerWidget {
               onTap: () => context.push(haftarahPath(context, ctx.id)),
             ),
           ],
+          WeekNotesRow(ctx: ctx),
           const Gap(16),
           if (ctx.isOpen && !ctx.progress.isComplete)
             OutlinedButton.icon(

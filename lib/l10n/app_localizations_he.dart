@@ -773,7 +773,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get verseOptions => 'אפשרויות לפסוק';
 
   @override
-  String get shortcutVerseOptions => 'אפשרויות לפסוק: העתקה, שיתוף או שאלה';
+  String get shortcutVerseOptions =>
+      'אפשרויות לפסוק: סימנייה, הערה, העתקה, שיתוף או שאלה';
 
   @override
   String get copyVerse => 'העתקה';
@@ -789,6 +790,80 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get shareCopiedInstead => 'אין כאן אפשרות לשתף, ולכן הפסוק הועתק.';
+
+  @override
+  String get bookmarkVerse => 'סימנייה';
+
+  @override
+  String get addNote => 'הוספת הערה';
+
+  @override
+  String get yourNote => 'ההערה שלך';
+
+  @override
+  String noteTitle(String reference) {
+    return 'הערה על $reference';
+  }
+
+  @override
+  String get noteHint => 'שאלה לשולחן השבת, או מחשבה';
+
+  @override
+  String get noteSaved => 'ההערה נשמרה';
+
+  @override
+  String get noteDeleted => 'ההערה נמחקה';
+
+  @override
+  String get verseBookmarked => 'מסומן בסימנייה';
+
+  @override
+  String get verseWithNote => 'יש עליו הערה שלך';
+
+  @override
+  String yourNoteLabel(String text) {
+    return 'ההערה שלך: $text';
+  }
+
+  @override
+  String get notesTitle => 'סימניות והערות';
+
+  @override
+  String get notesEmpty =>
+      'כדי לסמן פסוק או לשמור שאלה לשולחן השבת, יש ללחוץ לחיצה ארוכה על הפסוק בזמן הקריאה.';
+
+  @override
+  String get notesEmptyParsha => 'עדיין אין סימניות או הערות בפרשה הזו.';
+
+  @override
+  String get notesShowAll => 'כל הסימניות וההערות';
+
+  @override
+  String get parshaNotes => 'ההערות שלך על הפרשה';
+
+  @override
+  String notesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count הערות',
+      two: 'שתי הערות',
+      one: 'הערה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bookmarksCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count סימניות',
+      two: 'שתי סימניות',
+      one: 'סימנייה אחת',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get copyDivineName => 'כתיבת שם ההוויה כ־ה׳';
@@ -1783,7 +1858,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get syncProgressDesc =>
-      'שמירת התקדמות הקריאה בחשבון ושחזורה במכשירים אחרים.';
+      'שמירת התקדמות הקריאה, הסימניות וההערות בחשבון, ושחזורן במכשירים אחרים.';
 
   @override
   String get syncNow => 'סנכרון עכשיו';

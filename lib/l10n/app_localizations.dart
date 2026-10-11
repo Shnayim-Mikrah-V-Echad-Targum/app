@@ -1353,7 +1353,7 @@ abstract class AppLocalizations {
   /// **'Space'**
   String get keySpace;
 
-  /// A screen reader's action on a verse, which opens what can be done with it: copy, share or ask about it.
+  /// A screen reader's action on a verse, which opens what can be done with it: bookmark it, write a note on it, copy, share or ask about it.
   ///
   /// In en, this message translates to:
   /// **'Verse options'**
@@ -1362,7 +1362,7 @@ abstract class AppLocalizations {
   /// No description provided for @shortcutVerseOptions.
   ///
   /// In en, this message translates to:
-  /// **'Verse options: copy, share or ask'**
+  /// **'Verse options: bookmark, note, copy, share or ask'**
   String get shortcutVerseOptions;
 
   /// No description provided for @copyVerse.
@@ -1394,6 +1394,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sharing isn\'t available here, so the verse was copied.'**
   String get shareCopiedInstead;
+
+  /// A switch in a verse's options that bookmarks the verse.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmark'**
+  String get bookmarkVerse;
+
+  /// No description provided for @addNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note'**
+  String get addNote;
+
+  /// A verse's options: the row that opens the reader's note on the verse, with the note beneath it. Also the label of the note's field.
+  ///
+  /// In en, this message translates to:
+  /// **'Your note'**
+  String get yourNote;
+
+  /// The title of the dialog that edits the reader's note on a verse, such as "Note on Genesis 3:22".
+  ///
+  /// In en, this message translates to:
+  /// **'Note on {reference}'**
+  String noteTitle(String reference);
+
+  /// No description provided for @noteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A question for the Shabbat table, or a thought'**
+  String get noteHint;
+
+  /// No description provided for @noteSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Note saved'**
+  String get noteSaved;
+
+  /// No description provided for @noteDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Note deleted'**
+  String get noteDeleted;
+
+  /// Said by screen readers after a verse the reader has bookmarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmarked'**
+  String get verseBookmarked;
+
+  /// Said by screen readers after a verse the reader has written a note on.
+  ///
+  /// In en, this message translates to:
+  /// **'With your note'**
+  String get verseWithNote;
+
+  /// Read by screen readers on the list of bookmarks and notes: the reader's own note on a verse.
+  ///
+  /// In en, this message translates to:
+  /// **'Your note: {text}'**
+  String yourNoteLabel(String text);
+
+  /// No description provided for @notesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmarks & notes'**
+  String get notesTitle;
+
+  /// No description provided for @notesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'To bookmark a verse or keep a question for the Shabbat table, press and hold the verse as you read.'**
+  String get notesEmpty;
+
+  /// No description provided for @notesEmptyParsha.
+  ///
+  /// In en, this message translates to:
+  /// **'No bookmarks or notes on this parsha yet.'**
+  String get notesEmptyParsha;
+
+  /// No description provided for @notesShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All bookmarks & notes'**
+  String get notesShowAll;
+
+  /// A row on a week's page that opens the reader's bookmarks and notes on its parsha.
+  ///
+  /// In en, this message translates to:
+  /// **'Your notes on this parsha'**
+  String get parshaNotes;
+
+  /// No description provided for @notesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 note} other{{count} notes}}'**
+  String notesCount(int count);
+
+  /// No description provided for @bookmarksCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 bookmark} other{{count} bookmarks}}'**
+  String bookmarksCount(int count);
 
   /// No description provided for @copyDivineName.
   ///
@@ -3162,7 +3264,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncProgressDesc.
   ///
   /// In en, this message translates to:
-  /// **'Keep your reading progress with your account and restore it on other devices.'**
+  /// **'Keep your reading progress, bookmarks and notes with your account, and restore them on other devices.'**
   String get syncProgressDesc;
 
   /// No description provided for @syncNow.

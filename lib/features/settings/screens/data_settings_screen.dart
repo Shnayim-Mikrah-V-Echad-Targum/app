@@ -17,10 +17,14 @@ import '../../progress/domain/progress_merge.dart';
 import '../backup.dart';
 import '../widgets/settings_widgets.dart';
 
-/// A backup of all progress and settings, made at [now] (see
-/// [encodeBackup]).
-String exportBackup(WidgetRef ref, {DateTime? now}) =>
-    encodeBackup(ref.read(progressProvider), ref.read(settingsProvider), now: now ?? TodayController.now());
+/// A backup of all progress, settings, bookmarks and notes, made at [now]
+/// (see [encodeBackup]).
+String exportBackup(WidgetRef ref, {DateTime? now}) => encodeBackup(
+      ref.read(progressProvider),
+      ref.read(settingsProvider),
+      annotations: ref.read(annotationsProvider),
+      now: now ?? TodayController.now(),
+    );
 
 /// Saves a backup as a file, the platform's way (see [BackupFiles.save]).
 /// [context] is the control's own, where the iPad anchors the share sheet.
@@ -91,6 +95,9 @@ void showBackupImportStatus(
 /// [Backup.joinDate]), so that the history from both counts; replacing, it
 /// is the one saved with the backup, if any.
 ///
+/// Its bookmarks and notes are merged with those here either way, as a sync
+/// merges them: replacing erases the reading history, never a note.
+///
 /// Its settings come too only [withSettings], keeping this device's record
 /// of having offered reminders. Reminders they turn on need the OS's
 /// permission here, as they did on the device that saved them, so it is
@@ -114,6 +121,7 @@ Future<BackupImport> importBackup(
     unknownPauses: backup.unknownPauses,
     outlast: backup.progress.resetAt,
   );
+  ref.read(annotationsProvider.notifier).merge(backup.annotations);
   final restored = withSettings ? backup.settings : null;
   if (restored == null) {
     if (joinDate != current.joinDate) settings.update((s) => s.copyWith(joinDate: joinDate));

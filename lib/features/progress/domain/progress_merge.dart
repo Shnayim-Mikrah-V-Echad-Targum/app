@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/calendar/local_date.dart';
+import '../../notes/domain/annotations.dart';
 import 'progress_models.dart';
 
 export '../../../app/providers.dart' show ProgressState;
@@ -96,11 +97,25 @@ ProgressState _withoutReset(ProgressState s) => ProgressState(
       unknownPauses: s.unknownPauses,
     );
 
-/// What a sync saves to the reader's account: their [progress], and the day
-/// they joined (see [mergeSyncPayload]). Earlier versions saved the
-/// progress alone, and read past the join date.
-Map<String, dynamic> syncPayload(ProgressState progress, LocalDate? joinDate) =>
-    {...progress.toJson(), 'joinDate': ?joinDate?.rd};
+/// What a sync saves to the reader's account: their [progress], the day
+/// they joined (see [mergeSyncPayload]), and their bookmarks and notes
+/// ([annotations], merged by [Annotations.merge]), which are left out while
+/// there are none. Earlier versions saved the progress alone, and read past
+/// the join date and the annotations; one that saves again leaves the
+/// annotations out, and the next sync from this version puts them back.
+Map<String, dynamic> syncPayload(
+  ProgressState progress,
+  LocalDate? joinDate, {
+  Annotations annotations = Annotations.empty,
+}) =>
+    {
+      ...progress.toJson(),
+      'joinDate': ?joinDate?.rd,
+      if (annotations.entries.isNotEmpty || annotations.unknown.isNotEmpty) 'annotations': annotations.toJson(),
+    };
+
+/// The bookmarks and notes a sync [payload] holds: none if it has none.
+Annotations syncPayloadAnnotations(Map<String, dynamic> payload) => Annotations.fromJson(payload['annotations']);
 
 /// The join date a sync [payload] holds, if any.
 LocalDate? syncPayloadJoinDate(Map<String, dynamic> payload) =>

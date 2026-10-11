@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../app/providers.dart';
 import '../../app/routes.dart';
 import '../../core/text/hebrew_text.dart';
+import '../../data/models/parsha.dart' show kTorahBooks;
 import '../../data/models/scripture.dart';
 import '../../data/models/verse_ref.dart';
 import '../../services/feedback.dart';
@@ -16,6 +17,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/paper_group.dart';
+import '../notes/note_dialog.dart';
 import '../settings/app_settings.dart';
 import 'scripture_text.dart';
 
@@ -85,8 +87,9 @@ String verseQuote(Verse verse, AppSettings s, {required bool leftToRight}) =>
 String askAboutVersePath(BookVerse verse) =>
     Uri(path: '/community/new', queryParameters: {'forum': 'questions', 'verse': '$verse'}).toString();
 
-/// Opens the options of [verse] (copy, share, or ask about it) from
-/// [context], over the whole window, the navigation too.
+/// Opens the options of [verse] (bookmark it or write a note on it, where it
+/// is a verse of the Torah; copy, share, or ask about it) from [context],
+/// over the whole window, the navigation too.
 Future<void> showVerseActions(BuildContext context, ChosenVerse verse) => showAppSheet<void>(
       context: context,
       useRootNavigator: true,
@@ -123,10 +126,12 @@ bool openVerseOptionsInView(BuildContext context) {
   return open != null;
 }
 
-/// What can be done with a verse: copy it, share it, or ask about it in the
-/// community. The sheet is headed by the verse's reference, over the verse
-/// as it will go, and offers each in one paper group (DESIGN_SYSTEM.md
-/// §6.27).
+/// What can be done with a verse: bookmark it and write a note on it, in a
+/// paper group of their own for a verse of the Torah (a verse of the
+/// haftarah has neither, as the list of them opens the Torah's verses in
+/// the reader); then copy it, share it, or ask about it in the community.
+/// The sheet is headed by the verse's reference, over the verse as it will
+/// go (DESIGN_SYSTEM.md §6.27).
 class _VerseActionsSheet extends ConsumerStatefulWidget {
   const _VerseActionsSheet({required this.verse, required this.page});
 
@@ -194,6 +199,17 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
     if (page.mounted) openTabPage(page, path);
   }
 
+  /// Bookmarks the verse, or takes the bookmark away. The sheet stays, its
+  /// switch showing the change.
+  void _bookmark(bool bookmarked) => ref.read(annotationsProvider.notifier).setBookmark(widget.verse.at, bookmarked);
+
+  /// Closes the sheet and opens the verse's note for writing over the page.
+  void _note() {
+    final page = widget.page;
+    Navigator.pop(context);
+    if (page.mounted) editVerseNote(page, widget.verse.at);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -203,6 +219,10 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
     final apple = defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS;
     // The verse as search sets one (§6.25), in the scripture's font.
     final style = ScriptureStyles(context, s).style(ScriptureKind.mikra).copyWith(fontSize: 20, height: 1.7);
+    final annotatable = kTorahBooks.contains(widget.verse.at.book);
+    final marks = annotatable ? ref.watch(annotationsProvider)[widget.verse.at] : null;
+    final bookmarked = marks?.bookmarked ?? false;
+    final note = marks?.note;
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: Space.xxl),
       child: Column(
@@ -238,6 +258,34 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
                   ),
                 ),
                 const Gap(Space.lg),
+                if (annotatable) ...[
+                  PaperGroup(
+                    children: [
+                      // One item for screen readers, a switch in its state,
+                      // which the row's tap toggles.
+                      PaperRow(
+                        icon: bookmarked ? Icons.bookmark : Icons.bookmark_border,
+                        iconColor: bookmarked ? scheme.primary : null,
+                        title: l.bookmarkVerse,
+                        toggled: bookmarked,
+                        chevron: false,
+                        onTap: () => _bookmark(!bookmarked),
+                        trailing: ExcludeFocus(
+                          child: ExcludeSemantics(child: Switch(value: bookmarked, onChanged: _bookmark)),
+                        ),
+                      ),
+                      PaperRow(
+                        icon: note == null ? Icons.note_add_outlined : Icons.sticky_note_2_outlined,
+                        title: note == null ? l.addNote : l.yourNote,
+                        // In its own direction, whatever the interface's.
+                        subtitle: note == null ? null : '\u2068$note\u2069',
+                        chevron: false,
+                        onTap: _note,
+                      ),
+                    ],
+                  ),
+                  const Gap(Rhythm.cardGap),
+                ],
                 PaperGroup(
                   children: [
                     PaperRow(

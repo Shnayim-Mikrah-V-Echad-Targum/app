@@ -25,6 +25,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/ornaments.dart' show Eyebrow, SeferDivider;
 import '../../ui/widgets/progress_widgets.dart' show WeekStatusBadge;
+import '../notes/domain/annotations.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/streak_engine.dart';
@@ -1151,6 +1152,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   ) {
     final l = context.l10n;
     final isMac = defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.iOS;
+    // What the reader has marked on each verse, which its number shows.
+    final annotations = ref.watch(annotationsProvider);
+    Annotation? marksOf(VerseRef r) => annotations[BookVerse(flow.book, r)];
     void toggle(AppSettings Function(AppSettings) f) => ref.read(settingsProvider.notifier).update(f);
     void next() {
       if (!_fullText) _next(ctx, flow);
@@ -1374,6 +1378,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                 if (whole && _focusedVerse != null) _followAliyah(parsha.aliyahOf(i));
                               }),
                               onVerseOptions: (r) => _openVerseOptions(texts, flow.book, r),
+                              marksOf: marksOf,
                               footer: (a) => ctx.isOpen && !ctx.progress.isAliyahDone(a)
                                   ? FilledButton.tonalIcon(
                                       style: AppButtons.tonal(context),
@@ -1443,6 +1448,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                     _ => null,
                                   },
                                   onVerseOptions: (r) => _openVerseOptions(texts, flow.book, r),
+                                  marksOf: marksOf,
                                 ),
                     ),
                   ],
@@ -1743,6 +1749,7 @@ class _GuidedStep extends StatelessWidget {
     this.quiet = false,
     this.speakingVerse,
     required this.onVerseOptions,
+    required this.marksOf,
   });
 
   final ReaderFlow flow;
@@ -1763,6 +1770,9 @@ class _GuidedStep extends StatelessWidget {
 
   /// Opens a verse's options, from a long press on it.
   final ValueChanged<VerseRef> onVerseOptions;
+
+  /// What the reader has marked on a verse: a bookmark, a note.
+  final Annotation? Function(VerseRef) marksOf;
 
   /// How long one step takes to fade into the next (§8): opacity alone, with
   /// no slide.
@@ -1787,14 +1797,19 @@ class _GuidedStep extends StatelessWidget {
 
     // Every verse of the guided reader hangs its number in the gutter at its
     // start (§4.7).
-    ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false}) => ScriptureVerse(
-          verse: text.verse(r),
-          kind: kind,
-          settings: settings,
-          secondary: secondary,
-          hangingNumber: true,
-          onLongPress: () => onVerseOptions(r),
-        );
+    ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false}) {
+      final marks = marksOf(r);
+      return ScriptureVerse(
+        verse: text.verse(r),
+        kind: kind,
+        settings: settings,
+        secondary: secondary,
+        hangingNumber: true,
+        onLongPress: () => onVerseOptions(r),
+        bookmarked: marks?.bookmarked ?? false,
+        hasNote: marks?.hasNote ?? false,
+      );
+    }
 
     // What goes with a verse shares the edge its text starts at, past the
     // gutter its number hangs in.
@@ -2317,6 +2332,7 @@ class _FullText extends StatelessWidget {
     required this.onTap,
     required this.onVerseTap,
     required this.onVerseOptions,
+    required this.marksOf,
     required this.footer,
     this.whole,
   });
@@ -2358,6 +2374,9 @@ class _FullText extends StatelessWidget {
   /// Opens a verse's options, from a long press anywhere in its block.
   final ValueChanged<VerseRef> onVerseOptions;
 
+  /// What the reader has marked on a verse: a bookmark, a note.
+  final Annotation? Function(VerseRef) marksOf;
+
   /// What ends an aliyah's text, after its divider: the button that marks
   /// it read, while it isn't.
   final Widget? Function(int aliyah) footer;
@@ -2391,6 +2410,7 @@ class _FullText extends StatelessWidget {
       final highlighted = (settings.focusMode && focusedVerse == i && !targeted && quietFocus != i) || speaking;
       final brk = texts.mikra.breaks[r];
       final rashi = settings.showRashi || settings.usesRashi ? texts.rashi?.on(r) ?? const <Comment>[] : const <Comment>[];
+      final marks = marksOf(r);
       final mikra = ScriptureVerse(
         verse: texts.mikra.verse(r),
         kind: ScriptureKind.mikra,
@@ -2398,6 +2418,8 @@ class _FullText extends StatelessWidget {
         dimmed: dimmed,
         onLongPress: () => onVerseOptions(r),
         ownGestures: false,
+        bookmarked: marks?.bookmarked ?? false,
+        hasNote: marks?.hasNote ?? false,
       );
       // Without the verse's number again: beneath it, ruled off; beside it,
       // on its line.

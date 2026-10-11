@@ -10,7 +10,9 @@ import '../core/calendar/jewish_holidays.dart';
 import '../core/calendar/local_date.dart';
 import '../core/calendar/parsha_schedule.dart';
 import '../data/parsha_repository.dart';
+import '../data/models/verse_ref.dart';
 import '../data/text_repository.dart';
+import '../features/notes/domain/annotations.dart';
 import '../features/progress/domain/progress_models.dart';
 import '../features/progress/domain/reading_plan.dart';
 import '../features/progress/domain/streak_engine.dart';
@@ -730,3 +732,61 @@ final isPausedProvider = Provider<bool>((ref) {
   final today = ref.watch(todayProvider);
   return ref.watch(progressProvider.select((p) => p.pauses)).any((p) => p.contains(today));
 });
+
+// ---------------------------------------------------------------------------
+// Bookmarks and notes
+
+/// The reader's bookmarks and notes on verses (see [Annotations]), stored as
+/// JSON under [storageKey] and saved as each changes: they change a tap at a
+/// time, unlike the reader's place.
+///
+/// They are backed up with the progress, and merge as it does, so a note
+/// written on one device reaches the others, and one deleted stays deleted
+/// (see [Annotations.merge]). Resetting the progress leaves them alone.
+class AnnotationsController extends Notifier<Annotations> {
+  static const storageKey = 'annotations.v1';
+
+  /// The prefix of the key under which stored annotations that can't be read
+  /// at all are copied, with the time in milliseconds appended, before
+  /// anything could overwrite them.
+  static const corruptBackupPrefix = 'annotations.corrupt.';
+
+  @override
+  Annotations build() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final raw = prefs.getString(storageKey);
+    if (raw == null) return Annotations.empty;
+    try {
+      final json = jsonDecode(raw);
+      if (json is Map<String, dynamic>) return Annotations.fromJson(json);
+    } catch (_) {
+      // Kept aside below.
+    }
+    // The next save would replace it: copied aside, once.
+    final copies = prefs.getKeys().where((k) => k.startsWith(corruptBackupPrefix));
+    if (!copies.any((k) => prefs.get(k) == raw)) {
+      prefs.setString('$corruptBackupPrefix${DateTime.now().millisecondsSinceEpoch}', raw);
+    }
+    return Annotations.empty;
+  }
+
+  void _set(Annotations next) {
+    if (identical(next, state)) return;
+    state = next;
+    ref.read(sharedPreferencesProvider).setString(storageKey, jsonEncode(next.toJson()));
+  }
+
+  void setBookmark(BookVerse verse, bool bookmarked) => _set(state.withBookmark(verse, bookmarked));
+
+  /// Saves [note] as [verse]'s note; a blank one deletes it.
+  void setNote(BookVerse verse, String? note) => _set(state.withNote(verse, note));
+
+  /// Merges [other] in: a sync's or a backup's. Equal annotations change
+  /// nothing, so listeners hear only of real changes.
+  void merge(Annotations other) {
+    final merged = Annotations.merge(state, other);
+    if (merged != state) _set(merged);
+  }
+}
+
+final annotationsProvider = NotifierProvider<AnnotationsController, Annotations>(AnnotationsController.new);

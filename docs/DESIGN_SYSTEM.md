@@ -897,9 +897,12 @@ The Parsha tab's search button, and Ctrl+K (⌘K) on any tab, open one sheet (§
 A long press on a verse, in the guided reader, the full text (anywhere in the verse's block, with no ink outside focus mode) or the haftarah, opens one sheet (§6.19); so do a secondary click, and Shift+F10 or the menu key for the verse focus mode is on, or the first in view:
 - `SheetTitle` with the verse's reference, as Names.reference writes it ("Genesis 3:22", "בראשית ג, כב").
 - The verse as it will go, at most three lines, in the scripture's font at 20 / 1.7 in onSurface, right to left, set off as a quotation is (§6.21): a 2 px `secondary` rule at its right, 12 from the text. Screen readers skip it; the title has named the verse.
-- 16 below, one PaperGroup (§6.3): Copy (`content_copy_outlined`) and Share (`share_outlined`, or `ios_share` on Apple devices), with no chevron; then Ask about this verse (`help_outline`, the forum's icon) with `askAboutVerseDesc` beneath and a chevron, as it leads to a page.
+- 16 below, for a verse of the Torah, a PaperGroup of the reader's own marks: Bookmark (`bookmark_border`, or `bookmark` in primary once on) with a switch, one item to screen readers that reads as a switch (the switch itself is no item or tab stop of its own, as Account's backup row); then `addNote` (`note_add_outlined`), or `yourNote` (`sticky_note_2_outlined`) with the note beneath it, in its own direction, which closes the sheet and opens the note (below). Neither has a chevron. A verse of the haftarah has no such group.
+- 12 below that (or 16 below the verse), one PaperGroup (§6.3): Copy (`content_copy_outlined`) and Share (`share_outlined`, or `ios_share` on Apple devices), with no chevron; then Ask about this verse (`help_outline`, the forum's icon) with `askAboutVerseDesc` beneath and a chevron, as it leads to a page.
 - Copy closes the sheet and says `verseCopied`. Share leaves the sheet open beneath the platform's share sheet, which points from its row, and closes it once that is done with; where nothing can share, the verse is copied and `shareCopiedInstead` says so.
 - Screen readers: each verse (in the full text, the verse and its Targum) carries the custom action `verseOptions` and a long press.
+- Bookmark changes at once, and the sheet stays, its switch showing it.
+- **The note** (lib/features/notes/note_dialog.dart): a dialog (§6.19) titled `noteTitle` ("Note on Genesis 3:22"), its field outlined, 4 to 10 lines, labelled `yourNote` with the hint `noteHint`, up to 2,000 characters (`quietCounter`), in the direction of what is written, and taking the focus. Actions: Delete (while there is a note), Cancel, and a Filled Save that waits for a change; Ctrl+Enter (⌘Enter) saves. Saved, the page says `noteSaved`; deleted, by Delete or by emptying it, `noteDeleted` with Undo.
 
 ### 6.28 Listen bar (lib/features/reader/listen_bar.dart)
 
@@ -909,6 +912,19 @@ While Listen reads, playing or paused, a player sits above the reader's bottom b
 - At its centre, left to right in either language, as media controls are: `skip_previous_rounded` (`listenPreviousVerse`), 8, a tonal 48 dp icon button in primaryContainer / onPrimaryContainer with `pause_rounded` (`listenPause`) or `play_arrow_rounded` (`listenResume`), 8, and `skip_next_rounded` (`listenNextVerse`). Back and on are disabled where there is no verse to move to; between Listen along's readings, back reads the last verse again and on goes to the next reading.
 - At its end, `close` (`stopListening`).
 - The app bar's Listen button reads `stopListening` with `stop_circle_outlined` while the player shows.
+
+### 6.29 Bookmarks and notes (lib/features/notes/)
+
+**The verse's marks** (`VerseMarks`, scripture_text.dart): after the verse number, wherever the verse shows it (the Torah's verse, and the Targum in the guided reader's Targum step; never the full text's Targum beneath its verse), in the number's size and in primary, the techelet of the scroll's note marks (`dimInk` with a dimmed verse): a ribbon 0.46 × 0.72 of the number's size, notched at its foot, for a bookmark, and a dot 0.34 across at the middle of the number's letters for a note, ribbon first, 0.28 apart and 0.28 from the number. They stand on the baseline (a WidgetSpan above it). In the full text they are joined to the number by a word joiner, and to the verse by its no-break space; in the guided reader's margin they follow the number, or go beneath it where the margin has no room for both (large text). With numbers hidden, they lead the verse. The verse's label ends "Bookmarked", "With your note".
+
+**The list** (`/notes`, over the tabs; `/notes?week=5787:1` for a week's parsha): `notesTitle` in the app bar, in the 720 column.
+- A heading per book (one per parsha, filtered): the Hebrew name in FRL 600 20 onSurface, then in the English UI the English name in titleSmall onSurfaceVariant, one paragraph; a level-2 heading; 8 above the first, 28 above the rest, 4 below. Filtered, the parsha's name (`parshaLabel`).
+- Per chapter, `chapterLabel` ("Chapter 3", "פרק ג") in titleSmall onSurfaceVariant with tabular figures, a level-3 heading, 16 above and 8 below; then a PaperGroup of its verses, hairlines inset 54.
+- **Row:** padding start 16, vertical 12; where a row's icon sits (a 38 slot), centred on the reference's line, `bookmark` in primary for a bookmark, or `sticky_note_2_outlined` in onSurfaceVariant for a note alone; then the reference in titleSmall onSurfaceVariant with tabular figures, 4, the verse in the scripture font 20 / 1.7 onSurface, right to left, without cantillation (two lines), 4, and the note in bodyLarge onSurface in its own direction (four lines). Nothing is cut short once the text is enlarged. At the end, a `more_vert` IconButton (`verseOptions`), its glyph on the paper's edge as a paper row's menu's.
+- A tap opens the full text at the verse (§4.7): in the week of this year's cycle that reads it, or the filtered week. The menu button, a long press, a secondary click, Shift+F10 or the menu key open the verse's options (§6.27). One item to screen readers: the reference, `verseBookmarked`, the verse spoken as the reader's are, tagged `he`, and `yourNoteLabel`, with the `verseOptions` action and the long press; the menu button is an item of its own.
+- Empty: the empty state (§6.22) with `notesEmpty`, or filtered `notesEmptyParsha`. Filtered, a centred Text `notesShowAll` ends the page, 24 below.
+
+**On a week's page:** while its parsha has any, a PaperGroup of one PaperRow (`bookmarks_outlined`, `parshaNotes`, and beneath it `notesCount` · `bookmarksCount`) to the filtered list. The week's menu offers the whole list (`notesTitle`).
 
 ## 7. Motifs and iconography
 

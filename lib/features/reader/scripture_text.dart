@@ -318,6 +318,8 @@ class ScriptureVerse extends StatelessWidget {
     this.ruled = false,
     this.onLongPress,
     this.ownGestures = true,
+    this.bookmarked = false,
+    this.hasNote = false,
   });
 
   final Verse verse;
@@ -351,6 +353,12 @@ class ScriptureVerse extends StatelessWidget {
   /// ([VerseGroup], in the full text), so that only the screen readers'
   /// actions are here, on the verse they hear.
   final bool ownGestures;
+
+  /// Whether the reader has bookmarked the verse, or written a note on it:
+  /// marked after its number ([VerseMarks]) wherever it [showNumber]s, and
+  /// said after it to screen readers.
+  final bool bookmarked;
+  final bool hasNote;
 
   /// Between the rule and the text.
   static const ruleGap = 12.0;
@@ -441,6 +449,13 @@ class ScriptureVerse extends StatelessWidget {
       hebrewSpans.add(TextRange(start: start, end: start + spokenNote.length));
       label += note;
     }
+    final marked = showNumber && (bookmarked || hasNote);
+    if (marked) {
+      label += [
+        if (bookmarked) '. ${labels.verseBookmarked}',
+        if (hasNote) '. ${labels.verseWithNote}',
+      ].join();
+    }
 
     // The number in gold, joined to the first word by a no-break space so
     // that it never ends a line alone. The space is the verse's, and the
@@ -450,14 +465,33 @@ class ScriptureVerse extends StatelessWidget {
     final numeral = showNumber && settings.showVerseNumbers ? HebrewText.gematria(verse.ref.verse, punctuate: false) : null;
     final numberStyle = styles.numberStyle(kind, dimmed: dimmed);
     final strut = styles.strut(kind);
+    // The reader's marks, after the number (or where it would be), in the
+    // number's size: the techelet of the scroll's own note marks, receding
+    // with a dimmed verse.
+    final marks = marked
+        ? WidgetSpan(
+            alignment: PlaceholderAlignment.aboveBaseline,
+            baseline: TextBaseline.alphabetic,
+            child: VerseMarks(
+              size: MediaQuery.textScalerOf(context).scale(numberStyle.fontSize!),
+              bookmarked: bookmarked,
+              hasNote: hasNote,
+              color: dimmed ? dimInk : scheme.primary,
+              lead: numeral != null,
+            ),
+          )
+        : null;
 
     Widget paragraph({required bool withNumber}) {
       Widget text = Text.rich(
         TextSpan(
           style: base,
           children: [
-            if (withNumber && numeral != null) ...[
-              TextSpan(text: numeral, style: numberStyle),
+            if (withNumber && (numeral != null || marks != null)) ...[
+              if (numeral != null) TextSpan(text: numeral, style: numberStyle),
+              // Joined to the number, so that a line never breaks between
+              // them.
+              if (marks != null) ...[if (numeral != null) const TextSpan(text: '\u2060'), marks],
               TextSpan(text: '\u00A0', style: TextStyle(letterSpacing: settings.letterSpacing + settings.wordSpacing)),
             ],
             ...spans,
@@ -494,7 +528,16 @@ class ScriptureVerse extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              SizedBox(width: gutter, child: Text(numeral, style: numberStyle, textDirection: TextDirection.rtl)),
+              SizedBox(
+                width: gutter,
+                // The marks after the number, or beneath it where the gutter
+                // has no room for both.
+                child: Text.rich(
+                  TextSpan(text: numeral, children: [?marks]),
+                  style: numberStyle,
+                  textDirection: TextDirection.rtl,
+                ),
+              ),
               Expanded(child: paragraph(withNumber: false)),
             ],
           );
@@ -553,6 +596,101 @@ class ScriptureVerse extends StatelessWidget {
       child: ExcludeSemantics(child: content),
     );
   }
+}
+
+/// What the reader has marked on a verse, set after its number: a bookmark,
+/// a ribbon as tall as the number's letters, and a note, a dot at their
+/// middle. [size] is the number's size, at the system text scale; the marks
+/// stand on the baseline (a [WidgetSpan] aligned above it) and run right to
+/// left, as the verse does. A [lead]ing gap parts them from the number.
+class VerseMarks extends StatelessWidget {
+  const VerseMarks({
+    super.key,
+    required this.size,
+    required this.bookmarked,
+    required this.hasNote,
+    required this.color,
+    this.lead = true,
+  });
+
+  final double size;
+  final bool bookmarked;
+  final bool hasNote;
+  final Color color;
+  final bool lead;
+
+  static const _gap = 0.28;
+  static const _ribbonWidth = 0.46;
+  static const _height = 0.72;
+  static const _dot = 0.34;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = (lead ? _gap : 0) +
+        (bookmarked ? _ribbonWidth : 0) +
+        (bookmarked && hasNote ? _gap : 0) +
+        (hasNote ? _dot : 0);
+    return ExcludeSemantics(
+      child: CustomPaint(
+        size: Size(width * size, _height * size),
+        painter: _VerseMarksPainter(size: size, bookmarked: bookmarked, hasNote: hasNote, color: color, lead: lead),
+      ),
+    );
+  }
+}
+
+class _VerseMarksPainter extends CustomPainter {
+  const _VerseMarksPainter({
+    required this.size,
+    required this.bookmarked,
+    required this.hasNote,
+    required this.color,
+    required this.lead,
+  });
+
+  final double size;
+  final bool bookmarked;
+  final bool hasNote;
+  final Color color;
+  final bool lead;
+
+  @override
+  void paint(Canvas canvas, Size box) {
+    final paint = Paint()
+      ..color = color
+      ..isAntiAlias = true;
+    // From the right, where the number is.
+    var right = box.width - (lead ? VerseMarks._gap * size : 0);
+    if (bookmarked) {
+      final w = VerseMarks._ribbonWidth * size;
+      final h = box.height;
+      final left = right - w;
+      canvas.drawPath(
+        Path()
+          ..moveTo(left, 0)
+          ..lineTo(right, 0)
+          ..lineTo(right, h)
+          ..lineTo(left + w / 2, h - w * 0.42)
+          ..lineTo(left, h)
+          ..close(),
+        paint,
+      );
+      right = left - VerseMarks._gap * size;
+    }
+    if (hasNote) {
+      final r = VerseMarks._dot * size / 2;
+      // At the middle of the number's letters.
+      canvas.drawCircle(Offset(right - r, box.height - 0.36 * size), r, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_VerseMarksPainter old) =>
+      old.size != size ||
+      old.bookmarked != bookmarked ||
+      old.hasNote != hasNote ||
+      old.color != color ||
+      old.lead != lead;
 }
 
 /// One verse of the full text with all that goes with it (its Targum,

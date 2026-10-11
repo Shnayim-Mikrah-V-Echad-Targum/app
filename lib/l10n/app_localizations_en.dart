@@ -772,7 +772,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verseOptions => 'Verse options';
 
   @override
-  String get shortcutVerseOptions => 'Verse options: copy, share or ask';
+  String get shortcutVerseOptions =>
+      'Verse options: bookmark, note, copy, share or ask';
 
   @override
   String get copyVerse => 'Copy';
@@ -789,6 +790,78 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get shareCopiedInstead =>
       'Sharing isn\'t available here, so the verse was copied.';
+
+  @override
+  String get bookmarkVerse => 'Bookmark';
+
+  @override
+  String get addNote => 'Add a note';
+
+  @override
+  String get yourNote => 'Your note';
+
+  @override
+  String noteTitle(String reference) {
+    return 'Note on $reference';
+  }
+
+  @override
+  String get noteHint => 'A question for the Shabbat table, or a thought';
+
+  @override
+  String get noteSaved => 'Note saved';
+
+  @override
+  String get noteDeleted => 'Note deleted';
+
+  @override
+  String get verseBookmarked => 'Bookmarked';
+
+  @override
+  String get verseWithNote => 'With your note';
+
+  @override
+  String yourNoteLabel(String text) {
+    return 'Your note: $text';
+  }
+
+  @override
+  String get notesTitle => 'Bookmarks & notes';
+
+  @override
+  String get notesEmpty =>
+      'To bookmark a verse or keep a question for the Shabbat table, press and hold the verse as you read.';
+
+  @override
+  String get notesEmptyParsha => 'No bookmarks or notes on this parsha yet.';
+
+  @override
+  String get notesShowAll => 'All bookmarks & notes';
+
+  @override
+  String get parshaNotes => 'Your notes on this parsha';
+
+  @override
+  String notesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes',
+      one: '1 note',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bookmarksCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bookmarks',
+      one: '1 bookmark',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get copyDivineName => 'Write the Divine Name as ה׳';
@@ -1793,7 +1866,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncProgressDesc =>
-      'Keep your reading progress with your account and restore it on other devices.';
+      'Keep your reading progress, bookmarks and notes with your account, and restore them on other devices.';
 
   @override
   String get syncNow => 'Sync now';

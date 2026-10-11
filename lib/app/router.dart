@@ -13,6 +13,7 @@ import '../features/community/ui/forum_screen.dart';
 import '../features/community/ui/account_screen.dart';
 import '../features/community/ui/moderation_screen.dart';
 import '../features/community/ui/thread_screen.dart';
+import '../features/notes/notes_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/parsha/browse_screen.dart';
 import '../features/parsha/parsha_tab.dart';
@@ -143,6 +144,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       _haftarah('/haftarah/:id'),
       // Search fills the screen, as the reader does; ?q= searches at once.
       _route('/search', (s) => SearchScreen(initialQuery: s.uri.queryParameters['q'] ?? '')),
+      // The bookmarks and notes, over the tabs as the reader they open is;
+      // ?week= those of one week's parsha.
+      _route('/notes', (s) => NotesScreen(weekId: s.uri.queryParameters['week'])),
       // The list of cities over the reader, offered once reminders are turned
       // on there; choosing one goes back to it.
       _route('/city', (_) => const CityPickerScreen()),

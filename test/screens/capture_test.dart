@@ -10,6 +10,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -362,6 +363,18 @@ const _screens = {
   // haftarah's first: what can be done with it.
   'reader_verse_actions': '/read/5787:1/3',
   'haftarah_verse_actions': '/haftarah/5787:1',
+  // Bookmarks and notes (see [_annotations]): marked after the verse number
+  // in the guided reader and in the full text; Genesis 3:22's options, with
+  // its bookmark and note, and its note open; the list of every verse
+  // marked, of Bereshit's, and of none; and the row on the week's page.
+  'reader_marks': '/read/5787:1/3',
+  'reader_full_marks': '/read/5787:1/3?mode=full',
+  'reader_verse_actions_marked': '/read/5787:1/3',
+  'note_dialog': '/read/5787:1/3',
+  'notes': '/notes',
+  'notes_parsha': '/notes?week=5787:1',
+  'notes_empty': '/notes',
+  'week_notes': '/week/5787:1',
   // "Ask about this verse": the question begun, and a draft kept instead.
   'compose_verse': '/community/new?forum=questions&verse=Genesis%203:22',
   'compose_verse_draft': '/community/new?forum=questions&verse=Genesis%203:22',
@@ -899,7 +912,42 @@ Future<void> _scrollToEnd(WidgetTester tester) async {
   }
 }
 
+/// Bookmarks and notes on Genesis and Exodus, in both languages, for the
+/// screens that show them.
+final _annotations = jsonEncode({
+  'Genesis 1:1': {'b': false, 'n': 'What does a world made “in the beginning” say about every new start?', 'u': 1},
+  'Genesis 1:27': {'b': true, 'n': null, 'u': 2},
+  'Genesis 3:9': {'b': true, 'n': 'Ayeka — “where are you?” A question for the table: when do we hide?', 'u': 3},
+  'Genesis 3:22': {
+    'b': true,
+    'n': 'Why “like one of us”? Onkelos and Rashi each read it another way: ask at the table.',
+    'u': 4,
+  },
+  'Genesis 3:24': {'b': true, 'n': null, 'u': 5},
+  'Genesis 4:1': {'b': false, 'n': 'קניתי איש את ה׳ — מה חוה מבקשת לומר בשם קין?', 'u': 6},
+  'Genesis 2:3': {'b': false, 'n': null, 'u': 7},
+  'Exodus 3:14': {'b': true, 'n': null, 'u': 8},
+});
+
+/// Screens that show [_annotations].
+const _annotated = {
+  'reader_marks',
+  'reader_full_marks',
+  'reader_verse_actions_marked',
+  'note_dialog',
+  'notes',
+  'notes_parsha',
+  'week_notes',
+};
+
 final _screenSetup = <String, Future<void> Function(WidgetTester)>{
+  'reader_verse_actions_marked': (tester) => tester.longPress(find.byType(ScriptureVerse).first),
+  'note_dialog': (tester) async {
+    await tester.longPress(find.byType(ScriptureVerse).first);
+    await _settle(tester);
+    await tester.tap(find.byIcon(Icons.sticky_note_2_outlined));
+  },
+  'week_notes': _scrollToEnd,
   for (final screen in [
     'reader_listen',
     'reader_listen_full',
@@ -1284,6 +1332,8 @@ final _modes = [
 ];
 
 const _desktopScreens = {
+  'notes',
+  'reader_full_marks',
   'today',
   'today_candles',
   'parsha',
@@ -1363,7 +1413,7 @@ const _desktopScreens = {
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc', 'wide'};
-const _tallScreens = {'today', 'parsha', 'week', 'progress', 'progress_years', 's_display', 'sources'};
+const _tallScreens = {'week_notes', 'notes', 'notes_parsha', 'today', 'parsha', 'week', 'progress', 'progress_years', 's_display', 'sources'};
 const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {
   'today',
@@ -1379,6 +1429,10 @@ const _narrowScreens = {
   'reader_listen_full',
 };
 const _bigTextScreens = {
+  'notes',
+  'reader_marks',
+  'reader_verse_actions_marked',
+  'note_dialog',
   'today',
   'reader_offer',
   'reader_offer_city',
@@ -1494,6 +1548,7 @@ void main() {
             settings: mode.settings(base),
             now: _screenNow[entry.key] ?? _now,
             progress: onboarding ? const ProgressState() : (_screenProgress[entry.key] ?? _progress)(),
+            stored: {if (_annotated.contains(entry.key)) AnnotationsController.storageKey: _annotations},
             forums: blocked
                 ? await _accountWithNewerBackup()
                 : (_backupOn.contains(entry.key) ? await _signedIn() : await _communities[entry.key]?.call()),

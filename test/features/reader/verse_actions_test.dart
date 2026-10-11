@@ -280,7 +280,7 @@ void main() {
       await open(tester, '/read/5787:1/3');
       await tester.sendKeyEvent(LogicalKeyboardKey.f1);
       await tester.pumpAndSettle();
-      expect(find.text('Verse options: copy, share or ask'), findsOneWidget);
+      expect(find.text('Verse options: bookmark, note, copy, share or ask'), findsOneWidget);
     });
 
     testWidgets('in the full text, a long press anywhere in a verse\'s block opens its options', (tester) async {
