@@ -419,7 +419,10 @@ struct ParshaWidgetView: View {
           Link(destination: url) {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
               Text(next).lineLimit(2).minimumScaleFactor(0.8)
-              Image(systemName: "chevron.forward").font(.system(size: 11, weight: .semibold))
+              // Read as Today's button is, without the symbol's own name.
+              Image(systemName: "chevron.forward")
+                .font(.system(size: 11, weight: .semibold))
+                .accessibilityHidden(true)
             }
             .font(.system(size: 14, weight: .semibold))
             .foregroundColor(.techelet)
