@@ -14,7 +14,7 @@ import '../../helpers.dart';
 void main() {
   setUpAll(loadBundledFonts);
 
-  const names = ['Rishon', 'Sheni', 'Shlishi', "Revi'i", 'Chamishi', 'Shishi', "Shevi'i"];
+  const names = ['Rishon', 'Sheni', 'Shlishi', 'Revi’i', 'Chamishi', 'Shishi', 'Shevi’i'];
   const namesHe = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שביעי'];
 
   Future<List<int>> pump(
@@ -122,7 +122,7 @@ void main() {
           find.descendant(of: find.ancestor(of: tab(name), matching: find.byType(Stack)).first, matching: find.byType(AnimatedOpacity)),
         )
         .opacity;
-    expect(bar("Revi'i"), 1);
+    expect(bar('Revi’i'), 1);
     expect(bar('Sheni'), 0);
   });
 }

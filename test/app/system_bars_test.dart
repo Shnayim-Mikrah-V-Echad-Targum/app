@@ -143,7 +143,7 @@ void main() {
       phone(tester);
       await pumpApp(tester, settings: const AppSettings());
       await tester.pumpAndSettle();
-      expect(find.text("Start this week's parsha"), findsOneWidget);
+      expect(find.text('Start this week’s parsha'), findsOneWidget);
       final style = SystemChrome.latestStyle!;
       expect(style.statusBarColor, Colors.transparent);
       expect(style.statusBarIconBrightness, Brightness.dark);

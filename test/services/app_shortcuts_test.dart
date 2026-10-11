@@ -150,7 +150,7 @@ void main() {
       expect(shown(plugin), [
         ('continue_reading', 'Continue reading', 'ic_launcher'),
         ('log_from_book', 'Log reading from a book', 'ic_launcher'),
-        ('this_week', "This week's parsha", 'ic_launcher'),
+        ('this_week', 'This week’s parsha', 'ic_launcher'),
       ]);
       expectShortEnough(plugin);
 

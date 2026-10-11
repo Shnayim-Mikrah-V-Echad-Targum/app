@@ -139,10 +139,10 @@ void main() {
       }
       const tsere = [1, 4, 7, 9, 10, 14, 46, 49, 52];
       expect([for (final n in tsere) repo.byNumber(n).displayName(ashkenazi: false)],
-          ['Bereshit', 'Vayera', 'Vayetze', 'Vayeshev', 'Miketz', "Va'era", 'Ekev', 'Ki Tetze', 'Vayelech']);
+          ['Bereshit', 'Vayera', 'Vayetze', 'Vayeshev', 'Miketz', 'Va’era', 'Ekev', 'Ki Tetze', 'Vayelech']);
       // Ashkenazi: "ei".
       expect([for (final n in tsere) repo.byNumber(n).displayName(ashkenazi: true)],
-          ['Bereishis', 'Vayeira', 'Vayeitzei', 'Vayeishev', 'Mikeitz', "Va'eira", 'Eikev', 'Ki Seitzei', 'Vayeilech']);
+          ['Bereishis', 'Vayeira', 'Vayeitzei', 'Vayeishev', 'Mikeitz', 'Va’eira', 'Eikev', 'Ki Seitzei', 'Vayeilech']);
       expect([for (final n in [5, 23, 29, 43]) repo.byNumber(n).displayName(ashkenazi: false)],
           ['Chayei Sarah', 'Pekudei', 'Acharei Mot', 'Masei']);
     });

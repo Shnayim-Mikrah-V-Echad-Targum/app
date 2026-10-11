@@ -136,7 +136,7 @@ void main() {
   testWidgets('its switches are paper rows in groups: text, study aids and reading', (tester) async {
     final c = await open(tester);
     for (final (heading, rows) in [
-      ('Text', ['Vowels (nikud)', 'Cantillation (ta\'amim)', 'Show ketiv (as written)', 'Verse numbers', 'Write the Divine Name as ה׳', 'Justify text']),
+      ('Text', ['Vowels (nikud)', 'Cantillation (ta’amim)', 'Show ketiv (as written)', 'Verse numbers', 'Write the Divine Name as ה׳', 'Justify text']),
       ('Study aids', ['English translation (study aid)', 'Show Rashi alongside']),
       ('Reading', ['Focus mode', 'Bold text', 'Keep the screen on while reading']),
     ]) {

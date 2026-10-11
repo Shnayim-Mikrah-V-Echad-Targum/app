@@ -391,7 +391,7 @@ void main() {
       await tester.tap(inSheet(find.text('Share')));
       await tester.pumpAndSettle();
       expect(copied, endsWith('— Genesis 3:22'));
-      expect(find.text("Sharing isn't available here, so the verse was copied."), findsOneWidget);
+      expect(find.text('Sharing isn’t available here, so the verse was copied.'), findsOneWidget);
     });
 
     testWidgets('a browser without a share sheet copies the verse rather than open an email', (tester) async {
@@ -403,7 +403,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(sheet.emailed, isEmpty);
       expect(copied, endsWith('— Genesis 3:22'));
-      expect(find.text("Sharing isn't available here, so the verse was copied."), findsOneWidget);
+      expect(find.text('Sharing isn’t available here, so the verse was copied.'), findsOneWidget);
       expect(find.byType(BottomSheet), findsNothing);
     });
 

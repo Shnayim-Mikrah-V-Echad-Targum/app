@@ -126,14 +126,14 @@ void main() {
     await open(tester);
     await goTo(tester, '3:22');
     expect(find.text('Genesis 3:22'), findsOneWidget);
-    expect(find.text('Bereshit · Revi\'i'), findsOneWidget);
+    expect(find.text('Bereshit · Revi’i'), findsOneWidget);
   });
 
   testWidgets('a verse of a week read with the next opens in that week, at its aliyah', (tester) async {
     await open(tester);
     // Numbers 22:2 begins Balak, read with Chukat in the Diaspora in 5787.
     await goTo(tester, 'Balak 22:2');
-    expect(find.text('Chukat-Balak · Revi\'i'), findsOneWidget);
+    expect(find.text('Chukat-Balak · Revi’i'), findsOneWidget);
     await tester.tap(find.text('Numbers 22:2'));
     await untilRead(tester);
     expect(location(tester, ReaderScreen), '/read/5787:39-40/3?verse=22:2');

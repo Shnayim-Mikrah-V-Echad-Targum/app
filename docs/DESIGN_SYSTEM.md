@@ -47,7 +47,7 @@ Owner goal: an app that feels like a well-made chumash brought onto a screen wit
 3. Weights are 500/600/700 plus italic 500. There is no 400; it is too thin on screens.
 4. Chapter heads and Rashi's dibbur hamatchil use gold or ink, never techelet.
 5. Next uses a direction chevron. A check appears only on Finish.
-6. The hero CTA goes to `WeekContext.nextAliyah` (Shlishi in the scenario), not Revi'i.
+6. The hero CTA goes to `WeekContext.nextAliyah` (Shlishi in the scenario), not Revi’i.
 7. The icon uses a font size of 300 px. The letters are then 177 px tall and 744 px wide.
 8. The English UI keeps the transliterated Hebrew date ("28 Tishrei 5787"). Only the Hebrew UI uses Hebrew numerals.
 
@@ -59,7 +59,7 @@ Owner goal: an app that feels like a well-made chumash brought onto a screen wit
 | D2 | Seeded palette: lavender cards on cream, a mauve Targum ring and a pink demo banner. | app_theme.dart:92-146; progress_widgets.dart:55; community_ui.dart:145; reader_screen.dart:747; phone_today.png, phone_community.png |
 | D3 | The focus ring is invisible on FilledButton (primary ring on primary fill). | app_theme.dart:171, 217-222 |
 | D4 | Buttons request w600, but only 400/500/700 are bundled, so labels render Bold. | app_theme.dart:221; pubspec.yaml:82-95 |
-| D5 | The reader's ChoiceChip shows a check on the selected, unread Revi'i. Shlishi (2 of 3 passes) shows nothing. | reader_screen.dart:536-541; phone_reader.png |
+| D5 | The reader's ChoiceChip shows a check on the selected, unread Revi’i. Shlishi (2 of 3 passes) shows nothing. | reader_screen.dart:536-541; phone_reader.png |
 | D6 | Mikra 2 ring = primary at 80% alpha, which can't be told apart from Mikra 1. | progress_widgets.dart:55 |
 | D7 | Focus-mode dimmed verses use 55% alpha: 3.82:1, which fails AA. | scripture_text.dart:114, 118, 129, 223 |
 | D8 | Torah map: "late" tiles are white text on 70%-alpha primary. "Missed" and "upcoming" differ only by border colour. | progress_screen.dart:274-281 |
@@ -665,7 +665,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Each column: padding 16; ledgerNumeral (the count), then bodySmall label (`streakParsha`, `streakDays`); on Progress, an extra bodySmall "Longest: …".
 - When the value is 0, the numeral slot shows titleMedium text instead:
   - parsha streak: `streakBeginsWith(name)` = "Begins with Bereshit";
-  - days on track: `daysBeginToday` = "Begins with today's reading".
+  - days on track: `daysBeginToday` = "Begins with today’s reading".
   - Never show a stark 0.
 - The whole card is a SeferInkWell to /progress. Semantics: "Parsha streak: begins with Bereshit. Days on track: 2".
 
@@ -695,7 +695,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 **Layout**
 - Fixed grid: 3 columns under 600, 4 at 600 and up, 6 at 1200 and up; gap 6.
-- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha'alotcha on a 360 or 412 dp phone, or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, measured at the size it is set (letter spacing doesn't shrink with the text), and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
+- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha’alotcha on a 360 or 412 dp phone, or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, measured at the size it is set (letter spacing doesn't shrink with the text), and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
 - Build each row as `IntrinsicHeight(Row([Expanded(tile) …]))` so tiles grow with text scale. No GridView aspect ratio.
 
 **Tile**
@@ -857,7 +857,7 @@ Centred, max width 320, 40 top padding:
 
 Centred, max width 480:
 1. SeferDivider at 200 wide (animated, §8).
-2. 16 gap, then the title in headlineMedium (displaySmall from 600 dp): `aliyahDoneTitle`, "Revi'i is complete". The warmer `aliyahComplete` ("Yasher koach! Revi'i is complete.") is what is spoken, by the announcement or, where the platform takes none, the title's live region.
+2. 16 gap, then the title in headlineMedium (displaySmall from 600 dp): `aliyahDoneTitle`, "Revi’i is complete". The warmer `aliyahComplete` ("Yasher koach! Revi’i is complete.") is what is spoken, by the announcement or, where the platform takes none, the title's live region.
 3. 8 gap, then a marginalia line about the aliyah to continue with (the first after this one not yet read, then the first before it): `nextAliyahLength`, "Chamishi is 31 verses."
 4. 24 gap, then actions: Filled "Next aliyah · Chamishi" (52 high, a trailing chevron) and Text "Done". The first button takes the focus.
 5. Once everything planned for today and before is read, with the parsha unfinished, a marginalia line comes first: `todayReadingDone`, "That's today's reading. See you tomorrow." (or "See you on Sunday." when the next day with reading is later; a day whose aliyot were read ahead has none left), or on the plan's last day `erevShabbatDone`, "That's this week's reading. Shabbat shalom!" ("The rest is for Shabbat morning." when the plan leaves aliyot for it, and "Chag sameach!" when Yom Tov begins the next day). Done is then the Filled button, and continuing a Text "Keep going: Chamishi". While anything planned is still unread, the panel stays as in 4.
@@ -1083,7 +1083,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - Centred lines of more than one sentence (`weekComplete`, `restDayBody`) that don't fit on one line give each sentence a line or more of its own, and every centred line that wraps is set as narrow as its number of lines allows, so that no word stands alone on the last line.
 4. **Today card** (start-aligned):
    - Eyebrow `todayReadingTitle`, then headlineSmall `names.aliyot(day.aliyot)`, then bodyMedium onSurfaceVariant the verses and minutes of what is left of it (the aliyot not yet read).
-   - **Catching up** (aliyot planned for earlier days unread, and not paused): Eyebrow `todayCatchUpTitle`, then headlineSmall every aliyah due (`ctx.dueAliyot()`): a run of three or more as `Names.aliyahRange` ("Shlishi – Shevi'i"), otherwise by name; then bodyMedium "5 aliyot · 96 verses · about 33 min", the minutes counting only the readings not done (`remainingMinutes`); then a marginalia line honest about the day (§10), never "midweek" after Wednesday. Every line counts the same aliyot, those the card names, today's included:
+   - **Catching up** (aliyot planned for earlier days unread, and not paused): Eyebrow `todayCatchUpTitle`, then headlineSmall every aliyah due (`ctx.dueAliyot()`): a run of three or more as `Names.aliyahRange` ("Shlishi – Shevi’i"), otherwise by name; then bodyMedium "5 aliyot · 96 verses · about 33 min", the minutes counting only the readings not done (`remainingMinutes`); then a marginalia line honest about the day (§10), never "midweek" after Wednesday. Every line counts the same aliyot, those the card names, today's included:
      - Sunday to Wednesday: `todayBehind`;
      - Thursday: `todayBehindThursday`, that two days remain before Shabbat;
      - Erev Shabbat or Erev Yom Tov (by the reader's days of Yom Tov): `todayLastDayShabbat` or `todayLastDayYomTov`, with the Chumash as the calm alternative, logged after the day that ends the days of rest, as the rest-day page says (8): `todayLastDayShabbatThenYomTov` when Shabbat runs into Yom Tov, `todayLastDayYomTovThenShabbat` when Yom Tov runs into Shabbat;
@@ -1157,9 +1157,9 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 
 - App bar, two lines:
   - Eyebrow: the parsha name;
-  - titleLarge: "Revi'i · רביעי" in the English UI, "רביעי" in the Hebrew UI.
+  - titleLarge: "Revi’i · רביעי" in the English UI, "רביעי" in the Hebrew UI.
   - Actions unchanged (Listen, Aa, more).
-  - On a wide screen the title starts, and the actions end, where the text does. Screen readers hear the title as the page names itself ("Bereshit · Revi'i").
+  - On a wide screen the title starts, and the actions end, where the text does. Screen readers hear the title as the page names itself ("Bereshit · Revi’i").
 - Then the AliyahRibbon (§6.16), then a 16 gap, then the PassTrack (§6.17), then the verse.
 - Text column: max per LineWidth; side padding 20; top 16.
 - Typesetting per §4.7: gold hanging verse number, centred chapter head, section-break marks.
@@ -1182,7 +1182,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
   - the chapter heading, section marks and the verse's block (focus mode, the verse opened at, Listen) span the row; screen readers hear the verse, the Targum, the translation and Rashi, in that order.
 - **Whole parsha** (the overflow menu's `wholeParsha` / `oneAliyahAtATime`, full text only; `AppSettings.fullTextWholeParsha`; phone_reader_parsha, desktop_reader_parsha*):
   - one `SliverMainAxisGroup` per aliyah: the `AliyahHeader` pinned while its aliyah is read, its verses built lazily (`SliverList.builder`), then the SeferDivider and the Tonal Mark as read of that aliyah;
-  - `AliyahHeader` (whole_parsha.dart): surface, keeping to the text's measure, padding 10 vertical; the Hebrew ordinal in `ordinal` gold, 12, the name in titleMedium onSurface, 12, the verses in bodyMedium onSurfaceVariant with tabular figures (wrapping under the name when they don't fit), and at the end a 20 check in primary once the aliyah is read. A hairline beneath only while the text passes under it. One heading of level 2 to screen readers ("Revi'i, aliyah 4 of 7, Genesis 3:22–4:18, read"); the chapter headings beneath it are level 3;
+  - `AliyahHeader` (whole_parsha.dart): surface, keeping to the text's measure, padding 10 vertical; the Hebrew ordinal in `ordinal` gold, 12, the name in titleMedium onSurface, 12, the verses in bodyMedium onSurfaceVariant with tabular figures (wrapping under the name when they don't fit), and at the end a 20 check in primary once the aliyah is read. A hairline beneath only while the text passes under it. One heading of level 2 to screen readers ("Revi’i, aliyah 4 of 7, Genesis 3:22–4:18, read"); the chapter headings beneath it are level 3;
   - it opens at the aliyah chosen, out of sight until it is there; a ribbon tab scrolls to its aliyah's heading; the title, ribbon and menu follow the aliyah a quarter of the way down the text, or the verse focus mode moves to;
   - focus mode's ↓ and ↑, Listen and the verse opened at run through the whole parsha; a button reached by Tab is brought into view again once the verses before it are built.
 
@@ -1346,7 +1346,7 @@ In order:
   - an 8 px lozenge;
   - "שְׁנַיִם מִקְרָא / וְאֶחָד תַּרְגּוּם" in hebrewDisplay 40/60 primary (two lines, broken only between words), the page's heading (level 1), read as `appTitleFull`;
   - a SeferDivider;
-  - English UI only: "Shnayim Mikra v'Echad Targum" in EBG MediumItalic 24/30 onSurface (upright in high contrast and in an accessibility font), hidden from screen readers, since the heading says it. The Hebrew UI doesn't repeat the unpointed name;
+  - English UI only: "Shnayim Mikra v’Echad Targum" in EBG MediumItalic 24/30 onSurface (upright in high contrast and in an accessibility font), hidden from screen readers, since the heading says it. The Hebrew UI doesn't repeat the unpointed name;
   - body in bodyLarge onSurfaceVariant.
   - The English name, the body and the disclaimer set their lines evenly (`BalancedText`, lib/ui/widgets/lines.dart), so no word is left alone on a last line; the body keeps "once —" (and "פעם אחת —") together with no-break spaces.
   - The two names, display sizes already, grow with the text to 1.4× at most, so that with very large text the call to action isn't pushed far below the fold; the body and the buttons grow in full.
@@ -1366,7 +1366,7 @@ In order:
 
 **About header**
 - The app mark at 72 (corners 16), then "שניים מקרא ואחד תרגום" in hebrewDisplay 28/40 primary, the page's one heading of level 1, read as `appTitleFull`; the app bar shows "About" only once it has scrolled away, for the eye alone (`titleRevealed`), as on the policies.
-- English UI: "Shnayim Mikra v'Echad Targum" in EBG 500 20 onSurfaceVariant, hidden from screen readers. The Hebrew UI doesn't repeat the name.
+- English UI: "Shnayim Mikra v’Echad Targum" in EBG 500 20 onSurfaceVariant, hidden from screen readers. The Hebrew UI doesn't repeat the name.
 - Both names set their lines evenly (`BalancedText`) should large text need two.
 - Version in labelSmall, then a SeferDivider.
 - TitlePageFrame at ≥600 only.
@@ -1381,6 +1381,8 @@ In order:
 
 ## 10. Copy and l10n (app_en.arb / app_he.arb; the build fails on missing keys)
 
+**Typography.** The English is typeset: an apostrophe is ’ (Revi’i, today’s) and quotation marks are “ ”, never the typewriter's ' and ", which EB Garamond draws as straight ticks; the Hebrew has its own ׳ and ״. test/lint/typography_test.dart checks the strings of both languages and the English policies. The parsha names and the keys of the special haftarot keep the data's straight apostrophe, which progress, the calendar and the weekly threads' titles are matched by: `PortionInfo.displayName` and `Names.specialHaftarah` set it curly as they name them, and `City.name` does the same for a city.
+
 **New keys**
 
 | Key | English | Hebrew |
@@ -1393,12 +1395,12 @@ In order:
 | allAliyot | All aliyot | כל העליות |
 | readAliyah | Read {aliyah} | לקריאת {aliyah} |
 | streakBeginsWith | Begins with {name} | יתחיל בפרשת {name} |
-| daysBeginToday | Begins with today's reading | יתחיל בקריאה של היום |
+| daysBeginToday | Begins with today’s reading | יתחיל בקריאה של היום |
 | finishStep | Finish | סיום |
 | shabbatShalom | Shabbat Shalom | שבת שלום |
 | chagSameach | Chag Sameach | חג שמח |
 | shanaTova | Shanah Tovah | שנה טובה |
-| gmarChatimaTova | G'mar Chatimah Tovah | גמר חתימה טובה |
+| gmarChatimaTova | G’mar Chatimah Tovah | גמר חתימה טובה |
 | restDayBody | Reading from a printed Chumash today? You can log it after Shabbat. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת. |
 | restDayBodyChag | Reading from a printed Chumash today? You can log it after Yom Tov. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג. |
 | restDayBodyYomKippur | Reading from a printed Chumash today? You can log it after Yom Kippur. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי יום כיפור. |
@@ -1412,9 +1414,9 @@ In order:
 | openWeekRestoreZero | Finish {name} and {next} by Shabbat and both count — one double-up per book. | אם מסיימים את {name} ואת {next} עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש. |
 | pausedTodayNote | Paused — read whenever you like; nothing counts against you. | בהשהיה — אפשר לקרוא מתי שנוח; שום דבר לא נחשב לחובתך. |
 | pauseEndedOn | Your pause ended on {date}, and nothing during it counts against you. | ההשהיה הסתיימה ב{date}, ושום דבר בזמנה לא נחשב לחובתך. |
-| graceUsedNote | plural: {weekdays} was covered by a grace day / {weekdays} were covered by grace days — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat. | plural: {weekdays} כוסה ביום חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום החסד יחזור. / {weekdays} כוסו בימי חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום חסד אחד יחזור. (a no-break space inside יום חסד) |
+| graceUsedNote | plural: {weekdays} was covered by a grace day / {weekdays} were covered by grace days — your rhythm continues. You’ll earn one back when you finish {parsha} by Shabbat. | plural: {weekdays} כוסה ביום חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום החסד יחזור. / {weekdays} כוסו בימי חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום חסד אחד יחזור. (a no-break space inside יום חסד) |
 | caughtUpNote | Caught up — doubling up repaired yesterday. | חזרה לתוכנית — הקריאה הכפולה השלימה את אתמול. |
-| erevTishaBavNote | Erev Tisha B'Av: many finish their learning before midday. | ערב תשעה באב: רבים מסיימים את הלימוד לפני חצות היום. |
+| erevTishaBavNote | Erev Tisha B’Av: many finish their learning before midday. | ערב תשעה באב: רבים מסיימים את הלימוד לפני חצות היום. |
 | aboutStreaks | About streaks | על הרצפים |
 | graceAvailable | plural: 1 grace day available / {count} grace days available | plural: נותר יום חסד אחד / נותרו {count} ימי חסד |
 | thisYear | This year | השנה |
@@ -1461,7 +1463,7 @@ The literal "חֲזַק חֲזַק וְנִתְחַזֵּק" is not translated.
    - add 200%-text-scale overflow tests for the Hebrew locale on /today, /progress and the reader;
    - add a focus-traversal test asserting that a focused FilledButton paints `FocusRingBorder`.
 3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family, then loads the fonts `OptionalFonts` loads on demand. Pixel-sampled contrast checks (`textContrastGuideline`) stay on the test font: with real glyphs, anti-aliased edge pixels can outnumber the text colour (test/accessibility/text_contrast_test.dart).
-4. **Goldens** (`matchesGoldenFile`): Today, Reader guided, Parsha, Progress and Community × 5 themes × {en, he}. Plus the mixed headings "Revi'i · רביעי" and "בְּרֵאשִׁית" in titleLarge and hebrewDisplay (catches fallback tofu).
+4. **Goldens** (`matchesGoldenFile`): Today, Reader guided, Parsha, Progress and Community × 5 themes × {en, he}. Plus the mixed headings "Revi’i · רביעי" and "בְּרֵאשִׁית" in titleLarge and hebrewDisplay (catches fallback tofu).
 5. **Update tests that depend on removed visuals:**
    - reader_widget_test.dart:39 expects 'Targum Onkelos' (the removed LayerLabel). Change it to expect the PassTrack label '3 · Targum'.
    - All other existing finders keep working: 'Read the Hebrew', 'Verse 1 of 14', 'Next', 'Chapter 6', 'Mark this aliyah as read', 'Email me a code', 'Start this week's parsha', and 'Parshat' via the eyebrow.

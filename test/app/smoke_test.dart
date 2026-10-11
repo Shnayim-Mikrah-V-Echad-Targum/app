@@ -14,7 +14,7 @@ void main() {
   testWidgets('first launch shows onboarding', (tester) async {
     await pumpApp(tester, settings: const AppSettings());
     await tester.pumpAndSettle();
-    expect(find.text("Start this week's parsha"), findsOneWidget);
+    expect(find.text('Start this week’s parsha'), findsOneWidget);
   });
 
   testWidgets('Back returns a step of onboarding, and leaves the app only from the welcome', (tester) async {
@@ -28,7 +28,7 @@ void main() {
     final router = c.read(routerProvider);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text("Start this week's parsha"));
+    await tester.tap(find.text('Start this week’s parsha'));
     await tester.pumpAndSettle();
     expect(router.state.uri.path, '/welcome/location');
     await tester.tap(find.text('In Israel'));
@@ -56,7 +56,7 @@ void main() {
 
     expect(await tester.binding.handlePopRoute(), isTrue);
     await tester.pumpAndSettle();
-    expect(find.text("Start this week's parsha"), findsOneWidget);
+    expect(find.text('Start this week’s parsha'), findsOneWidget);
     expect(exits, isEmpty);
 
     // From the welcome, Back leaves the app.
@@ -74,7 +74,7 @@ void main() {
     expect(find.text('Start reading'), findsOneWidget);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
-    expect(find.text("Start this week's parsha"), findsOneWidget);
+    expect(find.text('Start this week’s parsha'), findsOneWidget);
 
     // Once onboarding is done, the steps lead to Today.
     c.read(settingsProvider.notifier).update((s) => s.copyWith(onboardingComplete: true));
@@ -95,7 +95,7 @@ void main() {
     // Home is the welcome, until onboarding is done.
     await tester.tap(find.widgetWithIcon(IconButton, Icons.home_outlined));
     await tester.pumpAndSettle();
-    expect(find.text("Start this week's parsha"), findsOneWidget);
+    expect(find.text('Start this week’s parsha'), findsOneWidget);
 
     router.go('/sources');
     await tester.pumpAndSettle();
@@ -106,7 +106,7 @@ void main() {
 
     router.go('/progress');
     await tester.pumpAndSettle();
-    expect(find.text("Start this week's parsha"), findsOneWidget);
+    expect(find.text('Start this week’s parsha'), findsOneWidget);
   });
 
   testWidgets('today screen renders', (tester) async {

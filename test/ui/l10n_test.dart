@@ -60,13 +60,40 @@ void main() {
       expect(names.specialHaftarah('Chanukah Day 8 (on Shabbat)'), 'Second Shabbat of Chanukah');
       expect(names.specialHaftarah('Shabbat Zachor'), 'Shabbat Zachor');
       expect(names.specialHaftarah('Not a key'), 'Not a key', reason: 'an unknown key is shown as it is');
+      // The calendar's keys have straight apostrophes; the names, curly ones.
+      expect(names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh"), 'Re’eh on Rosh Chodesh Elul');
+      expect(names.specialHaftarah('Ki Teitzei with 3rd Haftarah of Consolation'), 'Ki Tetze, with Aniyah So’arah');
+      expect(names.specialHaftarah("Not a key's"), 'Not a key’s');
 
       names = Names(await _page(tester, hebrew: true));
       expect(names.specialHaftarah('Pinchas occurring after 17 Tammuz'), 'ראשונה דפורענותא (״דברי ירמיהו״)');
       expect(names.specialHaftarah('Masei on Shabbat Rosh Chodesh'), 'מסעי בראש חודש אב');
       expect(names.specialHaftarah('Matot-Masei on Shabbat Rosh Chodesh'), 'מטות־מסעי בראש חודש אב');
       expect(names.specialHaftarah('Chanukah Day 8 (on Shabbat)'), 'שבת חנוכה השנייה');
+      expect(names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh"), 'ראה בשבת ראש חודש אלול');
     });
+
+    test('have no straight apostrophe in English', () {
+      for (final name in Names.specialHaftarotEn.values) {
+        expect(name, isNot(contains("'")), reason: name);
+      }
+    });
+  });
+
+  testWidgets("a parsha's English name sets its apostrophe curly, and the data keeps it straight", (tester) async {
+    final repo = (await tester.runAsync(loadRepo))!;
+    final haazinu = repo.byNumber(53), behaalotcha = repo.byNumber(36);
+    var names = Names(await _page(tester, hebrew: false));
+    expect(names.portion(haazinu, ashkenazi: false), 'Ha’azinu');
+    expect(names.portion(behaalotcha, ashkenazi: false), 'Beha’alotcha');
+    expect(names.portion(behaalotcha, ashkenazi: true), 'Beha’aloscha');
+
+    names = Names(await _page(tester, hebrew: true));
+    expect(names.portion(haazinu, ashkenazi: false), 'האזינו');
+    expect(names.portionAlt(haazinu, ashkenazi: false), 'Ha’azinu');
+
+    // The weekly threads' titles are built from it, as the server's are.
+    expect(haazinu.nameEn, "Ha'azinu");
   });
 
   group('Hebrew dates', () {
@@ -149,10 +176,10 @@ void main() {
 
   testWidgets('aliyot to read are spanned when three or more run on, and named otherwise', (tester) async {
     var names = Names(await _page(tester, hebrew: false));
-    expect(names.aliyotSpan([2, 3, 4, 5, 6]), "Shlishi – Shevi'i");
+    expect(names.aliyotSpan([2, 3, 4, 5, 6]), 'Shlishi – Shevi’i');
     expect(names.aliyotSpan([0, 1, 2]), 'Rishon – Shlishi');
     expect(names.aliyotSpan([4, 5]), 'Chamishi and Shishi');
-    expect(names.aliyotSpan([3]), "Revi'i");
+    expect(names.aliyotSpan([3]), 'Revi’i');
     // Not a run: Revi'i was read ahead.
     expect(names.aliyotSpan([2, 4, 5]), 'Shlishi, Chamishi and Shishi');
     expect(names.aliyotSpan([0, 1, 2, 3, 4, 5, 6]), 'The whole parsha');

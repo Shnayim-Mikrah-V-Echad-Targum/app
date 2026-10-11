@@ -620,7 +620,7 @@ void main() {
     Future<void> clearWeek() async {
       await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byTooltip('More options')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text("Clear this week's progress"));
+      await tester.tap(find.text('Clear this week’s progress'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
       await tester.pumpAndSettle();
@@ -668,8 +668,8 @@ void main() {
       expect(
         find.text(everywhere
             ? 'This erases your reading history and streaks on this device, in your backup, and on your other '
-                'devices when they next sync. It can\'t be undone.'
-            : "This erases your reading history and streaks on this device. It can't be undone."),
+                'devices when they next sync. It can’t be undone.'
+            : 'This erases your reading history and streaks on this device. It can’t be undone.'),
         findsOneWidget,
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Reset all progress'));

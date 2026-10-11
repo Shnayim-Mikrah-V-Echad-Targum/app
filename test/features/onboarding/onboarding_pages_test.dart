@@ -18,7 +18,7 @@ void main() {
   /// A Wednesday, when the plan step also asks about this week.
   final wednesday = DateTime(2026, 10, 14, 10);
   const fresh = AppSettings();
-  const appTitleFull = "Shnayim Mikra v'Echad Targum";
+  const appTitleFull = 'Shnayim Mikra v’Echad Targum';
 
   /// Expects [finder]'s node to be a heading of [level], labelled [label] if
   /// given.
@@ -75,7 +75,7 @@ void main() {
         expect(MediaQuery.textScalerOf(tester.element(name)).scale(10), closeTo(14, 0.01));
       }
       // What the practice is, and the buttons, grow in full.
-      for (final text in [find.textContaining('Read the parsha twice'), find.text("Start this week's parsha")]) {
+      for (final text in [find.textContaining('Read the parsha twice'), find.text('Start this week’s parsha')]) {
         expect(MediaQuery.textScalerOf(tester.element(text)).scale(10), 20);
       }
     });
@@ -114,7 +114,7 @@ void main() {
 
     testWidgets('sets its call to action 52 high and at most 400 wide, in the middle', (tester) async {
       await openRoute(tester, '/welcome', settings: fresh, size: const Size(1366, 860));
-      final start = find.widgetWithText(FilledButton, "Start this week's parsha");
+      final start = find.widgetWithText(FilledButton, 'Start this week’s parsha');
       expect(tester.getSize(start), const Size(400, 52));
       expect(tester.getCenter(start).dx, 683);
       // The way back in for a reader who already uses the app, as wide.
@@ -213,7 +213,7 @@ void main() {
 
     testWidgets('goes on from the docked button', (tester) async {
       final c = await openRoute(tester, '/welcome', settings: fresh, now: wednesday);
-      await tester.tap(find.text("Start this week's parsha"));
+      await tester.tap(find.text('Start this week’s parsha'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();

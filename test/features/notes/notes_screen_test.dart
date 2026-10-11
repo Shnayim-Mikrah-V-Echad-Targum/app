@@ -521,7 +521,7 @@ void main() {
 
     testWidgets('a week with none shows no row', (tester) async {
       await open(tester, '/week/5787:2');
-      await tester.scrollUntilVisible(find.text('Discuss this week\'s parsha'), 200, scrollable: find.byType(Scrollable).first);
+      await tester.scrollUntilVisible(find.text('Discuss this week’s parsha'), 200, scrollable: find.byType(Scrollable).first);
       expect(find.text('Your notes on this parsha'), findsNothing);
     });
 

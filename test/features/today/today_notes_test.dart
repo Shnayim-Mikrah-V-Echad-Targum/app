@@ -105,7 +105,7 @@ void main() {
       expect(c.read(routerProvider).state.uri.path, '/today/week/5787:1');
       c.read(routerProvider).go('/today');
       await tester.pumpAndSettle();
-      await tester.tap(find.text("Start this week's parsha"));
+      await tester.tap(find.text('Start this week’s parsha'));
       await tester.pump();
       expect(c.read(routerProvider).state.uri.path, '/read/5787:2/0');
     });
@@ -131,7 +131,7 @@ void main() {
           pauses: [pause],
         ),
       );
-      expect(find.text("Continue this week's parsha"), findsOneWidget);
+      expect(find.text('Continue this week’s parsha'), findsOneWidget);
       expect(find.textContaining('Catch up on'), findsNothing);
     });
 
@@ -194,7 +194,7 @@ void main() {
           '5787:2': _onTheirDays('5787:2', _d(10, 11), upTo: 3).withAliyah(4, _d(10, 15)),
         });
     final friday = DateTime(2026, 10, 16, 9);
-    const grace = "Wednesday was covered by a grace day — your rhythm continues. You'll earn one back when you "
+    const grace = 'Wednesday was covered by a grace day — your rhythm continues. You’ll earn one back when you '
         'finish Noach by Shabbat.';
 
     testWidgets('a grace day spent is explained, until put away', (tester) async {
@@ -238,7 +238,7 @@ void main() {
         }),
       );
       await show(tester, find.byType(WeekStrip));
-      expect(find.text("You're ahead of plan. Well done!"), findsOneWidget);
+      expect(find.text('You’re ahead of plan. Well done!'), findsOneWidget);
     });
 
     testWidgets('says so when doubling up today made up for yesterday', (tester) async {
@@ -275,7 +275,7 @@ void main() {
             .withAliyah(4, _d(10, 15)),
       };
       await openToday(tester, now: friday, progress: ProgressState(weeks: weeks));
-      final note = findWords("Monday and Tuesday were covered by grace days — your rhythm continues. You'll earn one "
+      final note = findWords('Monday and Tuesday were covered by grace days — your rhythm continues. You’ll earn one '
           'back when you finish Noach by Shabbat.');
       await show(tester, note);
       expect(note, findsOneWidget);
@@ -408,10 +408,10 @@ void main() {
       now: DateTime(2027, 8, 11, 9),
       progress: const ProgressState(),
     );
-    expect(find.text("Erev Tisha B'Av: many finish their learning before midday."), findsOneWidget);
+    expect(find.text('Erev Tisha B’Av: many finish their learning before midday.'), findsOneWidget);
     // Set evenly, so that no word is left alone on its last line.
     expect(
-      find.ancestor(of: find.text("Erev Tisha B'Av: many finish their learning before midday."), matching: find.byType(BalancedText)),
+      find.ancestor(of: find.text('Erev Tisha B’Av: many finish their learning before midday.'), matching: find.byType(BalancedText)),
       findsOneWidget,
     );
 

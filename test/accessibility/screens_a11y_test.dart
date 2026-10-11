@@ -451,7 +451,7 @@ void main() {
         tester.getSemantics(find.text('0 of 7 aliyot')),
         isSemantics(label: '0 of 7 aliyot', isHeader: true, isButton: false, hasTapAction: false),
       );
-      expect(find.byTooltip("More options for Revi'i"), findsOneWidget);
+      expect(find.byTooltip('More options for Revi’i'), findsOneWidget);
 
       // Each source is a link of its own, by its name and license, and then
       // what it is.

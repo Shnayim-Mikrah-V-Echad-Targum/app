@@ -163,7 +163,7 @@ void main() {
         int at(String label) => order.indexWhere((l) => l.contains(label));
         final (button, chumash, week, discuss) = hebrew
             ? ('המשך', 'קראתי בחומש', 'התוכנית לשבוע זה', 'דיון על פרשת השבוע')
-            : ('Continue', 'I read it in a Chumash', "This week's plan", "Discuss this week's parsha");
+            : ('Continue', 'I read it in a Chumash', 'This week’s plan', 'Discuss this week’s parsha');
         for (final label in [button, chumash, week, discuss]) {
           expect(at(label), isNonNegative, reason: label);
         }

@@ -27,7 +27,7 @@ void main() {
     expect(when, findsOneWidget);
     expect(find.textContaining('until Simchat Torah (SA 285:4; MB 285:12).'), findsOneWidget);
     expect(find.textContaining('may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein)'), findsOneWidget);
-    expect(find.textContaining("along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14)"),
+    expect(find.textContaining('along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14)'),
         findsOneWidget);
     expect(find.textContaining('do so as a voluntary mitzvah.'), findsOneWidget);
   });

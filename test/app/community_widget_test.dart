@@ -446,7 +446,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // First post: the community guidelines.
-    expect(find.text("I'll follow the community guidelines"), findsOneWidget);
+    expect(find.text('I’ll follow the community guidelines'), findsOneWidget);
     await tester.tap(find.byType(CheckboxListTile));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
@@ -573,7 +573,7 @@ void main() {
       await tester.enterText(message, 'Why does Rashi explain this word?');
       await tester.tap(postInAppBar);
       await tester.pumpAndSettle();
-      const rejected = "That message can't be posted. Please review the community guidelines.";
+      const rejected = 'That message can’t be posted. Please review the community guidelines.';
       expect(find.descendant(of: find.byType(InfoCard), matching: find.text(rejected)), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
       expect(_focusedField(tester), 'Your message');
@@ -583,7 +583,7 @@ void main() {
       await tester.enterText(message, 'Why does Rashi explain this word?');
       await tester.tap(postInAppBar);
       await tester.pumpAndSettle();
-      expect(find.descendant(of: find.byType(SnackBar), matching: find.text("You're posting quickly — please wait a few seconds.")), findsOneWidget);
+      expect(find.descendant(of: find.byType(SnackBar), matching: find.text('You’re posting quickly — please wait a few seconds.')), findsOneWidget);
     });
 
     testWidgets("keeps a server's error under its field until that field is changed", (tester) async {
@@ -801,7 +801,7 @@ void main() {
     expect(find.byType(SnackBar), findsNothing, reason: 'nothing covers the reply box');
     expect([for (final a in tester.takeAnnouncements()) a.message], ['Signed in as Rivka']);
     // The reply goes on: a first post asks to accept the guidelines.
-    expect(find.text("I'll follow the community guidelines"), findsOneWidget);
+    expect(find.text('I’ll follow the community guidelines'), findsOneWidget);
   });
 
   testWidgets('in Hebrew, signing in says that it worked, and the page then names the account', (tester) async {
@@ -879,7 +879,7 @@ void main() {
     testWidgets("opens from Today for this week's parsha", (tester) async {
       final forums = _Threads();
       final c = await _pump(tester, forums: forums);
-      final card = find.text("Discuss this week's parsha");
+      final card = find.text('Discuss this week’s parsha');
       await tester.ensureVisible(card);
       await tester.pumpAndSettle();
       await tester.tap(card);
@@ -895,7 +895,7 @@ void main() {
       await tester.pumpAndSettle();
       await _tapDiscuss(tester);
       await tester.pumpAndSettle();
-      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.byType(WeekOverviewScreen), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(tester.widget<PaperRow>(_discuss).onTap, isNotNull);
@@ -956,7 +956,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byTooltip('More options')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text("Clear this week's progress"));
+    await tester.tap(find.text('Clear this week’s progress'));
     await tester.pumpAndSettle();
     expect(find.text('Clear all progress for Bereshit?'), findsOneWidget, reason: "the dialog's title");
     await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
@@ -1017,7 +1017,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.text('Thank you.'), findsOneWidget);
     });
   });
@@ -1060,7 +1060,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(_todahWith(4), findsOneWidget);
       expect(find.byIcon(Icons.volunteer_activism), findsNothing);
-      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
     });
 
     Future<void> signInFromThePrompt(WidgetTester tester) async {
@@ -1537,7 +1537,7 @@ void main() {
       forums.offline = true;
       await tester.fling(_threadList, const Offset(0, 400), 1000);
       await tester.pumpAndSettle();
-      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.byType(PostCard), findsNWidgets(2));
     });
 
@@ -1550,7 +1550,7 @@ void main() {
       final list = find.descendant(of: find.byType(ForumScreen), matching: find.byType(Scrollable)).first;
       await tester.fling(list, const Offset(0, 400), 1000);
       await tester.pumpAndSettle();
-      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.text('Why read the Targum rather than a translation?'), findsOneWidget);
     });
 
@@ -1562,7 +1562,7 @@ void main() {
       forums.offline = true;
       await tester.tap(find.byTooltip('Refresh'));
       await tester.pumpAndSettle();
-      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.text('Updated'), findsNothing);
       expect(find.byType(PostCard), findsWidgets);
     });
@@ -1601,7 +1601,7 @@ void main() {
       await tester.tap(find.text('Show earlier posts'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.text('Show earlier posts'), findsOneWidget);
       expect(find.text('Post 151'), findsOneWidget);
       expect(c.read(postsProvider('5000')).requireValue.posts, hasLength(100));
@@ -1733,7 +1733,7 @@ void main() {
       await tester.tap(find.text('Load more'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.text('Load more'), findsOneWidget);
       expect(c.read(threadsProvider(3)).requireValue.threads, hasLength(70));
     });
@@ -2030,7 +2030,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Report'));
       await tester.pumpAndSettle();
-      expect(find.text("You've already reported this post."), findsOneWidget);
+      expect(find.text('You’ve already reported this post.'), findsOneWidget);
 
       await _openPostMenu(tester, 1);
       expect(find.text('Report'), findsNothing);
@@ -2629,11 +2629,11 @@ void main() {
         expect(find.text('Questions & answers'), findsOneWidget);
         expect(find.text('Ask about a verse, a Targum or a Rashi.'), findsOneWidget);
         expect(detailOf('Questions & answers'), findsNothing);
-        expect(find.text("Couldn't reach the server. Check your connection and try again."), findsNothing);
+        expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsNothing);
         // Nor while it is tried again, and after.
         await tester.pump(const Duration(minutes: 1));
         expect(detailOf('Questions & answers'), findsNothing);
-        expect(find.text("Couldn't reach the server. Check your connection and try again."), findsNothing);
+        expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsNothing);
       });
     });
   });
@@ -2661,7 +2661,7 @@ void main() {
       expect(find.byType(AppMark), findsOneWidget);
       expect(tester.getSize(find.byType(AppMark)), const Size(56, 56));
       expect(find.text('Sign in'), findsOneWidget);
-      expect(find.text("We'll email you a 6-digit code — no password needed."), findsOneWidget);
+      expect(find.text('We’ll email you a 6-digit code — no password needed.'), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Email me a code'), findsOneWidget);
       expect(find.textContaining('We use your email only to sign you in.'), findsOneWidget);
       // In a column of 440 at most.
@@ -2722,7 +2722,7 @@ void main() {
       tester.takeAnnouncements();
       await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
       await tester.pumpAndSettle();
-      const wrong = "That code didn't work. Check it and try again.";
+      const wrong = 'That code didn’t work. Check it and try again.';
       expect(find.text(wrong), findsOneWidget);
       expect(find.descendant(of: find.byType(SnackBar), matching: find.text(wrong)), findsNothing);
       expect(codeFocused(tester), isTrue);
@@ -2854,7 +2854,7 @@ void main() {
       }
       expect(find.text('Back up my progress'), findsOneWidget);
       expect(find.text('Blocked members (0)'), findsOneWidget);
-      expect(find.text("You haven't blocked anyone."), findsOneWidget);
+      expect(find.text('You haven’t blocked anyone.'), findsOneWidget);
       expect(find.text('Reports to review'), findsOneWidget);
 
       // Backup on: the switch, and Sync now beside it.
@@ -2902,7 +2902,7 @@ void main() {
       await forums.updateDisplayName('Rivka');
       await account(tester, forums: forums);
       expect(find.text('Blocked members (0)'), findsNothing);
-      expect(find.text("You haven't blocked anyone."), findsNothing);
+      expect(find.text('You haven’t blocked anyone.'), findsNothing);
       await tester.tap(find.text('Blocked members'));
       await tester.pumpAndSettle();
       final sheet = find.byType(BottomSheet);
@@ -2946,7 +2946,7 @@ void main() {
       expect(find.descendant(of: sheet, matching: find.text('Blocked members')), findsOneWidget);
       await tester.tap(find.descendant(of: sheet, matching: find.widgetWithText(TextButton, 'Unblock')));
       await tester.pumpAndSettle();
-      expect(find.descendant(of: sheet, matching: find.text("You haven't blocked anyone.")), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.text('You haven’t blocked anyone.')), findsOneWidget);
       expect(await forums.blockedUsers(), isEmpty);
       expect(find.text('Blocked members (0)'), findsOneWidget);
     });

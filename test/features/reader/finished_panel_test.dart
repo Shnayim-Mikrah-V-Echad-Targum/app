@@ -105,13 +105,13 @@ void main() {
     await _finish(tester, aliyah: 2, day: DateTime(2026, 10, 9, 10), progress: _readThrough(1, partly: 2, on: _monday));
 
     expect(find.text('Shlishi is complete'), findsOneWidget);
-    expect(find.text("Revi'i is 21 verses."), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, "Next aliyah · Revi'i"), findsOneWidget);
+    expect(find.text('Revi’i is 21 verses.'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Next aliyah · Revi’i'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Done'), findsOneWidget);
-    expect(find.textContaining("That's today's reading."), findsNothing, reason: "Friday's own aliyot are still to read");
+    expect(find.textContaining('That’s today’s reading.'), findsNothing, reason: "Friday's own aliyot are still to read");
     expect(find.byIcon(Icons.celebration), findsNothing);
     expect(find.byIcon(Icons.check_circle), findsNothing);
-    expect(_focused(tester, "Next aliyah · Revi'i"), isTrue);
+    expect(_focused(tester, 'Next aliyah · Revi’i'), isTrue);
   });
 
   testWidgets("once the day's reading is done, Done leads and going on is quieter", (tester) async {
@@ -123,10 +123,10 @@ void main() {
     );
 
     expect(find.text('Shlishi is complete'), findsOneWidget);
-    expect(find.text("That's today's reading. See you tomorrow."), findsOneWidget);
-    expect(find.text("Revi'i is 21 verses."), findsOneWidget);
+    expect(find.text('That’s today’s reading. See you tomorrow.'), findsOneWidget);
+    expect(find.text('Revi’i is 21 verses.'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Done'), findsOneWidget);
-    expect(find.widgetWithText(TextButton, "Keep going: Revi'i"), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Keep going: Revi’i'), findsOneWidget);
     expect(find.textContaining('Next aliyah'), findsNothing);
     expect(_focused(tester, 'Done'), isTrue, reason: 'the first button takes the focus');
   });
@@ -142,7 +142,7 @@ void main() {
 
     expect(find.text('Shishi is complete'), findsOneWidget);
     expect(find.text('The rest is for Shabbat morning. Shabbat shalom!'), findsOneWidget);
-    expect(find.widgetWithText(TextButton, "Keep going: Shevi'i"), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Keep going: Shevi’i'), findsOneWidget);
   });
 
   testWidgets("with the days ahead read ahead, the next reading is the next day that has some", (tester) async {
@@ -157,7 +157,7 @@ void main() {
     );
 
     expect(find.text('Chamishi is complete'), findsOneWidget);
-    expect(find.text("That's today's reading. See\u00A0you\u00A0on\u00A0Friday."), findsOneWidget);
+    expect(find.text('That’s today’s reading. See\u00A0you\u00A0on\u00A0Friday.'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Keep going: Shishi'), findsOneWidget);
   });
 
@@ -172,8 +172,8 @@ void main() {
     );
 
     expect(find.text('Shlishi is complete'), findsOneWidget);
-    expect(find.textContaining("That's today's reading."), findsNothing);
-    expect(find.widgetWithText(FilledButton, "Next aliyah · Revi'i"), findsOneWidget);
+    expect(find.textContaining('That’s today’s reading.'), findsNothing);
+    expect(find.widgetWithText(FilledButton, 'Next aliyah · Revi’i'), findsOneWidget);
   });
 
   testWidgets('on the eve of Yom Tov, the greeting is for the chag', (tester) async {

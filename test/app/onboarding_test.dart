@@ -23,7 +23,7 @@ void main() {
     addTearDown(tester.view.reset);
     final c = await pumpApp(tester, settings: const AppSettings(), now: now);
     await tester.pumpAndSettle();
-    await tester.tap(find.text("Start this week's parsha"));
+    await tester.tap(find.text('Start this week’s parsha'));
     await tester.pumpAndSettle();
     for (var step = 0; step < 2; step++) {
       await tester.tap(find.text('Continue'));
@@ -63,7 +63,7 @@ void main() {
     final c = await openPlanStep(tester, friday);
     expect(find.text('This week'), findsOneWidget);
     expect(find.text('Read the whole parsha by Shabbat'), findsOneWidget);
-    expect(find.text('Start with today\'s reading'), findsOneWidget);
+    expect(find.text('Start with today’s reading'), findsOneWidget);
     expect(find.text('Full plan from next week'), findsOneWidget);
     // Noach has 153 verses.
     expect(find.textContaining(RegExp(r'^153 verses · about \d+ min today$')), findsOneWidget);
@@ -83,7 +83,7 @@ void main() {
 
   testWidgets("joining on a Friday and starting with today's reading opens Shishi", (tester) async {
     final c = await openPlanStep(tester, friday);
-    await tapScrolled(tester, find.text("Start with today's reading"));
+    await tapScrolled(tester, find.text('Start with today’s reading'));
     expect(selected(tester), isFalse);
 
     final reader = await startReading(tester);
@@ -102,7 +102,7 @@ void main() {
     expect(find.textContaining(RegExp(r'^153 verses · about \d+ min over 3 days$')), findsOneWidget);
 
     // Shevi'i on Shabbat morning makes it four.
-    await tapScrolled(tester, find.text("Shevi'i on Shabbat morning"));
+    await tapScrolled(tester, find.text('Shevi’i on Shabbat morning'));
     expect(find.textContaining(RegExp(r'min over 4 days$')), findsOneWidget);
 
     // All on Friday is the same plan whenever the reader starts.

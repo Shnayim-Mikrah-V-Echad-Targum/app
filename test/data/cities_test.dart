@@ -137,6 +137,15 @@ void main() {
       expect(names(directory.search('Zurich')).first, 'Zürich');
     });
 
+    test('show their apostrophes curly in English, however GeoNames gives them, and find them typed either way', () {
+      final raanana = directory.search('Ra’anana').first;
+      expect(raanana.nameEn, "Ra'anana");
+      expect(raanana.name(hebrew: false), 'Ra’anana');
+      expect(raanana.name(hebrew: true), 'רעננה');
+      expect(directory.search('Xi’an').first.name(hebrew: false), 'Xi’an');
+      expect(names(directory.search("Xi'an")).first, 'Xi’an');
+    });
+
     test('finds the usual other spellings', () {
       expect(names(directory.search('Petach Tikva')).first, 'Petah Tikva');
       expect(names(directory.search('Qiryat Gat')).first, 'Kiryat Gat');

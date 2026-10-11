@@ -118,7 +118,7 @@ void main() {
       final row = find.widgetWithText(SwitchRow, 'Show streak numbers');
       expect(tester.getSemantics(row), isSemantics(hasToggledState: true, isToggled: true));
       expect(tester.getSemantics(row), isSemantics(isButton: false));
-      await tester.tap(find.text('Hide them if you\'d rather focus on the learning itself'));
+      await tester.tap(find.text('Hide them if you’d rather focus on the learning itself'));
       await tester.pumpAndSettle();
       expect(c.read(settingsProvider).showStreaks, isFalse);
       handle.dispose();
@@ -359,7 +359,7 @@ void main() {
       final title = tester.widget<Text>(find.text('Reset all progress'));
       expect(title.style?.color, Theme.of(tester.element(reset)).colorScheme.error);
       expect(find.descendant(of: reset, matching: find.byType(Icon)), findsNothing);
-      expect(find.text("This can't be undone."), findsOneWidget);
+      expect(find.text('This can’t be undone.'), findsOneWidget);
     });
 
     testWidgets('the reset is confirmed with the destructive button, and Cancel keeps everything', (tester) async {

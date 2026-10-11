@@ -33,7 +33,7 @@ void main() {
   final monday = DateTime(2026, 10, 12, 10); // week of Noach, 5787
   late CityDirectory directory;
   setUpAll(() => directory = CityDirectory.parse(File('assets/data/cities.json').readAsStringSync()));
-  const cityOffer = "Reminders are on. Choose your city, and they'll follow its Shabbat times.";
+  const cityOffer = 'Reminders are on. Choose your city, and they’ll follow its Shabbat times.';
 
   /// Finishes Rishon of Noach, the reader's first aliyah, read by aliyah, so
   /// that reminders are offered.

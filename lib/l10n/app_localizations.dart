@@ -108,7 +108,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitleFull.
   ///
   /// In en, this message translates to:
-  /// **'Shnayim Mikra v\'Echad Targum'**
+  /// **'Shnayim Mikra v’Echad Targum'**
   String get appTitleFull;
 
   /// No description provided for @navToday.
@@ -354,7 +354,7 @@ abstract class AppLocalizations {
   /// No description provided for @aliyah4.
   ///
   /// In en, this message translates to:
-  /// **'Revi\'i'**
+  /// **'Revi’i'**
   String get aliyah4;
 
   /// No description provided for @aliyah5.
@@ -372,7 +372,7 @@ abstract class AppLocalizations {
   /// No description provided for @aliyah7.
   ///
   /// In en, this message translates to:
-  /// **'Shevi\'i'**
+  /// **'Shevi’i'**
   String get aliyah7;
 
   /// No description provided for @aliyahNumbered.
@@ -528,7 +528,7 @@ abstract class AppLocalizations {
   /// The greeting on Today's title page on Yom Kippur, a solemn fast day: 'a good final sealing'.
   ///
   /// In en, this message translates to:
-  /// **'G\'mar Chatimah Tovah'**
+  /// **'G’mar Chatimah Tovah'**
   String get gmarChatimaTova;
 
   /// On Today's title page on Shabbat, under the parsha's name.
@@ -600,25 +600,25 @@ abstract class AppLocalizations {
   /// No description provided for @todayReadingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Today\'s reading'**
+  /// **'Today’s reading'**
   String get todayReadingTitle;
 
   /// No description provided for @todayDone.
   ///
   /// In en, this message translates to:
-  /// **'Today\'s reading is done'**
+  /// **'Today’s reading is done'**
   String get todayDone;
 
   /// No description provided for @todayAhead.
   ///
   /// In en, this message translates to:
-  /// **'You\'re ahead of plan. Well done!'**
+  /// **'You’re ahead of plan. Well done!'**
   String get todayAhead;
 
   /// Under Today's week strip, once, after grace days covered planned days without reading. count is how many grace days, weekdays those days as a list ('Monday and Tuesday'); parsha this week's.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues. You\'ll earn one back when you finish {parsha} by Shabbat.} other{{weekdays} were covered by grace days — your rhythm continues. You\'ll earn one back when you finish {parsha} by Shabbat.}}'**
+  /// **'{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues. You’ll earn one back when you finish {parsha} by Shabbat.} other{{weekdays} were covered by grace days — your rhythm continues. You’ll earn one back when you finish {parsha} by Shabbat.}}'**
   String graceUsedNote(int count, String weekdays, String parsha);
 
   /// As graceUsedNote, when finishing this week's parsha would not earn a grace day back (it is finished, or none is missing).
@@ -702,7 +702,7 @@ abstract class AppLocalizations {
   /// On Today's reading card on the day before Tisha B'Av, when many have the custom not to learn Torah from midday.
   ///
   /// In en, this message translates to:
-  /// **'Erev Tisha B\'Av: many finish their learning before midday.'**
+  /// **'Erev Tisha B’Av: many finish their learning before midday.'**
   String get erevTishaBavNote;
 
   /// No description provided for @startReading.
@@ -726,7 +726,7 @@ abstract class AppLocalizations {
   /// No description provided for @weekComplete.
   ///
   /// In en, this message translates to:
-  /// **'This week\'s parsha is complete. Yasher koach!'**
+  /// **'This week’s parsha is complete. Yasher koach!'**
   String get weekComplete;
 
   /// A gentle line under weekComplete on Today's title page, once every aliyah of the week is read.
@@ -876,13 +876,13 @@ abstract class AppLocalizations {
   /// A button on Today's welcome back after a pause, when nothing of this week's parsha is read yet.
   ///
   /// In en, this message translates to:
-  /// **'Start this week\'s parsha'**
+  /// **'Start this week’s parsha'**
   String get pauseEndedStart;
 
   /// As pauseEndedStart, when some of this week's parsha is read.
   ///
   /// In en, this message translates to:
-  /// **'Continue this week\'s parsha'**
+  /// **'Continue this week’s parsha'**
   String get pauseEndedContinue;
 
   /// A button on Today's welcome back after a pause, that opens last week's parsha, which can still count.
@@ -900,13 +900,13 @@ abstract class AppLocalizations {
   /// Shown on Today when the reader hears Israel's reading but keeps two days of Yom Tov (a visitor to Israel), in a week when Israel and the Diaspora read different portions.
   ///
   /// In en, this message translates to:
-  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Visitors from abroad usually read both. If you daven with a minyan reading {diaspora}, read only that one, and set the reading you\'ll hear to Outside Israel in Settings.'**
+  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Visitors from abroad usually read both. If you daven with a minyan reading {diaspora}, read only that one, and set the reading you’ll hear to Outside Israel in Settings.'**
   String readingDivergence(String israel, String diaspora);
 
   /// Shown on Today when the reader hears the reading outside Israel but keeps one day of Yom Tov (an Israeli abroad), in a week when Israel reads the next portion.
   ///
   /// In en, this message translates to:
-  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Israel is a parsha ahead, so you\'ll read {israel} next week.'**
+  /// **'In Israel this week: {israel}. Outside Israel: {diaspora}. Israel is a parsha ahead, so you’ll read {israel} next week.'**
   String readingDivergenceAhead(String israel, String diaspora);
 
   /// Button on the divergence notice that opens the week page of the Diaspora's portion, read in Israel the week before.
@@ -918,7 +918,7 @@ abstract class AppLocalizations {
   /// No description provided for @discussThisWeek.
   ///
   /// In en, this message translates to:
-  /// **'Discuss this week\'s parsha'**
+  /// **'Discuss this week’s parsha'**
   String get discussThisWeek;
 
   /// The heading over the haftarah and the discussion on Today.
@@ -960,7 +960,7 @@ abstract class AppLocalizations {
   /// On the streak card, in place of 0 days on track.
   ///
   /// In en, this message translates to:
-  /// **'Begins with today\'s reading'**
+  /// **'Begins with today’s reading'**
   String get daysBeginToday;
 
   /// No description provided for @dayKept.
@@ -1044,7 +1044,7 @@ abstract class AppLocalizations {
   /// No description provided for @weekStripLabel.
   ///
   /// In en, this message translates to:
-  /// **'This week\'s plan'**
+  /// **'This week’s plan'**
   String get weekStripLabel;
 
   /// No description provided for @weekOnTime.
@@ -1134,7 +1134,7 @@ abstract class AppLocalizations {
   /// No description provided for @clearWeek.
   ///
   /// In en, this message translates to:
-  /// **'Clear this week\'s progress'**
+  /// **'Clear this week’s progress'**
   String get clearWeek;
 
   /// No description provided for @clearWeekConfirm.
@@ -1446,13 +1446,13 @@ abstract class AppLocalizations {
   /// No description provided for @ttsUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Text-to-speech isn\'t available on this device.'**
+  /// **'Text-to-speech isn’t available on this device.'**
   String get ttsUnavailable;
 
   /// No description provided for @ttsNoHebrewVoice.
   ///
   /// In en, this message translates to:
-  /// **'No Hebrew voice is installed. You can add one in your device\'s speech settings.'**
+  /// **'No Hebrew voice is installed. You can add one in your device’s speech settings.'**
   String get ttsNoHebrewVoice;
 
   /// No description provided for @guidedMode.
@@ -1542,7 +1542,7 @@ abstract class AppLocalizations {
   /// No description provided for @readerFinished.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve finished this aliyah.'**
+  /// **'You’ve finished this aliyah.'**
   String get readerFinished;
 
   /// No description provided for @shortcutNext.
@@ -1692,7 +1692,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareCopiedInstead.
   ///
   /// In en, this message translates to:
-  /// **'Sharing isn\'t available here, so the verse was copied.'**
+  /// **'Sharing isn’t available here, so the verse was copied.'**
   String get shareCopiedInstead;
 
   /// A switch in a verse's options that bookmarks the verse.
@@ -1878,7 +1878,7 @@ abstract class AppLocalizations {
   /// No description provided for @torahMapHelp.
   ///
   /// In en, this message translates to:
-  /// **'Each tile is one parsha of this year\'s cycle.'**
+  /// **'Each tile is one parsha of this year’s cycle.'**
   String get torahMapHelp;
 
   /// Screen-reader label of a book's header on the Torah map; the header expands or collapses that book.
@@ -1902,7 +1902,7 @@ abstract class AppLocalizations {
   /// No description provided for @makeUpBody.
   ///
   /// In en, this message translates to:
-  /// **'Optional. Make-ups count toward this year\'s siyum.'**
+  /// **'Optional. Make-ups count toward this year’s siyum.'**
   String get makeUpBody;
 
   /// No description provided for @pauseTitle.
@@ -2244,7 +2244,7 @@ abstract class AppLocalizations {
   /// No description provided for @planShevii.
   ///
   /// In en, this message translates to:
-  /// **'Shevi\'i on Shabbat morning'**
+  /// **'Shevi’i on Shabbat morning'**
   String get planShevii;
 
   /// No description provided for @planSheviiDesc.
@@ -2358,7 +2358,7 @@ abstract class AppLocalizations {
   /// No description provided for @repeatLastVerseDesc.
   ///
   /// In en, this message translates to:
-  /// **'Repeat the parsha\'s last verse in Hebrew after its Targum'**
+  /// **'Repeat the parsha’s last verse in Hebrew after its Targum'**
   String get repeatLastVerseDesc;
 
   /// No description provided for @thirdReading.
@@ -2376,7 +2376,7 @@ abstract class AppLocalizations {
   /// No description provided for @haftarahEnabledDesc.
   ///
   /// In en, this message translates to:
-  /// **'Read the week\'s haftarah once'**
+  /// **'Read the week’s haftarah once'**
   String get haftarahEnabledDesc;
 
   /// No description provided for @nusachLabel.
@@ -2442,7 +2442,7 @@ abstract class AppLocalizations {
   /// No description provided for @tishaBavQuiet.
   ///
   /// In en, this message translates to:
-  /// **'No reading planned on Tisha B\'Av'**
+  /// **'No reading planned on Tisha B’Av'**
   String get tishaBavQuiet;
 
   /// No description provided for @cholHamoedQuiet.
@@ -2658,7 +2658,7 @@ abstract class AppLocalizations {
   /// No description provided for @showTeamim.
   ///
   /// In en, this message translates to:
-  /// **'Cantillation (ta\'amim)'**
+  /// **'Cantillation (ta’amim)'**
   String get showTeamim;
 
   /// No description provided for @showKetiv.
@@ -2724,7 +2724,7 @@ abstract class AppLocalizations {
   /// No description provided for @rashiScriptDesc.
   ///
   /// In en, this message translates to:
-  /// **'Set Rashi\'s commentary in the script of a printed chumash'**
+  /// **'Set Rashi’s commentary in the script of a printed chumash'**
   String get rashiScriptDesc;
 
   /// No description provided for @uiFontLabel.
@@ -3012,13 +3012,13 @@ abstract class AppLocalizations {
   /// No description provided for @fridayReminderDesc.
   ///
   /// In en, this message translates to:
-  /// **'Friday morning, only if the parsha isn\'t finished'**
+  /// **'Friday morning, only if the parsha isn’t finished'**
   String get fridayReminderDesc;
 
   /// In place of fridayReminderDesc when a city is chosen for Shabbat times: the reminder comes at the time chosen, or three hours before candle-lighting if that is earlier.
   ///
   /// In en, this message translates to:
-  /// **'Friday, at least three hours before candle-lighting, only if the parsha isn\'t finished'**
+  /// **'Friday, at least three hours before candle-lighting, only if the parsha isn’t finished'**
   String get fridayReminderDescCity;
 
   /// No description provided for @fridayReminderTime.
@@ -3072,7 +3072,7 @@ abstract class AppLocalizations {
   /// Status message, with the action reminderCityChoose, once the reader has turned reminders on in the offer after their first aliyah and no city is chosen for Shabbat times.
   ///
   /// In en, this message translates to:
-  /// **'Reminders are on. Choose your city, and they\'ll follow its Shabbat times.'**
+  /// **'Reminders are on. Choose your city, and they’ll follow its Shabbat times.'**
   String get remindersOnCityOffer;
 
   /// No description provided for @habitAnchorLabel.
@@ -3222,13 +3222,13 @@ abstract class AppLocalizations {
   /// Android notification channel description, shown in the system's notification settings.
   ///
   /// In en, this message translates to:
-  /// **'Your day\'s reading at the time you choose, never on Shabbat or Yom Tov'**
+  /// **'Your day’s reading at the time you choose, never on Shabbat or Yom Tov'**
   String get notifChannelDailyDesc;
 
   /// Android notification channel description, shown in the system's notification settings.
   ///
   /// In en, this message translates to:
-  /// **'Before Shabbat or Yom Tov, only if the parsha isn\'t finished'**
+  /// **'Before Shabbat or Yom Tov, only if the parsha isn’t finished'**
   String get notifChannelErevShabbatDesc;
 
   /// Android notification channel description, shown in the system's notification settings.
@@ -3252,7 +3252,7 @@ abstract class AppLocalizations {
   /// Ends the daily reminder when the reader has tied the reading to a routine, after ' · '.
   ///
   /// In en, this message translates to:
-  /// **'{cue} — it\'s yours.'**
+  /// **'{cue} — it’s yours.'**
   String notifDailyAnchor(String cue);
 
   /// No description provided for @notifFridayTitle.
@@ -3264,7 +3264,7 @@ abstract class AppLocalizations {
   /// No description provided for @notifFridayBody.
   ///
   /// In en, this message translates to:
-  /// **'If you haven\'t finished, there\'s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.'**
+  /// **'If you haven’t finished, there’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.'**
   String get notifFridayBody;
 
   /// No description provided for @notifCheckInTitle.
@@ -3288,7 +3288,7 @@ abstract class AppLocalizations {
   /// No description provided for @notifPausedBody.
   ///
   /// In en, this message translates to:
-  /// **'We\'ll pause reminders for now. Your place in Parshat {parsha} is saved — come back anytime.'**
+  /// **'We’ll pause reminders for now. Your place in Parshat {parsha} is saved — come back anytime.'**
   String notifPausedBody(String parsha);
 
   /// No description provided for @showStreaks.
@@ -3300,7 +3300,7 @@ abstract class AppLocalizations {
   /// No description provided for @showStreaksDesc.
   ///
   /// In en, this message translates to:
-  /// **'Hide them if you\'d rather focus on the learning itself'**
+  /// **'Hide them if you’d rather focus on the learning itself'**
   String get showStreaksDesc;
 
   /// No description provided for @exportData.
@@ -3342,7 +3342,7 @@ abstract class AppLocalizations {
   /// No description provided for @importFailed.
   ///
   /// In en, this message translates to:
-  /// **'That backup couldn\'t be read.'**
+  /// **'That backup couldn’t be read.'**
   String get importFailed;
 
   /// No description provided for @exportCopied.
@@ -3360,13 +3360,13 @@ abstract class AppLocalizations {
   /// No description provided for @resetProgressConfirm.
   ///
   /// In en, this message translates to:
-  /// **'This erases your reading history and streaks on this device. It can\'t be undone.'**
+  /// **'This erases your reading history and streaks on this device. It can’t be undone.'**
   String get resetProgressConfirm;
 
   /// No description provided for @resetProgressConfirmSynced.
   ///
   /// In en, this message translates to:
-  /// **'This erases your reading history and streaks on this device, in your backup, and on your other devices when they next sync. It can\'t be undone.'**
+  /// **'This erases your reading history and streaks on this device, in your backup, and on your other devices when they next sync. It can’t be undone.'**
   String get resetProgressConfirmSynced;
 
   /// No description provided for @resetDone.
@@ -3408,7 +3408,7 @@ abstract class AppLocalizations {
   /// Under resetProgress in Your data.
   ///
   /// In en, this message translates to:
-  /// **'This can\'t be undone.'**
+  /// **'This can’t be undone.'**
   String get resetProgressDesc;
 
   /// No description provided for @aboutTitle.
@@ -3480,7 +3480,7 @@ abstract class AppLocalizations {
   /// A status message when tapping a link opened nothing, as on a device with no browser to hand it to.
   ///
   /// In en, this message translates to:
-  /// **'The link couldn\'t be opened here.'**
+  /// **'The link couldn’t be opened here.'**
   String get linkOpenFailed;
 
   /// A status message when tapping the support address opened no mail app, with an action to copy the address.
@@ -3528,7 +3528,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbStart.
   ///
   /// In en, this message translates to:
-  /// **'Start this week\'s parsha'**
+  /// **'Start this week’s parsha'**
   String get onbStart;
 
   /// No description provided for @onbLocationTitle.
@@ -3636,7 +3636,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideTargumBody.
   ///
   /// In en, this message translates to:
-  /// **'Rashi\'s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn\'t understand Rashi\'s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.'**
+  /// **'Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.'**
   String get guideTargumBody;
 
   /// No description provided for @guideSpecialTitle.
@@ -3648,7 +3648,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideSpecialBody.
   ///
   /// In en, this message translates to:
-  /// **'In “Atarot v\'Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
+  /// **'In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.
@@ -3702,7 +3702,7 @@ abstract class AppLocalizations {
   /// No description provided for @forumNotFound.
   ///
   /// In en, this message translates to:
-  /// **'This forum couldn\'t be found. It may have moved or closed.'**
+  /// **'This forum couldn’t be found. It may have moved or closed.'**
   String get forumNotFound;
 
   /// No description provided for @allForums.
@@ -3750,7 +3750,7 @@ abstract class AppLocalizations {
   /// No description provided for @signInBody.
   ///
   /// In en, this message translates to:
-  /// **'We\'ll email you a 6-digit code — no password needed.'**
+  /// **'We’ll email you a 6-digit code — no password needed.'**
   String get signInBody;
 
   /// No description provided for @emailLabel.
@@ -3846,7 +3846,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncFailed.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t sync right now. We\'ll try again later.'**
+  /// **'Couldn’t sync right now. We’ll try again later.'**
   String get syncFailed;
 
   /// No description provided for @syncNeedsUpdate.
@@ -3876,7 +3876,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteAccountConfirm.
   ///
   /// In en, this message translates to:
-  /// **'This permanently deletes your account, your profile and everything you\'ve posted. Your reading progress on this device is kept. This can\'t be undone.'**
+  /// **'This permanently deletes your account, your profile and everything you’ve posted. Your reading progress on this device is kept. This can’t be undone.'**
   String get deleteAccountConfirm;
 
   /// No description provided for @accountDeleted.
@@ -3960,7 +3960,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportReasonLabel.
   ///
   /// In en, this message translates to:
-  /// **'What\'s wrong?'**
+  /// **'What’s wrong?'**
   String get reportReasonLabel;
 
   /// No description provided for @reasonSpam.
@@ -4020,7 +4020,7 @@ abstract class AppLocalizations {
   /// No description provided for @blockConfirm.
   ///
   /// In en, this message translates to:
-  /// **'You won\'t see posts from {name}. They won\'t be notified.'**
+  /// **'You won’t see posts from {name}. They won’t be notified.'**
   String blockConfirm(String name);
 
   /// No description provided for @blockedDone.
@@ -4158,7 +4158,7 @@ abstract class AppLocalizations {
   /// No description provided for @guidelinesAccept.
   ///
   /// In en, this message translates to:
-  /// **'I\'ll follow the community guidelines'**
+  /// **'I’ll follow the community guidelines'**
   String get guidelinesAccept;
 
   /// No description provided for @guidelinesPrompt.
@@ -4266,7 +4266,7 @@ abstract class AppLocalizations {
   /// No description provided for @errRateLimited.
   ///
   /// In en, this message translates to:
-  /// **'You\'re posting quickly — please wait a few seconds.'**
+  /// **'You’re posting quickly — please wait a few seconds.'**
   String get errRateLimited;
 
   /// No description provided for @errThreadLocked.
@@ -4284,7 +4284,7 @@ abstract class AppLocalizations {
   /// No description provided for @errBanned.
   ///
   /// In en, this message translates to:
-  /// **'Your account can\'t post.'**
+  /// **'Your account can’t post.'**
   String get errBanned;
 
   /// No description provided for @errSilenced.
@@ -4296,7 +4296,7 @@ abstract class AppLocalizations {
   /// No description provided for @errContent.
   ///
   /// In en, this message translates to:
-  /// **'That message can\'t be posted. Please review the community guidelines.'**
+  /// **'That message can’t be posted. Please review the community guidelines.'**
   String get errContent;
 
   /// No description provided for @errDuplicate.
@@ -4326,7 +4326,7 @@ abstract class AppLocalizations {
   /// No description provided for @errAlreadyReported.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve already reported this post.'**
+  /// **'You’ve already reported this post.'**
   String get errAlreadyReported;
 
   /// No description provided for @errInvalidName.
@@ -4338,7 +4338,7 @@ abstract class AppLocalizations {
   /// No description provided for @errInvalidCode.
   ///
   /// In en, this message translates to:
-  /// **'That code didn\'t work. Check it and try again.'**
+  /// **'That code didn’t work. Check it and try again.'**
   String get errInvalidCode;
 
   /// No description provided for @errInvalidEmail.
@@ -4356,7 +4356,7 @@ abstract class AppLocalizations {
   /// No description provided for @errForbidden.
   ///
   /// In en, this message translates to:
-  /// **'You don\'t have permission to do that.'**
+  /// **'You don’t have permission to do that.'**
   String get errForbidden;
 
   /// No description provided for @errShabbat.
@@ -4380,7 +4380,7 @@ abstract class AppLocalizations {
   /// No description provided for @errNetwork.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t reach the server. Check your connection and try again.'**
+  /// **'Couldn’t reach the server. Check your connection and try again.'**
   String get errNetwork;
 
   /// No description provided for @moderatorBadge.
@@ -4464,7 +4464,7 @@ abstract class AppLocalizations {
   /// Under the city in Settings, in the rare case that the device doesn't know the city's time zone.
   ///
   /// In en, this message translates to:
-  /// **'This device can\'t tell the time in that city, so its times can\'t be shown.'**
+  /// **'This device can’t tell the time in that city, so its times can’t be shown.'**
   String get shabbatTimesUnavailable;
 
   /// No description provided for @cityPickerTitle.
@@ -4500,7 +4500,7 @@ abstract class AppLocalizations {
   /// No description provided for @cityNoneDesc.
   ///
   /// In en, this message translates to:
-  /// **'Shabbat times aren\'t shown'**
+  /// **'Shabbat times aren’t shown'**
   String get cityNoneDesc;
 
   /// No description provided for @cityNearYou.
@@ -4530,7 +4530,7 @@ abstract class AppLocalizations {
   /// No description provided for @cityListNote.
   ///
   /// In en, this message translates to:
-  /// **'The list has every place of 100,000 people or more, every city in Israel, and the larger Israeli localities beyond the Green Line. If yours isn\'t there, choose the nearest one; beyond the Green Line, the nearest Israeli locality.'**
+  /// **'The list has every place of 100,000 people or more, every city in Israel, and the larger Israeli localities beyond the Green Line. If yours isn’t there, choose the nearest one; beyond the Green Line, the nearest Israeli locality.'**
   String get cityListNote;
 
   /// No description provided for @searchTitle.
@@ -4656,7 +4656,7 @@ abstract class AppLocalizations {
   /// Shortcut shown when the app's icon is long-pressed; opens the Parsha tab. Keep it under 25 characters.
   ///
   /// In en, this message translates to:
-  /// **'This week\'s parsha'**
+  /// **'This week’s parsha'**
   String get shortcutThisWeek;
 
   /// On Today, in place of shabbatInDays in the week of Vezot HaBerachah, which is read on Simchat Torah: the days left until then.
@@ -4686,7 +4686,7 @@ abstract class AppLocalizations {
   /// No description provided for @repeatLastVerseDescChabad.
   ///
   /// In en, this message translates to:
-  /// **'Repeat the parsha\'s last verse in Hebrew after its Targum (Chabad custom: not repeated)'**
+  /// **'Repeat the parsha’s last verse in Hebrew after its Targum (Chabad custom: not repeated)'**
   String get repeatLastVerseDescChabad;
 
   /// Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves.
@@ -4716,7 +4716,7 @@ abstract class AppLocalizations {
   /// Under the backup text field, when 'Paste from clipboard' finds no text, or the browser won't let the app read the clipboard.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t paste from the clipboard. Paste into the field instead.'**
+  /// **'Couldn’t paste from the clipboard. Paste into the field instead.'**
   String get importPasteFailed;
 
   /// No description provided for @exportSaved.
@@ -4794,13 +4794,13 @@ abstract class AppLocalizations {
   /// No description provided for @importReplaceConfirm.
   ///
   /// In en, this message translates to:
-  /// **'This erases the reading history and streaks on this device, and keeps only what the backup holds. It can\'t be undone.'**
+  /// **'This erases the reading history and streaks on this device, and keeps only what the backup holds. It can’t be undone.'**
   String get importReplaceConfirm;
 
   /// No description provided for @importReplaceConfirmSynced.
   ///
   /// In en, this message translates to:
-  /// **'This erases the reading history and streaks on this device, in your cloud backup, and on your other devices when they next sync, and keeps only what this backup holds. It can\'t be undone.'**
+  /// **'This erases the reading history and streaks on this device, in your cloud backup, and on your other devices when they next sync, and keeps only what this backup holds. It can’t be undone.'**
   String get importReplaceConfirmSynced;
 
   /// No description provided for @importReplaceAction.
@@ -4812,7 +4812,7 @@ abstract class AppLocalizations {
   /// After importing a backup whose settings had reminders on, when the device refused the app's notifications. Shown with a 'Reminders' action that opens their settings.
   ///
   /// In en, this message translates to:
-  /// **'Progress imported. Reminders are off, since notifications aren\'t allowed for this app.'**
+  /// **'Progress imported. Reminders are off, since notifications aren’t allowed for this app.'**
   String get importSuccessRemindersOff;
 
   /// No description provided for @cloudBackup.
@@ -4824,7 +4824,7 @@ abstract class AppLocalizations {
   /// About the Miqra according to the Masorah edition, on the Texts & sources page. Its license (CC BY-SA) requires saying how the text was changed.
   ///
   /// In en, this message translates to:
-  /// **'Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. In the Torah, where Ashkenazi and Sephardi scrolls differ from the Aleppo Codex, the text follows the scrolls, with the Codex\'s reading in a note. Otherwise it is converted to a structured format without changing the text.'**
+  /// **'Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. In the Torah, where Ashkenazi and Sephardi scrolls differ from the Aleppo Codex, the text follows the scrolls, with the Codex’s reading in a note. Otherwise it is converted to a structured format without changing the text.'**
   String get sourcesMamDescription;
 
   /// No description provided for @onbStarterTitle.
@@ -4854,7 +4854,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbStarterToday.
   ///
   /// In en, this message translates to:
-  /// **'Start with today\'s reading'**
+  /// **'Start with today’s reading'**
   String get onbStarterToday;
 
   /// No description provided for @onbStarterTodayDesc.
@@ -4914,13 +4914,13 @@ abstract class AppLocalizations {
   /// As importSuccessRemindersOff, after restoring a backup during onboarding.
   ///
   /// In en, this message translates to:
-  /// **'Your progress is restored. Reminders are off, since notifications aren\'t allowed for this app.'**
+  /// **'Your progress is restored. Reminders are off, since notifications aren’t allowed for this app.'**
   String get onbRestoreDoneRemindersOff;
 
   /// No description provided for @onbRestoreNone.
   ///
   /// In en, this message translates to:
-  /// **'This account has no backup yet. Let\'s set up your reading.'**
+  /// **'This account has no backup yet. Let’s set up your reading.'**
   String get onbRestoreNone;
 
   /// The message once the email code is accepted, confirming the sign-in worked; also announced to screen readers on the page signed in for.
@@ -4980,19 +4980,19 @@ abstract class AppLocalizations {
   /// On the finished panel when every aliyah planned for today (and before) is read, and tomorrow has reading planned.
   ///
   /// In en, this message translates to:
-  /// **'That\'s today\'s reading. See you tomorrow.'**
+  /// **'That’s today’s reading. See you tomorrow.'**
   String get todayReadingDone;
 
   /// As todayReadingDone, when the next day with reading planned is later than tomorrow. {day} is a weekday, e.g. "Sunday".
   ///
   /// In en, this message translates to:
-  /// **'That\'s today\'s reading. See you on {day}.'**
+  /// **'That’s today’s reading. See you on {day}.'**
   String todayReadingDoneOn(String day);
 
   /// On the finished panel when the last day of the week's plan is done. {greeting} is chag when Yom Tov begins the next day.
   ///
   /// In en, this message translates to:
-  /// **'That\'s this week\'s reading. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
+  /// **'That’s this week’s reading. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
   String erevShabbatDone(String greeting);
 
   /// As erevShabbatDone, when the plan leaves aliyot for Shabbat morning (read from a printed chumash).
@@ -5316,7 +5316,7 @@ abstract class AppLocalizations {
   /// No description provided for @noBlockedMembers.
   ///
   /// In en, this message translates to:
-  /// **'You haven\'t blocked anyone.'**
+  /// **'You haven’t blocked anyone.'**
   String get noBlockedMembers;
 
   /// Heading over a forum's pinned discussions.

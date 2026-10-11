@@ -447,14 +447,14 @@ void main() {
       }
 
       change((s) => s.copyWith(habitAnchor: HabitAnchor.dinner));
-      expect(await bodies(), everyElement(endsWith(" · After dinner — it's yours.")));
+      expect(await bodies(), everyElement(endsWith(' · After dinner — it’s yours.')));
 
       change((s) => s.copyWith(language: AppLanguage.hebrew));
       expect(await bodies(), everyElement(endsWith(' · אחרי ארוחת הערב — זה הזמן שלך.')));
 
       change((s) => s.copyWith(habitAnchor: null, language: AppLanguage.english));
       final cleared = await bodies();
-      expect(cleared, everyElement(isNot(contains('it\'s yours'))));
+      expect(cleared, everyElement(isNot(contains('it’s yours'))));
       expect(cleared.last, endsWith(' min'));
     });
 
@@ -501,7 +501,7 @@ void main() {
       final minutes = (verses * 25 / 60).ceil();
       expect(
         copyIn(en)(friday),
-        (title: "Today: Shishi, Shevi'i", body: 'Parshat Noach · $verses verses · about $minutes min'),
+        (title: 'Today: Shishi, Shevi’i', body: 'Parshat Noach · $verses verses · about $minutes min'),
       );
       expect(copyIn(he)(friday).body, he.notifDailyBody('נח', he.versesCount(verses), minutes));
     });
@@ -525,10 +525,10 @@ void main() {
 
       test('ends the daily reminder, after its length', () {
         final copy = describe(revii, en, HabitAnchor.shacharit);
-        expect(copy.title, "Today: Revi'i");
+        expect(copy.title, 'Today: Revi’i');
         expect(copy.body, contains('After Shacharit'));
         expect(copy.body, contains('about 9 min'));
-        expect(copy.body, "Parshat Bereshit · 21 verses · about 9 min · After Shacharit — it's yours.");
+        expect(copy.body, 'Parshat Bereshit · 21 verses · about 9 min · After Shacharit — it’s yours.');
         expect(describe(revii, he, HabitAnchor.shacharit).body, 'פרשת בראשית · 21 פסוקים · כ־9 דק׳ · אחרי שחרית — זה הזמן שלך.');
       });
 
@@ -544,7 +544,7 @@ void main() {
           plan: revii.plan,
           aliyot: const [0, 1, 2, 3, 4, 5, 6],
         );
-        expect(describe(r, en, HabitAnchor.bed).body, endsWith(" · Before bed — it's yours."));
+        expect(describe(r, en, HabitAnchor.bed).body, endsWith(' · Before bed — it’s yours.'));
       });
 
       test('is named in every language, each routine its own way', () {

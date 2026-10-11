@@ -119,7 +119,7 @@ void main() {
 
       expect(location(c), '/welcome/location');
       expect(find.text('Where will you be this Shabbat?'), findsOneWidget);
-      expect(find.text("This account has no backup yet. Let's set up your reading."), findsOneWidget);
+      expect(find.text('This account has no backup yet. Let’s set up your reading.'), findsOneWidget);
       final settings = c.read(settingsProvider);
       expect(settings.onboardingComplete, isFalse);
       expect(settings.cloudSync, isTrue);
@@ -136,7 +136,7 @@ void main() {
 
       expect(location(c), '/welcome');
       expect(c.read(settingsProvider).cloudSync, isFalse);
-      expect(find.text("Start this week's parsha"), findsOneWidget);
+      expect(find.text('Start this week’s parsha'), findsOneWidget);
     });
 
     testWidgets('when the sync fails says so, and stays on the welcome', (tester) async {
@@ -147,7 +147,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(location(c), '/welcome', reason: 'already signed in');
-      expect(find.text("Couldn't sync right now. We'll try again later."), findsOneWidget);
+      expect(find.text('Couldn’t sync right now. We’ll try again later.'), findsOneWidget);
       expect(c.read(settingsProvider).onboardingComplete, isFalse);
       expect(find.text('I already use Shnayim Mikra'), findsOneWidget, reason: 'to try again');
     });
@@ -251,7 +251,7 @@ void main() {
       final c = await chooseFile(tester, {'progress': 'none'});
 
       expect(location(c), '/welcome');
-      expect(find.text("That backup couldn't be read."), findsOneWidget);
+      expect(find.text('That backup couldn’t be read.'), findsOneWidget);
       expect(c.read(settingsProvider).onboardingComplete, isFalse);
     });
   });

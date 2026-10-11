@@ -178,7 +178,7 @@ void main() {
     expect(pips('Rishon'), [done, done, done]);
     expect(pips('Sheni'), [pending, pending, pending]);
     expect(pips('Shlishi'), [done, done, pending], reason: 'two of its three readings are done');
-    expect(pips("Revi'i"), [pending, pending, pending], reason: 'being open is not being read');
+    expect(pips('Revi’i'), [pending, pending, pending], reason: 'being open is not being read');
     // A check means "read" alone, and the ribbon has none.
     for (final icon in [Icons.check, Icons.check_circle, Icons.timelapse]) {
       expect(find.descendant(of: find.byType(AliyahRibbon), matching: find.byIcon(icon)), findsNothing);
@@ -188,7 +188,7 @@ void main() {
     expect(find.bySemanticsLabel('Sheni, aliyah 2 of 7, not started'), findsOneWidget);
     expect(find.bySemanticsLabel('Shlishi, aliyah 3 of 7, 2 of 3 readings done'), findsOneWidget);
     expect(
-      tester.getSemantics(find.bySemanticsLabel("Revi'i, aliyah 4 of 7, not started")),
+      tester.getSemantics(find.bySemanticsLabel('Revi’i, aliyah 4 of 7, not started')),
       isSemantics(isButton: true, isSelected: true, hasSelectedState: true, hasTapAction: true, isFocusable: true),
     );
     handle.dispose();
@@ -209,7 +209,7 @@ void main() {
       c.read(routerProvider).go('/read/5787:2/6');
       await loadTexts(tester);
       expect(find.descendant(of: find.byType(AliyahRibbon), matching: find.byType(Scrollable)), findsOneWidget);
-      final open = tester.getRect(tab(hebrew ? 'שביעי' : "Shevi'i"));
+      final open = tester.getRect(tab(hebrew ? 'שביעי' : 'Shevi’i'));
       expect(open.left, greaterThanOrEqualTo(0));
       expect(open.right, lessThanOrEqualTo(340));
     });
@@ -325,8 +325,8 @@ void main() {
 
     // Shevi'i is the last aliyah, but Shlishi is still under way. Monday's
     // reading (and Sunday's) is done, so Done leads and going on is quieter.
-    expect(find.text("Shevi'i is complete"), findsOneWidget);
-    expect(find.textContaining("That's today's reading."), findsOneWidget);
+    expect(find.text('Shevi’i is complete'), findsOneWidget);
+    expect(find.textContaining('That’s today’s reading.'), findsOneWidget);
     expect(find.text('Shlishi is 22 verses.'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Done'), findsOneWidget);
     await tester.tap(find.widgetWithText(TextButton, 'Keep going: Shlishi'));
@@ -1508,7 +1508,7 @@ void main() {
       expect(find.text('3 · Rashi'), findsOneWidget);
       // Noach's Revi'i opens on 8:15, on which Rashi is silent: it is read a
       // third time in Hebrew instead.
-      await tester.tap(tab("Revi'i"));
+      await tester.tap(tab('Revi’i'));
       await tester.pumpAndSettle();
       expect(find.text('3 · Mikra'), findsOneWidget);
       expect(find.text('3 · Rashi'), findsNothing);
@@ -1584,7 +1584,7 @@ void main() {
       expect(column.width, lessThan(1000));
       expect(tester.getTopLeft(find.text('Rishon · ראשון')).dx, moreOrLessEquals(column.left, epsilon: 1));
       expect(tester.getRect(tab('Rishon')).left, moreOrLessEquals(column.left, epsilon: 1));
-      expect(tester.getRect(tab("Shevi'i")).right, moreOrLessEquals(column.right, epsilon: 1));
+      expect(tester.getRect(tab('Shevi’i')).right, moreOrLessEquals(column.right, epsilon: 1));
       final back = tester.getRect(find.widgetWithText(TextButton, 'Back'));
       final next = tester.getRect(find.widgetWithText(FilledButton, 'Next'));
       expect(back.left, moreOrLessEquals(column.left, epsilon: 1));
@@ -1686,7 +1686,7 @@ void main() {
     addTearDown(tester.view.reset);
     final c = await pumpApp(tester, settings: const AppSettings(), now: monday);
     await tester.pumpAndSettle();
-    await tester.tap(find.text("Start this week's parsha"));
+    await tester.tap(find.text('Start this week’s parsha'));
     await tester.pumpAndSettle();
     expect(find.text('Where will you be this Shabbat?'), findsOneWidget);
     // Why it is asked, and what a visitor can do, is a tap away.

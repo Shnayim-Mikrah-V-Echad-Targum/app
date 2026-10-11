@@ -123,7 +123,7 @@ void main() {
         timeZone: 'Mars/Olympus_Mons',
       );
       await open(tester, '/settings/reading', city: nowhere);
-      expect(find.text("This device can't tell the time in that city, so its times can't be shown."), findsOneWidget);
+      expect(find.text('This device can’t tell the time in that city, so its times can’t be shown.'), findsOneWidget);
     });
   });
 

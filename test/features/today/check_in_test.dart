@@ -132,7 +132,7 @@ void main() {
       final c = await openToday(tester);
       await tester.tap(find.text('Choose aliyot'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(CheckboxListTile, "Shevi'i"));
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Shevi’i'));
       await tester.tap(find.widgetWithText(CheckboxListTile, 'Haftarah'));
       await tester.pump();
 
@@ -157,7 +157,7 @@ void main() {
       await openToday(tester);
       await tester.tap(find.text('Choose aliyot'));
       await tester.pumpAndSettle();
-      for (final name in ['Chamishi', 'Shishi', "Shevi'i", 'Haftarah']) {
+      for (final name in ['Chamishi', 'Shishi', 'Shevi’i', 'Haftarah']) {
         await tester.tap(find.widgetWithText(CheckboxListTile, name));
         await tester.pump();
       }

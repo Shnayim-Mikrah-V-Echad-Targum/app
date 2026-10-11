@@ -34,9 +34,9 @@
         ]
       },
       {
-        "heading": "Your device's own backup",
+        "heading": "Your device’s own backup",
         "blocks": [
-          {"type": "para", "text": "If backup is turned on for your device, it can include the app's settings, reading progress, bookmarks and notes, so they come back when you restore the device or set up a new one. If you are signed in to the community, it can also include that sign-in, with your email address, and any post you have started but not sent. Android keeps this backup in your Google account, and an iPhone or iPad in iCloud or on your computer. We have no access to it."}
+          {"type": "para", "text": "If backup is turned on for your device, it can include the app’s settings, reading progress, bookmarks and notes, so they come back when you restore the device or set up a new one. If you are signed in to the community, it can also include that sign-in, with your email address, and any post you have started but not sent. Android keeps this backup in your Google account, and an iPhone or iPad in iCloud or on your computer. We have no access to it."}
         ]
       },
       {
@@ -54,7 +54,7 @@
       {
         "heading": "Deleting your data",
         "blocks": [
-          {"type": "para", "text": "You can reset your progress at any time in Settings, under “Your data”; that leaves your bookmarks and notes, which you remove one by one from a verse's options. You can delete your community account in Settings, under “Account & community”; this deletes your profile, your posts and any backed-up progress, bookmarks and notes. Topics you started that others replied to stay, without your name, so that their replies still make sense."}
+          {"type": "para", "text": "You can reset your progress at any time in Settings, under “Your data”; that leaves your bookmarks and notes, which you remove one by one from a verse’s options. You can delete your community account in Settings, under “Account & community”; this deletes your profile, your posts and any backed-up progress, bookmarks and notes. Topics you started that others replied to stay, without your name, so that their replies still make sense."}
         ]
       },
       {
@@ -74,7 +74,7 @@
       {
         "heading": "The app",
         "blocks": [
-          {"type": "para", "text": "The app is provided free of charge, as is, to help with the practice of Shnayim Mikra v'Echad Targum. Calendar calculations are carefully tested, but customs vary: for practical questions, ask your rav."}
+          {"type": "para", "text": "The app is provided free of charge, as is, to help with the practice of Shnayim Mikra v’Echad Targum. Calendar calculations are carefully tested, but customs vary: for practical questions, ask your rav."}
         ]
       },
       {
@@ -112,7 +112,7 @@
       {
         "heading": "Guard your tongue",
         "blocks": [
-          {"type": "para", "text": "No lashon hara, gossip or shaming of individuals or communities. Don't share other people's private information."}
+          {"type": "para", "text": "No lashon hara, gossip or shaming of individuals or communities. Don’t share other people’s private information."}
         ]
       },
       {
@@ -152,7 +152,7 @@
         "blocks": [
           {"type": "bullet", "text": "Screen reader support on every platform, with a clean spoken version (cantillation removed) of each verse of the Torah and the Targum, and of each comment of Rashi, tagged as Hebrew; the English translation is tagged as English"},
           {"type": "bullet", "text": "A choice of how the Divine Name is spoken, wherever it is written: in the Torah, in the Targum and in Rashi"},
-          {"type": "bullet", "text": "Reading size up to 500%, on top of your device's text size, plus line, word and letter spacing"},
+          {"type": "bullet", "text": "Reading size up to 500%, on top of your device’s text size, plus line, word and letter spacing"},
           {"type": "bullet", "text": "Light, dark, sepia and two high-contrast themes; bold text; a choice of fonts, including Atkinson Hyperlegible and Lexend"},
           {"type": "bullet", "text": "Show or hide vowels and cantillation; focus mode; adjustable line width"},
           {"type": "bullet", "text": "Full keyboard support with shortcuts on Windows and the web"},
@@ -164,7 +164,7 @@
       {
         "heading": "Known limitations",
         "blocks": [
-          {"type": "para", "text": "Hebrew voices differ between devices and some screen readers do not pronounce pointed Hebrew perfectly. On Windows, Narrator and NVDA cannot switch to a Hebrew voice on their own, because the app has no way to tell them the language of a text there. To hear the Hebrew in a Hebrew voice, choose one in the screen reader's settings. Reminders are not available in the web version."}
+          {"type": "para", "text": "Hebrew voices differ between devices and some screen readers do not pronounce pointed Hebrew perfectly. On Windows, Narrator and NVDA cannot switch to a Hebrew voice on their own, because the app has no way to tell them the language of a text there. To hear the Hebrew in a Hebrew voice, choose one in the screen reader’s settings. Reminders are not available in the web version."}
         ]
       },
       {
@@ -178,21 +178,21 @@
       {
         "heading": "",
         "blocks": [
-          {"type": "para", "text": "Shnayim Mikra is a free app for reading the weekly parsha twice in Hebrew and once in Targum Onkelos. If something isn't working, or you have a question or an idea, we'd be glad to hear from you."}
+          {"type": "para", "text": "Shnayim Mikra is a free app for reading the weekly parsha twice in Hebrew and once in Targum Onkelos. If something isn’t working, or you have a question or an idea, we’d be glad to hear from you."}
         ]
       },
       {
         "heading": "Contact us",
         "blocks": [
           {"type": "contact", "text": "For questions and problems: {contact}. We aim to respond within five working days."},
-          {"type": "para", "when": "email", "text": "You can also report a problem or suggest an improvement in public, on the app's {issues|GitHub issue tracker}, where anyone can follow the work."}
+          {"type": "para", "when": "email", "text": "You can also report a problem or suggest an improvement in public, on the app’s {issues|GitHub issue tracker}, where anyone can follow the work."}
         ]
       },
       {
         "heading": "Reminders",
         "blocks": [
           {"type": "para", "text": "Reminders are optional, and there is never more than one a day. None arrive on Shabbat or Yom Tov. You can choose them in Settings → Reminders."},
-          {"type": "para", "text": "If a reminder doesn't arrive, check that notifications are allowed for Shnayim Mikra in your device's settings, and that battery saving isn't stopping the app. The web version can't send reminders: for them, install the app on Android, iPhone or Windows."}
+          {"type": "para", "text": "If a reminder doesn’t arrive, check that notifications are allowed for Shnayim Mikra in your device’s settings, and that battery saving isn’t stopping the app. The web version can’t send reminders: for them, install the app on Android, iPhone or Windows."}
         ]
       },
       {
@@ -200,7 +200,7 @@
         "blocks": [
           {"type": "para", "text": "Your progress, streaks, bookmarks, notes and settings stay on your device. The app has no ads, no analytics and no tracking, and it works without an internet connection."},
           {"type": "para", "text": "To move to a new device, export your progress in Settings → Your data and import it on the new one: the file holds your bookmarks and notes too. Or sign in to the community and turn on Back up my progress, which backs them up with it."},
-          {"type": "para", "text": "To start over, reset your progress in Settings → Your data; your bookmarks and notes stay, and you remove them one by one from a verse's options. To delete your community account and everything stored with it, see {link:delete-account}."},
+          {"type": "para", "text": "To start over, reset your progress in Settings → Your data; your bookmarks and notes stay, and you remove them one by one from a verse’s options. To delete your community account and everything stored with it, see {link:delete-account}."},
           {"type": "para", "text": "The full details are in the {link:privacy|privacy policy}."}
         ]
       }
@@ -209,7 +209,7 @@
       {
         "heading": "",
         "blocks": [
-          {"type": "para", "text": "You can delete your Shnayim Mikra community account, and the data stored with it, at any time. You don't need an account to use the app: reading, progress and reminders all work without one."}
+          {"type": "para", "text": "You can delete your Shnayim Mikra community account, and the data stored with it, at any time. You don’t need an account to use the app: reading, progress and reminders all work without one."}
         ]
       },
       {
@@ -222,8 +222,8 @@
         "heading": "By email",
         "when": "email",
         "blocks": [
-          {"type": "contact", "subject": "Delete my account", "text": "If you can't use the app, email {contact} from the address you sign in with, with the subject “Delete my account”."},
-          {"type": "para", "text": "We delete the account within 30 days, and write back once it's done."}
+          {"type": "contact", "subject": "Delete my account", "text": "If you can’t use the app, email {contact} from the address you sign in with, with the subject “Delete my account”."},
+          {"type": "para", "text": "We delete the account within 30 days, and write back once it’s done."}
         ]
       },
       {
@@ -234,7 +234,7 @@
           {"type": "bullet", "text": "The backup of your progress, bookmarks and notes, if you turned it on"},
           {"type": "bullet", "text": "Your reports, and your list of blocked members"},
           {"type": "para", "text": "Topics you started that others replied to stay, without your name, so that their replies still make sense."},
-          {"type": "para", "text": "The progress, bookmarks and notes kept on your device are not affected. You can reset the progress in Settings → Your data and remove bookmarks and notes from a verse's options, or remove them all by uninstalling the app."}
+          {"type": "para", "text": "The progress, bookmarks and notes kept on your device are not affected. You can reset the progress in Settings → Your data and remove bookmarks and notes from a verse’s options, or remove them all by uninstalling the app."}
         ]
       }
     ]

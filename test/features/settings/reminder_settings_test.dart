@@ -368,11 +368,11 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text("Friday, at least three hours before candle-lighting, only if the parsha isn't finished"),
+        find.text('Friday, at least three hours before candle-lighting, only if the parsha isn’t finished'),
         findsOneWidget,
       );
       expect(find.text('A gentle nudge at your chosen time'), findsNothing);
-      expect(find.text("Friday morning, only if the parsha isn't finished"), findsNothing);
+      expect(find.text('Friday morning, only if the parsha isn’t finished'), findsNothing);
       expect(find.text('Sunday morning, to log what you read on Shabbat'), findsNothing);
     });
 

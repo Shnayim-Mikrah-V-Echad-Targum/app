@@ -227,8 +227,10 @@ class Names {
     return const ['', 'Nisan', 'Iyar', 'Sivan', 'Tammuz', 'Av', 'Elul', 'Tishrei', 'Cheshvan', 'Kislev', 'Tevet', 'Shevat'][month];
   }
 
-  /// Human name for a special haftarah key from the data file.
-  String specialHaftarah(String key) => (_he ? specialHaftarotHe[key] : specialHaftarotEn[key]) ?? key;
+  /// Human name for a special haftarah key from the data file. A key with no
+  /// name is shown as it is, its apostrophes typeset in English.
+  String specialHaftarah(String key) =>
+      _he ? specialHaftarotHe[key] ?? key : specialHaftarotEn[key] ?? key.replaceAll("'", '’');
 
   static const _prophetsHe = {
     'Joshua': 'יהושע', 'Judges': 'שופטים', 'I Samuel': 'שמואל א', 'II Samuel': 'שמואל ב',
@@ -239,8 +241,8 @@ class Names {
   };
 
   /// The names of the special haftarot (the keys of `specialHaftarot` in
-  /// assets/data/parshiyot.json) in Hebrew, and in [specialHaftarotEn] in
-  /// English.
+  /// assets/data/parshiyot.json, as the calendar gives them, with straight
+  /// apostrophes) in Hebrew, and in [specialHaftarotEn] in English.
   @visibleForTesting
   static const specialHaftarotHe = {
     'Shabbat Rosh Chodesh': 'שבת ראש חודש',
@@ -293,7 +295,7 @@ class Names {
     'Kedoshim following Special Shabbat': 'Kedoshim (haftarah of Acharei Mot)',
     'Masei on Shabbat Rosh Chodesh': 'Masei on Rosh Chodesh Av',
     'Matot-Masei on Shabbat Rosh Chodesh': 'Matot-Masei on Rosh Chodesh Av',
-    'Ki Teitzei with 3rd Haftarah of Consolation': "Ki Tetze, with Aniyah So'arah",
-    "Re'eh on Shabbat Rosh Chodesh": "Re'eh on Rosh Chodesh Elul",
+    'Ki Teitzei with 3rd Haftarah of Consolation': 'Ki Tetze, with Aniyah So’arah',
+    "Re'eh on Shabbat Rosh Chodesh": 'Re’eh on Rosh Chodesh Elul',
   };
 }
