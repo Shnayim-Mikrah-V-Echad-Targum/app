@@ -446,7 +446,7 @@ Rules:
 **Other text**
 - Ketiv and alternate readings: 0.62×, `onSurfaceVariant`, as now (dimmed: `dimInk`).
 - Rashi: Noto Serif Hebrew 0.78×, height 1.7, `onSurfaceVariant`.
-  - New Display switch "Rashi script" (off by default) switches to NotoRashiHebrew 400 at 0.80×, height 1.75.
+  - New Display switch "Rashi script" (off by default) switches to NotoRashiHebrew 400 at 0.80×, height 1.75. The switch shows only while Rashi is shown (beside the Torah or as the second reading), and the script loads only then.
   - Dibbur hamatchil: FRL 700 in `onSurface` (never primary).
 - English translation (study aid): EBG 500, 20sp × readingScale, height 1.5, `onSurfaceVariant`.
   - Verse number EBG 600 in `secondary` with lining figures.
@@ -843,8 +843,8 @@ When a sefer is complete: a one-time full-screen panel. SeferDivider, then "חֲ
   - a 24×4 primary bar and a 24×1 goldLeaf rule;
   - the label in labelMedium below the card.
 - Selected: 2 px primary border plus a 20 px check badge (primary disc, onPrimary check) at the top-end corner.
-- Wrapped in the existing RadioGroup semantics. Match device is a separate row above the grid (switch).
-- Matching the device, the two themes it switches between are both marked: light and dark, or the two high-contrast themes when the device asks for high contrast. Choosing a swatch stops matching; turning the switch off keeps the theme the device had.
+- Radio semantics: one group container named `themeLabel`, each swatch a radio button (its name, checked state and tap); the arrow keys move from swatch to swatch, on the web too. Match device is a separate row above the grid (switch).
+- Matching the device, the two themes it switches between are both marked for the eye: light and dark, or the two high-contrast themes when the device asks for high contrast. To assistive technology none is checked (the switch says the device is followed), and the pair carry a hint, `themeUsedWhenLight` / `themeUsedWhenDark`. Choosing a swatch stops matching; turning the switch off keeps the theme the device had.
 - `ThemeSwatchPicker` (lib/ui/widgets/theme_swatch_picker.dart) is shared with the reader's display sheet, where its cards are 64 high (`compact`).
 
 ### 6.25 Search results (lib/features/search/)
@@ -1188,7 +1188,7 @@ In order:
   - Study aids: English, Rashi, Rashi script (NEW);
   - Reading: focus mode, bold, keep screen on.
 - Line width as a SegmentedButton.
-- Scripture fonts as radio rows whose title is "בְּרֵאשִׁית בָּרָא" at 22 in that font, named under it; interface fonts likewise, "Aa Bb אב" in each family, Device font included. Screen readers read the names alone. Every font is loaded as the page opens, so each sample is drawn in its own.
+- Scripture fonts as radio rows whose title is "בְּרֵאשִׁית בָּרָא" at 22 in that font, named under it; interface fonts likewise, "Aa Bb אב" in each family, Device font included. Screen readers read the names alone. Every font's regular face is loaded as the page opens (`OptionalFonts.ensureSamples`), so each sample is drawn in its own; an interface font's bold waits until it is chosen.
 
 **Reading & customs**
 - Sections with GroupHeaders, their settings 24 apart:
@@ -1203,7 +1203,7 @@ In order:
 - The customs disclaimer closes the page in marginalia.
 
 **Accessibility**
-- Quick setups as a 2×2 grid of cards 88 high, radius 12: icon 24 in primary, titleSmall, one bodySmall line.
+- Quick setups as a 2×2 grid of cards 88 high, radius 12: icon 24 in primary, titleSmall, one bodySmall line that names what changes most, the cantillation hidden and the theme among it ("Clear font, no cantillation"; "Largest text, high contrast").
   - A setup in force (`presetActive`: the settings it sets, sizes within a hair) is washed in primaryContainer with a primary border and a check, and reads as selected. Two may be, as Low vision includes High contrast.
   - Applying one says so with Undo, which restores the settings exactly as they were.
 - Reset display as a TextButton (`restart_alt`) under the grid, with the same Undo.
@@ -1212,7 +1212,7 @@ In order:
 **Reader display sheet** (lib/features/reader/display_sheet.dart)
 - Opens at 42% of the screen over a light scrim (`Colors.black12`), so the verse it changes stays in view; drawn up, 95%.
 - Text size: outlined 56×48 buttons (`text_decrease`, `text_increase`, radius 10) either side of the size in titleMedium, which screen readers hear as it changes.
-- Scripture font: four ChoiceChips sharing the width, each "בְּרֵאשִׁית" at 18 in its font and named for screen readers; four across where the word fits, else two, or one under another.
+- Scripture font: four ChoiceChips sharing the width, each "בְּרֵאשִׁית" at 18 in its font and named for screen readers; four across where the word fits, else two, or one under another. The sample keeps its font's weight, so the chosen chip's mark beyond its fill and border is a 24×2 primary rule under its word.
 - Theme: the compact swatches. Then a PaperGroup of switches (vowels, cantillation, translation, Rashi, Rashi script, focus mode) with line spacing (from 1.6), and a row to the Display page.
 
 **Reminders**

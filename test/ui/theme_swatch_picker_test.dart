@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
@@ -100,6 +101,38 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('the swatches are one group named for the theme, and the arrow keys move between them', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(tester);
+    final group = find.ancestor(of: swatch('Light'), matching: find.bySemanticsLabel('Theme')).first;
+    expect(group, findsOneWidget);
+    for (final label in ['Sepia', 'Dark', 'High contrast — light', 'High contrast — dark']) {
+      expect(find.descendant(of: group, matching: swatch(label)), findsOneWidget, reason: label);
+    }
+
+    FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+    bool focused(String label) => Focus.of(tester.element(find.descendant(of: swatch(label), matching: find.byType(Ink)))).hasFocus;
+    // Past the switch, to the first swatch.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(focused('Light'), isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+    expect(focused('Sepia'), isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+    expect(focused('High contrast — dark'), isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pump();
+    expect(focused('High contrast — light'), isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+    expect(focused('Light'), isTrue);
+    handle.dispose();
+  });
+
   for (final compact in [false, true]) {
     testWidgets('every swatch is a target of 48 or more${compact ? ', compact too' : ''}', (tester) async {
       final handle = tester.ensureSemantics();
@@ -157,17 +190,23 @@ void main() {
   });
 
   group('matching the device', () {
-    testWidgets('marks the light and dark pair it chooses between', (tester) async {
+    testWidgets('marks the light and dark pair it chooses between, for the eye, and says when each is used',
+        (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester, value: AppThemeMode.system);
-      for (final (label, marked) in [
-        ('Light', true),
-        ('Sepia', false),
-        ('Dark', true),
-        ('High contrast — light', false),
-        ('High contrast — dark', false),
+      for (final (label, marked, hint) in [
+        ('Light', true, 'Used while the device is light'),
+        ('Sepia', false, ''),
+        ('Dark', true, 'Used while the device is dark'),
+        ('High contrast — light', false, ''),
+        ('High contrast — dark', false, ''),
       ]) {
-        expect(checked(tester, label), marked, reason: label);
+        expect(find.descendant(of: swatch(label), matching: find.byIcon(Icons.check)), marked ? findsOneWidget : findsNothing,
+            reason: label);
+        // No theme is chosen while the device is followed, as its switch
+        // says: two checked radios in one group would contradict it.
+        expect(checked(tester, label), isFalse, reason: label);
+        expect(tester.getSemantics(swatch(label)).getSemanticsData().hint, hint, reason: label);
       }
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
       handle.dispose();
@@ -184,8 +223,11 @@ void main() {
         ('High contrast — light', true),
         ('High contrast — dark', true),
       ]) {
-        expect(checked(tester, label), marked, reason: label);
+        expect(find.descendant(of: swatch(label), matching: find.byIcon(Icons.check)), marked ? findsOneWidget : findsNothing,
+            reason: label);
+        expect(checked(tester, label), isFalse, reason: label);
       }
+      expect(tester.getSemantics(swatch('High contrast — dark')).getSemanticsData().hint, 'Used while the device is dark');
       handle.dispose();
     });
 

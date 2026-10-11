@@ -187,13 +187,12 @@ void main() {
     expect(AppSettings.fromJson(on.toJson()).rashiScript, isTrue);
   });
 
-  test('the fonts to load are the chosen ones, and the Rashi script while it is on', () {
-    expect(const AppSettings().chosenFontFamilies, [null, 'NotoSerifHebrew']);
-    expect(
-      const AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.taameyFrank, rashiScript: true)
-          .chosenFontFamilies,
-      ['Lexend', 'TaameyFrank', kRashiScriptFamily],
-    );
+  test('the fonts to load are the chosen ones, and the Rashi script only while Rashi is shown in it', () {
+    expect(const AppSettings().optionalFonts, [null, 'NotoSerifHebrew']);
+    const chosen = AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.taameyFrank, rashiScript: true);
+    expect(chosen.optionalFonts, ['Lexend', 'TaameyFrank'], reason: 'no Rashi is shown');
+    expect(chosen.copyWith(showRashi: true).optionalFonts, ['Lexend', 'TaameyFrank', kRashiScriptFamily]);
+    expect(chosen.copyWith(secondReading: SecondReading.rashi).optionalFonts, contains(kRashiScriptFamily));
   });
 
   test('line spacing is never under 1.6, so that lower marks are never clipped', () {

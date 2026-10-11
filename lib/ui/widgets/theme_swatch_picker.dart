@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../features/settings/app_settings.dart';
 import '../../features/settings/widgets/settings_widgets.dart';
@@ -18,8 +19,11 @@ import 'paper_group.dart';
 /// Matching the device, the two themes it chooses between are marked: light
 /// and dark, or high contrast's two when the device asks for high contrast.
 ///
-/// The swatches are radio buttons to assistive technology, each one node:
-/// the theme's name, whether it is chosen, and its tap.
+/// The swatches are radio buttons to assistive technology, in one group
+/// named for the theme, each one node: the theme's name, whether it is
+/// chosen, and its tap. Matching the device, none is chosen (the switch says
+/// the device is followed); the pair it switches between say so in a hint.
+/// The arrow keys move between them, as between radio buttons.
 class ThemeSwatchPicker extends StatelessWidget {
   const ThemeSwatchPicker({super.key, required this.value, required this.onChanged, this.compact = false});
 
@@ -50,6 +54,12 @@ class ThemeSwatchPicker extends StatelessWidget {
     final deviceDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
     bool marked(AppThemeMode mode) =>
         matching ? mode != AppThemeMode.sepia && AppTheme.isHighContrast(mode) == deviceHighContrast : mode == value;
+    // Matching, when each of the device's pair is used.
+    String? hint(AppThemeMode mode) => !matching || !marked(mode)
+        ? null
+        : (mode == AppThemeMode.dark || mode == AppThemeMode.highContrastDark)
+            ? l.themeUsedWhenDark
+            : l.themeUsedWhenLight;
     // Turned off, the page keeps the theme the device had it in.
     final shown = switch ((deviceHighContrast, deviceDark)) {
       (true, true) => AppThemeMode.highContrastDark,
@@ -81,28 +91,53 @@ class ThemeSwatchPicker extends StatelessWidget {
           ],
         ),
         const Gap(Space.lg),
-        for (var row = 0; row < themes.length; row += columns) ...[
-          if (row > 0) const Gap(_gap),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = row; i < row + columns; i++) ...[
-                if (i > row) const SizedBox(width: _gap),
-                Expanded(
-                  child: i < themes.length
-                      ? _Swatch(
-                          mode: themes[i],
-                          label: label[themes[i]]!,
-                          selected: marked(themes[i]),
-                          height: compact ? 64 : 96,
-                          onTap: () => onChanged(themes[i]),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ],
+        Semantics(
+          // One group of radio buttons, named.
+          container: true,
+          explicitChildNodes: true,
+          label: l.themeLabel,
+          child: FocusTraversalGroup(
+            child: Shortcuts(
+              // From swatch to swatch, as between radio buttons, on the web
+              // too, where the arrow keys would otherwise scroll the page.
+              shortcuts: const {
+                SingleActivator(LogicalKeyboardKey.arrowLeft): DirectionalFocusIntent(TraversalDirection.left),
+                SingleActivator(LogicalKeyboardKey.arrowRight): DirectionalFocusIntent(TraversalDirection.right),
+                SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
+                SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down),
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var row = 0; row < themes.length; row += columns) ...[
+                    if (row > 0) const Gap(_gap),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var i = row; i < row + columns; i++) ...[
+                          if (i > row) const SizedBox(width: _gap),
+                          Expanded(
+                            child: i < themes.length
+                                ? _Swatch(
+                                    mode: themes[i],
+                                    label: label[themes[i]]!,
+                                    selected: marked(themes[i]),
+                                    checked: !matching && themes[i] == value,
+                                    hint: hint(themes[i]),
+                                    height: compact ? 64 : 96,
+                                    onTap: () => onChanged(themes[i]),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
-        ],
+        ),
       ],
     );
   }
@@ -113,13 +148,22 @@ class _Swatch extends StatelessWidget {
     required this.mode,
     required this.label,
     required this.selected,
+    required this.checked,
+    required this.hint,
     required this.height,
     required this.onTap,
   });
 
   final AppThemeMode mode;
   final String label;
+
+  /// Marked for the eye: the theme chosen, or one of the pair the device
+  /// switches between.
   final bool selected;
+
+  /// The theme chosen, to assistive technology: never while matching.
+  final bool checked;
+  final String? hint;
   final double height;
   final VoidCallback onTap;
 
@@ -200,7 +244,8 @@ class _Swatch extends StatelessWidget {
     return MergeSemantics(
       child: Semantics(
         inMutuallyExclusiveGroup: true,
-        checked: selected,
+        checked: checked,
+        hint: hint,
         button: true,
         // The swatch's fill and the ink over it are painted on this, which
         // moves with the page as it scrolls.

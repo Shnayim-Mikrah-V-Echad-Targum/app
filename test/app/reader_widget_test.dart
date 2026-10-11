@@ -778,8 +778,9 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('chooses the theme by swatch, and has the Rashi script among its switches', (tester) async {
-      final c = await openSheet(tester);
+    testWidgets('chooses the theme by swatch, and has the Rashi script among its switches while Rashi is shown',
+        (tester) async {
+      final c = await openSheet(tester, settings: const AppSettings(onboardingComplete: true, showRashi: true));
       final sepia = inSheet(find.byWidgetPredicate((w) => w is Text && w.semanticsLabel == 'Sepia'));
       await showInSheet(tester, sepia);
       await tester.tap(sepia);

@@ -42,9 +42,10 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Each font's sample is set in that font, so every one is loaded; the
+    // Each font's sample is set in that font, at its regular weight, so that
+    // face of every one is loaded (the bold waits until one is chosen); the
     // samples are laid out again as each arrives.
-    OptionalFonts.ensureAll([for (final f in ScriptureFont.values) f.family, for (final f in UiFont.values) f.family]);
+    OptionalFonts.ensureSamples([for (final f in ScriptureFont.values) f.family, for (final f in UiFont.values) f.family]);
   }
 
   @override
@@ -122,7 +123,10 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
             toggle(l.showTranslation, s.showTranslation, (s, v) => s.copyWith(showTranslation: v),
                 subtitle: l.translationDisclaimer),
             toggle(l.showRashi, s.showRashi, (s, v) => s.copyWith(showRashi: v)),
-            toggle(l.rashiScript, s.rashiScript, (s, v) => s.copyWith(rashiScript: v), subtitle: l.rashiScriptDesc),
+            // Only while Rashi is shown, beside the Torah or as the second
+            // reading.
+            if (s.showsRashi)
+              toggle(l.rashiScript, s.rashiScript, (s, v) => s.copyWith(rashiScript: v), subtitle: l.rashiScriptDesc),
           ],
         ),
         GroupHeader(l.displayGroupReading),
@@ -233,29 +237,29 @@ class _PreviewPage extends ConsumerWidget {
     final sefer = SeferColors.of(context);
     final styles = ScriptureStyles(context, s);
 
-    // As the reader shows it in focus mode: the first verse is read, the
-    // rest dimmed.
-    List<Widget> verse(int n, {required bool current}) {
+    // As the reader shows it in focus mode: the first verse is read, its
+    // block marked as a whole, and the rest dimmed.
+    Widget verse(int n, {required bool current}) {
       final at = VerseRef(_chapter, n);
       final dimmed = s.focusMode && !current;
-      return [
-        if (mikra != null)
-          ScriptureVerse(
-            verse: mikra.verse(at),
-            kind: ScriptureKind.mikra,
-            settings: s,
-            dimmed: dimmed,
-            highlighted: s.focusMode && current,
-          ),
-        if (onkelos != null)
-          ScriptureVerse(
-            verse: onkelos.verse(at),
-            kind: ScriptureKind.targum,
-            settings: s,
-            dimmed: dimmed,
-            secondary: true,
-          ),
-      ];
+      return _VerseBlock(
+        highlighted: s.focusMode && current,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (mikra != null)
+              ScriptureVerse(verse: mikra.verse(at), kind: ScriptureKind.mikra, settings: s, dimmed: dimmed),
+            if (onkelos != null)
+              ScriptureVerse(
+                verse: onkelos.verse(at),
+                kind: ScriptureKind.targum,
+                settings: s,
+                dimmed: dimmed,
+                secondary: true,
+              ),
+          ],
+        ),
+      );
     }
 
     // As wide as the reader's column, where the window is wider.
@@ -264,8 +268,8 @@ class _PreviewPage extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ChapterHead(chapter: _chapter, readingScale: s.readingScale),
-        ...verse(1, current: true),
-        ...verse(2, current: false),
+        verse(1, current: true),
+        verse(2, current: false),
         if (mikra?.breaks[const VerseRef(_chapter, 2)] == SectionBreak.closed)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -358,6 +362,35 @@ class _Veil extends StatelessWidget {
             ),
           ),
         ),
+      );
+}
+
+/// One verse's block (its Mikra and Targum) as focus mode sets it (§4.7):
+/// every block inset alike, so that nothing moves as the verse being read
+/// changes, and that one on the verse highlight with a 3 px techelet rule at
+/// its start, the right, as scripture runs.
+class _VerseBlock extends StatelessWidget {
+  const _VerseBlock({required this.highlighted, required this.child});
+
+  final bool highlighted;
+  final Widget child;
+
+  static const _rule = 3.0;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: highlighted ? SeferColors.of(context).verseHighlight : null,
+          // The rule keeps its width when it isn't drawn.
+          border: Border(
+            right: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+              width: _rule,
+              style: highlighted ? BorderStyle.solid : BorderStyle.none,
+            ),
+          ),
+        ),
+        child: Padding(padding: const EdgeInsets.fromLTRB(12, 4, 12 - _rule, 4), child: child),
       );
 }
 

@@ -1230,6 +1230,14 @@
   "themeLabel": "Theme",
   "themeSystem": "Match device",
   "themeSystemDesc": "Light or dark, like the device",
+  "themeUsedWhenLight": "Used while the device is light",
+  "@themeUsedWhenLight": {
+    "description": "A screen reader's hint on a theme swatch while the app matches the device: the theme it uses when the device is in light mode."
+  },
+  "themeUsedWhenDark": "Used while the device is dark",
+  "@themeUsedWhenDark": {
+    "description": "As themeUsedWhenLight, for dark mode."
+  },
   "@themeSystemDesc": {
     "description": "Under the Match device switch over the theme swatches, in Display settings and the reader's display sheet."
   },
@@ -1302,7 +1310,7 @@
   "showRashi": "Show Rashi alongside",
   "rashiScript": "Rashi script",
   "@rashiScript": {
-    "description": "Display switch: set Rashi's commentary in Hebrew in Rashi script rather than the scripture font."
+    "description": "Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters."
   },
   "rashiScriptDesc": "Set Rashi's commentary in the script of a printed chumash",
   "uiFontLabel": "Interface font",
@@ -1339,9 +1347,9 @@
   "@presetLargePrintDesc": {
     "description": "One short line under Large print in Accessibility's quick setups."
   },
-  "presetDyslexiaDesc": "Clear font, more space",
+  "presetDyslexiaDesc": "Clear font, no cantillation",
   "presetHighContrastDesc": "Strong contrast, bold",
-  "presetLowVisionDesc": "Largest, boldest text",
+  "presetLowVisionDesc": "Largest text, high contrast",
   "presetApplied": "{name} applied",
   "@presetApplied": {
     "placeholders": {

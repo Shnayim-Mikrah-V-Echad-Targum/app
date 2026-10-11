@@ -7,6 +7,7 @@ import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/display_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikra/services/optional_fonts.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/theme_swatch_picker.dart';
 
@@ -136,7 +137,7 @@ void main() {
     final c = await open(tester);
     for (final (heading, rows) in [
       ('Text', ['Vowels (nikud)', 'Cantillation (ta\'amim)', 'Show ketiv (as written)', 'Verse numbers', 'Justify text']),
-      ('Study aids', ['English translation (study aid)', 'Show Rashi alongside', 'Rashi script']),
+      ('Study aids', ['English translation (study aid)', 'Show Rashi alongside']),
       ('Reading', ['Focus mode', 'Bold text', 'Keep the screen on while reading']),
     ]) {
       final eyebrow = find.text(heading.toUpperCase()).evaluate().isEmpty ? find.text(heading) : find.text(heading.toUpperCase());
@@ -146,7 +147,14 @@ void main() {
         expect(find.descendant(of: group, matching: find.widgetWithText(SwitchRow, row)), findsOneWidget, reason: row);
       }
     }
+    // The Rashi script only while Rashi is shown.
     final rashiScript = find.widgetWithText(SwitchRow, 'Rashi script');
+    expect(rashiScript, findsNothing);
+    final rashi = find.widgetWithText(SwitchRow, 'Show Rashi alongside');
+    await tester.ensureVisible(rashi);
+    await tester.pumpAndSettle();
+    await tester.tap(rashi);
+    await tester.pumpAndSettle();
     await tester.ensureVisible(rashiScript);
     await tester.pumpAndSettle();
     await tester.tap(rashiScript);
@@ -197,5 +205,33 @@ void main() {
     expect(find.text('פרק יד'), findsOneWidget);
     expect(find.text('Chapter 14'), findsNothing);
     expect(tester.takeException(), isNull);
+
+    // The preview's verses start at its right, as scripture does.
+    final card = tester.getRect(find.ancestor(of: find.text('פרק יד'), matching: find.byType(ClipRRect)).first);
+    final verse = tester.getRect(find.byType(ScriptureVerse).first);
+    expect(card.right - verse.right, lessThan(verse.left - card.left));
+    // The first swatch, Light, at the right of its row, Dark at the left.
+    Rect swatch(String label) => tester.getRect(find.byWidgetPredicate((w) => w is Text && w.semanticsLabel == label));
+    await tester.ensureVisible(find.byType(ThemeSwatchPicker));
+    await tester.pumpAndSettle();
+    expect(swatch('בהירה').center.dx, greaterThan(swatch('ספיה').center.dx));
+    expect(swatch('ספיה').center.dx, greaterThan(swatch('כהה').center.dx));
+    // A switch row's switch at its end, the left, and its words at the right.
+    final row = find.byType(SwitchRow).first;
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    final toggle = tester.getRect(find.descendant(of: row, matching: find.byType(Switch)));
+    final title = tester.getRect(find.descendant(of: row, matching: find.byType(Text)).first);
+    expect(toggle.right, lessThan(title.left));
+  });
+
+  testWidgets("each font's sample loads its regular face alone, the bold waiting until it is chosen", (tester) async {
+    OptionalFonts.reset();
+    addTearDown(OptionalFonts.reset);
+    await open(tester);
+    for (final family in ['Lexend', 'AtkinsonHyperlegibleNext', 'OpenDyslexic', 'TaameyFrank', 'EzraSIL']) {
+      expect(OptionalFonts.isSampled(family), isTrue, reason: family);
+      expect(OptionalFonts.isRequested(family), isFalse, reason: '$family: not in full');
+    }
   });
 }

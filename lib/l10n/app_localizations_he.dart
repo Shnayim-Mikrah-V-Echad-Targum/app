@@ -1429,6 +1429,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get themeSystemDesc => 'בהירה או כהה, כמו המכשיר';
 
   @override
+  String get themeUsedWhenLight => 'בשימוש כשהמכשיר במצב בהיר';
+
+  @override
+  String get themeUsedWhenDark => 'בשימוש כשהמכשיר במצב כהה';
+
+  @override
   String get themeLight => 'בהירה';
 
   @override
@@ -1631,13 +1637,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get presetLargePrintDesc => 'טקסט גדול ומרווח';
 
   @override
-  String get presetDyslexiaDesc => 'גופן ברור ויותר ריווח';
+  String get presetDyslexiaDesc => 'גופן ברור, בלי טעמים';
 
   @override
   String get presetHighContrastDesc => 'ניגודיות חזקה והדגשה';
 
   @override
-  String get presetLowVisionDesc => 'טקסט גדול מאוד ומודגש';
+  String get presetLowVisionDesc => 'טקסט גדול מאוד וניגודיות גבוהה';
 
   @override
   String presetApplied(String name) {

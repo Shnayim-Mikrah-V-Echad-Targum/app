@@ -1427,6 +1427,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSystemDesc => 'Light or dark, like the device';
 
   @override
+  String get themeUsedWhenLight => 'Used while the device is light';
+
+  @override
+  String get themeUsedWhenDark => 'Used while the device is dark';
+
+  @override
   String get themeLight => 'Light';
 
   @override
@@ -1630,13 +1636,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get presetLargePrintDesc => 'Bigger, roomier text';
 
   @override
-  String get presetDyslexiaDesc => 'Clear font, more space';
+  String get presetDyslexiaDesc => 'Clear font, no cantillation';
 
   @override
   String get presetHighContrastDesc => 'Strong contrast, bold';
 
   @override
-  String get presetLowVisionDesc => 'Largest, boldest text';
+  String get presetLowVisionDesc => 'Largest text, high contrast';
 
   @override
   String presetApplied(String name) {

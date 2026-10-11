@@ -94,7 +94,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
   /// builds the theme in the interface font once it has.
   void _loadFonts() {
     final settings = ref.read(settingsProvider);
-    OptionalFonts.ensureAll(settings.chosenFontFamilies).then((_) {
+    OptionalFonts.ensureAll(settings.optionalFonts).then((_) {
       if (mounted && OptionalFonts.isLoaded(ref.read(settingsProvider).uiFont.family)) setState(() {});
     });
   }
@@ -148,8 +148,9 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     ref.watch(reminderSchedulerProvider);
     ref.watch(appShortcutsProvider);
     ref.listen(progressSyncProvider, (_, _) {});
-    // Opt-in fonts load when first chosen (and at start, in initState).
-    ref.listen(settingsProvider.select((s) => s.chosenFontFamilies.join(',')), (_, _) => _loadFonts());
+    // Opt-in fonts load when first chosen (and at start, in initState): the
+    // Rashi script only once it is turned on, and Rashi shown.
+    ref.listen(settingsProvider.select((s) => (s.uiFont, s.scriptureFont, s.rashiScript && s.showsRashi)), (_, _) => _loadFonts());
     if (OptionalFonts.isLoaded(settings.uiFont.family)) _uiFont = settings.uiFont;
 
     final systemHighContrast = MediaQuery.highContrastOf(context);

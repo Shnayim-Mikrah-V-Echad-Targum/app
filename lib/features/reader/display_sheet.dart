@@ -97,7 +97,8 @@ class _DisplaySheet extends ConsumerWidget {
                 toggle(l.showTranslation, s.showTranslation, (s, v) => s.copyWith(showTranslation: v),
                     subtitle: l.translationDisclaimer),
                 toggle(l.showRashi, s.showRashi, (s, v) => s.copyWith(showRashi: v)),
-                toggle(l.rashiScript, s.rashiScript, (s, v) => s.copyWith(rashiScript: v)),
+                // Only while Rashi is shown.
+                if (s.showsRashi) toggle(l.rashiScript, s.rashiScript, (s, v) => s.copyWith(rashiScript: v)),
                 toggle(l.focusMode, s.focusMode, (s, v) => s.copyWith(focusMode: v), subtitle: l.focusModeDesc),
                 // In line with the rows' text, as on the paper of a page.
                 ListTileTheme.merge(
@@ -163,6 +164,9 @@ class _FontChips extends StatelessWidget {
   /// The widest of the fonts' samples, and some room.
   static const _word = 76.0;
 
+  /// The width of the mark under the chosen font's sample.
+  static const _mark = 24.0;
+
   @override
   Widget build(BuildContext context) {
     final word = MediaQuery.textScalerOf(context).scale(_word);
@@ -183,12 +187,28 @@ class _FontChips extends StatelessWidget {
                       child: SeferChoiceChip(
                         label: SizedBox(
                           width: cell(columns) - _chrome,
-                          // The word in that font, named for screen readers.
-                          child: Text(
-                            _sample,
-                            semanticsLabel: names[fonts[i]],
-                            textAlign: TextAlign.center,
-                            style: scriptureSampleStyle(fonts[i], 18),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // The word in that font, named for screen
+                              // readers.
+                              Text(
+                                _sample,
+                                semanticsLabel: names[fonts[i]],
+                                textAlign: TextAlign.center,
+                                style: scriptureSampleStyle(fonts[i], 18),
+                              ),
+                              // The chosen one underlined, as its sample can't
+                              // be bold: a mark that doesn't rest on colour.
+                              const SizedBox(height: 2),
+                              SizedBox(
+                                width: _mark,
+                                height: 2,
+                                child: ColoredBox(
+                                  color: value == fonts[i] ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         selected: value == fonts[i],

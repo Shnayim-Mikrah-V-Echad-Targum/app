@@ -80,7 +80,18 @@ enum UiFont {
   final String? family;
 }
 
+/// The reading column's measure (ScriptureStyles.maxLineWidth).
 enum LineWidth { narrow, medium, wide }
+
+/// The line spacing of scripture, as a multiple of its size: never below 1.6,
+/// so that lower vowels and cantillation marks are never clipped
+/// (DESIGN.md §8).
+const kMinLineHeight = 1.6;
+const kMaxLineHeight = 3.0;
+
+/// The Rashi script (DESIGN_SYSTEM.md §4.7), loaded only once it is chosen
+/// (OptionalFonts).
+const kRashiScriptFamily = 'NotoRashiHebrew';
 
 /// Whose public Torah reading the weeks follow. For a few weeks after Pesach
 /// or Shavuot, Israel can be a parsha ahead: when the last day of the
@@ -245,8 +256,8 @@ class AppSettings {
   /// Show Rashi alongside, as commentary (independent of [secondReading]).
   final bool showRashi;
 
-  /// Set Rashi's commentary in Hebrew in Rashi script, as a printed chumash
-  /// does, rather than in the scripture font.
+  /// Set Rashi's commentary in Rashi script, as printed Chumashim do, rather
+  /// than in square letters.
   final bool rashiScript;
   final NameStyle nameStyle;
 
@@ -355,12 +366,6 @@ class AppSettings {
 
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
-  /// The fonts these settings draw text in that load on demand
-  /// (OptionalFonts): the interface and scripture fonts chosen, and the Rashi
-  /// script if it is on. Null for a font that is always bundled.
-  List<String?> get chosenFontFamilies =>
-      [uiFont.family, scriptureFont.family, if (rashiScript) kRashiScriptFamily];
-
   /// These settings with [nusach] as the reader's custom. Until the reader
   /// sets [repeatLastVerse] themselves, it follows the custom: Chabad's is
   /// not to repeat the last verse.
@@ -372,6 +377,16 @@ class AppSettings {
   /// These settings with [repeatLastVerse] set by the reader, so that it no
   /// longer follows the custom.
   AppSettings withRepeatLastVerse(bool repeat) => copyWith(repeatLastVerse: repeat, repeatLastVerseTouched: true);
+
+  /// The opt-in font families these settings show text in, which are loaded
+  /// on demand (OptionalFonts); null for a bundled font. The Rashi script
+  /// only while Rashi is shown in it.
+  List<String?> get optionalFonts =>
+      [uiFont.family, scriptureFont.family, if (rashiScript && showsRashi) kRashiScriptFamily];
+
+  /// Whether the reader shows Rashi: beside the Torah, or as the second
+  /// reading.
+  bool get showsRashi => showRashi || usesRashi;
 
   /// Whether the reading heard and the days of Yom Tov kept are those of
   /// different places, as for a visitor to or from Israel.
@@ -754,14 +769,6 @@ class AppSettings {
 
 const kMinReadingScale = 0.5;
 const kMaxReadingScale = 5.0;
-
-/// Scripture's line height, as a multiple of its size: never under 1.6, so
-/// that lower vowels and cantillation marks are never clipped (§4.7).
-const kMinLineHeight = 1.6;
-const kMaxLineHeight = 3.0;
-
-/// The family of the Rashi script ([AppSettings.rashiScript]).
-const kRashiScriptFamily = 'NotoRashiHebrew';
 
 /// Ready-made combinations of display settings, offered in Settings →
 /// Accessibility.

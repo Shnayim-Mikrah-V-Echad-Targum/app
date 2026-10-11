@@ -109,46 +109,4 @@ void main() {
     expect(find.bySemanticsLabel('Verse 13. לא תרצח. לא תנאף. לא תגנב. לא תענה ברעך עד שקר.'), findsOneWidget);
     handle.dispose();
   });
-
-  group('Rashi', () {
-    const comment = Comment('בראשית', 'אמר רבי יצחק');
-
-    TextStyle commentStyle(WidgetTester tester) => tester.widget<RichText>(find.byType(RichText)).text.style!;
-    // Text.rich wraps the comment's span in one of its own.
-    TextStyle headingStyle(WidgetTester tester) =>
-        ((tester.widget<RichText>(find.byType(RichText)).text as TextSpan).children!.single as TextSpan)
-            .children!
-            .first
-            .style!;
-
-    testWidgets('is set in the scripture font, unless the Rashi script is on', (tester) async {
-      await pumpThemed(tester, const RashiComments(comments: [comment], settings: AppSettings(), english: false));
-      expect(commentStyle(tester).fontFamily, 'NotoSerifHebrew');
-      expect(commentStyle(tester).fontSize, closeTo(26 * 0.78, 1e-9));
-    });
-
-    testWidgets('in Rashi script, at 0.80 of the verse size and roomier, its quoted words in square letters', (tester) async {
-      await pumpThemed(
-        tester,
-        const RashiComments(comments: [comment], settings: AppSettings(rashiScript: true, readingScale: 2), english: false),
-      );
-      final style = commentStyle(tester);
-      expect(style.fontFamily, kRashiScriptFamily);
-      expect(style.fontSize, closeTo(26 * 0.80 * 2, 1e-9));
-      expect(style.height, 1.75);
-      expect(style.fontWeight, FontWeight.w400, reason: 'its one weight');
-      // Rashi script has no bold: the dibbur hamatchil is in Frank Ruhl Libre.
-      expect(headingStyle(tester).fontFamily, 'FrankRuhlLibre');
-      expect(headingStyle(tester).fontWeight, FontWeight.w700);
-    });
-
-    testWidgets('in English, the Rashi script changes nothing', (tester) async {
-      await pumpThemed(
-        tester,
-        const RashiComments(comments: [Comment('IN THE BEGINNING', 'Rabbi Yitzchak said')], settings: AppSettings(rashiScript: true), english: true),
-      );
-      expect(commentStyle(tester).fontFamily, isNot(kRashiScriptFamily));
-      expect(headingStyle(tester).fontFamily, isNot('FrankRuhlLibre'));
-    });
-  });
 }

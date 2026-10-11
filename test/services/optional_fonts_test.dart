@@ -94,6 +94,39 @@ void main() {
     }
   });
 
+  test("a sample loads a family's regular face alone, and choosing it then loads only the rest", () async {
+    final assets = _GatedAssets()..open.complete();
+    await OptionalFonts.ensureSamples(['Lexend', 'TaameyFrank', null, 'EBGaramond'], bundle: assets);
+    expect(assets.requested, ['assets/fonts/optional/Lexend-Regular.ttf', 'assets/fonts/optional/TaameyFrankCLM-Medium.ttf']);
+    expect(OptionalFonts.isSampled('Lexend'), isTrue);
+    expect(OptionalFonts.isLoaded('Lexend'), isFalse, reason: 'its bold is still to come');
+
+    assets.requested.clear();
+    await OptionalFonts.ensure('Lexend', bundle: assets);
+    expect(assets.requested, ['assets/fonts/optional/Lexend-Bold.ttf']);
+    expect(OptionalFonts.isLoaded('Lexend'), isTrue);
+    await OptionalFonts.ensure('TaameyFrank', bundle: assets);
+    expect(assets.requested, ['assets/fonts/optional/Lexend-Bold.ttf'], reason: 'its one file is in');
+    expect(OptionalFonts.isLoaded('TaameyFrank'), isTrue);
+
+    // A family loaded in full needs no sample.
+    assets.requested.clear();
+    await OptionalFonts.ensureSamples(['Lexend'], bundle: assets);
+    expect(assets.requested, isEmpty);
+  });
+
+  test('a sample that failed is tried again, and the family loaded in full after it', () async {
+    final missing = _MissingAssets();
+    final print = debugPrint;
+    debugPrint = (message, {wrapWidth}) {};
+    addTearDown(() => debugPrint = print);
+    await OptionalFonts.ensureSamples(['Lexend'], bundle: missing);
+    expect(OptionalFonts.isSampled('Lexend'), isFalse);
+    final assets = _GatedAssets()..open.complete();
+    await OptionalFonts.ensure('Lexend', bundle: assets);
+    expect(assets.requested, hasLength(2));
+  });
+
   testWidgets('the app loads an opt-in font as soon as it is chosen', (tester) async {
     final c = await pumpApp(tester);
     expect(OptionalFonts.isRequested('Lexend'), isFalse);

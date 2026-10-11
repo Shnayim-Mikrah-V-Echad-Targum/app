@@ -2337,6 +2337,18 @@ abstract class AppLocalizations {
   /// **'Light or dark, like the device'**
   String get themeSystemDesc;
 
+  /// A screen reader's hint on a theme swatch while the app matches the device: the theme it uses when the device is in light mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Used while the device is light'**
+  String get themeUsedWhenLight;
+
+  /// As themeUsedWhenLight, for dark mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Used while the device is dark'**
+  String get themeUsedWhenDark;
+
   /// No description provided for @themeLight.
   ///
   /// In en, this message translates to:
@@ -2529,7 +2541,7 @@ abstract class AppLocalizations {
   /// **'Show Rashi alongside'**
   String get showRashi;
 
-  /// Display switch: set Rashi's commentary in Hebrew in Rashi script rather than the scripture font.
+  /// Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters.
   ///
   /// In en, this message translates to:
   /// **'Rashi script'**
@@ -2730,7 +2742,7 @@ abstract class AppLocalizations {
   /// No description provided for @presetDyslexiaDesc.
   ///
   /// In en, this message translates to:
-  /// **'Clear font, more space'**
+  /// **'Clear font, no cantillation'**
   String get presetDyslexiaDesc;
 
   /// No description provided for @presetHighContrastDesc.
@@ -2742,7 +2754,7 @@ abstract class AppLocalizations {
   /// No description provided for @presetLowVisionDesc.
   ///
   /// In en, this message translates to:
-  /// **'Largest, boldest text'**
+  /// **'Largest text, high contrast'**
   String get presetLowVisionDesc;
 
   /// No description provided for @presetApplied.
