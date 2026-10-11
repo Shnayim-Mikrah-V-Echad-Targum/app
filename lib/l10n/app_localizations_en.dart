@@ -1876,6 +1876,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactTitle => 'Contact us';
 
   @override
+  String get aboutGroupLearn => 'Learn';
+
+  @override
+  String get aboutGroupPolicies => 'Policies';
+
+  @override
+  String get aboutGroupContact => 'Contact';
+
+  @override
+  String get feedbackLinkLabel => 'GitHub issues';
+
+  @override
+  String legalLastUpdated(String date) {
+    return 'Last updated: $date';
+  }
+
+  @override
   String get guideTitle => 'How it works';
 
   @override
@@ -1917,6 +1934,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideWhatTitle => 'What is Shnayim Mikra?';
 
   @override
+  String get guideQuoteSource => 'Berakhot 8a';
+
+  @override
+  String get guideQuoteTranslation =>
+      'A person should always complete their portions with the community: the text twice and the Targum once.';
+
+  @override
   String get guideWhatBody =>
       'The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.';
 
@@ -1933,6 +1957,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guideHowBody =>
       'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.';
+
+  @override
+  String get guidePassesCaption => '1 · Mikra  2 · Mikra  3 · Targum';
 
   @override
   String get guideTargumTitle => 'Targum or Rashi';
@@ -1960,7 +1987,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideSourcesBody =>
-      'Berakhot 8a–b · Shulchan Aruch, Orach Chaim 285 · Mishnah Berurah 285 · Kitzur Shulchan Aruch 72 · Shulchan Aruch HaRav 285';
+      'Berakhot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285';
 
   @override
   String hebrewDateLabel(String date) {

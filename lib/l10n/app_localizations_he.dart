@@ -1876,6 +1876,23 @@ class AppLocalizationsHe extends AppLocalizations {
   String get contactTitle => 'יצירת קשר';
 
   @override
+  String get aboutGroupLearn => 'לעיון';
+
+  @override
+  String get aboutGroupPolicies => 'מדיניות';
+
+  @override
+  String get aboutGroupContact => 'יצירת קשר';
+
+  @override
+  String get feedbackLinkLabel => 'דף התקלות ב־GitHub';
+
+  @override
+  String legalLastUpdated(String date) {
+    return 'עודכן לאחרונה: $date';
+  }
+
+  @override
   String get guideTitle => 'איך זה עובד';
 
   @override
@@ -1916,6 +1933,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get guideWhatTitle => 'מהו שניים מקרא?';
 
   @override
+  String get guideQuoteSource => 'ברכות ח, א';
+
+  @override
+  String get guideQuoteTranslation =>
+      'לעולם ישלים אדם את פרשיותיו עם הציבור: המקרא פעמיים והתרגום פעם אחת.';
+
+  @override
   String get guideWhatBody =>
       'הגמרא (ברכות ח, א) מלמדת: לעולם ישלים אדם פרשיותיו עם הציבור, שניים מקרא ואחד תרגום. השולחן ערוך פוסק זאת באורח חיים סימן רפה. זוהי השלמה אישית של הפרשה שהציבור קורא בשבת.';
 
@@ -1932,6 +1956,9 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get guideHowBody =>
       'קוראים פסוק פסוק — כל פסוק פעמיים ואחריו התרגום — או פרשה פרשה, כל פרשה פעמיים ואחריה התרגום. רבים חוזרים על הפסוק האחרון בעברית כדי לסיים במקרא. מומלץ לקרוא בקול ובטעמים, אם אפשר.';
+
+  @override
+  String get guidePassesCaption => '1 · מקרא  2 · מקרא  3 · תרגום';
 
   @override
   String get guideTargumTitle => 'תרגום או רש״י';
@@ -1959,7 +1986,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideSourcesBody =>
-      'ברכות ח, א–ב · שולחן ערוך, אורח חיים רפה · משנה ברורה רפה · קיצור שולחן ערוך עב · שולחן ערוך הרב רפה';
+      'ברכות ח, א–ב\nשולחן ערוך, אורח חיים רפה\nמשנה ברורה רפה\nקיצור שולחן ערוך עב\nשולחן ערוך הרב רפה';
 
   @override
   String hebrewDateLabel(String date) {

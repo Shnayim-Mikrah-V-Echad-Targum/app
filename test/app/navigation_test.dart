@@ -30,6 +30,7 @@ import 'package:shnayim_mikra/features/settings/screens/display_settings_screen.
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../helpers.dart';
@@ -53,6 +54,10 @@ class _Server extends DemoForumRepository {
 }
 
 final _home = find.widgetWithIcon(IconButton, Icons.home_outlined);
+
+/// A page's own heading, in its body: a policy sets its title there, which
+/// the app bar repeats, for the eye alone, once it has scrolled away.
+Finder _pageHeading(String text) => find.widgetWithText(PageBody, text);
 
 /// The app on a phone, for its navigation bar, on [_now].
 Future<GoRouter> _pump(
@@ -319,7 +324,7 @@ void main() {
       router.go('/settings/about/legal/privacy');
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
-      expect(find.text('Privacy'), findsOneWidget);
+      expect(_pageHeading('Privacy'), findsOneWidget);
 
       router.go('/settings/about/sources');
       await tester.pumpAndSettle();
@@ -337,7 +342,7 @@ void main() {
       router.push('/settings/about/legal/guidelines');
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
-      expect(find.text('Community guidelines'), findsOneWidget);
+      expect(_pageHeading('Community guidelines'), findsOneWidget);
       await goBack(tester);
       expect(selectedTab(tester), 3);
 
@@ -783,7 +788,7 @@ void main() {
     await tester.tap(guidelines);
     await tester.pumpAndSettle();
     expect(find.byType(LegalScreen), findsOneWidget);
-    expect(find.text('Community guidelines'), findsOneWidget);
+    expect(_pageHeading('Community guidelines'), findsOneWidget);
 
     await goBack(tester);
     expect(find.text('A question on Rashi'), findsOneWidget);

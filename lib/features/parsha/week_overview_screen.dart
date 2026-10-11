@@ -11,6 +11,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
+import '../../ui/widgets/heading_reveal.dart';
 import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
@@ -59,34 +60,9 @@ class WeekOverview extends ConsumerStatefulWidget {
   ConsumerState<WeekOverview> createState() => _WeekOverviewState();
 }
 
-class _WeekOverviewState extends ConsumerState<WeekOverview> {
-  /// The parsha's names at the head of the page.
-  final _names = GlobalKey();
-
-  /// Whether they have scrolled under the app bar, which then names the
-  /// parsha itself.
-  bool _namesHidden = false;
-
-  /// Whether a look at the names is due after the next frame.
-  bool _checkDue = false;
-
-  bool _onScroll(ScrollNotification notification) {
-    if (notification.depth != 0 || _checkDue) return false;
-    // Once the frame has laid the page out at its new offset.
-    _checkDue = true;
-    final viewport = notification.context;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkDue = false;
-      if (!mounted || viewport == null || !viewport.mounted) return;
-      final names = _names.currentContext?.findRenderObject() as RenderBox?;
-      final view = viewport.findRenderObject() as RenderBox?;
-      if (names == null || view == null || !names.attached || !view.attached) return;
-      final hidden = names.localToGlobal(Offset(0, names.size.height)).dy <= view.localToGlobal(Offset.zero).dy;
-      if (hidden != _namesHidden) setState(() => _namesHidden = hidden);
-    });
-    return false;
-  }
-
+// The parsha's names head the page; once they have scrolled under the app
+// bar, it names the parsha itself.
+class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<WeekOverview> {
   @override
   Widget build(BuildContext context) {
     final ctx = widget.ctx;
@@ -134,7 +110,7 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> {
     return PageScaffold(
       leading: widget.leading,
       titleText: l.parshaLabel(name),
-      titleRevealed: _namesHidden,
+      titleRevealed: headingHidden,
       actions: [
         ...widget.actions,
         PopupMenuButton<String>(
@@ -154,10 +130,10 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> {
         ),
       ],
       body: NotificationListener<ScrollNotification>(
-        onNotification: _onScroll,
+        onNotification: onPageScroll,
         child: PageBody(
           children: [
-            _WeekHeader(ctx: ctx, namesKey: _names),
+            _WeekHeader(ctx: ctx, namesKey: headingKey),
             if (!ctx.isOpen) ...[
               const Gap(Space.xl),
               NoticeBanner(icon: Icons.visibility_outlined, text: l.previewNotOpen(names.dateLong(ctx.week.start))),

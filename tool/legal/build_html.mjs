@@ -8,22 +8,24 @@
 // writes build/web/legal/<doc>.html in English and <doc>.he.html in Hebrew,
 // for every doc in DOCS.
 //
-// The texts the app shows come from the app itself: lib/features/about/
-// legal_screen.dart, read here so the pages never drift from it. The support
-// and delete-account pages are web-only (the app doesn't link them) and live
-// in assets/legal/legal.json, shaped as
-//   {titles: {en: {doc: title}}, en: {doc: [{heading, when?, blocks: [
-//     {type: 'para' | 'bullet' | 'contact', text, when?, subject?}]}]}, he: …}.
-// A doc in legal.json takes precedence, so the app's texts can move there.
+// The texts are in assets/legal/legal.json, which the app shows too, so the
+// pages never drift from it. It is shaped as
+//   {updated: {doc: 'yyyy-mm'}, titles: {en: {doc: title}}, en: {doc: [
+//     {heading, when?, blocks: [{type: 'para' | 'bullet' | 'contact', text,
+//     when?, subject?}]}]}, he: …}.
+// The app shows the policies (privacy, terms, guidelines, accessibility),
+// titled by its own strings (lib/l10n/app_*.arb); the support and
+// delete-account pages are web-only, titled in "titles".
 //
 // In the texts:
 //   {contact}          the SUPPORT_EMAIL address, or the issue tracker without one
 //   {issues}           the issue tracker (SOURCE_URL/issues)
 //   {link:doc}         another of these pages, by its title
 //   {name|label}       any of these, with its own link text
-// A section or block with "when": "email" is left out when there is no
-// SUPPORT_EMAIL, and one with "when": "no-email" when there is; a contact
-// block's "subject" fills in the email's subject.
+// The app's own policies use {contact} alone. A section or block with
+// "when": "email" is left out when there is no SUPPORT_EMAIL, and one with
+// "when": "no-email" when there is; a contact block's "subject" fills in the
+// email's subject.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -44,13 +46,11 @@ const ARB_TITLES = {
 
 const UI = {
   en: {
-    issues: 'GitHub issues',
     otherLanguage: 'עברית',
     pages: 'Policies and help',
     open: 'Open Shnayim Mikra',
   },
   he: {
-    issues: 'דף התקלות ב־GitHub',
     otherLanguage: 'English',
     pages: 'מדיניות ועזרה',
     open: 'לפתיחת שניים מקרא',
@@ -58,216 +58,49 @@ const UI = {
 };
 
 // ---------------------------------------------------------------------------
-// Reading the app's texts from legal_screen.dart
-
-/// Reads the `_en` and `_he` maps of legal_screen.dart, whose entries are
-/// `LegalDoc.name: [('heading', 'body'), …]` with constant string literals,
-/// as {en: {name: [{heading, body}]}, he: …}.
-export function parseDartLegal(source) {
-  const texts = {};
-  for (const lang of LANGS) {
-    const decl = new RegExp(`const\\s+_${lang}\\s*=\\s*<[^{;]*\\{`).exec(source);
-    if (!decl) throw new Error(`legal_screen.dart has no _${lang} map`);
-    const tokens = new DartTokens(source, decl.index + decl[0].length - 1);
-    texts[lang] = parseDocMap(tokens);
-  }
-  return texts;
-}
-
-function parseDocMap(tokens) {
-  const docs = {};
-  tokens.expect('{');
-  while (!tokens.accept('}')) {
-    const key = tokens.next();
-    const name = key.type === 'ident' && /^LegalDoc\.(\w+)$/.exec(key.value)?.[1];
-    if (!name) throw tokens.error(`expected LegalDoc.<name>, found ${key.value}`);
-    tokens.expect(':');
-    tokens.expect('[');
-    const sections = [];
-    while (!tokens.accept(']')) {
-      tokens.expect('(');
-      const heading = tokens.strings();
-      tokens.expect(',');
-      const body = tokens.strings();
-      tokens.accept(',');
-      tokens.expect(')');
-      sections.push({ heading, body });
-      if (!tokens.accept(',')) {
-        tokens.expect(']');
-        break;
-      }
-    }
-    docs[name] = sections;
-    if (!tokens.accept(',')) {
-      tokens.expect('}');
-      break;
-    }
-  }
-  return docs;
-}
-
-/// Just enough of a Dart tokenizer for a const map of string records:
-/// punctuation, dotted identifiers and string literals (raw, triple-quoted
-/// and escaped ones), skipping whitespace and comments.
-export class DartTokens {
-  constructor(source, start = 0) {
-    this.source = source;
-    this.pos = start;
-    this.peeked = null;
-  }
-
-  error(message) {
-    const line = this.source.slice(0, this.pos).split('\n').length;
-    return new Error(`legal_screen.dart:${line}: ${message}`);
-  }
-
-  peek() {
-    this.peeked ??= this.read();
-    return this.peeked;
-  }
-
-  next() {
-    const token = this.peek();
-    this.peeked = null;
-    return token;
-  }
-
-  accept(punct) {
-    const token = this.peek();
-    if (token.type !== 'punct' || token.value !== punct) return false;
-    this.next();
-    return true;
-  }
-
-  expect(punct) {
-    const token = this.next();
-    if (token.type !== 'punct' || token.value !== punct) throw this.error(`expected '${punct}', found ${token.value}`);
-  }
-
-  /// One or more adjacent string literals, joined as Dart joins them.
-  strings() {
-    const first = this.next();
-    if (first.type !== 'string') throw this.error(`expected a string, found ${first.value}`);
-    let text = first.value;
-    while (this.peek().type === 'string') text += this.next().value;
-    return text;
-  }
-
-  read() {
-    const s = this.source;
-    for (;;) {
-      while (/\s/.test(s[this.pos] ?? '')) this.pos++;
-      if (s.startsWith('//', this.pos)) {
-        const end = s.indexOf('\n', this.pos);
-        this.pos = end < 0 ? s.length : end;
-      } else if (s.startsWith('/*', this.pos)) {
-        const end = s.indexOf('*/', this.pos + 2);
-        if (end < 0) throw this.error('unterminated comment');
-        this.pos = end + 2;
-      } else {
-        break;
-      }
-    }
-    if (this.pos >= s.length) return { type: 'eof', value: 'the end of the file' };
-    const c = s[this.pos];
-    if ('{}[]():,'.includes(c)) {
-      this.pos++;
-      return { type: 'punct', value: c };
-    }
-    if (c === "'" || c === '"' || (c === 'r' && (s[this.pos + 1] === "'" || s[this.pos + 1] === '"'))) {
-      return { type: 'string', value: this.readString() };
-    }
-    const ident = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*/.exec(s.slice(this.pos, this.pos + 200));
-    if (ident) {
-      this.pos += ident[0].length;
-      return { type: 'ident', value: ident[0] };
-    }
-    throw this.error(`unexpected '${c}'`);
-  }
-
-  readString() {
-    const s = this.source;
-    const raw = s[this.pos] === 'r';
-    if (raw) this.pos++;
-    const quote = s.startsWith(s[this.pos].repeat(3), this.pos) ? s[this.pos].repeat(3) : s[this.pos];
-    this.pos += quote.length;
-    let text = '';
-    for (;;) {
-      if (this.pos >= s.length) throw this.error('unterminated string');
-      if (s.startsWith(quote, this.pos)) {
-        this.pos += quote.length;
-        return text;
-      }
-      const c = s[this.pos];
-      if (c === '\n' && quote.length === 1) throw this.error('newline in a string');
-      if (raw) {
-        text += c;
-        this.pos++;
-      } else if (c === '\\') {
-        text += this.readEscape();
-      } else if (c === '$') {
-        throw this.error('string interpolation is not supported here');
-      } else {
-        text += c;
-        this.pos++;
-      }
-    }
-  }
-
-  readEscape() {
-    const s = this.source;
-    const c = s[this.pos + 1];
-    this.pos += 2;
-    const simple = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', v: '\v' };
-    if (c in simple) return simple[c];
-    if (c === 'x' || c === 'u') {
-      const braced = c === 'u' && s[this.pos] === '{';
-      const hex = braced
-        ? /^\{([0-9A-Fa-f]{1,6})\}/.exec(s.slice(this.pos))
-        : new RegExp(`^([0-9A-Fa-f]{${c === 'x' ? 2 : 4}})`).exec(s.slice(this.pos));
-      if (!hex) throw this.error(`bad \\${c} escape`);
-      this.pos += hex[0].length;
-      return String.fromCodePoint(parseInt(hex[1], 16));
-    }
-    return c;
-  }
-}
-
-/// Turns an in-app section body into blocks: each line is a paragraph, a
-/// bullet ('• …') or, when it holds {contact}, a contact line.
-function blocksOf(body) {
-  return body.split('\n').map((line) => {
-    if (line.startsWith('• ')) return { type: 'bullet', text: line.slice(2) };
-    return { type: line.includes('{contact}') ? 'contact' : 'para', text: line };
-  });
-}
-
-// ---------------------------------------------------------------------------
 // Loading everything
 
-/// The docs in both languages, their titles and the app's name, from the
-/// repository at [root].
+/// The docs in both languages, their titles, when each was last updated and
+/// the app's strings the pages use, from the repository at [root].
 export function loadTexts(root = ROOT) {
   const read = (path) => readFileSync(join(root, path), 'utf8');
-  const app = parseDartLegal(read('lib/features/about/legal_screen.dart'));
   const json = JSON.parse(read('assets/legal/legal.json'));
+  const updated = json.updated ?? {};
+  for (const [doc, month] of Object.entries(updated)) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error(`"updated" for ${doc} is not yyyy-mm: ${month}`);
+  }
   const texts = {};
   for (const lang of LANGS) {
     const arb = JSON.parse(read(`lib/l10n/app_${lang}.arb`));
     const docs = {};
     const titles = {};
     for (const doc of DOCS) {
-      const sections =
-        json[lang]?.[doc] ?? app[lang][doc]?.map(({ heading, body }) => ({ heading, blocks: blocksOf(body) }));
+      const sections = json[lang]?.[doc];
       if (!sections) throw new Error(`no ${lang} text for ${doc}: add it to assets/legal/legal.json`);
       docs[doc] = sections;
       const title = json.titles?.[lang]?.[doc] ?? arb[ARB_TITLES[doc]];
       if (!title) throw new Error(`no ${lang} title for ${doc}: add it to "titles" in assets/legal/legal.json`);
       titles[doc] = title;
     }
-    texts[lang] = { docs, titles, appTitle: arb.appTitle };
+    texts[lang] = {
+      docs,
+      titles,
+      updated,
+      appTitle: arb.appTitle,
+      lastUpdated: arb.legalLastUpdated,
+      // The issue tracker's link text, as the app names it.
+      issuesLabel: arb.feedbackLinkLabel,
+    };
   }
   return texts;
+}
+
+/// "October 2026" for '2026-10', in [lang].
+export function monthYear(month, lang) {
+  const [year, number] = month.split('-').map(Number);
+  return new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(
+    Date.UTC(year, number - 1, 1),
+  );
 }
 
 /// The issue tracker: SOURCE_URL (as passed to the app with --dart-define),
@@ -310,7 +143,7 @@ function inline(text, ctx, block = {}) {
       const subject = block.subject ? `?subject=${encodeURIComponent(block.subject)}` : '';
       html += `<a href="mailto:${escape(ctx.email)}${escape(subject)}" dir="ltr">${escape(label ?? ctx.email)}</a>`;
     } else if (name === 'contact' || name === 'issues') {
-      html += `<a href="${escape(ctx.issues)}">${escape(label ?? UI[ctx.lang].issues)}</a>`;
+      html += `<a href="${escape(ctx.issues)}">${escape(label ?? ctx.issuesLabel)}</a>`;
     } else if (name === 'link' && DOCS.includes(arg)) {
       html += `<a href="${pageFile(arg, ctx.lang)}">${escape(label ?? ctx.titles[arg])}</a>`;
     } else {
@@ -386,12 +219,13 @@ header a { display: inline-flex; align-items: center; min-height: 48px; }
 .lang { font: 500 0.9375rem/1.33 var(--sans); }
 main { padding: 2.5rem 0 3rem; }
 h1 { margin: 0; font-size: 2rem; line-height: 1.25; font-weight: inherit; }
-h1::after { content: ''; display: block; width: 4rem; margin-top: 1.25rem; border-top: var(--rule) solid var(--gold-leaf); }
+.title::after { content: ''; display: block; width: 4rem; margin-top: 1.25rem; border-top: var(--rule) solid var(--gold-leaf); }
+.updated { margin: 0.375rem 0 0; font: 400 0.9375rem/1.47 var(--sans); color: var(--muted); }
 main h2 { margin: 2.25rem 0 0; font-size: 1.5rem; line-height: 1.25; font-weight: inherit; }
 :lang(he) h1 { font-size: 1.875rem; line-height: 1.4; }
 :lang(he) main h2 { font-size: 1.375rem; line-height: 1.36; font-weight: 600; }
 p, ul { margin: 0.75rem 0 0; }
-h1 + p { margin-top: 1.5rem; }
+.title + p { margin-top: 1.5rem; }
 ul { padding-inline-start: 1.25em; }
 li + li { margin-top: 0.375rem; }
 li::marker { color: var(--muted); }
@@ -414,6 +248,13 @@ footer [aria-current] { color: var(--on-surface); text-decoration: none; }
   header, footer { display: none; }
 }
 `;
+
+/// When [doc] was last updated, under its title, if legal.json says.
+function updatedLine(doc, ctx) {
+  const month = ctx.updated[doc];
+  if (!month) return '';
+  return `\n<p class="updated">${escape(ctx.lastUpdated.replace('{date}', monthYear(month, ctx.lang)))}</p>`;
+}
 
 function page(doc, ctx) {
   const { lang, titles } = ctx;
@@ -448,7 +289,9 @@ function page(doc, ctx) {
     <a class="lang" href="${pageFile(doc, other)}" hreflang="${other}" lang="${other}">${UI[lang].otherLanguage}</a>
   </header>
   <main>
-<h1>${escape(title)}</h1>
+<div class="title">
+<h1>${escape(title)}</h1>${updatedLine(doc, ctx)}
+</div>
 ${body(ctx.docs[doc], ctx)}
   </main>
   <footer>

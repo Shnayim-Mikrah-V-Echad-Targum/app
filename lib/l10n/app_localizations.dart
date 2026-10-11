@@ -3207,6 +3207,36 @@ abstract class AppLocalizations {
   /// **'Contact us'**
   String get contactTitle;
 
+  /// Heading over About's link to the texts and their sources.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn'**
+  String get aboutGroupLearn;
+
+  /// Heading over About's links to the privacy policy, terms, community guidelines, accessibility statement and open-source licenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Policies'**
+  String get aboutGroupPolicies;
+
+  /// Heading over About's links to email us and to send feedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get aboutGroupContact;
+
+  /// The link text, inside a policy's sentence ('Questions or requests: GitHub issues'), for the public issue tracker on GitHub, where there is no support email address.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub issues'**
+  String get feedbackLinkLabel;
+
+  /// Under a policy's title. date is a month and year, such as 'October 2026'.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: {date}'**
+  String legalLastUpdated(String date);
+
   /// No description provided for @guideTitle.
   ///
   /// In en, this message translates to:
@@ -3279,6 +3309,18 @@ abstract class AppLocalizations {
   /// **'What is Shnayim Mikra?'**
   String get guideWhatTitle;
 
+  /// Under the Talmud's words that open the guide, in Hebrew: where they are written.
+  ///
+  /// In en, this message translates to:
+  /// **'Berakhot 8a'**
+  String get guideQuoteSource;
+
+  /// The Talmud's words that open the guide, in English. Shown in the English interface only, under the Hebrew.
+  ///
+  /// In en, this message translates to:
+  /// **'A person should always complete their portions with the community: the text twice and the Targum once.'**
+  String get guideQuoteTranslation;
+
   /// No description provided for @guideWhatBody.
   ///
   /// In en, this message translates to:
@@ -3308,6 +3350,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.'**
   String get guideHowBody;
+
+  /// Beside three marks for the three readings, at the top of the guide's How section: the text twice, then the Targum. No-break spaces keep each reading's number with its name.
+  ///
+  /// In en, this message translates to:
+  /// **'1 · Mikra  2 · Mikra  3 · Targum'**
+  String get guidePassesCaption;
 
   /// No description provided for @guideTargumTitle.
   ///
@@ -3351,10 +3399,10 @@ abstract class AppLocalizations {
   /// **'Sources'**
   String get guideSourcesTitle;
 
-  /// No description provided for @guideSourcesBody.
+  /// The guide's sources, one to a line.
   ///
   /// In en, this message translates to:
-  /// **'Berakhot 8a–b · Shulchan Aruch, Orach Chaim 285 · Mishnah Berurah 285 · Kitzur Shulchan Aruch 72 · Shulchan Aruch HaRav 285'**
+  /// **'Berakhot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285'**
   String get guideSourcesBody;
 
   /// No description provided for @hebrewDateLabel.

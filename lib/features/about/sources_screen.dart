@@ -1,9 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../ui/l10n.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
+import '../../ui/widgets/ornaments.dart';
 
 class _Source {
   const _Source(this.title, this.description, this.license, this.url);
@@ -14,7 +18,8 @@ class _Source {
 }
 
 /// Attribution for every bundled text and dataset (required by CC BY-SA and
-/// CC BY, and good practice).
+/// CC BY, and good practice), set as a book's list of sources: a card for
+/// each, which opens the source, then where the adapted files are.
 class SourcesScreen extends StatelessWidget {
   const SourcesScreen({super.key});
 
@@ -22,6 +27,7 @@ class SourcesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final he = context.isHebrewUi;
+    final theme = Theme.of(context);
     final sources = [
       _Source(
         he ? 'מקרא על פי המסורה' : 'Miqra according to the Masorah (MAM)',
@@ -77,45 +83,111 @@ class SourcesScreen extends StatelessWidget {
     return PageScaffold(
       leading: homeLeading(context),
       titleText: l.sourcesTitle,
+      contentMaxWidth: ContentWidth.longform,
       body: PageBody(
+        maxWidth: ContentWidth.longform,
         children: [
-          for (final s in sources)
-            Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              // Its heading, text and link each a node of their own.
-              semanticContainer: false,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Semantics(header: true, headingLevel: 2, child: Text(s.title, style: Theme.of(context).textTheme.titleMedium)),
-                    const Gap(4),
-                    Text(s.description),
-                    const Gap(8),
-                    Wrap(
-                      spacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Chip(label: Text(s.license)),
-                        TextButton.icon(
-                          icon: const Icon(Icons.open_in_new, size: 18),
-                          label: Text(l.actionLearnMore),
-                          onPressed: () => launchUrl(Uri.parse(s.url)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          for (final (i, source) in sources.indexed) ...[if (i > 0) const Gap(Rhythm.cardGap), _SourceCard(source)],
+          const Gap(Rhythm.sectionGap),
+          const SeferDivider(),
+          const Gap(Space.lg),
           Text(
             he
                 ? 'הטקסטים והנתונים בצורתם המעובדת באפליקציה זו מופצים בתנאי הרישיונות המקוריים. קובצי הנתונים נמצאים בתיקיות ${ltr('assets/text')} ו־${ltr('assets/data')} בקוד המקור.'
-                : 'The texts and data as adapted in this app are distributed under their original licenses. The data files are in the assets/\u2060text and assets/\u2060data folders of the source code.',
-            style: Theme.of(context).textTheme.bodySmall,
+                : 'The texts and data as adapted in this app are distributed under their original licenses. The data files are in the assets/⁠text and assets/⁠data folders of the source code.',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A source on a card that opens it: its name, with its license as a small
+/// label beside it, then what it is. Read as one link, by its name and
+/// license, then what it is.
+class _SourceCard extends StatelessWidget {
+  const _SourceCard(this.source);
+
+  final _Source source;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final padding =
+        MediaQuery.sizeOf(context).width < Breakpoints.narrow ? Rhythm.cardPaddingNarrow : Rhythm.cardPadding;
+    final titleStyle = theme.textTheme.titleLarge!;
+    final titleLine = MediaQuery.textScalerOf(context).scale(titleStyle.fontSize!) * titleStyle.height!;
+    return Card(
+      // The focus ring is drawn just outside the card, which mustn't clip it;
+      // the ink well clips the ink to the card's corners instead.
+      clipBehavior: Clip.none,
+      child: Semantics(
+        link: true,
+        label: '${source.title}, ${source.license}',
+        child: SeferInkWell(
+          onTap: () => launchUrl(Uri.parse(source.url)),
+          child: Padding(
+            padding: EdgeInsets.all(padding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ExcludeSemantics(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        // The license follows the name, or goes under it
+                        // when the two don't fit on a line.
+                        child: Wrap(
+                          spacing: Space.md,
+                          runSpacing: Space.xs,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(source.title, style: titleStyle),
+                            _LicenseLabel(source.license),
+                          ],
+                        ),
+                      ),
+                      const Gap(Space.md),
+                      Padding(
+                        // In the middle of the name's first line.
+                        padding: EdgeInsets.only(top: math.max(0, (titleLine - 18) / 2)),
+                        child: Icon(Icons.open_in_new, size: 18, color: scheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(Space.sm),
+                Text(source.description, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A source's license: a small label, not a control.
+class _LicenseLabel extends StatelessWidget {
+  const _LicenseLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer,
+        borderRadius: const BorderRadius.all(Radius.circular(6)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Space.sm, vertical: 2),
+        child: Text(text, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSecondaryContainer)),
       ),
     );
   }

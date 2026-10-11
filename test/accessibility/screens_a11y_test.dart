@@ -240,8 +240,18 @@ void main() {
       );
       expect(find.byTooltip("More options for Revi'i"), findsOneWidget);
 
+      // Each source is a link of its own, by its name and license, and then
+      // what it is.
       await open(tester, '/sources');
-      expect(tester.getSemantics(find.text('Targum Onkelos')), isSemantics(label: 'Targum Onkelos', isHeader: true));
+      expect(
+        tester.getSemantics(find.text('Targum Onkelos')),
+        isSemantics(
+          label: 'Targum Onkelos, Public domain\nTorat Emet edition, via Sefaria.',
+          isLink: true,
+          hasTapAction: true,
+          isFocusable: true,
+        ),
+      );
       handle.dispose();
     });
   });

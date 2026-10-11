@@ -1249,17 +1249,19 @@ In order:
 ### About, Guide, Sources, Privacy (about_screen.dart, guide_screen.dart, sources_screen.dart, legal_screen.dart)
 
 **About header**
-- The app mark at 72, then "שניים מקרא ואחד תרגום" in hebrewDisplay 28/40 primary.
-- English UI: "Shnayim Mikra v'Echad Targum" in EBG 500 20.
+- The app mark at 72 (corners 16), then "שניים מקרא ואחד תרגום" in hebrewDisplay 28/40 primary, the page's heading (level 1), read as `appTitleFull`.
+- English UI: "Shnayim Mikra v'Echad Targum" in EBG 500 20 onSurfaceVariant, hidden from screen readers. The Hebrew UI doesn't repeat the name.
+- Both names set their lines evenly (`BalancedText`) should large text need two.
 - Version in labelSmall, then a SeferDivider.
 - TitlePageFrame at ≥600 only.
-- Link rows in one PaperGroup.
+- Link rows in PaperGroups under GroupHeaders: **Learn** (Texts & sources); **Policies** (Privacy, Terms, Community guidelines, Accessibility statement, Open-source licenses); **Contact** (Contact us where the build has an address, Send feedback). The guide is reached from Today's help button and from Settings.
 
 **Guide, Sources, Privacy**
-- longformBody, max width 620.
+- longformBody, max width 620 (the app bar's title on the column's edge, §5).
 - Headings in longformHeading, onSurface (not blue).
-- SeferDivider between major sections; source lines in marginalia.
-- The closing "Customs vary…" as a NoticeBanner.
+- **Guide:** it opens with a card of the Talmud's words, "לְעוֹלָם יַשְׁלִים אָדָם פָּרָשִׁיּוֹתָיו עִם הַצִּבּוּר, / שְׁנַיִם מִקְרָא וְאֶחָד תַּרְגּוּם" in Noto Serif Hebrew 24, centred, each phrase on a line of its own (balanced over two where it doesn't fit), tagged Hebrew and read as one sentence; "Berakhot 8a" in labelMedium secondary; in the English UI, the translation in marginalia. Then the practice and when; how and Targum or Rashi; the special cases and Shabbat; and the sources, a SeferDivider between each part. The How section begins with the three filled PassPips and "1 · Mikra  2 · Mikra  3 · Targum" in labelMedium onSurfaceVariant, for the eye alone. The sources are a line each in marginalia after a 6 px lozenge. The closing "Customs vary…" is a NoticeBanner.
+- **Sources:** each source is a card that opens it (SeferInkWell), read as one link: its name and license, then what it is. The name in titleLarge, with the license as a small label beside it, or under it where the two don't fit (labelSmall on secondaryContainer, radius 6, padding 8/2), and `open_in_new` 18 at the card's end, level with the name's first line; the description in bodyMedium onSurfaceVariant. The note on the adapted files closes the page under a SeferDivider, in bodySmall onSurfaceVariant.
+- **Policies** (privacy, terms, guidelines, accessibility): the texts are in `assets/legal/legal.json`, which the static web pages are made from too (docs/RELEASE.md). The page's title is its heading, in headlineMedium (above the 24 of the section headings), with "Last updated: October 2026" in bodySmall onSurfaceVariant under it; the app bar shows the title once it has scrolled away. Paragraphs are 12 apart; a bullet hangs, its wrapped lines aligned past the bullet (in onSurfaceVariant, 8 before the text, 6 between items). The way to reach us is a link in its sentence, primary and underlined: the support address, isolated in Hebrew, or "GitHub issues" / "דף התקלות ב־GitHub" where the build has none, never the raw address. The keyboard reaches it through its sentence, which takes the focus ring; Enter opens it.
 
 ## 10. Copy and l10n (app_en.arb / app_he.arb; the build fails on missing keys)
 

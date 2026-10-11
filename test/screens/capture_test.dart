@@ -18,6 +18,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
@@ -297,8 +298,10 @@ const _screens = {
   'guide': '/guide',
   // The special cases, Shabbat and the sources, at its end.
   'guide_end': '/guide',
-  // The privacy policy, open to every visitor.
+  // The privacy policy, open to every visitor; and at its end, the way to
+  // reach us.
   'legal': '/legal/privacy',
+  'legal_end': '/legal/privacy',
   'legal_a11y': '/legal/accessibility',
   // Links that lead nowhere: a mistyped address, and a forum that is gone.
   'not_found': '/nope',
@@ -328,6 +331,9 @@ const _screens = {
   'focus_button': '/today',
   'focus_day': '/today',
   'focus_card': '/today',
+  // A source's card, and the link to reach us in the privacy policy.
+  'focus_source': '/sources',
+  'focus_contact': '/legal/privacy',
   'focus_tile': '/progress',
   'focus_slider': '/settings/display',
   'focus_switch': '/settings/display',
@@ -831,6 +837,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(find.byIcon(Icons.import_contacts));
   },
   'guide_end': _scrollToEnd,
+  'legal_end': _scrollToEnd,
   // The regular haftarah's heading, with the special one's end above it.
   'haftarah_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.6),
   'haftarah_chabad_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.3),
@@ -852,6 +859,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'focus_day': (tester) =>
       _keyboardFocus(tester, find.descendant(of: find.byType(WeekStrip), matching: find.byType(SeferInkWell)).at(1)),
   'focus_card': (tester) => _keyboardFocus(tester, find.byWidgetPredicate((w) => w is InfoCard && w.onTap != null).first),
+  'focus_source': (tester) => _keyboardFocus(tester, find.byType(SeferInkWell).first),
+  'focus_contact': (tester) => _keyboardFocus(
+        tester,
+        find.ancestor(of: find.textContaining('GitHub', findRichText: true), matching: find.byType(FocusableActionDetector)).first,
+      ),
   // Noach: map tiles are the ink wells with 6 px corners.
   'focus_tile': (tester) => _keyboardFocus(
         tester,
@@ -1122,6 +1134,8 @@ const _desktopScreens = {
   'browse',
   'browse_summer',
   'guide',
+  'about',
+  'sources',
   'welcome',
   'welcome_plan',
   'welcome_restore',
@@ -1155,6 +1169,10 @@ const _tallScreens = {
   's_display',
   's_a11y',
   'sources',
+  'about',
+  'guide',
+  'legal',
+  'legal_a11y',
 };
 const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {'welcome', 'welcome_plan', 'settings', 's_reading', 's_display', 's_a11y', 'sheet_display_full', 'parsha', 'browse', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
@@ -1203,6 +1221,10 @@ const _bigTextScreens = {
   'kit_progress',
   'kit_week',
   'progress_map',
+  'about',
+  'guide',
+  'sources',
+  'legal_a11y',
 };
 
 Future<void> _settle(WidgetTester tester) async {
@@ -1229,6 +1251,14 @@ Future<void> _write(WidgetTester tester, String name) async {
 void main() {
   setUpAll(() async {
     if (_capture) await loadBundledFonts();
+    // The version About shows, as a release names it.
+    PackageInfo.setMockInitialValues(
+      appName: 'Shnayim Mikra',
+      packageName: 'app.shnayimmikra',
+      version: '1.0.0',
+      buildNumber: '1',
+      buildSignature: '',
+    );
   });
 
   for (final mode in _modes) {

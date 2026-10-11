@@ -1,4 +1,12 @@
 {
+  "updated": {
+    "privacy": "2026-10",
+    "terms": "2026-10",
+    "guidelines": "2026-10",
+    "accessibility": "2026-10",
+    "support": "2026-10",
+    "delete-account": "2026-10"
+  },
   "titles": {
     "en": {
       "privacy": "Privacy policy",
@@ -12,6 +20,160 @@
     }
   },
   "en": {
+    "privacy": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "Shnayim Mikra is built to need as little of your data as possible."}
+        ]
+      },
+      {
+        "heading": "What stays on your device",
+        "blocks": [
+          {"type": "para", "text": "Your reading progress, streaks, settings and reminders are stored on your device, and in its own backup if that is turned on (see below). The texts are bundled with the app, so reading works fully offline and nothing about what you read is sent anywhere. If you choose a city for Shabbat times, it stays on your device too: the times are worked out there, and the app never asks where you are."}
+        ]
+      },
+      {
+        "heading": "Your device's own backup",
+        "blocks": [
+          {"type": "para", "text": "If backup is turned on for your device, it can include the app's settings and reading progress, so they come back when you restore the device or set up a new one. If you are signed in to the community, it can also include that sign-in, with your email address, and any post you have started but not sent. Android keeps this backup in your Google account, and an iPhone or iPad in iCloud or on your computer. We have no access to it."}
+        ]
+      },
+      {
+        "heading": "No tracking",
+        "blocks": [
+          {"type": "para", "text": "The app contains no advertising, no analytics and no third-party tracking. We do not sell or share data."}
+        ]
+      },
+      {
+        "heading": "If you create a community account",
+        "blocks": [
+          {"type": "para", "text": "Signing in to the community uses your email address, which is used only to sign you in. Your display name and the posts you write are visible to other users. If you choose to sync your progress, it is stored with your account so you can restore it on another device."}
+        ]
+      },
+      {
+        "heading": "Deleting your data",
+        "blocks": [
+          {"type": "para", "text": "You can reset your progress at any time in Settings, under \"Your data\". You can delete your community account in Settings, under \"Account & community\"; this deletes your profile, your posts and any synced progress. Topics you started that others replied to stay, without your name, so that their replies still make sense."}
+        ]
+      },
+      {
+        "heading": "Contact",
+        "blocks": [
+          {"type": "contact", "text": "Questions or requests: {contact}"}
+        ]
+      }
+    ],
+    "terms": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "By using Shnayim Mikra you agree to these terms."}
+        ]
+      },
+      {
+        "heading": "The app",
+        "blocks": [
+          {"type": "para", "text": "The app is provided free of charge, as is, to help with the practice of Shnayim Mikra v'Echad Targum. Calendar calculations are carefully tested, but customs vary: for practical questions, ask your rav."}
+        ]
+      },
+      {
+        "heading": "Texts",
+        "blocks": [
+          {"type": "para", "text": "Bundled texts are used under their licenses, listed in About, under \"Texts & sources\"."}
+        ]
+      },
+      {
+        "heading": "Community",
+        "blocks": [
+          {"type": "para", "text": "You are responsible for what you post. Posts must follow the Community guidelines. Moderators may hide or remove content and suspend accounts that violate them. You can report any post and block any user."}
+        ]
+      },
+      {
+        "heading": "Changes",
+        "blocks": [
+          {"type": "para", "text": "These terms may be updated; material changes will be shown in the app."}
+        ]
+      }
+    ],
+    "guidelines": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "The community exists to learn the parsha together. Please help keep it a place of Torah, kindness and respect."}
+        ]
+      },
+      {
+        "heading": "Speak with derech eretz",
+        "blocks": [
+          {"type": "para", "text": "Disagree with ideas, never with people. No insults, mockery, harassment or personal attacks."}
+        ]
+      },
+      {
+        "heading": "Guard your tongue",
+        "blocks": [
+          {"type": "para", "text": "No lashon hara, gossip or shaming of individuals or communities. Don't share other people's private information."}
+        ]
+      },
+      {
+        "heading": "Respect sacred text",
+        "blocks": [
+          {"type": "para", "text": "When writing the Divine Name in posts, please write ה׳ or \"Hashem\". Quote sources accurately."}
+        ]
+      },
+      {
+        "heading": "Stay on topic",
+        "blocks": [
+          {"type": "para", "text": "Keep discussions connected to the parsha, its commentaries and the practice of learning. No advertising or spam."}
+        ]
+      },
+      {
+        "heading": "Psak",
+        "blocks": [
+          {"type": "para", "text": "The forums are for learning, not for halachic rulings. For practical questions, ask your rav."}
+        ]
+      },
+      {
+        "heading": "Reporting",
+        "blocks": [
+          {"type": "para", "text": "Use \"Report\" on any post that breaks these guidelines, and \"Block\" to stop seeing someone. Moderators review every report."}
+        ]
+      }
+    ],
+    "accessibility": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "We want everyone to be able to learn the parsha with this app, including people who use screen readers, magnification, switch access or keyboards, and people with dyslexia or low vision. We aim to meet WCAG 2.2 level AA."}
+        ]
+      },
+      {
+        "heading": "What the app offers",
+        "blocks": [
+          {"type": "bullet", "text": "Screen reader support on every platform, with a clean spoken version (cantillation removed) of each verse of the Torah and the Targum, and of each comment of Rashi, tagged as Hebrew; the English translation is tagged as English"},
+          {"type": "bullet", "text": "A choice of how the Divine Name is spoken, wherever it is written: in the Torah, in the Targum and in Rashi"},
+          {"type": "bullet", "text": "Reading size up to 500%, on top of your device's text size, plus line, word and letter spacing"},
+          {"type": "bullet", "text": "Light, dark, sepia and two high-contrast themes; bold text; a choice of fonts, including Atkinson Hyperlegible and Lexend"},
+          {"type": "bullet", "text": "Show or hide vowels and cantillation; focus mode; adjustable line width"},
+          {"type": "bullet", "text": "Full keyboard support with shortcuts on Windows and the web"},
+          {"type": "bullet", "text": "Reduce motion and haptics settings; no flashing content"},
+          {"type": "bullet", "text": "Status is never shown by color alone"},
+          {"type": "bullet", "text": "Text-to-speech where a Hebrew voice is available"}
+        ]
+      },
+      {
+        "heading": "Known limitations",
+        "blocks": [
+          {"type": "para", "text": "Hebrew voices differ between devices and some screen readers do not pronounce pointed Hebrew perfectly. On Windows, Narrator and NVDA cannot switch to a Hebrew voice on their own, because the app has no way to tell them the language of a text there. To hear the Hebrew in a Hebrew voice, choose one in the screen reader's settings. Reminders are not available in the web version."}
+        ]
+      },
+      {
+        "heading": "Feedback",
+        "blocks": [
+          {"type": "contact", "text": "If something is hard to use, please tell us: {contact}. We aim to respond within five working days."}
+        ]
+      }
+    ],
     "support": [
       {
         "heading": "",
@@ -78,6 +240,160 @@
     ]
   },
   "he": {
+    "privacy": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "שניים מקרא בנויה כך שתזדקק למעט ככל האפשר מהמידע שלך."}
+        ]
+      },
+      {
+        "heading": "מה נשאר במכשיר שלך",
+        "blocks": [
+          {"type": "para", "text": "התקדמות הקריאה, הרצפים, ההגדרות והתזכורות נשמרים במכשיר שלך, ובגיבוי של המכשיר אם הוא מופעל (ראו בהמשך). הטקסטים כלולים באפליקציה, כך שהקריאה פועלת ללא חיבור לרשת, ושום מידע על מה שקראת אינו נשלח לשום מקום. אם בחרת עיר לזמני השבת, גם היא נשמרת במכשיר: הזמנים מחושבים בו, והאפליקציה אינה מבקשת את מיקומך."}
+        ]
+      },
+      {
+        "heading": "הגיבוי של המכשיר",
+        "blocks": [
+          {"type": "para", "text": "אם הגיבוי מופעל במכשיר, הוא יכול לכלול את ההגדרות ואת התקדמות הקריאה באפליקציה, כך שהן יחזרו כשמשחזרים את המכשיר או מגדירים מכשיר חדש. אם נכנסת לקהילה, הגיבוי יכול לכלול גם את הכניסה, עם כתובת הדוא״ל שלך, והודעה שהתחלת לכתוב ועוד לא שלחת. ב־Android הגיבוי נשמר בחשבון Google שלך, וב־iPhone או ב־iPad ב־iCloud או במחשב. אין לנו גישה אליו."}
+        ]
+      },
+      {
+        "heading": "ללא מעקב",
+        "blocks": [
+          {"type": "para", "text": "אין באפליקציה פרסומות, אנליטיקה או מעקב של צד שלישי. איננו מוכרים או משתפים מידע."}
+        ]
+      },
+      {
+        "heading": "אם פתחת חשבון בקהילה",
+        "blocks": [
+          {"type": "para", "text": "הכניסה לקהילה משתמשת בכתובת הדוא״ל שלך לצורך הכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. אם בחרת לסנכרן את ההתקדמות, היא נשמרת עם החשבון, וכך אפשר לשחזר אותה במכשיר אחר."}
+        ]
+      },
+      {
+        "heading": "מחיקת המידע",
+        "blocks": [
+          {"type": "para", "text": "אפשר לאפס את ההתקדמות בכל עת בהגדרות, תחת ״הנתונים שלך״. אפשר למחוק את החשבון בהגדרות, תחת ״חשבון וקהילה״; פעולה זו מוחקת את הפרופיל, ההודעות וההתקדמות המסונכרנת. נושאים שפתחת ואחרים הגיבו בהם נשארים, בלי שמך, כדי שהתגובות שלהם יישארו מובנות."}
+        ]
+      },
+      {
+        "heading": "יצירת קשר",
+        "blocks": [
+          {"type": "contact", "text": "שאלות ובקשות: {contact}"}
+        ]
+      }
+    ],
+    "terms": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "השימוש בשניים מקרא מהווה הסכמה לתנאים אלה."}
+        ]
+      },
+      {
+        "heading": "האפליקציה",
+        "blocks": [
+          {"type": "para", "text": "האפליקציה ניתנת בחינם, כמות שהיא, לסיוע בקיום שניים מקרא ואחד תרגום. חישובי הלוח נבדקים בקפידה, אך המנהגים שונים: בשאלות מעשיות יש לשאול רב."}
+        ]
+      },
+      {
+        "heading": "טקסטים",
+        "blocks": [
+          {"type": "para", "text": "הטקסטים הכלולים משמשים בהתאם לרישיונותיהם, המפורטים באודות, תחת ״טקסטים ומקורות״."}
+        ]
+      },
+      {
+        "heading": "קהילה",
+        "blocks": [
+          {"type": "para", "text": "כל משתמש אחראי למה שהוא מפרסם. ההודעות חייבות לעמוד בכללי הקהילה. המנהלים רשאים להסתיר או להסיר תוכן ולהשעות חשבונות המפרים אותם. אפשר לדווח על כל הודעה ולחסום כל משתמש."}
+        ]
+      },
+      {
+        "heading": "שינויים",
+        "blocks": [
+          {"type": "para", "text": "התנאים עשויים להתעדכן; שינויים מהותיים יוצגו באפליקציה."}
+        ]
+      }
+    ],
+    "guidelines": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "הקהילה קיימת כדי ללמוד את הפרשה יחד. עזרו לשמור עליה מקום של תורה, חסד וכבוד."}
+        ]
+      },
+      {
+        "heading": "דרך ארץ",
+        "blocks": [
+          {"type": "para", "text": "חולקים על רעיונות, לעולם לא על אנשים. ללא עלבונות, לעג, הטרדה או התקפות אישיות."}
+        ]
+      },
+      {
+        "heading": "שמירת הלשון",
+        "blocks": [
+          {"type": "para", "text": "ללא לשון הרע, רכילות או ביוש של אנשים או קהילות. אין לשתף מידע פרטי של אחרים."}
+        ]
+      },
+      {
+        "heading": "כבוד לכתבי הקודש",
+        "blocks": [
+          {"type": "para", "text": "בכתיבת שם ה׳ בהודעות, נא לכתוב ה׳ או ״השם״. יש לצטט מקורות במדויק."}
+        ]
+      },
+      {
+        "heading": "להישאר בנושא",
+        "blocks": [
+          {"type": "para", "text": "הדיונים צריכים לעסוק בפרשה, במפרשיה ובלימוד. ללא פרסום או ספאם."}
+        ]
+      },
+      {
+        "heading": "פסיקה",
+        "blocks": [
+          {"type": "para", "text": "הפורומים נועדו ללימוד ולא לפסיקת הלכה. בשאלות מעשיות יש לשאול רב."}
+        ]
+      },
+      {
+        "heading": "דיווח",
+        "blocks": [
+          {"type": "para", "text": "השתמשו ב״דיווח״ על כל הודעה שמפרה את הכללים, וב״חסימה״ כדי להפסיק לראות משתמש. המנהלים בודקים כל דיווח."}
+        ]
+      }
+    ],
+    "accessibility": [
+      {
+        "heading": "",
+        "blocks": [
+          {"type": "para", "text": "אנחנו רוצים שכל אחד יוכל ללמוד את הפרשה באפליקציה, כולל משתמשי קוראי מסך, הגדלה, מתג או מקלדת, ואנשים עם דיסלקציה או ראייה ירודה. היעד שלנו הוא עמידה ב־WCAG 2.2 ברמה AA."}
+        ]
+      },
+      {
+        "heading": "מה האפליקציה מציעה",
+        "blocks": [
+          {"type": "bullet", "text": "תמיכה בקוראי מסך בכל הפלטפורמות, עם גרסה מדוברת נקייה (בלי טעמים) של כל פסוק בתורה ובתרגום ושל כל דיבור ברש״י, המסומנת כעברית; התרגום לאנגלית מסומן כאנגלית"},
+          {"type": "bullet", "text": "בחירה כיצד להגות את השם בכל מקום שהוא כתוב: בתורה, בתרגום וברש״י"},
+          {"type": "bullet", "text": "גודל קריאה עד 500%, מעבר לגודל הטקסט של המכשיר, וכן ריווח שורות, מילים ואותיות"},
+          {"type": "bullet", "text": "ערכות בהירה, כהה, ספיה ושתי ערכות בניגודיות גבוהה; טקסט מודגש; מבחר גופנים"},
+          {"type": "bullet", "text": "הצגה או הסתרה של ניקוד וטעמים; מצב מיקוד; רוחב שורה מתכוונן"},
+          {"type": "bullet", "text": "תמיכה מלאה במקלדת עם קיצורים ב־Windows ובדפדפן"},
+          {"type": "bullet", "text": "הפחתת תנועה ומשוב רטט; ללא תוכן מהבהב"},
+          {"type": "bullet", "text": "מצב לעולם אינו מוצג באמצעות צבע בלבד"},
+          {"type": "bullet", "text": "הקראה קולית כשקיים קול בעברית"}
+        ]
+      },
+      {
+        "heading": "מגבלות ידועות",
+        "blocks": [
+          {"type": "para", "text": "קולות העברית שונים בין מכשירים, וחלק מקוראי המסך אינם הוגים עברית מנוקדת באופן מושלם. ב־Windows, \u200fNarrator ו־NVDA אינם עוברים לקול עברי מעצמם, כי שם אין לאפליקציה דרך לציין להם את שפת הטקסט. כדי לשמוע את העברית בקול עברי, יש לבחור קול כזה בהגדרות קורא המסך. תזכורות אינן זמינות בגרסת הדפדפן."}
+        ]
+      },
+      {
+        "heading": "משוב",
+        "blocks": [
+          {"type": "contact", "text": "אם משהו קשה לשימוש, נשמח לשמוע על כך: {contact}. נשתדל להשיב תוך חמישה ימי עבודה."}
+        ]
+      }
+    ],
     "support": [
       {
         "heading": "",
