@@ -1224,7 +1224,7 @@ abstract class AppLocalizations {
   /// The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.
   ///
   /// In en, this message translates to:
-  /// **'Preview — this parsha opens for credit on {date}.'**
+  /// **'Preview — you can log this parsha from {date}.'**
   String previewNotOpen(String date);
 
   /// No description provided for @stepMikra1.
@@ -1302,7 +1302,7 @@ abstract class AppLocalizations {
   /// No description provided for @noTargumNote.
   ///
   /// In en, this message translates to:
-  /// **'Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berakhot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).'**
+  /// **'Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berachot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).'**
   String get noTargumNote;
 
   /// No description provided for @noRashiNote.
@@ -1440,7 +1440,7 @@ abstract class AppLocalizations {
   /// No description provided for @listenAlongDesc.
   ///
   /// In en, this message translates to:
-  /// **'Listen goes on from each reading to the next by itself, to the end of the aliyah. An aid for following the text, not a substitute for reading it.'**
+  /// **'Keeps playing from one reading to the next, to the end of the aliyah. An aid for following the text, not a substitute for reading it.'**
   String get listenAlongDesc;
 
   /// No description provided for @ttsUnavailable.
@@ -2724,7 +2724,7 @@ abstract class AppLocalizations {
   /// No description provided for @rashiScriptDesc.
   ///
   /// In en, this message translates to:
-  /// **'Set Rashi’s commentary in the script of a printed chumash'**
+  /// **'Set Rashi’s commentary in the script of a printed Chumash'**
   String get rashiScriptDesc;
 
   /// No description provided for @uiFontLabel.
@@ -3582,7 +3582,7 @@ abstract class AppLocalizations {
   /// Under the Talmud's words that open the guide, in Hebrew: where they are written.
   ///
   /// In en, this message translates to:
-  /// **'Berakhot 8a'**
+  /// **'Berachot 8a'**
   String get guideQuoteSource;
 
   /// The Talmud's words that open the guide, in English. Shown in the English interface only, under the Hebrew.
@@ -3648,7 +3648,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideSpecialBody.
   ///
   /// In en, this message translates to:
-  /// **'In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
+  /// **'In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berachot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.
@@ -3672,7 +3672,7 @@ abstract class AppLocalizations {
   /// The guide's sources, one to a line.
   ///
   /// In en, this message translates to:
-  /// **'Berakhot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285'**
+  /// **'Berachot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285'**
   String get guideSourcesBody;
 
   /// No description provided for @hebrewDateLabel.
@@ -3734,6 +3734,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in to post, say thanks or report.'**
   String get signInPrompt;
+
+  /// Settings, under the Account row's title while no one is signed in on this device. Todah is the forum's button that thanks a post's author.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to post, say todah or report'**
+  String get settingsAccountDesc;
 
   /// Settings, under the Account row's title: the member signed in on this device.
   ///

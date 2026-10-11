@@ -608,6 +608,7 @@ HE = {
   "weeklyThreadTitle": "פרשת {name} {year}",
   "openDiscussion": "לדיון",
   "signInPrompt": "יש להתחבר כדי לכתוב, להודות או לדווח.",
+  "settingsAccountDesc": "התחברות כדי לכתוב, להודות או לדווח",
   "signedInAs": "התחברת בשם {name}",
   "signInTitle": "כניסה",
   "signInBody": "נשלח אליך בדוא״ל קוד בן 6 ספרות — ללא סיסמה.",

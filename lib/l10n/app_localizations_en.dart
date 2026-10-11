@@ -784,7 +784,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String previewNotOpen(String date) {
-    return 'Preview — this parsha opens for credit on $date.';
+    return 'Preview — you can log this parsha from $date.';
   }
 
   @override
@@ -837,7 +837,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noTargumNote =>
-      'Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berakhot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).';
+      'Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berachot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).';
 
   @override
   String get noRashiNote =>
@@ -924,7 +924,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listenAlongDesc =>
-      'Listen goes on from each reading to the next by itself, to the end of the aliyah. An aid for following the text, not a substitute for reading it.';
+      'Keeps playing from one reading to the next, to the end of the aliyah. An aid for following the text, not a substitute for reading it.';
 
   @override
   String get ttsUnavailable => 'Text-to-speech isn’t available on this device.';
@@ -1654,7 +1654,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rashiScriptDesc =>
-      'Set Rashi’s commentary in the script of a printed chumash';
+      'Set Rashi’s commentary in the script of a printed Chumash';
 
   @override
   String get uiFontLabel => 'Interface font';
@@ -2132,7 +2132,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideWhatTitle => 'What is Shnayim Mikra?';
 
   @override
-  String get guideQuoteSource => 'Berakhot 8a';
+  String get guideQuoteSource => 'Berachot 8a';
 
   @override
   String get guideQuoteTranslation =>
@@ -2171,7 +2171,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideSpecialBody =>
-      'In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.';
+      'In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berachot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.';
 
   @override
   String get guideShabbatTitle => 'Shabbat and Yom Tov';
@@ -2185,7 +2185,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideSourcesBody =>
-      'Berakhot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285';
+      'Berachot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285';
 
   @override
   String hebrewDateLabel(String date) {
@@ -2224,6 +2224,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signInPrompt => 'Sign in to post, say thanks or report.';
+
+  @override
+  String get settingsAccountDesc => 'Sign in to post, say todah or report';
 
   @override
   String signedInAs(String name) {

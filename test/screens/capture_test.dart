@@ -401,6 +401,8 @@ const _screens = {
   // The preview at a small size, whole, in focus mode with a theme chosen.
   's_display_small': '/settings/display',
   's_fonts': '/settings/display',
+  // With Rashi shown: the switch for Rashi script, in view.
+  's_display_rashi': '/settings/display',
   's_a11y': '/settings/accessibility',
   // Large print in force, then Low vision just applied, with its Undo.
   's_a11y_active': '/settings/accessibility',
@@ -546,6 +548,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_rashi_script': (s) => s.copyWith(showRashi: true, rashiScript: true),
   'reader_rashi_step': (s) => s.copyWith(secondReading: SecondReading.rashi),
   's_display_small': (s) => s.copyWith(readingScale: 0.6, focusMode: true, theme: AppThemeMode.sepia),
+  's_display_rashi': (s) => s.copyWith(showRashi: true),
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   's_reminders_on': (s) =>
@@ -1291,6 +1294,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
   's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),
+  // Halfway down, clear of the preview pinned over the page.
+  's_display_rashi': (tester) => Scrollable.ensureVisible(
+        tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.rashiScriptDesc)),
+        alignment: 0.5,
+      ),
   's_display_scrolled': (tester) async => tester
       .state<ScrollableState>(find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)))
       .position

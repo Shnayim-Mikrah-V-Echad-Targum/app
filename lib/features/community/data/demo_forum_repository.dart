@@ -723,7 +723,7 @@ const _samples = [
         '714',
         'Miriam',
         Duration(days: 5, hours: 20),
-        'The Gemara (Berakhot 8a) says to complete the parsha twice in Mikra and once in Targum “even Atarot and '
+        'The Gemara (Berachot 8a) says to complete the parsha twice in Mikra and once in Targum “even Atarot and '
             'Divon”, a verse that is almost all place names. For a verse with no Targum, Rashi holds that it is read '
             'three times in Hebrew, while Tosafot suggest reading another Targum instead. Your rav can tell you '
             'which practice to follow.',

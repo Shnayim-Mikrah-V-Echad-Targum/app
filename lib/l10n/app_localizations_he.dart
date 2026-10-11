@@ -2224,6 +2224,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get signInPrompt => 'יש להתחבר כדי לכתוב, להודות או לדווח.';
 
   @override
+  String get settingsAccountDesc => 'התחברות כדי לכתוב, להודות או לדווח';
+
+  @override
   String signedInAs(String name) {
     return 'התחברת בשם $name';
   }

@@ -265,7 +265,8 @@ void main() {
 
     testWidgets("the account's row asks to sign in, or names who is signed in", (tester) async {
       await open(tester, '/settings');
-      expect(find.text('Sign in to post, say thanks or report.'), findsOneWidget);
+      // A subtitle, without a full stop, as every other row's is.
+      expect(find.text('Sign in to post, say todah or report'), findsOneWidget);
 
       final forums = DemoForumRepository();
       await forums.verifyCode('reader@example.org', '123456');

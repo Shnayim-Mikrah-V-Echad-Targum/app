@@ -737,7 +737,7 @@
       }
     }
   },
-  "previewNotOpen": "Preview — this parsha opens for credit on {date}.",
+  "previewNotOpen": "Preview — you can log this parsha from {date}.",
   "@previewNotOpen": {
     "description": "The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.",
     "placeholders": {
@@ -810,7 +810,7 @@
       }
     }
   },
-  "noTargumNote": "Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berakhot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).",
+  "noTargumNote": "Onkelos here gives mostly the Aramaic forms of the place names. Following Rashi (Berachot 8b), many also read this verse a third time in Hebrew (see Shulchan Aruch OC 285:1).",
   "noRashiNote": "Rashi does not comment on this verse. Some read it a third time in Hebrew (Mishnah Berurah 285:5).",
   "noRashiComment": "Rashi does not comment on this verse.",
   "ketivQereLabel": "Written {ketiv}, read {qere}",
@@ -897,7 +897,7 @@
     }
   },
   "listenAlong": "Listen along",
-  "listenAlongDesc": "Listen goes on from each reading to the next by itself, to the end of the aliyah. An aid for following the text, not a substitute for reading it.",
+  "listenAlongDesc": "Keeps playing from one reading to the next, to the end of the aliyah. An aid for following the text, not a substitute for reading it.",
   "ttsUnavailable": "Text-to-speech isn’t available on this device.",
   "ttsNoHebrewVoice": "No Hebrew voice is installed. You can add one in your device’s speech settings.",
   "guidedMode": "Guided reading",
@@ -1376,7 +1376,7 @@
   "@rashiScript": {
     "description": "Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters."
   },
-  "rashiScriptDesc": "Set Rashi’s commentary in the script of a printed chumash",
+  "rashiScriptDesc": "Set Rashi’s commentary in the script of a printed Chumash",
   "uiFontLabel": "Interface font",
   "uiFontStandard": "Standard",
   "uiFontAtkinson": "Atkinson Hyperlegible",
@@ -1704,7 +1704,7 @@
   },
   "onbWhyAsk": "Why we ask",
   "guideWhatTitle": "What is Shnayim Mikra?",
-  "guideQuoteSource": "Berakhot 8a",
+  "guideQuoteSource": "Berachot 8a",
   "@guideQuoteSource": {
     "description": "Under the Talmud's words that open the guide, in Hebrew: where they are written."
   },
@@ -1724,11 +1724,11 @@
   "guideTargumTitle": "Targum or Rashi",
   "guideTargumBody": "Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.",
   "guideSpecialTitle": "Special cases",
-  "guideSpecialBody": "In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
+  "guideSpecialBody": "In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berachot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
   "guideShabbatTitle": "Shabbat and Yom Tov",
   "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
   "guideSourcesTitle": "Sources",
-  "guideSourcesBody": "Berakhot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285",
+  "guideSourcesBody": "Berachot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285",
   "@guideSourcesBody": {
     "description": "The guide's sources, one to a line."
   },
@@ -1766,6 +1766,10 @@
   },
   "openDiscussion": "Open the discussion",
   "signInPrompt": "Sign in to post, say thanks or report.",
+  "settingsAccountDesc": "Sign in to post, say todah or report",
+  "@settingsAccountDesc": {
+    "description": "Settings, under the Account row's title while no one is signed in on this device. Todah is the forum's button that thanks a post's author."
+  },
   "signedInAs": "Signed in as {name}",
   "@signedInAs": {
     "description": "Settings, under the Account row's title: the member signed in on this device.",
