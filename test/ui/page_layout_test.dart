@@ -10,6 +10,7 @@ import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
+import 'package:shnayim_mikra/services/feedback.dart';
 import 'package:shnayim_mikra/ui/theme/layout.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -134,6 +135,22 @@ void main() {
       await openRoute(tester, '/community', size: const Size(1366, 860));
       final column = 257 + (1109 + 720) / 2;
       expect(tester.getRect(find.byTooltip(_en.signInTitle)).right, column);
+    });
+
+    testWidgets("on a desktop, the floating button ends where the column's content does", (tester) async {
+      await openRoute(tester, '/community/forum/questions', size: const Size(1366, 860));
+      final content = 257 + (1109 + 720) / 2 - 32;
+      expect(tester.getRect(find.byType(FloatingActionButton)).right, content);
+
+      // In Hebrew, at the left, with the rail at the right.
+      await openRoute(tester, '/community/forum/questions', size: const Size(1366, 860), settings: _hebrew);
+      expect(tester.getRect(find.byType(FloatingActionButton)).left, (1109 - 720) / 2 + 32);
+
+      // Where the column fills the pane, Material's 16 from its edge.
+      for (final size in [const Size(412, 915), const Size(800, 1180)]) {
+        await openRoute(tester, '/community/forum/questions', size: size);
+        expect(tester.getRect(find.byType(FloatingActionButton)).right, size.width - 16);
+      }
     });
 
     testWidgets('in Hebrew, the title ends where the content does, at the right', (tester) async {
@@ -264,6 +281,45 @@ void main() {
       expect(opacity(), 1);
       expect(find.bySemanticsLabel('Parshat Bereshit'), findsNothing);
       handle.dispose();
+    });
+  });
+
+  group('status messages', () {
+    /// Shows a message from the page on show, and gives where it is set.
+    Future<Rect> show(WidgetTester tester) async {
+      showStatus(tester.element(find.byType(PageScaffold).last), 'Updated');
+      await tester.pumpAndSettle();
+      // Its paper, within its margins.
+      return tester.getRect(find.descendant(of: find.byType(SnackBar), matching: find.byType(Material)).first);
+    }
+
+    testWidgets('on a phone, run 16 from the edges', (tester) async {
+      await openRoute(tester, '/settings');
+      final bar = await show(tester);
+      expect((bar.left, bar.right), (16, 412 - 16));
+    });
+
+    testWidgets("on a desktop, are a sheet's width at most, centred on the page beside the rail", (tester) async {
+      await openRoute(tester, '/settings', size: const Size(1366, 860));
+      final bar = await show(tester);
+      expect(bar.width, 640);
+      expect(bar.center.dx, 257 + 1109 / 2);
+      expect(bar.bottom, 860 - 16);
+
+      // In Hebrew, the rail is at the right.
+      await openRoute(tester, '/settings', size: const Size(1366, 860), settings: _hebrew);
+      expect((await show(tester)).center.dx, 1109 / 2);
+
+      // Over the tabs, the page is the window.
+      await openRoute(tester, '/guide', size: const Size(1366, 860));
+      expect((await show(tester)).center.dx, 1366 / 2);
+    });
+
+    testWidgets('on a tablet, keep 16 from the pane where it is narrower', (tester) async {
+      await openRoute(tester, '/settings', size: const Size(640, 900));
+      final bar = await show(tester);
+      // The compact rail (80 and its hairline) beside a pane of 559.
+      expect((bar.left, bar.right), (81 + 16, 640 - 16));
     });
   });
 

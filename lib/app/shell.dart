@@ -8,6 +8,7 @@ import '../features/search/go_to_verse_sheet.dart';
 import '../ui/l10n.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/app_mark.dart';
+import '../ui/widgets/common.dart' show RailPane;
 import '../ui/widgets/fonts_change_scope.dart';
 import 'system_bars.dart';
 
@@ -127,7 +128,7 @@ class AppShell extends StatelessWidget {
                 ),
               ),
             ),
-            Expanded(child: FocusTraversalGroup(child: shell)),
+            Expanded(child: RailPane(child: FocusTraversalGroup(child: shell))),
           ],
         ),
       ),

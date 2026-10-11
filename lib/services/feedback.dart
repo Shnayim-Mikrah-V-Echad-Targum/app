@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -5,7 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/providers.dart';
+import '../ui/theme/layout.dart';
 import '../ui/theme/motion.dart';
+import '../ui/widgets/common.dart' show RailPane;
 
 /// Status messages that are both visible and announced to screen readers
 /// (WCAG 4.1.3), shown for 4 s, or 8 s when they offer an [action]
@@ -23,6 +27,7 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
       SnackBar(
         content: Text(message),
         action: action,
+        margin: _wideMargin(context),
         duration: Duration(seconds: action == null ? 4 : 8),
         persist: action != null && MediaQuery.accessibleNavigationOf(context),
       ),
@@ -38,6 +43,30 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
   if (!kIsWeb && defaultTargetPlatform != TargetPlatform.iOS && MediaQuery.supportsAnnounceOf(context)) {
     SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
   }
+}
+
+/// The widest a status message is set from [Breakpoints.medium]: a sheet's
+/// width (§6.19), rather than a line across a desktop's whole window.
+const _maxWidth = 640.0;
+
+/// A status message's margin from [Breakpoints.medium]: at most [_maxWidth]
+/// wide, centred on the page that shows it (within a tab, the pane beside
+/// the navigation rail), 16 from the window's foot. Null on a phone, whose
+/// messages keep the theme's 16 all round.
+EdgeInsets? _wideMargin(BuildContext context) {
+  final window = MediaQuery.sizeOf(context);
+  // A margin is a floating message's alone.
+  final floating = SnackBarTheme.of(context).behavior == SnackBarBehavior.floating;
+  if (window.width < Breakpoints.medium || !floating) return null;
+  final page = RailPane.rectOf(context) ?? Offset.zero & window;
+  const inset = 16.0;
+  final width = math.min(_maxWidth, page.width - 2 * inset);
+  final start = page.left + (page.width - width) / 2;
+  // The message pads itself clear of the window's sides as well.
+  final view = MediaQuery.paddingOf(context);
+  final left = math.max(0.0, start - view.left);
+  final right = math.max(0.0, window.width - start - width - view.right);
+  return EdgeInsets.fromLTRB(left, inset, right, inset);
 }
 
 /// A status message said to screen readers without being shown, for a

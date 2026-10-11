@@ -491,6 +491,7 @@ Rules:
   - the nav indicator is the only stadium shape.
 - **Elevation:** 0 everywhere. Separation comes from paper on surface plus a 1 px hairline. FAB and menus are 2, with `shadowColor` = shadow token.
 - **App bar title alignment on wide screens:** `PageScaffold` reads the pane's width with a `LayoutBuilder` (the window less the rail and its hairline) and computes `inset = max(gutter, (paneWidth - contentMaxWidth) / 2 + gutter)`, where the column's content starts. The title is padded `inset` at its start, or `max(gutter, inset - 56)` after a back or home button, and a gutter at its end (as `titleSpacing` the inset would be kept after it too, leaving a narrow column's title no room on a wide screen), and `actionsPadding` ends `inset - gutter` from the pane's end, at the column's edge, as a phone's end at the screen's. This puts the title edge on the content edge, fixing D11. The title is a level-1 heading. Pages of list tiles pad the column `gutter - 16` at the sides (`PageBody.tilePadding`), so the tiles' own 16 brings their text to the same edge.
+- **Floating button:** where the pane is wider than the page's column, a `PageScaffold`'s floating action button ends where the column's content does, beside its cards and under the app bar's actions, rather than in the pane's far corner. Where the column fills the pane, Material's 16 from the edge.
 - **Document title:** on the web, the page on show names the browser's tab, its history and bookmarks: "Settings · Shnayim Mikra" (`DocumentTitle`, which `PageScaffold` applies; the reader, Today and Welcome apply it themselves). A page names it again whenever it comes back into view, as the page over it closes or its tab is chosen again. Its colour is the app's (`MaterialApp.color`, the surface), since the web takes it for the theme-color (§3.6). Elsewhere the platform keeps the app's name.
 
 ## 6. Components
@@ -787,6 +788,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 
 **Snackbar**
 - Floating; radius 10; margin 16; inverseSurface with onInverseSurface; action in inversePrimary.
+- From 600 dp, at most 640 wide (a sheet's width), centred on the page that shows it: within a tab, the pane beside the rail (`RailPane`), not the whole window.
 - Duration 4 s, or 8 s with an action. Flutter already holds action snackbars when `accessibleNavigation` is on.
 - Sits above the reader bottom bar.
 

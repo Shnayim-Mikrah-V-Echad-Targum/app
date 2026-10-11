@@ -232,10 +232,69 @@ class PageScaffold extends StatelessWidget {
                 : null,
             body: body,
             floatingActionButton: floatingActionButton,
+            floatingActionButtonLocation: _ColumnEndFab(contentMaxWidth: contentMaxWidth, gutter: g),
             bottomNavigationBar: bottomNavigationBar,
           );
         }),
       );
+}
+
+/// Where a [PageScaffold] floats its button (§5): at the end, 16 above the
+/// bottom, as Material does; but on a pane wider than the page's column, at
+/// the end of the column's content, where its cards and the app bar's
+/// actions end, rather than in the pane's far corner.
+class _ColumnEndFab extends StandardFabLocation with FabFloatOffsetY {
+  const _ColumnEndFab({required this.contentMaxWidth, required this.gutter});
+
+  final double contentMaxWidth;
+  final double gutter;
+
+  @override
+  double getOffsetX(ScaffoldPrelayoutGeometry geometry, double adjustment) {
+    final width = geometry.scaffoldSize.width;
+    // Where the column's content ends, from the pane's end, as in its
+    // PageBody; Material's margin while the column fills the pane.
+    final inset = (width - contentMaxWidth) / 2 + gutter;
+    final margin = inset > gutter ? inset : kFloatingActionButtonMargin;
+    return switch (geometry.textDirection) {
+      TextDirection.rtl => margin + geometry.minInsets.left - adjustment,
+      TextDirection.ltr =>
+        width - margin - geometry.minInsets.right - geometry.floatingActionButtonSize.width + adjustment,
+    };
+  }
+
+  // Equal while the column is, so that a rebuild never moves the button.
+  @override
+  bool operator ==(Object other) =>
+      other is _ColumnEndFab && other.contentMaxWidth == contentMaxWidth && other.gutter == gutter;
+
+  @override
+  int get hashCode => Object.hash(contentMaxWidth, gutter);
+}
+
+/// The pane beside the navigation rail, which a tab's pages fill (from
+/// [Breakpoints.medium]; the shell sets it). What is placed by the page
+/// rather than by the window finds the pane here: a status message, shown
+/// across the window, is centred on it.
+class RailPane extends StatefulWidget {
+  const RailPane({super.key, required this.child});
+
+  final Widget child;
+
+  /// The pane's rect in the window, where [context] is within it; null on a
+  /// phone, whose pages fill the window, and over the tabs.
+  static Rect? rectOf(BuildContext context) {
+    final box = context.findAncestorStateOfType<_RailPaneState>()?.context.findRenderObject();
+    return box is RenderBox && box.hasSize ? box.localToGlobal(Offset.zero) & box.size : null;
+  }
+
+  @override
+  State<RailPane> createState() => _RailPaneState();
+}
+
+class _RailPaneState extends State<RailPane> {
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// An app bar's title, in the app bar's style: set a little smaller where
