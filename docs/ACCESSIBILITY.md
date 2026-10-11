@@ -120,18 +120,42 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 ## How it is tested
 
 ### Automated (on every pull request, in CI)
-- `test/accessibility/screens_a11y_test.dart` lays 19 screens (among them a week within a tab and one opened on its own, the policies, and the pages for links that lead nowhere), the reminders page with every reminder on, and the reader (guided and full text, in English and Hebrew) out in the bundled fonts, so text sizes are the real ones, and runs Flutter's accessibility guidelines on them:
+The screens are opened as a phone shows them (412 × 915 dp) on a reading-week Monday, Noach 5787, unless said otherwise. The lists of routes are in `test/accessibility/routes.dart`.
+
+- **`test/accessibility/semantics_invariants_test.dart`** opens every route of the app's screens (Today, Parsha and Browse, Progress, the community with a discussion, a new one, a question on a verse and the account page, the bookmarks and notes, every Settings page, the guide, sources and privacy policy, a week within a tab and on its own, a book of the Torah finished, and the pages for links that lead nowhere), the reader (guided at Revi'i, and the full text), a haftarah, and the welcome and each step of onboarding. It shows each in all five themes in turn (light, dark, sepia, high-contrast light and high-contrast dark), as a reader who changes the theme sees it, and runs on each:
+  - `SemanticsInvariants` (below)
+  - `textContrastGuideline`
   - `androidTapTargetGuideline`
-  - `iOSTapTargetGuideline`
   - `labeledTapTargetGuideline`
-- The same test also checks:
-  - no overflow at 200% text on the busiest screens, the reader among them, in English and Hebrew
-  - that a day of the week strip and a parsha of the Torah map can be activated by a screen reader, that sliders are named by their setting and their buttons by what they do, and that a page keeps its headings, texts and controls apart
-  - the Hebrew right-to-left layout
-  - the desktop layout with a navigation rail
-- `test/accessibility/text_contrast_test.dart` runs `textContrastGuideline` on the same screens, on the reminders page with every reminder on, and on Today in all five themes: light, dark, sepia, high-contrast light and high-contrast dark. It keeps the test font: the guideline reads colours from rendered pixels, and the test font's solid glyphs show it the exact text colour where real glyphs show mostly anti-aliased edges.
+
+  It runs the same on the full text in focus mode, in the light and sepia themes, and on Progress with a parsha read on time, one finished after its Shabbat, one missed and one made up, in all five themes. It keeps the test font: `textContrastGuideline` reads colours from rendered pixels, and the test font's solid glyphs show it the exact text colour where real glyphs show mostly anti-aliased edges.
+- **`SemanticsInvariants`** (`test/accessibility/semantics_invariants.dart`) walks the whole semantics tree, skipping nodes merged into a parent and hidden ones, and fails when:
+  1. an enabled button or link has no tap action;
+  2. a slider's label is empty or the same as its value;
+  3. a text field has no label;
+  4. a verse, as the reader labels it ("Verse 9." or "Targum, verse 9." and the Hebrew, or the same in Hebrew), is tagged Hebrew neither by its node's locale nor by a span of its label.
+
+  Its own tests show that each rule fails where it should: a tile whose tap was removed fails the first. Two rules are scoped:
+  - Rule 3 applies to fields that take input. Flutter's `SelectableText`, which sets a post and the guide, is a read-only text field whose text is its value.
+  - Rule 4 applies to the reader's label of a verse only. Labels such as "Verse 1 of 14", "Verse by verse", "Targum Onkelos" or "תרגום לאנגלית" name parts of the interface, in its own language.
+- **`test/accessibility/screens_a11y_test.dart`** lays the same screens out in the bundled fonts, so sizes and overflow are the real ones, and runs `androidTapTargetGuideline`, `iOSTapTargetGuideline`, `labeledTapTargetGuideline` and `SemanticsInvariants` on:
+  - every route, and the reminders page with every reminder on;
+  - the welcome and each step of onboarding, in English and Hebrew;
+  - the reader, guided and full text, in English and Hebrew, and on a desktop (1366 × 860) the full text and the whole parsha in parallel columns.
+
+  It also checks that nothing overflows and that no word of the interface breaks across lines (scripture is left out: it keeps a maqaf's words together, and at the largest sizes such a pair can be wider than the column):
+  - at 200% text, in English, on Today, Parsha, Progress, Display settings, a link that leads nowhere, and the welcome and each step of onboarding;
+  - at 200% text, in Hebrew, on Today, Progress and the week page;
+  - at 200% text on the reader, guided and the whole parsha in English and Hebrew, and the full text in Hebrew;
+  - at 300% text on a 320 × 640 phone, on Today and the reader, in English and Hebrew;
+  - that Tab reaches Today's main button, which takes the focus ring: a `FocusRingBorder` in the theme's focus colour, drawn outside its fill;
+  - that a day of the week strip and a parsha of the Torah map can be activated by a screen reader, that sliders are named by their setting and their buttons by what they do, and that a page keeps its headings, texts and controls apart;
+  - the Hebrew right-to-left layout, and the desktop layout with a navigation rail.
+- **`test/accessibility/text_contrast_test.dart`** runs `textContrastGuideline` on the reminders page with every reminder on, and checks the colours the guideline skips: the Torah map's tiles in every past state, the week strip's filled days and each book's count, in the light, sepia and high-contrast dark themes.
+- **`test/goldens/`** compares Today, the guided reader, Parsha, Progress and Community, in all five themes and in English and Hebrew, with images of them as the capture harness shows them (Friday 9 October 2026, with Shlishi of Bereshit under way), in the bundled fonts. `typography_golden_test.dart` sets "Revi'i · רביעי" and "בְּרֵאשִׁית" in titleLarge and in the Hebrew display face, for each interface font in each language, so a missing glyph shows as a box. They run on Linux only, as CI does, and allow 0.5% of the pixels to differ, for anti-aliasing. After a deliberate visual change, review the captures and run `flutter test --update-goldens test/goldens/`.
 - `test/app/reader_widget_test.dart` runs `textContrastGuideline` on the reader (on the test font, for the reason above), checks the labels of verses, notes, the Targum and Rashi, and their language tags on Android, Windows and the web, and checks that focus mode's dimmed verses keep 4.5:1 in every theme.
 - `test/ui/palette_contrast_test.dart` computes the WCAG contrast of every text and graphics colour pair in the palette (docs/DESIGN_SYSTEM.md §3.5): 4.5:1 for text and 3:1 for graphics, 7:1 and 4.5:1 in the high-contrast themes, and 7:1 for scripture everywhere.
+- `test/ui/focus_test.dart` checks the focus ring of buttons, the FAB, a notice's action, cards and rows, and the slider's thumb, and that it shows only while the keyboard is in use.
 - Unit tests check the spoken-label pipeline (`test/core/text/hebrew_text_test.dart`), including Divine Name substitution in the Torah, the Targum and Rashi, and stripping cantillation but not the extraordinary points.
 
 ### Manual (before each release)

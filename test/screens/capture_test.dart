@@ -69,20 +69,11 @@ final _capture = Platform.environment['CAPTURE'] != null;
 final _only = Platform.environment['SCREENS']?.split(',').toSet();
 final _onlyModes = Platform.environment['MODES']?.split(',').toSet();
 
-/// Friday 9 Oct 2026 (28 Tishrei 5787), the week of Bereshit. Sunday was
-/// Simchat Torah in the Diaspora, so the reading week began on Monday.
-final _now = DateTime(2026, 10, 9, 11);
-final _join = LocalDate(2026, 10, 4);
-
-ProgressState _progress() {
-  final mon = LocalDate(2026, 10, 5);
-  var w = WeekProgress(weekId: '5787:1');
-  for (final p in ReadingPass.values) {
-    w = w.withUnit(0, p, mon).withUnit(1, p, mon.addDays(1));
-  }
-  w = w.withUnit(2, ReadingPass.mikra1, mon.addDays(2)).withUnit(2, ReadingPass.mikra2, mon.addDays(2));
-  return ProgressState(weeks: {'5787:1': w});
-}
+/// Friday 9 Oct 2026, the week of Bereshit, and its reader, with Shlishi
+/// under way (test/helpers.dart). The goldens show the same.
+final _now = captureNow;
+final _join = captureJoinDate;
+const _progress = captureProgress;
 
 /// 5787 up to the week of Chukat and Balak: most parshiyot read in their
 /// weeks, two begun and left, three not opened, and this week begun.

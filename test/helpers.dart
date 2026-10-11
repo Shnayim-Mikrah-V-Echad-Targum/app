@@ -64,6 +64,29 @@ Future<void> loadBundledFonts() => _fonts ??= () async {
 
 Future<ParshaRepository> loadRepo() async => _repo ??= await ParshaRepository.load();
 
+/// The day of the capture harness (test/screens/capture_test.dart) and of
+/// the goldens (test/goldens/): Friday 9 October 2026 (28 Tishrei 5787), in
+/// the week of Bereshit. Sunday was Simchat Torah in the Diaspora, so the
+/// reading week began on Monday.
+final captureNow = DateTime(2026, 10, 9, 11);
+
+/// When the reader of [captureProgress] joined: Simchat Torah, before the
+/// week of Bereshit.
+final captureJoinDate = LocalDate(2026, 10, 4);
+
+/// The reader of [captureNow]: Rishon and Sheni of Bereshit read in all three
+/// readings on Monday and Tuesday, and Shlishi twice on Wednesday, its
+/// Targum still to read.
+ProgressState captureProgress() {
+  final mon = LocalDate(2026, 10, 5);
+  var w = WeekProgress(weekId: '5787:1');
+  for (final p in ReadingPass.values) {
+    w = w.withUnit(0, p, mon).withUnit(1, p, mon.addDays(1));
+  }
+  w = w.withUnit(2, ReadingPass.mikra1, mon.addDays(2)).withUnit(2, ReadingPass.mikra2, mon.addDays(2));
+  return ProgressState(weeks: {'5787:1': w});
+}
+
 /// A history with every past state of the Torah map, as of [historyNow]: a
 /// reader who joined on [historyJoinDate] read Bereshit and Chayei Sara on
 /// time, finished Noach after its Shabbat, never finished Lech-Lecha, and
