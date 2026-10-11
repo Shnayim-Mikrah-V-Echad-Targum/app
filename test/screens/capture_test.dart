@@ -32,6 +32,7 @@ import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
+import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
@@ -178,8 +179,9 @@ const _screens = {
   'week': '/week/5787:1',
   // Next week's, not yet open: a preview.
   'week_next': '/week/5787:2',
-  // Two parshiyot read together, under one long name.
-  'week_combined': '/week/5787:22-23',
+  // Two parshiyot read together, under one long name: Vayakhel-Pekudei in
+  // 5786, a common year (5787 is a leap year, which reads them apart).
+  'week_combined': '/week/5786:22-23',
   // A week and its haftarah opened within a tab, under its navigation bar.
   'week_tab': '/today/week/5787:1',
   'haftarah_tab': '/parsha/haftarah/5787:1',
@@ -930,7 +932,12 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.drag(find.byType(SheetTitle), const Offset(0, -600));
   },
   'scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -400)),
-  'parsha_scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -300)),
+  // The page's own list, not the navigation rail's, which comes first on a
+  // wide screen.
+  'parsha_scrolled': (tester) => tester.drag(
+        find.descendant(of: find.byType(WeekOverview), matching: find.byType(Scrollable)).first,
+        const Offset(0, -300),
+      ),
   'kit_ornaments': (tester) => _showGallery(tester, const OrnamentsGallery()),
   'kit_rows': (tester) => _showGallery(tester, const RowsGallery()),
   'kit_progress': (tester) => _showGallery(tester, const ProgressGallery()),

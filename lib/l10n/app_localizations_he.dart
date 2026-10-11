@@ -708,6 +708,14 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String plannedForOverdue(String day) {
+    return 'מתוכנן ל$day, עדיין לקריאה';
+  }
+
+  @override
+  String get plannedForShabbatOverdue => 'מתוכנן לשבת בבוקר, עדיין לקריאה';
+
+  @override
   String get plannedForToday => 'מתוכנן להיום';
 
   @override

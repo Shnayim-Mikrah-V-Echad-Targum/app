@@ -48,9 +48,8 @@ class _LegalScreenState extends ConsumerState<LegalScreen> with HeadingReveal<Le
       titleText: title,
       titleRevealed: headingHidden,
       contentMaxWidth: ContentWidth.longform,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: onPageScroll,
-        child: PageBody(
+      body: watchHeading(
+        PageBody(
           maxWidth: ContentWidth.longform,
           children: [
             const Gap(Space.lg),

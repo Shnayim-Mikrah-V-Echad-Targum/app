@@ -5,8 +5,7 @@ import 'package:flutter/widgets.dart';
 /// title itself (`PageScaffold.titleRevealed`).
 ///
 /// Give the heading [headingKey], pass [headingHidden] as `titleRevealed`,
-/// and put [onPageScroll] in a `NotificationListener<ScrollNotification>`
-/// around the page's scroll view.
+/// and wrap the page's scroll view in [watchHeading].
 mixin HeadingReveal<T extends StatefulWidget> on State<T> {
   /// The heading at the head of the page.
   final headingKey = GlobalKey();
@@ -17,11 +16,22 @@ mixin HeadingReveal<T extends StatefulWidget> on State<T> {
   /// Whether a look at the heading is due after the next frame.
   bool _checkDue = false;
 
-  bool onPageScroll(ScrollNotification notification) {
-    if (notification.depth != 0 || _checkDue) return false;
+  /// [page], its heading looked at again whenever it scrolls, and whenever
+  /// its size or its content's changes without a scroll: a resized window,
+  /// say, or larger text, which can bring the heading back into view or
+  /// take it out.
+  Widget watchHeading(Widget page) => NotificationListener<ScrollMetricsNotification>(
+        onNotification: (n) => _look(n.depth, n.context),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (n) => _look(n.depth, n.context),
+          child: page,
+        ),
+      );
+
+  bool _look(int depth, BuildContext? viewport) {
+    if (depth != 0 || _checkDue) return false;
     // Once the frame has laid the page out at its new offset.
     _checkDue = true;
-    final viewport = notification.context;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkDue = false;
       if (!mounted || viewport == null || !viewport.mounted) return;

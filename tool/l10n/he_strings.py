@@ -170,6 +170,8 @@ HE = {
   "weekOverdue": "עוד אפשר להשלים",
   "weekInProgress": "בתהליך",
   "plannedFor": "מתוכנן ל{day}",
+  "plannedForOverdue": "מתוכנן ל{day}, עדיין לקריאה",
+  "plannedForShabbatOverdue": "מתוכנן לשבת בבוקר, עדיין לקריאה",
   "plannedForToday": "מתוכנן להיום",
   "plannedForShabbat": "שבת בבוקר — לרשום אחרי שבת",
   "markWholeWeek": "סימון כל הפרשה כנקראה",

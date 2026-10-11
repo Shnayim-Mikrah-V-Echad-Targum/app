@@ -662,6 +662,20 @@
       }
     }
   },
+  "plannedForOverdue": "Planned for {day}, still to read",
+  "@plannedForOverdue": {
+    "description": "Read by screen readers for an aliyah on the week's page planned for a day gone by and still to read, which the page shows in the overdue colour after a mark.",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "Wednesday"
+      }
+    }
+  },
+  "plannedForShabbatOverdue": "Planned for Shabbat morning, still to read",
+  "@plannedForShabbatOverdue": {
+    "description": "As plannedForOverdue, for an aliyah planned for Shabbat morning once Shabbat has passed."
+  },
   "plannedForToday": "Planned for today",
   "plannedForShabbat": "Shabbat morning — log it after Shabbat",
   "markWholeWeek": "Mark the whole parsha as read",

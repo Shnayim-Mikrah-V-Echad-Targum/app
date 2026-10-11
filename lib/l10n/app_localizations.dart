@@ -1107,6 +1107,18 @@ abstract class AppLocalizations {
   /// **'Planned for {day}'**
   String plannedFor(String day);
 
+  /// Read by screen readers for an aliyah on the week's page planned for a day gone by and still to read, which the page shows in the overdue colour after a mark.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned for {day}, still to read'**
+  String plannedForOverdue(String day);
+
+  /// As plannedForOverdue, for an aliyah planned for Shabbat morning once Shabbat has passed.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned for Shabbat morning, still to read'**
+  String get plannedForShabbatOverdue;
+
   /// No description provided for @plannedForToday.
   ///
   /// In en, this message translates to:

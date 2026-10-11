@@ -9,6 +9,7 @@ import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/features/parsha/browse_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
@@ -42,11 +43,17 @@ void main() {
     String route = '/parsha',
     AppSettings? settings,
     ProgressState? progress,
+    DateTime? now,
   }) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final c = await pumpApp(tester, settings: settings ?? _settings, now: _friday, progress: progress ?? _bereshit());
+    final c = await pumpApp(
+      tester,
+      settings: settings ?? _settings,
+      now: now ?? _friday,
+      progress: progress ?? _bereshit(),
+    );
     c.read(routerProvider).go(route);
     await tester.pumpAndSettle();
     return c;
@@ -89,6 +96,21 @@ void main() {
       await tester.pumpAndSettle();
       expect(opacity(), 1);
       await tester.drag(find.byType(Scrollable).first, const Offset(0, 300));
+      await tester.pumpAndSettle();
+      expect(opacity(), 0);
+    });
+
+    testWidgets('takes the name back from the app bar when the page comes to fit without a scroll', (tester) async {
+      await open(tester);
+      double opacity() => tester
+          .widget<AnimatedOpacity>(find.descendant(of: find.byType(AppBar), matching: find.byType(AnimatedOpacity)))
+          .opacity;
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(opacity(), 1);
+      // A window made tall enough for the whole page: its offset goes back
+      // to the top without a scroll of the reader's.
+      tester.view.physicalSize = const Size(412, 4000);
       await tester.pumpAndSettle();
       expect(opacity(), 0);
     });
@@ -153,6 +175,102 @@ void main() {
       expect(find.descendant(of: row('Shlishi'), matching: find.byIcon(Icons.history)), findsOneWidget);
     });
 
+    group('are never overdue on a day that does not count', () {
+      void expectNoneOverdue(WidgetTester tester) {
+        final overdue = StatusColors.of(tester.element(find.byType(WeekOverview))).overdue;
+        expect(find.byIcon(Icons.history), findsNothing);
+        for (final (name, day) in [('Shlishi', 'Wednesday'), ("Revi'i", 'Thursday'), ('Chamishi', 'Thursday')]) {
+          expect(textIn(tester, row(name), 'Planned for $day').style?.color, isNot(overdue), reason: name);
+        }
+      }
+
+      testWidgets('while paused', (tester) async {
+        await open(
+          tester,
+          progress: ProgressState(weeks: _bereshit().weeks, pauses: [Pause(LocalDate(2026, 10, 8), LocalDate(2026, 10, 18))]),
+        );
+        expectNoneOverdue(tester);
+      });
+
+      testWidgets('on the days a pause covered', (tester) async {
+        // Paused Wednesday and Thursday; Friday is a day back.
+        await open(
+          tester,
+          progress: ProgressState(weeks: _bereshit().weeks, pauses: [Pause(LocalDate(2026, 10, 7), LocalDate(2026, 10, 8))]),
+        );
+        expectNoneOverdue(tester);
+        expect(find.text('Planned for today'), findsNWidgets(2));
+      });
+
+      testWidgets('in a past week a pause kept from counting', (tester) async {
+        // Bereshit, paused throughout, seen once its late window is over.
+        await open(
+          tester,
+          route: '/week/5787:1',
+          now: DateTime(2026, 10, 22, 10),
+          progress: ProgressState(weeks: _bereshit().weeks, pauses: [Pause(LocalDate(2026, 10, 5), LocalDate(2026, 10, 10))]),
+        );
+        expect(find.textContaining('Not counted'), findsOneWidget);
+        expectNoneOverdue(tester);
+        expect(find.descendant(of: row('Shishi'), matching: find.byIcon(Icons.history)), findsNothing);
+      });
+    });
+
+    group("planned for Shabbat morning (the plan with Shevi'i on Shabbat)", () {
+      final shabbatPlan = _settings.copyWith(plan: ReadingPlanType.sheviiOnShabbat);
+
+      testWidgets('say so, and are not behind before Shabbat', (tester) async {
+        await open(tester, settings: shabbatPlan);
+        final line = textIn(tester, row("Shevi'i"), 'Shabbat morning');
+        expect(line.data, 'Shabbat morning — log it after Shabbat');
+        expect(find.descendant(of: row("Shevi'i"), matching: find.byIcon(Icons.history)), findsNothing);
+      });
+
+      testWidgets('are still to read once Shabbat has passed', (tester) async {
+        final handle = tester.ensureSemantics();
+        // Sunday after Shabbat Bereshit, everything but Shevi'i read.
+        var w = WeekProgress(weekId: '5787:1');
+        for (var a = 0; a < 6; a++) {
+          w = w.withAliyah(a, LocalDate(2026, 10, 5 + (a < 5 ? a : 4)));
+        }
+        await open(
+          tester,
+          route: '/week/5787:1',
+          settings: shabbatPlan,
+          now: DateTime(2026, 10, 11, 10),
+          progress: ProgressState(weeks: {'5787:1': w}),
+        );
+        final overdue = StatusColors.of(tester.element(find.byType(WeekOverview))).overdue;
+        expect(textIn(tester, row("Shevi'i"), 'Shabbat morning').style?.color, overdue);
+        expect(find.descendant(of: row("Shevi'i"), matching: find.byIcon(Icons.history)), findsOneWidget);
+        expect(
+          tester.getSemantics(find.text("Shevi'i")).getSemanticsData().label,
+          contains('Planned for Shabbat morning, still to read'),
+        );
+        handle.dispose();
+      });
+    });
+
+    testWidgets('of a past week finished on its days are plain, with no reading under way', (tester) async {
+      var w = WeekProgress(weekId: '5787:1');
+      for (var a = 0; a < 7; a++) {
+        w = w.withAliyah(a, LocalDate(2026, 10, 5 + (a < 5 ? a : 4)));
+      }
+      await open(tester, route: '/week/5787:1', now: DateTime(2026, 10, 22, 10), progress: ProgressState(weeks: {'5787:1': w}));
+      expect(find.text('Planned for today'), findsNothing);
+      expect(find.byIcon(Icons.history), findsNothing);
+      expect([for (final p in tester.widgetList<PassPips>(find.byType(PassPips))) p.current], everyElement(isNull));
+      expect(find.descendant(of: row('Shlishi'), matching: find.byIcon(Icons.check)), findsOneWidget);
+    });
+
+    testWidgets("of next week's preview have no reading under way, no today and nothing behind", (tester) async {
+      await open(tester, route: '/week/5787:2');
+      expect(find.textContaining('Preview — this parsha opens for credit'), findsOneWidget);
+      expect(find.text('Planned for today'), findsNothing);
+      expect(find.byIcon(Icons.history), findsNothing);
+      expect([for (final p in tester.widgetList<PassPips>(find.byType(PassPips))) p.current], everyElement(isNull));
+    });
+
     testWidgets("show their three readings, the current one ringed, and a check once they're done", (tester) async {
       await open(tester);
       const done = PipState.done, pending = PipState.pending;
@@ -173,7 +291,8 @@ void main() {
       await open(tester);
       final data = tester.getSemantics(find.text('Shlishi')).getSemanticsData();
       expect(data.label, startsWith('Shlishi · aliyah 3\n'));
-      expect(data.label, contains('Planned for Wednesday'));
+      // The overdue colour and mark, in words.
+      expect(data.label, contains('Planned for Wednesday, still to read'));
       expect(data.value, 'First reading: done, Second reading: done, Targum: not done');
       expect(data.flagsCollection.isButton, isTrue);
       expect(data.hasAction(SemanticsAction.tap), isTrue);
@@ -233,6 +352,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(BrowseScreen), findsOneWidget);
     expect(c.read(routerProvider).state.uri.toString(), '/parsha/browse');
+  });
+
+  testWidgets("the Parsha tab's way to every parsha keeps to its share of the app bar with very large text",
+      (tester) async {
+    await openRoute(tester, '/parsha', settings: _settings, now: _friday, textScale: 2);
+    final bar = tester.getRect(find.byType(AppBar));
+    final browse = tester.getRect(find.widgetWithText(TextButton, 'All parshiyot'));
+    expect(browse.width, lessThanOrEqualTo(412 * 0.4 + 24), reason: "40% of the width, and the button's padding");
+    expect(tester.takeException(), isNull);
+    for (final button in [find.byIcon(Icons.search), find.byIcon(Icons.more_vert)]) {
+      final rect = tester.getRect(button.first);
+      expect(rect.left, greaterThanOrEqualTo(browse.right - 1));
+      expect(rect.right, lessThanOrEqualTo(bar.right));
+    }
   });
 
   testWidgets('another aliyah division is read from its note', (tester) async {

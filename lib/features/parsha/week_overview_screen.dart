@@ -129,9 +129,8 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
           ],
         ),
       ],
-      body: NotificationListener<ScrollNotification>(
-        onNotification: onPageScroll,
-        child: PageBody(
+      body: watchHeading(
+        PageBody(
           children: [
             _WeekHeader(ctx: ctx, namesKey: headingKey),
             if (!ctx.isOpen) ...[
@@ -314,8 +313,9 @@ class _StatusLine extends StatelessWidget {
 /// for its three readings over a menu.
 ///
 /// Today's aliyot say so in bold, and those planned for a day gone by that
-/// are still to read give their day in the overdue colour, after a mark.
-/// A tap opens the reader.
+/// are still to read give their day in the overdue colour, after a mark,
+/// and say so to a screen reader too; never for a day that doesn't count
+/// (before joining, or paused). A tap opens the reader.
 class _AliyahRow extends ConsumerWidget {
   const _AliyahRow({required this.ctx, required this.aliyah});
 
@@ -349,6 +349,9 @@ class _AliyahRow extends ConsumerWidget {
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
     final settings = ref.watch(settingsProvider);
+    // Nothing is behind while paused, or on a day a pause covered.
+    final paused = ref.watch(isPausedProvider);
+    final pauses = ref.watch(progressProvider.select((p) => p.pauses));
     final r = ctx.portion.aliyot[aliyah];
     final verses = ctx.aliyahVerses[aliyah];
     final progress = ctx.progress;
@@ -426,7 +429,7 @@ class _AliyahRow extends ConsumerWidget {
                     ],
                     style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                   ),
-                  ?_plan(context),
+                  ?_plan(context, counts: (date) => !paused && !pauses.any((p) => p.contains(date))),
                   if (other != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
@@ -501,8 +504,9 @@ class _AliyahRow extends ConsumerWidget {
   }
 
   /// The day the aliyah is planned for: today in bold, and a day gone by
-  /// with the aliyah still to read in the overdue colour, after a mark.
-  Widget? _plan(BuildContext context) {
+  /// with the aliyah still to read, on a day that [counts], in the overdue
+  /// colour, after a mark.
+  Widget? _plan(BuildContext context, {required bool Function(LocalDate date) counts}) {
     final l = context.l10n;
     final theme = Theme.of(context);
     final style = theme.textTheme.bodySmall;
@@ -511,12 +515,15 @@ class _AliyahRow extends ConsumerWidget {
     if (day == ctx.today) {
       return Text(l.plannedForToday, style: style?.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w700));
     }
-    final label = day == null ? l.plannedForShabbat : l.plannedFor(Names(context).weekday(day));
-    if (!_overdue(day ?? ctx.week.occasion)) {
+    final weekday = day == null ? null : Names(context).weekday(day);
+    final label = weekday == null ? l.plannedForShabbat : l.plannedFor(weekday);
+    if (!_overdue(day ?? ctx.week.occasion, counts: counts)) {
       return Text(label, style: style?.copyWith(color: theme.colorScheme.onSurfaceVariant));
     }
     final color = StatusColors.of(context).overdue;
     return Text.rich(
+      // In words what the colour and the mark say.
+      semanticsLabel: weekday == null ? l.plannedForShabbatOverdue : l.plannedForOverdue(weekday),
       TextSpan(children: [
         WidgetSpan(
           alignment: PlaceholderAlignment.middle,
@@ -532,9 +539,12 @@ class _AliyahRow extends ConsumerWidget {
   }
 
   /// Whether the aliyah, planned for [date], is still to read after that
-  /// day; never for a day before the reader joined, which doesn't count.
-  bool _overdue(LocalDate date) {
+  /// day; never for a day that doesn't count: before the reader joined, one
+  /// a pause covered or any while paused (as [counts] says), or in a week
+  /// that doesn't count at all.
+  bool _overdue(LocalDate date, {required bool Function(LocalDate date) counts}) {
     if (ctx.progress.isAliyahDone(aliyah) || date >= ctx.today) return false;
+    if (ctx.status == WeekStatus.transparent || !counts(date)) return false;
     final join = ctx.joinDate;
     return join == null || date >= join;
   }

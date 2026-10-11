@@ -700,6 +700,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String plannedForOverdue(String day) {
+    return 'Planned for $day, still to read';
+  }
+
+  @override
+  String get plannedForShabbatOverdue =>
+      'Planned for Shabbat morning, still to read';
+
+  @override
   String get plannedForToday => 'Planned for today';
 
   @override
