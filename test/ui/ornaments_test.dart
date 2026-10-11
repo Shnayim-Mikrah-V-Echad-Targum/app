@@ -365,6 +365,18 @@ void main() {
       expect(find.text('THIS WEEK'), findsOneWidget);
     });
 
+    testWidgets('never breaks inside a word, at the largest text on a small phone', (tester) async {
+      await pumpThemed(
+        tester,
+        const Align(alignment: Alignment.topCenter, child: SizedBox(width: 240, child: Eyebrow('Parshat HaShavua'))),
+        uiFont: UiFont.atkinson,
+        textScale: 3,
+      );
+      expectWordsWhole(tester, 'PARSHAT HASHAVUA');
+      expect(tester.getSize(find.byType(Eyebrow)).width, lessThanOrEqualTo(240));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('reads its words as written, not its capitals', (tester) async {
       final handle = tester.ensureSemantics();
       await pumpThemed(tester, const Eyebrow('This week'), uiFont: UiFont.atkinson);

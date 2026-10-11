@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
+import '../../ui/widgets/lines.dart';
 import '../settings/app_settings.dart';
 import 'reader_flow.dart';
 
@@ -96,7 +97,9 @@ class ReaderBottomBar extends StatelessWidget {
       onPressed: onBack,
       style: TextButton.styleFrom(foregroundColor: scheme.onSurfaceVariant, iconColor: scheme.onSurfaceVariant),
       icon: const Icon(Icons.chevron_left),
-      label: Text(l.actionBack),
+      // Never broken inside its word, as two labels side by side at a very
+      // large text size would be.
+      label: WholeWords(l.actionBack),
     );
     // Next points the way the text runs; only Finish, which ends the aliyah,
     // has a check (DESIGN_SYSTEM.md §0, correction 5).
@@ -106,7 +109,7 @@ class ReaderBottomBar extends StatelessWidget {
       style: FilledButton.styleFrom(minimumSize: const Size(128, 52)),
       icon: Icon(last ? Icons.check : Icons.chevron_right),
       iconAlignment: last ? IconAlignment.start : IconAlignment.end,
-      label: Text(last ? l.finishStep : l.actionNext),
+      label: WholeWords(last ? l.finishStep : l.actionNext),
     );
 
     return DecoratedBox(

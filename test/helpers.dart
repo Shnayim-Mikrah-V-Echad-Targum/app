@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:ui' show BoxHeightStyle;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -275,3 +277,18 @@ Finder findWords(String words) => find.textContaining(wordsRegExp(RegExp.escape(
 
 /// [pattern] with each space matching a no-break space too (see [findWords]).
 RegExp wordsRegExp(String pattern) => RegExp(pattern.replaceAll(' ', '[ \u00A0]'));
+
+/// Expects each word of [text], shown in a [Text], to stand on one line, as
+/// a word too wide for its room, broken across lines, would not.
+void expectWordsWhole(WidgetTester tester, String text) {
+  final paragraph = tester.renderObject<RenderParagraph>(
+    find.descendant(of: find.text(text), matching: find.byType(RichText)).first,
+  );
+  for (final word in RegExp(r'\S+').allMatches(text)) {
+    final lines = paragraph.getBoxesForSelection(
+      TextSelection(baseOffset: word.start, extentOffset: word.end),
+      boxHeightStyle: BoxHeightStyle.max,
+    );
+    expect({for (final box in lines) box.top.round()}, hasLength(1), reason: '"${word.group(0)}" of "$text"');
+  }
+}

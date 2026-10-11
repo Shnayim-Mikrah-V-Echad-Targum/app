@@ -394,6 +394,7 @@ Unchanged:
 Rules:
 - **Floors:** EB Garamond is never below 18sp (small-caps eyebrow) and never below 19sp for running text.
 - **No digits in eyebrows.** Old-style small-cap figures make "1" read as "I", so put digits in the next line instead.
+- **Whole words.** A word of the interface never breaks across lines. Where the largest text sizes leave a word too wide for its room (an eyebrow, a row's title, a ledger column, a day of the week strip, the reader's Back and Next, the masthead), it is set just small enough to fit (`WholeWords`, lib/ui/widgets/lines.dart). In a sentence a line may still end after a hyphen; a name of two parshiyot ("Matot-Masei") stays whole.
 - **Serif numbers** always use `FontFeature.liningFigures()` and `tabularFigures()`.
 - **Accessibility-font override:** when `uiFont` is atkinson, lexend or openDyslexic, every EBG/FRL role uses that family at the same size:
   - display, headline and title at w700;

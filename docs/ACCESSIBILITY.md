@@ -44,7 +44,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 ### Vision
 - **Themes:** light, dark, sepia, high-contrast light and high-contrast dark. They follow the system setting or can be set manually. The app also honours the platform's high-contrast and bold-text settings.
 - **Text size:**
-  - The interface follows the system text size; layouts are tested at 200%.
+  - The interface follows the system text size; layouts are tested at 200%, and Today and the reader at 300% on a 320 dp phone. A word never breaks across lines: a label with a word too wide for its room, at the largest sizes, is set just small enough for it.
   - Scripture has its own reading size (0.5×–5×), which **multiplies** the system size. People with low vision can make the text very large without breaking the interface.
 - **Typography controls:**
   - line height (at least 1.6; the default is 1.9)

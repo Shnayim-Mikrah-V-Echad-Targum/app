@@ -77,6 +77,79 @@ void main() {
     });
   });
 
+  group('WholeWords', () {
+    Future<void> pump(WidgetTester tester, Widget child, {required double width}) => pumpThemed(
+          tester,
+          Align(alignment: AlignmentDirectional.topStart, child: SizedBox(width: width, child: child)),
+        );
+
+    testWidgets('sets a text whose words fit as it is', (tester) async {
+      await pump(tester, const WholeWords('aa bb', style: style), width: 100);
+      expect(tester.getSize(find.byType(WholeWords)), const Size(100, 10));
+      expect(tester.getSize(find.text('aa bb')), const Size(100, 10));
+    });
+
+    // A text of words of four letters or fewer, 40 wide at most, set where
+    // the line is 35: smaller, on as many lines as it takes at the full size.
+    testWidgets('wraps between words, and sets a word too wide for the line just small enough', (tester) async {
+      await pump(tester, const WholeWords('aaaa bb', style: style, textAlign: TextAlign.start), width: 35);
+      final box = tester.getRect(find.byType(WholeWords));
+      expect(box.width, 35);
+      expect(tester.getSize(find.text('aaaa bb')).height, 20, reason: 'two lines, before it is scaled');
+      expect(box.height, inExclusiveRange(15, 20), reason: 'two smaller lines');
+      expect(tester.getRect(find.text('aaaa bb')).width, lessThanOrEqualTo(35));
+      expectWordsWhole(tester, 'aaaa bb');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets("measures in the style around it, as a button's label", (tester) async {
+      await pump(
+        tester,
+        const DefaultTextStyle(style: TextStyle(fontSize: 20, height: 1), child: WholeWords('aaaa')),
+        width: 50,
+      );
+      // 80 wide at 20: set at 49/80 of it.
+      expect(tester.getSize(find.byType(WholeWords)).height, moreOrLessEquals(20 * 49 / 80));
+      expect(tester.getRect(find.text('aaaa')).width, lessThanOrEqualTo(50));
+      expectWordsWhole(tester, 'aaaa');
+    });
+
+    testWidgets('keeps a hyphenated name whole, or breaks it after the hyphen', (tester) async {
+      await pump(tester, const WholeWords('aaa-bbb', style: style), width: 50);
+      expect(tester.getSize(find.byType(WholeWords)).height, lessThan(10), reason: 'one smaller line');
+      await pump(tester, const WholeWords('aaa-bbb', style: style, breakAtHyphens: true), width: 50);
+      expect(tester.getSize(find.byType(WholeWords)).height, 20, reason: 'two lines, at the full size');
+    });
+
+    testWidgets('can stand in a row as tall as its tallest cell', (tester) async {
+      const cell = Key('cell');
+      await pump(
+        tester,
+        const IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: WholeWords('aaaa aaaa', style: style)),
+              Expanded(child: SizedBox(key: cell)),
+            ],
+          ),
+        ),
+        width: 70,
+      );
+      expect(tester.takeException(), isNull);
+      // Two lines of "aaaa", set smaller to fit a cell 35 wide.
+      expect(tester.getSize(find.byKey(cell)).height, tester.getSize(find.byType(WholeWords)).height);
+      expect(tester.getSize(find.byKey(cell)).height, inExclusiveRange(15, 20));
+    });
+
+    testWidgets('a screen reader hears its label, where it has one', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, const WholeWords('THIS WEEK', style: style, semanticsLabel: 'This week'), width: 200);
+      expect(tester.getSemantics(find.text('THIS WEEK')), isSemantics(label: 'This week'));
+      handle.dispose();
+    });
+  });
+
   test('dashHeldToWord holds each spaced em dash to the word before it', () {
     expect(dashHeldToWord('Two aliyot — very normal — midweek.'), 'Two aliyot\u00A0— very normal\u00A0— midweek.');
     expect(dashHeldToWord('עוד 3 עליות להשלים — רגיל'), 'עוד 3 עליות להשלים\u00A0— רגיל');

@@ -199,7 +199,7 @@ class _TodayHeader extends StatelessWidget {
               const Gap(2),
               // The app's name, not a heading: the parsha's name below is
               // the page's heading.
-              Text(l.appTitle, style: theme.textTheme.headlineMedium),
+              WholeWords(l.appTitle, style: theme.textTheme.headlineMedium, textAlign: TextAlign.start),
             ],
           ),
         ),
