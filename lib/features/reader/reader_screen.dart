@@ -1631,28 +1631,28 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         final width = min(560.0, MediaQuery.sizeOf(context).width - 80) - 48;
         return AlertDialog(
           title: Text(l.keyboardShortcuts),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final (combos, action) in rows)
-                  MergeSemantics(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          Expanded(child: Text(action, style: theme.textTheme.bodyMedium)),
-                          const Gap(16),
-                          ConstrainedBox(
-                            constraints: BoxConstraints(maxWidth: max(120, width * 0.55)),
-                            child: _KeyCombos(combos),
-                          ),
-                        ],
-                      ),
+          // Half the end padding goes inside the list (_ShortcutList), where
+          // its scrollbar stands clear of the keys.
+          contentPadding: const EdgeInsetsDirectional.fromSTEB(24, 16, 24 - _ShortcutList.scrollbarRoom, 24),
+          content: _ShortcutList(
+            children: [
+              for (final (combos, action) in rows)
+                MergeSemantics(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(action, style: theme.textTheme.bodyMedium)),
+                        const Gap(16),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: max(120, width * 0.55)),
+                          child: _KeyCombos(combos),
+                        ),
+                      ],
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
           actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionClose))],
         );
@@ -1702,6 +1702,42 @@ class _ReaderTitle extends StatelessWidget {
             children: [fitted(Eyebrow(parsha)), fitted(Text(line))],
           );
         },
+      );
+}
+
+/// The shortcuts dialog's rows, which scroll where the dialog has no room
+/// for them all (a phone, large text). The scrollbar then stays in sight, so
+/// that a list cut off between two rows doesn't look complete.
+class _ShortcutList extends StatefulWidget {
+  const _ShortcutList({required this.children});
+
+  final List<Widget> children;
+
+  /// Between the keys and the dialog's edge, where the scrollbar runs.
+  static const double scrollbarRoom = 12;
+
+  @override
+  State<_ShortcutList> createState() => _ShortcutListState();
+}
+
+class _ShortcutListState extends State<_ShortcutList> {
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scrollbar(
+        controller: _scroll,
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          controller: _scroll,
+          padding: const EdgeInsetsDirectional.only(end: _ShortcutList.scrollbarRoom),
+          child: Column(mainAxisSize: MainAxisSize.min, children: widget.children),
+        ),
       );
 }
 

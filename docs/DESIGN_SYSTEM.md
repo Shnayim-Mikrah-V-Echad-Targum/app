@@ -1128,6 +1128,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 - **_Note** (no Targum or Rashi available; reader_screen.dart:736-760): a NoticeBanner with `info_outline` (replaces tertiaryContainer).
 - Bottom bar per §6.18; finished panel per §6.23.
 - Desktop: ribbon, track, text and bottom bar all share one centred column.
+- The keyboard shortcuts (F1, or the menu's Keyboard shortcuts): a dialog (§6.19) of rows, the action in bodyMedium and its keys as keycaps at the end. Where the rows run past the dialog's foot (a phone, large text), they scroll with their scrollbar kept in sight, in a 12 band of the end padding clear of the keys, so that a list cut off between two rows isn't taken to be complete.
 
 ### Reader, full text (phone_reader_full, desktop_reader_full)
 

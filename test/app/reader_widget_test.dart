@@ -1337,6 +1337,14 @@ void main() {
       expect(find.bySemanticsLabel('Show or hide cantillation\nCtrl + Shift + T'), findsOneWidget);
       expect(find.bySemanticsLabel('Show shortcuts\nF1, Ctrl + /'), findsOneWidget);
       expect(find.textContaining('focus mode'), findsNothing, reason: '↑ and ↓ move between verses only in focus mode');
+      // On a phone the list runs past the dialog's foot, and its scrollbar
+      // stays in sight, so that the rows below aren't taken to be missing.
+      final list = find.descendant(of: find.byType(AlertDialog), matching: find.byType(Scrollable));
+      expect(tester.state<ScrollableState>(list).position.maxScrollExtent, greaterThan(0));
+      expect(
+        tester.widget<Scrollbar>(find.descendant(of: find.byType(AlertDialog), matching: find.byType(Scrollbar))).thumbVisibility,
+        isTrue,
+      );
       handle.dispose();
       await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
