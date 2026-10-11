@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +15,6 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/app_icon.dart';
 import '../../ui/widgets/common.dart';
-import '../../ui/widgets/fonts_change_scope.dart';
 import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/ledger.dart';
 import '../../ui/widgets/lines.dart';
@@ -474,9 +471,9 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     final settings = widget.settings;
     final haftarah = (settings.haftarahEnabled || ctx.haftarahRequired) && ctx.progress.haftarah == null;
     return [
-      _Balanced(l.weekComplete, style: theme.textTheme.titleLarge, bySentence: true),
+      BalancedText(l.weekComplete, style: theme.textTheme.titleLarge, bySentence: true),
       const Gap(Space.xs),
-      _Balanced(
+      BalancedText(
         ctx.week.portion.isVezotHaberakhah ? l.weekCompleteNoteSimchatTorah : l.weekCompleteNote,
         style: SeferType.of(context).marginalia,
       ),
@@ -821,85 +818,6 @@ class _BookSheetState extends State<_BookSheet> {
   }
 }
 
-/// [text] wrapped as evenly as its lines allow: as narrow as it can be set
-/// in as few lines as the full width takes, so that a word is never left
-/// alone on its last line, as a title page sets its lines. Centred unless
-/// [textAlign] says otherwise.
-///
-/// With [bySentence], text too long for one line sets each sentence on a
-/// line or more of its own.
-class _Balanced extends StatelessWidget {
-  const _Balanced(this.text, {required this.style, this.textAlign = TextAlign.center, this.bySentence = false});
-
-  final String text;
-  final TextStyle? style;
-  final TextAlign textAlign;
-  final bool bySentence;
-
-  static final _sentenceBreak = RegExp(r'(?<=[.?!])\s+(?=\S)');
-
-  @override
-  Widget build(BuildContext context) {
-    // Measured again when a font arrives.
-    FontsChangeScope.watch(context);
-    return LayoutBuilder(builder: (context, constraints) {
-      final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
-      TextPainter painter(String text) => TextPainter(
-            text: TextSpan(text: text, style: style?.merge(bold) ?? bold),
-            textDirection: Directionality.of(context),
-            textScaler: MediaQuery.textScalerOf(context),
-            locale: Localizations.maybeLocaleOf(context),
-          )..layout(maxWidth: constraints.maxWidth);
-
-      Widget balanced(String text) {
-        final p = painter(text);
-        final lines = p.computeLineMetrics().length;
-        var width = constraints.maxWidth;
-        if (lines > 1) {
-          // Never narrower than its widest word.
-          var low = math.min(p.minIntrinsicWidth, width);
-          var high = width;
-          for (var i = 0; i < 10 && high - low > 1; i++) {
-            final mid = (low + high) / 2;
-            p.layout(maxWidth: mid);
-            if (p.computeLineMetrics().length > lines) {
-              low = mid;
-            } else {
-              high = mid;
-            }
-          }
-          width = math.min(constraints.maxWidth, high.ceilToDouble() + 1);
-        }
-        p.dispose();
-        return Align(
-          alignment: textAlign == TextAlign.center ? Alignment.center : AlignmentDirectional.centerStart,
-          widthFactor: 1,
-          child: SizedBox(width: width, child: Text(text, style: style, textAlign: textAlign)),
-        );
-      }
-
-      final sentences = bySentence ? text.split(_sentenceBreak) : [text];
-      if (sentences.length > 1) {
-        final whole = painter(text);
-        final oneLine = whole.computeLineMetrics().length <= 1;
-        whole.dispose();
-        if (!oneLine) {
-          return Semantics(
-            // One text for screen readers, as it is written.
-            label: text,
-            excludeSemantics: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [for (final s in sentences) balanced(s)],
-            ),
-          );
-        }
-      }
-      return balanced(text);
-    });
-  }
-}
-
 /// A text button with an icon, its padding roomy around a label that large
 /// text wraps. At the edge of a line ([flush]), it is moved by its padding
 /// toward that edge, so that its icon, not its padding, lines up with the
@@ -974,7 +892,7 @@ class _RestHero extends ConsumerWidget {
         children: [
           const Center(child: ShabbatCandlesIcon(size: 40)),
           const Gap(Space.lg),
-          _Balanced(yomTov(date) ? l.chagSameach : l.shabbatShalom, style: theme.textTheme.headlineMedium),
+          BalancedText(yomTov(date) ? l.chagSameach : l.shabbatShalom, style: theme.textTheme.headlineMedium),
           const Gap(Space.xl),
           Semantics(
             container: true,
@@ -998,7 +916,7 @@ class _RestHero extends ConsumerWidget {
           const Gap(Space.lg),
           // Logged once the days of rest are over, after Yom Tov where they
           // end with one.
-          _Balanced(
+          BalancedText(
             yomTov(last) ? l.restDayBodyChag : l.restDayBody,
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             bySentence: true,
@@ -1182,7 +1100,7 @@ class _StripNote extends ConsumerWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: _Balanced(text, style: SeferType.of(context).marginalia, textAlign: TextAlign.start),
+              child: BalancedText(text, style: SeferType.of(context).marginalia, textAlign: TextAlign.start),
             ),
           ),
           IconButton(

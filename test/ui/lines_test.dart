@@ -41,4 +41,39 @@ void main() {
       expect(tester.getSize(find.textContaining('aa')).height, 20, reason: 'two lines, which break at the comma');
     });
   });
+
+  group('BalancedText', () {
+    Future<void> pump(WidgetTester tester, String text, {required double width, bool bySentence = false}) =>
+        pumpThemed(
+          tester,
+          Align(
+            alignment: AlignmentDirectional.topStart,
+            child: SizedBox(width: width, child: BalancedText(text, style: style, bySentence: bySentence)),
+          ),
+        );
+
+    testWidgets('sets its lines evenly, leaving no word alone on the last', (tester) async {
+      // At the full 100, "aa bb cc / dd"; evenly, "aa bb / cc dd".
+      await pump(tester, 'aa bb cc dd', width: 100);
+      final text = tester.getRect(find.text('aa bb cc dd'));
+      expect(text.height, 20, reason: 'as few lines as the full width takes');
+      expect(text.width, inInclusiveRange(50, 52));
+      // Centred in the column.
+      expect(text.center.dx, closeTo(50, 1));
+    });
+
+    testWidgets('keeps a text that fits on one line whole', (tester) async {
+      await pump(tester, 'aa bb', width: 100);
+      expect(tester.getSize(find.text('aa bb')).height, 10);
+    });
+
+    testWidgets('by sentence, sets each on lines of its own, read as one text', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, 'Aa bb. Cc dd ee.', width: 100, bySentence: true);
+      expect(find.text('Aa bb.'), findsOneWidget);
+      expect(find.text('Cc dd ee.'), findsOneWidget);
+      expect(find.bySemanticsLabel('Aa bb. Cc dd ee.'), findsOneWidget);
+      handle.dispose();
+    });
+  });
 }

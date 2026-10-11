@@ -114,3 +114,82 @@ class WholeWords extends StatelessWidget {
         );
       });
 }
+
+/// [text] wrapped as evenly as its lines allow: as narrow as it can be set
+/// in as few lines as the full width takes, so that a word is never left
+/// alone on its last line, as a title page sets its lines. Centred unless
+/// [textAlign] says otherwise.
+///
+/// With [bySentence], text too long for one line sets each sentence on a
+/// line or more of its own.
+class BalancedText extends StatelessWidget {
+  const BalancedText(this.text, {super.key, required this.style, this.textAlign = TextAlign.center, this.bySentence = false});
+
+  final String text;
+  final TextStyle? style;
+  final TextAlign textAlign;
+  final bool bySentence;
+
+  static final _sentenceBreak = RegExp(r'(?<=[.?!])\s+(?=\S)');
+
+  @override
+  Widget build(BuildContext context) {
+    // Measured again when a font arrives.
+    FontsChangeScope.watch(context);
+    return LayoutBuilder(builder: (context, constraints) {
+      final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
+      TextPainter painter(String text) => TextPainter(
+            text: TextSpan(text: text, style: style?.merge(bold) ?? bold),
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+            locale: Localizations.maybeLocaleOf(context),
+          )..layout(maxWidth: constraints.maxWidth);
+
+      Widget balanced(String text) {
+        final p = painter(text);
+        final lines = p.computeLineMetrics().length;
+        var width = constraints.maxWidth;
+        if (lines > 1) {
+          // Never narrower than its widest word.
+          var low = math.min(p.minIntrinsicWidth, width);
+          var high = width;
+          for (var i = 0; i < 10 && high - low > 1; i++) {
+            final mid = (low + high) / 2;
+            p.layout(maxWidth: mid);
+            if (p.computeLineMetrics().length > lines) {
+              low = mid;
+            } else {
+              high = mid;
+            }
+          }
+          width = math.min(constraints.maxWidth, high.ceilToDouble() + 1);
+        }
+        p.dispose();
+        return Align(
+          alignment: textAlign == TextAlign.center ? Alignment.center : AlignmentDirectional.centerStart,
+          widthFactor: 1,
+          child: SizedBox(width: width, child: Text(text, style: style, textAlign: textAlign)),
+        );
+      }
+
+      final sentences = bySentence ? text.split(_sentenceBreak) : [text];
+      if (sentences.length > 1) {
+        final whole = painter(text);
+        final oneLine = whole.computeLineMetrics().length <= 1;
+        whole.dispose();
+        if (!oneLine) {
+          return Semantics(
+            // One text for screen readers, as it is written.
+            label: text,
+            excludeSemantics: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [for (final s in sentences) balanced(s)],
+            ),
+          );
+        }
+      }
+      return balanced(text);
+    });
+  }
+}
