@@ -5,15 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
-import '../../../core/text/hebrew_text.dart';
-import '../../../data/models/scripture.dart';
 import '../../../data/models/verse_ref.dart';
 import '../../../data/text_repository.dart';
 import '../../../services/optional_fonts.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
-import '../../../ui/widgets/ornaments.dart' as ornaments;
 import '../../../ui/widgets/paper_group.dart';
 import '../../../ui/widgets/theme_swatch_picker.dart';
 import '../../reader/reader_screen.dart';
@@ -267,14 +264,12 @@ class _PreviewPage extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ChapterHead(chapter: _chapter, readingScale: s.readingScale),
+        // The reader's own head and section mark; within the preview, which
+        // is one image to a screen reader, the head is no heading.
+        ChapterHeading(chapter: _chapter, settings: s),
         verse(1, current: true),
         verse(2, current: false),
-        if (mikra?.breaks[const VerseRef(_chapter, 2)] == SectionBreak.closed)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: ornaments.SectionBreakMark(ornaments.SectionBreak.setumah, verseSize: styles.sizeFor(ScriptureKind.mikra)),
-          ),
+        if (mikra?.breaks[const VerseRef(_chapter, 2)] case final kind?) SectionGap(kind: kind, settings: s),
       ],
     );
 
@@ -393,58 +388,4 @@ class _VerseBlock extends StatelessWidget {
         ),
         child: Padding(padding: const EdgeInsetsDirectional.fromSTEB(12 - _rule, 4, 12, 4), child: child),
       );
-}
-
-/// A chapter's head as the reader sets it (§4.7): "פרק יד" centred in gold
-/// ink between two short rules, and in the English UI "Chapter 14" under it.
-class _ChapterHead extends StatelessWidget {
-  const _ChapterHead({required this.chapter, required this.readingScale});
-
-  final int chapter;
-  final double readingScale;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final sefer = SeferColors.of(context);
-    final ink = sefer.isHighContrast ? theme.colorScheme.onSurface : theme.colorScheme.secondary;
-    final rule = SizedBox(
-      width: 32,
-      height: sefer.hairlineWidth,
-      child: ColoredBox(color: sefer.isHighContrast ? theme.colorScheme.onSurface : sefer.hairline),
-    );
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Space.sm),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              rule,
-              const SizedBox(width: 12),
-              Text(
-                // The Hebrew head, in either language, as a chumash prints it.
-                'פרק ${HebrewText.gematria(chapter, punctuate: false)}',
-                textDirection: TextDirection.rtl,
-                style: SeferType.of(context).hebrewDisplay.copyWith(
-                      fontSize: 20 * math.sqrt(readingScale),
-                      fontWeight: sefer.isHighContrast ? FontWeight.w700 : FontWeight.w600,
-                      color: ink,
-                    ),
-              ),
-              const SizedBox(width: 12),
-              rule,
-            ],
-          ),
-          if (!context.isHebrewUi)
-            Text(
-              context.l10n.chapterLabel('$chapter'),
-              textDirection: TextDirection.ltr,
-              style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-        ],
-      ),
-    );
-  }
 }
