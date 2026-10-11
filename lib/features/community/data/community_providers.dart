@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/widgets.dart' show AppLifecycleListener, visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
@@ -232,24 +233,34 @@ class ReportedPostIds extends Notifier<Set<String>> {
 final reportedPostIdsProvider = NotifierProvider<ReportedPostIds, Set<String>>(ReportedPostIds.new);
 
 /// Keeps reading progress backed up to the user's account (when they have
-/// opted in): pulls and merges on sign-in, pushes a few seconds after any
-/// change. Merging keeps every change made on either device, removals
-/// included (see [mergeProgress]). The join date goes with the progress,
-/// and the earliest wins, so that a new device counts the history it
-/// restores (see [mergeSyncPayload]). So do the reader's bookmarks and
-/// notes, verse by verse, the later change winning, a deletion included
-/// (see [Annotations.merge]).
+/// opted in): pulls and merges on sign-in and whenever the app comes back to
+/// the foreground, pushes a few seconds after any change. Merging keeps
+/// every change made on either device, removals included (see
+/// [mergeProgress]). The join date goes with the progress, and the earliest
+/// wins, so that a new device counts the history it restores (see
+/// [mergeSyncPayload]). So do the reader's bookmarks and notes, verse by
+/// verse, the later change winning, a deletion included (see
+/// [Annotations.merge]).
 ///
 /// The state is the time of the last successful sync.
 class ProgressSync extends Notifier<DateTime?> {
   /// How long progress must rest unchanged before it is pushed.
   static const pushDelay = Duration(seconds: 5);
 
+  /// How long after a sync the app coming back to the foreground pulls
+  /// nothing more: switching back and forth between windows, say.
+  @visibleForTesting
+  static Duration resumeQuietPeriod = const Duration(minutes: 1);
+
   Timer? _debounce;
 
   /// The sync running now, and the one queued to run after it.
   Future<bool>? _inFlight;
   Future<bool>? _followUp;
+
+  /// When the latest sync started.
+  DateTime? _startedAt;
+
   bool _applyingMerge = false;
 
   @override
@@ -261,6 +272,11 @@ class ProgressSync extends Notifier<DateTime?> {
     final userId = ref.watch(communityUserProvider.select((u) => u.value?.id));
     if (!enabled || userId == null) return null;
     Future.microtask(syncNow);
+    // A device left open for days would otherwise show what it held then.
+    // On the web and on desktop this is also the tab or the window regaining
+    // focus.
+    final lifecycle = AppLifecycleListener(onResume: _resumed);
+    ref.onDispose(lifecycle.dispose);
     void changed() {
       // The sync's own merge is pushed by that same sync.
       if (_applyingMerge) return;
@@ -272,6 +288,14 @@ class ProgressSync extends Notifier<DateTime?> {
     ref.listen(settingsProvider.select((s) => s.joinDate), (_, _) => changed());
     ref.listen(annotationsProvider, (_, _) => changed());
     return null;
+  }
+
+  void _resumed() {
+    // Recent enough: a sync that succeeded lately, or one that started lately
+    // and is still under way (the one the app starts with, say). A clock set
+    // back counts as time gone by.
+    final last = _inFlight == null ? state : _startedAt;
+    if (last == null || DateTime.now().difference(last).abs() >= resumeQuietPeriod) unawaited(syncNow());
   }
 
   /// Pulls, merges and pushes. Returns normally (with false) when offline or
@@ -291,7 +315,10 @@ class ProgressSync extends Notifier<DateTime?> {
     });
   }
 
-  Future<bool> _start() => _inFlight = _sync().whenComplete(() => _inFlight = null);
+  Future<bool> _start() {
+    _startedAt = DateTime.now();
+    return _inFlight = _sync().whenComplete(() => _inFlight = null);
+  }
 
   Future<bool> _sync() async {
     // The provider rebuilds with a new ref when backup is turned off or the

@@ -144,6 +144,8 @@ final _simchatTorah = LocalDate(2026, 10, 4);
 final _toldotWednesday = LocalDate(2026, 11, 11);
 
 void main() {
+  // For the app's lifecycle, which the sync follows.
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
   late SharedPreferences prefs;
 
   setUp(() async {
@@ -265,6 +267,107 @@ void main() {
       async.flushMicrotasks();
       expect(repo.loads, loads + 3);
       container.dispose();
+    });
+  });
+
+  group('coming back to the foreground', () {
+    /// Sets [ProgressSync.resumeQuietPeriod] for this test.
+    void quietFor(Duration period) {
+      final before = ProgressSync.resumeQuietPeriod;
+      addTearDown(() => ProgressSync.resumeQuietPeriod = before);
+      ProgressSync.resumeQuietPeriod = period;
+    }
+
+    /// The app going to the background and coming back, as each platform
+    /// reports it on the way.
+    void leaveAndReturn() {
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    }
+
+    test('pulls what another device has logged meanwhile', () {
+      quietFor(Duration.zero);
+      final repo = _CountingRepo(user: _me, remote: _otherDevice());
+      fakeAsync((async) {
+        final container = containerFor(repo);
+        async.elapse(const Duration(seconds: 120));
+        final (loads, saves) = (repo.loads, repo.saves);
+        // Sheni, read on the other device while this one was in the background.
+        repo.remote = syncPayload(ProgressState(weeks: {_week: remoteOf(repo).week(_week).withAliyah(1, _d2)}), _d1);
+
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+        async.flushMicrotasks();
+        expect(repo.loads, loads, reason: 'only coming back pulls');
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+        async.flushMicrotasks();
+        expect(repo.loads, loads + 1);
+        final local = container.read(progressProvider);
+        expect(local.week(_week).isAliyahDone(1), isTrue, reason: 'pulled from the other device');
+        expect(local, remoteOf(repo));
+        expect(repo.saves, saves, reason: 'the cloud already held everything');
+        container.dispose();
+      });
+    });
+
+    test('pulls nothing more straight after a sync', () {
+      final repo = _CountingRepo(user: _me, remote: _otherDevice());
+      fakeAsync((async) {
+        final container = containerFor(repo);
+        async.elapse(const Duration(seconds: 120));
+        final loads = repo.loads;
+
+        leaveAndReturn();
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.loads, loads);
+        container.dispose();
+      });
+    });
+
+    test('lets a sync just started finish alone, and has one that started long ago followed by another', () {
+      final repo = _CountingRepo(user: _me, remote: _otherDevice());
+      fakeAsync((async) {
+        // The app comes to the foreground as its first sync is under way.
+        repo.gate = Completer<void>();
+        final container = containerFor(repo);
+        async.elapse(const Duration(seconds: 1));
+        expect(repo.loads, 1, reason: 'the first pull is in flight');
+        leaveAndReturn();
+        repo.gate!.complete();
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.loads, 1, reason: 'that pull was new enough');
+        expect(container.read(progressSyncProvider), isNotNull);
+
+        // One under way for longer than the quiet period (which is none
+        // here), a sync that stalled in the background say, may have pulled
+        // before the other device saved: another follows it.
+        quietFor(Duration.zero);
+        repo.gate = Completer<void>();
+        container.read(progressSyncProvider.notifier).syncNow();
+        async.flushMicrotasks();
+        expect(repo.loads, 2);
+        leaveAndReturn();
+        repo.gate!.complete();
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.loads, 3);
+        container.dispose();
+      });
+    });
+
+    test('pulls nothing with backup turned off', () {
+      quietFor(Duration.zero);
+      final repo = _CountingRepo(user: _me, remote: _otherDevice());
+      fakeAsync((async) {
+        final container = containerFor(repo);
+        async.elapse(const Duration(seconds: 120));
+        final loads = repo.loads;
+        container.read(settingsProvider.notifier).update((s) => s.copyWith(cloudSync: false));
+        async.flushMicrotasks();
+
+        leaveAndReturn();
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.loads, loads);
+        container.dispose();
+      });
     });
   });
 
