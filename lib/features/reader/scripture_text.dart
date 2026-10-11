@@ -9,6 +9,7 @@ import '../../data/models/verse_ref.dart';
 import '../../l10n/app_localizations.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
+import '../../ui/widgets/fonts_change_scope.dart';
 import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/ornaments.dart' hide SectionBreak;
 import '../../ui/widgets/ornaments.dart' as ornaments show SectionBreak;
@@ -270,9 +271,195 @@ String displayHebrew(String text, AppSettings s) =>
 /// [hebrew] as it may break into lines on screen: never with a paseq at a
 /// line's start, as it is bound to the word before it, and never between
 /// words joined by a maqaf. Only for display: the no-break space and word
-/// joiner would travel with a copy.
+/// joiner would travel with a copy. Where the words a maqaf joins are too
+/// wide together for a line, [joinWhereFits] parts them.
 String keepLinesSound(String hebrew) =>
     hebrew.replaceAll(' ׀', ' ׀').replaceAll('־', '־⁠');
+
+/// [text], a paragraph of scripture whose words [keepLinesSound] has joined,
+/// with the word joiner after a maqaf left out wherever the words it joins
+/// would be too wide together for a line [maxWidth] wide, as at a very large
+/// reading or text size on a phone. A line may then end after that maqaf, as
+/// the text engine allows (U+05BE breaks after), rather than inside a word,
+/// which is where a run of joined words too wide for the line would break.
+/// Words joined by maqafs one after another stay together as far as they
+/// fit: from the first, as many to a line as fit.
+///
+/// [text] is measured as a [Text] lays it out within [style] (the ambient
+/// style it is merged with), at [textScaler], in [locale], with its widgets
+/// as large as [placeholders] say, in order (as
+/// [TextPainter.setPlaceholderDimensions] takes them).
+InlineSpan joinWhereFits(
+  InlineSpan text, {
+  required double maxWidth,
+  required TextScaler textScaler,
+  TextStyle? style,
+  Locale? locale,
+  List<PlaceholderDimensions> placeholders = const [],
+}) {
+  if (!maxWidth.isFinite) return text;
+  final plain = text.toPlainText(includeSemanticsLabels: false);
+  // Each run a line can't break inside, between two spaces (the no-break
+  // spaces and joiners bind the rest), that holds words joined by a maqaf:
+  // where each of those words begins, at the joiner after its maqaf.
+  final runs = <(int, int, List<int>)>[];
+  for (final run in _unbreakable.allMatches(plain)) {
+    final joins = [
+      for (var i = run.start + 1; i < run.end; i++)
+        if (plain.codeUnitAt(i) == _joiner && plain.codeUnitAt(i - 1) == _maqaf) i,
+    ];
+    if (joins.isNotEmpty) runs.add((run.start, run.end, joins));
+  }
+  if (runs.isEmpty) return text;
+  // A hair under the line, so that rounding never breaks the words after all.
+  final limit = maxWidth - 1;
+
+  // No run is wider than an em of the largest type for each of its letters,
+  // with the widest spacing after each, and the widest widget in place of
+  // each widget: where that fits every run, as at ordinary sizes, the
+  // paragraph isn't measured.
+  var em = 0.0;
+  var spacing = 0.0;
+  void largest(InlineSpan span, TextStyle inherited) {
+    final s = inherited.merge(span.style);
+    em = math.max(em, textScaler.scale(s.fontSize ?? kDefaultFontSize));
+    spacing = math.max(spacing, math.max(s.letterSpacing ?? 0, 0) + math.max(s.wordSpacing ?? 0, 0));
+    if (span is TextSpan) {
+      for (final child in span.children ?? const <InlineSpan>[]) {
+        largest(child, s);
+      }
+    }
+  }
+
+  largest(text, style ?? const TextStyle());
+  final letter = placeholders.fold(em, (w, p) => math.max(w, p.size.width)) + spacing;
+  bool surelyFits((int, int, List<int>) r) {
+    final run = plain.substring(r.$1, r.$2);
+    return (run.length - _zeroWidth.allMatches(run).length) * letter <= limit;
+  }
+
+  if (runs.every(surelyFits)) return text;
+
+  // Laid out on one line, from the left: a word's width is its run's.
+  final painter = TextPainter(
+    text: TextSpan(style: style, children: [text]),
+    textDirection: TextDirection.rtl,
+    textAlign: TextAlign.left,
+    textScaler: textScaler,
+    locale: locale,
+  )
+    ..setPlaceholderDimensions(placeholders)
+    ..layout();
+  double width(int start, int end) {
+    final boxes = painter.getBoxesForSelection(TextSelection(baseOffset: start, extentOffset: end));
+    if (boxes.isEmpty) return 0;
+    return boxes.map((b) => b.right).reduce(math.max) - boxes.map((b) => b.left).reduce(math.min);
+  }
+
+  final parted = <int>{};
+  for (final (start, end, joins) in runs) {
+    var line = width(start, joins.first);
+    for (final (k, join) in joins.indexed) {
+      final word = width(join, k + 1 < joins.length ? joins[k + 1] : end);
+      if (line + word > limit) {
+        parted.add(join);
+        line = word;
+      } else {
+        line += word;
+      }
+    }
+  }
+  painter.dispose();
+  return parted.isEmpty ? text : _without(text, parted);
+}
+
+const _maqaf = 0x05BE;
+const _joiner = 0x2060;
+final _unbreakable = RegExp('[^ ]+');
+
+/// What takes no room of its own: the points and cantillation, and the
+/// joiners and marks of direction.
+final _zeroWidth = RegExp('[\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u034F\u200B-\u200F\u2060]');
+
+/// [span] without the characters at [offsets] of its plain text, in which a
+/// widget is one character, as [InlineSpan.toPlainText] writes it.
+InlineSpan _without(InlineSpan span, Set<int> offsets) {
+  var at = 0;
+  InlineSpan strip(InlineSpan span) {
+    if (span is! TextSpan) {
+      at++;
+      return span;
+    }
+    var text = span.text;
+    if (text != null) {
+      final start = at;
+      at += text.length;
+      text = String.fromCharCodes([
+        for (var i = 0; i < text.length; i++)
+          if (!offsets.contains(start + i)) text.codeUnitAt(i),
+      ]);
+    }
+    return TextSpan(
+      text: text,
+      children: span.children?.map(strip).toList(),
+      style: span.style,
+      recognizer: span.recognizer,
+      mouseCursor: span.mouseCursor,
+      onEnter: span.onEnter,
+      onExit: span.onExit,
+      semanticsLabel: span.semanticsLabel,
+      semanticsIdentifier: span.semanticsIdentifier,
+      locale: span.locale,
+      spellOut: span.spellOut,
+    );
+  }
+
+  return strip(span);
+}
+
+/// [text], a paragraph of scripture whose words [keepLinesSound] has joined,
+/// laid out by [builder] with only the joiners after a maqaf that the width
+/// it is given has room for ([joinWhereFits]). [style] and [locale] are the
+/// ones [builder] gives its [Text], and [placeholders] size [text]'s widgets.
+class JoinsThatFit extends StatelessWidget {
+  const JoinsThatFit({
+    super.key,
+    required this.text,
+    required this.builder,
+    this.style,
+    this.locale,
+    this.placeholders = const [],
+  });
+
+  final InlineSpan text;
+  final TextStyle? style;
+  final Locale? locale;
+  final List<PlaceholderDimensions> placeholders;
+  final Widget Function(BuildContext context, InlineSpan text) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    // Measured again when a font arrives.
+    FontsChangeScope.watch(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var effective = DefaultTextStyle.of(context).style.merge(style);
+        if (MediaQuery.boldTextOf(context)) effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+        return builder(
+          context,
+          joinWhereFits(
+            text,
+            maxWidth: constraints.maxWidth,
+            textScaler: MediaQuery.textScalerOf(context),
+            style: effective,
+            locale: locale,
+            placeholders: placeholders,
+          ),
+        );
+      },
+    );
+  }
+}
 
 /// The text a screen reader should speak for a verse of the Torah or of
 /// Targum Onkelos.
@@ -508,11 +695,13 @@ class ScriptureVerse extends StatelessWidget {
         : null;
 
     Widget paragraph({required bool withNumber}) {
-      Widget text = Text.rich(
-        TextSpan(
+      final lead = withNumber && (numeral != null || marks != null);
+      // A maqaf's words stay on one line where the line has room for them.
+      Widget text = JoinsThatFit(
+        text: TextSpan(
           style: base,
           children: [
-            if (withNumber && (numeral != null || marks != null)) ...[
+            if (lead) ...[
               if (numeral != null) TextSpan(text: numeral, style: numberStyle),
               // Joined to the number, so that a line never breaks between
               // them.
@@ -522,9 +711,26 @@ class ScriptureVerse extends StatelessWidget {
             ...spans,
           ],
         ),
-        textDirection: TextDirection.rtl,
-        textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
-        strutStyle: strut,
+        placeholders: [
+          if (lead && marks != null)
+            PlaceholderDimensions(
+              // As the text scales them, at the number's size.
+              size: VerseMarks.extent(
+                MediaQuery.textScalerOf(context).scale(numberStyle.fontSize!),
+                bookmarked: bookmarked,
+                hasNote: hasNote,
+                lead: numeral != null,
+              ),
+              alignment: PlaceholderAlignment.aboveBaseline,
+              baseline: TextBaseline.alphabetic,
+            ),
+        ],
+        builder: (context, fitted) => Text.rich(
+          fitted,
+          textDirection: TextDirection.rtl,
+          textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+          strutStyle: strut,
+        ),
       );
       if (notes.isNotEmpty) {
         text = Column(
@@ -657,15 +863,20 @@ class VerseMarks extends StatelessWidget {
   static const _height = 0.72;
   static const _dot = 0.34;
 
-  @override
-  Widget build(BuildContext context) {
+  /// Its size, for a number [size] large.
+  static Size extent(double size, {required bool bookmarked, required bool hasNote, bool lead = true}) {
     final width = (lead ? _gap : 0) +
         (bookmarked ? _ribbonWidth : 0) +
         (bookmarked && hasNote ? _gap : 0) +
         (hasNote ? _dot : 0);
+    return Size(width * size, _height * size);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return ExcludeSemantics(
       child: CustomPaint(
-        size: Size(width * size, _height * size),
+        size: extent(size, bookmarked: bookmarked, hasNote: hasNote, lead: lead),
         painter: _VerseMarksPainter(size: size, bookmarked: bookmarked, hasNote: hasNote, color: color, lead: lead),
       ),
     );

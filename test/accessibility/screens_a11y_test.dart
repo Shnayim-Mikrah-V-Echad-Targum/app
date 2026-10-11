@@ -194,6 +194,7 @@ void main() {
       bool hebrew = false,
       double textScale = 1,
       bool wholeParsha = false,
+      double readingScale = 1,
       Size size = const Size(412, 915),
     }) async {
       tester.view.physicalSize = size;
@@ -207,6 +208,7 @@ void main() {
           onboardingComplete: true,
           language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
           fullTextWholeParsha: wholeParsha,
+          readingScale: readingScale,
         ),
         now: a11yMonday,
       );
@@ -253,13 +255,26 @@ void main() {
       expectWholeWords(tester);
     });
 
+    // Scripture too: where a maqaf's words are too wide together for the
+    // column, a line ends after the maqaf rather than inside a word.
     for (final hebrew in [false, true]) {
       testWidgets('no overflow or broken word at 300% on a 320 dp phone${hebrew ? ', Hebrew' : ''}', (tester) async {
         await openReader(tester, hebrew: hebrew, textScale: 3, size: const Size(320, 640));
         expect(tester.takeException(), isNull);
+        expect(find.byType(ScriptureVerse), findsWidgets);
         expectWholeWords(tester);
       });
     }
+
+    // The reading size multiplies the system's, so a maqaf's words outgrow
+    // the column at 100% text too. (At the largest, 500%, a long word is
+    // wider than a phone's column on its own, and breaks.)
+    testWidgets('no overflow or broken word at a reading size of 400%', (tester) async {
+      await openReader(tester, readingScale: 4);
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ScriptureVerse), findsWidgets);
+      expectWholeWords(tester);
+    });
 
     // On a desktop, the full text in parallel columns, of one aliyah and of
     // the whole parsha under each aliyah's heading.
@@ -402,23 +417,14 @@ void main() {
   });
 }
 
-/// Fails for a word of the interface laid out on the screen that is broken
-/// across lines, as a label too large for its room is: each word's letters
-/// must all stand on one line. A line may end after a hyphen or a dash, as
-/// in a range ("54:1–" and "55:5").
-///
-/// Scoped to the interface: scripture keeps a maqaf's words together (a
-/// word joiner follows the maqaf), and at the largest sizes such a pair can
-/// be wider than the column on its own.
+/// Fails for a word laid out on the screen that is broken across lines, as a
+/// label too large for its room is: each word's letters must all stand on
+/// one line. A line may end after a hyphen or a dash, as in a range ("54:1–"
+/// and "55:5"), or a maqaf, where the words it joins are too wide together
+/// for the column (joinWhereFits).
 void expectWholeWords(WidgetTester tester) {
-  final scripture = find
-      .descendant(of: find.byType(ScriptureVerse), matching: find.byType(RichText))
-      .evaluate()
-      .map((e) => e.renderObject)
-      .toSet();
   final broken = <String>[];
   for (final paragraph in tester.allRenderObjects.whereType<RenderParagraph>()) {
-    if (scripture.contains(paragraph)) continue;
     final text = paragraph.text.toPlainText(includeSemanticsLabels: false);
     // A placeholder (\uFFFC) is a widget, as a gap between two words.
     for (final word in RegExp(r'[^\s\-–—־\uFFFC]+[\-–—־]?').allMatches(text)) {

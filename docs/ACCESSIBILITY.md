@@ -44,7 +44,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 ### Vision
 - **Themes:** light, dark, sepia, high-contrast light and high-contrast dark. They follow the system setting or can be set manually. The app also honours the platform's high-contrast and bold-text settings.
 - **Text size:**
-  - The interface follows the system text size; layouts are tested at 200%, and Today and the reader at 300% on a 320 dp phone. A word never breaks across lines: a label with a word too wide for its room, at the largest sizes, is set just small enough for it.
+  - The interface follows the system text size; layouts are tested at 200%, and Today and the reader at 300% on a 320 dp phone. A word of the interface never breaks across lines: a label with a word too wide for its room, at the largest sizes, is set just small enough for it. In scripture, words joined by a maqaf stay on one line where the column has room for them; where it hasn't, the line ends after the maqaf, never inside a word. Only a word wider than the column on its own breaks, as some do at the largest reading size on a phone.
   - Scripture has its own reading size (0.5×–5×), which **multiplies** the system size. People with low vision can make the text very large without breaking the interface.
 - **Typography controls:**
   - line height (at least 1.6; the default is 1.9)
@@ -143,11 +143,12 @@ The screens are opened as a phone shows them (412 × 915 dp) on a reading-week M
   - the welcome and each step of onboarding, in English and Hebrew;
   - the reader, guided and full text, in English and Hebrew, and on a desktop (1366 × 860) the full text and the whole parsha in parallel columns.
 
-  It also checks that nothing overflows and that no word of the interface breaks across lines (scripture is left out: it keeps a maqaf's words together, and at the largest sizes such a pair can be wider than the column):
+  It also checks that nothing overflows and that no word breaks across lines, of the interface or of scripture, where a line may end after a maqaf but not inside a word:
   - at 200% text, in English, on Today, Parsha, Progress, Display settings, a link that leads nowhere, and the welcome and each step of onboarding;
   - at 200% text, in Hebrew, on Today, Progress and the week page;
   - at 200% text on the reader, guided and the whole parsha in English and Hebrew, and the full text in Hebrew;
   - at 300% text on a 320 × 640 phone, on Today and the reader, in English and Hebrew;
+  - at a reading size of 400%, with 100% text, on the reader;
   - that Tab reaches Today's main button, which takes the focus ring: a `FocusRingBorder` in the theme's focus colour, drawn outside its fill;
   - that a day of the week strip and a parsha of the Torah map can be activated by a screen reader, that sliders are named by their setting and their buttons by what they do, and that a page keeps its headings, texts and controls apart;
   - the Hebrew right-to-left layout, and the desktop layout with a navigation rail.
