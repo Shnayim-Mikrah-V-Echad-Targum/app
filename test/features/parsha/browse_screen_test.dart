@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -138,6 +139,47 @@ void main() {
       expect(partsOf(tester, row('Pinchas')), isNot(contains(startsWith('Read with'))));
     });
 
+    testWidgets('read together, break between the parts of the line with very large text, never at a dot',
+        (tester) async {
+      await open(tester, now: _chukatBalakWeek, progress: const ProgressState());
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await tester.pumpAndSettle();
+      for (final name in ['Chukat', 'Balak']) {
+        expect(partsOf(tester, row(name)), containsAllInOrder(['Read with ${name == 'Chukat' ? 'Balak' : 'Chukat'}', 'July 17']));
+        // Each line of the subtitle is a text of its own; one that holds a
+        // dot between two parts keeps to one line, so no line starts or ends
+        // with it.
+        for (final text in find.descendant(of: row(name), matching: find.byType(RichText)).evaluate()) {
+          final paragraph = text.renderObject! as RenderParagraph;
+          final plain = paragraph.text.toPlainText();
+          if (!plain.contains('·')) continue;
+          final line = paragraph.getFullHeightForCaret(const TextPosition(offset: 0));
+          expect(paragraph.size.height, lessThan(line * 1.5), reason: '$name: "$plain" wraps');
+        }
+      }
+    });
+
+    testWidgets('grow the mark with the text to 1.5× at most, inside its column and clear of the title',
+        (tester) async {
+      await open(tester);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await tester.pumpAndSettle();
+      final bereshit = row('Bereshit');
+      final mark = tester.getRect(find.descendant(of: bereshit, matching: find.byIcon(Icons.check_circle)));
+      final column = tester.getRect(
+        find.ancestor(
+          of: find.descendant(of: bereshit, matching: find.byIcon(Icons.check_circle)),
+          matching: find.byWidgetPredicate((w) => w is SizedBox && w.width == 28),
+        ),
+      );
+      expect(mark.width, lessThanOrEqualTo(27.01));
+      expect(mark.left, greaterThanOrEqualTo(column.left - 0.01));
+      expect(mark.right, lessThanOrEqualTo(column.right + 0.01));
+      expect(mark.right, lessThan(tester.getRect(find.text('Bereshit')).left));
+    });
+
     testWidgets('show a check once read this year, and a clock while under way', (tester) async {
       final handle = tester.ensureSemantics();
       await open(tester);
@@ -242,6 +284,16 @@ void main() {
       expect(tester.getRect(rule).left, closeTo(card.left + 1, 0.01));
       expect(find.descendant(of: row('Noach'), matching: find.byWidgetPredicate((w) => w is SizedBox && w.width == 3)),
           findsNothing);
+    });
+
+    testWidgets('is ruled at its start in Hebrew too, on the right', (tester) async {
+      await open(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
+      final bereshit = row('בראשית');
+      final rule = find.descendant(of: bereshit, matching: find.byWidgetPredicate((w) => w is SizedBox && w.width == 3));
+      expect(rule, findsOneWidget);
+      final card = tester.getRect(find.ancestor(of: bereshit, matching: find.byType(Card)));
+      final hairline = SeferColors.of(tester.element(bereshit)).hairlineWidth;
+      expect(tester.getRect(rule).right, closeTo(card.right - hairline, 0.01));
     });
 
     testWidgets('of two read together, rules both and names the first', (tester) async {

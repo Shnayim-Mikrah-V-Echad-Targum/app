@@ -301,14 +301,14 @@ class _ParshaRow extends StatelessWidget {
     final range = portion.range;
     final week = this.week;
     final other = readWith;
+    // Each its own part, so that a line breaks only between them.
     final subtitle = [
       names.range(portion.book, range.start.chapter, range.start.verse, range.end.chapter, range.end.verse),
-      if (week != null)
-        [
-          if (other != null) l.browseReadWith(names.portion(other, ashkenazi: ashkenazi)),
-          // In the UI's own calendar, as the week's page dates it.
-          hebrewUi ? names.hebrewDayMonth(week.occasion) : names.dateMonthDay(week.occasion),
-        ].join(DotLine.separator),
+      if (week != null) ...[
+        if (other != null) l.browseReadWith(names.portion(other, ashkenazi: ashkenazi)),
+        // In the UI's own calendar, as the week's page dates it.
+        hebrewUi ? names.hebrewDayMonth(week.occasion) : names.dateMonthDay(week.occasion),
+      ],
     ];
 
     final mark = switch (standing) {
@@ -329,12 +329,13 @@ class _ParshaRow extends StatelessWidget {
                 textAlign: TextAlign.center,
                 textScaler: markScaler,
               )
-            // A line of its own, for a baseline to set it on.
+            // A line of its own, for a baseline to set it on. The paragraph
+            // scales the icon with the text, as far as markScaler lets it.
             : Text.rich(
                 TextSpan(children: [
                   WidgetSpan(
                     alignment: PlaceholderAlignment.middle,
-                    child: Icon(mark, size: markScaler.scale(18), color: scheme.primary),
+                    child: Icon(mark, size: 18, color: scheme.primary),
                   ),
                 ]),
                 style: text.labelMedium,
