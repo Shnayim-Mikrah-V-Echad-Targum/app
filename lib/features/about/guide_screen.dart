@@ -101,11 +101,13 @@ class _Quote extends StatelessWidget {
       leadingDistribution: TextLeadingDistribution.even,
       color: scheme.onSurface,
     );
+    // The card's own padding (20, 16 under 360 dp), and a little more air
+    // above and below the words.
     return InfoCard(
-      padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xxl, Space.xxl, Space.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const Gap(Space.xs),
           Lang(
             const Locale('he'),
             child: Semantics(
@@ -131,6 +133,7 @@ class _Quote extends StatelessWidget {
             const Gap(Space.md),
             BalancedText(l.guideQuoteTranslation, style: SeferType.of(context).marginalia),
           ],
+          const Gap(Space.xs),
         ],
       ),
     );

@@ -10,6 +10,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/app_mark.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/heading_reveal.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/paper_group.dart';
@@ -43,18 +44,27 @@ final issueTrackerUri = Uri.parse('${AppConfig.sourceUrl}/issues');
 /// name and the version, then the texts, the policies and the ways to reach
 /// us, each on a sheet of paper. The guide is reached from Today and from
 /// Settings.
-class AboutScreen extends StatelessWidget {
+///
+/// The app's name is the page's one heading of level 1; the app bar names the
+/// page once the name has scrolled under it, for the eye alone.
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
+  @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> with HeadingReveal<AboutScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final email = supportEmailUri(l);
     return PageScaffold(
       titleText: l.aboutTitle,
-      body: PageBody(
+      titleRevealed: headingHidden,
+      body: watchHeading(PageBody(
         children: [
-          const _AboutHeader(),
+          _AboutHeader(nameKey: headingKey),
           GroupHeader(l.aboutGroupLearn),
           PaperGroup(
             children: [
@@ -100,7 +110,7 @@ class AboutScreen extends StatelessWidget {
             ],
           ),
         ],
-      ),
+      )),
     );
   }
 }
@@ -109,7 +119,10 @@ class AboutScreen extends StatelessWidget {
 /// in the English UI the name as read in English; the version; and a
 /// divider. Framed as a title page where the window is wide enough for one.
 class _AboutHeader extends ConsumerWidget {
-  const _AboutHeader();
+  const _AboutHeader({required this.nameKey});
+
+  /// For the name, which the page watches scroll out of sight.
+  final Key nameKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -124,6 +137,7 @@ class _AboutHeader extends ConsumerWidget {
         const AppMark(size: 72, radius: 16),
         const Gap(Space.lg),
         Semantics(
+          key: nameKey,
           header: true,
           headingLevel: 1,
           label: l.appTitleFull,

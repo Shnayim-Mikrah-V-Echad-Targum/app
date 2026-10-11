@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/config.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/about/about_screen.dart';
 import 'package:shnayim_mikra/features/about/legal_texts.dart';
@@ -96,14 +97,26 @@ void main() {
 
   group('a policy', () {
     late List<String> launched;
+    late List<String> copied;
 
-    Future<void> open(WidgetTester tester, String doc, {AppLanguage language = AppLanguage.english}) async {
+    Future<void> open(
+      WidgetTester tester,
+      String doc, {
+      AppLanguage language = AppLanguage.english,
+      bool opens = true,
+    }) async {
       launched = [];
+      copied = [];
       const channel = MethodChannel('plugins.flutter.io/url_launcher');
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
         if (call.method == 'launch') launched.add((call.arguments as Map)['url'] as String);
-        return true;
+        return opens;
       });
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
       addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
@@ -145,7 +158,7 @@ void main() {
       await tester.ensureVisible(item);
       await tester.pumpAndSettle();
       final bullet = tester.getRect(find.descendant(of: item, matching: find.text('•')));
-      final text = tester.getRect(find.descendant(of: item, matching: find.byType(SelectableText)));
+      final text = tester.getRect(find.descendant(of: item, matching: find.byType(RichText)).last);
       // Every line of the item starts past the bullet: it runs to more than
       // one, all within the text's own column.
       expect(text.left, greaterThan(bullet.right));
@@ -155,8 +168,10 @@ void main() {
 
     /// The middle of [part] of the contact line [line].
     Offset centreOf(WidgetTester tester, Finder line, String part) {
-      final paragraph = tester.renderObject<RenderParagraph>(line);
-      final start = paragraph.text.toPlainText().indexOf(part);
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: line, matching: find.byType(RichText), matchRoot: true).first,
+      );
+      final start = paragraph.text.toPlainText(includeSemanticsLabels: false).indexOf(part);
       final box = paragraph.getBoxesForSelection(TextSelection(baseOffset: start, extentOffset: start + part.length)).first;
       return paragraph.localToGlobal(box.toRect().center);
     }
@@ -178,6 +193,94 @@ void main() {
       await tester.tapAt(centreOf(tester, line, 'GitHub issues'));
       expect(launched, ['$issueTrackerUri']);
       handle.dispose();
+    });
+
+    testWidgets("says so where nothing opens the issue tracker's link", (tester) async {
+      await open(tester, 'privacy', opens: false);
+      final line = find.text('Questions or requests: GitHub issues', findRichText: true);
+      await tester.ensureVisible(line);
+      await tester.pumpAndSettle();
+      await tester.tapAt(centreOf(tester, line, 'GitHub issues'));
+      await tester.pumpAndSettle();
+      expect(find.text("The link couldn't be opened here."), findsOneWidget);
+    });
+
+    testWidgets('can be selected and copied, its paragraphs one text', (tester) async {
+      await open(tester, 'privacy');
+      expect(find.byType(SelectionArea), findsOneWidget);
+      final line = find.text('Questions or requests: GitHub issues', findRichText: true);
+      expect(find.ancestor(of: line, matching: find.byType(SelectionArea)), findsOneWidget);
+      expect(find.byType(SelectableText), findsNothing, reason: 'the page selects as a whole');
+    });
+
+    group('with an address to email', () {
+      const email = 'help@example.org';
+      setUp(() => AppConfig.debugSupportEmail = email);
+      tearDown(() => AppConfig.debugSupportEmail = null);
+
+      testWidgets('in Hebrew, links the address, isolated, at the end of the sentence, and emails it', (tester) async {
+        final handle = tester.ensureSemantics();
+        await open(tester, 'privacy', language: AppLanguage.hebrew);
+        final line = find.textContaining(email, findRichText: true);
+        await tester.ensureVisible(line);
+        await tester.pumpAndSettle();
+        expect(line, findsOneWidget);
+        expect(
+          tester.renderObject<RenderParagraph>(find.descendant(of: line, matching: find.byType(RichText), matchRoot: true).first)
+              .text
+              .toPlainText(includeSemanticsLabels: false),
+          'שאלות ובקשות: \u2066$email\u2069',
+        );
+        // Read as the address alone, without the marks that isolate it.
+        expect(
+          find.semantics.byLabel(email).evaluate().single,
+          matchesSemantics(label: email, isLink: true, hasTapAction: true),
+        );
+        // At the end of the Hebrew sentence: to the left of its words.
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: line, matching: find.byType(RichText), matchRoot: true).first,
+        );
+        double leftOf(String part) {
+          final start = paragraph.text.toPlainText(includeSemanticsLabels: false).indexOf(part);
+          return paragraph
+              .getBoxesForSelection(TextSelection(baseOffset: start, extentOffset: start + part.length))
+              .map((b) => b.left)
+              .reduce((a, b) => a < b ? a : b);
+        }
+
+        expect(leftOf(email), lessThan(leftOf('שאלות')));
+        await tester.tapAt(centreOf(tester, line, email));
+        expect(launched.single, startsWith('mailto:$email?subject='));
+        handle.dispose();
+      });
+
+      testWidgets('copied from a selection, the address comes without the marks that isolate it', (tester) async {
+        await open(tester, 'privacy', language: AppLanguage.hebrew);
+        final line = find.textContaining(email, findRichText: true);
+        await tester.ensureVisible(line);
+        await tester.pumpAndSettle();
+        // Everything on the page selected, the address and its marks with it.
+        tester.state<SelectableRegionState>(find.byType(SelectableRegion)).selectAll(SelectionChangedCause.keyboard);
+        await tester.pumpAndSettle();
+        Actions.invoke(tester.element(line), CopySelectionTextIntent.copy);
+        await tester.pump();
+        expect(copied, isNotEmpty);
+        expect(copied.last, contains(email));
+        expect(copied.last, isNot(contains(RegExp('[\u2066-\u2069]'))));
+      });
+
+      testWidgets('where no mail app opens, says so and offers the address to copy, bare', (tester) async {
+        await open(tester, 'privacy', language: AppLanguage.hebrew, opens: false);
+        final line = find.textContaining(email, findRichText: true);
+        await tester.ensureVisible(line);
+        await tester.pumpAndSettle();
+        await tester.tapAt(centreOf(tester, line, email));
+        await tester.pumpAndSettle();
+        expect(find.text('לא נפתחה תוכנת דואר. אפשר לכתוב אל \u2066$email\u2069.'), findsOneWidget);
+        await tester.tap(find.text('העתקה'));
+        await tester.pumpAndSettle();
+        expect(copied, [email]);
+      });
     });
 
     testWidgets('opens its contact from the keyboard', (tester) async {

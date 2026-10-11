@@ -45,7 +45,11 @@ void main() {
 
   /// The left edge of [part] where the text of [text] draws it.
   double leftOf(WidgetTester tester, Finder text, String part) {
-    final paragraph = tester.renderObject<RenderParagraph>(text);
+    // The text's paragraph: inside a SelectionArea, Text sets it in a
+    // MouseRegion of its own.
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.descendant(of: text, matching: find.byType(RichText), matchRoot: true).first,
+    );
     final plain = paragraph.text.toPlainText();
     final start = plain.indexOf(part);
     expect(start, isNonNegative, reason: '"$part" in "$plain"');

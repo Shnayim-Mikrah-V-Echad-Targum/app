@@ -1,10 +1,13 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SelectedContent;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/config.dart';
+import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
@@ -29,12 +32,21 @@ class LegalScreen extends ConsumerStatefulWidget {
 }
 
 class _LegalScreenState extends ConsumerState<LegalScreen> with HeadingReveal<LegalScreen> {
+  /// What is selected of the page, which reads as one text to select across.
+  SelectedContent? _selected;
+
+  /// [_selected] to the clipboard, without the marks that isolate a Latin
+  /// run, such as the support address, in Hebrew: pasted into a mail app,
+  /// they would break it.
+  void _copy() {
+    final text = _selected?.plainText;
+    if (text == null || text.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: text.replaceAll(RegExp('[\u2066-\u2069]'), '')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final type = SeferType.of(context);
     final title = switch (widget.doc) {
       LegalDoc.privacy => l.privacyTitle,
       LegalDoc.terms => l.termsTitle,
@@ -49,37 +61,71 @@ class _LegalScreenState extends ConsumerState<LegalScreen> with HeadingReveal<Le
       titleRevealed: headingHidden,
       contentMaxWidth: ContentWidth.longform,
       body: watchHeading(
-        PageBody(
-          maxWidth: ContentWidth.longform,
-          children: [
-            const Gap(Space.lg),
-            Semantics(
-              header: true,
-              headingLevel: 1,
-              child: Text(title, key: headingKey, style: theme.textTheme.headlineMedium),
+        // Copied as _copy copies, from the keyboard and the menu alike.
+        Actions(
+          actions: {
+            CopySelectionTextIntent: CallbackAction<CopySelectionTextIntent>(
+              onInvoke: (_) {
+                _copy();
+                return null;
+              },
             ),
-            if (updated != null) ...[
-              const Gap(Space.xs),
-              Text(
-                l.legalLastUpdated(DateFormat.yMMMM(context.localeName).format(updated)),
-                style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-              ),
-            ],
-            ...switch (texts) {
-              AsyncData(:final value) => [
-                  for (final section in value.sections(
-                    widget.doc,
-                    hebrew: context.isHebrewUi,
-                    hasEmail: AppConfig.supportEmail.isNotEmpty,
-                  ))
-                    ..._section(context, section),
-                ],
-              AsyncError() => [const Gap(Space.xxl), Text(l.errorGeneric, style: type.longformBody)],
-              _ => const <Widget>[],
-            },
-          ],
+          },
+          child: SelectionArea(
+            onSelectionChanged: (content) => _selected = content,
+            contextMenuBuilder: (context, state) => AdaptiveTextSelectionToolbar.buttonItems(
+              anchors: state.contextMenuAnchors,
+              buttonItems: [
+                for (final item in state.contextMenuButtonItems)
+                  item.type == ContextMenuButtonType.copy
+                      ? item.copyWith(onPressed: () {
+                          _copy();
+                          state.hideToolbar();
+                        })
+                      : item,
+              ],
+            ),
+            child: _page(context, title, texts, updated),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _page(BuildContext context, String title, AsyncValue<LegalTexts> texts, DateTime? updated) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final type = SeferType.of(context);
+    return PageBody(
+      maxWidth: ContentWidth.longform,
+      children: [
+        const Gap(Space.lg),
+        Semantics(
+          header: true,
+          headingLevel: 1,
+          child: Text(title, key: headingKey, style: theme.textTheme.headlineMedium),
+        ),
+        if (updated != null) ...[
+          const Gap(Space.xs),
+          Text(
+            l.legalLastUpdated(DateFormat.yMMMM(context.localeName).format(updated)),
+            style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+        ...switch (texts) {
+          AsyncData(:final value) => [
+              for (final section in value.sections(
+                widget.doc,
+                hebrew: context.isHebrewUi,
+                hasEmail: AppConfig.supportEmail.isNotEmpty,
+              ))
+                ..._section(context, section),
+            ],
+          AsyncError() => [const Gap(Space.xxl), Text(l.errorGeneric, style: type.longformBody)],
+          _ => const <Widget>[],
+        },
+      ],
     );
   }
 
@@ -104,7 +150,7 @@ class _LegalScreenState extends ConsumerState<LegalScreen> with HeadingReveal<Le
         if (i > 0 && !(block is Bullet && blocks[i - 1] is Bullet))
           Gap(blocks[i - 1] is Bullet ? Space.md - _bulletGap : Space.md),
         switch (block) {
-          Para(:final text) => SelectableText(text, style: body),
+          Para(:final text) => Text(text, style: body),
           Bullet(:final text) => _BulletItem(text, style: body),
           final ContactLine line => _ContactText(line, style: body),
         },
@@ -132,7 +178,7 @@ class _BulletItem extends StatelessWidget {
               child: Text('•', style: style.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
             const Gap(Space.sm),
-            Expanded(child: SelectableText(text, style: style)),
+            Expanded(child: Text(text, style: style)),
           ],
         ),
       );
@@ -160,9 +206,21 @@ class _ContactTextState extends State<_ContactText> {
   late final _tap = TapGestureRecognizer()..onTap = _open;
   bool _ring = false;
 
-  void _open() {
-    final target = supportEmailUri(context.l10n, subject: widget.line.subject) ?? issueTrackerUri;
-    launchUrl(target).catchError((_) => false);
+  /// Opens the link, and where nothing opens it (no mail app, say), says
+  /// so, with the address to copy.
+  Future<void> _open() async {
+    final l = context.l10n;
+    final email = AppConfig.supportEmail;
+    final target = supportEmailUri(l, subject: widget.line.subject) ?? issueTrackerUri;
+    final opened = await launchUrl(target).catchError((Object _) => false);
+    if (opened || !mounted) return;
+    showStatus(
+      context,
+      email.isEmpty ? l.linkOpenFailed : l.emailOpenFailed(context.ltrRun(email)),
+      action: email.isEmpty
+          ? null
+          : SnackBarAction(label: l.actionCopy, onPressed: () => Clipboard.setData(ClipboardData(text: email))),
+    );
   }
 
   @override

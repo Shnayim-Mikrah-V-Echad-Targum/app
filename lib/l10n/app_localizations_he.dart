@@ -66,9 +66,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get actionShare => 'שיתוף';
 
   @override
-  String get actionLearnMore => 'מידע נוסף';
-
-  @override
   String get actionMarkRead => 'סימון כנקרא';
 
   @override
@@ -1935,7 +1932,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get guidelinesTitle => 'כללי הקהילה';
 
   @override
-  String get contactTitle => 'יצירת קשר';
+  String get contactTitle => 'כתיבה אלינו בדוא״ל';
 
   @override
   String get aboutGroupLearn => 'לעיון';
@@ -1945,6 +1942,17 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get aboutGroupContact => 'יצירת קשר';
+
+  @override
+  String get linkOpenFailed => 'לא ניתן היה לפתוח את הקישור כאן.';
+
+  @override
+  String emailOpenFailed(String address) {
+    return 'לא נפתחה תוכנת דואר. אפשר לכתוב אל $address.';
+  }
+
+  @override
+  String get actionCopy => 'העתקה';
 
   @override
   String get feedbackLinkLabel => 'דף התקלות ב־GitHub';
@@ -2003,7 +2011,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideWhatBody =>
-      'הגמרא (ברכות ח, א) מלמדת: לעולם ישלים אדם פרשיותיו עם הציבור, שניים מקרא ואחד תרגום. השולחן ערוך פוסק זאת באורח חיים סימן רפה. זוהי השלמה אישית של הפרשה שהציבור קורא בשבת.';
+      'השולחן ערוך פוסק את דברי הגמרא האלה להלכה (אורח חיים סימן רפה): בכל שבוע משלימים בעצמם, בקצב הציבור, את הפרשה שנקראת בשבת בבית הכנסת.';
 
   @override
   String get guideWhenTitle => 'מתי';

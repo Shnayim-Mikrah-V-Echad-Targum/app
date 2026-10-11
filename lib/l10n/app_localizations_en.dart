@@ -66,9 +66,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionShare => 'Share';
 
   @override
-  String get actionLearnMore => 'Learn more';
-
-  @override
   String get actionMarkRead => 'Mark as read';
 
   @override
@@ -1949,6 +1946,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutGroupContact => 'Contact';
 
   @override
+  String get linkOpenFailed => 'The link couldn\'t be opened here.';
+
+  @override
+  String emailOpenFailed(String address) {
+    return 'No mail app opened. You can write to $address.';
+  }
+
+  @override
+  String get actionCopy => 'Copy';
+
+  @override
   String get feedbackLinkLabel => 'GitHub issues';
 
   @override
@@ -2006,7 +2014,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideWhatBody =>
-      'The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.';
+      'The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.';
 
   @override
   String get guideWhenTitle => 'When';

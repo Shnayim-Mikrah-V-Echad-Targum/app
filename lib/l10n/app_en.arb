@@ -18,7 +18,6 @@
   "actionRetry": "Try again",
   "actionOk": "OK",
   "actionShare": "Share",
-  "actionLearnMore": "Learn more",
   "actionMarkRead": "Mark as read",
   "actionMarkUnread": "Mark as not read",
   "actionStart": "Start",
@@ -1589,6 +1588,20 @@
   "@aboutGroupContact": {
     "description": "Heading over About's links to email us and to send feedback."
   },
+  "linkOpenFailed": "The link couldn't be opened here.",
+  "@linkOpenFailed": {
+    "description": "A status message when tapping a link opened nothing, as on a device with no browser to hand it to."
+  },
+  "emailOpenFailed": "No mail app opened. You can write to {address}.",
+  "@emailOpenFailed": {
+    "description": "A status message when tapping the support address opened no mail app, with an action to copy the address.",
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "actionCopy": "Copy",
   "feedbackLinkLabel": "GitHub issues",
   "@feedbackLinkLabel": {
     "description": "The link text, inside a policy's sentence ('Questions or requests: GitHub issues'), for the public issue tracker on GitHub, where there is no support email address."
@@ -1632,7 +1645,7 @@
   "@guideQuoteTranslation": {
     "description": "The Talmud's words that open the guide, in English. Shown in the English interface only, under the Hebrew."
   },
-  "guideWhatBody": "The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.",
+  "guideWhatBody": "The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.",
   "guideWhenTitle": "When",
   "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
   "guideHowTitle": "How",

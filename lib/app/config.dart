@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Build-time configuration, passed with `--dart-define` (see README).
 abstract final class AppConfig {
   /// Supabase project URL for forums and sync. Empty → community features
@@ -9,7 +11,13 @@ abstract final class AppConfig {
   static const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
 
   /// Where users can reach the maintainers. Empty → hidden.
-  static const supportEmail = String.fromEnvironment('SUPPORT_EMAIL');
+  static String get supportEmail => debugSupportEmail ?? _supportEmail;
+  static const _supportEmail = String.fromEnvironment('SUPPORT_EMAIL');
+
+  /// Stands in for [supportEmail] in tests, which can't define it at build
+  /// time.
+  @visibleForTesting
+  static String? debugSupportEmail;
 
   /// Public source code / issue tracker.
   static const sourceUrl = String.fromEnvironment(

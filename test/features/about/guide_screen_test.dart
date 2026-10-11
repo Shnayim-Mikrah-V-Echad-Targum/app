@@ -62,7 +62,31 @@ void main() {
     await openGuide(tester, AppLanguage.hebrew);
     expect(find.text('ברכות ח, א'), findsOneWidget);
     expect(find.textContaining('A person should always'), findsNothing);
+    // What follows builds on them, rather than saying them again.
+    expect(find.textContaining('לעולם ישלים אדם'), findsNothing);
+    expect(find.textContaining('השולחן ערוך פוסק את דברי הגמרא האלה להלכה'), findsOneWidget);
   });
+
+  testWidgets("what follows the Talmud's words builds on them rather than restating them", (tester) async {
+    await openGuide(tester, AppLanguage.english);
+    expect(find.textContaining('The Shulchan Aruch sets these words of the Talmud down as law'), findsOneWidget);
+    expect(find.textContaining('the Torah text twice and the Targum once'), findsNothing);
+  });
+
+  for (final (width, padding) in [(412.0, 20.0), (320.0, 16.0)]) {
+    testWidgets("the words' card keeps the card rhythm, $padding in at ${width.round()} dp", (tester) async {
+      tester.view.physicalSize = Size(width, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true));
+      c.read(routerProvider).go('/guide');
+      await tester.pumpAndSettle();
+      final card = tester.getRect(find.ancestor(of: find.text('Berakhot 8a'), matching: find.byType(Card)).first);
+      final source = tester.getRect(find.ancestor(of: find.text('Berakhot 8a'), matching: find.byType(Column)).first);
+      expect(source.left - card.left, padding);
+      expect(card.right - source.right, padding);
+    });
+  }
 
   testWidgets('sets its headings in ink, shows the three readings, and lists its sources a line each', (tester) async {
     await openGuide(tester, AppLanguage.english);

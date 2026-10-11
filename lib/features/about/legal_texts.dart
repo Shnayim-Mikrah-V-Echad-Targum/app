@@ -145,10 +145,8 @@ class LegalTexts {
   DateTime? updated(LegalDoc doc) => _updated[doc];
 }
 
-/// The policies, read once from the bundle. Decoded here rather than with
-/// `loadString`, which hands a file of 50 KB or more to another isolate, for
-/// a file this small a round trip slower than decoding it.
-final legalTextsProvider = FutureProvider<LegalTexts>((ref) async {
-  final data = await rootBundle.load(LegalTexts.asset);
-  return LegalTexts.parse(utf8.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
-});
+/// The policies, read once from the bundle. The provider keeps them, so the
+/// bundle needn't keep the file's text as well.
+final legalTextsProvider = FutureProvider<LegalTexts>(
+  (ref) async => LegalTexts.parse(await rootBundle.loadString(LegalTexts.asset, cache: false)),
+);

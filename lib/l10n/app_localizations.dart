@@ -207,12 +207,6 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get actionShare;
 
-  /// No description provided for @actionLearnMore.
-  ///
-  /// In en, this message translates to:
-  /// **'Learn more'**
-  String get actionLearnMore;
-
   /// No description provided for @actionMarkRead.
   ///
   /// In en, this message translates to:
@@ -3291,6 +3285,24 @@ abstract class AppLocalizations {
   /// **'Contact'**
   String get aboutGroupContact;
 
+  /// A status message when tapping a link opened nothing, as on a device with no browser to hand it to.
+  ///
+  /// In en, this message translates to:
+  /// **'The link couldn\'t be opened here.'**
+  String get linkOpenFailed;
+
+  /// A status message when tapping the support address opened no mail app, with an action to copy the address.
+  ///
+  /// In en, this message translates to:
+  /// **'No mail app opened. You can write to {address}.'**
+  String emailOpenFailed(String address);
+
+  /// No description provided for @actionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get actionCopy;
+
   /// The link text, inside a policy's sentence ('Questions or requests: GitHub issues'), for the public issue tracker on GitHub, where there is no support email address.
   ///
   /// In en, this message translates to:
@@ -3390,7 +3402,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhatBody.
   ///
   /// In en, this message translates to:
-  /// **'The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.'**
+  /// **'The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.'**
   String get guideWhatBody;
 
   /// No description provided for @guideWhenTitle.
