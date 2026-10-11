@@ -167,6 +167,42 @@ void main() {
     expect(f.resumeFrom([6, 6, 0]), (0, 2));
   });
 
+  group('a chunk starts past the readings of the Hebrew done before the aliyah was opened', () {
+    test('read twice from a Chumash, each verse starts at its Targum', () {
+      final f = flow();
+      for (var c = 0; c < 6; c++) {
+        expect(f.entryStep(c, [6, 6, 0]), 2, reason: 'verse ${c + 1}');
+      }
+      expect(f.resumeFrom([6, 6, 1]), (1, 2), reason: 'as the reader resumes there');
+      expect(f.entryStep(0, [6, 0, 0]), 1, reason: 'read once: the second reading');
+    });
+
+    test('nothing done, or the aliyah read, starts every chunk at its beginning', () {
+      final f = flow();
+      expect([for (var c = 0; c < 6; c++) f.entryStep(c, null)], everyElement(0));
+      expect([for (var c = 0; c < 6; c++) f.entryStep(c, [0, 0, 0])], everyElement(0));
+    });
+
+    test('a chunk read in full is read again in full', () {
+      final f = flow();
+      expect(f.entryStep(1, [4, 4, 3]), 0, reason: 'verse 2 was read three times');
+      expect(f.entryStep(3, [4, 4, 3]), 2, reason: 'verse 4 was read twice');
+      expect(f.entryStep(4, [4, 4, 3]), 0, reason: 'verse 5 was not read');
+    });
+
+    test('never past a reading that was un-marked on its own', () {
+      expect(flow().entryStep(2, [0, 6, 0]), 0);
+    });
+
+    test('by section, and with Rashi after the Targum', () {
+      final sections = flow(method: ReadingMethod.sectionBySection);
+      expect(sections.entryStep(1, [6, 6, 2]), 2);
+      expect(sections.entryStep(1, [4, 4, 2]), 0, reason: 'the section is not yet read through');
+      final both = flow(second: SecondReading.onkelosAndRashi);
+      expect(both.entryStep(0, [6, 6, 0]), both.stepsFor(0).indexOf(StepKind.targum));
+    });
+  });
+
   test('resume after switching from verse to section mode', () {
     final f = flow(method: ReadingMethod.sectionBySection);
     expect(f.resumeFrom([3, 3, 3]), (1, 0), reason: 'restart the section containing the next verse');

@@ -329,8 +329,8 @@ String? _focusedField(WidgetTester tester) {
   return null;
 }
 
-/// The week page's Discuss button, in either language.
-final _discuss = find.descendant(of: find.byType(WeeklyThreadOpener), matching: find.byType(OutlinedButton));
+/// The week page's Discuss row, in either language.
+final _discuss = find.descendant(of: find.byType(WeeklyThreadOpener), matching: find.byType(PaperRow));
 
 Future<void> _tapDiscuss(WidgetTester tester) async {
   await tester.ensureVisible(_discuss);
@@ -865,7 +865,7 @@ void main() {
       expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
       expect(find.byType(WeekOverviewScreen), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(tester.widget<OutlinedButton>(_discuss).onPressed, isNotNull);
+      expect(tester.widget<PaperRow>(_discuss).onTap, isNotNull);
     });
 
     testWidgets('shows that it is opening, and opens once however often it is tapped', (tester) async {
@@ -1839,7 +1839,8 @@ void main() {
       expect(inset(post, disc), lessThan(1));
       expect(inset(post, name), greaterThanOrEqualTo(tester.getSize(disc).width + 12));
 
-      final notice = find.byType(NoticeBanner);
+      // The locked thread's notice, below the demo's, which is one too.
+      final notice = find.widgetWithIcon(NoticeBanner, Icons.lock_outline);
       expect(notice, findsOneWidget, reason: 'the thread is locked');
       final icon = find.descendant(of: notice, matching: find.byIcon(Icons.lock_outline));
       expect(inset(find.descendant(of: notice, matching: find.byType(Card)), icon), greaterThanOrEqualTo(12));

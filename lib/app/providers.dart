@@ -576,16 +576,23 @@ class ProgressController extends Notifier<ProgressState> {
   void markAliyah(String weekId, int aliyah, LocalDate? date) =>
       _updateWeek(weekId, (w) => w.withAliyah(aliyah, date));
 
-  /// Marks each of [aliyot] read on [date], as one change.
-  void markAliyot(String weekId, List<int> aliyot, LocalDate date) =>
-      _updateWeek(weekId, (w) => aliyot.fold(w, (w, a) => w.withAliyah(a, date)));
+  /// Marks each of [aliyot] read on [date], and the haftarah too with
+  /// [haftarah], as one change.
+  void markAliyot(String weekId, List<int> aliyot, LocalDate date, {bool haftarah = false}) => _updateWeek(
+        weekId,
+        (w) {
+          final read = aliyot.fold(w, (w, a) => w.withAliyah(a, date));
+          return haftarah ? read.withHaftarah(date) : read;
+        },
+      );
 
   void markWeek(String weekId, LocalDate date) => _updateWeek(weekId, (w) => w.withAll(date));
 
   void clearWeek(String weekId) => _updateWeek(weekId, (w) => w.cleared());
 
-  /// Puts a week back the way it was in [before] (undoing a clear), as a new
-  /// change that a sync won't undo.
+  /// Puts a week back the way it was in [before] (undoing a clear, or what
+  /// the after-Shabbat check-in logged), as a new change that a sync won't
+  /// undo.
   void restoreWeek(String weekId, WeekProgress before) => _updateWeek(weekId, (w) => w.restoredTo(before));
 
   void markHaftarah(String weekId, LocalDate? date) => _updateWeek(weekId, (w) => w.withHaftarah(date));

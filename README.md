@@ -91,6 +91,7 @@ The app is configured at build time with `--dart-define`:
 | `SUPABASE_PUBLISHABLE_KEY` | The project's publishable (anon) key. It is safe to ship because row-level security protects all data. |
 | `SUPPORT_EMAIL` | Contact address shown in About and in the accessibility statement. Hidden if empty. |
 | `SOURCE_URL` | Link to the source code and issue tracker. |
+| `INSTALL_URL` | Where to get the installed app, offered on the web's Reminders page, since reminders need it. Hidden if empty. |
 
 Example:
 

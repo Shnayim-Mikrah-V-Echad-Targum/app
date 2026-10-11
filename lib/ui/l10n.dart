@@ -6,6 +6,7 @@ import '../core/calendar/local_date.dart';
 import '../core/calendar/parsha_schedule.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/models/parsha.dart';
+import '../features/progress/domain/progress_models.dart';
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
 
@@ -54,13 +55,30 @@ class Names {
         _ => l.aliyah7,
       };
 
+  /// A run of aliyot, from [first] to [last]: "Shlishi – Shevi'i".
+  String aliyahRange(int first, int last) => '${aliyah(first)} – ${aliyah(last)}';
+
+  /// The aliyot to read, by name: one alone, a run of three or more from its
+  /// first to its last ([aliyahRange]), or else each of them ([aliyot]).
+  String aliyotSpan(List<int> indices) {
+    if (indices.length > 2 && indices.length < 7 && indices.last - indices.first == indices.length - 1) {
+      return aliyahRange(indices.first, indices.last);
+    }
+    return aliyot(indices);
+  }
+
   /// "Revi'i" or "Chamishi and Shishi".
   String aliyot(List<int> indices) {
-    if (indices.isEmpty) return '';
     if (indices.length == 7) return _he ? 'כל הפרשה' : 'The whole parsha';
-    final names = indices.map(aliyah).toList();
-    if (names.length == 1) return names.single;
-    return _l.andJoiner(names.sublist(0, names.length - 1).join(', '), names.last);
+    return andList(indices.map(aliyah).toList());
+  }
+
+  /// [items] as a list in a sentence: "Monday", "Monday and Tuesday",
+  /// "Monday, Tuesday and Wednesday".
+  String andList(List<String> items) {
+    if (items.isEmpty) return '';
+    if (items.length == 1) return items.single;
+    return _l.andJoiner(items.sublist(0, items.length - 1).join(', '), items.last);
   }
 
   /// What the reader reads after the Torah's two readings, as [reading]
@@ -69,6 +87,15 @@ class Names {
         SecondReading.onkelos => _l.passTargum,
         SecondReading.rashi || SecondReading.rashiEnglish => _l.passRashi,
         SecondReading.onkelosAndRashi => _l.secondBoth,
+      };
+
+  /// The name of reading [pass] of an aliyah, as the rings' legend gives it:
+  /// "First reading", "Second reading", and then "Targum", or "Rashi" for a
+  /// reader whose second reading is Rashi alone ([rashi]).
+  String readingPass(ReadingPass pass, {bool rashi = false}) => switch (pass) {
+        ReadingPass.mikra1 => _l.passMikra1,
+        ReadingPass.mikra2 => _l.passMikra2,
+        ReadingPass.targum => rashi ? _l.passRashi : _l.passTargum,
       };
 
   /// The routine [anchor] as it completes "After I…": "finish Shacharit".
@@ -85,6 +112,10 @@ class Names {
   String portion(PortionInfo p, {required bool ashkenazi}) =>
       _he ? HebrewText.stripNikud(p.nameHe) : p.displayName(ashkenazi: ashkenazi);
 
+  /// The parsha's Hebrew name with its vowels, without cantillation:
+  /// "בְּרֵאשִׁית", as a title sets it.
+  String portionPointed(PortionInfo p) => HebrewText.forDisplay(p.nameHe, nikud: true, teamim: false);
+
   /// Secondary name: the other language.
   String portionAlt(PortionInfo p, {required bool ashkenazi}) =>
       _he ? p.displayName(ashkenazi: ashkenazi) : HebrewText.stripNikud(p.nameHe);
@@ -95,16 +126,20 @@ class Names {
     return _he ? (_prophetsHe[english] ?? english) : english;
   }
 
-  /// "Genesis 7:17–8:14" / "בראשית ז, יז – ח, יד".
-  String range(String bookName, int c1, int v1, int c2, int v2) {
+  /// "Genesis 7:17–8:14" / "בראשית ז, יז–ח, יד".
+  String range(String bookName, int c1, int v1, int c2, int v2) => '${book(bookName)} ${verseRange(c1, v1, c2, v2)}';
+
+  /// [range] without the book, for a range in a book named nearby:
+  /// "7:17–8:14" / "ז, יז–ח, יד".
+  String verseRange(int c1, int v1, int c2, int v2) {
     if (_he) {
       final g = HebrewText.gematria;
       final start = '${g(c1, punctuate: false)}, ${g(v1, punctuate: false)}';
       final end = c1 == c2 ? g(v2, punctuate: false) : '${g(c2, punctuate: false)}, ${g(v2, punctuate: false)}';
-      return '${book(bookName)} $start–$end';
+      return '$start–$end';
     }
     final end = c1 == c2 ? '$v2' : '$c2:$v2';
-    return '${book(bookName)} $c1:$v1–$end';
+    return '$c1:$v1–$end';
   }
 
   /// One verse: "Genesis 28:10" / "בראשית כח, י".
@@ -130,6 +165,12 @@ class Names {
 
   /// "Sunday, 11 October".
   String dateLong(LocalDate d) => DateFormat.MMMMEEEEd(context.localeName).format(d.toDateTime());
+
+  /// [dateLong] for a sentence: it wraps after its weekday's comma or not at
+  /// all, never between a day and its month ("October / 11", "11 /
+  /// באוקטובר").
+  String dateInText(LocalDate d) =>
+      [for (final part in dateLong(d).split(', ')) part.replaceAll(' ', '\u00A0')].join(', ');
 
   /// "11 October" (no weekday).
   String dateMonthDay(LocalDate d) => DateFormat.MMMMd(context.localeName).format(d.toDateTime());

@@ -1,11 +1,16 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/fonts_change_scope.dart';
+import '../../../ui/widgets/paper_group.dart';
 
 /// One option in a [ChoiceGroup].
 class Choice<T> {
-  const Choice(this.value, this.title, {this.subtitle, this.semanticsLabel});
+  const Choice(this.value, this.title, {this.subtitle, this.semanticsLabel, this.sampleStyle});
   final T value;
   final String title;
   final String? subtitle;
@@ -13,10 +18,116 @@ class Choice<T> {
   /// What screen readers say for [title], where it would be read badly as
   /// written.
   final String? semanticsLabel;
+
+  /// Sets [title] in a style of its own, as a sample of what the option
+  /// looks like (a font's letters), which [subtitle] names. Screen readers
+  /// read the name alone.
+  final TextStyle? sampleStyle;
 }
 
-/// A labeled group of radio options. Uses RadioGroup so assistive technology
-/// announces "1 of 3" and arrow keys move between options.
+/// The heading of a setting, with its help under it (docs/DESIGN_SYSTEM.md
+/// §9 Settings): at [level] 2 an eyebrow ([GroupHeader]), for a setting that
+/// is a section of its own; at level 3 a subheading in titleMedium, for one
+/// of several settings in a section.
+///
+/// [help] is bodyMedium in onSurfaceVariant, or with [helpIsSource], where it
+/// cites its source, a [SourceNote]. The heading leaves the gap below it to
+/// the setting's controls.
+class SettingHeading extends StatelessWidget {
+  const SettingHeading(this.title, {super.key, this.help, this.helpIsSource = false, this.source, this.level = 2})
+      : assert(level == 2 || level == 3),
+        assert(source == null || !helpIsSource, 'A source of its own, or the help as one');
+
+  final String title;
+  final String? help;
+  final bool helpIsSource;
+
+  /// The source the setting rests on, in a [SourceNote] before any [help]:
+  /// the citation in the margin's voice, and advice as plain help.
+  final String? source;
+  final int level;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final help = this.help;
+    final source = this.source;
+    // In line with a group header's eyebrow, 4 in from the paper's edge.
+    const inset = EdgeInsetsDirectional.symmetric(horizontal: 4);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (level == 2)
+          GroupHeader(title)
+        else
+          Padding(
+            padding: inset,
+            child: Semantics(
+              header: true,
+              headingLevel: level,
+              child: Text(title, style: theme.textTheme.titleMedium?.copyWith(color: scheme.onSurface)),
+            ),
+          ),
+        if (source != null)
+          Padding(padding: EdgeInsets.only(top: level == 2 ? 0 : Space.sm), child: SourceNote(source)),
+        if (help != null)
+          if (helpIsSource)
+            Padding(padding: EdgeInsets.only(top: level == 2 ? 0 : Space.sm), child: SourceNote(help))
+          else
+            Padding(
+              padding: inset.add(EdgeInsets.only(top: source != null ? Space.sm : (level == 2 ? 0 : 2))),
+              child: Text(help, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+            ),
+        // A group header keeps 8 below itself.
+        Gap(help != null || source != null ? Space.md : (level == 2 ? 0 : Space.sm)),
+      ],
+    );
+  }
+}
+
+/// A note that cites its source, such as "(Shulchan Aruch OC 285:2)", set as
+/// a margin note is in a chumash: marginalia on surfaceContainerLow, radius
+/// 12, padding 12, and outlined in high contrast, where the wash is the page.
+class SourceNote extends StatelessWidget {
+  const SourceNote(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        border: SeferColors.of(context).isHighContrast ? Border.all(color: scheme.outline, width: 2) : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(Space.md),
+        child: Text(text, style: SeferType.of(context).marginalia),
+      ),
+    );
+  }
+}
+
+/// A labeled group of options, one of which is chosen: radio rows on one
+/// sheet of paper (§6.3), 56 high or 72 with a subtitle, or with [segmented]
+/// a segmented control, for two or three short options. The radios are in a
+/// RadioGroup, so assistive technology announces "1 of 3" and arrow keys
+/// move between them.
+///
+/// Its heading is a [SettingHeading] of [headingLevel], with [help] under
+/// it, through a [SourceNote] where [helpIsSource], or after the [source]'s
+/// note. [margin] surrounds the
+/// whole: on a page still padded for list tiles (PageBody.tilePadding), 16
+/// at the sides brings the paper to the gutters.
+///
+/// A [prominent] group is the one question of a page, as each step of
+/// onboarding asks (§9 Onboarding): its heading is the question itself, in
+/// headlineSmall, and each option a radio card of its own, at least 72 high
+/// and 8 apart. The chosen card is washed in primaryContainer within a 2 px
+/// primary border; the others are paper within a 1 px outline.
 class ChoiceGroup<T> extends StatelessWidget {
   const ChoiceGroup({
     super.key,
@@ -25,42 +136,301 @@ class ChoiceGroup<T> extends StatelessWidget {
     required this.choices,
     required this.onChanged,
     this.help,
-  });
+    this.helpIsSource = false,
+    this.source,
+    this.segmented = false,
+    this.prominent = false,
+    this.headingLevel = 2,
+    this.margin = EdgeInsets.zero,
+  })  : assert(!(segmented && prominent), 'Segments or cards, not both'),
+        // A question asked on its own page has plain help, never a source.
+        assert(!(prominent && (helpIsSource || source != null)), 'A prominent question takes plain help');
 
   final String title;
   final T value;
   final List<Choice<T>> choices;
   final ValueChanged<T> onChanged;
   final String? help;
+  final bool helpIsSource;
+
+  /// As [SettingHeading.source].
+  final String? source;
+  final bool segmented;
+  final bool prominent;
+  final int headingLevel;
+  final EdgeInsetsGeometry margin;
+
+  /// The space between two radio cards of a [prominent] group.
+  static const cardGap = Space.sm;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SectionHeader(title, padding: const EdgeInsetsDirectional.only(top: 16, bottom: 4, start: 16, end: 16)),
-        if (help != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Text(help!, style: Theme.of(context).textTheme.bodySmall),
+    final Widget options = segmented
+        ? _Segments<T>(value: value, choices: choices, onChanged: onChanged)
+        : RadioGroup<T>(
+            groupValue: value,
+            onChanged: (v) {
+              if (v != null) onChanged(v);
+            },
+            child: prominent
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final (i, c) in choices.indexed) ...[
+                        if (i > 0) const Gap(cardGap),
+                        _RadioRow<T>(choice: c, card: true, selected: c.value == value),
+                      ],
+                    ],
+                  )
+                : PaperGroup(
+                    ruleInset: _RadioRow.textStart,
+                    children: [for (final c in choices) _RadioRow<T>(choice: c)],
+                  ),
+          );
+    return Padding(
+      padding: margin,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (prominent)
+            _Question(title, help: help, level: headingLevel)
+          else
+            SettingHeading(title, help: help, helpIsSource: helpIsSource, source: source, level: headingLevel),
+          options,
+        ],
+      ),
+    );
+  }
+}
+
+/// The heading of a [ChoiceGroup.prominent]: the question in headlineSmall,
+/// and any help under it in bodyMedium, inset 4 as a group header's eyebrow
+/// is, and 16 above the cards.
+class _Question extends StatelessWidget {
+  const _Question(this.title, {this.help, required this.level});
+
+  final String title;
+  final String? help;
+  final int level;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final help = this.help;
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(Space.xs, 0, Space.xs, Space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            header: true,
+            headingLevel: level,
+            child: Text(title, style: theme.textTheme.headlineSmall?.copyWith(color: scheme.onSurface)),
           ),
-        RadioGroup<T>(
-          groupValue: value,
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-          child: Column(
-            children: [
-              for (final c in choices)
-                RadioListTile<T>(
-                  value: c.value,
-                  title: Text(c.title, semanticsLabel: c.semanticsLabel),
-                  subtitle: c.subtitle == null ? null : Text(c.subtitle!),
+          if (help != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Space.xs),
+              child: Text(help, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A [ChoiceGroup]'s options as a segmented control across the column, each
+/// label in two lines at most, with no word broken. The selected segment
+/// always bears the check, its non-colour cue (§6.8), and every other label
+/// keeps the check's room beside it, so that each is set as narrow as the
+/// selected one and nothing moves as the choice changes. Where the labels
+/// don't fit so (large text, a narrow phone), the segments stand one under
+/// another, each the column's width.
+class _Segments<T> extends StatelessWidget {
+  const _Segments({required this.value, required this.choices, required this.onChanged});
+
+  final T value;
+  final List<Choice<T>> choices;
+  final ValueChanged<T> onChanged;
+
+  /// A segment's padding (12 at each side), its borders and a little to
+  /// spare; and the room the check takes in the selected one, which every
+  /// label keeps: the check (18), the gap after it (8), and the 4 more at
+  /// the end that a button with an icon pads itself by.
+  static const _padding = 24.0 + 2 + 4;
+  static const _check = 18.0 + 8 + 4;
+
+  /// Whether every label fits beside the check in a segment [room] wide.
+  bool _fit(BuildContext context, double room) {
+    final width = room - _check;
+    if (width <= 0) return false;
+    // Bold, as the selected segment sets it.
+    final style = Theme.of(context).textTheme.labelLarge!.copyWith(fontWeight: FontWeight.w700);
+    final painter = TextPainter(textDirection: Directionality.of(context), textScaler: MediaQuery.textScalerOf(context));
+    try {
+      return choices.every((c) {
+        painter
+          ..text = TextSpan(text: c.title, style: style)
+          ..layout(maxWidth: width);
+        if (painter.computeLineMetrics().length > 2) return false;
+        return c.title.split(RegExp(r'\s')).every((word) {
+          painter
+            ..text = TextSpan(text: word, style: style)
+            ..layout();
+          return painter.width <= width;
+        });
+      });
+    } finally {
+      painter.dispose();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Measured as it builds: again when a font loaded on demand arrives.
+    FontsChangeScope.watch(context);
+    return LayoutBuilder(builder: (context, constraints) {
+      final across = _fit(context, constraints.maxWidth / choices.length - _padding);
+      return SizedBox(
+        width: double.infinity,
+        child: SegmentedButton<T>(
+          // Built anew as it turns, since a SegmentedButton keeps whether it
+          // was expanded from when it was first built.
+          key: ValueKey(across),
+          segments: [
+            for (final c in choices)
+              ButtonSegment<T>(
+                value: c.value,
+                label: Padding(
+                  // The check's room, kept by the labels without it, half on
+                  // either side so that they stay centred.
+                  padding: EdgeInsets.symmetric(horizontal: across && c.value != value ? _check / 2 : 0),
+                  child: Text(c.title, semanticsLabel: c.semanticsLabel, textAlign: TextAlign.center),
                 ),
-            ],
-          ),
+              ),
+          ],
+          selected: {value},
+          onSelectionChanged: (selected) => onChanged(selected.single),
+          showSelectedIcon: true,
+          // Across, the segments share the width; stacked, each takes it.
+          expandedInsets: across ? EdgeInsets.zero : null,
+          direction: across ? Axis.horizontal : Axis.vertical,
         ),
-      ],
+      );
+    });
+  }
+}
+
+/// One option of a [ChoiceGroup], as a row of its paper: a radio, then the
+/// title and subtitle where a [PaperRow]'s text starts. Underneath it is a
+/// RadioListTile, a member of the group's RadioGroup; focused from the
+/// keyboard it is ringed as a paper row is (§6.1), rather than washed.
+///
+/// As a [card], it is a sheet of its own (see [ChoiceGroup.prominent]),
+/// marked as [selected] by its wash and border as well as its radio.
+class _RadioRow<T> extends StatefulWidget {
+  const _RadioRow({super.key, required this.choice, this.card = false, this.selected = false});
+
+  final Choice<T> choice;
+  final bool card;
+  final bool selected;
+
+  /// Where the text starts, as in a [PaperRow] with an icon: the radio's
+  /// circle (20 in a 40 box) at 16, as an icon is.
+  static const textStart = PaperGroup.iconInset;
+  static const _radioBox = 40.0;
+  static const _start = PaperGroup.plainInset - 10;
+
+  static const _cardCorners = BorderRadius.all(Radius.circular(12));
+  static const _cardMinHeight = 72.0;
+
+  @override
+  State<_RadioRow<T>> createState() => _RadioRowState<T>();
+}
+
+class _RadioRowState<T> extends State<_RadioRow<T>> {
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addHighlightModeListener(_highlightModeChanged);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_highlightModeChanged);
+    super.dispose();
+  }
+
+  // A tap after tabbing hides the ring; a key press brings it back.
+  void _highlightModeChanged(FocusHighlightMode mode) {
+    if (_focused) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final sefer = SeferColors.of(context);
+    final card = widget.card;
+    final corners = card ? _RadioRow._cardCorners : PaperGroup.rowCorners(context);
+    final choice = widget.choice;
+    final ring = _focused && FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+    Widget tile = Theme(
+      // The ring marks focus; the tile's wash as well would read as a
+      // second selection.
+      data: theme.copyWith(focusColor: Colors.transparent),
+      child: RadioListTile<T>(
+        value: choice.value,
+        title: switch (choice.sampleStyle) {
+          null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
+          final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
+        },
+        subtitle: choice.subtitle == null ? null : Text(choice.subtitle!),
+        // The ink keeps to the paper's corners.
+        shape: RoundedRectangleBorder(borderRadius: corners),
+        minTileHeight: card ? _RadioRow._cardMinHeight : null,
+        contentPadding: const EdgeInsetsDirectional.only(start: _RadioRow._start, end: 12),
+        horizontalTitleGap: _RadioRow.textStart - _RadioRow._start - _RadioRow._radioBox,
+        onFocusChange: (focused) => setState(() => _focused = focused),
+      ),
+    );
+    if (card) {
+      final selected = widget.selected;
+      tile = Material(
+        // The tile's ink is drawn on this sheet, over its wash. High contrast,
+        // whose wash barely shows on the page, borders the chosen card the
+        // more heavily.
+        color: selected ? scheme.primaryContainer : sefer.paper,
+        animationDuration: Motion.of(context).d(Motion.short),
+        shape: RoundedRectangleBorder(
+          borderRadius: corners,
+          side: selected
+              ? BorderSide(color: scheme.primary, width: sefer.isHighContrast ? 3 : 2)
+              : BorderSide(color: scheme.outline, width: sefer.isHighContrast ? 2 : 1),
+        ),
+        child: tile,
+      );
+    }
+    return DecoratedBox(
+      // Always present, so that showing the ring never rebuilds the tile
+      // (and drops its focus).
+      position: DecorationPosition.foreground,
+      decoration: switch ((ring, card)) {
+        (false, _) => const BoxDecoration(),
+        // Clear of the card's own border, which may be primary too (§6.1).
+        (true, true) => ShapeDecoration(
+            shape: FocusRingBorder(borderRadius: corners, ring: sefer.focus, gap: sefer.focusGap),
+          ),
+        (true, false) => ShapeDecoration(
+            shape: RoundedRectangleBorder(
+              borderRadius: corners,
+              side: BorderSide(color: sefer.focus, width: 3, strokeAlign: BorderSide.strokeAlignOutside),
+            ),
+          ),
+      },
+      child: tile,
     );
   }
 }
@@ -153,17 +523,218 @@ class LabeledSlider extends StatelessWidget {
   }
 }
 
-/// Settings pages share this scaffold with a readable max width. Their rows
-/// are list tiles, which line up with the title (PageBody.tilePadding).
+/// Settings pages share this scaffold with a readable max width. A [paper]
+/// page is set in paper groups (§6.3), which stand on the gutters; any other
+/// is a page of list tiles, which line up with the title
+/// (PageBody.tilePadding).
+///
+/// A page may show a [preview] of what its settings change above them (§9
+/// Display), [previewMaxHeight] high. Where the window is tall enough and the
+/// text not so large that it would crowd the settings out (at least 640
+/// high, and 16 sp text no larger than 24), the preview stays at the top as
+/// the settings scroll under it, shrinking to [previewMinHeight] first; it
+/// is built with how far it has shrunk, from 0 to 1. Elsewhere it scrolls
+/// away with them, whole.
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key, required this.title, required this.children});
+  const SettingsPage({super.key, required this.title, required this.children, this.paper = false, this.preview});
 
   final String title;
   final List<Widget> children;
+  final bool paper;
+  final Widget Function(BuildContext context, double shrunk)? preview;
+
+  static const previewMaxHeight = 220.0;
+  static const previewMinHeight = 140.0;
+
+  /// Whether a [preview] stays in view in [context], as above.
+  static bool previewPinned(BuildContext context) =>
+      MediaQuery.sizeOf(context).height >= 640 && MediaQuery.textScalerOf(context).scale(16) <= 24;
 
   @override
-  Widget build(BuildContext context) => PageScaffold(
-        titleText: title,
-        body: PageBody(padding: PageBody.tilePadding(context), children: children),
-      );
+  Widget build(BuildContext context) {
+    final preview = this.preview;
+    final padding = paper ? null : PageBody.tilePadding(context);
+    return PageScaffold(
+      titleText: title,
+      body: preview == null
+          ? PageBody(padding: padding, children: children)
+          : _PreviewedBody(preview: preview, padding: padding, children: children),
+    );
+  }
+}
+
+/// A settings page's body under its preview, laid out as a [PageBody]'s: in
+/// the page's column, with its padding.
+class _PreviewedBody extends StatelessWidget {
+  const _PreviewedBody({required this.preview, required this.padding, required this.children});
+
+  final Widget Function(BuildContext context, double shrunk) preview;
+  final EdgeInsets? padding;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = (padding ?? PageBody.defaultPadding(context)) +
+        EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom);
+    final pinned = SettingsPage.previewPinned(context);
+    Widget column(Widget child) => Center(
+          child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: ContentWidth.list), child: child),
+        );
+    final scrollView = CustomScrollView(
+      slivers: [
+        SliverPersistentHeader(
+          pinned: pinned,
+          delegate: _PreviewHeader(
+            preview: preview,
+            // On the gutters, as paper is, with the page's 8 above it.
+            padding: EdgeInsets.fromLTRB(Gutter.of(context), Space.sm, Gutter.of(context), Space.md),
+            maxHeight: SettingsPage.previewMaxHeight,
+            minHeight: pinned ? SettingsPage.previewMinHeight : SettingsPage.previewMaxHeight,
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: column(
+            Padding(
+              padding: p.copyWith(top: 0),
+              // Each heading, text and control a node of its own.
+              child: Semantics(
+                explicitChildNodes: true,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+    // Held at the top, the preview carries on the app bar: the rule that
+    // marks the settings scrolled under it is its own, not the app bar's.
+    if (!pinned) return scrollView;
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (_) => true,
+      child: NotificationListener<ScrollNotification>(onNotification: (_) => true, child: scrollView),
+    );
+  }
+}
+
+class _PreviewHeader extends SliverPersistentHeaderDelegate {
+  const _PreviewHeader({required this.preview, required this.padding, required this.maxHeight, required this.minHeight});
+
+  final Widget Function(BuildContext context, double shrunk) preview;
+  final EdgeInsets padding;
+  final double maxHeight;
+  final double minHeight;
+
+  @override
+  double get maxExtent => maxHeight + padding.vertical;
+
+  @override
+  double get minExtent => minHeight + padding.vertical;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final sefer = SeferColors.of(context);
+    final range = maxExtent - minExtent;
+    final shrunk = range == 0 ? 0.0 : (shrinkOffset / range).clamp(0.0, 1.0);
+    final height = math.max(minExtent, maxExtent - shrinkOffset);
+    return SizedBox(
+      height: height,
+      child: DecoratedBox(
+        // The page's own surface, which hides the settings scrolled under it.
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          // A rule once the settings pass under it.
+          border: range > 0 && shrinkOffset > range
+              ? Border(bottom: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth))
+              : null,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: ContentWidth.list),
+            child: SizedBox(
+              width: double.infinity,
+              height: height,
+              child: Padding(padding: padding, child: preview(context, shrunk)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_PreviewHeader old) =>
+      old.preview != preview || old.padding != padding || old.maxHeight != maxHeight || old.minHeight != minHeight;
+}
+
+/// A setting that is on or off, as a row of paper (§6.3): its title and
+/// description, never cut short, and at the end a switch that the whole row
+/// toggles. It reads as one item, a switch; with no [onChanged] it shows
+/// what it would set, disabled. It is a [PaperRow], so that its group rules
+/// it off as one.
+class SwitchRow extends PaperRow {
+  SwitchRow({
+    super.key,
+    super.icon,
+    required super.title,
+    super.subtitle,
+    required bool value,
+    required ValueChanged<bool>? onChanged,
+  }) : super(
+          subtitleMaxLines: null,
+          onTap: onChanged == null ? null : () => onChanged(!value),
+          chevron: false,
+          mergeTrailing: true,
+          // The row takes the focus and rings itself; the switch shows the
+          // state, and toggles it when tapped itself.
+          trailing: _Undimmed(
+            child: ExcludeFocus(
+              child: Switch(value: value, onChanged: onChanged, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+            ),
+          ),
+        );
+
+  @override
+  Widget build(BuildContext context) {
+    if (onTap != null) return super.build(context);
+    // Disabled: its words and icon dimmed as Material dims a disabled
+    // control's (38%), so that the row doesn't look as if a tap would do
+    // something. The switch shows it in its own way, undimmed again.
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return _UndimmedTheme(
+      theme: theme,
+      child: Theme(
+        data: theme.copyWith(
+          colorScheme: scheme.copyWith(
+            onSurface: scheme.onSurface.withValues(alpha: 0.38),
+            onSurfaceVariant: scheme.onSurfaceVariant.withValues(alpha: 0.38),
+          ),
+        ),
+        child: Builder(builder: super.build),
+      ),
+    );
+  }
+}
+
+/// The theme a disabled [SwitchRow] had before it dimmed its words.
+class _UndimmedTheme extends InheritedWidget {
+  const _UndimmedTheme({required this.theme, required super.child});
+
+  final ThemeData theme;
+
+  @override
+  bool updateShouldNotify(_UndimmedTheme old) => old.theme != theme;
+}
+
+/// [child] in the theme of the [SwitchRow] around it before it dimmed.
+class _Undimmed extends StatelessWidget {
+  const _Undimmed({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.dependOnInheritedWidgetOfExactType<_UndimmedTheme>()?.theme;
+    return theme == null ? child : Theme(data: theme, child: child);
+  }
 }

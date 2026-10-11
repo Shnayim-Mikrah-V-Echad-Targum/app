@@ -55,7 +55,7 @@ void main() {
       (tester) async {
     await openToday(tester, _settings, _friday);
     expect(text('Candle-lighting 5:47 PM'), findsOneWidget);
-    expect(find.text('Shabbat is tomorrow'), findsNothing);
+    expect(find.text('Shabbat begins this evening'), findsNothing);
   });
 
   testWidgets('in Hebrew, the time is a left-to-right run', (tester) async {
@@ -81,7 +81,7 @@ void main() {
     expect(find.textContaining('Candle-lighting'), findsNothing);
 
     await openToday(tester, _settings.copyWith(city: null), _friday);
-    expect(find.text('Shabbat is tomorrow'), findsOneWidget);
+    expect(find.text('Shabbat begins this evening'), findsOneWidget);
     expect(find.textContaining('Candle-lighting'), findsNothing);
   });
 
@@ -90,7 +90,7 @@ void main() {
     // Travelling in New York, with London still chosen: candles there are
     // lit at 17:47 London time, 12:47 in New York.
     await openToday(tester, _settings, _friday, clock: 'America/New_York');
-    expect(find.text('Shabbat is tomorrow'), findsOneWidget);
+    expect(find.text('Shabbat begins this evening'), findsOneWidget);
     expect(find.textContaining('Candle-lighting'), findsNothing);
 
     // Back home, once the clocks agree, it shows again.

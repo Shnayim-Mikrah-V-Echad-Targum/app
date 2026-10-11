@@ -14,6 +14,7 @@ import 'package:shnayim_mikra/features/reader/reader_bottom_bar.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/theme/motion.dart';
@@ -108,8 +109,7 @@ void main() {
 
       c.read(routerProvider).go('/week/5787:2');
       await tester.pumpAndSettle();
-      final rishon = find.ancestor(of: find.text('Rishon · aliyah 1'), matching: find.byType(ListTile));
-      await tester.tap(find.descendant(of: rishon, matching: find.byTooltip('More options for Rishon')));
+      await tester.tap(find.byTooltip('More options for Rishon'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Mark as not read'));
       await tester.pumpAndSettle();
@@ -332,7 +332,8 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Keep going: Shlishi'));
     await tester.pumpAndSettle();
     expect(titled('Shlishi'), findsOneWidget);
-    expect(find.text('Read the Hebrew'), findsOneWidget);
+    // Its first reading is marked done, so it opens at the second.
+    expect(find.text('Read the Hebrew again'), findsOneWidget);
 
     // Once every aliyah is read, there is nothing to continue with.
     await tester.tap(find.byTooltip('More options'));
@@ -810,13 +811,97 @@ void main() {
     final slider = find.descendant(of: find.byType(BottomSheet), matching: find.byType(Slider));
     await tester.scrollUntilVisible(slider, 200, scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
     expect(tester.getSemantics(slider), isSemantics(label: 'Line spacing', value: '1.9', isSlider: true));
-    // Wholly in view, its buttons too.
+    // Built with the switches above it, so built before it is scrolled to.
     await tester.ensureVisible(find.byTooltip('Increase Line spacing'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Increase Line spacing'));
     await tester.pumpAndSettle();
     expect(c.read(settingsProvider).lineHeight, closeTo(2.0, 1e-9));
     handle.dispose();
+  });
+
+  group('the display sheet', () {
+    Future<ProviderContainer> openSheet(WidgetTester tester, {AppSettings settings = const AppSettings(onboardingComplete: true)}) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(tester, settings: settings, now: monday);
+      c.read(routerProvider).go('/read/5787:2/0');
+      await loadTexts(tester);
+      await tester.tap(find.byTooltip('Display settings'));
+      await tester.pumpAndSettle();
+      return c;
+    }
+
+    Finder inSheet(Finder finder) => find.descendant(of: find.byType(BottomSheet), matching: finder);
+
+    Future<void> showInSheet(WidgetTester tester, Finder finder) async {
+      await tester.scrollUntilVisible(finder, 200, scrollable: inSheet(find.byType(Scrollable)));
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('opens on the lower part of the screen over a light scrim, so the verse stays in view', (tester) async {
+      await openSheet(tester);
+      final sheet = tester.getRect(find.byType(BottomSheet));
+      expect(sheet.top, greaterThan(915 / 2));
+      final barrier = tester.widgetList<ModalBarrier>(find.byType(ModalBarrier)).last;
+      expect(barrier.color, Colors.black12);
+      expect(tester.getRect(find.byType(ScriptureVerse).first).top, lessThan(sheet.top));
+    });
+
+    testWidgets('steps the reading size with buttons 56 by 48, and says the size as it changes', (tester) async {
+      final handle = tester.ensureSemantics();
+      final c = await openSheet(tester);
+      final larger = find.widgetWithIcon(IconButton, Icons.text_increase);
+      expect(tester.getSize(larger), const Size(56, 48));
+      expect(tester.getSize(find.widgetWithIcon(IconButton, Icons.text_decrease)), const Size(56, 48));
+      expect(find.text('100%'), findsOneWidget);
+      await tester.tap(larger);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).readingScale, closeTo(1.1, 1e-9));
+      expect(tester.getSemantics(find.bySemanticsLabel('Text size, 110%')), isSemantics(isLiveRegion: true));
+      expect(find.byTooltip('Smaller text'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('chooses the scripture font by chips, each the word in its font, named for screen readers', (tester) async {
+      final handle = tester.ensureSemantics();
+      final c = await openSheet(tester);
+      expect(inSheet(find.byType(ChoiceChip)), findsNWidgets(4));
+      final ezra = inSheet(find.byWidgetPredicate((w) => w is Text && w.semanticsLabel == 'Ezra SIL'));
+      expect(tester.widget<Text>(ezra).data, 'בְּרֵאשִׁית');
+      expect(tester.widget<Text>(ezra).style!.fontFamily, 'EzraSIL');
+      expect(tester.widget<Text>(ezra).style!.fontSize, 18);
+      expect(find.bySemanticsLabel('Ezra SIL'), findsOneWidget);
+      await tester.tap(ezra);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).scriptureFont, ScriptureFont.ezra);
+      handle.dispose();
+    });
+
+    testWidgets('chooses the theme by swatch, and has the Rashi script among its switches while Rashi is shown',
+        (tester) async {
+      final c = await openSheet(tester, settings: const AppSettings(onboardingComplete: true, showRashi: true));
+      final sepia = inSheet(find.byWidgetPredicate((w) => w is Text && w.semanticsLabel == 'Sepia'));
+      await showInSheet(tester, sepia);
+      await tester.tap(sepia);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).theme, AppThemeMode.sepia);
+      final rashiScript = inSheet(find.widgetWithText(SwitchRow, 'Rashi script'));
+      await showInSheet(tester, rashiScript);
+      await tester.tap(rashiScript);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).rashiScript, isTrue);
+    });
+
+    testWidgets('sets line spacing no lower than 1.6', (tester) async {
+      final c = await openSheet(tester, settings: const AppSettings(onboardingComplete: true, lineHeight: 1.6));
+      final decrease = inSheet(find.byTooltip('Decrease Line spacing'));
+      await showInSheet(tester, decrease);
+      expect(tester.widget<IconButton>(find.ancestor(of: decrease, matching: find.byType(IconButton)).first).onPressed, isNull);
+      expect(c.read(settingsProvider).lineHeight, 1.6);
+    });
   });
 
   testWidgets('full-text mode shows Torah and Targum together', (tester) async {
@@ -1302,8 +1387,11 @@ void main() {
       // Settings → Accessibility turns them off.
       c.read(routerProvider).go('/settings/accessibility');
       await tester.pumpAndSettle();
-      final toggle = find.widgetWithText(SwitchListTile, 'Single-key shortcuts');
+      final toggle = find.widgetWithText(SwitchRow, 'Single-key shortcuts');
       await tester.scrollUntilVisible(toggle, 200);
+      // Built with the rows of its paper, before it is scrolled to.
+      await tester.ensureVisible(toggle);
+      await tester.pumpAndSettle();
       await tester.tap(toggle);
       await tester.pumpAndSettle();
       expect(s().singleKeyShortcuts, isFalse);

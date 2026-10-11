@@ -37,6 +37,10 @@ abstract final class OptionalFonts {
   static final _loading = <String, Future<void>>{};
   static final _loaded = <String>{};
 
+  /// The families whose first file alone is loading or loaded
+  /// ([ensureSample]).
+  static final _samples = <String, Future<void>>{};
+
   /// Every family loaded on demand.
   @visibleForTesting
   static Iterable<String> get families => _files.keys;
@@ -59,7 +63,13 @@ abstract final class OptionalFonts {
     if (family == null || files == null) return Future.value();
     final pending = _loading[family];
     if (pending != null) return pending;
-    final loading = _load(family, files, bundle ?? rootBundle);
+    final assets = bundle ?? rootBundle;
+    // Its regular face may be in already, for a sample: only the rest is
+    // needed then, or all of it again if that failed.
+    final sample = _samples[family];
+    final loading = sample == null
+        ? _load(family, files, assets)
+        : sample.then((_) => _load(family, files.skip(1).toList(), assets), onError: (Object _) => _load(family, files, assets));
     _loading[family] = loading;
     // Registered before anyone else's, so whoever awaits [ensure] finds the
     // family loaded.
@@ -68,6 +78,27 @@ abstract final class OptionalFonts {
     });
     return loading;
   }
+
+  /// Registers the first file of each of [families], its regular face, for
+  /// a sample drawn at that weight, as Display's choices of font are: an
+  /// interface font's bold waits until the family is chosen ([ensure]),
+  /// which then loads only what is missing. Never fails, as [ensureAll].
+  static Future<void> ensureSamples(Iterable<String?> families, {AssetBundle? bundle}) => Future.wait([
+        for (final family in families.toSet())
+          if (family != null && _files.containsKey(family) && !_loading.containsKey(family))
+            _samples.putIfAbsent(family, () {
+              final loading = _load(family, _files[family]!.take(1).toList(), bundle ?? rootBundle);
+              // Forgotten if it fails, so that it can be tried again.
+              loading.then<void>((_) {}, onError: (Object _) {
+                _samples.remove(family);
+              });
+              return loading;
+            }).catchError((Object e) => debugPrint('Font $family unavailable: $e')),
+      ]);
+
+  /// Whether the regular face of [family] has been asked for, for a sample.
+  @visibleForTesting
+  static bool isSampled(String family) => _samples.containsKey(family);
 
   /// Loads each of [families] as [ensure] does, all at once. Never fails: a
   /// family that can't be loaded is reported, and its text keeps to the
@@ -88,9 +119,11 @@ abstract final class OptionalFonts {
   static void reset() {
     _loading.clear();
     _loaded.clear();
+    _samples.clear();
   }
 
   static Future<void> _load(String family, List<String> files, AssetBundle bundle) async {
+    if (files.isEmpty) return;
     // Read every file before registering any, so a missing one leaves no
     // half-registered family behind. Every request starts at once, so a
     // family of two files costs one round trip on the web, not two; they are

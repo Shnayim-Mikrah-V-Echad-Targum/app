@@ -140,6 +140,22 @@ void main() {
     );
   });
 
+  testWidgets('rows of another kind inset their hairlines where the group is told', (tester) async {
+    await pumpThemed(
+      tester,
+      const SizedBox(
+        width: 400,
+        child: PaperGroup(ruleInset: 72, children: [SizedBox(height: 84), SizedBox(height: 84)]),
+      ),
+      hebrew: true,
+    );
+    // Mirrored in Hebrew, where the text starts at the right.
+    expect(
+      tester.renderObject(find.byWidgetPredicate((w) => w is CustomPaint && w.child is SizedBox)),
+      paints..rect(rect: const Rect.fromLTRB(0, 83, 400 - 72, 84)),
+    );
+  });
+
   testWidgets('high contrast: 2 px hairlines in the outline colour', (tester) async {
     await pumpThemed(
       tester,
@@ -223,8 +239,33 @@ void main() {
       ),
     );
     final row = tester.getSemantics(find.byType(PaperRow));
-    expect(row, isSemantics(label: 'Show streak numbers', hasToggledState: true, isToggled: true, hasTapAction: true));
+    expect(
+      row,
+      isSemantics(label: 'Show streak numbers', hasToggledState: true, isToggled: true, hasTapAction: true),
+    );
+    // A switch, in the switch's role rather than a button's.
+    expect(row, isSemantics(isButton: false));
     expect(tester.getSemantics(find.byType(Switch)).id, row.id);
+    handle.dispose();
+  });
+
+  testWidgets('the row that erases is set in error ink, and a live row is read out as it changes', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpThemed(
+      tester,
+      SizedBox(
+        width: 400,
+        child: PaperGroup(children: [
+          PaperRow(title: 'Reset all progress', destructive: true, chevron: false, onTap: () {}),
+          PaperRow(title: 'Daily reminder time', value: '7:30 AM', liveRegion: true, onTap: () {}),
+        ]),
+      ),
+    );
+    final scheme = Theme.of(tester.element(find.byType(PaperGroup))).colorScheme;
+    expect(tester.widget<Text>(find.text('Reset all progress')).style?.color, scheme.error);
+    expect(find.descendant(of: find.byType(PaperRow).first, matching: find.byType(Icon)), findsNothing);
+    expect(tester.getSemantics(find.text('Daily reminder time')), isSemantics(isLiveRegion: true, isButton: true));
+    expect(tester.getSemantics(find.text('Reset all progress')), isSemantics(isLiveRegion: false));
     handle.dispose();
   });
 
@@ -489,6 +530,20 @@ void main() {
     final icon = find.byIcon(Icons.help_outline);
     expect(tester.widget<Icon>(icon).textDirection, TextDirection.ltr);
     expect(find.descendant(of: icon, matching: find.byType(Transform)), findsNothing);
+  });
+
+  testWidgets('a subtitle of several facts, a line each, can be let run', (tester) async {
+    const facts = 'I Samuel 20:18–42\nSpecial haftarah: Shabbat Machar Chodesh\nAlso the regular haftarah';
+    await pumpThemed(
+      tester,
+      const Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(width: 300, child: PaperRow(title: 'Haftarah', subtitle: facts, subtitleMaxLines: null)),
+      ),
+    );
+    final text = tester.widget<Text>(find.text(facts));
+    expect((text.maxLines, text.overflow), (null, null));
+    expect(tester.getSize(find.text(facts)).height, greaterThan(3 * 22 - 1), reason: 'every line shows');
   });
 
   group('GroupHeader', () {

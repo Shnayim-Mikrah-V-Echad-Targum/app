@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -7,8 +9,11 @@ import '../../app/providers.dart';
 import '../../core/calendar/local_date.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
-import '../../ui/theme/motion.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/lang.dart';
+import '../../ui/widgets/lines.dart';
+import '../../ui/widgets/ornaments.dart';
 import '../community/data/backend.dart';
 import '../community/data/community_providers.dart';
 import '../parsha/week_context.dart';
@@ -177,15 +182,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     final page = Scaffold(
       body: SafeArea(
-        child: PageBody(
-          padding: const EdgeInsets.only(bottom: 24),
-          children: [
-            _Welcome(
-              onStart: _restoring ? null : () => context.push(OnboardingStep.location.path),
-              onRestore: _restoring ? null : _restore,
-              restoring: _restoring,
-            ),
-          ],
+        child: _Welcome(
+          onStart: _restoring ? null : () => context.push(OnboardingStep.location.path),
+          onRestore: _restoring ? null : _restore,
+          restoring: _restoring,
         ),
       ),
     );
@@ -247,35 +247,33 @@ class OnboardingStepScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final theme = Theme.of(context);
     final next = step.next;
     return PageScaffold(
       titleText: l.onbStep(step.number, OnboardingStep.values.length),
       body: SafeArea(
         child: PageBody(
-          // Its questions are list tiles, as on a Settings page: their text,
-          // and the rest of the page's, starts on the gutter, under the title.
+          // As on a Settings page of list tiles: the text of the page's
+          // questions starts on the gutter, under the title, and their paper
+          // stands 16 out from it.
           padding: PageBody.tilePadding(context),
           children: [
+            // Clear of the app bar, about midway between it and the question.
+            const Gap(Space.sm),
+            _StepMarks(step: step),
+            const Gap(Space.xxl),
             switch (step) {
               OnboardingStep.location => const _LocationStep(),
               OnboardingStep.method => const _MethodStep(),
               OnboardingStep.plan => const _PlanStep(),
             },
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(l.onbChangeAnytime, style: theme.textTheme.bodySmall),
-            ),
-            const Gap(16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: FilledButton(
-                onPressed: next == null ? () => _finish(context, ref) : () => _continue(context, ref, next),
-                child: Text(next == null ? l.startReading : l.actionContinue),
-              ),
-            ),
           ],
         ),
+      ),
+      // Docked, so that going on is always in view, however large the text.
+      bottomNavigationBar: _StepBar(
+        note: l.onbChangeAnytime,
+        label: next == null ? l.startReading : l.actionContinue,
+        onPressed: next == null ? () => _finish(context, ref) : () => _continue(context, ref, next),
       ),
     );
   }
@@ -311,6 +309,96 @@ class OnboardingStepScreen extends ConsumerWidget {
   }
 }
 
+/// Where a step stands among the pages of onboarding, the welcome and the
+/// three steps: a 12 px lozenge for each, filled up to this one and
+/// outlined after it. The app bar's title says the same in words ("Step 1 of
+/// 3"), so screen readers hear that alone.
+class _StepMarks extends StatelessWidget {
+  const _StepMarks({required this.step});
+
+  final OnboardingStep step;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    // In the colour of indicators, or onSurface in high contrast, as every
+    // ornament there (§7).
+    final ink = SeferColors.of(context).isHighContrast ? scheme.onSurface : scheme.primary;
+    // The welcome is the first page.
+    final pages = OnboardingStep.values.length + 1;
+    final current = step.number + 1;
+    return ExcludeSemantics(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (var page = 1; page <= pages; page++) ...[
+            if (page > 1) const Gap(Space.md),
+            Lozenge(size: Lozenge.large, color: ink, outlined: page > current),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A step's way on, docked below its page on surface, under a hairline: a
+/// reminder that every choice can be changed later, and the Filled button,
+/// 52 high and at most 480 wide.
+class _StepBar extends StatelessWidget {
+  const _StepBar({required this.note, required this.label, required this.onPressed});
+
+  final String note;
+  final String label;
+  final VoidCallback onPressed;
+
+  static const _maxWidth = 480.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final sefer = SeferColors.of(context);
+    final g = Gutter.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(top: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          // On the gutters, as the page's paper is.
+          padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.lg),
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: _maxWidth),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    note,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                  const Gap(Space.sm),
+                  FilledButton(
+                    style: AppButtons.roomy(context, (24, 12, 6))
+                        .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
+                    onPressed: onPressed,
+                    child: Text(label, textAlign: TextAlign.center),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _LocationStep extends ConsumerStatefulWidget {
   const _LocationStep();
 
@@ -331,6 +419,9 @@ class _LocationStepState extends ConsumerState<_LocationStep> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ChoiceGroup<ReadingSchedule>(
+          // On a page of list tiles: in to the gutters, as they are.
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          prominent: true,
           title: l.onbLocationTitle,
           value: schedule,
           choices: [
@@ -398,6 +489,8 @@ class _MethodStep extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ChoiceGroup<ReadingMethod>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          prominent: true,
           title: l.onbMethodTitle,
           value: s.method,
           choices: [
@@ -407,8 +500,9 @@ class _MethodStep extends ConsumerWidget {
           onChanged: (v) => _update(ref, (s) => s.copyWith(method: v)),
         ),
         ChoiceGroup<SecondReading>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.secondLabel,
-          help: l.secondHelp,
+          help: '${l.secondSource} ${l.secondAdvice}',
           value: s.secondReading,
           choices: [
             Choice(SecondReading.onkelos, l.secondOnkelos),
@@ -453,7 +547,6 @@ class _PlanStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final theme = Theme.of(context);
     final s = ref.watch(settingsProvider);
     // The reader starts today, as onboarding ends (see _finish).
     final LocalDate start = s.joinDate ?? ref.watch(todayProvider);
@@ -462,6 +555,8 @@ class _PlanStep extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ChoiceGroup<ReadingPlanType>(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          prominent: true,
           title: l.onbPlanTitle,
           value: s.plan,
           choices: [
@@ -475,6 +570,7 @@ class _PlanStep extends ConsumerWidget {
         // over the days left, or only what the usual plan has from today on.
         if (catchUp != null)
           ChoiceGroup<bool>(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
             title: l.onbStarterTitle,
             value: s.starterCatchUp,
             choices: [
@@ -492,24 +588,20 @@ class _PlanStep extends ConsumerWidget {
             onChanged: (v) => _update(ref, (s) => s.copyWith(starterCatchUp: v)),
           ),
         Padding(
-          padding: const EdgeInsets.all(16),
-          child: InfoCard(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.handshake_outlined, color: theme.colorScheme.primary),
-                const Gap(12),
-                Expanded(child: Text(l.onbHonor)),
-              ],
-            ),
-          ),
+          // A section's gap below the choices.
+          padding: const EdgeInsets.fromLTRB(16, Rhythm.sectionGap, 16, 0),
+          child: NoticeBanner(icon: Icons.handshake_outlined, text: l.onbHonor, marginalia: true),
         ),
       ],
     );
   }
 }
 
-class _Welcome extends ConsumerWidget {
+/// The welcome, a title page (§9 Onboarding): the language at the top end,
+/// and in the middle of the page the app's name in a title-page frame, the
+/// way into this week's parsha and the way back in for a reader who already
+/// uses the app.
+class _Welcome extends StatelessWidget {
   const _Welcome({required this.onStart, required this.onRestore, required this.restoring});
   final VoidCallback? onStart;
 
@@ -519,109 +611,198 @@ class _Welcome extends ConsumerWidget {
   /// Whether progress is being restored from the account's backup.
   final bool restoring;
 
+  /// The width of the title block and what follows it, and of its buttons.
+  static const _maxWidth = 520.0;
+  static const _buttonMaxWidth = 400.0;
+
+  /// Below the block, about as much as the language takes above it, less
+  /// the page's greater padding below: so the block sits in the middle of
+  /// the whole height, where there is room.
+  static const _languageBalance = Space.s40;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final language = ref.watch(settingsProvider.select((s) => s.language));
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: SegmentedButton<AppLanguage>(
-              segments: [
-                ButtonSegment(value: AppLanguage.english, label: Text(l.languageEnglish)),
-                ButtonSegment(value: AppLanguage.hebrew, label: Text(l.languageHebrew)),
-              ],
-              emptySelectionAllowed: true,
-              selected: {if (language != AppLanguage.system) language},
-              onSelectionChanged: (v) => ref
-                  .read(settingsProvider.notifier)
-                  .update((s) => s.copyWith(language: v.isEmpty ? AppLanguage.system : v.first)),
-            ),
+    final scheme = theme.colorScheme;
+    // Centred, like the text above them, also when large text wraps them.
+    Widget button(Widget child) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _buttonMaxWidth),
+            child: SizedBox(width: double.infinity, child: child),
           ),
-          const Gap(48),
-          ExcludeSemantics(
-            child: Text(
-              'שְׁנַיִם מִקְרָא\nוְאֶחָד תַּרְגּוּם',
-              textAlign: TextAlign.center,
-              textDirection: TextDirection.rtl,
-              style: TextStyle(
-                fontFamily: 'NotoSerifHebrew',
-                fontSize: 40,
-                height: 1.6,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-          const Gap(24),
-          Semantics(
-            header: true,
-            headingLevel: 1,
-            child: Text(l.appTitleFull, textAlign: TextAlign.center, style: theme.textTheme.headlineSmall),
-          ),
-          const Gap(12),
-          Text(l.onbWelcomeBody, textAlign: TextAlign.center, style: theme.textTheme.bodyLarge),
-          const Gap(48),
-          // Centred like the text around them, also when large text wraps them.
+        );
+    final block = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _TitleBlock(),
+        const Gap(Space.xxl),
+        button(
           FilledButton(
-            style: _roomy(context, (24, 12, 6)),
+            // The page's one call to action, 52 high, with room around a label
+            // that large text wraps.
+            style: AppButtons.roomy(context, (24, 12, 6))
+                .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
             onPressed: onStart,
             child: Text(l.onbStart, textAlign: TextAlign.center),
           ),
-          const Gap(8),
-          if (restoring)
-            // In the button's place, as tall, until the backup is in.
-            Semantics(
-              liveRegion: true,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 48),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                    const Gap(12),
-                    Flexible(
-                      child: Text(
-                        l.onbRestoring,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                      ),
+        ),
+        const Gap(Space.sm),
+        if (restoring)
+          // In the button's place, as tall, until the backup is in.
+          Semantics(
+            liveRegion: true,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                  const Gap(Space.md),
+                  Flexible(
+                    child: Text(
+                      l.onbRestoring,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            )
-          else
+            ),
+          )
+        else
+          button(
             TextButton(
-              style: _roomy(context, (12, 8, 4), vertical: 8),
+              style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
               onPressed: onRestore,
               child: Text(l.onbRestore, textAlign: TextAlign.center),
             ),
-          const Gap(16),
-          Text(l.disclaimer, textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
-        ],
-      ),
+          ),
+        const Gap(Space.lg),
+        BalancedText(l.disclaimer, style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+      ],
+    );
+    return LayoutBuilder(builder: (context, constraints) {
+      final side = math.max(Gutter.of(context), (constraints.maxWidth - _maxWidth) / 2);
+      return SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(side, Space.lg, side, Space.xxl),
+            child: Column(
+              // The language at the top, the block in the middle.
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Align(alignment: AlignmentDirectional.centerEnd, child: _LanguageChoice()),
+                Padding(padding: const EdgeInsets.symmetric(vertical: Space.xxl), child: block),
+                const SizedBox(height: _languageBalance),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+/// English or עברית: the language the app is shown in, which is the device's
+/// own until one is chosen here or in Settings. The language shown is always
+/// the one chosen, the device's too.
+class _LanguageChoice extends ConsumerWidget {
+  const _LanguageChoice();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final shown = Localizations.localeOf(context).languageCode == 'he' ? AppLanguage.hebrew : AppLanguage.english;
+    return SegmentedButton<AppLanguage>(
+      segments: [
+        // Each read in its own language's voice.
+        ButtonSegment(value: AppLanguage.english, label: Lang(const Locale('en'), child: Text(l.languageEnglish))),
+        ButtonSegment(value: AppLanguage.hebrew, label: Lang(const Locale('he'), child: Text(l.languageHebrew))),
+      ],
+      selected: {shown},
+      // Choosing the language already shown changes nothing: an app that
+      // follows the device goes on following it.
+      emptySelectionAllowed: false,
+      onSelectionChanged: (v) => _update(ref, (s) => s.copyWith(language: v.single)),
     );
   }
+}
 
-  /// Material's padding for a button: [sides] at each side at 1×, 2× and
-  /// 3× the usual text size, as its own narrows when text grows, and
-  /// [vertical] above and below at the usual size. Where Material's leaves
-  /// nothing above and below large text, this keeps 8, so a label wrapped
-  /// onto two lines doesn't run into the button's edges.
-  static ButtonStyle _roomy(BuildContext context, (double, double, double) sides, {double vertical = 0}) {
-    final size = Theme.of(context).textTheme.labelLarge?.fontSize ?? 14;
-    return ButtonStyle(
-      padding: WidgetStatePropertyAll(ButtonStyleButton.scaledPadding(
-        EdgeInsets.symmetric(horizontal: sides.$1, vertical: vertical),
-        EdgeInsets.symmetric(horizontal: sides.$2, vertical: 8),
-        EdgeInsets.symmetric(horizontal: sides.$3, vertical: 8),
-        MediaQuery.textScalerOf(context).scale(size) / 14,
-      )),
+/// The welcome's title page: a lozenge; the name of the practice in pointed
+/// Hebrew, the page's heading; a divider; the name again in English, in the
+/// English UI; and what the practice is.
+class _TitleBlock extends StatelessWidget {
+  const _TitleBlock();
+
+  static const _title = 'שְׁנַיִם מִקְרָא\nוְאֶחָד תַּרְגּוּם';
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final sefer = SeferColors.of(context);
+    final hebrewUi = Localizations.localeOf(context).languageCode == 'he';
+    final narrow = MediaQuery.sizeOf(context).width < Breakpoints.narrow;
+    // EB Garamond's Medium Italic: upright in high contrast, as marginalia
+    // is, and in an accessibility font, which has no italic.
+    final latin = theme.textTheme.headlineSmall!;
+    final italic = latin.fontFamily == 'EBGaramond' && !sefer.isHighContrast;
+    // The names, already display sizes, grow with the text only so far, so
+    // that with very large text the way on isn't pushed far below the fold;
+    // what the practice is, and the buttons, grow in full.
+    Widget display(Widget child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.4)),
+          child: child,
+        );
+    return TitlePageFrame(
+      padding: EdgeInsets.all(narrow ? Space.xxl : Space.s32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(child: Lozenge()),
+          const Gap(Space.md),
+          Semantics(
+            header: true,
+            headingLevel: 1,
+            label: l.appTitleFull,
+            excludeSemantics: true,
+            child: display(
+              WholeWords(
+                _title,
+                style: SeferType.of(context).hebrewDisplay.copyWith(fontSize: 40, height: 60 / 40),
+                textDirection: TextDirection.rtl,
+                locale: const Locale('he'),
+              ),
+            ),
+          ),
+          const Gap(Space.md),
+          const SeferDivider(),
+          // The Hebrew UI's heading is its own name already.
+          if (!hebrewUi) ...[
+            const Gap(Space.md),
+            ExcludeSemantics(
+              child: display(
+                BalancedText(
+                  l.appTitleFull,
+                  style: latin.copyWith(
+                    color: scheme.onSurface,
+                    fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const Gap(Space.lg),
+          BalancedText(
+            l.onbWelcomeBody,
+            style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 }

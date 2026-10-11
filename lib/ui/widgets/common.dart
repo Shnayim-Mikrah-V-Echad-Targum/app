@@ -135,12 +135,17 @@ class PageBody extends StatelessWidget {
 /// title is then no heading, nor what names the page to a screen reader as
 /// it opens, and the page's body gives its own heading of level 1, which
 /// names the route.
+///
+/// A page that sets its heading in its body, as a title page does, gives
+/// [titleRevealed]: the app bar's title then repeats that heading for the
+/// eye alone, once it has scrolled under the app bar.
 class PageScaffold extends StatelessWidget {
   const PageScaffold({
     super.key,
     required this.titleText,
     this.title,
     this.showTitle = true,
+    this.titleRevealed,
     this.actions,
     this.leading,
     required this.body,
@@ -156,6 +161,12 @@ class PageScaffold extends StatelessWidget {
   final Widget? title;
   final bool showTitle;
   final bool titleNamesPage;
+
+  /// For a page whose heading is in its body: whether the app bar shows its
+  /// title, which fades in once the heading has scrolled under it. Screen
+  /// readers find the heading in the page, so the title is hidden from them.
+  /// Null for the usual title, always shown and the page's heading.
+  final bool? titleRevealed;
   final List<Widget>? actions;
 
   /// The app bar's leading button, if not the back button it adds itself.
@@ -182,6 +193,7 @@ class PageScaffold extends StatelessWidget {
           // A back button, where the app bar adds one: the test it makes, but
           // for local history entries, which pages don't use.
           final hasLeading = leading != null || (ModalRoute.canPopOf(context) ?? false);
+          final shown = title ?? AppBarTitle(titleText);
           return Scaffold(
             appBar: showAppBar
                 ? AppBar(
@@ -192,17 +204,26 @@ class PageScaffold extends StatelessWidget {
                     // account's) no room at all on a wide screen.
                     titleSpacing: 0,
                     actionsPadding: EdgeInsetsDirectional.only(end: inset - g),
-                    excludeHeaderSemantics: !titleNamesPage,
+                    excludeHeaderSemantics: !titleNamesPage || titleRevealed != null,
                     title: showTitle
                         ? Padding(
                             padding: EdgeInsetsDirectional.only(
                               start: hasLeading ? math.max(g, inset - _leadingWidth) : inset,
                               end: g,
                             ),
-                            // The app bar makes it a heading; this gives its level.
-                            child: titleNamesPage
-                                ? Semantics(headingLevel: 1, child: title ?? AppBarTitle(titleText))
-                                : title ?? AppBarTitle(titleText),
+                            child: switch (titleRevealed) {
+                              // The app bar makes it a heading; this gives its level.
+                              null when titleNamesPage => Semantics(headingLevel: 1, child: shown),
+                              null => shown,
+                              final revealed => ExcludeSemantics(
+                                  child: AnimatedOpacity(
+                                    opacity: revealed ? 1 : 0,
+                                    duration: Motion.of(context).d(Motion.short),
+                                    curve: Motion.standard,
+                                    child: shown,
+                                  ),
+                                ),
+                            },
                           )
                         : null,
                     actions: actions,
@@ -402,20 +423,43 @@ class InfoCard extends StatelessWidget {
 class NoticeBanner extends StatelessWidget {
   const NoticeBanner({
     super.key,
-    required this.icon,
+    this.icon,
+    this.leading,
     required this.text,
+    this.title,
     this.action,
     this.actionBelow = false,
     this.liveRegion = false,
-  });
+    this.marginalia = false,
+    this.onDismiss,
+    this.dismissLabel,
+  }) : assert((icon == null) != (leading == null), 'An icon or a mark of its own, not both');
 
-  final IconData icon;
+  final IconData? icon;
+
+  /// A mark of its own in place of [icon], 20 square: the Shabbat candles,
+  /// say, which are drawn rather than an icon of the font.
+  final Widget? leading;
   final String text;
+
+  /// Puts the notice away: a close button at its top end, whose tooltip and
+  /// label are [dismissLabel].
+  final VoidCallback? onDismiss;
+  final String? dismissLabel;
+
+  /// A line in titleSmall over [text], for a notice that needs one: its
+  /// heading.
+  final String? title;
   final Widget? action;
 
   /// Whether the banner is read out as it appears or its text changes: a
   /// live region, on the node that holds the text.
   final bool liveRegion;
+
+  /// Sets [text] as marginalia (§4.5), in the banner's ink: for a gentle
+  /// word in the margin, such as onboarding's honor statement, rather than
+  /// a notice of something that has happened.
+  final bool marginalia;
 
   /// Puts [action] beneath the text, at the end, rather than beside it: for
   /// a text of more than a line or two, which would otherwise be squeezed.
@@ -454,10 +498,32 @@ class NoticeBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    Widget message = Text(text, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSecondaryContainer));
+    final ink = scheme.onSecondaryContainer;
+    final style = (marginalia ? SeferType.of(context).marginalia : theme.textTheme.bodyMedium)?.copyWith(color: ink);
+    Widget message = Text(text, style: style);
+    if (title case final title?) {
+      message = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // The notice's heading, which screen readers can move to: a node
+          // of its own.
+          Semantics(
+            container: true,
+            header: true,
+            child: Text(title, style: theme.textTheme.titleSmall?.copyWith(color: ink)),
+          ),
+          message,
+        ],
+      );
+    }
     if (liveRegion) message = Semantics(liveRegion: true, child: message);
     final action = _legible(context);
     final below = actionBelow ? action : null;
+    final dismiss = onDismiss;
+    // Marginalia's first line is taller than the icon, which is centred on it.
+    final markTop = marginalia && title == null
+        ? math.max(0.0, (MediaQuery.textScalerOf(context).scale(style!.fontSize!) * style.height! - 20) / 2)
+        : 0.0;
     return Card(
       color: scheme.secondaryContainer,
       // The fill sets it apart; only high contrast outlines it (§6.20).
@@ -465,13 +531,27 @@ class NoticeBanner extends StatelessWidget {
         borderRadius: const BorderRadius.all(Radius.circular(12)),
         side: SeferColors.of(context).isHighContrast ? BorderSide(color: scheme.outline, width: 2) : BorderSide.none,
       ),
+      // Unclipped, so the close button's focus ring shows whole.
+      clipBehavior: dismiss == null ? null : Clip.none,
       child: Padding(
         // A trailing button's own padding makes up the end padding beside it.
-        padding: EdgeInsetsDirectional.fromSTEB(16, 12, action == null ? 16 : 8, below == null ? 12 : 4),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          16,
+          12,
+          dismiss != null ? 4 : (action == null ? 16 : 8),
+          below == null ? 12 : 4,
+        ),
         child: Row(
-          crossAxisAlignment: below == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+          // A title, or text over a button, starts beside the icon, as does
+          // marginalia, which runs to several lines.
+          crossAxisAlignment: below == null && title == null && dismiss == null && !marginalia
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 20, color: scheme.onSecondaryContainer),
+            if (markTop > 0)
+              Padding(padding: EdgeInsets.only(top: markTop), child: leading ?? Icon(icon, size: 20, color: ink))
+            else
+              leading ?? Icon(icon, size: 20, color: ink),
             const Gap(12),
             Expanded(
               child: below == null
@@ -485,6 +565,16 @@ class NoticeBanner extends StatelessWidget {
                     ),
             ),
             if (below == null) ?action,
+            if (dismiss != null)
+              // Raised to the first line, its 48 dp target reaching the edge.
+              Transform.translate(
+                offset: const Offset(0, -12),
+                child: IconButton(
+                  tooltip: dismissLabel,
+                  icon: Icon(Icons.close, size: 20, color: ink),
+                  onPressed: dismiss,
+                ),
+              ),
           ],
         ),
       ),
@@ -579,17 +669,21 @@ double sheetPadding(BuildContext context) => _isNarrow(context) ? 16 : 24;
 ///
 /// [useRootNavigator] puts the sheet and its scrim over the whole screen,
 /// the navigation bar too, when the page that opens it is shown within a
-/// tab.
+/// tab. [barrierColor] tints the page behind it, the theme's scrim unless
+/// given: a sheet whose changes the page shows as they are made takes a
+/// lighter one.
 Future<T?> showAppSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool isScrollControlled = false,
   bool useRootNavigator = false,
+  Color? barrierColor,
 }) =>
     showModalBottomSheet<T>(
       context: context,
       isScrollControlled: isScrollControlled,
       useRootNavigator: useRootNavigator,
+      barrierColor: barrierColor,
       useSafeArea: true,
       sheetAnimationStyle: Motion.of(context).style,
       builder: (context) {

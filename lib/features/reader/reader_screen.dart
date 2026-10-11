@@ -120,6 +120,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   bool _completedOnVisit = false;
   bool _positioned = false;
 
+  /// The aliyah's position counts when it was opened (null if it was read):
+  /// a chunk starts past the readings already done through it
+  /// ([ReaderFlow.entryStep]), and Back from there returns to the chunk
+  /// before.
+  List<int>? _doneAtOpen;
+
   // Another aliyah was chosen: once the step it resumes at is known, it is
   // announced, as Next and Back announce theirs.
   bool _announceWhenPositioned = false;
@@ -283,7 +289,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _step++;
       } else if (_chunk + 1 < flow.chunks.length) {
         _chunk++;
-        _step = 0;
+        _step = flow.entryStep(_chunk, _doneAtOpen);
       } else {
         _finished = true;
         _justCompleted = _completedOnVisit;
@@ -311,7 +317,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     setState(() {
       if (_finished) {
         _finished = false;
-      } else if (_step > 0) {
+      } else if (_step > 0 && (_chunk == 0 || _step != flow.entryStep(_chunk, _doneAtOpen))) {
         _step--;
       } else if (_chunk > 0) {
         _chunk--;
@@ -572,6 +578,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           final flow = _flowFor(ctx, texts, s);
           if (!_positioned) {
             final saved = ctx.progress.isAliyahDone(_aliyah) ? null : _savedPositions(ctx.progress, flow);
+            _doneAtOpen = saved;
             final (c, st) = flow.resumeFrom(saved);
             _chunk = c.clamp(0, flow.chunks.length - 1);
             _step = st.clamp(0, flow.stepsFor(_chunk).length - 1);

@@ -1,34 +1,76 @@
-import 'dart:math' as math;
-
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/city_providers.dart';
 import '../../app/providers.dart';
+import '../../core/calendar/hebrew_date.dart';
 import '../../core/calendar/jewish_holidays.dart';
 import '../../core/calendar/local_date.dart';
 import '../../core/calendar/parsha_schedule.dart';
+import '../../data/models/parsha.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/app_icon.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/lang.dart';
+import '../../ui/widgets/ledger.dart';
+import '../../ui/widgets/lines.dart';
+import '../../ui/widgets/ornaments.dart';
+import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
 import '../community/ui/community_ui.dart';
 import '../parsha/week_context.dart';
+import '../parsha/week_rows.dart';
 import '../progress/domain/progress_models.dart';
-import '../progress/domain/reading_plan.dart';
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
+import '../settings/widgets/pause_setting.dart';
 import '../settings/widgets/shabbat_times_setting.dart' show clockTime;
+import 'check_in.dart';
+import 'today_clock.dart';
 
+/// Today (docs/DESIGN_SYSTEM.md §9): a running head, the week's title page
+/// with its rings and the one button that continues the reading, today's
+/// reading or the aliyot to catch up, the week's days, the streaks, and the
+/// week's haftarah and discussion. On Shabbat and Yom Tov, the day's title
+/// page alone.
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
+  /// Forgets which weeks' completions have been drawn, as if the app had
+  /// restarted.
+  @visibleForTesting
+  static void forgetCompletions() => _HeroState.forgetCompletions();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final g = Gutter.of(context);
+    final rest = ref.watch(restDayProvider);
+    return PageScaffold(
+      titleText: l.navToday,
+      showAppBar: false,
+      // Under the status bar, which no app bar clears here.
+      body: SafeArea(
+        bottom: false,
+        child: PageBody(
+          padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.s40),
+          children: rest != null
+              ? [_TodayHeader(today: rest), const Gap(Space.lg), _RestHero(date: rest)]
+              : _readingDay(context, ref),
+        ),
+      ),
+    );
+  }
+
+  /// Today on a reading day: any notice, the week's title page, today's
+  /// reading, the week's days, the streaks, and the week's haftarah and
+  /// discussion.
+  List<Widget> _readingDay(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final names = Names(context);
     final today = ref.watch(todayProvider);
@@ -39,63 +81,60 @@ class TodayScreen extends ConsumerWidget {
     final paused = ref.watch(isPausedProvider);
     final pauses = ref.watch(progressProvider.select((p) => p.pauses));
     final divergence = ref.watch(readingDivergenceProvider);
+    final pauseEnd = ref.watch(
+      progressProvider.select((p) => pauseEndToWelcome(p, today, oneDayYomTov: settings.oneDayYomTov)),
+    );
+    final welcome = pauseEnd != null && pauseEnd != settings.pauseEndSeen ? pauseEnd : null;
 
-    final page = Scaffold(
-      appBar: AppBar(
-        // On the content's edge, as on every page's app bar.
-        titleSpacing: Gutter.of(context),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l.appTitle),
-            Text(
-              '${names.dateLong(today)} · ${names.hebrewDate(today)}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: l.guideTitle,
-            icon: const AppIcon(Icons.help_outline),
-            onPressed: () => context.push('/guide'),
+    return [
+      _TodayHeader(today: today),
+      const Gap(Space.lg),
+      if (paused) ...[
+        NoticeBanner(
+          icon: Icons.pause_circle_outline,
+          // Until the last day of the pauses that run on from today's.
+          text: l.pausedBanner(names.dateInText(pauseCovering(pauses, today)!.end)),
+          // Two sentences, which beside the button would wrap into a
+          // narrow column.
+          actionBelow: true,
+          action: TextButton(
+            // Back by choice, and told so here: no welcome back.
+            onPressed: () => resumePause(context, ref),
+            child: Text(l.resume),
           ),
-        ],
-      ),
-      body: PageBody(
-        children: [
-          if (paused) ...[
-            NoticeBanner(
-              icon: Icons.pause_circle_outline,
-              text: l.pausedBanner(names.dateLong(pauses.firstWhere((p) => p.contains(today)).end)),
-              // Two sentences, which beside the button would wrap into a
-              // narrow column.
-              actionBelow: true,
-              action: TextButton(
-                onPressed: () {
-                  ref.read(progressProvider.notifier).endPause(today);
-                  showStatus(context, l.pauseEnded);
-                },
-                child: Text(l.resume),
-              ),
+        ),
+        const Gap(Rhythm.cardGap),
+      ],
+      if (welcome != null) ...[
+        _PauseEndedNotice(end: welcome, ctx: ctx, previous: previous),
+        const Gap(Rhythm.cardGap),
+      ],
+      if (divergence != null) ...[
+        _DivergenceBanner(divergence: divergence, settings: settings),
+        const Gap(Rhythm.cardGap),
+      ],
+      // The welcome back offers last week's parsha itself.
+      if (previous != null && welcome == null) ...[
+        PreviousWeekNotice(previous: previous, current: ctx, today: today),
+        const Gap(Rhythm.cardGap),
+      ],
+      _Hero(ctx: ctx, settings: settings),
+      const Gap(Rhythm.cardGap),
+      _TodayCard(ctx: ctx, settings: settings),
+      const Gap(Rhythm.cardGap),
+      InfoCard(
+        padding: WeekStrip.cardPadding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // On the line of the other cards' content: the card's 8,
+            // and 12 more.
+            SectionHeader(
+              l.weekStripLabel,
+              trailing: const WeekStripLegendButton(),
+              padding: const EdgeInsetsDirectional.only(start: Space.md),
             ),
-            const Gap(12),
-          ],
-          if (divergence != null) ...[
-            _DivergenceBanner(divergence: divergence, settings: settings),
-            const Gap(12),
-          ],
-          if (previous != null) ...[
-            _OpenPreviousCard(previous: previous, current: ctx, today: today, summary: summary),
-            const Gap(12),
-          ],
-          _ParshaCard(ctx: ctx, settings: settings),
-          const Gap(12),
-          _TodayCard(ctx: ctx, settings: settings),
-          const Gap(12),
-          InfoCard(
-            padding: WeekStrip.cardPadding,
-            child: WeekStrip(
+            WeekStrip(
               plan: ctx.plan,
               today: today,
               statuses: summary.days,
@@ -103,35 +142,74 @@ class TodayScreen extends ConsumerWidget {
               joinDate: settings.joinDate,
               onDayTap: (day) => context.push('/read/${ctx.id}/${day.aliyot.first}'),
             ),
-          ),
-          if (settings.showStreaks) ...[
-            const Gap(12),
-            _StreakRow(summary: summary),
+            _StripNote(ctx: ctx, summary: summary, settings: settings),
           ],
-          if (settings.haftarahEnabled) ...[
-            const Gap(12),
-            _HaftarahTile(ctx: ctx),
-          ],
-          const Gap(12),
-          WeeklyThreadOpener(
-            portion: ctx.portion,
-            hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
-            builder: (context, progress, open) => InfoCard(
-              onTap: open,
-              child: Row(
-                children: [
-                  SizedBox.square(dimension: 24, child: Center(child: progress ?? const Icon(Icons.forum_outlined))),
-                  const Gap(12),
-                  Expanded(child: Text(l.discussThisWeek)),
-                  const Icon(Icons.chevron_right),
-                ],
-              ),
-            ),
-          ),
+        ),
+      ),
+      if (settings.showStreaks) ...[
+        const Gap(Rhythm.cardGap),
+        LedgerCard(
+          parshaStreak: summary.parshaStreak,
+          daysOnTrack: summary.daysOnTrack,
+          beginsWith: names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames),
+          onTap: () => context.go('/progress'),
+        ),
+      ],
+      GroupHeader(l.thisWeek),
+      PaperGroup(
+        ruleInset: PaperGroup.iconInset,
+        children: [
+          if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
+          DiscussRow(ctx: ctx),
         ],
       ),
+    ];
+  }
+}
+
+/// The running head and the masthead: today's date in both calendars, the
+/// app's name, and the guide a tap away.
+class _TodayHeader extends StatelessWidget {
+  const _TodayHeader({required this.today});
+
+  final LocalDate today;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final names = Names(context);
+    final theme = Theme.of(context);
+    // Each UI's own calendar first.
+    final runningHead = context.isHebrewUi
+        ? ['${names.weekday(today)}, ${names.hebrewDate(today)}', names.dateMonthDay(today)]
+        : [names.dateLong(today), names.hebrewDate(today)];
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DotLine(
+                runningHead,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const Gap(2),
+              // The app's name, not a heading: the parsha's name below is
+              // the page's heading.
+              Text(l.appTitle, style: theme.textTheme.headlineMedium),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: l.guideTitle,
+          icon: const AppIcon(Icons.help_outline),
+          onPressed: () => context.push('/guide'),
+        ),
+      ],
     );
-    return DocumentTitle(title: l.navToday, child: page);
   }
 }
 
@@ -169,99 +247,411 @@ class _DivergenceBanner extends ConsumerWidget {
   }
 }
 
-class _ParshaCard extends ConsumerWidget {
-  const _ParshaCard({required this.ctx, required this.settings});
+/// The week's title page (§9 Today, 3): an eyebrow, the parsha's name in
+/// Hebrew and in the UI's language, when it is read, the rings, and the one
+/// filled button on the page, which names exactly where the reading
+/// continues.
+///
+/// Once every aliyah is read, the rings and the button give way to a word
+/// that the parsha is complete, the haftarah if it is still to read, and the
+/// week's discussion. When that happens while the app is open, the frame's
+/// gold rule draws itself around the page once (§8), and is still after;
+/// a restarted app shows it still, as the rings show progress without a
+/// sweep.
+class _Hero extends ConsumerStatefulWidget {
+  const _Hero({required this.ctx, required this.settings});
 
   final WeekContext ctx;
   final AppSettings settings;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Hero> createState() => _HeroState();
+}
+
+class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixin {
+  /// The weeks this run of the app has shown unfinished, and those whose
+  /// frame has since drawn itself, by week id. In memory only.
+  static final _seenOpen = <String>{};
+  static final _framed = <String>{};
+
+  static void forgetCompletions() {
+    _seenOpen.clear();
+    _framed.clear();
+  }
+
+  late final AnimationController _frame = AnimationController(vsync: this, value: 1);
+  late final Animation<double> _draw = CurvedAnimation(parent: _frame, curve: Motion.standard);
+
+  /// Whether the frame has yet to draw itself: set while the hero is hidden
+  /// (a route covers it, or its tab is in the background), so that it waits
+  /// until it can be seen.
+  bool _pending = false;
+
+  WeekContext get ctx => widget.ctx;
+
+  @override
+  void initState() {
+    super.initState();
+    _track();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _drawIfVisible();
+  }
+
+  @override
+  void didUpdateWidget(_Hero old) {
+    super.didUpdateWidget(old);
+    if (old.ctx.id != ctx.id || old.ctx.progress.isComplete != ctx.progress.isComplete) {
+      _track();
+      _drawIfVisible();
+    }
+  }
+
+  /// Notes a week shown unfinished, and readies the frame of one finished
+  /// since.
+  void _track() {
+    final id = ctx.id;
+    if (!ctx.progress.isComplete) {
+      _seenOpen.add(id);
+      _pending = false;
+      _frame.value = 1;
+    } else if (_seenOpen.contains(id) && !_framed.contains(id)) {
+      _pending = true;
+      _frame.value = 0;
+    }
+  }
+
+  void _drawIfVisible() {
+    if (!_pending || !TickerMode.valuesOf(context).enabled) return;
+    _pending = false;
+    _framed.add(ctx.id);
+    final duration = Motion.of(context).d(Motion.frame);
+    if (duration == Duration.zero) {
+      _frame.value = 1;
+    } else {
+      _frame
+        ..duration = duration
+        ..forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _frame.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final names = Names(context);
     final theme = Theme.of(context);
-    final repo = ref.watch(parshaRepositoryProvider);
-    final weights = [for (var a = 0; a < kAliyot; a++) repo.aliyahVerseCount(ctx.portion, a)];
-    final occasion = ctx.week.occasion;
-    final readOn = names.readOnLabel(ctx.week);
-    final next = ctx.nextAliyah;
-    final started = ctx.progress.isStarted;
-    final daysLeft = occasion.differenceInDays(ctx.today);
+    final scheme = theme.colorScheme;
+    final sefer = SeferType.of(context);
+    final settings = widget.settings;
+    final hebrewUi = context.isHebrewUi;
+    final portion = ctx.portion;
+    final week = ctx.week;
+    final today = ctx.today;
+    final vezot = week.portion.isVezotHaberakhah;
+    final friday = today.weekday == _friday;
+    final complete = ctx.progress.isComplete;
+
+    final eyebrow = vezot
+        ? l.simchatTorahEyebrow
+        : friday && ref.watch(pastMiddayProvider)
+            ? l.erevShabbat
+            : l.parshatHashavua;
+    final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
+    final range = portion.range;
+    final daysLeft = week.occasion.differenceInDays(today);
     // The days until the portion is read in synagogue: on Shabbat, or for
-    // Vezot HaBerachah on Simchat Torah, which is seldom a Shabbat.
-    final countdown = daysLeft < 0 || ctx.progress.isComplete
+    // Vezot HaBerachah on Simchat Torah, which is seldom a Shabbat. On
+    // Friday, that Shabbat begins this evening.
+    final countdown = daysLeft < 0 || complete
         ? null
-        : ctx.week.portion.isVezotHaberakhah
+        : vezot
             ? l.simchatTorahInDays(daysLeft)
-            : occasion.isShabbat
-                ? l.shabbatInDays(daysLeft)
-                : null;
+            : friday
+                ? l.shabbatBeginsTonight
+                : week.occasion.isShabbat
+                    ? l.shabbatInDays(daysLeft)
+                    : null;
     // On the eve of Shabbat or Yom Tov, with a city chosen, when candles are
     // lit there tonight instead.
     final candles = ref.watch(candleLightingTodayProvider);
     final note = candles == null ? countdown : l.todayCandleLighting(clockTime(context, candles));
+    final muted = scheme.onSurfaceVariant;
+    final thirdLabel = settings.usesRashi && !settings.usesOnkelos ? l.passRashi : null;
 
-    return InfoCard(
+    final title = Semantics(
+      // Read through before the rings below it.
+      container: true,
+      explicitChildNodes: true,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Read through before the rings below it.
-          Semantics(
-            container: true,
-            explicitChildNodes: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Semantics(
-                  header: true,
-                  headingLevel: 1,
-                  child: Text(
-                    l.parshaLabel(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
-                    style: theme.textTheme.headlineSmall,
-                  ),
-                ),
-                Text(
-                  names.portionAlt(ctx.portion, ashkenazi: settings.ashkenaziNames),
-                  style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-                const Gap(8),
-                Text(readOn, style: theme.textTheme.bodyMedium),
-                if (note != null) Text(note, style: theme.textTheme.bodySmall),
-              ],
-            ),
+          Eyebrow(eyebrow, textAlign: TextAlign.center),
+          const Gap(Space.sm),
+          // The page's heading, named as the UI names the parsha.
+          _ParshaHeading(
+            portion: portion,
+            label: l.parshaLabel(name),
+            style: sefer.hebrewDisplay.copyWith(fontSize: 46, height: 60 / 46),
           ),
-          const Gap(20),
-          RingsWithLegend(
-            progress: ctx.progress,
-            aliyahWeights: weights,
-            thirdLabel: settings.usesRashi && !settings.usesOnkelos ? l.passRashi : null,
-          ),
-          const Gap(20),
-          if (ctx.progress.isComplete)
-            Row(
-              children: [
-                Icon(Icons.celebration_outlined, color: theme.colorScheme.primary),
-                const Gap(8),
-                Expanded(child: Text(l.weekComplete, style: theme.textTheme.titleSmall)),
-              ],
+          if (hebrewUi)
+            Lang(
+              const Locale('en'),
+              child: Text(
+                names.portionAlt(portion, ashkenazi: settings.ashkenaziNames),
+                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                textAlign: TextAlign.center,
+                textDirection: TextDirection.ltr,
+              ),
             )
           else
-            FilledButton.icon(
-              icon: const Icon(Icons.menu_book),
-              label: Text(started ? l.continueReading : l.startReading),
-              onPressed: () => context.push('/read/${ctx.id}/${next ?? 0}'),
+            // The heading already says it.
+            ExcludeSemantics(
+              child: WholeWords(name, style: theme.textTheme.headlineLarge?.copyWith(color: scheme.onSurface)),
             ),
-          const Gap(8),
-          OutlinedButton(
-            onPressed: () => context.push('/today/week/${ctx.id}'),
-            child: Text(l.aliyotProgress(ctx.progress.completedAliyot, kAliyot)),
+          const Gap(Space.xs),
+          DotLine(
+            [
+              names.range(portion.book, range.start.chapter, range.start.verse, range.end.chapter, range.end.verse),
+              names.readOnLabel(week),
+            ],
+            style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+            textAlign: TextAlign.center,
+          ),
+          if (note != null)
+            Text(note, style: theme.textTheme.bodySmall?.copyWith(color: muted), textAlign: TextAlign.center),
+        ],
+      ),
+    );
+
+    final padding = EdgeInsets.all(MediaQuery.sizeOf(context).width < Breakpoints.narrow ? Space.lg : Space.xxl);
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        title,
+        const Gap(Space.lg),
+        const SeferDivider(),
+        const Gap(Space.lg),
+        if (complete)
+          ..._complete(context)
+        else ...[
+          _HeroRings(ctx: ctx, thirdLabel: thirdLabel),
+          const Gap(Space.md),
+          FilledButton.icon(
+            // The hero's 52, and room around a label that large text wraps.
+            style: AppButtons.roomy(context, (24, 12, 6))
+                .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
+            icon: const Icon(Icons.menu_book),
+            label: Text(_continueLabel(context), textAlign: TextAlign.center),
+            onPressed: () => context.push('/read/${ctx.id}/${ctx.nextAliyah}'),
           ),
         ],
+      ],
+    );
+    if (!complete) return TitlePageFrame(padding: padding, child: body);
+    return AnimatedBuilder(
+      animation: _draw,
+      builder: (context, child) => TitlePageFrame(padding: padding, drawProgress: _draw.value, child: child!),
+      child: body,
+    );
+  }
+
+  /// The complete week: a word that it is, a gentle line, and what is left
+  /// to do with it, the haftarah and the discussion.
+  List<Widget> _complete(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final settings = widget.settings;
+    final haftarah = (settings.haftarahEnabled || ctx.haftarahRequired) && ctx.progress.haftarah == null;
+    return [
+      BalancedText(l.weekComplete, style: theme.textTheme.titleLarge, bySentence: true),
+      const Gap(Space.xs),
+      BalancedText(
+        ctx.week.portion.isVezotHaberakhah ? l.weekCompleteNoteSimchatTorah : l.weekCompleteNote,
+        style: SeferType.of(context).marginalia,
+      ),
+      const Gap(Space.lg),
+      Wrap(
+        alignment: WrapAlignment.center,
+        spacing: Space.sm,
+        runSpacing: Space.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (haftarah)
+            FilledButton.tonal(
+              style: AppButtons.tonal(context).merge(AppButtons.roomy(context, (24, 12, 6))),
+              onPressed: () => context.push('/today/haftarah/${ctx.id}'),
+              child: Text(l.readTheHaftarah, textAlign: TextAlign.center),
+            ),
+          WeeklyThreadOpener(
+            portion: ctx.portion,
+            hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
+            builder: (context, progress, open) => TextButton.icon(
+              style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+              icon: progress ?? const Icon(Icons.forum_outlined),
+              label: Text(l.discussTheParsha, textAlign: TextAlign.center),
+              onPressed: open,
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  /// Where the button leads, exactly: "Start · Rishon" before anything of
+  /// the week is read, "Continue · Shlishi, Targum" when some readings of
+  /// the next aliyah are done, and otherwise "Continue · Shlishi".
+  String _continueLabel(BuildContext context) {
+    final l = context.l10n;
+    final names = Names(context);
+    final next = ctx.nextAliyah!;
+    final aliyah = names.aliyah(next);
+    final progress = ctx.progress;
+    if (!progress.isStarted) return l.startAt(aliyah);
+    if (!ReadingPass.values.any((p) => progress.isUnitDone(next, p))) return l.continueAt(aliyah);
+    final pass = ReadingPass.values.firstWhere((p) => !progress.isUnitDone(next, p));
+    final settings = widget.settings;
+    return l.continueAtPass(aliyah, names.readingPass(pass, rashi: settings.usesRashi && !settings.usesOnkelos));
+  }
+}
+
+/// The parsha's name, pointed, as the page's heading: its label names the
+/// parsha as the UI does.
+class _ParshaHeading extends StatelessWidget {
+  const _ParshaHeading({required this.portion, required this.label, required this.style});
+
+  final PortionInfo portion;
+  final String label;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        header: true,
+        headingLevel: 1,
+        label: label,
+        child: ExcludeSemantics(
+          child: Lang(
+            const Locale('he'),
+            child: WholeWords(
+              Names(context).portionPointed(portion),
+              style: style,
+              textDirection: TextDirection.rtl,
+              locale: const Locale('he'),
+            ),
+          ),
+        ),
+      );
+}
+
+/// The hero's rings and their legend, centred in the frame, and under the
+/// legend's end the way to all seven aliyot.
+class _HeroRings extends StatelessWidget {
+  const _HeroRings({required this.ctx, required this.thirdLabel});
+
+  final WeekContext ctx;
+  final String? thirdLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    // As wide as the rings and their legend side by side can use (§6.11),
+    // so that they sit in the middle of a wide frame.
+    final width = ParshaRings.hero +
+        RingsWithLegend.gap +
+        RingLegend.naturalWidth(context, ctx.progress, thirdLabel: thirdLabel) +
+        RingsWithLegend.maxSlack;
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: width),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            RingsWithLegend(progress: ctx.progress, aliyahWeights: ctx.aliyahVerses, thirdLabel: thirdLabel),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: _FlushTextButton(
+                end: true,
+                icon: Icons.chevron_right,
+                label: l.allAliyot,
+                onPressed: () => context.push('/today/week/${ctx.id}'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+/// [LocalDate.weekday]s, from Sunday's 0.
+const _thursday = 4;
+const _friday = 5;
+
+/// Which day of the week Today's catch-up line speaks for: the line never
+/// calls a day "midweek" that isn't one.
+enum CatchUpDay {
+  /// Sunday to Wednesday.
+  midweek,
+
+  /// Thursday, with Friday still to read on.
+  thursday,
+
+  /// The last reading day before Shabbat.
+  erevShabbat,
+
+  /// The last reading day before a Shabbat that runs straight into Yom Tov:
+  /// what is read then is logged after Yom Tov.
+  erevShabbatThenYomTov,
+
+  /// The last reading day before a Yom Tov that is not Shabbat.
+  erevYomTov,
+
+  /// The last reading day before a Yom Tov that runs straight into Shabbat
+  /// (Rosh Hashanah on Thursday and Friday, say): what is read then is
+  /// logged after Shabbat.
+  erevYomTovThenShabbat,
+
+  /// The day before Yom Kippur, whatever day of the week it is: neither
+  /// called Yom Tov nor the end of the week, which always has a reading day
+  /// after it.
+  erevYomKippur,
+}
+
+/// The [CatchUpDay] of [today], a reading day, by the reader's custom for
+/// the days of Yom Tov.
+CatchUpDay catchUpDayFor(LocalDate today, {required bool oneDayYomTov}) {
+  final tomorrow = today.addDays(1);
+  if (JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(tomorrow))) return CatchUpDay.erevYomKippur;
+  if (JewishHolidays.isRestDay(tomorrow, israel: oneDayYomTov)) {
+    // Logged once the days of rest are over, after whichever ends them.
+    final endsWithShabbat = _lastDayOfRest(tomorrow, oneDayYomTov: oneDayYomTov).isShabbat;
+    if (tomorrow.isShabbat) return endsWithShabbat ? CatchUpDay.erevShabbat : CatchUpDay.erevShabbatThenYomTov;
+    return endsWithShabbat ? CatchUpDay.erevYomTovThenShabbat : CatchUpDay.erevYomTov;
+  }
+  return today.weekday == _thursday ? CatchUpDay.thursday : CatchUpDay.midweek;
+}
+
+/// The last of the days of rest that run on from [day], a day of rest, by
+/// the reader's custom for the days of Yom Tov.
+LocalDate _lastDayOfRest(LocalDate day, {required bool oneDayYomTov}) {
+  var last = day;
+  while (JewishHolidays.isRestDay(last.addDays(1), israel: oneDayYomTov)) {
+    last = last.addDays(1);
+  }
+  return last;
+}
+
+/// Today's reading (§9 Today, 4), or while aliyot planned for earlier days
+/// are still to read, those aliyot and today's together, with an honest
+/// estimate and a calm word about the day. Reading from a printed Chumash
+/// can always be logged here.
 class _TodayCard extends ConsumerWidget {
   const _TodayCard({required this.ctx, required this.settings});
 
@@ -273,266 +663,544 @@ class _TodayCard extends ConsumerWidget {
     final l = context.l10n;
     final names = Names(context);
     final theme = Theme.of(context);
-    final repo = ref.watch(parshaRepositoryProvider);
+    final muted = theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final paused = ref.watch(isPausedProvider);
     final day = ctx.plan.dayFor(ctx.today);
+    final due = ctx.dueAliyot();
     final behind = ctx.behindBy();
-
-    Widget body;
-    if (day == null) {
-      body = Text(l.todayNothingPlanned);
-    } else {
-      final verses = day.aliyot.fold<int>(0, (n, a) => n + repo.aliyahVerseCount(ctx.portion, a));
-      final done = day.aliyot.every(ctx.progress.isAliyahDone);
-      final first = day.aliyot.firstWhere((a) => !ctx.progress.isAliyahDone(a), orElse: () => day.aliyot.first);
-      body = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(names.aliyot(day.aliyot), style: theme.textTheme.titleLarge),
-          Text(
-            '${l.versesCount(verses)} · ${l.minutesEstimate((verses * kSecondsPerVerse / 60).ceil())}',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          if (behind > 0 && !done) ...[
-            const Gap(8),
-            Text(l.todayBehind(behind), style: theme.textTheme.bodyMedium),
+    int versesOf(List<int> aliyot) => aliyot.fold(0, (n, a) => n + ctx.aliyahVerses[a]);
+    // Calm words about the day: while paused, that nothing counts; on the
+    // eve of Tisha B'Av, when many stop learning.
+    final notes = [
+      if (paused) l.pausedTodayNote,
+      if (JewishHolidays.isTishaBav(ctx.today.addDays(1))) l.erevTishaBavNote,
+    ];
+    // Set evenly, as the note under the week strip is, so that no word is
+    // left alone on a last line and no line starts with a dash.
+    List<Widget> marginalia(List<String> lines) => [
+          for (final (i, line) in lines.indexed) ...[
+            Gap(i == 0 ? Space.sm : Space.xs),
+            BalancedText(dashHeldToWord(line), style: SeferType.of(context).marginalia, textAlign: TextAlign.start),
           ],
-          const Gap(12),
-          if (done)
-            Row(
-              children: [
-                Icon(Icons.check_circle, color: theme.colorScheme.primary),
-                const Gap(8),
-                Expanded(child: Text(l.todayDone, style: theme.textTheme.titleSmall)),
-              ],
-            )
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton.tonalIcon(
-                  style: AppButtons.tonal(context),
-                  icon: const Icon(Icons.play_arrow),
-                  label: Text(l.readTodaysAliyah),
-                  onPressed: () => context.push('/read/${ctx.id}/$first'),
-                ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.import_contacts),
-                  label: Text(l.readFromBook),
-                  onPressed: () async {
-                    final date = await pickReadDate(context, week: ctx.week, today: ctx.today);
-                    if (date == null || !context.mounted) return;
-                    ref.read(progressProvider.notifier).markAliyot(ctx.id, day.aliyot, date);
-                    hapticSuccess(ref);
-                    showStatus(context, l.markedRead);
-                  },
-                ),
-              ],
-            ),
-        ],
-      );
-    }
+        ];
 
+    /// Reading [target], if given, and logging [shown], the aliyot the card
+    /// names and has not seen read, from a Chumash.
+    Widget actions(List<int> shown, {int? target}) => Wrap(
+          spacing: Space.sm,
+          runSpacing: Space.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (target != null)
+              FilledButton.tonal(
+                style: AppButtons.tonal(context).merge(AppButtons.roomy(context, (24, 12, 6))),
+                onPressed: () => context.push('/read/${ctx.id}/$target'),
+                child: Text(l.readAliyah(names.aliyah(target)), textAlign: TextAlign.center),
+              ),
+            _FlushTextButton(
+              // At the start of the line, its icon on the text's edge.
+              flush: target == null,
+              icon: Icons.import_contacts,
+              label: l.readFromBook,
+              onPressed: () => _logFromBook(context, ref, shown),
+            ),
+          ],
+        );
+
+    final List<Widget> children;
+    if (behind > 0 && !paused && due.isNotEmpty) {
+      // Everything due, from the first aliyah not read, where the hero's
+      // button starts too, so no other button leads to one. The line counts
+      // what the card names.
+      final count = due.length;
+      final line = switch (catchUpDayFor(ctx.today, oneDayYomTov: settings.oneDayYomTov)) {
+        CatchUpDay.midweek => l.todayBehind(count),
+        CatchUpDay.thursday => l.todayBehindThursday(count),
+        CatchUpDay.erevShabbat => l.todayLastDayShabbat(count),
+        CatchUpDay.erevShabbatThenYomTov => l.todayLastDayShabbatThenYomTov(count),
+        CatchUpDay.erevYomTov => l.todayLastDayYomTov(count),
+        CatchUpDay.erevYomTovThenShabbat => l.todayLastDayYomTovThenShabbat(count),
+        CatchUpDay.erevYomKippur => l.todayLastDayYomKippur(count),
+      };
+      children = [
+        _CardHeader(l.todayCatchUpTitle),
+        Text(names.aliyotSpan(due), style: theme.textTheme.headlineSmall),
+        Text(
+          [l.aliyotCount(due.length), l.versesCount(versesOf(due)), l.minutesEstimate(ctx.remainingMinutes(due))]
+              .join(' · '),
+          style: muted,
+        ),
+        ...marginalia([line, ...notes]),
+        const Gap(Space.lg),
+        actions(due),
+      ];
+    } else if (day == null) {
+      children = [_CardHeader(l.todayReadingTitle), Text(l.todayNothingPlanned, style: muted), ...marginalia(notes)];
+    } else {
+      // While paused too, only today's aliyot, whatever was planned before.
+      final unread = day.aliyot.where((a) => !ctx.progress.isAliyahDone(a)).toList();
+      children = [
+        _CardHeader(l.todayReadingTitle),
+        Text(names.aliyot(day.aliyot), style: theme.textTheme.headlineSmall),
+        Text(
+          [
+            // What is left to read, and once it is read, what was.
+            if (unread.isEmpty)
+              l.versesCount(versesOf(day.aliyot))
+            else ...[
+              l.versesCount(versesOf(unread)),
+              l.minutesEstimate(ctx.remainingMinutes(unread)),
+            ],
+          ].join(' · '),
+          style: muted,
+        ),
+        ...marginalia(notes),
+        const Gap(Space.lg),
+        if (unread.isEmpty)
+          Row(
+            children: [
+              Icon(Icons.check_circle, size: 20, color: theme.colorScheme.primary),
+              const Gap(Space.sm),
+              Expanded(child: Text(l.todayDone, style: theme.textTheme.titleSmall)),
+            ],
+          )
+        else
+          // Today's first aliyah, where the hero's button leads elsewhere
+          // (while paused, to an aliyah planned before).
+          actions(unread, target: unread.first == ctx.nextAliyah ? null : unread.first),
+      ];
+    }
     return InfoCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SectionHeader(l.todayReadingTitle, padding: const EdgeInsets.only(bottom: 8)),
-          body,
-        ],
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
     );
+  }
+
+  /// Logs reading done from a printed Chumash: which of [aliyot] (each
+  /// checked to begin with), then when, then all of them at once.
+  Future<void> _logFromBook(BuildContext context, WidgetRef ref, List<int> aliyot) async {
+    final l = context.l10n;
+    final chosen = await showAppSheet<List<int>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _BookSheet(ctx: ctx, aliyot: aliyot),
+    );
+    if (chosen == null || chosen.isEmpty || !context.mounted) return;
+    final date = await pickReadDate(context, week: ctx.week, today: ctx.today);
+    if (date == null || !context.mounted) return;
+    ref.read(progressProvider.notifier).markAliyot(ctx.id, chosen, date);
+    hapticSuccess(ref);
+    showStatus(context, l.markedRead);
   }
 }
 
-class _StreakRow extends StatelessWidget {
-  const _StreakRow({required this.summary});
-  final StreakSummary summary;
+/// A card's eyebrow, a heading for screen readers, 4 above its title.
+class _CardHeader extends StatelessWidget {
+  const _CardHeader(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) =>
+      SectionHeader(text, padding: const EdgeInsetsDirectional.only(bottom: Space.xs));
+}
+
+/// The aliyot to log as read from a Chumash, each checked to begin with.
+/// Returns those still checked.
+class _BookSheet extends StatefulWidget {
+  const _BookSheet({required this.ctx, required this.aliyot});
+
+  final WeekContext ctx;
+  final List<int> aliyot;
+
+  @override
+  State<_BookSheet> createState() => _BookSheetState();
+}
+
+class _BookSheetState extends State<_BookSheet> {
+  late final Set<int> _checked = {...widget.aliyot};
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    Widget tile(IconData icon, String label, String value) => Expanded(
-          child: InfoCard(
-            onTap: () => context.go('/progress'),
-            child: Semantics(
-              label: '$label: $value',
-              button: true,
-              excludeSemantics: true,
-              child: Row(
-                children: [
-                  Icon(icon, color: Theme.of(context).colorScheme.primary),
-                  const Gap(10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _WholeWords(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                        Text(label, style: Theme.of(context).textTheme.bodySmall),
-                      ],
-                    ),
-                  ),
-                ],
+    final names = Names(context);
+    final padding = sheetPadding(context);
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SheetTitle(l.readFromBookTitle),
+            for (final a in widget.aliyot)
+              CheckboxListTile(
+                controlAffinity: ListTileControlAffinity.leading,
+                value: _checked.contains(a),
+                onChanged: (on) => setState(() => on! ? _checked.add(a) : _checked.remove(a)),
+                title: Text(names.aliyah(a)),
+                subtitle: Text(aliyahReference(context, widget.ctx, a)),
+              ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(padding, Space.sm, padding, Space.lg),
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: FilledButton(
+                  style: AppButtons.roomy(context, (24, 12, 6)),
+                  onPressed: _checked.isEmpty
+                      ? null
+                      : () => Navigator.pop(context, widget.aliyot.where(_checked.contains).toList()),
+                  child: Text(l.actionContinue),
+                ),
               ),
             ),
-          ),
-        );
-    return Row(
-      children: [
-        tile(Icons.auto_stories_outlined, l.streakParsha, l.weeksCount(summary.parshaStreak)),
-        const Gap(12),
-        tile(Icons.event_available_outlined, l.streakDays, l.daysCount(summary.daysOnTrack)),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
 
-/// [text] wrapped between its words, never inside one: a word too wide for
-/// the line on its own, as with large text, is set just small enough to fit.
-class _WholeWords extends StatelessWidget {
-  const _WholeWords(this.text, {required this.style});
+/// A text button with an icon, its padding roomy around a label that large
+/// text wraps. At the edge of a line ([flush]), it is moved by its padding
+/// toward that edge, so that its icon, not its padding, lines up with the
+/// text above it; its ink and focus ring reach into the card's margin.
+class _FlushTextButton extends StatelessWidget {
+  const _FlushTextButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.flush = true,
+    this.end = false,
+  });
 
-  final String text;
-  final TextStyle? style;
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final bool flush;
+
+  /// At the end of the line, with the icon after the label (a chevron);
+  /// otherwise at its start, with the icon before it.
+  final bool end;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
-        final scaler = MediaQuery.textScalerOf(context);
-        var widest = 0.0;
-        for (final word in text.split(' ')) {
-          final painter = TextPainter(
-            text: TextSpan(text: word, style: style),
-            textDirection: Directionality.of(context),
-            textScaler: scaler,
-            maxLines: 1,
-          )..layout();
-          widest = math.max(widest, painter.width);
-          painter.dispose();
-        }
-        final size = style?.fontSize ?? 14;
-        // A hair under, so rounding never breaks the word after all.
-        final share = widest > constraints.maxWidth ? (constraints.maxWidth - 1) / widest : 1.0;
-        return Text(text, style: style, textScaler: share < 1 ? TextScaler.linear(scaler.scale(size) / size * share) : null);
-      });
+  Widget build(BuildContext context) {
+    final padding = AppButtons.roomyPadding(context, (12, 8, 4), vertical: 8);
+    final button = TextButton.icon(
+      style: ButtonStyle(padding: WidgetStatePropertyAll(padding)),
+      iconAlignment: end ? IconAlignment.end : IconAlignment.start,
+      icon: Icon(icon),
+      label: Text(label),
+      onPressed: onPressed,
+    );
+    if (!flush) return button;
+    final shift = (end ? 1 : -1) * padding.left * (Directionality.of(context) == TextDirection.rtl ? -1 : 1);
+    return Transform.translate(offset: Offset(shift, 0), child: button);
+  }
 }
 
-class _HaftarahTile extends ConsumerWidget {
-  const _HaftarahTile({required this.ctx});
-  final WeekContext ctx;
+/// Today on Shabbat or Yom Tov ([restDayProvider], §9 Today, 8): candles, a
+/// greeting, the parsha's name, a word that reading from a printed Chumash
+/// is logged afterwards, and the way to the parsha. Nothing else, and
+/// nothing moves.
+class _RestHero extends ConsumerWidget {
+  const _RestHero({required this.date});
+
+  /// The day of rest, by the device's date.
+  final LocalDate date;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final names = Names(context);
-    final h = ctx.haftarah;
-    final refs = h.parts
-        .map((p) => names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse))
-        .join(' · ');
-    final done = ctx.progress.haftarah != null;
-    return InfoCard(
-      onTap: () => context.push('/today/haftarah/${ctx.id}'),
-      child: Row(
+    final theme = Theme.of(context);
+    final settings = ref.watch(settingsProvider);
+    // The parsha read today, or on the Shabbat this Yom Tov comes before.
+    final week = ref.watch(scheduleProvider).weekFor(date);
+    final portion = ref.watch(parshaRepositoryProvider).portion(week.portion);
+    final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
+    bool yomTov(LocalDate d) => JewishHolidays.isYomTov(HebrewDate.fromLocalDate(d), israel: settings.oneDayYomTov);
+    bool yomKippur(LocalDate d) => JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(d));
+    final last = _lastDayOfRest(date, oneDayYomTov: settings.oneDayYomTov);
+    // The day's own greeting, on Shabbat too: Yom Kippur is a fast, and Rosh
+    // Hashanah has its wish for the year.
+    final greeting = yomKippur(date)
+        ? l.gmarChatimaTova
+        : JewishHolidays.isRoshHashanah(HebrewDate.fromLocalDate(date))
+            ? l.shanaTova
+            : yomTov(date)
+                ? l.chagSameach
+                : l.shabbatShalom;
+    final narrow = MediaQuery.sizeOf(context).width < Breakpoints.narrow;
+    return TitlePageFrame(
+      // A little more air above and below than a reading day's.
+      padding: narrow
+          ? const EdgeInsets.fromLTRB(Space.lg, Space.s28, Space.lg, Space.lg)
+          : const EdgeInsets.fromLTRB(Space.xxl, Space.s40, Space.xxl, Space.xxl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(done ? Icons.check_circle : Icons.auto_stories_outlined,
-              color: done ? Theme.of(context).colorScheme.primary : null),
-          const Gap(12),
-          Expanded(
+          const Center(child: ShabbatCandlesIcon(size: 40)),
+          const Gap(Space.lg),
+          BalancedText(greeting, style: theme.textTheme.headlineMedium),
+          const Gap(Space.xl),
+          Semantics(
+            container: true,
+            explicitChildNodes: true,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(done ? l.haftarahRead : l.haftarahLabel, style: Theme.of(context).textTheme.titleSmall),
-                Text(refs),
-                if (h.specialKey != null) Text(l.specialHaftarah(names.specialHaftarah(h.specialKey!))),
-                if (h.regular != null) Text(l.alsoRegularHaftarah),
+                Eyebrow(
+                  week.portion.isVezotHaberakhah ? l.simchatTorahEyebrow : l.parshatHashavua,
+                  textAlign: TextAlign.center,
+                ),
+                const Gap(Space.xs),
+                _ParshaHeading(
+                  portion: portion,
+                  label: l.parshaLabel(name),
+                  style: SeferType.of(context).hebrewDisplay.copyWith(fontSize: 32, height: 44 / 32),
+                ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right),
+          const Gap(Space.lg),
+          // Logged once the days of rest are over, after Yom Tov (or Yom
+          // Kippur) where they end with one.
+          BalancedText(
+            yomKippur(last)
+                ? l.restDayBodyYomKippur
+                : yomTov(last)
+                    ? l.restDayBodyChag
+                    : l.restDayBody,
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            bySentence: true,
+          ),
+          const Gap(Space.sm),
+          Center(
+            child: TextButton(
+              style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+              onPressed: () => context.push('/today/week/${weekIdFor(week.portion, week.occasion)}'),
+              child: Text(l.openTheParsha, textAlign: TextAlign.center),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _OpenPreviousCard extends ConsumerWidget {
-  const _OpenPreviousCard({required this.previous, required this.current, required this.today, required this.summary});
+/// The last day of the latest pause, once it has ended, for Today to
+/// welcome the reader back from: until they read again, or put the welcome
+/// away ([AppSettings.pauseEndSeen]). Null while paused, before any pause
+/// has ended, and once reading has been logged for a day after it.
+///
+/// Null too for a pause made, or last changed, once it was over (by the
+/// reading day of its stamp, by the reader's days of Yom Tov): one entered
+/// after the fact, say, a few days back, or one ended early. Only a pause
+/// that ended while the app was closed is welcomed.
+LocalDate? pauseEndToWelcome(ProgressState progress, LocalDate today, {bool oneDayYomTov = false}) {
+  Pause? latest;
+  for (final p in progress.pauses) {
+    if (p.deleted) continue;
+    if (latest == null || p.end > latest.end) latest = p;
+  }
+  final end = latest?.end;
+  if (latest == null || end == null || end >= today) return null;
+  if (latest.updatedAt > 0) {
+    final changed = DateTime.fromMillisecondsSinceEpoch(latest.updatedAt);
+    if (effectiveReadingDay(changed, oneDayYomTov: oneDayYomTov) > end) return null;
+  }
+  for (final w in progress.weeks.values) {
+    for (final row in w.units) {
+      if (row.any((d) => d != null && d > end)) return null;
+    }
+  }
+  return end;
+}
 
-  final WeekContext previous;
-  final WeekContext current;
-  final LocalDate today;
-  final StreakSummary summary;
+/// Back after a pause that ended while the app was closed: welcomed, told
+/// that nothing in it counted, and offered this week's parsha and last
+/// week's while it can still count.
+class _PauseEndedNotice extends ConsumerWidget {
+  const _PauseEndedNotice({required this.end, required this.ctx, required this.previous});
+
+  /// The pause's last day.
+  final LocalDate end;
+  final WeekContext ctx;
+  final WeekContext? previous;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final names = Names(context);
-    final settings = ref.watch(settingsProvider);
-    final name = names.portion(previous.portion, ashkenazi: settings.ashkenaziNames);
-    final engine = ref.watch(streakEngineProvider);
-    // On the first reading day after Shabbat, ask about reading done on Shabbat.
-    var firstDayAfter = previous.week.occasion.addDays(1);
-    while (JewishHolidays.isRestDay(firstDayAfter, israel: settings.oneDayYomTov)) {
-      firstDayAfter = firstDayAfter.addDays(1);
-    }
-    if (today == firstDayAfter && previous.week.occasion.isShabbat) {
-      return InfoCard(
-        color: Theme.of(context).colorScheme.secondaryContainer,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SectionHeader(l.checkInTitle, padding: EdgeInsets.zero),
-            const Gap(4),
-            Text(l.checkInBody),
-            const Gap(12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton(
-                  onPressed: () {
-                    final progress = ref.read(progressProvider.notifier);
-                    progress.markWeek(previous.id, previous.week.occasion);
-                    // Finishing it includes the haftarah, where that counts.
-                    if (previous.haftarahDue) progress.markHaftarah(previous.id, previous.week.occasion);
-                    hapticSuccess(ref);
-                    showStatus(context, l.parshaComplete(name));
-                  },
-                  child: Text(l.checkInFinished),
-                ),
-                OutlinedButton(
-                  onPressed: () => context.push('/today/week/${previous.id}'),
-                  child: Text(l.checkInPick),
-                ),
-              ],
-            ),
-          ],
+    final ashkenazi = ref.watch(settingsProvider.select((s) => s.ashkenaziNames));
+    final previous = this.previous;
+    final next = ctx.nextAliyah;
+    final actions = [
+      if (previous != null)
+        TextButton(
+          onPressed: () => context.push('/today/week/${previous.id}'),
+          child: Text(l.catchUpOn(names.portion(previous.portion, ashkenazi: ashkenazi)), textAlign: TextAlign.center),
         ),
-      );
-    }
+      // Tonal: the hero's is the page's one filled button.
+      if (next != null)
+        FilledButton.tonal(
+          // Room around a label that large text wraps.
+          style: AppButtons.tonal(context).merge(AppButtons.roomy(context, (24, 12, 6))),
+          onPressed: () => context.push('/read/${ctx.id}/$next'),
+          child: Text(ctx.progress.isStarted ? l.pauseEndedContinue : l.pauseEndedStart, textAlign: TextAlign.center),
+        ),
+    ];
+    return NoticeBanner(
+      icon: Icons.play_circle_outline,
+      title: l.pauseEnded,
+      text: l.pauseEndedOn(names.dateInText(end)),
+      actionBelow: true,
+      action: actions.isEmpty
+          ? null
+          : Wrap(
+              alignment: WrapAlignment.end,
+              spacing: Space.sm,
+              runSpacing: Space.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: actions,
+            ),
+      onDismiss: () => ref.read(settingsProvider.notifier).update((s) => s.copyWith(pauseEndSeen: end)),
+      dismissLabel: l.actionDismiss,
+    );
+  }
+}
 
-    final overdue = previous.status == WeekStatus.overdue;
-    final nextName = names.portion(current.portion, ashkenazi: settings.ashkenaziNames);
-    final onlyHaftarah = previous.progress.isComplete;
-    return InfoCard(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      onTap: () => context.push(onlyHaftarah ? '/today/haftarah/${previous.id}' : '/today/week/${previous.id}'),
+/// What the note under Today's week strip tells.
+enum StripNoteKind {
+  /// A grace day covered a planned day.
+  grace,
+
+  /// Today's reading was read ahead.
+  ahead,
+
+  /// Doubling up today made up for yesterday.
+  caughtUp,
+}
+
+/// What the note under Today's week strip tells, and of which days: each
+/// grace day spent, in order, or today, or yesterday.
+@immutable
+class StripNote {
+  const StripNote(this.kind, this.days);
+
+  final StripNoteKind kind;
+  final List<LocalDate> days;
+
+  @override
+  bool operator ==(Object other) => other is StripNote && other.kind == kind && const ListEquality<LocalDate>().equals(other.days, days);
+
+  @override
+  int get hashCode => Object.hash(kind, Object.hashAll(days));
+
+  @override
+  String toString() => 'StripNote(${kind.name}, $days)';
+}
+
+/// The one note under Today's week strip, if any (§9 Today, 5), from the
+/// week's [days]: first the grace days that covered planned days, all of
+/// them in one line, then today's reading read ahead, then yesterday made
+/// up today.
+///
+/// A note tells of what was decided after [acknowledged], the last day the
+/// reader put the notes away or saw them (see [AppSettings.lastStripAck]).
+/// A grace day is decided once the planned day after it is over without the
+/// reading made up, and is told within a week of that: every grace day not
+/// yet told is told together, so that none is spent without a word.
+StripNote? stripNoteFor(
+  Map<LocalDate, DayStatus> days, {
+  required LocalDate today,
+  LocalDate? acknowledged,
+}) {
+  bool unacknowledged(LocalDate decided) => acknowledged == null || decided > acknowledged;
+  final planned = days.keys.toList()..sort();
+  final grace = <LocalDate>[];
+  for (var i = planned.length - 1; i >= 0; i--) {
+    final day = planned[i];
+    if (days[day] != DayStatus.grace) continue;
+    final decided = (i + 1 < planned.length ? planned[i + 1] : day).addDays(1);
+    if (decided <= today.addDays(-7)) break;
+    if (unacknowledged(decided)) grace.insert(0, day);
+  }
+  if (grace.isNotEmpty) return StripNote(StripNoteKind.grace, grace);
+  if (!unacknowledged(today)) return null;
+  if (days[today] == DayStatus.ahead) return StripNote(StripNoteKind.ahead, [today]);
+  final yesterday = today.addDays(-1);
+  if (days[yesterday] == DayStatus.caughtUp) return StripNote(StripNoteKind.caughtUp, [yesterday]);
+  return null;
+}
+
+/// The note under the week strip ([stripNoteFor]), in the margin's voice,
+/// with a button to put it away. Once seen, it is told for the rest of the
+/// day.
+class _StripNote extends ConsumerWidget {
+  const _StripNote({required this.ctx, required this.summary, required this.settings});
+
+  final WeekContext ctx;
+  final StreakSummary summary;
+  final AppSettings settings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final names = Names(context);
+    final today = ctx.today;
+    final shown = settings.stripNoteShownOn;
+    final acknowledged = [settings.lastStripAck, if (shown != null && shown < today) shown].nonNulls.maxOrNull;
+    final note = stripNoteFor(summary.days, today: today, acknowledged: acknowledged);
+    if (note == null) return const SizedBox.shrink();
+
+    // Seen today, unless the page is out of sight (behind a route, or on
+    // a tab in the background).
+    if (shown != today && TickerMode.valuesOf(context).enabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted || ref.read(settingsProvider).stripNoteShownOn == today) return;
+        ref.read(settingsProvider.notifier).update((s) => s.copyWith(stripNoteShownOn: today));
+      });
+    }
+    // A grace day spent is earned back by finishing this parsha by its
+    // Shabbat, while there is room for one more.
+    final earnsBack = ctx.week.occasion.isShabbat &&
+        !ctx.week.portion.isVezotHaberakhah &&
+        !ctx.isFinished &&
+        summary.graceBalance < GraceRules.maxBalance;
+    final weekdays = names.andList([for (final d in note.days) names.weekday(d)]);
+    final text = switch (note.kind) {
+      StripNoteKind.grace => earnsBack
+          ? l.graceUsedNote(
+              note.days.length,
+              weekdays,
+              names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames),
+            )
+          : l.graceUsedNoteShort(note.days.length, weekdays),
+      StripNoteKind.ahead => l.todayAhead,
+      StripNoteKind.caughtUp => l.caughtUpNote,
+    };
+    return Padding(
+      // On the line of the header above, and clear of the card's foot.
+      padding: const EdgeInsetsDirectional.only(start: Space.md, bottom: Space.sm),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.schedule),
-          const Gap(12),
+          // The first line on the close button's centre.
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l.openWeekTitle(name), style: Theme.of(context).textTheme.titleSmall),
-                if (onlyHaftarah) Text(l.openWeekHaftarahLeft),
-                Text(overdue
-                    ? l.openWeekRestore(name, nextName)
-                    : l.openWeekLate(names.dateLong(engine.lateDeadlineOf(previous.week)))),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: BalancedText(
+                dashHeldToWord(text),
+                style: SeferType.of(context).marginalia,
+                textAlign: TextAlign.start,
+              ),
             ),
           ),
-          const Icon(Icons.chevron_right),
+          IconButton(
+            tooltip: l.actionDismiss,
+            icon: Icon(Icons.close, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            onPressed: () => ref.read(settingsProvider.notifier).update((s) => s.copyWith(lastStripAck: today)),
+          ),
         ],
       ),
     );

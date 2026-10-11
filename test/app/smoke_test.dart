@@ -110,10 +110,19 @@ void main() {
   });
 
   testWidgets('today screen renders', (tester) async {
+    final handle = tester.ensureSemantics();
     await pumpApp(tester);
     await tester.pumpAndSettle();
     // The default test window is tablet-sized, so navigation is a rail.
     expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.text('Parshat Bereshit').evaluate().isNotEmpty || find.textContaining('Parshat').evaluate().isNotEmpty, isTrue);
+    // The title page: its eyebrow, the parsha named as a heading, and the
+    // button that names where the reading starts.
+    expect(find.text('Parshat HaShavua'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^Parshat (?!HaShavua)')), findsOneWidget);
+    expect(
+      find.ancestor(of: find.textContaining(RegExp(r'^(Start|Continue) · ')), matching: find.byType(FilledButton)),
+      findsOneWidget,
+    );
+    handle.dispose();
   });
 }

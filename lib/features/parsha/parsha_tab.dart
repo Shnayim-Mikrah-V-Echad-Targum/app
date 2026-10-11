@@ -17,16 +17,21 @@ class ParshaTab extends ConsumerWidget {
     return WeekOverview(
       ctx: ctx,
       actions: [
+        // Every parsha of the Torah, named in words rather than by an icon.
+        TextButton(
+          onPressed: () => context.push('/parsha/browse'),
+          child: ConstrainedBox(
+            // With very large text on a phone, set smaller than it would be,
+            // rather than pushing the other actions off the app bar.
+            constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.4),
+            child: FittedBox(fit: BoxFit.scaleDown, child: Text(context.l10n.browseAll)),
+          ),
+        ),
         // A verse by its reference, or words to search for.
         IconButton(
           tooltip: context.l10n.searchTitle,
           icon: const Icon(Icons.search),
           onPressed: () => showGoToVerse(context),
-        ),
-        IconButton(
-          tooltip: context.l10n.browseAll,
-          icon: const Icon(Icons.list_alt),
-          onPressed: () => context.push('/parsha/browse'),
         ),
       ],
     );

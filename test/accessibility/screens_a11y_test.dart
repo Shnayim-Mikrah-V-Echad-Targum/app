@@ -71,8 +71,9 @@ void main() {
   }
 
   // Material leaves no space above and below a button's label at this size.
+  // On a 360 dp phone, where both labels wrap.
   testWidgets("at 200% text size the welcome's wrapped button labels keep clear of the buttons' edges", (tester) async {
-    await open(tester, '/welcome', settings: const AppSettings(), textScale: 2);
+    await open(tester, '/welcome', settings: const AppSettings(), size: const Size(360, 800), textScale: 2);
     for (final button in [find.byType(FilledButton), find.widgetWithText(TextButton, 'I already use Shnayim Mikra')]) {
       final box = tester.getRect(button);
       final label = tester.getRect(find.descendant(of: button, matching: find.byType(Text)));
@@ -168,16 +169,17 @@ void main() {
     testWidgets('a day of the week strip is a button that can be activated', (tester) async {
       final handle = tester.ensureSemantics();
       final c = await open(tester, '/today');
+      // "Monday: …", not the running head ("Monday, October 12 · …").
       expect(
-        tester.getSemantics(find.bySemanticsLabel(RegExp('^Monday'))),
+        tester.getSemantics(find.bySemanticsLabel(RegExp('^Monday: '))),
         isSemantics(isButton: true, hasTapAction: true, isFocusable: true),
       );
       // Shabbat has no reading to open.
       expect(
-        tester.getSemantics(find.bySemanticsLabel(RegExp('^Saturday'))),
+        tester.getSemantics(find.bySemanticsLabel(RegExp('^Saturday: '))),
         isSemantics(isButton: false, hasTapAction: false),
       );
-      tester.semantics.tap(find.semantics.byLabel(RegExp('^Monday')));
+      tester.semantics.tap(find.semantics.byLabel(RegExp('^Monday: ')));
       await tester.pump();
       await tester.pump();
       expect(location(c), '/read/5787:2/1', reason: "Monday's reading is Sheni");
@@ -212,7 +214,9 @@ void main() {
     testWidgets("the parsha's title is a heading of its own, apart from its rings", (tester) async {
       final handle = tester.ensureSemantics();
       await open(tester, '/today');
-      final title = tester.getSemantics(find.text('Parshat Noach'));
+      // The name is set in Hebrew on the title page, and named as the UI
+      // names the parsha.
+      final title = tester.getSemantics(find.bySemanticsLabel('Parshat Noach'));
       expect(title, isSemantics(label: 'Parshat Noach', isHeader: true, isImage: false));
       expect(title.getSemanticsData().headingLevel, 1);
       expect(
@@ -236,8 +240,18 @@ void main() {
       );
       expect(find.byTooltip("More options for Revi'i"), findsOneWidget);
 
+      // Each source is a link of its own, by its name and license, and then
+      // what it is.
       await open(tester, '/sources');
-      expect(tester.getSemantics(find.text('Targum Onkelos')), isSemantics(label: 'Targum Onkelos', isHeader: true));
+      expect(
+        tester.getSemantics(find.text('Targum Onkelos')),
+        isSemantics(
+          label: 'Targum Onkelos, Public domain\nTorat Emet edition, via Sefaria.',
+          isLink: true,
+          hasTapAction: true,
+          isFocusable: true,
+        ),
+      );
       handle.dispose();
     });
   });

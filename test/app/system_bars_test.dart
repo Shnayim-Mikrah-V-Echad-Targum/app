@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/app/system_bars.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
@@ -163,7 +164,9 @@ void main() {
 
     testWidgets('under an app bar, the navigation bar stays transparent', (tester) async {
       phone(tester);
-      await pumpApp(tester);
+      final c = await pumpApp(tester);
+      // Settings has an app bar; Today, the first page, has none.
+      c.read(routerProvider).go('/settings');
       await tester.pumpAndSettle();
       expect(find.byType(AppBar), findsWidgets);
       final style = SystemChrome.latestStyle!;

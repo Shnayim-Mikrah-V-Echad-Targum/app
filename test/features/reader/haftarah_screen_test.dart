@@ -223,14 +223,15 @@ void main() {
 
     testWidgets("says the haftarah page has the regular haftarah too, in a week it gives way", (tester) async {
       await openToday(tester, _friday);
-      expect(find.text('Special haftarah: Shabbat Machar Chodesh'), findsOneWidget);
-      expect(find.text('Also the regular haftarah'), findsOneWidget);
+      // Lines of the haftarah row's subtitle, under its reference.
+      expect(find.textContaining('\nSpecial haftarah: Shabbat Machar Chodesh'), findsOneWidget);
+      expect(find.textContaining('\nAlso the regular haftarah'), findsOneWidget);
     });
 
     testWidgets('says nothing of it in other weeks', (tester) async {
       await openToday(tester, DateTime(2026, 10, 13, 11));
       expect(find.text('Haftarah'), findsOneWidget);
-      expect(find.text('Also the regular haftarah'), findsNothing);
+      expect(find.textContaining('Also the regular haftarah'), findsNothing);
     });
   });
 }

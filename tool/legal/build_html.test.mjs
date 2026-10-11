@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-import { DartTokens, DOCS, LANGS, build, issuesUrl, loadTexts, parseDartLegal } from './build_html.mjs';
+import { DOCS, LANGS, build, issuesUrl, loadTexts, monthYear } from './build_html.mjs';
 
 const ROOT = new URL('../../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, ROOT), 'utf8');
@@ -20,35 +20,6 @@ function buildInto(env) {
   return (doc, lang = 'en') => readFileSync(join(dir, 'legal', `${doc}${lang === 'en' ? '' : `.${lang}`}.html`), 'utf8');
 }
 
-describe('reading legal_screen.dart', () => {
-  it('joins adjacent literals and decodes escapes', () => {
-    const tokens = new DartTokens(String.raw`('It\'s ' "a" // comment
-      '\n• ש\u{1F600}', r'\n$')`);
-    tokens.expect('(');
-    assert.equal(tokens.strings(), "It's a\n• ש😀");
-    tokens.expect(',');
-    assert.equal(tokens.strings(), '\\n$');
-    tokens.expect(')');
-  });
-
-  it('refuses interpolation, which the app would fill in', () => {
-    assert.throws(() => new DartTokens("'Hello $name'").strings(), /interpolation/);
-  });
-
-  it("finds every doc the app shows, in both languages", () => {
-    const texts = parseDartLegal(read('lib/features/about/legal_screen.dart'));
-    for (const lang of LANGS) {
-      assert.deepEqual(Object.keys(texts[lang]).sort(), ['accessibility', 'guidelines', 'privacy', 'terms']);
-      for (const sections of Object.values(texts[lang])) {
-        assert.ok(sections.length > 2);
-        assert.ok(sections.every((s) => typeof s.heading === 'string' && s.body.length > 0));
-      }
-    }
-    assert.match(texts.en.privacy[0].body, /^Shnayim Mikra is built to need as little/);
-    assert.equal(texts.en.privacy.length, texts.he.privacy.length);
-  });
-});
-
 describe('the texts', () => {
   const texts = loadTexts();
 
@@ -59,13 +30,35 @@ describe('the texts', () => {
     }
   });
 
-  it('gives the Hebrew web-only pages the shape of the English ones', () => {
+  it("gives every Hebrew page the shape of the English one", () => {
     const json = JSON.parse(read('assets/legal/legal.json'));
+    assert.deepEqual(Object.keys(json.he), Object.keys(json.en));
     const shape = (sections) =>
       sections.map((s) => [s.when, Boolean(s.heading), s.blocks.map((b) => [b.type, b.when, Boolean(b.subject)])]);
     for (const doc of Object.keys(json.en)) {
       assert.deepEqual(shape(json.he[doc]), shape(json.en[doc]), doc);
     }
+  });
+
+  it("has the app's policies, which say how to reach us with {contact} alone", () => {
+    const json = JSON.parse(read('assets/legal/legal.json'));
+    for (const lang of LANGS) {
+      for (const doc of ['privacy', 'terms', 'guidelines', 'accessibility']) {
+        const blocks = json[lang][doc].flatMap((s) => s.blocks);
+        assert.ok(blocks.length > 2, `${lang} ${doc}`);
+        for (const { type, text } of blocks) {
+          const placeholders = text.match(/\{[^}]*\}/g) ?? [];
+          assert.deepEqual(placeholders, type === 'contact' ? ['{contact}'] : [], `${lang} ${doc}: ${text}`);
+        }
+      }
+    }
+    assert.match(json.en.privacy[0].blocks[0].text, /^Shnayim Mikra is built to need as little/);
+  });
+
+  it('says when each page was last updated, as a month', () => {
+    for (const doc of DOCS) assert.match(texts.en.updated[doc], /^\d{4}-\d{2}$/, doc);
+    assert.equal(monthYear('2026-10', 'en'), 'October 2026');
+    assert.equal(monthYear('2026-10', 'he'), 'אוקטובר 2026');
   });
 
   it('takes the issue tracker from SOURCE_URL or the app config', () => {
@@ -99,16 +92,24 @@ describe('the pages', () => {
     assert.match(page('support'), /<a href="https:\/\/github\.com\/[^"]+\/issues">GitHub issue tracker<\/a>/);
     assert.match(page('support'), /<a href="delete-account\.html">Delete your account<\/a>/);
     assert.match(page('support', 'he'), /<a href="delete-account\.he\.html">מחיקת החשבון<\/a>/);
-    // The in-app texts' bullets become a list item each, beside the footer's
-    // one for each page.
-    const bullets = parseDartLegal(read('lib/features/about/legal_screen.dart'))
-      .en.accessibility.flatMap(({ body }) => body.split('\n'))
-      .filter((line) => line.startsWith('• ')).length;
+    // The bullets become a list item each, beside the footer's one for each
+    // page.
+    const bullets = JSON.parse(read('assets/legal/legal.json'))
+      .en.accessibility.flatMap((s) => s.blocks)
+      .filter((b) => b.type === 'bullet').length;
     assert.ok(bullets > 0);
     const main = page('accessibility').split('<main>')[1].split('</main>')[0];
     assert.equal(main.match(/<li>/g).length, bullets);
     assert.equal(main.match(/<ul>/g).length, 1);
     assert.equal(page('accessibility').match(/<li>/g).length, bullets + DOCS.length);
+  });
+
+  it('say under the title when the page was last updated', () => {
+    const page = buildInto({});
+    assert.match(page('privacy'), /<h1>Privacy policy<\/h1>\n<p class="updated">Last updated: October 2026<\/p>\n<\/div>/);
+    assert.match(page('privacy', 'he'), /<p class="updated">עודכן לאחרונה: אוקטובר 2026<\/p>/);
+    // The date left the opening paragraph for its own line.
+    assert.doesNotMatch(page('privacy'), /<p>[^<]*Last updated/);
   });
 
   it('draw the gold rule in the text colour in high contrast', () => {

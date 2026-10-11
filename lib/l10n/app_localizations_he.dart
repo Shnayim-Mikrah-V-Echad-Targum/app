@@ -66,9 +66,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get actionShare => 'שיתוף';
 
   @override
-  String get actionLearnMore => 'מידע נוסף';
-
-  @override
   String get actionMarkRead => 'סימון כנקרא';
 
   @override
@@ -190,9 +187,6 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get passShortMikra => 'מקרא';
-
-  @override
   String passSemantics(String pass, String state) {
     return '$pass: $state';
   }
@@ -258,6 +252,67 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get parshatHashavua => 'פרשת השבוע';
+
+  @override
+  String get erevShabbat => 'ערב שבת';
+
+  @override
+  String get shabbatShalom => 'שבת שלום';
+
+  @override
+  String get chagSameach => 'חג שמח';
+
+  @override
+  String get shanaTova => 'שנה טובה';
+
+  @override
+  String get gmarChatimaTova => 'גמר חתימה טובה';
+
+  @override
+  String get restDayBody => 'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת.';
+
+  @override
+  String get restDayBodyChag =>
+      'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג.';
+
+  @override
+  String get restDayBodyYomKippur =>
+      'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי יום כיפור.';
+
+  @override
+  String get openTheParsha => 'לפרשה';
+
+  @override
+  String get simchatTorahEyebrow => 'שמחת תורה';
+
+  @override
+  String get shabbatBeginsTonight => 'שבת נכנסת הערב';
+
+  @override
+  String get allAliyot => 'כל העליות';
+
+  @override
+  String startAt(String aliyah) {
+    return 'התחלה · $aliyah';
+  }
+
+  @override
+  String continueAt(String aliyah) {
+    return 'המשך · $aliyah';
+  }
+
+  @override
+  String continueAtPass(String aliyah, String pass) {
+    return 'המשך · $aliyah, $pass';
+  }
+
+  @override
+  String readAliyah(String aliyah) {
+    return 'לקריאת $aliyah';
+  }
+
+  @override
   String get todayReadingTitle => 'הקריאה של היום';
 
   @override
@@ -267,25 +322,138 @@ class AppLocalizationsHe extends AppLocalizations {
   String get todayAhead => 'מקדימים את התוכנית. כל הכבוד!';
 
   @override
+  String graceUsedNote(int count, String weekdays, String parsha) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$weekdays כוסו בימי חסד — הקצב נמשך. עם סיום פרשת $parsha עד שבת, יום חסד אחד יחזור.',
+      one:
+          '$weekdays כוסה ביום חסד — הקצב נמשך. עם סיום פרשת $parsha עד שבת, יום החסד יחזור.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String graceUsedNoteShort(int count, String weekdays) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$weekdays כוסו בימי חסד — הקצב נמשך.',
+      one: '$weekdays כוסה ביום חסד — הקצב נמשך.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get caughtUpNote => 'חזרה לתוכנית — הקריאה הכפולה השלימה את אתמול.';
+
+  @override
   String get todayNothingPlanned =>
       'לא מתוכננת קריאה להיום. זמן טוב להשלים או להקדים.';
+
+  @override
+  String get todayCatchUpTitle => 'משלימים';
+
+  @override
+  String aliyotCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count עליות',
+      one: 'עלייה אחת',
+    );
+    return '$_temp0';
+  }
 
   @override
   String todayBehind(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count עליות בפיגור — רגיל לגמרי באמצע השבוע.',
-      one: 'עלייה אחת בפיגור — רגיל לגמרי באמצע השבוע.',
+      other: 'עוד $count עליות להשלים — רגיל לגמרי באמצע השבוע.',
+      one: 'עוד עלייה אחת להשלים — רגיל לגמרי באמצע השבוע.',
     );
     return '$_temp0';
   }
 
   @override
-  String get readTodaysAliyah => 'לקריאה של היום';
+  String todayBehindThursday(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'עוד $count עליות להשלים — ויש עוד יומיים עד שבת.',
+      one: 'עוד עלייה אחת להשלים — ויש עוד יומיים עד שבת.',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get continueReading => 'המשך קריאה';
+  String todayLastDayShabbat(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'עוד $count עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.',
+      one: 'עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomTov(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'עוד $count עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג.',
+      one: 'עוד עלייה אחת לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayShabbatThenYomTov(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'עוד $count עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג.',
+      one: 'עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomTovThenShabbat(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'עוד $count עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת.',
+      one: 'עוד עלייה אחת לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomKippur(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'עוד $count עליות להשלים לפני יום כיפור — ויש זמן גם אחריו.',
+      one: 'עוד עלייה אחת להשלים לפני יום כיפור — ויש זמן גם אחריו.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pausedTodayNote =>
+      'בהשהיה — אפשר לקרוא מתי שנוח; שום דבר לא נחשב לחובתך.';
+
+  @override
+  String get erevTishaBavNote =>
+      'ערב תשעה באב: רבים מסיימים את הלימוד לפני חצות היום.';
 
   @override
   String get startReading => 'התחלת קריאה';
@@ -294,7 +462,20 @@ class AppLocalizationsHe extends AppLocalizations {
   String get readFromBook => 'קראתי בחומש';
 
   @override
+  String get readFromBookTitle => 'אילו עליות נקראו?';
+
+  @override
   String get weekComplete => 'הפרשה של השבוע הושלמה. יישר כוח!';
+
+  @override
+  String get weekCompleteNote => 'הכול מוכן לקריאת התורה בשבת.';
+
+  @override
+  String get weekCompleteNoteSimchatTorah =>
+      'הכול מוכן לקריאת התורה בשמחת תורה.';
+
+  @override
+  String get discussTheParsha => 'לדיון בפרשה';
 
   @override
   String get haftarahLabel => 'הפטרה';
@@ -313,12 +494,33 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String openWeekRestore(String name, String next) {
-    return 'סיום $name ו$next עד שבת ישמור על הרצף — השלמה כפולה אחת לכל חומש.';
+  String openWeekRestore(String name, String next, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'סיום $name ו$next עד שבת ימשיך את הרצף של $count שבועות — השלמה כפולה אחת לכל חומש.',
+      one:
+          'סיום $name ו$next עד שבת ימשיך את הרצף של שבוע אחד — השלמה כפולה אחת לכל חומש.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String openWeekRestoreZero(String name, String next) {
+    return 'אם מסיימים את $name ואת $next עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש.';
   }
 
   @override
   String get openWeekHaftarahLeft => 'נשארה רק ההפטרה.';
+
+  @override
+  String openWeekOpen(String name) {
+    return 'לפרשת $name';
+  }
+
+  @override
+  String get readTheHaftarah => 'לקריאת ההפטרה';
 
   @override
   String get checkInTitle => 'שבוע טוב! קראת בשבת?';
@@ -334,12 +536,50 @@ class AppLocalizationsHe extends AppLocalizations {
   String get checkInPick => 'בחירת עליות';
 
   @override
+  String get checkInNotThisTime => 'לא הפעם';
+
+  @override
+  String checkInReadOnShabbat(String date) {
+    return 'תאריך הקריאה: שבת, $date';
+  }
+
+  @override
+  String checkInReadOn(String date) {
+    return 'תאריך הקריאה: $date';
+  }
+
+  @override
+  String get changeDate => 'שינוי התאריך';
+
+  @override
+  String get logReading => 'סימון הקריאה';
+
+  @override
   String pausedBanner(String date) {
     return 'בהשהיה עד $date. דבר אינו מתאפס בזמן ההשהיה.';
   }
 
   @override
   String get resume => 'סיום ההשהיה';
+
+  @override
+  String pauseEndedOn(String date) {
+    return 'ההשהיה הסתיימה ב$date, ושום דבר בזמנה לא נחשב לחובתך.';
+  }
+
+  @override
+  String get pauseEndedStart => 'התחלת פרשת השבוע';
+
+  @override
+  String get pauseEndedContinue => 'המשך פרשת השבוע';
+
+  @override
+  String catchUpOn(String name) {
+    return 'השלמת פרשת $name';
+  }
+
+  @override
+  String get actionDismiss => 'הסתרה';
 
   @override
   String readingDivergence(String israel, String diaspora) {
@@ -358,6 +598,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get discussThisWeek => 'דיון על פרשת השבוע';
+
+  @override
+  String get thisWeek => 'השבוע';
 
   @override
   String get streakParsha => 'רצף פרשות';
@@ -467,8 +710,19 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String plannedFor(String day) {
-    return 'מתוכנן ליום $day';
+    return 'מתוכנן ל$day';
   }
+
+  @override
+  String plannedForOverdue(String day) {
+    return 'מתוכנן ל$day, עדיין לקריאה';
+  }
+
+  @override
+  String get plannedForShabbatOverdue => 'מתוכנן לשבת בבוקר, עדיין לקריאה';
+
+  @override
+  String get plannedForToday => 'מתוכנן להיום';
 
   @override
   String get plannedForShabbat => 'שבת בבוקר — לרשום אחרי שבת';
@@ -506,8 +760,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get markedUnread => 'סומן כלא נקרא';
 
   @override
-  String aliyahNote(String note) {
-    return 'הערה: $note';
+  String aliyahOtherDivision(String range) {
+    return 'לפי חלק מהמקורות: $range';
   }
 
   @override
@@ -515,6 +769,25 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get browseTitle => 'התורה';
+
+  @override
+  String browseBookParshiyot(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פרשות',
+      one: 'פרשה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get browseThisWeek => 'פרשת השבוע';
+
+  @override
+  String browseReadWith(String name) {
+    return 'נקראת עם $name';
+  }
 
   @override
   String previewNotOpen(String date) {
@@ -805,6 +1078,24 @@ class AppLocalizationsHe extends AppLocalizations {
   String get pauseStarting => 'החל מ־';
 
   @override
+  String pauseManageTitle(String date) {
+    return 'בהשהיה עד $date';
+  }
+
+  @override
+  String get pauseManageBody => 'אפשר להאריך את ההשהיה או לסיים אותה עכשיו.';
+
+  @override
+  String get pauseExtendBy => 'להאריך בעוד';
+
+  @override
+  String get pauseExtend => 'הארכה';
+
+  @override
+  String get pauseAtMost =>
+      'השהיה נמשכת 30 יום לכל היותר. אפשר לסיים אותה עכשיו.';
+
+  @override
   String pauseStarted(String date) {
     return 'בהשהיה עד $date.';
   }
@@ -909,6 +1200,22 @@ class AppLocalizationsHe extends AppLocalizations {
   String get settingsDataDesc => 'גיבוי, שחזור או איפוס ההתקדמות';
 
   @override
+  String get settingsGroupPractice => 'שגרת הקריאה';
+
+  @override
+  String get settingsGroupReading => 'קריאה במסך';
+
+  @override
+  String get settingsGroupYou => 'אישי';
+
+  @override
+  String get settingsAboutDesc => 'גרסה, מקורות, פרטיות';
+
+  @override
+  String get settingsPauseDesc =>
+      'מחלה, נסיעה, אבלות, תינוק חדש: דבר אינו מתאפס בזמן ההשהיה';
+
+  @override
   String get locationIsrael => 'בארץ ישראל';
 
   @override
@@ -1006,8 +1313,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get secondRashiEnglish => 'רש״י באנגלית';
 
   @override
-  String get secondHelp =>
-      'השולחן ערוך (או״ח רפה, ב) מתיר לקרוא את פירוש רש״י במקום התרגום, וירא שמים יקרא את שניהם. תרגום פשוט הוא עזר ללימוד ואינו תחליף. על רש״י מתורגם יש לשאול רב.';
+  String get secondSource =>
+      'השולחן ערוך (או״ח רפה, ב) מתיר לקרוא את פירוש רש״י במקום התרגום, וירא שמים יקרא את שניהם.';
+
+  @override
+  String get secondAdvice =>
+      'תרגום פשוט הוא עזר ללימוד ואינו תחליף. על רש״י מתורגם יש לשאול רב.';
 
   @override
   String get repeatLastVerse => 'לסיים במקרא';
@@ -1022,9 +1333,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get thirdReadingDesc =>
       'להציע קריאה שלישית בעברית כשאונקלוס מביא בעיקר שמות (במדבר לב, ג) או כשרש״י אינו מפרש';
-
-  @override
-  String get haftarahEnabled => 'הפטרה';
 
   @override
   String get haftarahEnabledDesc => 'קריאת הפטרת השבוע פעם אחת';
@@ -1079,10 +1387,28 @@ class AppLocalizationsHe extends AppLocalizations {
   String get nameAshkenazi => 'אשכנזי (Bereishis)';
 
   @override
+  String get readingGroupWhere => 'מקום וזמן';
+
+  @override
+  String get readingGroupHow => 'אופן הקריאה';
+
+  @override
+  String get readingGroupSpecialDays => 'ימים מיוחדים';
+
+  @override
   String get themeLabel => 'ערכת צבעים';
 
   @override
   String get themeSystem => 'לפי המכשיר';
+
+  @override
+  String get themeSystemDesc => 'בהירה או כהה, כמו המכשיר';
+
+  @override
+  String get themeUsedWhenLight => 'בשימוש כשהמכשיר במצב בהיר';
+
+  @override
+  String get themeUsedWhenDark => 'בשימוש כשהמכשיר במצב כהה';
 
   @override
   String get themeLight => 'בהירה';
@@ -1132,6 +1458,18 @@ class AppLocalizationsHe extends AppLocalizations {
   String get letterSpacing => 'ריווח אותיות';
 
   @override
+  String get displayGroupSize => 'גודל וריווח';
+
+  @override
+  String get displayGroupText => 'טקסט';
+
+  @override
+  String get displayGroupStudy => 'עזרי לימוד';
+
+  @override
+  String get displayGroupReading => 'קריאה';
+
+  @override
   String decreaseSetting(String name) {
     return 'הקטנת $name';
   }
@@ -1173,6 +1511,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get showRashi => 'הצגת רש״י לצד הטקסט';
+
+  @override
+  String get rashiScript => 'כתב רש״י';
+
+  @override
+  String get rashiScriptDesc => 'פירוש רש״י בכתב שבו הוא מודפס בחומש';
 
   @override
   String get uiFontLabel => 'גופן הממשק';
@@ -1266,9 +1610,30 @@ class AppLocalizationsHe extends AppLocalizations {
   String get presetReset => 'איפוס התצוגה';
 
   @override
+  String get presetLargePrintDesc => 'טקסט גדול ומרווח';
+
+  @override
+  String get presetDyslexiaDesc => 'גופן ברור, בלי טעמים';
+
+  @override
+  String get presetHighContrastDesc => 'ניגודיות חזקה והדגשה';
+
+  @override
+  String get presetLowVisionDesc => 'טקסט גדול מאוד וניגודיות גבוהה';
+
+  @override
   String presetApplied(String name) {
     return 'הוחל: $name';
   }
+
+  @override
+  String get displayResetDone => 'הגדרות התצוגה אופסו';
+
+  @override
+  String get a11yGroupMotion => 'תנועה ומגע';
+
+  @override
+  String get a11yGroupMore => 'הצהרה ומשוב';
 
   @override
   String get accessibilityStatement => 'הצהרת נגישות';
@@ -1314,11 +1679,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get remindersShabbatNote =>
-      'תזכורות לעולם אינן נשלחות בשבת וביום טוב, ולעולם לא יותר מאחת ביום.';
+      'לעולם לא בשבת וביום טוב, ולכל היותר פעם ביום.';
 
   @override
   String remindersShabbatNoteCity(String city) {
-    return 'תזכורות לעולם אינן נשלחות בשבת וביום טוב, ולעולם לא יותר מאחת ביום. הן מותאמות לזמני השבת של $city.';
+    return 'לעולם לא בשבת וביום טוב, ולכל היותר פעם ביום. התזכורות מותאמות לזמני השבת של $city.';
   }
 
   @override
@@ -1371,7 +1736,10 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notificationsUnsupported =>
-      'תזכורות אינן זמינות בגרסת הדפדפן. אפשר להתקין את האפליקציה בטלפון או במחשב כדי לקבל אותן.';
+      'תזכורות דורשות את האפליקציה המותקנת, בטלפון או במחשב. כאן אפשר לראות אילו תזכורות היא שולחת.';
+
+  @override
+  String get getTheApp => 'להורדת האפליקציה';
 
   @override
   String get notificationsDenied =>
@@ -1511,6 +1879,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get languageHebrew => 'עברית';
 
   @override
+  String get languageDevice => 'לפי המכשיר';
+
+  @override
+  String get dataGroupBackup => 'גיבוי ושחזור';
+
+  @override
+  String get resetProgressDesc => 'אי אפשר לבטל פעולה זו.';
+
+  @override
   String get aboutTitle => 'אודות';
 
   @override
@@ -1534,7 +1911,35 @@ class AppLocalizationsHe extends AppLocalizations {
   String get guidelinesTitle => 'כללי הקהילה';
 
   @override
-  String get contactTitle => 'יצירת קשר';
+  String get contactTitle => 'כתיבה אלינו בדוא״ל';
+
+  @override
+  String get aboutGroupLearn => 'לעיון';
+
+  @override
+  String get aboutGroupPolicies => 'מדיניות';
+
+  @override
+  String get aboutGroupContact => 'יצירת קשר';
+
+  @override
+  String get linkOpenFailed => 'לא ניתן היה לפתוח את הקישור כאן.';
+
+  @override
+  String emailOpenFailed(String address) {
+    return 'לא נפתחה תוכנת דואר. אפשר לכתוב אל $address.';
+  }
+
+  @override
+  String get actionCopy => 'העתקה';
+
+  @override
+  String get feedbackLinkLabel => 'דף התקלות ב־GitHub';
+
+  @override
+  String legalLastUpdated(String date) {
+    return 'עודכן לאחרונה: $date';
+  }
 
   @override
   String get guideTitle => 'איך זה עובד';
@@ -1544,7 +1949,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get onbWelcomeBody =>
-      'קוראים את הפרשה פעמיים ואת התרגום פעם אחת — עלייה ליום, ומסיימים לפני שבת.';
+      'קוראים את הפרשה פעמיים ואת התרגום פעם אחת — עלייה ליום, ומסיימים לפני שבת.';
 
   @override
   String get onbStart => 'להתחיל את פרשת השבוע';
@@ -1577,8 +1982,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get guideWhatTitle => 'מהו שניים מקרא?';
 
   @override
+  String get guideQuoteSource => 'ברכות ח, א';
+
+  @override
+  String get guideQuoteTranslation =>
+      'לעולם ישלים אדם את פרשיותיו עם הציבור: המקרא פעמיים והתרגום פעם אחת.';
+
+  @override
   String get guideWhatBody =>
-      'הגמרא (ברכות ח, א) מלמדת: לעולם ישלים אדם פרשיותיו עם הציבור, שניים מקרא ואחד תרגום. השולחן ערוך פוסק זאת באורח חיים סימן רפה. זוהי השלמה אישית של הפרשה שהציבור קורא בשבת.';
+      'השולחן ערוך פוסק את דברי הגמרא האלה להלכה (אורח חיים סימן רפה): בכל שבוע משלימים בעצמם, בקצב הציבור, את הפרשה שנקראת בשבת בבית הכנסת.';
 
   @override
   String get guideWhenTitle => 'מתי';
@@ -1593,6 +2005,9 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get guideHowBody =>
       'קוראים פסוק פסוק — כל פסוק פעמיים ואחריו התרגום — או פרשה פרשה, כל פרשה פעמיים ואחריה התרגום. רבים חוזרים על הפסוק האחרון בעברית כדי לסיים במקרא. מומלץ לקרוא בקול ובטעמים, אם אפשר.';
+
+  @override
+  String get guidePassesCaption => '1 · מקרא  2 · מקרא  3 · תרגום';
 
   @override
   String get guideTargumTitle => 'תרגום או רש״י';
@@ -1620,16 +2035,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get guideSourcesBody =>
-      'ברכות ח, א–ב · שולחן ערוך, אורח חיים רפה · משנה ברורה רפה · קיצור שולחן ערוך עב · שולחן ערוך הרב רפה';
+      'ברכות ח, א–ב\nשולחן ערוך, אורח חיים רפה\nמשנה ברורה רפה\nקיצור שולחן ערוך עב\nשולחן ערוך הרב רפה';
 
   @override
   String hebrewDateLabel(String date) {
     return 'תאריך עברי: $date';
-  }
-
-  @override
-  String bookOfTorah(String book) {
-    return 'ספר $book';
   }
 
   @override
@@ -1663,6 +2073,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get signInPrompt => 'יש להתחבר כדי לכתוב, להודות או לדווח.';
+
+  @override
+  String signedInAs(String name) {
+    return 'התחברת בשם $name';
+  }
 
   @override
   String get signInTitle => 'כניסה';
@@ -2644,9 +3059,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String milestoneSiyumFrom(String name) {
     return 'סיום התורה מפרשת $name';
   }
-
-  @override
-  String get rashiScript => 'כתב רש״י';
 
   @override
   String get demoTag => 'הדגמה';

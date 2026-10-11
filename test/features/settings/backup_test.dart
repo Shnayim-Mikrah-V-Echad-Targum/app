@@ -16,6 +16,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/services/backup_files.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../../fake_backup_files.dart';
 import '../../helpers.dart';
@@ -440,6 +441,36 @@ void main() {
       expect(find.text('Progress imported.'), findsOneWidget);
     });
 
+    testWidgets('restoring the settings keeps what Today has asked and said on this device', (tester) async {
+      final here = setUpHere.copyWith(
+        checkInAnsweredFor: '5787:1',
+        pauseEndSeen: _monday.addDays(-2),
+        lastStripAck: _monday,
+        stripNoteShownOn: _monday,
+      );
+      final (c, _) = await open(
+        tester,
+        settings: here,
+        file: encodeBackup(
+          backedUp(),
+          savedSettings.copyWith(checkInAnsweredFor: '5786:54', lastStripAck: _monday.addDays(-9)),
+          now: DateTime.utc(2026, 10, 11, 12),
+        ),
+      );
+      await chooseFile(tester);
+      await tester.tap(find.text('Also restore settings'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Merge'));
+      await tester.pumpAndSettle();
+
+      final settings = c.read(settingsProvider);
+      expect(settings.plan, ReadingPlanType.erevShabbat, reason: 'restored');
+      expect(
+        (settings.checkInAnsweredFor, settings.pauseEndSeen, settings.lastStripAck, settings.stripNoteShownOn),
+        ('5787:1', _monday.addDays(-2), _monday, _monday),
+      );
+    });
+
     for (final allows in [true, false]) {
       testWidgets('asks the OS before restoring reminders, and ${allows ? 'keeps them when allowed' : 'turns them off when refused'}',
           (tester) async {
@@ -617,7 +648,7 @@ void main() {
         expect(backup.progress, c.read(progressProvider));
         expect(backup.settings!.toJson(), c.read(settingsProvider).toJson());
         // The row, where the iPad anchors the share sheet.
-        final row = tester.getRect(find.widgetWithText(ListTile, 'Export my progress'));
+        final row = tester.getRect(find.widgetWithText(PaperRow, 'Export my progress'));
         expect(saved.origin, row);
         expect(find.text('Backup saved.'), findsOneWidget);
       });
@@ -660,17 +691,17 @@ void main() {
       for (final hebrew in [false, true]) {
         testWidgets('the dialogs fit at 200% text${hebrew ? ', in Hebrew' : ''}', (tester) async {
           await open(tester, textScale: 2, settings: setUpHere.copyWith(language: hebrew ? AppLanguage.hebrew : null));
-          await tester.ensureVisible(find.byIcon(Icons.download));
+          await tester.ensureVisible(find.byIcon(Icons.download_outlined));
           await tester.pumpAndSettle();
-          await tester.tap(find.byIcon(Icons.download));
+          await tester.tap(find.byIcon(Icons.download_outlined));
           await tester.pumpAndSettle();
           expect(find.byType(CheckboxListTile), findsOneWidget);
           expect(tester.takeException(), isNull);
           await tester.tap(find.byType(FilledButton));
           await tester.pumpAndSettle();
-          await tester.ensureVisible(find.byIcon(Icons.content_paste));
+          await tester.ensureVisible(find.byIcon(Icons.content_paste_outlined));
           await tester.pumpAndSettle();
-          await tester.tap(find.byIcon(Icons.content_paste));
+          await tester.tap(find.byIcon(Icons.content_paste_outlined));
           await tester.pumpAndSettle();
           expect(find.byType(TextField), findsOneWidget);
           expect(tester.takeException(), isNull);
