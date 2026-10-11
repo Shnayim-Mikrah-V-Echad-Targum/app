@@ -85,7 +85,8 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   | Larger / smaller scripture text | Ctrl+= / Ctrl+− | + or = / − |
   | Show or hide cantillation | Ctrl+Shift+T | T |
   | Show or hide vowels | Ctrl+Shift+N | N |
-  | Listen / stop | Ctrl+Shift+L | L |
+  | Listen / pause | Ctrl+Shift+L | L |
+  | While listening: back or on a verse | Ctrl+Shift+← / Ctrl+Shift+→ | Ctrl+Shift+← / Ctrl+Shift+→ |
   | A verse's options: copy, share or ask | Shift+F10, or the menu key | Shift+F10, or the menu key |
   | Show shortcuts | F1, or Ctrl+/ | ?, F1, or Ctrl+/ |
 
@@ -108,6 +109,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - **Reduce motion** follows the system setting and can also be set in the app. It removes page transitions and celebration animations.
 - Haptics can be turned off.
 - Nothing plays sound without the user asking. Text-to-speech starts only on request.
+- **Listen** reads verse by verse, for readers who follow by ear: the verse being read is highlighted (a techelet rule at its start, which is the cue in high contrast too) and kept in view, scrolling at once under Reduce Motion. The player beneath the text pauses and goes on from the same verse, moves back or on a verse, sets the speech rate and stops; each of its buttons is named for screen readers and takes a 48 dp tap. *Listen along* reads the guided reader's steps one after another, hands-free, to the end of the aliyah.
 
 ### Language and direction
 - The interface is fully translated into Hebrew, with a mirrored right-to-left layout.

@@ -1101,6 +1101,48 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get stopListening;
 
+  /// No description provided for @listenPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get listenPause;
+
+  /// No description provided for @listenResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get listenResume;
+
+  /// No description provided for @listenPreviousVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous verse'**
+  String get listenPreviousVerse;
+
+  /// No description provided for @listenNextVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Next verse'**
+  String get listenNextVerse;
+
+  /// The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is a percentage, as Settings shows it: "45%".
+  ///
+  /// In en, this message translates to:
+  /// **'Speech rate: {rate}'**
+  String speechRateValue(String rate);
+
+  /// No description provided for @listenAlong.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen along'**
+  String get listenAlong;
+
+  /// No description provided for @listenAlongDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen goes on from each reading to the next by itself, to the end of the aliyah. An aid for following the text, not a substitute for reading it.'**
+  String get listenAlongDesc;
+
   /// No description provided for @ttsUnavailable.
   ///
   /// In en, this message translates to:
@@ -1230,8 +1272,14 @@ abstract class AppLocalizations {
   /// No description provided for @shortcutListen.
   ///
   /// In en, this message translates to:
-  /// **'Listen / stop'**
+  /// **'Listen / pause'**
   String get shortcutListen;
+
+  /// No description provided for @shortcutListenVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'While listening: previous or next verse'**
+  String get shortcutListenVerse;
 
   /// No description provided for @shortcutHelp.
   ///
@@ -1274,6 +1322,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Down arrow'**
   String get keyDown;
+
+  /// No description provided for @keyLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left arrow'**
+  String get keyLeft;
+
+  /// No description provided for @keyRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Right arrow'**
+  String get keyRight;
 
   /// No description provided for @keySpace.
   ///

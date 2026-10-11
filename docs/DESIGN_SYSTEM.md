@@ -467,6 +467,12 @@ Rules:
 - It is not focus mode's verse and shows with focus mode off. With focus mode on, it is also the focused verse, so the others dim around it, and focus mode's own highlight yields to the mark.
 - Where the platform takes announcements, its reference is said once the scroll ends ("Genesis 28:12").
 
+**The verse Listen reads** (§6.28)
+- Has focus mode's highlight, whether focus mode is on or not: in the full text, its block's own (`VerseGroup`); in the guided reader and the haftarah, where verses have no blocks, the same paper and 3 px primary rule painted around the verse and what goes with it, 12 past it at the sides and 4 above and below (`SpeakingVerseMark`), so nothing moves as it passes on. Faded in over `Motion.short`.
+- In focus mode it is the focused verse, so the others dim around it, never it.
+- Brought into view as the voice reaches it, unless it is wholly in view already: a fifth of the way down the text's viewport, over `Motion.medium`, at once under Reduce Motion, and never under a finger scrolling the text (`FollowedVerse`).
+- It replaces the mark of the verse opened at, which goes as Listen starts.
+
 **Line widths:** `LineWidth.narrow` 560, `medium` 680 (default), `wide` 880 (was 1040, about 80 characters at 26sp).
 
 ## 5. Layout tokens
@@ -894,6 +900,15 @@ A long press on a verse, in the guided reader, the full text (anywhere in the ve
 - 16 below, one PaperGroup (§6.3): Copy (`content_copy_outlined`) and Share (`share_outlined`, or `ios_share` on Apple devices), with no chevron; then Ask about this verse (`help_outline`, the forum's icon) with `askAboutVerseDesc` beneath and a chevron, as it leads to a page.
 - Copy closes the sheet and says `verseCopied`. Share leaves the sheet open beneath the platform's share sheet, which points from its row, and closes it once that is done with; where nothing can share, the verse is copied and `shareCopiedInstead` says so.
 - Screen readers: each verse (in the full text, the verse and its Targum) carries the custom action `verseOptions` and a long press.
+
+### 6.28 Listen bar (lib/features/reader/listen_bar.dart)
+
+While Listen reads, playing or paused, a player sits above the reader's bottom bar, or at the foot of the full text and of the haftarah's page (above a tab's navigation bar):
+- Background surface, 1 px hairline top border; it runs under the gesture bar where it is the page's last bar. Content constrained to the reading column and centred, as the bottom bar's; padding 4 above and below, the buttons' own padding bringing their glyphs to the column's edges.
+- At its start, the speech rate: a Text button in onSurfaceVariant, `speed` 18 and the rate as Settings shows it ("45%", labelLarge, tabular figures), tooltip `speechRate`, read as `speechRateValue` ("Speech rate: 45%"). The icon goes where the rate would have no room beside it, and the rate is set smaller before it is ever cut short. It opens a menu (paper, §6.19) of 25, 35, 45, 55, 65, 80 and 100%, with the rate set among them if it is another: each a radio icon (`radio_button_checked` in primary, unchecked in onSurfaceVariant) and its rate, the one chosen in w700. A rate chosen is the setting's (Settings → Accessibility → Speech rate), and the verse being read starts again at it.
+- At its centre, left to right in either language, as media controls are: `skip_previous_rounded` (`listenPreviousVerse`), 8, a tonal 48 dp icon button in primaryContainer / onPrimaryContainer with `pause_rounded` (`listenPause`) or `play_arrow_rounded` (`listenResume`), 8, and `skip_next_rounded` (`listenNextVerse`). Back and on are disabled where there is no verse to move to; between Listen along's readings, back reads the last verse again and on goes to the next reading.
+- At its end, `close` (`stopListening`).
+- The app bar's Listen button reads `stopListening` with `stop_circle_outlined` while the player shows.
 
 ## 7. Motifs and iconography
 

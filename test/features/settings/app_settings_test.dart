@@ -33,6 +33,7 @@ void main() {
       habitAnchor: HabitAnchor.shacharit,
       singleKeyShortcuts: false,
       cityOfferAnswered: true,
+      listenAlong: true,
     );
     final back = AppSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
@@ -44,6 +45,8 @@ void main() {
     expect(back.habitAnchor, HabitAnchor.shacharit);
     expect(back.cityOfferAnswered, isTrue);
     expect(AppSettings.fromJson({}).cityOfferAnswered, isFalse, reason: 'offered until answered');
+    expect(back.listenAlong, isTrue);
+    expect(AppSettings.fromJson({}).listenAlong, isFalse, reason: 'Listen stops after the step unless asked');
   });
 
   group('habit anchor', () {

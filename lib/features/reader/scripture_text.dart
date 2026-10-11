@@ -550,7 +550,7 @@ class VerseGroup extends StatelessWidget {
   final VerseRef verse;
   final Widget child;
 
-  /// The verse focus mode is on.
+  /// The verse focus mode is on, or the one Listen is reading.
   final bool highlighted;
   final VoidCallback? onTap;
 
@@ -564,7 +564,9 @@ class VerseGroup extends StatelessWidget {
   /// highlight frames lines that run the full measure (the translation, or
   /// justified text) as it frames the rest.
   static const padding = EdgeInsets.fromLTRB(12, 4, 12, 4);
-  static const _rule = 3.0;
+
+  /// The width of the highlight's rule.
+  static const rule = 3.0;
 
   @override
   Widget build(BuildContext context) {
@@ -581,7 +583,7 @@ class VerseGroup extends StatelessWidget {
         border: Border(
           right: BorderSide(
             color: scheme.primary,
-            width: _rule,
+            width: rule,
             style: highlighted ? BorderStyle.solid : BorderStyle.none,
           ),
         ),
@@ -609,7 +611,7 @@ class VerseGroup extends StatelessWidget {
             hoverColor: onTap == null ? Colors.transparent : null,
             mouseCursor: onTap == null ? MouseCursor.defer : null,
             child: Padding(
-              padding: padding.copyWith(right: padding.right - _rule),
+              padding: padding.copyWith(right: padding.right - rule),
               child: child,
             ),
           ),
@@ -617,6 +619,126 @@ class VerseGroup extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The verse Listen is reading, where it is not one of the full text's
+/// blocks (the guided reader and the haftarah): focus mode's highlight, the
+/// paper and a techelet rule at the verse's start, the right in either
+/// language of the app (§4.7). It is painted [bleed] past the verse, as far
+/// as a block of the full text reaches, so that nothing moves as it comes and
+/// goes; and the text follows it ([FollowedVerse]).
+class SpeakingVerseMark extends StatelessWidget {
+  const SpeakingVerseMark({super.key, required this.active, required this.child});
+
+  final bool active;
+  final Widget child;
+
+  /// How far the highlight reaches past the text: as far as [VerseGroup]'s
+  /// padding, within the page's side padding and the gap between verses.
+  static const bleed = VerseGroup.padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final sefer = SeferColors.of(context);
+    return FollowedVerse(
+      active: active,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: active ? 1 : 0),
+        duration: Motion.of(context).d(Motion.short),
+        curve: Motion.standard,
+        child: child,
+        // The same widgets with the highlight or without, so that what
+        // [child] holds stays as it comes and goes.
+        builder: (context, shown, child) => CustomPaint(
+          painter: shown == 0 ? null : _SpeakingPainter(fill: sefer.verseHighlight, rule: scheme.primary, shown: shown),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeakingPainter extends CustomPainter {
+  const _SpeakingPainter({required this.fill, required this.rule, required this.shown});
+
+  final Color fill;
+  final Color rule;
+
+  /// How far it has faded in, from 0 to 1.
+  final double shown;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final area = SpeakingVerseMark.bleed.inflateRect(Offset.zero & size);
+    if (fill.a > 0) canvas.drawRect(area, Paint()..color = fill.withValues(alpha: fill.a * shown));
+    canvas.drawRect(
+      Rect.fromLTRB(area.right - VerseGroup.rule, area.top, area.right, area.bottom),
+      Paint()..color = rule.withValues(alpha: rule.a * shown),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SpeakingPainter old) => old.fill != fill || old.rule != rule || old.shown != shown;
+}
+
+/// Brings [child] into view as it becomes [active]: the verse Listen has
+/// reached, which the text follows. Unless it is in view already, it is
+/// scrolled a fifth of the way down the screen, as the verse opened at is,
+/// over Motion.medium, or at once under Reduce Motion. Nothing is scrolled
+/// under a finger that is scrolling the text.
+class FollowedVerse extends StatefulWidget {
+  const FollowedVerse({super.key, required this.active, required this.child});
+
+  final bool active;
+  final Widget child;
+
+  @override
+  State<FollowedVerse> createState() => _FollowedVerseState();
+}
+
+class _FollowedVerseState extends State<FollowedVerse> {
+  /// Room kept clear above and below the verse, for its highlight.
+  static const _margin = 4.0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.active) _reveal();
+  }
+
+  @override
+  void didUpdateWidget(FollowedVerse old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !old.active) _reveal();
+  }
+
+  void _reveal() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.active) return;
+      final box = context.findRenderObject();
+      final position = Scrollable.maybeOf(context)?.position;
+      if (box is! RenderBox || !box.hasSize || position == null || position.isScrollingNotifier.value) return;
+      final viewport = RenderAbstractViewport.maybeOf(box);
+      if (viewport == null) return;
+      // The scroll offsets that would set its top at the top of the view,
+      // and its foot at the foot.
+      final top = viewport.getOffsetToReveal(box, 0).offset;
+      final foot = viewport.getOffsetToReveal(box, 1).offset;
+      final inView = position.pixels <= math.max(position.minScrollExtent, top - _margin) + 0.5 &&
+          position.pixels >= math.min(position.maxScrollExtent, foot + _margin) - 0.5;
+      if (inView) return;
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.2,
+        duration: Motion.of(context).d(Motion.medium),
+        curve: Motion.standard,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// The head of a chapter, centred as a Chumash sets it (DESIGN_SYSTEM.md

@@ -523,9 +523,8 @@ void main() {
         steps: 2,
       );
       expect(find.text('Read the Targum'), findsOneWidget);
-      final (text, language) = tts.spoken.single;
-      expect(language, 'he-IL');
-      final plain = HebrewText.consonantsOnly(text);
+      expect({for (final (_, language) in tts.spoken) language}, {'he-IL'});
+      final plain = HebrewText.consonantsOnly(tts.spokenText);
       // Onkelos of 32:3, then its Hebrew, then the Onkelos of 32:4.
       final targum = plain.indexOf('מכללתא ומלבשתא');
       final hebrew = plain.indexOf('עטרות ודיבן ויעזר ונמרה');
@@ -558,7 +557,7 @@ void main() {
         steps: 2,
       );
       expect(find.text('Read the Targum'), findsOneWidget);
-      final plain = HebrewText.consonantsOnly(tts.spoken.single.$1);
+      final plain = HebrewText.consonantsOnly(tts.spokenText);
       expect(plain, contains('דהשם'));
       expect(plain, isNot(contains('יי')));
     });
@@ -577,7 +576,7 @@ void main() {
         steps: 2,
       );
       expect(find.text('Read Rashi'), findsOneWidget);
-      final plain = HebrewText.consonantsOnly(tts.spoken.single.$1);
+      final plain = HebrewText.consonantsOnly(tts.spokenText);
       expect(plain, contains('ויסגור השם בעדו'));
       expect(plain, isNot(contains("ויסגור ה'")));
     });

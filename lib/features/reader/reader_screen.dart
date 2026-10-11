@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -30,6 +31,8 @@ import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
 import 'aliyah_ribbon.dart';
 import 'display_sheet.dart';
+import 'listen_along.dart';
+import 'listen_bar.dart';
 import 'notification_prompt.dart';
 import 'pass_track.dart';
 import 'reader_bottom_bar.dart';
@@ -154,10 +157,28 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   // Kept for dispose(), when ref can no longer be used.
   late final TtsService _tts;
 
+  // Listen, from its start until it ends or is stopped (DESIGN.md §3): the
+  // verse being read, which is highlighted, and the player beneath the text.
+  late final ListenController _listen;
+
+  // Listen along's breath between one reading of the guided reader and the
+  // next, and whether it is paused there.
+  Timer? _listenOn;
+  bool _listenHeld = false;
+
+  // The step was reached by Listen along, whose voice reads it: it is not
+  // announced as well, which would speak over it.
+  bool _quietStep = false;
+
+  // What the reader last showed, for Listen along to go on with once its
+  // breath is over.
+  (WeekContext, ReaderTexts, ReaderFlow)? _shown;
+
   @override
   void initState() {
     super.initState();
     _tts = ref.read(ttsProvider);
+    _listen = ListenController(_tts)..addListener(_listenChanged);
     if (ref.read(settingsProvider).keepScreenOn) {
       WakelockPlus.enable().catchError((_) {});
     }
@@ -166,6 +187,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   @override
   void dispose() {
     WakelockPlus.disable().catchError((_) {});
+    _listenOn?.cancel();
+    _listen
+      ..removeListener(_listenChanged)
+      ..dispose();
     _tts.stop();
     _scroll.dispose();
     for (final node in [_nextFocus, _backFocus, _finishFocus, _panelFocus, _readerFocus]) {
@@ -196,7 +221,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _goToAliyah(int a) {
-    ref.read(ttsProvider).stop();
+    _stopListening();
     // Continued from the finished panel, the focus goes on to Next.
     if (_panelFocus.hasFocus) _focusAfterFrame(_nextFocus);
     setState(() {
@@ -208,6 +233,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _focusedVerse = null;
       _quietFocus = null;
       _targetVerse = null;
+      _quietStep = false;
     });
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
@@ -270,16 +296,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
   }
 
-  void _next(WeekContext ctx, ReaderFlow flow) {
+  /// Next: records the step read, and shows the next one, or the finished
+  /// panel. Pressed, it stops Listen; [listening] is Listen along going on
+  /// to the next reading, which it reads.
+  void _next(WeekContext ctx, ReaderFlow flow, {bool listening = false}) {
     if (_finished) return;
-    ref.read(ttsProvider).stop();
+    if (!listening) _stopListening();
     final steps = flow.stepsFor(_chunk);
     final hadCompletedBefore = ref.read(progressProvider).weeks.values.any((w) => w.completedAliyot > 0);
     final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     _record(ctx, flow, _chunk, _step);
     if (!wasComplete && ref.read(progressProvider).week(ctx.id).isComplete) _completedOnVisit = true;
-    hapticTap(ref);
+    if (!listening) hapticTap(ref);
     setState(() {
+      _quietStep = listening;
       if (_step + 1 < steps.length) {
         _step++;
       } else if (_chunk + 1 < flow.chunks.length) {
@@ -297,7 +327,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       final offer = _offersReminders(ctx, firstEver: !hadCompletedBefore);
       if (!offer) _focusAfterFrame(_finishFocus);
       _onFinished(ctx, offerReminders: offer);
-    } else {
+    } else if (!listening) {
       _announceStep(flow);
     }
     if (_scroll.hasClients) _scroll.jumpTo(0);
@@ -306,10 +336,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void _back(ReaderFlow flow) {
     // Page Up or Alt+↑ at the first step: nothing to go back to, or to say.
     if (!_finished && _chunk == 0 && _step == 0) return;
-    ref.read(ttsProvider).stop();
+    _stopListening();
     final fromPanel = _finished && _panelFocus.hasFocus;
     final fromBack = _backFocus.hasFocus;
     setState(() {
+      _quietStep = false;
       if (_finished) {
         _finished = false;
       } else if (_step > 0) {
@@ -486,69 +517,221 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
   }
 
-  // --- Speech -----------------------------------------------------------------
+  // --- Listening ----------------------------------------------------------------
 
-  Future<void> _toggleSpeech(ReaderTexts texts, ReaderFlow flow) async {
-    final tts = ref.read(ttsProvider);
-    if (tts.speaking.value) {
-      await tts.stop();
-      return;
-    }
-    final s = ref.read(settingsProvider);
-    final l = context.l10n;
-    final hasHebrew = await tts.hasHebrewVoice();
+  /// How long Listen along waits after one reading before it goes on to the
+  /// next.
+  static const _listenAlongPause = Duration(milliseconds: 600);
+
+  /// The verse Listen reads has moved on, or it has paused, gone on or
+  /// ended. Focus mode reads around the verse being read, so that it is never
+  /// one of those dimmed.
+  void _listenChanged() {
     if (!mounted) return;
-    final (text, :english) = _speechText(texts, flow, s);
-    if (hasHebrew == false && !english) showStatus(context, l.ttsNoHebrewVoice);
-    try {
-      await tts.speak(text, language: english ? 'en-US' : 'he-IL', rate: s.speechRate);
-    } catch (_) {
-      if (mounted) showStatus(context, l.ttsUnavailable);
+    final verse = _listen.verse;
+    setState(() {
+      if (verse != null && _fullText && ref.read(settingsProvider).focusMode) {
+        _focusedVerse = verse;
+        _quietFocus = null;
+      }
+    });
+  }
+
+  /// Starts Listen on what the reader shows, from [startVerse] (an index into
+  /// the aliyah's verses), or else from where the reader is: in the full
+  /// text, the verse opened at, the verse focus mode is on, or the first in
+  /// view; in the guided reader, the step's first verse. Until the voice is
+  /// stopped, the verse it reads is highlighted and the player shows.
+  Future<void> _startListening(ReaderTexts texts, ReaderFlow flow, {bool checkVoice = true, int? startVerse}) async {
+    final l = context.l10n;
+    final hasHebrew = checkVoice ? await _tts.hasHebrewVoice() : null;
+    if (!mounted) return;
+    final s = ref.read(settingsProvider);
+    final queue = _speechQueue(texts, flow, s);
+    if (queue.isEmpty) return;
+    if (hasHebrew == false && queue.language == 'he-IL') showStatus(context, l.ttsNoHebrewVoice);
+    final start = startVerse ?? (_fullText ? _listenStartVerse(flow) : queue.verses.first);
+    _listenOn?.cancel();
+    _listenOn = null;
+    _listenHeld = false;
+    // The voice's highlight takes over from the mark of the verse opened at.
+    if (_targetVerse != null) {
+      setState(() {
+        _targetVerse = null;
+        _quietFocus = null;
+      });
+    }
+    final end = await _listen.play(queue, rate: s.speechRate, startVerse: start);
+    if (!mounted) return;
+    switch (end) {
+      case ListenEnd.failed:
+        showStatus(context, l.ttsUnavailable);
+      case ListenEnd.stopped:
+        break;
+      case ListenEnd.finished:
+        // Listen along goes on to the next reading, after a breath; at the
+        // aliyah's end, or without it, Listen is over.
+        if (_listensOn()) {
+          setState(() => _listenOn = Timer(_listenAlongPause, _listenOnNow));
+        } else {
+          _listen.end();
+        }
     }
   }
 
-  StepKind _currentKind(ReaderFlow flow) => _fullText || _finished ? StepKind.mikra1 : flow.stepsFor(_chunk)[_step];
+  /// Whether Listen along goes on from the step shown to the next one: in
+  /// the guided reader, up to the aliyah's last step, where the reader
+  /// finishes the aliyah themselves.
+  bool _listensOn() {
+    final flow = _shown?.$3;
+    if (flow == null || _fullText || _finished || !ref.read(settingsProvider).listenAlong) return false;
+    return _chunk < flow.chunks.length - 1 || _step < flow.stepsFor(_chunk).length - 1;
+  }
 
-  /// What Listen reads of the step shown, and whether it is English (Rashi
-  /// in English) rather than Hebrew.
-  (String, {bool english}) _speechText(ReaderTexts texts, ReaderFlow flow, AppSettings s) {
-    final kind = _currentKind(flow);
-    final refs = _fullText || _finished ? flow.verses : flow.stepVerses(_chunk, kind);
+  /// Listen along's breath is over: on to the next reading, which it reads.
+  /// The step read is recorded as Next records it.
+  void _listenOnNow() {
+    _listenOn?.cancel();
+    _listenOn = null;
+    _listenHeld = false;
+    final shown = _shown;
+    if (!mounted || shown == null || !_listen.active) return;
+    if (!_listensOn()) return _stopListening();
+    final (ctx, texts, flow) = shown;
+    _next(ctx, flow, listening: true);
+    _startListening(texts, flow, checkVoice: false);
+  }
+
+  /// Play or pause, from the player and the keyboard: Listen starts, or
+  /// pauses at the verse it reads, or goes on from it.
+  void _playPause(ReaderTexts texts, ReaderFlow flow) {
+    if (!_listen.active) {
+      _startListening(texts, flow);
+    } else if (_listenOn != null) {
+      // Paused in the breath between one reading and the next.
+      _listenOn!.cancel();
+      setState(() {
+        _listenOn = null;
+        _listenHeld = true;
+      });
+    } else if (_listenHeld) {
+      _listenOnNow();
+    } else if (_listen.paused) {
+      _listen.resume();
+    } else {
+      _listen.pause();
+    }
+  }
+
+  /// Whether Listen along is between one reading and the next, waiting or
+  /// paused there.
+  bool get _betweenReadings => _listen.active && (_listenOn != null || _listenHeld);
+
+  bool get _canListenBack => _betweenReadings || _listen.hasPrevious;
+
+  bool get _canListenOn => _listen.active && (_listen.hasNext || _listensOn());
+
+  /// Back a verse; between Listen along's readings, the last verse read
+  /// again.
+  void _listenBack(ReaderTexts texts, ReaderFlow flow) {
+    if (_betweenReadings) {
+      _startListening(texts, flow, checkVoice: false, startVerse: _listen.verse);
+    } else {
+      _listen.previous();
+    }
+  }
+
+  /// On a verse; from the step's last, Listen along goes on to the next
+  /// reading.
+  void _listenOnVerse() {
+    if (!_listen.active) return;
+    if (_listen.hasNext) return _listen.next();
+    if (_listensOn()) _listenOnNow();
+  }
+
+  void _setSpeechRate(double rate) {
+    ref.read(settingsProvider.notifier).update((s) => s.copyWith(speechRate: rate));
+    _listen.setRate(rate);
+  }
+
+  /// Stops Listen, and any speech.
+  void _stopListening() {
+    _listenOn?.cancel();
+    _listenOn = null;
+    _listenHeld = false;
+    _listen.stop();
+  }
+
+  /// Where Listen starts in the full text: at the verse opened at, the verse
+  /// focus mode is on, or else the first verse in view.
+  int _listenStartVerse(ReaderFlow flow) {
+    if (_targetVerse case final target?) {
+      final i = flow.verses.indexOf(target);
+      if (i >= 0) return i;
+    }
+    final focused = _focusedVerse;
+    if (focused != null && ref.read(settingsProvider).focusMode) return focused;
+    return _firstVerseInView(flow.verses.length);
+  }
+
+  /// What Listen reads, verse by verse, each item with the index of its verse
+  /// among the aliyah's: in the full text, each verse and then its Targum,
+  /// where it is shown; in the guided reader, the step shown, as the step
+  /// shows it. The Divine Name is spoken as the reader has chosen.
+  SpeechQueue _speechQueue(ReaderTexts texts, ReaderFlow flow, AppSettings s) {
     String hebrew(Verse v, {bool targum = false}) =>
         HebrewSpeech.spoken(v.readText, divineName: s.divineName, targum: targum);
+    final queue = SpeechQueue(language: 'he-IL');
+    if (_fullText || _finished) {
+      for (final (i, r) in flow.verses.indexed) {
+        queue.add(i, hebrew(texts.mikra.verse(r)));
+        if (_fullText && texts.onkelos != null) queue.add(i, hebrew(texts.onkelos!.verse(r), targum: true));
+      }
+      return queue;
+    }
+    final kind = flow.stepsFor(_chunk)[_step];
+    final refs = flow.stepVerses(_chunk, kind);
+    final index = {for (final (i, r) in flow.verses.indexed) r: i};
     switch (kind) {
       case StepKind.targum:
-        // With the Hebrew of a verse read a third time among the Targum.
-        final text = refs
-            .expand((r) => [
-                  hebrew(texts.onkelos!.verse(r), targum: true),
-                  if (flow.thirdHebrewInTargum(_chunk, r)) hebrew(texts.mikra.verse(r)),
-                ])
-            .join(' ');
-        return (text, english: false);
+        for (final r in refs) {
+          queue.add(index[r]!, hebrew(texts.onkelos!.verse(r), targum: true));
+          // With the Hebrew of a verse read a third time among the Targum.
+          if (flow.thirdHebrewInTargum(_chunk, r)) queue.add(index[r]!, hebrew(texts.mikra.verse(r)));
+        }
       case StepKind.rashi:
-        final english = s.secondReading == SecondReading.rashiEnglish;
         final comments = [for (final r in refs) texts.rashi!.on(r)];
-        if (english) {
+        if (s.secondReading == SecondReading.rashiEnglish) {
           // One voice reads it all: the comments in English, or, where Rashi
           // is silent on the whole step, its verses in Hebrew.
-          final text = comments.expand((c) => c).map((c) => spokenRashiEnglish(c, s, speech: true).string).join(' ');
-          if (text.trim().isNotEmpty) return (text, english: true);
-          return (refs.map((r) => hebrew(texts.mikra.verse(r))).join(' '), english: false);
-        }
-        // A verse Rashi is silent on is read in Hebrew, as the step shows it.
-        final text = [
-          for (final (i, r) in refs.indexed)
-            if (comments[i].isEmpty)
-              hebrew(texts.mikra.verse(r))
-            else
-              for (final c in comments[i])
+          final english = SpeechQueue(language: 'en-US');
+          for (final (i, r) in refs.indexed) {
+            for (final c in comments[i]) {
+              english.add(index[r]!, spokenRashiEnglish(c, s, speech: true).string);
+            }
+          }
+          if (!english.isEmpty) return english;
+          for (final r in refs) {
+            queue.add(index[r]!, hebrew(texts.mikra.verse(r)));
+          }
+        } else {
+          // A verse Rashi is silent on is read in Hebrew, as the step shows it.
+          for (final (i, r) in refs.indexed) {
+            if (comments[i].isEmpty) queue.add(index[r]!, hebrew(texts.mikra.verse(r)));
+            for (final c in comments[i]) {
+              queue.add(
+                index[r]!,
                 HebrewSpeech.spoken('${c.heading ?? ''} ${c.text}', divineName: s.divineName, rashi: true),
-        ].join(' ');
-        return (text, english: false);
+              );
+            }
+          }
+        }
       case StepKind.mikra1 || StepKind.mikra2 || StepKind.thirdHebrew || StepKind.repeatLast:
-        return (refs.map((r) => hebrew(texts.mikra.verse(r))).join(' '), english: false);
+        for (final r in refs) {
+          queue.add(index[r]!, hebrew(texts.mikra.verse(r)));
+        }
     }
+    return queue;
   }
 
   // --- Build ------------------------------------------------------------------
@@ -629,6 +812,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           // Settings changes can reshape the flow; keep indices in range.
           if (_chunk >= flow.chunks.length) _chunk = flow.chunks.length - 1;
           if (_step >= flow.stepsFor(_chunk).length) _step = flow.stepsFor(_chunk).length - 1;
+          _shown = (ctx, texts, flow);
           return _buildReader(context, ctx, texts, flow, s);
         },
       ),
@@ -705,7 +889,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Widget _buildReader(BuildContext context, WeekContext ctx, ReaderTexts texts, ReaderFlow flow, AppSettings s) {
     final l = context.l10n;
     final isMac = defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.iOS;
-    final tts = ref.watch(ttsProvider);
     void toggle(AppSettings Function(AppSettings) f) => ref.read(settingsProvider.notifier).update(f);
     void next() {
       if (!_fullText) _next(ctx, flow);
@@ -719,7 +902,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     void smaller() => changeReadingScale(ref, -0.1);
     void teamim() => toggle((s) => s.copyWith(showTeamim: !s.showTeamim));
     void nikud() => toggle((s) => s.copyWith(showNikud: !s.showNikud));
-    void listen() => _toggleSpeech(texts, flow);
+    void listen() => _playPause(texts, flow);
+    void listenBack() {
+      if (_canListenBack) _listenBack(texts, flow);
+    }
+
     void help() => _showShortcuts(context, isMac, s);
     void verseOptions() => _verseOptionsByKey(texts, flow);
 
@@ -729,6 +916,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       const SingleActivator(LogicalKeyboardKey.pageUp): () => _pageOrStep(-1, ctx, flow),
       const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true): next,
       const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true): back,
+      // While Listen reads, back or on a verse: in either language, as the
+      // player's buttons are, and on the web too.
+      SingleActivator(LogicalKeyboardKey.arrowLeft, control: !isMac, meta: isMac, shift: true, includeRepeats: false):
+          listenBack,
+      SingleActivator(LogicalKeyboardKey.arrowRight, control: !isMac, meta: isMac, shift: true, includeRepeats: false):
+          _listenOnVerse,
       if (_fullText && s.focusMode) ...{
         const SingleActivator(LogicalKeyboardKey.arrowDown): () => _moveFocusedVerse(1, flow.verses.length),
         const SingleActivator(LogicalKeyboardKey.arrowUp): () => _moveFocusedVerse(-1, flow.verses.length),
@@ -784,18 +977,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 s,
                 scrolledUnder: !showRibbon,
                 actions: [
-                  ValueListenableBuilder<bool>(
-                    valueListenable: tts.speaking,
-                    builder: (context, speaking, _) => IconButton(
-                      tooltip: speaking ? l.stopListening : l.listen,
-                      icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
-                      onPressed: () => _toggleSpeech(texts, flow),
-                    ),
+                  IconButton(
+                    tooltip: _listen.active ? l.stopListening : l.listen,
+                    icon: Icon(_listen.active ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
+                    onPressed: () => _listen.active ? _stopListening() : _startListening(texts, flow),
                   ),
                   IconButton(
                     tooltip: l.displaySettings,
                     icon: const Icon(Icons.text_format),
-                    onPressed: () => showDisplaySheet(context),
+                    onPressed: () => showDisplaySheet(context, listenAlong: true),
                   ),
                   PopupMenuButton<String>(
                     tooltip: l.actionMore,
@@ -803,6 +993,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     onSelected: (v) {
                       switch (v) {
                         case 'mode':
+                          // Listen reads what the mode shows.
+                          _stopListening();
                           setState(() {
                             _fullText = !_fullText;
                             // The mark of the verse opened at goes with a
@@ -876,6 +1068,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                               focusedVerse: _focusedVerse,
                               quietFocus: _quietFocus,
                               targetVerse: _targetVerse,
+                              speakingVerse: _listen.verse,
                               onTap: _targetVerse == null ? null : () => setState(() => _targetVerse = null),
                               onVerseTap: (i) => setState(() {
                                 _focusedVerse = _focusedVerse == i ? null : i;
@@ -916,6 +1109,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   step: _step,
                                   scroll: _scroll,
                                   stepTitle: _stepTitle(flow.stepsFor(_chunk)[_step]),
+                                  quiet: _quietStep,
+                                  speakingVerse: switch (_listen.verse) {
+                                    final i? when i < flow.verses.length => flow.verses[i],
+                                    _ => null,
+                                  },
                                   onVerseOptions: (r) => _openVerseOptions(texts, flow.book, r),
                                 ),
                     ),
@@ -924,22 +1122,55 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               ),
               // In the scaffold's own slot, so that status messages rise above
               // it rather than cover it.
-              bottomNavigationBar: !_fullText && !_finished
-                  ? ReaderBottomBar(
-                      flow: flow,
-                      chunk: _chunk,
-                      step: _step,
-                      onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
-                      onNext: () => _next(ctx, flow),
-                      backFocus: _backFocus,
-                      nextFocus: _nextFocus,
-                      maxWidth: columnWidth,
-                    )
-                  : null,
+              bottomNavigationBar: _bottomBars(ctx, texts, flow, s, columnWidth),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// What sits beneath the text: while Listen reads, its player, and in the
+  /// guided reader the bar with Back and Next, which keeps its place under
+  /// the player as the player comes and goes.
+  Widget? _bottomBars(WeekContext ctx, ReaderTexts texts, ReaderFlow flow, AppSettings s, double columnWidth) {
+    final steps = !_fullText && !_finished;
+    if (!steps && !_listen.active) return null;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_listen.active)
+          KeyedSubtree(
+            key: const ValueKey('listen'),
+            // Above the bottom bar, which keeps clear of the gesture bar.
+            child: MediaQuery.removePadding(
+              context: context,
+              removeBottom: steps,
+              child: ListenBar(
+                paused: _listen.paused || _listenHeld,
+                onPlayPause: () => _playPause(texts, flow),
+                onPrevious: _canListenBack ? () => _listenBack(texts, flow) : null,
+                onNext: _canListenOn ? _listenOnVerse : null,
+                rate: s.speechRate,
+                onRate: _setSpeechRate,
+                onStop: _stopListening,
+                maxWidth: columnWidth,
+              ),
+            ),
+          ),
+        if (steps)
+          ReaderBottomBar(
+            key: const ValueKey('steps'),
+            flow: flow,
+            chunk: _chunk,
+            step: _step,
+            onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
+            onNext: () => _next(ctx, flow),
+            backFocus: _backFocus,
+            nextFocus: _nextFocus,
+            maxWidth: columnWidth,
+          ),
+      ],
     );
   }
 
@@ -965,6 +1196,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     // space bar. The interface fonts have no arrows, ⌘ or ⌥: icons draw them.
     final up = _Key(l.keyUp, Icons.arrow_upward);
     final down = _Key(l.keyDown, Icons.arrow_downward);
+    // Drawn left to right, as the keys are (_KeyCombos).
+    final left = _Key(l.keyLeft, Icons.arrow_back);
+    final right = _Key(l.keyRight, Icons.arrow_forward);
     final mod = isMac ? const _Key('Command', Icons.keyboard_command_key) : const _Key('Ctrl');
     final alt = isMac ? const _Key('Option', Icons.keyboard_option_key) : const _Key('Alt');
     const shift = _Key('Shift');
@@ -993,6 +1227,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         (const [[_Key('N')]], l.shortcutNikud),
         (const [[_Key('L')]], l.shortcutListen),
       ],
+      ([[mod, shift, left], [mod, shift, right]], l.shortcutListenVerse),
       ([[shift, const _Key('F10')]], l.shortcutVerseOptions),
       (
         [
@@ -1174,6 +1409,8 @@ class _GuidedStep extends StatelessWidget {
     required this.step,
     required this.scroll,
     required this.stepTitle,
+    this.quiet = false,
+    this.speakingVerse,
     required this.onVerseOptions,
   });
 
@@ -1185,6 +1422,13 @@ class _GuidedStep extends StatelessWidget {
   final int step;
   final ScrollController scroll;
   final String stepTitle;
+
+  /// Whether the step, reached by Listen along, goes unannounced: its voice
+  /// reads it.
+  final bool quiet;
+
+  /// The verse Listen is reading, which is highlighted.
+  final VerseRef? speakingVerse;
 
   /// Opens a verse's options, from a long press on it.
   final ValueChanged<VerseRef> onVerseOptions;
@@ -1336,7 +1580,7 @@ class _GuidedStep extends StatelessWidget {
                           container: true,
                           // Spoken by the reader's announcement where there
                           // is one, and elsewhere as it appears.
-                          liveRegion: !MediaQuery.supportsAnnounceOf(context),
+                          liveRegion: !quiet && !MediaQuery.supportsAnnounceOf(context),
                           label: '$stepTitle\n${l.stepOf(step + 1, steps.length)}',
                           child: ExcludeSemantics(child: Text(stepTitle, style: theme.textTheme.bodyLarge)),
                         ),
@@ -1347,15 +1591,25 @@ class _GuidedStep extends StatelessWidget {
                           // a third time among it.
                           if (kind == StepKind.targum && i > 0 && flow.thirdHebrewInTargum(chunk, refs[i - 1]))
                             hanging(LayerLabel(l.targumLabel)),
-                          layerFor(r),
-                          if (settings.showRashi &&
-                              kind != StepKind.rashi &&
-                              texts.rashi != null &&
-                              texts.rashi!.on(r).isNotEmpty) ...[
-                            const Gap(4),
-                            hanging(LayerLabel(l.rashiLabel)),
-                            rashi(texts.rashi!.on(r)),
-                          ],
+                          // The verse and what goes with it, highlighted
+                          // together while Listen reads it.
+                          SpeakingVerseMark(
+                            active: r == speakingVerse,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                layerFor(r),
+                                if (settings.showRashi &&
+                                    kind != StepKind.rashi &&
+                                    texts.rashi != null &&
+                                    texts.rashi!.on(r).isNotEmpty) ...[
+                                  const Gap(4),
+                                  hanging(LayerLabel(l.rashiLabel)),
+                                  rashi(texts.rashi!.on(r)),
+                                ],
+                              ],
+                            ),
+                          ),
                           if (texts.mikra.breaks[r] case final brk? when hebrewStep)
                             SectionGap(kind: brk, settings: settings)
                           else if (i < refs.length - 1)
@@ -1695,6 +1949,7 @@ class _FullText extends StatelessWidget {
     required this.focusedVerse,
     this.quietFocus,
     required this.targetVerse,
+    this.speakingVerse,
     required this.onTap,
     required this.onVerseTap,
     required this.onVerseOptions,
@@ -1717,6 +1972,10 @@ class _FullText extends StatelessWidget {
   /// The verse the reader was opened at, which is marked.
   final VerseRef? targetVerse;
 
+  /// The verse Listen is reading, by index: highlighted as focus mode's
+  /// verse is, and kept in view.
+  final int? speakingVerse;
+
   /// Called on any tap on the text, wherever it lands.
   final VoidCallback? onTap;
   final ValueChanged<int> onVerseTap;
@@ -1737,13 +1996,15 @@ class _FullText extends StatelessWidget {
     Widget verse(int i) {
       final r = flow.verses[i];
       final targeted = r == targetVerse;
-      final dimmed = settings.focusMode && focusedVerse != null && focusedVerse != i;
+      final speaking = speakingVerse == i;
+      final dimmed = settings.focusMode && focusedVerse != null && focusedVerse != i && !speaking;
       // The mark of the verse opened at stands in for focus mode's own, which
-      // stays off after the mark goes, until focus moves.
-      final highlighted = settings.focusMode && focusedVerse == i && !targeted && quietFocus != i;
+      // stays off after the mark goes, until focus moves. The verse Listen
+      // reads has it, in focus mode or not.
+      final highlighted = (settings.focusMode && focusedVerse == i && !targeted && quietFocus != i) || speaking;
       final brk = texts.mikra.breaks[r];
       final rashi = settings.showRashi || settings.usesRashi ? texts.rashi?.on(r) ?? const <Comment>[] : const <Comment>[];
-      return Center(
+      final block = Center(
         key: verseKey(i),
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: styles.maxLineWidth),
@@ -1817,6 +2078,7 @@ class _FullText extends StatelessWidget {
           ),
         ),
       );
+      return FollowedVerse(active: speaking, child: block);
     }
 
     return TapObserver(

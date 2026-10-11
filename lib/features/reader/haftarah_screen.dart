@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -17,6 +18,8 @@ import '../../ui/widgets/ornaments.dart';
 import '../parsha/week_context.dart';
 import '../settings/app_settings.dart';
 import 'display_sheet.dart';
+import 'listen_along.dart';
+import 'listen_bar.dart';
 import 'scripture_text.dart';
 import 'verse_actions_sheet.dart';
 
@@ -43,26 +46,116 @@ String haftarahRefs(Names names, Haftarah haftarah) => haftarah
 /// with a chapter's head where a chapter begins, and at the end a divider
 /// and the button that marks it read. In a week a special haftarah displaces
 /// the portion's own, the regular one follows it, folded but for Chabad.
-class HaftarahScreen extends ConsumerWidget {
+///
+/// Listen reads its verses one by one, from the first in view, highlighting
+/// each as it is read, with the player at the foot of the page.
+class HaftarahScreen extends ConsumerStatefulWidget {
   const HaftarahScreen({super.key, required this.weekId});
 
   final String weekId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HaftarahScreen> createState() => _HaftarahScreenState();
+}
+
+class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
+  // Kept for dispose(), when ref can no longer be used.
+  late final TtsService _tts;
+  late final ListenController _listen;
+
+  // One per verse of the haftarah, for the first in view, where Listen
+  // starts.
+  final _verseKeys = <GlobalKey>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _tts = ref.read(ttsProvider);
+    _listen = ListenController(_tts)..addListener(_listenChanged);
+  }
+
+  @override
+  void dispose() {
+    _listen
+      ..removeListener(_listenChanged)
+      ..dispose();
+    // The voice goes with the page, as the reader's does.
+    _tts.stop();
+    super.dispose();
+  }
+
+  void _listenChanged() {
+    if (mounted) setState(() {});
+  }
+
+  GlobalKey _verseKey(int i) {
+    while (_verseKeys.length <= i) {
+      _verseKeys.add(GlobalKey());
+    }
+    return _verseKeys[i];
+  }
+
+  /// The first of the haftarah's [count] verses whose top is in view; the
+  /// first verse, if the page is scrolled past them all.
+  int _firstVerseInView(int count) {
+    for (var i = 0; i < count && i < _verseKeys.length; i++) {
+      final at = _verseKeys[i].currentContext;
+      final box = at?.findRenderObject();
+      if (at == null || box is! RenderBox) continue;
+      final viewport = RenderAbstractViewport.maybeOf(box);
+      final position = Scrollable.maybeOf(at)?.position;
+      if (viewport == null || position == null) return 0;
+      if (viewport.getOffsetToReveal(box, 0).offset >= position.pixels - 1) return i;
+    }
+    return 0;
+  }
+
+  /// Reads the haftarah's verses aloud, from the first in view, the Divine
+  /// Name as the reader has chosen.
+  Future<void> _startListening(List<HaftarahVerse> list) async {
+    final l = context.l10n;
+    final hasHebrew = await _tts.hasHebrewVoice();
+    if (!mounted) return;
+    if (hasHebrew == false) showStatus(context, l.ttsNoHebrewVoice);
+    final settings = ref.read(settingsProvider);
+    final queue = SpeechQueue(language: 'he-IL');
+    for (final (i, v) in list.indexed) {
+      queue.add(i, HebrewSpeech.spoken(v.hebrew.readText, divineName: settings.divineName));
+    }
+    if (queue.isEmpty) return;
+    final end = await _listen.play(queue, rate: settings.speechRate, startVerse: _firstVerseInView(list.length));
+    if (!mounted) return;
+    switch (end) {
+      case ListenEnd.failed:
+        showStatus(context, l.ttsUnavailable);
+      case ListenEnd.finished:
+        _listen.end();
+      case ListenEnd.stopped:
+        break;
+    }
+  }
+
+  void _setSpeechRate(double rate) {
+    ref.read(settingsProvider.notifier).update((s) => s.copyWith(speechRate: rate));
+    _listen.setRate(rate);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final names = Names(context);
     final theme = Theme.of(context);
+    final weekId = widget.weekId;
     final ctx = ref.watch(weekContextProvider(weekId));
     final settings = ref.watch(settingsProvider);
     final verses = ref.watch(haftarahTextProvider(weekId));
     // A link to a week that doesn't exist.
     if (ctx == null) return const NotFoundPage();
     final styles = ScriptureStyles(context, settings);
-    final tts = ref.watch(ttsProvider);
     final parsha = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
     // The text keeps the reader's measure, between the page's gutters.
     final width = styles.maxLineWidth + 2 * Gutter.of(context);
+    final listening = _listen.active;
 
     return PageScaffold(
       leading: homeLeading(context),
@@ -71,22 +164,10 @@ class HaftarahScreen extends ConsumerWidget {
       showTitle: false,
       contentMaxWidth: width,
       actions: [
-        ValueListenableBuilder<bool>(
-          valueListenable: tts.speaking,
-          builder: (context, speaking, _) => IconButton(
-            tooltip: speaking ? l.stopListening : l.listen,
-            icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
-            onPressed: () async {
-              if (speaking) return tts.stop();
-              final list = verses.value ?? const [];
-              final text = list.map((v) => HebrewSpeech.spoken(v.hebrew.readText, divineName: settings.divineName)).join(' ');
-              try {
-                await tts.speak(text, language: 'he-IL', rate: settings.speechRate);
-              } catch (_) {
-                if (context.mounted) showStatus(context, l.ttsUnavailable);
-              }
-            },
-          ),
+        IconButton(
+          tooltip: listening ? l.stopListening : l.listen,
+          icon: Icon(listening ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
+          onPressed: () => listening ? _listen.stop() : _startListening(verses.value ?? const []),
         ),
         IconButton(
           tooltip: l.displaySettings,
@@ -120,7 +201,7 @@ class HaftarahScreen extends ConsumerWidget {
                 NoticeBanner(icon: Icons.info_outline, text: l.chabadFallbackNote),
               ],
               const Gap(Space.xxl),
-              ..._verses(context, settings, list),
+              ..._verses(context, settings, list, keyOf: _verseKey, speaking: _listen.verse),
               if (ctx.haftarah.regular != null) ...[
                 const Gap(Space.xxl),
                 _RegularHaftarah(ctx: ctx),
@@ -136,6 +217,18 @@ class HaftarahScreen extends ConsumerWidget {
           ),
         ),
       ),
+      bottomNavigationBar: listening
+          ? ListenBar(
+              paused: _listen.paused,
+              onPlayPause: _listen.paused ? _listen.resume : _listen.pause,
+              onPrevious: _listen.hasPrevious ? _listen.previous : null,
+              onNext: _listen.hasNext ? _listen.next : null,
+              rate: settings.speechRate,
+              onRate: _setSpeechRate,
+              onStop: _listen.stop,
+              maxWidth: styles.maxLineWidth,
+            )
+          : null,
     );
   }
 }
@@ -145,8 +238,17 @@ class HaftarahScreen extends ConsumerWidget {
 /// Drawn from more than one book, each book's verses are headed by its name.
 /// Its heads are headings of [level]: 2 beneath the page's heading, or 3
 /// beneath the regular haftarah's own. A long press on a verse opens its
-/// options, with its translation where that is shown.
-List<Widget> _verses(BuildContext context, AppSettings settings, List<HaftarahVerse> list, {int level = 2}) {
+/// options, with its translation where that is shown. Each verse takes the
+/// key [keyOf] gives it, and verse [speaking], which Listen reads, is
+/// highlighted with its translation.
+List<Widget> _verses(
+  BuildContext context,
+  AppSettings settings,
+  List<HaftarahVerse> list, {
+  int level = 2,
+  GlobalKey Function(int)? keyOf,
+  int? speaking,
+}) {
   final names = Names(context);
   final books = {for (final v in list) v.book};
   void options(HaftarahVerse v) => showVerseActions(
@@ -169,16 +271,25 @@ List<Widget> _verses(BuildContext context, AppSettings settings, List<HaftarahVe
         )
       else if (i > 0 && list[i].hebrew.ref.chapter != list[i - 1].hebrew.ref.chapter)
         ChapterHeading(chapter: list[i].hebrew.ref.chapter, settings: settings, headingLevel: level),
-      ScriptureVerse(
-        verse: list[i].hebrew,
-        kind: ScriptureKind.mikra,
-        settings: settings,
-        onLongPress: () => options(list[i]),
+      SpeakingVerseMark(
+        key: keyOf?.call(i),
+        active: speaking == i,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ScriptureVerse(
+              verse: list[i].hebrew,
+              kind: ScriptureKind.mikra,
+              settings: settings,
+              onLongPress: () => options(list[i]),
+            ),
+            if (settings.showTranslation) ...[
+              const Gap(6),
+              TranslationVerse(text: list[i].english, number: list[i].hebrew.ref.verse, settings: settings),
+            ],
+          ],
+        ),
       ),
-      if (settings.showTranslation) ...[
-        const Gap(6),
-        TranslationVerse(text: list[i].english, number: list[i].hebrew.ref.verse, settings: settings),
-      ],
     ],
   ];
 }

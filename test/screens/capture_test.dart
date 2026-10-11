@@ -43,6 +43,7 @@ import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/services/backup_files.dart';
+import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -171,6 +172,17 @@ const _screens = {
   // Rishon of Pinchas, as the scrolls write it: the small yod of פינחס
   // (Numbers 25:11), and the note on the broken vav of shalom.
   'reader_pinchas': '/read/5787:41/0?mode=full',
+  // Listen, two verses on: in the guided reader, by section, and in the full
+  // text, where each verse is read with its Targum; then paused there, in
+  // focus mode, and the menu of speech rates.
+  'reader_listen': '/read/5787:1/2',
+  'reader_listen_full': '/read/5787:1/2?mode=full',
+  'reader_listen_paused': '/read/5787:1/2?mode=full',
+  'reader_listen_focus': '/read/5787:1/2?mode=full',
+  'reader_listen_rate': '/read/5787:1/2?mode=full',
+  // The haftarah read aloud, on its own and within its tab.
+  'haftarah_listen': '/haftarah/5787:1',
+  'haftarah_tab_listen': '/parsha/haftarah/5787:1',
   'haftarah': '/haftarah/5787:1',
   // Bereshit's own haftarah after Machar Chodesh's: folded, and for Chabad
   // open, under the note that Chabad's haftarot are being verified.
@@ -399,6 +411,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_finished_erev': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, plan: ReadingPlanType.sheviiOnShabbat),
   'reader_finished_week': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  'reader_listen': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
+  'reader_listen_focus': (s) => s.copyWith(focusMode: true),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
   // Israel is a parsha ahead, and both pairs of portions are read together.
@@ -465,7 +479,36 @@ final _screenOverrides = <String, List<Override>>{
     deviceClockProvider.overrideWithValue(_clockOf(_jerusalem)),
   ],
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
+  for (final screen in _listening) screen: [ttsProvider.overrideWithValue(_HeldTts())],
 };
+
+/// Screens shown while Listen reads.
+const _listening = {
+  'reader_listen',
+  'reader_listen_full',
+  'reader_listen_paused',
+  'reader_listen_focus',
+  'reader_listen_rate',
+  'haftarah_listen',
+  'haftarah_tab_listen',
+};
+
+/// Speech that says nothing, and never finishes what it is asked to say, so
+/// that Listen stays at the verse it has reached.
+class _HeldTts extends RecordingTts {
+  @override
+  Future<bool> speak(String text, {required String language, double rate = 0.45}) {
+    spoken.add((text, language));
+    return Completer<bool>().future;
+  }
+}
+
+/// Listen, then on two verses.
+final _listenOnTwo = _tapInTurn([
+  () => find.byIcon(Icons.volume_up_outlined),
+  () => find.byIcon(Icons.skip_next_rounded),
+  () => find.byIcon(Icons.skip_next_rounded),
+]);
 
 /// The clock of [city], for a device there.
 Duration Function(LocalDate) _clockOf(City city) {
@@ -829,6 +872,22 @@ Future<void> _scrollToEnd(WidgetTester tester) async {
 }
 
 final _screenSetup = <String, Future<void> Function(WidgetTester)>{
+  for (final screen in [
+    'reader_listen',
+    'reader_listen_full',
+    'reader_listen_focus',
+    'haftarah_listen',
+    'haftarah_tab_listen',
+  ])
+    screen: _listenOnTwo,
+  'reader_listen_paused': (tester) async {
+    await _listenOnTwo(tester);
+    await tester.tap(find.byIcon(Icons.pause_rounded));
+  },
+  'reader_listen_rate': (tester) async {
+    await _listenOnTwo(tester);
+    await tester.tap(find.text('45%'));
+  },
   // Next through Rishon's three readings, then a routine in the offer.
   'reader_offer': _tapInTurn([
     for (var i = 0; i < 3; i++) () => find.byWidgetPredicate((w) => w is FilledButton).last,
@@ -1227,6 +1286,10 @@ const _desktopScreens = {
   'reader_verse',
   'reader_verse_actions',
   'compose_verse',
+  'reader_listen',
+  'reader_listen_full',
+  'haftarah_listen',
+  'haftarah_tab_listen',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc', 'wide'};
@@ -1242,6 +1305,8 @@ const _narrowScreens = {
   's_data_import',
   'reader',
   'reader_long',
+  'reader_listen',
+  'reader_listen_full',
 };
 const _bigTextScreens = {
   'today',
@@ -1290,6 +1355,9 @@ const _bigTextScreens = {
   'kit_progress',
   'kit_week',
   'progress_map',
+  'reader_listen',
+  'reader_listen_full',
+  'haftarah_listen',
 };
 
 Future<void> _settle(WidgetTester tester) async {

@@ -56,6 +56,7 @@
   - Tapping a reminder, with the app running and with it closed, opens Today. The Erev Shabbat reminder opens the week instead, and going back from it leads to Today.
   - Reminders survive a reboot (Android).
   - On Android, the status-bar icon is the three rules of the mark (two long over a shorter one), not a white square or a menu icon, and the Erev Shabbat reminder expands to show its whole message.
+- [ ] Listen, on Android, iOS, Windows and the web: the highlight follows the voice verse by verse, in the full text with each Targum; pause and play go on from the same verse; back and on a verse, and a new speech rate, take effect at once, with no verse skipped or cut short; and Listen along reads Mikra, Mikra and Targum hands-free and stops at the aliyah's last step.
 - [ ] Listen is audible with the Silent switch on; music ducks and comes back up, and a paused podcast resumes, both when speech finishes and when it is stopped part-way or the reader is left (iOS).
 - [ ] Offline: reading, logging and streaks all work in airplane mode.
 - [ ] Launch and system bars, from a cold start, in light and dark mode: iOS, Android 11, and Android 14 or later.

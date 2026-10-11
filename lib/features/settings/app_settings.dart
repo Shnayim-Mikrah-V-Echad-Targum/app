@@ -184,6 +184,7 @@ class AppSettings {
     this.uiFont = UiFont.standard,
     this.boldText = false,
     this.focusMode = false,
+    this.listenAlong = false,
     this.keepScreenOn = true,
     this.reduceMotion = false,
     this.haptics = true,
@@ -282,6 +283,10 @@ class AppSettings {
 
   /// Highlight the current verse and dim the rest.
   final bool focusMode;
+
+  /// In the guided reader, Listen goes on from each reading to the next by
+  /// itself, to the end of the aliyah: Mikra, Mikra, Targum, hands-free.
+  final bool listenAlong;
   final bool keepScreenOn;
 
   // Accessibility
@@ -460,6 +465,7 @@ class AppSettings {
     UiFont? uiFont,
     bool? boldText,
     bool? focusMode,
+    bool? listenAlong,
     bool? keepScreenOn,
     bool? reduceMotion,
     bool? haptics,
@@ -519,6 +525,7 @@ class AppSettings {
         uiFont: uiFont ?? this.uiFont,
         boldText: boldText ?? this.boldText,
         focusMode: focusMode ?? this.focusMode,
+        listenAlong: listenAlong ?? this.listenAlong,
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
         reduceMotion: reduceMotion ?? this.reduceMotion,
         haptics: haptics ?? this.haptics,
@@ -584,6 +591,7 @@ class AppSettings {
         'uiFont': uiFont.name,
         'boldText': boldText,
         'focusMode': focusMode,
+        'listenAlong': listenAlong,
         'keepScreenOn': keepScreenOn,
         'reduceMotion': reduceMotion,
         'haptics': haptics,
@@ -669,6 +677,7 @@ class AppSettings {
       uiFont: e(UiFont.values, j['uiFont'], d.uiFont),
       boldText: b('boldText', d.boldText),
       focusMode: b('focusMode', d.focusMode),
+      listenAlong: b('listenAlong', d.listenAlong),
       keepScreenOn: b('keepScreenOn', d.keepScreenOn),
       reduceMotion: b('reduceMotion', d.reduceMotion),
       haptics: b('haptics', d.haptics),

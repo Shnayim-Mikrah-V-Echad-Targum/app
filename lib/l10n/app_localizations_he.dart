@@ -637,6 +637,30 @@ class AppLocalizationsHe extends AppLocalizations {
   String get stopListening => 'עצירה';
 
   @override
+  String get listenPause => 'השהיה';
+
+  @override
+  String get listenResume => 'המשך השמעה';
+
+  @override
+  String get listenPreviousVerse => 'הפסוק הקודם';
+
+  @override
+  String get listenNextVerse => 'הפסוק הבא';
+
+  @override
+  String speechRateValue(String rate) {
+    return 'קצב הקראה: $rate';
+  }
+
+  @override
+  String get listenAlong => 'השמעה רציפה';
+
+  @override
+  String get listenAlongDesc =>
+      'ההשמעה עוברת מעצמה מכל קריאה לקריאה שאחריה, עד סוף העלייה. עזר למעקב אחר הטקסט, לא תחליף לקריאה בו.';
+
+  @override
   String get ttsUnavailable => 'הקראה קולית אינה זמינה במכשיר זה.';
 
   @override
@@ -704,7 +728,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shortcutNikud => 'הצגת או הסתרת ניקוד';
 
   @override
-  String get shortcutListen => 'השמעה / עצירה';
+  String get shortcutListen => 'השמעה / השהיה';
+
+  @override
+  String get shortcutListenVerse => 'בזמן השמעה: הפסוק הקודם או הבא';
 
   @override
   String get shortcutHelp => 'הצגת קיצורים';
@@ -726,6 +753,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get keyDown => 'חץ למטה';
+
+  @override
+  String get keyLeft => 'חץ שמאלה';
+
+  @override
+  String get keyRight => 'חץ ימינה';
 
   @override
   String get keySpace => 'רווח';

@@ -534,6 +534,21 @@
   "textLarger": "Larger text",
   "listen": "Listen",
   "stopListening": "Stop",
+  "listenPause": "Pause",
+  "listenResume": "Resume",
+  "listenPreviousVerse": "Previous verse",
+  "listenNextVerse": "Next verse",
+  "speechRateValue": "Speech rate: {rate}",
+  "@speechRateValue": {
+    "description": "The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is a percentage, as Settings shows it: \"45%\".",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "listenAlong": "Listen along",
+  "listenAlongDesc": "Listen goes on from each reading to the next by itself, to the end of the aliyah. An aid for following the text, not a substitute for reading it.",
   "ttsUnavailable": "Text-to-speech isn't available on this device.",
   "ttsNoHebrewVoice": "No Hebrew voice is installed. You can add one in your device's speech settings.",
   "guidedMode": "Guided reading",
@@ -562,7 +577,8 @@
   "shortcutSmaller": "Smaller text",
   "shortcutTeamim": "Show or hide cantillation",
   "shortcutNikud": "Show or hide vowels",
-  "shortcutListen": "Listen / stop",
+  "shortcutListen": "Listen / pause",
+  "shortcutListenVerse": "While listening: previous or next verse",
   "shortcutHelp": "Show shortcuts",
   "shortcutScroll": "Scroll the text",
   "shortcutPageDown": "Down a page, then the next step",
@@ -570,6 +586,8 @@
   "shortcutFocusVerse": "Full text in focus mode: previous or next verse",
   "keyUp": "Up arrow",
   "keyDown": "Down arrow",
+  "keyLeft": "Left arrow",
+  "keyRight": "Right arrow",
   "keySpace": "Space",
   "verseOptions": "Verse options",
   "@verseOptions": {

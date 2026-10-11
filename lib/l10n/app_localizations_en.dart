@@ -634,6 +634,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stopListening => 'Stop';
 
   @override
+  String get listenPause => 'Pause';
+
+  @override
+  String get listenResume => 'Resume';
+
+  @override
+  String get listenPreviousVerse => 'Previous verse';
+
+  @override
+  String get listenNextVerse => 'Next verse';
+
+  @override
+  String speechRateValue(String rate) {
+    return 'Speech rate: $rate';
+  }
+
+  @override
+  String get listenAlong => 'Listen along';
+
+  @override
+  String get listenAlongDesc =>
+      'Listen goes on from each reading to the next by itself, to the end of the aliyah. An aid for following the text, not a substitute for reading it.';
+
+  @override
   String get ttsUnavailable =>
       'Text-to-speech isn\'t available on this device.';
 
@@ -702,7 +726,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutNikud => 'Show or hide vowels';
 
   @override
-  String get shortcutListen => 'Listen / stop';
+  String get shortcutListen => 'Listen / pause';
+
+  @override
+  String get shortcutListenVerse => 'While listening: previous or next verse';
 
   @override
   String get shortcutHelp => 'Show shortcuts';
@@ -725,6 +752,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyDown => 'Down arrow';
+
+  @override
+  String get keyLeft => 'Left arrow';
+
+  @override
+  String get keyRight => 'Right arrow';
 
   @override
   String get keySpace => 'Space';

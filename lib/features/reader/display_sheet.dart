@@ -11,12 +11,13 @@ import '../settings/widgets/settings_widgets.dart';
 
 /// Quick display controls available while reading. The sheet and its scrim
 /// cover the whole screen, the navigation bar too when the page (the
-/// haftarah, say) is shown within a tab.
-Future<void> showDisplaySheet(BuildContext context) => showAppSheet<void>(
+/// haftarah, say) is shown within a tab. The reader's, with [listenAlong],
+/// also offers Listen along, which reads its steps one after another.
+Future<void> showDisplaySheet(BuildContext context, {bool listenAlong = false}) => showAppSheet<void>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
-      builder: (_) => const _DisplaySheet(),
+      builder: (_) => _DisplaySheet(listenAlong: listenAlong),
     );
 
 void changeReadingScale(WidgetRef ref, double delta) {
@@ -26,7 +27,9 @@ void changeReadingScale(WidgetRef ref, double delta) {
 }
 
 class _DisplaySheet extends ConsumerWidget {
-  const _DisplaySheet();
+  const _DisplaySheet({required this.listenAlong});
+
+  final bool listenAlong;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -97,6 +100,13 @@ class _DisplaySheet extends ConsumerWidget {
             value: s.focusMode,
             onChanged: (v) => update((s) => s.copyWith(focusMode: v)),
           ),
+          if (listenAlong)
+            SwitchListTile(
+              title: Text(l.listenAlong),
+              subtitle: Text(l.listenAlongDesc),
+              value: s.listenAlong,
+              onChanged: (v) => update((s) => s.copyWith(listenAlong: v)),
+            ),
           LabeledSlider(
             title: l.lineSpacing,
             value: s.lineHeight,
