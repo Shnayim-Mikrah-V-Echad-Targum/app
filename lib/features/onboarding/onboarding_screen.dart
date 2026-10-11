@@ -257,6 +257,8 @@ class OnboardingStepScreen extends ConsumerWidget {
           // stands 16 out from it.
           padding: PageBody.tilePadding(context),
           children: [
+            // Clear of the app bar, about midway between it and the question.
+            const Gap(Space.sm),
             _StepMarks(step: step),
             const Gap(Space.xxl),
             switch (step) {
@@ -749,6 +751,13 @@ class _TitleBlock extends StatelessWidget {
     // is, and in an accessibility font, which has no italic.
     final latin = theme.textTheme.headlineSmall!;
     final italic = latin.fontFamily == 'EBGaramond' && !sefer.isHighContrast;
+    // The names, already display sizes, grow with the text only so far, so
+    // that with very large text the way on isn't pushed far below the fold;
+    // what the practice is, and the buttons, grow in full.
+    Widget display(Widget child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.4)),
+          child: child,
+        );
     return TitlePageFrame(
       padding: EdgeInsets.all(narrow ? Space.xxl : Space.s32),
       child: Column(
@@ -761,11 +770,13 @@ class _TitleBlock extends StatelessWidget {
             headingLevel: 1,
             label: l.appTitleFull,
             excludeSemantics: true,
-            child: WholeWords(
-              _title,
-              style: SeferType.of(context).hebrewDisplay.copyWith(fontSize: 40, height: 60 / 40),
-              textDirection: TextDirection.rtl,
-              locale: const Locale('he'),
+            child: display(
+              WholeWords(
+                _title,
+                style: SeferType.of(context).hebrewDisplay.copyWith(fontSize: 40, height: 60 / 40),
+                textDirection: TextDirection.rtl,
+                locale: const Locale('he'),
+              ),
             ),
           ),
           const Gap(Space.md),
@@ -774,11 +785,13 @@ class _TitleBlock extends StatelessWidget {
           if (!hebrewUi) ...[
             const Gap(Space.md),
             ExcludeSemantics(
-              child: BalancedText(
-                l.appTitleFull,
-                style: latin.copyWith(
-                  color: scheme.onSurface,
-                  fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+              child: display(
+                BalancedText(
+                  l.appTitleFull,
+                  style: latin.copyWith(
+                    color: scheme.onSurface,
+                    fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+                  ),
                 ),
               ),
             ),

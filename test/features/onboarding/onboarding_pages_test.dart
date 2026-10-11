@@ -5,6 +5,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/lang.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
@@ -50,6 +51,35 @@ void main() {
       expect(find.text('להתחיל את פרשת השבוע'), findsOneWidget);
     });
 
+    testWidgets("names each language in itself, read in that language's voice", (tester) async {
+      for (final hebrewUi in [false, true]) {
+        await openRoute(tester, '/welcome', settings: hebrewUi ? const AppSettings(language: AppLanguage.hebrew) : fresh);
+        for (final (name, code) in [('English', 'en'), ('עברית', 'he')]) {
+          expect(
+            find.ancestor(
+              of: find.text(name),
+              matching: find.byWidgetPredicate((w) => w is Lang && w.locale == Locale(code)),
+            ),
+            findsOneWidget,
+            reason: '$name in the ${hebrewUi ? 'Hebrew' : 'English'} UI',
+          );
+        }
+      }
+    });
+
+    testWidgets('keeps the title from crowding out the way on with very large text', (tester) async {
+      await openRoute(tester, '/welcome', settings: fresh, textScale: 2);
+      // The names, display sizes already, grow to 1.4 times at most, so the
+      // call to action stays near the fold.
+      for (final name in [find.text('שְׁנַיִם מִקְרָא\nוְאֶחָד תַּרְגּוּם'), find.text(appTitleFull)]) {
+        expect(MediaQuery.textScalerOf(tester.element(name)).scale(10), closeTo(14, 0.01));
+      }
+      // What the practice is, and the buttons, grow in full.
+      for (final text in [find.textContaining('Read the parsha twice'), find.text("Start this week's parsha")]) {
+        expect(MediaQuery.textScalerOf(tester.element(text)).scale(10), 20);
+      }
+    });
+
     testWidgets('on a device in Hebrew, shows Hebrew as chosen', (tester) async {
       tester.platformDispatcher.localesTestValue = const [Locale('he', 'IL')];
       addTearDown(tester.platformDispatcher.clearLocalesTestValue);
@@ -87,6 +117,10 @@ void main() {
       final start = find.widgetWithText(FilledButton, "Start this week's parsha");
       expect(tester.getSize(start), const Size(400, 52));
       expect(tester.getCenter(start).dx, 683);
+      // The way back in for a reader who already uses the app, as wide.
+      final restore = find.widgetWithText(TextButton, 'I already use Shnayim Mikra');
+      expect(tester.getSize(restore).width, 400);
+      expect(tester.getCenter(restore).dx, 683);
       // The title block is at most 520 wide, in the middle.
       final frame = tester.getRect(find.byType(TitlePageFrame));
       expect((frame.width, frame.center.dx), (520, 683));
@@ -107,6 +141,8 @@ void main() {
       for (final lozenge in tester.widgetList<Lozenge>(find.byType(Lozenge))) {
         expect(lozenge.size, Lozenge.large);
       }
+      // Set clear of the app bar: 16 below it, the page's 8 and 8 more.
+      expect(tester.getTopLeft(find.byType(Lozenge).first).dy - tester.getBottomLeft(find.byType(AppBar)).dy, 16);
 
       c.read(routerProvider).go('/welcome/method');
       await tester.pumpAndSettle();

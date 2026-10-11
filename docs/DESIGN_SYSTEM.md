@@ -1174,7 +1174,7 @@ In order:
 
 **Rows of a settings page** (`settings_widgets.dart`)
 - `SettingsPage(paper: true)` stands its paper on the gutters; pages not yet set in paper keep `PageBody.tilePadding`, and a `ChoiceGroup` on them takes a 16 margin.
-- `ChoiceGroup`: a `SettingHeading` (level 2, a GroupHeader; or level 3, a subheading in titleMedium onSurface for one of several settings in a section), its help in bodyMedium onSurfaceVariant or, with `helpIsSource`, a `SourceNote` (marginalia on surfaceContainerLow, radius 12, padding 12; outlined in high contrast), then radio rows on one PaperGroup (a RadioListTile underneath, its text where a PaperRow's starts, ringed rather than washed when focused) or, `segmented`, a SegmentedButton (§6.8).
+- `ChoiceGroup`: a `SettingHeading` (level 2, a GroupHeader; or level 3, a subheading in titleMedium onSurface for one of several settings in a section), its help in bodyMedium onSurfaceVariant or, with `helpIsSource`, a `SourceNote` (marginalia on surfaceContainerLow, radius 12, padding 12; outlined in high contrast), or a `source`'s note and then the help, then radio rows on one PaperGroup (a RadioListTile underneath, its text where a PaperRow's starts, ringed rather than washed when focused) or, `segmented`, a SegmentedButton (§6.8). `prominent`, for a question on a page of its own (onboarding's steps): the question in headlineSmall as a level-2 heading, plain help only, and the options as paper radio cards (§9 Onboarding).
 - `SwitchRow`: a PaperRow whose whole row toggles its switch, read as one switch; its description is never cut short; disabled with no `onChanged`, when its words and icon are dimmed to 38% as Material dims a disabled control's (the switch shows it in its own way).
 
 **Display**
@@ -1236,12 +1236,13 @@ In order:
   - English UI only: "Shnayim Mikra v'Echad Targum" in EBG MediumItalic 24/30 onSurface (upright in high contrast and in an accessibility font), hidden from screen readers, since the heading says it. The Hebrew UI doesn't repeat the unpointed name;
   - body in bodyLarge onSurfaceVariant.
   - The English name, the body and the disclaimer set their lines evenly (`BalancedText`, lib/ui/widgets/lines.dart), so no word is left alone on a last line; the body keeps "once —" (and "פעם אחת —") together with no-break spaces.
+  - The two names, display sizes already, grow with the text to 1.4× at most, so that with very large text the call to action isn't pushed far below the fold; the body and the buttons grow in full.
 - Outside the frame: 24 gap, a Filled "Start this week's parsha" 52 high (max width 400).
 - An 8 gap, then a TextButton "I already use Shnayim Mikra" (the same max width), which opens the restore sheet: sign in (only with a real community backend), a backup file, or pasted text. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
 - Then, 16 below, the disclaimer in bodySmall onSurfaceVariant.
 
 **Steps 2–4**
-- At the top: four 12 px lozenges, one for each page of onboarding (the welcome and the three steps), 12 apart and centred: filled up to the current page, outlined after it, in primary (onSurface in high contrast), hidden from screen readers. The app bar's title still says it in words ("Step 1 of 3").
+- At the top, 16 below the app bar (clear of its rule): four 12 px lozenges, one for each page of onboarding (the welcome and the three steps), 12 apart and centred: filled up to the current page, outlined after it, in primary (onSurface in high contrast), hidden from screen readers. The app bar's title still says it in words ("Step 1 of 3").
 - 24 below, the question in headlineSmall, a level-2 heading (`ChoiceGroup(prominent: true)`).
 - Options as paper radio cards: min 72 high, radius 12, 8 apart; selected = 2 px primary border plus primaryContainer fill, unselected = paper within a 1 px outline (3 px and 2 px in high contrast), with RadioGroup semantics and arrow keys. A focused card takes the focus ring with its gap (§6.1), clear of its own border.
 - The second reading and this week's start stay ChoiceGroups of paper rows under eyebrows.
