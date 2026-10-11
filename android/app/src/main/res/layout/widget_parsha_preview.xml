@@ -25,7 +25,6 @@
 
         <TextView
             style="@style/ParshaWidget.Text.Fitted.Hebrew"
-            android:layout_marginTop="2dp"
             android:text="@string/widget_preview_hebrew" />
 
         <TextView
@@ -35,7 +34,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/widget_section_gap"
             android:orientation="vertical">
 
             <ProgressBar
@@ -57,8 +56,7 @@
         </LinearLayout>
 
         <TextView
-            style="@style/ParshaWidget.Text.Line"
-            android:layout_marginTop="4dp"
+            style="@style/ParshaWidget.Text.Fitted.Progress"
             android:text="@string/widget_preview_progress" />
     </LinearLayout>
 
@@ -81,7 +79,6 @@
 
         <TextView
             style="@style/ParshaWidget.Text.Continue"
-            android:layout_marginTop="4dp"
             android:text="@string/widget_preview_continue" />
     </LinearLayout>
 </LinearLayout>

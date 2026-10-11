@@ -3,8 +3,9 @@
      the parsha's Hebrew name and its transliteration, then on a reading day
      the three readings' bars and the aliyot read, on a day of rest the
      candles and the day's greeting, or a note. ParshaWidgetProvider fills it
-     in and shows one of the three. The whole card is one button for
-     TalkBack, read as one sentence (its content description). -->
+     in, shows one of the three, and leaves out the lines the widget is too
+     short for. The whole card is one button for TalkBack, read as one
+     sentence (its content description). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
@@ -32,8 +33,7 @@
 
         <TextView
             android:id="@+id/widget_hebrew"
-            style="@style/ParshaWidget.Text.Fitted.Hebrew"
-            android:layout_marginTop="2dp" />
+            style="@style/ParshaWidget.Text.Fitted.Hebrew" />
 
         <TextView
             android:id="@+id/widget_name"
@@ -43,7 +43,7 @@
             android:id="@+id/widget_bars"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/widget_section_gap"
             android:orientation="vertical">
 
             <ProgressBar
@@ -66,26 +66,25 @@
 
         <TextView
             android:id="@+id/widget_progress"
-            style="@style/ParshaWidget.Text.Line"
-            android:layout_marginTop="4dp" />
+            style="@style/ParshaWidget.Text.Fitted.Progress" />
 
         <LinearLayout
             android:id="@+id/widget_rest"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/widget_section_gap"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:visibility="gone">
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="@dimen/widget_candles"
+                android:layout_height="@dimen/widget_candles"
                 android:src="@drawable/widget_candles" />
 
             <TextView
                 android:id="@+id/widget_greeting"
-                style="@style/ParshaWidget.Text.Greeting" />
+                style="@style/ParshaWidget.Text.Fitted.Greeting" />
         </LinearLayout>
 
         <TextView

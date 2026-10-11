@@ -30,14 +30,15 @@ void main() {
     }
   }
 
-  collect(const WidgetTimeline(
+  collect(WidgetTimeline(
     rtl: false,
     stale: '',
-    weeks: [
+    weeks: const [
       WidgetWeek(
           id: '', hebrew: '', name: '', spoken: '', progress: '', spokenProgress: '', mikra1: 0, mikra2: 0, targum: 0, next: ''),
     ],
-    days: [],
+    days: const [],
+    rests: {LocalDate(2026, 10, 24): ''},
   ).toJson());
   collect(WidgetDay(
     date: LocalDate(2026, 10, 9),
@@ -54,8 +55,10 @@ void main() {
     expect(json['continue'], startsWith('${WidgetLink.scheme}://widget/'));
     // home_widget hands iOS's app only links marked as the widget's.
     expect(Uri.parse(json['open'] as String).queryParameters, contains('homeWidget'));
-    expect(provider, contains('launch(context, timeline.openLink)'));
-    expect(provider, contains('launch(context, timeline.continueLink)'));
+    expect(provider, contains('openLink = timeline.openLink'));
+    expect(provider, contains('continueLink = timeline.continueLink'));
+    expect(provider, contains('launch(context, content.openLink)'));
+    expect(provider, contains('launch(context, content.continueLink)'));
     expect(swift, contains('.widgetURL(URL(string: timeline.open))'));
     expect(swift, contains('URL(string: timeline.continueLink)'));
     for (final native in [provider, swift]) {
@@ -68,6 +71,18 @@ void main() {
     expect(rolloverDate(DateTime(2026, 10, 10, 3)), LocalDate(2026, 10, 10));
     expect(provider, contains('const val DAY_STARTS_AT_HOUR = 3'));
     expect(swift, contains('private let dayStartsAtHour = 3'));
+
+    // Three hours after midnight by the hours that pass, as rolloverDate
+    // counts them, rather than at 3 o'clock: on the night the clocks go
+    // forward, 3 o'clock comes two hours after midnight.
+    expect(provider, contains('fun appDate(time: Long) = dateOf(time - DAY_STARTS_AT_HOUR * HOUR_MS)'));
+    expect(provider, contains('val turn = midnight.timeInMillis + DAY_STARTS_AT_HOUR * HOUR_MS + TURN_DELAY_MS'));
+    expect(provider, isNot(contains('set(Calendar.HOUR_OF_DAY, DAY_STARTS_AT_HOUR)')));
+  });
+
+  test('past their days, the widget still rests on Shabbat and Yom Tov', () {
+    expect(provider, contains('timeline.rests[appDate(now)]'));
+    expect(provider, contains('date in timeline.rests'));
   });
 
   group('Android', () {
@@ -220,12 +235,71 @@ void main() {
 
       expect(provider, contains('const val TIMELINE_KEY = "$kWidgetTimelineKey"'));
       final read = {
-        for (final m in RegExp(r'\b(?:getString|getInt|getLong|getJSONArray|getJSONObject|optBoolean|has)\("(\w+)"')
+        for (final m in RegExp(r'\b(?:getString|getInt|getLong|getJSONArray|getJSONObject|optJSONObject|optBoolean|has)\("(\w+)"')
             .allMatches(provider))
           m[1]!,
       };
-      expect(read, isNotEmpty);
+      expect(read, containsAll(['weeks', 'days', 'rest']));
       expect(payloadKeys.containsAll(read), isTrue, reason: '${read.difference(payloadKeys)}');
+    });
+
+    test('the provider measures the lines by the dimensions the layouts set them in', () {
+      final styles = File('$res/values/widget_styles.xml').readAsStringSync();
+      final dimens = {
+        for (final m in RegExp(r'<dimen name="(\w+)">([\d.]+)(dp|sp)</dimen>').allMatches(styles)) m[1]!: (m[2]!, m[3]!),
+      };
+      final measured = {for (final m in RegExp(r'R\.dimen\.(\w+)').allMatches(provider)) m[1]!};
+      expect(measured, containsAll(['widget_padding', 'widget_hebrew_box', 'widget_greeting_box', 'widget_tap']));
+      expect(dimens.keys, containsAll(measured));
+
+      /// The item [name] of style [style], following its parents by name.
+      String? item(String style, String name) {
+        for (var s = style; s.contains('.'); s = s.substring(0, s.lastIndexOf('.'))) {
+          final body = RegExp('<style name="${RegExp.escape(s)}"[^>]*>(.*?)</style>', dotAll: true).firstMatch(styles)?[1];
+          final value = RegExp('<item name="android:$name">([^<]*)</item>').firstMatch(body ?? '')?[1];
+          if (value != null) return value;
+        }
+        return null;
+      }
+
+      // Each line in a box of its own, in sp so that it grows with the
+      // system's text size, which the provider adds up.
+      for (final (style, box) in [
+        ('ParshaWidget.Text.Fitted.Eyebrow', 'widget_eyebrow_box'),
+        ('ParshaWidget.Text.Fitted.Eyebrow.Hebrew', 'widget_eyebrow_box_hebrew'),
+        ('ParshaWidget.Text.Fitted.Hebrew', 'widget_hebrew_box'),
+        ('ParshaWidget.Text.Fitted.Name', 'widget_name_box'),
+        ('ParshaWidget.Text.Fitted.Progress', 'widget_progress_box'),
+        ('ParshaWidget.Text.Fitted.Greeting', 'widget_greeting_box'),
+      ]) {
+        expect(item(style, 'layout_height'), '@dimen/$box', reason: style);
+        expect(dimens[box]!.$2, 'sp', reason: box);
+        expect(measured, contains(box));
+        expect(item(style, 'autoSizeTextType'), 'uniform', reason: style);
+      }
+      // Gaps in dp, in the styles and layouts alike.
+      expect(item('ParshaWidget.Text.Fitted.Hebrew', 'layout_marginTop'), '@dimen/widget_title_gap');
+      expect(item('ParshaWidget.Text.Fitted.Progress', 'layout_marginTop'), '@dimen/widget_line_gap');
+      expect(item('ParshaWidget.Text.Continue', 'layout_marginTop'), '@dimen/widget_line_gap');
+      expect(item('ParshaWidget.Text.Continue', 'minHeight'), '@dimen/widget_tap');
+      for (final layout in ['widget_parsha_small', 'widget_parsha_medium']) {
+        final xml = File('$res/layout/$layout.xml').readAsStringSync();
+        expect(RegExp(r'android:layout_(?:height|margin\w*)="[1-9]').hasMatch(xml), isFalse, reason: '$layout: a size of its own');
+        expect(xml, contains('android:layout_marginTop="@dimen/widget_section_gap"'), reason: layout);
+      }
+
+      // The greeting in whole words, never cut short: in two lines, or three
+      // at a narrow widget's smallest sizes, which the box holds.
+      expect(item('ParshaWidget.Text.Fitted.Greeting', 'maxLines'), '3');
+      expect(item('ParshaWidget.Text.Fitted.Greeting', 'ellipsize'), 'none');
+      expect(dimens['widget_greeting_box'], ('40', 'sp'));
+
+      // Its smallest size and the medium layout's width are the widget info's.
+      final info = File('$res/xml/parsha_widget_info.xml').readAsStringSync();
+      String attribute(String name) => RegExp('android:$name="([^"]*)"').firstMatch(info)![1]!;
+      expect(provider, contains('const val MIN_SIZE_DP = ${attribute('minResizeHeight').replaceAll('dp', '')}f'));
+      expect(attribute('minResizeWidth'), attribute('minResizeHeight'));
+      expect(provider, contains('const val MEDIUM_WIDTH_DP = ${attribute('minWidth').replaceAll('dp', '')}f'));
     });
 
     test("the colours are the design system's, light and dark", () {

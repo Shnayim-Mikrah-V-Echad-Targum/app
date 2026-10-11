@@ -8,6 +8,30 @@
     <dimen name="widget_gutter">16dp</dimen>
     <dimen name="widget_bar">4dp</dimen>
     <dimen name="widget_bar_gap">3dp</dimen>
+    <dimen name="widget_candles">22dp</dimen>
+    <dimen name="widget_tap">48dp</dimen>
+
+    <!-- Above the Hebrew name; below the names (above the bars, the candles
+         or a note); and below the bars and above Continue. -->
+    <dimen name="widget_title_gap">2dp</dimen>
+    <dimen name="widget_section_gap">10dp</dimen>
+    <dimen name="widget_line_gap">4dp</dimen>
+
+    <!-- The boxes the fitted lines are set in, in sp, so that they grow with
+         the system's text size. ParshaWidgetProvider adds these up to see
+         which lines fit the widget's height, and leaves out the others. -->
+    <dimen name="widget_eyebrow_box">16sp</dimen>
+    <dimen name="widget_eyebrow_box_hebrew">18sp</dimen>
+    <dimen name="widget_hebrew_box">34sp</dimen>
+    <dimen name="widget_name_box">21sp</dimen>
+    <dimen name="widget_progress_box">17sp</dimen>
+    <!-- Two lines of the greeting. -->
+    <dimen name="widget_greeting_box">40sp</dimen>
+
+    <!-- The sizes of the lines that wrap: a note, today's reading and
+         Continue. -->
+    <dimen name="widget_line_text">12sp</dimen>
+    <dimen name="widget_today_text">13sp</dimen>
 
     <style name="ParshaWidget" />
 
@@ -22,9 +46,8 @@
         <item name="android:textAlignment">viewStart</item>
     </style>
 
-    <!-- A line that keeps to one line however long its words, set smaller
-         (from Android 8) rather than cut short. Its height is in sp, so it
-         grows with the system's text size. -->
+    <!-- A line that keeps to its box however long its words, set smaller
+         (from Android 8) rather than cut short. -->
     <style name="ParshaWidget.Text.Fitted">
         <item name="android:autoSizeTextType">uniform</item>
         <item name="android:autoSizeStepGranularity">1sp</item>
@@ -32,7 +55,7 @@
 
     <!-- The eyebrow in the English UI: spaced capitals in gold. -->
     <style name="ParshaWidget.Text.Fitted.Eyebrow">
-        <item name="android:layout_height">16sp</item>
+        <item name="android:layout_height">@dimen/widget_eyebrow_box</item>
         <item name="android:fontFamily">serif</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textSize">11sp</item>
@@ -45,7 +68,7 @@
 
     <!-- The eyebrow in the Hebrew UI, without letter spacing. -->
     <style name="ParshaWidget.Text.Fitted.Eyebrow.Hebrew">
-        <item name="android:layout_height">18sp</item>
+        <item name="android:layout_height">@dimen/widget_eyebrow_box_hebrew</item>
         <item name="android:textSize">13sp</item>
         <item name="android:autoSizeMinTextSize">9sp</item>
         <item name="android:autoSizeMaxTextSize">13sp</item>
@@ -59,7 +82,8 @@
 
     <!-- The parsha's Hebrew name, in techelet, as Today's title page sets it. -->
     <style name="ParshaWidget.Text.Fitted.Hebrew">
-        <item name="android:layout_height">34sp</item>
+        <item name="android:layout_height">@dimen/widget_hebrew_box</item>
+        <item name="android:layout_marginTop">@dimen/widget_title_gap</item>
         <item name="android:fontFamily">serif</item>
         <item name="android:textSize">24sp</item>
         <item name="android:autoSizeMinTextSize">14sp</item>
@@ -68,7 +92,7 @@
     </style>
 
     <style name="ParshaWidget.Text.Fitted.Name">
-        <item name="android:layout_height">21sp</item>
+        <item name="android:layout_height">@dimen/widget_name_box</item>
         <item name="android:fontFamily">serif</item>
         <item name="android:textSize">15sp</item>
         <item name="android:autoSizeMinTextSize">10sp</item>
@@ -76,43 +100,62 @@
         <item name="android:textColor">@color/widget_ink</item>
     </style>
 
-    <style name="ParshaWidget.Text.Line">
+    <!-- The aliyot read ("2 of 7 aliyot"), below the bars. -->
+    <style name="ParshaWidget.Text.Fitted.Progress">
+        <item name="android:layout_height">@dimen/widget_progress_box</item>
+        <item name="android:layout_marginTop">@dimen/widget_line_gap</item>
         <item name="android:fontFamily">sans-serif</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">@dimen/widget_line_text</item>
+        <item name="android:autoSizeMinTextSize">9sp</item>
+        <item name="android:autoSizeMaxTextSize">@dimen/widget_line_text</item>
         <item name="android:textColor">@color/widget_ink_muted</item>
     </style>
 
-    <style name="ParshaWidget.Text.Note" parent="ParshaWidget.Text.Line">
+    <!-- A day of rest's greeting, beside the candles: broken between words,
+         and set smaller rather than cut short. Its box holds two lines, or
+         three only at sizes small enough for every word to fit the
+         narrowest widget, where two can't hold "G'mar Chatimah Tovah". -->
+    <style name="ParshaWidget.Text.Fitted.Greeting">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_height">@dimen/widget_greeting_box</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:gravity">center_vertical</item>
         <item name="android:maxLines">3</item>
-        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:autoSizeMinTextSize">8sp</item>
+        <item name="android:autoSizeMaxTextSize">16sp</item>
+        <item name="android:textColor">@color/widget_ink</item>
+    </style>
+
+    <style name="ParshaWidget.Text.Note">
+        <item name="android:layout_marginTop">@dimen/widget_section_gap</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">@dimen/widget_line_text</item>
+        <item name="android:textColor">@color/widget_ink_muted</item>
+        <item name="android:maxLines">3</item>
     </style>
 
     <style name="ParshaWidget.Text.Today">
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">@dimen/widget_today_text</item>
         <item name="android:textColor">@color/widget_ink</item>
         <item name="android:maxLines">2</item>
     </style>
 
     <!-- Continue: a text button in techelet, 48 dp tall to tap. -->
     <style name="ParshaWidget.Text.Continue">
+        <item name="android:layout_marginTop">@dimen/widget_line_gap</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">@dimen/widget_today_text</item>
         <item name="android:textColor">@color/widget_techelet</item>
         <item name="android:maxLines">2</item>
-        <item name="android:minHeight">48dp</item>
+        <item name="android:minHeight">@dimen/widget_tap</item>
         <item name="android:gravity">center_vertical</item>
         <item name="android:drawableEnd">@drawable/widget_chevron</item>
         <item name="android:drawablePadding">2dp</item>
-    </style>
-
-    <style name="ParshaWidget.Text.Greeting">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:fontFamily">serif</item>
-        <item name="android:textSize">16sp</item>
-        <item name="android:textColor">@color/widget_ink</item>
-        <item name="android:layout_marginStart">6dp</item>
     </style>
 
     <!-- A reading's bar: how many of the seven aliyot it has covered, filling
