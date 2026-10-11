@@ -795,6 +795,7 @@ Keep the keyboard shortcuts.
   - Beside or below a TextButton the end padding is 8: the button's own padding makes up the rest, and the text keeps 16.
 - **Action below** (`actionBelow`): for a text longer than a line or two, which a trailing button would squeeze. The icon and text align to the top, and the TextButton sits under the text at the end, with 4 bottom padding.
 - **Action ink:** the TextButton is `primary` where primary on secondaryContainer meets AA (4.5:1); otherwise, as in the high-contrast themes, it is `onSecondaryContainer`, with a 3 px focus ring in the same colour.
+- **Marginalia** (`marginalia`): for a gentle word in the margin rather than news, such as onboarding's honor statement, the text is set as marginalia (§4.5) in onSecondaryContainer, and the icon sits beside its first line.
 
 **Demo notice** (community_ui.dart:139-155)
 - A NoticeBanner with `info_outline` (replaces the pink `tertiaryContainer` strip and the flask icon).
@@ -1224,24 +1225,26 @@ In order:
 ### Onboarding (onboarding_screen.dart; phone_welcome, he_welcome, dark_welcome, desktop_welcome)
 
 **Welcome**
-- At the top end: a SegmentedButton English / עברית. The selected segment is the EFFECTIVE locale even when language = system (fixes the unselected toggle in phone_welcome.png).
-- The block is vertically centred in the available height, max width 520.
-- TitlePageFrame (padding 32) containing:
+- At the top end: a SegmentedButton English / עברית, each label tagged with its own language. The selected segment is the EFFECTIVE locale even when language = system (fixes the unselected toggle in phone_welcome.png), and a selection can't be emptied: choosing the language already shown changes nothing, so an app that follows the device goes on following it.
+- The block is vertically centred in the available height, max width 520, on the gutters below that; the language ends where the block does. The page scrolls when the block doesn't fit (large text).
+- TitlePageFrame (padding 32, 24 below 360) containing:
   - an 8 px lozenge;
-  - "שְׁנַיִם מִקְרָא / וְאֶחָד תַּרְגּוּם" in hebrewDisplay 40/60 primary (two lines);
+  - "שְׁנַיִם מִקְרָא / וְאֶחָד תַּרְגּוּם" in hebrewDisplay 40/60 primary (two lines, broken only between words), the page's heading (level 1), read as `appTitleFull`;
   - a SeferDivider;
-  - English UI only: "Shnayim Mikra v'Echad Targum" in EBG MediumItalic 24/30;
+  - English UI only: "Shnayim Mikra v'Echad Targum" in EBG MediumItalic 24/30 onSurface (upright in high contrast and in an accessibility font), hidden from screen readers, since the heading says it. The Hebrew UI doesn't repeat the unpointed name;
   - body in bodyLarge onSurfaceVariant.
+  - The English name, the body and the disclaimer set their lines evenly (`BalancedText`, lib/ui/widgets/lines.dart), so no word is left alone on a last line; the body keeps "once —" (and "פעם אחת —") together with no-break spaces.
 - Outside the frame: 24 gap, a Filled "Start this week's parsha" 52 high (max width 400).
 - An 8 gap, then a TextButton "I already use Shnayim Mikra" (the same max width), which opens the restore sheet: sign in (only with a real community backend), a backup file, or pasted text. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
-- Then the disclaimer in bodySmall.
+- Then, 16 below, the disclaimer in bodySmall onSurfaceVariant.
 
 **Steps 2–4**
-- At the top: four 12 px lozenges (filled = done, outlined = pending). Semantics still announce "Step 2 of 4".
-- The question in headlineSmall.
-- Options as paper radio cards: min 72 high, radius 12; selected = 2 px primary border plus primaryContainer fill, with RadioGroup semantics.
-- The honor statement as marginalia inside a NoticeBanner.
-- Button labels stay as now ("Continue", "Start reading").
+- At the top: four 12 px lozenges, one for each page of onboarding (the welcome and the three steps), 12 apart and centred: filled up to the current page, outlined after it, in primary (onSurface in high contrast), hidden from screen readers. The app bar's title still says it in words ("Step 1 of 3").
+- 24 below, the question in headlineSmall, a level-2 heading (`ChoiceGroup(prominent: true)`).
+- Options as paper radio cards: min 72 high, radius 12, 8 apart; selected = 2 px primary border plus primaryContainer fill, unselected = paper within a 1 px outline (3 px and 2 px in high contrast), with RadioGroup semantics and arrow keys. A focused card takes the focus ring with its gap (§6.1), clear of its own border.
+- The second reading and this week's start stay ChoiceGroups of paper rows under eyebrows.
+- The honor statement as marginalia inside a NoticeBanner, a section's gap below the choices.
+- The way on is docked below the page (`Scaffold.bottomNavigationBar`), on surface under a hairline, so it is always in view, however large the text: on the gutters, 12 above and 16 below, `onbChangeAnytime` in bodySmall onSurfaceVariant, 8, then the Filled button 52 high and at most 480 wide. Its labels stay as now ("Continue", "Start reading").
 
 ### About, Guide, Sources, Privacy (about_screen.dart, guide_screen.dart, sources_screen.dart, legal_screen.dart)
 

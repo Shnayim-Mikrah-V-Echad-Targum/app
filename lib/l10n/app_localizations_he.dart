@@ -1883,7 +1883,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get onbWelcomeBody =>
-      'קוראים את הפרשה פעמיים ואת התרגום פעם אחת — עלייה ליום, ומסיימים לפני שבת.';
+      'קוראים את הפרשה פעמיים ואת התרגום פעם אחת — עלייה ליום, ומסיימים לפני שבת.';
 
   @override
   String get onbStart => 'להתחיל את פרשת השבוע';

@@ -1884,7 +1884,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onbWelcomeBody =>
-      'Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.';
+      'Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.';
 
   @override
   String get onbStart => 'Start this week\'s parsha';

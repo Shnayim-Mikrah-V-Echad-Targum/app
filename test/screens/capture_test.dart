@@ -1074,7 +1074,12 @@ final _modes = [
   _Mode('bighe', const Size(412, 2600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 2),
   // A 360 dp phone, tall, for the screens in [_narrowScreens].
   _Mode('narrow', const Size(360, 2600), (s) => s),
+  // System text at 200% on a phone's own height, for the screens in
+  // [_bigPhoneScreens]: what stays in view without scrolling.
+  _Mode('bigphone', const Size(412, 915), (s) => s, textScale: 2),
 ];
+
+const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 
 const _desktopScreens = {
   'today',
@@ -1152,7 +1157,7 @@ const _tallScreens = {
   'sources',
 };
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'settings', 's_reading', 's_display', 's_a11y', 'sheet_display_full', 'parsha', 'browse', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
+const _narrowScreens = {'welcome', 'welcome_plan', 'settings', 's_reading', 's_display', 's_a11y', 'sheet_display_full', 'parsha', 'browse', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
   's_display',
   's_a11y',
@@ -1186,6 +1191,8 @@ const _bigTextScreens = {
   'today_paused',
   'welcome',
   'welcome_restore',
+  'welcome_location',
+  'welcome_plan',
   's_data',
   's_data_import',
   'progress',
@@ -1231,6 +1238,7 @@ void main() {
       if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
       if (mode.tag == 'narrow' && !_narrowScreens.contains(entry.key)) continue;
+      if (mode.tag == 'bigphone' && !_bigPhoneScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {

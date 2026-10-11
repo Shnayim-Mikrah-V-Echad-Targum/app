@@ -113,6 +113,12 @@ class SourceNote extends StatelessWidget {
 /// it, through a [SourceNote] where [helpIsSource]. [margin] surrounds the
 /// whole: on a page still padded for list tiles (PageBody.tilePadding), 16
 /// at the sides brings the paper to the gutters.
+///
+/// A [prominent] group is the one question of a page, as each step of
+/// onboarding asks (§9 Onboarding): its heading is the question itself, in
+/// headlineSmall, and each option a radio card of its own, at least 72 high
+/// and 8 apart. The chosen card is washed in primaryContainer within a 2 px
+/// primary border; the others are paper within a 1 px outline.
 class ChoiceGroup<T> extends StatelessWidget {
   const ChoiceGroup({
     super.key,
@@ -123,9 +129,10 @@ class ChoiceGroup<T> extends StatelessWidget {
     this.help,
     this.helpIsSource = false,
     this.segmented = false,
+    this.prominent = false,
     this.headingLevel = 2,
     this.margin = EdgeInsets.zero,
-  });
+  }) : assert(!(segmented && prominent), 'Segments or cards, not both');
 
   final String title;
   final T value;
@@ -134,8 +141,12 @@ class ChoiceGroup<T> extends StatelessWidget {
   final String? help;
   final bool helpIsSource;
   final bool segmented;
+  final bool prominent;
   final int headingLevel;
   final EdgeInsetsGeometry margin;
+
+  /// The space between two radio cards of a [prominent] group.
+  static const cardGap = Space.sm;
 
   @override
   Widget build(BuildContext context) {
@@ -146,18 +157,67 @@ class ChoiceGroup<T> extends StatelessWidget {
             onChanged: (v) {
               if (v != null) onChanged(v);
             },
-            child: PaperGroup(
-              ruleInset: _RadioRow.textStart,
-              children: [for (final c in choices) _RadioRow<T>(choice: c)],
-            ),
+            child: prominent
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final (i, c) in choices.indexed) ...[
+                        if (i > 0) const Gap(cardGap),
+                        _RadioRow<T>(choice: c, card: true, selected: c.value == value),
+                      ],
+                    ],
+                  )
+                : PaperGroup(
+                    ruleInset: _RadioRow.textStart,
+                    children: [for (final c in choices) _RadioRow<T>(choice: c)],
+                  ),
           );
     return Padding(
       padding: margin,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SettingHeading(title, help: help, helpIsSource: helpIsSource, level: headingLevel),
+          if (prominent)
+            _Question(title, help: help, level: headingLevel)
+          else
+            SettingHeading(title, help: help, helpIsSource: helpIsSource, level: headingLevel),
           options,
+        ],
+      ),
+    );
+  }
+}
+
+/// The heading of a [ChoiceGroup.prominent]: the question in headlineSmall,
+/// and any help under it in bodyMedium, inset 4 as a group header's eyebrow
+/// is, and 16 above the cards.
+class _Question extends StatelessWidget {
+  const _Question(this.title, {this.help, required this.level});
+
+  final String title;
+  final String? help;
+  final int level;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final help = this.help;
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(Space.xs, 0, Space.xs, Space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            header: true,
+            headingLevel: level,
+            child: Text(title, style: theme.textTheme.headlineSmall?.copyWith(color: scheme.onSurface)),
+          ),
+          if (help != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Space.xs),
+              child: Text(help, style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+            ),
         ],
       ),
     );
@@ -251,16 +311,24 @@ class _Segments<T> extends StatelessWidget {
 /// title and subtitle where a [PaperRow]'s text starts. Underneath it is a
 /// RadioListTile, a member of the group's RadioGroup; focused from the
 /// keyboard it is ringed as a paper row is (§6.1), rather than washed.
+///
+/// As a [card], it is a sheet of its own (see [ChoiceGroup.prominent]),
+/// marked as [selected] by its wash and border as well as its radio.
 class _RadioRow<T> extends StatefulWidget {
-  const _RadioRow({super.key, required this.choice});
+  const _RadioRow({super.key, required this.choice, this.card = false, this.selected = false});
 
   final Choice<T> choice;
+  final bool card;
+  final bool selected;
 
   /// Where the text starts, as in a [PaperRow] with an icon: the radio's
   /// circle (20 in a 40 box) at 16, as an icon is.
   static const textStart = PaperGroup.iconInset;
   static const _radioBox = 40.0;
   static const _start = PaperGroup.plainInset - 10;
+
+  static const _cardCorners = BorderRadius.all(Radius.circular(12));
+  static const _cardMinHeight = 72.0;
 
   @override
   State<_RadioRow<T>> createState() => _RadioRowState<T>();
@@ -289,43 +357,66 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final corners = PaperGroup.rowCorners(context);
+    final scheme = theme.colorScheme;
+    final sefer = SeferColors.of(context);
+    final card = widget.card;
+    final corners = card ? _RadioRow._cardCorners : PaperGroup.rowCorners(context);
     final choice = widget.choice;
     final ring = _focused && FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+    Widget tile = Theme(
+      // The ring marks focus; the tile's wash as well would read as a
+      // second selection.
+      data: theme.copyWith(focusColor: Colors.transparent),
+      child: RadioListTile<T>(
+        value: choice.value,
+        title: switch (choice.sampleStyle) {
+          null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
+          final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
+        },
+        subtitle: choice.subtitle == null ? null : Text(choice.subtitle!),
+        // The ink keeps to the paper's corners.
+        shape: RoundedRectangleBorder(borderRadius: corners),
+        minTileHeight: card ? _RadioRow._cardMinHeight : null,
+        contentPadding: const EdgeInsetsDirectional.only(start: _RadioRow._start, end: 12),
+        horizontalTitleGap: _RadioRow.textStart - _RadioRow._start - _RadioRow._radioBox,
+        onFocusChange: (focused) => setState(() => _focused = focused),
+      ),
+    );
+    if (card) {
+      final selected = widget.selected;
+      tile = Material(
+        // The tile's ink is drawn on this sheet, over its wash. High contrast,
+        // whose wash barely shows on the page, borders the chosen card the
+        // more heavily.
+        color: selected ? scheme.primaryContainer : sefer.paper,
+        animationDuration: Motion.of(context).d(Motion.short),
+        shape: RoundedRectangleBorder(
+          borderRadius: corners,
+          side: selected
+              ? BorderSide(color: scheme.primary, width: sefer.isHighContrast ? 3 : 2)
+              : BorderSide(color: scheme.outline, width: sefer.isHighContrast ? 2 : 1),
+        ),
+        child: tile,
+      );
+    }
     return DecoratedBox(
       // Always present, so that showing the ring never rebuilds the tile
       // (and drops its focus).
       position: DecorationPosition.foreground,
-      decoration: ring
-          ? ShapeDecoration(
-              shape: RoundedRectangleBorder(
-                borderRadius: corners,
-                side: BorderSide(
-                  color: SeferColors.of(context).focus,
-                  width: 3,
-                  strokeAlign: BorderSide.strokeAlignOutside,
-                ),
-              ),
-            )
-          : const BoxDecoration(),
-      child: Theme(
-        // The ring marks focus; the tile's wash as well would read as a
-        // second selection.
-        data: theme.copyWith(focusColor: Colors.transparent),
-        child: RadioListTile<T>(
-          value: choice.value,
-          title: switch (choice.sampleStyle) {
-            null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
-            final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
-          },
-          subtitle: choice.subtitle == null ? null : Text(choice.subtitle!),
-          // The ink keeps to the paper's corners.
-          shape: RoundedRectangleBorder(borderRadius: corners),
-          contentPadding: const EdgeInsetsDirectional.only(start: _RadioRow._start, end: 12),
-          horizontalTitleGap: _RadioRow.textStart - _RadioRow._start - _RadioRow._radioBox,
-          onFocusChange: (focused) => setState(() => _focused = focused),
-        ),
-      ),
+      decoration: switch ((ring, card)) {
+        (false, _) => const BoxDecoration(),
+        // Clear of the card's own border, which may be primary too (§6.1).
+        (true, true) => ShapeDecoration(
+            shape: FocusRingBorder(borderRadius: corners, ring: sefer.focus, gap: sefer.focusGap),
+          ),
+        (true, false) => ShapeDecoration(
+            shape: RoundedRectangleBorder(
+              borderRadius: corners,
+              side: BorderSide(color: sefer.focus, width: 3, strokeAlign: BorderSide.strokeAlignOutside),
+            ),
+          ),
+      },
+      child: tile,
     );
   }
 }

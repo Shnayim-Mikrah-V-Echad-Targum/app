@@ -113,6 +113,34 @@ void main() {
       expect(dismissed, 1);
     });
 
+    testWidgets('can set its text as marginalia in its ink, the icon on the first line', (tester) async {
+      await pumpThemed(
+        tester,
+        const SizedBox(
+          width: 300,
+          child: NoticeBanner(
+            icon: Icons.handshake_outlined,
+            marginalia: true,
+            text: 'Shnayim Mikra runs on the honor system. Log what you read, wherever you read it.',
+          ),
+        ),
+      );
+      final context = tester.element(find.byType(NoticeBanner));
+      final text = find.textContaining('honor system');
+      final style = tester.widget<Text>(text).style!;
+      final marginalia = SeferType.of(context).marginalia;
+      expect(
+        (style.fontFamily, style.fontSize, style.fontStyle),
+        (marginalia.fontFamily, marginalia.fontSize, marginalia.fontStyle),
+      );
+      expect(style.color, Palettes.light.onSecondaryContainer);
+      // Several lines, with the icon beside the first of them.
+      final line = marginalia.fontSize! * marginalia.height!;
+      final box = tester.getRect(text);
+      expect(box.height, greaterThan(line * 1.5));
+      expect(tester.getCenter(find.byIcon(Icons.handshake_outlined)).dy, closeTo(box.top + line / 2, 1));
+    });
+
     testWidgets('is outlined 2 px in high contrast', (tester) async {
       await pumpThemed(
         tester,

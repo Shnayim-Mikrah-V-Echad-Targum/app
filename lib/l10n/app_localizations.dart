@@ -3222,7 +3222,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbWelcomeBody.
   ///
   /// In en, this message translates to:
-  /// **'Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.'**
+  /// **'Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.'**
   String get onbWelcomeBody;
 
   /// No description provided for @onbStart.

@@ -16,6 +16,7 @@ void main() {
   Future<List<String>> pumpChoice(
     WidgetTester tester, {
     bool segmented = false,
+    bool prominent = false,
     String? help,
     bool helpIsSource = false,
     int headingLevel = 2,
@@ -39,6 +40,7 @@ void main() {
               helpIsSource: helpIsSource,
               headingLevel: headingLevel,
               segmented: segmented,
+              prominent: prominent,
               value: value,
               choices: [for (final label in labels) Choice(label, label)],
               onChanged: (v) => setState(() {
@@ -206,6 +208,115 @@ void main() {
         await pumpChoice(tester, segmented: true, width: 320, labels: const ['In', 'Out side']);
         expect(segments(tester).showSelectedIcon, isFalse);
         expect(segments(tester).direction, Axis.horizontal);
+      });
+    });
+
+    group('prominent', () {
+      Finder rows() => find.byWidgetPredicate((w) => w is RadioListTile<String>);
+
+      /// The sheet that card [i] is drawn on, and its border.
+      Material card(WidgetTester tester, int i) =>
+          tester.widget<Material>(find.ancestor(of: rows().at(i), matching: find.byType(Material)).first);
+      BorderSide side(WidgetTester tester, int i) => (card(tester, i).shape! as RoundedRectangleBorder).side;
+
+      testWidgets('asks its question as a level-2 heading in headlineSmall', (tester) async {
+        final handle = tester.ensureSemantics();
+        await pumpChoice(tester, prominent: true, help: 'Visitors usually keep their home custom.');
+        final theme = Theme.of(tester.element(find.byType(ChoiceGroup<String>)));
+        final heading = tester.widget<Text>(find.text('Haftarah custom'));
+        expect(heading.style?.fontSize, theme.textTheme.headlineSmall?.fontSize);
+        expect(heading.style?.fontFamily, theme.textTheme.headlineSmall?.fontFamily);
+        final data = tester.getSemantics(find.text('Haftarah custom')).getSemanticsData();
+        expect(data.flagsCollection.isHeader, isTrue);
+        expect(data.headingLevel, 2);
+        expect(find.byType(GroupHeader), findsNothing, reason: 'no eyebrow');
+        final help = tester.widget<Text>(find.text('Visitors usually keep their home custom.')).style!;
+        expect(help.color, theme.colorScheme.onSurfaceVariant);
+        handle.dispose();
+      });
+
+      testWidgets('sets each option on a card of its own, at least 72 high and 8 apart', (tester) async {
+        final chosen = await pumpChoice(tester, prominent: true);
+        expect(find.byType(PaperGroup), findsNothing);
+        expect(rows(), findsNWidgets(3));
+        for (var i = 0; i < 3; i++) {
+          expect(tester.getSize(rows().at(i)).height, greaterThanOrEqualTo(72));
+          final shape = card(tester, i).shape! as RoundedRectangleBorder;
+          expect(shape.borderRadius, const BorderRadius.all(Radius.circular(12)));
+        }
+        for (var i = 1; i < 3; i++) {
+          expect(tester.getTopLeft(rows().at(i)).dy - tester.getBottomLeft(rows().at(i - 1)).dy, ChoiceGroup.cardGap);
+        }
+        expect(ChoiceGroup.cardGap, 8);
+        // The text starts where a paper row's does.
+        final left = tester.getRect(rows().at(1)).left;
+        expect(tester.getTopLeft(find.text('Sephardi')).dx - left, PaperGroup.iconInset);
+
+        await tester.tap(find.text('Chabad'));
+        await tester.pump();
+        expect(chosen, ['Chabad']);
+      });
+
+      testWidgets('washes the chosen card in primaryContainer within a 2 px primary border', (tester) async {
+        await pumpChoice(tester, prominent: true);
+        final context = tester.element(find.byType(ChoiceGroup<String>));
+        final scheme = Theme.of(context).colorScheme;
+        expect(card(tester, 0).color, scheme.primaryContainer);
+        expect((side(tester, 0).color, side(tester, 0).width), (scheme.primary, 2));
+        for (final i in [1, 2]) {
+          expect(card(tester, i).color, SeferColors.of(context).paper);
+          expect((side(tester, i).color, side(tester, i).width), (scheme.outline, 1));
+        }
+
+        // The wash and border follow the choice.
+        await tester.tap(find.text('Sephardi'));
+        await tester.pumpAndSettle();
+        expect(card(tester, 1).color, scheme.primaryContainer);
+        expect(card(tester, 0).color, SeferColors.of(context).paper);
+      });
+
+      testWidgets('borders every card more heavily in high contrast, the chosen one most', (tester) async {
+        await pumpChoice(tester, prominent: true, theme: AppThemeMode.highContrastDark);
+        final scheme = Theme.of(tester.element(find.byType(ChoiceGroup<String>))).colorScheme;
+        expect((side(tester, 0).color, side(tester, 0).width), (scheme.primary, 3));
+        expect((side(tester, 1).color, side(tester, 1).width), (scheme.outline, 2));
+      });
+
+      testWidgets('still reads as one radio group, moved through with the arrow keys', (tester) async {
+        final handle = tester.ensureSemantics();
+        final chosen = await pumpChoice(tester, prominent: true);
+        expect(
+          tester.getSemantics(find.text('Ashkenazi')),
+          isSemantics(label: 'Ashkenazi', hasCheckedState: true, isChecked: true, isInMutuallyExclusiveGroup: true),
+        );
+        expect(tester.getSemantics(find.text('Sephardi')), isSemantics(hasCheckedState: true, isChecked: false));
+
+        FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+        addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+        expect(chosen, ['Sephardi']);
+        handle.dispose();
+      });
+
+      testWidgets('a focused card is ringed clear of its border, with the gap of every focus ring', (tester) async {
+        await pumpChoice(tester, prominent: true);
+        FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+        addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        final sefer = SeferColors.of(tester.element(find.byType(ChoiceGroup<String>)));
+        final rings = tester
+            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+            .map((box) => box.decoration)
+            .whereType<ShapeDecoration>()
+            .map((d) => d.shape)
+            .whereType<FocusRingBorder>()
+            .toList();
+        expect(rings, hasLength(1));
+        expect((rings.single.ring, rings.single.gap), (sefer.focus, sefer.focusGap));
       });
     });
   });

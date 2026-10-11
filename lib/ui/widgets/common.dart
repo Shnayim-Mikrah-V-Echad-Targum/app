@@ -370,6 +370,7 @@ class NoticeBanner extends StatelessWidget {
     this.action,
     this.actionBelow = false,
     this.liveRegion = false,
+    this.marginalia = false,
     this.onDismiss,
     this.dismissLabel,
   }) : assert((icon == null) != (leading == null), 'An icon or a mark of its own, not both');
@@ -393,6 +394,11 @@ class NoticeBanner extends StatelessWidget {
   /// Whether the banner is read out as it appears or its text changes: a
   /// live region, on the node that holds the text.
   final bool liveRegion;
+
+  /// Sets [text] as marginalia (§4.5), in the banner's ink: for a gentle
+  /// word in the margin, such as onboarding's honor statement, rather than
+  /// a notice of something that has happened.
+  final bool marginalia;
 
   /// Puts [action] beneath the text, at the end, rather than beside it: for
   /// a text of more than a line or two, which would otherwise be squeezed.
@@ -432,7 +438,8 @@ class NoticeBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final ink = scheme.onSecondaryContainer;
-    Widget message = Text(text, style: theme.textTheme.bodyMedium?.copyWith(color: ink));
+    final style = (marginalia ? SeferType.of(context).marginalia : theme.textTheme.bodyMedium)?.copyWith(color: ink);
+    Widget message = Text(text, style: style);
     if (title case final title?) {
       message = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -443,6 +450,10 @@ class NoticeBanner extends StatelessWidget {
     final action = _legible(context);
     final below = actionBelow ? action : null;
     final dismiss = onDismiss;
+    // Marginalia's first line is taller than the icon, which is centred on it.
+    final markTop = marginalia && title == null
+        ? math.max(0.0, (MediaQuery.textScalerOf(context).scale(style!.fontSize!) * style.height! - 20) / 2)
+        : 0.0;
     return Card(
       color: scheme.secondaryContainer,
       // The fill sets it apart; only high contrast outlines it (§6.20).
@@ -461,11 +472,16 @@ class NoticeBanner extends StatelessWidget {
           below == null ? 12 : 4,
         ),
         child: Row(
-          // A title, or text over a button, starts beside the icon.
-          crossAxisAlignment:
-              below == null && title == null && dismiss == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+          // A title, or text over a button, starts beside the icon, as does
+          // marginalia, which runs to several lines.
+          crossAxisAlignment: below == null && title == null && dismiss == null && !marginalia
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
           children: [
-            leading ?? Icon(icon, size: 20, color: ink),
+            if (markTop > 0)
+              Padding(padding: EdgeInsets.only(top: markTop), child: leading ?? Icon(icon, size: 20, color: ink))
+            else
+              leading ?? Icon(icon, size: 20, color: ink),
             const Gap(12),
             Expanded(
               child: below == null

@@ -71,8 +71,9 @@ void main() {
   }
 
   // Material leaves no space above and below a button's label at this size.
+  // On a 360 dp phone, where both labels wrap.
   testWidgets("at 200% text size the welcome's wrapped button labels keep clear of the buttons' edges", (tester) async {
-    await open(tester, '/welcome', settings: const AppSettings(), textScale: 2);
+    await open(tester, '/welcome', settings: const AppSettings(), size: const Size(360, 800), textScale: 2);
     for (final button in [find.byType(FilledButton), find.widgetWithText(TextButton, 'I already use Shnayim Mikra')]) {
       final box = tester.getRect(button);
       final label = tester.getRect(find.descendant(of: button, matching: find.byType(Text)));
