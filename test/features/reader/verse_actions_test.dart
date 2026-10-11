@@ -92,6 +92,11 @@ void main() {
       expect(text, isNot(contains('\u00a0')));
     });
 
+    test('is shown in the sheet with no line broken after a maqaf, or begun with a paseq', () {
+      expect(keepLinesSound('פֶּן־יִשְׁלַח'), 'פֶּן־\u2060יִשְׁלַח');
+      expect(keepLinesSound('וְעַתָּה ׀ פֶּן'), 'וְעַתָּה\u00a0׀ פֶּן');
+    });
+
     test('follows what the reader shows, and the Name as the reader chooses', () {
       final verse = mikra.verse(genesis3_22.ref);
       // The paseq goes with the cantillation.
@@ -264,6 +269,9 @@ void main() {
       await tester.longPress(find.byType(ScriptureVerse).first);
       await tester.pumpAndSettle();
       expect(inSheet(find.text('Genesis 3:22')), findsOneWidget);
+      // The verse over the options keeps פֶּן־יִשְׁלַח on one line, as the
+      // reader does; what is copied has none of that.
+      expect(inSheet(find.text(keepLinesSound(hebrew3_22))), findsOneWidget);
 
       await tester.tap(inSheet(find.text('Copy')));
       await tester.pumpAndSettle();

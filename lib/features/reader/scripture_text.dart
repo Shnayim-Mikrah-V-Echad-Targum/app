@@ -264,14 +264,15 @@ class ScriptureStyles {
 
 /// Prepares Hebrew for display: applies the vowel/cantillation preferences
 /// and keeps line breaks typographically sound.
-String displayHebrew(String text, AppSettings s) {
-  var out = HebrewText.forDisplay(text, nikud: s.showNikud, teamim: s.showTeamim);
-  // Never start a line with a paseq: bind it to the preceding word.
-  out = out.replaceAll(' ׀', ' ׀');
-  // Keep words joined by a maqaf on one line.
-  out = out.replaceAll('־', '־⁠');
-  return out;
-}
+String displayHebrew(String text, AppSettings s) =>
+    keepLinesSound(HebrewText.forDisplay(text, nikud: s.showNikud, teamim: s.showTeamim));
+
+/// [hebrew] as it may break into lines on screen: never with a paseq at a
+/// line's start, as it is bound to the word before it, and never between
+/// words joined by a maqaf. Only for display: the no-break space and word
+/// joiner would travel with a copy.
+String keepLinesSound(String hebrew) =>
+    hebrew.replaceAll(' ׀', ' ׀').replaceAll('־', '־⁠');
 
 /// The text a screen reader should speak for a verse of the Torah or of
 /// Targum Onkelos.

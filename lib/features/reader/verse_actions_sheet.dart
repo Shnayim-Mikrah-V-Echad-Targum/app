@@ -267,7 +267,7 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
                         border: BorderDirectional(start: BorderSide(color: scheme.secondary, width: 2)),
                       ),
                       child: Text(
-                        verseText(widget.verse.hebrew, s),
+                        keepLinesSound(verseText(widget.verse.hebrew, s)),
                         style: style,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
