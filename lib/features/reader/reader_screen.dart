@@ -2501,6 +2501,7 @@ class _FullText extends StatelessWidget {
       final brk = texts.mikra.breaks[r];
       final rashi = settings.showRashi || settings.usesRashi ? texts.rashi?.on(r) ?? const <Comment>[] : const <Comment>[];
       final marks = marksOf(r);
+      final focusTap = settings.focusMode ? () => onVerseTap(i) : null;
       final mikra = ScriptureVerse(
         verse: texts.mikra.verse(r),
         kind: ScriptureKind.mikra,
@@ -2508,6 +2509,7 @@ class _FullText extends StatelessWidget {
         dimmed: dimmed,
         onLongPress: () => onVerseOptions(r),
         ownGestures: false,
+        onFocusTap: focusTap,
         bookmarked: marks?.bookmarked ?? false,
         hasNote: marks?.hasNote ?? false,
       );
@@ -2525,6 +2527,7 @@ class _FullText extends StatelessWidget {
               ruled: !parallel,
               onLongPress: () => onVerseOptions(r),
               ownGestures: false,
+              onFocusTap: focusTap,
             );
       final translation = settings.showTranslation && texts.english != null
           ? TranslationVerse(text: texts.english!.verse(r).readText, number: r.verse, settings: settings, dimmed: dimmed)
@@ -2585,7 +2588,7 @@ class _FullText extends StatelessWidget {
               VerseGroup(
                 verse: r,
                 highlighted: highlighted,
-                onTap: settings.focusMode ? () => onVerseTap(i) : null,
+                onTap: focusTap,
                 onLongPress: () => onVerseOptions(r),
                 child: TargetVerseMark(active: targeted, child: content),
               ),

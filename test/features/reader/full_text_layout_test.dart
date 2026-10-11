@@ -173,7 +173,9 @@ void main() {
       });
     }
 
-    testWidgets('in focus mode, a screen reader\'s tap on a row focuses its verse', (tester) async {
+    // On the verse and its Targum, which are heard on their own: the row
+    // has no node of its own, which would have nothing to say.
+    testWidgets("in focus mode, a screen reader's tap on a verse or its Targum focuses the verse", (tester) async {
       final handle = tester.ensureSemantics();
       await open(
         tester,
@@ -183,23 +185,17 @@ void main() {
       final rows = find.byType(VerseGroup);
       expect(find.byType(ParallelVerse), findsWidgets);
       expect(tester.widget<VerseGroup>(rows.at(0)).highlighted, isTrue);
-      // The row's node, around its verse and Targum, which are heard on
-      // their own.
-      bool holds(SemanticsNode node, String label) {
-        var found = false;
-        node.visitChildren((child) {
-          found = child.label.startsWith(label) || holds(child, label);
-          return !found;
-        });
-        return found;
-      }
 
-      tester.semantics.tap(find.semantics.byPredicate(
-        (n) => n.getSemanticsData().hasAction(SemanticsAction.tap) && holds(n, 'Verse 10. '),
-      ));
+      tester.semantics.tap(find.semantics.byLabel(RegExp(r'^Verse 10\. ')));
       await tester.pumpAndSettle();
       expect(tester.widget<VerseGroup>(rows.at(0)).highlighted, isFalse);
       expect(tester.widget<VerseGroup>(rows.at(1)).highlighted, isTrue);
+
+      tester.semantics.tap(find.semantics.byLabel(RegExp(r'^Targum, verse 11\. ')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<VerseGroup>(rows.at(1)).highlighted, isFalse);
+      expect(tester.widget<VerseGroup>(rows.at(2)).highlighted, isTrue);
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
       handle.dispose();
     });
 

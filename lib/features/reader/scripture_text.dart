@@ -334,6 +334,7 @@ class ScriptureVerse extends StatelessWidget {
     this.ruled = false,
     this.onLongPress,
     this.ownGestures = true,
+    this.onFocusTap,
     this.bookmarked = false,
     this.hasNote = false,
   });
@@ -369,6 +370,12 @@ class ScriptureVerse extends StatelessWidget {
   /// ([VerseGroup], in the full text), so that only the screen readers'
   /// actions are here, on the verse they hear.
   final bool ownGestures;
+
+  /// Focus mode's tap, which moves the focus to this verse, for screen
+  /// readers only: the block the verse stands in ([VerseGroup]) takes the
+  /// pointer's tap for the whole of it, and the verse offers it where it is
+  /// heard. Null outside focus mode.
+  final VoidCallback? onFocusTap;
 
   /// Whether the reader has bookmarked the verse, or written a note on it:
   /// marked after its number ([VerseMarks]) wherever it [showNumber]s, and
@@ -616,6 +623,7 @@ class ScriptureVerse extends StatelessWidget {
         attributes: [for (final range in hebrewSpans) LocaleStringAttribute(range: range, locale: _hebrew)],
       ),
       textDirection: TextDirection.rtl,
+      onTap: onFocusTap,
       onLongPress: onLongPress,
       customSemanticsActions: onLongPress == null ? null : {CustomSemanticsAction(label: l.verseOptions): onLongPress},
       child: ExcludeSemantics(child: content),
@@ -741,6 +749,10 @@ class VerseGroup extends StatelessWidget {
 
   /// The verse focus mode is on, or the one Listen is reading.
   final bool highlighted;
+
+  /// Focus mode's tap, anywhere in the block. Screen readers find it on its
+  /// verses ([ScriptureVerse.onFocusTap]), which they hear: a node of the
+  /// block's own would be one with nothing to say.
   final VoidCallback? onTap;
 
   /// Opens the verse's options, on a long press or a secondary click
@@ -780,29 +792,26 @@ class VerseGroup extends StatelessWidget {
       // So that a tap's ink shows over the highlight.
       child: Material(
         type: MaterialType.transparency,
-        // Focus mode's tap, for screen readers, here; the verse's options
-        // on its verses, where they hear it.
-        child: Semantics(
+        // Screen readers find focus mode's tap and the verse's options on
+        // its verses, where they hear them.
+        child: InkWell(
           onTap: onTap,
-          child: InkWell(
-            onTap: onTap,
-            onLongPress: onLongPress,
-            onSecondaryTap: onLongPress,
-            excludeFromSemantics: true,
-            // ↑ and ↓ move from verse to verse: a Tab stop on each would put
-            // up to 72 before the button at the end.
-            canRequestFocus: false,
-            // Outside focus mode a verse is text to read, not a button: no
-            // ink for a tap, which does nothing, no wash under the pointer
-            // and no hand over it. A long press opens the options at once.
-            splashFactory: onTap == null ? NoSplash.splashFactory : null,
-            highlightColor: onTap == null ? Colors.transparent : null,
-            hoverColor: onTap == null ? Colors.transparent : null,
-            mouseCursor: onTap == null ? MouseCursor.defer : null,
-            child: Padding(
-              padding: padding.copyWith(right: padding.right - rule),
-              child: child,
-            ),
+          onLongPress: onLongPress,
+          onSecondaryTap: onLongPress,
+          excludeFromSemantics: true,
+          // ↑ and ↓ move from verse to verse: a Tab stop on each would put
+          // up to 72 before the button at the end.
+          canRequestFocus: false,
+          // Outside focus mode a verse is text to read, not a button: no
+          // ink for a tap, which does nothing, no wash under the pointer
+          // and no hand over it. A long press opens the options at once.
+          splashFactory: onTap == null ? NoSplash.splashFactory : null,
+          highlightColor: onTap == null ? Colors.transparent : null,
+          hoverColor: onTap == null ? Colors.transparent : null,
+          mouseCursor: onTap == null ? MouseCursor.defer : null,
+          child: Padding(
+            padding: padding.copyWith(right: padding.right - rule),
+            child: child,
           ),
         ),
       ),
