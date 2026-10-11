@@ -337,7 +337,12 @@ class _ThisYear extends StatelessWidget {
             const Gap(Space.xs),
           ],
           const Gap(Space.sm),
-          Text(l.parshiyotOfYear(done.length, kParshaCount), style: theme.textTheme.headlineSmall),
+          WholeWords(
+            l.parshiyotOfYear(done.length, kParshaCount),
+            style: theme.textTheme.headlineSmall,
+            textAlign: TextAlign.start,
+            breakAtHyphens: true,
+          ),
           const Gap(2),
           Text(
             '${names.hebrewYear(cycle)} · ${l.versesRead(versesCount, secondReading)}',
@@ -475,7 +480,14 @@ class _WeekRow extends StatelessWidget {
                     children: [
                       Icon(WeekStatusBadge.icon(status), size: 16, color: WeekStatusBadge.color(context, status)),
                       const Gap(6),
-                      Flexible(child: Text(WeekStatusBadge.label(context, status), style: meta)),
+                      Flexible(
+                        child: WholeWords(
+                          WeekStatusBadge.label(context, status),
+                          style: meta,
+                          textAlign: TextAlign.start,
+                          breakAtHyphens: true,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -1241,6 +1253,8 @@ class _BookHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Measured again when a font arrives.
+    FontsChangeScope.watch(context);
     final l = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -1270,35 +1284,46 @@ class _BookHeader extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        // One paragraph, so with large text the English
-                        // name wraps under the Hebrew one.
-                        Expanded(
-                          child: Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(text: kTorahBooksHe[book], style: hebrew),
-                                if (!context.isHebrewUi) ...[
-                                  const WidgetSpan(child: SizedBox(width: 8)),
-                                  TextSpan(text: latin, style: theme.textTheme.titleSmall),
-                                ],
-                              ],
-                            ),
-                          ),
+                    child: LayoutBuilder(builder: (context, constraints) {
+                      // One paragraph, so with large text the English name
+                      // wraps under the Hebrew one; each name whole, set
+                      // smaller where the largest text leaves one too wide
+                      // for the row.
+                      final latinStyle = theme.textTheme.titleSmall;
+                      final names = WholeWords.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: kTorahBooksHe[book], style: hebrew),
+                            if (!context.isHebrewUi) ...[
+                              const WidgetSpan(child: SizedBox(width: 8)),
+                              TextSpan(text: latin, style: latinStyle),
+                            ],
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          l.countOfTotal(done, total),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ],
-                    ),
+                        textAlign: TextAlign.start,
+                      );
+                      final countText = l.countOfTotal(done, total);
+                      final countStyle = theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      );
+                      final count = Text(countText, style: countStyle);
+                      // The count ends the names' line, or, where it would
+                      // squeeze a name smaller (very large text), goes under
+                      // them, as a row's value does (§6.3).
+                      final widest = math.max(
+                        _textWidth(context, kTorahBooksHe[book], hebrew),
+                        context.isHebrewUi ? 0.0 : _textWidth(context, latin, latinStyle),
+                      );
+                      if (widest + 12 + _textWidth(context, countText, countStyle) > constraints.maxWidth) {
+                        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [names, count]);
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [Expanded(child: names), const SizedBox(width: 12), count],
+                      );
+                    }),
                   ),
                   const SizedBox(width: 8),
                   AnimatedRotation(
@@ -1442,4 +1467,20 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
   final end = start.addDays(days - 1);
   ref.read(progressProvider.notifier).addPause(start, end);
   if (context.mounted) showStatus(context, l.pauseStarted(names.dateLong(end)));
+}
+
+/// [text]'s width on one line in [style], merged with the ambient style, at
+/// the system's text size and boldness.
+double _textWidth(BuildContext context, String text, TextStyle? style) {
+  var effective = DefaultTextStyle.of(context).style.merge(style);
+  if (MediaQuery.boldTextOf(context)) effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: effective),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
 }

@@ -353,6 +353,7 @@ class PaperRow extends StatelessWidget {
     final titleStyle =
         text.bodyLarge!.copyWith(color: destructive ? scheme.error : scheme.onSurface).merge(this.titleStyle);
     final subtitleStyle = muted?.merge(this.subtitleStyle);
+    final detailStyle = text.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
     // A labelled button goes with the title, as a value does, rather than
     // after it.
     final trailing = this.trailing;
@@ -379,6 +380,10 @@ class PaperRow extends StatelessWidget {
     // not keep it.
     final titleText =
         WholeWords(title, style: titleStyle, textAlign: TextAlign.start, breakAtHyphens: breakTitleAtHyphens);
+    // So with the lines under it, once the text is enlarged: below that, a
+    // subtitle may be cut short at its last line instead.
+    Widget enlargedLine(String line, TextStyle? style) =>
+        WholeWords(line, style: style, textAlign: TextAlign.start, breakAtHyphens: true);
     // The title, and at the end of its line a value or a labelled button,
     // which move under it when the two don't fit side by side.
     Widget titleWith(Widget other) => SizedBox(
@@ -432,17 +437,19 @@ class PaperRow extends StatelessWidget {
                         maxLines: enlarged ? null : subtitleMaxLines,
                         overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
                       )
+                    else if (enlarged)
+                      enlargedLine(subtitle, subtitleStyle)
                     else
                       Text(
                         subtitle,
                         style: subtitleStyle,
-                        maxLines: enlarged ? null : subtitleMaxLines,
-                        overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
+                        maxLines: subtitleMaxLines,
+                        overflow: subtitleMaxLines == null ? null : TextOverflow.ellipsis,
                       ),
-                  if (detail != null)
+                  if (detail case final detail?)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(detail!, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                      child: enlarged ? enlargedLine(detail, detailStyle) : Text(detail, style: detailStyle),
                     ),
                 ],
               ),

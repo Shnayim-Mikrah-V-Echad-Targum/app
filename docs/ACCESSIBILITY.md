@@ -44,7 +44,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 ### Vision
 - **Themes:** light, dark, sepia, high-contrast light and high-contrast dark. They follow the system setting or can be set manually. The app also honours the platform's high-contrast and bold-text settings.
 - **Text size:**
-  - The interface follows the system text size; layouts are tested at 200%, and Today and the reader at 300% on a 320 dp phone. A word of the interface never breaks across lines: a label with a word too wide for its room, at the largest sizes, is set just small enough for it, and a name of two parshiyot ("Vayakhel-Pekudei") stays whole. In scripture, words joined by a maqaf stay on one line where the column has room for them; where it hasn't, the line ends after the maqaf, never inside a word. Only a word wider than the column on its own breaks, as some do at the largest reading size on a phone.
+  - The interface follows the system text size; layouts are tested at 200%, and Today, Parsha, Progress, Community, a discussion, Settings and the reader at 300% on a 320 dp phone. A word of the interface never breaks across lines: a label with a word too wide for its room, at the largest sizes, is set just small enough for it, and a name of two parshiyot ("Vayakhel-Pekudei") stays whole. Words that may be of any length, such as an email address or a discussion's title, are set no smaller than 12 px, and one too long even at that size wraps. In scripture, words joined by a maqaf stay on one line where the column has room for them; where it hasn't, the line ends after the maqaf, never inside a word. Only a word wider than the column on its own breaks, as some do at the largest reading size on a phone.
   - Scripture has its own reading size (0.5×–5×), which **multiplies** the system size. People with low vision can make the text very large without breaking the interface.
 - **Typography controls:**
   - line height (at least 1.6; the default is 1.9)
@@ -147,7 +147,7 @@ The screens are opened as a phone shows them (412 × 915 dp) on a reading-week M
   - at 200% text, in English, on Today, Parsha, Progress, Display settings, a link that leads nowhere, and the welcome and each step of onboarding;
   - at 200% text, in Hebrew, on Today, Progress and the week page;
   - at 200% text on the reader, guided and the whole parsha in English and Hebrew, and the full text in Hebrew;
-  - at 300% text on a 320 × 640 phone, on Today and the reader, in English and Hebrew;
+  - at 300% text on a 320 × 640 phone, on Today and the reader, in English and Hebrew, and on Today, Parsha, Progress, Community, a discussion and Settings as the capture harness's Friday shows them (a grace day told under the week, a special haftarah, aliyot left from days gone by), each opened in English and then shown in Hebrew;
   - at a reading size of 400%, with 100% text, on the reader;
   - that Tab reaches Today's main button, which takes the focus ring: a `FocusRingBorder` in the theme's focus colour, drawn outside its fill;
   - that a day of the week strip and a parsha of the Torah map can be activated by a screen reader, that sliders are named by their setting and their buttons by what they do, and that a page keeps its headings, texts and controls apart;

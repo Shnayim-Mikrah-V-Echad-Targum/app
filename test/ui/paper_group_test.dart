@@ -370,6 +370,27 @@ void main() {
     expect(await maxLines(2), isNull);
   });
 
+  // At 300% on a small phone, "haftarah:" and "discussions" are wider than
+  // a row's text beside its icon and chevron.
+  testWidgets('enlarged, a subtitle and a detail line keep each word whole', (tester) async {
+    const subtitle = 'Special haftarah: Shabbat Machar Chodesh';
+    const detail = '3 discussions · active 3 hours ago';
+    await pumpThemed(
+      tester,
+      const Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 280,
+          child: PaperRow(icon: Icons.auto_stories_outlined, title: 'Haftarah', subtitle: subtitle, detail: detail),
+        ),
+      ),
+      textScale: 3,
+    );
+    expect(tester.takeException(), isNull);
+    expectWordsWhole(tester, subtitle);
+    expectWordsWhole(tester, detail);
+  });
+
   testWidgets('a row may set its title and subtitle in other styles, as the forums do', (tester) async {
     late TextTheme text;
     await pumpThemed(

@@ -1,11 +1,10 @@
-import 'dart:ui' show BoxHeightStyle;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
@@ -167,6 +166,44 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text(WholeWords.unbroken('Acharei Mot-Kedoshim')), findsOneWidget);
       expectWholeWords(tester);
+    });
+  }
+
+  // The same on the pages most read, as the capture harness's Friday of
+  // Bereshit shows them (test/helpers.dart): a grace day told under the
+  // week, a special haftarah, aliyot left from days gone by on the week's
+  // page, a year's Torah map, the forums' activity and a discussion. Each
+  // page is opened in English and then shown in Hebrew.
+  for (final route in ['/today', '/parsha', '/progress', '/community', '/settings', '/community/thread/1']) {
+    testWidgets('no overflow or broken word at 300% on a 320 dp phone, in either language, on Friday: $route',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: captureJoinDate),
+        now: captureNow,
+        progress: captureProgress(),
+        forums: DemoForumRepository(clock: () => captureNow),
+      );
+      c.read(routerProvider).go(route);
+      await tester.pumpAndSettle();
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+      await tester.pumpAndSettle();
+      if (route == '/today') {
+        expect(find.textContaining('covered by a grace day'), findsOneWidget);
+        expect(find.textContaining('Shabbat Machar Chodesh'), findsOneWidget);
+      }
+      if (route == '/parsha') expect(find.byIcon(Icons.history), findsWidgets);
+      for (final language in [AppLanguage.system, AppLanguage.hebrew]) {
+        c.read(settingsProvider.notifier).update((s) => s.copyWith(language: language));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: language.name);
+        expectWholeWords(tester);
+      }
     });
   }
 
@@ -437,30 +474,4 @@ void main() {
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
-}
-
-/// Fails for a word laid out on the screen that is broken across lines, as a
-/// label too large for its room is: each word's letters must all stand on
-/// one line. A line may end after a hyphen or a dash, as in a range ("54:1–"
-/// and "55:5"), or a maqaf, where the words it joins are too wide together
-/// for the column (joinWhereFits); but not after one that a word joiner
-/// holds to the word after it, as in a parsha's name ("Mot-Kedoshim") or
-/// a maqaf's words that fit a line.
-void expectWholeWords(WidgetTester tester) {
-  final broken = <String>[];
-  for (final paragraph in tester.allRenderObjects.whereType<RenderParagraph>()) {
-    final text = paragraph.text.toPlainText(includeSemanticsLabels: false);
-    // A placeholder (\uFFFC) is a widget, as a gap between two words.
-    for (final word in RegExp(r'(?:[^\s\-–—־\uFFFC]|[\-–—־]\u2060)+[\-–—־]?').allMatches(text)) {
-      final lines = paragraph
-          .getBoxesForSelection(
-            TextSelection(baseOffset: word.start, extentOffset: word.end),
-            boxHeightStyle: BoxHeightStyle.max,
-          )
-          .map((box) => box.top.round())
-          .toSet();
-      if (lines.length > 1) broken.add('"${word.group(0)}" in "$text"');
-    }
-  }
-  expect(broken, isEmpty, reason: 'words broken across lines');
 }

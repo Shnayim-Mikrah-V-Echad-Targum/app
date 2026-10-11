@@ -421,9 +421,12 @@ class _AliyahRow extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  // Each word of the row whole, as very large text between the
+                  // disc and the pips would not keep it.
+                  WholeWords(
                     names.aliyah(aliyah),
                     style: titleStyle,
+                    textAlign: TextAlign.start,
                     // With its number, for a screen reader.
                     semanticsLabel: l.aliyahWithName(names.aliyah(aliyah), aliyah + 1),
                   ),
@@ -440,13 +443,15 @@ class _AliyahRow extends ConsumerWidget {
                   if (other != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(
+                      child: WholeWords(
                         l.aliyahOtherDivision(
                           _unbroken(
                             names.verseRange(other.start.chapter, other.start.verse, other.end.chapter, other.end.verse),
                           ),
                         ),
                         style: SeferType.of(context).marginalia,
+                        textAlign: TextAlign.start,
+                        breakAtHyphens: true,
                       ),
                     ),
                 ],
@@ -519,16 +524,19 @@ class _AliyahRow extends ConsumerWidget {
     final style = theme.textTheme.bodySmall;
     final day = ctx.plan.days.firstWhereOrNull((d) => d.aliyot.contains(aliyah))?.date;
     if (day == null && !ctx.plan.shabbatAliyot.contains(aliyah)) return null;
+    // A sentence, which a line may end in after a dash.
+    Widget line(String text, TextStyle? style) =>
+        WholeWords(text, style: style, textAlign: TextAlign.start, breakAtHyphens: true);
     if (day == ctx.today) {
-      return Text(l.plannedForToday, style: style?.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w700));
+      return line(l.plannedForToday, style?.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w700));
     }
     final weekday = day == null ? null : Names(context).weekday(day);
     final label = weekday == null ? l.plannedForShabbat : l.plannedFor(weekday);
     if (!_overdue(day ?? ctx.week.occasion, counts: counts)) {
-      return Text(label, style: style?.copyWith(color: theme.colorScheme.onSurfaceVariant));
+      return line(label, style?.copyWith(color: theme.colorScheme.onSurfaceVariant));
     }
     final color = StatusColors.of(context).overdue;
-    return Text.rich(
+    return WholeWords.rich(
       // In words what the colour and the mark say.
       semanticsLabel: weekday == null ? l.plannedForShabbatOverdue : l.plannedForOverdue(weekday),
       TextSpan(children: [
@@ -542,6 +550,7 @@ class _AliyahRow extends ConsumerWidget {
         TextSpan(text: label),
       ]),
       style: style?.copyWith(color: color),
+      textAlign: TextAlign.start,
     );
   }
 

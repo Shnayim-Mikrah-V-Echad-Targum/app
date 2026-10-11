@@ -68,6 +68,19 @@ void main() {
       expect(tester.getSize(find.text('aa bb')).height, 10);
     });
 
+    // "Wednesday" at 300% beside the note's close button on a small phone.
+    testWidgets('sets a word too wide for the line just small enough, as WholeWords does', (tester) async {
+      await pump(tester, 'aaaaaa bb cc', width: 50);
+      expect(find.byType(WholeWords), findsOneWidget);
+      final box = tester.getRect(find.byType(WholeWords));
+      expect(box.width, lessThanOrEqualTo(50));
+      expect(box.height, lessThan(30), reason: 'three lines, scaled down');
+      expectWordsWhole(tester, 'aaaaaa bb cc');
+      // Where every word fits, it balances as before.
+      await pump(tester, 'aa bb cc dd', width: 100);
+      expect(find.byType(WholeWords), findsNothing);
+    });
+
     testWidgets('by sentence, sets each on lines of its own, read as one text', (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester, 'Aa bb. Cc dd ee.', width: 100, bySentence: true);
@@ -113,6 +126,52 @@ void main() {
       expect(tester.getSize(find.byType(WholeWords)).height, moreOrLessEquals(20 * 49 / 80));
       expect(tester.getRect(find.text('aaaa')).width, lessThanOrEqualTo(50));
       expectWordsWhole(tester, 'aaaa');
+    });
+
+    // An email address 200 wide at 20, in a column 100 wide: half the size,
+    // unless that is under the floor, where it wraps at the floor's size.
+    testWidgets('sets a word no smaller than its floor, wrapping it below that', (tester) async {
+      const big = TextStyle(fontSize: 20, height: 1);
+      await pump(tester, const WholeWords('aaaaaaaaaa', style: big, minFontSize: 9), width: 100);
+      expect(tester.getSize(find.byType(WholeWords)).height, inExclusiveRange(9, 10), reason: 'one line, about half');
+      expectWordsWhole(tester, 'aaaaaaaaaa');
+
+      await pump(tester, const WholeWords('aaaaaaaaaa', style: big, minFontSize: 12), width: 100);
+      // At 12/20 of its size, laid out 100 × 20/12 wide: 8 letters to a line.
+      final box = tester.getRect(find.byType(WholeWords));
+      expect(box.width, 100);
+      expect(tester.getSize(find.text('aaaaaaaaaa')).height, 40, reason: 'two lines, before it is scaled');
+      expect(box.height, moreOrLessEquals(40 * 12 / 20), reason: 'two lines, at the floor');
+      expect(tester.takeException(), isNull);
+
+      // A floor above its size leaves it as it is, to wrap as a Text does.
+      await pump(tester, const WholeWords('aaaaaaaaaaaa', style: style, minFontSize: 12), width: 100);
+      expect(tester.getSize(find.byType(WholeWords)).height, 20, reason: 'two lines, at the full size');
+    });
+
+    // A book's heading on the Torah map: its Hebrew name and, smaller, its
+    // English one.
+    testWidgets('rich, measures each word in its own span\'s style', (tester) async {
+      Widget rich(String small, String large) => WholeWords.rich(
+            TextSpan(children: [
+              TextSpan(text: small),
+              const WidgetSpan(child: SizedBox(width: 8)),
+              TextSpan(text: large, style: const TextStyle(fontSize: 20)),
+            ]),
+            style: style,
+            textAlign: TextAlign.start,
+          );
+      // "bbbb" is 80 wide at 20, though four letters at 10 would fit.
+      await pump(tester, rich('aa', 'bbbb'), width: 50);
+      final box = tester.getRect(find.byType(WholeWords));
+      expect(box.width, lessThanOrEqualTo(50));
+      expect(box.height, inExclusiveRange(15, 20), reason: 'two lines, of 10 and 20, at 49/80');
+      // The gap between the names is a widget, where a line may break.
+      expect(brokenWords(tester), isEmpty);
+      expect(tester.takeException(), isNull);
+      // Where each fits, it is set as it is.
+      await pump(tester, rich('aa', 'bb'), width: 100);
+      expect(tester.getSize(find.byType(WholeWords)).height, 20, reason: 'one line, at the full size');
     });
 
     testWidgets('keeps a hyphenated name whole, or breaks it after the hyphen', (tester) async {

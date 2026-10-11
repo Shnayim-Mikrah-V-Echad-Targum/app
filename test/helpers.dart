@@ -315,3 +315,34 @@ void expectWordsWhole(WidgetTester tester, String text) {
     expect({for (final box in lines) box.top.round()}, hasLength(1), reason: '"${word.group(0)}" of "$text"');
   }
 }
+
+/// The words laid out on the screen that are broken across lines, as a
+/// label too large for its room is, each with the text it is in: a word's
+/// letters must all stand on one line. A line may end after a hyphen or a
+/// dash, as in a range ("54:1–" and "55:5"), or a maqaf, where the words it
+/// joins are too wide together for the column (joinWhereFits); but not after
+/// one that a word joiner holds to the word after it, as in a parsha's name
+/// ("Mot-Kedoshim") or a maqaf's words that fit a line.
+List<String> brokenWords(WidgetTester tester) {
+  final broken = <String>[];
+  for (final paragraph in tester.allRenderObjects.whereType<RenderParagraph>()) {
+    if (!paragraph.hasSize) continue;
+    final text = paragraph.text.toPlainText(includeSemanticsLabels: false);
+    // A placeholder (\uFFFC) is a widget, as a gap between two words.
+    for (final word in RegExp(r'(?:[^\s\-–—־\uFFFC]|[\-–—־]\u2060)+[\-–—־]?').allMatches(text)) {
+      final lines = paragraph
+          .getBoxesForSelection(
+            TextSelection(baseOffset: word.start, extentOffset: word.end),
+            boxHeightStyle: BoxHeightStyle.max,
+          )
+          .map((box) => box.top.round())
+          .toSet();
+      if (lines.length > 1) broken.add('"${word.group(0)}" in "$text"');
+    }
+  }
+  return broken;
+}
+
+/// Fails for a word laid out on the screen that is broken across lines
+/// ([brokenWords]).
+void expectWholeWords(WidgetTester tester) => expect(brokenWords(tester), isEmpty, reason: 'words broken across lines');
