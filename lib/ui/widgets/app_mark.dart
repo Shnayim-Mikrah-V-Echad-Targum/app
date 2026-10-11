@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 /// The app's mark: the icon (שמו״ת over the three rules) with its corners
 /// rounded to a quarter of its size, 10 at the rail's 40 (docs/DESIGN_SYSTEM.md
-/// §6.10).
+/// §6.10), unless given a [radius] of their own.
 ///
 /// Decorative unless [semanticLabel] is given, in which case it is announced
 /// as an image with that label.
 class AppMark extends StatelessWidget {
-  const AppMark({super.key, this.size = 40, this.semanticLabel});
+  const AppMark({super.key, this.size = 40, this.radius, this.semanticLabel});
 
   /// The opaque 1024 px master that the platform icons are made from, and a
   /// 128 px rendering of it for small sizes.
@@ -15,6 +15,9 @@ class AppMark extends StatelessWidget {
   static const small = 'assets/branding/mark_128.png';
 
   final double size;
+
+  /// The corners' radius; a quarter of [size] if not given.
+  final double? radius;
   final String? semanticLabel;
 
   @override
@@ -24,7 +27,7 @@ class AppMark extends StatelessWidget {
     // letters.) The small one's own corners are tighter than this clip.
     final pixels = size * MediaQuery.devicePixelRatioOf(context);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(size / 4),
+      borderRadius: BorderRadius.circular(radius ?? size / 4),
       child: Image.asset(
         pixels <= 128 ? small : master,
         width: size,

@@ -32,6 +32,30 @@ ReadingWeek? findWeekById(ParshaSchedule schedule, String id) {
   return null;
 }
 
+/// The weeks of the cycle that began in [cycle], Bereshit through Vezot
+/// HaBerachah, by the number of each parsha read in them: a week of two
+/// parshiyot read together is under both.
+Map<int, ReadingWeek> cycleWeeks(ParshaSchedule schedule, int cycle) {
+  final weeks = <int, ReadingWeek>{};
+  var week = findWeekById(schedule, '$cycle:1');
+  // A cycle has a week for each portion at most; the bound only keeps a
+  // schedule gone wrong from looping.
+  for (var i = 0; week != null && i < kParshaCount; i++) {
+    for (final n in week.portion.parshiyot) {
+      weeks[n] = week;
+    }
+    if (week.portion.isVezotHaberakhah) break;
+    week = schedule.nextWeek(week);
+  }
+  return weeks;
+}
+
+/// [cycleWeeks] for the cycle of the current week, the one Browse lists.
+final currentCycleWeeksProvider = Provider<Map<int, ReadingWeek>>((ref) {
+  final current = ref.watch(currentWeekProvider);
+  return cycleWeeks(ref.watch(scheduleProvider), cycleYearOf(current.portion, current.occasion));
+});
+
 /// Where verse [r] of [book] is read in the cycle that began in [cycle]: the
 /// id of the week whose portion holds it, and the aliyah of that week's
 /// portion that holds it. A combined week divides its aliyot differently from
@@ -115,12 +139,25 @@ class WeekContext {
   /// Whether everything that counts toward finishing this week is read.
   bool get isFinished => progress.isComplete && !haftarahDue;
 
-  /// The first aliyah not yet fully read, in order; null when complete.
+  /// Where the reading continues: the first aliyah not yet fully read, in
+  /// order, passing over those planned only for days before the reader
+  /// joined, which aren't expected of them, unless begun, until the rest are
+  /// read. Unless one of those is begun, it is the first of [dueAliyot]
+  /// whenever any are due. Null when complete.
   int? get nextAliyah {
+    final join = joinDate;
+    final beforeJoining = {
+      if (join != null)
+        for (final d in [...plan.days, PlanDay(week.occasion, plan.shabbatAliyot)])
+          if (d.date < join) ...d.aliyot,
+    };
+    int? first;
     for (var a = 0; a < kAliyot; a++) {
-      if (!progress.isAliyahDone(a)) return a;
+      if (progress.isAliyahDone(a)) continue;
+      first ??= a;
+      if (!beforeJoining.contains(a) || progress.isAliyahStarted(a, aliyahVerses[a])) return a;
     }
-    return null;
+    return first;
   }
 
   /// Aliyot not yet read that were planned for today or earlier (and not

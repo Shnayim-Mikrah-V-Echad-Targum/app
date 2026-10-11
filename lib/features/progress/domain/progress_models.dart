@@ -432,13 +432,17 @@ class WeekProgress {
   /// The verses read so far in each reading of [aliyah], which has
   /// [verseCount] verses. A count that claims a reading is complete when it
   /// isn't marked done (say, one that a sync restored after "Mark as not
-  /// read") is stale, and reads as 0: that reading starts over.
+  /// read") is stale, and reads as 0: that reading starts over. A reading
+  /// marked done reads as complete, whatever was saved (nothing, when it was
+  /// marked from the week's page or from a Chumash), so that the reader
+  /// resumes at the first reading not done.
   List<int> savedPositions(int aliyah, int verseCount) {
     final saved = positions[aliyah] ?? const <int>[];
     return [
       for (final pass in ReadingPass.values)
         switch (pass.index < saved.length ? saved[pass.index] : 0) {
-          final n when n >= verseCount && !isUnitDone(aliyah, pass) => 0,
+          _ when isUnitDone(aliyah, pass) => verseCount,
+          final n when n >= verseCount => 0,
           final n => n,
         },
     ];

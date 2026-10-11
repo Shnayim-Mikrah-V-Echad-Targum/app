@@ -75,6 +75,100 @@ void main() {
       expect(glyph.left - banner.left, 16);
     });
 
+    testWidgets('can carry a title over its text, both in its ink, beside the icon', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpThemed(
+        tester,
+        const NoticeBanner(icon: Icons.schedule, title: 'Bereshit is still open', text: 'Finish by Tuesday.'),
+      );
+      final context = tester.element(find.byType(NoticeBanner));
+      final title = tester.widget<Text>(find.text('Bereshit is still open')).style;
+      expect(title?.fontSize, Theme.of(context).textTheme.titleSmall?.fontSize);
+      expect(title?.color, Palettes.light.onSecondaryContainer);
+      expect(tester.getTopLeft(find.text('Finish by Tuesday.')).dy,
+          tester.getBottomLeft(find.text('Bereshit is still open')).dy);
+      // The icon beside the title's line, not the middle of both.
+      expect(tester.getCenter(find.byIcon(Icons.schedule)).dy,
+          closeTo(tester.getCenter(find.text('Bereshit is still open')).dy, 1));
+      // The notice's heading, which a screen reader can move to.
+      expect(tester.getSemantics(find.text('Bereshit is still open')), isSemantics(isHeader: true));
+      expect(tester.getSemantics(find.text('Finish by Tuesday.')), isNot(isSemantics(isHeader: true)));
+      handle.dispose();
+    });
+
+    testWidgets('can be put away with a close button at its top end', (tester) async {
+      var dismissed = 0;
+      await pumpThemed(
+        tester,
+        NoticeBanner(
+          icon: Icons.play_circle_outline,
+          title: 'Welcome back',
+          text: 'Your pause has ended.',
+          onDismiss: () => dismissed++,
+          dismissLabel: 'Dismiss',
+        ),
+      );
+      final close = find.byTooltip('Dismiss');
+      expect(close, findsOneWidget);
+      expect(tester.getSize(find.byType(IconButton)), const Size(48, 48), reason: 'a 48 dp target');
+      // On the title's line, at the end.
+      expect(tester.getCenter(find.byIcon(Icons.close)).dy, closeTo(tester.getCenter(find.text('Welcome back')).dy, 3));
+      expect(tester.getRect(find.byType(NoticeBanner)).right - tester.getRect(find.byType(IconButton)).right, 4);
+      await tester.tap(close);
+      expect(dismissed, 1);
+    });
+
+    testWidgets('puts its close button at the top end in Hebrew too, on the left', (tester) async {
+      await pumpThemed(
+        tester,
+        NoticeBanner(
+          icon: Icons.play_circle_outline,
+          title: 'ברוכים השבים',
+          text: 'ההשהיה הסתיימה.',
+          onDismiss: () {},
+          dismissLabel: 'סגירה',
+        ),
+        hebrew: true,
+      );
+      final banner = tester.getRect(find.byType(NoticeBanner));
+      final button = tester.getRect(find.byType(IconButton));
+      expect(button.left - banner.left, 4, reason: 'at the end, which is the left');
+      expect(tester.getCenter(find.byIcon(Icons.close)).dy, closeTo(tester.getCenter(find.text('ברוכים השבים')).dy, 3));
+      // The icon at the start, on the right, and the title beside it.
+      final icon = tester.getRect(find.byIcon(Icons.play_circle_outline));
+      expect(banner.right - icon.right, 16);
+      expect(tester.getRect(find.text('ברוכים השבים')).right, lessThan(icon.left));
+      expect(tester.getRect(find.text('ברוכים השבים')).left, greaterThan(button.right - 1));
+    });
+
+    testWidgets('can set its text as marginalia in its ink, the icon on the first line', (tester) async {
+      await pumpThemed(
+        tester,
+        const SizedBox(
+          width: 300,
+          child: NoticeBanner(
+            icon: Icons.handshake_outlined,
+            marginalia: true,
+            text: 'Shnayim Mikra runs on the honor system. Log what you read, wherever you read it.',
+          ),
+        ),
+      );
+      final context = tester.element(find.byType(NoticeBanner));
+      final text = find.textContaining('honor system');
+      final style = tester.widget<Text>(text).style!;
+      final marginalia = SeferType.of(context).marginalia;
+      expect(
+        (style.fontFamily, style.fontSize, style.fontStyle),
+        (marginalia.fontFamily, marginalia.fontSize, marginalia.fontStyle),
+      );
+      expect(style.color, Palettes.light.onSecondaryContainer);
+      // Several lines, with the icon beside the first of them.
+      final line = marginalia.fontSize! * marginalia.height!;
+      final box = tester.getRect(text);
+      expect(box.height, greaterThan(line * 1.5));
+      expect(tester.getCenter(find.byIcon(Icons.handshake_outlined)).dy, closeTo(box.top + line / 2, 1));
+    });
+
     testWidgets('is outlined 2 px in high contrast', (tester) async {
       await pumpThemed(
         tester,

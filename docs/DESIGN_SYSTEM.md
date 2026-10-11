@@ -414,6 +414,7 @@ Rules:
 - Hebrew numerals (גימטריה) are used for:
   - verse numbers, chapter heads and aliyah ordinals (א–ז);
   - Hebrew dates in the Hebrew UI.
+- A long date inside a sentence ("Paused until Sunday, October 18.") is `Names.dateInText`: it wraps after its weekday's comma or not at all, never between a day and its month ("October / 18", "18 / באוקטובר").
 - Add `String ltr(String s) => '⁦$s⁩'` in `lib/ui/l10n.dart`. Wrap every Latin-digit run that is interpolated into a Hebrew string with it: references "3:22–4:18", "2/7", times and counts. In Hebrew UI layouts, author names in post headers also go in their own Text widget (§9 Thread).
 
 ### 4.7 Scripture (`ScriptureStyles` and `ScriptureVerse`, lib/features/reader/scripture_text.dart)
@@ -545,7 +546,8 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
   - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it. With a subtitle under them, the icon and chevron line up with the title's line too.
   - A trailing button with a label (a TextButton, such as "About streaks" or "Sign in") goes with the title the same way: at the end of its line, or under it when the two don't fit, so that no word of the title ever breaks.
 - Tap via SeferInkWell.
-- Semantics: the row is one item, its text and its tap. A trailing control (a menu or text button) keeps an item of its own beside it, so both actions can be reached; a switch or checkbox that the row's tap also toggles merges into the row (`mergeTrailing`).
+- Semantics: the row is one item, its text and its tap. A trailing control (a menu or text button) keeps an item of its own beside it, so both actions can be reached; a switch or checkbox that the row's tap also toggles merges into the row (`mergeTrailing`), which then reads in the control's role rather than as a button. A row whose value another control moves is a live region (`liveRegion`).
+- The one row of a page that erases sets its title in `error` (`destructive`), with no icon.
 
 **GroupHeader**
 - Eyebrow, 28 above and 8 below, start inset 4.
@@ -609,6 +611,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 **SegmentedButton**
 - Radius 10, height 48; selected primaryContainer with label w700 and a check icon (keep the M3 check here; it's the non-colour cue); unselected transparent with 1 px outline.
 - Focus: the ring goes around the whole group (Flutter gives each segment a plain shape of its own), so the focused segment is also washed in its ink at 24% and its label is underlined.
+- A settings choice (`ChoiceGroup.segmented`) lies across the column while every label fits beside the check in two lines, no word broken. The selected segment always bears the check, and every other label keeps the check's room (30: the check, its gap, and the 4 more a button with an icon pads its end by) beside it, half on either side, so that all are set as narrow and none changes its lines as the choice changes. Otherwise the segments stand one under another, each the column's width, checked.
 
 ### 6.9 Navigation bar (phone)
 
@@ -801,6 +804,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
   - Beside or below a TextButton the end padding is 8: the button's own padding makes up the rest, and the text keeps 16.
 - **Action below** (`actionBelow`): for a text longer than a line or two, which a trailing button would squeeze. The icon and text align to the top, and the TextButton sits under the text at the end, with 4 bottom padding.
 - **Action ink:** the TextButton is `primary` where primary on secondaryContainer meets AA (4.5:1); otherwise, as in the high-contrast themes, it is `onSecondaryContainer`, with a 3 px focus ring in the same colour.
+- **Marginalia** (`marginalia`): for a gentle word in the margin rather than news, such as onboarding's honor statement, the text is set as marginalia (§4.5) in onSecondaryContainer, and the icon sits beside its first line.
 
 **Demo notice** (`DemoBanner` and `DemoTag`, community_ui.dart)
 - A NoticeBanner with `info_outline` (replaces the pink `tertiaryContainer` strip and the flask icon).
@@ -860,7 +864,9 @@ Centred, max width 480:
   - a 24×4 primary bar and a 24×1 goldLeaf rule;
   - the label in labelMedium below the card.
 - Selected: 2 px primary border plus a 20 px check badge (primary disc, onPrimary check) at the top-end corner.
-- Wrapped in the existing RadioGroup semantics. Match device is a separate row above the grid (switch).
+- Radio semantics: one group container named `themeLabel`, each swatch a radio button (its name, checked state and tap); the arrow keys move from swatch to swatch, on the web too. Match device is a separate row above the grid (switch).
+- Matching the device, the two themes it switches between are both marked for the eye: light and dark, or the two high-contrast themes when the device asks for high contrast. To assistive technology none is checked (the switch says the device is followed), and the pair carry a hint, `themeUsedWhenLight` / `themeUsedWhenDark`. Choosing a swatch stops matching; turning the switch off keeps the theme the device had.
+- `ThemeSwatchPicker` (lib/ui/widgets/theme_swatch_picker.dart) is shared with the reader's display sheet, where its cards are 64 high (`compact`).
 
 ### 6.25 Search results (lib/features/search/)
 
@@ -988,7 +994,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 
 **Completion moments** (once each, silent, no confetti)
 - Aliyah: the SeferDivider hairlines draw outward from the lozenge over 400 ms, then the title fades in over 150 ms; `hapticSuccess`.
-- Parsha: the hero's inner goldLeaf frame rule draws around the card once over 900 ms (`PathMetric.extractPath`), then stays static.
+- Parsha: the hero's inner goldLeaf frame rule draws around the card once over 900 ms (`PathMetric.extractPath`), then stays static. It draws when the week is finished while the app is open (the hero has shown it unfinished in this run), once per week, and waits until the hero can be seen; a restarted app shows it static, as the rings show progress without a sweep.
 - Sefer: a panel fade of 400 ms.
 
 **Never:** looping, idle or time-based animation anywhere. Nothing at all moves on the rest-day Today. Animate only opacity, transform and CustomPaint progress; never BoxShadow or blur.
@@ -1001,9 +1007,13 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 
 1. **TodayHeader** (12 top):
    - Row of `Expanded(Column)` and a help IconButton (help_outline, tooltip `guideTitle`).
-   - The column holds a running head in bodySmall w500 onSurfaceVariant (`'${names.dateLong(today)} · ${names.hebrewDate(today)}'`), a 2 gap, and the masthead `appTitle` in headlineMedium.
+   - The column holds a running head in bodySmall w500 onSurfaceVariant (`'${names.dateLong(today)} · ${names.hebrewDate(today)}'`; in the Hebrew UI the Hebrew date first, `'${names.weekday(today)}, ${names.hebrewDate(today)} · ${names.dateMonthDay(today)}'`), a 2 gap, and the masthead `appTitle` in headlineMedium.
+   - A line of parts between middle dots (the running head, and the hero's reference and reading day) sets as many parts to a line as fit, so it breaks between parts rather than inside one ("October / 10"), and starts no line with a dot. A part too long for a line of its own, as with large text, breaks after a comma before anywhere else ("Read on Shabbat, / October 10") (`DotLine`, lib/ui/widgets/lines.dart).
    - The masthead is not a heading; the parsha name stays heading level 1.
 2. Paused banner and open-previous-week card: NoticeBanner style.
+   - Resuming from the paused banner says `pauseEnded` in a status message. A pause that ended while the app was closed (not one made or changed once it was over, by its stamp's reading day: entered after the fact, or ended early) is welcomed instead, on the first reading day the app is opened after it, until the reader puts it away (a close button, `actionDismiss`; `pauseEndSeen`) or reads again: a NoticeBanner titled `pauseEnded` with `pauseEndedOn(date)`, a Tonal `pauseEndedStart` or `pauseEndedContinue` to `/read/{id}/{next}`, and a TextButton `catchUpOn(name)` to last week while it can still count. It offers last week itself, so the open-previous-week card waits until it is put away.
+   - **After-Shabbat check-in** (the open-previous-week card's first form): after a Shabbat whose parsha is unfinished, on the first reading day after it and on each one after that while the week can still count as late (`WeekStatus.inProgress`), until it is answered (`checkInAnsweredFor`). `checkInTitle` and `checkInBody`, then a TextButton `checkInNotThisTime`, a TextButton `checkInPick` and a Tonal `checkInFinished`. Choose aliyot opens one sheet, titled `checkInTitle`: each aliyah not yet read as a checked CheckboxListTile with its reference, the haftarah too where it is shown and not logged, the line `checkInReadOnShabbat` (or `checkInReadOn` once another day is chosen) beside a TextButton `changeDate` (`pickReadDate`), and a Filled `logReading` that logs every checked reading in one change. Logging, either way, answers the check-in and says so in a status message with Undo, which puts the week and the question back as they were.
+   - After the late window, a week that a double-up can still restore says so by the reader's parsha streak: `openWeekRestore(name, next, count)` with one, `openWeekRestoreZero` without.
    - After the paused banner, the **divergence notice**: a NoticeBanner with `info_outline` and the action below. It appears in a week when Israel and the Diaspora read different portions, for a reader whose reading and days of Yom Tov follow different places:
      - a visitor to Israel (Israel's reading, two days of Yom Tov): `readingDivergence`, with a TextButton `readingDivergenceOpen` to the home portion's week (last week's in Israel);
      - an Israeli abroad (the Diaspora's reading, one day): `readingDivergenceAhead`, with no action.
@@ -1012,34 +1022,46 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - **Eyebrow:** `parshatHashavua` by default; `erevShabbat` on Friday at or after 12:00 local; "Simchat Torah" when the portion is Vezot HaBerachah.
    - 8 gap, then the Hebrew pointed name: new `Names.portionPointed(p)` = `HebrewText.forDisplay(p.nameHe, nikud: true, teamim: false)`, in hebrewDisplay 46/60 primary. Semantics header level 1 with label `parshaLabel(name)`.
    - English UI: the Latin name in headlineLarge onSurface. Hebrew UI: the Latin name in bodyMedium onSurfaceVariant.
-   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`; on Erev Shabbat and Erev Yom Tov, with a city chosen for Shabbat times and the device on the city's clock, `todayCandleLighting` ("Candle-lighting 4:12 PM") in its place.
+   - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`, or on Friday `shabbatBeginsTonight` ("Shabbat begins this evening"); on Erev Shabbat and Erev Yom Tov, with a city chosen for Shabbat times and the device on the city's clock, `todayCandleLighting` ("Candle-lighting 4:12 PM") in its place.
    - 16 gap, SeferDivider, 16 gap.
    - Row of ParshaRings 104, a 20 gap, and `Expanded(RingLegend)`. Under the legend, an end-aligned TextButton `allAliyot` ("All aliyot") with a chevron, to /today/week/{id} (within the Today tab). Under 360 dp the rings sit centred above the legend.
-   - 20 gap, then a full-width Filled button (52) with `menu_book` and a label naming the destination. Let `next = ctx.nextAliyah` and `p` = the first ReadingPass of `next` that is not done:
+   - 20 gap, then a full-width Filled button (52) with `menu_book` and a label naming the destination. Let `next = ctx.nextAliyah` (the first aliyah not read, passing over those planned only before the reader joined, unless begun, until the rest are read: so the first aliyah due whenever any are) and `p` = the first ReadingPass of `next` that is not done:
      - nothing read this week: `startAt(name)` = "Start · Rishon";
      - `next` has some passes done: `continueAtPass(name, passLabel(p))` = "Continue · Shlishi, Targum";
      - otherwise: `continueAt(name)`.
-     - It routes to `/read/{id}/{next}`; the reader already resumes via `flow.resumeFrom` (reader_screen.dart:318-319). If a unit was marked done without saved positions, derive positions from `isUnitDone` so it resumes at the first unread pass.
+     - It routes to `/read/{id}/{next}`; the reader already resumes via `flow.resumeFrom` (reader_screen.dart:318-319). If a unit was marked done without saved positions, derive positions from `isUnitDone` so it resumes at the first unread pass. The guided reader then starts each chunk past the readings of the Hebrew done before it was opened (`ReaderFlow.entryStep`), so "Continue · Shlishi, Targum" goes on from Targum to Targum, and Back retraces that way.
    - Delete the outlined "2 of 7 aliyot" button (D10).
-   - **Complete state:** the rings and CTA are replaced by the animated frame (§8), titleLarge `weekComplete`, and a marginalia line. Add a Tonal "Read the haftarah" if enabled and not yet read, and a Text "Discuss the parsha".
+   - **Complete state:** the rings and CTA are replaced by the animated frame (§8), titleLarge `weekComplete`, and a marginalia line, `weekCompleteNote` ("Ready to hear it read on Shabbat."; `weekCompleteNoteSimchatTorah` for Vezot HaBerachah). Add a Tonal `readTheHaftarah` if the haftarah is shown and not yet read, and a TextButton.icon `forum_outlined` `discussTheParsha` (its spinner in the icon's place while the discussion opens).
+   - Centred lines of more than one sentence (`weekComplete`, `restDayBody`) that don't fit on one line give each sentence a line or more of its own, and every centred line that wraps is set as narrow as its number of lines allows, so that no word stands alone on the last line.
 4. **Today card** (start-aligned):
-   - Eyebrow `todayReadingTitle`, then headlineSmall `names.aliyot(day.aliyot)`, then bodyMedium onSurfaceVariant verses and minutes.
-   - If behind and not done: marginalia with the new `todayBehind` copy (§10).
+   - Eyebrow `todayReadingTitle`, then headlineSmall `names.aliyot(day.aliyot)`, then bodyMedium onSurfaceVariant the verses and minutes of what is left of it (the aliyot not yet read).
+   - **Catching up** (aliyot planned for earlier days unread, and not paused): Eyebrow `todayCatchUpTitle`, then headlineSmall every aliyah due (`ctx.dueAliyot()`): a run of three or more as `Names.aliyahRange` ("Shlishi – Shevi'i"), otherwise by name; then bodyMedium "5 aliyot · 96 verses · about 33 min", the minutes counting only the readings not done (`remainingMinutes`); then a marginalia line honest about the day (§10), never "midweek" after Wednesday. Every line counts the same aliyot, those the card names, today's included:
+     - Sunday to Wednesday: `todayBehind`;
+     - Thursday: `todayBehindThursday`, that two days remain before Shabbat;
+     - Erev Shabbat or Erev Yom Tov (by the reader's days of Yom Tov): `todayLastDayShabbat` or `todayLastDayYomTov`, with the Chumash as the calm alternative, logged after the day that ends the days of rest, as the rest-day page says (8): `todayLastDayShabbatThenYomTov` when Shabbat runs into Yom Tov, `todayLastDayYomTovThenShabbat` when Yom Tov runs into Shabbat;
+     - Erev Yom Kippur, whatever the day (Yom Kippur is neither called Yom Tov nor the end of a week, which always has a reading day after it): `todayLastDayYomKippur`, that there is still time after it.
    - 16 gap, then actions:
-     - a Tonal `readAliyah(firstUnreadToday)` = "Read Shishi", ONLY when `firstUnreadToday != next`;
-     - a TextButton.icon `import_contacts` `readFromBook`, always.
+     - a Tonal `readAliyah(firstUnreadToday)` = "Read Shishi", ONLY when `firstUnreadToday != next` (as while paused, when the hero's button leads to an aliyah planned before). In catch-up mode it is omitted: the hero's button already starts the backlog, at the first aliyah due;
+     - a TextButton.icon `import_contacts` `readFromBook`, always. It opens a sheet (`readFromBookTitle`) of the aliyot the card names and has not seen read (every aliyah due when catching up; otherwise today's, paused or not), each a checked CheckboxListTile, then `pickReadDate`, and marks the checked ones in one change. Where it starts a line, it moves by its padding so its icon sits on the text's edge.
      - Never two Filled buttons; never two unlabelled CTAs to different places.
-   - Done: a check_circle 20 in primary with titleSmall `todayDone`.
+   - Its marginalia lines, like the note under the week strip (5), set their lines evenly (`BalancedText`) and hold a dash to the word before it (`dashHeldToWord`), so that no line starts with one.
+   - Done: a check_circle 20 in primary with titleSmall `todayDone`, and the verses without minutes.
    - No reading today: bodyMedium onSurfaceVariant `todayNothingPlanned`.
+   - **Paused:** a marginalia line `pausedTodayNote` in place of the catching-up line, under today's reading.
+   - **Erev Tisha B'Av** (`JewishHolidays.isTishaBav(today + 1)`): a marginalia line `erevTishaBavNote`.
 5. **WeekStrip card** (§6.13).
+   - Under the strip, at most one marginalia line, with a close IconButton (18, onSurfaceVariant, tooltip `actionDismiss`) on its first line's centre, inset like the card's header, its lines balanced: first the grace days spent within the last week, every one not yet told, named together ("Monday and Tuesday were covered by grace days…", `graceUsedNote(count, weekdays, parsha)`, or `graceUsedNoteShort` when finishing this parsha by Shabbat would not earn one back), then today read ahead (`todayAhead`), then yesterday made up today (`caughtUpNote`).
+   - A grace day is news once the planned day after it is over without the reading made up. A line tells only what was decided after the day the reader last put it away (`lastStripAck`) or last saw one (`stripNoteShownOn`, recorded while the page is in sight): seen, a line stays for the rest of the day and is not told again.
 6. **LedgerCard**, if `showStreaks` (§6.12).
 7. **"This week" PaperGroup:**
    - Haftarah row: `auto_stories_outlined`, title "Haftarah", subtitle the reference, plus a second subtitle line for a special haftarah.
    - Discuss row: `forum_outlined`, `discussThisWeek`.
    - These replace two separate cards.
-8. **Rest day** (`JewishHolidays.isRestDay(today, israel: settings.oneDayYomTov)`, the reader's Yom Tov custom rather than the reading schedule):
-   - The hero shows candles at 40, `shabbatShalom` or `chagSameach` in headlineMedium, the pointed parsha name in hebrewDisplay 32/44, and bodyMedium `restDayBody`.
-   - No rings, CTAs, Today card or ledger; only a Text link "Open the parsha".
+8. **Rest day** (`JewishHolidays.isRestDay(date, israel: settings.oneDayYomTov)`, the reader's Yom Tov custom rather than the reading schedule). The reading day is never a day of rest, so this is the device's date (`restDayProvider`), turning at 3 a.m.; with a city chosen for Shabbat times and the device on its clock, it begins at candle-lighting there on its eve (`Zmanim.candleLighting`), and the last day of rest ends at nightfall there (`Zmanim.havdalah`), so that Motzaei Shabbat is a reading day for the check-in. Without one it lasts from 3 a.m. to 3 a.m.:
+   - The header's running head gives the day of rest's date.
+   - The hero (TitlePageFrame, padding 40 above and 24 elsewhere, 28 and 16 under 360 dp) shows candles at 40, 16, the day's greeting in headlineMedium (`gmarChatimaTova` on Yom Kippur and `shanaTova` on Rosh Hashanah, on Shabbat too; `chagSameach` on the festivals' Yom Tov; otherwise `shabbatShalom`), 20, the eyebrow `parshatHashavua`, 4, the pointed parsha name in hebrewDisplay 32/44 (heading level 1, `parshaLabel(name)`), 16, and bodyMedium onSurfaceVariant `restDayBody`, or `restDayBodyChag` when the days of rest end with Yom Tov (`restDayBodyYomKippur` with Yom Kippur). The parsha is the week the day falls in: the one read today, or on the Shabbat after a Yom Tov.
+   - No rings, CTAs, notices, Today card, week strip, ledger or "This week"; only a TextButton `openTheParsha` to its week, /today/week/{id}.
+   - Nothing animates.
    - The wording goes to the rabbinic advisor (DESIGN.md §11).
 9. **Desktop ≥1200:**
    - A container of max width 1040 with columns 7/5 and a 24 gap.
@@ -1049,30 +1071,36 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 ### Parsha tab / Week overview (week_overview_screen.dart, parsha_tab.dart; phonetall_parsha, phonetall_week, he_parsha)
 
 1. **Header** (no card, start-aligned):
-   - Hebrew pointed name in hebrewDisplay 36/48 primary; in the English UI, the Latin name in headlineMedium;
-   - bodyMedium onSurfaceVariant "Genesis 1:1–6:8 · 146 verses · Read on Shabbat, 10 October" (`names.readOnLabel(week)`, as on Today);
+   - Hebrew pointed name in hebrewDisplay 36/48 primary, the page's level-1 heading, labelled `parshaLabel(name)`, which names the route; in the English UI, the Latin name in headlineMedium (the Hebrew UI gives it in bodyMedium onSurfaceVariant, tagged `en`, as on Today);
+   - bodyMedium onSurfaceVariant "Genesis 1:1–6:8 · 146 verses", then "Read on Shabbat, 10 October · 29 Tishrei 5787": `names.readOnLabel(week)`, as on Today, and the date in the other calendar (the Gregorian one with its year in the Hebrew UI);
    - the status line (icon plus label) in bodySmall;
-   - ParshaRings 88 with RingLegend in a Row at ≥360.
-2. **GroupHeader** with `aliyotProgress` ("2 of 7 aliyot", no digits in the eyebrow, so render it as titleSmall onSurfaceVariant instead of an eyebrow).
-3. **One PaperGroup with seven rows** (replaces seven cards):
-   - Leading 40 disc: done = primary fill with an onPrimary check 20; otherwise ringTrack fill with the Hebrew ordinal (FRL 600 18, onSurface).
-   - Title in titleMedium, e.g. "Rishon"; subtitle bodySmall "Genesis 1:1–2:3 · 34 verses · about 15 min"; a second line bodySmall "Planned for Monday".
-   - The alternative-division note becomes a third line in marginalia at 17/24 ("Some sources use 4:19–26").
-   - Trailing: PassPips (size 12) above the existing overflow menu.
-   - Tap opens the reader.
-4. **Second PaperGroup:** Haftarah and Discuss rows.
-5. **Footer:** a centred TextButton "Mark the whole parsha as read".
+   - ParshaRings 88 with RingLegend (`RingsWithLegend`), beside it where it fits and under it otherwise.
+   - The app bar shows no title while the name is in sight; once it has scrolled under the app bar, the title (`parshaLabel(name)`) fades in over `Motion.short`, for the eye alone (`PageScaffold.titleRevealed`). It is looked at again whenever the page scrolls and whenever its size or content changes without a scroll (`HeadingReveal.watchHeading`: a resized window, larger text). The Parsha tab's actions: a TextButton `browseAll` ("All parshiyot") to Browse, labelled rather than an icon (its label set smaller rather than crowd the app bar with very large text on a phone), the search button, and the week's menu.
+2. **GroupHeader** with `aliyotProgress` ("2 of 7 aliyot", no digits in the eyebrow, so render it as titleSmall onSurfaceVariant instead of an eyebrow, inset 4 as a GroupHeader is).
+3. **One PaperGroup with seven rows** (replaces seven cards), its hairlines inset 72, where the rows' text starts:
+   - Leading 40 disc, 16 from the start and 16 before the text: done = primary fill with an onPrimary check 20; otherwise ringTrack fill with the Hebrew ordinal (FRL 600 18, onSurface).
+   - Title in titleMedium, e.g. "Rishon" (read out as `aliyahWithName`, "Rishon · aliyah 1"); subtitle bodySmall "1:1–2:3 · 34 verses · about 15 min", without the book, which the header names, so that it keeps to one line on a phone; a second line bodySmall "Planned for Monday":
+     - today's aliyot: `plannedForToday` ("Planned for today") in onSurface w700;
+     - an aliyah still to read after its day: its day in `overdue`, after a 14 px `history` icon, and read as `plannedForOverdue` ("Planned for Wednesday, still to read"; `plannedForShabbatOverdue` for Shabbat morning), since the colour and mark say it to the eye alone. Never for a day that doesn't count: before the reader joined, one a pause covered, any while paused, or in a week not counted (`WeekStatus.transparent`), which stays neutral (§3.4).
+   - The alternative-division note becomes a third line in marginalia ("Some sources use 4:19–26", `aliyahOtherDivision`, in either UI, its verses kept on one line). It keeps marginalia's own size, the EB Garamond floor of §4.5.
+   - Trailing: PassPips (size 12) on the title's line, the reading under way ringed in the row of the aliyah the reading continues at, above the existing overflow menu, in a 52 column 4 from the text and 10 from the end.
+   - Tap opens the reader. The row is one button whose value is the state of each reading; the menu keeps its own item.
+4. **Second PaperGroup**, 28 below: Haftarah and Discuss rows, as on Today (`HaftarahRow`, `DiscussRow`).
+5. **Footer:** a centred TextButton "Mark the whole parsha as read", while the week is open and unfinished.
 
-**Browse** (browse_screen.dart):
-- One PaperGroup per book under a book header ("בראשית" FRL 600 20 + "Genesis" titleSmall).
-- Rows:
-  - leading: a 28 px column with the ordinal in labelMedium onSurfaceVariant with tabular figures;
-  - title: the Latin name in EBG 500 20/26;
-  - Hebrew name FRL 500 18 end-aligned;
-  - subtitle: the reference in bodySmall.
-  - The `menu_book` icon is removed.
-- The current parsha row has a 3 px primary start rule and the Eyebrow "This week" above its title.
-- In the Hebrew UI, the Hebrew name is the title and the Latin name is end-aligned in bodySmall.
+**Browse** (browse_screen.dart; phone_browse, phonetall_browse, phone_browse_summer):
+- One PaperGroup per book, its hairlines inset 54, under a book header inset 4 (12 above the first, 28 above the rest, 8 below): "בראשית" in FRL 600 20 `secondary`, then "Genesis" in titleSmall onSurfaceVariant (English UI only), and at its end `browseBookParshiyot` ("12 parshiyot") in labelSmall onSurfaceVariant with tabular figures. A level-2 heading named in the UI's language.
+- Rows (padding start 16, end 16, or 12 before a chevron; vertical 12):
+  - leading: a 28 px column, 10 before the text, with the parsha's number in the Torah (1–54) in labelMedium onSurfaceVariant with tabular figures, set on the title's baseline. Read this year (every reading of its week): `check_circle` 18 in primary instead; begun: `timelapse` 18 in primary. Both grow with the text to 1.5× at most;
+  - title: the Latin name in EBG 500 20/26 onSurface, with the Hebrew name in FRL 500 18 onSurfaceVariant at the end of its line, on its baseline. When the two don't fit side by side (large text), the Hebrew name goes under the title;
+  - subtitle bodySmall onSurfaceVariant, a DotLine: the reference, then the day it is read in this year's cycle (`dateMonthDay`; the Hebrew date without the year in the Hebrew UI). A parsha read together with another this year says so first: "Numbers 19:1–22:1 · Read with Balak · July 17" (`browseReadWith`);
+  - a chevron only at 600 dp and wider, centred on the title and subtitle;
+  - the `menu_book` icon is removed.
+- Tap opens the week within the Parsha tab, by the week's own id (`/parsha/week/5787:39-40`).
+- The row is one button; how far the parsha is read is its value (`stateDone`, `weekInProgress`). The number, and the Hebrew name in the English UI, are not read.
+- This week's row has a 3 px primary start rule, inside the sheet's hairline and clipped to its corners, and the Eyebrow `browseThisWeek` ("This week") above its title. Two parshiyot read together share one continuous rule and one eyebrow, over the first; the second is still read as this week's.
+- The page opens with this week's row in view: after the first frame, unless it already shows whole, `Scrollable.ensureVisible` at alignment 0.3 over `Motion.medium` (at once under Reduce Motion).
+- In the Hebrew UI, the Hebrew name is the title (FRL 500 20/28 onSurface) and the Latin name is end-aligned in bodySmall, inside Lang(en).
 
 ### Reader, guided (reader_screen.dart; phone_reader, he_reader, dark_reader, desktop_reader)
 
@@ -1183,17 +1211,25 @@ In order:
 
 ### Settings (settings_screen.dart and screens/)
 
-**Top level:** three PaperGroups with GroupHeaders.
-- **Practice:** Reading & customs; Reminders; the "Show streak numbers" switch row.
+**Top level:** three PaperGroups with GroupHeaders, every leading icon outlined.
+- **Practice:** Reading & customs; Reminders; the "Show streak numbers" switch row; "Pause streaks", which opens the pause dialog (no chevron) and, while a pause lasts, says until when (the last day of the pauses that run on from today's, `pauseCovering`) and opens instead a dialog titled `pauseManageTitle` that lengthens it from the day after (`pauseExtendBy`, 30 days in all at most) or resumes, as Today's banner does (`resumePause`).
+- The rows' subtitles are never cut short, however narrow the phone and long the language's.
 - **Reading:** Display; Accessibility.
-- **You:** Account & community; Your data; Language. Language is ONE row whose value is Device / English / עברית; it opens a sheet with RadioGroup rows and replaces the three inline radios.
+- **You:** Account & community ("Signed in as …", or the prompt to sign in); Your data; Language. Language is ONE row whose value is Device / English / עברית (a language's name tagged with its own language, `PaperRow.valueLocale`); it opens a sheet, over the navigation bar, with RadioGroup rows (each language's name tagged with its own language), which closes as one is chosen, and replaces the three inline radios.
 - **About:**
-  - "How it works": the guide, `guideTitle` value changed (§10);
-  - "About this app": `settingsAbout` value changed.
+  - "How it works": the guide (`school_outlined`), `guideTitle` value changed (§10);
+  - "About this app": `settingsAbout` value changed, with "Version, sources, privacy" under it.
   - This resolves D15.
+
+**Rows of a settings page** (`settings_widgets.dart`)
+- `SettingsPage(paper: true)` stands its paper on the gutters; pages not yet set in paper keep `PageBody.tilePadding`, and a `ChoiceGroup` on them takes a 16 margin.
+- `ChoiceGroup`: a `SettingHeading` (level 2, a GroupHeader; or level 3, a subheading in titleMedium onSurface for one of several settings in a section), its help in bodyMedium onSurfaceVariant or, with `helpIsSource`, a `SourceNote` (marginalia on surfaceContainerLow, radius 12, padding 12; outlined in high contrast), or a `source`'s note and then the help, then radio rows on one PaperGroup (a RadioListTile underneath, its text where a PaperRow's starts, ringed rather than washed when focused) or, `segmented`, a SegmentedButton (§6.8). `prominent`, for a question on a page of its own (onboarding's steps): the question in headlineSmall as a level-2 heading, plain help only, and the options as paper radio cards (§9 Onboarding).
+- `SwitchRow`: a PaperRow whose whole row toggles its switch, read as one switch; its description is never cut short; disabled with no `onChanged`, when its words and icon are dimmed to 38% as Material dims a disabled control's (the switch shows it in its own way).
 
 **Display**
 - The preview becomes a paper "page" showing a chapter head, two verses, a Targum line and a setumah mark. It reflects settings live and is pinned at the top: `SliverPersistentHeader`, collapsing 220 → 140.
+  - The page is Deuteronomy 14:1–2, a section of its own: the chapter head (§4.7), each verse and its Targum, and the setumah that closes it, at the reader's line width. It is a window on the text, which rises with the settings as the window shrinks and fades where the window cuts it (not in high contrast). A hairline marks the settings passing under it, and the app bar stays flat.
+  - It is pinned only where the window is at least 640 high and 16 sp text is no larger than 24 (`SettingsPage.previewPinned`); elsewhere it scrolls away, whole. To screen readers it is one node, "Preview".
 - A Match-device switch, then theme swatches (§6.24).
 - Sliders per §6.8.
 - Toggles in PaperGroups:
@@ -1201,61 +1237,83 @@ In order:
   - Study aids: English, Rashi, Rashi script (NEW);
   - Reading: focus mode, bold, keep screen on.
 - Line width as a SegmentedButton.
+- Scripture fonts as radio rows whose title is "בְּרֵאשִׁית בָּרָא" at 22 in that font, named under it; interface fonts likewise, "Aa Bb אב" in each family, Device font included. Screen readers read the names alone. Every font's regular face is loaded as the page opens (`OptionalFonts.ensureSamples`), so each sample is drawn in its own; an interface font's bold waits until it is chosen.
 
 **Reading & customs**
+- Sections with GroupHeaders, their settings 24 apart:
+  - **Where & when:** the reading heard and the days of Yom Tov as SegmentedButtons, Shabbat times (the city), the weekly plan, the after-Shabbat window;
+  - **How I read:** the method, the second reading, then End with Mikra and the third-reading prompts as switch rows;
+  - **Haftarah:** its switch ("Read the week's haftarah once", the section naming it); while it is on, set in by 16 behind a 2 px outlineVariant start rule, the custom as a SegmentedButton [Ashkenazi | Sephardi | Chabad] and "Count the haftarah toward completion";
+  - **Special days:** Tisha B'Av and Chol HaMoed;
+  - **Parsha names:** a SegmentedButton.
 - Radio groups inside PaperGroups with 56/72 rows.
-- Source citations, e.g. "(Shulchan Aruch OC 285:2)", in marginalia at 17/24.
+- Source citations, e.g. "(Shulchan Aruch OC 285:2)", in SourceNotes: the second reading's (its citation alone, `secondSource`, with the advice after it as plain help, `secondAdvice`; `ChoiceGroup.source`) and the after-Shabbat window's. The marginalia keep their own size (EB Garamond's 19 sp floor, §4.5; Frank Ruhl Libre 17/26 in Hebrew).
+- A segment's label and its gloss ("One, as in Israel"; "Sephardi (Bereshit)") are set on two lines, so that the label breaks there or nowhere, whichever segment bears the check.
+- The customs disclaimer closes the page in marginalia.
 
 **Accessibility**
-- Quick setups as a 2×2 grid of cards 88 high, radius 12: icon 24 in primary, titleSmall, one bodySmall line.
-- Reset display as a TextButton.
-- The remaining rows in PaperGroups.
+- Quick setups as a 2×2 grid of cards 88 high, radius 12: icon 24 in primary, titleSmall, one bodySmall line that names what changes most, the cantillation hidden and the theme among it ("Clear font, no cantillation"; "Largest text, high contrast").
+  - A setup in force (`presetActive`: the settings it sets, sizes within a hair) is washed in primaryContainer with a primary border and a check, and reads as selected. Two may be, as Low vision includes High contrast.
+  - Applying one says so with Undo, which restores the settings exactly as they were.
+- Reset display as a TextButton (`restart_alt`) under the grid, with the same Undo.
+- The remaining rows in PaperGroups: the Display page, Motion and touch, the screen reader's text and the Divine Name, speech rate, and Statement and feedback.
+
+**Reader display sheet** (lib/features/reader/display_sheet.dart)
+- Opens at 42% of the screen over a light scrim (`Colors.black12`), so the verse it changes stays in view; drawn up, 95%.
+- Text size: outlined 56×48 buttons (`text_decrease`, `text_increase`, radius 10) either side of the size in titleMedium, which screen readers hear as it changes.
+- Scripture font: four ChoiceChips sharing the width, each "בְּרֵאשִׁית" at 18 in its font and named for screen readers; four across where the word fits, else two, or one under another. The sample keeps its font's weight, so the chosen chip's mark beyond its fill and border is a 24×2 primary rule under its word.
+- Theme: the compact swatches. Then a PaperGroup of switches (vowels, cantillation, translation, Rashi, Rashi script, focus mode) with line spacing (from 1.6), and a row to the Display page.
 
 **Reminders**
-- Native: rows per type.
-- The Shabbat note is a NoticeBanner with candles: "Never on Shabbat or Yom Tov, and at most once a day."
-- Web: one NoticeBanner explaining that reminders need the installed app (replaces two stacked banners).
+- Native: a PaperGroup for each reminder: its switch row and, once on, its time as a row's value (and for the daily reminder, the routine chips), 12 apart; the offer of a city below them, 28 apart.
+- The Shabbat note is a NoticeBanner with candles (§7.6, in `rest`): "Never on Shabbat or Yom Tov, and at most once a day."
+- Web: one NoticeBanner (`install_mobile`) saying that reminders need the installed app, with "Get the app" where the build gives `INSTALL_URL`, over the three reminders' switch rows, disabled and off, whatever a backup from a phone brought (replaces two stacked banners).
 
 **Your data**
-- Group 1: a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export, Import, and "Paste backup text".
-- Group 2: "Reset all progress" in error-coloured text with no icon tile. The confirm dialog uses the destructive Filled button.
+- Group 1, "Backup & restore": a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export (`ios_share_outlined`), Import (`download_outlined`) and "Paste backup text" (`content_paste_outlined`), which open dialogs and have no chevron.
+- Group 2, apart: "Reset all progress" in error-coloured text with no icon tile, and "This can't be undone." under it. The confirm dialog uses the destructive Filled button.
 
 ### Onboarding (onboarding_screen.dart; phone_welcome, he_welcome, dark_welcome, desktop_welcome)
 
 **Welcome**
-- At the top end: a SegmentedButton English / עברית. The selected segment is the EFFECTIVE locale even when language = system (fixes the unselected toggle in phone_welcome.png).
-- The block is vertically centred in the available height, max width 520.
-- TitlePageFrame (padding 32) containing:
+- At the top end: a SegmentedButton English / עברית, each label tagged with its own language. The selected segment is the EFFECTIVE locale even when language = system (fixes the unselected toggle in phone_welcome.png), and a selection can't be emptied: choosing the language already shown changes nothing, so an app that follows the device goes on following it.
+- The block is vertically centred in the available height, max width 520, on the gutters below that; the language ends where the block does. The page scrolls when the block doesn't fit (large text).
+- TitlePageFrame (padding 32, 24 below 360) containing:
   - an 8 px lozenge;
-  - "שְׁנַיִם מִקְרָא / וְאֶחָד תַּרְגּוּם" in hebrewDisplay 40/60 primary (two lines);
+  - "שְׁנַיִם מִקְרָא / וְאֶחָד תַּרְגּוּם" in hebrewDisplay 40/60 primary (two lines, broken only between words), the page's heading (level 1), read as `appTitleFull`;
   - a SeferDivider;
-  - English UI only: "Shnayim Mikra v'Echad Targum" in EBG MediumItalic 24/30;
+  - English UI only: "Shnayim Mikra v'Echad Targum" in EBG MediumItalic 24/30 onSurface (upright in high contrast and in an accessibility font), hidden from screen readers, since the heading says it. The Hebrew UI doesn't repeat the unpointed name;
   - body in bodyLarge onSurfaceVariant.
+  - The English name, the body and the disclaimer set their lines evenly (`BalancedText`, lib/ui/widgets/lines.dart), so no word is left alone on a last line; the body keeps "once —" (and "פעם אחת —") together with no-break spaces.
+  - The two names, display sizes already, grow with the text to 1.4× at most, so that with very large text the call to action isn't pushed far below the fold; the body and the buttons grow in full.
 - Outside the frame: 24 gap, a Filled "Start this week's parsha" 52 high (max width 400).
 - An 8 gap, then a TextButton "I already use Shnayim Mikra" (the same max width), which opens the restore sheet: sign in (only with a real community backend), a backup file, or pasted text. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
-- Then the disclaimer in bodySmall.
+- Then, 16 below, the disclaimer in bodySmall onSurfaceVariant.
 
 **Steps 2–4**
-- At the top: four 12 px lozenges (filled = done, outlined = pending). Semantics still announce "Step 2 of 4".
-- The question in headlineSmall.
-- Options as paper radio cards: min 72 high, radius 12; selected = 2 px primary border plus primaryContainer fill, with RadioGroup semantics.
-- The honor statement as marginalia inside a NoticeBanner.
-- Button labels stay as now ("Continue", "Start reading").
+- At the top, 16 below the app bar (clear of its rule): four 12 px lozenges, one for each page of onboarding (the welcome and the three steps), 12 apart and centred: filled up to the current page, outlined after it, in primary (onSurface in high contrast), hidden from screen readers. The app bar's title still says it in words ("Step 1 of 3").
+- 24 below, the question in headlineSmall, a level-2 heading (`ChoiceGroup(prominent: true)`).
+- Options as paper radio cards: min 72 high, radius 12, 8 apart; selected = 2 px primary border plus primaryContainer fill, unselected = paper within a 1 px outline (3 px and 2 px in high contrast), with RadioGroup semantics and arrow keys. A focused card takes the focus ring with its gap (§6.1), clear of its own border.
+- The second reading and this week's start stay ChoiceGroups of paper rows under eyebrows.
+- The honor statement as marginalia inside a NoticeBanner, a section's gap below the choices.
+- The way on is docked below the page (`Scaffold.bottomNavigationBar`), on surface under a hairline, so it is always in view, however large the text: on the gutters, 12 above and 16 below, `onbChangeAnytime` in bodySmall onSurfaceVariant, 8, then the Filled button 52 high and at most 480 wide. Its labels stay as now ("Continue", "Start reading").
 
 ### About, Guide, Sources, Privacy (about_screen.dart, guide_screen.dart, sources_screen.dart, legal_screen.dart)
 
 **About header**
-- The app mark at 72, then "שניים מקרא ואחד תרגום" in hebrewDisplay 28/40 primary.
-- English UI: "Shnayim Mikra v'Echad Targum" in EBG 500 20.
+- The app mark at 72 (corners 16), then "שניים מקרא ואחד תרגום" in hebrewDisplay 28/40 primary, the page's one heading of level 1, read as `appTitleFull`; the app bar shows "About" only once it has scrolled away, for the eye alone (`titleRevealed`), as on the policies.
+- English UI: "Shnayim Mikra v'Echad Targum" in EBG 500 20 onSurfaceVariant, hidden from screen readers. The Hebrew UI doesn't repeat the name.
+- Both names set their lines evenly (`BalancedText`) should large text need two.
 - Version in labelSmall, then a SeferDivider.
 - TitlePageFrame at ≥600 only.
-- Link rows in one PaperGroup.
+- Link rows in PaperGroups under GroupHeaders: **Learn** (Texts & sources); **Policies** (Privacy, Terms, Community guidelines, Accessibility statement, Open-source licenses); **Contact** (Contact us where the build has an address, Send feedback). The guide is reached from Today's help button and from Settings.
 
 **Guide, Sources, Privacy**
-- longformBody, max width 620.
+- longformBody, max width 620 (the app bar's title on the column's edge, §5).
 - Headings in longformHeading, onSurface (not blue).
-- SeferDivider between major sections; source lines in marginalia.
-- The closing "Customs vary…" as a NoticeBanner.
+- **Guide:** it opens with a card (the card rhythm's 20, 16 under 360 dp, and 4 more above and below the words) of the Talmud's words, "לְעוֹלָם יַשְׁלִים אָדָם פָּרָשִׁיּוֹתָיו עִם הַצִּבּוּר, / שְׁנַיִם מִקְרָא וְאֶחָד תַּרְגּוּם" in Noto Serif Hebrew 24, centred, each phrase on a line of its own (balanced over two where it doesn't fit), tagged Hebrew and read as one sentence; "Berakhot 8a" in labelMedium secondary; in the English UI, the translation in marginalia. Then the practice and when (its first paragraph building on the card, from the Shulchan Aruch, rather than saying the words again); how and Targum or Rashi; the special cases and Shabbat; and the sources, a SeferDivider between each part. The How section begins with the three filled PassPips and "1 · Mikra  2 · Mikra  3 · Targum" in labelMedium onSurfaceVariant, for the eye alone. The sources are a line each in marginalia after a 6 px lozenge. The closing "Customs vary…" is a NoticeBanner.
+- **Sources:** each source is a card that opens it (SeferInkWell), read as one link: its name and license, then what it is. The name in titleLarge, with the license as a small label beside it, or under it where the two don't fit (labelSmall on secondaryContainer, radius 6, padding 8/2), and `open_in_new` 18 at the card's end, level with the name's first line; the description in bodyMedium onSurfaceVariant. The note on the adapted files closes the page under a SeferDivider, in bodySmall onSurfaceVariant.
+- **Policies** (privacy, terms, guidelines, accessibility): the texts are in `assets/legal/legal.json`, which the static web pages are made from too (docs/RELEASE.md). The page's title is its heading, in headlineMedium (above the 24 of the section headings), with "Last updated: October 2026" in bodySmall onSurfaceVariant under it; the app bar shows the title once it has scrolled away. Paragraphs are 12 apart; a bullet hangs, its wrapped lines aligned past the bullet (in onSurfaceVariant, 8 before the text, 6 between items). The way to reach us is a link in its sentence, primary and underlined: the support address, isolated in Hebrew, or "GitHub issues" / "דף התקלות ב־GitHub" where the build has none, never the raw address. The keyboard reaches it through its sentence, which takes the focus ring; Enter opens it. Where nothing opens it, a status message says so (`linkOpenFailed`, or `emailOpenFailed` with a Copy action that copies the bare address). The page selects as one text (`SelectionArea`), the contact line too, and a copy leaves out the marks that isolate a Latin run in Hebrew, which would break an address pasted into a mail app.
 
 ## 10. Copy and l10n (app_en.arb / app_he.arb; the build fails on missing keys)
 
@@ -1275,8 +1333,24 @@ In order:
 | finishStep | Finish | סיום |
 | shabbatShalom | Shabbat Shalom | שבת שלום |
 | chagSameach | Chag Sameach | חג שמח |
-| restDayBody | Reading from a printed chumash today? You can log it after Shabbat. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת. |
-| restDayBodyChag | Reading from a printed chumash today? You can log it after Yom Tov. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג. |
+| shanaTova | Shanah Tovah | שנה טובה |
+| gmarChatimaTova | G'mar Chatimah Tovah | גמר חתימה טובה |
+| restDayBody | Reading from a printed Chumash today? You can log it after Shabbat. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת. |
+| restDayBodyChag | Reading from a printed Chumash today? You can log it after Yom Tov. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג. |
+| restDayBodyYomKippur | Reading from a printed Chumash today? You can log it after Yom Kippur. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי יום כיפור. |
+| openTheParsha | Open the parsha | לפרשה |
+| weekCompleteNote | Ready to hear it read on Shabbat. | הכול מוכן לקריאת התורה בשבת. |
+| discussTheParsha | Discuss the parsha | לדיון בפרשה |
+| checkInNotThisTime | Not this time | לא הפעם |
+| checkInReadOnShabbat | Read on Shabbat, {date} | תאריך הקריאה: שבת, {date} |
+| changeDate | Change date | שינוי התאריך |
+| logReading | Log reading | סימון הקריאה |
+| openWeekRestoreZero | Finish {name} and {next} by Shabbat and both count — one double-up per book. | אם מסיימים את {name} ואת {next} עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש. |
+| pausedTodayNote | Paused — read whenever you like; nothing counts against you. | בהשהיה — אפשר לקרוא מתי שנוח; שום דבר לא נחשב לחובתך. |
+| pauseEndedOn | Your pause ended on {date}, and nothing during it counts against you. | ההשהיה הסתיימה ב{date}, ושום דבר בזמנה לא נחשב לחובתך. |
+| graceUsedNote | plural: {weekdays} was covered by a grace day / {weekdays} were covered by grace days — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat. | plural: {weekdays} כוסה ביום חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום החסד יחזור. / {weekdays} כוסו בימי חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום חסד אחד יחזור. (a no-break space inside יום חסד) |
+| caughtUpNote | Caught up — doubling up repaired yesterday. | חזרה לתוכנית — הקריאה הכפולה השלימה את אתמול. |
+| erevTishaBavNote | Erev Tisha B'Av: many finish their learning before midday. | ערב תשעה באב: רבים מסיימים את הלימוד לפני חצות היום. |
 | aboutStreaks | About streaks | על הרצפים |
 | graceAvailable | plural: 1 grace day available / {count} grace days available | plural: נותר יום חסד אחד / נותרו {count} ימי חסד |
 | thisYear | This year | השנה |
@@ -1295,9 +1369,18 @@ In order:
 | rashiScript | Rashi script | כתב רש״י |
 
 **Changed values**
-- `todayBehind`:
+- `todayBehind` (Sunday to Wednesday only; it counts every aliyah the card names, today's included):
   - English: "{count, plural, =1{One aliyah to catch up — very normal midweek.} other{{count} aliyot to catch up — very normal midweek.}}"
   - Hebrew: "{count, plural, =1{עוד עלייה אחת להשלים — רגיל לגמרי באמצע השבוע.} other{עוד {count} עליות להשלים — רגיל לגמרי באמצע השבוע.}}"
+- On the other days the line is honest about the day (§9 Today, 4):
+  - `todayBehindThursday`: "{count} aliyot to catch up — and there are still two days before Shabbat." / "עוד {count} עליות להשלים — ויש עוד יומיים עד שבת."
+  - `todayLastDayShabbat`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת."
+  - `todayLastDayYomTov`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג."
+  - `todayLastDayShabbatThenYomTov`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג."
+  - `todayLastDayYomTovThenShabbat`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת."
+  - `todayLastDayYomKippur`: "{count} aliyot to catch up before Yom Kippur — and there is still time after it, too." / "עוד {count} עליות להשלים לפני יום כיפור — ויש זמן גם אחריו."
+  - Each has a singular form ("One aliyah…" / "עוד עלייה אחת…").
+- `openWeekRestore` takes the reader's parsha streak: "Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book." / "סיום {name} ו{next} עד שבת ימשיך את הרצף של {count} שבועות — השלמה כפולה אחת לכל חומש." (one week: "של שבוע אחד").
 - `guideTitle`: "How it works" / "איך זה עובד".
 - `settingsAbout`: "About this app" / "אודות האפליקציה".
 

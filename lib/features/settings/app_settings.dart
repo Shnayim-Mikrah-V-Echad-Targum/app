@@ -205,6 +205,10 @@ class AppSettings {
     this.notificationPromptShown = false,
     this.joinDate,
     this.planHistory = const [],
+    this.checkInAnsweredFor,
+    this.pauseEndSeen,
+    this.lastStripAck,
+    this.stripNoteShownOn,
   });
 
   // Calendar and customs
@@ -337,6 +341,28 @@ class AppSettings {
   /// the days before (see [recordingPlanChange]). With no entries, the
   /// settings as they are now have always applied.
   final List<PlanSettingsEntry> planHistory;
+
+  // What Today has asked and said on this device, which restoring a
+  // backup's settings keeps (see [keepingTodaysNotesOf])
+
+  /// The week whose after-Shabbat check-in was last answered: logged,
+  /// finished, or put aside for this time. Until then it is asked on Today
+  /// for as long as the week can still count as late.
+  final String? checkInAnsweredFor;
+
+  /// The last day of the pause whose end Today last welcomed the reader
+  /// back from, once they put the welcome away.
+  final LocalDate? pauseEndSeen;
+
+  /// The day the reader last put away the note under Today's week strip:
+  /// what was decided by then (a grace day spent, for one) is not said
+  /// again.
+  final LocalDate? lastStripAck;
+
+  /// The day a note under the week strip was last on show. A note is said
+  /// for the day it is first shown, and from the next day it counts as
+  /// acknowledged, as though put away.
+  final LocalDate? stripNoteShownOn;
 
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
@@ -476,6 +502,10 @@ class AppSettings {
     bool? notificationPromptShown,
     Object? joinDate = _keep,
     List<PlanSettingsEntry>? planHistory,
+    Object? checkInAnsweredFor = _keep,
+    Object? pauseEndSeen = _keep,
+    Object? lastStripAck = _keep,
+    Object? stripNoteShownOn = _keep,
   }) =>
       AppSettings(
         readingSchedule: readingSchedule ?? this.readingSchedule,
@@ -534,6 +564,22 @@ class AppSettings {
         notificationPromptShown: notificationPromptShown ?? this.notificationPromptShown,
         joinDate: identical(joinDate, _keep) ? this.joinDate : joinDate as LocalDate?,
         planHistory: planHistory ?? this.planHistory,
+        checkInAnsweredFor:
+            identical(checkInAnsweredFor, _keep) ? this.checkInAnsweredFor : checkInAnsweredFor as String?,
+        pauseEndSeen: identical(pauseEndSeen, _keep) ? this.pauseEndSeen : pauseEndSeen as LocalDate?,
+        lastStripAck: identical(lastStripAck, _keep) ? this.lastStripAck : lastStripAck as LocalDate?,
+        stripNoteShownOn:
+            identical(stripNoteShownOn, _keep) ? this.stripNoteShownOn : stripNoteShownOn as LocalDate?,
+      );
+
+  /// These settings with what Today has said on this device taken from
+  /// [device]: restoring a backup's settings doesn't ask again what this
+  /// device has asked, or say again what it has said.
+  AppSettings keepingTodaysNotesOf(AppSettings device) => copyWith(
+        checkInAnsweredFor: device.checkInAnsweredFor,
+        pauseEndSeen: device.pauseEndSeen,
+        lastStripAck: device.lastStripAck,
+        stripNoteShownOn: device.stripNoteShownOn,
       );
 
   static const _keep = Object();
@@ -598,6 +644,10 @@ class AppSettings {
         'notificationPromptShown': notificationPromptShown,
         'joinDate': joinDate?.rd,
         'planHistory': [for (final e in planHistory) e.toJson()],
+        'checkInAnsweredFor': checkInAnsweredFor,
+        'pauseEndSeen': pauseEndSeen?.rd,
+        'lastStripAck': lastStripAck?.rd,
+        'stripNoteShownOn': stripNoteShownOn?.rd,
       };
 
   /// Reads settings, tolerating missing or unknown values so that older and
@@ -610,6 +660,7 @@ class AppSettings {
     double n(String k, double fallback, double min, double max) =>
         j[k] is num ? (j[k] as num).toDouble().clamp(min, max) : fallback;
     int i(String k, int fallback) => j[k] is int ? j[k] as int : fallback;
+    LocalDate? date(String k) => j[k] is int ? LocalDate.fromRd(j[k] as int) : null;
     final nusach = e(HaftarahNusach.values, j['nusach'], d.nusach);
     // Settings saved before this was kept may have turned the repeat off:
     // that was the reader's choice, since it was on by default.
@@ -680,8 +731,12 @@ class AppSettings {
       language: e(AppLanguage.values, j['language'], d.language),
       onboardingComplete: b('onboardingComplete', d.onboardingComplete),
       notificationPromptShown: b('notificationPromptShown', d.notificationPromptShown),
-      joinDate: j['joinDate'] is int ? LocalDate.fromRd(j['joinDate'] as int) : null,
+      joinDate: date('joinDate'),
       planHistory: _readPlanHistory(j['planHistory']),
+      checkInAnsweredFor: j['checkInAnsweredFor'] is String ? j['checkInAnsweredFor'] as String : null,
+      pauseEndSeen: date('pauseEndSeen'),
+      lastStripAck: date('lastStripAck'),
+      stripNoteShownOn: date('stripNoteShownOn'),
     );
   }
 
@@ -715,3 +770,82 @@ class AppSettings {
 
 const kMinReadingScale = 0.5;
 const kMaxReadingScale = 5.0;
+
+/// Ready-made combinations of display settings, offered in Settings →
+/// Accessibility.
+enum DisplayPreset { largePrint, dyslexia, highContrast, lowVision, reset }
+
+/// [s] with the display settings [p] sets. High contrast is dark or light as
+/// the device prefers ([darkPreferred]).
+AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPreferred}) {
+  const d = AppSettings();
+  final highContrast = darkPreferred ? AppThemeMode.highContrastDark : AppThemeMode.highContrastLight;
+  switch (p) {
+    case DisplayPreset.largePrint:
+      return s.copyWith(readingScale: 1.8, lineHeight: 2.1, lineWidth: LineWidth.medium);
+    case DisplayPreset.dyslexia:
+      return s.copyWith(
+        uiFont: UiFont.lexend,
+        wordSpacing: 4,
+        lineHeight: 2.2,
+        showTeamim: false,
+        focusMode: true,
+        justify: false,
+        lineWidth: LineWidth.narrow,
+      );
+    case DisplayPreset.highContrast:
+      return s.copyWith(theme: highContrast, boldText: true);
+    case DisplayPreset.lowVision:
+      return s.copyWith(
+        readingScale: 2.6,
+        lineHeight: 2.0,
+        theme: highContrast,
+        boldText: true,
+        focusMode: true,
+        lineWidth: LineWidth.wide,
+      );
+    case DisplayPreset.reset:
+      return s.copyWith(
+        theme: d.theme,
+        readingScale: d.readingScale,
+        lineHeight: d.lineHeight,
+        wordSpacing: d.wordSpacing,
+        letterSpacing: d.letterSpacing,
+        showNikud: d.showNikud,
+        showTeamim: d.showTeamim,
+        justify: d.justify,
+        lineWidth: d.lineWidth,
+        scriptureFont: d.scriptureFont,
+        uiFont: d.uiFont,
+        boldText: d.boldText,
+        focusMode: d.focusMode,
+      );
+  }
+}
+
+/// Whether the display settings of [s] are those [p] sets, in either of its
+/// high contrast themes; the settings it leaves alone may be anything. A
+/// size or spacing within a hair of the preset's counts, as a slider's steps
+/// add up to one.
+bool presetActive(AppSettings s, DisplayPreset p) =>
+    [false, true].any((dark) => _sameDisplay(applyPreset(s, p, darkPreferred: dark), s));
+
+/// Whether [a] and [b] show the text alike: every display setting a preset
+/// may set. Applying a preset changes only its own, so comparing them all
+/// compares just those.
+bool _sameDisplay(AppSettings a, AppSettings b) {
+  bool near(double x, double y) => (x - y).abs() < 1e-6;
+  return a.theme == b.theme &&
+      near(a.readingScale, b.readingScale) &&
+      near(a.lineHeight, b.lineHeight) &&
+      near(a.wordSpacing, b.wordSpacing) &&
+      near(a.letterSpacing, b.letterSpacing) &&
+      a.showNikud == b.showNikud &&
+      a.showTeamim == b.showTeamim &&
+      a.justify == b.justify &&
+      a.lineWidth == b.lineWidth &&
+      a.scriptureFont == b.scriptureFont &&
+      a.uiFont == b.uiFont &&
+      a.boldText == b.boldText &&
+      a.focusMode == b.focusMode;
+}

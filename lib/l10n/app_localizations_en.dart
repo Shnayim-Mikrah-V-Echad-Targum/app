@@ -66,9 +66,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionShare => 'Share';
 
   @override
-  String get actionLearnMore => 'Learn more';
-
-  @override
   String get actionMarkRead => 'Mark as read';
 
   @override
@@ -190,9 +187,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get passShortMikra => 'Mikra';
-
-  @override
   String passSemantics(String pass, String state) {
     return '$pass: $state';
   }
@@ -257,6 +251,68 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get parshatHashavua => 'Parshat HaShavua';
+
+  @override
+  String get erevShabbat => 'Erev Shabbat';
+
+  @override
+  String get shabbatShalom => 'Shabbat Shalom';
+
+  @override
+  String get chagSameach => 'Chag Sameach';
+
+  @override
+  String get shanaTova => 'Shanah Tovah';
+
+  @override
+  String get gmarChatimaTova => 'G\'mar Chatimah Tovah';
+
+  @override
+  String get restDayBody =>
+      'Reading from a printed Chumash today? You can log it after Shabbat.';
+
+  @override
+  String get restDayBodyChag =>
+      'Reading from a printed Chumash today? You can log it after Yom Tov.';
+
+  @override
+  String get restDayBodyYomKippur =>
+      'Reading from a printed Chumash today? You can log it after Yom Kippur.';
+
+  @override
+  String get openTheParsha => 'Open the parsha';
+
+  @override
+  String get simchatTorahEyebrow => 'Simchat Torah';
+
+  @override
+  String get shabbatBeginsTonight => 'Shabbat begins this evening';
+
+  @override
+  String get allAliyot => 'All aliyot';
+
+  @override
+  String startAt(String aliyah) {
+    return 'Start · $aliyah';
+  }
+
+  @override
+  String continueAt(String aliyah) {
+    return 'Continue · $aliyah';
+  }
+
+  @override
+  String continueAtPass(String aliyah, String pass) {
+    return 'Continue · $aliyah, $pass';
+  }
+
+  @override
+  String readAliyah(String aliyah) {
+    return 'Read $aliyah';
+  }
+
+  @override
   String get todayReadingTitle => 'Today\'s reading';
 
   @override
@@ -266,25 +322,140 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayAhead => 'You\'re ahead of plan. Well done!';
 
   @override
+  String graceUsedNote(int count, String weekdays, String parsha) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$weekdays were covered by grace days — your rhythm continues. You\'ll earn one back when you finish $parsha by Shabbat.',
+      one:
+          '$weekdays was covered by a grace day — your rhythm continues. You\'ll earn one back when you finish $parsha by Shabbat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String graceUsedNoteShort(int count, String weekdays) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$weekdays were covered by grace days — your rhythm continues.',
+      one: '$weekdays was covered by a grace day — your rhythm continues.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get caughtUpNote => 'Caught up — doubling up repaired yesterday.';
+
+  @override
   String get todayNothingPlanned =>
       'No reading is planned for today. A good day to catch up or read ahead.';
+
+  @override
+  String get todayCatchUpTitle => 'Catching up';
+
+  @override
+  String aliyotCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aliyot',
+      one: '1 aliyah',
+    );
+    return '$_temp0';
+  }
 
   @override
   String todayBehind(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count aliyot behind — very normal midweek.',
-      one: '1 aliyah behind — very normal midweek.',
+      other: '$count aliyot to catch up — very normal midweek.',
+      one: 'One aliyah to catch up — very normal midweek.',
     );
     return '$_temp0';
   }
 
   @override
-  String get readTodaysAliyah => 'Read today\'s reading';
+  String todayBehindThursday(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot to catch up — and there are still two days before Shabbat.',
+      one: 'One aliyah to catch up — and there are still two days before Shabbat.',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get continueReading => 'Continue reading';
+  String todayLastDayShabbat(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.',
+      one: 'One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomTov(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.',
+      one: 'One aliyah left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayShabbatThenYomTov(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.',
+      one: 'One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomTovThenShabbat(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.',
+      one: 'One aliyah left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todayLastDayYomKippur(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot to catch up before Yom Kippur — and there is still time after it, too.',
+      one: 'One aliyah to catch up before Yom Kippur — and there is still time after it, too.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pausedTodayNote =>
+      'Paused — read whenever you like; nothing counts against you.';
+
+  @override
+  String get erevTishaBavNote =>
+      'Erev Tisha B\'Av: many finish their learning before midday.';
 
   @override
   String get startReading => 'Start reading';
@@ -293,7 +464,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readFromBook => 'I read it in a Chumash';
 
   @override
+  String get readFromBookTitle => 'Which aliyot did you read?';
+
+  @override
   String get weekComplete => 'This week\'s parsha is complete. Yasher koach!';
+
+  @override
+  String get weekCompleteNote => 'Ready to hear it read on Shabbat.';
+
+  @override
+  String get weekCompleteNoteSimchatTorah =>
+      'Ready to hear it read on Simchat Torah.';
+
+  @override
+  String get discussTheParsha => 'Discuss the parsha';
 
   @override
   String get haftarahLabel => 'Haftarah';
@@ -312,12 +496,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String openWeekRestore(String name, String next) {
-    return 'Finish $name and $next by Shabbat to keep your streak — one double-up per book.';
+  String openWeekRestore(String name, String next, int count) {
+    return 'Finish $name and $next by Shabbat and your $count-week streak continues — one double-up per book.';
+  }
+
+  @override
+  String openWeekRestoreZero(String name, String next) {
+    return 'Finish $name and $next by Shabbat and both count — one double-up per book.';
   }
 
   @override
   String get openWeekHaftarahLeft => 'Only the haftarah is left.';
+
+  @override
+  String openWeekOpen(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String get readTheHaftarah => 'Read the haftarah';
 
   @override
   String get checkInTitle => 'Shavua tov! Did you read on Shabbat?';
@@ -333,12 +530,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInPick => 'Choose aliyot';
 
   @override
+  String get checkInNotThisTime => 'Not this time';
+
+  @override
+  String checkInReadOnShabbat(String date) {
+    return 'Read on Shabbat, $date';
+  }
+
+  @override
+  String checkInReadOn(String date) {
+    return 'Read on $date';
+  }
+
+  @override
+  String get changeDate => 'Change date';
+
+  @override
+  String get logReading => 'Log reading';
+
+  @override
   String pausedBanner(String date) {
     return 'Paused until $date. Nothing resets while paused.';
   }
 
   @override
   String get resume => 'Resume';
+
+  @override
+  String pauseEndedOn(String date) {
+    return 'Your pause ended on $date, and nothing during it counts against you.';
+  }
+
+  @override
+  String get pauseEndedStart => 'Start this week\'s parsha';
+
+  @override
+  String get pauseEndedContinue => 'Continue this week\'s parsha';
+
+  @override
+  String catchUpOn(String name) {
+    return 'Catch up on $name';
+  }
+
+  @override
+  String get actionDismiss => 'Dismiss';
 
   @override
   String readingDivergence(String israel, String diaspora) {
@@ -357,6 +592,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discussThisWeek => 'Discuss this week\'s parsha';
+
+  @override
+  String get thisWeek => 'This week';
 
   @override
   String get streakParsha => 'Parsha streak';
@@ -468,6 +706,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String plannedForOverdue(String day) {
+    return 'Planned for $day, still to read';
+  }
+
+  @override
+  String get plannedForShabbatOverdue =>
+      'Planned for Shabbat morning, still to read';
+
+  @override
+  String get plannedForToday => 'Planned for today';
+
+  @override
   String get plannedForShabbat => 'Shabbat morning — log it after Shabbat';
 
   @override
@@ -503,8 +753,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markedUnread => 'Marked as not read';
 
   @override
-  String aliyahNote(String note) {
-    return 'Note: $note';
+  String aliyahOtherDivision(String range) {
+    return 'Some sources use $range';
   }
 
   @override
@@ -512,6 +762,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get browseTitle => 'The Torah';
+
+  @override
+  String browseBookParshiyot(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count parshiyot',
+      one: '1 parsha',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get browseThisWeek => 'This week';
+
+  @override
+  String browseReadWith(String name) {
+    return 'Read with $name';
+  }
 
   @override
   String previewNotOpen(String date) {
@@ -805,6 +1074,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pauseStarting => 'Starting';
 
   @override
+  String pauseManageTitle(String date) {
+    return 'Paused until $date';
+  }
+
+  @override
+  String get pauseManageBody => 'You can lengthen the pause, or resume now.';
+
+  @override
+  String get pauseExtendBy => 'Lengthen by';
+
+  @override
+  String get pauseExtend => 'Lengthen';
+
+  @override
+  String get pauseAtMost =>
+      'A pause lasts 30 days at most. You can resume now.';
+
+  @override
   String pauseStarted(String date) {
     return 'Paused until $date.';
   }
@@ -911,6 +1198,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDataDesc => 'Back up, restore or reset your progress';
 
   @override
+  String get settingsGroupPractice => 'Practice';
+
+  @override
+  String get settingsGroupReading => 'Reading';
+
+  @override
+  String get settingsGroupYou => 'You';
+
+  @override
+  String get settingsAboutDesc => 'Version, sources, privacy';
+
+  @override
+  String get settingsPauseDesc =>
+      'Illness, travel, mourning, a new baby: nothing resets while paused';
+
+  @override
   String get locationIsrael => 'In Israel';
 
   @override
@@ -1008,8 +1311,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get secondRashiEnglish => 'Rashi in English';
 
   @override
-  String get secondHelp =>
-      'The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both. A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.';
+  String get secondSource =>
+      'The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both.';
+
+  @override
+  String get secondAdvice =>
+      'A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.';
 
   @override
   String get repeatLastVerse => 'End with Mikra';
@@ -1024,9 +1331,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get thirdReadingDesc =>
       'Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent';
-
-  @override
-  String get haftarahEnabled => 'Haftarah';
 
   @override
   String get haftarahEnabledDesc => 'Read the week\'s haftarah once';
@@ -1081,10 +1385,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nameAshkenazi => 'Ashkenazi (Bereishis)';
 
   @override
+  String get readingGroupWhere => 'Where & when';
+
+  @override
+  String get readingGroupHow => 'How I read';
+
+  @override
+  String get readingGroupSpecialDays => 'Special days';
+
+  @override
   String get themeLabel => 'Theme';
 
   @override
   String get themeSystem => 'Match device';
+
+  @override
+  String get themeSystemDesc => 'Light or dark, like the device';
+
+  @override
+  String get themeUsedWhenLight => 'Used while the device is light';
+
+  @override
+  String get themeUsedWhenDark => 'Used while the device is dark';
 
   @override
   String get themeLight => 'Light';
@@ -1134,6 +1456,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get letterSpacing => 'Letter spacing';
 
   @override
+  String get displayGroupSize => 'Size and spacing';
+
+  @override
+  String get displayGroupText => 'Text';
+
+  @override
+  String get displayGroupStudy => 'Study aids';
+
+  @override
+  String get displayGroupReading => 'Reading';
+
+  @override
   String decreaseSetting(String name) {
     return 'Decrease $name';
   }
@@ -1175,6 +1509,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showRashi => 'Show Rashi alongside';
+
+  @override
+  String get rashiScript => 'Rashi script';
+
+  @override
+  String get rashiScriptDesc =>
+      'Set Rashi\'s commentary in the script of a printed chumash';
 
   @override
   String get uiFontLabel => 'Interface font';
@@ -1268,9 +1609,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get presetReset => 'Reset display';
 
   @override
+  String get presetLargePrintDesc => 'Bigger, roomier text';
+
+  @override
+  String get presetDyslexiaDesc => 'Clear font, no cantillation';
+
+  @override
+  String get presetHighContrastDesc => 'Strong contrast, bold';
+
+  @override
+  String get presetLowVisionDesc => 'Largest text, high contrast';
+
+  @override
   String presetApplied(String name) {
     return '$name applied';
   }
+
+  @override
+  String get displayResetDone => 'Display settings reset';
+
+  @override
+  String get a11yGroupMotion => 'Motion and touch';
+
+  @override
+  String get a11yGroupMore => 'Statement and feedback';
 
   @override
   String get accessibilityStatement => 'Accessibility statement';
@@ -1318,11 +1680,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get remindersShabbatNote =>
-      'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.';
+      'Never on Shabbat or Yom Tov, and at most once a day.';
 
   @override
   String remindersShabbatNoteCity(String city) {
-    return 'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in $city.';
+    return 'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in $city.';
   }
 
   @override
@@ -1375,7 +1737,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsUnsupported =>
-      'Reminders aren\'t available in the web version. Install the app on your phone or computer to get them.';
+      'Reminders need the installed app, on your phone or computer. Below are the reminders it can send.';
+
+  @override
+  String get getTheApp => 'Get the app';
 
   @override
   String get notificationsDenied =>
@@ -1516,6 +1881,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageHebrew => 'עברית';
 
   @override
+  String get languageDevice => 'Device';
+
+  @override
+  String get dataGroupBackup => 'Backup & restore';
+
+  @override
+  String get resetProgressDesc => 'This can\'t be undone.';
+
+  @override
   String get aboutTitle => 'About';
 
   @override
@@ -1542,6 +1916,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactTitle => 'Contact us';
 
   @override
+  String get aboutGroupLearn => 'Learn';
+
+  @override
+  String get aboutGroupPolicies => 'Policies';
+
+  @override
+  String get aboutGroupContact => 'Contact';
+
+  @override
+  String get linkOpenFailed => 'The link couldn\'t be opened here.';
+
+  @override
+  String emailOpenFailed(String address) {
+    return 'No mail app opened. You can write to $address.';
+  }
+
+  @override
+  String get actionCopy => 'Copy';
+
+  @override
+  String get feedbackLinkLabel => 'GitHub issues';
+
+  @override
+  String legalLastUpdated(String date) {
+    return 'Last updated: $date';
+  }
+
+  @override
   String get guideTitle => 'How it works';
 
   @override
@@ -1550,7 +1952,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onbWelcomeBody =>
-      'Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.';
+      'Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.';
 
   @override
   String get onbStart => 'Start this week\'s parsha';
@@ -1583,15 +1985,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guideWhatTitle => 'What is Shnayim Mikra?';
 
   @override
+  String get guideQuoteSource => 'Berakhot 8a';
+
+  @override
+  String get guideQuoteTranslation =>
+      'A person should always complete their portions with the community: the text twice and the Targum once.';
+
+  @override
   String get guideWhatBody =>
-      'The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.';
+      'The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.';
 
   @override
   String get guideWhenTitle => 'When';
 
   @override
   String get guideWhenBody =>
-      'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).';
+      'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).';
 
   @override
   String get guideHowTitle => 'How';
@@ -1599,6 +2008,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guideHowBody =>
       'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.';
+
+  @override
+  String get guidePassesCaption => '1 · Mikra  2 · Mikra  3 · Targum';
 
   @override
   String get guideTargumTitle => 'Targum or Rashi';
@@ -1612,7 +2024,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideSpecialBody =>
-      'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.';
+      'In “Atarot v\'Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.';
 
   @override
   String get guideShabbatTitle => 'Shabbat and Yom Tov';
@@ -1626,16 +2038,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideSourcesBody =>
-      'Berakhot 8a–b · Shulchan Aruch, Orach Chaim 285 · Mishnah Berurah 285 · Kitzur Shulchan Aruch 72 · Shulchan Aruch HaRav 285';
+      'Berakhot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285';
 
   @override
   String hebrewDateLabel(String date) {
     return 'Hebrew date: $date';
-  }
-
-  @override
-  String bookOfTorah(String book) {
-    return '$book';
   }
 
   @override
@@ -1670,6 +2077,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signInPrompt => 'Sign in to post, say thanks or report.';
+
+  @override
+  String signedInAs(String name) {
+    return 'Signed in as $name';
+  }
 
   @override
   String get signInTitle => 'Sign in';
@@ -2279,10 +2691,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get repeatLastVerseFollowsChabad =>
-      '\"End with Mikra\" is now off, following the Chabad custom.';
+      '“End with Mikra” is now off, following the Chabad custom.';
 
   @override
-  String get repeatLastVerseBackOn => '\"End with Mikra\" is on again.';
+  String get repeatLastVerseBackOn => '“End with Mikra” is on again.';
 
   @override
   String get divineAdonaiSpoken => 'Adonai';
@@ -2650,9 +3062,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String milestoneSiyumFrom(String name) {
     return 'Siyum from Parshat $name';
   }
-
-  @override
-  String get rashiScript => 'Rashi script';
 
   @override
   String get demoTag => 'Demo';

@@ -40,6 +40,16 @@ void main() {
     testWidgets('text contrast: $route', (tester) => expectReadableText(tester, route, settings: const AppSettings()));
   }
 
+  // The welcome's title page, and a step's chosen card, washed in
+  // primaryContainer, in the darker themes.
+  for (final theme in [AppThemeMode.dark, AppThemeMode.highContrastDark]) {
+    for (final route in ['/welcome', '/welcome/plan']) {
+      testWidgets('text contrast: $route in the ${theme.name} theme', (tester) async {
+        await expectReadableText(tester, route, settings: AppSettings(theme: theme));
+      });
+    }
+  }
+
   testWidgets('text contrast: reminders, where they can be scheduled, with all of them on', (tester) async {
     await expectReadableText(tester, '/settings/reminders', settings: a11yRemindersOn, notifications: PhoneNotifications());
     expect(find.text('Daily reminder time'), findsOneWidget);

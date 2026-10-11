@@ -43,34 +43,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// The editing render object of the SelectableText showing [text] (or,
-  /// with [ending], ending with it).
-  RenderEditable editableOf(WidgetTester tester, String text, {bool ending = false}) {
-    final widget = find.byWidgetPredicate(
-      (w) => w is SelectableText && (ending ? w.data?.endsWith(text) ?? false : w.data == text),
-    );
-    RenderEditable? found;
-    void visit(RenderObject o) {
-      if (o is RenderEditable) found ??= o;
-      o.visitChildren(visit);
-    }
-
-    visit(tester.renderObject(widget));
-    return found!;
-  }
-
-  /// Where [editable] draws its text, in global coordinates.
-  Rect drawn(RenderEditable editable) {
-    final boxes = editable.getBoxesForSelection(
-      TextSelection(baseOffset: 0, extentOffset: editable.text!.toPlainText().length),
-    );
-    final local = boxes.map((b) => b.toRect()).reduce((a, b) => a.expandToInclude(b));
-    return local.shift(editable.localToGlobal(Offset.zero));
-  }
-
   /// The left edge of [part] where the text of [text] draws it.
   double leftOf(WidgetTester tester, Finder text, String part) {
-    final paragraph = tester.renderObject<RenderParagraph>(text);
+    // The text's paragraph: inside a SelectionArea, Text sets it in a
+    // MouseRegion of its own.
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.descendant(of: text, matching: find.byType(RichText), matchRoot: true).first,
+    );
     final plain = paragraph.text.toPlainText();
     final start = plain.indexOf(part);
     expect(start, isNonNegative, reason: '"$part" in "$plain"');
@@ -98,29 +77,27 @@ void main() {
     expect(leftOf(tester, shevii, '1'), lessThan(leftOf(tester, shevii, '6')));
   });
 
-  for (final doc in ['privacy', 'accessibility']) {
-    testWidgets('$doc: the contact address has a line of its own in Hebrew, without direction marks', (tester) async {
-      await open(tester, '/legal/$doc', AppLanguage.hebrew);
-      // Its own paragraph, so that copied, it holds nothing but the address.
-      final address = find.text('$issueTrackerUri');
-      await tester.ensureVisible(address);
-      await tester.pumpAndSettle();
-      expect(address, findsOneWidget);
-      expect(find.textContaining(RegExp('[\u2066-\u2069]')), findsNothing);
-      final field = editableOf(tester, '$issueTrackerUri');
-      expect(field.textDirection, TextDirection.ltr);
-      // Under the Hebrew line before it, at the start of the line: the right.
-      final before = editableOf(tester, doc == 'privacy' ? 'שאלות ובקשות:' : 'אפשר לכתוב לנו:', ending: true);
-      final (line, lineBefore) = (drawn(field), drawn(before));
-      expect(line.top, greaterThanOrEqualTo(lineBefore.bottom));
-      expect(line.right, moreOrLessEquals(lineBefore.right, epsilon: 1));
-    });
+  testWidgets('the privacy policy in Hebrew: the contact is a short link after the words that lead to it', (tester) async {
+    await open(tester, '/legal/privacy', AppLanguage.hebrew);
+    final line = find.textContaining('דף התקלות ב־GitHub');
+    await tester.ensureVisible(line);
+    await tester.pumpAndSettle();
+    expect(line, findsOneWidget);
+    // Never the raw address, which would break across lines.
+    expect(find.textContaining('$issueTrackerUri'), findsNothing);
+    // The link text is the UI's own Hebrew, which needs no isolates.
+    expect(find.textContaining(RegExp('[\u2066-\u2069]')), findsNothing);
+    // At the end of the Hebrew sentence: to the left of its start.
+    expect(leftOf(tester, line, 'GitHub'), lessThan(leftOf(tester, line, 'שאלות ובקשות:')));
+  });
 
-    testWidgets('$doc: the contact address is as it is in English', (tester) async {
+  for (final doc in ['privacy', 'accessibility']) {
+    testWidgets('$doc: the contact is a short link in English too', (tester) async {
       await open(tester, '/legal/$doc', AppLanguage.english);
-      final line = find.textContaining('$issueTrackerUri');
+      final line = find.textContaining('GitHub issues');
       await tester.ensureVisible(line);
       expect(line, findsOneWidget);
+      expect(find.textContaining('$issueTrackerUri'), findsNothing);
       expect(find.textContaining('\u2066'), findsNothing);
     });
   }

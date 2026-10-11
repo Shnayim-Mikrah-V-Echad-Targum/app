@@ -20,7 +20,7 @@
   - for Google Play, a page where users can **request account deletion**: `<web address>/legal/delete-account.html`
   - also the terms of use, the community guidelines and the accessibility statement: `legal/terms.html`, `legal/guidelines.html` and `legal/accessibility.html`
 
-  CI writes them after the web build with `node tool/legal/build_html.mjs build/web`. The texts the app shows come from `lib/features/about/legal_screen.dart`; the support and account-deletion pages, which only the web has, are in `assets/legal/legal.json`. The web app itself also shows the policies to every visitor, before onboarding too, at `/#/legal/privacy`, `/#/legal/terms`, `/#/legal/guidelines` and `/#/legal/accessibility`.
+  CI writes them after the web build with `node tool/legal/build_html.mjs build/web`. All the texts are in `assets/legal/legal.json`: the policies, which the app shows too, and the support and account-deletion pages, which only the web has. When a policy changes, also update the month it was last updated (`updated`), which the app and the pages show under its title. The web app itself also shows the policies to every visitor, before onboarding too, at `/#/legal/privacy`, `/#/legal/terms`, `/#/legal/guidelines` and `/#/legal/accessibility`.
 - [ ] **Community backend.** Set it up per [BACKEND.md](BACKEND.md):
   - custom SMTP
   - the OTP email template

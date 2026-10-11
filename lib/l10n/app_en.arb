@@ -18,7 +18,6 @@
   "actionRetry": "Try again",
   "actionOk": "OK",
   "actionShare": "Share",
-  "actionLearnMore": "Learn more",
   "actionMarkRead": "Mark as read",
   "actionMarkUnread": "Mark as not read",
   "actionStart": "Start",
@@ -103,7 +102,6 @@
       }
     }
   },
-  "passShortMikra": "Mikra",
   "passSemantics": "{pass}: {state}",
   "@passSemantics": {
     "placeholders": {
@@ -185,23 +183,237 @@
       }
     }
   },
+  "parshatHashavua": "Parshat HaShavua",
+  "@parshatHashavua": {
+    "description": "The eyebrow over the parsha's name in the Today hero, on most days."
+  },
+  "erevShabbat": "Erev Shabbat",
+  "@erevShabbat": {
+    "description": "The eyebrow over the parsha's name in the Today hero on Friday afternoon."
+  },
+  "shabbatShalom": "Shabbat Shalom",
+  "@shabbatShalom": {
+    "description": "The greeting on Today's title page on Shabbat."
+  },
+  "chagSameach": "Chag Sameach",
+  "@chagSameach": {
+    "description": "The greeting on Today's title page on the festivals' days of Yom Tov (Pesach, Shavuot, Sukkot, Shemini Atzeret)."
+  },
+  "shanaTova": "Shanah Tovah",
+  "@shanaTova": {
+    "description": "The greeting on Today's title page on Rosh Hashanah, for a good year."
+  },
+  "gmarChatimaTova": "G'mar Chatimah Tovah",
+  "@gmarChatimaTova": {
+    "description": "The greeting on Today's title page on Yom Kippur, a solemn fast day: 'a good final sealing'."
+  },
+  "restDayBody": "Reading from a printed Chumash today? You can log it after Shabbat.",
+  "@restDayBody": {
+    "description": "On Today's title page on Shabbat, under the parsha's name."
+  },
+  "restDayBodyChag": "Reading from a printed Chumash today? You can log it after Yom Tov.",
+  "@restDayBodyChag": {
+    "description": "As restDayBody, on Shabbat or Yom Tov when the days of rest end with Yom Tov."
+  },
+  "restDayBodyYomKippur": "Reading from a printed Chumash today? You can log it after Yom Kippur.",
+  "@restDayBodyYomKippur": {
+    "description": "As restDayBody, on Yom Kippur, which is not called Yom Tov."
+  },
+  "openTheParsha": "Open the parsha",
+  "@openTheParsha": {
+    "description": "The one button on Today on Shabbat or Yom Tov, which opens the parsha's week."
+  },
+  "simchatTorahEyebrow": "Simchat Torah",
+  "@simchatTorahEyebrow": {
+    "description": "The eyebrow over the parsha's name in the Today hero in the week of Vezot HaBerachah, which is read on Simchat Torah."
+  },
+  "shabbatBeginsTonight": "Shabbat begins this evening",
+  "@shabbatBeginsTonight": {
+    "description": "In the Today hero on Friday, in place of the countdown to Shabbat (shabbatInDays)."
+  },
+  "allAliyot": "All aliyot",
+  "@allAliyot": {
+    "description": "A link under the rings in the Today hero to the week's page, which lists its seven aliyot."
+  },
+  "startAt": "Start · {aliyah}",
+  "@startAt": {
+    "description": "The Today hero's button when nothing of the week is read yet. aliyah is the aliyah it opens, such as Rishon.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "continueAt": "Continue · {aliyah}",
+  "@continueAt": {
+    "description": "The Today hero's button: aliyah is the first aliyah not yet read, such as Shlishi.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
+  "continueAtPass": "Continue · {aliyah}, {pass}",
+  "@continueAtPass": {
+    "description": "The Today hero's button when some readings of the next aliyah are done: pass is the reading it resumes at, such as Targum.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      },
+      "pass": {
+        "type": "String"
+      }
+    }
+  },
+  "readAliyah": "Read {aliyah}",
+  "@readAliyah": {
+    "description": "A button on Today's reading card that opens the aliyah named, such as Shishi.",
+    "placeholders": {
+      "aliyah": {
+        "type": "String"
+      }
+    }
+  },
   "todayReadingTitle": "Today's reading",
   "todayDone": "Today's reading is done",
   "todayAhead": "You're ahead of plan. Well done!",
+  "graceUsedNote": "{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat.} other{{weekdays} were covered by grace days — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat.}}",
+  "@graceUsedNote": {
+    "description": "Under Today's week strip, once, after grace days covered planned days without reading. count is how many grace days, weekdays those days as a list ('Monday and Tuesday'); parsha this week's.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "weekdays": {
+        "type": "String",
+        "example": "Wednesday"
+      },
+      "parsha": {
+        "type": "String",
+        "example": "Noach"
+      }
+    }
+  },
+  "graceUsedNoteShort": "{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues.} other{{weekdays} were covered by grace days — your rhythm continues.}}",
+  "@graceUsedNoteShort": {
+    "description": "As graceUsedNote, when finishing this week's parsha would not earn a grace day back (it is finished, or none is missing).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "weekdays": {
+        "type": "String",
+        "example": "Wednesday"
+      }
+    }
+  },
+  "caughtUpNote": "Caught up — doubling up repaired yesterday.",
+  "@caughtUpNote": {
+    "description": "Under Today's week strip when reading two days' aliyot today has made up for yesterday."
+  },
   "todayNothingPlanned": "No reading is planned for today. A good day to catch up or read ahead.",
-  "todayBehind": "{count, plural, =1{1 aliyah behind — very normal midweek.} other{{count} aliyot behind — very normal midweek.}}",
-  "@todayBehind": {
+  "todayCatchUpTitle": "Catching up",
+  "@todayCatchUpTitle": {
+    "description": "The eyebrow of Today's reading card while aliyot planned for earlier days are still to read."
+  },
+  "aliyotCount": "{count, plural, =1{1 aliyah} other{{count} aliyot}}",
+  "@aliyotCount": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "readTodaysAliyah": "Read today's reading",
-  "continueReading": "Continue reading",
+  "todayBehind": "{count, plural, =1{One aliyah to catch up — very normal midweek.} other{{count} aliyot to catch up — very normal midweek.}}",
+  "@todayBehind": {
+    "description": "On Today's reading card, under the aliyot to catch up, from Sunday to Wednesday. count is every aliyah the card names: those planned up to today and not yet read, today's included.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayBehindThursday": "{count, plural, =1{One aliyah to catch up — and there are still two days before Shabbat.} other{{count} aliyot to catch up — and there are still two days before Shabbat.}}",
+  "@todayBehindThursday": {
+    "description": "As todayBehind, on Thursday, when Thursday and Friday are left for reading before Shabbat. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayLastDayShabbat": "{count, plural, =1{One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.}}",
+  "@todayLastDayShabbat": {
+    "description": "As todayBehind, on Erev Shabbat. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayLastDayYomTov": "{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.}}",
+  "@todayLastDayYomTov": {
+    "description": "As todayBehind, on Erev Yom Tov. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayLastDayShabbatThenYomTov": "{count, plural, =1{One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.}}",
+  "@todayLastDayShabbatThenYomTov": {
+    "description": "As todayLastDayShabbat, on an Erev Shabbat whose Shabbat runs straight into Yom Tov, so that reading done then is logged once Yom Tov is over. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayLastDayYomTovThenShabbat": "{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.}}",
+  "@todayLastDayYomTovThenShabbat": {
+    "description": "As todayLastDayYomTov, on an Erev Yom Tov whose Yom Tov runs straight into Shabbat (Rosh Hashanah on Thursday and Friday, say), so that reading done then is logged once Shabbat is over. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todayLastDayYomKippur": "{count, plural, =1{One aliyah to catch up before Yom Kippur — and there is still time after it, too.} other{{count} aliyot to catch up before Yom Kippur — and there is still time after it, too.}}",
+  "@todayLastDayYomKippur": {
+    "description": "As todayBehind, on the day before Yom Kippur, which is never the last reading day of a week. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pausedTodayNote": "Paused — read whenever you like; nothing counts against you.",
+  "@pausedTodayNote": {
+    "description": "On Today's reading card while streaks are paused, in place of a line about aliyot to catch up."
+  },
+  "erevTishaBavNote": "Erev Tisha B'Av: many finish their learning before midday.",
+  "@erevTishaBavNote": {
+    "description": "On Today's reading card on the day before Tisha B'Av, when many have the custom not to learn Torah from midday."
+  },
   "startReading": "Start reading",
   "readFromBook": "I read it in a Chumash",
+  "readFromBookTitle": "Which aliyot did you read?",
+  "@readFromBookTitle": {
+    "description": "The title of the sheet that logs reading done from a printed Chumash, over the aliyot to log, each checked."
+  },
   "weekComplete": "This week's parsha is complete. Yasher koach!",
+  "weekCompleteNote": "Ready to hear it read on Shabbat.",
+  "@weekCompleteNote": {
+    "description": "A gentle line under weekComplete on Today's title page, once every aliyah of the week is read."
+  },
+  "weekCompleteNoteSimchatTorah": "Ready to hear it read on Simchat Torah.",
+  "@weekCompleteNoteSimchatTorah": {
+    "description": "As weekCompleteNote, for Vezot HaBerachah, which is read on Simchat Torah."
+  },
+  "discussTheParsha": "Discuss the parsha",
+  "@discussTheParsha": {
+    "description": "A text button on Today's title page, once the week is complete, that opens the week's discussion."
+  },
   "haftarahLabel": "Haftarah",
   "haftarahRead": "Haftarah read",
   "openWeekTitle": "{name} is still open",
@@ -220,8 +432,24 @@
       }
     }
   },
-  "openWeekRestore": "Finish {name} and {next} by Shabbat to keep your streak — one double-up per book.",
+  "openWeekRestore": "Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book.",
   "@openWeekRestore": {
+    "description": "On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openWeekRestoreZero": "Finish {name} and {next} by Shabbat and both count — one double-up per book.",
+  "@openWeekRestoreZero": {
+    "description": "As openWeekRestore, when the reader has no parsha streak to continue.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -232,10 +460,55 @@
     }
   },
   "openWeekHaftarahLeft": "Only the haftarah is left.",
+  "openWeekOpen": "Open {name}",
+  "@openWeekOpen": {
+    "description": "The button of the notice on Today that last week's parsha is still open: name is the parsha.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "readTheHaftarah": "Read the haftarah",
+  "@readTheHaftarah": {
+    "description": "A button that opens the week's haftarah."
+  },
   "checkInTitle": "Shavua tov! Did you read on Shabbat?",
   "checkInBody": "Log what you read from a printed Chumash — it counts just the same.",
   "checkInFinished": "I finished it on Shabbat",
   "checkInPick": "Choose aliyot",
+  "checkInNotThisTime": "Not this time",
+  "@checkInNotThisTime": {
+    "description": "A button of the after-Shabbat check-in on Today that puts it away without logging anything."
+  },
+  "checkInReadOnShabbat": "Read on Shabbat, {date}",
+  "@checkInReadOnShabbat": {
+    "description": "In the after-Shabbat check-in sheet, the day the checked readings are logged for: the Shabbat just past. date is its day and month.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "10 October"
+      }
+    }
+  },
+  "checkInReadOn": "Read on {date}",
+  "@checkInReadOn": {
+    "description": "As checkInReadOnShabbat, once another day is chosen. date is its weekday, day and month.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, 11 October"
+      }
+    }
+  },
+  "changeDate": "Change date",
+  "@changeDate": {
+    "description": "A button beside the day reading is logged for, which asks for another."
+  },
+  "logReading": "Log reading",
+  "@logReading": {
+    "description": "The button of the after-Shabbat check-in sheet that logs every checked reading at once."
+  },
   "pausedBanner": "Paused until {date}. Nothing resets while paused.",
   "@pausedBanner": {
     "placeholders": {
@@ -245,6 +518,38 @@
     }
   },
   "resume": "Resume",
+  "pauseEndedOn": "Your pause ended on {date}, and nothing during it counts against you.",
+  "@pauseEndedOn": {
+    "description": "On Today, under pauseEnded, the first time it is opened after a pause has ended. date is the pause's last day.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sunday, 18 October"
+      }
+    }
+  },
+  "pauseEndedStart": "Start this week's parsha",
+  "@pauseEndedStart": {
+    "description": "A button on Today's welcome back after a pause, when nothing of this week's parsha is read yet."
+  },
+  "pauseEndedContinue": "Continue this week's parsha",
+  "@pauseEndedContinue": {
+    "description": "As pauseEndedStart, when some of this week's parsha is read."
+  },
+  "catchUpOn": "Catch up on {name}",
+  "@catchUpOn": {
+    "description": "A button on Today's welcome back after a pause, that opens last week's parsha, which can still count.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
+      }
+    }
+  },
+  "actionDismiss": "Dismiss",
+  "@actionDismiss": {
+    "description": "The tooltip and label of a close button that puts a note away."
+  },
   "readingDivergence": "In Israel this week: {israel}. Outside Israel: {diaspora}. Visitors from abroad usually read both. If you daven with a minyan reading {diaspora}, read only that one, and set the reading you'll hear to Outside Israel in Settings.",
   "@readingDivergence": {
     "description": "Shown on Today when the reader hears Israel's reading but keeps two days of Yom Tov (a visitor to Israel), in a week when Israel and the Diaspora read different portions.",
@@ -282,6 +587,10 @@
     }
   },
   "discussThisWeek": "Discuss this week's parsha",
+  "thisWeek": "This week",
+  "@thisWeek": {
+    "description": "The heading over the haftarah and the discussion on Today."
+  },
   "streakParsha": "Parsha streak",
   "streakDays": "Days on track",
   "weeksCount": "{count, plural, =1{1 week} other{{count} weeks}}",
@@ -354,12 +663,28 @@
   "weekInProgress": "In progress",
   "plannedFor": "Planned for {day}",
   "@plannedFor": {
+    "description": "The day is the weekday's name (Names.weekday): 'Monday', in Hebrew 'יום שני', which takes ל directly.",
     "placeholders": {
       "day": {
         "type": "String"
       }
     }
   },
+  "plannedForOverdue": "Planned for {day}, still to read",
+  "@plannedForOverdue": {
+    "description": "Read by screen readers for an aliyah on the week's page planned for a day gone by and still to read, which the page shows in the overdue colour after a mark.",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "Wednesday"
+      }
+    }
+  },
+  "plannedForShabbatOverdue": "Planned for Shabbat morning, still to read",
+  "@plannedForShabbatOverdue": {
+    "description": "As plannedForOverdue, for an aliyah planned for Shabbat morning once Shabbat has passed."
+  },
+  "plannedForToday": "Planned for today",
   "plannedForShabbat": "Shabbat morning — log it after Shabbat",
   "markWholeWeek": "Mark the whole parsha as read",
   "clearWeek": "Clear this week's progress",
@@ -378,16 +703,40 @@
   "whenPickDate": "Choose a date",
   "markedRead": "Marked as read",
   "markedUnread": "Marked as not read",
-  "aliyahNote": "Note: {note}",
-  "@aliyahNote": {
+  "aliyahOtherDivision": "Some sources use {range}",
+  "@aliyahOtherDivision": {
+    "description": "Under an aliyah whose verses some sources divide differently: the verses they give it instead, without the book ('4:19–26'; in Hebrew 'ד, יט–כו').",
     "placeholders": {
-      "note": {
+      "range": {
         "type": "String"
       }
     }
   },
   "browseAll": "All parshiyot",
   "browseTitle": "The Torah",
+  "browseBookParshiyot": "{count, plural, =1{1 parsha} other{{count} parshiyot}}",
+  "@browseBookParshiyot": {
+    "description": "Beside a book's name on the page of every parsha (The Torah): how many parshiyot the book has.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "browseThisWeek": "This week",
+  "@browseThisWeek": {
+    "description": "Eyebrow over the name of this week's parsha in the list of every parsha (The Torah)."
+  },
+  "browseReadWith": "Read with {name}",
+  "@browseReadWith": {
+    "description": "Under a parsha in the list of every parsha, when this year it is read together with the parsha before or after it on one Shabbat. The name is that other parsha's, in the UI's language: 'Read with Pekudei'.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Pekudei"
+      }
+    }
+  },
   "previewNotOpen": "Preview — this parsha opens for credit on {date}.",
   "@previewNotOpen": {
     "description": "The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.",
@@ -652,6 +1001,28 @@
   "pauseAction": "Pause streaks",
   "pauseFor": "Pause for",
   "pauseStarting": "Starting",
+  "pauseManageTitle": "Paused until {date}",
+  "@pauseManageTitle": {
+    "description": "The title of the dialog that Settings' pause row opens while a pause lasts.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pauseManageBody": "You can lengthen the pause, or resume now.",
+  "pauseExtendBy": "Lengthen by",
+  "@pauseExtendBy": {
+    "description": "Over the choices of how many days to lengthen a pause by (1 day, 3 days…)."
+  },
+  "pauseExtend": "Lengthen",
+  "@pauseExtend": {
+    "description": "The button that lengthens the pause under way."
+  },
+  "pauseAtMost": "A pause lasts 30 days at most. You can resume now.",
+  "@pauseAtMost": {
+    "description": "In place of pauseManageBody when the pause under way already runs its 30 days."
+  },
   "pauseStarted": "Paused until {date}.",
   "@pauseStarted": {
     "placeholders": {
@@ -710,6 +1081,23 @@
   "settingsAccessibilityDesc": "Motion, screen readers, speech, quick setups",
   "settingsRemindersDesc": "Gentle reminders, never on Shabbat or Yom Tov",
   "settingsDataDesc": "Back up, restore or reset your progress",
+  "settingsGroupPractice": "Practice",
+  "@settingsGroupPractice": {
+    "description": "Heading of the settings group with Reading & customs, Reminders and the streaks."
+  },
+  "settingsGroupReading": "Reading",
+  "@settingsGroupReading": {
+    "description": "Heading of the settings group with Display and Accessibility: how the text reads on the screen."
+  },
+  "settingsGroupYou": "You",
+  "@settingsGroupYou": {
+    "description": "Heading of the settings group with the account, the reader's data and the language."
+  },
+  "settingsAboutDesc": "Version, sources, privacy",
+  "settingsPauseDesc": "Illness, travel, mourning, a new baby: nothing resets while paused",
+  "@settingsPauseDesc": {
+    "description": "Under pauseAction in Settings, which opens the pause dialog."
+  },
   "locationIsrael": "In Israel",
   "locationDiaspora": "Outside Israel",
   "locationHelp": "Israel and the Diaspora sometimes read different parshiyot and keep a different number of Yom Tov days. Visiting? You can set the days of Yom Tov you keep separately in Settings.",
@@ -765,12 +1153,18 @@
   "secondRashi": "Rashi",
   "secondBoth": "Onkelos and Rashi",
   "secondRashiEnglish": "Rashi in English",
-  "secondHelp": "The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both. A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.",
+  "secondSource": "The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both.",
+  "@secondSource": {
+    "description": "The source of the choice of second reading, set as a margin note under its heading."
+  },
+  "secondAdvice": "A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.",
+  "@secondAdvice": {
+    "description": "Advice on the choice of second reading, in plain help after secondSource."
+  },
   "repeatLastVerse": "End with Mikra",
   "repeatLastVerseDesc": "Repeat the parsha's last verse in Hebrew after its Targum",
   "thirdReading": "Third-reading prompts",
   "thirdReadingDesc": "Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent",
-  "haftarahEnabled": "Haftarah",
   "haftarahEnabledDesc": "Read the week's haftarah once",
   "nusachLabel": "Haftarah custom",
   "nusachAshkenazi": "Ashkenazi",
@@ -791,8 +1185,32 @@
   "nameStyleLabel": "Parsha names",
   "nameSephardi": "Sephardi (Bereshit)",
   "nameAshkenazi": "Ashkenazi (Bereishis)",
+  "readingGroupWhere": "Where & when",
+  "@readingGroupWhere": {
+    "description": "Heading in Reading & customs over the reading heard, the days of Yom Tov, Shabbat times, the plan and the after-Shabbat window."
+  },
+  "readingGroupHow": "How I read",
+  "@readingGroupHow": {
+    "description": "Heading in Reading & customs over the reading method, the second reading and the prompts to read again."
+  },
+  "readingGroupSpecialDays": "Special days",
+  "@readingGroupSpecialDays": {
+    "description": "Heading in Reading & customs over the switches for Tisha B'Av and Chol HaMoed."
+  },
   "themeLabel": "Theme",
   "themeSystem": "Match device",
+  "themeSystemDesc": "Light or dark, like the device",
+  "themeUsedWhenLight": "Used while the device is light",
+  "@themeUsedWhenLight": {
+    "description": "A screen reader's hint on a theme swatch while the app matches the device: the theme it uses when the device is in light mode."
+  },
+  "themeUsedWhenDark": "Used while the device is dark",
+  "@themeUsedWhenDark": {
+    "description": "As themeUsedWhenLight, for dark mode."
+  },
+  "@themeSystemDesc": {
+    "description": "Under the Match device switch over the theme swatches, in Display settings and the reader's display sheet."
+  },
   "themeLight": "Light",
   "themeDark": "Dark",
   "themeSepia": "Sepia",
@@ -815,6 +1233,22 @@
   "lineSpacing": "Line spacing",
   "wordSpacing": "Word spacing",
   "letterSpacing": "Letter spacing",
+  "displayGroupSize": "Size and spacing",
+  "@displayGroupSize": {
+    "description": "Heading in Display settings over the sliders for reading size and line, word and letter spacing."
+  },
+  "displayGroupText": "Text",
+  "@displayGroupText": {
+    "description": "Heading in Display settings over the switches for vowels, cantillation, the ketiv, verse numbers and justified text."
+  },
+  "displayGroupStudy": "Study aids",
+  "@displayGroupStudy": {
+    "description": "Heading in Display settings over the switches for the English translation, Rashi and the Rashi script."
+  },
+  "displayGroupReading": "Reading",
+  "@displayGroupReading": {
+    "description": "Heading in Display settings over the switches for focus mode, bold text and keeping the screen on."
+  },
   "decreaseSetting": "Decrease {name}",
   "@decreaseSetting": {
     "description": "Tooltip and spoken name of the minus button beside a settings slider. name is the slider's name, such as 'Reading size'.",
@@ -844,6 +1278,11 @@
   "lineWide": "Wide",
   "showTranslation": "English translation (study aid)",
   "showRashi": "Show Rashi alongside",
+  "rashiScript": "Rashi script",
+  "@rashiScript": {
+    "description": "Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters."
+  },
+  "rashiScriptDesc": "Set Rashi's commentary in the script of a printed chumash",
   "uiFontLabel": "Interface font",
   "uiFontStandard": "Standard",
   "uiFontAtkinson": "Atkinson Hyperlegible",
@@ -874,6 +1313,13 @@
   "presetHighContrast": "High contrast",
   "presetLowVision": "Low vision",
   "presetReset": "Reset display",
+  "presetLargePrintDesc": "Bigger, roomier text",
+  "@presetLargePrintDesc": {
+    "description": "One short line under Large print in Accessibility's quick setups."
+  },
+  "presetDyslexiaDesc": "Clear font, no cantillation",
+  "presetHighContrastDesc": "Strong contrast, bold",
+  "presetLowVisionDesc": "Largest text, high contrast",
   "presetApplied": "{name} applied",
   "@presetApplied": {
     "placeholders": {
@@ -881,6 +1327,18 @@
         "type": "String"
       }
     }
+  },
+  "displayResetDone": "Display settings reset",
+  "@displayResetDone": {
+    "description": "Status message after Reset display in Accessibility, with an Undo action."
+  },
+  "a11yGroupMotion": "Motion and touch",
+  "@a11yGroupMotion": {
+    "description": "Heading in Accessibility over the switches for reduced motion, haptic feedback and single-key shortcuts."
+  },
+  "a11yGroupMore": "Statement and feedback",
+  "@a11yGroupMore": {
+    "description": "Heading in Accessibility over the accessibility statement and Send feedback."
   },
   "accessibilityStatement": "Accessibility statement",
   "sendFeedback": "Send feedback",
@@ -904,8 +1362,8 @@
   "@checkInReminderDescCity": {
     "description": "In place of checkInReminderDesc when a city is chosen for Shabbat times: on Motzaei Shabbat, unless that is after 10:30 PM."
   },
-  "remindersShabbatNote": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.",
-  "remindersShabbatNoteCity": "Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in {city}.",
+  "remindersShabbatNote": "Never on Shabbat or Yom Tov, and at most once a day.",
+  "remindersShabbatNoteCity": "Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.",
   "@remindersShabbatNoteCity": {
     "description": "In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.",
     "placeholders": {
@@ -953,7 +1411,11 @@
   "@anchorCueBed": {
     "description": "The reader's chosen routine, named in the daily reminder: 'Before bed — it's yours.'"
   },
-  "notificationsUnsupported": "Reminders aren't available in the web version. Install the app on your phone or computer to get them.",
+  "notificationsUnsupported": "Reminders need the installed app, on your phone or computer. Below are the reminders it can send.",
+  "getTheApp": "Get the app",
+  "@getTheApp": {
+    "description": "Under notificationsUnsupported on the web, where the app can be installed from (INSTALL_URL)."
+  },
   "notificationsDenied": "Notifications are turned off for this app in your device settings.",
   "notificationsDeniedTitle": "Notifications are off",
   "openSystemSettings": "Open settings",
@@ -1061,6 +1523,15 @@
   "languageSystem": "Device language",
   "languageEnglish": "English",
   "languageHebrew": "עברית",
+  "languageDevice": "Device",
+  "@languageDevice": {
+    "description": "The Language row's value in Settings when the app follows the device's language."
+  },
+  "dataGroupBackup": "Backup & restore",
+  "resetProgressDesc": "This can't be undone.",
+  "@resetProgressDesc": {
+    "description": "Under resetProgress in Your data."
+  },
   "aboutTitle": "About",
   "versionLabel": "Version {version}",
   "@versionLabel": {
@@ -1076,9 +1547,48 @@
   "termsTitle": "Terms of use",
   "guidelinesTitle": "Community guidelines",
   "contactTitle": "Contact us",
+  "aboutGroupLearn": "Learn",
+  "@aboutGroupLearn": {
+    "description": "Heading over About's link to the texts and their sources."
+  },
+  "aboutGroupPolicies": "Policies",
+  "@aboutGroupPolicies": {
+    "description": "Heading over About's links to the privacy policy, terms, community guidelines, accessibility statement and open-source licenses."
+  },
+  "aboutGroupContact": "Contact",
+  "@aboutGroupContact": {
+    "description": "Heading over About's links to email us and to send feedback."
+  },
+  "linkOpenFailed": "The link couldn't be opened here.",
+  "@linkOpenFailed": {
+    "description": "A status message when tapping a link opened nothing, as on a device with no browser to hand it to."
+  },
+  "emailOpenFailed": "No mail app opened. You can write to {address}.",
+  "@emailOpenFailed": {
+    "description": "A status message when tapping the support address opened no mail app, with an action to copy the address.",
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "actionCopy": "Copy",
+  "feedbackLinkLabel": "GitHub issues",
+  "@feedbackLinkLabel": {
+    "description": "The link text, inside a policy's sentence ('Questions or requests: GitHub issues'), for the public issue tracker on GitHub, where there is no support email address."
+  },
+  "legalLastUpdated": "Last updated: {date}",
+  "@legalLastUpdated": {
+    "description": "Under a policy's title. date is a month and year, such as 'October 2026'.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "guideTitle": "How it works",
   "disclaimer": "Customs vary. For practical questions, ask your rav.",
-  "onbWelcomeBody": "Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.",
+  "onbWelcomeBody": "Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.",
   "onbStart": "Start this week's parsha",
   "onbLocationTitle": "Where will you be this Shabbat?",
   "onbMethodTitle": "How do you read?",
@@ -1098,31 +1608,38 @@
   },
   "onbWhyAsk": "Why we ask",
   "guideWhatTitle": "What is Shnayim Mikra?",
-  "guideWhatBody": "The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.",
+  "guideQuoteSource": "Berakhot 8a",
+  "@guideQuoteSource": {
+    "description": "Under the Talmud's words that open the guide, in Hebrew: where they are written."
+  },
+  "guideQuoteTranslation": "A person should always complete their portions with the community: the text twice and the Targum once.",
+  "@guideQuoteTranslation": {
+    "description": "The Talmud's words that open the guide, in English. Shown in the English interface only, under the Hebrew."
+  },
+  "guideWhatBody": "The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.",
   "guideWhenTitle": "When",
-  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
+  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
   "guideHowTitle": "How",
   "guideHowBody": "Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.",
+  "guidePassesCaption": "1\u00a0·\u00a0Mikra  2\u00a0·\u00a0Mikra  3\u00a0·\u00a0Targum",
+  "@guidePassesCaption": {
+    "description": "Beside three marks for the three readings, at the top of the guide's How section: the text twice, then the Targum. No-break spaces keep each reading's number with its name."
+  },
   "guideTargumTitle": "Targum or Rashi",
   "guideTargumBody": "Rashi's commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn't understand Rashi's Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.",
   "guideSpecialTitle": "Special cases",
-  "guideSpecialBody": "In \"Atarot v'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once. Reading quietly along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
+  "guideSpecialBody": "In “Atarot v'Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week's haftarah once. Reading quietly along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
   "guideShabbatTitle": "Shabbat and Yom Tov",
   "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
   "guideSourcesTitle": "Sources",
-  "guideSourcesBody": "Berakhot 8a–b · Shulchan Aruch, Orach Chaim 285 · Mishnah Berurah 285 · Kitzur Shulchan Aruch 72 · Shulchan Aruch HaRav 285",
+  "guideSourcesBody": "Berakhot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285",
+  "@guideSourcesBody": {
+    "description": "The guide's sources, one to a line."
+  },
   "hebrewDateLabel": "Hebrew date: {date}",
   "@hebrewDateLabel": {
     "placeholders": {
       "date": {
-        "type": "String"
-      }
-    }
-  },
-  "bookOfTorah": "{book}",
-  "@bookOfTorah": {
-    "placeholders": {
-      "book": {
         "type": "String"
       }
     }
@@ -1153,6 +1670,16 @@
   },
   "openDiscussion": "Open the discussion",
   "signInPrompt": "Sign in to post, say thanks or report.",
+  "signedInAs": "Signed in as {name}",
+  "@signedInAs": {
+    "description": "Settings, under the Account row's title: the member signed in on this device.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Rivka"
+      }
+    }
+  },
   "signInTitle": "Sign in",
   "signInBody": "We'll email you a 6-digit code — no password needed.",
   "emailLabel": "Email address",
@@ -1608,11 +2135,11 @@
   },
   "chabadFallbackNote": "Chabad haftarot are being verified; showing the Ashkenazi reading.",
   "repeatLastVerseDescChabad": "Repeat the parsha's last verse in Hebrew after its Targum (Chabad custom: not repeated)",
-  "repeatLastVerseFollowsChabad": "\"End with Mikra\" is now off, following the Chabad custom.",
+  "repeatLastVerseFollowsChabad": "“End with Mikra” is now off, following the Chabad custom.",
   "@repeatLastVerseFollowsChabad": {
     "description": "Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves."
   },
-  "repeatLastVerseBackOn": "\"End with Mikra\" is on again.",
+  "repeatLastVerseBackOn": "“End with Mikra” is on again.",
   "@repeatLastVerseBackOn": {
     "description": "Said when choosing another haftarah custom than Chabad turns repeatLastVerse back on."
   },
@@ -2014,10 +2541,6 @@
         "example": "Vayera"
       }
     }
-  },
-  "rashiScript": "Rashi script",
-  "@rashiScript": {
-    "description": "Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters."
   },
   "demoTag": "Demo",
   "@demoTag": {

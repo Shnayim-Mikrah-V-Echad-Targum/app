@@ -62,6 +62,26 @@ abstract final class AppButtons {
     );
   }
 
+  /// Material's padding for a button, with room above and below a label
+  /// that large text wraps: [sides] at each side at 1×, 2× and 3× the usual
+  /// text size, narrowing as text grows as Material's own does, and
+  /// [vertical] above and below at the usual size. Where Material's leaves
+  /// nothing above and below large text, this keeps 8, so a label wrapped
+  /// onto two lines doesn't run into the button's edges.
+  static ButtonStyle roomy(BuildContext context, (double, double, double) sides, {double vertical = 0}) =>
+      ButtonStyle(padding: WidgetStatePropertyAll(roomyPadding(context, sides, vertical: vertical)));
+
+  /// The padding of [roomy].
+  static EdgeInsets roomyPadding(BuildContext context, (double, double, double) sides, {double vertical = 0}) {
+    final size = Theme.of(context).textTheme.labelLarge?.fontSize ?? 14;
+    return ButtonStyleButton.scaledPadding(
+      EdgeInsets.symmetric(horizontal: sides.$1, vertical: vertical),
+      EdgeInsets.symmetric(horizontal: sides.$2, vertical: 8),
+      EdgeInsets.symmetric(horizontal: sides.$3, vertical: 8),
+      MediaQuery.textScalerOf(context).scale(size) / 14,
+    ) as EdgeInsets;
+  }
+
   /// A FilledButton in error / onError, for the confirming action of a
   /// destructive dialog only (§6.5). Never for anything else: error is
   /// reserved for validation and destruction.
@@ -85,6 +105,10 @@ abstract final class AppTheme {
 
   static ColorScheme scheme(AppThemeMode mode, Brightness platformBrightness) =>
       _tokens(resolve(mode, platformBrightness)).scheme;
+
+  /// The book's own colours in [mode], as [scheme] gives its scheme.
+  static SeferColors seferColors(AppThemeMode mode, Brightness platformBrightness) =>
+      _tokens(resolve(mode, platformBrightness)).sefer;
 
   static _Tokens _tokens(AppThemeMode resolved) => switch (resolved) {
         AppThemeMode.system || AppThemeMode.light =>

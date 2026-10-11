@@ -54,12 +54,13 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   - vowels and cantillation each shown or hidden
   - verse numbers on or off
 - **Fonts:** Atkinson Hyperlegible Next for the interface (designed for low vision), and a choice of four scripture fonts.
-- **Presets** (*Settings → Accessibility*):
+- **Presets** (*Settings → Accessibility*), as cards that show which are in force (screen readers hear "selected"), each with *Undo*, which puts every setting back as it was:
   - **Large print**
   - **Dyslexia-friendly:** Lexend, wider spacing, no cantillation, focus mode and a narrow column
   - **High contrast**
   - **Low vision**
-  - **Reset**
+  - **Reset display**
+- **A preview that stays in view:** *Settings → Display* holds a page of the text at the top while its sliders and switches scroll beneath, so each change is seen as it is made. With very large text or a short window, it scrolls away instead, so as not to crowd the settings out. The reader's display sheet opens on the lower part of the screen, over a light scrim, so the verse it changes stays in view.
 - **Focus mode** dims everything except the current verse. Dimmed verses use their own ink, which still meets 4.5:1; the high-contrast themes don't dim at all.
 
 ### Motor and keyboard

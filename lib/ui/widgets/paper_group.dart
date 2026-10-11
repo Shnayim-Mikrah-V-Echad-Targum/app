@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/focus.dart';
 import '../theme/sefer_colors.dart';
 import 'app_icon.dart';
+import 'lang.dart';
 import 'ornaments.dart';
 
 /// Rows on one sheet of paper (docs/DESIGN_SYSTEM.md §6.3): a card with no
@@ -17,6 +18,9 @@ class PaperGroup extends StatelessWidget {
   const PaperGroup({super.key, required this.children, this.ruleInset});
 
   final List<Widget> children;
+
+  /// Where every hairline starts, for rows of another kind whose text
+  /// starts past a leading mark of their own.
   final double? ruleInset;
 
   static const double iconInset = PaperRow._start + PaperRow._iconSlot;
@@ -232,7 +236,8 @@ class _RowRule extends CustomPainter {
 /// of its own beside the row's, so a screen reader reaches both actions:
 /// merged into the row, its action would replace the row's. Set
 /// [mergeTrailing] for a switch or checkbox that the row's tap also toggles,
-/// so that the row and its state read as one item. A trailing button with a
+/// so that the row and its state read as one item, in the control's role. A
+/// trailing button with a
 /// label (a [TextButton], say) ends the title's line as a value does, and
 /// moves under the title when the two don't fit side by side, rather than
 /// squeeze the title until its words break (large text).
@@ -243,14 +248,18 @@ class PaperRow extends StatelessWidget {
     this.iconColor,
     required this.title,
     this.subtitle,
+    this.subtitleMaxLines = 2,
     this.titleStyle,
     this.subtitleStyle,
     this.value,
+    this.valueLocale,
     this.trailing,
     this.mergeTrailing = false,
     this.onTap,
     this.selected,
     this.toggled,
+    this.liveRegion = false,
+    this.destructive = false,
     this.focusNode,
     bool? chevron,
   }) : chevron = chevron ?? onTap != null;
@@ -261,8 +270,12 @@ class PaperRow extends StatelessWidget {
   final Color? iconColor;
   final String title;
 
-  /// At most two lines, unless the text is enlarged.
+  /// At most [subtitleMaxLines] lines, unless the text is enlarged.
   final String? subtitle;
+
+  /// Two by default; null for a subtitle of several facts, each on a line
+  /// of its own, that is never cut short.
+  final int? subtitleMaxLines;
 
   /// bodyLarge in onSurface, merged with this where given: a list of places
   /// to go, such as the forums, sets its titles in titleMedium.
@@ -273,6 +286,11 @@ class PaperRow extends StatelessWidget {
 
   /// The current setting, such as a language, at the end of the row.
   final String? value;
+
+  /// The language [value] is written in, where it is not the interface's
+  /// (a language's own name), so that a screen reader reads it in its own
+  /// voice.
+  final Locale? valueLocale;
   final Widget? trailing;
 
   /// Whether [trailing] reads as part of the row (a switch the row toggles)
@@ -292,6 +310,14 @@ class PaperRow extends StatelessWidget {
   /// nothing.
   final bool? toggled;
 
+  /// Whether a screen reader reads the row out as it changes, as a value
+  /// moved by another control does.
+  final bool liveRegion;
+
+  /// Sets the title in error ink, for the one row of a page that erases
+  /// (§9 Your data). Such a row has no icon.
+  final bool destructive;
+
   final bool chevron;
 
   /// The focus node of the row's ink well, for a row given the focus when
@@ -307,7 +333,8 @@ class PaperRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
     final muted = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
-    final titleStyle = text.bodyLarge!.copyWith(color: scheme.onSurface).merge(this.titleStyle);
+    final titleStyle =
+        text.bodyLarge!.copyWith(color: destructive ? scheme.error : scheme.onSurface).merge(this.titleStyle);
     final subtitleStyle = muted?.merge(this.subtitleStyle);
     // A labelled button goes with the title, as a value does, rather than
     // after it.
@@ -366,7 +393,11 @@ class PaperRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (value case final value?)
-                    titleWith(Text(value, style: muted))
+                    titleWith(
+                      valueLocale == null
+                          ? Text(value, style: muted)
+                          : Lang(valueLocale!, child: Text(value, style: muted)),
+                    )
                   else if (besideTitle != null)
                     titleWith(besideTitle)
                   else
@@ -375,8 +406,8 @@ class PaperRow extends StatelessWidget {
                     Text(
                       subtitle!,
                       style: subtitleStyle,
-                      maxLines: enlarged ? null : 2,
-                      overflow: enlarged ? null : TextOverflow.ellipsis,
+                      maxLines: enlarged ? null : subtitleMaxLines,
+                      overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
                     ),
                 ],
               ),
@@ -391,13 +422,16 @@ class PaperRow extends StatelessWidget {
         ),
       ),
     );
+    final merged = trailing != null && mergeTrailing;
     final row = Semantics(
       // Its own item: the text and the tap gather here, while a trailing
-      // control below keeps its own (unless merged, below).
+      // control below keeps its own (unless merged, below). A merged switch
+      // or checkbox gives the row its role.
       container: true,
-      button: onTap != null,
+      button: onTap != null && !merged,
       selected: selected,
       toggled: toggled,
+      liveRegion: liveRegion,
       child: onTap == null
           ? content
           : SeferInkWell(
@@ -407,7 +441,7 @@ class PaperRow extends StatelessWidget {
               child: content,
             ),
     );
-    return trailing != null && mergeTrailing ? MergeSemantics(child: row) : row;
+    return merged ? MergeSemantics(child: row) : row;
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,66 +7,174 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../ui/l10n.dart';
-import '../../ui/widgets/app_icon.dart';
+import '../../ui/theme/app_theme.dart';
+import '../../ui/widgets/app_mark.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/heading_reveal.dart';
+import '../../ui/widgets/lines.dart';
+import '../../ui/widgets/ornaments.dart';
+import '../../ui/widgets/paper_group.dart';
 
-final _version = PackageInfo.fromPlatform().then((i) => '${i.version} (${i.buildNumber})').catchError((_) => '');
+/// The app's version and build, "1.0.0 (12)", or empty where the platform
+/// doesn't say.
+final _versionProvider = FutureProvider<String>((ref) async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    return '${info.version} (${info.buildNumber})';
+  } catch (_) {
+    return '';
+  }
+});
 
-/// An email to the maintainers, or null when the build names no address.
-Uri? supportEmailUri(AppLocalizations l) => AppConfig.supportEmail.isEmpty
+/// An email to the maintainers about [subject] (the app's name unless
+/// given), or null when the build names no address.
+Uri? supportEmailUri(AppLocalizations l, {String? subject}) => AppConfig.supportEmail.isEmpty
     ? null
-    : Uri(scheme: 'mailto', path: AppConfig.supportEmail, query: 'subject=${Uri.encodeComponent(l.appTitle)}');
+    : Uri(
+        scheme: 'mailto',
+        path: AppConfig.supportEmail,
+        query: 'subject=${Uri.encodeComponent(subject ?? l.appTitle)}',
+      );
 
 /// The public issue tracker, where feedback reaches the maintainers in any
 /// build.
 final issueTrackerUri = Uri.parse('${AppConfig.sourceUrl}/issues');
 
-class AboutScreen extends StatelessWidget {
+/// About (docs/DESIGN_SYSTEM.md §9): the app's title page, with its mark, its
+/// name and the version, then the texts, the policies and the ways to reach
+/// us, each on a sheet of paper. The guide is reached from Today and from
+/// Settings.
+///
+/// The app's name is the page's one heading of level 1; the app bar names the
+/// page once the name has scrolled under it, for the eye alone.
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
   @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> with HeadingReveal<AboutScreen> {
+  @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final theme = Theme.of(context);
-    Widget link(IconData icon, String title, VoidCallback onTap) =>
-        ListTile(leading: AppIcon(icon), title: Text(title), trailing: const Icon(Icons.chevron_right), onTap: onTap);
+    final email = supportEmailUri(l);
     return PageScaffold(
       titleText: l.aboutTitle,
-      body: PageBody(
-        padding: PageBody.tilePadding(context),
+      titleRevealed: headingHidden,
+      body: watchHeading(PageBody(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Text('שניים מקרא ואחד תרגום',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(fontFamily: 'NotoSerifHebrew', fontSize: 28, color: theme.colorScheme.primary)),
-                // The name as read in English; in Hebrew it would repeat the title.
-                if (!context.isHebrewUi) ...[
-                  const Gap(8),
-                  Text(l.appTitleFull, style: theme.textTheme.titleMedium),
-                ],
-                FutureBuilder<String>(
-                  future: _version,
-                  builder: (context, snap) => Text(
-                    snap.data == null || snap.data!.isEmpty ? '' : l.versionLabel(snap.data!),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
-              ],
+          _AboutHeader(nameKey: headingKey),
+          GroupHeader(l.aboutGroupLearn),
+          PaperGroup(
+            children: [
+              PaperRow(
+                icon: Icons.library_books_outlined,
+                title: l.sourcesTitle,
+                onTap: () => context.push('/sources'),
+              ),
+            ],
+          ),
+          GroupHeader(l.aboutGroupPolicies),
+          PaperGroup(
+            children: [
+              PaperRow(
+                icon: Icons.privacy_tip_outlined,
+                title: l.privacyTitle,
+                onTap: () => context.push('/legal/privacy'),
+              ),
+              PaperRow(icon: Icons.gavel_outlined, title: l.termsTitle, onTap: () => context.push('/legal/terms')),
+              PaperRow(
+                icon: Icons.groups_outlined,
+                title: l.guidelinesTitle,
+                onTap: () => context.push('/legal/guidelines'),
+              ),
+              PaperRow(
+                icon: Icons.accessibility_new_outlined,
+                title: l.accessibilityStatement,
+                onTap: () => context.push('/legal/accessibility'),
+              ),
+              PaperRow(
+                icon: Icons.description_outlined,
+                title: l.licensesTitle,
+                onTap: () => showLicensePage(context: context, applicationName: l.appTitleFull),
+              ),
+            ],
+          ),
+          GroupHeader(l.aboutGroupContact),
+          PaperGroup(
+            children: [
+              if (email != null)
+                PaperRow(icon: Icons.mail_outline, title: l.contactTitle, onTap: () => launchUrl(email)),
+              PaperRow(icon: Icons.feedback_outlined, title: l.sendFeedback, onTap: () => launchUrl(issueTrackerUri)),
+            ],
+          ),
+        ],
+      )),
+    );
+  }
+}
+
+/// The app's title page: its mark; its name in Hebrew, the page's heading;
+/// in the English UI the name as read in English; the version; and a
+/// divider. Framed as a title page where the window is wide enough for one.
+class _AboutHeader extends ConsumerWidget {
+  const _AboutHeader({required this.nameKey});
+
+  /// For the name, which the page watches scroll out of sight.
+  final Key nameKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final version = ref.watch(_versionProvider).value ?? '';
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final type = SeferType.of(context);
+    final framed = MediaQuery.sizeOf(context).width >= Breakpoints.medium;
+    final header = Column(
+      children: [
+        const AppMark(size: 72, radius: 16),
+        const Gap(Space.lg),
+        Semantics(
+          key: nameKey,
+          header: true,
+          headingLevel: 1,
+          label: l.appTitleFull,
+          excludeSemantics: true,
+          // Its lines even, should large text need two.
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: BalancedText(
+              'שניים מקרא ואחד תרגום',
+              style: type.hebrewDisplay.copyWith(fontSize: 28, height: 40 / 28, letterSpacing: 0),
             ),
           ),
-          link(Icons.help_outline, l.guideTitle, () => context.push('/guide')),
-          link(Icons.library_books_outlined, l.sourcesTitle, () => context.push('/sources')),
-          link(Icons.accessibility, l.accessibilityStatement, () => context.push('/legal/accessibility')),
-          link(Icons.privacy_tip_outlined, l.privacyTitle, () => context.push('/legal/privacy')),
-          link(Icons.gavel_outlined, l.termsTitle, () => context.push('/legal/terms')),
-          link(Icons.groups_outlined, l.guidelinesTitle, () => context.push('/legal/guidelines')),
-          link(Icons.description_outlined, l.licensesTitle, () => showLicensePage(context: context, applicationName: l.appTitleFull)),
-          if (supportEmailUri(l) case final email?) link(Icons.mail_outline, l.contactTitle, () => launchUrl(email)),
-          link(Icons.feedback_outlined, l.sendFeedback, () => launchUrl(issueTrackerUri)),
+        ),
+        // The name as read in English, which the heading already says. The
+        // Hebrew UI doesn't repeat it.
+        if (!context.isHebrewUi) ...[
+          const Gap(Space.xs),
+          ExcludeSemantics(
+            child: BalancedText(l.appTitleFull, style: type.wordmark.copyWith(color: scheme.onSurfaceVariant)),
+          ),
         ],
+        const Gap(Space.sm),
+        Text(
+          version.isEmpty ? '' : l.versionLabel(context.ltrRun(version)),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        const Gap(Space.lg),
+        const SeferDivider(),
+      ],
+    );
+    if (!framed) return Padding(padding: const EdgeInsets.only(top: Space.xxl), child: header);
+    return Padding(
+      padding: const EdgeInsets.only(top: Space.lg),
+      child: TitlePageFrame(
+        padding: const EdgeInsets.fromLTRB(Space.s32, Space.s32, Space.s32, Space.xxl),
+        child: header,
       ),
     );
   }

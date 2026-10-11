@@ -12,6 +12,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/theme/layout.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../helpers.dart';
 
@@ -23,10 +24,9 @@ final _he = lookupAppLocalizations(const Locale('he'));
 Finder _title(String text) => find.descendant(of: find.byType(AppBar), matching: find.text(text));
 
 /// The start edge of a page's content: the first card's, or for a page of
-/// list tiles, the first tile's leading icon.
+/// paper groups, the first group's.
 Rect _firstCard(WidgetTester tester) => tester.getRect(find.byType(InfoCard).first);
-Rect _firstTileIcon(WidgetTester tester) =>
-    tester.getRect(find.descendant(of: find.byType(ListTile).first, matching: find.byType(Icon)).first);
+Rect _firstPaper(WidgetTester tester) => tester.getRect(find.byType(PaperGroup).first);
 
 void main() {
   // Real glyphs, so that a title is as wide as it is on a screen.
@@ -81,8 +81,25 @@ void main() {
 
     testWidgets("a page of list tiles pads the rest of the gutter, so their text starts on the gutter",
         (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpThemed(
+        tester,
+        Builder(
+          builder: (context) => PageBody(
+            padding: PageBody.tilePadding(context),
+            children: const [ListTile(leading: Icon(Icons.person_outline), title: Text('Account'))],
+          ),
+        ),
+      );
+      expect(tester.getRect(find.byType(Icon)).left, 20);
+    });
+
+    testWidgets('a page of paper groups stands them on the gutters', (tester) async {
       await openRoute(tester, '/settings');
-      expect(_firstTileIcon(tester).left, 20);
+      expect(_firstPaper(tester).left, 20);
+      expect(_firstPaper(tester).right, 412 - 20);
     });
   });
 
@@ -97,7 +114,7 @@ void main() {
           '/settings/display' => _en.settingsDisplay,
           _ => _en.communityTitle,
         };
-        final content = route == '/settings' ? _firstTileIcon(tester) : _firstCard(tester);
+        final content = route == '/community' ? _firstCard(tester) : _firstPaper(tester);
         expect(content.left, 257 + (1109 - 720) / 2 + 32);
         expect(tester.getTopLeft(_title(title)).dx, content.left);
       });
@@ -220,6 +237,33 @@ void main() {
         expect(set, moreOrLessEquals(full * 0.75));
         expect(tester.renderObject<RenderParagraph>(text).didExceedMaxLines, isTrue);
       });
+    });
+
+    testWidgets("a page whose heading is in its body shows the title once it is revealed, for the eye alone",
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      Future<void> pump({required bool revealed}) => pumpThemed(
+            tester,
+            PageScaffold(
+              titleText: 'Parshat Bereshit',
+              titleRevealed: revealed,
+              body: const PageBody(children: [Text('Body')]),
+            ),
+          );
+      double opacity() => tester
+          .widget<AnimatedOpacity>(find.ancestor(of: _title('Parshat Bereshit'), matching: find.byType(AnimatedOpacity)))
+          .opacity;
+
+      await pump(revealed: false);
+      expect(opacity(), 0);
+      // Screen readers find the heading in the page instead.
+      expect(find.bySemanticsLabel('Parshat Bereshit'), findsNothing);
+
+      await pump(revealed: true);
+      await tester.pumpAndSettle();
+      expect(opacity(), 1);
+      expect(find.bySemanticsLabel('Parshat Bereshit'), findsNothing);
+      handle.dispose();
     });
   });
 

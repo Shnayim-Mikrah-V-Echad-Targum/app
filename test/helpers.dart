@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/app.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
@@ -112,10 +113,24 @@ Map<String, WeekProgress> secondYearProgress() {
   return weeks;
 }
 
+/// The device's clock, moved on from Shabbat or Yom Tov (outside Israel,
+/// which has more of them) to the same time on the next weekday: the
+/// reading day those days count toward. A test that doesn't fix the clock
+/// then sees the same Today whatever day it runs on, rather than Today's
+/// rest on Shabbat.
+DateTime _readingDayClock() {
+  var now = DateTime.now();
+  while (JewishHolidays.isRestDay(rolloverDate(now), israel: false)) {
+    now = now.add(const Duration(days: 1));
+  }
+  return now;
+}
+
 /// Pumps the whole app with in-memory storage and the demo backend (or
 /// [forums], when given), and notifications disabled (or [notifications]),
 /// and any further [overrides]. Storage holds [settings], [progress] and
-/// anything else in [stored], by key.
+/// anything else in [stored], by key. The clock is [now], if given, and
+/// otherwise the device's moved off any day of rest (see [_readingDayClock]).
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   AppSettings settings = const AppSettings(onboardingComplete: true),
@@ -127,7 +142,11 @@ Future<ProviderContainer> pumpApp(
   List<Override> overrides = const [],
 }) async {
   TodayController.autoRollover = false;
-  if (now != null) TodayController.now = () => now;
+  if (now != null) {
+    TodayController.now = () => now;
+  } else if (identical(TodayController.now, DateTime.now)) {
+    TodayController.now = _readingDayClock;
+  }
   SharedPreferences.setMockInitialValues({
     'flutter.settings.v1': jsonEncode(settings.toJson()),
     if (progress != null) 'flutter.progress.v1': jsonEncode(progress.toJson()),
@@ -242,3 +261,11 @@ class PhoneNotifications extends NotificationService {
 }
 
 class _NoPlugin extends Fake implements FlutterLocalNotificationsPlugin {}
+
+/// Finds a text that contains [words], any of whose spaces may be no-break
+/// spaces, as a line of parts sets them to keep a clause together when a
+/// part is too long for a line of its own (DotLine).
+Finder findWords(String words) => find.textContaining(wordsRegExp(RegExp.escape(words)));
+
+/// [pattern] with each space matching a no-break space too (see [findWords]).
+RegExp wordsRegExp(String pattern) => RegExp(pattern.replaceAll(' ', '[ \u00A0]'));

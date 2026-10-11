@@ -1,181 +1,287 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SelectedContent;
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/config.dart';
+import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
+import '../../ui/widgets/heading_reveal.dart';
 import 'about_screen.dart';
+import 'legal_texts.dart';
 
-enum LegalDoc {
-  privacy,
-  terms,
-  guidelines,
-  accessibility;
+export 'legal_texts.dart' show LegalDoc;
 
-  /// The policy at [slug], or null for none: a mistyped link leads to no
-  /// policy rather than to the wrong one.
-  static LegalDoc? fromSlug(String slug) => values.where((d) => d.name == slug).firstOrNull;
-}
-
-/// In-app policies. Kept in the app (not only on a website) so they are
-/// available offline and in both languages.
-class LegalScreen extends StatelessWidget {
+/// In-app policies (docs/DESIGN_SYSTEM.md §9), set as long-form reading: the
+/// title and when it was last updated, then each section under its heading.
+/// Kept in the app (not only on a website) so they are available offline and
+/// in both languages; the texts are in assets/legal/legal.json.
+class LegalScreen extends ConsumerStatefulWidget {
   const LegalScreen({super.key, required this.doc});
 
   final LegalDoc doc;
 
   @override
+  ConsumerState<LegalScreen> createState() => _LegalScreenState();
+}
+
+class _LegalScreenState extends ConsumerState<LegalScreen> with HeadingReveal<LegalScreen> {
+  /// What is selected of the page, which reads as one text to select across.
+  SelectedContent? _selected;
+
+  /// [_selected] to the clipboard, without the marks that isolate a Latin
+  /// run, such as the support address, in Hebrew: pasted into a mail app,
+  /// they would break it.
+  void _copy() {
+    final text = _selected?.plainText;
+    if (text == null || text.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: text.replaceAll(RegExp('[\u2066-\u2069]'), '')));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final he = context.isHebrewUi;
-    final title = switch (doc) {
+    final title = switch (widget.doc) {
       LegalDoc.privacy => l.privacyTitle,
       LegalDoc.terms => l.termsTitle,
       LegalDoc.guidelines => l.guidelinesTitle,
       LegalDoc.accessibility => l.accessibilityStatement,
     };
-    final sections = (he ? _he : _en)[doc]!;
-    final contact = AppConfig.supportEmail.isNotEmpty ? AppConfig.supportEmail : '$issueTrackerUri';
-    final style = Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6);
+    final texts = ref.watch(legalTextsProvider);
+    final updated = texts.value?.updated(widget.doc);
     return PageScaffold(
       leading: homeLeading(context),
       titleText: title,
-      body: PageBody(
-        children: [
-          for (final (heading, body) in sections) ...[
-            if (heading.isNotEmpty) SectionHeader(heading),
-            ..._paragraph(context, body, contact, style),
-          ],
-        ],
+      titleRevealed: headingHidden,
+      contentMaxWidth: ContentWidth.longform,
+      body: watchHeading(
+        // Copied as _copy copies, from the keyboard and the menu alike.
+        Actions(
+          actions: {
+            CopySelectionTextIntent: CallbackAction<CopySelectionTextIntent>(
+              onInvoke: (_) {
+                _copy();
+                return null;
+              },
+            ),
+          },
+          child: SelectionArea(
+            onSelectionChanged: (content) => _selected = content,
+            contextMenuBuilder: (context, state) => AdaptiveTextSelectionToolbar.buttonItems(
+              anchors: state.contextMenuAnchors,
+              buttonItems: [
+                for (final item in state.contextMenuButtonItems)
+                  item.type == ContextMenuButtonType.copy
+                      ? item.copyWith(onPressed: () {
+                          _copy();
+                          state.hideToolbar();
+                        })
+                      : item,
+              ],
+            ),
+            child: _page(context, title, texts, updated),
+          ),
+        ),
       ),
     );
   }
 
-  /// [body], with [contact] in place of `{contact}`. Where the address has a
-  /// line of its own, as in Hebrew, it is a paragraph of its own, left to
-  /// right at the start of the line: so it keeps its order, a hyphen where
-  /// it wraps isn't left against the Hebrew before it, and copied, it holds
-  /// no invisible direction marks to break it in a mail client or a
-  /// browser. Within a sentence it is isolated in Hebrew (see [ltrRun]).
-  static List<Widget> _paragraph(BuildContext context, String body, String contact, TextStyle? style) {
-    final own = body.split('\n{contact}');
-    if (own.length == 1) return [SelectableText(body.replaceAll('{contact}', context.ltrRun(contact)), style: style)];
-    final rtl = Directionality.of(context) == TextDirection.rtl;
+  Widget _page(BuildContext context, String title, AsyncValue<LegalTexts> texts, DateTime? updated) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final type = SeferType.of(context);
+    return PageBody(
+      maxWidth: ContentWidth.longform,
+      children: [
+        const Gap(Space.lg),
+        Semantics(
+          header: true,
+          headingLevel: 1,
+          child: Text(title, key: headingKey, style: theme.textTheme.headlineMedium),
+        ),
+        if (updated != null) ...[
+          const Gap(Space.xs),
+          Text(
+            l.legalLastUpdated(DateFormat.yMMMM(context.localeName).format(updated)),
+            style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+        ...switch (texts) {
+          AsyncData(:final value) => [
+              for (final section in value.sections(
+                widget.doc,
+                hebrew: context.isHebrewUi,
+                hasEmail: AppConfig.supportEmail.isNotEmpty,
+              ))
+                ..._section(context, section),
+            ],
+          AsyncError() => [const Gap(Space.xxl), Text(l.errorGeneric, style: type.longformBody)],
+          _ => const <Widget>[],
+        },
+      ],
+    );
+  }
+
+  static const _bulletGap = 6.0;
+
+  /// [section] under its heading (the opening paragraphs have none), its
+  /// paragraphs 12 apart and its bullets 6.
+  List<Widget> _section(BuildContext context, LegalSection section) {
+    final type = SeferType.of(context);
+    final body = type.longformBody;
+    final blocks = section.blocks;
     return [
-      SelectableText(own.first, style: style),
-      SelectableText(
-        contact,
-        textDirection: TextDirection.ltr,
-        textAlign: rtl ? TextAlign.right : TextAlign.left,
-        style: style,
-      ),
-      if (own.last.trim().isNotEmpty) SelectableText(own.last.trimLeft(), style: style),
+      if (section.heading.isEmpty)
+        const Gap(Space.xxl)
+      else
+        Padding(
+          padding: const EdgeInsets.only(top: Rhythm.sectionGap + Space.xs, bottom: Space.sm),
+          child: Semantics(header: true, headingLevel: 2, child: Text(section.heading, style: type.longformHeading)),
+        ),
+      for (final (i, block) in blocks.indexed) ...[
+        // A bullet keeps its own gap below it.
+        if (i > 0 && !(block is Bullet && blocks[i - 1] is Bullet))
+          Gap(blocks[i - 1] is Bullet ? Space.md - _bulletGap : Space.md),
+        switch (block) {
+          Para(:final text) => Text(text, style: body),
+          Bullet(:final text) => _BulletItem(text, style: body),
+          final ContactLine line => _ContactText(line, style: body),
+        },
+      ],
     ];
   }
 }
 
-const _en = <LegalDoc, List<(String, String)>>{
-  LegalDoc.privacy: [
-    ('', 'Shnayim Mikra is built to need as little of your data as possible. Last updated: October 2026.'),
-    ('What stays on your device',
-        'Your reading progress, streaks, settings and reminders are stored on your device, and in its own backup if that is turned on (see below). The texts are bundled with the app, so reading works fully offline and nothing about what you read is sent anywhere. If you choose a city for Shabbat times, it stays on your device too: the times are worked out there, and the app never asks where you are.'),
-    ('Your device\'s own backup',
-        'If backup is turned on for your device, it can include the app\'s settings and reading progress, so they come back when you restore the device or set up a new one. If you are signed in to the community, it can also include that sign-in, with your email address, and any post you have started but not sent. Android keeps this backup in your Google account, and an iPhone or iPad in iCloud or on your computer. We have no access to it.'),
-    ('No tracking',
-        'The app contains no advertising, no analytics and no third-party tracking. We do not sell or share data.'),
-    ('If you create a community account',
-        'Signing in to the community uses your email address, which is used only to sign you in. Your display name and the posts you write are visible to other users. If you choose to sync your progress, it is stored with your account so you can restore it on another device.'),
-    ('Deleting your data',
-        'You can reset your progress at any time in Settings, under "Your data". You can delete your community account in Settings, under "Account & community"; this deletes your profile, your posts and any synced progress. Topics you started that others replied to stay, without your name, so that their replies still make sense.'),
-    ('Contact', 'Questions or requests: {contact}'),
-  ],
-  LegalDoc.terms: [
-    ('', 'By using Shnayim Mikra you agree to these terms.'),
-    ('The app',
-        'The app is provided free of charge, as is, to help with the practice of Shnayim Mikra v\'Echad Targum. Calendar calculations are carefully tested, but customs vary: for practical questions, ask your rav.'),
-    ('Texts', 'Bundled texts are used under their licenses, listed in About, under "Texts & sources".'),
-    ('Community',
-        'You are responsible for what you post. Posts must follow the Community guidelines. Moderators may hide or remove content and suspend accounts that violate them. You can report any post and block any user.'),
-    ('Changes', 'These terms may be updated; material changes will be shown in the app.'),
-  ],
-  LegalDoc.guidelines: [
-    ('', 'The community exists to learn the parsha together. Please help keep it a place of Torah, kindness and respect.'),
-    ('Speak with derech eretz',
-        'Disagree with ideas, never with people. No insults, mockery, harassment or personal attacks.'),
-    ('Guard your tongue',
-        'No lashon hara, gossip or shaming of individuals or communities. Don\'t share other people\'s private information.'),
-    ('Respect sacred text',
-        'When writing the Divine Name in posts, please write ה׳ or "Hashem". Quote sources accurately.'),
-    ('Stay on topic', 'Keep discussions connected to the parsha, its commentaries and the practice of learning. No advertising or spam.'),
-    ('Psak', 'The forums are for learning, not for halachic rulings. For practical questions, ask your rav.'),
-    ('Reporting',
-        'Use "Report" on any post that breaks these guidelines, and "Block" to stop seeing someone. Moderators review every report.'),
-  ],
-  LegalDoc.accessibility: [
-    ('', 'We want everyone to be able to learn the parsha with this app, including people who use screen readers, magnification, switch access or keyboards, and people with dyslexia or low vision. We aim to meet WCAG 2.2 level AA.'),
-    ('What the app offers',
-        '• Screen reader support on every platform, with a clean spoken version (cantillation removed) of each verse of the Torah and the Targum, and of each comment of Rashi, tagged as Hebrew; the English translation is tagged as English\n'
-            '• A choice of how the Divine Name is spoken, wherever it is written: in the Torah, in the Targum and in Rashi\n'
-            '• Reading size up to 500%, on top of your device\'s text size, plus line, word and letter spacing\n'
-            '• Light, dark, sepia and two high-contrast themes; bold text; a choice of fonts, including Atkinson Hyperlegible and Lexend\n'
-            '• Show or hide vowels and cantillation; focus mode; adjustable line width\n'
-            '• Full keyboard support with shortcuts on Windows and the web\n'
-            '• Reduce motion and haptics settings; no flashing content\n'
-            '• Status is never shown by color alone\n'
-            '• Text-to-speech where a Hebrew voice is available'),
-    ('Known limitations',
-        'Hebrew voices differ between devices and some screen readers do not pronounce pointed Hebrew perfectly. On Windows, Narrator and NVDA cannot switch to a Hebrew voice on their own, because the app has no way to tell them the language of a text there. To hear the Hebrew in a Hebrew voice, choose one in the screen reader\'s settings. Reminders are not available in the web version.'),
-    ('Feedback',
-        'If something is hard to use, please tell us: {contact}. We aim to respond within five working days.'),
-  ],
-};
+/// An item of a list: a bullet, and the text beside it, its wrapped lines
+/// hanging from the bullet rather than running back under it.
+class _BulletItem extends StatelessWidget {
+  const _BulletItem(this.text, {required this.style});
 
-const _he = <LegalDoc, List<(String, String)>>{
-  LegalDoc.privacy: [
-    ('', 'שניים מקרא בנויה כך שתזדקק למעט ככל האפשר מהמידע שלך. עודכן לאחרונה: אוקטובר 2026.'),
-    ('מה נשאר במכשיר שלך',
-        'התקדמות הקריאה, הרצפים, ההגדרות והתזכורות נשמרים במכשיר שלך, ובגיבוי של המכשיר אם הוא מופעל (ראו בהמשך). הטקסטים כלולים באפליקציה, כך שהקריאה פועלת ללא חיבור לרשת, ושום מידע על מה שקראת אינו נשלח לשום מקום. אם בחרת עיר לזמני השבת, גם היא נשמרת במכשיר: הזמנים מחושבים בו, והאפליקציה אינה מבקשת את מיקומך.'),
-    ('הגיבוי של המכשיר',
-        'אם הגיבוי מופעל במכשיר, הוא יכול לכלול את ההגדרות ואת התקדמות הקריאה באפליקציה, כך שהן יחזרו כשמשחזרים את המכשיר או מגדירים מכשיר חדש. אם נכנסת לקהילה, הגיבוי יכול לכלול גם את הכניסה, עם כתובת הדוא״ל שלך, והודעה שהתחלת לכתוב ועוד לא שלחת. ב־Android הגיבוי נשמר בחשבון Google שלך, וב־iPhone או ב־iPad ב־iCloud או במחשב. אין לנו גישה אליו.'),
-    ('ללא מעקב', 'אין באפליקציה פרסומות, אנליטיקה או מעקב של צד שלישי. איננו מוכרים או משתפים מידע.'),
-    ('אם פתחת חשבון בקהילה',
-        'הכניסה לקהילה משתמשת בכתובת הדוא״ל שלך לצורך הכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. אם בחרת לסנכרן את ההתקדמות, היא נשמרת עם החשבון, וכך אפשר לשחזר אותה במכשיר אחר.'),
-    ('מחיקת המידע',
-        'אפשר לאפס את ההתקדמות בכל עת בהגדרות, תחת ״הנתונים שלך״. אפשר למחוק את החשבון בהגדרות, תחת ״חשבון וקהילה״; פעולה זו מוחקת את הפרופיל, ההודעות וההתקדמות המסונכרנת. נושאים שפתחת ואחרים הגיבו בהם נשארים, בלי שמך, כדי שהתגובות שלהם יישארו מובנות.'),
-    ('יצירת קשר', 'שאלות ובקשות:\n{contact}'),
-  ],
-  LegalDoc.terms: [
-    ('', 'השימוש בשניים מקרא מהווה הסכמה לתנאים אלה.'),
-    ('האפליקציה',
-        'האפליקציה ניתנת בחינם, כמות שהיא, לסיוע בקיום שניים מקרא ואחד תרגום. חישובי הלוח נבדקים בקפידה, אך המנהגים שונים: בשאלות מעשיות יש לשאול רב.'),
-    ('טקסטים', 'הטקסטים הכלולים משמשים בהתאם לרישיונותיהם, המפורטים באודות, תחת ״טקסטים ומקורות״.'),
-    ('קהילה',
-        'כל משתמש אחראי למה שהוא מפרסם. ההודעות חייבות לעמוד בכללי הקהילה. המנהלים רשאים להסתיר או להסיר תוכן ולהשעות חשבונות המפרים אותם. אפשר לדווח על כל הודעה ולחסום כל משתמש.'),
-    ('שינויים', 'התנאים עשויים להתעדכן; שינויים מהותיים יוצגו באפליקציה.'),
-  ],
-  LegalDoc.guidelines: [
-    ('', 'הקהילה קיימת כדי ללמוד את הפרשה יחד. עזרו לשמור עליה מקום של תורה, חסד וכבוד.'),
-    ('דרך ארץ', 'חולקים על רעיונות, לעולם לא על אנשים. ללא עלבונות, לעג, הטרדה או התקפות אישיות.'),
-    ('שמירת הלשון', 'ללא לשון הרע, רכילות או ביוש של אנשים או קהילות. אין לשתף מידע פרטי של אחרים.'),
-    ('כבוד לכתבי הקודש', 'בכתיבת שם ה׳ בהודעות, נא לכתוב ה׳ או ״השם״. יש לצטט מקורות במדויק.'),
-    ('להישאר בנושא', 'הדיונים צריכים לעסוק בפרשה, במפרשיה ובלימוד. ללא פרסום או ספאם.'),
-    ('פסיקה', 'הפורומים נועדו ללימוד ולא לפסיקת הלכה. בשאלות מעשיות יש לשאול רב.'),
-    ('דיווח', 'השתמשו ב״דיווח״ על כל הודעה שמפרה את הכללים, וב״חסימה״ כדי להפסיק לראות משתמש. המנהלים בודקים כל דיווח.'),
-  ],
-  LegalDoc.accessibility: [
-    ('', 'אנחנו רוצים שכל אחד יוכל ללמוד את הפרשה באפליקציה, כולל משתמשי קוראי מסך, הגדלה, מתג או מקלדת, ואנשים עם דיסלקציה או ראייה ירודה. היעד שלנו הוא עמידה ב־WCAG 2.2 ברמה AA.'),
-    ('מה האפליקציה מציעה',
-        '• תמיכה בקוראי מסך בכל הפלטפורמות, עם גרסה מדוברת נקייה (בלי טעמים) של כל פסוק בתורה ובתרגום ושל כל דיבור ברש״י, המסומנת כעברית; התרגום לאנגלית מסומן כאנגלית\n'
-            '• בחירה כיצד להגות את השם בכל מקום שהוא כתוב: בתורה, בתרגום וברש״י\n'
-            '• גודל קריאה עד 500%, מעבר לגודל הטקסט של המכשיר, וכן ריווח שורות, מילים ואותיות\n'
-            '• ערכות בהירה, כהה, ספיה ושתי ערכות בניגודיות גבוהה; טקסט מודגש; מבחר גופנים\n'
-            '• הצגה או הסתרה של ניקוד וטעמים; מצב מיקוד; רוחב שורה מתכוונן\n'
-            '• תמיכה מלאה במקלדת עם קיצורים ב־Windows ובדפדפן\n'
-            '• הפחתת תנועה ומשוב רטט; ללא תוכן מהבהב\n'
-            '• מצב לעולם אינו מוצג באמצעות צבע בלבד\n'
-            '• הקראה קולית כשקיים קול בעברית'),
-    ('מגבלות ידועות',
-        'קולות העברית שונים בין מכשירים, וחלק מקוראי המסך אינם הוגים עברית מנוקדת באופן מושלם. ב־Windows, \u200fNarrator ו־NVDA אינם עוברים לקול עברי מעצמם, כי שם אין לאפליקציה דרך לציין להם את שפת הטקסט. כדי לשמוע את העברית בקול עברי, יש לבחור קול כזה בהגדרות קורא המסך. תזכורות אינן זמינות בגרסת הדפדפן.'),
-    ('משוב', 'אם משהו קשה לשימוש, נשמח לשמוע, ונשתדל להשיב תוך חמישה ימי עבודה. אפשר לכתוב לנו:\n{contact}'),
-  ],
-};
+  final String text;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: _LegalScreenState._bulletGap),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // The list's shape is for the eye; each item is read as it is.
+            ExcludeSemantics(
+              child: Text('•', style: style.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ),
+            const Gap(Space.sm),
+            Expanded(child: Text(text, style: style)),
+          ],
+        ),
+      );
+}
+
+/// A sentence with the way to reach us in it: the support address, or the
+/// issue tracker by name where the build has none, as a link, and never a
+/// raw web address. In Hebrew the address is isolated left to right, so it
+/// keeps its order and the sentence's punctuation stays with the Hebrew.
+///
+/// The link is a span of the sentence, which the keyboard reaches through
+/// the sentence: focused, the sentence takes the focus ring, and Enter or
+/// Space opens the link.
+class _ContactText extends StatefulWidget {
+  const _ContactText(this.line, {required this.style});
+
+  final ContactLine line;
+  final TextStyle style;
+
+  @override
+  State<_ContactText> createState() => _ContactTextState();
+}
+
+class _ContactTextState extends State<_ContactText> {
+  late final _tap = TapGestureRecognizer()..onTap = _open;
+  bool _ring = false;
+
+  /// Opens the link, and where nothing opens it (no mail app, say), says
+  /// so, with the address to copy.
+  Future<void> _open() async {
+    final l = context.l10n;
+    final email = AppConfig.supportEmail;
+    final target = supportEmailUri(l, subject: widget.line.subject) ?? issueTrackerUri;
+    final opened = await launchUrl(target).catchError((Object _) => false);
+    if (opened || !mounted) return;
+    showStatus(
+      context,
+      email.isEmpty ? l.linkOpenFailed : l.emailOpenFailed(context.ltrRun(email)),
+      action: email.isEmpty
+          ? null
+          : SnackBarAction(label: l.actionCopy, onPressed: () => Clipboard.setData(ClipboardData(text: email))),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tap.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final sefer = SeferColors.of(context);
+    final email = AppConfig.supportEmail;
+    final (before, after) = widget.line.parts;
+    return FocusableActionDetector(
+      actions: {
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            _open();
+            return null;
+          },
+        ),
+      },
+      onShowFocusHighlight: (shown) => setState(() => _ring = shown),
+      // As wide as the sentence, which the focus ring goes around.
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: _ring
+              ? ShapeDecoration(
+                  shape: FocusRingBorder(
+                    borderRadius: const BorderRadius.all(Radius.circular(4)),
+                    ring: sefer.focus,
+                    gap: sefer.focusGap,
+                  ),
+                )
+              : const BoxDecoration(),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: before),
+                TextSpan(
+                  text: email.isEmpty ? l.feedbackLinkLabel : context.ltrRun(email),
+                  // Read without the isolates around it.
+                  semanticsLabel: email.isEmpty ? null : email,
+                  style: TextStyle(
+                    color: scheme.primary,
+                    decoration: TextDecoration.underline,
+                    decorationColor: scheme.primary,
+                  ),
+                  recognizer: _tap,
+                ),
+                TextSpan(text: after),
+              ],
+            ),
+            style: widget.style,
+          ),
+        ),
+      ),
+    );
+  }
+}

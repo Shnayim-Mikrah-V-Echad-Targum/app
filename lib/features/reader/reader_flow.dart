@@ -191,16 +191,28 @@ class ReaderFlow {
     if (t >= verses.length) return (0, 0);
     var ci = chunks.indexWhere((c) => c.end > t);
     if (ci < 0) ci = 0;
-    final c = chunks[ci];
-    final steps = stepsFor(ci);
+    return (ci, entryStep(ci, positions));
+  }
+
+  /// The step chunk [chunkIndex] starts at for a reader whose position
+  /// counts were [done] when the aliyah was opened (null for none, as when
+  /// it was already read): past the readings of the Hebrew already done
+  /// through the chunk, as from a Chumash, so that the reader doesn't read
+  /// them again, verse after verse. A chunk read in full starts at its
+  /// beginning, to be read again.
+  int entryStep(int chunkIndex, List<int>? done) {
+    if (done == null || done.length < 3) return 0;
+    final c = chunks[chunkIndex];
+    if (done[2] >= c.end) return 0;
+    final steps = stepsFor(chunkIndex);
     // A reading can be un-marked on its own, so check that the earlier ones
     // really are done.
-    if (positions[0] >= c.end && positions[1] >= c.end) {
+    if (done[0] >= c.end && done[1] >= c.end) {
       final i = steps.indexOf(StepKind.mikra2) + 1;
-      return (ci, math.min(i, steps.length - 1));
+      return math.min(i, steps.length - 1);
     }
-    if (positions[0] >= c.end) return (ci, steps.indexOf(StepKind.mikra2));
-    return (ci, 0);
+    if (done[0] >= c.end) return steps.indexOf(StepKind.mikra2);
+    return 0;
   }
 
   int get totalSteps => [for (var i = 0; i < chunks.length; i++) stepsFor(i).length].fold(0, (a, b) => a + b);

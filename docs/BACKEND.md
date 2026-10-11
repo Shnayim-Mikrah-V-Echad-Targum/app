@@ -151,4 +151,4 @@ On an Android emulator, use `http://10.0.2.2:54321` instead of `127.0.0.1`.
 - The backend holds: email addresses (in Supabase Auth), display names, posts, reactions, reports, blocks, and the optional progress backup.
 - Reading progress leaves the device only if the user turns on *Cloud backup*.
 - Account deletion is immediate. It covers all of the user's posts and the threads they started that have no other posts.
-- Update the privacy policy in the app (`lib/features/about/legal_screen.dart`) if you add analytics, crash reporting or any other processor. The current text says there is no advertising, analytics or tracking.
+- Update the privacy policy in the app (`assets/legal/legal.json`, with its `updated` month) if you add analytics, crash reporting or any other processor. The current text says there is no advertising, analytics or tracking.

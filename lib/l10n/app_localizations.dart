@@ -207,12 +207,6 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get actionShare;
 
-  /// No description provided for @actionLearnMore.
-  ///
-  /// In en, this message translates to:
-  /// **'Learn more'**
-  String get actionLearnMore;
-
   /// No description provided for @actionMarkRead.
   ///
   /// In en, this message translates to:
@@ -435,12 +429,6 @@ abstract class AppLocalizations {
   /// **'{count} of {total}'**
   String countOfTotal(int count, int total);
 
-  /// No description provided for @passShortMikra.
-  ///
-  /// In en, this message translates to:
-  /// **'Mikra'**
-  String get passShortMikra;
-
   /// No description provided for @passSemantics.
   ///
   /// In en, this message translates to:
@@ -507,6 +495,108 @@ abstract class AppLocalizations {
   /// **'Parshat {name}'**
   String parshaLabel(String name);
 
+  /// The eyebrow over the parsha's name in the Today hero, on most days.
+  ///
+  /// In en, this message translates to:
+  /// **'Parshat HaShavua'**
+  String get parshatHashavua;
+
+  /// The eyebrow over the parsha's name in the Today hero on Friday afternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Erev Shabbat'**
+  String get erevShabbat;
+
+  /// The greeting on Today's title page on Shabbat.
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat Shalom'**
+  String get shabbatShalom;
+
+  /// The greeting on Today's title page on the festivals' days of Yom Tov (Pesach, Shavuot, Sukkot, Shemini Atzeret).
+  ///
+  /// In en, this message translates to:
+  /// **'Chag Sameach'**
+  String get chagSameach;
+
+  /// The greeting on Today's title page on Rosh Hashanah, for a good year.
+  ///
+  /// In en, this message translates to:
+  /// **'Shanah Tovah'**
+  String get shanaTova;
+
+  /// The greeting on Today's title page on Yom Kippur, a solemn fast day: 'a good final sealing'.
+  ///
+  /// In en, this message translates to:
+  /// **'G\'mar Chatimah Tovah'**
+  String get gmarChatimaTova;
+
+  /// On Today's title page on Shabbat, under the parsha's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading from a printed Chumash today? You can log it after Shabbat.'**
+  String get restDayBody;
+
+  /// As restDayBody, on Shabbat or Yom Tov when the days of rest end with Yom Tov.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading from a printed Chumash today? You can log it after Yom Tov.'**
+  String get restDayBodyChag;
+
+  /// As restDayBody, on Yom Kippur, which is not called Yom Tov.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading from a printed Chumash today? You can log it after Yom Kippur.'**
+  String get restDayBodyYomKippur;
+
+  /// The one button on Today on Shabbat or Yom Tov, which opens the parsha's week.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the parsha'**
+  String get openTheParsha;
+
+  /// The eyebrow over the parsha's name in the Today hero in the week of Vezot HaBerachah, which is read on Simchat Torah.
+  ///
+  /// In en, this message translates to:
+  /// **'Simchat Torah'**
+  String get simchatTorahEyebrow;
+
+  /// In the Today hero on Friday, in place of the countdown to Shabbat (shabbatInDays).
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat begins this evening'**
+  String get shabbatBeginsTonight;
+
+  /// A link under the rings in the Today hero to the week's page, which lists its seven aliyot.
+  ///
+  /// In en, this message translates to:
+  /// **'All aliyot'**
+  String get allAliyot;
+
+  /// The Today hero's button when nothing of the week is read yet. aliyah is the aliyah it opens, such as Rishon.
+  ///
+  /// In en, this message translates to:
+  /// **'Start · {aliyah}'**
+  String startAt(String aliyah);
+
+  /// The Today hero's button: aliyah is the first aliyah not yet read, such as Shlishi.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue · {aliyah}'**
+  String continueAt(String aliyah);
+
+  /// The Today hero's button when some readings of the next aliyah are done: pass is the reading it resumes at, such as Targum.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue · {aliyah}, {pass}'**
+  String continueAtPass(String aliyah, String pass);
+
+  /// A button on Today's reading card that opens the aliyah named, such as Shishi.
+  ///
+  /// In en, this message translates to:
+  /// **'Read {aliyah}'**
+  String readAliyah(String aliyah);
+
   /// No description provided for @todayReadingTitle.
   ///
   /// In en, this message translates to:
@@ -525,29 +615,95 @@ abstract class AppLocalizations {
   /// **'You\'re ahead of plan. Well done!'**
   String get todayAhead;
 
+  /// Under Today's week strip, once, after grace days covered planned days without reading. count is how many grace days, weekdays those days as a list ('Monday and Tuesday'); parsha this week's.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues. You\'ll earn one back when you finish {parsha} by Shabbat.} other{{weekdays} were covered by grace days — your rhythm continues. You\'ll earn one back when you finish {parsha} by Shabbat.}}'**
+  String graceUsedNote(int count, String weekdays, String parsha);
+
+  /// As graceUsedNote, when finishing this week's parsha would not earn a grace day back (it is finished, or none is missing).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues.} other{{weekdays} were covered by grace days — your rhythm continues.}}'**
+  String graceUsedNoteShort(int count, String weekdays);
+
+  /// Under Today's week strip when reading two days' aliyot today has made up for yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Caught up — doubling up repaired yesterday.'**
+  String get caughtUpNote;
+
   /// No description provided for @todayNothingPlanned.
   ///
   /// In en, this message translates to:
   /// **'No reading is planned for today. A good day to catch up or read ahead.'**
   String get todayNothingPlanned;
 
-  /// No description provided for @todayBehind.
+  /// The eyebrow of Today's reading card while aliyot planned for earlier days are still to read.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 aliyah behind — very normal midweek.} other{{count} aliyot behind — very normal midweek.}}'**
+  /// **'Catching up'**
+  String get todayCatchUpTitle;
+
+  /// No description provided for @aliyotCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 aliyah} other{{count} aliyot}}'**
+  String aliyotCount(int count);
+
+  /// On Today's reading card, under the aliyot to catch up, from Sunday to Wednesday. count is every aliyah the card names: those planned up to today and not yet read, today's included.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah to catch up — very normal midweek.} other{{count} aliyot to catch up — very normal midweek.}}'**
   String todayBehind(int count);
 
-  /// No description provided for @readTodaysAliyah.
+  /// As todayBehind, on Thursday, when Thursday and Friday are left for reading before Shabbat. count is every aliyah planned up to today and not yet read.
   ///
   /// In en, this message translates to:
-  /// **'Read today\'s reading'**
-  String get readTodaysAliyah;
+  /// **'{count, plural, =1{One aliyah to catch up — and there are still two days before Shabbat.} other{{count} aliyot to catch up — and there are still two days before Shabbat.}}'**
+  String todayBehindThursday(int count);
 
-  /// No description provided for @continueReading.
+  /// As todayBehind, on Erev Shabbat. count is every aliyah planned up to today and not yet read.
   ///
   /// In en, this message translates to:
-  /// **'Continue reading'**
-  String get continueReading;
+  /// **'{count, plural, =1{One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat.}}'**
+  String todayLastDayShabbat(int count);
+
+  /// As todayBehind, on Erev Yom Tov. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.}}'**
+  String todayLastDayYomTov(int count);
+
+  /// As todayLastDayShabbat, on an Erev Shabbat whose Shabbat runs straight into Yom Tov, so that reading done then is logged once Yom Tov is over. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov.}}'**
+  String todayLastDayShabbatThenYomTov(int count);
+
+  /// As todayLastDayYomTov, on an Erev Yom Tov whose Yom Tov runs straight into Shabbat (Rosh Hashanah on Thursday and Friday, say), so that reading done then is logged once Shabbat is over. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.}}'**
+  String todayLastDayYomTovThenShabbat(int count);
+
+  /// As todayBehind, on the day before Yom Kippur, which is never the last reading day of a week. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah to catch up before Yom Kippur — and there is still time after it, too.} other{{count} aliyot to catch up before Yom Kippur — and there is still time after it, too.}}'**
+  String todayLastDayYomKippur(int count);
+
+  /// On Today's reading card while streaks are paused, in place of a line about aliyot to catch up.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused — read whenever you like; nothing counts against you.'**
+  String get pausedTodayNote;
+
+  /// On Today's reading card on the day before Tisha B'Av, when many have the custom not to learn Torah from midday.
+  ///
+  /// In en, this message translates to:
+  /// **'Erev Tisha B\'Av: many finish their learning before midday.'**
+  String get erevTishaBavNote;
 
   /// No description provided for @startReading.
   ///
@@ -561,11 +717,35 @@ abstract class AppLocalizations {
   /// **'I read it in a Chumash'**
   String get readFromBook;
 
+  /// The title of the sheet that logs reading done from a printed Chumash, over the aliyot to log, each checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Which aliyot did you read?'**
+  String get readFromBookTitle;
+
   /// No description provided for @weekComplete.
   ///
   /// In en, this message translates to:
   /// **'This week\'s parsha is complete. Yasher koach!'**
   String get weekComplete;
+
+  /// A gentle line under weekComplete on Today's title page, once every aliyah of the week is read.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to hear it read on Shabbat.'**
+  String get weekCompleteNote;
+
+  /// As weekCompleteNote, for Vezot HaBerachah, which is read on Simchat Torah.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to hear it read on Simchat Torah.'**
+  String get weekCompleteNoteSimchatTorah;
+
+  /// A text button on Today's title page, once the week is complete, that opens the week's discussion.
+  ///
+  /// In en, this message translates to:
+  /// **'Discuss the parsha'**
+  String get discussTheParsha;
 
   /// No description provided for @haftarahLabel.
   ///
@@ -591,17 +771,35 @@ abstract class AppLocalizations {
   /// **'Finish by {date} and it still counts.'**
   String openWeekLate(String date);
 
-  /// No description provided for @openWeekRestore.
+  /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.
   ///
   /// In en, this message translates to:
-  /// **'Finish {name} and {next} by Shabbat to keep your streak — one double-up per book.'**
-  String openWeekRestore(String name, String next);
+  /// **'Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book.'**
+  String openWeekRestore(String name, String next, int count);
+
+  /// As openWeekRestore, when the reader has no parsha streak to continue.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish {name} and {next} by Shabbat and both count — one double-up per book.'**
+  String openWeekRestoreZero(String name, String next);
 
   /// No description provided for @openWeekHaftarahLeft.
   ///
   /// In en, this message translates to:
   /// **'Only the haftarah is left.'**
   String get openWeekHaftarahLeft;
+
+  /// The button of the notice on Today that last week's parsha is still open: name is the parsha.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String openWeekOpen(String name);
+
+  /// A button that opens the week's haftarah.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the haftarah'**
+  String get readTheHaftarah;
 
   /// No description provided for @checkInTitle.
   ///
@@ -627,6 +825,36 @@ abstract class AppLocalizations {
   /// **'Choose aliyot'**
   String get checkInPick;
 
+  /// A button of the after-Shabbat check-in on Today that puts it away without logging anything.
+  ///
+  /// In en, this message translates to:
+  /// **'Not this time'**
+  String get checkInNotThisTime;
+
+  /// In the after-Shabbat check-in sheet, the day the checked readings are logged for: the Shabbat just past. date is its day and month.
+  ///
+  /// In en, this message translates to:
+  /// **'Read on Shabbat, {date}'**
+  String checkInReadOnShabbat(String date);
+
+  /// As checkInReadOnShabbat, once another day is chosen. date is its weekday, day and month.
+  ///
+  /// In en, this message translates to:
+  /// **'Read on {date}'**
+  String checkInReadOn(String date);
+
+  /// A button beside the day reading is logged for, which asks for another.
+  ///
+  /// In en, this message translates to:
+  /// **'Change date'**
+  String get changeDate;
+
+  /// The button of the after-Shabbat check-in sheet that logs every checked reading at once.
+  ///
+  /// In en, this message translates to:
+  /// **'Log reading'**
+  String get logReading;
+
   /// No description provided for @pausedBanner.
   ///
   /// In en, this message translates to:
@@ -638,6 +866,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resume'**
   String get resume;
+
+  /// On Today, under pauseEnded, the first time it is opened after a pause has ended. date is the pause's last day.
+  ///
+  /// In en, this message translates to:
+  /// **'Your pause ended on {date}, and nothing during it counts against you.'**
+  String pauseEndedOn(String date);
+
+  /// A button on Today's welcome back after a pause, when nothing of this week's parsha is read yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Start this week\'s parsha'**
+  String get pauseEndedStart;
+
+  /// As pauseEndedStart, when some of this week's parsha is read.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue this week\'s parsha'**
+  String get pauseEndedContinue;
+
+  /// A button on Today's welcome back after a pause, that opens last week's parsha, which can still count.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch up on {name}'**
+  String catchUpOn(String name);
+
+  /// The tooltip and label of a close button that puts a note away.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get actionDismiss;
 
   /// Shown on Today when the reader hears Israel's reading but keeps two days of Yom Tov (a visitor to Israel), in a week when Israel and the Diaspora read different portions.
   ///
@@ -662,6 +920,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discuss this week\'s parsha'**
   String get discussThisWeek;
+
+  /// The heading over the haftarah and the discussion on Today.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get thisWeek;
 
   /// No description provided for @streakParsha.
   ///
@@ -831,11 +1095,29 @@ abstract class AppLocalizations {
   /// **'In progress'**
   String get weekInProgress;
 
-  /// No description provided for @plannedFor.
+  /// The day is the weekday's name (Names.weekday): 'Monday', in Hebrew 'יום שני', which takes ל directly.
   ///
   /// In en, this message translates to:
   /// **'Planned for {day}'**
   String plannedFor(String day);
+
+  /// Read by screen readers for an aliyah on the week's page planned for a day gone by and still to read, which the page shows in the overdue colour after a mark.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned for {day}, still to read'**
+  String plannedForOverdue(String day);
+
+  /// As plannedForOverdue, for an aliyah planned for Shabbat morning once Shabbat has passed.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned for Shabbat morning, still to read'**
+  String get plannedForShabbatOverdue;
+
+  /// No description provided for @plannedForToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned for today'**
+  String get plannedForToday;
 
   /// No description provided for @plannedForShabbat.
   ///
@@ -903,11 +1185,11 @@ abstract class AppLocalizations {
   /// **'Marked as not read'**
   String get markedUnread;
 
-  /// No description provided for @aliyahNote.
+  /// Under an aliyah whose verses some sources divide differently: the verses they give it instead, without the book ('4:19–26'; in Hebrew 'ד, יט–כו').
   ///
   /// In en, this message translates to:
-  /// **'Note: {note}'**
-  String aliyahNote(String note);
+  /// **'Some sources use {range}'**
+  String aliyahOtherDivision(String range);
 
   /// No description provided for @browseAll.
   ///
@@ -920,6 +1202,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The Torah'**
   String get browseTitle;
+
+  /// Beside a book's name on the page of every parsha (The Torah): how many parshiyot the book has.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 parsha} other{{count} parshiyot}}'**
+  String browseBookParshiyot(int count);
+
+  /// Eyebrow over the name of this week's parsha in the list of every parsha (The Torah).
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get browseThisWeek;
+
+  /// Under a parsha in the list of every parsha, when this year it is read together with the parsha before or after it on one Shabbat. The name is that other parsha's, in the UI's language: 'Read with Pekudei'.
+  ///
+  /// In en, this message translates to:
+  /// **'Read with {name}'**
+  String browseReadWith(String name);
 
   /// The date is the day the week opens, with its weekday first (Names.dateLong): 'Sunday, July 18', in Hebrew 'יום ראשון, 18 ביולי', which takes ב directly.
   ///
@@ -1407,6 +1707,36 @@ abstract class AppLocalizations {
   /// **'Starting'**
   String get pauseStarting;
 
+  /// The title of the dialog that Settings' pause row opens while a pause lasts.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused until {date}'**
+  String pauseManageTitle(String date);
+
+  /// No description provided for @pauseManageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can lengthen the pause, or resume now.'**
+  String get pauseManageBody;
+
+  /// Over the choices of how many days to lengthen a pause by (1 day, 3 days…).
+  ///
+  /// In en, this message translates to:
+  /// **'Lengthen by'**
+  String get pauseExtendBy;
+
+  /// The button that lengthens the pause under way.
+  ///
+  /// In en, this message translates to:
+  /// **'Lengthen'**
+  String get pauseExtend;
+
+  /// In place of pauseManageBody when the pause under way already runs its 30 days.
+  ///
+  /// In en, this message translates to:
+  /// **'A pause lasts 30 days at most. You can resume now.'**
+  String get pauseAtMost;
+
   /// No description provided for @pauseStarted.
   ///
   /// In en, this message translates to:
@@ -1581,6 +1911,36 @@ abstract class AppLocalizations {
   /// **'Back up, restore or reset your progress'**
   String get settingsDataDesc;
 
+  /// Heading of the settings group with Reading & customs, Reminders and the streaks.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice'**
+  String get settingsGroupPractice;
+
+  /// Heading of the settings group with Display and Accessibility: how the text reads on the screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading'**
+  String get settingsGroupReading;
+
+  /// Heading of the settings group with the account, the reader's data and the language.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get settingsGroupYou;
+
+  /// No description provided for @settingsAboutDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Version, sources, privacy'**
+  String get settingsAboutDesc;
+
+  /// Under pauseAction in Settings, which opens the pause dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Illness, travel, mourning, a new baby: nothing resets while paused'**
+  String get settingsPauseDesc;
+
   /// No description provided for @locationIsrael.
   ///
   /// In en, this message translates to:
@@ -1749,11 +2109,17 @@ abstract class AppLocalizations {
   /// **'Rashi in English'**
   String get secondRashiEnglish;
 
-  /// No description provided for @secondHelp.
+  /// The source of the choice of second reading, set as a margin note under its heading.
   ///
   /// In en, this message translates to:
-  /// **'The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both. A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.'**
-  String get secondHelp;
+  /// **'The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both.'**
+  String get secondSource;
+
+  /// Advice on the choice of second reading, in plain help after secondSource.
+  ///
+  /// In en, this message translates to:
+  /// **'A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.'**
+  String get secondAdvice;
 
   /// No description provided for @repeatLastVerse.
   ///
@@ -1778,12 +2144,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent'**
   String get thirdReadingDesc;
-
-  /// No description provided for @haftarahEnabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Haftarah'**
-  String get haftarahEnabled;
 
   /// No description provided for @haftarahEnabledDesc.
   ///
@@ -1887,6 +2247,24 @@ abstract class AppLocalizations {
   /// **'Ashkenazi (Bereishis)'**
   String get nameAshkenazi;
 
+  /// Heading in Reading & customs over the reading heard, the days of Yom Tov, Shabbat times, the plan and the after-Shabbat window.
+  ///
+  /// In en, this message translates to:
+  /// **'Where & when'**
+  String get readingGroupWhere;
+
+  /// Heading in Reading & customs over the reading method, the second reading and the prompts to read again.
+  ///
+  /// In en, this message translates to:
+  /// **'How I read'**
+  String get readingGroupHow;
+
+  /// Heading in Reading & customs over the switches for Tisha B'Av and Chol HaMoed.
+  ///
+  /// In en, this message translates to:
+  /// **'Special days'**
+  String get readingGroupSpecialDays;
+
   /// No description provided for @themeLabel.
   ///
   /// In en, this message translates to:
@@ -1898,6 +2276,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Match device'**
   String get themeSystem;
+
+  /// Under the Match device switch over the theme swatches, in Display settings and the reader's display sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Light or dark, like the device'**
+  String get themeSystemDesc;
+
+  /// A screen reader's hint on a theme swatch while the app matches the device: the theme it uses when the device is in light mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Used while the device is light'**
+  String get themeUsedWhenLight;
+
+  /// As themeUsedWhenLight, for dark mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Used while the device is dark'**
+  String get themeUsedWhenDark;
 
   /// No description provided for @themeLight.
   ///
@@ -1989,6 +2385,30 @@ abstract class AppLocalizations {
   /// **'Letter spacing'**
   String get letterSpacing;
 
+  /// Heading in Display settings over the sliders for reading size and line, word and letter spacing.
+  ///
+  /// In en, this message translates to:
+  /// **'Size and spacing'**
+  String get displayGroupSize;
+
+  /// Heading in Display settings over the switches for vowels, cantillation, the ketiv, verse numbers and justified text.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get displayGroupText;
+
+  /// Heading in Display settings over the switches for the English translation, Rashi and the Rashi script.
+  ///
+  /// In en, this message translates to:
+  /// **'Study aids'**
+  String get displayGroupStudy;
+
+  /// Heading in Display settings over the switches for focus mode, bold text and keeping the screen on.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading'**
+  String get displayGroupReading;
+
   /// Tooltip and spoken name of the minus button beside a settings slider. name is the slider's name, such as 'Reading size'.
   ///
   /// In en, this message translates to:
@@ -2066,6 +2486,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show Rashi alongside'**
   String get showRashi;
+
+  /// Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters.
+  ///
+  /// In en, this message translates to:
+  /// **'Rashi script'**
+  String get rashiScript;
+
+  /// No description provided for @rashiScriptDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Rashi\'s commentary in the script of a printed chumash'**
+  String get rashiScriptDesc;
 
   /// No description provided for @uiFontLabel.
   ///
@@ -2247,11 +2679,53 @@ abstract class AppLocalizations {
   /// **'Reset display'**
   String get presetReset;
 
+  /// One short line under Large print in Accessibility's quick setups.
+  ///
+  /// In en, this message translates to:
+  /// **'Bigger, roomier text'**
+  String get presetLargePrintDesc;
+
+  /// No description provided for @presetDyslexiaDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear font, no cantillation'**
+  String get presetDyslexiaDesc;
+
+  /// No description provided for @presetHighContrastDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong contrast, bold'**
+  String get presetHighContrastDesc;
+
+  /// No description provided for @presetLowVisionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Largest text, high contrast'**
+  String get presetLowVisionDesc;
+
   /// No description provided for @presetApplied.
   ///
   /// In en, this message translates to:
   /// **'{name} applied'**
   String presetApplied(String name);
+
+  /// Status message after Reset display in Accessibility, with an Undo action.
+  ///
+  /// In en, this message translates to:
+  /// **'Display settings reset'**
+  String get displayResetDone;
+
+  /// Heading in Accessibility over the switches for reduced motion, haptic feedback and single-key shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion and touch'**
+  String get a11yGroupMotion;
+
+  /// Heading in Accessibility over the accessibility statement and Send feedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement and feedback'**
+  String get a11yGroupMore;
 
   /// No description provided for @accessibilityStatement.
   ///
@@ -2334,13 +2808,13 @@ abstract class AppLocalizations {
   /// No description provided for @remindersShabbatNote.
   ///
   /// In en, this message translates to:
-  /// **'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day.'**
+  /// **'Never on Shabbat or Yom Tov, and at most once a day.'**
   String get remindersShabbatNote;
 
   /// In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.
   ///
   /// In en, this message translates to:
-  /// **'Reminders are never sent on Shabbat or Yom Tov, and never more than one a day. They follow the Shabbat times in {city}.'**
+  /// **'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.'**
   String remindersShabbatNoteCity(String city);
 
   /// Offered under the reminders while any of them is on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow.
@@ -2436,8 +2910,14 @@ abstract class AppLocalizations {
   /// No description provided for @notificationsUnsupported.
   ///
   /// In en, this message translates to:
-  /// **'Reminders aren\'t available in the web version. Install the app on your phone or computer to get them.'**
+  /// **'Reminders need the installed app, on your phone or computer. Below are the reminders it can send.'**
   String get notificationsUnsupported;
+
+  /// Under notificationsUnsupported on the web, where the app can be installed from (INSTALL_URL).
+  ///
+  /// In en, this message translates to:
+  /// **'Get the app'**
+  String get getTheApp;
 
   /// No description provided for @notificationsDenied.
   ///
@@ -2673,6 +3153,24 @@ abstract class AppLocalizations {
   /// **'עברית'**
   String get languageHebrew;
 
+  /// The Language row's value in Settings when the app follows the device's language.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get languageDevice;
+
+  /// No description provided for @dataGroupBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & restore'**
+  String get dataGroupBackup;
+
+  /// Under resetProgress in Your data.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone.'**
+  String get resetProgressDesc;
+
   /// No description provided for @aboutTitle.
   ///
   /// In en, this message translates to:
@@ -2721,6 +3219,54 @@ abstract class AppLocalizations {
   /// **'Contact us'**
   String get contactTitle;
 
+  /// Heading over About's link to the texts and their sources.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn'**
+  String get aboutGroupLearn;
+
+  /// Heading over About's links to the privacy policy, terms, community guidelines, accessibility statement and open-source licenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Policies'**
+  String get aboutGroupPolicies;
+
+  /// Heading over About's links to email us and to send feedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get aboutGroupContact;
+
+  /// A status message when tapping a link opened nothing, as on a device with no browser to hand it to.
+  ///
+  /// In en, this message translates to:
+  /// **'The link couldn\'t be opened here.'**
+  String get linkOpenFailed;
+
+  /// A status message when tapping the support address opened no mail app, with an action to copy the address.
+  ///
+  /// In en, this message translates to:
+  /// **'No mail app opened. You can write to {address}.'**
+  String emailOpenFailed(String address);
+
+  /// No description provided for @actionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get actionCopy;
+
+  /// The link text, inside a policy's sentence ('Questions or requests: GitHub issues'), for the public issue tracker on GitHub, where there is no support email address.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub issues'**
+  String get feedbackLinkLabel;
+
+  /// Under a policy's title. date is a month and year, such as 'October 2026'.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: {date}'**
+  String legalLastUpdated(String date);
+
   /// No description provided for @guideTitle.
   ///
   /// In en, this message translates to:
@@ -2736,7 +3282,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbWelcomeBody.
   ///
   /// In en, this message translates to:
-  /// **'Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.'**
+  /// **'Read the parsha twice and the Targum once — one aliyah a day, done before Shabbat.'**
   String get onbWelcomeBody;
 
   /// No description provided for @onbStart.
@@ -2793,10 +3339,22 @@ abstract class AppLocalizations {
   /// **'What is Shnayim Mikra?'**
   String get guideWhatTitle;
 
+  /// Under the Talmud's words that open the guide, in Hebrew: where they are written.
+  ///
+  /// In en, this message translates to:
+  /// **'Berakhot 8a'**
+  String get guideQuoteSource;
+
+  /// The Talmud's words that open the guide, in English. Shown in the English interface only, under the Hebrew.
+  ///
+  /// In en, this message translates to:
+  /// **'A person should always complete their portions with the community: the text twice and the Targum once.'**
+  String get guideQuoteTranslation;
+
   /// No description provided for @guideWhatBody.
   ///
   /// In en, this message translates to:
-  /// **'The Talmud (Berakhot 8a) teaches that a person should complete the weekly Torah portion together with the community: the Torah text twice and the Targum once. The Shulchan Aruch codifies this in Orach Chaim 285. It completes, privately, the portion the community reads publicly on Shabbat.'**
+  /// **'The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.'**
   String get guideWhatBody;
 
   /// No description provided for @guideWhenTitle.
@@ -2808,7 +3366,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhenBody.
   ///
   /// In en, this message translates to:
-  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (\"until Wednesday\"), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
+  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
   String get guideWhenBody;
 
   /// No description provided for @guideHowTitle.
@@ -2822,6 +3380,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.'**
   String get guideHowBody;
+
+  /// Beside three marks for the three readings, at the top of the guide's How section: the text twice, then the Targum. No-break spaces keep each reading's number with its name.
+  ///
+  /// In en, this message translates to:
+  /// **'1 · Mikra  2 · Mikra  3 · Targum'**
+  String get guidePassesCaption;
 
   /// No description provided for @guideTargumTitle.
   ///
@@ -2844,7 +3408,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideSpecialBody.
   ///
   /// In en, this message translates to:
-  /// **'In \"Atarot v\'Divon\" (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
+  /// **'In “Atarot v\'Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berakhot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week\'s haftarah once. Reading quietly along with the ba\'al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.
@@ -2865,10 +3429,10 @@ abstract class AppLocalizations {
   /// **'Sources'**
   String get guideSourcesTitle;
 
-  /// No description provided for @guideSourcesBody.
+  /// The guide's sources, one to a line.
   ///
   /// In en, this message translates to:
-  /// **'Berakhot 8a–b · Shulchan Aruch, Orach Chaim 285 · Mishnah Berurah 285 · Kitzur Shulchan Aruch 72 · Shulchan Aruch HaRav 285'**
+  /// **'Berakhot 8a–b\nShulchan Aruch, Orach Chaim 285\nMishnah Berurah 285\nKitzur Shulchan Aruch 72\nShulchan Aruch HaRav 285'**
   String get guideSourcesBody;
 
   /// No description provided for @hebrewDateLabel.
@@ -2876,12 +3440,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hebrew date: {date}'**
   String hebrewDateLabel(String date);
-
-  /// No description provided for @bookOfTorah.
-  ///
-  /// In en, this message translates to:
-  /// **'{book}'**
-  String bookOfTorah(String book);
 
   /// No description provided for @communityTitle.
   ///
@@ -2936,6 +3494,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in to post, say thanks or report.'**
   String get signInPrompt;
+
+  /// Settings, under the Account row's title: the member signed in on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String signedInAs(String name);
 
   /// No description provided for @signInTitle.
   ///
@@ -3846,13 +4410,13 @@ abstract class AppLocalizations {
   /// Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves.
   ///
   /// In en, this message translates to:
-  /// **'\"End with Mikra\" is now off, following the Chabad custom.'**
+  /// **'“End with Mikra” is now off, following the Chabad custom.'**
   String get repeatLastVerseFollowsChabad;
 
   /// Said when choosing another haftarah custom than Chabad turns repeatLastVerse back on.
   ///
   /// In en, this message translates to:
-  /// **'\"End with Mikra\" is on again.'**
+  /// **'“End with Mikra” is on again.'**
   String get repeatLastVerseBackOn;
 
   /// What screen readers say for divineAdonai, which is written with a hyphen out of respect, and would be spelled out letter by letter as written.
@@ -4328,12 +4892,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Siyum from Parshat {name}'**
   String milestoneSiyumFrom(String name);
-
-  /// Display switch: set Rashi's commentary in the traditional Rashi script rather than square letters.
-  ///
-  /// In en, this message translates to:
-  /// **'Rashi script'**
-  String get rashiScript;
 
   /// A small tag in the app bar of community pages when no community server is connected. Tapping it explains the demo.
   ///

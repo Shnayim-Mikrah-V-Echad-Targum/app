@@ -130,6 +130,9 @@ flutter:
     - assets/text/rashi/
     - assets/text/rashi_en/
     - assets/fonts/licenses/
+    # The policies, shown in the app and published as static web pages
+    # (tool/legal/build_html.mjs).
+    - assets/legal/legal.json
     # Optional fonts: plain assets that OptionalFonts registers on first use,
     # so the web build does not download them at start-up. optional/ holds
     # the scripture and interface fonts a reader may choose.

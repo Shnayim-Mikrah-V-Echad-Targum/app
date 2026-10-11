@@ -30,6 +30,8 @@ import 'package:shnayim_mikra/features/settings/screens/display_settings_screen.
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../helpers.dart';
 
@@ -52,6 +54,10 @@ class _Server extends DemoForumRepository {
 }
 
 final _home = find.widgetWithIcon(IconButton, Icons.home_outlined);
+
+/// A page's own heading, in its body: a policy sets its title there, which
+/// the app bar repeats, for the eye alone, once it has scrolled away.
+Finder _pageHeading(String text) => find.widgetWithText(PageBody, text);
 
 /// The app on a phone, for its navigation bar, on [_now].
 Future<GoRouter> _pump(
@@ -319,7 +325,7 @@ void main() {
       router.go('/settings/about/legal/privacy');
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
-      expect(find.text('Privacy'), findsOneWidget);
+      expect(_pageHeading('Privacy'), findsOneWidget);
 
       router.go('/settings/about/sources');
       await tester.pumpAndSettle();
@@ -337,7 +343,7 @@ void main() {
       router.push('/settings/about/legal/guidelines');
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
-      expect(find.text('Community guidelines'), findsOneWidget);
+      expect(_pageHeading('Community guidelines'), findsOneWidget);
       await goBack(tester);
       expect(selectedTab(tester), 3);
 
@@ -353,14 +359,14 @@ void main() {
 
     testWidgets('opened from Today stays in the Today tab, and so does its haftarah', (tester) async {
       final router = await _pump(tester);
-      await tester.tap(find.widgetWithText(OutlinedButton, '0 of 7 aliyot'));
+      await tester.tap(find.widgetWithText(TextButton, 'All aliyot'));
       await tester.pumpAndSettle();
       expect(find.byType(WeekOverviewScreen), findsOneWidget);
       expect(location(router), '/today/week/5787:1');
       expect(selectedTab(tester), 0);
       expect(find.byType(BackButton), findsOneWidget);
 
-      final haftarah = find.widgetWithText(ListTile, 'Haftarah');
+      final haftarah = find.widgetWithText(PaperRow, 'Haftarah');
       await tester.ensureVisible(haftarah);
       await tester.pumpAndSettle();
       await tester.tap(haftarah);
@@ -378,7 +384,7 @@ void main() {
       final router = await _pump(tester);
       router.go('/parsha/browse');
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ListTile, 'Noach'));
+      await tester.tap(find.text('Noach'));
       await tester.pumpAndSettle();
       expect(find.text('Parshat Noach'), findsOneWidget);
       expect(selectedTab(tester), 1);
@@ -452,7 +458,7 @@ void main() {
     });
 
     Future<void> tapHaftarah(WidgetTester tester) async {
-      final haftarah = find.widgetWithText(ListTile, 'Haftarah');
+      final haftarah = find.widgetWithText(PaperRow, 'Haftarah');
       await tester.ensureVisible(haftarah);
       await tester.pumpAndSettle();
       await tester.tap(haftarah);
@@ -489,7 +495,7 @@ void main() {
       expect(find.byType(BottomSheet), findsOneWidget);
       expect(find.byType(NavigationBar).hitTestable(), findsNothing, reason: "under the sheet's scrim");
 
-      final display = find.widgetWithText(ListTile, 'Display');
+      final display = find.widgetWithText(PaperRow, 'Display');
       await tester.scrollUntilVisible(display, 200,
           scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
       await tester.tap(display);
@@ -524,9 +530,9 @@ void main() {
 
     testWidgets('goes back to the week it was opened from, rather than opening it again', (tester) async {
       await _pump(tester);
-      await tester.tap(find.widgetWithText(OutlinedButton, '0 of 7 aliyot'));
+      await tester.tap(find.widgetWithText(TextButton, 'All aliyot'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Rishon · aliyah 1'));
+      await tester.tap(find.text('Rishon'));
       await _loadTexts(tester);
       expect(find.byType(ReaderScreen), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
@@ -540,7 +546,7 @@ void main() {
 
     testWidgets('opened from Today shows the week in its place, within Today', (tester) async {
       await _pump(tester);
-      await tester.tap(find.widgetWithText(FilledButton, 'Start reading'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Start · Rishon'));
       await _loadTexts(tester);
       expect(find.byType(ReaderScreen), findsOneWidget);
 
@@ -557,7 +563,7 @@ void main() {
       await _loadTexts(tester);
       await tester.tap(find.byTooltip('Display settings'));
       await tester.pumpAndSettle();
-      final display = find.widgetWithText(ListTile, 'Display');
+      final display = find.widgetWithText(PaperRow, 'Display');
       await tester.scrollUntilVisible(display, 200,
           scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
       await tester.tap(display);
@@ -577,7 +583,7 @@ void main() {
         }
       }
       await _pump(tester, progress: ProgressState(weeks: {'5787:1': week}));
-      await tester.tap(find.widgetWithText(FilledButton, 'Continue reading'));
+      await tester.tap(find.widgetWithText(FilledButton, "Continue · Shevi'i"));
       await _loadTexts(tester);
       await tester.tap(find.byTooltip('More options'));
       await tester.pumpAndSettle();
@@ -689,6 +695,8 @@ void main() {
       final router = await _pump(tester);
       router.go('/settings');
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Account & community'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Account & community'));
       await tester.pumpAndSettle();
       expect(find.byType(AccountScreen), findsOneWidget);
@@ -782,7 +790,7 @@ void main() {
     await tester.tap(guidelines);
     await tester.pumpAndSettle();
     expect(find.byType(LegalScreen), findsOneWidget);
-    expect(find.text('Community guidelines'), findsOneWidget);
+    expect(_pageHeading('Community guidelines'), findsOneWidget);
 
     await goBack(tester);
     expect(find.text('A question on Rashi'), findsOneWidget);

@@ -48,7 +48,8 @@ void main() {
     testWidgets('a visitor sees both portions, and can open the other', (tester) async {
       await openToday(tester, _visitor);
       expect(find.text(_notice), findsOneWidget);
-      expect(find.text('Parshat Shelach'), findsOneWidget, reason: 'the week follows the reading heard');
+      // The title page's name, under its Hebrew.
+      expect(find.text('Shelach'), findsOneWidget, reason: 'the week follows the reading heard');
 
       await tester.tap(find.widgetWithText(TextButton, "Open Beha'alotcha"));
       await tester.pumpAndSettle();
@@ -59,7 +60,7 @@ void main() {
     testWidgets('an Israeli abroad is told that Israel is a parsha ahead, with nothing to open', (tester) async {
       await openToday(tester, _abroad);
       expect(find.text(_aheadNotice), findsOneWidget);
-      expect(find.text("Parshat Beha'alotcha"), findsOneWidget);
+      expect(find.text("Beha'alotcha"), findsOneWidget);
       // Shelach is next week's reading for them, not open yet.
       expect(find.textContaining('Open '), findsNothing);
     });

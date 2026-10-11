@@ -132,6 +132,29 @@ void main() {
       expect(ctx.plan.days.first.date, _mon);
       expect(ctx.dueAliyot(), [2, 3, 4]);
       expect(ctx.behindBy(), 1);
+      expect(ctx.nextAliyah, 2, reason: 'the reading continues at the first aliyah due, not at Rishon');
+    });
+
+    test('the reading continues before joining only at an aliyah begun, or once the rest is read', () async {
+      final settings = AppSettings(joinDate: wed, starterCatchUp: false);
+      Future<int?> nextWith(WeekProgress w) async {
+        final c = await containerFor(today: thu, settings: settings, progress: ProgressState(weeks: {_bereshit: w}));
+        return c.read(currentWeekContextProvider).nextAliyah;
+      }
+
+      final empty = WeekProgress(weekId: _bereshit);
+      expect(await nextWith(empty.withUnit(1, ReadingPass.mikra1, wed)), 1, reason: 'Sheni was begun');
+      var rest = empty;
+      for (var a = 2; a < kAliyot; a++) {
+        rest = rest.withAliyah(a, thu);
+      }
+      expect(await nextWith(rest), 0, reason: 'only Rishon and Sheni are left');
+      expect(await nextWith(rest.withAliyah(0, thu).withAliyah(1, thu)), isNull);
+    });
+
+    test('with the starter plan, the reading starts at Rishon', () async {
+      final c = await containerFor(today: thu, settings: AppSettings(joinDate: wed));
+      expect(c.read(currentWeekContextProvider).nextAliyah, 0);
     });
   });
 

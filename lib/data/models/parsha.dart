@@ -128,6 +128,19 @@ class PortionInfo {
   /// Notes on alternative aliyah boundaries, keyed by aliyah index.
   final Map<int, String> aliyahNotes;
 
+  /// The verses some sources give aliyah [index] instead, from its note
+  /// ("some sources use 4:19-26"); null for an aliyah without one, or with a
+  /// note that names no verses.
+  VerseRange? alternativeAliyah(int index) {
+    final m = _alternative.firstMatch(aliyahNotes[index] ?? '');
+    if (m == null) return null;
+    final start = VerseRef(int.parse(m[1]!), int.parse(m[2]!));
+    final end = VerseRef(m[3] == null ? start.chapter : int.parse(m[3]!), int.parse(m[4]!));
+    return VerseRange(book, start, end);
+  }
+
+  static final _alternative = RegExp(r'(\d+):(\d+)\s*[-–]\s*(?:(\d+):)?(\d+)');
+
   VerseRange get range => VerseRange(book, aliyot.first.start, aliyot.last.end);
 
   /// Index of the book in the Torah, 0 (Genesis) – 4 (Deuteronomy).
