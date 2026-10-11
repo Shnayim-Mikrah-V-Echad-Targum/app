@@ -262,8 +262,15 @@ const _screens = {
   // For Chabad: the last verse isn't repeated, as the switch says.
   's_reading_chabad': '/settings/reading',
   's_display': '/settings/display',
+  // Scrolled to the sliders: the preview held at the top, shrunk.
+  's_display_scrolled': '/settings/display',
+  // The preview at a small size, whole, in focus mode with a theme chosen.
+  's_display_small': '/settings/display',
   's_fonts': '/settings/display',
   's_a11y': '/settings/accessibility',
+  // Large print in force, then Low vision just applied, with its Undo.
+  's_a11y_active': '/settings/accessibility',
+  's_a11y_undo': '/settings/accessibility',
   's_a11y_web': '/settings/accessibility',
   's_reminders': '/settings/reminders',
   // As on a phone, where reminders can be scheduled, with all three on.
@@ -337,6 +344,8 @@ const _screens = {
   'sheet_date': '/week/5787:1',
   'dialog_date': '/week/5787:1',
   'sheet_display': '/read/5787:1/2',
+  // Drawn up to its full height.
+  'sheet_display_full': '/read/5787:1/2',
   'scrolled': '/progress',
   // Shared widgets on pages of their own (galleries.dart), opened over Today.
   'kit_ornaments': '/today',
@@ -355,6 +364,8 @@ const _screens = {
 /// the screen has loaded.
 final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
+  's_display_small': (s) => s.copyWith(readingScale: 0.6, focusMode: true, theme: AppThemeMode.sepia),
+  's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   's_reminders_on': (s) =>
       s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true, habitAnchor: HabitAnchor.shacharit),
@@ -831,6 +842,12 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
   's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),
+  's_display_scrolled': (tester) async => tester
+      .state<ScrollableState>(find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)))
+      .position
+      .jumpTo(700),
+  // Low vision, the second row's second card.
+  's_a11y_undo': (tester) => tester.tap(find.text(tester.element(find.byType(Scaffold).last).l10n.presetLowVision)),
   'focus_button': (tester) => _keyboardFocus(tester, find.byType(FilledButton).first),
   'focus_day': (tester) =>
       _keyboardFocus(tester, find.descendant(of: find.byType(WeekStrip), matching: find.byType(SeferInkWell)).at(1)),
@@ -843,7 +860,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
             .at(1),
       ),
   'focus_slider': (tester) => _keyboardFocus(tester, find.byType(Slider).first),
-  'focus_switch': (tester) => _keyboardFocus(tester, find.byType(SwitchListTile).first),
+  'focus_switch': (tester) => _keyboardFocus(tester, find.byType(SwitchRow).first),
   'focus_field': (tester) => _keyboardFocus(tester, find.byType(TextField).first),
   'compose_focused': (tester) => _keyboardFocus(tester, find.byWidgetPredicate((w) => w is TextField && w.maxLength == 150)),
   'focus_chip': (tester) => _keyboardFocus(tester, find.byType(ChoiceChip).at(1)),
@@ -885,6 +902,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(find.byIcon(Icons.edit_calendar));
   },
   'sheet_display': (tester) => tester.tap(find.byIcon(Icons.text_format)),
+  'sheet_display_full': (tester) async {
+    await tester.tap(find.byIcon(Icons.text_format));
+    await _settle(tester);
+    await tester.drag(find.byType(SheetTitle), const Offset(0, -600));
+  },
   'scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -400)),
   'parsha_scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -300)),
   'kit_ornaments': (tester) => _showGallery(tester, const OrnamentsGallery()),
@@ -1087,6 +1109,8 @@ const _desktopScreens = {
   'settings',
   // The app bar's title on the column's edge (§5), over pages of each kind.
   's_display',
+  's_display_scrolled',
+  's_a11y',
   'community',
   'forum',
   'account',
@@ -1124,11 +1148,15 @@ const _tallScreens = {
   's_reminders_on',
   's_data',
   's_display',
+  's_a11y',
   'sources',
 };
 const _bigTextModes = {'big', 'bighe'};
-const _narrowScreens = {'settings', 's_reading', 'parsha', 'browse', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
+const _narrowScreens = {'settings', 's_reading', 's_display', 's_a11y', 'sheet_display_full', 'parsha', 'browse', 'today', 'today_book', 'today_paused', 'today_shabbat', 'today_checkin', 'today_grace', 'progress', 'progress_map', 'kit_week', 's_data_import'};
 const _bigTextScreens = {
+  's_display',
+  's_a11y',
+  'sheet_display_full',
   'parsha',
   'browse',
   'week_combined',

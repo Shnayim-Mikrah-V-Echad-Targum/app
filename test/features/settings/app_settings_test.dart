@@ -180,6 +180,79 @@ void main() {
     expect(s.joinDate, LocalDate(2026, 10, 9));
   });
 
+  test('the Rashi script is off until turned on, and round-trips', () {
+    expect(const AppSettings().rashiScript, isFalse);
+    expect(AppSettings.fromJson({}).rashiScript, isFalse, reason: 'settings saved before it existed');
+    final on = const AppSettings().copyWith(rashiScript: true);
+    expect(AppSettings.fromJson(on.toJson()).rashiScript, isTrue);
+  });
+
+  test('the fonts to load are the chosen ones, and the Rashi script while it is on', () {
+    expect(const AppSettings().chosenFontFamilies, [null, 'NotoSerifHebrew']);
+    expect(
+      const AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.taameyFrank, rashiScript: true)
+          .chosenFontFamilies,
+      ['Lexend', 'TaameyFrank', kRashiScriptFamily],
+    );
+  });
+
+  test('line spacing is never under 1.6, so that lower marks are never clipped', () {
+    expect(AppSettings.fromJson({'lineHeight': 1.5}).lineHeight, kMinLineHeight);
+    expect(AppSettings.fromJson({'lineHeight': 9}).lineHeight, kMaxLineHeight);
+    expect(kMinLineHeight, 1.6);
+  });
+
+  group('display presets', () {
+    test('each is in force once applied, and only the settings it sets count', () {
+      for (final preset in DisplayPreset.values) {
+        final applied = applyPreset(const AppSettings(showRashi: true, haptics: false), preset, darkPreferred: false);
+        expect(presetActive(applied, preset), isTrue, reason: preset.name);
+        // A setting no preset touches changes nothing.
+        expect(presetActive(applied.copyWith(showRashi: false, speechRate: 0.9), preset), isTrue, reason: preset.name);
+      }
+    });
+
+    test('one of the settings it sets changed, it is no longer in force', () {
+      final large = applyPreset(const AppSettings(), DisplayPreset.largePrint, darkPreferred: false);
+      expect(presetActive(large.copyWith(lineHeight: 2.2), DisplayPreset.largePrint), isFalse);
+      expect(presetActive(large.copyWith(lineWidth: LineWidth.wide), DisplayPreset.largePrint), isFalse);
+      final dyslexia = applyPreset(const AppSettings(), DisplayPreset.dyslexia, darkPreferred: false);
+      expect(presetActive(dyslexia.copyWith(showTeamim: true), DisplayPreset.dyslexia), isFalse);
+      expect(presetActive(const AppSettings(), DisplayPreset.largePrint), isFalse);
+    });
+
+    test("a size reached by a slider's steps counts, though it is a hair off", () {
+      // 1.0 and eight steps of 0.1 is 1.8000000000000003.
+      var scale = 1.0;
+      for (var i = 0; i < 8; i++) {
+        scale += 0.1;
+      }
+      expect(scale, isNot(1.8));
+      final s = const AppSettings().copyWith(readingScale: scale, lineHeight: 2.1);
+      expect(presetActive(s, DisplayPreset.largePrint), isTrue);
+    });
+
+    test('high contrast counts in either of its themes', () {
+      for (final theme in [AppThemeMode.highContrastLight, AppThemeMode.highContrastDark]) {
+        expect(presetActive(AppSettings(theme: theme, boldText: true), DisplayPreset.highContrast), isTrue);
+      }
+      expect(presetActive(const AppSettings(theme: AppThemeMode.dark, boldText: true), DisplayPreset.highContrast),
+          isFalse);
+      expect(
+        applyPreset(const AppSettings(), DisplayPreset.highContrast, darkPreferred: true).theme,
+        AppThemeMode.highContrastDark,
+      );
+    });
+
+    test('the reset is in force with the display as it comes', () {
+      expect(presetActive(const AppSettings(), DisplayPreset.reset), isTrue);
+      expect(presetActive(const AppSettings(justify: true), DisplayPreset.reset), isFalse);
+      // Low vision includes high contrast's settings, so both are in force.
+      final lowVision = applyPreset(const AppSettings(), DisplayPreset.lowVision, darkPreferred: false);
+      expect(presetActive(lowVision, DisplayPreset.highContrast), isTrue);
+    });
+  });
+
   test('unknown or out-of-range values fall back safely', () {
     final s = AppSettings.fromJson({
       'theme': 'neon',

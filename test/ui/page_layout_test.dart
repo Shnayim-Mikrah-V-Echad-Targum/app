@@ -108,7 +108,7 @@ void main() {
           '/settings/display' => _en.settingsDisplay,
           _ => _en.communityTitle,
         };
-        final content = route == '/settings' ? _firstPaper(tester) : _firstCard(tester);
+        final content = route == '/community' ? _firstCard(tester) : _firstPaper(tester);
         expect(content.left, 257 + (1109 - 720) / 2 + 32);
         expect(tester.getTopLeft(_title(title)).dx, content.left);
       });

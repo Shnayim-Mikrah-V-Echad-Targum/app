@@ -106,6 +106,10 @@ abstract final class AppTheme {
   static ColorScheme scheme(AppThemeMode mode, Brightness platformBrightness) =>
       _tokens(resolve(mode, platformBrightness)).scheme;
 
+  /// The book's own colours in [mode], as [scheme] gives its scheme.
+  static SeferColors seferColors(AppThemeMode mode, Brightness platformBrightness) =>
+      _tokens(resolve(mode, platformBrightness)).sefer;
+
   static _Tokens _tokens(AppThemeMode resolved) => switch (resolved) {
         AppThemeMode.system || AppThemeMode.light =>
           (scheme: Palettes.light, sefer: Palettes.seferLight, status: Palettes.statusLight),

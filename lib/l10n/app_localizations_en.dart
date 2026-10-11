@@ -1366,6 +1366,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSystem => 'Match device';
 
   @override
+  String get themeSystemDesc => 'Light or dark, like the device';
+
+  @override
   String get themeLight => 'Light';
 
   @override
@@ -1413,6 +1416,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get letterSpacing => 'Letter spacing';
 
   @override
+  String get displayGroupSize => 'Size and spacing';
+
+  @override
+  String get displayGroupText => 'Text';
+
+  @override
+  String get displayGroupStudy => 'Study aids';
+
+  @override
+  String get displayGroupReading => 'Reading';
+
+  @override
   String decreaseSetting(String name) {
     return 'Decrease $name';
   }
@@ -1454,6 +1469,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showRashi => 'Show Rashi alongside';
+
+  @override
+  String get rashiScript => 'Rashi script';
+
+  @override
+  String get rashiScriptDesc =>
+      'Set Rashi\'s commentary in the script of a printed chumash';
 
   @override
   String get uiFontLabel => 'Interface font';
@@ -1547,9 +1569,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get presetReset => 'Reset display';
 
   @override
+  String get presetLargePrintDesc => 'Bigger, roomier text';
+
+  @override
+  String get presetDyslexiaDesc => 'Clear font, more space';
+
+  @override
+  String get presetHighContrastDesc => 'Strong contrast, bold';
+
+  @override
+  String get presetLowVisionDesc => 'Largest, boldest text';
+
+  @override
   String presetApplied(String name) {
     return '$name applied';
   }
+
+  @override
+  String get displayResetDone => 'Display settings reset';
+
+  @override
+  String get a11yGroupMotion => 'Motion and touch';
+
+  @override
+  String get a11yGroupMore => 'Statement and feedback';
 
   @override
   String get accessibilityStatement => 'Accessibility statement';

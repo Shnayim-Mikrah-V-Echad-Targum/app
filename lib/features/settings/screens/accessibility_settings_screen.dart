@@ -7,64 +7,18 @@ import '../../../app/providers.dart';
 import '../../../core/text/hebrew_text.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/paper_group.dart';
 import '../../about/about_screen.dart';
 import '../../community/data/backend.dart';
 import '../../reader/reader_screen.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
 
-/// Ready-made combinations of display settings.
-enum DisplayPreset { largePrint, dyslexia, highContrast, lowVision, reset }
-
-AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPreferred}) {
-  const d = AppSettings();
-  switch (p) {
-    case DisplayPreset.largePrint:
-      return s.copyWith(readingScale: 1.8, lineHeight: 2.1, lineWidth: LineWidth.medium);
-    case DisplayPreset.dyslexia:
-      return s.copyWith(
-        uiFont: UiFont.lexend,
-        wordSpacing: 4,
-        lineHeight: 2.2,
-        showTeamim: false,
-        focusMode: true,
-        justify: false,
-        lineWidth: LineWidth.narrow,
-      );
-    case DisplayPreset.highContrast:
-      return s.copyWith(
-        theme: darkPreferred ? AppThemeMode.highContrastDark : AppThemeMode.highContrastLight,
-        boldText: true,
-      );
-    case DisplayPreset.lowVision:
-      return s.copyWith(
-        readingScale: 2.6,
-        lineHeight: 2.0,
-        theme: darkPreferred ? AppThemeMode.highContrastDark : AppThemeMode.highContrastLight,
-        boldText: true,
-        focusMode: true,
-        lineWidth: LineWidth.wide,
-      );
-    case DisplayPreset.reset:
-      return s.copyWith(
-        theme: d.theme,
-        readingScale: d.readingScale,
-        lineHeight: d.lineHeight,
-        wordSpacing: d.wordSpacing,
-        letterSpacing: d.letterSpacing,
-        showNikud: d.showNikud,
-        showTeamim: d.showTeamim,
-        justify: d.justify,
-        lineWidth: d.lineWidth,
-        scriptureFont: d.scriptureFont,
-        uiFont: d.uiFont,
-        boldText: d.boldText,
-        focusMode: d.focusMode,
-      );
-  }
-}
-
+/// Settings → Accessibility (docs/DESIGN_SYSTEM.md §9): quick setups as cards
+/// that show which are in force, each undoable, then motion and touch, what
+/// screen readers and speech say, and the accessibility statement.
 class AccessibilitySettingsScreen extends ConsumerWidget {
   const AccessibilitySettingsScreen({super.key});
 
@@ -84,72 +38,108 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
     }
   }
 
+  /// Applies [preset], saying so with a way to undo it: back to the settings
+  /// exactly as they were.
+  static void _apply(BuildContext context, WidgetRef ref, DisplayPreset preset, String message) {
+    final l = context.l10n;
+    final notifier = ref.read(settingsProvider.notifier);
+    final before = ref.read(settingsProvider);
+    final dark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    notifier.update((s) => applyPreset(s, preset, darkPreferred: dark));
+    showStatus(context, message, action: SnackBarAction(label: l.actionUndo, onPressed: () => notifier.replace(before)));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
     void update(AppSettings Function(AppSettings) f) => ref.read(settingsProvider.notifier).update(f);
     final presets = [
-      (DisplayPreset.largePrint, l.presetLargePrint, Icons.format_size),
-      (DisplayPreset.dyslexia, l.presetDyslexia, Icons.spellcheck),
-      (DisplayPreset.highContrast, l.presetHighContrast, Icons.contrast),
-      (DisplayPreset.lowVision, l.presetLowVision, Icons.visibility),
-      (DisplayPreset.reset, l.presetReset, Icons.restart_alt),
+      (DisplayPreset.largePrint, l.presetLargePrint, l.presetLargePrintDesc, Icons.format_size),
+      (DisplayPreset.dyslexia, l.presetDyslexia, l.presetDyslexiaDesc, Icons.spellcheck),
+      (DisplayPreset.highContrast, l.presetHighContrast, l.presetHighContrastDesc, Icons.contrast),
+      (DisplayPreset.lowVision, l.presetLowVision, l.presetLowVisionDesc, Icons.visibility_outlined),
+    ];
+    final cards = [
+      for (final (preset, title, description, icon) in presets)
+        _PresetCard(
+          icon: icon,
+          title: title,
+          description: description,
+          active: presetActive(s, preset),
+          onTap: () => _apply(context, ref, preset, l.presetApplied(title)),
+        ),
     ];
 
     return SettingsPage(
       title: l.settingsAccessibility,
+      paper: true,
       children: [
-        SectionHeader(l.presetsTitle, padding: const EdgeInsetsDirectional.only(start: 16, top: 16, bottom: 8)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final (preset, label, icon) in presets)
-                ActionChip(
-                  avatar: Icon(icon),
-                  label: Text(label),
-                  onPressed: () {
-                    final dark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
-                    update((s) => applyPreset(s, preset, darkPreferred: dark));
-                    showStatus(context, l.presetApplied(label));
-                  },
-                ),
-            ],
+        GroupHeader(l.presetsTitle),
+        for (var row = 0; row < cards.length; row += 2) ...[
+          if (row > 0) const Gap(Space.md),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: cards[row]),
+                const SizedBox(width: Space.md),
+                Expanded(child: cards[row + 1]),
+              ],
+            ),
+          ),
+        ],
+        const Gap(Space.xs),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: _FlushStart(
+            child: TextButton.icon(
+              icon: const Icon(Icons.restart_alt),
+              label: Text(l.presetReset),
+              onPressed: () => _apply(context, ref, DisplayPreset.reset, l.displayResetDone),
+            ),
           ),
         ),
-        const Gap(8),
-        SwitchListTile(
-          title: Text(l.reduceMotion),
-          subtitle: Text(l.reduceMotionDesc),
-          value: s.reduceMotion,
-          onChanged: (v) => update((s) => s.copyWith(reduceMotion: v)),
+        const Gap(Space.xs),
+        PaperGroup(
+          children: [
+            PaperRow(
+              icon: Icons.text_fields_outlined,
+              title: l.settingsDisplay,
+              subtitle: l.settingsDisplayDesc,
+              onTap: () => context.push('/settings/display'),
+            ),
+          ],
         ),
-        SwitchListTile(
-          title: Text(l.haptics),
-          value: s.haptics,
-          onChanged: (v) => update((s) => s.copyWith(haptics: v)),
-        ),
-        // Only where the reader takes single keys: elsewhere its shortcuts
-        // all need Ctrl or ⌘ (WCAG 2.1.4).
-        if (ReaderScreen.singleKeyPlatform)
-          SwitchListTile(
-            title: Text(l.singleKeyShortcuts),
-            subtitle: Text(l.singleKeyShortcutsDesc),
-            value: s.singleKeyShortcuts,
-            onChanged: (v) => update((s) => s.copyWith(singleKeyShortcuts: v)),
-          ),
-        ListTile(
-          leading: const Icon(Icons.text_fields),
-          title: Text(l.settingsDisplay),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push('/settings/display'),
+        GroupHeader(l.a11yGroupMotion),
+        PaperGroup(
+          children: [
+            SwitchRow(
+              icon: Icons.motion_photos_off_outlined,
+              title: l.reduceMotion,
+              subtitle: l.reduceMotionDesc,
+              value: s.reduceMotion,
+              onChanged: (v) => update((s) => s.copyWith(reduceMotion: v)),
+            ),
+            SwitchRow(
+              icon: Icons.vibration_outlined,
+              title: l.haptics,
+              value: s.haptics,
+              onChanged: (v) => update((s) => s.copyWith(haptics: v)),
+            ),
+            // Only where the reader takes single keys: elsewhere its shortcuts
+            // all need Ctrl or ⌘ (WCAG 2.1.4).
+            if (ReaderScreen.singleKeyPlatform)
+              SwitchRow(
+                icon: Icons.keyboard_outlined,
+                title: l.singleKeyShortcuts,
+                subtitle: l.singleKeyShortcutsDesc,
+                value: s.singleKeyShortcuts,
+                onChanged: (v) => update((s) => s.copyWith(singleKeyShortcuts: v)),
+              ),
+          ],
         ),
         ChoiceGroup<ScreenReaderText>(
-          // On a page of list tiles: in to the gutters, as they are.
-          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.screenReaderText,
           value: s.screenReaderText,
           choices: [
@@ -160,7 +150,6 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           onChanged: (v) => update((s) => s.copyWith(screenReaderText: v)),
         ),
         ChoiceGroup<DivineNameSpeech>(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.divineNameLabel,
           value: s.divineName,
           choices: [
@@ -170,29 +159,134 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           ],
           onChanged: (v) => update((s) => s.copyWith(divineName: v)),
         ),
-        LabeledSlider(
-          title: l.speechRate,
-          value: s.speechRate,
-          min: 0.1,
-          max: 1.0,
-          step: 0.05,
-          format: (v) => '${(v * 100).round()}%',
-          onChanged: (v) => update((s) => s.copyWith(speechRate: v)),
+        const Gap(Space.md),
+        PaperGroup(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: Space.sm, bottom: Space.xs),
+              child: LabeledSlider(
+                title: l.speechRate,
+                value: s.speechRate,
+                min: 0.1,
+                max: 1.0,
+                step: 0.05,
+                format: (v) => '${(v * 100).round()}%',
+                onChanged: (v) => update((s) => s.copyWith(speechRate: v)),
+              ),
+            ),
+          ],
         ),
-        const Divider(height: 32),
-        ListTile(
-          leading: const Icon(Icons.accessibility),
-          title: Text(l.accessibilityStatement),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push('/legal/accessibility'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.feedback_outlined),
-          title: Text(l.sendFeedback),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _sendFeedback(context, ref),
+        GroupHeader(l.a11yGroupMore),
+        PaperGroup(
+          children: [
+            PaperRow(
+              icon: Icons.accessibility_new_outlined,
+              title: l.accessibilityStatement,
+              onTap: () => context.push('/legal/accessibility'),
+            ),
+            PaperRow(
+              icon: Icons.feedback_outlined,
+              title: l.sendFeedback,
+              onTap: () => _sendFeedback(context, ref),
+            ),
+          ],
         ),
       ],
+    );
+  }
+}
+
+/// A text button at the start of the line, its icon on the column's edge.
+class _FlushStart extends StatelessWidget {
+  const _FlushStart({required this.child});
+
+  final Widget child;
+
+  /// A text button's padding before its icon.
+  static const _inset = 12.0;
+
+  @override
+  Widget build(BuildContext context) => Transform.translate(
+        offset: Offset(Directionality.of(context) == TextDirection.rtl ? _inset : -_inset, 0),
+        child: child,
+      );
+}
+
+/// A quick setup, as a card 88 high at least (§9 Accessibility): its icon in
+/// primary, its name and one line on what it does. One in force is washed in
+/// primaryContainer and checked, and reads as selected.
+class _PresetCard extends StatelessWidget {
+  const _PresetCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.active,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final bool active;
+  final VoidCallback onTap;
+
+  static const _radius = BorderRadius.all(Radius.circular(12));
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final sefer = SeferColors.of(context);
+    final text = theme.textTheme;
+    final ink = active ? scheme.onPrimaryContainer : scheme.onSurface;
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        selected: active,
+        child: DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: BoxDecoration(
+            borderRadius: _radius,
+            border: Border.all(
+              color: active ? scheme.primary : sefer.hairline,
+              width: active ? sefer.hairlineWidth + 1 : sefer.hairlineWidth,
+            ),
+          ),
+          child: Material(
+            color: active ? scheme.primaryContainer : sefer.paper,
+            borderRadius: _radius,
+            child: SeferInkWell(
+              onTap: onTap,
+              borderRadius: _radius,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 88),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(icon, size: 24, color: scheme.primary),
+                          const Spacer(),
+                          if (active) Icon(Icons.check_circle, size: 20, color: scheme.primary),
+                        ],
+                      ),
+                      // 88 high in all, with the icon's own room below it.
+                      const Gap(2),
+                      Text(title, style: text.titleSmall?.copyWith(color: ink)),
+                      Text(
+                        description,
+                        style: text.bodySmall?.copyWith(color: active ? ink : scheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -583,17 +583,21 @@ double sheetPadding(BuildContext context) => _isNarrow(context) ? 16 : 24;
 ///
 /// [useRootNavigator] puts the sheet and its scrim over the whole screen,
 /// the navigation bar too, when the page that opens it is shown within a
-/// tab.
+/// tab. [barrierColor] tints the page behind it, the theme's scrim unless
+/// given: a sheet whose changes the page shows as they are made takes a
+/// lighter one.
 Future<T?> showAppSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool isScrollControlled = false,
   bool useRootNavigator = false,
+  Color? barrierColor,
 }) =>
     showModalBottomSheet<T>(
       context: context,
       isScrollControlled: isScrollControlled,
       useRootNavigator: useRootNavigator,
+      barrierColor: barrierColor,
       useSafeArea: true,
       sheetAnimationStyle: Motion.of(context).style,
       builder: (context) {

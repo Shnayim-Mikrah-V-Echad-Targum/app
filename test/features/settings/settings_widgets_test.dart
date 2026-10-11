@@ -56,6 +56,30 @@ void main() {
   }
 
   group('ChoiceGroup', () {
+    testWidgets('an option shown as a sample of itself is read by its name alone', (tester) async {
+      final handle = tester.ensureSemantics();
+      const sample = TextStyle(fontFamily: 'NotoSansHebrew', fontSize: 22);
+      await pumpThemed(
+        tester,
+        ChoiceGroup<int>(
+          title: 'Scripture font',
+          value: 1,
+          choices: const [
+            Choice(1, 'בְּרֵאשִׁית בָּרָא', subtitle: 'Noto Sans Hebrew', sampleStyle: sample),
+            Choice(2, 'בְּרֵאשִׁית בָּרָא', subtitle: 'Noto Serif Hebrew', sampleStyle: sample),
+          ],
+          onChanged: (_) {},
+        ),
+      );
+      final first = find.byType(RadioListTile<int>).first;
+      final title = tester.widget<Text>(find.descendant(of: first, matching: find.text('בְּרֵאשִׁית בָּרָא')));
+      expect(title.style, sample);
+      final label = tester.getSemantics(first).label;
+      expect(label, contains('Noto Sans Hebrew'));
+      expect(label, isNot(contains('בְּרֵאשִׁית')));
+      handle.dispose();
+    });
+
     testWidgets('sets its options as radio rows on one sheet of paper, 56 high, chosen by a tap', (tester) async {
       final chosen = await pumpChoice(tester);
       expect(find.byType(PaperGroup), findsOneWidget);

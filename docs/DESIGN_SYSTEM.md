@@ -843,6 +843,8 @@ When a sefer is complete: a one-time full-screen panel. SeferDivider, then "חֲ
   - the label in labelMedium below the card.
 - Selected: 2 px primary border plus a 20 px check badge (primary disc, onPrimary check) at the top-end corner.
 - Wrapped in the existing RadioGroup semantics. Match device is a separate row above the grid (switch).
+- Matching the device, the two themes it switches between are both marked: light and dark, or the two high-contrast themes when the device asks for high contrast. Choosing a swatch stops matching; turning the switch off keeps the theme the device had.
+- `ThemeSwatchPicker` (lib/ui/widgets/theme_swatch_picker.dart) is shared with the reader's display sheet, where its cards are 64 high (`compact`).
 
 ### 6.25 Search results (lib/features/search/)
 
@@ -1174,6 +1176,8 @@ In order:
 
 **Display**
 - The preview becomes a paper "page" showing a chapter head, two verses, a Targum line and a setumah mark. It reflects settings live and is pinned at the top: `SliverPersistentHeader`, collapsing 220 → 140.
+  - The page is Deuteronomy 14:1–2, a section of its own: the chapter head (§4.7), each verse and its Targum, and the setumah that closes it, at the reader's line width. It is a window on the text, which rises with the settings as the window shrinks and fades where the window cuts it (not in high contrast). A hairline marks the settings passing under it, and the app bar stays flat.
+  - It is pinned only where the window is at least 640 high and 16 sp text is no larger than 24 (`SettingsPage.previewPinned`); elsewhere it scrolls away, whole. To screen readers it is one node, "Preview".
 - A Match-device switch, then theme swatches (§6.24).
 - Sliders per §6.8.
 - Toggles in PaperGroups:
@@ -1181,6 +1185,7 @@ In order:
   - Study aids: English, Rashi, Rashi script (NEW);
   - Reading: focus mode, bold, keep screen on.
 - Line width as a SegmentedButton.
+- Scripture fonts as radio rows whose title is "בְּרֵאשִׁית בָּרָא" at 22 in that font, named under it; interface fonts likewise, "Aa Bb אב" in each family, Device font included. Screen readers read the names alone. Every font is loaded as the page opens, so each sample is drawn in its own.
 
 **Reading & customs**
 - Sections with GroupHeaders, their settings 24 apart:
@@ -1196,8 +1201,16 @@ In order:
 
 **Accessibility**
 - Quick setups as a 2×2 grid of cards 88 high, radius 12: icon 24 in primary, titleSmall, one bodySmall line.
-- Reset display as a TextButton.
-- The remaining rows in PaperGroups.
+  - A setup in force (`presetActive`: the settings it sets, sizes within a hair) is washed in primaryContainer with a primary border and a check, and reads as selected. Two may be, as Low vision includes High contrast.
+  - Applying one says so with Undo, which restores the settings exactly as they were.
+- Reset display as a TextButton (`restart_alt`) under the grid, with the same Undo.
+- The remaining rows in PaperGroups: the Display page, Motion and touch, the screen reader's text and the Divine Name, speech rate, and Statement and feedback.
+
+**Reader display sheet** (lib/features/reader/display_sheet.dart)
+- Opens at 42% of the screen over a light scrim (`Colors.black12`), so the verse it changes stays in view; drawn up, 95%.
+- Text size: outlined 56×48 buttons (`text_decrease`, `text_increase`, radius 10) either side of the size in titleMedium, which screen readers hear as it changes.
+- Scripture font: four ChoiceChips sharing the width, each "בְּרֵאשִׁית" at 18 in its font and named for screen readers; four across where the word fits, else two, or one under another.
+- Theme: the compact swatches. Then a PaperGroup of switches (vowels, cantillation, translation, Rashi, Rashi script, focus mode) with line spacing (from 1.6), and a row to the Display page.
 
 **Reminders**
 - Native: a PaperGroup for each reminder: its switch row and, once on, its time as a row's value (and for the daily reminder, the routine chips), 12 apart; the offer of a city below them, 28 apart.

@@ -1370,6 +1370,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get themeSystem => 'לפי המכשיר';
 
   @override
+  String get themeSystemDesc => 'בהירה או כהה, כמו המכשיר';
+
+  @override
   String get themeLight => 'בהירה';
 
   @override
@@ -1417,6 +1420,18 @@ class AppLocalizationsHe extends AppLocalizations {
   String get letterSpacing => 'ריווח אותיות';
 
   @override
+  String get displayGroupSize => 'גודל וריווח';
+
+  @override
+  String get displayGroupText => 'טקסט';
+
+  @override
+  String get displayGroupStudy => 'עזרי לימוד';
+
+  @override
+  String get displayGroupReading => 'קריאה';
+
+  @override
   String decreaseSetting(String name) {
     return 'הקטנת $name';
   }
@@ -1458,6 +1473,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get showRashi => 'הצגת רש״י לצד הטקסט';
+
+  @override
+  String get rashiScript => 'כתב רש״י';
+
+  @override
+  String get rashiScriptDesc => 'פירוש רש״י בכתב שבו הוא מודפס בחומש';
 
   @override
   String get uiFontLabel => 'גופן הממשק';
@@ -1551,9 +1572,30 @@ class AppLocalizationsHe extends AppLocalizations {
   String get presetReset => 'איפוס התצוגה';
 
   @override
+  String get presetLargePrintDesc => 'טקסט גדול ומרווח';
+
+  @override
+  String get presetDyslexiaDesc => 'גופן ברור ויותר ריווח';
+
+  @override
+  String get presetHighContrastDesc => 'ניגודיות חזקה והדגשה';
+
+  @override
+  String get presetLowVisionDesc => 'טקסט גדול מאוד ומודגש';
+
+  @override
   String presetApplied(String name) {
     return 'הוחל: $name';
   }
+
+  @override
+  String get displayResetDone => 'הגדרות התצוגה אופסו';
+
+  @override
+  String get a11yGroupMotion => 'תנועה ומגע';
+
+  @override
+  String get a11yGroupMore => 'הצהרה ומשוב';
 
   @override
   String get accessibilityStatement => 'הצהרת נגישות';

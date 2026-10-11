@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../ui/l10n.dart';
@@ -8,7 +10,7 @@ import '../../../ui/widgets/paper_group.dart';
 
 /// One option in a [ChoiceGroup].
 class Choice<T> {
-  const Choice(this.value, this.title, {this.subtitle, this.semanticsLabel});
+  const Choice(this.value, this.title, {this.subtitle, this.semanticsLabel, this.sampleStyle});
   final T value;
   final String title;
   final String? subtitle;
@@ -16,6 +18,11 @@ class Choice<T> {
   /// What screen readers say for [title], where it would be read badly as
   /// written.
   final String? semanticsLabel;
+
+  /// Sets [title] in a style of its own, as a sample of what the option
+  /// looks like (a font's letters), which [subtitle] names. Screen readers
+  /// read the name alone.
+  final TextStyle? sampleStyle;
 }
 
 /// The heading of a setting, with its help under it (docs/DESIGN_SYSTEM.md
@@ -307,7 +314,10 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
         data: theme.copyWith(focusColor: Colors.transparent),
         child: RadioListTile<T>(
           value: choice.value,
-          title: Text(choice.title, semanticsLabel: choice.semanticsLabel),
+          title: switch (choice.sampleStyle) {
+            null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
+            final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
+          },
           subtitle: choice.subtitle == null ? null : Text(choice.subtitle!),
           // The ink keeps to the paper's corners.
           shape: RoundedRectangleBorder(borderRadius: corners),
@@ -412,18 +422,143 @@ class LabeledSlider extends StatelessWidget {
 /// page is set in paper groups (§6.3), which stand on the gutters; any other
 /// is a page of list tiles, which line up with the title
 /// (PageBody.tilePadding).
+///
+/// A page may show a [preview] of what its settings change above them (§9
+/// Display), [previewMaxHeight] high. Where the window is tall enough and the
+/// text not so large that it would crowd the settings out (at least 640
+/// high, and 16 sp text no larger than 24), the preview stays at the top as
+/// the settings scroll under it, shrinking to [previewMinHeight] first; it
+/// is built with how far it has shrunk, from 0 to 1. Elsewhere it scrolls
+/// away with them, whole.
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key, required this.title, required this.children, this.paper = false});
+  const SettingsPage({super.key, required this.title, required this.children, this.paper = false, this.preview});
 
   final String title;
   final List<Widget> children;
   final bool paper;
+  final Widget Function(BuildContext context, double shrunk)? preview;
+
+  static const previewMaxHeight = 220.0;
+  static const previewMinHeight = 140.0;
+
+  /// Whether a [preview] stays in view in [context], as above.
+  static bool previewPinned(BuildContext context) =>
+      MediaQuery.sizeOf(context).height >= 640 && MediaQuery.textScalerOf(context).scale(16) <= 24;
 
   @override
-  Widget build(BuildContext context) => PageScaffold(
-        titleText: title,
-        body: PageBody(padding: paper ? null : PageBody.tilePadding(context), children: children),
-      );
+  Widget build(BuildContext context) {
+    final preview = this.preview;
+    final padding = paper ? null : PageBody.tilePadding(context);
+    return PageScaffold(
+      titleText: title,
+      body: preview == null
+          ? PageBody(padding: padding, children: children)
+          : _PreviewedBody(preview: preview, padding: padding, children: children),
+    );
+  }
+}
+
+/// A settings page's body under its preview, laid out as a [PageBody]'s: in
+/// the page's column, with its padding.
+class _PreviewedBody extends StatelessWidget {
+  const _PreviewedBody({required this.preview, required this.padding, required this.children});
+
+  final Widget Function(BuildContext context, double shrunk) preview;
+  final EdgeInsets? padding;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = (padding ?? PageBody.defaultPadding(context)) +
+        EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom);
+    final pinned = SettingsPage.previewPinned(context);
+    Widget column(Widget child) => Center(
+          child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: ContentWidth.list), child: child),
+        );
+    final scrollView = CustomScrollView(
+      slivers: [
+        SliverPersistentHeader(
+          pinned: pinned,
+          delegate: _PreviewHeader(
+            preview: preview,
+            // On the gutters, as paper is, with the page's 8 above it.
+            padding: EdgeInsets.fromLTRB(Gutter.of(context), Space.sm, Gutter.of(context), Space.md),
+            maxHeight: SettingsPage.previewMaxHeight,
+            minHeight: pinned ? SettingsPage.previewMinHeight : SettingsPage.previewMaxHeight,
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: column(
+            Padding(
+              padding: p.copyWith(top: 0),
+              // Each heading, text and control a node of its own.
+              child: Semantics(
+                explicitChildNodes: true,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+    // Held at the top, the preview carries on the app bar: the rule that
+    // marks the settings scrolled under it is its own, not the app bar's.
+    if (!pinned) return scrollView;
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (_) => true,
+      child: NotificationListener<ScrollNotification>(onNotification: (_) => true, child: scrollView),
+    );
+  }
+}
+
+class _PreviewHeader extends SliverPersistentHeaderDelegate {
+  const _PreviewHeader({required this.preview, required this.padding, required this.maxHeight, required this.minHeight});
+
+  final Widget Function(BuildContext context, double shrunk) preview;
+  final EdgeInsets padding;
+  final double maxHeight;
+  final double minHeight;
+
+  @override
+  double get maxExtent => maxHeight + padding.vertical;
+
+  @override
+  double get minExtent => minHeight + padding.vertical;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final sefer = SeferColors.of(context);
+    final range = maxExtent - minExtent;
+    final shrunk = range == 0 ? 0.0 : (shrinkOffset / range).clamp(0.0, 1.0);
+    final height = math.max(minExtent, maxExtent - shrinkOffset);
+    return SizedBox(
+      height: height,
+      child: DecoratedBox(
+        // The page's own surface, which hides the settings scrolled under it.
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          // A rule once the settings pass under it.
+          border: range > 0 && shrinkOffset > range
+              ? Border(bottom: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth))
+              : null,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: ContentWidth.list),
+            child: SizedBox(
+              width: double.infinity,
+              height: height,
+              child: Padding(padding: padding, child: preview(context, shrunk)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_PreviewHeader old) =>
+      old.preview != preview || old.padding != padding || old.maxHeight != maxHeight || old.minHeight != minHeight;
 }
 
 /// A setting that is on or off, as a row of paper (§6.3): its title and

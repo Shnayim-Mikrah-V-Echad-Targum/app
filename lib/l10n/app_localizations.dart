@@ -2277,6 +2277,12 @@ abstract class AppLocalizations {
   /// **'Match device'**
   String get themeSystem;
 
+  /// Under the Match device switch over the theme swatches, in Display settings and the reader's display sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Light or dark, like the device'**
+  String get themeSystemDesc;
+
   /// No description provided for @themeLight.
   ///
   /// In en, this message translates to:
@@ -2367,6 +2373,30 @@ abstract class AppLocalizations {
   /// **'Letter spacing'**
   String get letterSpacing;
 
+  /// Heading in Display settings over the sliders for reading size and line, word and letter spacing.
+  ///
+  /// In en, this message translates to:
+  /// **'Size and spacing'**
+  String get displayGroupSize;
+
+  /// Heading in Display settings over the switches for vowels, cantillation, the ketiv, verse numbers and justified text.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get displayGroupText;
+
+  /// Heading in Display settings over the switches for the English translation, Rashi and the Rashi script.
+  ///
+  /// In en, this message translates to:
+  /// **'Study aids'**
+  String get displayGroupStudy;
+
+  /// Heading in Display settings over the switches for focus mode, bold text and keeping the screen on.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading'**
+  String get displayGroupReading;
+
   /// Tooltip and spoken name of the minus button beside a settings slider. name is the slider's name, such as 'Reading size'.
   ///
   /// In en, this message translates to:
@@ -2444,6 +2474,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show Rashi alongside'**
   String get showRashi;
+
+  /// Display switch: set Rashi's commentary in Hebrew in Rashi script rather than the scripture font.
+  ///
+  /// In en, this message translates to:
+  /// **'Rashi script'**
+  String get rashiScript;
+
+  /// No description provided for @rashiScriptDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Rashi\'s commentary in the script of a printed chumash'**
+  String get rashiScriptDesc;
 
   /// No description provided for @uiFontLabel.
   ///
@@ -2625,11 +2667,53 @@ abstract class AppLocalizations {
   /// **'Reset display'**
   String get presetReset;
 
+  /// One short line under Large print in Accessibility's quick setups.
+  ///
+  /// In en, this message translates to:
+  /// **'Bigger, roomier text'**
+  String get presetLargePrintDesc;
+
+  /// No description provided for @presetDyslexiaDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear font, more space'**
+  String get presetDyslexiaDesc;
+
+  /// No description provided for @presetHighContrastDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong contrast, bold'**
+  String get presetHighContrastDesc;
+
+  /// No description provided for @presetLowVisionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Largest, boldest text'**
+  String get presetLowVisionDesc;
+
   /// No description provided for @presetApplied.
   ///
   /// In en, this message translates to:
   /// **'{name} applied'**
   String presetApplied(String name);
+
+  /// Status message after Reset display in Accessibility, with an Undo action.
+  ///
+  /// In en, this message translates to:
+  /// **'Display settings reset'**
+  String get displayResetDone;
+
+  /// Heading in Accessibility over the switches for reduced motion, haptic feedback and single-key shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion and touch'**
+  String get a11yGroupMotion;
+
+  /// Heading in Accessibility over the accessibility statement and Send feedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement and feedback'**
+  String get a11yGroupMore;
 
   /// No description provided for @accessibilityStatement.
   ///

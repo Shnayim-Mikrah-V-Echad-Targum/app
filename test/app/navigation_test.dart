@@ -489,7 +489,7 @@ void main() {
       expect(find.byType(BottomSheet), findsOneWidget);
       expect(find.byType(NavigationBar).hitTestable(), findsNothing, reason: "under the sheet's scrim");
 
-      final display = find.widgetWithText(ListTile, 'Display');
+      final display = find.widgetWithText(PaperRow, 'Display');
       await tester.scrollUntilVisible(display, 200,
           scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
       await tester.tap(display);
@@ -557,7 +557,7 @@ void main() {
       await _loadTexts(tester);
       await tester.tap(find.byTooltip('Display settings'));
       await tester.pumpAndSettle();
-      final display = find.widgetWithText(ListTile, 'Display');
+      final display = find.widgetWithText(PaperRow, 'Display');
       await tester.scrollUntilVisible(display, 200,
           scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
       await tester.tap(display);

@@ -155,6 +155,7 @@ class AppSettings {
     this.thirdReadingPrompts = true,
     this.showTranslation = false,
     this.showRashi = false,
+    this.rashiScript = false,
     this.nameStyle = NameStyle.sephardi,
     this.theme = AppThemeMode.system,
     this.readingScale = 1.0,
@@ -243,6 +244,10 @@ class AppSettings {
 
   /// Show Rashi alongside, as commentary (independent of [secondReading]).
   final bool showRashi;
+
+  /// Set Rashi's commentary in Hebrew in Rashi script, as a printed chumash
+  /// does, rather than in the scripture font.
+  final bool rashiScript;
   final NameStyle nameStyle;
 
   // Display
@@ -350,6 +355,12 @@ class AppSettings {
 
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
+  /// The fonts these settings draw text in that load on demand
+  /// (OptionalFonts): the interface and scripture fonts chosen, and the Rashi
+  /// script if it is on. Null for a font that is always bundled.
+  List<String?> get chosenFontFamilies =>
+      [uiFont.family, scriptureFont.family, if (rashiScript) kRashiScriptFamily];
+
   /// These settings with [nusach] as the reader's custom. Until the reader
   /// sets [repeatLastVerse] themselves, it follows the custom: Chabad's is
   /// not to repeat the last verse.
@@ -437,6 +448,7 @@ class AppSettings {
     bool? thirdReadingPrompts,
     bool? showTranslation,
     bool? showRashi,
+    bool? rashiScript,
     NameStyle? nameStyle,
     AppThemeMode? theme,
     double? readingScale,
@@ -498,6 +510,7 @@ class AppSettings {
         thirdReadingPrompts: thirdReadingPrompts ?? this.thirdReadingPrompts,
         showTranslation: showTranslation ?? this.showTranslation,
         showRashi: showRashi ?? this.showRashi,
+        rashiScript: rashiScript ?? this.rashiScript,
         nameStyle: nameStyle ?? this.nameStyle,
         theme: theme ?? this.theme,
         readingScale: readingScale ?? this.readingScale,
@@ -577,6 +590,7 @@ class AppSettings {
         'thirdReadingPrompts': thirdReadingPrompts,
         'showTranslation': showTranslation,
         'showRashi': showRashi,
+        'rashiScript': rashiScript,
         'nameStyle': nameStyle.name,
         'theme': theme.name,
         'readingScale': readingScale,
@@ -664,10 +678,11 @@ class AppSettings {
       thirdReadingPrompts: b('thirdReadingPrompts', d.thirdReadingPrompts),
       showTranslation: b('showTranslation', d.showTranslation),
       showRashi: b('showRashi', d.showRashi),
+      rashiScript: b('rashiScript', d.rashiScript),
       nameStyle: e(NameStyle.values, j['nameStyle'], d.nameStyle),
       theme: e(AppThemeMode.values, j['theme'], d.theme),
       readingScale: n('readingScale', d.readingScale, kMinReadingScale, kMaxReadingScale),
-      lineHeight: n('lineHeight', d.lineHeight, 1.5, 3.0),
+      lineHeight: n('lineHeight', d.lineHeight, kMinLineHeight, kMaxLineHeight),
       wordSpacing: n('wordSpacing', d.wordSpacing, 0, 16),
       letterSpacing: n('letterSpacing', d.letterSpacing, 0, 4),
       showNikud: b('showNikud', d.showNikud),
@@ -739,3 +754,90 @@ class AppSettings {
 
 const kMinReadingScale = 0.5;
 const kMaxReadingScale = 5.0;
+
+/// Scripture's line height, as a multiple of its size: never under 1.6, so
+/// that lower vowels and cantillation marks are never clipped (§4.7).
+const kMinLineHeight = 1.6;
+const kMaxLineHeight = 3.0;
+
+/// The family of the Rashi script ([AppSettings.rashiScript]).
+const kRashiScriptFamily = 'NotoRashiHebrew';
+
+/// Ready-made combinations of display settings, offered in Settings →
+/// Accessibility.
+enum DisplayPreset { largePrint, dyslexia, highContrast, lowVision, reset }
+
+/// [s] with the display settings [p] sets. High contrast is dark or light as
+/// the device prefers ([darkPreferred]).
+AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPreferred}) {
+  const d = AppSettings();
+  final highContrast = darkPreferred ? AppThemeMode.highContrastDark : AppThemeMode.highContrastLight;
+  switch (p) {
+    case DisplayPreset.largePrint:
+      return s.copyWith(readingScale: 1.8, lineHeight: 2.1, lineWidth: LineWidth.medium);
+    case DisplayPreset.dyslexia:
+      return s.copyWith(
+        uiFont: UiFont.lexend,
+        wordSpacing: 4,
+        lineHeight: 2.2,
+        showTeamim: false,
+        focusMode: true,
+        justify: false,
+        lineWidth: LineWidth.narrow,
+      );
+    case DisplayPreset.highContrast:
+      return s.copyWith(theme: highContrast, boldText: true);
+    case DisplayPreset.lowVision:
+      return s.copyWith(
+        readingScale: 2.6,
+        lineHeight: 2.0,
+        theme: highContrast,
+        boldText: true,
+        focusMode: true,
+        lineWidth: LineWidth.wide,
+      );
+    case DisplayPreset.reset:
+      return s.copyWith(
+        theme: d.theme,
+        readingScale: d.readingScale,
+        lineHeight: d.lineHeight,
+        wordSpacing: d.wordSpacing,
+        letterSpacing: d.letterSpacing,
+        showNikud: d.showNikud,
+        showTeamim: d.showTeamim,
+        justify: d.justify,
+        lineWidth: d.lineWidth,
+        scriptureFont: d.scriptureFont,
+        uiFont: d.uiFont,
+        boldText: d.boldText,
+        focusMode: d.focusMode,
+      );
+  }
+}
+
+/// Whether the display settings of [s] are those [p] sets, in either of its
+/// high contrast themes; the settings it leaves alone may be anything. A
+/// size or spacing within a hair of the preset's counts, as a slider's steps
+/// add up to one.
+bool presetActive(AppSettings s, DisplayPreset p) =>
+    [false, true].any((dark) => _sameDisplay(applyPreset(s, p, darkPreferred: dark), s));
+
+/// Whether [a] and [b] show the text alike: every display setting a preset
+/// may set. Applying a preset changes only its own, so comparing them all
+/// compares just those.
+bool _sameDisplay(AppSettings a, AppSettings b) {
+  bool near(double x, double y) => (x - y).abs() < 1e-6;
+  return a.theme == b.theme &&
+      near(a.readingScale, b.readingScale) &&
+      near(a.lineHeight, b.lineHeight) &&
+      near(a.wordSpacing, b.wordSpacing) &&
+      near(a.letterSpacing, b.letterSpacing) &&
+      a.showNikud == b.showNikud &&
+      a.showTeamim == b.showTeamim &&
+      a.justify == b.justify &&
+      a.lineWidth == b.lineWidth &&
+      a.scriptureFont == b.scriptureFont &&
+      a.uiFont == b.uiFont &&
+      a.boldText == b.boldText &&
+      a.focusMode == b.focusMode;
+}

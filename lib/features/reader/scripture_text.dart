@@ -332,7 +332,16 @@ class RashiComments extends StatelessWidget {
     final theme = Theme.of(context);
     final style = english
         ? styles.style(ScriptureKind.translation)
-        : styles.style(ScriptureKind.rashi).copyWith(height: 1.7);
+        : settings.rashiScript
+            // Rashi script, as a printed chumash sets the commentary: its one
+            // weight, a little larger and roomier than the square letters.
+            ? styles.style(ScriptureKind.rashi).copyWith(
+                fontFamily: kRashiScriptFamily,
+                fontSize: ScriptureStyles.baseHebrewSize * 0.80 * settings.readingScale,
+                height: 1.75,
+                fontWeight: FontWeight.w400,
+              )
+            : styles.style(ScriptureKind.rashi).copyWith(height: 1.7);
     final dir = english ? TextDirection.ltr : TextDirection.rtl;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -354,7 +363,13 @@ class RashiComments extends StatelessWidget {
                     if (c.heading != null)
                       TextSpan(
                         text: '${c.heading} ',
-                        style: style.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
+                        style: style.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.primary,
+                          // Rashi script has one weight: the quoted words
+                          // stand out in square letters instead.
+                          fontFamily: settings.rashiScript && !english ? 'FrankRuhlLibre' : null,
+                        ),
                       ),
                     TextSpan(text: english ? c.text : HebrewText.forDisplay(c.text, nikud: settings.showNikud, teamim: true)),
                   ]),
