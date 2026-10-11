@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Shnayim Mikra</string>
+
+    <!-- The home-screen widget (ParshaWidgetProvider), in the widget picker,
+         and before the app has given it anything to show. Everything else it
+         shows comes from the app, in the app's language. -->
+    <string name="widget_label">This week\'s parsha</string>
+    <string name="widget_description">This week\'s parsha, how far you\'ve read and today\'s reading, a tap away.</string>
+    <string name="widget_empty">Open Shnayim Mikra to begin.</string>
+
+    <!-- The widget as the picker previews it (widget_parsha_preview), for a
+         reader partway through Bereshit. -->
+    <string name="widget_preview_eyebrow">Parshat HaShavua</string>
+    <string name="widget_preview_hebrew" translatable="false">בְּרֵאשִׁית</string>
+    <string name="widget_preview_name" translatable="false">Bereshit</string>
+    <string name="widget_preview_progress">2 of 7 aliyot</string>
+    <string name="widget_preview_today">Today: Shlishi</string>
+    <string name="widget_preview_continue">Continue · Shlishi, Targum</string>
 </resources>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget as the picker shows it on Android 12 and later: the medium
+     layout (widget_parsha_medium), filled in for a reader partway through
+     Bereshit, in the device's language and theme. Older launchers show
+     drawable-nodpi/widget_preview.png instead. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:clipToOutline="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="@dimen/widget_padding">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            style="@style/ParshaWidget.Text.Fitted.Eyebrow.Preview"
+            android:text="@string/widget_preview_eyebrow" />
+
+        <TextView
+            style="@style/ParshaWidget.Text.Fitted.Hebrew"
+            android:layout_marginTop="2dp"
+            android:text="@string/widget_preview_hebrew" />
+
+        <TextView
+            style="@style/ParshaWidget.Text.Fitted.Name"
+            android:text="@string/widget_preview_name" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical">
+
+            <ProgressBar
+                style="@style/ParshaWidget.Bar"
+                android:progress="3"
+                android:progressDrawable="@drawable/widget_bar_mikra1" />
+
+            <ProgressBar
+                style="@style/ParshaWidget.Bar"
+                android:layout_marginTop="@dimen/widget_bar_gap"
+                android:progress="3"
+                android:progressDrawable="@drawable/widget_bar_mikra2" />
+
+            <ProgressBar
+                style="@style/ParshaWidget.Bar"
+                android:layout_marginTop="@dimen/widget_bar_gap"
+                android:progress="2"
+                android:progressDrawable="@drawable/widget_bar_targum" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/ParshaWidget.Text.Line"
+            android:layout_marginTop="4dp"
+            android:text="@string/widget_preview_progress" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="@dimen/widget_gutter"
+        android:layout_marginEnd="@dimen/widget_gutter"
+        android:background="@color/widget_hairline" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            style="@style/ParshaWidget.Text.Today"
+            android:text="@string/widget_preview_today" />
+
+        <TextView
+            style="@style/ParshaWidget.Text.Continue"
+            android:layout_marginTop="4dp"
+            android:text="@string/widget_preview_continue" />
+    </LinearLayout>
+</LinearLayout>

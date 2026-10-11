@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home-screen widget in the dark theme ("Lamplight", docs/DESIGN_SYSTEM.md §3). -->
+<resources>
+    <color name="widget_paper">#1C1915</color>
+    <color name="widget_hairline">#4A443A</color>
+    <color name="widget_ink">#EDE6D6</color>
+    <color name="widget_ink_muted">#C4BAA8</color>
+    <color name="widget_techelet">#AFC6EE</color>
+    <color name="widget_gold">#DDB96B</color>
+    <color name="widget_mikra1">#AFC6EE</color>
+    <color name="widget_mikra2">#7E9BC8</color>
+    <color name="widget_targum">#C9A458</color>
+    <color name="widget_track">#36312A</color>
+</resources>

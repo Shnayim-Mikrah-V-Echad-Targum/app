@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home-screen widget's type and spacing (docs/DESIGN_SYSTEM.md §6.30).
+     A widget is drawn by the launcher, which can't load the app's own fonts,
+     so the names are set in the system's serif and the rest in its sans. -->
+<resources>
+    <dimen name="widget_padding">16dp</dimen>
+    <dimen name="widget_corner">16dp</dimen>
+    <dimen name="widget_gutter">16dp</dimen>
+    <dimen name="widget_bar">4dp</dimen>
+    <dimen name="widget_bar_gap">3dp</dimen>
+
+    <style name="ParshaWidget" />
+
+    <style name="ParshaWidget.Text">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <!-- Aligned to the side the app's language starts on, whatever the
+             text's own direction: the Hebrew name with the English UI's
+             other lines. -->
+        <item name="android:textAlignment">viewStart</item>
+    </style>
+
+    <!-- A line that keeps to one line however long its words, set smaller
+         (from Android 8) rather than cut short. Its height is in sp, so it
+         grows with the system's text size. -->
+    <style name="ParshaWidget.Text.Fitted">
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeStepGranularity">1sp</item>
+    </style>
+
+    <!-- The eyebrow in the English UI: spaced capitals in gold. -->
+    <style name="ParshaWidget.Text.Fitted.Eyebrow">
+        <item name="android:layout_height">16sp</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:autoSizeMinTextSize">8sp</item>
+        <item name="android:autoSizeMaxTextSize">11sp</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/widget_gold</item>
+    </style>
+
+    <!-- The eyebrow in the Hebrew UI, without letter spacing. -->
+    <style name="ParshaWidget.Text.Fitted.Eyebrow.Hebrew">
+        <item name="android:layout_height">18sp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:autoSizeMinTextSize">9sp</item>
+        <item name="android:autoSizeMaxTextSize">13sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <!-- The picker's preview follows the device's language
+         (values-iw/widget_styles.xml). -->
+    <style name="ParshaWidget.Text.Fitted.Eyebrow.Preview" />
+
+    <!-- The parsha's Hebrew name, in techelet, as Today's title page sets it. -->
+    <style name="ParshaWidget.Text.Fitted.Hebrew">
+        <item name="android:layout_height">34sp</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:autoSizeMinTextSize">14sp</item>
+        <item name="android:autoSizeMaxTextSize">24sp</item>
+        <item name="android:textColor">@color/widget_techelet</item>
+    </style>
+
+    <style name="ParshaWidget.Text.Fitted.Name">
+        <item name="android:layout_height">21sp</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:autoSizeMinTextSize">10sp</item>
+        <item name="android:autoSizeMaxTextSize">15sp</item>
+        <item name="android:textColor">@color/widget_ink</item>
+    </style>
+
+    <style name="ParshaWidget.Text.Line">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/widget_ink_muted</item>
+    </style>
+
+    <style name="ParshaWidget.Text.Note" parent="ParshaWidget.Text.Line">
+        <item name="android:maxLines">3</item>
+        <item name="android:layout_marginTop">10dp</item>
+    </style>
+
+    <style name="ParshaWidget.Text.Today">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/widget_ink</item>
+        <item name="android:maxLines">2</item>
+    </style>
+
+    <!-- Continue: a text button in techelet, 48 dp tall to tap. -->
+    <style name="ParshaWidget.Text.Continue">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/widget_techelet</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:drawableEnd">@drawable/widget_chevron</item>
+        <item name="android:drawablePadding">2dp</item>
+    </style>
+
+    <style name="ParshaWidget.Text.Greeting">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/widget_ink</item>
+        <item name="android:layout_marginStart">6dp</item>
+    </style>
+
+    <!-- A reading's bar: how many of the seven aliyot it has covered, filling
+         from the side the app's language starts on. -->
+    <style name="ParshaWidget.Bar" parent="@android:style/Widget.Material.ProgressBar.Horizontal">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/widget_bar</item>
+        <item name="android:minHeight">@dimen/widget_bar</item>
+        <item name="android:maxHeight">@dimen/widget_bar</item>
+        <item name="android:max">7</item>
+        <item name="android:indeterminate">false</item>
+        <item name="android:mirrorForRtl">true</item>
+    </style>
+</resources>
