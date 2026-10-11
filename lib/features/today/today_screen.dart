@@ -171,13 +171,7 @@ class TodayScreen extends ConsumerWidget {
     return [
       _TodayHeader(today: today),
       const Gap(Space.lg),
-      if (wide)
-        _Columns(main: reading, side: week)
-      else ...[
-        ...reading,
-        const Gap(Rhythm.cardGap),
-        ...week,
-      ],
+      _Columns(main: reading, side: week, wide: wide),
     ];
   }
 }
@@ -188,11 +182,18 @@ class TodayScreen extends ConsumerWidget {
 /// for keyboard focus and for screen readers, so that both go down the one
 /// before the other, rather than across from one to the other by what stands
 /// level on the page.
+///
+/// Until [wide], the two stand one above the other, a card's gap apart, as
+/// one column. Either way they are the same widgets in the same places, so
+/// that a window widened or narrowed across [Breakpoints.expanded] keeps
+/// what they hold: the keyboard's focus, the title page's drawn frame, a
+/// discussion opening.
 class _Columns extends StatelessWidget {
-  const _Columns({required this.main, required this.side});
+  const _Columns({required this.main, required this.side, required this.wide});
 
   final List<Widget> main;
   final List<Widget> side;
+  final bool wide;
 
   static const _gap = Space.xxl;
 
@@ -200,19 +201,24 @@ class _Columns extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget column(List<Widget> children) => FocusTraversalGroup(
           child: Semantics(
-            container: true,
+            // As one column, its parts are the page's own, as before.
+            container: wide,
             // Its headings, texts and controls each a node of their own, as
             // in the page's single column.
             explicitChildNodes: true,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
           ),
         );
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // A Flex in either direction, rather than a Row or a Column, which as
+    // widgets of different kinds would build both columns anew.
+    return Flex(
+      direction: wide ? Axis.horizontal : Axis.vertical,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: wide ? CrossAxisAlignment.start : CrossAxisAlignment.stretch,
       children: [
-        Expanded(flex: 7, child: column(main)),
-        const SizedBox(width: _gap),
-        Expanded(flex: 5, child: column(side)),
+        Flexible(flex: wide ? 7 : 0, fit: FlexFit.tight, child: column(main)),
+        SizedBox(width: wide ? _gap : 0, height: wide ? 0 : Rhythm.cardGap),
+        Flexible(flex: wide ? 5 : 0, fit: FlexFit.tight, child: column(side)),
       ],
     );
   }

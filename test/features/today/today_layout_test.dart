@@ -5,6 +5,7 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/theme/layout.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/ledger.dart';
@@ -31,6 +32,9 @@ final _shabbat = DateTime(2026, 10, 10, 11);
 
 /// The extended rail and its hairline, beside the pane, from 1200.
 const _rail = 257.0;
+
+final _en = lookupAppLocalizations(const Locale('en'));
+final _he = lookupAppLocalizations(const Locale('he'));
 
 void main() {
   setUpAll(loadBundledFonts);
@@ -104,25 +108,50 @@ void main() {
       expect(strip(tester).top, hero(tester).top);
     });
 
-    testWidgets("Tab goes down the title page and today's reading before the week", (tester) async {
-      await openToday(tester, size);
-      // Focuses the control around [inside], then moves on as Tab does, and
-      // gives where focus lands.
-      Future<Rect> tabFrom(Finder inside) async {
-        Focus.of(tester.element(inside)).requestFocus();
-        await tester.pump();
-        FocusManager.instance.primaryFocus!.nextFocus();
-        await tester.pump();
-        return FocusManager.instance.primaryFocus!.rect;
-      }
+    for (final hebrew in [false, true]) {
+      final language = hebrew ? ', in Hebrew' : '';
+      testWidgets("Tab goes down the title page and today's reading before the week$language", (tester) async {
+        final l = hebrew ? _he : _en;
+        await openToday(tester, size, settings: hebrew ? _settings.copyWith(language: AppLanguage.hebrew) : null);
+        // Focuses the control around [inside], then moves on as Tab does, and
+        // gives where focus lands.
+        Future<Rect> tabFrom(Finder inside) async {
+          Focus.of(tester.element(inside)).requestFocus();
+          await tester.pump();
+          FocusManager.instance.primaryFocus!.nextFocus();
+          await tester.pump();
+          return FocusManager.instance.primaryFocus!.rect;
+        }
 
-      // From the header's button, the title page's first control rather
-      // than the week's, which is higher on the page.
-      final afterHelp = await tabFrom(find.descendant(of: find.byTooltip('How it works'), matching: find.byType(Icon)));
-      expect(hero(tester).contains(afterHelp.center), isTrue);
-      // From the first column's last control, the week's first.
-      final afterChumash = await tabFrom(find.text('I read it in a Chumash'));
-      expect(strip(tester).contains(afterChumash.center), isTrue);
+        // From the header's button, the title page's first control rather
+        // than the week's, which is higher on the page: in Hebrew, the
+        // column at the right.
+        final afterHelp = await tabFrom(find.descendant(of: find.byTooltip(l.guideTitle), matching: find.byType(Icon)));
+        expect(hero(tester).contains(afterHelp.center), isTrue);
+        // From the first column's last control, the week's first.
+        final afterChumash = await tabFrom(find.text(l.readFromBook));
+        expect(strip(tester).contains(afterChumash.center), isTrue);
+      });
+    }
+
+    testWidgets('keeps the focus where it is as the window narrows to one column and widens again', (tester) async {
+      await openToday(tester, size);
+      final button = find.descendant(of: find.byType(TitlePageFrame), matching: find.byType(FilledButton));
+      Focus.of(tester.element(find.descendant(of: button, matching: find.byType(Text)).first)).requestFocus();
+      await tester.pump();
+      final focused = FocusManager.instance.primaryFocus;
+      expect(focused, isNotNull);
+      expect(tester.getRect(button).contains(focused!.rect.center), isTrue);
+
+      for (final width in [1000.0, 1920.0, 1366.0]) {
+        tester.view.physicalSize = Size(width, size.height);
+        await tester.pumpAndSettle();
+        expect(FocusManager.instance.primaryFocus, same(focused), reason: 'at ${width.round()} dp');
+        expect(focused.context!.mounted, isTrue);
+        expect(tester.getRect(button).contains(focused.rect.center), isTrue);
+      }
+      // Each column a group of its own again.
+      expect(strip(tester).top, hero(tester).top);
     });
 
     for (final hebrew in [false, true]) {
