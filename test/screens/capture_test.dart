@@ -4,6 +4,10 @@
 //   CAPTURE=1 flutter test test/screens/capture_test.dart
 //   CAPTURE=1 SCREENS=today,reader flutter test test/screens/capture_test.dart
 //   CAPTURE=1 SCREENS=today MODES=sepia,hcl flutter test test/screens/capture_test.dart
+//   CAPTURE=1 WORDS=1 MODES=big,bighe,huge,hugehe,hugetall,hugetallhe flutter test test/screens/capture_test.dart
+//
+// WORDS=1 also lists every word broken across lines, in
+// build/screens/broken_words.txt (remove it before a new run).
 //
 // Skipped unless CAPTURE is set, so it never runs (or fails) in CI.
 @Tags(['screens'])
@@ -68,6 +72,10 @@ import 'galleries.dart';
 final _capture = Platform.environment['CAPTURE'] != null;
 final _only = Platform.environment['SCREENS']?.split(',').toSet();
 final _onlyModes = Platform.environment['MODES']?.split(',').toSet();
+
+/// Whether to list the words each capture breaks across lines, in
+/// build/screens/broken_words.txt (WORDS=1): none should be.
+final _words = Platform.environment['WORDS'] != null;
 
 /// Friday 9 Oct 2026, the week of Bereshit, and its reader, with Shlishi
 /// under way (test/helpers.dart). The goldens show the same.
@@ -1572,11 +1580,16 @@ final _modes = [
   // screens in [_hugeScreens], as screens_a11y_test.dart lays them out.
   _Mode('huge', const Size(320, 640), (s) => s, textScale: 3),
   _Mode('hugehe', const Size(320, 640), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 3),
+  // The same, tall, for the screens in [_hugeTallScreens]: the whole page.
+  _Mode('hugetall', const Size(320, 3600), (s) => s, textScale: 3),
+  _Mode('hugetallhe', const Size(320, 3600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 3),
 ];
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 const _hugeModes = {'huge', 'hugehe'};
 const _hugeScreens = {'today', 'reader'};
+const _hugeTallModes = {'hugetall', 'hugetallhe'};
+const _hugeTallScreens = {'today', 'parsha', 'week', 'progress', 'settings', 'community', 'thread', 'haftarah'};
 
 const _desktopScreens = {
   'notes',
@@ -1819,6 +1832,13 @@ Future<void> _write(WidgetTester tester, String name) async {
   });
   final file = File('build/screens/$name.png')..createSync(recursive: true);
   file.writeAsBytesSync(bytes!);
+  if (_words) {
+    final broken = brokenWords(tester);
+    if (broken.isNotEmpty) {
+      File('build/screens/broken_words.txt')
+          .writeAsStringSync('$name\n  ${broken.join('\n  ')}\n', mode: FileMode.append);
+    }
+  }
 }
 
 void main() {
@@ -1843,6 +1863,7 @@ void main() {
       if (mode.tag == 'narrow' && !_narrowScreens.contains(entry.key)) continue;
       if (mode.tag == 'bigphone' && !_bigPhoneScreens.contains(entry.key)) continue;
       if (_hugeModes.contains(mode.tag) && !_hugeScreens.contains(entry.key)) continue;
+      if (_hugeTallModes.contains(mode.tag) && !_hugeTallScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {
