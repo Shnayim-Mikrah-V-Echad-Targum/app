@@ -6,10 +6,10 @@ import WidgetKit
 //
 // The app sends a timeline (lib/services/home_widget_sync.dart): an entry for
 // each day from today through next week's Shabbat, every string already in
-// the app's language, saved in the App Group the two targets share. The
-// widget's own timeline turns to each day's entry at the app's day boundary,
-// 3 a.m., and at the times an entry gives (candle-lighting, nightfall),
-// without the app running.
+// the app's language, and the days of rest for some months after, saved in
+// the App Group the two targets share. The widget's own timeline turns to
+// each day's entry at the app's day boundary, 3 a.m., and at the times an
+// entry gives (candle-lighting, nightfall), without the app running.
 
 /// Where the app saves the timeline (kWidgetAppGroup and kWidgetTimelineKey).
 private let appGroup = "group.org.shnayimmikra.app"
@@ -60,10 +60,13 @@ struct WidgetTimeline: Decodable {
   let stale: String
   let weeks: [Week]
   let days: [Day]
+  /// The greetings of the days of rest after [days], by date.
+  let rests: [String: String]?
 
   enum CodingKeys: String, CodingKey {
     case rtl, open, stale, weeks, days
     case continueLink = "continue"
+    case rests = "rest"
   }
 
   /// The timeline the app last saved, if it can be read.
@@ -87,25 +90,38 @@ struct WidgetTimeline: Decodable {
     }
   }
 
+  /// Past its days, the greeting of a day of rest at [date], if it is one:
+  /// the widget still rests on Shabbat and Yom Tov.
+  func rest(at date: Date) -> String? {
+    rests?[appDate(date)]
+  }
+
   /// Every moment after [now] at which the entry may change: each day
   /// boundary through the day after the last (when the widget says to open
-  /// the app), and each time an entry gives.
+  /// the app), the start and end of each day of rest after them, and each
+  /// time an entry gives.
   func changes(after now: Date) -> [Date] {
     guard let last = days.last?.date else { return [] }
+    let rests = self.rests ?? [:]
+    let end = max(last, rests.keys.max() ?? last)
     let calendar = Calendar.current
     var changes = Set<Date>()
-    // A few seconds after the hour, as the app's own day turns.
-    if var boundary = calendar.date(bySettingHour: dayStartsAtHour, minute: 0, second: 5, of: now) {
-      if boundary <= now, let next = calendar.date(byAdding: .day, value: 1, to: boundary) {
-        boundary = next
-      }
-      for _ in 0..<45 {
-        changes.insert(boundary)
-        guard appDate(boundary) <= last, let next = calendar.date(byAdding: .day, value: 1, to: boundary) else {
-          break
-        }
-        boundary = next
-      }
+    // Each midnight from yesterday's. The app's day turns 3 hours after it by
+    // the hours that pass, however the clocks change that night (as appDate
+    // counts them), and the widget a few seconds after.
+    guard let yesterday = calendar.date(byAdding: .day, value: -1, to: now) else { return [] }
+    var midnight = calendar.startOfDay(for: yesterday)
+    var previous: String?
+    for _ in 0..<200 {
+      if let previous = previous, previous > end { break }
+      let date = localDate(midnight)
+      let turn = midnight.addingTimeInterval(TimeInterval(dayStartsAtHour * 3600 + 5))
+      let after = previous.map { $0 <= last || rests[$0] != nil } ?? false
+      if turn > now && (date <= last || rests[date] != nil || after) { changes.insert(turn) }
+      previous = date
+      guard let next = calendar.date(byAdding: .day, value: 1, to: midnight) else { break }
+      // A midnight the clocks skip is the first moment of its day.
+      midnight = calendar.startOfDay(for: next)
     }
     for day in days {
       if let end = day.end, end > now { changes.insert(end) }
@@ -114,11 +130,15 @@ struct WidgetTimeline: Decodable {
   }
 }
 
-/// The day the app keeps at [date], as yyyy-MM-dd.
-private func appDate(_ date: Date) -> String {
-  let shifted = date.addingTimeInterval(-Double(dayStartsAtHour) * 3600)
-  let parts = Calendar.current.dateComponents([.year, .month, .day], from: shifted)
+/// The local date of [date], as yyyy-MM-dd.
+private func localDate(_ date: Date) -> String {
+  let parts = Calendar.current.dateComponents([.year, .month, .day], from: date)
   return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+}
+
+/// The day the app keeps at [date], as yyyy-MM-dd: the date 3 hours before.
+private func appDate(_ date: Date) -> String {
+  localDate(date.addingTimeInterval(-Double(dayStartsAtHour) * 3600))
 }
 
 // MARK: - Entries
@@ -129,11 +149,15 @@ struct ParshaEntry: TimelineEntry {
   let timeline: WidgetTimeline?
   /// Nil once the timeline is over.
   let day: WidgetTimeline.Day?
+  /// Once the timeline is over, the greeting of a day of rest.
+  let rest: String?
 
   init(date: Date, timeline: WidgetTimeline?) {
     self.date = date
     self.timeline = timeline
-    self.day = timeline?.day(at: date)
+    let day = timeline?.day(at: date)
+    self.day = day
+    self.rest = day == nil ? timeline?.rest(at: date) : nil
   }
 }
 
@@ -168,7 +192,8 @@ extension WidgetTimeline {
           eyebrow: NSLocalizedString("preview.eyebrow", comment: "The eyebrow: Parshat HaShavua"),
           line: NSLocalizedString("preview.today", comment: "Today's reading")
         )
-      ]
+      ],
+      rests: nil
     )
   }
 }
@@ -205,8 +230,8 @@ private enum Serif {
     .custom(semibold ? "FrankRuhlLibre-SemiBold" : "FrankRuhlLibre-Medium", size: size)
   }
 
-  static func latin(_ size: CGFloat, semibold: Bool = false) -> Font {
-    .custom(semibold ? "EBGaramond-SemiBold" : "EBGaramond-Medium", size: size)
+  static func latin(_ size: CGFloat) -> Font {
+    .custom("EBGaramond-Medium", size: size)
   }
 }
 
@@ -261,7 +286,22 @@ struct ParshaWidgetView: View {
     .accessibilityLabel(Text(verbatim: "\(name). \(note)"))
   }
 
+  @ViewBuilder
   private func parsha(_ timeline: WidgetTimeline) -> some View {
+    if let greeting = entry.rest {
+      // Past its days, Shabbat and Yom Tov still rest, with the candles and
+      // the greeting alone.
+      rest(greeting)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: greeting))
+    } else {
+      titled(timeline)
+    }
+  }
+
+  /// The parsha, and what the day brings.
+  private func titled(_ timeline: WidgetTimeline) -> some View {
     // Once its days are over, the last week's parsha, and a word to open
     // the app.
     let day = entry.day
@@ -317,13 +357,18 @@ struct ParshaWidgetView: View {
         if timeline.rtl {
           Text(shown.eyebrow).font(Serif.hebrew(14, semibold: true))
         } else {
-          // In small capitals, as the app's eyebrows.
-          Text(shown.eyebrow).font(Serif.latin(14, semibold: true).smallCaps()).kerning(0.6)
+          // In capitals of the system's serif, made to be read this small,
+          // where the app's small capitals would be too small to read
+          // (docs/DESIGN_SYSTEM.md §4).
+          Text(shown.eyebrow)
+            .font(.system(size: 12, weight: .semibold, design: .serif))
+            .kerning(0.6)
+            .textCase(.uppercase)
         }
       }
       .foregroundColor(.gold)
       .lineLimit(1)
-      .minimumScaleFactor(0.6)
+      .minimumScaleFactor(0.7)
 
       Text(week.he)
         .font(Serif.hebrew(28))
@@ -333,7 +378,7 @@ struct ParshaWidgetView: View {
         .padding(.top, 2)
 
       Text(week.name)
-        .font(Serif.latin(17))
+        .font(Serif.latin(18))
         .foregroundColor(.ink)
         .lineLimit(1)
         .minimumScaleFactor(0.6)

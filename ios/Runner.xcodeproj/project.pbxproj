@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		09CC84A94DBA5E762BF3C6E6 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7DC3AD2F544AD720B20FE3E1 /* Localizable.strings */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		26B3605DF83EC349C2A5006A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4C0B16DA29C56609B365BF89 /* PrivacyInfo.xcprivacy */; };
 		2A8A20CF813EDD6049379AEE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 05AE7B664234210762E694E8 /* Assets.xcassets */; };
 		2DD45379C8329D31D1799E02 /* FrankRuhlLibre-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DBA750215A0F03CF392FCDC3 /* FrankRuhlLibre-Medium.ttf */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
@@ -23,7 +24,6 @@
 		A2605B829BDA6609361476BE /* ParshaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9B2D5BB61BF157555C9963B7 /* ParshaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A6B30D0FDA6602DCE3577F8A /* EBGaramond-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C96F8ABAD5D5999884788776 /* EBGaramond-Medium.ttf */; };
 		AE942787CA74F0EEA6AA6FF0 /* ParshaWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F483EC8B4B51EE357061C3CA /* ParshaWidget.swift */; };
-		C10603FC2403FD79885B317B /* EBGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8BDC9D29CBA5CFC2ADCD55C6 /* EBGaramond-SemiBold.ttf */; };
 		C802FE255E226D7A5C1690DD /* FrankRuhlLibre-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2A424BDC523ADA28E85F1878 /* FrankRuhlLibre-SemiBold.ttf */; };
 /* End PBXBuildFile section */
 
@@ -77,13 +77,13 @@
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		4C0B16DA29C56609B365BF89 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		6D5CDE6FFCCB2AB1768C2C99 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
-		8BDC9D29CBA5CFC2ADCD55C6 /* EBGaramond-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "EBGaramond-SemiBold.ttf"; path = "../assets/fonts/EBGaramond-SemiBold.ttf"; sourceTree = SOURCE_ROOT; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -125,7 +125,6 @@
 			isa = PBXGroup;
 			children = (
 				C96F8ABAD5D5999884788776 /* EBGaramond-Medium.ttf */,
-				8BDC9D29CBA5CFC2ADCD55C6 /* EBGaramond-SemiBold.ttf */,
 				DBA750215A0F03CF392FCDC3 /* FrankRuhlLibre-Medium.ttf */,
 				2A424BDC523ADA28E85F1878 /* FrankRuhlLibre-SemiBold.ttf */,
 			);
@@ -147,6 +146,7 @@
 				05AE7B664234210762E694E8 /* Assets.xcassets */,
 				7DC3AD2F544AD720B20FE3E1 /* Localizable.strings */,
 				6D5CDE6FFCCB2AB1768C2C99 /* Info.plist */,
+				4C0B16DA29C56609B365BF89 /* PrivacyInfo.xcprivacy */,
 				FF4DC33A107C7678C81E787D /* ParshaWidget.entitlements */,
 				2FE7AE04FE1B4FAD5615FE25 /* Fonts */,
 			);
@@ -328,9 +328,9 @@
 				2A8A20CF813EDD6049379AEE /* Assets.xcassets in Resources */,
 				09CC84A94DBA5E762BF3C6E6 /* Localizable.strings in Resources */,
 				A6B30D0FDA6602DCE3577F8A /* EBGaramond-Medium.ttf in Resources */,
-				C10603FC2403FD79885B317B /* EBGaramond-SemiBold.ttf in Resources */,
 				2DD45379C8329D31D1799E02 /* FrankRuhlLibre-Medium.ttf in Resources */,
 				C802FE255E226D7A5C1690DD /* FrankRuhlLibre-SemiBold.ttf in Resources */,
+				26B3605DF83EC349C2A5006A /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -33,7 +33,6 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>EBGaramond-Medium.ttf</string>
-		<string>EBGaramond-SemiBold.ttf</string>
 		<string>FrankRuhlLibre-Medium.ttf</string>
 		<string>FrankRuhlLibre-SemiBold.ttf</string>
 	</array>

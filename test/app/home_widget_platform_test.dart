@@ -78,11 +78,17 @@ void main() {
     expect(provider, contains('fun appDate(time: Long) = dateOf(time - DAY_STARTS_AT_HOUR * HOUR_MS)'));
     expect(provider, contains('val turn = midnight.timeInMillis + DAY_STARTS_AT_HOUR * HOUR_MS + TURN_DELAY_MS'));
     expect(provider, isNot(contains('set(Calendar.HOUR_OF_DAY, DAY_STARTS_AT_HOUR)')));
+    expect(swift, contains('localDate(date.addingTimeInterval(-Double(dayStartsAtHour) * 3600))'));
+    expect(swift, contains('var midnight = calendar.startOfDay(for: yesterday)'));
+    expect(swift, contains('let turn = midnight.addingTimeInterval(TimeInterval(dayStartsAtHour * 3600 + 5))'));
+    expect(swift, isNot(contains('bySettingHour')));
   });
 
-  test('past their days, the widget still rests on Shabbat and Yom Tov', () {
+  test('past their days, both widgets still rest on Shabbat and Yom Tov', () {
     expect(provider, contains('timeline.rests[appDate(now)]'));
     expect(provider, contains('date in timeline.rests'));
+    expect(swift, contains('rests?[appDate(date)]'));
+    expect(swift, contains('rests[date] != nil'));
   });
 
   group('Android', () {
@@ -416,11 +422,13 @@ void main() {
       final fields = {
         for (final s in structs)
           for (final m in RegExp(r'^\s+let (\w+):', multiLine: true).allMatches(s[1]!)) m[1]!,
-        'rtl', 'open', 'continue', 'stale', 'weeks', 'days',
+        'rtl', 'open', 'continue', 'stale', 'weeks', 'days', 'rest',
       };
       expect(fields, hasLength(greaterThan(12)));
       expect(payloadKeys.containsAll(fields), isTrue, reason: '${fields.difference(payloadKeys)}');
       expect(swift, contains('case continueLink = "continue"'));
+      expect(swift, contains('case rests = "rest"'));
+      expect(swift, contains('let rests: [String: String]?'));
       // Optional where the app may leave them out.
       expect(swift, contains('let next: String?'));
       expect(swift, contains('let until: Double?'));
@@ -438,7 +446,7 @@ void main() {
       ];
       expect(registered..sort(), bundled..sort());
       final named = {for (final m in RegExp(r'"((?:FrankRuhlLibre|EBGaramond)-\w+)"').allMatches(swift)) m[1]!};
-      expect(named, hasLength(4));
+      expect(named, {'FrankRuhlLibre-Medium', 'FrankRuhlLibre-SemiBold', 'EBGaramond-Medium'});
       // Font.custom takes a font's PostScript name.
       expect({for (final font in registered) _postScriptName(File('assets/fonts/$font'))}, named);
     });
@@ -458,6 +466,44 @@ void main() {
       };
       expect(used, containsAll(['widget.name', 'widget.description', 'widget.empty']));
       expect(en.keys.toSet().containsAll(used), isTrue, reason: '${used.difference(en.keys.toSet())}');
+    });
+
+    test('its privacy manifest declares each reason it reads what the system asks one for', () {
+      const path = 'ios/ParshaWidget/PrivacyInfo.xcprivacy';
+      final manifest = File(path).readAsStringSync().replaceAll(RegExp(r'\s+'), '');
+      expect(manifest, startsWith('<?xmlversion="1.0"encoding="UTF-8"?><!DOCTYPEplist'));
+      expect(manifest, contains('<key>NSPrivacyTracking</key><false/>'));
+      expect(manifest, contains('<key>NSPrivacyTrackingDomains</key><array/>'));
+      expect(manifest, contains('<key>NSPrivacyCollectedDataTypes</key><array/>'));
+      // Apple's required-reason APIs the extension might call, and the reason
+      // each is called for: the user defaults of the App Group it shares
+      // with the app (1C8F.1).
+      const apis = {
+        'UserDefaults': ('NSPrivacyAccessedAPICategoryUserDefaults', '1C8F.1'),
+        'systemUptime': ('NSPrivacyAccessedAPICategorySystemBootTime', null),
+        'creationDate': ('NSPrivacyAccessedAPICategoryFileTimestamp', null),
+        'modificationDate': ('NSPrivacyAccessedAPICategoryFileTimestamp', null),
+        'volumeAvailableCapacity': ('NSPrivacyAccessedAPICategoryDiskSpace', null),
+        'activeInputModes': ('NSPrivacyAccessedAPICategoryActiveKeyboards', null),
+      };
+      final used = {for (final MapEntry(:key, :value) in apis.entries) if (swift.contains(key)) value};
+      expect(used, {('NSPrivacyAccessedAPICategoryUserDefaults', '1C8F.1')});
+      final declared = RegExp(r'<key>NSPrivacyAccessedAPIType</key><string>(\w+)</string>'
+              r'<key>NSPrivacyAccessedAPITypeReasons</key><array><string>([\w.]+)</string></array>')
+          .allMatches(manifest)
+          .map((m) => (m[1]!, m[2]!))
+          .toSet();
+      expect(declared, used);
+
+      // Built into the extension's bundle.
+      final resources = pbxproj.list(pbxproj.target('ParshaWidget')!, 'buildPhases')
+          .singleWhere((phase) => pbxproj.isa(phase) == 'PBXResourcesBuildPhase');
+      final files = [
+        for (final file in pbxproj.list(resources, 'files'))
+          ...pbxproj.pathsOf(pbxproj.field(file, 'fileRef')!, 'ParshaWidget'),
+      ];
+      expect(files, contains('ParshaWidget/PrivacyInfo.xcprivacy'));
+      expect(File(path).existsSync(), isTrue);
     });
 
     test("the colours are the design system's, light and dark", () {
