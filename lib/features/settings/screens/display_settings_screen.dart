@@ -368,7 +368,8 @@ class _Veil extends StatelessWidget {
 /// One verse's block (its Mikra and Targum) as focus mode sets it (§4.7):
 /// every block inset alike, so that nothing moves as the verse being read
 /// changes, and that one on the verse highlight with a 3 px techelet rule at
-/// its start, the right, as scripture runs.
+/// its start, the right, as scripture runs (the preview is set right to
+/// left).
 class _VerseBlock extends StatelessWidget {
   const _VerseBlock({required this.highlighted, required this.child});
 
@@ -382,15 +383,15 @@ class _VerseBlock extends StatelessWidget {
         decoration: BoxDecoration(
           color: highlighted ? SeferColors.of(context).verseHighlight : null,
           // The rule keeps its width when it isn't drawn.
-          border: Border(
-            right: BorderSide(
+          border: BorderDirectional(
+            start: BorderSide(
               color: Theme.of(context).colorScheme.primary,
               width: _rule,
               style: highlighted ? BorderStyle.solid : BorderStyle.none,
             ),
           ),
         ),
-        child: Padding(padding: const EdgeInsets.fromLTRB(12, 4, 12 - _rule, 4), child: child),
+        child: Padding(padding: const EdgeInsetsDirectional.fromSTEB(12 - _rule, 4, 12, 4), child: child),
       );
 }
 
