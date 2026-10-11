@@ -8,12 +8,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../data/models/scripture.dart';
+import '../../../data/models/verse_ref.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/app_icon.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/sefer_choice_chip.dart';
+import '../../reader/verse_actions_sheet.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -28,10 +31,18 @@ import 'community_ui.dart';
 /// each field what it still needs and gives the first such field the focus,
 /// where a screen reader hears why. An error from the server about a field
 /// is shown the same way. Ctrl+Enter (⌘Enter) posts too.
+///
+/// Asked about a [verse], from the reader, it begins the question: its title
+/// names the verse, and its message quotes it. A draft not yet sent is never
+/// replaced: the page says that it was kept, and what discarding it will do.
 class ComposeScreen extends ConsumerStatefulWidget {
-  const ComposeScreen({super.key, this.forumSlug});
+  const ComposeScreen({super.key, this.forumSlug, this.verse});
 
   final String? forumSlug;
+
+  /// The verse asked about, as a link names it ("Genesis 3:22"; see
+  /// [BookVerse.tryParse]); null, or one that can't be read, for none.
+  final String? verse;
 
   @override
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
@@ -67,6 +78,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String _titleSeen = '';
   String _bodySeen = '';
 
+  /// The verse asked about, if any.
+  late final BookVerse? _asked = BookVerse.tryParse(widget.verse);
+
+  /// Whether a draft not yet sent kept the question on [_asked] from being
+  /// begun, as the page then says.
+  bool _draftKept = false;
+
   @override
   void initState() {
     super.initState();
@@ -96,6 +114,36 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     _title.addListener(save);
     _body.addListener(save);
+
+    if (_asked != null) {
+      if (_title.text.isEmpty && _body.text.isEmpty) {
+        // Once the page can name the verse in its language.
+        WidgetsBinding.instance.addPostFrameCallback((_) => _askAboutVerse());
+      } else {
+        _draftKept = true;
+      }
+    }
+  }
+
+  /// Begins the question on [_asked]: its title names the verse, and its
+  /// message quotes it, once its text has come, with the caret after it, on
+  /// the line the question goes on. What has been typed meanwhile stays.
+  Future<void> _askAboutVerse() async {
+    final asked = _asked;
+    if (asked == null || !mounted) return;
+    final l = context.l10n;
+    final leftToRight = !context.isHebrewUi;
+    final reference = Names(context).reference(asked.book, asked.ref.chapter, asked.ref.verse);
+    if (_title.text.isEmpty) _title.text = l.questionOnVerse(reference);
+    Verse? verse;
+    try {
+      verse = await ref.read(textRepositoryProvider).hebrewVerse(asked);
+    } catch (_) {
+      // Its text can't be read (an asset missing, say): the title alone.
+    }
+    if (!mounted || verse == null || _body.text.isNotEmpty) return;
+    final quote = verseQuote(verse, ref.read(settingsProvider), leftToRight: leftToRight);
+    _body.value = TextEditingValue(text: quote, selection: TextSelection.collapsed(offset: quote.length));
   }
 
   @override
@@ -192,6 +240,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _checked = false;
       _titleError = _bodyError = _titleServerError = _bodyServerError = null;
     });
+    // The draft was all that kept the question on the verse from being begun.
+    if (_draftKept) {
+      setState(() => _draftKept = false);
+      _askAboutVerse();
+    }
   }
 
   @override
@@ -251,6 +304,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Gap(Space.lg),
+                    if (_asked case final asked? when _draftKept) ...[
+                      NoticeBanner(
+                        icon: Icons.info_outline,
+                        text: l.askDraftKept(Names(context).reference(asked.book, asked.ref.chapter, asked.ref.verse)),
+                        actionBelow: true,
+                        // The banner goes with its button: the message field,
+                        // where the question goes, takes the focus.
+                        action: TextButton(
+                          onPressed: () {
+                            _discardDraft();
+                            _bodyFocus.requestFocus();
+                          },
+                          child: Text(l.discardDraft),
+                        ),
+                      ),
+                      const Gap(Space.md),
+                    ],
                     InfoCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,

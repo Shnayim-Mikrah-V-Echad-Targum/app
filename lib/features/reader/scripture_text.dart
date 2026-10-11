@@ -290,6 +290,8 @@ class ScriptureVerse extends StatelessWidget {
     this.showNumber = true,
     this.hangingNumber = false,
     this.ruled = false,
+    this.onLongPress,
+    this.ownGestures = true,
   });
 
   final Verse verse;
@@ -312,6 +314,17 @@ class ScriptureVerse extends StatelessWidget {
   /// Set off by a gold rule at its start, as the Targum beneath each verse of
   /// the full text is.
   final bool ruled;
+
+  /// Opens the verse's options (copy, share, ask): on a long press or a
+  /// secondary click, and for screen readers as their own long press and as
+  /// the action "Verse options". Null where it has none.
+  final VoidCallback? onLongPress;
+
+  /// Whether the verse takes the long press and secondary click itself.
+  /// False where the block it stands in takes them for the whole of it
+  /// ([VerseGroup], in the full text), so that only the screen readers'
+  /// actions are here, on the verse they hear.
+  final bool ownGestures;
 
   /// Between the rule and the text.
   static const ruleGap = 12.0;
@@ -485,6 +498,20 @@ class ScriptureVerse extends StatelessWidget {
       );
     }
 
+    final onLongPress = this.onLongPress;
+    if (onLongPress != null && ownGestures) {
+      content = GestureDetector(
+        // The spaces between its words and lines are the verse's too.
+        behavior: HitTestBehavior.opaque,
+        onLongPress: () {
+          Feedback.forLongPress(context);
+          onLongPress();
+        },
+        onSecondaryTap: onLongPress,
+        child: content,
+      );
+    }
+
     return Semantics(
       container: true,
       // Only where the whole label is Hebrew: elsewhere the node's language
@@ -495,6 +522,8 @@ class ScriptureVerse extends StatelessWidget {
         attributes: [for (final range in hebrewSpans) LocaleStringAttribute(range: range, locale: _hebrew)],
       ),
       textDirection: TextDirection.rtl,
+      onLongPress: onLongPress,
+      customSemanticsActions: onLongPress == null ? null : {CustomSemanticsAction(label: l.verseOptions): onLongPress},
       child: ExcludeSemantics(child: content),
     );
   }
@@ -509,7 +538,14 @@ class ScriptureVerse extends StatelessWidget {
 /// the paper with a rule in techelet at its start; the others are dimmed by
 /// their own text.
 class VerseGroup extends StatelessWidget {
-  const VerseGroup({super.key, required this.verse, required this.child, this.highlighted = false, this.onTap});
+  const VerseGroup({
+    super.key,
+    required this.verse,
+    required this.child,
+    this.highlighted = false,
+    this.onTap,
+    this.onLongPress,
+  });
 
   final VerseRef verse;
   final Widget child;
@@ -517,6 +553,11 @@ class VerseGroup extends StatelessWidget {
   /// The verse focus mode is on.
   final bool highlighted;
   final VoidCallback? onTap;
+
+  /// Opens the verse's options, on a long press or a secondary click
+  /// anywhere in the block. Screen readers find them on its verses
+  /// ([ScriptureVerse.onLongPress]), which they hear.
+  final VoidCallback? onLongPress;
 
   /// Around every block's text: at its start, the right, in either language
   /// of the app, with the rule's width, and as much at its end, so that the
@@ -548,14 +589,29 @@ class VerseGroup extends StatelessWidget {
       // So that a tap's ink shows over the highlight.
       child: Material(
         type: MaterialType.transparency,
-        child: InkWell(
+        // Focus mode's tap, for screen readers, here; the verse's options
+        // on its verses, where they hear it.
+        child: Semantics(
           onTap: onTap,
-          // ↑ and ↓ move from verse to verse: a Tab stop on each would put
-          // up to 72 before the button at the end.
-          canRequestFocus: false,
-          child: Padding(
-            padding: padding.copyWith(right: padding.right - _rule),
-            child: child,
+          child: InkWell(
+            onTap: onTap,
+            onLongPress: onLongPress,
+            onSecondaryTap: onLongPress,
+            excludeFromSemantics: true,
+            // ↑ and ↓ move from verse to verse: a Tab stop on each would put
+            // up to 72 before the button at the end.
+            canRequestFocus: false,
+            // Outside focus mode a verse is text to read, not a button: no
+            // ink for a tap, which does nothing, no wash under the pointer
+            // and no hand over it. A long press opens the options at once.
+            splashFactory: onTap == null ? NoSplash.splashFactory : null,
+            highlightColor: onTap == null ? Colors.transparent : null,
+            hoverColor: onTap == null ? Colors.transparent : null,
+            mouseCursor: onTap == null ? MouseCursor.defer : null,
+            child: Padding(
+              padding: padding.copyWith(right: padding.right - _rule),
+              child: child,
+            ),
           ),
         ),
       ),

@@ -35,6 +35,7 @@ import 'pass_track.dart';
 import 'reader_bottom_bar.dart';
 import 'reader_flow.dart';
 import 'scripture_text.dart';
+import 'verse_actions_sheet.dart';
 import 'verse_anchor.dart';
 
 final bookTextProvider = FutureProvider.family<BookText, (TextLayer, String)>(
@@ -460,6 +461,31 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     };
   }
 
+  // --- A verse's options -----------------------------------------------------
+
+  /// Opens what can be done with verse [r] (copy, share, ask): its Hebrew,
+  /// with its Targum and translation where the reader shows them.
+  void _openVerseOptions(ReaderTexts texts, String book, VerseRef r) => showVerseActions(
+        context,
+        ChosenVerse(
+          at: BookVerse(book, r),
+          hebrew: texts.mikra.verse(r),
+          targum: texts.onkelos?.verse(r),
+          english: texts.english?.verse(r).readText,
+        ),
+      );
+
+  /// Shift+F10 or the menu key: the options of the verse focus mode is on,
+  /// or else of the first verse in view.
+  void _verseOptionsByKey(ReaderTexts texts, ReaderFlow flow) {
+    final focused = _fullText && ref.read(settingsProvider).focusMode ? _focusedVerse : null;
+    if (focused != null) {
+      _openVerseOptions(texts, flow.book, flow.verses[focused]);
+    } else {
+      openVerseOptionsInView(context);
+    }
+  }
+
   // --- Speech -----------------------------------------------------------------
 
   Future<void> _toggleSpeech(ReaderTexts texts, ReaderFlow flow) async {
@@ -695,6 +721,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     void nikud() => toggle((s) => s.copyWith(showNikud: !s.showNikud));
     void listen() => _toggleSpeech(texts, flow);
     void help() => _showShortcuts(context, isMac, s);
+    void verseOptions() => _verseOptionsByKey(texts, flow);
 
     final singleKeys = ReaderScreen.singleKeyPlatform;
     final shortcuts = <ShortcutActivator, VoidCallback>{
@@ -728,6 +755,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       },
       const SingleActivator(LogicalKeyboardKey.f1): help,
       SingleActivator(LogicalKeyboardKey.slash, control: !isMac, meta: isMac): help,
+      // The keys that open a context menu, for the verses' options.
+      const SingleActivator(LogicalKeyboardKey.f10, shift: true, includeRepeats: false): verseOptions,
+      const SingleActivator(LogicalKeyboardKey.contextMenu, includeRepeats: false): verseOptions,
     };
 
     final columnWidth = ScriptureStyles(context, s).maxLineWidth;
@@ -741,168 +771,172 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     return PrimaryScrollController(
       controller: _scroll,
       automaticallyInheritForPlatforms: const {},
-      child: CallbackShortcuts(
-        bindings: shortcuts,
-        child: Focus(
-          focusNode: _readerFocus,
-          autofocus: true,
-          child: Scaffold(
-            appBar: _appBar(
-              context,
-              ctx,
-              s,
-              scrolledUnder: !showRibbon,
-              actions: [
-                ValueListenableBuilder<bool>(
-                  valueListenable: tts.speaking,
-                  builder: (context, speaking, _) => IconButton(
-                    tooltip: speaking ? l.stopListening : l.listen,
-                    icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
-                    onPressed: () => _toggleSpeech(texts, flow),
+      child: OwnContextMenu(
+        child: CallbackShortcuts(
+          bindings: shortcuts,
+          child: Focus(
+            focusNode: _readerFocus,
+            autofocus: true,
+            child: Scaffold(
+              appBar: _appBar(
+                context,
+                ctx,
+                s,
+                scrolledUnder: !showRibbon,
+                actions: [
+                  ValueListenableBuilder<bool>(
+                    valueListenable: tts.speaking,
+                    builder: (context, speaking, _) => IconButton(
+                      tooltip: speaking ? l.stopListening : l.listen,
+                      icon: Icon(speaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined),
+                      onPressed: () => _toggleSpeech(texts, flow),
+                    ),
                   ),
-                ),
-                IconButton(
-                  tooltip: l.displaySettings,
-                  icon: const Icon(Icons.text_format),
-                  onPressed: () => showDisplaySheet(context),
-                ),
-                PopupMenuButton<String>(
-                  tooltip: l.actionMore,
-                  popUpAnimationStyle: Motion.of(context).style,
-                  onSelected: (v) {
-                    switch (v) {
-                      case 'mode':
-                        setState(() {
-                          _fullText = !_fullText;
-                          // The mark of the verse opened at goes with a
-                          // change of mode.
-                          _targetVerse = null;
-                          _quietFocus = null;
-                          // Focus mode picks up the full text at the verse
-                          // being read.
-                          if (_fullText && s.focusMode && !_finished) _focusedVerse = flow.chunks[_chunk].start;
-                        });
-                        if (_fullText && _focusedVerse != null) _revealVerse(_focusedVerse!, animate: false);
-                      case 'mark':
-                        _markAliyahRead(ctx);
-                      case 'week':
-                        // The week's page beneath, or in place of the reader:
-                        // never a second copy of it.
-                        if (widget.fromWeek && context.canPop()) {
-                          context.pop();
-                        } else {
-                          replaceWithWeekPage(context, 'week/${ctx.id}');
-                        }
-                      case 'keys':
-                        help();
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(value: 'mode', child: Text(_fullText ? l.guidedMode : l.fullTextMode)),
-                    if (ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah))
-                      PopupMenuItem(value: 'mark', child: Text(l.markAliyahRead)),
-                    PopupMenuItem(value: 'week', child: Text(l.backToWeek)),
-                    PopupMenuItem(value: 'keys', child: Text(l.keyboardShortcuts)),
-                  ],
-                ),
-              ],
-            ),
-            // The bottom bar runs under the gesture bar itself; above it, the
-            // page keeps clear of the notch and the screen's rounded sides.
-            body: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  if (showRibbon)
-                    AliyahRibbon(
-                      week: ctx.progress,
-                      aliyahVerses: ctx.aliyahVerses,
-                      selected: _aliyah,
-                      onSelected: _goToAliyah,
-                      maxWidth: columnWidth,
-                    ),
-                  if (!ctx.isOpen)
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: columnWidth + 2 * _columnPadding),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(_columnPadding, 12, _columnPadding, 0),
-                          child: NoticeBanner(
-                            icon: Icons.visibility_outlined,
-                            text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
-                          ),
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: _fullText
-                        ? _FullText(
-                            flow: flow,
-                            texts: texts,
-                            settings: s,
-                            scroll: _scroll,
-                            verseKey: _verseKey,
-                            focusedVerse: _focusedVerse,
-                            quietFocus: _quietFocus,
-                            targetVerse: _targetVerse,
-                            onTap: _targetVerse == null ? null : () => setState(() => _targetVerse = null),
-                            onVerseTap: (i) => setState(() {
-                              _focusedVerse = _focusedVerse == i ? null : i;
-                              _quietFocus = null;
-                            }),
-                            footer: ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah)
-                                ? FilledButton.tonalIcon(
-                                    style: AppButtons.tonal(context),
-                                    icon: const Icon(Icons.check),
-                                    label: Text(l.markAliyahRead),
-                                    onPressed: () => _markAliyahRead(ctx),
-                                  )
-                                : null,
-                          )
-                        : _finished
-                            ? Focus(
-                                focusNode: _panelFocus,
-                                // With no bottom bar beneath it, the panel
-                                // keeps clear of the gesture bar itself.
-                                child: SafeArea(
-                                  top: false,
-                                  child: _FinishedPanel(
-                                    ctx: ctx,
-                                    aliyah: _aliyah,
-                                    justCompleted: _justCompleted,
-                                    firstFocus: _finishFocus,
-                                    onGoToAliyah: _goToAliyah,
-                                  ),
-                                ),
-                              )
-                            : _GuidedStep(
-                                flow: flow,
-                                texts: texts,
-                                settings: s,
-                                aliyah: _aliyah,
-                                chunk: _chunk,
-                                step: _step,
-                                scroll: _scroll,
-                                stepTitle: _stepTitle(flow.stepsFor(_chunk)[_step]),
-                              ),
+                  IconButton(
+                    tooltip: l.displaySettings,
+                    icon: const Icon(Icons.text_format),
+                    onPressed: () => showDisplaySheet(context),
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: l.actionMore,
+                    popUpAnimationStyle: Motion.of(context).style,
+                    onSelected: (v) {
+                      switch (v) {
+                        case 'mode':
+                          setState(() {
+                            _fullText = !_fullText;
+                            // The mark of the verse opened at goes with a
+                            // change of mode.
+                            _targetVerse = null;
+                            _quietFocus = null;
+                            // Focus mode picks up the full text at the verse
+                            // being read.
+                            if (_fullText && s.focusMode && !_finished) _focusedVerse = flow.chunks[_chunk].start;
+                          });
+                          if (_fullText && _focusedVerse != null) _revealVerse(_focusedVerse!, animate: false);
+                        case 'mark':
+                          _markAliyahRead(ctx);
+                        case 'week':
+                          // The week's page beneath, or in place of the reader:
+                          // never a second copy of it.
+                          if (widget.fromWeek && context.canPop()) {
+                            context.pop();
+                          } else {
+                            replaceWithWeekPage(context, 'week/${ctx.id}');
+                          }
+                        case 'keys':
+                          help();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(value: 'mode', child: Text(_fullText ? l.guidedMode : l.fullTextMode)),
+                      if (ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah))
+                        PopupMenuItem(value: 'mark', child: Text(l.markAliyahRead)),
+                      PopupMenuItem(value: 'week', child: Text(l.backToWeek)),
+                      PopupMenuItem(value: 'keys', child: Text(l.keyboardShortcuts)),
+                    ],
                   ),
                 ],
               ),
+              // The bottom bar runs under the gesture bar itself; above it, the
+              // page keeps clear of the notch and the screen's rounded sides.
+              body: SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    if (showRibbon)
+                      AliyahRibbon(
+                        week: ctx.progress,
+                        aliyahVerses: ctx.aliyahVerses,
+                        selected: _aliyah,
+                        onSelected: _goToAliyah,
+                        maxWidth: columnWidth,
+                      ),
+                    if (!ctx.isOpen)
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: columnWidth + 2 * _columnPadding),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(_columnPadding, 12, _columnPadding, 0),
+                            child: NoticeBanner(
+                              icon: Icons.visibility_outlined,
+                              text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: _fullText
+                          ? _FullText(
+                              flow: flow,
+                              texts: texts,
+                              settings: s,
+                              scroll: _scroll,
+                              verseKey: _verseKey,
+                              focusedVerse: _focusedVerse,
+                              quietFocus: _quietFocus,
+                              targetVerse: _targetVerse,
+                              onTap: _targetVerse == null ? null : () => setState(() => _targetVerse = null),
+                              onVerseTap: (i) => setState(() {
+                                _focusedVerse = _focusedVerse == i ? null : i;
+                                _quietFocus = null;
+                              }),
+                              onVerseOptions: (r) => _openVerseOptions(texts, flow.book, r),
+                              footer: ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah)
+                                  ? FilledButton.tonalIcon(
+                                      style: AppButtons.tonal(context),
+                                      icon: const Icon(Icons.check),
+                                      label: Text(l.markAliyahRead),
+                                      onPressed: () => _markAliyahRead(ctx),
+                                    )
+                                  : null,
+                            )
+                          : _finished
+                              ? Focus(
+                                  focusNode: _panelFocus,
+                                  // With no bottom bar beneath it, the panel
+                                  // keeps clear of the gesture bar itself.
+                                  child: SafeArea(
+                                    top: false,
+                                    child: _FinishedPanel(
+                                      ctx: ctx,
+                                      aliyah: _aliyah,
+                                      justCompleted: _justCompleted,
+                                      firstFocus: _finishFocus,
+                                      onGoToAliyah: _goToAliyah,
+                                    ),
+                                  ),
+                                )
+                              : _GuidedStep(
+                                  flow: flow,
+                                  texts: texts,
+                                  settings: s,
+                                  aliyah: _aliyah,
+                                  chunk: _chunk,
+                                  step: _step,
+                                  scroll: _scroll,
+                                  stepTitle: _stepTitle(flow.stepsFor(_chunk)[_step]),
+                                  onVerseOptions: (r) => _openVerseOptions(texts, flow.book, r),
+                                ),
+                    ),
+                  ],
+                ),
+              ),
+              // In the scaffold's own slot, so that status messages rise above
+              // it rather than cover it.
+              bottomNavigationBar: !_fullText && !_finished
+                  ? ReaderBottomBar(
+                      flow: flow,
+                      chunk: _chunk,
+                      step: _step,
+                      onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
+                      onNext: () => _next(ctx, flow),
+                      backFocus: _backFocus,
+                      nextFocus: _nextFocus,
+                      maxWidth: columnWidth,
+                    )
+                  : null,
             ),
-            // In the scaffold's own slot, so that status messages rise above
-            // it rather than cover it.
-            bottomNavigationBar: !_fullText && !_finished
-                ? ReaderBottomBar(
-                    flow: flow,
-                    chunk: _chunk,
-                    step: _step,
-                    onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
-                    onNext: () => _next(ctx, flow),
-                    backFocus: _backFocus,
-                    nextFocus: _nextFocus,
-                    maxWidth: columnWidth,
-                  )
-                : null,
           ),
         ),
       ),
@@ -959,6 +993,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         (const [[_Key('N')]], l.shortcutNikud),
         (const [[_Key('L')]], l.shortcutListen),
       ],
+      ([[shift, const _Key('F10')]], l.shortcutVerseOptions),
       (
         [
           if (singleKeys) const [_Key('?')],
@@ -1139,6 +1174,7 @@ class _GuidedStep extends StatelessWidget {
     required this.step,
     required this.scroll,
     required this.stepTitle,
+    required this.onVerseOptions,
   });
 
   final ReaderFlow flow;
@@ -1149,6 +1185,9 @@ class _GuidedStep extends StatelessWidget {
   final int step;
   final ScrollController scroll;
   final String stepTitle;
+
+  /// Opens a verse's options, from a long press on it.
+  final ValueChanged<VerseRef> onVerseOptions;
 
   /// How long one step takes to fade into the next (§8): opacity alone, with
   /// no slide.
@@ -1173,8 +1212,14 @@ class _GuidedStep extends StatelessWidget {
 
     // Every verse of the guided reader hangs its number in the gutter at its
     // start (§4.7).
-    ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false}) =>
-        ScriptureVerse(verse: text.verse(r), kind: kind, settings: settings, secondary: secondary, hangingNumber: true);
+    ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false}) => ScriptureVerse(
+          verse: text.verse(r),
+          kind: kind,
+          settings: settings,
+          secondary: secondary,
+          hangingNumber: true,
+          onLongPress: () => onVerseOptions(r),
+        );
 
     // What goes with a verse shares the edge its text starts at, past the
     // gutter its number hangs in.
@@ -1652,6 +1697,7 @@ class _FullText extends StatelessWidget {
     required this.targetVerse,
     required this.onTap,
     required this.onVerseTap,
+    required this.onVerseOptions,
     this.footer,
   });
 
@@ -1674,6 +1720,9 @@ class _FullText extends StatelessWidget {
   /// Called on any tap on the text, wherever it lands.
   final VoidCallback? onTap;
   final ValueChanged<int> onVerseTap;
+
+  /// Opens a verse's options, from a long press anywhere in its block.
+  final ValueChanged<VerseRef> onVerseOptions;
   final Widget? footer;
 
   /// Between one verse's block and the next, which with the blocks' insets
@@ -1708,6 +1757,7 @@ class _FullText extends StatelessWidget {
                 verse: r,
                 highlighted: highlighted,
                 onTap: settings.focusMode ? () => onVerseTap(i) : null,
+                onLongPress: () => onVerseOptions(r),
                 child: TargetVerseMark(
                   active: targeted,
                   child: Column(
@@ -1718,6 +1768,8 @@ class _FullText extends StatelessWidget {
                         kind: ScriptureKind.mikra,
                         settings: settings,
                         dimmed: dimmed,
+                        onLongPress: () => onVerseOptions(r),
+                        ownGestures: false,
                       ),
                       // Close beneath its verse, ruled off and without the
                       // verse's number again.
@@ -1731,6 +1783,8 @@ class _FullText extends StatelessWidget {
                           secondary: true,
                           showNumber: false,
                           ruled: true,
+                          onLongPress: () => onVerseOptions(r),
+                          ownGestures: false,
                         ),
                       ],
                       if (settings.showTranslation && texts.english != null) ...[

@@ -571,6 +571,18 @@
   "keyUp": "Up arrow",
   "keyDown": "Down arrow",
   "keySpace": "Space",
+  "verseOptions": "Verse options",
+  "@verseOptions": {
+    "description": "A screen reader's action on a verse, which opens what can be done with it: copy, share or ask about it."
+  },
+  "shortcutVerseOptions": "Verse options: copy, share or ask",
+  "copyVerse": "Copy",
+  "askAboutVerse": "Ask about this verse",
+  "askAboutVerseDesc": "In Questions & answers",
+  "verseCopied": "Verse copied",
+  "shareCopiedInstead": "Sharing isn't available here, so the verse was copied.",
+  "copyDivineName": "Write the Divine Name as ה׳",
+  "copyDivineNameDesc": "In a verse copied, shared or quoted in a question",
   "progressTitle": "Progress",
   "longest": "Longest: {value}",
   "@longest": {
@@ -1379,6 +1391,23 @@
   "moderatorBadge": "Moderator",
   "draftRestored": "Your draft was restored.",
   "discardDraft": "Discard draft",
+  "questionOnVerse": "Question on {reference}",
+  "@questionOnVerse": {
+    "description": "The title a question about a verse starts with, such as \"Question on Genesis 3:22\".",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "askDraftKept": "Your unsent draft is kept. Discard it to ask about {reference} instead.",
+  "@askDraftKept": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
   "charactersLeft": "{count} characters left",
   "@charactersLeft": {
     "placeholders": {

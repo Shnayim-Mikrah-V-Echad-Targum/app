@@ -16,6 +16,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -34,7 +35,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading;
+import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading, ScriptureVerse;
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
@@ -322,6 +323,13 @@ const _screens = {
   'goto_help': '/parsha',
   'reader_verse': '/read/5787:1/2?verse=3:8',
   'reader_verse_focus': '/read/5787:1/2?verse=3:8',
+  // A long press on Genesis 3:22, Revi'i's first verse, and on the
+  // haftarah's first: what can be done with it.
+  'reader_verse_actions': '/read/5787:1/3',
+  'haftarah_verse_actions': '/haftarah/5787:1',
+  // "Ask about this verse": the question begun, and a draft kept instead.
+  'compose_verse': '/community/new?forum=questions&verse=Genesis%203:22',
+  'compose_verse_draft': '/community/new?forum=questions&verse=Genesis%203:22',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
   'focus_day': '/today',
@@ -1038,6 +1046,20 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'goto_phrase': (tester) => _goTo(tester, 'שלח לו'),
   // Nothing to go to or search for: what the sheet takes.
   'goto_help': (tester) => _goTo(tester, '28'),
+  'reader_verse_actions': (tester) => tester.longPress(find.byType(ScriptureVerse).first),
+  'haftarah_verse_actions': (tester) => tester.longPress(find.byType(ScriptureVerse).first),
+  // A draft left from before, then the verse asked about.
+  'compose_verse_draft': (tester) async {
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    final router = c.read(routerProvider);
+    router.go('/community');
+    await _settle(tester);
+    await c.read(sharedPreferencesProvider).setString(
+          'draft.newThread',
+          '{"title":"Onkelos and the names of places","body":"Why does Onkelos keep some names"}',
+        );
+    router.go('/community/new?forum=questions&verse=Genesis%203:22');
+  },
   's_data_import': (tester) => tester.tap(find.byIcon(Icons.download)),
   's_data_paste': _tapInTurn([
     () => find.byIcon(Icons.content_paste),
@@ -1203,6 +1225,8 @@ const _desktopScreens = {
   'search_many',
   'goto_verse',
   'reader_verse',
+  'reader_verse_actions',
+  'compose_verse',
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc', 'wide'};
@@ -1245,6 +1269,8 @@ const _bigTextScreens = {
   'goto_verse',
   'goto_missing',
   'reader_verse',
+  'reader_verse_actions',
+  'compose_verse_draft',
   'search_many',
   'search_none',
   's_reading_city',

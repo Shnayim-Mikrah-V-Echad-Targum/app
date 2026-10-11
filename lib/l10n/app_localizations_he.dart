@@ -731,6 +731,33 @@ class AppLocalizationsHe extends AppLocalizations {
   String get keySpace => 'רווח';
 
   @override
+  String get verseOptions => 'אפשרויות לפסוק';
+
+  @override
+  String get shortcutVerseOptions => 'אפשרויות לפסוק: העתקה, שיתוף או שאלה';
+
+  @override
+  String get copyVerse => 'העתקה';
+
+  @override
+  String get askAboutVerse => 'שאלה על הפסוק';
+
+  @override
+  String get askAboutVerseDesc => 'בפורום שאלות ותשובות';
+
+  @override
+  String get verseCopied => 'הפסוק הועתק';
+
+  @override
+  String get shareCopiedInstead => 'אין כאן אפשרות לשתף, ולכן הפסוק הועתק.';
+
+  @override
+  String get copyDivineName => 'כתיבת שם ההוויה כ־ה׳';
+
+  @override
+  String get copyDivineNameDesc => 'בפסוק שמעתיקים, משתפים או מצטטים בשאלה';
+
+  @override
   String get progressTitle => 'התקדמות';
 
   @override
@@ -2045,6 +2072,16 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get discardDraft => 'מחיקת הטיוטה';
+
+  @override
+  String questionOnVerse(String reference) {
+    return 'שאלה על $reference';
+  }
+
+  @override
+  String askDraftKept(String reference) {
+    return 'הטיוטה שלא נשלחה נשמרה. אפשר למחוק אותה כדי לשאול על $reference במקומה.';
+  }
 
   @override
   String charactersLeft(int count) {

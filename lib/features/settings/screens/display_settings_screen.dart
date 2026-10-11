@@ -10,6 +10,7 @@ import '../../../ui/widgets/common.dart';
 import '../../reader/reader_screen.dart';
 import '../../reader/scripture_text.dart';
 import '../app_settings.dart';
+import '../widgets/divine_name_switch.dart';
 import '../widgets/settings_widgets.dart';
 
 class DisplaySettingsScreen extends ConsumerWidget {
@@ -82,6 +83,7 @@ class DisplaySettingsScreen extends ConsumerWidget {
           value: s.showVerseNumbers,
           onChanged: (v) => update((s) => s.copyWith(showVerseNumbers: v)),
         ),
+        const DivineNameSwitch(),
         SwitchListTile(
           title: Text(l.showTranslation),
           subtitle: Text(l.translationDisclaimer),

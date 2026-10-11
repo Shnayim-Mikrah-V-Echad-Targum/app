@@ -86,10 +86,12 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   | Show or hide cantillation | Ctrl+Shift+T | T |
   | Show or hide vowels | Ctrl+Shift+N | N |
   | Listen / stop | Ctrl+Shift+L | L |
+  | A verse's options: copy, share or ask | Shift+F10, or the menu key | Shift+F10, or the menu key |
   | Show shortcuts | F1, or Ctrl+/ | ?, F1, or Ctrl+/ |
 
-  Page Down and Page Up scroll a step that is longer than the screen before they move on, so nothing is skipped at a large reading size. In focus mode, the full text opens on the reader's place, the first verse of the step the guided reader would resume at, and the verse that ↓ or ↑ moves to is scrolled into view, nearer the top of the screen than the bottom. The shortcuts list shows ↑ and ↓ for focus mode only while it is on. Verses are not Tab stops of their own, so Tab reaches *Mark this aliyah as read* at the end of the text.
+  Page Down and Page Up scroll a step that is longer than the screen before they move on, so nothing is skipped at a large reading size. In focus mode, the full text opens on the reader's place, the first verse of the step the guided reader would resume at, and the verse that ↓ or ↑ moves to is scrolled into view, nearer the top of the screen than the bottom. The shortcuts list shows ↑ and ↓ for focus mode only while it is on. Verses are not Tab stops of their own, so Tab reaches *Mark this aliyah as read* at the end of the text. Shift+F10 opens the options of the verse focus mode is on, or else of the first verse in view; the haftarah's page takes it too.
 
+- A verse's options (copy, share, ask) are among its actions for screen readers: "Verse options" in TalkBack's actions menu and VoiceOver's Actions rotor, and a long press. In the full text, where a long press anywhere in a verse's block opens them, the verse and its Targum each keep their own node and offer them, and focus mode's tap stays on the block.
 - On any of the five tabs, Ctrl+K (⌘K on macOS) opens Search, where a verse is reached by its reference or words are searched for. It is not bound in the reader, whose own shortcuts take the keyboard there.
 - In the community, F5 or Ctrl+R (⌘R on macOS) refreshes the forums, a forum, a thread or the moderation queue. On the web those keys stay the browser's. Each of these pages also has a Refresh button.
 - No action needs a swipe, drag or multi-finger gesture. Pull to refresh has a Refresh button beside it. Everything is a tap, click or key press, and nothing has a time limit.

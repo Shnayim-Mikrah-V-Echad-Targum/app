@@ -730,6 +730,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keySpace => 'Space';
 
   @override
+  String get verseOptions => 'Verse options';
+
+  @override
+  String get shortcutVerseOptions => 'Verse options: copy, share or ask';
+
+  @override
+  String get copyVerse => 'Copy';
+
+  @override
+  String get askAboutVerse => 'Ask about this verse';
+
+  @override
+  String get askAboutVerseDesc => 'In Questions & answers';
+
+  @override
+  String get verseCopied => 'Verse copied';
+
+  @override
+  String get shareCopiedInstead =>
+      'Sharing isn\'t available here, so the verse was copied.';
+
+  @override
+  String get copyDivineName => 'Write the Divine Name as ה׳';
+
+  @override
+  String get copyDivineNameDesc =>
+      'In a verse copied, shared or quoted in a question';
+
+  @override
   String get progressTitle => 'Progress';
 
   @override
@@ -2056,6 +2085,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discardDraft => 'Discard draft';
+
+  @override
+  String questionOnVerse(String reference) {
+    return 'Question on $reference';
+  }
+
+  @override
+  String askDraftKept(String reference) {
+    return 'Your unsent draft is kept. Discard it to ask about $reference instead.';
+  }
 
   @override
   String charactersLeft(int count) {

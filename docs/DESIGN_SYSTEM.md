@@ -886,6 +886,15 @@ The Parsha tab's search button, and Ctrl+K (⌘K) on any tab, open one sheet (§
 - Enter takes the first row that leads somewhere; with none, the field keeps the focus.
 - Once typing pauses, the first row is announced where the platform takes announcements.
 
+### 6.27 Verse actions (lib/features/reader/verse_actions_sheet.dart)
+
+A long press on a verse, in the guided reader, the full text (anywhere in the verse's block, with no ink outside focus mode) or the haftarah, opens one sheet (§6.19); so do a secondary click, and Shift+F10 or the menu key for the verse focus mode is on, or the first in view:
+- `SheetTitle` with the verse's reference, as Names.reference writes it ("Genesis 3:22", "בראשית ג, כב").
+- The verse as it will go, at most three lines, in the scripture's font at 20 / 1.7 in onSurface, right to left, set off as a quotation is (§6.21): a 2 px `secondary` rule at its right, 12 from the text. Screen readers skip it; the title has named the verse.
+- 16 below, one PaperGroup (§6.3): Copy (`content_copy_outlined`) and Share (`share_outlined`, or `ios_share` on Apple devices), with no chevron; then Ask about this verse (`help_outline`, the forum's icon) with `askAboutVerseDesc` beneath and a chevron, as it leads to a page.
+- Copy closes the sheet and says `verseCopied`. Share leaves the sheet open beneath the platform's share sheet, which points from its row, and closes it once that is done with; where nothing can share, the verse is copied and `shareCopiedInstead` says so.
+- Screen readers: each verse (in the full text, the verse and its Targum) carries the custom action `verseOptions` and a long press.
+
 ## 7. Motifs and iconography
 
 At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/ornaments.dart`, wrapped in ExcludeSemantics. In high contrast they draw in onSurface.

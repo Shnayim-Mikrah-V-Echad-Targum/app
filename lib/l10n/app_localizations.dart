@@ -1281,6 +1281,60 @@ abstract class AppLocalizations {
   /// **'Space'**
   String get keySpace;
 
+  /// A screen reader's action on a verse, which opens what can be done with it: copy, share or ask about it.
+  ///
+  /// In en, this message translates to:
+  /// **'Verse options'**
+  String get verseOptions;
+
+  /// No description provided for @shortcutVerseOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Verse options: copy, share or ask'**
+  String get shortcutVerseOptions;
+
+  /// No description provided for @copyVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyVerse;
+
+  /// No description provided for @askAboutVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about this verse'**
+  String get askAboutVerse;
+
+  /// No description provided for @askAboutVerseDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'In Questions & answers'**
+  String get askAboutVerseDesc;
+
+  /// No description provided for @verseCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Verse copied'**
+  String get verseCopied;
+
+  /// No description provided for @shareCopiedInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing isn\'t available here, so the verse was copied.'**
+  String get shareCopiedInstead;
+
+  /// No description provided for @copyDivineName.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the Divine Name as ה׳'**
+  String get copyDivineName;
+
+  /// No description provided for @copyDivineNameDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'In a verse copied, shared or quoted in a question'**
+  String get copyDivineNameDesc;
+
   /// No description provided for @progressTitle.
   ///
   /// In en, this message translates to:
@@ -3566,6 +3620,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discard draft'**
   String get discardDraft;
+
+  /// The title a question about a verse starts with, such as "Question on Genesis 3:22".
+  ///
+  /// In en, this message translates to:
+  /// **'Question on {reference}'**
+  String questionOnVerse(String reference);
+
+  /// No description provided for @askDraftKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Your unsent draft is kept. Discard it to ask about {reference} instead.'**
+  String askDraftKept(String reference);
 
   /// No description provided for @charactersLeft.
   ///

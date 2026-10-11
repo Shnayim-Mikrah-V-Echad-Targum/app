@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../core/calendar/local_date.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart';
+import '../../data/models/verse_ref.dart';
 import '../../data/text_repository.dart';
 import '../../services/feedback.dart';
 import '../../services/tts.dart';
@@ -17,6 +18,7 @@ import '../parsha/week_context.dart';
 import '../settings/app_settings.dart';
 import 'display_sheet.dart';
 import 'scripture_text.dart';
+import 'verse_actions_sheet.dart';
 
 final haftarahTextProvider = FutureProvider.family<List<HaftarahVerse>, String>((ref, weekId) async {
   final ctx = ref.watch(weekContextProvider(weekId));
@@ -92,42 +94,46 @@ class HaftarahScreen extends ConsumerWidget {
           onPressed: () => showDisplaySheet(context),
         ),
       ],
-      body: verses.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(l.errorGeneric)),
-        data: (list) => PageBody(
-          maxWidth: width,
-          children: [
-            Eyebrow('${l.haftarahTitle} · $parsha'),
-            const Gap(Space.xs),
-            Semantics(
-              header: true,
-              headingLevel: 1,
-              child: Text(haftarahRefs(names, ctx.haftarah.parts), style: theme.textTheme.headlineSmall),
-            ),
-            if (ctx.haftarah.specialKey case final key?) ...[
+      // A verse's options open from the keyboard too, as well as from a long
+      // press or a secondary click on it.
+      body: VerseOptionsKeys(
+        child: verses.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text(l.errorGeneric)),
+          data: (list) => PageBody(
+            maxWidth: width,
+            children: [
+              Eyebrow('${l.haftarahTitle} · $parsha'),
               const Gap(Space.xs),
-              Text(names.specialHaftarah(key), style: SeferType.of(context).marginalia),
-            ],
-            // Chabad's own reading isn't listed for this week yet.
-            if (ctx.haftarah.fallback) ...[
-              const Gap(Space.lg),
-              NoticeBanner(icon: Icons.info_outline, text: l.chabadFallbackNote),
-            ],
-            const Gap(Space.xxl),
-            ..._verses(names, settings, list),
-            if (ctx.haftarah.regular != null) ...[
+              Semantics(
+                header: true,
+                headingLevel: 1,
+                child: Text(haftarahRefs(names, ctx.haftarah.parts), style: theme.textTheme.headlineSmall),
+              ),
+              if (ctx.haftarah.specialKey case final key?) ...[
+                const Gap(Space.xs),
+                Text(names.specialHaftarah(key), style: SeferType.of(context).marginalia),
+              ],
+              // Chabad's own reading isn't listed for this week yet.
+              if (ctx.haftarah.fallback) ...[
+                const Gap(Space.lg),
+                NoticeBanner(icon: Icons.info_outline, text: l.chabadFallbackNote),
+              ],
               const Gap(Space.xxl),
-              _RegularHaftarah(ctx: ctx),
+              ..._verses(context, settings, list),
+              if (ctx.haftarah.regular != null) ...[
+                const Gap(Space.xxl),
+                _RegularHaftarah(ctx: ctx),
+              ],
+              // The haftarah's end, as a book ends a section.
+              const Gap(Space.xxl),
+              const SeferDivider(),
+              if (ctx.isOpen) ...[
+                const Gap(Space.xl),
+                _MarkRead(ctx: ctx),
+              ],
             ],
-            // The haftarah's end, as a book ends a section.
-            const Gap(Space.xxl),
-            const SeferDivider(),
-            if (ctx.isOpen) ...[
-              const Gap(Space.xl),
-              _MarkRead(ctx: ctx),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -138,9 +144,19 @@ class HaftarahScreen extends ConsumerWidget {
 /// a chapter's head where the chapter changes from one verse to the next.
 /// Drawn from more than one book, each book's verses are headed by its name.
 /// Its heads are headings of [level]: 2 beneath the page's heading, or 3
-/// beneath the regular haftarah's own.
-List<Widget> _verses(Names names, AppSettings settings, List<HaftarahVerse> list, {int level = 2}) {
+/// beneath the regular haftarah's own. A long press on a verse opens its
+/// options, with its translation where that is shown.
+List<Widget> _verses(BuildContext context, AppSettings settings, List<HaftarahVerse> list, {int level = 2}) {
+  final names = Names(context);
   final books = {for (final v in list) v.book};
+  void options(HaftarahVerse v) => showVerseActions(
+        context,
+        ChosenVerse(
+          at: BookVerse(v.book, v.hebrew.ref),
+          hebrew: v.hebrew,
+          english: settings.showTranslation ? v.english : null,
+        ),
+      );
   return [
     for (var i = 0; i < list.length; i++) ...[
       if (i > 0) const Gap(_verseGap),
@@ -153,7 +169,12 @@ List<Widget> _verses(Names names, AppSettings settings, List<HaftarahVerse> list
         )
       else if (i > 0 && list[i].hebrew.ref.chapter != list[i - 1].hebrew.ref.chapter)
         ChapterHeading(chapter: list[i].hebrew.ref.chapter, settings: settings, headingLevel: level),
-      ScriptureVerse(verse: list[i].hebrew, kind: ScriptureKind.mikra, settings: settings),
+      ScriptureVerse(
+        verse: list[i].hebrew,
+        kind: ScriptureKind.mikra,
+        settings: settings,
+        onLongPress: () => options(list[i]),
+      ),
       if (settings.showTranslation) ...[
         const Gap(6),
         TranslationVerse(text: list[i].english, number: list[i].hebrew.ref.verse, settings: settings),
@@ -226,7 +247,7 @@ class _RegularVerses extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Gap(Space.md),
-              ..._verses(Names(context), settings, list, level: 3),
+              ..._verses(context, settings, list, level: 3),
             ],
           ),
         );

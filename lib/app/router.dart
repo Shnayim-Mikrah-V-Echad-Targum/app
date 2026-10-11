@@ -102,7 +102,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             _route('/community', (_) => const CommunityScreen(), routes: [
               _route('forum/:slug', (s) => ForumScreen(slug: s.pathParameters['slug']!)),
               _route('thread/:id', (s) => ThreadScreen(threadId: s.pathParameters['id']!)),
-              _route('new', (s) => ComposeScreen(forumSlug: s.uri.queryParameters['forum'])),
+              // ?verse=Genesis 3:22 begins a question on that verse.
+              _route('new', (s) => ComposeScreen(
+                    forumSlug: s.uri.queryParameters['forum'],
+                    verse: s.uri.queryParameters['verse'],
+                  )),
               _route('account', _account),
               _route('moderation', (_) => const ModerationScreen()),
             ]),
