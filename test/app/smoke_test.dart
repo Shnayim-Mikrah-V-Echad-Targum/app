@@ -6,9 +6,30 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/about/guide_screen.dart';
 import 'package:shnayim_mikra/features/about/legal_screen.dart';
 import 'package:shnayim_mikra/features/about/sources_screen.dart';
+import 'package:shnayim_mikra/features/parsha/parsha_tab.dart';
+import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/today/today_screen.dart';
 
 import '../helpers.dart';
+
+/// Records each time the app leaves, as the system's Back does when the app
+/// has nowhere to go back to.
+List<MethodCall> _recordExits(WidgetTester tester) {
+  final exits = <MethodCall>[];
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+    if (call.method == 'SystemNavigator.pop') exits.add(call);
+    return null;
+  });
+  addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+  return exits;
+}
+
+/// A destination of the navigation rail (the default test window is
+/// tablet-sized): its label, not the bold copy laid out unseen beneath it.
+Finder _tab(String label) => find.descendant(of: find.byType(NavigationRail), matching: find.text(label)).hitTestable();
+
+int? _selectedTab(WidgetTester tester) => tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex;
 
 void main() {
   testWidgets('first launch shows onboarding', (tester) async {
@@ -18,12 +39,7 @@ void main() {
   });
 
   testWidgets('Back returns a step of onboarding, and leaves the app only from the welcome', (tester) async {
-    final exits = <MethodCall>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      if (call.method == 'SystemNavigator.pop') exits.add(call);
-      return null;
-    });
-    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final exits = _recordExits(tester);
     final c = await pumpApp(tester, settings: const AppSettings());
     final router = c.read(routerProvider);
     await tester.pumpAndSettle();
@@ -60,6 +76,61 @@ void main() {
     expect(exits, isEmpty);
 
     // From the welcome, Back leaves the app.
+    expect(await tester.binding.handlePopRoute(), isFalse);
+    expect(exits, hasLength(1));
+  });
+
+  testWidgets('Back from another tab returns to Today, and only then leaves', (tester) async {
+    final exits = _recordExits(tester);
+    final c = await pumpApp(tester);
+    final router = c.read(routerProvider);
+    await tester.pumpAndSettle();
+
+    for (final (label, path) in [
+      ('Parsha', '/parsha'),
+      ('Progress', '/progress'),
+      ('Community', '/community'),
+      ('Settings', '/settings'),
+    ]) {
+      await tester.tap(_tab(label));
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, path);
+
+      // The system's Back, as on Android.
+      expect(await tester.binding.handlePopRoute(), isTrue, reason: 'Back from $label');
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, '/today', reason: 'Back from $label');
+      expect(_selectedTab(tester), 0);
+      expect(find.byType(TodayScreen), findsOneWidget);
+      expect(exits, isEmpty);
+    }
+
+    // From Today, Back leaves the app.
+    expect(await tester.binding.handlePopRoute(), isFalse);
+    expect(exits, hasLength(1));
+  });
+
+  testWidgets('Back closes a week open in Parsha before it returns to Today', (tester) async {
+    final exits = _recordExits(tester);
+    final c = await pumpApp(tester);
+    final router = c.read(routerProvider);
+    await tester.pumpAndSettle();
+    router.go('/parsha/week/5787:2');
+    await tester.pumpAndSettle();
+    expect(find.byType(WeekOverviewScreen), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, '/parsha');
+    expect(_selectedTab(tester), 1);
+    expect(find.byType(ParshaTab), findsOneWidget);
+    expect(find.byType(WeekOverviewScreen), findsNothing);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, '/today');
+    expect(exits, isEmpty);
+
     expect(await tester.binding.handlePopRoute(), isFalse);
     expect(exits, hasLength(1));
   });

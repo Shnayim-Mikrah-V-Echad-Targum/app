@@ -36,9 +36,19 @@ class AppShell extends StatelessWidget {
 
   void _go(int index) => shell.goBranch(index, initialLocation: index == shell.currentIndex);
 
-  // Ctrl+K (⌘K) goes to a verse, or searches, from any tab.
   @override
-  Widget build(BuildContext context) => GoToVerseShortcut(child: _layout(context));
+  Widget build(BuildContext context) => PopScope(
+        // Today is where the app starts, so the system's Back leaves the app
+        // only from there: at the root of another tab it returns to Today, as
+        // Today's tab would. A page within a tab, or over the tabs, is popped
+        // first, by its own navigator.
+        canPop: shell.currentIndex == 0,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) shell.goBranch(0);
+        },
+        // Ctrl+K (⌘K) goes to a verse, or searches, from any tab.
+        child: GoToVerseShortcut(child: _layout(context)),
+      );
 
   Widget _layout(BuildContext context) {
     final l = context.l10n;
