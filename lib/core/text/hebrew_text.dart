@@ -46,6 +46,46 @@ abstract final class HebrewText {
 
   static bool containsHebrew(String s) => RegExp('[֐-׿]').hasMatch(s);
 
+  // A word, between spaces or maqafs.
+  static final _word = RegExp(r'[^\s־]+');
+
+  // The four letters of the Divine Name, after up to two prefix letters, as
+  // HebrewSpeech finds it to speak it.
+  static final _divineName = RegExp(r'^([ובכלמשה]{0,2})יהוה$');
+
+  /// Writes the Divine Name (יהוה, however pointed or cantillated) as ה׳, as
+  /// it is written where it may be erased or thrown away: in a verse copied,
+  /// shared or quoted in a post. A prefix keeps its letters and vowels
+  /// (לַיהוָה becomes לַה׳), and the punctuation around the word stays.
+  /// Nothing else changes: the spaces and maqafs between words, and every
+  /// other word, are left as they are.
+  static String replaceDivineName(String text) => text.splitMapJoin(_word, onMatch: (m) => _hashem(m[0]!));
+
+  static bool _isLetter(int unit) => unit >= 0x05D0 && unit <= 0x05EA;
+
+  static String _hashem(String word) {
+    final letters = String.fromCharCodes(word.codeUnits.where(_isLetter));
+    final prefix = _divineName.firstMatch(letters)?[1];
+    if (prefix == null) return word;
+    // What comes before the Name: punctuation, and the prefix's letters with
+    // their marks.
+    final out = StringBuffer();
+    var i = 0;
+    for (var left = prefix.length; i < word.length; i++) {
+      if (_isLetter(word.codeUnitAt(i)) && left-- == 0) break;
+      out.writeCharCode(word.codeUnitAt(i));
+    }
+    // And what follows its last letter's marks: a sof pasuq, say.
+    var end = word.length;
+    while (!_isLetter(word.codeUnitAt(end - 1))) {
+      end--;
+    }
+    while (end < word.length && isMark(word.codeUnitAt(end))) {
+      end++;
+    }
+    return '$outה׳${word.substring(end)}';
+  }
+
   /// Whether [codeUnit] is one of the marks [consonantsOnly] removes: a
   /// cantillation mark, meteg, vowel point, dagesh, shin or sin dot, a
   /// Masoretic dot, or the combining grapheme joiner. The paseq is not one:

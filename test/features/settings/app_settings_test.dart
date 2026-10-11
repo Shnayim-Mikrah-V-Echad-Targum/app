@@ -241,6 +241,14 @@ void main() {
     );
   });
 
+  test('the Divine Name is copied as ה׳ unless the reader turns it off, also in settings saved before it existed', () {
+    expect(const AppSettings().copyDivineNameAsHashem, isTrue);
+    expect(AppSettings.fromJson({}).copyDivineNameAsHashem, isTrue);
+    const off = AppSettings(copyDivineNameAsHashem: false);
+    expect(AppSettings.fromJson(off.toJson()).copyDivineNameAsHashem, isFalse);
+    expect(const AppSettings().copyWith(copyDivineNameAsHashem: false).copyDivineNameAsHashem, isFalse);
+  });
+
   test('copyWith can clear nullable fields', () {
     final s = const AppSettings(habitAnchor: HabitAnchor.bed, city: _jerusalem).copyWith(habitAnchor: null, city: null);
     expect(s.habitAnchor, isNull);

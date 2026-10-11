@@ -177,6 +177,7 @@ class AppSettings {
     this.showTeamim = true,
     this.showKetiv = true,
     this.showVerseNumbers = true,
+    this.copyDivineNameAsHashem = true,
     this.justify = false,
     this.lineWidth = LineWidth.medium,
     this.scriptureFont = ScriptureFont.notoSerif,
@@ -269,6 +270,10 @@ class AppSettings {
   final bool showTeamim;
   final bool showKetiv;
   final bool showVerseNumbers;
+
+  /// Write the Divine Name as ה׳ in a verse copied, shared or quoted in a
+  /// post, which may be erased or thrown away (DESIGN.md §3).
+  final bool copyDivineNameAsHashem;
   final bool justify;
   final LineWidth lineWidth;
   final ScriptureFont scriptureFont;
@@ -448,6 +453,7 @@ class AppSettings {
     bool? showTeamim,
     bool? showKetiv,
     bool? showVerseNumbers,
+    bool? copyDivineNameAsHashem,
     bool? justify,
     LineWidth? lineWidth,
     ScriptureFont? scriptureFont,
@@ -506,6 +512,7 @@ class AppSettings {
         showTeamim: showTeamim ?? this.showTeamim,
         showKetiv: showKetiv ?? this.showKetiv,
         showVerseNumbers: showVerseNumbers ?? this.showVerseNumbers,
+        copyDivineNameAsHashem: copyDivineNameAsHashem ?? this.copyDivineNameAsHashem,
         justify: justify ?? this.justify,
         lineWidth: lineWidth ?? this.lineWidth,
         scriptureFont: scriptureFont ?? this.scriptureFont,
@@ -570,6 +577,7 @@ class AppSettings {
         'showTeamim': showTeamim,
         'showKetiv': showKetiv,
         'showVerseNumbers': showVerseNumbers,
+        'copyDivineNameAsHashem': copyDivineNameAsHashem,
         'justify': justify,
         'lineWidth': lineWidth.name,
         'scriptureFont': scriptureFont.name,
@@ -654,6 +662,7 @@ class AppSettings {
       showTeamim: b('showTeamim', d.showTeamim),
       showKetiv: b('showKetiv', d.showKetiv),
       showVerseNumbers: b('showVerseNumbers', d.showVerseNumbers),
+      copyDivineNameAsHashem: b('copyDivineNameAsHashem', d.copyDivineNameAsHashem),
       justify: b('justify', d.justify),
       lineWidth: e(LineWidth.values, j['lineWidth'], d.lineWidth),
       scriptureFont: e(ScriptureFont.values, j['scriptureFont'], d.scriptureFont),
