@@ -497,6 +497,7 @@ Rules:
   - the nav indicator is the only stadium shape.
 - **Elevation:** 0 everywhere. Separation comes from paper on surface plus a 1 px hairline. FAB and menus are 2, with `shadowColor` = shadow token.
 - **App bar title alignment on wide screens:** `PageScaffold` reads the pane's width with a `LayoutBuilder` (the window less the rail and its hairline) and computes `inset = max(gutter, (paneWidth - contentMaxWidth) / 2 + gutter)`, where the column's content starts. The title is padded `inset` at its start, or `max(gutter, inset - 56)` after a back or home button, and a gutter at its end (as `titleSpacing` the inset would be kept after it too, leaving a narrow column's title no room on a wide screen), and `actionsPadding` ends `inset - gutter` from the pane's end, at the column's edge, as a phone's end at the screen's. This puts the title edge on the content edge, fixing D11. The title is a level-1 heading. Pages of list tiles pad the column `gutter - 16` at the sides (`PageBody.tilePadding`), so the tiles' own 16 brings their text to the same edge.
+- **Floating button:** where the pane is wider than the page's column, a `PageScaffold`'s floating action button ends where the column's content does, beside its cards and under the app bar's actions, rather than in the pane's far corner. Where the column fills the pane, Material's 16 from the edge.
 - **Document title:** on the web, the page on show names the browser's tab, its history and bookmarks: "Settings · Shnayim Mikra" (`DocumentTitle`, which `PageScaffold` applies; the reader, Today and Welcome apply it themselves). A page names it again whenever it comes back into view, as the page over it closes or its tab is chosen again. Its colour is the app's (`MaterialApp.color`, the surface), since the web takes it for the theme-color (§3.6). Elsewhere the platform keeps the app's name.
 
 ## 6. Components
@@ -794,8 +795,9 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 
 **Snackbar**
 - Floating; radius 10; margin 16; inverseSurface with onInverseSurface; action in inversePrimary.
+- From 600 dp, at most 640 wide (a sheet's width), centred on the page that shows it: within a tab, the pane beside the rail, not the whole window. The page on show sets it in its own Scaffold, as it lays out (`StatusMessageArea`, feedback.dart), so a message that stays on as another page opens, or as the window is resized, is set again for where it now is. Within the safe area, so a phone held sideways keeps it clear of the notch and centred on the page where it can.
 - Duration 4 s, or 8 s with an action. Flutter already holds action snackbars when `accessibleNavigation` is on.
-- Sits above the reader bottom bar.
+- Sits above the page's bottom bar (the reader's, a thread's reply box) and its floating button. On a tablet or desktop the shell has no Scaffold of its own around the rail and the pane, so that each page is the one that shows it; on a phone the shell shows it, above the navigation bar.
 
 **Tooltip:** inverseSurface, radius 6, bodySmall in onInverseSurface; waitDuration 400 ms (existing).
 
@@ -810,6 +812,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 - Padding 12/16; icon 20 in onSecondaryContainer; bodyMedium onSecondaryContainer; optional trailing TextButton.
   - Beside or below a TextButton the end padding is 8: the button's own padding makes up the rest, and the text keeps 16.
 - **Action below** (`actionBelow`): for a text longer than a line or two, which a trailing button would squeeze. The icon and text align to the top, and the TextButton sits under the text at the end, with 4 bottom padding.
+  - A row of actions below that ends with a Tonal button (the after-Shabbat check-in, the welcome after a pause) is inset 4 more at the end and 8 more at the foot (`NoticeBanner.tonalActionInset`): a text button's own padding makes up the banner's, but the Tonal's fill shows, so it stands 12 from the banner's end and foot, as the text stands 12 from its top.
 - **Action ink:** the TextButton is `primary` where primary on secondaryContainer meets AA (4.5:1); otherwise, as in the high-contrast themes, it is `onSecondaryContainer`, with a 3 px focus ring in the same colour.
 - **Marginalia** (`marginalia`): for a gentle word in the margin rather than news, such as onboarding's honor statement, the text is set as marginalia (§4.5) in onSecondaryContainer, and the icon sits beside its first line.
 
@@ -1106,7 +1109,10 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - The wording goes to the rabbinic advisor (DESIGN.md §11).
 9. **Desktop ≥1200:**
    - A container of max width 1040 with columns 7/5 and a 24 gap.
-   - Left: header, hero, Today card. Right: week strip, ledger, "This week".
+   - Left: any notices, the hero and the Today card. Right: week strip, ledger, "This week".
+   - The header runs across the container above them, so its help button ends where the columns do, as an app bar's actions end on the column's edge, and the two columns start level under it.
+   - Each column is a focus traversal group, so Tab goes down the left column before the right, in the order a screen reader reads them, rather than across to the week strip, which stands higher on the page than the hero's controls.
+   - The day of rest keeps the single 720 column: its title page is all there is.
    - 600–1199: a single 720 column.
 
 ### Parsha tab / Week overview (week_overview_screen.dart, parsha_tab.dart; phonetall_parsha, phonetall_week, he_parsha)

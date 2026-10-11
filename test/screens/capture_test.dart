@@ -319,6 +319,11 @@ const _screens = {
   'forum_questions': '/community/forum/questions',
   'forum_feedback': '/community/forum/feedback',
   'forum_empty': '/community/forum/divrei-torah',
+  // Offline: a forum's threads, a discussion's posts and the reports that
+  // can't load, each said in the page's column.
+  'forum_error': '/community/forum/questions',
+  'thread_error': '/community/thread/1',
+  'moderation_error': '/community/moderation',
   // What the Demo tag explains.
   'demo_about': '/community/forum/questions',
   // Reporting a post, before a reason is chosen.
@@ -341,8 +346,10 @@ const _screens = {
   'week_discuss': '/week/5787:1',
   // Asked to confirm clearing the week's progress.
   'week_clear': '/week/5787:1',
-  // Just refreshed from the app bar.
+  // Just refreshed from the app bar: the message above the reply box, and
+  // above the button that begins a discussion.
   'thread_refreshed': '/community/thread/1',
+  'forum_refreshed': '/community/forum/questions',
   'compose': '/community/new',
   // Its empty title field focused: the caret at the start of the UI's direction.
   'compose_focused': '/community/new',
@@ -383,6 +390,8 @@ const _screens = {
   'city_search': '/settings/reading/city',
   'city_many': '/settings/reading/city',
   'city_none': '/settings/reading/city',
+  // The list of cities, which failed to load.
+  'city_error': '/settings/reading/city',
   // Its customs: the second reading, the haftarah and the late window.
   's_reading_customs': '/settings/reading',
   // For Chabad: the last verse isn't repeated, as the switch says.
@@ -631,6 +640,7 @@ final _screenOverrides = <String, List<Override>>{
     ],
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
   for (final screen in _listening) screen: [ttsProvider.overrideWithValue(_HeldTts())],
+  'city_error': [cityDirectoryProvider.overrideWith((ref) async => throw Exception('offline'))],
 };
 
 /// Screens shown while Listen reads.
@@ -920,6 +930,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked'])
     screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
+  for (final screen in ['forum_error', 'thread_error', 'moderation_error']) screen: () async => _Offline(),
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
   'thread_mine': _withOwnPost,
@@ -1010,6 +1021,26 @@ class _CloudForever extends _Cloud {
   Future<Map<String, dynamic>?> loadProgress() => Completer<Map<String, dynamic>?>().future;
 }
 
+/// A community whose forums load, but whose threads, posts and reports
+/// can't.
+class _Offline extends DemoForumRepository {
+  @override
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) async =>
+      throw Exception('offline');
+
+  @override
+  Future<List<Post>> posts(String threadId, {(DateTime, String)? before, int limit = ForumRepository.postsPageSize}) async =>
+      throw Exception('offline');
+
+  @override
+  Future<List<Report>> openReports() async => throw Exception('offline');
+}
+
 /// A community whose weekly threads never finish opening.
 class _OpeningForever extends DemoForumRepository {
   @override
@@ -1027,7 +1058,7 @@ final _taps = {
   for (final screen in ['reader_finished', 'reader_finished_next', 'reader_finished_day', 'reader_finished_erev', 'reader_finished_week'])
     screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(PaperRow, Icons.forum_outlined),
-  'thread_refreshed': () => find.byIcon(Icons.refresh),
+  for (final screen in ['thread_refreshed', 'forum_refreshed']) screen: () => find.byIcon(Icons.refresh),
   'account_code': () => find.byType(FilledButton).first,
   'compose_errors': () => find.byType(FilledButton).last,
 };
@@ -1138,6 +1169,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await _listenOnTwo(tester);
     await tester.tap(find.text('45%'));
   },
+  // Past the times what failed to load is tried again, so that none is
+  // still waiting as the test ends.
+  for (final screen in ['forum_error', 'thread_error', 'moderation_error', 'city_error'])
+    screen: (tester) => tester.pump(const Duration(minutes: 1)),
   // Next through Rishon's three readings, then a routine in the offer.
   'reader_offer': _tapInTurn([
     for (var i = 0; i < 3; i++) () => find.byWidgetPredicate((w) => w is FilledButton).last,
@@ -1574,12 +1609,26 @@ final _modes = [
   _Mode('narrow', const Size(360, 2600), (s) => s),
   // A 1920 dp desktop, where a column's inset is widest.
   _Mode('wide', const Size(1920, 1080), (s) => s),
+  // The narrowest desktop, where Today's columns are narrowest, for the
+  // screens in [_narrowDesktopScreens].
+  _Mode('desk1200', const Size(1200, 800), (s) => s),
   // System text at 200% on a phone's own height, for the screens in
   // [_bigPhoneScreens]: what stays in view without scrolling.
   _Mode('bigphone', const Size(412, 915), (s) => s, textScale: 2),
 ];
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
+
+const _narrowDesktopScreens = {
+  'today',
+  'today_checkin',
+  'today_complete',
+  'today_grace',
+  'today_pause_ended',
+  'today_divergence',
+  'forum_questions',
+  'snackbar',
+};
 
 const _desktopScreens = {
   'notes',
@@ -1592,11 +1641,19 @@ const _desktopScreens = {
   'today_divergence',
   'today_haftarah_left',
   'today_yomtov_oneday',
+  // Today's columns with a notice over the title page, with the strip's
+  // note, and with a sheet over them.
+  'today_paused',
+  'today_pause_ended',
+  'today_grace',
+  'today_book',
   'parsha',
   'parsha_scrolled',
   'week',
+  'week_combined',
   'week_tab',
   'haftarah_tab',
+  'haftarah',
   'haftarah_regular',
   'haftarah_read',
   'reader',
@@ -1625,6 +1682,8 @@ const _desktopScreens = {
   'reader_gaps',
   'progress',
   'progress_years',
+  'progress_paused',
+  'progress_about',
   'thread',
   'thread_letters',
   'thread_replying',
@@ -1636,9 +1695,19 @@ const _desktopScreens = {
   's_display',
   's_display_scrolled',
   's_a11y',
+  's_reading',
+  's_reminders',
+  's_data',
   'community',
   'forum',
   'forum_questions',
+  // The button that begins a discussion, at the column's end.
+  'forum_empty',
+  // What can't load, said under the title rather than at the pane's edge.
+  'forum_error',
+  'thread_error',
+  'moderation_error',
+  'city_error',
   'account',
   'account_code',
   'account_member',
@@ -1652,6 +1721,12 @@ const _desktopScreens = {
   'welcome_plan',
   'welcome_restore',
   'dialog',
+  // Status messages, centred on the page that shows them: over the tabs,
+  // and within one beside the rail.
+  'snackbar',
+  's_a11y_undo',
+  'thread_refreshed',
+  'forum_refreshed',
   'sheet_display',
   'focus_nav',
   'kit_ornaments',
@@ -1660,6 +1735,7 @@ const _desktopScreens = {
   'kit_week',
   'progress_map',
   'city_search',
+  'search',
   'search_many',
   'goto_verse',
   'reader_verse',
@@ -1845,6 +1921,7 @@ void main() {
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
       if (mode.tag == 'narrow' && !_narrowScreens.contains(entry.key)) continue;
       if (mode.tag == 'bigphone' && !_bigPhoneScreens.contains(entry.key)) continue;
+      if (mode.tag == 'desk1200' && !_narrowDesktopScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {

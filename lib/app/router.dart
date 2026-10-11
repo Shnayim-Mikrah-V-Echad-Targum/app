@@ -88,7 +88,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         // without a display name, as nothing is posted.
         _route('account', (_) => const AccountScreen(returnWhenSignedIn: true, needsName: false)),
       ]),
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
+        navigatorContainerBuilder: _tabStack,
         pageBuilder: (context, state, shell) => _page(state, AppShell(shell: shell)),
         branches: [
           StatefulShellBranch(routes: [_route('/today', (_) => const TodayScreen(), routes: _weekPages())]),
@@ -171,6 +172,25 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// The tabs' navigators, each kept as it was left and only the chosen one
+/// shown, as go_router's indexed stack keeps them; and only the chosen one's
+/// heroes take part in a page's transition. On a tablet or desktop each
+/// tab's page on show is the Scaffold that shows a status message (§6.19),
+/// whose copy of it, a hero, would otherwise be one of several alike.
+Widget _tabStack(BuildContext context, StatefulNavigationShell shell, List<Widget> children) => IndexedStack(
+      index: shell.currentIndex,
+      children: [
+        for (final (i, child) in children.indexed)
+          Offstage(
+            offstage: i != shell.currentIndex,
+            child: TickerMode(
+              enabled: i == shell.currentIndex,
+              child: HeroMode(enabled: i == shell.currentIndex, child: child),
+            ),
+          ),
+      ],
+    );
 
 /// The roots of the navigation tabs.
 const _tabs = ['/today', '/parsha', '/progress', '/community', '/settings'];

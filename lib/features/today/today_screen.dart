@@ -51,6 +51,9 @@ class TodayScreen extends ConsumerWidget {
     final l = context.l10n;
     final g = Gutter.of(context);
     final rest = ref.watch(restDayProvider);
+    // A desktop's reading day is set in two columns; the day of rest's one
+    // title page keeps the single column.
+    final wide = rest == null && MediaQuery.sizeOf(context).width >= Breakpoints.expanded;
     return PageScaffold(
       titleText: l.navToday,
       showAppBar: false,
@@ -58,10 +61,11 @@ class TodayScreen extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: PageBody(
+          maxWidth: wide ? ContentWidth.todayWide : ContentWidth.list,
           padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.s40),
           children: rest != null
               ? [_TodayHeader(today: rest), const Gap(Space.lg), _RestHero(date: rest)]
-              : _readingDay(context, ref),
+              : _readingDay(context, ref, wide: wide),
         ),
       ),
     );
@@ -69,8 +73,9 @@ class TodayScreen extends ConsumerWidget {
 
   /// Today on a reading day: any notice, the week's title page, today's
   /// reading, the week's days, the streaks, and the week's haftarah and
-  /// discussion.
-  List<Widget> _readingDay(BuildContext context, WidgetRef ref) {
+  /// discussion. In one column, or when [wide] in two under the header
+  /// (§9 Today, 9): the title page and today's reading beside the week.
+  List<Widget> _readingDay(BuildContext context, WidgetRef ref, {required bool wide}) {
     final l = context.l10n;
     final names = Names(context);
     final today = ref.watch(todayProvider);
@@ -86,9 +91,7 @@ class TodayScreen extends ConsumerWidget {
     );
     final welcome = pauseEnd != null && pauseEnd != settings.pauseEndSeen ? pauseEnd : null;
 
-    return [
-      _TodayHeader(today: today),
-      const Gap(Space.lg),
+    final reading = [
       if (paused) ...[
         NoticeBanner(
           icon: Icons.pause_circle_outline,
@@ -121,7 +124,8 @@ class TodayScreen extends ConsumerWidget {
       _Hero(ctx: ctx, settings: settings),
       const Gap(Rhythm.cardGap),
       _TodayCard(ctx: ctx, settings: settings),
-      const Gap(Rhythm.cardGap),
+    ];
+    final week = [
       InfoCard(
         padding: WeekStrip.cardPadding,
         child: Column(
@@ -164,6 +168,59 @@ class TodayScreen extends ConsumerWidget {
         ],
       ),
     ];
+    return [
+      _TodayHeader(today: today),
+      const Gap(Space.lg),
+      _Columns(main: reading, side: week, wide: wide),
+    ];
+  }
+}
+
+/// Today's two columns on a desktop (§9 Today, 9): seven parts of the width
+/// for [main], the title page and today's reading, and five for [side], the
+/// week, 24 apart and level at the top. Each column is a group of its own,
+/// for keyboard focus and for screen readers, so that both go down the one
+/// before the other, rather than across from one to the other by what stands
+/// level on the page.
+///
+/// Until [wide], the two stand one above the other, a card's gap apart, as
+/// one column. Either way they are the same widgets in the same places, so
+/// that a window widened or narrowed across [Breakpoints.expanded] keeps
+/// what they hold: the keyboard's focus, the title page's drawn frame, a
+/// discussion opening.
+class _Columns extends StatelessWidget {
+  const _Columns({required this.main, required this.side, required this.wide});
+
+  final List<Widget> main;
+  final List<Widget> side;
+  final bool wide;
+
+  static const _gap = Space.xxl;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget column(List<Widget> children) => FocusTraversalGroup(
+          child: Semantics(
+            // As one column, its parts are the page's own, as before.
+            container: wide,
+            // Its headings, texts and controls each a node of their own, as
+            // in the page's single column.
+            explicitChildNodes: true,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+          ),
+        );
+    // A Flex in either direction, rather than a Row or a Column, which as
+    // widgets of different kinds would build both columns anew.
+    return Flex(
+      direction: wide ? Axis.horizontal : Axis.vertical,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: wide ? CrossAxisAlignment.start : CrossAxisAlignment.stretch,
+      children: [
+        Flexible(flex: wide ? 7 : 0, fit: FlexFit.tight, child: column(main)),
+        SizedBox(width: wide ? _gap : 0, height: wide ? 0 : Rhythm.cardGap),
+        Flexible(flex: wide ? 5 : 0, fit: FlexFit.tight, child: column(side)),
+      ],
+    );
   }
 }
 
@@ -1056,12 +1113,16 @@ class _PauseEndedNotice extends ConsumerWidget {
       actionBelow: true,
       action: actions.isEmpty
           ? null
-          : Wrap(
-              alignment: WrapAlignment.end,
-              spacing: Space.sm,
-              runSpacing: Space.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: actions,
+          : Padding(
+              // Clear of the corner, where the tonal button ends the row.
+              padding: next != null ? NoticeBanner.tonalActionInset : EdgeInsets.zero,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: Space.sm,
+                runSpacing: Space.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: actions,
+              ),
             ),
       onDismiss: () => ref.read(settingsProvider.notifier).update((s) => s.copyWith(pauseEndSeen: end)),
       dismissLabel: l.actionDismiss,

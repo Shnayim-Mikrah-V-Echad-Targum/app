@@ -141,7 +141,8 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
             // Fetched again, the threads shown stay until the new ones come.
             skipError: threads.hasValue,
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text(communityError(l, e)))]),
+            // In the page's column, under the title, and pulled to try again.
+            error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
             data: (page) {
               // The pinned threads, then the rest, each group as rows of one
               // sheet of paper, built only as they scroll into view: a forum

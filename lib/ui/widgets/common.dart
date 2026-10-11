@@ -232,10 +232,44 @@ class PageScaffold extends StatelessWidget {
                 : null,
             body: body,
             floatingActionButton: floatingActionButton,
+            floatingActionButtonLocation: _ColumnEndFab(contentMaxWidth: contentMaxWidth, gutter: g),
             bottomNavigationBar: bottomNavigationBar,
           );
         }),
       );
+}
+
+/// Where a [PageScaffold] floats its button (§5): at the end, 16 above the
+/// bottom, as Material does; but on a pane wider than the page's column, at
+/// the end of the column's content, where its cards and the app bar's
+/// actions end, rather than in the pane's far corner.
+class _ColumnEndFab extends StandardFabLocation with FabFloatOffsetY {
+  const _ColumnEndFab({required this.contentMaxWidth, required this.gutter});
+
+  final double contentMaxWidth;
+  final double gutter;
+
+  @override
+  double getOffsetX(ScaffoldPrelayoutGeometry geometry, double adjustment) {
+    final width = geometry.scaffoldSize.width;
+    // Where the column's content ends, from the pane's end, as in its
+    // PageBody; Material's margin while the column fills the pane.
+    final inset = (width - contentMaxWidth) / 2 + gutter;
+    final margin = inset > gutter ? inset : kFloatingActionButtonMargin;
+    return switch (geometry.textDirection) {
+      TextDirection.rtl => margin + geometry.minInsets.left - adjustment,
+      TextDirection.ltr =>
+        width - margin - geometry.minInsets.right - geometry.floatingActionButtonSize.width + adjustment,
+    };
+  }
+
+  // Equal while the column is, so that a rebuild never moves the button.
+  @override
+  bool operator ==(Object other) =>
+      other is _ColumnEndFab && other.contentMaxWidth == contentMaxWidth && other.gutter == gutter;
+
+  @override
+  int get hashCode => Object.hash(contentMaxWidth, gutter);
 }
 
 /// An app bar's title, in the app bar's style: set a little smaller where
@@ -464,6 +498,12 @@ class NoticeBanner extends StatelessWidget {
   /// Puts [action] beneath the text, at the end, rather than beside it: for
   /// a text of more than a line or two, which would otherwise be squeezed.
   final bool actionBelow;
+
+  /// Around an [action] below the text that ends with a tonal button. A
+  /// text button's own padding makes up the banner's, but a tonal button's
+  /// fill shows: this sets it 12 from the banner's end and foot, as the text
+  /// stands 12 from its top, rather than all but in the corner.
+  static const tonalActionInset = EdgeInsetsDirectional.only(end: 4, bottom: 8);
 
   /// [action] in the colour of interaction where that reads clearly on the
   /// banner (WCAG AA), and otherwise, as in the high-contrast themes, in the
