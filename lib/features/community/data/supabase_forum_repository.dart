@@ -136,6 +136,13 @@ class SupabaseForumRepository implements ForumRepository {
       'id, category_id, parasha_id, hebrew_year, kind, title, author_id, is_pinned, is_locked, post_count, '
       'last_post_at, created_at, author_name, excerpt, todah_total';
 
+  /// A thread opened on its own is read from its table, which lets a
+  /// moderator open one deleted (from an old link, say), as the listing
+  /// doesn't; its page shows neither the excerpt nor the thanks.
+  static const _oneThreadColumns =
+      'id, category_id, parasha_id, hebrew_year, kind, title, author_id, is_pinned, is_locked, post_count, '
+      'last_post_at, created_at, author:profiles(display_name)';
+
   /// The exact times PostgREST gave, by row: `thread:ID` for a thread's
   /// last post, `post:ID` for a post. A page follows on from the last row
   /// shown at its exact time: a DateTime on the web keeps only milliseconds,
@@ -153,7 +160,7 @@ class SupabaseForumRepository implements ForumRepository {
         title: r['title'] as String,
         kind: ThreadKind.values.firstWhere((k) => k.name == r['kind'], orElse: () => ThreadKind.discussion),
         authorId: r['author_id'] as String?,
-        authorName: r['author_name'] as String? ?? '',
+        authorName: r['author_name'] as String? ?? (r['author'] as Map<String, dynamic>?)?['display_name'] as String? ?? '',
         postCount: r['post_count'] as int? ?? 0,
         lastPostAt: DateTime.parse(r['last_post_at'] as String),
         createdAt: DateTime.parse(r['created_at'] as String),
@@ -206,7 +213,7 @@ class SupabaseForumRepository implements ForumRepository {
 
   @override
   Future<ThreadSummary> thread(String id) => _call(() async {
-        final r = await _db.from('thread_listing').select(_threadColumns).eq('id', int.parse(id)).single();
+        final r = await _db.from('threads').select(_oneThreadColumns).eq('id', int.parse(id)).single();
         return _thread(r);
       });
 

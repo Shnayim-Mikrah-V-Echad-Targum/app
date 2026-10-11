@@ -1190,7 +1190,7 @@ In order:
 - Demo NoticeBanner (§6.20).
 - Featured row (a Card with SeferInkWell, no primaryContainer fill): the Hebrew parsha name in FRL 600 20 primary, titleMedium "This week: Parshat Bereshit", bodySmall "Open the discussion", and a chevron.
 - Sign-in: one PaperRow with `info_outline`, text, and a trailing TextButton "Sign in".
-- GroupHeader "Forums", then one PaperGroup: icons in onSurfaceVariant, titles titleMedium, descriptions bodySmall onSurface (2 lines), as a thread's excerpt is, and under them, once it comes, the forum's activity as a detail line, "12 discussions · active 3 hours ago" ("No discussions yet" in an empty forum; no "active" until one has been posted in). A forum is listed without it until then, or where it can't be had.
+- GroupHeader "Forums", then one PaperGroup: icons in onSurfaceVariant, titles titleMedium, descriptions bodySmall onSurface (2 lines), as a thread's excerpt is, and under them, once it comes, the forum's activity as a detail line, "12 discussions · active 3 hours ago" ("No discussions yet" in an empty forum; no "active" until one has been posted in). As the page first loads, the forums wait a moment (1.5 s) for it, still loading, so that no row grows by a line under a finger or a screen reader's cursor as it comes; past that, a forum is listed without it until it comes, or where it can't be had. It is fetched again wherever a forum's discussions change: one begun, this week's opened (which may begin it), and an account deleted with its own.
 
 **Forum**
 - The description in bodyMedium onSurfaceVariant.

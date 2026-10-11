@@ -599,7 +599,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     await _run(() async {
       await repo.deleteAccount();
       ref.read(settingsProvider.notifier).update((s) => s.copyWith(cloudSync: false));
-      ref.invalidate(myProfileProvider);
+      ref
+        ..invalidate(myProfileProvider)
+        // Its discussions that no one else posted in went with it.
+        ..invalidate(threadsProvider)
+        ..invalidate(forumStatsProvider);
     }, success: l.accountDeleted);
   }
 

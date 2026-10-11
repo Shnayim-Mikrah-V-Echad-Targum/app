@@ -261,6 +261,31 @@ void main() {
     });
   }
 
+  testWidgets('with a detail line and no subtitle, the value and chevron still share the title\'s line, 72 high',
+      (tester) async {
+    await pumpThemed(
+      tester,
+      Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 400,
+          child: PaperRow(
+            icon: Icons.forum_outlined,
+            title: 'Forums',
+            detail: '12 discussions',
+            value: 'New',
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+    final title = tester.getCenter(find.text('Forums')).dy;
+    expect(tester.getCenter(find.text('New')).dy, moreOrLessEquals(title, epsilon: 0.5));
+    expect(tester.getCenter(find.byIcon(Icons.chevron_right)).dy, moreOrLessEquals(title, epsilon: 0.5));
+    expect(tester.getCenter(find.byIcon(Icons.forum_outlined)).dy, moreOrLessEquals(title, epsilon: 0.5));
+    expect(tester.getSize(find.byType(PaperRow)).height, greaterThanOrEqualTo(72));
+  });
+
   testWidgets('a value moves under the title rather than squeeze it, at 200%', (tester) async {
     await pumpGroup(tester);
     // On the title's line while they fit.

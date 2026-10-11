@@ -133,11 +133,18 @@ void main() {
       expect((threads[1].authorName, threads[1].excerpt, threads[1].todahTotal), ('', null, 0));
     });
 
-    test('opens a thread from the listing', () async {
-      serve((_) => {..._threadRow(7), 'excerpt': 'The opening post', 'todah_total': 2});
+    test('opens a thread from its table, where a moderator can open a deleted one', () async {
+      final row = {..._threadRow(7), 'author': {'display_name': 'Rivka'}}
+        ..remove('author_name')
+        ..remove('excerpt')
+        ..remove('todah_total');
+      serve((_) => row);
       final thread = await repo.thread('7');
-      expect(to('thread_listing').single.queryParameters['id'], 'eq.7');
-      expect((thread.excerpt, thread.todahTotal), ('The opening post', 2));
+      expect(to('thread_listing'), isEmpty, reason: 'the listing leaves deleted threads out, for moderators too');
+      final asked = to('threads').single;
+      expect(asked.queryParameters['id'], 'eq.7');
+      expect(asked.queryParameters['select'], contains('author:profiles(display_name)'));
+      expect((thread.id, thread.authorName, thread.excerpt, thread.todahTotal), ('7', 'Rivka', null, 0));
     });
 
     test("reads each forum's discussions and latest post from its stats", () async {

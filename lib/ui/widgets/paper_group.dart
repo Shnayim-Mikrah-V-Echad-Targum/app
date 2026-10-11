@@ -223,10 +223,10 @@ class _RowRule extends CustomPainter {
 /// One row of a [PaperGroup]: an optional icon, a title and subtitle, and at
 /// the end an optional value, a [trailing] widget and a chevron.
 ///
-/// It is 56 high with one line and 72 with a subtitle, and reads to a screen
-/// reader as one item: its text, and its tap if it has one. The chevron shows
-/// when the row can be tapped, unless [chevron] says otherwise; it points the
-/// other way in Hebrew.
+/// It is 56 high with one line and 72 with a subtitle or a detail line, and
+/// reads to a screen reader as one item: its text, and its tap if it has
+/// one. The chevron shows when the row can be tapped, unless [chevron] says
+/// otherwise; it points the other way in Hebrew.
 ///
 /// A [trailing] control, such as a menu button or a text button, keeps an item
 /// of its own beside the row's, so a screen reader reaches both actions:
@@ -330,10 +330,11 @@ class PaperRow extends StatelessWidget {
     final scaler = MediaQuery.textScalerOf(context);
     // Text is never cut short once it is enlarged (WCAG 1.4.4).
     final enlarged = scaler.scale(1) > 1;
-    // A value ends the title's line. With a subtitle under them, the icon and
-    // the end of the row line up with that line too, rather than with the
-    // middle of the row, so the value and chevron stay side by side.
-    final onTitleLine = value != null && subtitle != null;
+    // A value ends the title's line. With a subtitle or a detail line under
+    // them, the icon and the end of the row line up with that line too,
+    // rather than with the middle of the row, so the value and chevron stay
+    // side by side.
+    final onTitleLine = value != null && (subtitle != null || detail != null);
     Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
         ? ConstrainedBox(
             constraints: BoxConstraints(minHeight: scaler.scale(titleStyle.fontSize ?? 16) * (titleStyle.height ?? 1.5)),

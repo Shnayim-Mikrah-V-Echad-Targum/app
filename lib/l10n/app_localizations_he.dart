@@ -1880,7 +1880,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String lastSynced(String time) {
-    return 'סונכרן לאחרונה $time';
+    return 'סונכרן לאחרונה: $time';
   }
 
   @override
@@ -2118,7 +2118,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String forumActive(String time) {
-    return 'פעילות אחרונה $time';
+    return 'פעילות אחרונה: $time';
   }
 
   @override

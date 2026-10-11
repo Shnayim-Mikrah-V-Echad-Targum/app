@@ -237,12 +237,18 @@ Future<void> openWeeklyThread(BuildContext context, WidgetRef ref, PortionInfo p
   final l = context.l10n;
   // Only a fallback: the server builds the title from its own reference data.
   final title = '${portion.nameEn} · ${HebrewText.stripNikud(portion.nameHe)} · $hebrewYear';
+  // The page may close while the thread is opened, and its ref with it.
+  final container = ProviderScope.containerOf(context, listen: false);
   try {
     final id = await ref.read(forumRepositoryProvider).weeklyThread(
           parshaNumber: portion.id.number,
           hebrewYear: hebrewYear,
           title: title,
         );
+    // It may have just been begun: its forum lists one discussion more.
+    container
+      ..invalidate(threadsProvider)
+      ..invalidate(forumStatsProvider);
     if (context.mounted) openTabPage(context, '/community/thread/$id');
   } catch (e) {
     if (context.mounted) showStatus(context, communityError(l, e));

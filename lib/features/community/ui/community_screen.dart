@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,9 +28,8 @@ class CommunityScreen extends ConsumerWidget {
     final user = ref.watch(communityUserProvider).value;
     final profile = ref.watch(myProfileProvider).value;
     final forums = ref.watch(forumsProvider);
-    // How busy each forum is, once it comes: a forum is listed without it
-    // until then, or if it can't be had.
-    final stats = ref.watch(forumStatsProvider).value;
+    // How busy each forum is, once it comes (see _Forums).
+    final stats = ref.watch(forumStatsProvider);
 
     Future<void> refresh() async {
       ref
@@ -84,26 +85,29 @@ class CommunityScreen extends ConsumerWidget {
               ],
               GroupHeader(l.forumsHeading),
               forums.when(
-                loading: () => const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
+                loading: () => const _Loading(),
                 error: (e, _) => _Retry(message: communityError(l, e), onRetry: () => ref.invalidate(forumsProvider)),
                 data: (list) => list.isEmpty
                     ? const SizedBox.shrink()
-                    : PaperGroup(
-                        children: [
-                          for (final f in list)
-                            PaperRow(
-                              icon: iconFor(f.slug),
-                              title: f.name(he),
-                              titleStyle: text.titleMedium,
-                              subtitle: f.description(he).isEmpty ? null : f.description(he),
-                              subtitleStyle: text.bodySmall?.copyWith(color: ink),
-                              detail: switch (stats?[f.id]) {
-                                final s? => activity(context, s),
-                                null => null,
-                              },
-                              onTap: () => context.push('/community/forum/${f.slug}'),
-                            ),
-                        ],
+                    : _Forums(
+                        stats: stats,
+                        builder: (stats) => PaperGroup(
+                          children: [
+                            for (final f in list)
+                              PaperRow(
+                                icon: iconFor(f.slug),
+                                title: f.name(he),
+                                titleStyle: text.titleMedium,
+                                subtitle: f.description(he).isEmpty ? null : f.description(he),
+                                subtitleStyle: text.bodySmall?.copyWith(color: ink),
+                                detail: switch (stats?[f.id]) {
+                                  final s? => activity(context, s),
+                                  null => null,
+                                },
+                                onTap: () => context.push('/community/forum/${f.slug}'),
+                              ),
+                          ],
+                        ),
                       ),
               ),
             ],
@@ -134,6 +138,60 @@ class CommunityScreen extends ConsumerWidget {
         'announcements' => Icons.campaign_outlined,
         _ => Icons.forum_outlined,
       };
+}
+
+class _Loading extends StatelessWidget {
+  const _Loading();
+
+  @override
+  Widget build(BuildContext context) =>
+      const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
+}
+
+/// The forums, built by [builder] with each one's activity once [stats]
+/// come. While they are first fetched, the forums wait for them a moment
+/// ([grace]), still loading, so that each row doesn't grow by a line, and
+/// the group move down, under a finger or a screen reader's cursor as they
+/// arrive. Past that, or where they can't be had, the forums are listed
+/// without them.
+class _Forums extends StatefulWidget {
+  const _Forums({required this.stats, required this.builder});
+
+  final AsyncValue<Map<int, ForumStats>> stats;
+  final Widget Function(Map<int, ForumStats>? stats) builder;
+
+  static const grace = Duration(milliseconds: 1500);
+
+  @override
+  State<_Forums> createState() => _ForumsState();
+}
+
+class _ForumsState extends State<_Forums> {
+  Timer? _grace;
+  bool _waited = false;
+
+  bool get _waiting => !_waited && widget.stats.isLoading && !widget.stats.hasValue && !widget.stats.hasError;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_waiting) _grace = Timer(_Forums.grace, () => setState(() => _waited = true));
+  }
+
+  @override
+  void didUpdateWidget(_Forums old) {
+    super.didUpdateWidget(old);
+    if (!_waiting) _grace?.cancel();
+  }
+
+  @override
+  void dispose() {
+    _grace?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => _waiting ? const _Loading() : widget.builder(widget.stats.value);
 }
 
 class _Retry extends StatelessWidget {

@@ -3657,7 +3657,7 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No discussions yet} =1{1 discussion} other{{count} discussions}}'**
   String forumDiscussionsCount(int count);
 
-  /// After a forum's count of discussions on the Community page: when one was last posted in. {time} is "3 hours ago", "just now" or a date.
+  /// After a forum's count of discussions on the Community page: when one was last posted in. {time} is "3 hours ago", "just now" or, after a day, a date ("Thu, Oct 8"): the phrase must read well with either.
   ///
   /// In en, this message translates to:
   /// **'active {time}'**

@@ -206,6 +206,12 @@ select set_config('request.jwt.claim.sub', :'dave', false);
 insert into public.reactions (post_id, user_id) values (:carol_post, :'dave');
 select public.check((select excerpt like 'Is anyone reading%' and todah_total = 4 and post_count = 2 from public.thread_listing where id = :t2),
                     'a reply leaves the excerpt as it was, and every todah on the thread''s posts counts');
+select set_config('request.jwt.claim.sub', :'bob', false);
+insert into public.reactions (post_id, user_id, kind) values (:carol_post, :'bob', 'insightful');
+select public.check((select todah_total = 4 from public.thread_listing where id = :t2),
+                    'another kind of reaction is no todah, and leaves the count');
+delete from public.reactions where post_id = :carol_post and user_id = :'bob' and kind = 'insightful';
+select set_config('request.jwt.claim.sub', :'dave', false);
 -- Blocking hides the blocked member's excerpt, and the thanks on their posts, from the blocker alone.
 select set_config('request.jwt.claim.sub', :'carol', false);
 insert into public.user_blocks (blocker_id, blocked_id) values (:'carol', :'dave');
@@ -226,6 +232,18 @@ set role authenticated;
 select set_config('request.jwt.claim.sub', :'carol', false);
 select public.check((select excerpt is null from public.thread_listing where id = :t1),
                     'a post hidden pending review gives other members no excerpt');
+-- A todah given to it before it was hidden counts only for those who may see it.
+select todah_total as t1_todah from public.thread_listing where id = :t1 \gset
+reset role;
+insert into public.reactions (post_id, user_id) values (:alice_post, :'dave');
+set role authenticated;
+select set_config('request.jwt.claim.sub', :'carol', false);
+select public.check((select todah_total = :t1_todah from public.thread_listing where id = :t1),
+                    'a todah on a post hidden pending review is not counted for other members');
+select set_config('request.jwt.claim.sub', :'mod', false);
+select public.check((select todah_total = :t1_todah + 1 from public.thread_listing where id = :t1),
+                    'but is for moderators, who see the post');
+select set_config('request.jwt.claim.sub', :'carol', false);
 select set_config('request.jwt.claim.sub', :'alice', false);
 select public.check((select excerpt = 'Why does the Torah begin with a bet?' from public.thread_listing where id = :t1),
                     'its author still sees the excerpt of their own hidden post');

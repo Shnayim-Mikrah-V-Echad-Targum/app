@@ -157,6 +157,33 @@ class _NoStats extends DemoForumRepository {
   Future<Map<int, ForumStats>> forumStats() async => throw Exception('offline');
 }
 
+/// A community whose forums' activity comes once [gate] completes.
+class _SlowStats extends DemoForumRepository {
+  final gate = Completer<void>();
+
+  @override
+  Future<Map<int, ForumStats>> forumStats() async {
+    await gate.future;
+    return super.forumStats();
+  }
+}
+
+/// A member whose forums' lists are counted as they are fetched, by forum.
+class _CountingThreads extends _Member {
+  final fetched = <int?, int>{};
+
+  @override
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) {
+    if (after == null) fetched[forumId] = (fetched[forumId] ?? 0) + 1;
+    return super.threads(forumId: forumId, parshaNumber: parshaNumber, after: after, limit: limit);
+  }
+}
+
 /// A member whose blocked members can't be fetched (offline).
 class _NoBlockedList extends DemoForumRepository {
   @override
@@ -2395,6 +2422,66 @@ void main() {
       expect(find.descendant(of: tileOf(question), matching: find.textContaining('5\u00a0thanks')), findsOneWidget);
     });
 
+    testWidgets("shows its opening post's edit", (tester) async {
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/divrei-torah');
+      await tester.pumpAndSettle();
+      c.read(routerProvider).push('/community/new?forum=divrei-torah');
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Light on the first verse');
+      await tester.enterText(find.widgetWithText(TextField, 'Your message'), 'Onkelos and Rashi read it differently.');
+      await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post')));
+      await tester.pumpAndSettle();
+      await _openPostMenu(tester, 0);
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+      final dialog = find.byType(AlertDialog);
+      await tester.enterText(find.descendant(of: dialog, matching: find.byType(TextField)), 'A clearer opening, on the first verse.');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      await _goBack(tester);
+      final tile = tileOf('Light on the first verse');
+      expect(find.descendant(of: tile, matching: find.text('A clearer opening, on the first verse.')), findsOneWidget);
+      expect(find.descendant(of: tile, matching: find.text('Onkelos and Rashi read it differently.')), findsNothing);
+    });
+
+    testWidgets('is fetched again when the member signs out, whose blocks went with them', (tester) async {
+      final forums = _CountingThreads();
+      await forums.signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      final questions = c.read(forumsProvider).value!.firstWhere((f) => f.slug == 'questions').id;
+      final before = forums.fetched[questions]!;
+      await forums.signOut();
+      await tester.pumpAndSettle();
+      expect(forums.fetched[questions], before + 1);
+    });
+
+    testWidgets("a todah fetches again only its own forum's list", (tester) async {
+      final forums = _CountingThreads();
+      await forums.signIn();
+      final c = await _pump(tester, forums: forums);
+      final ids = {for (final f in await forums.forums()) f.slug: f.id};
+      // Two forums' pages open, one under the other, and the thread over them.
+      c.read(routerProvider).go('/community/forum/divrei-torah');
+      await tester.pumpAndSettle();
+      c.read(routerProvider).push('/community/forum/questions');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(question));
+      await tester.pumpAndSettle();
+      final (divrei, questions) = (forums.fetched[ids['divrei-torah']]!, forums.fetched[ids['questions']]!);
+      await _tapTodah(tester, 4);
+      await tester.pumpAndSettle();
+      // Each list is fetched as its page shows again.
+      await _goBack(tester);
+      expect(forums.fetched[ids['questions']], questions + 1);
+      await _goBack(tester);
+      expect(forums.fetched[ids['divrei-torah']], divrei, reason: 'a forum the thread is not in');
+    });
+
     testWidgets('counts a todah given in its thread', (tester) async {
       final forums = await _Member().signIn();
       final c = await _pump(tester, forums: forums);
@@ -2449,6 +2536,89 @@ void main() {
         await tester.scrollUntilVisible(find.text('App feedback'), 200);
         expect(tester.widget<Text>(detailOf('Divrei Torah')).data, 'No discussions yet');
         expect(tester.widget<Text>(detailOf('Questions & answers')).data, matches(RegExp('^1\u00a0discussion\u00a0· active .+\$')));
+      });
+
+      testWidgets("counts this week's discussion, once it has been begun from its card", (tester) async {
+        final c = await _pump(tester, now: DateTime(2026, 10, 12, 10));
+        c.read(routerProvider).go('/community');
+        await tester.pumpAndSettle();
+        int count() => int.parse(RegExp(r'^\d+').firstMatch(tester.widget<Text>(detailOf('Parshat HaShavua')).data!)![0]!);
+        final before = count();
+        await tester.tap(find.byType(ThisWeekCard));
+        await tester.pumpAndSettle();
+        expect(find.byType(ThreadScreen), findsOneWidget);
+        await _goBack(tester);
+        expect(count(), before + 1);
+      });
+
+      testWidgets('counts no more the discussions an account deleted took with it', (tester) async {
+        final forums = await _Member().signIn();
+        final c = await _pump(tester, forums: forums, now: DateTime(2026, 10, 12, 10));
+        c.read(routerProvider).go('/community');
+        await tester.pumpAndSettle();
+        c.read(routerProvider).push('/community/new?forum=divrei-torah');
+        await tester.pumpAndSettle();
+        await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Light on the first verse');
+        await tester.enterText(find.widgetWithText(TextField, 'Your message'), 'Onkelos and Rashi read it differently.');
+        await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post')));
+        await tester.pumpAndSettle();
+        await _goBack(tester);
+        expect(tester.widget<Text>(detailOf('Divrei Torah')).data, startsWith('3\u00a0discussions'));
+
+        c.read(routerProvider).push('/community/account');
+        await tester.pumpAndSettle();
+        final delete = find.text('Delete my account');
+        await tester.scrollUntilVisible(delete, 200, scrollable: find.byType(Scrollable).first);
+        await Scrollable.ensureVisible(tester.element(delete), alignment: 0.5);
+        await tester.pumpAndSettle();
+        await tester.tap(delete);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Delete my account'));
+        await tester.pumpAndSettle();
+        c.read(routerProvider).go('/community');
+        await tester.pumpAndSettle();
+        expect(tester.widget<Text>(detailOf('Divrei Torah')).data, startsWith('2\u00a0discussions'));
+      });
+
+      testWidgets('waits a moment for it, rather than grow each row as it comes', (tester) async {
+        final forums = _SlowStats();
+        final c = await _pump(tester, forums: forums);
+        c.read(routerProvider).go('/community');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.text('Questions & answers'), findsNothing, reason: 'still loading');
+        forums.gate.complete();
+        await tester.pumpAndSettle();
+        expect(find.text('Questions & answers'), findsOneWidget);
+        expect(detailOf('Questions & answers'), findsOneWidget, reason: 'listed with it at once');
+      });
+
+      testWidgets('lists the forums without it once it has taken too long, and adds it when it comes', (tester) async {
+        final forums = _SlowStats();
+        final c = await _pump(tester, forums: forums);
+        c.read(routerProvider).go('/community');
+        // The forums come at once, and then a grace of 1.5 s.
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 500));
+        }
+        expect(find.text('Questions & answers'), findsOneWidget);
+        expect(detailOf('Questions & answers'), findsNothing);
+        forums.gate.complete();
+        await tester.pumpAndSettle();
+        expect(detailOf('Questions & answers'), findsOneWidget);
+      });
+
+      testWidgets('in Hebrew, says when a forum was last active, a date or a time ago', (tester) async {
+        final c = await _pump(
+          tester,
+          now: DateTime(2026, 10, 12, 10),
+          settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew),
+        );
+        c.read(routerProvider).go('/community');
+        await tester.pumpAndSettle();
+        final details = tester.widgetList<Text>(find.textContaining('פעילות אחרונה')).map((t) => t.data!).toList();
+        expect(details, isNotEmpty);
+        expect(details, everyElement(contains('פעילות אחרונה: ')));
       });
 
       testWidgets("lists the forums without it where it can't be had", (tester) async {

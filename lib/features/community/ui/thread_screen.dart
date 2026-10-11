@@ -1099,10 +1099,16 @@ class _TodahButtonState extends ConsumerState<_TodahButton> {
       }
     }
     if (mounted) setState(() => _busy = false);
-    container
-      ..invalidate(postsProvider(widget.post.threadId))
-      // The thanks its forum lists the thread with.
-      ..invalidate(threadsProvider);
+    container.invalidate(postsProvider(widget.post.threadId));
+    // The thanks its forum lists the thread with: that forum's list alone,
+    // or every list where the thread hasn't come (and so its forum isn't
+    // known).
+    switch (container.read(threadProvider(widget.post.threadId)).value?.forumId) {
+      case final forum?:
+        container.invalidate(threadsProvider(forum));
+      case null:
+        container.invalidate(threadsProvider);
+    }
   }
 
   @override
