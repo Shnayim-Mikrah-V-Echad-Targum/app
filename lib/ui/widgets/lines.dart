@@ -86,33 +86,37 @@ class WholeWords extends StatelessWidget {
   final Locale? locale;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
-        final scaler = MediaQuery.textScalerOf(context);
-        final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
-        var widest = 0.0;
-        for (final word in text.split(' ')) {
-          final painter = TextPainter(
-            text: TextSpan(text: word, style: style?.merge(bold) ?? bold),
-            textDirection: textDirection ?? Directionality.of(context),
-            textScaler: scaler,
-            locale: locale,
-            maxLines: 1,
-          )..layout();
-          widest = math.max(widest, painter.width);
-          painter.dispose();
-        }
-        final size = style?.fontSize ?? 14;
-        // A hair under, so rounding never breaks the word after all.
-        final share = widest > constraints.maxWidth ? (constraints.maxWidth - 1) / widest : 1.0;
-        return Text(
-          text,
-          style: style,
-          textAlign: textAlign,
-          textDirection: textDirection,
+  Widget build(BuildContext context) {
+    // Measured again when a font arrives.
+    FontsChangeScope.watch(context);
+    return LayoutBuilder(builder: (context, constraints) {
+      final scaler = MediaQuery.textScalerOf(context);
+      final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
+      var widest = 0.0;
+      for (final word in text.split(' ')) {
+        final painter = TextPainter(
+          text: TextSpan(text: word, style: style?.merge(bold) ?? bold),
+          textDirection: textDirection ?? Directionality.of(context),
+          textScaler: scaler,
           locale: locale,
-          textScaler: share < 1 ? TextScaler.linear(scaler.scale(size) / size * share) : null,
-        );
-      });
+          maxLines: 1,
+        )..layout();
+        widest = math.max(widest, painter.width);
+        painter.dispose();
+      }
+      final size = style?.fontSize ?? 14;
+      // A hair under, so rounding never breaks the word after all.
+      final share = widest > constraints.maxWidth ? (constraints.maxWidth - 1) / widest : 1.0;
+      return Text(
+        text,
+        style: style,
+        textAlign: textAlign,
+        textDirection: textDirection,
+        locale: locale,
+        textScaler: share < 1 ? TextScaler.linear(scaler.scale(size) / size * share) : null,
+      );
+    });
+  }
 }
 
 /// [text] wrapped as evenly as its lines allow: as narrow as it can be set

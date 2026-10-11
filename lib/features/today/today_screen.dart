@@ -608,12 +608,18 @@ enum CatchUpDay {
 
   /// The last reading day before a Yom Tov that is not Shabbat.
   erevYomTov,
+
+  /// The day before Yom Kippur, whatever day of the week it is: neither
+  /// called Yom Tov nor the end of the week, which always has a reading day
+  /// after it.
+  erevYomKippur,
 }
 
 /// The [CatchUpDay] of [today], a reading day, by the reader's custom for
 /// the days of Yom Tov.
 CatchUpDay catchUpDayFor(LocalDate today, {required bool oneDayYomTov}) {
   final tomorrow = today.addDays(1);
+  if (JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(tomorrow))) return CatchUpDay.erevYomKippur;
   if (JewishHolidays.isRestDay(tomorrow, israel: oneDayYomTov)) {
     return tomorrow.isShabbat ? CatchUpDay.erevShabbat : CatchUpDay.erevYomTov;
   }
@@ -640,7 +646,6 @@ class _TodayCard extends ConsumerWidget {
     final day = ctx.plan.dayFor(ctx.today);
     final due = ctx.dueAliyot();
     final behind = ctx.behindBy();
-    final next = ctx.nextAliyah;
     int versesOf(List<int> aliyot) => aliyot.fold(0, (n, a) => n + ctx.aliyahVerses[a]);
     // Calm words about the day: while paused, that nothing counts; on the
     // eve of Tisha B'Av, when many stop learning.
@@ -655,14 +660,14 @@ class _TodayCard extends ConsumerWidget {
           ],
         ];
 
-    /// Reading [target] when the hero's button doesn't already lead there,
-    /// and logging [due] from a Chumash.
-    Widget actions(int target) => Wrap(
+    /// Reading [target], if given, and logging [shown], the aliyot the card
+    /// names and has not seen read, from a Chumash.
+    Widget actions(List<int> shown, {int? target}) => Wrap(
           spacing: Space.sm,
           runSpacing: Space.sm,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (target != next)
+            if (target != null)
               FilledButton.tonal(
                 style: AppButtons.tonal(context).merge(AppButtons.roomy(context, (24, 12, 6))),
                 onPressed: () => context.push('/read/${ctx.id}/$target'),
@@ -670,23 +675,26 @@ class _TodayCard extends ConsumerWidget {
               ),
             _FlushTextButton(
               // At the start of the line, its icon on the text's edge.
-              flush: target == next,
+              flush: target == null,
               icon: Icons.import_contacts,
               label: l.readFromBook,
-              onPressed: () => _logFromBook(context, ref, due),
+              onPressed: () => _logFromBook(context, ref, shown),
             ),
           ],
         );
 
     final List<Widget> children;
     if (behind > 0 && !paused && due.isNotEmpty) {
-      // Everything due, from the first aliyah not read: where the hero's
-      // button starts too.
+      // Everything due, from the first aliyah not read, where the hero's
+      // button starts too, so no other button leads to one. The line counts
+      // what the card names.
+      final count = due.length;
       final line = switch (catchUpDayFor(ctx.today, oneDayYomTov: settings.oneDayYomTov)) {
-        CatchUpDay.midweek => l.todayBehind(behind),
-        CatchUpDay.thursday => l.todayBehindThursday(behind),
-        CatchUpDay.erevShabbat => l.todayLastDayShabbat(due.length),
-        CatchUpDay.erevYomTov => l.todayLastDayYomTov(due.length),
+        CatchUpDay.midweek => l.todayBehind(count),
+        CatchUpDay.thursday => l.todayBehindThursday(count),
+        CatchUpDay.erevShabbat => l.todayLastDayShabbat(count),
+        CatchUpDay.erevYomTov => l.todayLastDayYomTov(count),
+        CatchUpDay.erevYomKippur => l.todayLastDayYomKippur(count),
       };
       children = [
         _CardHeader(l.todayCatchUpTitle),
@@ -698,20 +706,25 @@ class _TodayCard extends ConsumerWidget {
         ),
         ...marginalia([line, ...notes]),
         const Gap(Space.lg),
-        actions(due.first),
+        actions(due),
       ];
     } else if (day == null) {
       children = [_CardHeader(l.todayReadingTitle), Text(l.todayNothingPlanned, style: muted), ...marginalia(notes)];
     } else {
+      // While paused too, only today's aliyot, whatever was planned before.
       final unread = day.aliyot.where((a) => !ctx.progress.isAliyahDone(a)).toList();
       children = [
         _CardHeader(l.todayReadingTitle),
         Text(names.aliyot(day.aliyot), style: theme.textTheme.headlineSmall),
         Text(
           [
-            l.versesCount(versesOf(day.aliyot)),
-            // Nothing left to time once it is read.
-            if (unread.isNotEmpty) l.minutesEstimate(ctx.remainingMinutes(day.aliyot)),
+            // What is left to read, and once it is read, what was.
+            if (unread.isEmpty)
+              l.versesCount(versesOf(day.aliyot))
+            else ...[
+              l.versesCount(versesOf(unread)),
+              l.minutesEstimate(ctx.remainingMinutes(unread)),
+            ],
           ].join(' · '),
           style: muted,
         ),
@@ -726,7 +739,9 @@ class _TodayCard extends ConsumerWidget {
             ],
           )
         else
-          actions(unread.first),
+          // Today's first aliyah, where the hero's button leads elsewhere
+          // (while paused, to an aliyah planned before).
+          actions(unread, target: unread.first == ctx.nextAliyah ? null : unread.first),
       ];
     }
     return InfoCard(

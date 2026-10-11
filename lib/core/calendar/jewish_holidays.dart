@@ -24,6 +24,12 @@ abstract final class JewishHolidays {
     }
   }
 
+  /// Either day of Rosh Hashana.
+  static bool isRoshHashanah(HebrewDate date) => date.month == HebrewMonth.tishrei && date.day <= 2;
+
+  /// Yom Kippur.
+  static bool isYomKippur(HebrewDate date) => date.month == HebrewMonth.tishrei && date.day == 10;
+
   /// Shabbat or Yom Tov: a day on which the app expects no activity.
   static bool isRestDay(LocalDate date, {required bool israel}) =>
       date.isShabbat ||

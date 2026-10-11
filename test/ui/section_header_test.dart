@@ -76,6 +76,7 @@ void main() {
     });
 
     testWidgets('can carry a title over its text, both in its ink, beside the icon', (tester) async {
+      final handle = tester.ensureSemantics();
       await pumpThemed(
         tester,
         const NoticeBanner(icon: Icons.schedule, title: 'Bereshit is still open', text: 'Finish by Tuesday.'),
@@ -89,6 +90,10 @@ void main() {
       // The icon beside the title's line, not the middle of both.
       expect(tester.getCenter(find.byIcon(Icons.schedule)).dy,
           closeTo(tester.getCenter(find.text('Bereshit is still open')).dy, 1));
+      // The notice's heading, which a screen reader can move to.
+      expect(tester.getSemantics(find.text('Bereshit is still open')), isSemantics(isHeader: true));
+      expect(tester.getSemantics(find.text('Finish by Tuesday.')), isNot(isSemantics(isHeader: true)));
+      handle.dispose();
     });
 
     testWidgets('can be put away with a close button at its top end', (tester) async {

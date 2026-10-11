@@ -1004,23 +1004,24 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - 4 gap, then bodyMedium onSurfaceVariant: "Genesis 1:1–6:8 · Read on Shabbat, 10 October". Its second part is `names.readOnLabel(week)`, which in the Hebrew UI gives the Hebrew date without the year: "נקראת בשבת, כ״ט בתשרי". Then bodySmall onSurfaceVariant `shabbatInDays`, or on Friday `shabbatBeginsTonight` ("Shabbat begins this evening"); on Erev Shabbat and Erev Yom Tov, with a city chosen for Shabbat times and the device on the city's clock, `todayCandleLighting` ("Candle-lighting 4:12 PM") in its place.
    - 16 gap, SeferDivider, 16 gap.
    - Row of ParshaRings 104, a 20 gap, and `Expanded(RingLegend)`. Under the legend, an end-aligned TextButton `allAliyot` ("All aliyot") with a chevron, to /today/week/{id} (within the Today tab). Under 360 dp the rings sit centred above the legend.
-   - 20 gap, then a full-width Filled button (52) with `menu_book` and a label naming the destination. Let `next = ctx.nextAliyah` and `p` = the first ReadingPass of `next` that is not done:
+   - 20 gap, then a full-width Filled button (52) with `menu_book` and a label naming the destination. Let `next = ctx.nextAliyah` (the first aliyah not read, passing over those planned only before the reader joined, unless begun, until the rest are read: so the first aliyah due whenever any are) and `p` = the first ReadingPass of `next` that is not done:
      - nothing read this week: `startAt(name)` = "Start · Rishon";
      - `next` has some passes done: `continueAtPass(name, passLabel(p))` = "Continue · Shlishi, Targum";
      - otherwise: `continueAt(name)`.
-     - It routes to `/read/{id}/{next}`; the reader already resumes via `flow.resumeFrom` (reader_screen.dart:318-319). If a unit was marked done without saved positions, derive positions from `isUnitDone` so it resumes at the first unread pass.
+     - It routes to `/read/{id}/{next}`; the reader already resumes via `flow.resumeFrom` (reader_screen.dart:318-319). If a unit was marked done without saved positions, derive positions from `isUnitDone` so it resumes at the first unread pass. The guided reader then starts each chunk past the readings of the Hebrew done before it was opened (`ReaderFlow.entryStep`), so "Continue · Shlishi, Targum" goes on from Targum to Targum, and Back retraces that way.
    - Delete the outlined "2 of 7 aliyot" button (D10).
    - **Complete state:** the rings and CTA are replaced by the animated frame (§8), titleLarge `weekComplete`, and a marginalia line, `weekCompleteNote` ("Ready to hear it read on Shabbat."; `weekCompleteNoteSimchatTorah` for Vezot HaBerachah). Add a Tonal `readTheHaftarah` if the haftarah is shown and not yet read, and a TextButton.icon `forum_outlined` `discussTheParsha` (its spinner in the icon's place while the discussion opens).
    - Centred lines of more than one sentence (`weekComplete`, `restDayBody`) that don't fit on one line give each sentence a line or more of its own, and every centred line that wraps is set as narrow as its number of lines allows, so that no word stands alone on the last line.
 4. **Today card** (start-aligned):
-   - Eyebrow `todayReadingTitle`, then headlineSmall `names.aliyot(day.aliyot)`, then bodyMedium onSurfaceVariant verses and minutes.
-   - **Catching up** (aliyot planned for earlier days unread, and not paused): Eyebrow `todayCatchUpTitle`, then headlineSmall every aliyah due (`ctx.dueAliyot()`): a run of three or more as `Names.aliyahRange` ("Shlishi – Shevi'i"), otherwise by name; then bodyMedium "5 aliyot · 96 verses · about 33 min", the minutes counting only the readings not done (`remainingMinutes`); then a marginalia line honest about the day (§10), never "midweek" after Wednesday:
-     - Sunday to Wednesday: `todayBehind`, counting the aliyot planned before today;
+   - Eyebrow `todayReadingTitle`, then headlineSmall `names.aliyot(day.aliyot)`, then bodyMedium onSurfaceVariant the verses and minutes of what is left of it (the aliyot not yet read).
+   - **Catching up** (aliyot planned for earlier days unread, and not paused): Eyebrow `todayCatchUpTitle`, then headlineSmall every aliyah due (`ctx.dueAliyot()`): a run of three or more as `Names.aliyahRange` ("Shlishi – Shevi'i"), otherwise by name; then bodyMedium "5 aliyot · 96 verses · about 33 min", the minutes counting only the readings not done (`remainingMinutes`); then a marginalia line honest about the day (§10), never "midweek" after Wednesday. Every line counts the same aliyot, those the card names, today's included:
+     - Sunday to Wednesday: `todayBehind`;
      - Thursday: `todayBehindThursday`, that two days remain before Shabbat;
-     - Erev Shabbat or Erev Yom Tov (by the reader's days of Yom Tov): `todayLastDayShabbat` or `todayLastDayYomTov`, counting every aliyah due before it, with the Chumash as the calm alternative.
+     - Erev Shabbat or Erev Yom Tov (by the reader's days of Yom Tov): `todayLastDayShabbat` or `todayLastDayYomTov`, with the Chumash as the calm alternative;
+     - Erev Yom Kippur, whatever the day (Yom Kippur is neither called Yom Tov nor the end of a week, which always has a reading day after it): `todayLastDayYomKippur`, that there is still time after it.
    - 16 gap, then actions:
-     - a Tonal `readAliyah(firstUnreadToday)` = "Read Shishi", ONLY when `firstUnreadToday != next` (catching up, the first aliyah due, only when it is not `next`: the hero's button already starts the backlog);
-     - a TextButton.icon `import_contacts` `readFromBook`, always. It opens a sheet (`readFromBookTitle`) of the aliyot due, each a checked CheckboxListTile, then `pickReadDate`, and marks the checked ones in one change. Where it starts a line, it moves by its padding so its icon sits on the text's edge.
+     - a Tonal `readAliyah(firstUnreadToday)` = "Read Shishi", ONLY when `firstUnreadToday != next` (as while paused, when the hero's button leads to an aliyah planned before). In catch-up mode it is omitted: the hero's button already starts the backlog, at the first aliyah due;
+     - a TextButton.icon `import_contacts` `readFromBook`, always. It opens a sheet (`readFromBookTitle`) of the aliyot the card names and has not seen read (every aliyah due when catching up; otherwise today's, paused or not), each a checked CheckboxListTile, then `pickReadDate`, and marks the checked ones in one change. Where it starts a line, it moves by its padding so its icon sits on the text's edge.
      - Never two Filled buttons; never two unlabelled CTAs to different places.
    - Done: a check_circle 20 in primary with titleSmall `todayDone`, and the verses without minutes.
    - No reading today: bodyMedium onSurfaceVariant `todayNothingPlanned`.
@@ -1310,13 +1311,14 @@ In order:
 | rashiScript | Rashi script | כתב רש״י |
 
 **Changed values**
-- `todayBehind` (Sunday to Wednesday only):
+- `todayBehind` (Sunday to Wednesday only; it counts every aliyah the card names, today's included):
   - English: "{count, plural, =1{One aliyah to catch up — very normal midweek.} other{{count} aliyot to catch up — very normal midweek.}}"
   - Hebrew: "{count, plural, =1{עוד עלייה אחת להשלים — רגיל לגמרי באמצע השבוע.} other{עוד {count} עליות להשלים — רגיל לגמרי באמצע השבוע.}}"
 - On the other days the line is honest about the day (§9 Today, 4):
   - `todayBehindThursday`: "{count} aliyot to catch up — and there are still two days before Shabbat." / "עוד {count} עליות להשלים — ויש עוד יומיים עד שבת."
   - `todayLastDayShabbat`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת."
   - `todayLastDayYomTov`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג."
+  - `todayLastDayYomKippur`: "{count} aliyot to catch up before Yom Kippur — and there is still time after it, too." / "עוד {count} עליות להשלים לפני יום כיפור — ויש זמן גם אחריו."
   - Each has a singular form ("One aliyah…" / "עוד עלייה אחת…").
 - `openWeekRestore` takes the reader's parsha streak: "Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book." / "סיום {name} ו{next} עד שבת ימשיך את הרצף של {count} שבועות — השלמה כפולה אחת לכל חומש." (one week: "של שבוע אחד").
 - `guideTitle`: "How it works" / "איך זה עובד".

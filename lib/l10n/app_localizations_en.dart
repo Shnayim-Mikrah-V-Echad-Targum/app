@@ -393,18 +393,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String todayLastDayYomKippur(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count aliyot to catch up before Yom Kippur — and there is still time after it, too.',
+      one: 'One aliyah to catch up before Yom Kippur — and there is still time after it, too.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pausedTodayNote =>
       'Paused — read whenever you like; nothing counts against you.';
 
   @override
   String get erevTishaBavNote =>
       'Erev Tisha B\'Av: many finish their learning before midday.';
-
-  @override
-  String get readTodaysAliyah => 'Read today\'s reading';
-
-  @override
-  String get continueReading => 'Continue reading';
 
   @override
   String get startReading => 'Start reading';

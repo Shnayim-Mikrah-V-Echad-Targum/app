@@ -139,12 +139,25 @@ class WeekContext {
   /// Whether everything that counts toward finishing this week is read.
   bool get isFinished => progress.isComplete && !haftarahDue;
 
-  /// The first aliyah not yet fully read, in order; null when complete.
+  /// Where the reading continues: the first aliyah not yet fully read, in
+  /// order, passing over those planned only for days before the reader
+  /// joined, which aren't expected of them, unless begun, until the rest are
+  /// read. Unless one of those is begun, it is the first of [dueAliyot]
+  /// whenever any are due. Null when complete.
   int? get nextAliyah {
+    final join = joinDate;
+    final beforeJoining = {
+      if (join != null)
+        for (final d in [...plan.days, PlanDay(week.occasion, plan.shabbatAliyot)])
+          if (d.date < join) ...d.aliyot,
+    };
+    int? first;
     for (var a = 0; a < kAliyot; a++) {
-      if (!progress.isAliyahDone(a)) return a;
+      if (progress.isAliyahDone(a)) continue;
+      first ??= a;
+      if (!beforeJoining.contains(a) || progress.isAliyahStarted(a, aliyahVerses[a])) return a;
     }
-    return null;
+    return first;
   }
 
   /// Aliyot not yet read that were planned for today or earlier (and not

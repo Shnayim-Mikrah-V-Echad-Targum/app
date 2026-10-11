@@ -387,7 +387,8 @@ class NoticeBanner extends StatelessWidget {
   final VoidCallback? onDismiss;
   final String? dismissLabel;
 
-  /// A line in titleSmall over [text], for a notice that needs one.
+  /// A line in titleSmall over [text], for a notice that needs one: its
+  /// heading.
   final String? title;
   final Widget? action;
 
@@ -443,7 +444,16 @@ class NoticeBanner extends StatelessWidget {
     if (title case final title?) {
       message = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [Text(title, style: theme.textTheme.titleSmall?.copyWith(color: ink)), message],
+        children: [
+          // The notice's heading, which screen readers can move to: a node
+          // of its own.
+          Semantics(
+            container: true,
+            header: true,
+            child: Text(title, style: theme.textTheme.titleSmall?.copyWith(color: ink)),
+          ),
+          message,
+        ],
       );
     }
     if (liveRegion) message = Semantics(liveRegion: true, child: message);

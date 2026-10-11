@@ -639,13 +639,13 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 aliyah} other{{count} aliyot}}'**
   String aliyotCount(int count);
 
-  /// On Today's reading card, under the aliyot to catch up, from Sunday to Wednesday. count is how many aliyot planned for earlier days are still to read.
+  /// On Today's reading card, under the aliyot to catch up, from Sunday to Wednesday. count is every aliyah the card names: those planned up to today and not yet read, today's included.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{One aliyah to catch up — very normal midweek.} other{{count} aliyot to catch up — very normal midweek.}}'**
   String todayBehind(int count);
 
-  /// As todayBehind, on Thursday, when Thursday and Friday are left for reading before Shabbat.
+  /// As todayBehind, on Thursday, when Thursday and Friday are left for reading before Shabbat. count is every aliyah planned up to today and not yet read.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{One aliyah to catch up — and there are still two days before Shabbat.} other{{count} aliyot to catch up — and there are still two days before Shabbat.}}'**
@@ -663,6 +663,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.}}'**
   String todayLastDayYomTov(int count);
 
+  /// As todayBehind, on the day before Yom Kippur, which is never the last reading day of a week. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah to catch up before Yom Kippur — and there is still time after it, too.} other{{count} aliyot to catch up before Yom Kippur — and there is still time after it, too.}}'**
+  String todayLastDayYomKippur(int count);
+
   /// On Today's reading card while streaks are paused, in place of a line about aliyot to catch up.
   ///
   /// In en, this message translates to:
@@ -674,18 +680,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Erev Tisha B\'Av: many finish their learning before midday.'**
   String get erevTishaBavNote;
-
-  /// No description provided for @readTodaysAliyah.
-  ///
-  /// In en, this message translates to:
-  /// **'Read today\'s reading'**
-  String get readTodaysAliyah;
-
-  /// No description provided for @continueReading.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue reading'**
-  String get continueReading;
 
   /// No description provided for @startReading.
   ///
