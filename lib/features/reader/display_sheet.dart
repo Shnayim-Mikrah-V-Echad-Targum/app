@@ -12,13 +12,20 @@ import '../../ui/widgets/theme_swatch_picker.dart';
 import '../settings/app_settings.dart';
 import '../settings/screens/display_settings_screen.dart';
 import '../settings/widgets/settings_widgets.dart';
+import 'scripture_text.dart' show ScriptureStyles;
 
 /// Quick display controls available while reading. The sheet and its scrim
 /// cover the whole screen, the navigation bar too when the page (the
 /// haftarah, say) is shown within a tab. It opens on the lower part of the
 /// screen, over a light scrim, so the verse it changes stays in view; it can
 /// be drawn up for the rest.
-Future<void> showDisplaySheet(BuildContext context) {
+///
+/// The reader's, with [listenAlong], also offers Listen along, which reads
+/// its steps one after another, and the full text's, with [sideBySide], its
+/// parallel columns, wherever they would show: with the Targum or the
+/// translation beside the verse, in a pane wide enough, at a measure and a
+/// size they fit.
+Future<void> showDisplaySheet(BuildContext context, {bool listenAlong = false, bool sideBySide = false}) {
   // Each font's chip is set in that font.
   OptionalFonts.ensureAll([for (final f in ScriptureFont.values) f.family]);
   return showAppSheet<void>(
@@ -26,7 +33,7 @@ Future<void> showDisplaySheet(BuildContext context) {
     useRootNavigator: true,
     isScrollControlled: true,
     barrierColor: Colors.black12,
-    builder: (_) => const _DisplaySheet(),
+    builder: (_) => _DisplaySheet(listenAlong: listenAlong, sideBySide: sideBySide, page: context),
   );
 }
 
@@ -37,7 +44,14 @@ void changeReadingScale(WidgetRef ref, double delta) {
 }
 
 class _DisplaySheet extends ConsumerWidget {
-  const _DisplaySheet();
+  const _DisplaySheet({required this.listenAlong, required this.sideBySide, required this.page});
+
+  final bool listenAlong;
+  final bool sideBySide;
+
+  /// The page the sheet was opened over, whose pane the columns would fill:
+  /// the sheet's own keeps clear of the window's side insets.
+  final BuildContext page;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -99,7 +113,17 @@ class _DisplaySheet extends ConsumerWidget {
                 toggle(l.showRashi, s.showRashi, (s, v) => s.copyWith(showRashi: v)),
                 // Only while Rashi is shown.
                 if (s.showsRashi) toggle(l.rashiScript, s.rashiScript, (s, v) => s.copyWith(rashiScript: v)),
+                // Only where the columns would show: elsewhere it would
+                // change nothing to be seen.
+                if (sideBySide &&
+                    page.mounted &&
+                    (s.usesOnkelos || s.showTranslation) &&
+                    ScriptureStyles(context, s).parallelFits(ScriptureStyles.paneWidth(page)))
+                  toggle(l.sideBySide, s.parallelColumns, (s, v) => s.copyWith(parallelColumns: v),
+                      subtitle: l.sideBySideDesc),
                 toggle(l.focusMode, s.focusMode, (s, v) => s.copyWith(focusMode: v), subtitle: l.focusModeDesc),
+                if (listenAlong)
+                  toggle(l.listenAlong, s.listenAlong, (s, v) => s.copyWith(listenAlong: v), subtitle: l.listenAlongDesc),
                 // In line with the rows' text, as on the paper of a page.
                 ListTileTheme.merge(
                   contentPadding: const EdgeInsets.symmetric(horizontal: PaperGroup.plainInset),

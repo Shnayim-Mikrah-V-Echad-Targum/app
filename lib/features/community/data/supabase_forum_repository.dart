@@ -117,7 +117,29 @@ class SupabaseForumRepository implements ForumRepository {
         ];
       });
 
+  @override
+  Future<Map<int, ForumStats>> forumStats() => _call(() async {
+        final rows = await _db.from('category_stats').select('category_id, thread_count, last_post_at');
+        return {
+          for (final r in rows)
+            r['category_id'] as int: ForumStats(
+              threadCount: r['thread_count'] as int? ?? 0,
+              lastPostAt: r['last_post_at'] == null ? null : DateTime.parse(r['last_post_at'] as String),
+            ),
+        };
+      });
+
+  /// Threads are read through the `thread_listing` view, which adds what
+  /// the lists show (the author's name, the excerpt and the todah given) as
+  /// the reader may see them, and leaves out deleted threads.
   static const _threadColumns =
+      'id, category_id, parasha_id, hebrew_year, kind, title, author_id, is_pinned, is_locked, post_count, '
+      'last_post_at, created_at, author_name, excerpt, todah_total';
+
+  /// A thread opened on its own is read from its table, which lets a
+  /// moderator open one deleted (from an old link, say), as the listing
+  /// doesn't; its page shows neither the excerpt nor the thanks.
+  static const _oneThreadColumns =
       'id, category_id, parasha_id, hebrew_year, kind, title, author_id, is_pinned, is_locked, post_count, '
       'last_post_at, created_at, author:profiles(display_name)';
 
@@ -138,7 +160,7 @@ class SupabaseForumRepository implements ForumRepository {
         title: r['title'] as String,
         kind: ThreadKind.values.firstWhere((k) => k.name == r['kind'], orElse: () => ThreadKind.discussion),
         authorId: r['author_id'] as String?,
-        authorName: (r['author'] as Map<String, dynamic>?)?['display_name'] as String? ?? '',
+        authorName: r['author_name'] as String? ?? (r['author'] as Map<String, dynamic>?)?['display_name'] as String? ?? '',
         postCount: r['post_count'] as int? ?? 0,
         lastPostAt: DateTime.parse(r['last_post_at'] as String),
         createdAt: DateTime.parse(r['created_at'] as String),
@@ -146,6 +168,11 @@ class SupabaseForumRepository implements ForumRepository {
         hebrewYear: r['hebrew_year'] as int?,
         pinned: r['is_pinned'] as bool? ?? false,
         locked: r['is_locked'] as bool? ?? false,
+        excerpt: switch (r['excerpt']) {
+          final String e when e.isNotEmpty => e,
+          _ => null,
+        },
+        todahTotal: r['todah_total'] as int? ?? 0,
       );
 
   /// A filter for the rows that come after [cursor] (a time in [column], and
@@ -169,7 +196,7 @@ class SupabaseForumRepository implements ForumRepository {
   }) =>
       _call(() async {
         PostgrestTransformBuilder<PostgrestList> query({required bool pinned, String? after}) {
-          var q = _db.from('threads').select(_threadColumns).eq('is_pinned', pinned);
+          var q = _db.from('thread_listing').select(_threadColumns).eq('is_pinned', pinned);
           if (forumId != null) q = q.eq('category_id', forumId);
           if (parshaNumber != null) q = q.eq('parasha_id', parshaNumber);
           if (after != null) q = q.or(after);
@@ -186,7 +213,7 @@ class SupabaseForumRepository implements ForumRepository {
 
   @override
   Future<ThreadSummary> thread(String id) => _call(() async {
-        final r = await _db.from('threads').select(_threadColumns).eq('id', int.parse(id)).single();
+        final r = await _db.from('threads').select(_oneThreadColumns).eq('id', int.parse(id)).single();
         return _thread(r);
       });
 

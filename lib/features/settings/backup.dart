@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../core/calendar/local_date.dart';
+import '../notes/domain/annotations.dart';
 import '../progress/domain/progress_merge.dart';
 import 'app_settings.dart';
 
@@ -14,17 +15,23 @@ String backupFileName(DateTime now) {
   return 'shnayim-mikra-backup-${now.year.toString().padLeft(4, '0')}-${two(now.month)}-${two(now.day)}.json';
 }
 
-/// A backup of [progress] and [settings], made at [now], as JSON. Progress
-/// this version couldn't read is kept apart, as `unreadableProgress`, so
-/// that the rest can always be imported again, and that part restored with
-/// it.
-String encodeBackup(ProgressState progress, AppSettings settings, {required DateTime now}) =>
+/// A backup of [progress], [settings] and the reader's bookmarks and notes
+/// ([annotations]), made at [now], as JSON. Progress this version couldn't
+/// read is kept apart, as `unreadableProgress`, so that the rest can always
+/// be imported again, and that part restored with it.
+String encodeBackup(
+  ProgressState progress,
+  AppSettings settings, {
+  Annotations annotations = Annotations.empty,
+  required DateTime now,
+}) =>
     const JsonEncoder.withIndent('  ').convert({
       'app': _app,
       'exportedAt': now.toUtc().toIso8601String(),
       'progress': progress.readable.toJson(),
       'unreadableProgress': ?progress.unknownMissingFrom(progress.readable),
       'settings': settings.toJson(),
+      'annotations': annotations.toJson(),
     });
 
 /// A backup file, as [parseBackup] reads it, and what it holds, for the
@@ -35,6 +42,7 @@ class Backup {
     this.unknownWeeks = const {},
     this.unknownPauses = const [],
     this.settings,
+    this.annotations = Annotations.empty,
     this.exportedAt,
   });
 
@@ -49,6 +57,10 @@ class Backup {
   /// The settings saved with it, if any.
   final AppSettings? settings;
 
+  /// The bookmarks and notes saved with it: none in a backup made before
+  /// they were kept.
+  final Annotations annotations;
+
   /// When it was made, in local time, if the file says.
   final DateTime? exportedAt;
 
@@ -57,6 +69,10 @@ class Backup {
 
   /// How many pauses it holds, leaving out those cancelled before they began.
   int get pauses => progress.pauses.where((p) => !p.deleted).length;
+
+  /// How many verses it has bookmarked, and how many notes it holds.
+  int get bookmarks => annotations.entries.values.where((a) => a.bookmarked).length;
+  int get notes => annotations.entries.values.where((a) => a.hasNote).length;
 
   /// The day the reader joined, as saved with the settings. A backup
   /// without one counts as joined on the day of its earliest reading, as a
@@ -68,7 +84,8 @@ class Backup {
 /// Reads a backup file made by [encodeBackup], or returns null if [raw]
 /// isn't one. A file with progress this version can't read exactly is
 /// rejected whole, rather than half imported. Its settings are read as
-/// stored settings are, keeping the default for any that can't be.
+/// stored settings are, keeping the default for any that can't be, and its
+/// annotations as stored ones are, keeping any it can't read untouched.
 Backup? parseBackup(String raw) {
   try {
     final j = jsonDecode(raw.trim());
@@ -82,6 +99,7 @@ Backup? parseBackup(String raw) {
       unknownWeeks: (unreadable['weeks'] ?? const <String, dynamic>{}) as Map<String, dynamic>,
       unknownPauses: (unreadable['pauses'] ?? const []) as List,
       settings: settings is Map<String, dynamic> ? AppSettings.fromJson(settings) : null,
+      annotations: Annotations.fromJson(j['annotations']),
       exportedAt: exportedAt is String ? DateTime.tryParse(exportedAt)?.toLocal() : null,
     );
   } catch (_) {

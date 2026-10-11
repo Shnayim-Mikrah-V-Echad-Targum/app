@@ -227,10 +227,10 @@ class _RowRule extends CustomPainter {
 /// One row of a [PaperGroup]: an optional icon, a title and subtitle, and at
 /// the end an optional value, a [trailing] widget and a chevron.
 ///
-/// It is 56 high with one line and 72 with a subtitle, and reads to a screen
-/// reader as one item: its text, and its tap if it has one. The chevron shows
-/// when the row can be tapped, unless [chevron] says otherwise; it points the
-/// other way in Hebrew.
+/// It is 56 high with one line and 72 with a subtitle or a detail line, and
+/// reads to a screen reader as one item: its text, and its tap if it has
+/// one. The chevron shows when the row can be tapped, unless [chevron] says
+/// otherwise; it points the other way in Hebrew.
 ///
 /// A [trailing] control, such as a menu button or a text button, keeps an item
 /// of its own beside the row's, so a screen reader reaches both actions:
@@ -249,8 +249,10 @@ class PaperRow extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.subtitleMaxLines = 2,
+    this.subtitleLocale,
     this.titleStyle,
     this.subtitleStyle,
+    this.detail,
     this.value,
     this.valueLocale,
     this.trailing,
@@ -277,12 +279,20 @@ class PaperRow extends StatelessWidget {
   /// of its own, that is never cut short.
   final int? subtitleMaxLines;
 
+  /// The language of [subtitle], for screen readers, where it isn't the
+  /// interface's (the reader's own note, say).
+  final Locale? subtitleLocale;
+
   /// bodyLarge in onSurface, merged with this where given: a list of places
   /// to go, such as the forums, sets its titles in titleMedium.
   final TextStyle? titleStyle;
 
   /// bodyMedium in onSurfaceVariant, merged with this where given.
   final TextStyle? subtitleStyle;
+
+  /// A line under the subtitle in bodySmall onSurfaceVariant, such as how
+  /// busy a forum is.
+  final String? detail;
 
   /// The current setting, such as a language, at the end of the row.
   final String? value;
@@ -347,10 +357,11 @@ class PaperRow extends StatelessWidget {
     final scaler = MediaQuery.textScalerOf(context);
     // Text is never cut short once it is enlarged (WCAG 1.4.4).
     final enlarged = scaler.scale(1) > 1;
-    // A value ends the title's line. With a subtitle under them, the icon and
-    // the end of the row line up with that line too, rather than with the
-    // middle of the row, so the value and chevron stay side by side.
-    final onTitleLine = value != null && subtitle != null;
+    // A value ends the title's line. With a subtitle or a detail line under
+    // them, the icon and the end of the row line up with that line too,
+    // rather than with the middle of the row, so the value and chevron stay
+    // side by side.
+    final onTitleLine = value != null && (subtitle != null || detail != null);
     Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
         ? ConstrainedBox(
             constraints: BoxConstraints(minHeight: scaler.scale(titleStyle.fontSize ?? 16) * (titleStyle.height ?? 1.5)),
@@ -369,7 +380,7 @@ class PaperRow extends StatelessWidget {
           ),
         );
     final content = ConstrainedBox(
-      constraints: BoxConstraints(minHeight: subtitle == null ? 56 : 72),
+      constraints: BoxConstraints(minHeight: subtitle == null && detail == null ? 56 : 72),
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(_start, 12, 12, 12),
         child: Row(
@@ -402,12 +413,25 @@ class PaperRow extends StatelessWidget {
                     titleWith(besideTitle)
                   else
                     Text(title, style: titleStyle),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      style: subtitleStyle,
-                      maxLines: enlarged ? null : subtitleMaxLines,
-                      overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
+                  if (subtitle case final subtitle?)
+                    if (subtitleLocale case final locale?)
+                      Text.rich(
+                        TextSpan(text: subtitle, locale: locale),
+                        style: subtitleStyle,
+                        maxLines: enlarged ? null : subtitleMaxLines,
+                        overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        subtitle,
+                        style: subtitleStyle,
+                        maxLines: enlarged ? null : subtitleMaxLines,
+                        overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
+                      ),
+                  if (detail != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(detail!, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                     ),
                 ],
               ),

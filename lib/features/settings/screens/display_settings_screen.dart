@@ -16,6 +16,7 @@ import '../../../ui/widgets/theme_swatch_picker.dart';
 import '../../reader/reader_screen.dart';
 import '../../reader/scripture_text.dart';
 import '../app_settings.dart';
+import '../widgets/divine_name_switch.dart';
 import '../widgets/settings_widgets.dart';
 
 /// The words each scripture font is shown in, as its sample.
@@ -111,6 +112,7 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
             toggle(l.showTeamim, s.showTeamim, (s, v) => s.copyWith(showTeamim: v)),
             toggle(l.showKetiv, s.showKetiv, (s, v) => s.copyWith(showKetiv: v)),
             toggle(l.showVerseNumbers, s.showVerseNumbers, (s, v) => s.copyWith(showVerseNumbers: v)),
+            const DivineNameSwitch(),
             toggle(l.justifyText, s.justify, (s, v) => s.copyWith(justify: v)),
           ],
         ),

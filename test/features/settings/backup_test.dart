@@ -9,6 +9,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikra/features/notes/domain/annotations.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -284,6 +285,28 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Merge'), findsOneWidget);
       expect(find.widgetWithText(TextButton, 'Replace instead'), findsOneWidget);
       expect(tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value, isFalse);
+    });
+
+    testWidgets('says what bookmarks and notes a backup holds, which may be all it holds', (tester) async {
+      final notes = Annotations.fromJson({
+        'Genesis 1:1': {'b': false, 'n': 'In the beginning', 'u': 1},
+        'Genesis 3:22': {'b': true, 'n': 'Why “like one of us”?', 'u': 2},
+        'Genesis 12:1': {'b': true, 'n': null, 'u': 3},
+        'Genesis 2:3': {'b': false, 'n': null, 'u': 4},
+      });
+      await open(
+        tester,
+        file: encodeBackup(const ProgressState(), savedSettings, annotations: notes, now: DateTime.utc(2026, 10, 11, 12)),
+      );
+      await chooseFile(tester);
+      expect(find.text('Backup from October 11, 2026: nothing logged, no pauses.'), findsOneWidget);
+      expect(find.text('2\u00a0bookmarks, 2\u00a0notes.'), findsOneWidget, reason: 'a removal counts as neither');
+    });
+
+    testWidgets('a backup with no bookmarks or notes says nothing of them', (tester) async {
+      await open(tester);
+      await chooseFile(tester);
+      expect(find.descendant(of: find.byType(AlertDialog), matching: find.textContaining('bookmark')), findsNothing);
     });
 
     testWidgets('merging keeps what was read here, and adds the backup', (tester) async {

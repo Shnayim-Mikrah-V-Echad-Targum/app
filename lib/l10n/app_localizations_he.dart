@@ -910,6 +910,30 @@ class AppLocalizationsHe extends AppLocalizations {
   String get stopListening => 'עצירה';
 
   @override
+  String get listenPause => 'השהיה';
+
+  @override
+  String get listenResume => 'המשך השמעה';
+
+  @override
+  String get listenPreviousVerse => 'הפסוק הקודם';
+
+  @override
+  String get listenNextVerse => 'הפסוק הבא';
+
+  @override
+  String speechRateValue(String rate) {
+    return 'קצב הקראה: $rate';
+  }
+
+  @override
+  String get listenAlong => 'השמעה רציפה';
+
+  @override
+  String get listenAlongDesc =>
+      'ההשמעה עוברת מעצמה מכל קריאה לקריאה שאחריה, עד סוף העלייה. עזר למעקב אחר הטקסט, לא תחליף לקריאה בו.';
+
+  @override
   String get ttsUnavailable => 'הקראה קולית אינה זמינה במכשיר זה.';
 
   @override
@@ -921,6 +945,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get fullTextMode => 'טקסט מלא';
+
+  @override
+  String get wholeParsha => 'הפרשה כולה';
+
+  @override
+  String get oneAliyahAtATime => 'עלייה אחת בכל פעם';
 
   @override
   String get markAliyahRead => 'סימון העלייה כנקראה';
@@ -977,7 +1007,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shortcutNikud => 'הצגת או הסתרת ניקוד';
 
   @override
-  String get shortcutListen => 'השמעה / עצירה';
+  String get shortcutListen => 'השמעה / השהיה';
+
+  @override
+  String get shortcutListenVerse => 'בזמן השמעה: הפסוק הקודם או הבא';
 
   @override
   String get shortcutHelp => 'הצגת קיצורים';
@@ -1001,7 +1034,115 @@ class AppLocalizationsHe extends AppLocalizations {
   String get keyDown => 'חץ למטה';
 
   @override
+  String get keyLeft => 'חץ שמאלה';
+
+  @override
+  String get keyRight => 'חץ ימינה';
+
+  @override
   String get keySpace => 'רווח';
+
+  @override
+  String get verseOptions => 'אפשרויות לפסוק';
+
+  @override
+  String get shortcutVerseOptions =>
+      'אפשרויות לפסוק: סימנייה, הערה, העתקה, שיתוף או שאלה';
+
+  @override
+  String get copyVerse => 'העתקה';
+
+  @override
+  String get askAboutVerse => 'שאלה על הפסוק';
+
+  @override
+  String get askAboutVerseDesc => 'בפורום שאלות ותשובות';
+
+  @override
+  String get verseCopied => 'הפסוק הועתק';
+
+  @override
+  String get shareCopiedInstead => 'אין כאן אפשרות לשתף, ולכן הפסוק הועתק.';
+
+  @override
+  String get bookmarkVerse => 'סימנייה';
+
+  @override
+  String get addNote => 'הוספת הערה';
+
+  @override
+  String get yourNote => 'ההערה שלך';
+
+  @override
+  String noteTitle(String reference) {
+    return 'הערה על $reference';
+  }
+
+  @override
+  String get noteHint => 'שאלה לשולחן השבת, או מחשבה';
+
+  @override
+  String get noteSaved => 'ההערה נשמרה';
+
+  @override
+  String get noteDeleted => 'ההערה נמחקה';
+
+  @override
+  String get verseBookmarked => 'מסומן בסימנייה';
+
+  @override
+  String get verseWithNote => 'יש עליו הערה שלך';
+
+  @override
+  String yourNoteLabel(String text) {
+    return 'ההערה שלך: $text';
+  }
+
+  @override
+  String get notesTitle => 'סימניות והערות';
+
+  @override
+  String get notesEmpty =>
+      'כדי לסמן פסוק או לשמור שאלה לשולחן השבת, יש ללחוץ לחיצה ארוכה על הפסוק בזמן הקריאה.';
+
+  @override
+  String get notesEmptyParsha => 'עדיין אין סימניות או הערות בפרשה הזו.';
+
+  @override
+  String get notesShowAll => 'כל הסימניות וההערות';
+
+  @override
+  String get parshaNotes => 'ההערות שלך על הפרשה';
+
+  @override
+  String notesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count הערות',
+      two: 'שתי הערות',
+      one: 'הערה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bookmarksCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count סימניות',
+      two: 'שתי סימניות',
+      one: 'סימנייה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get copyDivineName => 'כתיבת שם הוי״ה כ־ה׳';
+
+  @override
+  String get copyDivineNameDesc => 'בפסוק שמעתיקים, משתפים או מצטטים בשאלה';
 
   @override
   String get progressTitle => 'התקדמות';
@@ -1546,6 +1687,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get focusModeDesc => 'הדגשת הפסוק הנוכחי ועמעום השאר';
 
   @override
+  String get sideBySide => 'זה לצד זה';
+
+  @override
+  String get sideBySideDesc =>
+      'במסך רחב, הטקסט המלא מציג את תרגום אונקלוס, או את התרגום לאנגלית, בטור לצד כל פסוק';
+
+  @override
   String get keepScreenOn => 'המסך יישאר דלוק בזמן קריאה';
 
   @override
@@ -1835,7 +1983,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get exportData => 'ייצוא ההתקדמות שלי';
 
   @override
-  String get exportDataDesc => 'שמירת גיבוי שאפשר לשחזר מאוחר יותר';
+  String get exportDataDesc =>
+      'שמירת גיבוי של ההתקדמות, הסימניות וההערות, לשחזור מאוחר יותר';
 
   @override
   String get importData => 'ייבוא התקדמות';
@@ -2125,7 +2274,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get syncProgressDesc =>
-      'שמירת התקדמות הקריאה בחשבון ושחזורה במכשירים אחרים.';
+      'שמירת התקדמות הקריאה, הסימניות וההערות בחשבון, ושחזורן במכשירים אחרים.';
 
   @override
   String get syncNow => 'סנכרון עכשיו';
@@ -2141,8 +2290,12 @@ class AppLocalizationsHe extends AppLocalizations {
       'הגיבוי נשמר בגרסה חדשה יותר של האפליקציה. יש לעדכן את האפליקציה כדי להמשיך לסנכרן.';
 
   @override
+  String get syncTooLarge =>
+      'ההערות שלך ארוכות מכדי לגבות אותן בחשבון, ולכן שום דבר חדש אינו מגובה. כדאי לקצר או למחוק חלק מהן; קובץ גיבוי, מ״הנתונים שלך״, שומר את כולן.';
+
+  @override
   String lastSynced(String time) {
-    return 'סונכרן לאחרונה $time';
+    return 'סונכרן לאחרונה: $time';
   }
 
   @override
@@ -2267,6 +2420,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get posted => 'פורסם.';
 
   @override
+  String get viewPostedThread => 'לדיון';
+
+  @override
   String get pendingReview => 'מוסתרת — ממתינה לבדיקת צוות הניהול';
 
   @override
@@ -2350,6 +2506,34 @@ class AppLocalizationsHe extends AppLocalizations {
       zero: 'אין עדיין הודעות',
     );
     return '$_temp0';
+  }
+
+  @override
+  String threadThanksCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count תודות',
+      one: 'תודה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String forumDiscussionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count דיונים',
+      one: 'דיון אחד',
+      zero: 'אין עדיין דיונים',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String forumActive(String time) {
+    return 'פעילות אחרונה: $time';
   }
 
   @override
@@ -2460,6 +2644,16 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get discardDraft => 'מחיקת הטיוטה';
+
+  @override
+  String questionOnVerse(String reference) {
+    return 'שאלה על $reference';
+  }
+
+  @override
+  String askDraftKept(String reference) {
+    return 'הטיוטה שלא נשלחה נשמרה. אפשר למחוק אותה כדי לשאול על $reference במקומה.';
+  }
 
   @override
   String charactersLeft(int count) {
@@ -2749,6 +2943,27 @@ class AppLocalizationsHe extends AppLocalizations {
       two: 'שתי השהיות',
       one: 'השהיה אחת',
       zero: 'ללא השהיות',
+    );
+    return '$_temp0, $_temp1.';
+  }
+
+  @override
+  String importMarks(int bookmarks, int notes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      bookmarks,
+      locale: localeName,
+      other: '$bookmarks סימניות',
+      two: 'שתי סימניות',
+      one: 'סימנייה אחת',
+      zero: 'ללא סימניות',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      notes,
+      locale: localeName,
+      other: '$notes הערות',
+      two: 'שתי הערות',
+      one: 'הערה אחת',
+      zero: 'ללא הערות',
     );
     return '$_temp0, $_temp1.';
   }

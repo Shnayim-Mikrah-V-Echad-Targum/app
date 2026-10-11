@@ -56,7 +56,8 @@
   - Tapping a reminder, with the app running and with it closed, opens Today. The Erev Shabbat reminder opens the week instead, and going back from it leads to Today.
   - Reminders survive a reboot (Android).
   - On Android, the status-bar icon is the three rules of the mark (two long over a shorter one), not a white square or a menu icon, and the Erev Shabbat reminder expands to show its whole message.
-- [ ] Listen is audible with the Silent switch on; music ducks and comes back up, and a paused podcast resumes, both when speech finishes and when it is stopped part-way or the reader is left (iOS).
+- [ ] Listen, on Android, iOS, Windows and the web: the highlight follows the voice verse by verse, in the full text with each Targum; pause and play go on from the same verse; back and on a verse, and a new speech rate, take effect at once, with no verse skipped or cut short; and Listen along reads Mikra, Mikra and Targum hands-free and stops at the aliyah's last step.
+- [ ] Listen is audible with the Silent switch on; music ducks and comes back up, and a paused podcast resumes, both when speech finishes and when it is stopped part-way, paused or the reader is left, and music stays ducked from one verse to the next and through Listen along's breath between readings (iOS).
 - [ ] Offline: reading, logging and streaks all work in airplane mode.
 - [ ] Launch and system bars, from a cold start, in light and dark mode: iOS, Android 11, and Android 14 or later.
   - The launch screen is the mark's tile on cream (light) or lamplight brown (dark), with no white flash before or after it.
@@ -106,7 +107,7 @@
 
 - [ ] **Data safety:**
   - Collected only when the user uses the community: email address (account management), user-generated content (posts) and user IDs.
-  - Collected only if the user opts in: app activity (reading progress, for backup).
+  - Collected only if the user opts in, for backup: app activity (reading progress) and user-generated content (bookmarks, and the notes the user writes on verses, up to 2,000 characters each). Neither is shared or shown to anyone else.
   - Encrypted in transit.
   - Users can delete their data in the app, and through the account-deletion URL (`legal/delete-account.html`).
   - No data is shared with third parties.
@@ -140,6 +141,7 @@
   - User content: posts, used for app functionality, linked to the user.
   - Identifiers: user ID, linked to the user.
   - Usage data (reading progress): only with opt-in backup, linked to the user.
+  - User content, other user content (bookmarks and notes on verses): only with opt-in backup, used for app functionality, linked to the user.
   - No tracking.
 - [ ] **Guideline 1.2 (user-generated content):** all of these are in the app. Mention them in the review notes:
   - content filtering

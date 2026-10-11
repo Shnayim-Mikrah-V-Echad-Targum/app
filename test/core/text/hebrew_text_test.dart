@@ -118,6 +118,45 @@ void main() {
     });
   });
 
+  group('replaceDivineName', () {
+    test('writes the Name as ה׳, however it is pointed', () {
+      expect(HebrewText.replaceDivineName('יְהֹוָ֣ה'), 'ה׳');
+      expect(HebrewText.replaceDivineName('יְהוָה'), 'ה׳');
+      expect(HebrewText.replaceDivineName('יהוה'), 'ה׳');
+      // Vocalized to be read Elohim.
+      expect(HebrewText.replaceDivineName('אֲדֹנָ֤י יֱהֹוִה֙'), 'אֲדֹנָ֤י ה׳');
+    });
+
+    test('keeps a prefix with its vowels', () {
+      expect(HebrewText.replaceDivineName('וַיהוָה'), 'וַה׳');
+      expect(HebrewText.replaceDivineName('לַיהוָה'), 'לַה׳');
+      expect(HebrewText.replaceDivineName('לַֽיהֹוָ֔ה'), 'לַֽה׳');
+      expect(HebrewText.replaceDivineName('וּבַיהוָה'), 'וּבַה׳');
+      expect(HebrewText.replaceDivineName('ויהוה'), 'וה׳');
+      // Deuteronomy 32:6, with two prefix letters.
+      expect(HebrewText.replaceDivineName('הַֽלְיהֹוָה֙ תִּגְמְלוּ־זֹ֔את'), startsWith('הַֽלְה׳ '));
+    });
+
+    test('keeps the punctuation around the word, and the maqafs and spaces between words', () {
+      expect(HebrewText.replaceDivineName('כִּ֛י אֲנִ֥י יְהֹוָֽה׃'), 'כִּ֛י אֲנִ֥י ה׳׃');
+      expect(HebrewText.replaceDivineName('אֶת־יְהֹוָ֖ה'), 'אֶת־ה׳');
+      expect(HebrewText.replaceDivineName('(יְהוָה)'), '(ה׳)');
+      expect(HebrewText.replaceDivineName('קוּמָ֣ה ׀ יְהֹוָ֗ה  וְיָפֻ֙צוּ֙'), 'קוּמָ֣ה ׀ ה׳  וְיָפֻ֙צוּ֙');
+    });
+
+    test('changes nothing else', () {
+      for (final word in ['יְהוּדָה', 'וְהָיָה', 'אֱלֹהִים', 'יְיָ', 'הוֹוָה', 'יהוהו', 'ייהוה', '']) {
+        expect(HebrewText.replaceDivineName(word), word, reason: word);
+      }
+      expect(HebrewText.replaceDivineName(genesis11), genesis11);
+    });
+
+    test('in Genesis 3:22', () {
+      const verse = 'וַיֹּ֣אמֶר ׀ יְהֹוָ֣ה אֱלֹהִ֗ים הֵ֤ן הָֽאָדָם֙ הָיָה֙ כְּאַחַ֣ד מִמֶּ֔נּוּ';
+      expect(HebrewText.replaceDivineName(verse), 'וַיֹּ֣אמֶר ׀ ה׳ אֱלֹהִ֗ים הֵ֤ן הָֽאָדָם֙ הָיָה֙ כְּאַחַ֣ד מִמֶּ֔נּוּ');
+    });
+  });
+
   group('HebrewSpeech', () {
     test('the Divine Name is read as Adonai, or Elohim where so vocalized', () {
       expect(HebrewSpeech.spoken('וַיֹּ֥אמֶר יְהֹוָ֖ה אֶל־מֹשֶׁ֑ה'), contains('אֲדֹנָי'));

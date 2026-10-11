@@ -110,6 +110,12 @@ String relativeTime(BuildContext context, DateTime time) {
   return MaterialLocalizations.of(context).formatMediumDate(time.toLocal());
 }
 
+/// The parts of a line of facts, such as "Rivka · 3 hours ago · 4 replies",
+/// joined by middle dots. A no-break space holds each dot to the part before
+/// it, so a line too long for its row wraps after a dot, and none leads a
+/// line.
+String metaLine(Iterable<String> parts) => parts.join('\u00a0· ');
+
 /// Absolute date and time, for screen readers and tooltips.
 String absoluteTime(BuildContext context, DateTime time) {
   final m = MaterialLocalizations.of(context);
@@ -167,7 +173,10 @@ Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref, {bool named = f
 
   if (await ready()) return true;
   if (!context.mounted) return false;
-  await context.push('/community/account?then=back');
+  // Over the tabs (a question asked from the reader), the account page
+  // opens over them too: a tab's page can't be shown above it.
+  final overTabs = StatefulNavigationShell.maybeOf(context) == null;
+  await context.push(overTabs ? '/account?then=back' : '/community/account?then=back');
   return ready();
 }
 
@@ -228,12 +237,18 @@ Future<void> openWeeklyThread(BuildContext context, WidgetRef ref, PortionInfo p
   final l = context.l10n;
   // Only a fallback: the server builds the title from its own reference data.
   final title = '${portion.nameEn} · ${HebrewText.stripNikud(portion.nameHe)} · $hebrewYear';
+  // The page may close while the thread is opened, and its ref with it.
+  final container = ProviderScope.containerOf(context, listen: false);
   try {
     final id = await ref.read(forumRepositoryProvider).weeklyThread(
           parshaNumber: portion.id.number,
           hebrewYear: hebrewYear,
           title: title,
         );
+    // It may have just been begun: its forum lists one discussion more.
+    container
+      ..invalidate(threadsProvider)
+      ..invalidate(forumStatsProvider);
     if (context.mounted) openTabPage(context, '/community/thread/$id');
   } catch (e) {
     if (context.mounted) showStatus(context, communityError(l, e));

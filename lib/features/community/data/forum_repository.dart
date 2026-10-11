@@ -26,13 +26,19 @@ abstract class ForumRepository {
   // --- Reading ---------------------------------------------------------------
   Future<List<Forum>> forums();
 
+  /// How many discussions each forum lists, and when one was last posted
+  /// in, by forum id.
+  Future<Map<int, ForumStats>> forumStats();
+
   /// How many unpinned threads [threads] returns at most, by default.
   static const threadsPageSize = 30;
 
   /// How many posts [posts] returns at most, by default.
   static const postsPageSize = 100;
 
-  /// Threads in a forum (or across all forums), newest activity first.
+  /// Threads in a forum (or across all forums), newest activity first, each
+  /// with its excerpt and the todah given to its posts, as the reader may see
+  /// them.
   ///
   /// The first page (no [after]) holds every pinned thread, then at most
   /// [limit] others. Each later page holds the next [limit] unpinned threads

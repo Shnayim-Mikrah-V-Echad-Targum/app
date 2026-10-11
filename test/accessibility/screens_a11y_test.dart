@@ -107,15 +107,26 @@ void main() {
   // are checked on the test font in test/app/reader_widget_test.dart.
   group('reader', () {
     /// Opens Noach's Rishon and waits for its texts to load.
-    Future<void> openReader(WidgetTester tester, {String mode = '', bool hebrew = false, double textScale = 1}) async {
-      tester.view.physicalSize = const Size(412, 915);
+    Future<void> openReader(
+      WidgetTester tester, {
+      String mode = '',
+      bool hebrew = false,
+      double textScale = 1,
+      bool wholeParsha = false,
+      Size size = const Size(412, 915),
+    }) async {
+      tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       tester.platformDispatcher.textScaleFactorTestValue = textScale;
       addTearDown(tester.view.reset);
       addTearDown(tester.platformDispatcher.clearAllTestValues);
       final c = await pumpApp(
         tester,
-        settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.system),
+        settings: AppSettings(
+          onboardingComplete: true,
+          language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
+          fullTextWholeParsha: wholeParsha,
+        ),
         now: a11yMonday,
       );
       // Not openRoute: its settling would wait on the loading spinner.
@@ -147,6 +158,31 @@ void main() {
     for (final hebrew in [false, true]) {
       testWidgets('no overflow at 200% text size${hebrew ? ', Hebrew' : ''}', (tester) async {
         await openReader(tester, hebrew: hebrew, textScale: 2);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    // On a desktop, the full text in parallel columns, of one aliyah and of
+    // the whole parsha under each aliyah's heading.
+    for (final whole in [false, true]) {
+      for (final hebrew in [false, true]) {
+        testWidgets(
+            'a11y guidelines: ${whole ? 'the whole parsha' : 'full text'} in parallel columns${hebrew ? ', Hebrew' : ''}',
+            (tester) async {
+          final handle = tester.ensureSemantics();
+          await openReader(tester, mode: '?mode=full', hebrew: hebrew, wholeParsha: whole, size: const Size(1366, 860));
+          expect(tester.takeException(), isNull);
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          handle.dispose();
+        });
+      }
+    }
+
+    for (final hebrew in [false, true]) {
+      testWidgets('the whole parsha: no overflow at 200% text size${hebrew ? ', Hebrew' : ''}', (tester) async {
+        await openReader(tester, mode: '?mode=full', hebrew: hebrew, wholeParsha: true, textScale: 2);
         expect(tester.takeException(), isNull);
       });
     }

@@ -10,11 +10,13 @@ import 'package:shnayim_mikra/app/app.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/community_providers.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
+import 'package:shnayim_mikra/features/notes/domain/annotations.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
@@ -799,6 +801,47 @@ void main() {
     });
   });
 
+  test('notes too long for the server are not sent, and the reader is told why', () {
+    final repo = _CountingRepo(user: _me, remote: _otherDevice());
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      async.elapse(const Duration(seconds: 120));
+      final saves = repo.saves;
+      // Hundreds of long notes: more than the server takes.
+      final long = 'א' * 2000;
+      for (var verse = 1; verse <= 250; verse++) {
+        container.read(annotationsProvider.notifier).setNote(BookVerse('Genesis', VerseRef(1 + verse ~/ 30, 1 + verse % 30)), '$long $verse');
+      }
+      bool? result;
+      container.read(progressSyncProvider.notifier).syncNow().then((ok) => result = ok);
+      async.flushMicrotasks();
+      expect(result, isFalse);
+      expect(repo.saves, saves, reason: 'every save would fail');
+      expect(container.read(syncTooLargeProvider), isTrue);
+      expect(syncPayloadAnnotations(repo.remote!).inTorah, isEmpty, reason: 'the backup is as it was');
+
+      // Shortened, it is backed up again.
+      for (var verse = 1; verse <= 250; verse++) {
+        container.read(annotationsProvider.notifier).setNote(BookVerse('Genesis', VerseRef(1 + verse ~/ 30, 1 + verse % 30)), 'Short $verse');
+      }
+      container.read(progressSyncProvider.notifier).syncNow().then((ok) => result = ok);
+      async.flushMicrotasks();
+      expect(result, isTrue);
+      expect(container.read(syncTooLargeProvider), isFalse);
+      expect(syncPayloadAnnotations(repo.remote!).inTorah, hasLength(250));
+      container.dispose();
+    });
+  });
+
+  test('a payload is too large by its encoded size', () {
+    expect(syncPayloadTooLarge(syncPayload(const ProgressState(), null)), isFalse);
+    final notes = Annotations.fromJson({
+      for (var i = 1; i <= 230; i++) 'Genesis 1:$i': {'b': false, 'n': 'א' * 2000, 'u': i},
+    });
+    // 230 notes of 2,000 Hebrew letters, two bytes each in UTF-8.
+    expect(syncPayloadTooLarge(syncPayload(const ProgressState(), null, annotations: notes)), isTrue);
+  });
+
   testWidgets('the account screen asks for an update when the backup is newer', (tester) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
@@ -820,6 +863,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(message), findsNWidgets(2), reason: 'the notice, and the reply to Sync now');
     expect(c.read(progressProvider), const ProgressState());
+  });
+
+  testWidgets('the account screen says why notes too long for the server are not backed up', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const message = 'Your notes are too long to back up to your account, so nothing new is backed up. '
+        'Shorten or delete some of them; a backup file, from Your data, keeps them all.';
+    final demo = DemoForumRepository();
+    await demo.verifyCode(_me.email!, '123456');
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(onboardingComplete: true, cloudSync: true),
+      forums: demo,
+      stored: {
+        AnnotationsController.storageKey: jsonEncode({
+          for (var i = 1; i <= 230; i++) 'Genesis 1:$i': {'b': false, 'n': 'א' * 2000, 'u': i},
+        }),
+      },
+    );
+    c.read(routerProvider).go('/community/account');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Sync now'));
+    await tester.pumpAndSettle();
+    expect(find.text(message), findsNWidgets(2), reason: 'the notice, and the reply to Sync now');
+    expect(await demo.loadProgress(), isNull, reason: 'nothing was sent');
   });
 
   testWidgets('a sync does not rebuild the app', (tester) async {

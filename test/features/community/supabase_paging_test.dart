@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/data/supabase_forum_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// A thread row as PostgREST returns it.
+/// A thread row as PostgREST returns it from the `thread_listing` view.
 Map<String, dynamic> _threadRow(int id, {bool pinned = false}) => {
       'id': id,
       'category_id': 1,
@@ -20,7 +21,9 @@ Map<String, dynamic> _threadRow(int id, {bool pinned = false}) => {
       'post_count': 1,
       'last_post_at': '2026-10-0${id % 9 + 1}T12:00:00.123456+00:00',
       'created_at': '2026-10-01T12:00:00+00:00',
-      'author': null,
+      'author_name': null,
+      'excerpt': null,
+      'todah_total': 0,
     };
 
 /// A post row as PostgREST returns it.
@@ -41,8 +44,9 @@ void main() {
   late SupabaseClient client;
   late SupabaseForumRepository repo;
 
-  /// Answers each request with [respond]'s rows.
-  void serve(List<Map<String, dynamic>> Function(Uri url) respond) {
+  /// Answers each request with [respond]'s rows, or row where one is asked
+  /// for.
+  void serve(Object Function(Uri url) respond) {
     client = SupabaseClient(
       'https://example.supabase.co',
       'public-key',
@@ -73,7 +77,7 @@ void main() {
       final threads = await repo.threads(forumId: 1);
       expect([for (final t in threads) t.id], ['1', '2', '9', '8']);
 
-      final asked = to('threads');
+      final asked = to('thread_listing');
       expect(asked, hasLength(2));
       final pinned = asked.firstWhere((u) => u.queryParameters['is_pinned'] == 'eq.true');
       final others = asked.firstWhere((u) => u.queryParameters['is_pinned'] == 'eq.false');
@@ -92,7 +96,7 @@ void main() {
       final threads = await repo.threads(forumId: 1, after: (at, '42'), limit: 31);
       expect([for (final t in threads) t.id], ['3']);
 
-      final asked = to('threads').single;
+      final asked = to('thread_listing').single;
       expect(asked.queryParameters['is_pinned'], 'eq.false');
       expect(
         asked.queryParameters['or'],
@@ -107,9 +111,53 @@ void main() {
       requests.clear();
       await repo.threads(forumId: 1, after: (last.lastPostAt, last.id));
       expect(
-        to('threads').single.queryParameters['or'],
+        to('thread_listing').single.queryParameters['or'],
         '(last_post_at.lt.2026-10-09T12:00:00.123456+00:00,and(last_post_at.eq.2026-10-09T12:00:00.123456+00:00,id.lt.8))',
       );
+    });
+  });
+
+  group('listing', () {
+    test("reads threads through the listing, with each one's author, excerpt and thanks", () async {
+      serve((url) => url.queryParameters['is_pinned'] == 'eq.true'
+          ? []
+          : [
+              {..._threadRow(9), 'author_name': 'Rivka', 'excerpt': 'Why does the Torah begin with a bet?', 'todah_total': 4},
+              {..._threadRow(8), 'excerpt': ''},
+            ]);
+      final threads = await repo.threads(forumId: 1);
+      expect(to('threads'), isEmpty, reason: 'the table would show deleted threads, and no excerpt');
+      final select = to('thread_listing').first.queryParameters['select']!;
+      expect(select.split(','), containsAll(['author_name', 'excerpt', 'todah_total']));
+      expect((threads[0].authorName, threads[0].excerpt, threads[0].todahTotal), ('Rivka', 'Why does the Torah begin with a bet?', 4));
+      expect((threads[1].authorName, threads[1].excerpt, threads[1].todahTotal), ('', null, 0));
+    });
+
+    test('opens a thread from its table, where a moderator can open a deleted one', () async {
+      final row = {..._threadRow(7), 'author': {'display_name': 'Rivka'}}
+        ..remove('author_name')
+        ..remove('excerpt')
+        ..remove('todah_total');
+      serve((_) => row);
+      final thread = await repo.thread('7');
+      expect(to('thread_listing'), isEmpty, reason: 'the listing leaves deleted threads out, for moderators too');
+      final asked = to('threads').single;
+      expect(asked.queryParameters['id'], 'eq.7');
+      expect(asked.queryParameters['select'], contains('author:profiles(display_name)'));
+      expect((thread.id, thread.authorName, thread.excerpt, thread.todahTotal), ('7', 'Rivka', null, 0));
+    });
+
+    test("reads each forum's discussions and latest post from its stats", () async {
+      serve((url) => [
+            {'category_id': 1, 'thread_count': 12, 'last_post_at': '2026-10-09T09:00:00+00:00'},
+            {'category_id': 6, 'thread_count': 0, 'last_post_at': null},
+          ]);
+      final stats = await repo.forumStats();
+      expect(to('category_stats'), hasLength(1));
+      expect(stats, {
+        1: ForumStats(threadCount: 12, lastPostAt: DateTime.utc(2026, 10, 9, 9)),
+        6: const ForumStats(threadCount: 0),
+      });
     });
   });
 

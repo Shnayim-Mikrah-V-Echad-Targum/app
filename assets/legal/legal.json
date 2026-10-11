@@ -30,13 +30,13 @@
       {
         "heading": "What stays on your device",
         "blocks": [
-          {"type": "para", "text": "Your reading progress, streaks, settings and reminders are stored on your device, and in its own backup if that is turned on (see below). The texts are bundled with the app, so reading works fully offline and nothing about what you read is sent anywhere. If you choose a city for Shabbat times, it stays on your device too: the times are worked out there, and the app never asks where you are."}
+          {"type": "para", "text": "Your reading progress, streaks, bookmarks, notes, settings and reminders are stored on your device, and in its own backup if that is turned on (see below). The texts are bundled with the app, so reading works fully offline and nothing about what you read is sent anywhere. If you choose a city for Shabbat times, it stays on your device too: the times are worked out there, and the app never asks where you are."}
         ]
       },
       {
         "heading": "Your device's own backup",
         "blocks": [
-          {"type": "para", "text": "If backup is turned on for your device, it can include the app's settings and reading progress, so they come back when you restore the device or set up a new one. If you are signed in to the community, it can also include that sign-in, with your email address, and any post you have started but not sent. Android keeps this backup in your Google account, and an iPhone or iPad in iCloud or on your computer. We have no access to it."}
+          {"type": "para", "text": "If backup is turned on for your device, it can include the app's settings, reading progress, bookmarks and notes, so they come back when you restore the device or set up a new one. If you are signed in to the community, it can also include that sign-in, with your email address, and any post you have started but not sent. Android keeps this backup in your Google account, and an iPhone or iPad in iCloud or on your computer. We have no access to it."}
         ]
       },
       {
@@ -48,13 +48,13 @@
       {
         "heading": "If you create a community account",
         "blocks": [
-          {"type": "para", "text": "Signing in to the community uses your email address, which is used only to sign you in. Your display name and the posts you write are visible to other users. If you choose to sync your progress, it is stored with your account so you can restore it on another device."}
+          {"type": "para", "text": "Signing in to the community uses your email address, which is used only to sign you in. Your display name and the posts you write are visible to other users. If you choose to back up your progress, it is stored with your account, together with your bookmarks and the notes you write on verses, so you can restore them on another device. Only you can see them."}
         ]
       },
       {
         "heading": "Deleting your data",
         "blocks": [
-          {"type": "para", "text": "You can reset your progress at any time in Settings, under “Your data”. You can delete your community account in Settings, under “Account & community”; this deletes your profile, your posts and any synced progress. Topics you started that others replied to stay, without your name, so that their replies still make sense."}
+          {"type": "para", "text": "You can reset your progress at any time in Settings, under “Your data”; that leaves your bookmarks and notes, which you remove one by one from a verse's options. You can delete your community account in Settings, under “Account & community”; this deletes your profile, your posts and any backed-up progress, bookmarks and notes. Topics you started that others replied to stay, without your name, so that their replies still make sense."}
         ]
       },
       {
@@ -198,9 +198,9 @@
       {
         "heading": "Your reading and your data",
         "blocks": [
-          {"type": "para", "text": "Your progress, streaks and settings stay on your device. The app has no ads, no analytics and no tracking, and it works without an internet connection."},
-          {"type": "para", "text": "To move to a new device, export your progress in Settings → Your data and import it on the new one. Or sign in to the community and turn on Back up my progress."},
-          {"type": "para", "text": "To start over, reset your progress in Settings → Your data. To delete your community account and everything stored with it, see {link:delete-account}."},
+          {"type": "para", "text": "Your progress, streaks, bookmarks, notes and settings stay on your device. The app has no ads, no analytics and no tracking, and it works without an internet connection."},
+          {"type": "para", "text": "To move to a new device, export your progress in Settings → Your data and import it on the new one: the file holds your bookmarks and notes too. Or sign in to the community and turn on Back up my progress, which backs them up with it."},
+          {"type": "para", "text": "To start over, reset your progress in Settings → Your data; your bookmarks and notes stay, and you remove them one by one from a verse's options. To delete your community account and everything stored with it, see {link:delete-account}."},
           {"type": "para", "text": "The full details are in the {link:privacy|privacy policy}."}
         ]
       }
@@ -231,10 +231,10 @@
         "blocks": [
           {"type": "bullet", "text": "Your profile, display name and email address"},
           {"type": "bullet", "text": "Your posts in the community"},
-          {"type": "bullet", "text": "The backup of your progress, if you turned it on"},
+          {"type": "bullet", "text": "The backup of your progress, bookmarks and notes, if you turned it on"},
           {"type": "bullet", "text": "Your reports, and your list of blocked members"},
           {"type": "para", "text": "Topics you started that others replied to stay, without your name, so that their replies still make sense."},
-          {"type": "para", "text": "The progress kept on your device is not affected. You can reset it in Settings → Your data, or remove it by uninstalling the app."}
+          {"type": "para", "text": "The progress, bookmarks and notes kept on your device are not affected. You can reset the progress in Settings → Your data and remove bookmarks and notes from a verse's options, or remove them all by uninstalling the app."}
         ]
       }
     ]
@@ -250,13 +250,13 @@
       {
         "heading": "מה נשאר במכשיר שלך",
         "blocks": [
-          {"type": "para", "text": "התקדמות הקריאה, הרצפים, ההגדרות והתזכורות נשמרים במכשיר שלך, ובגיבוי של המכשיר אם הוא מופעל (ראו בהמשך). הטקסטים כלולים באפליקציה, כך שהקריאה פועלת ללא חיבור לרשת, ושום מידע על מה שקראת אינו נשלח לשום מקום. אם בחרת עיר לזמני השבת, גם היא נשמרת במכשיר: הזמנים מחושבים בו, והאפליקציה אינה מבקשת את מיקומך."}
+          {"type": "para", "text": "התקדמות הקריאה, הרצפים, הסימניות, ההערות, ההגדרות והתזכורות נשמרים במכשיר שלך, ובגיבוי של המכשיר אם הוא מופעל (ראו בהמשך). הטקסטים כלולים באפליקציה, כך שהקריאה פועלת ללא חיבור לרשת, ושום מידע על מה שקראת אינו נשלח לשום מקום. אם בחרת עיר לזמני השבת, גם היא נשמרת במכשיר: הזמנים מחושבים בו, והאפליקציה אינה מבקשת את מיקומך."}
         ]
       },
       {
         "heading": "הגיבוי של המכשיר",
         "blocks": [
-          {"type": "para", "text": "אם הגיבוי מופעל במכשיר, הוא יכול לכלול את ההגדרות ואת התקדמות הקריאה באפליקציה, כך שהן יחזרו כשמשחזרים את המכשיר או מגדירים מכשיר חדש. אם נכנסת לקהילה, הגיבוי יכול לכלול גם את הכניסה, עם כתובת הדוא״ל שלך, והודעה שהתחלת לכתוב ועוד לא שלחת. ב־Android הגיבוי נשמר בחשבון Google שלך, וב־iPhone או ב־iPad ב־iCloud או במחשב. אין לנו גישה אליו."}
+          {"type": "para", "text": "אם הגיבוי מופעל במכשיר, הוא יכול לכלול את ההגדרות, את התקדמות הקריאה, את הסימניות ואת ההערות באפליקציה, כך שהן יחזרו כשמשחזרים את המכשיר או מגדירים מכשיר חדש. אם נכנסת לקהילה, הגיבוי יכול לכלול גם את הכניסה, עם כתובת הדוא״ל שלך, והודעה שהתחלת לכתוב ועוד לא שלחת. ב־Android הגיבוי נשמר בחשבון Google שלך, וב־iPhone או ב־iPad ב־iCloud או במחשב. אין לנו גישה אליו."}
         ]
       },
       {
@@ -268,13 +268,13 @@
       {
         "heading": "אם פתחת חשבון בקהילה",
         "blocks": [
-          {"type": "para", "text": "הכניסה לקהילה משתמשת בכתובת הדוא״ל שלך לצורך הכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. אם בחרת לסנכרן את ההתקדמות, היא נשמרת עם החשבון, וכך אפשר לשחזר אותה במכשיר אחר."}
+          {"type": "para", "text": "הכניסה לקהילה משתמשת בכתובת הדוא״ל שלך לצורך הכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. אם בחרת לגבות את ההתקדמות, היא נשמרת עם החשבון, יחד עם הסימניות וההערות שכתבת על פסוקים, וכך אפשר לשחזר אותן במכשיר אחר. הן גלויות רק לך."}
         ]
       },
       {
         "heading": "מחיקת המידע",
         "blocks": [
-          {"type": "para", "text": "אפשר לאפס את ההתקדמות בכל עת בהגדרות, תחת ״הנתונים שלך״. אפשר למחוק את החשבון בהגדרות, תחת ״חשבון וקהילה״; פעולה זו מוחקת את הפרופיל, ההודעות וההתקדמות המסונכרנת. נושאים שפתחת ואחרים הגיבו בהם נשארים, בלי שמך, כדי שהתגובות שלהם יישארו מובנות."}
+          {"type": "para", "text": "אפשר לאפס את ההתקדמות בכל עת בהגדרות, תחת ״הנתונים שלך״; האיפוס אינו נוגע בסימניות ובהערות, שאותן מסירים אחת אחת מהאפשרויות של הפסוק. אפשר למחוק את החשבון בהגדרות, תחת ״חשבון וקהילה״; פעולה זו מוחקת את הפרופיל, ההודעות, וההתקדמות, הסימניות וההערות שגובו. נושאים שפתחת ואחרים הגיבו בהם נשארים, בלי שמך, כדי שהתגובות שלהם יישארו מובנות."}
         ]
       },
       {
@@ -418,9 +418,9 @@
       {
         "heading": "הקריאה והנתונים שלכם",
         "blocks": [
-          {"type": "para", "text": "ההתקדמות, הרצפים וההגדרות נשמרים במכשיר שלכם. באפליקציה אין פרסומות, אנליטיקה או מעקב, והיא פועלת גם ללא חיבור לאינטרנט."},
-          {"type": "para", "text": "כדי לעבור למכשיר חדש, אפשר לייצא את ההתקדמות בהגדרות ← הנתונים שלך ולייבא אותה במכשיר החדש. אפשר גם להיכנס לקהילה ולהפעיל את גיבוי ההתקדמות שלי."},
-          {"type": "para", "text": "כדי להתחיל מחדש, אפשר לאפס את ההתקדמות בהגדרות ← הנתונים שלך. למחיקת החשבון בקהילה וכל מה שנשמר בו, ראו {link:delete-account}."},
+          {"type": "para", "text": "ההתקדמות, הרצפים, הסימניות, ההערות וההגדרות נשמרים במכשיר שלכם. באפליקציה אין פרסומות, אנליטיקה או מעקב, והיא פועלת גם ללא חיבור לאינטרנט."},
+          {"type": "para", "text": "כדי לעבור למכשיר חדש, אפשר לייצא את ההתקדמות בהגדרות ← הנתונים שלך ולייבא אותה במכשיר החדש: הקובץ כולל גם את הסימניות וההערות. אפשר גם להיכנס לקהילה ולהפעיל את גיבוי ההתקדמות שלי, שמגבה גם אותן."},
+          {"type": "para", "text": "כדי להתחיל מחדש, אפשר לאפס את ההתקדמות בהגדרות ← הנתונים שלך; הסימניות וההערות נשארות, ואותן מסירים אחת אחת מהאפשרויות של הפסוק. למחיקת החשבון בקהילה וכל מה שנשמר בו, ראו {link:delete-account}."},
           {"type": "para", "text": "הפרטים המלאים מופיעים ב{link:privacy|מדיניות הפרטיות}."}
         ]
       }
@@ -451,10 +451,10 @@
         "blocks": [
           {"type": "bullet", "text": "הפרופיל, שם התצוגה וכתובת הדוא״ל"},
           {"type": "bullet", "text": "ההודעות שפרסמתם בקהילה"},
-          {"type": "bullet", "text": "גיבוי ההתקדמות, אם הפעלתם אותו"},
+          {"type": "bullet", "text": "גיבוי ההתקדמות, הסימניות וההערות, אם הפעלתם אותו"},
           {"type": "bullet", "text": "הדיווחים שלכם ורשימת המשתמשים שחסמתם"},
           {"type": "para", "text": "נושאים שפתחתם ואחרים הגיבו בהם נשארים, בלי שמכם, כדי שהתגובות שלהם יישארו מובנות."},
-          {"type": "para", "text": "ההתקדמות השמורה במכשיר אינה נפגעת. אפשר לאפס אותה בהגדרות ← הנתונים שלך, או למחוק אותה בהסרת האפליקציה."}
+          {"type": "para", "text": "ההתקדמות, הסימניות וההערות השמורות במכשיר אינן נפגעות. אפשר לאפס את ההתקדמות בהגדרות ← הנתונים שלך ולהסיר סימניות והערות מהאפשרויות של הפסוק, או למחוק את כולן בהסרת האפליקציה."}
         ]
       }
     ]

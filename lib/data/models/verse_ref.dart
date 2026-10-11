@@ -76,3 +76,33 @@ class VerseRange {
   @override
   String toString() => '$book $start–$end';
 }
+
+/// One verse of a book of the Tanakh, as a link names it: the book as the
+/// app's data names it, in English, then the chapter and verse ("Genesis
+/// 3:22", "I Samuel 20:18").
+class BookVerse {
+  const BookVerse(this.book, this.ref);
+
+  /// Parses `"Genesis 3:22"` from outside the app's data, such as a link:
+  /// null for anything else. Whether the book is one the app has is for
+  /// whoever looks the verse up to say.
+  static BookVerse? tryParse(String? s) {
+    final m = _form.firstMatch(s?.trim() ?? '');
+    final ref = VerseRef.tryParse(m?[2]);
+    return m == null || ref == null ? null : BookVerse(m[1]!, ref);
+  }
+
+  static final _form = RegExp(r'^([A-Za-z][A-Za-z ]*[A-Za-z]) +(\d+:\d+)$');
+
+  final String book;
+  final VerseRef ref;
+
+  @override
+  bool operator ==(Object other) => other is BookVerse && other.book == book && other.ref == ref;
+
+  @override
+  int get hashCode => Object.hash(book, ref);
+
+  @override
+  String toString() => '$book $ref';
+}
