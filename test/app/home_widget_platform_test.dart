@@ -48,6 +48,21 @@ void main() {
     line: '',
   ).toJson());
 
+  test('both widgets open the links the app gives them, in its own scheme', () {
+    final json = jsonDecode(const WidgetTimeline(rtl: false, stale: '', weeks: [], days: []).encode()) as Map;
+    expect(json['open'], startsWith('${WidgetLink.scheme}://widget/'));
+    expect(json['continue'], startsWith('${WidgetLink.scheme}://widget/'));
+    // home_widget hands iOS's app only links marked as the widget's.
+    expect(Uri.parse(json['open'] as String).queryParameters, contains('homeWidget'));
+    expect(provider, contains('launch(context, timeline.openLink)'));
+    expect(provider, contains('launch(context, timeline.continueLink)'));
+    expect(swift, contains('.widgetURL(URL(string: timeline.open))'));
+    expect(swift, contains('URL(string: timeline.continueLink)'));
+    for (final native in [provider, swift]) {
+      expect(native, isNot(contains('${WidgetLink.scheme}://')));
+    }
+  });
+
   test("both widgets turn their day at 3 a.m., as the app's does", () {
     expect(rolloverDate(DateTime(2026, 10, 10, 2, 59)), LocalDate(2026, 10, 9));
     expect(rolloverDate(DateTime(2026, 10, 10, 3)), LocalDate(2026, 10, 10));
