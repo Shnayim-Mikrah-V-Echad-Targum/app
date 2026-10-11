@@ -26,6 +26,11 @@ final myProfileProvider = FutureProvider<Profile?>((ref) async {
 
 final forumsProvider = FutureProvider<List<Forum>>((ref) => ref.watch(forumRepositoryProvider).forums());
 
+/// How many discussions each forum lists, and when one was last posted in,
+/// by forum id, for the Community page. Fetched again with the forums'
+/// threads where a discussion or a post is added or removed.
+final forumStatsProvider = FutureProvider<Map<int, ForumStats>>((ref) => ref.watch(forumRepositoryProvider).forumStats());
+
 /// Whether the demo's notice on the Community page has been dismissed. It
 /// stays dismissed for the rest of the session; the other pages still say,
 /// with their Demo tag, that the community is a demo.
@@ -52,7 +57,9 @@ class ThreadsPage {
 /// and the next as the reader asks ([loadMore]).
 ///
 /// Fetched again (when invalidated, after a reply say), it shows as many
-/// threads as before, so that none the reader had paged to drops out.
+/// threads as before, so that none the reader had paged to drops out. It is
+/// fetched again too when the account changes: a thread's excerpt and thanks
+/// leave out the posts of members the reader has blocked.
 class ForumThreads extends AsyncNotifier<ThreadsPage> {
   ForumThreads(this.forumId);
   final int? forumId;
@@ -63,6 +70,7 @@ class ForumThreads extends AsyncNotifier<ThreadsPage> {
 
   @override
   Future<ThreadsPage> build() async {
+    ref.watch(communityUserProvider.select((v) => v.value?.id));
     final limit = max(ForumRepository.threadsPageSize, _unpinned);
     final list = await ref.watch(forumRepositoryProvider).threads(forumId: forumId, limit: limit + 1);
     return _shown(const [], list, limit);

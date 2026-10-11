@@ -245,6 +245,7 @@ class PaperRow extends StatelessWidget {
     this.subtitle,
     this.titleStyle,
     this.subtitleStyle,
+    this.detail,
     this.value,
     this.trailing,
     this.mergeTrailing = false,
@@ -270,6 +271,10 @@ class PaperRow extends StatelessWidget {
 
   /// bodyMedium in onSurfaceVariant, merged with this where given.
   final TextStyle? subtitleStyle;
+
+  /// A line under the subtitle in bodySmall onSurfaceVariant, such as how
+  /// busy a forum is.
+  final String? detail;
 
   /// The current setting, such as a language, at the end of the row.
   final String? value;
@@ -342,7 +347,7 @@ class PaperRow extends StatelessWidget {
           ),
         );
     final content = ConstrainedBox(
-      constraints: BoxConstraints(minHeight: subtitle == null ? 56 : 72),
+      constraints: BoxConstraints(minHeight: subtitle == null && detail == null ? 56 : 72),
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(_start, 12, 12, 12),
         child: Row(
@@ -377,6 +382,11 @@ class PaperRow extends StatelessWidget {
                       style: subtitleStyle,
                       maxLines: enlarged ? null : 2,
                       overflow: enlarged ? null : TextOverflow.ellipsis,
+                    ),
+                  if (detail != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(detail!, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                     ),
                 ],
               ),

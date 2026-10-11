@@ -2086,6 +2086,34 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String threadThanksCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count תודות',
+      one: 'תודה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String forumDiscussionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count דיונים',
+      one: 'דיון אחד',
+      zero: 'אין עדיין דיונים',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String forumActive(String time) {
+    return 'פעילות אחרונה $time';
+  }
+
+  @override
   String get timeJustNow => 'הרגע';
 
   @override

@@ -3633,6 +3633,24 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}'**
   String postsCount(int count);
 
+  /// In a forum's list, after a discussion's replies: the thanks (todah) given to its posts, once there are any. A no-break space keeps the count with its word.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 thanks} other{{count} thanks}}'**
+  String threadThanksCount(int count);
+
+  /// Under a forum's description on the Community page: how many discussions it has. A no-break space keeps the count with its word.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No discussions yet} =1{1 discussion} other{{count} discussions}}'**
+  String forumDiscussionsCount(int count);
+
+  /// After a forum's count of discussions on the Community page: when one was last posted in. {time} is "3 hours ago", "just now" or a date.
+  ///
+  /// In en, this message translates to:
+  /// **'active {time}'**
+  String forumActive(String time);
+
   /// No description provided for @timeJustNow.
   ///
   /// In en, this message translates to:

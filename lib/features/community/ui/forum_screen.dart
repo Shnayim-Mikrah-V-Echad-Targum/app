@@ -216,9 +216,10 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
 
 /// A thread in a forum's list (§9 Community): its title, run in the direction
 /// of its own language, under a Pinned or Locked tag if it is pinned or
-/// locked; then who started it, when it was last active, and how many replies
-/// it has had. One item for screen readers, which opens the thread, and says
-/// each tag too.
+/// locked; the opening of its first post, in that post's direction; then who
+/// started it, when it was last active, how many replies it has had and the
+/// thanks its posts were given. One item for screen readers, which opens the
+/// thread, and says each tag too.
 class ThreadTile extends ConsumerWidget {
   const ThreadTile({super.key, required this.thread, this.focusNode});
   final ThreadSummary thread;
@@ -235,9 +236,11 @@ class ThreadTile extends ConsumerWidget {
     final text = theme.textTheme;
     final muted = theme.colorScheme.onSurfaceVariant;
     final title = threadDisplayTitle(context, ref, thread);
-    final direction = autoDirection(title, fallback: Directionality.of(context));
-    // Each title runs its own way, but starts on the same edge as the rest.
-    final edge = Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.left;
+    final page = Directionality.of(context);
+    // Each title and excerpt runs its own way, but starts on the same edge as
+    // the rest.
+    final edge = page == TextDirection.rtl ? TextAlign.right : TextAlign.left;
+    final excerpt = thread.excerpt;
     // Never cut short once the text is enlarged (WCAG 1.4.4).
     final enlarged = MediaQuery.textScalerOf(context).scale(1) > 1;
     // Starting with the time, as a weekly thread's does, it starts with a
@@ -251,12 +254,13 @@ class ThreadTile extends ConsumerWidget {
           ],
         );
     final meta = toBeginningOfSentenceCase(
-      [
+      metaLine([
         // A weekly thread is the community's, started by no one.
         if (thread.authorName.isNotEmpty) isolate(thread.authorName),
         relativeTime(context, thread.lastPostAt),
         l.repliesCount(_replies),
-      ].join(' · '),
+        if (thread.todahTotal > 0) l.threadThanksCount(thread.todahTotal),
+      ]),
       context.localeName,
     );
     return Semantics(
@@ -285,23 +289,61 @@ class ThreadTile extends ConsumerWidget {
                       ],
                     ),
                   ),
-                Lang(
-                  Locale(direction == TextDirection.rtl ? 'he' : 'en'),
-                  child: Text(
-                    title,
-                    style: text.titleMedium,
-                    textDirection: direction,
+                _OwnDirection(
+                  title,
+                  page: page,
+                  style: text.titleMedium,
+                  textAlign: edge,
+                  maxLines: enlarged ? null : 2,
+                ),
+                if (excerpt != null) ...[
+                  const Gap(2),
+                  _OwnDirection(
+                    excerpt,
+                    page: page,
+                    style: text.bodySmall?.copyWith(color: theme.colorScheme.onSurface),
                     textAlign: edge,
                     maxLines: enlarged ? null : 2,
-                    overflow: enlarged ? null : TextOverflow.ellipsis,
                   ),
-                ),
-                const Gap(2),
+                ],
+                // A little more air between the post's words and the facts.
+                Gap(excerpt == null ? 2 : Space.xs),
                 Text(meta, style: text.bodySmall?.copyWith(color: muted)),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// [text] written by a member, such as a thread's title or its excerpt: run
+/// in the direction of its own language and tagged with it, from the page's
+/// edge ([textAlign]), and cut short after [maxLines] lines.
+class _OwnDirection extends StatelessWidget {
+  const _OwnDirection(this.text, {required this.page, this.style, required this.textAlign, this.maxLines});
+
+  final String text;
+
+  /// The page's direction, for a text with no letter to take one from.
+  final TextDirection page;
+  final TextStyle? style;
+  final TextAlign textAlign;
+  final int? maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final direction = autoDirection(text, fallback: page);
+    return Lang(
+      Locale(direction == TextDirection.rtl ? 'he' : 'en'),
+      child: Text(
+        text,
+        style: style,
+        textDirection: direction,
+        textAlign: textAlign,
+        maxLines: maxLines,
+        overflow: maxLines == null ? null : TextOverflow.ellipsis,
       ),
     );
   }

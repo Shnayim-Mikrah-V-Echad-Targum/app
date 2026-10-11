@@ -7,6 +7,7 @@ import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../data/community_providers.dart';
+import '../data/models.dart';
 import 'community_ui.dart';
 
 /// The community's front page (§9 Community): the demo's notice, this
@@ -19,13 +20,20 @@ class CommunityScreen extends ConsumerWidget {
     final l = context.l10n;
     final he = context.isHebrewUi;
     final text = Theme.of(context).textTheme;
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    // A forum's description is ink, as a thread's excerpt is in its list,
+    // over the muted line of how busy it is.
+    final ink = Theme.of(context).colorScheme.onSurface;
     final user = ref.watch(communityUserProvider).value;
     final profile = ref.watch(myProfileProvider).value;
     final forums = ref.watch(forumsProvider);
+    // How busy each forum is, once it comes: a forum is listed without it
+    // until then, or if it can't be had.
+    final stats = ref.watch(forumStatsProvider).value;
 
     Future<void> refresh() async {
-      ref.invalidate(forumsProvider);
+      ref
+        ..invalidate(forumsProvider)
+        ..invalidate(forumStatsProvider);
       await ref.read(forumsProvider.future);
     }
 
@@ -88,7 +96,11 @@ class CommunityScreen extends ConsumerWidget {
                               title: f.name(he),
                               titleStyle: text.titleMedium,
                               subtitle: f.description(he).isEmpty ? null : f.description(he),
-                              subtitleStyle: text.bodySmall?.copyWith(color: muted),
+                              subtitleStyle: text.bodySmall?.copyWith(color: ink),
+                              detail: switch (stats?[f.id]) {
+                                final s? => activity(context, s),
+                                null => null,
+                              },
                               onTap: () => context.push('/community/forum/${f.slug}'),
                             ),
                         ],
@@ -99,6 +111,16 @@ class CommunityScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// How busy a forum is: "12 discussions · active 3 hours ago", or with
+  /// nothing posted in it yet, only how many discussions it has.
+  static String activity(BuildContext context, ForumStats stats) {
+    final l = context.l10n;
+    return metaLine([
+      l.forumDiscussionsCount(stats.threadCount),
+      if (stats.lastPostAt case final at?) l.forumActive(relativeTime(context, at)),
+    ]);
   }
 
   /// The icon of the forum [slug], here and where a new discussion picks

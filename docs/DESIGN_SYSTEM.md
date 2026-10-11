@@ -547,6 +547,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Min height 56 (one line) or 72 (two lines); padding start 16, end 12, vertical 12.
 - Leading icon 22 in onSurfaceVariant, in a 38 slot (icon then 16 gap).
 - Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max. Once the system text is enlarged, the subtitle is never cut short (WCAG 1.4.4).
+- An optional detail line under the subtitle, 4 below it, in bodySmall onSurfaceVariant: a line of facts, such as how busy a forum is.
 - Trailing: an optional value in bodyMedium onSurfaceVariant, then `Icons.chevron_right` 20 in outline (mirrors in RTL automatically).
   - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it. With a subtitle under them, the icon and chevron line up with the title's line too.
   - A trailing button with a label (a TextButton, such as "About streaks" or "Sign in") goes with the title the same way: at the end of its line, or under it when the two don't fit, so that no word of the title ever breaks.
@@ -1189,12 +1190,12 @@ In order:
 - Demo NoticeBanner (§6.20).
 - Featured row (a Card with SeferInkWell, no primaryContainer fill): the Hebrew parsha name in FRL 600 20 primary, titleMedium "This week: Parshat Bereshit", bodySmall "Open the discussion", and a chevron.
 - Sign-in: one PaperRow with `info_outline`, text, and a trailing TextButton "Sign in".
-- GroupHeader "Forums", then one PaperGroup: icons in onSurfaceVariant, titles titleMedium, descriptions bodySmall (2 lines).
+- GroupHeader "Forums", then one PaperGroup: icons in onSurfaceVariant, titles titleMedium, descriptions bodySmall onSurface (2 lines), as a thread's excerpt is, and under them, once it comes, the forum's activity as a detail line, "12 discussions · active 3 hours ago" ("No discussions yet" in an empty forum; no "active" until one has been posted in). A forum is listed without it until then, or where it can't be had.
 
 **Forum**
 - The description in bodyMedium onSurfaceVariant.
 - Parshat HaShavua first shows this week's card, as on Home, so that forum is never empty.
-- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines), then bodySmall "Rivka · 3 hours ago · 4 replies" with the name isolated. A pinned or locked thread has a 16 px icon (`push_pin_outlined`, `lock_outline`) and a labelSmall tag ("Pinned", "Locked") above its title, so that the row says so wherever it is met, not only under its group's heading; screen readers hear the tags first. No leading icon or chevron.
+- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines); 2 below it the excerpt of its first post, bodySmall onSurface, in its own direction and tagged with its language like the title, 2 lines (whole once the text is enlarged), and none where the reader may not see that post; then 4 below it (2 below the title where there is no excerpt), bodySmall onSurfaceVariant "Rivka · 3 hours ago · 4 replies · 12 thanks" with the name isolated, the thanks only once there are any. A pinned or locked thread has a 16 px icon (`push_pin_outlined`, `lock_outline`) and a labelSmall tag ("Pinned", "Locked") above its title, so that the row says so wherever it is met, not only under its group's heading; screen readers hear the tags first. No leading icon or chevron.
 - The rows are built only as they scroll into view, each its share of its group's paper (`PaperGroupRow`), as a forum paged through may hold hundreds. Each but the last lays its paper a little past its foot, and each but the first leaves as much of its top bare, so that the row below, painted after it, never covers the foot of its focus ring.
 - Empty state per §6.22 with `emptyForum`, its action New discussion; in a locked forum, to a member who may not begin one there, `emptyLockedForum` ("No discussions here yet.") with no action.
 - FAB: extended "New discussion", primaryContainer / onPrimaryContainer, radius 12, elevation 2.
@@ -1218,6 +1219,8 @@ In order:
 - Signed in with a name, the paper begins with "Posting as Rivka" after a 24 px initial disc.
 - Until the guidelines are accepted, one line in bodySmall onSurfaceVariant, start-aligned, ending with the link to them (`LinkedText`).
 - Then a full-width Filled "Post", and Discard draft (Text, centred) once anything is written.
+
+**Lines of facts** (`metaLine`, community_ui.dart): the facts of a thread's row and of a forum's activity are joined by " · ", the dot held to the fact before it by a no-break space, so that a line too long for its row wraps after a dot and none leads a line.
 
 **Inline links** (`LinkedText`, community_ui.dart): a sentence in bodySmall onSurfaceVariant ending with a link in primary w500, always underlined. The link is a WidgetSpan holding a SeferInkWell, so it takes the keyboard focus with the ring (4 px of room either side: the 3 px ring, drawn outside the link, and a hairline clear of the words) and Enter follows it; screen readers read it as a link after the sentence. As a link in running text it is as tall as the line (WCAG 2.5.8's inline exception).
 

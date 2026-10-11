@@ -1413,7 +1413,20 @@ const _desktopScreens = {
 };
 // The wide modes render only the screens above.
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc', 'wide'};
-const _tallScreens = {'week_notes', 'notes', 'notes_parsha', 'today', 'parsha', 'week', 'progress', 'progress_years', 's_display', 'sources'};
+const _tallScreens = {
+  'week_notes',
+  'notes',
+  'notes_parsha',
+  'today',
+  'parsha',
+  'week',
+  'progress',
+  'progress_years',
+  's_display',
+  'sources',
+  // Every forum, with how busy it is.
+  'community',
+};
 const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {
   'today',

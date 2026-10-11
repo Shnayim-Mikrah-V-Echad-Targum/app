@@ -97,7 +97,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
       container
         ..invalidate(postsProvider(threadId))
         ..invalidate(threadProvider(threadId))
-        ..invalidate(threadsProvider);
+        ..invalidate(threadsProvider)
+        ..invalidate(forumStatsProvider);
       if (mounted) {
         showStatus(context, l.posted);
         unawaited(_scrollToLatest());
@@ -613,8 +614,9 @@ class PostCard extends ConsumerWidget {
     final name = post.authorName.isEmpty ? l.anonymousMember : post.authorName;
     final reported = ref.watch(reportedPostIdsProvider).contains(post.id);
 
-    /// Runs [f], then fetches the posts again, and with [recount] the
-    /// thread's count too, here and in its forum.
+    /// Runs [f], then fetches the posts again, and with [recount] the thread
+    /// too, here and as its forum lists it: its count, its excerpt and the
+    /// thanks its posts were given, and its forum's activity.
     Future<void> run(Future<void> Function() f, {String? success, bool recount = false}) async {
       try {
         await f();
@@ -628,7 +630,8 @@ class PostCard extends ConsumerWidget {
       if (recount) {
         container
           ..invalidate(threadProvider(post.threadId))
-          ..invalidate(threadsProvider);
+          ..invalidate(threadsProvider)
+          ..invalidate(forumStatsProvider);
       }
       if (success != null && context.mounted) showStatus(context, success);
     }
@@ -637,7 +640,8 @@ class PostCard extends ConsumerWidget {
       switch (v) {
         case 'edit':
           final ok = await _editPost(context, post);
-          if (ok != null) await run(() => repo.editPost(post.id, ok));
+          // The first post's edit is its thread's excerpt.
+          if (ok != null) await run(() => repo.editPost(post.id, ok), recount: true);
         case 'delete':
           final ok = await _confirm(context, title: l.deletePostConfirm, action: l.actionDelete);
           if (ok) await run(() => repo.deletePost(post.id), success: l.postDeleted, recount: true);
@@ -660,7 +664,8 @@ class PostCard extends ConsumerWidget {
           if (!await ensureSignedIn(context, ref) || !context.mounted) return;
           final ok = await _confirm(context, title: l.blockUser(name), message: l.blockConfirm(name), action: l.blockUser(name));
           if (ok && post.authorId != null) {
-            await run(() => repo.block(post.authorId!), success: l.blockedDone);
+            // Their words leave the forums' excerpts, and their thanks the counts.
+            await run(() => repo.block(post.authorId!), success: l.blockedDone, recount: true);
             container.invalidate(blockedUsersProvider);
           }
         case 'hide':
@@ -1094,7 +1099,10 @@ class _TodahButtonState extends ConsumerState<_TodahButton> {
       }
     }
     if (mounted) setState(() => _busy = false);
-    container.invalidate(postsProvider(widget.post.threadId));
+    container
+      ..invalidate(postsProvider(widget.post.threadId))
+      // The thanks its forum lists the thread with.
+      ..invalidate(threadsProvider);
   }
 
   @override

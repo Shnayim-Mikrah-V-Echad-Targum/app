@@ -213,7 +213,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // Sent: whatever happens to this page, the draft must not come back.
       _draftTimer?.cancel();
       await prefs.remove(_draftKey);
-      container.invalidate(threadsProvider);
+      container
+        ..invalidate(threadsProvider)
+        ..invalidate(forumStatsProvider);
       if (mounted) {
         showStatus(context, l.posted);
         context.pushReplacement('/community/thread/$id');

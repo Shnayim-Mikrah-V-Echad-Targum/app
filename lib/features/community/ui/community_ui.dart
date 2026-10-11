@@ -110,6 +110,12 @@ String relativeTime(BuildContext context, DateTime time) {
   return MaterialLocalizations.of(context).formatMediumDate(time.toLocal());
 }
 
+/// The parts of a line of facts, such as "Rivka · 3 hours ago · 4 replies",
+/// joined by middle dots. A no-break space holds each dot to the part before
+/// it, so a line too long for its row wraps after a dot, and none leads a
+/// line.
+String metaLine(Iterable<String> parts) => parts.join('\u00a0· ');
+
 /// Absolute date and time, for screen readers and tooltips.
 String absoluteTime(BuildContext context, DateTime time) {
   final m = MaterialLocalizations.of(context);

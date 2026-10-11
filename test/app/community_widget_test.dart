@@ -151,6 +151,12 @@ class _LockedFeedback extends DemoForumRepository {
       ];
 }
 
+/// A community whose forums' activity can't be fetched (offline).
+class _NoStats extends DemoForumRepository {
+  @override
+  Future<Map<int, ForumStats>> forumStats() async => throw Exception('offline');
+}
+
 /// A member whose blocked members can't be fetched (offline).
 class _NoBlockedList extends DemoForumRepository {
   @override
@@ -2157,8 +2163,8 @@ void main() {
       final tile = find.widgetWithText(ThreadTile, title);
       final node = tester.getSemantics(tile);
       expect(node, isSemantics(isButton: true, hasTapAction: true));
-      expect(node.label, startsWith('Locked\n\u2068Avraham\u2069 · '));
-      expect(node.label, endsWith(' · 1\u00a0reply'));
+      expect(node.label, startsWith('Locked\n\u2068Avraham\u2069\u00a0· '));
+      expect(node.label, endsWith('\u00a0· 1\u00a0reply\u00a0· 13\u00a0thanks'));
       expect(tester.getSemantics(find.descendant(of: tile, matching: find.text('Locked'))).id, node.id);
       // The title, tagged with its own language, is read within the row, and
       // is no item to stop on of its own.
@@ -2185,7 +2191,7 @@ void main() {
       expect(tester.getRect(find.text(title)).right, closeTo(tester.getRect(find.widgetWithText(ThreadTile, title)).right - 16, 1));
       // The meta line runs right to left: the name, isolated, first, at the
       // right, then the time and the replies.
-      final meta = find.descendant(of: find.widgetWithText(ThreadTile, title), matching: find.textContaining('\u2068Avraham\u2069 · '));
+      final meta = find.descendant(of: find.widgetWithText(ThreadTile, title), matching: find.textContaining('\u2068Avraham\u2069\u00a0· '));
       expect(meta, findsOneWidget);
       final paragraph = tester.renderObject<RenderParagraph>(meta);
       final text = paragraph.text.toPlainText();
@@ -2256,8 +2262,12 @@ void main() {
       expect(tag, findsOneWidget);
       expect(find.descendant(of: locked, matching: find.byIcon(Icons.lock_outline)), findsOneWidget);
       expect(tester.getTopLeft(tag).dy, lessThan(tester.getTopLeft(find.text(title)).dy));
-      // Who started it, when it was last active, and its replies.
-      expect(find.descendant(of: locked, matching: find.textContaining(RegExp(r'^\u2068Avraham\u2069 · .+ · 1\u00a0reply$'))), findsOneWidget);
+      // Who started it, when it was last active, its replies and the thanks
+      // its posts were given.
+      expect(
+        find.descendant(of: locked, matching: find.textContaining(RegExp('^\u2068Avraham\u2069\u00a0· .+\u00a0· 1\u00a0reply\u00a0· 13\u00a0thanks\$'))),
+        findsOneWidget,
+      );
     });
 
     testWidgets("lists a weekly thread as the community's, started by no one", (tester) async {
@@ -2283,7 +2293,7 @@ void main() {
       c.read(routerProvider).go('/community/forum/parsha');
       await tester.pumpAndSettle();
       final weekly = find.widgetWithText(ThreadTile, 'Parshat Noach 5787');
-      expect(find.descendant(of: weekly, matching: find.text('Just now · No replies yet')), findsOneWidget);
+      expect(find.descendant(of: weekly, matching: find.text('Just now\u00a0· No replies yet')), findsOneWidget);
     });
 
     testWidgets("runs each title its own way from the page's edge, and keeps a Hebrew name in its place", (tester) async {
@@ -2297,7 +2307,163 @@ void main() {
       expect(tester.widget<Lang>(find.ancestor(of: find.text(question), matching: find.byType(Lang))).locale, const Locale('he'));
       expect(tester.widget<Text>(find.text('Why read Numbers 32:3 a third time?')).textDirection, TextDirection.ltr);
       // Isolated, so that the rest of the line stays after the name.
-      expect(find.textContaining('\u2068שירה\u2069 · '), findsOneWidget);
+      expect(find.textContaining('\u2068שירה\u2069\u00a0· '), findsOneWidget);
+    });
+  });
+
+  group("a forum's activity", () {
+    const question = 'Why read the Targum rather than a translation?';
+    const opening = 'I read English more easily than Aramaic. Why does the Shulchan Aruch insist on Targum Onkelos?';
+    const hebrewTitle = 'עד מתי אפשר להשלים את הקריאה?';
+    const hebrewOpening = 'קרה לי שלא הספקתי לסיים שניים מקרא לפני שבת. עד מתי אפשר עוד להשלים?';
+    Finder tileOf(String title) => find.widgetWithText(ThreadTile, title);
+
+    testWidgets('lists a discussion with its opening, in its own direction, read within its row', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      final excerpt = find.text(hebrewOpening);
+      final text = tester.widget<Text>(excerpt);
+      expect(text.textDirection, TextDirection.rtl, reason: 'so its question mark ends it');
+      expect(text.textAlign, TextAlign.left, reason: "from the English page's edge");
+      expect(text.maxLines, 2);
+      expect(text.style?.fontSize, Theme.of(tester.element(excerpt)).textTheme.bodySmall?.fontSize);
+      expect(tester.widget<Lang>(find.ancestor(of: excerpt, matching: find.byType(Lang))).locale, const Locale('he'));
+      // Under its title, over who began it, its replies and its thanks.
+      final tile = tileOf(hebrewTitle);
+      final meta = find.descendant(of: tile, matching: find.textContaining('\u2068שירה\u2069'));
+      expect(tester.getTopLeft(excerpt).dy, greaterThanOrEqualTo(tester.getBottomLeft(find.text(hebrewTitle)).dy));
+      expect(tester.getBottomLeft(excerpt).dy, lessThanOrEqualTo(tester.getTopLeft(meta).dy));
+      expect(tester.widget<Text>(meta).data, endsWith('\u00a0· 2\u00a0replies\u00a0· 13\u00a0thanks'));
+      // Tagged with its language, it is read within the row, as the title is.
+      final row = tester.getSemantics(tile);
+      SemanticsNode? up = tester.getSemantics(excerpt);
+      while (up != null && up.id != row.id) {
+        up = up.parent;
+      }
+      expect(up, isNotNull, reason: 'within the row');
+      expect(find.text(opening), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('at 200% text, shows the whole opening', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text(hebrewOpening), 200);
+      expect(tester.widget<Text>(find.text(hebrewOpening)).maxLines, isNull, reason: 'never cut short once enlarged');
+    });
+
+    testWidgets("leaves out a blocked member's opening and the thanks on their posts, until they are unblocked", (tester) async {
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.text(opening), findsOneWidget);
+      await forums.setTodah('1', true);
+      await tester.tap(find.text(question));
+      await tester.pumpAndSettle();
+      await _openPostMenu(tester, 0);
+      await tester.tap(find.text('Block Avraham'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Block Avraham'));
+      await tester.pumpAndSettle();
+      await _goBack(tester);
+      expect(find.text(opening), findsNothing, reason: 'rather than the answer in its place');
+      // Only the thanks on Rivka's answer: none on Avraham's question.
+      expect(tester.widget<Text>(find.descendant(of: tileOf(question), matching: find.textContaining('reply'))).data,
+          endsWith('1\u00a0reply\u00a0· 4\u00a0thanks'));
+
+      // Once the status message that says so has gone.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      c.read(routerProvider).go('/community/account');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Blocked members (1)'));
+      await tester.pumpAndSettle();
+      final sheet = find.byType(BottomSheet);
+      await tester.tap(find.descendant(of: sheet, matching: find.widgetWithText(TextButton, 'Unblock')));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(sheet)).pop();
+      await tester.pumpAndSettle();
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.text(opening), findsOneWidget);
+      expect(find.descendant(of: tileOf(question), matching: find.textContaining('5\u00a0thanks')), findsOneWidget);
+    });
+
+    testWidgets('counts a todah given in its thread', (tester) async {
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      Finder thanks(int n) => find.descendant(of: tileOf(question), matching: find.textContaining('$n\u00a0thanks'));
+      expect(thanks(4), findsOneWidget);
+      await tester.tap(find.text(question));
+      await tester.pumpAndSettle();
+      await _tapTodah(tester, 4);
+      await tester.pumpAndSettle();
+      await _goBack(tester);
+      expect(thanks(5), findsOneWidget);
+    });
+
+    group('on the community page', () {
+      Finder detailOf(String forum) => find.descendant(
+            of: find.widgetWithText(PaperRow, forum),
+            matching: find.textContaining(RegExp('^(No discussions yet|\\d+\u00a0discussions?)')),
+          );
+
+      testWidgets('says how many discussions each forum has, and when one was last posted in, as one item with the forum',
+          (tester) async {
+        final semantics = tester.ensureSemantics();
+        final forums = await _Member().signIn();
+        final c = await _pump(tester, forums: forums, now: DateTime(2026, 10, 12, 10));
+        c.read(routerProvider).go('/community');
+        await tester.pumpAndSettle();
+        expect(tester.widget<Text>(detailOf('Divrei Torah')).data, matches(RegExp('^2\u00a0discussions\u00a0· active .+\$')));
+        final row = tester.getSemantics(find.widgetWithText(PaperRow, 'Divrei Torah'));
+        expect(row.label, contains('Divrei Torah'));
+        expect(row.label, contains('2\u00a0discussions'));
+        expect(tester.getSemantics(detailOf('Divrei Torah')).id, row.id);
+
+        // A discussion begun counts, and is its forum's latest.
+        c.read(routerProvider).push('/community/new?forum=divrei-torah');
+        await tester.pumpAndSettle();
+        await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Light on the first verse');
+        await tester.enterText(find.widgetWithText(TextField, 'Your message'), 'Onkelos and Rashi read it differently.');
+        await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post')));
+        await tester.pumpAndSettle();
+        expect(find.byType(ThreadScreen), findsOneWidget);
+        await _goBack(tester);
+        expect(tester.widget<Text>(detailOf('Divrei Torah')).data, '3\u00a0discussions\u00a0· active just now');
+        semantics.dispose();
+      });
+
+      testWidgets('says of a forum with no discussions only that, and never that it is active', (tester) async {
+        final c = await _pump(tester, forums: DemoForumRepository(samples: false));
+        c.read(routerProvider).go('/community');
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(find.text('App feedback'), 200);
+        expect(tester.widget<Text>(detailOf('Divrei Torah')).data, 'No discussions yet');
+        expect(tester.widget<Text>(detailOf('Questions & answers')).data, matches(RegExp('^1\u00a0discussion\u00a0· active .+\$')));
+      });
+
+      testWidgets("lists the forums without it where it can't be had", (tester) async {
+        final c = await _pump(tester, forums: _NoStats());
+        c.read(routerProvider).go('/community');
+        await tester.pumpAndSettle();
+        expect(find.text('Questions & answers'), findsOneWidget);
+        expect(find.text('Ask about a verse, a Targum or a Rashi.'), findsOneWidget);
+        expect(detailOf('Questions & answers'), findsNothing);
+        expect(find.text("Couldn't reach the server. Check your connection and try again."), findsNothing);
+        // Nor while it is tried again, and after.
+        await tester.pump(const Duration(minutes: 1));
+        expect(detailOf('Questions & answers'), findsNothing);
+        expect(find.text("Couldn't reach the server. Check your connection and try again."), findsNothing);
+      });
     });
   });
 

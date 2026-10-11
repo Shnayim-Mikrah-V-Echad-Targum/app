@@ -971,7 +971,10 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
     });
     try {
       await ref.read(forumRepositoryProvider).unblock(id);
-      ref.invalidate(blockedUsersProvider);
+      ref
+        ..invalidate(blockedUsersProvider)
+        // Their words come back to the forums' excerpts.
+        ..invalidate(threadsProvider);
     } catch (e) {
       if (mounted) setState(() => _errors[id] = communityError(l, e));
     } finally {
