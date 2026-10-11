@@ -12,7 +12,8 @@ import 'routes.dart';
 
 /// Text contrast (WCAG 1.4.3) where a page needs more than opening it: the
 /// reminders as a phone schedules them, and the Torah map's tiles. Every
-/// route in every theme is checked in semantics_invariants_test.dart.
+/// route in every theme is checked in semantics_invariants_test.dart and
+/// semantics_invariants_pages_test.dart.
 ///
 /// textContrastGuideline reads the colours from the rendered pixels around
 /// each text and takes the most common dark and light ones. That only works

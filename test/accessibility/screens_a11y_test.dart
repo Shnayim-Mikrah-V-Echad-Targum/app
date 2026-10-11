@@ -21,7 +21,8 @@ import 'semantics_invariants.dart';
 /// in English and Hebrew, at phone and desktop sizes and at 200% and 300%
 /// text size. Text is laid out in the bundled fonts, so sizes and overflow
 /// are the real ones. Text contrast, and these guidelines in every theme,
-/// are checked in semantics_invariants_test.dart.
+/// are checked in semantics_invariants_test.dart and
+/// semantics_invariants_pages_test.dart.
 void main() {
   setUpAll(loadBundledFonts);
 
