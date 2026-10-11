@@ -229,16 +229,26 @@ class ScriptureStyles {
   /// to keep a measure of words rather than of one or two.
   static const parallelMaxSize = 34.0;
 
-  /// Whether the full text, in a pane [paneWidth] wide, sets the Torah and
-  /// what goes with it ([companion]: the Targum, or else the translation)
-  /// side by side: on a wide pane, at a measure other than the narrow one and
-  /// a size the column holds, unless the reader has turned it off.
-  bool parallelColumns(double paneWidth, {required bool companion}) =>
-      companion &&
-      settings.parallelColumns &&
+  /// The width of the reader's pane in [context]'s window: the window's,
+  /// within its side insets.
+  static double paneWidth(BuildContext context) =>
+      MediaQuery.sizeOf(context).width - MediaQuery.paddingOf(context).horizontal;
+
+  /// Whether the full text, in a pane [paneWidth] wide, has room to set the
+  /// Torah and what goes with it side by side, whether or not the reader has
+  /// turned that off: on a wide pane, at a measure other than the narrow one
+  /// and a size the column holds.
+  bool parallelFits(double paneWidth) =>
       settings.lineWidth != LineWidth.narrow &&
       paneWidth >= parallelMinPane &&
       MediaQuery.textScalerOf(context).scale(sizeFor(ScriptureKind.mikra)) <= parallelMaxSize;
+
+  /// Whether the full text, in a pane [paneWidth] wide, sets the Torah and
+  /// what goes with it ([companion]: the Targum, or else the translation)
+  /// side by side: where it fits ([parallelFits]), unless the reader has
+  /// turned it off.
+  bool parallelColumns(double paneWidth, {required bool companion}) =>
+      companion && settings.parallelColumns && parallelFits(paneWidth);
 
   /// The full text's measure: [parallelWidth] in parallel columns, and
   /// otherwise the reading column's.

@@ -135,6 +135,73 @@ void main() {
       expect(tester.getTopLeft(titled('Rishon')).dx, closeTo(column.left, 0.5));
     });
 
+    for (final translation in [false, true]) {
+      testWidgets(
+          'in the Hebrew interface, keeps the Torah at the right and ${translation ? 'the translation' : 'the Targum'} '
+          'at the left, each under its own name', (tester) async {
+        await open(
+          tester,
+          '/read/5787:2/0?mode=full',
+          settings: AppSettings(
+            onboardingComplete: true,
+            language: AppLanguage.hebrew,
+            showTranslation: translation,
+            secondReading: translation ? SecondReading.rashi : SecondReading.onkelos,
+          ),
+        );
+        final first = find.byType(ParallelVerse).first;
+        final mikra = tester.getRect(find.descendant(of: first, matching: verses(ScriptureKind.mikra)));
+        final beside = tester.getRect(
+          find.descendant(of: first, matching: translation ? find.byType(TranslationVerse) : verses(ScriptureKind.targum)),
+        );
+        expect(beside.right, lessThan(mikra.left));
+        expect(mikra.left - beside.right, closeTo(ParallelVerse.gutter, 0.5));
+        expect(firstBaseline(tester, find.descendant(of: first, matching: verses(ScriptureKind.mikra))),
+            closeTo(firstBaseline(tester, find.descendant(of: first, matching: translation ? find.byType(TranslationVerse) : verses(ScriptureKind.targum))), 0.5));
+
+        // Each name over its column, set from the edge its text begins at.
+        final heading = tester.widget<ParallelHeading>(find.byType(ParallelHeading));
+        final torahHead = find.descendant(of: find.byType(ParallelHeading), matching: find.text(heading.torah));
+        final besideHead = find.descendant(of: find.byType(ParallelHeading), matching: find.text(heading.beside));
+        expect(tester.getRect(torahHead).left, closeTo(mikra.left, 0.5));
+        expect(tester.getRect(torahHead).right, closeTo(mikra.right, 0.5));
+        expect(tester.getRect(besideHead).left, closeTo(beside.left, 0.5));
+        expect(tester.getRect(besideHead).right, closeTo(beside.right, 0.5));
+        expect(tester.widget<Text>(torahHead).textAlign, TextAlign.right);
+        expect(tester.widget<Text>(besideHead).textAlign, translation ? TextAlign.left : TextAlign.right);
+      });
+    }
+
+    testWidgets('in focus mode, a screen reader\'s tap on a row focuses its verse', (tester) async {
+      final handle = tester.ensureSemantics();
+      await open(
+        tester,
+        '/read/5787:2/0?mode=full',
+        settings: const AppSettings(onboardingComplete: true, focusMode: true),
+      );
+      final rows = find.byType(VerseGroup);
+      expect(find.byType(ParallelVerse), findsWidgets);
+      expect(tester.widget<VerseGroup>(rows.at(0)).highlighted, isTrue);
+      // The row's node, around its verse and Targum, which are heard on
+      // their own.
+      bool holds(SemanticsNode node, String label) {
+        var found = false;
+        node.visitChildren((child) {
+          found = child.label.startsWith(label) || holds(child, label);
+          return !found;
+        });
+        return found;
+      }
+
+      tester.semantics.tap(find.semantics.byPredicate(
+        (n) => n.getSemanticsData().hasAction(SemanticsAction.tap) && holds(n, 'Verse 10. '),
+      ));
+      await tester.pumpAndSettle();
+      expect(tester.widget<VerseGroup>(rows.at(0)).highlighted, isFalse);
+      expect(tester.widget<VerseGroup>(rows.at(1)).highlighted, isTrue);
+      handle.dispose();
+    });
+
     for (final hebrew in [false, true]) {
       testWidgets('is heard verse before Targum${hebrew ? ', in the Hebrew interface' : ''}', (tester) async {
         final handle = tester.ensureSemantics();
@@ -228,6 +295,42 @@ void main() {
       expect(find.byType(ParallelVerse), findsNothing);
       expect(tester.getRect(find.byType(ScriptureVerse).first).width, lessThanOrEqualTo(680));
     });
+
+    for (final (name, path, size, padding, settings) in [
+      ('in the guided reader', '/read/5787:2/0', wide, EdgeInsets.zero, const AppSettings(onboardingComplete: true)),
+      (
+        'beside insets that leave a pane under 960',
+        '/read/5787:2/0?mode=full',
+        const Size(1000, 700),
+        const EdgeInsets.symmetric(horizontal: 44),
+        const AppSettings(onboardingComplete: true),
+      ),
+      (
+        'at the narrow measure',
+        '/read/5787:2/0?mode=full',
+        wide,
+        EdgeInsets.zero,
+        const AppSettings(onboardingComplete: true, lineWidth: LineWidth.narrow),
+      ),
+      (
+        'with nothing to set beside the verse',
+        '/read/5787:2/0?mode=full',
+        wide,
+        EdgeInsets.zero,
+        const AppSettings(onboardingComplete: true, secondReading: SecondReading.rashi),
+      ),
+    ]) {
+      testWidgets('the display sheet doesn\'t offer the columns $name, where they wouldn\'t show', (tester) async {
+        tester.view.padding = FakeViewPadding(left: padding.left, right: padding.right);
+        await open(tester, path, settings: settings, size: size);
+        expect(find.byType(ParallelVerse), findsNothing);
+        await tester.tap(find.byTooltip('Display settings'));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(find.widgetWithText(SwitchListTile, 'Focus mode'), 200,
+            scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)));
+        expect(find.widgetWithText(SwitchListTile, 'Side by side'), findsNothing);
+      });
+    }
 
     testWidgets('the display sheet turns the columns off, and offers them only on a wide screen', (tester) async {
       final c = await open(tester, '/read/5787:2/0?mode=full');
@@ -370,6 +473,100 @@ void main() {
       await tester.pumpAndSettle();
       expect(focused(), const VerseRef(6, 22));
       expect(titled('Rishon'), findsOneWidget);
+    });
+
+    testWidgets('in focus mode, keeps its verse as the whole parsha is turned on and off', (tester) async {
+      final c = await open(tester, '/read/5787:2/1?mode=full', settings: const AppSettings(onboardingComplete: true, focusMode: true), size: phone);
+      VerseRef? focused() =>
+          tester.widgetList<VerseGroup>(find.byType(VerseGroup)).where((g) => g.highlighted).singleOrNull?.verse;
+      expect(focused(), const VerseRef(7, 1));
+      for (var i = 0; i < 2; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+      }
+      expect(focused(), const VerseRef(7, 3));
+
+      await openMenu(tester);
+      await tester.tap(find.text('Whole parsha'));
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).fullTextWholeParsha, isTrue);
+      expect(focused(), const VerseRef(7, 3), reason: 'the parsha\'s numbering of the same verse');
+      expect(titled('Sheni'), findsOneWidget);
+
+      await openMenu(tester);
+      await tester.tap(find.text('One aliyah at a time'));
+      await tester.pumpAndSettle();
+      expect(focused(), const VerseRef(7, 3));
+      expect(titled('Sheni'), findsOneWidget);
+
+      // Scrolled on into another aliyah, which the title follows, focus
+      // mode's verse is none of the aliyah shown alone.
+      await openMenu(tester);
+      await tester.tap(find.text('Whole parsha'));
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 30 && titled('Sheni').evaluate().isNotEmpty; i++) {
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
+        await tester.pumpAndSettle();
+      }
+      expect(titled('Shlishi'), findsOneWidget);
+      await openMenu(tester);
+      await tester.tap(find.text('One aliyah at a time'));
+      await tester.pumpAndSettle();
+      expect(titled('Shlishi'), findsOneWidget);
+      expect(focused(), isNull);
+    });
+
+    for (final finish in ['Mark this aliyah as read', 'at its end']) {
+      testWidgets('in focus mode, from a guided aliyah finished ($finish), the full text keeps to it', (tester) async {
+        await open(
+          tester,
+          '/read/5787:2/3',
+          settings: whole.copyWith(focusMode: true, method: ReadingMethod.aliyahByAliyah),
+          size: phone,
+        );
+        expect(titled('Revi\'i'), findsOneWidget);
+        if (finish == 'at its end') {
+          for (var i = 0; i < 6 && find.text('Finish').evaluate().isEmpty; i++) {
+            await tester.tap(find.text('Next'));
+            await tester.pumpAndSettle();
+          }
+          await tester.tap(find.text('Finish'));
+        } else {
+          await openMenu(tester);
+          await tester.tap(find.text(finish));
+        }
+        await tester.pumpAndSettle();
+
+        await openMenu(tester);
+        await tester.tap(find.text('Full text'));
+        await tester.pumpAndSettle();
+        expect(titled('Revi\'i'), findsOneWidget);
+        // Revi'i begins at Genesis 8:15.
+        final highlighted = find.byWidgetPredicate((w) => w is VerseGroup && w.highlighted);
+        expect(tester.widget<VerseGroup>(highlighted).verse, const VerseRef(8, 15));
+        expect(tester.getRect(highlighted).top, greaterThan(tester.getRect(heading(3)).bottom - 1));
+        expect(tester.getRect(highlighted).top, lessThan(phone.height / 2));
+      });
+    }
+
+    testWidgets('Shift+F10 opens the options of the first verse below the heading held at the top', (tester) async {
+      await open(tester, '/read/5787:2/0?mode=full', settings: whole, size: phone);
+      // Scrolled so that a verse begins just above the heading's foot.
+      final text = find.byType(CustomScrollView);
+      final verse = find.byWidgetPredicate((w) => w is VerseGroup && w.verse == const VerseRef(6, 12));
+      await tester.dragUntilVisible(verse, text, const Offset(0, -100));
+      await tester.pumpAndSettle();
+      final top = tester.getRect(heading(0)).bottom;
+      await tester.drag(text, Offset(0, -(tester.getRect(verse).top - top + 60)));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(verse).top, lessThan(tester.getRect(heading(0)).bottom), reason: 'begun beneath the heading');
+      expect(tester.getRect(verse).bottom, greaterThan(tester.getRect(heading(0)).bottom));
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
+      await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(BottomSheet), matching: find.text('Genesis 6:13')), findsOneWidget);
     });
 
     testWidgets('opens at the verse it was opened at, marked, far into the parsha', (tester) async {

@@ -20,6 +20,7 @@ import '../../ui/widgets/paper_group.dart';
 import '../notes/note_dialog.dart';
 import '../settings/app_settings.dart';
 import 'scripture_text.dart';
+import 'whole_parsha.dart' show topInView;
 
 /// A verse whose options are offered (DESIGN.md §3): where it is, and its
 /// text in each layer the reader shows with it.
@@ -109,19 +110,25 @@ Future<void> showVerseActions(BuildContext context, ChosenVerse verse) => showAp
 
 /// Opens the options of the verse in view on [context]'s page, as Shift+F10
 /// or the menu key does where no verse is chosen: the first whose top is in
-/// view, or else the one the view is within. Returns whether there was one.
+/// view, below any heading held at the top of the text ([topInView]), as
+/// Listen starts there; or else the one the view is within. Returns whether
+/// there was one.
 bool openVerseOptionsInView(BuildContext context) {
-  final verses = <(Rect, Rect, VoidCallback)>[];
+  // Each verse, in the page's order: where its top is in what shows of the
+  // view, its height, and how tall that view is. A Targum beneath its verse
+  // is the verse's, which begins above it.
+  final verses = <({double top, double height, double view, VoidCallback open})>[];
   void visit(Element element) {
     final widget = element.widget;
-    if (widget is ScriptureVerse && widget.onLongPress != null) {
+    if (widget is ScriptureVerse && widget.onLongPress != null && !widget.secondary) {
       final box = element.renderObject;
-      final scrollable = element.findAncestorStateOfType<ScrollableState>()?.context.findRenderObject();
-      if (box is RenderBox && box.hasSize && scrollable is RenderBox && scrollable.hasSize) {
+      final position = Scrollable.maybeOf(element)?.position;
+      if (box is RenderBox && box.hasSize) {
         verses.add((
-          box.localToGlobal(Offset.zero) & box.size,
-          scrollable.localToGlobal(Offset.zero) & scrollable.size,
-          widget.onLongPress!,
+          top: position == null ? 0 : topInView(box, position),
+          height: box.size.height,
+          view: position != null && position.hasViewportDimension ? position.viewportDimension : double.infinity,
+          open: widget.onLongPress!,
         ));
       }
       return;
@@ -130,9 +137,9 @@ bool openVerseOptionsInView(BuildContext context) {
   }
 
   context.visitChildElements(visit);
-  final open = verses.where((v) => v.$1.top >= v.$2.top - 1 && v.$1.top < v.$2.bottom).firstOrNull ??
-      verses.where((v) => v.$1.top < v.$2.top && v.$1.bottom > v.$2.top).lastOrNull;
-  open?.$3();
+  final open = verses.where((v) => v.top >= -1 && v.top < v.view).firstOrNull ??
+      verses.where((v) => v.top < 0 && v.top + v.height > 0).lastOrNull;
+  open?.open();
   return open != null;
 }
 

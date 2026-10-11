@@ -129,6 +129,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   // Another aliyah was chosen: once the step it resumes at is known, it is
   // announced, as Next and Back announce theirs.
   bool _announceWhenPositioned = false;
+
+  /// Focus mode's verse: its index among the verses the full text shows
+  /// ([_textVerses]: in the whole parsha, the parsha's), or in the guided
+  /// reader among the aliyah's, where the full text would pick it up.
   int? _focusedVerse;
   final _scroll = ScrollController();
 
@@ -377,7 +381,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// text's view, once the frame being built is laid out, and says whether it
   /// got there. In the whole parsha, a verse far from the view is not yet
   /// built: the text is first moved to where it should be, reckoned from the
-  /// verses that are, until it is.
+  /// verses that are, until it is; and as the verses built on the way are
+  /// measured, moving it, it is brought there again until it stays.
   ///
   /// [onFound] is called once the verse is built, as it is scrolled to.
   Future<bool> _seekVerse(
@@ -388,22 +393,42 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }) async {
     final seek = ++_seek;
     _seeking = true;
+    var found = false;
     try {
       for (var attempt = 0; attempt < 8; attempt++) {
         await WidgetsBinding.instance.endOfFrame;
         if (!mounted || seek != _seek) return false;
         final verse = i < _verseKeys.length ? _verseKeys[i].currentContext : null;
         if (verse != null && verse.mounted) {
-          onFound?.call();
-          await Scrollable.ensureVisible(verse, alignment: alignment, duration: duration, curve: Motion.standard);
-          return mounted && seek == _seek;
+          final box = verse.findRenderObject();
+          final viewport = box == null ? null : RenderAbstractViewport.maybeOf(box);
+          if (found && viewport != null && _scroll.hasClients) {
+            final p = _scroll.position;
+            final to = viewport.getOffsetToReveal(box!, alignment).offset.clamp(p.minScrollExtent, p.maxScrollExtent);
+            if ((p.pixels - to).abs() < 0.5) return true;
+          }
+          final first = !found;
+          if (first) {
+            found = true;
+            onFound?.call();
+          }
+          await Scrollable.ensureVisible(
+            verse,
+            alignment: alignment,
+            duration: first ? duration : Duration.zero,
+            curve: Motion.standard,
+          );
+          if (!mounted || seek != _seek) return false;
+          // One aliyah's verses are all built and measured: it is there.
+          if (!_wholeParsha) return true;
+          continue;
         }
         final to = _wholeParsha && _scroll.hasClients ? _estimatedOffset(i) : null;
-        if (to == null) return false;
+        if (to == null) return found;
         final p = _scroll.position;
         _scroll.jumpTo(to.clamp(p.minScrollExtent, p.maxScrollExtent));
       }
-      return false;
+      return found;
     } finally {
       if (seek == _seek) _seeking = false;
     }
@@ -628,15 +653,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   /// The first verse of the full text whose top is in view: in the whole
-  /// parsha, below the heading held at the top, whose height the viewport
-  /// reckons in revealing anything beneath it.
+  /// parsha, below the heading held at the top ([topInView]).
   int _firstVerseInView(int count) {
     if (!_scroll.hasClients) return 0;
-    final top = _scroll.position.pixels;
     for (var i = 0; i < count && i < _verseKeys.length; i++) {
       final box = _verseKeys[i].currentContext?.findRenderObject();
-      final viewport = box == null ? null : RenderAbstractViewport.maybeOf(box);
-      if (box != null && viewport != null && viewport.getOffsetToReveal(box, 0).offset >= top - 1) return i;
+      if (box is RenderBox && RenderAbstractViewport.maybeOf(box) != null && topInView(box, _scroll.position) >= -1) {
+        return i;
+      }
     }
     return count - 1;
   }
@@ -1229,7 +1253,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     // it, in a wider column that the title, the ribbon and the player keep
     // to as well.
     final styles = ScriptureStyles(context, s);
-    final pane = MediaQuery.sizeOf(context).width - MediaQuery.paddingOf(context).horizontal;
+    final pane = ScriptureStyles.paneWidth(context);
     final companion = texts.onkelos != null || (s.showTranslation && texts.english != null);
     final parallel = _fullText && styles.parallelColumns(pane, companion: companion);
     final columnWidth = styles.fullTextWidth(parallel: parallel);
@@ -1268,7 +1292,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   IconButton(
                     tooltip: l.displaySettings,
                     icon: const Icon(Icons.text_format),
-                    onPressed: () => showDisplaySheet(context, listenAlong: true, sideBySide: true),
+                    onPressed: () => showDisplaySheet(context, listenAlong: true, sideBySide: _fullText),
                   ),
                   PopupMenuButton<String>(
                     tooltip: l.actionMore,
@@ -1279,15 +1303,26 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           // Listen reads what the mode shows.
                           _stopListening();
                           setState(() {
+                            // The whole parsha's numbering of focus mode's
+                            // verse, which the guided reader keeps as the
+                            // aliyah's.
+                            final start = parsha.starts[_aliyah];
+                            if (_wholeParsha && _focusedVerse != null) {
+                              final local = _focusedVerse! - start;
+                              _focusedVerse = local >= 0 && local < flow.verses.length ? local : null;
+                            }
                             _fullText = !_fullText;
                             // The mark of the verse opened at goes with a
                             // change of mode.
                             _targetVerse = null;
                             _quietFocus = null;
                             // Focus mode picks up the full text at the verse
-                            // being read.
+                            // being read; a finished aliyah, at the verse it
+                            // was at.
                             if (_fullText && s.focusMode && !_finished) {
                               _focusedVerse = _aliyahStart + flow.chunks[_chunk].start;
+                            } else if (_wholeParsha && _focusedVerse != null) {
+                              _focusedVerse = start + _focusedVerse!;
                             }
                             // The whole parsha's text, out of sight until it
                             // is at the aliyah.
@@ -1360,7 +1395,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     Expanded(
                       child: _fullText
                           ? _FullText(
-                              book: flow.book,
                               aliyah: _aliyah,
                               verses: flow.verses,
                               texts: texts,
@@ -2329,7 +2363,6 @@ class _Whole {
 /// stands beside each verse rather than beneath it.
 class _FullText extends StatelessWidget {
   const _FullText({
-    required this.book,
     required this.aliyah,
     required this.verses,
     required this.texts,
@@ -2349,8 +2382,6 @@ class _FullText extends StatelessWidget {
     required this.footer,
     this.whole,
   });
-
-  final String book;
 
   /// The aliyah shown, and its verses, unless the whole parsha is.
   final int aliyah;

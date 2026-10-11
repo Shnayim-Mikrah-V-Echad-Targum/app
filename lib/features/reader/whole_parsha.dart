@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/verse_ref.dart';
@@ -40,6 +41,17 @@ class ParshaVerses {
     }
     return a;
   }
+}
+
+/// Where the top of [box] is, on a page scrolled to [position]: how far
+/// below the top of what shows of the text, beneath any heading held there
+/// (an aliyah's, in the whole parsha), whose height the viewport reckons in
+/// revealing what lies beneath it. Negative where it is scrolled out of view
+/// at the top, or held under such a heading.
+double topInView(RenderBox box, ScrollPosition position) {
+  final viewport = RenderAbstractViewport.maybeOf(box);
+  if (viewport == null || !position.hasPixels) return 0;
+  return viewport.getOffsetToReveal(box, 0).offset - position.pixels;
 }
 
 /// The head of an aliyah in the full text of the whole parsha, which stays

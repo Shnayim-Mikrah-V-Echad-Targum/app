@@ -14,14 +14,15 @@ import 'scripture_text.dart' show ScriptureStyles;
 /// cover the whole screen, the navigation bar too when the page (the
 /// haftarah, say) is shown within a tab. The reader's, with [listenAlong],
 /// also offers Listen along, which reads its steps one after another, and
-/// with [sideBySide], on a screen wide enough, the full text's parallel
-/// columns.
+/// the full text's, with [sideBySide], its parallel columns, wherever they
+/// would show: with the Targum or the translation beside the verse, in a
+/// pane wide enough, at a measure and a size they fit.
 Future<void> showDisplaySheet(BuildContext context, {bool listenAlong = false, bool sideBySide = false}) =>
     showAppSheet<void>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
-      builder: (_) => _DisplaySheet(listenAlong: listenAlong, sideBySide: sideBySide),
+      builder: (_) => _DisplaySheet(listenAlong: listenAlong, sideBySide: sideBySide, page: context),
     );
 
 void changeReadingScale(WidgetRef ref, double delta) {
@@ -31,10 +32,14 @@ void changeReadingScale(WidgetRef ref, double delta) {
 }
 
 class _DisplaySheet extends ConsumerWidget {
-  const _DisplaySheet({required this.listenAlong, required this.sideBySide});
+  const _DisplaySheet({required this.listenAlong, required this.sideBySide, required this.page});
 
   final bool listenAlong;
   final bool sideBySide;
+
+  /// The page the sheet was opened over, whose pane the columns would fill:
+  /// the sheet's own keeps clear of the window's side insets.
+  final BuildContext page;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -99,8 +104,12 @@ class _DisplaySheet extends ConsumerWidget {
               value: s.rashiScript,
               onChanged: (v) => update((s) => s.copyWith(rashiScript: v)),
             ),
-          // Only where the screen is wide enough for the columns.
-          if (sideBySide && MediaQuery.sizeOf(context).width >= ScriptureStyles.parallelMinPane)
+          // Only where the columns would show: elsewhere it would change
+          // nothing to be seen.
+          if (sideBySide &&
+              page.mounted &&
+              (s.usesOnkelos || s.showTranslation) &&
+              ScriptureStyles(context, s).parallelFits(ScriptureStyles.paneWidth(page)))
             SwitchListTile(
               title: Text(l.sideBySide),
               subtitle: Text(l.sideBySideDesc),
