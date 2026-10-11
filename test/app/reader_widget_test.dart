@@ -1000,15 +1000,20 @@ void main() {
     await tester.tap(find.byTooltip('Display settings'));
     await tester.pumpAndSettle();
     final sheet = find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable));
-    final toggle = find.widgetWithText(SwitchListTile, 'Rashi script');
+    final toggle = find.widgetWithText(SwitchRow, 'Rashi script');
     // With Rashi shown nowhere, the script would change nothing to be seen.
-    await tester.scrollUntilVisible(find.widgetWithText(SwitchListTile, 'Focus mode'), 200, scrollable: sheet);
+    await tester.scrollUntilVisible(find.widgetWithText(SwitchRow, 'Focus mode'), 200, scrollable: sheet);
     expect(toggle, findsNothing);
 
-    await tester.tap(find.widgetWithText(SwitchListTile, 'Show Rashi alongside'));
+    final showRashi = find.widgetWithText(SwitchRow, 'Show Rashi alongside');
+    await tester.ensureVisible(showRashi);
+    await tester.pumpAndSettle();
+    await tester.tap(showRashi);
     // Rashi's comments load behind the sheet.
     await loadTexts(tester);
     await tester.scrollUntilVisible(toggle, 200, scrollable: sheet);
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
     await tester.tap(toggle);
     await tester.pumpAndSettle();
     expect(c.read(settingsProvider).rashiScript, isTrue);
