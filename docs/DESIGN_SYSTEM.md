@@ -805,6 +805,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 - Padding 12/16; icon 20 in onSecondaryContainer; bodyMedium onSecondaryContainer; optional trailing TextButton.
   - Beside or below a TextButton the end padding is 8: the button's own padding makes up the rest, and the text keeps 16.
 - **Action below** (`actionBelow`): for a text longer than a line or two, which a trailing button would squeeze. The icon and text align to the top, and the TextButton sits under the text at the end, with 4 bottom padding.
+  - A row of actions below that ends with a Tonal button (the after-Shabbat check-in, the welcome after a pause) is inset 4 more at the end and 8 more at the foot (`NoticeBanner.tonalActionInset`): a text button's own padding makes up the banner's, but the Tonal's fill shows, so it stands 12 from the banner's end and foot, as the text stands 12 from its top.
 - **Action ink:** the TextButton is `primary` where primary on secondaryContainer meets AA (4.5:1); otherwise, as in the high-contrast themes, it is `onSecondaryContainer`, with a 3 px focus ring in the same colour.
 - **Marginalia** (`marginalia`): for a gentle word in the margin rather than news, such as onboarding's honor statement, the text is set as marginalia (§4.5) in onSecondaryContainer, and the icon sits beside its first line.
 

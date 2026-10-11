@@ -499,6 +499,12 @@ class NoticeBanner extends StatelessWidget {
   /// a text of more than a line or two, which would otherwise be squeezed.
   final bool actionBelow;
 
+  /// Around an [action] below the text that ends with a tonal button. A
+  /// text button's own padding makes up the banner's, but a tonal button's
+  /// fill shows: this sets it 12 from the banner's end and foot, as the text
+  /// stands 12 from its top, rather than all but in the corner.
+  static const tonalActionInset = EdgeInsetsDirectional.only(end: 4, bottom: 8);
+
   /// [action] in the colour of interaction where that reads clearly on the
   /// banner (WCAG AA), and otherwise, as in the high-contrast themes, in the
   /// banner's own ink, with a focus ring to match.

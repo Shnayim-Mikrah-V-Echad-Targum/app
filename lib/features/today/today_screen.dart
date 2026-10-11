@@ -1113,12 +1113,16 @@ class _PauseEndedNotice extends ConsumerWidget {
       actionBelow: true,
       action: actions.isEmpty
           ? null
-          : Wrap(
-              alignment: WrapAlignment.end,
-              spacing: Space.sm,
-              runSpacing: Space.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: actions,
+          : Padding(
+              // Clear of the corner, where the tonal button ends the row.
+              padding: next != null ? NoticeBanner.tonalActionInset : EdgeInsets.zero,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: Space.sm,
+                runSpacing: Space.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: actions,
+              ),
             ),
       onDismiss: () => ref.read(settingsProvider.notifier).update((s) => s.copyWith(pauseEndSeen: end)),
       dismissLabel: l.actionDismiss,
