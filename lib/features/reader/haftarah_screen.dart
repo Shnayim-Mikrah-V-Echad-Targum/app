@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -20,6 +22,7 @@ import '../settings/app_settings.dart';
 import 'display_sheet.dart';
 import 'listen_along.dart';
 import 'listen_bar.dart';
+import 'reader_screen.dart';
 import 'scripture_text.dart';
 import 'verse_actions_sheet.dart';
 
@@ -48,7 +51,9 @@ String haftarahRefs(Names names, Haftarah haftarah) => haftarah
 /// the portion's own, the regular one follows it, folded but for Chabad.
 ///
 /// Listen reads its verses one by one, from the first in view, highlighting
-/// each as it is read, with the player at the foot of the page.
+/// each as it is read, with the player at the foot of the page. Its keys are
+/// the reader's: Ctrl+Shift+L (L on the web) plays and pauses, and
+/// Ctrl+Shift+← and → move back and on a verse.
 class HaftarahScreen extends ConsumerStatefulWidget {
   const HaftarahScreen({super.key, required this.weekId});
 
@@ -140,6 +145,34 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
     _listen.setRate(rate);
   }
 
+  /// Starts Listen, or pauses it, or goes on.
+  void _playPause(List<HaftarahVerse> list) {
+    if (!_listen.active) {
+      _startListening(list);
+    } else if (_listen.paused) {
+      _listen.resume();
+    } else {
+      _listen.pause();
+    }
+  }
+
+  /// Listen's keys, as the reader binds them: in either language, as the
+  /// player's buttons are.
+  Map<ShortcutActivator, VoidCallback> _listenKeys(AppSettings settings, List<HaftarahVerse> list) {
+    final mac = defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.iOS;
+    void playPause() => _playPause(list);
+    return {
+      if (!ReaderScreen.singleKeyPlatform)
+        SingleActivator(LogicalKeyboardKey.keyL, control: !mac, meta: mac, shift: true, includeRepeats: false): playPause
+      else if (settings.singleKeyShortcuts)
+        const SingleActivator(LogicalKeyboardKey.keyL, includeRepeats: false): playPause,
+      SingleActivator(LogicalKeyboardKey.arrowLeft, control: !mac, meta: mac, shift: true, includeRepeats: false):
+          _listen.previous,
+      SingleActivator(LogicalKeyboardKey.arrowRight, control: !mac, meta: mac, shift: true, includeRepeats: false):
+          _listen.next,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -176,8 +209,9 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
         ),
       ],
       // A verse's options open from the keyboard too, as well as from a long
-      // press or a secondary click on it.
+      // press or a secondary click on it; so do Listen's keys.
       body: VerseOptionsKeys(
+        bindings: _listenKeys(settings, verses.value ?? const []),
         child: verses.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text(l.errorGeneric)),

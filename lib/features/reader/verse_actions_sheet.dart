@@ -332,10 +332,12 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
 
 /// A page of verses whose options open from the keyboard too: Shift+F10, or
 /// the menu key, opens those of the first verse in view
-/// ([openVerseOptionsInView]). The reader binds the keys among its own.
+/// ([openVerseOptionsInView]), as do the page's own [bindings]. The reader
+/// binds the keys among its own.
 class VerseOptionsKeys extends StatelessWidget {
-  const VerseOptionsKeys({super.key, required this.child});
+  const VerseOptionsKeys({super.key, this.bindings = const {}, required this.child});
 
+  final Map<ShortcutActivator, VoidCallback> bindings;
   final Widget child;
 
   @override
@@ -346,6 +348,7 @@ class VerseOptionsKeys extends StatelessWidget {
         bindings: {
           const SingleActivator(LogicalKeyboardKey.f10, shift: true, includeRepeats: false): open,
           const SingleActivator(LogicalKeyboardKey.contextMenu, includeRepeats: false): open,
+          ...bindings,
         },
         // The page's own focus, which the keys reach before anything on it
         // has been tapped or tabbed to; Tab goes on from the top.

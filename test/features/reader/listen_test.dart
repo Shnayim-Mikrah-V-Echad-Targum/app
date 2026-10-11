@@ -12,6 +12,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikra/features/reader/listen_along.dart';
 import 'package:shnayim_mikra/features/reader/listen_bar.dart';
+import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/tts.dart';
@@ -47,6 +48,14 @@ class _HeldTts extends RecordingTts {
 
   /// The last thing asked for, as letters alone.
   String get last => HebrewText.consonantsOnly(spoken.last.$1);
+}
+
+/// Speech on a device that has none: every queue fails.
+class _FailingTts extends RecordingTts {
+  @override
+  Future<bool> speakQueue(List<String> items,
+          {required String language, double rate = 0.45, int startAt = 0, List<int>? groups}) =>
+      Future.error(PlatformException(code: 'no-engine'));
 }
 
 void main() {
@@ -192,6 +201,55 @@ void main() {
       expect(reading.top, lessThan(tester.getRect(player).top - 100));
     });
 
+    testWidgets('in focus mode, ↓ and ↑ move the voice, which stays the focused verse, paused or not',
+        (tester) async {
+      final tts = _HeldTts();
+      await open(tester, '/read/5787:2/0?mode=full', tts,
+          settings: const AppSettings(onboardingComplete: true, focusMode: true));
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pumpAndSettle();
+      await tester.tap(inPlayer('Pause'));
+      await tester.pumpAndSettle();
+      final said = tts.spoken.length;
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(highlighted(tester), [1], reason: 'one verse highlighted, the one the voice is at');
+      expect(inPlayer('Resume'), findsOneWidget, reason: 'still paused');
+      expect(tts.spoken.length, said);
+      final verses = tester.widgetList<ScriptureVerse>(find.byType(ScriptureVerse)).toList();
+      expect([for (final v in verses.take(4)) v.dimmed], [true, true, false, false]);
+
+      await tester.tap(inPlayer('Resume'));
+      await tester.pumpAndSettle();
+      expect(tts.last, startsWith('ויולד נח שלשה בנים'), reason: 'goes on from the verse ↓ reached');
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(highlighted(tester), [2]);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(highlighted(tester), [1]);
+      expect(tts.last, startsWith('ויולד נח שלשה בנים'));
+
+      // A tap reads from the verse tapped.
+      await Scrollable.ensureVisible(tester.element(find.byType(VerseGroup).at(3)), alignment: 0.3);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(VerseGroup).at(3));
+      await tester.pumpAndSettle();
+      expect(highlighted(tester), [3]);
+      expect(tts.last, startsWith('וירא אלהים את הארץ'));
+    });
+
+    testWidgets('says so where the device cannot speak', (tester) async {
+      await open(tester, '/read/5787:2/0?mode=full', _FailingTts());
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pumpAndSettle();
+      expect(find.text("Text-to-speech isn't available on this device."), findsOneWidget);
+      expect(player, findsNothing);
+      expect(highlighted(tester), isEmpty);
+      expect(find.byTooltip('Listen'), findsOneWidget);
+    });
+
     testWidgets('in focus mode, the verse being read is the focused one, and none of those dimmed', (tester) async {
       final tts = _HeldTts();
       await open(tester, '/read/5787:2/0?mode=full', tts,
@@ -271,6 +329,62 @@ void main() {
       expect(week.isUnitDone(0, ReadingPass.targum), isFalse);
     });
 
+    testWidgets('in the breath between readings, back reads the last verse again, and on goes to the next reading',
+        (tester) async {
+      final tts = RecordingTts();
+      await open(tester, '/read/5787:2/0', tts,
+          settings: const AppSettings(
+            onboardingComplete: true,
+            method: ReadingMethod.aliyahByAliyah,
+            listenAlong: true,
+          ));
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pump();
+      await tester.pump();
+      final verses = tts.spoken.length;
+      final lastVerse = tts.spoken.last;
+
+      // Back: the step's last verse once more, and then the breath again.
+      expect(tester.widget<IconButton>(find.descendant(of: player, matching: find.widgetWithIcon(IconButton, Icons.skip_previous_rounded))).onPressed, isNotNull);
+      await tester.tap(inPlayer('Previous verse'));
+      await tester.pump();
+      await tester.pump();
+      expect(tts.spoken.length, verses + 1);
+      expect(tts.spoken.last, lastVerse);
+      expect(find.text('Read the Hebrew'), findsOneWidget, reason: 'still the first reading');
+
+      // On: the next reading at once, without its breath.
+      await tester.tap(inPlayer('Next verse'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Read the Hebrew again'), findsOneWidget);
+      expect(tts.spoken.length, 2 * verses + 1);
+      await tester.tap(inPlayer('Stop'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the display sheet turns Listen along on, where the haftarah\'s has no such switch', (tester) async {
+      final c = await open(tester, '/read/5787:2/0', RecordingTts());
+      await tester.tap(find.byTooltip('Display settings'));
+      await tester.pumpAndSettle();
+      final row = find.widgetWithText(SwitchListTile, 'Listen along');
+      await tester.scrollUntilVisible(row, 100, scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)).first);
+      await Scrollable.ensureVisible(tester.element(row), alignment: 0.5);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).listenAlong, isTrue);
+      Navigator.pop(tester.element(find.byType(BottomSheet)));
+      await tester.pumpAndSettle();
+
+      c.read(routerProvider).go('/haftarah/5787:2');
+      await loadTexts(tester);
+      await tester.tap(find.byTooltip('Display settings'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Listen along', skipOffstage: false), findsNothing);
+    });
+
     testWidgets('paused in the breath between readings, waits there', (tester) async {
       final tts = RecordingTts();
       await open(tester, '/read/5787:2/0', tts,
@@ -343,8 +457,85 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  group('on the haftarah\'s page', () {
+    Future<ProviderContainer> openHaftarah(WidgetTester tester, TtsService tts,
+            {AppSettings settings = const AppSettings(onboardingComplete: true)}) =>
+        open(tester, '/haftarah/5787:1', tts,
+            settings: settings.copyWith(joinDate: LocalDate(2026, 10, 4)), now: DateTime(2026, 10, 9, 10));
+
+    testWidgets('Listen starts at the first verse in view', (tester) async {
+      final tts = _HeldTts();
+      await openHaftarah(tester, tts);
+      // Scrolled so that the fifth verse is the first in view.
+      unawaited(Scrollable.ensureVisible(tester.element(find.byType(SpeakingVerseMark).at(4))));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pumpAndSettle();
+      expect(marked(tester), [4]);
+    });
+
+    testWidgets('the keys play, pause and move verse by verse, as the reader\'s do', (tester) async {
+      final tts = _HeldTts();
+      await openHaftarah(tester, tts);
+      await press(tester, LogicalKeyboardKey.keyL);
+      expect(player, findsOneWidget);
+      expect(marked(tester), [0]);
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      await press(tester, LogicalKeyboardKey.arrowRight);
+      expect(marked(tester), [2]);
+      await press(tester, LogicalKeyboardKey.arrowLeft);
+      expect(marked(tester), [1]);
+
+      await press(tester, LogicalKeyboardKey.keyL);
+      expect(inPlayer('Resume'), findsOneWidget);
+      await press(tester, LogicalKeyboardKey.keyL);
+      expect(inPlayer('Pause'), findsOneWidget);
+      expect(marked(tester), [1]);
+    });
+
+    testWidgets('on the web, L alone plays and pauses, where single keys are on', (tester) async {
+      ReaderScreen.singleKeyPlatform = true;
+      addTearDown(() => ReaderScreen.singleKeyPlatform = false);
+      final tts = _HeldTts();
+      await openHaftarah(tester, tts, settings: const AppSettings(onboardingComplete: true, singleKeyShortcuts: true));
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyL);
+      await tester.pumpAndSettle();
+      expect(player, findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyL);
+      await tester.pumpAndSettle();
+      expect(inPlayer('Resume'), findsOneWidget);
+    });
+  });
+
+  testWidgets('the rate the Settings slider stepped back to is marked, and choosing it starts nothing again',
+      (tester) async {
+    final tts = _HeldTts();
+    // 10% and seven steps of 5%, as the slider sets it.
+    const stepped = 0.1 + 7 * 0.05;
+    expect(stepped, isNot(0.45));
+    final c = await open(tester, '/read/5787:2/0?mode=full', tts,
+        settings: const AppSettings(onboardingComplete: true, speechRate: stepped));
+    await tester.tap(find.byTooltip('Listen'));
+    await tester.pumpAndSettle();
+    final said = tts.spoken.length;
+    await tester.tap(find.descendant(of: player, matching: find.text('45%')));
+    await tester.pumpAndSettle();
+    final checked = find.byIcon(Icons.radio_button_checked);
+    expect(checked, findsOneWidget);
+    expect(find.descendant(of: find.ancestor(of: checked, matching: find.byType(Row)).first, matching: find.text('45%')), findsOneWidget);
+    expect(find.text('45%'), findsNWidgets(2), reason: 'the menu has no second 45%');
+
+    await tester.tap(find.text('45%').last);
+    await tester.pumpAndSettle();
+    expect(tts.spoken.length, said, reason: 'the verse being read goes on');
+    expect(c.read(settingsProvider).speechRate, stepped);
+  });
+
   test('the player offers the rate set, among its own', () {
     expect(speechRatesWith(0.45), kSpeechRates);
+    expect(speechRatesWith(0.1 + 7 * 0.05), kSpeechRates);
+    expect(sameSpeechRate(0.1 + 7 * 0.05, 0.45), isTrue);
+    expect(sameSpeechRate(0.5, 0.45), isFalse);
     expect(speechRatesWith(0.5), [0.25, 0.35, 0.45, 0.5, 0.55, 0.65, 0.8, 1.0]);
     expect(speechRateLabel(0.45), '45%');
   });

@@ -14,10 +14,13 @@ import 'package:flutter_tts/flutter_tts.dart';
 class TtsService {
   /// Speaks through [engine], by default the platform's.
   TtsService({@visibleForTesting FlutterTts? engine}) : _tts = engine ?? FlutterTts() {
-    _tts.setStartHandler(() {
-      if (!_disposed) speaking.value = true;
+    _tts.setStartHandler(() => _speaking = true);
+    _tts.setCompletionHandler(() {
+      _engineStopped(spokenToEnd: true);
+      // Once nothing follows it (another item of a queue, or the next
+      // reading of Listen along), the iOS session ends.
+      _releaseIosAudioSoon();
     });
-    _tts.setCompletionHandler(() => _engineStopped(spokenToEnd: true));
     _tts.setCancelHandler(() {
       _engineStopped();
       _releaseIosAudioSoon();
@@ -32,10 +35,16 @@ class TtsService {
   @visibleForTesting
   static const audioSessionChannel = MethodChannel('shnayim_mikra/audio_session');
 
-  /// How long after speech stops part-way the iOS audio session is ended,
-  /// unless speech starts again meanwhile.
+  /// How long after speech stops the iOS audio session is ended, unless
+  /// speech starts again meanwhile.
   @visibleForTesting
   static Duration releaseDelay = const Duration(milliseconds: 300);
+
+  /// How long after a queue is spoken to its end the iOS audio session is
+  /// ended: longer than Listen along's breath between readings, whose next
+  /// queue keeps it.
+  @visibleForTesting
+  static Duration finishedReleaseDelay = const Duration(seconds: 1);
 
   /// How long, at most, the next utterance waits for the engine to report
   /// the one it stopped as stopped (see [_halt]).
@@ -43,7 +52,10 @@ class TtsService {
   static Duration settleTimeout = const Duration(milliseconds: 250);
 
   final FlutterTts _tts;
-  final ValueNotifier<bool> speaking = ValueNotifier(false);
+
+  /// The engine has reported an utterance started, and not yet stopped.
+  bool _speaking = false;
+
   Completer<bool>? _utterance;
   bool? _hebrewAvailable;
   bool _disposed = false;
@@ -77,7 +89,7 @@ class TtsService {
   }
 
   void _done({bool spokenToEnd = false}) {
-    _set(speaking, false);
+    _speaking = false;
     _utterance?.complete(spokenToEnd);
     _utterance = null;
   }
@@ -124,12 +136,12 @@ class TtsService {
       if (!kIsWeb) await _tts.awaitSpeakCompletion(false);
       if (generation == _generation) {
         _engineBusy = true;
-        speaking.value = true;
         final result = await _tts.speak(text);
-        if (result != 1 && result != null && result != true) _engineStopped();
+        if (result != 1 && result != null && result != true && identical(_utterance, c)) _engineStopped();
       }
     } catch (_) {
-      _engineStopped();
+      // Unless another utterance has taken its place meanwhile.
+      if (identical(_utterance, c)) _engineStopped();
       rethrow;
     }
     return c.future;
@@ -142,13 +154,20 @@ class TtsService {
   /// engine also ignores an utterance asked for before it has stopped.
   ///
   /// An engine that isn't speaking isn't told to stop: Windows reports a
-  /// cancel even then.
+  /// cancel even then, which would arrive during the next utterance and end
+  /// it. An utterance still being prepared needs no stop: it is never
+  /// spoken, as another has been asked for, or speech stopped, meanwhile.
   Future<void> _halt() async {
-    final busy = _engineBusy;
-    if (!busy && _utterance == null && !speaking.value) return;
+    if (!_engineBusy && !_speaking) {
+      if (_utterance != null) {
+        _done();
+        _releaseIosAudioSoon();
+      }
+      return;
+    }
     // Already being stopped, for an utterance asked for a moment ago.
     final stopping = _engineSettled != null;
-    final settled = busy ? (_engineSettled ??= Completer<void>()) : null;
+    final settled = _engineSettled ??= Completer<void>();
     if (!stopping) {
       try {
         await _tts.stop();
@@ -156,7 +175,6 @@ class TtsService {
     }
     _done();
     _releaseIosAudioSoon();
-    if (settled == null) return;
     // An engine that never reports it is taken to have stopped.
     await settled.future.timeout(settleTimeout, onTimeout: () {
       if (identical(_engineSettled, settled)) {
@@ -170,9 +188,16 @@ class TtsService {
   /// is for playback. Set on the first Listen rather than at startup, so that
   /// opening the reader never ducks the user's music; other audio ducks while
   /// speaking and resumes after.
+  ///
+  /// The engine would end the session after each utterance it finishes, and
+  /// so after each verse: music would come back up and be ducked again, and
+  /// a podcast be told it may resume and then be interrupted, verse by
+  /// verse. The session is ended here instead, once speech has stopped
+  /// ([_releaseIosAudioSoon]).
   Future<void> _prepareIosAudio() async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS || _iosAudioReady) return;
     try {
+      await _tts.autoStopSharedSession(false);
       final result = await _tts.setIosAudioCategory(
         IosTextToSpeechAudioCategory.playback,
         [
@@ -189,16 +214,17 @@ class TtsService {
     }
   }
 
-  /// On iOS, once speech has stopped part-way, ends the audio session set
-  /// for it, as the engine does by itself only when speech finishes: music
-  /// it ducked comes back up, and spoken audio it interrupted (a podcast)
-  /// is told it may resume. After [releaseDelay], so that the session isn't
-  /// ended under speech that a new Listen (or the next verse) starts.
-  void _releaseIosAudioSoon() {
+  /// On iOS, once speech has stopped (finished, stopped, failed or paused),
+  /// ends the audio session set for it: music it ducked comes back up, and
+  /// spoken audio it interrupted (a podcast) is told it may resume. After
+  /// [releaseDelay] ([after]), so that the session isn't ended under speech
+  /// that starts again meanwhile: a new Listen, the next verse, or the next
+  /// reading of Listen along. A queue playing holds it between its items.
+  void _releaseIosAudioSoon({Duration? after}) {
     if (!_iosAudioReady || _disposed) return;
     _release?.cancel();
-    _release = Timer(releaseDelay, () {
-      if (_utterance != null || _preparing > 0) return;
+    _release = Timer(after ?? releaseDelay, () {
+      if (_utterance != null || _preparing > 0 || (_queueEnd != null && !paused.value)) return;
       unawaited(audioSessionChannel.invokeMethod<bool>('deactivate').then((_) {}, onError: (Object _) {}));
     });
   }
@@ -301,6 +327,7 @@ class TtsService {
     final end = _queueEnd;
     _queueEnd = null;
     if (end == null) return;
+    _releaseIosAudioSoon(after: completed ? finishedReleaseDelay : null);
     if (error != null) {
       end.completeError(error, stack);
     } else {
@@ -315,6 +342,7 @@ class TtsService {
     _queueToken++;
     _set(paused, true);
     await _silence();
+    _releaseIosAudioSoon();
   }
 
   /// Goes on with a paused queue, from the item it was paused at.
@@ -337,6 +365,13 @@ class TtsService {
   /// Moves back to the first item of the group before this one (the verse
   /// before). A paused queue stays paused there.
   void previous() => _moveTo(_groupStart(-1));
+
+  /// Moves to item [index] (the first of a verse, say). A paused queue stays
+  /// paused there.
+  void moveTo(int index) {
+    if (currentIndex.value == null || index < 0 || index >= _queue.length) return;
+    _moveTo(index);
+  }
 
   /// Speaks the queue at [rate] from now on: the item being spoken starts
   /// again at it.
@@ -383,7 +418,7 @@ class TtsService {
   void dispose() {
     unawaited(stop().whenComplete(() {
       _disposed = true;
-      speaking.dispose();
+      _release?.cancel();
       currentIndex.dispose();
       paused.dispose();
     }));

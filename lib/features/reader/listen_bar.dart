@@ -146,17 +146,18 @@ class _RateButton extends StatelessWidget {
       ),
       Offset.zero & overlay.size,
     );
+    final rates = speechRatesWith(rate);
     final chosen = await showMenu<double>(
       context: context,
       position: position,
       semanticLabel: l.speechRate,
       popUpAnimationStyle: Motion.of(context).style,
-      initialValue: rate,
+      initialValue: rates.firstWhere((r) => sameSpeechRate(r, rate)),
       items: [
-        for (final r in speechRatesWith(rate)) PopupMenuItem(value: r, child: _RateChoice(rate: r, chosen: r == rate)),
+        for (final r in rates) PopupMenuItem(value: r, child: _RateChoice(rate: r, chosen: sameSpeechRate(r, rate))),
       ],
     );
-    if (chosen != null && chosen != rate) onRate(chosen);
+    if (chosen != null && !sameSpeechRate(chosen, rate)) onRate(chosen);
   }
 
   @override

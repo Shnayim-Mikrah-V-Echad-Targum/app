@@ -150,6 +150,13 @@ class ListenController extends ChangeNotifier {
     if (_ours) tts.previous();
   }
 
+  /// Moves to [verse] (an index among the verses the queue was made from),
+  /// or the first after it with something to read. A paused Listen stays
+  /// paused there.
+  void moveTo(int verse) {
+    if (_ours) tts.moveTo(_queue!.startOf(verse));
+  }
+
   /// Reads on at [rate], from the start of the item being read.
   void setRate(double rate) {
     if (_ours) tts.setRate(rate);
@@ -174,9 +181,14 @@ const kSpeechRates = [0.25, 0.35, 0.45, 0.55, 0.65, 0.8, 1.0];
 /// [kSpeechRates], with [current] among them if it is set to another.
 List<double> speechRatesWith(double current) {
   final rates = [...kSpeechRates];
-  if (!rates.any((r) => (r - current).abs() < 0.001)) rates.add(current);
+  if (!rates.any((r) => sameSpeechRate(r, current))) rates.add(current);
   return rates..sort();
 }
+
+/// Whether [a] and [b] are the same speech rate, as Settings shows it: the
+/// slider's steps add up to rates a little off the menu's (0.1 + 7 × 0.05 is
+/// 0.45000000000000007).
+bool sameSpeechRate(double a, double b) => (a - b).abs() < 0.001;
 
 /// A speech rate as Settings → Accessibility shows it: "45%".
 String speechRateLabel(double rate) => '${(rate * 100).round()}%';

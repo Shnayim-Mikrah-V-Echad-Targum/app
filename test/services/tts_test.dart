@@ -33,6 +33,9 @@ class _FakeTts extends Fake implements FlutterTts {
   }
 
   @override
+  Future<dynamic> autoStopSharedSession(bool autoStop) async => calls.add('autoStopSharedSession($autoStop)');
+
+  @override
   Future<dynamic> setLanguage(String language) async => calls.add('setLanguage');
   @override
   Future<dynamic> setSpeechRate(double rate) async => calls.add('setSpeechRate');
@@ -51,7 +54,9 @@ class _FakeTts extends Fake implements FlutterTts {
 /// A speech engine that reports as the platforms' do: each utterance starts
 /// as it is spoken, ends when the test says it has been spoken to its end
 /// ([finish]) or something outside interrupts it ([interrupt]), and is
-/// reported cancelled a moment after it is stopped ([cancelDelay]).
+/// reported cancelled a moment after it is stopped ([cancelDelay]); told to
+/// stop while silent, it reports a cancel all the same, as Windows does
+/// ([cancelsWhenSilent]).
 class _Engine extends Fake implements FlutterTts {
   VoidCallback? _onStart;
   VoidCallback? _onComplete;
@@ -65,8 +70,30 @@ class _Engine extends Fake implements FlutterTts {
   /// Whether an utterance is being spoken.
   bool talking = false;
 
+  /// How many times it was told to stop.
+  int stops = 0;
+
   Duration cancelDelay = Duration.zero;
   bool failSpeak = false;
+  bool cancelsWhenSilent = false;
+
+  /// Holds each utterance in preparation, at its language, until completed.
+  Completer<void>? preparing;
+
+  /// Whether it is told to end the iOS session after each utterance.
+  bool? autoStop;
+
+  @override
+  Future<dynamic> autoStopSharedSession(bool autoStop) async {
+    this.autoStop = autoStop;
+    return 1;
+  }
+
+  @override
+  Future<dynamic> setIosAudioCategory(
+          IosTextToSpeechAudioCategory category, List<IosTextToSpeechAudioCategoryOptions> options,
+          [IosTextToSpeechAudioMode mode = IosTextToSpeechAudioMode.defaultMode]) async =>
+      1;
 
   @override
   void setStartHandler(VoidCallback callback) => _onStart = callback;
@@ -78,7 +105,11 @@ class _Engine extends Fake implements FlutterTts {
   void setErrorHandler(ErrorHandler handler) {}
 
   @override
-  Future<dynamic> setLanguage(String language) async => 1;
+  Future<dynamic> setLanguage(String language) async {
+    await preparing?.future;
+    return 1;
+  }
+
   @override
   Future<dynamic> setSpeechRate(double rate) async {
     _rate = rate;
@@ -100,7 +131,8 @@ class _Engine extends Fake implements FlutterTts {
 
   @override
   Future<dynamic> stop() async {
-    if (talking) {
+    stops++;
+    if (talking || cancelsWhenSilent) {
       talking = false;
       Timer(cancelDelay, () => _onCancel?.call());
     }
@@ -137,6 +169,7 @@ void main() {
   setUp(() {
     sessionCalls = [];
     TtsService.releaseDelay = Duration.zero;
+    TtsService.finishedReleaseDelay = Duration.zero;
     TtsService.settleTimeout = Duration.zero;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(TtsService.audioSessionChannel, (call) async {
@@ -148,6 +181,7 @@ void main() {
   tearDown(() {
     debugDefaultTargetPlatformOverride = null;
     TtsService.releaseDelay = const Duration(milliseconds: 300);
+    TtsService.finishedReleaseDelay = const Duration(seconds: 1);
     TtsService.settleTimeout = const Duration(milliseconds: 250);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(TtsService.audioSessionChannel, null);
@@ -172,6 +206,9 @@ void main() {
         IosTextToSpeechAudioCategoryOptions.interruptSpokenAudioAndMixWithOthers,
       ]);
       expect(engine.calls.indexOf('setIosAudioCategory'), lessThan(engine.calls.indexOf('speak')));
+      // The app ends the session itself, rather than the engine after each
+      // utterance.
+      expect(engine.calls.indexOf('autoStopSharedSession(false)'), lessThan(engine.calls.indexOf('speak')));
 
       await listen(tts);
       expect(engine.calls.where((c) => c == 'setIosAudioCategory'), hasLength(1));
@@ -206,6 +243,93 @@ void main() {
       await tts.stop();
       await settle();
       expect(sessionCalls, isEmpty);
+    });
+
+    group('a queue', () {
+      late _Engine engine;
+      late TtsService tts;
+      setUp(() {
+        engine = _Engine();
+        tts = TtsService(engine: engine);
+      });
+
+      Future<void> settled() => Future<void>.delayed(const Duration(milliseconds: 5));
+
+      test('keeps the session from one item to the next, and ends it once spoken to its end', () async {
+        final done = tts.speakQueue(['mikra 1', 'targum 1', 'mikra 2'], language: 'he-IL', groups: [0, 0, 1]);
+        await settled();
+        expect(engine.autoStop, isFalse);
+        engine.finish();
+        await settled();
+        engine.finish();
+        await settled();
+        expect(engine.said, ['mikra 1', 'targum 1', 'mikra 2']);
+        expect(sessionCalls, isEmpty, reason: 'other audio stays ducked between verses');
+
+        engine.finish();
+        expect(await done, isTrue);
+        await settled();
+        expect(sessionCalls, ['deactivate']);
+      });
+
+      test('moved verse by verse, keeps the session', () async {
+        unawaited(tts.speakQueue(['א', 'ב', 'ג'], language: 'he-IL'));
+        await settled();
+        tts.next();
+        await settled();
+        tts.previous();
+        await settled();
+        expect(sessionCalls, isEmpty);
+      });
+
+      test('ends the session when paused or stopped, and keeps it again once resumed', () async {
+        unawaited(tts.speakQueue(['א', 'ב'], language: 'he-IL'));
+        await settled();
+        await tts.pause();
+        await settled();
+        expect(sessionCalls, ['deactivate'], reason: 'paused, other audio may come back');
+
+        tts.resume();
+        await settled();
+        engine.finish();
+        await settled();
+        expect(sessionCalls, ['deactivate']);
+
+        await tts.stop();
+        await settled();
+        expect(sessionCalls, ['deactivate', 'deactivate']);
+      });
+
+      test('keeps the session through Listen along\'s breath between readings', () async {
+        TtsService.finishedReleaseDelay = const Duration(milliseconds: 50);
+        final first = tts.speakQueue(['א'], language: 'he-IL');
+        await settled();
+        engine.finish();
+        expect(await first, isTrue);
+        // The next reading, a breath later.
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        unawaited(tts.speakQueue(['ב'], language: 'he-IL'));
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+        expect(sessionCalls, isEmpty);
+      });
+
+      test('ends the session when it fails', () async {
+        engine.failSpeak = true;
+        await expectLater(tts.speakQueue(['א'], language: 'he-IL'), throwsA(isA<PlatformException>()));
+        await settled();
+        expect(sessionCalls, ['deactivate']);
+      });
+    });
+
+    test('a single utterance spoken to its end ends the session', () async {
+      final engine = _Engine();
+      final tts = TtsService(engine: engine);
+      final spoken = tts.speak('בראשית ברא', language: 'he-IL');
+      await pumpEventQueue();
+      engine.finish();
+      expect(await spoken, isTrue);
+      await settle();
+      expect(sessionCalls, ['deactivate']);
     });
 
     test('a session that could not be set still speaks, and is tried again next time', () async {
@@ -363,6 +487,61 @@ void main() {
       await tts.stop();
       expect(await second, isFalse);
       expect((tts.currentIndex.value, engine.talking), (null, false));
+    });
+
+    test('nothing speaking, the engine is not told to stop', () async {
+      engine.cancelsWhenSilent = true;
+      await tts.stop();
+      await tts.pause();
+      expect(engine.stops, 0);
+
+      // Nor once the queue has been spoken to its end.
+      final done = tts.speakQueue(['א'], language: 'he-IL');
+      await settled();
+      engine.finish();
+      await done;
+      await tts.stop();
+      expect(engine.stops, 0);
+    });
+
+    test('an utterance overtaken while it is prepared is never spoken, and stops nothing', () async {
+      // Windows reports a cancel even for a stop while silent, which would
+      // end the utterance after it.
+      engine
+        ..cancelsWhenSilent = true
+        ..cancelDelay = const Duration(milliseconds: 10);
+      final gate = engine.preparing = Completer<void>();
+      final first = tts.speak('א', language: 'he-IL');
+      await settled();
+      final second = tts.speak('ב', language: 'he-IL');
+      await settled();
+      gate.complete();
+      expect(await first, isFalse);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(engine.said, ['ב']);
+      expect(engine.stops, 0);
+      expect(engine.talking, isTrue, reason: 'no late cancel ends it');
+      engine.finish();
+      expect(await second, isTrue);
+    });
+
+    test('Next pressed twice in quick succession speaks the verse it reaches, and keeps playing', () async {
+      engine
+        ..cancelsWhenSilent = true
+        ..cancelDelay = const Duration(milliseconds: 10);
+      unawaited(tts.speakQueue(['א', 'ב', 'ג'], language: 'he-IL'));
+      await settled();
+      engine.preparing = Completer<void>();
+      tts.next();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      // The second press lands while the verse the first reached is prepared.
+      tts.next();
+      await settled();
+      engine.preparing!.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(engine.said, ['א', 'ג']);
+      expect(engine.stops, 1, reason: 'only the verse being spoken was stopped');
+      expect((tts.currentIndex.value, tts.paused.value, engine.talking), (2, false, true));
     });
 
     test('an engine that cannot speak ends it with the error', () async {

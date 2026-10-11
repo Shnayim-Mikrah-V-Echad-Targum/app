@@ -1190,9 +1190,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           listenBack,
       SingleActivator(LogicalKeyboardKey.arrowRight, control: !isMac, meta: isMac, shift: true, includeRepeats: false):
           _listenOnVerse,
+      // Focus mode's verse; while Listen reads, it is the verse being read,
+      // which they move.
       if (_fullText && s.focusMode) ...{
-        const SingleActivator(LogicalKeyboardKey.arrowDown): () => _moveFocusedVerse(1, verseCount),
-        const SingleActivator(LogicalKeyboardKey.arrowUp): () => _moveFocusedVerse(-1, verseCount),
+        const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
+            _listen.active ? _listenOnVerse() : _moveFocusedVerse(1, verseCount),
+        const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
+            _listen.active ? listenBack() : _moveFocusedVerse(-1, verseCount),
       },
       if (!singleKeys) ...{
         SingleActivator(LogicalKeyboardKey.equal, control: !isMac, meta: isMac): larger,
@@ -1370,13 +1374,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                               targetVerse: _targetVerse,
                               speakingVerse: _listen.verse,
                               onTap: _targetVerse == null ? null : () => setState(() => _targetVerse = null),
-                              onVerseTap: (i) => setState(() {
-                                _focusedVerse = _focusedVerse == i ? null : i;
-                                _quietFocus = null;
-                                // In the whole parsha, the aliyah shown is the
-                                // verse's.
-                                if (whole && _focusedVerse != null) _followAliyah(parsha.aliyahOf(i));
-                              }),
+                              onVerseTap: (i) {
+                                // While Listen reads, the focused verse is the
+                                // one being read: a tap reads from the verse
+                                // tapped.
+                                if (_listen.active) {
+                                  if (i != _listen.verse) _listen.moveTo(i);
+                                  return;
+                                }
+                                setState(() {
+                                  _focusedVerse = _focusedVerse == i ? null : i;
+                                  _quietFocus = null;
+                                  // In the whole parsha, the aliyah shown is
+                                  // the verse's.
+                                  if (whole && _focusedVerse != null) _followAliyah(parsha.aliyahOf(i));
+                                });
+                              },
                               onVerseOptions: (r) => _openVerseOptions(texts, flow.book, r),
                               marksOf: marksOf,
                               footer: (a) => ctx.isOpen && !ctx.progress.isAliyahDone(a)
@@ -2400,14 +2413,17 @@ class _FullText extends StatelessWidget {
     // Verse [i] of those shown, [r], with all that goes with it. The first of
     // an aliyah is headed by its chapter, and in parallel columns by the
     // columns' names; the last ends at the aliyah's divider.
+    // While Listen reads, the verse being read is focus mode's verse, and the
+    // only one highlighted.
+    final focused = speakingVerse ?? focusedVerse;
     Widget verse(int i, VerseRef r, {required bool first, required bool last}) {
       final targeted = r == targetVerse;
       final speaking = speakingVerse == i;
-      final dimmed = settings.focusMode && focusedVerse != null && focusedVerse != i && !speaking;
+      final dimmed = settings.focusMode && focused != null && focused != i;
       // The mark of the verse opened at stands in for focus mode's own, which
       // stays off after the mark goes, until focus moves. The verse Listen
       // reads has it, in focus mode or not.
-      final highlighted = (settings.focusMode && focusedVerse == i && !targeted && quietFocus != i) || speaking;
+      final highlighted = (settings.focusMode && focused == i && !targeted && quietFocus != i) || speaking;
       final brk = texts.mikra.breaks[r];
       final rashi = settings.showRashi || settings.usesRashi ? texts.rashi?.on(r) ?? const <Comment>[] : const <Comment>[];
       final marks = marksOf(r);
