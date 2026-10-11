@@ -63,11 +63,16 @@ class Names {
 
   /// "Revi'i" or "Chamishi and Shishi".
   String aliyot(List<int> indices) {
-    if (indices.isEmpty) return '';
     if (indices.length == 7) return _he ? 'כל הפרשה' : 'The whole parsha';
-    final names = indices.map(aliyah).toList();
-    if (names.length == 1) return names.single;
-    return _l.andJoiner(names.sublist(0, names.length - 1).join(', '), names.last);
+    return andList(indices.map(aliyah).toList());
+  }
+
+  /// [items] as a list in a sentence: "Monday", "Monday and Tuesday",
+  /// "Monday, Tuesday and Wednesday".
+  String andList(List<String> items) {
+    if (items.isEmpty) return '';
+    if (items.length == 1) return items.single;
+    return _l.andJoiner(items.sublist(0, items.length - 1).join(', '), items.last);
   }
 
   /// What the reader reads after the Torah's two readings, as [reading]

@@ -519,11 +519,23 @@ abstract class AppLocalizations {
   /// **'Shabbat Shalom'**
   String get shabbatShalom;
 
-  /// The greeting on Today's title page on Yom Tov.
+  /// The greeting on Today's title page on the festivals' days of Yom Tov (Pesach, Shavuot, Sukkot, Shemini Atzeret).
   ///
   /// In en, this message translates to:
   /// **'Chag Sameach'**
   String get chagSameach;
+
+  /// The greeting on Today's title page on Rosh Hashanah, for a good year.
+  ///
+  /// In en, this message translates to:
+  /// **'Shanah Tovah'**
+  String get shanaTova;
+
+  /// The greeting on Today's title page on Yom Kippur, a solemn fast day: 'a good final sealing'.
+  ///
+  /// In en, this message translates to:
+  /// **'G\'mar Chatimah Tovah'**
+  String get gmarChatimaTova;
 
   /// On Today's title page on Shabbat, under the parsha's name.
   ///
@@ -536,6 +548,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reading from a printed Chumash today? You can log it after Yom Tov.'**
   String get restDayBodyChag;
+
+  /// As restDayBody, on Yom Kippur, which is not called Yom Tov.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading from a printed Chumash today? You can log it after Yom Kippur.'**
+  String get restDayBodyYomKippur;
 
   /// The one button on Today on Shabbat or Yom Tov, which opens the parsha's week.
   ///
@@ -603,17 +621,17 @@ abstract class AppLocalizations {
   /// **'You\'re ahead of plan. Well done!'**
   String get todayAhead;
 
-  /// Under Today's week strip, once, after a grace day covered a planned day without reading. weekday is that day; parsha this week's.
+  /// Under Today's week strip, once, after grace days covered planned days without reading. count is how many grace days, weekdays those days as a list ('Monday and Tuesday'); parsha this week's.
   ///
   /// In en, this message translates to:
-  /// **'{weekday} was covered by a grace day — your rhythm continues. You\'ll earn one back when you finish {parsha} by Shabbat.'**
-  String graceUsedNote(String weekday, String parsha);
+  /// **'{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues. You\'ll earn one back when you finish {parsha} by Shabbat.} other{{weekdays} were covered by grace days — your rhythm continues. You\'ll earn one back when you finish {parsha} by Shabbat.}}'**
+  String graceUsedNote(int count, String weekdays, String parsha);
 
   /// As graceUsedNote, when finishing this week's parsha would not earn a grace day back (it is finished, or none is missing).
   ///
   /// In en, this message translates to:
-  /// **'{weekday} was covered by a grace day — your rhythm continues.'**
-  String graceUsedNoteShort(String weekday);
+  /// **'{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues.} other{{weekdays} were covered by grace days — your rhythm continues.}}'**
+  String graceUsedNoteShort(int count, String weekdays);
 
   /// Under Today's week strip when reading two days' aliyot today has made up for yesterday.
   ///

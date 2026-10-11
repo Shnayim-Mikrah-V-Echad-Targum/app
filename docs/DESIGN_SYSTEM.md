@@ -990,7 +990,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - A line of parts between middle dots (the running head, and the hero's reference and reading day) sets as many parts to a line as fit, so it breaks between parts rather than inside one ("October / 10"), and starts no line with a dot. A part too long for a line of its own, as with large text, breaks after a comma before anywhere else ("Read on Shabbat, / October 10") (`DotLine`, lib/ui/widgets/lines.dart).
    - The masthead is not a heading; the parsha name stays heading level 1.
 2. Paused banner and open-previous-week card: NoticeBanner style.
-   - Resuming from the paused banner says `pauseEnded` in a status message. A pause that ended while the app was closed is welcomed instead, on the first reading day the app is opened after it, until the reader puts it away (a close button, `actionDismiss`; `pauseEndSeen`) or reads again: a NoticeBanner titled `pauseEnded` with `pauseEndedOn(date)`, a Tonal `pauseEndedStart` or `pauseEndedContinue` to `/read/{id}/{next}`, and a TextButton `catchUpOn(name)` to last week while it can still count. It offers last week itself, so the open-previous-week card waits until it is put away.
+   - Resuming from the paused banner says `pauseEnded` in a status message. A pause that ended while the app was closed (not one made or changed once it was over, by its stamp's reading day: entered after the fact, or ended early) is welcomed instead, on the first reading day the app is opened after it, until the reader puts it away (a close button, `actionDismiss`; `pauseEndSeen`) or reads again: a NoticeBanner titled `pauseEnded` with `pauseEndedOn(date)`, a Tonal `pauseEndedStart` or `pauseEndedContinue` to `/read/{id}/{next}`, and a TextButton `catchUpOn(name)` to last week while it can still count. It offers last week itself, so the open-previous-week card waits until it is put away.
    - **After-Shabbat check-in** (the open-previous-week card's first form): after a Shabbat whose parsha is unfinished, on the first reading day after it and on each one after that while the week can still count as late (`WeekStatus.inProgress`), until it is answered (`checkInAnsweredFor`). `checkInTitle` and `checkInBody`, then a TextButton `checkInNotThisTime`, a TextButton `checkInPick` and a Tonal `checkInFinished`. Choose aliyot opens one sheet, titled `checkInTitle`: each aliyah not yet read as a checked CheckboxListTile with its reference, the haftarah too where it is shown and not logged, the line `checkInReadOnShabbat` (or `checkInReadOn` once another day is chosen) beside a TextButton `changeDate` (`pickReadDate`), and a Filled `logReading` that logs every checked reading in one change. Logging, either way, answers the check-in and says so in a status message with Undo, which puts the week and the question back as they were.
    - After the late window, a week that a double-up can still restore says so by the reader's parsha streak: `openWeekRestore(name, next, count)` with one, `openWeekRestoreZero` without.
    - After the paused banner, the **divergence notice**: a NoticeBanner with `info_outline` and the action below. It appears in a week when Israel and the Diaspora read different portions, for a reader whose reading and days of Yom Tov follow different places:
@@ -1028,16 +1028,16 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - **Paused:** a marginalia line `pausedTodayNote` in place of the catching-up line, under today's reading.
    - **Erev Tisha B'Av** (`JewishHolidays.isTishaBav(today + 1)`): a marginalia line `erevTishaBavNote`.
 5. **WeekStrip card** (§6.13).
-   - Under the strip, at most one marginalia line, with a close IconButton (18, onSurfaceVariant, tooltip `actionDismiss`) on its first line's centre, inset like the card's header, its lines balanced: first a grace day spent within the last week (`graceUsedNote(weekday, parsha)`, or `graceUsedNoteShort` when finishing this parsha by Shabbat would not earn one back), then today read ahead (`todayAhead`), then yesterday made up today (`caughtUpNote`).
+   - Under the strip, at most one marginalia line, with a close IconButton (18, onSurfaceVariant, tooltip `actionDismiss`) on its first line's centre, inset like the card's header, its lines balanced: first the grace days spent within the last week, every one not yet told, named together ("Monday and Tuesday were covered by grace days…", `graceUsedNote(count, weekdays, parsha)`, or `graceUsedNoteShort` when finishing this parsha by Shabbat would not earn one back), then today read ahead (`todayAhead`), then yesterday made up today (`caughtUpNote`).
    - A grace day is news once the planned day after it is over without the reading made up. A line tells only what was decided after the day the reader last put it away (`lastStripAck`) or last saw one (`stripNoteShownOn`, recorded while the page is in sight): seen, a line stays for the rest of the day and is not told again.
 6. **LedgerCard**, if `showStreaks` (§6.12).
 7. **"This week" PaperGroup:**
    - Haftarah row: `auto_stories_outlined`, title "Haftarah", subtitle the reference, plus a second subtitle line for a special haftarah.
    - Discuss row: `forum_outlined`, `discussThisWeek`.
    - These replace two separate cards.
-8. **Rest day** (`JewishHolidays.isRestDay(date, israel: settings.oneDayYomTov)`, the reader's Yom Tov custom rather than the reading schedule). The reading day is never a day of rest, so this is the device's date (`restDayProvider`), turning at 3 a.m.; with a city chosen for Shabbat times and the device on its clock, the last day of rest ends at nightfall there (`Zmanim.havdalah`), so that Motzaei Shabbat is a reading day for the check-in, and without one it lasts until 3 a.m.:
+8. **Rest day** (`JewishHolidays.isRestDay(date, israel: settings.oneDayYomTov)`, the reader's Yom Tov custom rather than the reading schedule). The reading day is never a day of rest, so this is the device's date (`restDayProvider`), turning at 3 a.m.; with a city chosen for Shabbat times and the device on its clock, it begins at candle-lighting there on its eve (`Zmanim.candleLighting`), and the last day of rest ends at nightfall there (`Zmanim.havdalah`), so that Motzaei Shabbat is a reading day for the check-in. Without one it lasts from 3 a.m. to 3 a.m.:
    - The header's running head gives the day of rest's date.
-   - The hero (TitlePageFrame, padding 40 above and 24 elsewhere, 28 and 16 under 360 dp) shows candles at 40, 16, `shabbatShalom` or `chagSameach` (on Yom Tov) in headlineMedium, 20, the eyebrow `parshatHashavua`, 4, the pointed parsha name in hebrewDisplay 32/44 (heading level 1, `parshaLabel(name)`), 16, and bodyMedium onSurfaceVariant `restDayBody`, or `restDayBodyChag` when the days of rest end with Yom Tov. The parsha is the week the day falls in: the one read today, or on the Shabbat after a Yom Tov.
+   - The hero (TitlePageFrame, padding 40 above and 24 elsewhere, 28 and 16 under 360 dp) shows candles at 40, 16, the day's greeting in headlineMedium (`gmarChatimaTova` on Yom Kippur and `shanaTova` on Rosh Hashanah, on Shabbat too; `chagSameach` on the festivals' Yom Tov; otherwise `shabbatShalom`), 20, the eyebrow `parshatHashavua`, 4, the pointed parsha name in hebrewDisplay 32/44 (heading level 1, `parshaLabel(name)`), 16, and bodyMedium onSurfaceVariant `restDayBody`, or `restDayBodyChag` when the days of rest end with Yom Tov (`restDayBodyYomKippur` with Yom Kippur). The parsha is the week the day falls in: the one read today, or on the Shabbat after a Yom Tov.
    - No rings, CTAs, notices, Today card, week strip, ledger or "This week"; only a TextButton `openTheParsha` to its week, /today/week/{id}.
    - Nothing animates.
    - The wording goes to the rabbinic advisor (DESIGN.md §11).
@@ -1282,8 +1282,11 @@ In order:
 | finishStep | Finish | סיום |
 | shabbatShalom | Shabbat Shalom | שבת שלום |
 | chagSameach | Chag Sameach | חג שמח |
+| shanaTova | Shanah Tovah | שנה טובה |
+| gmarChatimaTova | G'mar Chatimah Tovah | גמר חתימה טובה |
 | restDayBody | Reading from a printed Chumash today? You can log it after Shabbat. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת. |
 | restDayBodyChag | Reading from a printed Chumash today? You can log it after Yom Tov. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג. |
+| restDayBodyYomKippur | Reading from a printed Chumash today? You can log it after Yom Kippur. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי יום כיפור. |
 | openTheParsha | Open the parsha | לפרשה |
 | weekCompleteNote | Ready to hear it read on Shabbat. | הכול מוכן לקריאת התורה בשבת. |
 | discussTheParsha | Discuss the parsha | לדיון בפרשה |
@@ -1291,10 +1294,10 @@ In order:
 | checkInReadOnShabbat | Read on Shabbat, {date} | תאריך הקריאה: שבת, {date} |
 | changeDate | Change date | שינוי התאריך |
 | logReading | Log reading | סימון הקריאה |
-| openWeekRestoreZero | Finish {name} and {next} by Shabbat and both count — one double-up per book. | סיום {name} ו{next} עד שבת, ושתיהן ייחשבו — השלמה כפולה אחת לכל חומש. |
+| openWeekRestoreZero | Finish {name} and {next} by Shabbat and both count — one double-up per book. | אם מסיימים את {name} ואת {next} עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש. |
 | pausedTodayNote | Paused — read whenever you like; nothing counts against you. | בהשהיה — אפשר לקרוא מתי שנוח; שום דבר לא נחשב לחובתך. |
 | pauseEndedOn | Your pause ended on {date}, and nothing during it counts against you. | ההשהיה הסתיימה ב{date}, ושום דבר בזמנה לא נחשב לחובתך. |
-| graceUsedNote | {weekday} was covered by a grace day — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat. | {weekday} כוסה ביום חסד — הקצב נמשך. יום חסד יתווסף בחזרה עם סיום פרשת {parsha} עד שבת. |
+| graceUsedNote | plural: {weekdays} was covered by a grace day / {weekdays} were covered by grace days — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat. | plural: {weekdays} כוסה ביום חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום החסד יחזור. / {weekdays} כוסו בימי חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום חסד אחד יחזור. (a no-break space inside יום חסד) |
 | caughtUpNote | Caught up — doubling up repaired yesterday. | חזרה לתוכנית — הקריאה הכפולה השלימה את אתמול. |
 | erevTishaBavNote | Erev Tisha B'Av: many finish their learning before midday. | ערב תשעה באב: רבים מסיימים את הלימוד לפני חצות היום. |
 | aboutStreaks | About streaks | על הרצפים |

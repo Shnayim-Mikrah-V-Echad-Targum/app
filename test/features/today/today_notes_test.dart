@@ -148,6 +148,39 @@ void main() {
       final readBefore = _onTheirDays('5787:1', _d(10, 5), upTo: 3);
       expect(pauseEndToWelcome(ProgressState(weeks: {'5787:1': readBefore}, pauses: [pause]), today), _d(10, 11));
     });
+
+    test('is not welcomed when it was made, or changed, once it was over', () {
+      final today = _d(10, 12);
+      int at(DateTime t) => t.millisecondsSinceEpoch;
+      // Made on Thursday, before it began: it ended while the app was closed.
+      final made = Pause(_d(10, 8), _d(10, 11), id: 'a', updatedAt: at(DateTime(2026, 10, 8, 9)));
+      expect(pauseEndToWelcome(ProgressState(pauses: [made]), today), _d(10, 11));
+      // Made on its last day: still welcomed once it is over.
+      final lastDay = Pause(_d(10, 9), _d(10, 11), id: 'b', updatedAt: at(DateTime(2026, 10, 11, 20)));
+      expect(pauseEndToWelcome(ProgressState(pauses: [lastDay]), today), _d(10, 11));
+      // A day's pause entered this morning for yesterday.
+      final backdated = Pause(_d(10, 11), _d(10, 11), id: 'c', updatedAt: at(DateTime(2026, 10, 12, 9)));
+      expect(pauseEndToWelcome(ProgressState(pauses: [backdated]), today), isNull);
+      // Entered on Motzaei Shabbat for Shabbat: that evening counts toward
+      // Sunday.
+      final shabbat = Pause(_d(10, 9), _d(10, 10), id: 'd', updatedAt: at(DateTime(2026, 10, 10, 21)));
+      expect(pauseEndToWelcome(ProgressState(pauses: [shabbat]), today), isNull);
+      // Ended early, by choice.
+      final ended = Pause(_d(10, 8), _d(10, 11), id: 'e', updatedAt: at(DateTime(2026, 10, 12, 8)));
+      expect(pauseEndToWelcome(ProgressState(pauses: [ended]), today), isNull);
+    });
+
+    testWidgets('a pause entered after the fact gets no welcome back', (tester) async {
+      final clock = ProgressClock.nowMs;
+      ProgressClock.nowMs = () => monday.millisecondsSinceEpoch;
+      addTearDown(() => ProgressClock.nowMs = clock);
+      final c = await openToday(tester, now: monday, progress: halfRead().copyWith(pauses: const []));
+      // A day's pause, from yesterday, as the pause dialog allows.
+      c.read(progressProvider.notifier).addPause(_d(10, 11), _d(10, 11));
+      await tester.pumpAndSettle();
+      expect(find.text('Welcome back! Your place is saved.'), findsNothing);
+      expect(find.textContaining('Your pause ended'), findsNothing);
+    });
   });
 
   group('under the week strip', () {
@@ -222,9 +255,96 @@ void main() {
     testWidgets('in Hebrew', (tester) async {
       final hebrew = _settings.copyWith(language: AppLanguage.hebrew);
       await openToday(tester, settings: hebrew, now: friday, progress: graceWeek());
-      final note = find.text('יום רביעי כוסה ביום חסד — הקצב נמשך. יום חסד יתווסף בחזרה עם סיום פרשת נח עד שבת.');
+      final note = find.text('יום רביעי כוסה ביום\u00A0חסד — הקצב נמשך. עם סיום פרשת נח עד שבת, יום\u00A0החסד יחזור.');
       await show(tester, note);
       expect(note, findsOneWidget);
+    });
+
+    testWidgets('names every grace day spent, the first not lost behind the second', (tester) async {
+      // Friday of Noach: Rishon on Sunday, nothing on Monday or Tuesday,
+      // Revi'i alone on Wednesday and Chamishi on Thursday. Grace days cover
+      // Monday and Tuesday.
+      final weeks = {
+        '5787:1': _bereshit(),
+        '5787:2': WeekProgress(weekId: '5787:2')
+            .withAliyah(0, _d(10, 11))
+            .withAliyah(3, _d(10, 14))
+            .withAliyah(4, _d(10, 15)),
+      };
+      await openToday(tester, now: friday, progress: ProgressState(weeks: weeks));
+      final note = find.text("Monday and Tuesday were covered by grace days — your rhythm continues. You'll earn one "
+          'back when you finish Noach by Shabbat.');
+      await show(tester, note);
+      expect(note, findsOneWidget);
+
+      await openToday(
+        tester,
+        settings: _settings.copyWith(language: AppLanguage.hebrew),
+        now: friday,
+        progress: ProgressState(weeks: weeks),
+      );
+      final hebrew = find.text(
+          'יום שני ויום שלישי כוסו בימי\u00A0חסד — הקצב נמשך. עם סיום פרשת נח עד שבת, יום\u00A0חסד אחד יחזור.');
+      await show(tester, hebrew);
+      expect(hebrew, findsOneWidget);
+    });
+
+    group('promises no grace day back where finishing would not earn one', () {
+      const short = 'Wednesday was covered by a grace day — your rhythm continues.';
+
+      testWidgets('once the week is finished', (tester) async {
+        // Revi'i, Shishi and Shevi'i read on Friday: Noach is finished.
+        final week = graceWeek().weeks['5787:2']!.withAliyah(3, _d(10, 16)).withAliyah(5, _d(10, 16)).withAliyah(
+              6,
+              _d(10, 16),
+            );
+        await openToday(tester, now: friday, progress: ProgressState(weeks: {'5787:1': _bereshit(), '5787:2': week}));
+        final note = find.text(short);
+        await show(tester, note);
+        expect(note, findsOneWidget);
+        expect(find.textContaining('earn one back'), findsNothing);
+      });
+
+      /// Today on [now], its streaks [summary] in place of the engine's.
+      Future<void> openWith(WidgetTester tester, DateTime now, StreakSummary summary) async {
+        tester.view.physicalSize = const Size(412, 915);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await pumpApp(
+          tester,
+          settings: _settings.copyWith(joinDate: LocalDate(2026, 9, 1)),
+          now: now,
+          progress: graceWeek(),
+          overrides: [streakSummaryProvider.overrideWithValue(summary)],
+        );
+        await tester.pumpAndSettle();
+      }
+
+      StreakSummary withGrace(LocalDate day, {required int balance}) => StreakSummary(
+            parshaStreak: 0,
+            longestParshaStreak: 0,
+            daysOnTrack: 0,
+            longestDaysOnTrack: 0,
+            graceBalance: balance,
+            days: {day: DayStatus.grace, day.addDays(1): DayStatus.kept},
+            weeks: const [],
+            restoreAvailable: false,
+          );
+
+      testWidgets('while every grace day is in hand', (tester) async {
+        await openWith(tester, friday, withGrace(_d(10, 14), balance: GraceRules.maxBalance));
+        final note = find.text(short);
+        await show(tester, note);
+        expect(note, findsOneWidget);
+      });
+
+      testWidgets("in Vezot HaBerachah's week, read on Simchat Torah", (tester) async {
+        // Thursday 1 October 2026, Chol HaMoed Sukkot.
+        await openWith(tester, DateTime(2026, 10, 1, 9), withGrace(_d(9, 29), balance: 1));
+        final note = find.text('Tuesday was covered by a grace day — your rhythm continues.');
+        await show(tester, note);
+        expect(note, findsOneWidget);
+      });
     });
 
     group('stripNoteFor', () {
@@ -238,13 +358,13 @@ void main() {
       };
 
       test('tells of a grace day once the day after it is over', () {
-        expect(stripNoteFor(days, today: _d(10, 16)), (kind: StripNoteKind.grace, day: _d(10, 14)));
+        expect(stripNoteFor(days, today: _d(10, 16)), StripNote(StripNoteKind.grace, [_d(10, 14)]));
         // Decided on Friday: put away or seen on Thursday, it is still news.
         expect(stripNoteFor(days, today: _d(10, 16), acknowledged: _d(10, 15)),
-            (kind: StripNoteKind.grace, day: _d(10, 14)));
+            StripNote(StripNoteKind.grace, [_d(10, 14)]));
         expect(stripNoteFor(days, today: _d(10, 16), acknowledged: _d(10, 16)), isNull);
         // Within a week of it.
-        expect(stripNoteFor(days, today: _d(10, 22)), (kind: StripNoteKind.grace, day: _d(10, 14)));
+        expect(stripNoteFor(days, today: _d(10, 22)), StripNote(StripNoteKind.grace, [_d(10, 14)]));
         expect(stripNoteFor(days, today: _d(10, 23)), isNull);
       });
 
@@ -252,13 +372,27 @@ void main() {
         final ahead = {...days, _d(10, 16): DayStatus.ahead};
         expect(stripNoteFor(ahead, today: _d(10, 16), acknowledged: _d(10, 16)), isNull);
         expect(stripNoteFor(ahead, today: _d(10, 16), acknowledged: _d(10, 15)),
-            (kind: StripNoteKind.grace, day: _d(10, 14)),
+            StripNote(StripNoteKind.grace, [_d(10, 14)]),
             reason: 'the grace day first');
         final noGrace = {...ahead, _d(10, 14): DayStatus.kept};
-        expect(stripNoteFor(noGrace, today: _d(10, 16)), (kind: StripNoteKind.ahead, day: _d(10, 16)));
+        expect(stripNoteFor(noGrace, today: _d(10, 16)), StripNote(StripNoteKind.ahead, [_d(10, 16)]));
         final caughtUp = {...noGrace, _d(10, 15): DayStatus.caughtUp, _d(10, 16): DayStatus.kept};
-        expect(stripNoteFor(caughtUp, today: _d(10, 16)), (kind: StripNoteKind.caughtUp, day: _d(10, 15)));
+        expect(stripNoteFor(caughtUp, today: _d(10, 16)), StripNote(StripNoteKind.caughtUp, [_d(10, 15)]));
         expect(stripNoteFor(caughtUp, today: _d(10, 17)), isNull, reason: 'only yesterday');
+      });
+
+      test('tells of every grace day not yet told, in one line', () {
+        // Monday and Tuesday missed, decided on Wednesday and Thursday.
+        final two = {...days, _d(10, 12): DayStatus.grace, _d(10, 13): DayStatus.grace, _d(10, 14): DayStatus.kept};
+        expect(stripNoteFor(two, today: _d(10, 16)), StripNote(StripNoteKind.grace, [_d(10, 12), _d(10, 13)]));
+        // Monday's told on Wednesday; Tuesday's is still news.
+        expect(stripNoteFor(two, today: _d(10, 16), acknowledged: _d(10, 14)),
+            StripNote(StripNoteKind.grace, [_d(10, 13)]));
+        // Opened first on Saturday: Monday's, decided Wednesday, is not lost
+        // behind Tuesday's.
+        expect(stripNoteFor(two, today: _d(10, 17), acknowledged: _d(10, 10)),
+            StripNote(StripNoteKind.grace, [_d(10, 12), _d(10, 13)]));
+        expect(stripNoteFor(two, today: _d(10, 16), acknowledged: _d(10, 16)), isNull);
       });
     });
   });

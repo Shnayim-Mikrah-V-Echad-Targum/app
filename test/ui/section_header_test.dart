@@ -118,6 +118,29 @@ void main() {
       expect(dismissed, 1);
     });
 
+    testWidgets('puts its close button at the top end in Hebrew too, on the left', (tester) async {
+      await pumpThemed(
+        tester,
+        NoticeBanner(
+          icon: Icons.play_circle_outline,
+          title: 'ברוכים השבים',
+          text: 'ההשהיה הסתיימה.',
+          onDismiss: () {},
+          dismissLabel: 'סגירה',
+        ),
+        hebrew: true,
+      );
+      final banner = tester.getRect(find.byType(NoticeBanner));
+      final button = tester.getRect(find.byType(IconButton));
+      expect(button.left - banner.left, 4, reason: 'at the end, which is the left');
+      expect(tester.getCenter(find.byIcon(Icons.close)).dy, closeTo(tester.getCenter(find.text('ברוכים השבים')).dy, 3));
+      // The icon at the start, on the right, and the title beside it.
+      final icon = tester.getRect(find.byIcon(Icons.play_circle_outline));
+      expect(banner.right - icon.right, 16);
+      expect(tester.getRect(find.text('ברוכים השבים')).right, lessThan(icon.left));
+      expect(tester.getRect(find.text('ברוכים השבים')).left, greaterThan(button.right - 1));
+    });
+
     testWidgets('can set its text as marginalia in its ink, the icon on the first line', (tester) async {
       await pumpThemed(
         tester,

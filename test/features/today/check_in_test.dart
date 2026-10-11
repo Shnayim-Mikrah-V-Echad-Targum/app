@@ -210,9 +210,10 @@ void main() {
         now: DateTime(2026, 10, 14, 9),
         progress: ProgressState(weeks: {...weeks, ..._bereshit().weeks}),
       );
-      final streak = find.textContaining('Finish Bereshit and Noach by Shabbat and your');
-      expect(streak, findsOneWidget);
-      expect(tester.widget<Text>(streak).data, contains('-week streak continues — one double-up per book.'));
+      expect(
+        find.text('Finish Bereshit and Noach by Shabbat and your 2-week streak continues — one double-up per book.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('says both count, with no streak to keep', (tester) async {
@@ -222,6 +223,9 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('streak continues'), findsNothing);
+
+      await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew), now: DateTime(2026, 10, 14, 9));
+      expect(find.text('אם מסיימים את בראשית ואת נח עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש.'), findsOneWidget);
     });
   });
 

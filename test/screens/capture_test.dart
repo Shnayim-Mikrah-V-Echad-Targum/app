@@ -148,6 +148,10 @@ const _screens = {
   // second day of Yom Tov): Today at rest.
   'today_shabbat': '/today',
   'today_yomtov': '/today',
+  // Yom Kippur 5787, a Monday: its own greeting, not "Chag Sameach".
+  'today_yom_kippur': '/today',
+  // Friday evening after candle-lighting in Jerusalem: Shabbat has begun.
+  'today_friday_night': '/today',
   // Bereshit complete on Friday, with its haftarah still to read; and as
   // its last aliyah is logged, the frame drawing itself.
   'today_complete': '/today',
@@ -421,6 +425,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_three_weeks': (s) => s.copyWith(joinDate: LocalDate(2027, 7, 18)),
   'today_erev_yomtov': (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
   'today_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
+  'today_yom_kippur': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
+  'today_friday_night': (s) => s.copyWith(city: _jerusalem),
   'today_erev_tisha_bav': (s) => s.copyWith(joinDate: LocalDate(2027, 8, 11)),
   'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   's_reading_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
@@ -444,11 +450,12 @@ const _jerusalem = City(
 final _screenOverrides = <String, List<Override>>{
   for (final screen in ['city', 'city_search', 'city_many', 'city_none'])
     screen: [deviceTimeZoneProvider.overrideWith((ref) async => 'Asia/Jerusalem')],
-  'today_candles': [
-    timeZoneDatabaseProvider.overrideWith((ref) async {}),
-    // A device in Jerusalem, on its clock: tests run on UTC.
-    deviceClockProvider.overrideWithValue(_clockOf(_jerusalem)),
-  ],
+  for (final screen in ['today_candles', 'today_friday_night'])
+    screen: [
+      timeZoneDatabaseProvider.overrideWith((ref) async {}),
+      // A device in Jerusalem, on its clock: tests run on UTC.
+      deviceClockProvider.overrideWithValue(_clockOf(_jerusalem)),
+    ],
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
 };
 
@@ -483,6 +490,8 @@ final _screenNow = <String, DateTime>{
   'today_erev_yomtov': DateTime(2028, 9, 20, 11),
   'today_shabbat': DateTime(2026, 10, 10, 11),
   'today_yomtov': DateTime(2029, 5, 20, 11),
+  'today_yom_kippur': DateTime(2026, 9, 21, 11),
+  'today_friday_night': DateTime(2026, 10, 9, 20),
   'today_checkin': DateTime(2026, 10, 12, 11),
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
   'today_restore': DateTime(2026, 10, 14, 11),
@@ -512,6 +521,7 @@ final _screenProgress = <String, ProgressState Function()>{
       }),
   'today_erev_yomtov': () => ProgressState(weeks: {}),
   'today_yomtov': () => ProgressState(weeks: {}),
+  'today_yom_kippur': () => ProgressState(weeks: {}),
   'today_erev_tisha_bav': () => ProgressState(weeks: {}),
   // Every aliyah read on its day; the haftarah not yet.
   'today_complete': () => ProgressState(weeks: {'5787:1': _readOnTheirDays('5787:1', LocalDate(2026, 10, 5))}),

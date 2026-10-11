@@ -80,7 +80,9 @@ class TodayScreen extends ConsumerWidget {
     final paused = ref.watch(isPausedProvider);
     final pauses = ref.watch(progressProvider.select((p) => p.pauses));
     final divergence = ref.watch(readingDivergenceProvider);
-    final pauseEnd = ref.watch(progressProvider.select((p) => pauseEndToWelcome(p, today)));
+    final pauseEnd = ref.watch(
+      progressProvider.select((p) => pauseEndToWelcome(p, today, oneDayYomTov: settings.oneDayYomTov)),
+    );
     final welcome = pauseEnd != null && pauseEnd != settings.pauseEndSeen ? pauseEnd : null;
 
     return [
@@ -892,10 +894,20 @@ class _RestHero extends ConsumerWidget {
     final portion = ref.watch(parshaRepositoryProvider).portion(week.portion);
     final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
     bool yomTov(LocalDate d) => JewishHolidays.isYomTov(HebrewDate.fromLocalDate(d), israel: settings.oneDayYomTov);
+    bool yomKippur(LocalDate d) => JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(d));
     var last = date;
     while (JewishHolidays.isRestDay(last.addDays(1), israel: settings.oneDayYomTov)) {
       last = last.addDays(1);
     }
+    // The day's own greeting, on Shabbat too: Yom Kippur is a fast, and Rosh
+    // Hashanah has its wish for the year.
+    final greeting = yomKippur(date)
+        ? l.gmarChatimaTova
+        : JewishHolidays.isRoshHashanah(HebrewDate.fromLocalDate(date))
+            ? l.shanaTova
+            : yomTov(date)
+                ? l.chagSameach
+                : l.shabbatShalom;
     final narrow = MediaQuery.sizeOf(context).width < Breakpoints.narrow;
     return TitlePageFrame(
       // A little more air above and below than a reading day's.
@@ -907,7 +919,7 @@ class _RestHero extends ConsumerWidget {
         children: [
           const Center(child: ShabbatCandlesIcon(size: 40)),
           const Gap(Space.lg),
-          BalancedText(yomTov(date) ? l.chagSameach : l.shabbatShalom, style: theme.textTheme.headlineMedium),
+          BalancedText(greeting, style: theme.textTheme.headlineMedium),
           const Gap(Space.xl),
           Semantics(
             container: true,
@@ -929,10 +941,14 @@ class _RestHero extends ConsumerWidget {
             ),
           ),
           const Gap(Space.lg),
-          // Logged once the days of rest are over, after Yom Tov where they
-          // end with one.
+          // Logged once the days of rest are over, after Yom Tov (or Yom
+          // Kippur) where they end with one.
           BalancedText(
-            yomTov(last) ? l.restDayBodyChag : l.restDayBody,
+            yomKippur(last)
+                ? l.restDayBodyYomKippur
+                : yomTov(last)
+                    ? l.restDayBodyChag
+                    : l.restDayBody,
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             bySentence: true,
           ),
@@ -954,16 +970,26 @@ class _RestHero extends ConsumerWidget {
 /// welcome the reader back from: until they read again, or put the welcome
 /// away ([AppSettings.pauseEndSeen]). Null while paused, before any pause
 /// has ended, and once reading has been logged for a day after it.
-LocalDate? pauseEndToWelcome(ProgressState progress, LocalDate today) {
-  LocalDate? end;
+///
+/// Null too for a pause made, or last changed, once it was over (by the
+/// reading day of its stamp, by the reader's days of Yom Tov): one entered
+/// after the fact, say, a few days back, or one ended early. Only a pause
+/// that ended while the app was closed is welcomed.
+LocalDate? pauseEndToWelcome(ProgressState progress, LocalDate today, {bool oneDayYomTov = false}) {
+  Pause? latest;
   for (final p in progress.pauses) {
     if (p.deleted) continue;
-    if (end == null || p.end > end) end = p.end;
+    if (latest == null || p.end > latest.end) latest = p;
   }
-  if (end == null || end >= today) return null;
+  final end = latest?.end;
+  if (latest == null || end == null || end >= today) return null;
+  if (latest.updatedAt > 0) {
+    final changed = DateTime.fromMillisecondsSinceEpoch(latest.updatedAt);
+    if (effectiveReadingDay(changed, oneDayYomTov: oneDayYomTov) > end) return null;
+  }
   for (final w in progress.weeks.values) {
     for (final row in w.units) {
-      if (row.any((d) => d != null && d > end!)) return null;
+      if (row.any((d) => d != null && d > end)) return null;
     }
   }
   return end;
@@ -1034,33 +1060,55 @@ enum StripNoteKind {
   caughtUp,
 }
 
+/// What the note under Today's week strip tells, and of which days: each
+/// grace day spent, in order, or today, or yesterday.
+@immutable
+class StripNote {
+  const StripNote(this.kind, this.days);
+
+  final StripNoteKind kind;
+  final List<LocalDate> days;
+
+  @override
+  bool operator ==(Object other) => other is StripNote && other.kind == kind && const ListEquality<LocalDate>().equals(other.days, days);
+
+  @override
+  int get hashCode => Object.hash(kind, Object.hashAll(days));
+
+  @override
+  String toString() => 'StripNote(${kind.name}, $days)';
+}
+
 /// The one note under Today's week strip, if any (§9 Today, 5), from the
-/// week's [days]: first a grace day that covered a planned day, then
-/// today's reading read ahead, then yesterday made up today.
+/// week's [days]: first the grace days that covered planned days, all of
+/// them in one line, then today's reading read ahead, then yesterday made
+/// up today.
 ///
-/// A note tells of something decided after [acknowledged], the last day
-/// the reader put the notes away or saw them (see
-/// [AppSettings.lastStripAck]). A grace day is decided once the planned day
-/// after it is over without the reading made up, and is told within a week
-/// of that.
-({StripNoteKind kind, LocalDate day})? stripNoteFor(
+/// A note tells of what was decided after [acknowledged], the last day the
+/// reader put the notes away or saw them (see [AppSettings.lastStripAck]).
+/// A grace day is decided once the planned day after it is over without the
+/// reading made up, and is told within a week of that: every grace day not
+/// yet told is told together, so that none is spent without a word.
+StripNote? stripNoteFor(
   Map<LocalDate, DayStatus> days, {
   required LocalDate today,
   LocalDate? acknowledged,
 }) {
   bool unacknowledged(LocalDate decided) => acknowledged == null || decided > acknowledged;
   final planned = days.keys.toList()..sort();
+  final grace = <LocalDate>[];
   for (var i = planned.length - 1; i >= 0; i--) {
     final day = planned[i];
     if (days[day] != DayStatus.grace) continue;
     final decided = (i + 1 < planned.length ? planned[i + 1] : day).addDays(1);
     if (decided <= today.addDays(-7)) break;
-    if (unacknowledged(decided)) return (kind: StripNoteKind.grace, day: day);
+    if (unacknowledged(decided)) grace.insert(0, day);
   }
+  if (grace.isNotEmpty) return StripNote(StripNoteKind.grace, grace);
   if (!unacknowledged(today)) return null;
-  if (days[today] == DayStatus.ahead) return (kind: StripNoteKind.ahead, day: today);
+  if (days[today] == DayStatus.ahead) return StripNote(StripNoteKind.ahead, [today]);
   final yesterday = today.addDays(-1);
-  if (days[yesterday] == DayStatus.caughtUp) return (kind: StripNoteKind.caughtUp, day: yesterday);
+  if (days[yesterday] == DayStatus.caughtUp) return StripNote(StripNoteKind.caughtUp, [yesterday]);
   return null;
 }
 
@@ -1098,10 +1146,15 @@ class _StripNote extends ConsumerWidget {
         !ctx.week.portion.isVezotHaberakhah &&
         !ctx.isFinished &&
         summary.graceBalance < GraceRules.maxBalance;
+    final weekdays = names.andList([for (final d in note.days) names.weekday(d)]);
     final text = switch (note.kind) {
       StripNoteKind.grace => earnsBack
-          ? l.graceUsedNote(names.weekday(note.day), names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames))
-          : l.graceUsedNoteShort(names.weekday(note.day)),
+          ? l.graceUsedNote(
+              note.days.length,
+              weekdays,
+              names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames),
+            )
+          : l.graceUsedNoteShort(note.days.length, weekdays),
       StripNoteKind.ahead => l.todayAhead,
       StripNoteKind.caughtUp => l.caughtUpNote,
     };

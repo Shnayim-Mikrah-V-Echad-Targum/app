@@ -266,12 +266,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chagSameach => 'Chag Sameach';
 
   @override
+  String get shanaTova => 'Shanah Tovah';
+
+  @override
+  String get gmarChatimaTova => 'G\'mar Chatimah Tovah';
+
+  @override
   String get restDayBody =>
       'Reading from a printed Chumash today? You can log it after Shabbat.';
 
   @override
   String get restDayBodyChag =>
       'Reading from a printed Chumash today? You can log it after Yom Tov.';
+
+  @override
+  String get restDayBodyYomKippur =>
+      'Reading from a printed Chumash today? You can log it after Yom Kippur.';
 
   @override
   String get openTheParsha => 'Open the parsha';
@@ -315,13 +325,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayAhead => 'You\'re ahead of plan. Well done!';
 
   @override
-  String graceUsedNote(String weekday, String parsha) {
-    return '$weekday was covered by a grace day — your rhythm continues. You\'ll earn one back when you finish $parsha by Shabbat.';
+  String graceUsedNote(int count, String weekdays, String parsha) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$weekdays were covered by grace days — your rhythm continues. You\'ll earn one back when you finish $parsha by Shabbat.',
+      one:
+          '$weekdays was covered by a grace day — your rhythm continues. You\'ll earn one back when you finish $parsha by Shabbat.',
+    );
+    return '$_temp0';
   }
 
   @override
-  String graceUsedNoteShort(String weekday) {
-    return '$weekday was covered by a grace day — your rhythm continues.';
+  String graceUsedNoteShort(int count, String weekdays) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$weekdays were covered by grace days — your rhythm continues.',
+      one: '$weekdays was covered by a grace day — your rhythm continues.',
+    );
+    return '$_temp0';
   }
 
   @override

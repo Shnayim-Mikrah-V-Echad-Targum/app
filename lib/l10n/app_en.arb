@@ -198,7 +198,15 @@
   },
   "chagSameach": "Chag Sameach",
   "@chagSameach": {
-    "description": "The greeting on Today's title page on Yom Tov."
+    "description": "The greeting on Today's title page on the festivals' days of Yom Tov (Pesach, Shavuot, Sukkot, Shemini Atzeret)."
+  },
+  "shanaTova": "Shanah Tovah",
+  "@shanaTova": {
+    "description": "The greeting on Today's title page on Rosh Hashanah, for a good year."
+  },
+  "gmarChatimaTova": "G'mar Chatimah Tovah",
+  "@gmarChatimaTova": {
+    "description": "The greeting on Today's title page on Yom Kippur, a solemn fast day: 'a good final sealing'."
   },
   "restDayBody": "Reading from a printed Chumash today? You can log it after Shabbat.",
   "@restDayBody": {
@@ -207,6 +215,10 @@
   "restDayBodyChag": "Reading from a printed Chumash today? You can log it after Yom Tov.",
   "@restDayBodyChag": {
     "description": "As restDayBody, on Shabbat or Yom Tov when the days of rest end with Yom Tov."
+  },
+  "restDayBodyYomKippur": "Reading from a printed Chumash today? You can log it after Yom Kippur.",
+  "@restDayBodyYomKippur": {
+    "description": "As restDayBody, on Yom Kippur, which is not called Yom Tov."
   },
   "openTheParsha": "Open the parsha",
   "@openTheParsha": {
@@ -266,11 +278,14 @@
   "todayReadingTitle": "Today's reading",
   "todayDone": "Today's reading is done",
   "todayAhead": "You're ahead of plan. Well done!",
-  "graceUsedNote": "{weekday} was covered by a grace day — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat.",
+  "graceUsedNote": "{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat.} other{{weekdays} were covered by grace days — your rhythm continues. You'll earn one back when you finish {parsha} by Shabbat.}}",
   "@graceUsedNote": {
-    "description": "Under Today's week strip, once, after a grace day covered a planned day without reading. weekday is that day; parsha this week's.",
+    "description": "Under Today's week strip, once, after grace days covered planned days without reading. count is how many grace days, weekdays those days as a list ('Monday and Tuesday'); parsha this week's.",
     "placeholders": {
-      "weekday": {
+      "count": {
+        "type": "int"
+      },
+      "weekdays": {
         "type": "String",
         "example": "Wednesday"
       },
@@ -280,11 +295,14 @@
       }
     }
   },
-  "graceUsedNoteShort": "{weekday} was covered by a grace day — your rhythm continues.",
+  "graceUsedNoteShort": "{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues.} other{{weekdays} were covered by grace days — your rhythm continues.}}",
   "@graceUsedNoteShort": {
     "description": "As graceUsedNote, when finishing this week's parsha would not earn a grace day back (it is finished, or none is missing).",
     "placeholders": {
-      "weekday": {
+      "count": {
+        "type": "int"
+      },
+      "weekdays": {
         "type": "String",
         "example": "Wednesday"
       }

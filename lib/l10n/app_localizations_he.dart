@@ -267,11 +267,21 @@ class AppLocalizationsHe extends AppLocalizations {
   String get chagSameach => 'חג שמח';
 
   @override
+  String get shanaTova => 'שנה טובה';
+
+  @override
+  String get gmarChatimaTova => 'גמר חתימה טובה';
+
+  @override
   String get restDayBody => 'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת.';
 
   @override
   String get restDayBodyChag =>
       'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג.';
+
+  @override
+  String get restDayBodyYomKippur =>
+      'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי יום כיפור.';
 
   @override
   String get openTheParsha => 'לפרשה';
@@ -315,13 +325,27 @@ class AppLocalizationsHe extends AppLocalizations {
   String get todayAhead => 'מקדימים את התוכנית. כל הכבוד!';
 
   @override
-  String graceUsedNote(String weekday, String parsha) {
-    return '$weekday כוסה ביום חסד — הקצב נמשך. יום חסד יתווסף בחזרה עם סיום פרשת $parsha עד שבת.';
+  String graceUsedNote(int count, String weekdays, String parsha) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$weekdays כוסו בימי חסד — הקצב נמשך. עם סיום פרשת $parsha עד שבת, יום חסד אחד יחזור.',
+      one:
+          '$weekdays כוסה ביום חסד — הקצב נמשך. עם סיום פרשת $parsha עד שבת, יום החסד יחזור.',
+    );
+    return '$_temp0';
   }
 
   @override
-  String graceUsedNoteShort(String weekday) {
-    return '$weekday כוסה ביום חסד — הקצב נמשך.';
+  String graceUsedNoteShort(int count, String weekdays) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$weekdays כוסו בימי חסד — הקצב נמשך.',
+      one: '$weekdays כוסה ביום חסד — הקצב נמשך.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -463,7 +487,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String openWeekRestoreZero(String name, String next) {
-    return 'סיום $name ו$next עד שבת, ושתיהן ייחשבו — השלמה כפולה אחת לכל חומש.';
+    return 'אם מסיימים את $name ואת $next עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש.';
   }
 
   @override

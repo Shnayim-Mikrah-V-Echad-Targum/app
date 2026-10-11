@@ -54,11 +54,12 @@ final pastMiddayProvider = NotifierProvider<MiddayController, bool>(MiddayContro
 ///
 /// The day is the device's date, which turns at 3 a.m. as the reading day
 /// does. With a city chosen for Shabbat times, on a day the device keeps the
-/// city's clock, the last day of rest ends at nightfall there instead
-/// ([Zmanim.havdalah]): Motzaei Shabbat is for logging what was read, as the
-/// check-in reminder that comes then expects. Without one, nothing says when
-/// Shabbat ends, and it lasts until 3 a.m., as the reminders without a city
-/// wait for the morning.
+/// city's clock, it begins as candles are lit there on its eve
+/// ([Zmanim.candleLighting]), and the last day of rest ends at nightfall
+/// there ([Zmanim.havdalah]): Motzaei Shabbat is for logging what was read,
+/// as the check-in reminder that comes then expects. Without one, nothing
+/// says when Shabbat begins or ends, and it lasts from 3 a.m. to 3 a.m., as
+/// the reminders without a city keep to midday and the morning.
 class RestDayController extends Notifier<LocalDate?> {
   Timer? _timer;
   AppLifecycleListener? _lifecycle;
@@ -83,11 +84,12 @@ class RestDayController extends Notifier<LocalDate?> {
     var next = DateTime(now.year, now.month, now.day, 3, 0, 5);
     if (!next.isAfter(now)) next = next.add(const Duration(days: 1));
     LocalDate? rest;
+    bool keepsCitysClock(LocalDate day) => citysTimes && Zmanim.keepsClock(city, day, clock(day));
     if (JewishHolidays.isRestDay(date, israel: oneDayYomTov)) {
       rest = date;
       final last = !JewishHolidays.isRestDay(date.addDays(1), israel: oneDayYomTov);
-      if (last && citysTimes && Zmanim.keepsClock(city, date, clock(date))) {
-        final times = Zmanim.of(city, date);
+      if (last && keepsCitysClock(date)) {
+        final times = Zmanim.of(city!, date);
         if (times.minutesOf(times.havdalah) case final minutes?) {
           // On the device's clock, which is the city's.
           final nightfall = DateTime(date.year, date.month, date.day, 0, minutes);
@@ -96,6 +98,17 @@ class RestDayController extends Notifier<LocalDate?> {
           } else if (nightfall.isBefore(next)) {
             next = nightfall;
           }
+        }
+      }
+    } else if (JewishHolidays.isRestDay(date.addDays(1), israel: oneDayYomTov) && keepsCitysClock(date)) {
+      // Its eve: from candle-lighting, the coming day of rest.
+      final times = Zmanim.of(city!, date);
+      if (times.minutesOf(times.candleLighting) case final minutes?) {
+        final candles = DateTime(date.year, date.month, date.day, 0, minutes);
+        if (!now.isBefore(candles)) {
+          rest = date.addDays(1);
+        } else if (candles.isBefore(next)) {
+          next = candles;
         }
       }
     }
