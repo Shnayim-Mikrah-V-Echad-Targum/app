@@ -651,6 +651,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 aliyah} other{{count} aliyot}}'**
   String aliyotCount(int count);
 
+  /// All seven aliyot, where the aliyot of a day are named: on Today's reading card when a day's reading is the whole parsha, or all of it is still to catch up, and on the home-screen widget ("Today: The whole parsha").
+  ///
+  /// In en, this message translates to:
+  /// **'The whole parsha'**
+  String get aliyotWholeParsha;
+
   /// On Today's reading card, under the aliyot to catch up, from Sunday to Wednesday. count is every aliyah the card names: those planned up to today and not yet read, today's included.
   ///
   /// In en, this message translates to:
@@ -4689,7 +4695,7 @@ abstract class AppLocalizations {
   /// **'Parsha complete · Yasher koach!'**
   String get widgetWeekComplete;
 
-  /// On the home-screen widget, once the days it was given have passed without the app being opened: it then shows the parsha alone, and this line.
+  /// On the home-screen widget, on a weekday once the days it was given have passed without the app being opened: it then shows the last parsha it was given, and this line. (On Shabbat and Yom Tov it shows only the candles and the day's greeting, and asks nothing.)
   ///
   /// In en, this message translates to:
   /// **'Open the app to bring this up to date'**

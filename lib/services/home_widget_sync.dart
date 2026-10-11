@@ -21,6 +21,7 @@ import '../features/progress/domain/progress_models.dart';
 import '../features/progress/domain/reading_plan.dart';
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
+import '../ui/l10n.dart' show AliyahNames;
 import 'app_shortcuts.dart';
 
 /// The App Group the iOS widget extension shares with the app, where the
@@ -197,14 +198,20 @@ class WidgetDay {
 }
 
 /// What the home-screen widgets show, worked out by the app for each day
-/// from today through the Shabbat of next week: a widget can't run the
-/// app's code on its own, so it picks the entry for the day as it comes,
-/// with the progress as it stood when the app last ran (it changes only
-/// while the app runs, which sends a new timeline then). Every string is
-/// already in the app's language.
+/// from today through the Shabbat of next week (and any Yom Tov straight
+/// after it): a widget can't run the app's code on its own, so it picks the
+/// entry for the day as it comes, with the progress as it stood when the app
+/// last ran (it changes only while the app runs, which sends a new timeline
+/// then). Every string is already in the app's language.
 @immutable
 class WidgetTimeline {
-  const WidgetTimeline({required this.rtl, required this.stale, required this.weeks, required this.days});
+  const WidgetTimeline({
+    required this.rtl,
+    required this.stale,
+    required this.weeks,
+    required this.days,
+    this.rests = const {},
+  });
 
   /// Whether the app shows in Hebrew, which the widget then follows.
   final bool rtl;
@@ -215,6 +222,11 @@ class WidgetTimeline {
   final List<WidgetWeek> weeks;
   final List<WidgetDay> days;
 
+  /// The days of rest for some months after [days], each with its greeting:
+  /// a widget left that long without the app still rests on them, with the
+  /// candles and the greeting, rather than ask for the app on Shabbat.
+  final Map<LocalDate, String> rests;
+
   Map<String, Object?> toJson() => {
         'v': 1,
         'rtl': rtl,
@@ -223,6 +235,7 @@ class WidgetTimeline {
         'stale': stale,
         'weeks': [for (final w in weeks) w.toJson()],
         'days': [for (final d in days) d.toJson()],
+        'rest': {for (final MapEntry(key: date, value: greeting) in rests.entries) date.toIso(): greeting},
       };
 
   String encode() => jsonEncode(toJson());
@@ -248,18 +261,10 @@ WidgetTimeline widgetTimeline({
   final schedule = planner.schedule;
   final israel = settings.oneDayYomTov;
   final rtl = l.localeName.startsWith('he');
-  final aliyahNames = [l.aliyah1, l.aliyah2, l.aliyah3, l.aliyah4, l.aliyah5, l.aliyah6, l.aliyah7];
+  // The aliyot named as Today's card names them.
+  final names = AliyahNames(l);
   final rashi = settings.usesRashi && !settings.usesOnkelos;
 
-  String andList(List<String> items) =>
-      items.length == 1 ? items.single : l.andJoiner(items.sublist(0, items.length - 1).join(', '), items.last);
-  String aliyot(List<int> indices) =>
-      indices.length == kAliyot ? l.wholeParsha : andList([for (final a in indices) aliyahNames[a]]);
-  // A run of three or more as its first and last, as Today's card names it.
-  String span(List<int> indices) =>
-      indices.length > 2 && indices.length < kAliyot && indices.last - indices.first == indices.length - 1
-          ? '${aliyahNames[indices.first]} – ${aliyahNames[indices.last]}'
-          : aliyot(indices);
   String passName(ReadingPass pass) => switch (pass) {
         ReadingPass.mikra1 => l.passMikra1,
         ReadingPass.mikra2 => l.passMikra2,
@@ -301,7 +306,7 @@ WidgetTimeline widgetTimeline({
   String? continueLabel(WeekContext ctx) {
     final next = ctx.nextAliyah;
     if (next == null) return null;
-    final aliyah = aliyahNames[next];
+    final aliyah = names.aliyah(next);
     final p = ctx.progress;
     if (!p.isStarted) return l.startAt(aliyah);
     if (!ReadingPass.values.any((pass) => p.isUnitDone(next, pass))) return l.continueAt(aliyah);
@@ -344,11 +349,11 @@ WidgetTimeline widgetTimeline({
     if (ctx.progress.isComplete) return l.widgetWeekComplete;
     if (paused) return l.widgetPaused;
     final due = ctx.dueAliyot();
-    if (ctx.behindBy() > 0 && due.isNotEmpty) return l.widgetCatchUp(span(due));
+    if (ctx.behindBy() > 0 && due.isNotEmpty) return l.widgetCatchUp(names.aliyotSpan(due));
     final day = ctx.plan.dayFor(ctx.today);
     if (day == null) return l.widgetNothingToday;
     if (day.aliyot.every(ctx.progress.isAliyahDone)) return l.todayDone;
-    return l.widgetToday(aliyot(day.aliyot));
+    return l.widgetToday(names.aliyot(day.aliyot));
   }
 
   // The day of rest's greeting, as Today's.
@@ -364,7 +369,12 @@ WidgetTimeline widgetTimeline({
 
   final first = rolloverDate(now);
   final current = schedule.weekFor(effectiveReadingDay(now, oneDayYomTov: israel));
-  final last = schedule.nextWeek(current).occasion;
+  // Through next week's Shabbat, and a Yom Tov straight after it: a widget
+  // whose days run out then rests on, rather than ask for the app.
+  var last = schedule.nextWeek(current).occasion;
+  while (JewishHolidays.isRestDay(last.addDays(1), israel: israel)) {
+    last = last.addDays(1);
+  }
   final days = <WidgetDay>[];
   void add(WidgetDay day) {
     // Already over.
@@ -414,8 +424,16 @@ WidgetTimeline widgetTimeline({
       add(WidgetDay(date: day, until: until, week: index, kind: kind, eyebrow: eyebrow, line: line));
     }
   }
-  return WidgetTimeline(rtl: rtl, stale: l.widgetStale, weeks: weeks, days: days);
+  final rests = {
+    for (var day = last.addDays(1); day <= last.addDays(kWidgetRestDays); day = day.addDays(1))
+      if (JewishHolidays.isRestDay(day, israel: israel)) day: greeting(day),
+  };
+  return WidgetTimeline(rtl: rtl, stale: l.widgetStale, weeks: weeks, days: days, rests: rests);
 }
+
+/// How many days after its last a timeline gives the days of rest
+/// ([WidgetTimeline.rests]): about four months.
+const kWidgetRestDays = 120;
 
 /// [LocalDate.weekday] of Friday, from Sunday's 0.
 const _friday = 5;

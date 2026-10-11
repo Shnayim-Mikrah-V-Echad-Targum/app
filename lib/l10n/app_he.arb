@@ -92,6 +92,7 @@
   "todayNothingPlanned": "לא מתוכננת קריאה להיום. זמן טוב להשלים או להקדים.",
   "todayCatchUpTitle": "משלימים",
   "aliyotCount": "{count, plural, =1{עלייה אחת} other{{count} עליות}}",
+  "aliyotWholeParsha": "כל הפרשה",
   "todayBehind": "{count, plural, =1{עוד עלייה אחת להשלים — רגיל לגמרי באמצע השבוע.} other{עוד {count} עליות להשלים — רגיל לגמרי באמצע השבוע.}}",
   "todayBehindThursday": "{count, plural, =1{עוד עלייה אחת להשלים — ויש עוד יומיים עד שבת.} other{עוד {count} עליות להשלים — ויש עוד יומיים עד שבת.}}",
   "todayLastDayShabbat": "{count, plural, =1{עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.} other{עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.}}",

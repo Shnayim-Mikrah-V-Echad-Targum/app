@@ -2,22 +2,28 @@ import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
+import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/app_shortcuts.dart';
 import 'package:shnayim_mikra/services/home_widget_sync.dart';
+import 'package:shnayim_mikra/ui/l10n.dart';
 
 import '../helpers.dart';
 
@@ -48,7 +54,12 @@ class FakeHomeWidget {
     });
     messenger.setMockStreamHandler(
       _events,
-      MockStreamHandler.inline(onListen: (_, sink) => _sink = sink, onCancel: (_) => _sink = null),
+      // Block bodies: what the handlers return is sent back over the channel.
+      MockStreamHandler.inline(onListen: (_, sink) {
+        _sink = sink;
+      }, onCancel: (_) {
+        _sink = null;
+      }),
     );
     addTearDown(() {
       messenger.setMockMethodCallHandler(_channel, null);
@@ -156,7 +167,7 @@ void main() {
       expect((sunday.kind, sunday.week, sunday.line), (WidgetDayKind.weekday, 1, 'Today: Rishon'));
       expect(only(t, LocalDate(2026, 10, 12)).line, 'Catching up: Rishon and Sheni');
       expect(only(t, LocalDate(2026, 10, 13)).line, 'Catching up: Rishon – Shlishi');
-      expect(on(t, LocalDate(2026, 10, 16)).last.line, 'Catching up: Whole parsha');
+      expect(on(t, LocalDate(2026, 10, 16)).last.line, 'Catching up: The whole parsha');
       expect(only(t, LocalDate(2026, 10, 17)).kind, WidgetDayKind.shabbat);
     });
 
@@ -184,7 +195,15 @@ void main() {
       // A plan that reads everything on Friday plans nothing before it.
       t = timeline(_monday, settings: AppSettings(joinDate: captureJoinDate, plan: ReadingPlanType.erevShabbat));
       expect(only(t, LocalDate(2026, 10, 12)).line, 'No reading planned today');
-      expect(on(t, LocalDate(2026, 10, 16)).first.line, 'Today: Whole parsha');
+      expect(on(t, LocalDate(2026, 10, 16)).first.line, 'Today: The whole parsha');
+      // In the very words of Today's card.
+      expect(AliyahNames(en).aliyot([for (var a = 0; a < kAliyot; a++) a]), 'The whole parsha');
+      t = timeline(
+        _monday,
+        l: he,
+        settings: AppSettings(joinDate: captureJoinDate, plan: ReadingPlanType.erevShabbat, language: AppLanguage.hebrew),
+      );
+      expect(on(t, LocalDate(2026, 10, 16)).first.line, 'היום: כל הפרשה');
     });
 
     test("turns with the app's day, at 3 a.m.", () {
@@ -257,6 +276,59 @@ void main() {
       expect(tishrei.days.last.date, LocalDate(2026, 10, 4));
     });
 
+    test('runs on through a Yom Tov straight after its last Shabbat', () {
+      // Two weeks before Pesach 5785, which begins on Sunday 13 April, the
+      // day after the timeline's last Shabbat: outside Israel for two days.
+      final settings = AppSettings(joinDate: LocalDate(2024, 9, 1));
+      const times = (candleLighting: 19 * 60, nightfall: 20 * 60 + 10);
+      final diaspora = timeline(DateTime(2025, 3, 31, 10), settings: settings, restTimes: (_) => times);
+      expect(diaspora.days.last.date, LocalDate(2025, 4, 14));
+      final shabbat = only(diaspora, LocalDate(2025, 4, 12));
+      expect((shabbat.kind, shabbat.line, shabbat.until), (WidgetDayKind.shabbat, 'Shabbat Shalom', null),
+          reason: 'the days of rest go on');
+      for (final (day, until) in [(13, null), (14, DateTime(2025, 4, 14, 20, 10))]) {
+        final d = only(diaspora, LocalDate(2025, 4, day));
+        expect((d.kind, d.line, d.until), (WidgetDayKind.yomTov, 'Chag Sameach', until), reason: '$day April');
+      }
+      expect(diaspora.rests.keys.first, LocalDate(2025, 4, 19));
+
+      // In Israel, one day.
+      final israel = timeline(DateTime(2025, 3, 31, 10),
+          settings: settings.locatedIn(ReadingSchedule.israel), restTimes: (_) => times);
+      expect(israel.days.last.date, LocalDate(2025, 4, 13));
+      expect(only(israel, LocalDate(2025, 4, 13)).until, DateTime(2025, 4, 13, 20, 10));
+    });
+
+    test('then gives the days of rest for months, each with its greeting', () {
+      final t = timeline(captureNow);
+      // Every Shabbat from the one after the timeline's last, for about four
+      // months.
+      expect(t.days.last.date, LocalDate(2026, 10, 17));
+      expect(t.rests.keys.first, LocalDate(2026, 10, 24));
+      expect(t.rests.keys.last, LocalDate(2027, 2, 13));
+      expect(t.rests, hasLength(17));
+      expect(t.rests.keys.every((d) => d.isShabbat), isTrue);
+      expect(t.rests.values.toSet(), {'Shabbat Shalom'});
+
+      // Yom Tov by the days kept, in the app's language: Pesach and Shavuot
+      // 5787.
+      final spring = timeline(DateTime(2027, 3, 1, 10), settings: AppSettings(joinDate: LocalDate(2026, 9, 1)));
+      final yomTov = {for (final MapEntry(:key, :value) in spring.rests.entries) if (!key.isShabbat) key: value};
+      expect(yomTov, {
+        for (final day in [(4, 22), (4, 23), (4, 28), (4, 29), (6, 11)]) LocalDate(2027, day.$1, day.$2): 'Chag Sameach',
+      });
+      expect(spring.rests[LocalDate(2027, 6, 12)], 'Chag Sameach', reason: 'Shavuot on Shabbat');
+      final israel = timeline(
+        DateTime(2027, 3, 1, 10),
+        l: he,
+        settings: AppSettings(joinDate: LocalDate(2026, 9, 1), language: AppLanguage.hebrew).locatedIn(ReadingSchedule.israel),
+      );
+      expect({for (final MapEntry(:key, :value) in israel.rests.entries) if (!key.isShabbat) key: value}, {
+        for (final day in [(4, 22), (4, 28), (6, 11)]) LocalDate(2027, day.$1, day.$2): 'חג שמח',
+      });
+      expect(israel.rests[LocalDate(2027, 6, 12)], 'שבת שלום');
+    });
+
     test('while paused, says that nothing counts against the reader', () {
       final progress = ProgressState(pauses: [Pause(LocalDate(2026, 10, 11), LocalDate(2026, 10, 13))]);
       final t = timeline(_monday, progress: progress);
@@ -312,7 +384,9 @@ void main() {
 
     test('is sent as compact JSON, under 8 KB at its longest', () {
       final json = jsonDecode(timeline(captureNow, progress: captureProgress()).encode()) as Map<String, dynamic>;
-      expect(json.keys, ['v', 'rtl', 'open', 'continue', 'stale', 'weeks', 'days']);
+      expect(json.keys, ['v', 'rtl', 'open', 'continue', 'stale', 'weeks', 'days', 'rest']);
+      expect((json['rest'] as Map).entries.first, isA<MapEntry<String, dynamic>>());
+      expect((json['rest'] as Map)['2026-10-24'], 'Shabbat Shalom');
       expect(json['open'], 'shnayimmikra://widget/today?homeWidget');
       expect(json['continue'], 'shnayimmikra://widget/continue?homeWidget');
       final days = (json['days'] as List).cast<Map<String, dynamic>>();
@@ -624,6 +698,147 @@ void main() {
         async.elapse(const Duration(seconds: 2));
         expect(fake.saved, hasLength(1));
       });
+    });
+  });
+  // The app's own wiring (lib/app/app.dart): the links it opens, and the
+  // timeline it sends again when the device's language changes.
+  group('in the app', () {
+    // Monday 12 October 2026, in the week of Noach.
+    final monday = DateTime(2026, 10, 12, 10);
+    const noach = '5787:2';
+    const lechLecha = '5787:3';
+    final mondayDate = LocalDate.fromDateTime(monday);
+
+    /// Rishon and Sheni of Noach read: Continue leads to Shlishi.
+    ProgressState twoRead() => ProgressState(weeks: {
+          noach: WeekProgress(weekId: noach).withAliyah(0, mondayDate).withAliyah(1, mondayDate),
+        });
+
+    /// The app on the fake platform, launched by [launchedWith] if given.
+    /// Taps are told apart by [now], which stands still unless a test moves
+    /// it.
+    Future<(GoRouter, FakeHomeWidget)> pump(
+      WidgetTester tester, {
+      AppSettings settings = const AppSettings(onboardingComplete: true, notificationPromptShown: true),
+      ProgressState? progress,
+      String? launchedWith,
+      DateTime Function()? now,
+    }) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final fake = FakeHomeWidget()..launchedWith = launchedWith;
+      final service = await HomeWidgetService.create(now: now ?? () => monday);
+      final container = await pumpApp(
+        tester,
+        settings: settings,
+        now: monday,
+        progress: progress,
+        overrides: [homeWidgetServiceProvider.overrideWithValue(service)],
+      );
+      return (container.read(routerProvider), fake);
+    }
+
+    /// Lets a page open and the reader load its text, whose spinner never
+    /// settles, and the timeline be sent.
+    Future<void> settle(WidgetTester tester) async {
+      for (var i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+        if (find.byType(CircularProgressIndicator).evaluate().isEmpty && !tester.binding.hasScheduledFrame) break;
+      }
+      await tester.pumpAndSettle();
+      await tester.pump(HomeWidgetService.throttle * 2);
+    }
+
+    String location(GoRouter router) => router.state.uri.toString();
+
+    /// Goes back from the page on top, as its back button does, to Today.
+    Future<void> expectBackToToday(WidgetTester tester, GoRouter router) async {
+      await tester.tap(find.byType(BackButton));
+      await settle(tester);
+      expect(location(router), '/today');
+      expect(find.byType(TodayScreen), findsOneWidget);
+      expect(find.byType(ReaderScreen), findsNothing);
+    }
+
+    testWidgets("the link that launched the app opens Continue's page over Today, once", (tester) async {
+      final (router, fake) = await pump(tester, progress: twoRead(), launchedWith: WidgetLink.continueReading.uri.toString());
+      await settle(tester);
+      expect(location(router), '/read/$noach/2');
+      expect(find.byType(ReaderScreen), findsOneWidget);
+
+      // The same tap reported again as the app resumes opens nothing more.
+      fake.tap(WidgetLink.continueReading.uri.toString());
+      await settle(tester);
+      await expectBackToToday(tester, router);
+    });
+
+    testWidgets('a tap while the app runs opens its page over Today, from wherever the app was', (tester) async {
+      var now = monday;
+      final (router, fake) = await pump(tester, progress: twoRead(), now: () => now);
+      router.go('/settings/display');
+      await settle(tester);
+
+      fake.tap(WidgetLink.continueReading.uri.toString());
+      await settle(tester);
+      expect(location(router), '/read/$noach/2');
+      await expectBackToToday(tester, router);
+
+      router.go('/settings/display');
+      await settle(tester);
+      now = now.add(const Duration(minutes: 1));
+      fake.tap(WidgetLink.today.uri.toString());
+      await settle(tester);
+      expect(location(router), '/today');
+    });
+
+    // A week later the app is still suspended, and hears of the tap before
+    // it hears it has resumed: Continue opens the new week.
+    testWidgets('a tap opens the week of the day it is tapped, without waiting for a resume', (tester) async {
+      final (router, fake) = await pump(tester, progress: twoRead());
+      TodayController.now = () => monday.add(const Duration(days: 7));
+      fake.tap(WidgetLink.continueReading.uri.toString());
+      await settle(tester);
+      expect(location(router), '/read/$lechLecha/0');
+      expect(tester.widget<ReaderScreen>(find.byType(ReaderScreen)).weekId, lechLecha);
+    });
+
+    testWidgets('before onboarding, taps open nothing', (tester) async {
+      final (router, fake) = await pump(
+        tester,
+        settings: const AppSettings(),
+        launchedWith: WidgetLink.continueReading.uri.toString(),
+      );
+      await settle(tester);
+      expect(location(router), '/welcome');
+      fake.tap(WidgetLink.today.uri.toString());
+      await settle(tester);
+      expect(location(router), '/welcome');
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+      expect(fake.saved, [null], reason: 'the widget is cleared');
+    });
+
+    // The app invalidates the sync when the device's language changes.
+    testWidgets("sends the timeline again in the device's language when the app follows it", (tester) async {
+      addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+      final (_, fake) = await pump(
+        tester,
+        settings: const AppSettings(onboardingComplete: true, notificationPromptShown: true, language: AppLanguage.system),
+      );
+      await settle(tester);
+      expect(fake.lastTimeline['rtl'], isFalse);
+      final sent = fake.saved.length;
+
+      tester.platformDispatcher.localesTestValue = const [Locale('he', 'IL')];
+      await settle(tester);
+      expect(fake.saved, hasLength(sent + 1));
+      expect(fake.lastTimeline['rtl'], isTrue);
+      expect(((fake.lastTimeline['days'] as List).first as Map)['eyebrow'], 'פרשת השבוע');
+
+      tester.platformDispatcher.localesTestValue = const [Locale('en', 'US')];
+      await settle(tester);
+      expect(fake.lastTimeline['rtl'], isFalse);
     });
   });
 }

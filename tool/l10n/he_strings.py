@@ -62,6 +62,7 @@ HE = {
   "versesCount": "{count, plural, =1{פסוק אחד} other{{count} פסוקים}}",
   "minutesEstimate": "כ־{minutes} דק׳",
   "aliyotProgress": "{done} מתוך {total} עליות",
+  "aliyotWholeParsha": "כל הפרשה",
   "readOnShabbat": "נקראת בשבת, {date}",
   "readOnSimchatTorah": "נקראת בשמחת תורה, {date}",
   "shabbatInDays": "{count, plural, =0{שבת היום} =1{שבת מחר} =2{שבת בעוד יומיים} other{שבת בעוד {count} ימים}}",

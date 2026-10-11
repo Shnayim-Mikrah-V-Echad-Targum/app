@@ -367,6 +367,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aliyotWholeParsha => 'The whole parsha';
+
+  @override
   String todayBehind(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
