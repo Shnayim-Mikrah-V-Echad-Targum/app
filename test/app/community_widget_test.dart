@@ -1191,6 +1191,16 @@ void main() {
       tester.getSemantics(todahOf(0)),
       isSemantics(label: 'Say todah to Avraham', isButton: true, hasToggledState: true, isToggled: false),
     );
+    // Thanked once, it holds the digit it shows, "1", as with any other count.
+    await tester.ensureVisible(todahOf(0));
+    await tester.pumpAndSettle();
+    await tester.tap(todahOf(0));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: todahOf(0), matching: find.text('1')), findsOneWidget);
+    expect(
+      tester.getSemantics(todahOf(0)),
+      isSemantics(label: 'Remove your todah to Avraham. Thanked 1 time', isButton: true, hasToggledState: true, isToggled: true),
+    );
     for (final i in [0, 1]) {
       expect(tester.getSemantics(todahOf(i)).label.toLowerCase(), contains('todah'));
     }
@@ -1211,6 +1221,33 @@ void main() {
       // one, with the full date.
       expect(find.bySemanticsLabel(RegExp(r'^Post 1 of 2\nAvraham, Question, \w+day, ')), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp(r'^Post 2 of 2\nRivka, \w+day, ')), findsOneWidget);
+      semantics.dispose();
+    });
+
+    // The asker's later words are no question: Author, as in any other
+    // discussion.
+    testWidgets('by the member who asked a question is tagged Question only on the post that asked it', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final forums = DemoForumRepository()
+        ..seed(posts: [
+          Post(
+            id: '9200',
+            threadId: '1',
+            authorId: 'demo-author',
+            authorName: 'Avraham',
+            body: 'Thanks, that answers it.',
+            createdAt: DateTime.now(),
+          ),
+        ]);
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await _scrollThreadTo(tester, find.text('Thanks, that answers it.'));
+      final thanks = find.ancestor(of: find.text('Thanks, that answers it.'), matching: find.byType(PostCard));
+      expect(find.descendant(of: thanks, matching: find.text('Author')), findsOneWidget);
+      expect(find.descendant(of: thanks, matching: find.text('Question')), findsNothing);
+      expect(find.bySemanticsLabel(RegExp(r'^Post 3 of 3\nAvraham, Author, ')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^Post 1 of 3\nAvraham, Question, ')), findsOneWidget);
       semantics.dispose();
     });
 
@@ -2216,7 +2253,7 @@ void main() {
       final node = tester.getSemantics(tile);
       expect(node, isSemantics(isButton: true, hasTapAction: true));
       expect(node.label, startsWith('Locked\n\u2068Avraham\u2069\u00a0· '));
-      expect(node.label, endsWith('\u00a0· 1\u00a0reply\u00a0· thanked\u00a013\u00a0times'));
+      expect(node.label, endsWith('\u00a0· 1\u00a0reply\u00a0· thanked 13\u00a0times'));
       expect(tester.getSemantics(find.descendant(of: tile, matching: find.text('Locked'))).id, node.id);
       // The title, tagged with its own language, is read within the row, and
       // is no item to stop on of its own.
@@ -2317,7 +2354,7 @@ void main() {
       // Who started it, when it was last active, its replies and the thanks
       // its posts were given.
       expect(
-        find.descendant(of: locked, matching: find.textContaining(RegExp('^\u2068Avraham\u2069\u00a0· .+\u00a0· 1\u00a0reply\u00a0· thanked\u00a013\u00a0times\$'))),
+        find.descendant(of: locked, matching: find.textContaining(RegExp('^\u2068Avraham\u2069\u00a0· .+\u00a0· 1\u00a0reply\u00a0· thanked 13\u00a0times\$'))),
         findsOneWidget,
       );
     });
@@ -2387,7 +2424,7 @@ void main() {
       final meta = find.descendant(of: tile, matching: find.textContaining('\u2068שירה\u2069'));
       expect(tester.getTopLeft(excerpt).dy, greaterThanOrEqualTo(tester.getBottomLeft(find.text(hebrewTitle)).dy));
       expect(tester.getBottomLeft(excerpt).dy, lessThanOrEqualTo(tester.getTopLeft(meta).dy));
-      expect(tester.widget<Text>(meta).data, endsWith('\u00a0· 2\u00a0replies\u00a0· thanked\u00a013\u00a0times'));
+      expect(tester.widget<Text>(meta).data, endsWith('\u00a0· 2\u00a0replies\u00a0· thanked 13\u00a0times'));
       // Tagged with its language, it is read within the row, as the title is.
       final row = tester.getSemantics(tile);
       SemanticsNode? up = tester.getSemantics(excerpt);
@@ -2427,7 +2464,7 @@ void main() {
       expect(find.text(opening), findsNothing, reason: 'rather than the answer in its place');
       // Only the thanks on Rivka's answer: none on Avraham's question.
       expect(tester.widget<Text>(find.descendant(of: tileOf(question), matching: find.textContaining('reply'))).data,
-          endsWith('1\u00a0reply\u00a0· thanked\u00a04\u00a0times'));
+          endsWith('1\u00a0reply\u00a0· thanked 4\u00a0times'));
 
       // Once the status message that says so has gone.
       await tester.pump(const Duration(seconds: 5));
@@ -2444,7 +2481,7 @@ void main() {
       c.read(routerProvider).go('/community/forum/questions');
       await tester.pumpAndSettle();
       expect(find.text(opening), findsOneWidget);
-      expect(find.descendant(of: tileOf(question), matching: find.textContaining('thanked\u00a05\u00a0times')), findsOneWidget);
+      expect(find.descendant(of: tileOf(question), matching: find.textContaining('thanked 5\u00a0times')), findsOneWidget);
     });
 
     testWidgets("shows its opening post's edit", (tester) async {
@@ -2512,7 +2549,7 @@ void main() {
       final c = await _pump(tester, forums: forums);
       c.read(routerProvider).go('/community/forum/questions');
       await tester.pumpAndSettle();
-      Finder thanks(int n) => find.descendant(of: tileOf(question), matching: find.textContaining('thanked\u00a0$n\u00a0times'));
+      Finder thanks(int n) => find.descendant(of: tileOf(question), matching: find.textContaining('thanked $n\u00a0times'));
       expect(thanks(4), findsOneWidget);
       await tester.tap(find.text(question));
       await tester.pumpAndSettle();

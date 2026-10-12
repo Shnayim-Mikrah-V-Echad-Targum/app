@@ -252,7 +252,7 @@ void main() {
         }),
       );
       await show(tester, find.byType(WeekStrip));
-      expect(findWords('Caught up — doubling up repaired yesterday.'), findsOneWidget);
+      expect(findWords('Caught up — today’s reading made up for yesterday.'), findsOneWidget);
     });
 
     testWidgets('in Hebrew', (tester) async {

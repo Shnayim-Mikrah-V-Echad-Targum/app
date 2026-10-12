@@ -180,12 +180,14 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 
   /// The tag beside the name of the member who started [t] on their posts:
-  /// Asked in a question, and Author in any other discussion. None in a
-  /// weekly thread, which is the community's.
-  static String? _authorTag(AppLocalizations l, ThreadSummary? t, Post post) {
+  /// Question on the post that asked it ([opening], in a question), and
+  /// Author on the rest of theirs, as in any other discussion, so that a
+  /// later word of thanks isn't called a question. None in a weekly thread,
+  /// which is the community's.
+  static String? _authorTag(AppLocalizations l, ThreadSummary? t, Post post, {required bool opening}) {
     final author = t?.authorId;
     if (t == null || t.kind == ThreadKind.weekly || author == null || post.authorId != author) return null;
-    return t.kind == ThreadKind.question ? l.askedTag : l.authorTag;
+    return t.kind == ThreadKind.question && opening ? l.askedTag : l.authorTag;
   }
 
   @override
@@ -408,7 +410,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
             number: offset + i + 1,
             total: total,
             opening: list[i].id == opening,
-            tag: _authorTag(l, t, list[i]),
+            tag: _authorTag(l, t, list[i], opening: list[i].id == opening),
             focusNode: list[i].id == _firstPostFocused ? _firstPostFocus : null,
             // As loaded, or else as fetched with the reply.
             quote: switch (byId[list[i].replyToId]) {
@@ -674,8 +676,8 @@ class PostCard extends ConsumerWidget {
   /// Whether this is the post that opened the thread.
   final bool opening;
 
-  /// A tag beside the writer's name: Asked, say, on the posts of the member
-  /// who asked the question.
+  /// A tag beside the writer's name: Question, say, on the post that asked
+  /// the thread's question, and Author on its writer's other posts.
   final String? tag;
 
   /// The post it replies to.
@@ -1266,7 +1268,8 @@ class _TodahButtonState extends ConsumerState<_TodahButton> {
       // Merged into the button's node: a toggle, on once thanks are given.
       label: Semantics(
         toggled: _given,
-        label: _count == 0 ? action : '$action. ${l.todahCount(_count)}',
+        // The count in digits, as the button shows it.
+        label: _count == 0 ? action : '$action. ${l.todahButtonCount(_count)}',
         excludeSemantics: true,
         child: Row(
           mainAxisSize: MainAxisSize.min,

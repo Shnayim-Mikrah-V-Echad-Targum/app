@@ -11,6 +11,7 @@ import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/lang.dart';
+import '../../../ui/widgets/lines.dart' show WholeWords;
 import '../../../ui/widgets/paper_group.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -321,7 +322,10 @@ class ThreadTile extends ConsumerWidget {
 
 /// [text] written by a member, such as a thread's title or its excerpt: run
 /// in the direction of its own language and tagged with it, from the page's
-/// edge ([textAlign]), and cut short after [maxLines] lines.
+/// edge ([textAlign]), and cut short after [maxLines] lines. Never cut short
+/// ([maxLines] null, as at large text), each word stays whole, set smaller
+/// where it is too wide for the row, as the thread's own title is, unless
+/// too long to stay legible.
 class _OwnDirection extends StatelessWidget {
   const _OwnDirection(this.text, {required this.page, this.style, required this.textAlign, this.maxLines});
 
@@ -336,16 +340,27 @@ class _OwnDirection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final direction = autoDirection(text, fallback: page);
+    final locale = Locale(direction == TextDirection.rtl ? 'he' : 'en');
     return Lang(
-      Locale(direction == TextDirection.rtl ? 'he' : 'en'),
-      child: Text(
-        text,
-        style: style,
-        textDirection: direction,
-        textAlign: textAlign,
-        maxLines: maxLines,
-        overflow: maxLines == null ? null : TextOverflow.ellipsis,
-      ),
+      locale,
+      child: maxLines == null
+          ? WholeWords(
+              text,
+              style: style,
+              textDirection: direction,
+              textAlign: textAlign,
+              locale: locale,
+              breakAtHyphens: true,
+              minFontSize: WholeWords.smallestSize,
+            )
+          : Text(
+              text,
+              style: style,
+              textDirection: direction,
+              textAlign: textAlign,
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+            ),
     );
   }
 }

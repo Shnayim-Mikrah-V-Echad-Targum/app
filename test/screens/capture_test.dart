@@ -1778,6 +1778,8 @@ const _hugeTallScreens = {
   'progress',
   'settings',
   'community',
+  // A forum's discussions, the longest lines of facts among them.
+  'forum_questions',
   'thread',
   'haftarah',
   // The offer to move the daily reminder, its button under its text.

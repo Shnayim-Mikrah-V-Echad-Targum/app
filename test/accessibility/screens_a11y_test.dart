@@ -177,8 +177,17 @@ void main() {
   // Bereshit shows them (test/helpers.dart): a grace day told under the
   // week, a special haftarah, aliyot left from days gone by on the week's
   // page, a year's Torah map, the forums' activity and a discussion. Each
-  // page is opened in English and then shown in Hebrew.
-  for (final route in ['/today', '/parsha', '/progress', '/community', '/settings', '/community/thread/1']) {
+  // page is opened in English and then shown in Hebrew. A forum's list of
+  // discussions holds the longest lines of facts ("… · thanked 13 times").
+  for (final route in [
+    '/today',
+    '/parsha',
+    '/progress',
+    '/community',
+    '/settings',
+    '/community/forum/questions',
+    '/community/thread/1',
+  ]) {
     testWidgets('no overflow or broken word at 300% on a 320 dp phone, in either language, on Friday: $route',
         (tester) async {
       tester.view.physicalSize = const Size(320, 640);
@@ -202,6 +211,7 @@ void main() {
         expect(find.textContaining('Shabbat Machar Chodesh'), findsOneWidget);
       }
       if (route == '/parsha') expect(find.byIcon(Icons.history), findsWidgets);
+      if (route == '/community/forum/questions') expect(find.textContaining('thanked'), findsWidgets);
       for (final language in [AppLanguage.system, AppLanguage.hebrew]) {
         c.read(settingsProvider.notifier).update((s) => s.copyWith(language: language));
         await tester.pumpAndSettle();

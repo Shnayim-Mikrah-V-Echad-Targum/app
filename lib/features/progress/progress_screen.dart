@@ -480,12 +480,15 @@ class _WeekRow extends StatelessWidget {
                     children: [
                       Icon(WeekStatusBadge.icon(status), size: 16, color: WeekStatusBadge.color(context, status)),
                       const Gap(6),
+                      // Its lines balanced, so that large text leaves no word
+                      // alone on the last ("parsha", "יותר"); each word
+                      // whole, one too wide for the line set just small
+                      // enough to fit.
                       Flexible(
-                        child: WholeWords(
+                        child: BalancedText(
                           WeekStatusBadge.label(context, status),
                           style: meta,
                           textAlign: TextAlign.start,
-                          breakAtHyphens: true,
                         ),
                       ),
                     ],

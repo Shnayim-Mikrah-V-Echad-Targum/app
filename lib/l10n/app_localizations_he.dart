@@ -346,7 +346,7 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get caughtUpNote => 'חזרה לתוכנית — הקריאה הכפולה השלימה את אתמול.';
+  String get caughtUpNote => 'חזרה לתוכנית — הקריאה של היום השלימה את אתמול.';
 
   @override
   String get todayNothingPlanned =>
@@ -694,10 +694,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get weekLate => 'אחרי שבת — עדיין נחשב';
 
   @override
-  String get weekRestored => 'הושלם עם הפרשה הבאה';
+  String get weekRestored => 'הושלם עם הפרשה הבאה';
 
   @override
-  String get weekMadeUp => 'הושלם מאוחר יותר';
+  String get weekMadeUp => 'הושלם מאוחר יותר';
 
   @override
   String get weekMissed => 'לא הושלם';
@@ -706,7 +706,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get weekTransparent => 'לא נספר';
 
   @override
-  String get weekOverdue => 'עוד אפשר להשלים עם הפרשה הבאה';
+  String get weekOverdue => 'עוד אפשר להשלים עם הפרשה הבאה';
 
   @override
   String get weekInProgress => 'בתהליך';
@@ -2368,6 +2368,17 @@ class AppLocalizationsHe extends AppLocalizations {
       locale: localeName,
       other: '$count תודות',
       one: 'תודה אחת',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String todahButtonCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count תודות',
+      one: 'תודה 1',
     );
     return '$_temp0';
   }

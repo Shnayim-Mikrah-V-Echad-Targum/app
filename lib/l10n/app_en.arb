@@ -307,9 +307,9 @@
       }
     }
   },
-  "caughtUpNote": "Caught up — doubling up repaired yesterday.",
+  "caughtUpNote": "Caught up — today’s reading made up for yesterday.",
   "@caughtUpNote": {
-    "description": "Under Today's week strip when reading two days' aliyot today has made up for yesterday."
+    "description": "Under Today's week strip when reading two days' aliyot today has made up for yesterday. It says what happened in plain words, as the rescue of a missed parsha is named, with no word for doubling up."
   },
   "todayNothingPlanned": "No reading is planned for today. A good day to catch up or read ahead.",
   "todayCatchUpTitle": "Catching up",
@@ -659,9 +659,9 @@
   "weekStripLabel": "This week’s plan",
   "weekOnTime": "On time",
   "weekLate": "After Shabbat — still counts",
-  "weekRestored": "Finished with the next parsha",
+  "weekRestored": "Finished with the next parsha",
   "@weekRestored": {
-    "description": "A parsha's status: missed by its late window, then finished together with the next parsha by the next Shabbat (once in each book of the Torah), so the streak continues. weekOverdue is the same rescue still open; keep the two in the same words. A no-break space keeps \"next parsha\" together."
+    "description": "A parsha's status: missed by its late window, then finished together with the next parsha by the next Shabbat (once in each book of the Torah), so the streak continues. weekOverdue is the same rescue still open; keep the two in the same words. No no-break spaces: in the Progress page's recent weeks, the line balances its words itself, and a pair held together would be set smaller there as one word."
   },
   "weekMadeUp": "Made up later",
   "@weekMadeUp": {
@@ -669,7 +669,7 @@
   },
   "weekMissed": "Not completed",
   "weekTransparent": "Not counted",
-  "weekOverdue": "Can still be finished with the next parsha",
+  "weekOverdue": "Can still be finished with the next parsha",
   "@weekOverdue": {
     "description": "A parsha's status: missed by its late window, and it can still count if it is finished together with the next parsha by the next Shabbat (see weekRestored)."
   },
@@ -1894,7 +1894,16 @@
   },
   "todahCount": "{count, plural, =1{Thanked once} other{Thanked {count} times}}",
   "@todahCount": {
-    "description": "How many have thanked a post: on its Todah button for screen readers, and under one's own post.",
+    "description": "How many have thanked one's own post, under it, for screen readers. The Todah button on others' posts says it with todahButtonCount.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todahButtonCount": "{count, plural, =1{Thanked 1 time} other{Thanked {count} times}}",
+  "@todahButtonCount": {
+    "description": "On a post's Todah button, after what a tap does, for screen readers: how many have thanked it, always in digits, as the button shows the count, so that voice control finds the button by the number it shows too (WCAG 2.5.3).",
     "placeholders": {
       "count": {
         "type": "int"
@@ -2007,9 +2016,9 @@
       }
     }
   },
-  "threadThanksCount": "{count, plural, =1{thanked once} other{thanked {count} times}}",
+  "threadThanksCount": "{count, plural, =1{thanked once} other{thanked {count} times}}",
   "@threadThanksCount": {
-    "description": "In a forum's list, after a discussion's replies: how often its posts have been thanked (todah), once they have been. It runs on in a lowercase list (\"Rivka · 3 hours ago · 4 replies · thanked 12 times\"). No-break spaces keep the words together.",
+    "description": "In a forum's list, after a discussion's replies: how often its posts have been thanked (todah), once they have been. It runs on in a lowercase list (\"Rivka · 3 hours ago · 4 replies · thanked 12 times\"). A no-break space holds the count to its word, and nothing more, so that at large text on a phone the line can break after \"thanked\" rather than inside a word.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -2927,11 +2936,11 @@
   "sending": "Sending…",
   "askedTag": "Question",
   "@askedTag": {
-    "description": "A small tag beside a member's name on their posts in a question they asked."
+    "description": "A small tag beside a member's name on the post that asked a question (a discussion in Questions & answers): it names the post. Their later posts there are tagged authorTag."
   },
   "authorTag": "Author",
   "@authorTag": {
-    "description": "A small tag beside a member's name on their posts in a discussion they started."
+    "description": "A small tag beside a member's name on their posts in a discussion they started (in a question, on all but the post that asked it, which is tagged askedTag): it names the person."
   },
   "todahAction": "Todah",
   "@todahAction": {

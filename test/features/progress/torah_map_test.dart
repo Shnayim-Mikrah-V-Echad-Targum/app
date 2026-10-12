@@ -281,10 +281,10 @@ void main() {
     for (final label in [
       'On time',
       'After Shabbat — still counts',
-      'Finished with the next\u00a0parsha',
+      'Finished with the next parsha',
       'Made up later',
       'Not completed',
-      'Can still be finished with the next\u00a0parsha',
+      'Can still be finished with the next parsha',
       'In progress',
       'Upcoming',
       'Not counted',

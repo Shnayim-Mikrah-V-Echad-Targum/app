@@ -840,13 +840,13 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 - **Header row:**
   - 32 px initial disc in secondaryContainer, initial in EBG 600 16 onSecondaryContainer (`InitialDisc`, excluded from semantics; a person when the name is empty), centred on the name's first line however large the text;
   - 12 gap, then the author in titleSmall in its OWN Text with `textDirection: autoDirection(name)`;
-  - on the posts of the member who began the thread, a tag in labelSmall on secondaryContainer, radius 6 (outlined in high contrast): "Question" in a question, "Author" in any other discussion, none in a weekly thread;
+  - on the posts of the member who began the thread, a tag in labelSmall on secondaryContainer, radius 6 (outlined in high contrast): "Question" on the post that asked a question, "Author" on the asker's later posts and on the posts of whoever began any other discussion, none in a weekly thread;
   - then " · " and the relative time in bodySmall onSurfaceVariant in a separate Text, with the full date in a tooltip; when the three don't fit on one line (enlarged text, a long name) the time goes under the name, without the separator;
   - then the overflow menu, its 48 dp box reaching 12 into the end gutter so that its glyph lines up with the column's edge, as the app bar's do with the screen's. The post itself reaches into the gutter by as much (`PostCard.menuBleed`), so the whole box takes a tap; the rest of the post keeps to the column. Reply is not in it.
   - Separate widgets fix the mixed-direction header in he_thread.png. Screen readers hear one label: name, tag, full date and "edited".
 - **Body:** bodyLarge 16/26 in both UIs (NSH in Hebrew), `autoDirection`, tagged with its language, start-inset 44 to align with the name. A quoted post sits above it on surfaceContainerLow with a 2 px gold-ink (`secondary`) start rule, in bodySmall onSurfaceVariant.
 - **Footer**, its icons in line with the text:
-  - TextButton "Todah" with `volunteer_activism_outlined` 18 (filled `volunteer_activism` when given), then the count in tabular figures once there is one. A toggle for screen readers, named for what a tap does and how many have thanked, in words that hold the one it shows ("Say todah to Rivka. Thanked 4 times"), so that voice control finds it by them.
+  - TextButton "Todah" with `volunteer_activism_outlined` 18 (filled `volunteer_activism` when given), then the count in tabular figures once there is one. A toggle for screen readers, named for what a tap does and how many have thanked, in words that hold the one it shows, and the count in digits as it shows it, one too ("Say todah to Rivka. Thanked 4 times", "… Thanked 1 time"), so that voice control finds it by them.
   - The footer's buttons keep their 12 start padding at any text size (Material's would shrink), so their icons stay in line with the text.
   - 8 gap, then TextButton "Reply" with `Icons.reply` 18 ("Reply to Rivka" for screen readers), on every post the reader can answer; none in a locked thread, except for moderators.
   - Under your own post, no Todah button: the icon and count in onSurfaceVariant, once it has been thanked; until then Reply comes first.
@@ -1244,7 +1244,7 @@ In order:
 4. **This week's plan:** WeekStrip card.
 5. **Torah map** (§6.14), keeping the info button.
 6. **Make-up list:** unchanged content, as a PaperGroup, for this year's weeks only.
-7. **Recent weeks:** a PaperGroup. Rows show the name in titleMedium, a status icon plus label in bodySmall, and the date end-aligned in bodySmall with tabular figures (with the year for a week of another year), then a chevron.
+7. **Recent weeks:** a PaperGroup. Rows show the name in titleMedium, a status icon plus label in bodySmall (wrapped at the reader's text size with its lines balanced, `BalancedText`, so large text leaves no word alone on its last line: "הושלם / מאוחר יותר"; the labels hold no no-break spaces, which would make a pair one word, set smaller to fit), and the date end-aligned in bodySmall with tabular figures (with the year for a week of another year), then a chevron.
    - A week before the join date with nothing read is left out (the Vezot HaBerakhah of a reader who joined on Simchat Torah).
    - Ten rows, then a centred TextButton `showAllWeeks` ("Show all (45)") that shows the rest in place, passing the keyboard's focus to the first week it adds.
 8. **"Life happens":** a PaperRow with a pause icon and `pauseRowBody` that opens the existing pause flow. Its ChoiceChips follow §6.6. While a pause covers today, the row says `pausedBanner` under its title, over a Tonal `endPause` and a Text `extendPause`, which asks how many days more (1, 3, 7 or 14, as long as the pause then ends within 30 days of today) and shows the new end as the choice changes (`extendPauseUntil`, "The pause will end on …", until it is confirmed). The keyboard's focus moves on to what takes a button's place: the row once End pause ends the pause, End pause once an extension uses up the room for another.
@@ -1456,7 +1456,7 @@ In order:
 | pausedTodayNote | Paused — read whenever you like; nothing counts against you. | בהשהיה — אפשר לקרוא מתי שנוח; שום דבר לא נחשב לחובתך. |
 | pauseEndedOn | Your pause ended on {date}, and nothing during it counts against you. | ההשהיה הסתיימה ב{date}, ושום דבר בזמנה לא נחשב לחובתך. |
 | graceUsedNote | plural: {weekdays} was covered by a grace day / {weekdays} were covered by grace days — your rhythm continues. You’ll earn one back when you finish {parsha} by Shabbat. | plural: {weekdays} כוסה ביום חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום החסד יחזור. / {weekdays} כוסו בימי חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום חסד אחד יחזור. (a no-break space inside יום חסד) |
-| caughtUpNote | Caught up — doubling up repaired yesterday. | חזרה לתוכנית — הקריאה הכפולה השלימה את אתמול. |
+| caughtUpNote | Caught up — today’s reading made up for yesterday. | חזרה לתוכנית — הקריאה של היום השלימה את אתמול. |
 | erevTishaBavNote | Erev Tisha B’Av: many finish their learning before midday. | ערב תשעה באב: רבים מסיימים את הלימוד לפני חצות היום. |
 | aboutStreaks | About streaks | על הרצפים |
 | graceAvailable | plural: 1 grace day available / {count} grace days available | plural: נותר יום חסד אחד / נותרו {count} ימי חסד |
@@ -1465,7 +1465,7 @@ In order:
 | recordTitle | Finished so far | הושלם עד כה |
 | demoTag | Demo | הדגמה |
 | emptyForum | No discussions yet — begin the first. | עדיין אין דיונים — אפשר לפתוח את הראשון. |
-| askedTag / authorTag | Question / Author | שאלה / פתיחת הדיון (no slashed gender forms) |
+| askedTag / authorTag | Question (the post that asked) / Author (the member) | שאלה / פתיחת הדיון (no slashed gender forms) |
 | todahAction | Todah | תודה |
 | replyToName | Reply to {name} | תגובה ל{name} |
 | sending | Sending… | בשליחה… |
@@ -1490,7 +1490,7 @@ In order:
 - `openWeekRestore` takes the reader's parsha streak: "Finish {name} and {next} by Shabbat and your {count}-week streak continues — you can do this once in each book of the Torah." / "סיום {name} ו{next} עד שבת ימשיך את הרצף של {count} שבועות — אפשר לעשות זאת פעם אחת בכל חומש." (one week: "של שבוע אחד").
 - The parsha statuses name the rescue as the banner does: `weekRestored` "Finished with the next parsha" / "הושלם עם הפרשה הבאה", `weekOverdue` "Can still be finished with the next parsha" / "עוד אפשר להשלים עם הפרשה הבאה", and `weekMadeUp` "Made up later" / "הושלם מאוחר יותר".
 - `translationDisclaimer`, under the translation's switch: "Helps with the meaning; it doesn’t take the place of the Targum." / "עוזר להבין את הפשט, אך אינו בא במקום תרגום אונקלוס." The Hebrew names Onkelos, since תרגום is the word for both.
-- Thanks are counted in words that agree with one: `todahCount` "Thanked once" / "Thanked {count} times"; in a forum row's lowercase list, `threadThanksCount` "thanked 12 times". The shortcut `shortcutLogFromBook` is "Log a Chumash reading" / "רישום קריאה מתוך חומש", within the 25 characters a launcher shows.
+- Thanks are counted in words that agree with one: `todahCount` "Thanked once" / "Thanked {count} times", under one's own post; on the Todah button, whose name holds the digits it shows, `todahButtonCount` "Thanked 1 time" / "Thanked {count} times" ("תודה 1" / "{count} תודות"); in a forum row's lowercase list, `threadThanksCount` "thanked 12 times", the count held to "times" by a no-break space and nothing more, so that at 300% on a phone the row's line can break after "thanked". The shortcut `shortcutLogFromBook` is "Log a Chumash reading" / "רישום קריאה מתוך חומש", within the 25 characters a launcher shows.
 - `guideTitle`: "How it works" / "איך זה עובד".
 - `settingsAbout`: "About this app" / "אודות האפליקציה".
 

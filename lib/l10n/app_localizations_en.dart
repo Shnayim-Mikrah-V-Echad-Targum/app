@@ -346,7 +346,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get caughtUpNote => 'Caught up — doubling up repaired yesterday.';
+  String get caughtUpNote =>
+      'Caught up — today’s reading made up for yesterday.';
 
   @override
   String get todayNothingPlanned =>
@@ -686,7 +687,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weekLate => 'After Shabbat — still counts';
 
   @override
-  String get weekRestored => 'Finished with the next parsha';
+  String get weekRestored => 'Finished with the next parsha';
 
   @override
   String get weekMadeUp => 'Made up later';
@@ -698,7 +699,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weekTransparent => 'Not counted';
 
   @override
-  String get weekOverdue => 'Can still be finished with the next parsha';
+  String get weekOverdue => 'Can still be finished with the next parsha';
 
   @override
   String get weekInProgress => 'In progress';
@@ -2376,6 +2377,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String todahButtonCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Thanked $count times',
+      one: 'Thanked 1 time',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String todahSemantics(String name) {
     return 'Say todah to $name';
   }
@@ -2543,8 +2555,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'thanked $count times',
-      one: 'thanked once',
+      other: 'thanked $count times',
+      one: 'thanked once',
     );
     return '$_temp0';
   }

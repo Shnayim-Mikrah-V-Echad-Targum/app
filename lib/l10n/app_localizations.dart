@@ -627,10 +627,10 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues.} other{{weekdays} were covered by grace days — your rhythm continues.}}'**
   String graceUsedNoteShort(int count, String weekdays);
 
-  /// Under Today's week strip when reading two days' aliyot today has made up for yesterday.
+  /// Under Today's week strip when reading two days' aliyot today has made up for yesterday. It says what happened in plain words, as the rescue of a missed parsha is named, with no word for doubling up.
   ///
   /// In en, this message translates to:
-  /// **'Caught up — doubling up repaired yesterday.'**
+  /// **'Caught up — today’s reading made up for yesterday.'**
   String get caughtUpNote;
 
   /// No description provided for @todayNothingPlanned.
@@ -1065,10 +1065,10 @@ abstract class AppLocalizations {
   /// **'After Shabbat — still counts'**
   String get weekLate;
 
-  /// A parsha's status: missed by its late window, then finished together with the next parsha by the next Shabbat (once in each book of the Torah), so the streak continues. weekOverdue is the same rescue still open; keep the two in the same words. A no-break space keeps "next parsha" together.
+  /// A parsha's status: missed by its late window, then finished together with the next parsha by the next Shabbat (once in each book of the Torah), so the streak continues. weekOverdue is the same rescue still open; keep the two in the same words. No no-break spaces: in the Progress page's recent weeks, the line balances its words itself, and a pair held together would be set smaller there as one word.
   ///
   /// In en, this message translates to:
-  /// **'Finished with the next parsha'**
+  /// **'Finished with the next parsha'**
   String get weekRestored;
 
   /// A parsha's status: finished after its late window, but not together with the next parsha by the next Shabbat. It counts for the year, but the streak begins again.
@@ -1092,7 +1092,7 @@ abstract class AppLocalizations {
   /// A parsha's status: missed by its late window, and it can still count if it is finished together with the next parsha by the next Shabbat (see weekRestored).
   ///
   /// In en, this message translates to:
-  /// **'Can still be finished with the next parsha'**
+  /// **'Can still be finished with the next parsha'**
   String get weekOverdue;
 
   /// No description provided for @weekInProgress.
@@ -3981,11 +3981,17 @@ abstract class AppLocalizations {
   /// **'Replying to {name}'**
   String replyingTo(String name);
 
-  /// How many have thanked a post: on its Todah button for screen readers, and under one's own post.
+  /// How many have thanked one's own post, under it, for screen readers. The Todah button on others' posts says it with todahButtonCount.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{Thanked once} other{Thanked {count} times}}'**
   String todahCount(int count);
+
+  /// On a post's Todah button, after what a tap does, for screen readers: how many have thanked it, always in digits, as the button shows the count, so that voice control finds the button by the number it shows too (WCAG 2.5.3).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Thanked 1 time} other{Thanked {count} times}}'**
+  String todahButtonCount(int count);
 
   /// The Todah button's name for screen readers, which holds the word the button shows (Todah), so that voice control finds it by what it says.
   ///
@@ -4257,10 +4263,10 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}'**
   String postsCount(int count);
 
-  /// In a forum's list, after a discussion's replies: how often its posts have been thanked (todah), once they have been. It runs on in a lowercase list ("Rivka · 3 hours ago · 4 replies · thanked 12 times"). No-break spaces keep the words together.
+  /// In a forum's list, after a discussion's replies: how often its posts have been thanked (todah), once they have been. It runs on in a lowercase list ("Rivka · 3 hours ago · 4 replies · thanked 12 times"). A no-break space holds the count to its word, and nothing more, so that at large text on a phone the line can break after "thanked" rather than inside a word.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{thanked once} other{thanked {count} times}}'**
+  /// **'{count, plural, =1{thanked once} other{thanked {count} times}}'**
   String threadThanksCount(int count);
 
   /// Under a forum's description on the Community page: how many discussions it has. A no-break space keeps the count with its word.
@@ -5439,13 +5445,13 @@ abstract class AppLocalizations {
   /// **'Sending…'**
   String get sending;
 
-  /// A small tag beside a member's name on their posts in a question they asked.
+  /// A small tag beside a member's name on the post that asked a question (a discussion in Questions & answers): it names the post. Their later posts there are tagged authorTag.
   ///
   /// In en, this message translates to:
   /// **'Question'**
   String get askedTag;
 
-  /// A small tag beside a member's name on their posts in a discussion they started.
+  /// A small tag beside a member's name on their posts in a discussion they started (in a question, on all but the post that asked it, which is tagged askedTag): it names the person.
   ///
   /// In en, this message translates to:
   /// **'Author'**
