@@ -551,12 +551,16 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 **PaperRow**
 - Min height 56 (one line) or 72 (two lines); padding start 16, end 12, vertical 12.
-- Leading icon 22 in onSurfaceVariant, in a 38 slot (icon then 16 gap).
+- Leading icon 22 in onSurfaceVariant, in a 38 slot (icon then 16 gap); or, in its place, a `leading` widget, such as a member's initial disc, in the same slot and aligned as the icon is.
 - Title bodyLarge onSurface; subtitle bodyMedium onSurfaceVariant, 2 lines max. Once the system text is enlarged, the subtitle is never cut short (WCAG 1.4.4).
 - An optional detail line under the subtitle, 4 below it, in bodySmall onSurfaceVariant: a line of facts, such as how busy a forum is.
 - Trailing: an optional value in bodyMedium onSurfaceVariant, then `Icons.chevron_right` 20 in outline (mirrors in RTL automatically).
   - The value ends the title's line, 4 before the chevron. When the two don't fit side by side (large text), it moves under the title instead of squeezing it. With a subtitle under them, the icon and chevron line up with the title's line too.
   - A trailing button with a label (a TextButton, such as "About streaks" or "Sign in") goes with the title the same way: at the end of its line, or under it when the two don't fit, so that no word of the title ever breaks.
+- Large text: where the text beside the icon slot and the controls at the end (12 before each; a chevron 20, a switch 52, another control 48) would be narrower than 112 as the text is scaled (`PaperRow.squeezes`), the row stacks, rather than leave its text a word or two a line. At 300% that is any phone; at 200%, a 360 dp phone.
+  - The title's line: the icon, growing with the text to 1.5× at most, 8 before the title, and the chevron at its end, 12 after it, while that leaves the title at least 88 as scaled (a 412 dp phone at 300%). Narrower (a 320 dp phone), the icon and the chevron go on a line of their own, 4 above the title, and the title takes the full width; the hairline under such a row starts at 16, where all its text then does.
+  - The subtitle and the detail line under it, the row's full width; then a trailing control (a menu, a switch), 8 below them, at the start.
+  - A title set smaller to keep a long word whole (§4, `WholeWords`) sets the lines under it no larger, so that it is never smaller than its subtitle.
 - Tap via SeferInkWell.
 - Semantics: the row is one item, its text and its tap. A trailing control (a menu or text button) keeps an item of its own beside it, so both actions can be reached; a switch or checkbox that the row's tap also toggles merges into the row (`mergeTrailing`), which then reads in the control's role rather than as a button. A row whose value another control moves is a live region (`liveRegion`).
 - The one row of a page that erases sets its title in `error` (`destructive`), with no icon.

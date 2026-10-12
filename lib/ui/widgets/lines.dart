@@ -154,27 +154,80 @@ class WholeWords extends StatelessWidget {
   static String unbroken(String text) =>
       text.replaceAllMapped(_hyphen, (m) => m[0] == '—' ? '\u2060—\u2060' : '${m[0]}\u2060');
 
+  /// The scale a [WholeWords] of [text] in [style] sets it at in [width]:
+  /// below 1 where its widest word is wider than that. For text that keeps
+  /// in step with it, as a row's subtitle never outgrows its title.
+  static double scaleIn(
+    BuildContext context,
+    String text, {
+    required double width,
+    TextStyle? style,
+    TextDirection? textDirection,
+    Locale? locale,
+    bool breakAtHyphens = false,
+  }) {
+    FontsChangeScope.watch(context);
+    final word = _widestWord(
+      text,
+      _effectiveStyle(context, style),
+      scaler: MediaQuery.textScalerOf(context),
+      direction: textDirection ?? Directionality.of(context),
+      locale: locale,
+      breakAtHyphens: breakAtHyphens,
+    );
+    return _RenderFitWord.scaleFor(word, width, 0);
+  }
+
+  /// [style] merged into the ambient one, as a [Text] merges it, and bold
+  /// where the platform asks for bold text.
+  static TextStyle _effectiveStyle(BuildContext context, TextStyle? style) {
+    final effective = DefaultTextStyle.of(context).style.merge(style);
+    if (!MediaQuery.boldTextOf(context)) return effective;
+    return effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+  }
+
+  /// The width of the widest word of [text], set in [style].
+  static double _widestWord(
+    String text,
+    TextStyle style, {
+    required TextScaler scaler,
+    required TextDirection direction,
+    required Locale? locale,
+    required bool breakAtHyphens,
+  }) {
+    var widest = 0.0;
+    for (final word in (breakAtHyphens ? _hyphenated : _words).allMatches(text)) {
+      final painter = TextPainter(
+        text: TextSpan(text: word.group(0), style: style),
+        textDirection: direction,
+        textScaler: scaler,
+        locale: locale,
+        maxLines: 1,
+      )..layout();
+      widest = math.max(widest, painter.width);
+      painter.dispose();
+    }
+    return widest;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Measured again when a font arrives.
     FontsChangeScope.watch(context);
-    var effective = DefaultTextStyle.of(context).style.merge(style);
-    if (MediaQuery.boldTextOf(context)) effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+    final effective = _effectiveStyle(context, style);
     final scaler = MediaQuery.textScalerOf(context);
     final direction = textDirection ?? Directionality.of(context);
     var widest = 0.0;
     void measure(String text, TextStyle style) {
-      for (final word in (breakAtHyphens ? _hyphenated : _words).allMatches(text)) {
-        final painter = TextPainter(
-          text: TextSpan(text: word.group(0), style: style),
-          textDirection: direction,
-          textScaler: scaler,
-          locale: locale,
-          maxLines: 1,
-        )..layout();
-        widest = math.max(widest, painter.width);
-        painter.dispose();
-      }
+      final word = _widestWord(
+        text,
+        style,
+        scaler: scaler,
+        direction: direction,
+        locale: locale,
+        breakAtHyphens: breakAtHyphens,
+      );
+      widest = math.max(widest, word);
     }
 
     // In each span's own style, merged down from the paragraph's. A word
@@ -266,13 +319,15 @@ class _RenderFitWord extends RenderProxyBox {
 
   double _scale = 1;
 
-  /// The scale at which the widest word fits [width]: a hair under, so that
-  /// rounding never breaks the word after all; but no smaller than
+  double _scaleFor(double width) => scaleFor(_word, width, _minScale);
+
+  /// The scale at which a [word] that wide fits [width]: a hair under, so
+  /// that rounding never breaks the word after all; but no smaller than
   /// [minScale], where the word wraps. None where the width is a pixel or
   /// less (a label squeezed to nothing, as in a collapse): no word fits
   /// there at any size, and the text wraps as a plain Text would.
-  double _scaleFor(double width) =>
-      width.isFinite && width > 1 && _word > width ? math.max((width - 1) / _word, _minScale) : 1;
+  static double scaleFor(double word, double width, double minScale) =>
+      width.isFinite && width > 1 && word > width ? math.max((width - 1) / word, minScale) : 1;
 
   BoxConstraints _unscaled(BoxConstraints c, double scale) => scale == 1 ? c : c / scale;
 

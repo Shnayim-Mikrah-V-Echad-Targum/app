@@ -4,7 +4,7 @@
 //   CAPTURE=1 flutter test test/screens/capture_test.dart
 //   CAPTURE=1 SCREENS=today,reader flutter test test/screens/capture_test.dart
 //   CAPTURE=1 SCREENS=today MODES=sepia,hcl flutter test test/screens/capture_test.dart
-//   CAPTURE=1 WORDS=1 MODES=big,bighe,huge,hugehe,hugetall,hugetallhe flutter test test/screens/capture_test.dart
+//   CAPTURE=1 WORDS=1 MODES=big,bighe,huge,hugehe,hugetall,hugetallhe,hugewide flutter test test/screens/capture_test.dart
 //
 // WORDS=1 also lists every word broken across lines, in
 // build/screens/broken_words.txt (remove it before a new run).
@@ -1648,6 +1648,9 @@ final _modes = [
   // The same, tall, for the screens in [_hugeTallScreens]: the whole page.
   _Mode('hugetall', const Size(320, 3600), (s) => s, textScale: 3),
   _Mode('hugetallhe', const Size(320, 3600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 3),
+  // System text at 300% on a 412 dp phone, tall, for the screens in
+  // [_hugeWideScreens]: a stacked row keeps its icon on the title's line.
+  _Mode('hugewide', const Size(412, 3600), (s) => s, textScale: 3),
 ];
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
@@ -1657,6 +1660,7 @@ const _hugeModes = {'huge', 'hugehe'};
 const _hugeScreens = {'today', 'reader', 'reader_listen'};
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {'today', 'parsha', 'week', 'progress', 'settings', 'community', 'thread', 'haftarah'};
+const _hugeWideScreens = {'parsha', 'settings'};
 
 const _narrowDesktopScreens = {
   'today',
@@ -1973,6 +1977,7 @@ void main() {
       if (mode.tag == 'desk1200' && !_narrowDesktopScreens.contains(entry.key)) continue;
       if (_hugeModes.contains(mode.tag) && !_hugeScreens.contains(entry.key)) continue;
       if (_hugeTallModes.contains(mode.tag) && !_hugeTallScreens.contains(entry.key)) continue;
+      if (mode.tag == 'hugewide' && !_hugeWideScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {

@@ -592,6 +592,290 @@ void main() {
     expect(tester.getSize(find.text(facts)).height, greaterThan(3 * 22 - 1), reason: 'every line shows');
   });
 
+  group('at large text sizes', () {
+    /// The size [text] is drawn at in the row around it: its style, scaled
+    /// as the text is, and as much again as it is set smaller to keep a
+    /// long word whole.
+    double drawnSize(WidgetTester tester, String text) {
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(text));
+      final row = tester.renderObject(find.ancestor(of: find.text(text), matching: find.byType(PaperRow)).first);
+      final transform = paragraph.getTransformTo(row);
+      return paragraph.textScaler.scale(paragraph.text.style!.fontSize!) *
+          Offset(transform.entry(0, 0), transform.entry(1, 0)).distance;
+    }
+
+    /// A group [width] wide (the card of a 320 dp phone is 280) of [rows].
+    Future<void> pumpRows(WidgetTester tester, List<Widget> rows,
+            {double width = 280, double textScale = 3, bool hebrew = false, double? ruleInset}) =>
+        pumpThemed(
+          tester,
+          Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: width,
+              child: SingleChildScrollView(child: PaperGroup(ruleInset: ruleInset, children: rows)),
+            ),
+          ),
+          textScale: textScale,
+          hebrew: hebrew,
+        );
+
+    for (final hebrew in [false, true]) {
+      testWidgets('${hebrew ? 'he' : 'en'}: on a small phone at 300%, a row stacks, its icon and chevron over the '
+          'title and the text its full width', (tester) async {
+        await pumpRows(tester, hebrew: hebrew, [
+          PaperRow(icon: Icons.menu_book_outlined, title: 'Read', subtitle: 'Plan', onTap: () {}),
+          const PaperRow(title: 'Last'),
+        ]);
+        expect(tester.takeException(), isNull);
+        final row = tester.getRect(find.byType(PaperRow).first);
+        double fromStart(Rect r) => hebrew ? row.right - r.right : r.left - row.left;
+        double fromEnd(Rect r) => hebrew ? r.left - row.left : row.right - r.right;
+        final icon = tester.getRect(find.byIcon(Icons.menu_book_outlined));
+        final chevron = tester.getRect(find.byIcon(Icons.chevron_right));
+        final title = tester.getRect(find.text('Read'));
+        final subtitle = tester.getRect(find.text('Plan'));
+        // The icon grows with the text, to 1.5× at most.
+        expect(tester.widget<Icon>(find.byIcon(Icons.menu_book_outlined)).size, 33);
+        expect(fromStart(icon), 16);
+        expect(chevron.center.dy, moreOrLessEquals(icon.center.dy, epsilon: 0.5));
+        expect(fromEnd(chevron), 12);
+        expect(title.top, greaterThanOrEqualTo(icon.bottom));
+        expect(fromStart(title), 16);
+        expect(fromStart(subtitle), 16);
+        expect(subtitle.top, greaterThanOrEqualTo(title.bottom));
+        // The hairline starts where all the row's text now does.
+        expect(
+          tester.renderObject(find.byWidgetPredicate((w) => w is CustomPaint && w.child is PaperRow)),
+          paints
+            ..rect(
+              rect: hebrew
+                  ? Rect.fromLTRB(0, row.height - 1, 280 - 16, row.height)
+                  : Rect.fromLTRB(16, row.height - 1, 280, row.height),
+            ),
+        );
+      });
+
+      testWidgets('${hebrew ? 'he' : 'en'}: on a larger phone at 300%, the icon and chevron keep to the title\'s line',
+          (tester) async {
+        // The card of a 412 dp phone.
+        await pumpRows(tester, width: 372, hebrew: hebrew, [
+          PaperRow(icon: Icons.menu_book_outlined, title: 'Read', subtitle: 'Plan', onTap: () {}),
+          const PaperRow(title: 'Last'),
+        ]);
+        expect(tester.takeException(), isNull);
+        final row = tester.getRect(find.byType(PaperRow).first);
+        double fromStart(Rect r) => hebrew ? row.right - r.right : r.left - row.left;
+        final icon = tester.getRect(find.byIcon(Icons.menu_book_outlined));
+        final chevron = tester.getRect(find.byIcon(Icons.chevron_right));
+        final title = tester.getRect(find.text('Read'));
+        expect(fromStart(icon), 16);
+        expect(fromStart(title), 16 + 33 + 8);
+        expect(icon.center.dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+        expect(chevron.center.dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+        // The subtitle under them, the row's full width.
+        expect(fromStart(tester.getRect(find.text('Plan'))), 16);
+        // The hairline as ever, where the title starts.
+        expect(
+          tester.renderObject(find.byWidgetPredicate((w) => w is CustomPaint && w.child is PaperRow)),
+          paints
+            ..rect(
+              rect: hebrew
+                  ? Rect.fromLTRB(0, row.height - 1, 372 - 54, row.height)
+                  : Rect.fromLTRB(54, row.height - 1, 372, row.height),
+            ),
+        );
+      });
+    }
+
+    testWidgets('at 200% on a 412 dp phone, a row keeps its columns side by side', (tester) async {
+      await pumpRows(tester, width: 372, textScale: 2, [
+        PaperRow(icon: Icons.menu_book_outlined, title: 'Read', subtitle: 'Plan', onTap: () {}),
+        PaperRow(
+          icon: Icons.visibility_outlined,
+          title: 'Show',
+          onTap: () {},
+          chevron: false,
+          mergeTrailing: true,
+          trailing: Switch(value: true, onChanged: (_) {}, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+        ),
+      ]);
+      final row = tester.getRect(find.byType(PaperRow).first);
+      final icon = tester.getRect(find.byIcon(Icons.menu_book_outlined));
+      final title = tester.getRect(find.text('Read'));
+      expect(tester.widget<Icon>(find.byIcon(Icons.menu_book_outlined)).size, 22);
+      expect(title.left - row.left, 54);
+      expect(icon.center.dy, moreOrLessEquals(row.center.dy, epsilon: 0.5));
+      expect(tester.getCenter(find.byIcon(Icons.chevron_right)).dy, moreOrLessEquals(row.center.dy, epsilon: 0.5));
+      // A switch at the end too.
+      final switchRow = tester.getRect(find.byType(PaperRow).last);
+      expect(switchRow.right - tester.getRect(find.byType(Switch)).right, 12);
+    });
+
+    testWidgets('a stacked row sets a trailing control under its text, and keeps it an item of its own',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpRows(tester, [
+        PaperRow(
+          title: 'Rishon',
+          subtitle: 'Gen 1',
+          onTap: () {},
+          trailing: IconButton(tooltip: 'More options', icon: const Icon(Icons.more_vert), onPressed: () {}),
+        ),
+      ]);
+      expect(tester.takeException(), isNull);
+      final row = tester.getRect(find.byType(PaperRow));
+      final menu = tester.getRect(find.byType(IconButton));
+      final title = tester.getRect(find.text('Rishon'));
+      expect(menu.left - row.left, 16);
+      expect(menu.top, greaterThanOrEqualTo(tester.getRect(find.text('Gen 1')).bottom + 8));
+      // Without an icon, the chevron ends the title's line.
+      expect(tester.getCenter(find.byIcon(Icons.chevron_right)).dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+      expect(row.right - tester.getRect(find.byIcon(Icons.chevron_right)).right, 12);
+      final rowNode = tester.getSemantics(find.byType(PaperRow));
+      expect(rowNode, isSemantics(label: 'Rishon\nGen 1', isButton: true, hasTapAction: true));
+      expect(tester.getSemantics(find.byType(IconButton)).id, isNot(rowNode.id));
+      handle.dispose();
+    });
+
+    testWidgets('a stacked row with a switch it toggles still reads as one switch', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpRows(tester, [
+        PaperRow(
+          icon: Icons.visibility_outlined,
+          title: 'Show',
+          subtitle: 'Hide',
+          onTap: () {},
+          chevron: false,
+          mergeTrailing: true,
+          trailing: Switch(value: true, onChanged: (_) {}),
+        ),
+      ]);
+      final row = tester.getRect(find.byType(PaperRow));
+      final control = tester.getRect(find.byType(Switch));
+      expect(control.left - row.left, 16);
+      expect(control.top, greaterThanOrEqualTo(tester.getRect(find.text('Hide')).bottom + 8));
+      final node = tester.getSemantics(find.byType(PaperRow));
+      expect(node, isSemantics(label: 'Show\nHide', hasToggledState: true, isToggled: true, isButton: false));
+      expect(tester.getSemantics(find.byType(Switch)).id, node.id);
+      handle.dispose();
+    });
+
+    testWidgets('a title set smaller to keep a long word whole sets its subtitle no larger', (tester) async {
+      // In the test font, "Accessibility" at 300% is far wider than the row.
+      await pumpRows(tester, [
+        PaperRow(icon: Icons.accessibility_new_outlined, title: 'Accessibility', subtitle: 'Calm', onTap: () {}),
+      ]);
+      expect(tester.takeException(), isNull);
+      final title = drawnSize(tester, 'Accessibility');
+      expect(title, lessThan(48), reason: 'set smaller to keep the word whole');
+      expect(drawnSize(tester, 'Calm'), lessThanOrEqualTo(title + 0.01));
+      expectWordsWhole(tester, 'Accessibility');
+
+      // A title that fits leaves its subtitle as it is.
+      await pumpRows(tester, [
+        PaperRow(icon: Icons.accessibility_new_outlined, title: 'Ease', subtitle: 'Calm', onTap: () {}),
+      ]);
+      expect(drawnSize(tester, 'Ease'), 48);
+      expect(drawnSize(tester, 'Calm'), 45);
+    });
+
+    testWidgets('the hairline follows a stacked row wherever it is in its group\'s row, and comes back',
+        (tester) async {
+      List<Widget> rows() => [
+            Builder(
+              builder: (context) =>
+                  PaperRow(icon: Icons.menu_book_outlined, title: 'Read', subtitle: 'Plan', onTap: () {}),
+            ),
+            const PaperRow(title: 'Last'),
+          ];
+      final rule = find.byWidgetPredicate((w) => w is CustomPaint && w.child is Builder);
+      await pumpRows(tester, rows(), ruleInset: PaperGroup.iconInset);
+      var height = tester.getSize(rule).height;
+      expect(tester.renderObject(rule), paints..rect(rect: Rect.fromLTRB(16, height - 1, 280, height)));
+
+      await pumpRows(tester, rows(), ruleInset: PaperGroup.iconInset, textScale: 1);
+      height = tester.getSize(rule).height;
+      expect(tester.renderObject(rule), paints..rect(rect: Rect.fromLTRB(54, height - 1, 280, height)));
+    });
+
+    testWidgets('so does the hairline under a row built on its own', (tester) async {
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 280,
+            child: SingleChildScrollView(
+              child: Column(children: [
+                PaperGroupRow(
+                  first: true,
+                  last: false,
+                  child: PaperRow(icon: Icons.menu_book_outlined, title: 'Read', subtitle: 'Plan', onTap: () {}),
+                ),
+                const PaperGroupRow(first: false, last: true, child: PaperRow(title: 'Last')),
+              ]),
+            ),
+          ),
+        ),
+        textScale: 3,
+      );
+      final share = find.descendant(of: find.byType(PaperGroupRow).first, matching: find.byType(CustomPaint)).first;
+      final height = tester.getSize(share).height;
+      expect(tester.renderObject(share), paints..rrect()..rect(rect: Rect.fromLTRB(16, height - 1, 280, height)));
+    });
+  });
+
+  group('a leading widget', () {
+    const disc = SizedBox.square(key: Key('disc'), dimension: 32);
+
+    testWidgets('takes the icon\'s place, and its hairline', (tester) async {
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 400,
+            child: PaperGroup(children: [
+              PaperRow(leading: disc, title: 'Rivka', onTap: () {}),
+              const PaperRow(title: 'Last'),
+            ]),
+          ),
+        ),
+      );
+      final row = tester.getRect(find.byType(PaperRow).first);
+      final lead = tester.getRect(find.byKey(const Key('disc')));
+      expect(lead.left - row.left, 16);
+      expect(lead.center.dy, moreOrLessEquals(row.center.dy, epsilon: 0.5));
+      expect(tester.getRect(find.text('Rivka')).left - row.left, 54);
+      expect(
+        tester.renderObject(find.byWidgetPredicate((w) => w is CustomPaint && w.child is PaperRow)),
+        paints..rect(rect: Rect.fromLTRB(54, row.height - 1, 400, row.height)),
+      );
+    });
+
+    testWidgets('stays in its slot beside the title of a stacked row', (tester) async {
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(width: 372, child: PaperRow(leading: disc, title: 'Rivka', subtitle: 'Gen', onTap: () {})),
+        ),
+        textScale: 3,
+      );
+      final row = tester.getRect(find.byType(PaperRow));
+      final title = tester.getRect(find.text('Rivka'));
+      expect(tester.getRect(find.byKey(const Key('disc'))).left - row.left, 16);
+      expect(title.left - row.left, 54);
+      expect(tester.getRect(find.byKey(const Key('disc'))).center.dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+      expect(tester.getRect(find.text('Gen')).left - row.left, 16);
+    });
+
+    test('is one or the other with an icon', () {
+      expect(() => PaperRow(icon: Icons.person_outline, leading: disc, title: 'Rivka'), throwsAssertionError);
+    });
+  });
+
   group('GroupHeader', () {
     for (final hebrew in [false, true]) {
       testWidgets('an eyebrow heading, 28 above, 8 below, inset 4 (${hebrew ? 'he' : 'en'})', (tester) async {
