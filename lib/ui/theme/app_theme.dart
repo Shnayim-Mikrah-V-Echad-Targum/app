@@ -176,9 +176,14 @@ abstract final class AppTheme {
       shadowColor: scheme.shadow,
       extensions: [status, sefer, seferType, Motion(reduced: reduceMotion)],
       // §8: each platform's transition, or none while motion is reduced, when
-      // ink doesn't spread either (pressed controls still show their wash).
+      // ink doesn't spread either. Apple platforms have no ink at all. Either
+      // way a pressed control still shows its wash (_overlay).
       pageTransitionsTheme: AppPageTransitions.theme(reduced: reduceMotion),
-      splashFactory: reduceMotion ? NoSplash.splashFactory : null,
+      splashFactory: reduceMotion ||
+              defaultTargetPlatform == TargetPlatform.iOS ||
+              defaultTargetPlatform == TargetPlatform.macOS
+          ? NoSplash.splashFactory
+          : null,
     );
 
     // ThemeData has filled in what the text theme leaves to the platform (the

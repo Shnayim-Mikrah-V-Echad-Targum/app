@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -84,6 +85,21 @@ void main() {
       expect(_theme().splashFactory, isNot(NoSplash.splashFactory));
       expect(_theme(reduceMotion: true).extension<Motion>()!.reduced, isTrue);
       expect(_theme().extension<Motion>()!.reduced, isFalse);
+    });
+
+    test('no ink on Apple platforms, where the pressed wash is the feedback', () {
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      for (final platform in TargetPlatform.values) {
+        debugDefaultTargetPlatformOverride = platform;
+        final expected = switch (platform) {
+          TargetPlatform.iOS || TargetPlatform.macOS => NoSplash.splashFactory,
+          // Material's own elsewhere.
+          TargetPlatform.android => InkSparkle.splashFactory,
+          _ => InkRipple.splashFactory,
+        };
+        expect(_theme().splashFactory, expected, reason: platform.name);
+        expect(_theme(reduceMotion: true).splashFactory, NoSplash.splashFactory, reason: platform.name);
+      }
     });
 
     test('page transitions: each platform its own, a fade on the web and desktop', () {

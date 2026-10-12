@@ -1061,6 +1061,8 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 
 **Reduce Motion everywhere:** dialogs, sheets, snackbars and every `PopupMenuButton` (`popUpAnimationStyle: Motion.of(context).style`) appear at once, and `ThemeData.splashFactory` is `NoSplash`.
 
+**Ink:** none on Apple platforms (iOS and macOS, in a browser too), where the pressed wash (10% of the control's ink, §6.5) is the feedback: `splashFactory` is `NoSplash` there as well. Android keeps Material's `InkSparkle`, and the web and other desktops `InkRipple`.
+
 **Reader**
 - Step and verse change: `AnimatedSwitcher`, 180 ms, opacity only, keyed by (chunk, step). No horizontal slides.
 - The scroll resets to the top instantly.
