@@ -676,8 +676,8 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 ### 6.13 WeekStrip
 
 - Seven equal cells; min 48×68; radius 10; horizontal margin 2. The 48 is the day's slot, margins included: the day's Semantics node covers the whole slot, and a tap on its margins opens the day too, so the whole slot is the 48 dp target.
-- Weekday label in labelMedium onSurfaceVariant (today: onSurface w700). Icon 22, 8 below the label.
-- Under the icon, 4 below it, the day's planned aliyot as Hebrew ordinals in labelSmall onSurfaceVariant: "א", "ד·ה" for two, "א–ז" for a run. Shabbat shows the plan's Shabbat-morning aliyot, if any; a day before the join date shows none. A Yom Tov that is not Shabbat (Yom Kippur and Rosh Hashana included) shows `yomTovShort` ("Yom Tov" / "יו״ט") instead, so Simchat Torah is not taken for Shabbat. It keeps to one line across the day, untracked, 2 clear of the wash on each side and shrunk to fit if need be, so a Yom Tov week is no taller than any other. Tisha B'Av with no reading planned on it shows `tishaBavShort` ("9 Av" / "ט׳ באב", on the 10th too when the fast is postponed) in the same way, where "Tisha B’Av" would wrap, and its label adds `tishaBavTitle` as the reason it has none ("Thursday: No reading planned. Tisha B’Av").
+- Weekday label in labelMedium onSurfaceVariant (today: onSurface w700). Icon 22, 8 below the label, growing with the text to 1.5× (33 from 150% up), so a glyph is never a speck beside a weekday at twice its size.
+- Under the icon, 4 below it, the day's planned aliyot as Hebrew ordinals in labelSmall onSurfaceVariant: "א", "ד·ה" for two, "א–ז" for a run. Shabbat shows the plan's Shabbat-morning aliyot, if any; a day before the join date shows none. A Yom Tov that is not Shabbat (Yom Kippur and Rosh Hashana included) shows `yomTovShort` ("Yom Tov" / "יו״ט") instead, so Simchat Torah is not taken for Shabbat. It keeps to one line across the day, untracked, 2 clear of the wash on each side and shrunk to fit if need be, so a Yom Tov week is no taller than any other. Once the text is enlarged past 130%, it wraps between words instead ("Yom / Tov"), whole and centred, rather than shrinking back toward the size the reader enlarged it from. Tisha B'Av with no reading planned on it shows `tishaBavShort` ("9 Av" / "ט׳ באב", on the 10th too when the fast is postponed) in the same way, where "Tisha B’Av" would wrap, and its label adds `tishaBavTitle` as the reason it has none ("Thursday: No reading planned. Tisha B’Av").
 - Cells in a row are as tall as the tallest (`IntrinsicHeight`).
 - Cell states:
   - Today: primaryContainer fill at 100% (was 35%) plus a 1.5 px primary border, drawn over the cell so its content sits where the other days' does. Icon: a 2 px primary ring with an 8 px centre dot (`TodayMark`).
@@ -704,7 +704,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 **Tile**
 - minHeight 52; radius 6; padding 8/6.
-- `Row(mainAxisAlignment: center)`: an optional 14 px icon, a 4 gap, then `Flexible(Text(maxLines: 2, textAlign: center))` in labelMedium (a Column instead, as above, for a word too long). Once the system text is enlarged, a name is never cut short.
+- `Row(mainAxisAlignment: center)`: an optional 14 px icon (growing with the text to 1.5×, 21 px; whether a name fits beside it is measured at the size it is drawn), a 4 gap, then `Flexible(Text(maxLines: 2, textAlign: center))` in labelMedium (a Column instead, as above, for a word too long). Once the system text is enlarged, a name is never cut short.
 - The fill is `Ink`; the border is drawn over the tile, so every tile's content sits in the same place.
 
 **States**
@@ -746,7 +746,7 @@ A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled 
 **Each tab** (SeferInkWell, min 56 wide), top to bottom:
 - the Hebrew ordinal א–ז in `ordinal` style (selected onSurface, else onSurfaceVariant);
 - 2 gap, then the name in labelSmall (selected onSurface w700);
-- 6 gap, then mini PassPips (§7.5, size 6, gap 3).
+- 6 gap, then mini PassPips (§7.5, size 6, gap 3), growing with the text to twice that (12, gap 6) as the ribbon does. With enlarged text, which outgrows the ribbon's 76, a gap beneath them keeps them clear of the selected indicator: 4 from 150% up, in proportion below that, and none at the normal size.
 
 **Selected indicator:** a 3 px primary bar, radius 1.5, inset 8 at the bottom.
 
@@ -993,6 +993,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - in high contrast: a 2 px outline, with no inner rule.
 5. **PassPips:**
    - three lozenges (size 12 with gap 8, or mini 6 with gap 3) in reading order; the Row follows Directionality;
+   - `scale` grows them with the text, lozenges and gaps alike: the aliyah ribbon's mini pips grow to 2× (12 with gap 6 at 200%, §6.16), as the week strip's glyphs and the Torah map's icons grow to 1.5× (§6.13, §6.14);
    - done: filled in ringMikra1 / ringMikra2 / ringTargum;
    - pending: a 1.5 px outline stroke;
    - current step (parsha rows only): an extra 2 px ring in its colour;

@@ -902,6 +902,12 @@ const double _tilePadding = 8;
 const double _tileIcon = 14;
 const double _tileIconGap = 4;
 
+/// A tile's icon as drawn: [_tileIcon], growing with the text to half as
+/// large again. Both the tile and the measure of whether its name fits
+/// beside the icon take it from here, so they agree.
+double _tileIconSize(BuildContext context) =>
+    MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.5).scale(_tileIcon);
+
 /// Every parsha of one year's cycle as a tile, book by book
 /// (docs/DESIGN_SYSTEM.md §6.14). Each book has a header that folds it away;
 /// only the book being read starts open.
@@ -1083,7 +1089,7 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
           state: state,
           onTap: () => context.push('/progress/week/${widget.cycle}:${p.id.number}'),
           name: name,
-          stacked: look.icon != null && word > room - _tileIcon - _tileIconGap,
+          stacked: look.icon != null && word > room - _tileIconSize(context) - _tileIconGap,
           nameScale: words.fit(name, bold: look.bold, room: room),
         ),
       ),
@@ -1204,7 +1210,7 @@ class _TileFace extends StatelessWidget {
         direction: stacked ? Axis.vertical : Axis.horizontal,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (look.icon != null) Icon(look.icon, size: _tileIcon, color: look.iconColor),
+          if (look.icon != null) Icon(look.icon, size: _tileIconSize(context), color: look.iconColor),
           if (look.icon != null && name != null)
             stacked ? const SizedBox(height: 2) : const SizedBox(width: _tileIconGap),
           if (name != null)

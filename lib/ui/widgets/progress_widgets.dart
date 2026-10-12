@@ -915,6 +915,7 @@ class WeekStrip extends StatelessWidget {
             ? l.tishaBavShort
             : (dayAliyot.isEmpty ? null : aliyahOrdinals(dayAliyot));
     final noteStyle = theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant);
+    final scaler = MediaQuery.textScalerOf(context);
     final content = Container(
       constraints: const BoxConstraints(minHeight: 68),
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -939,14 +940,25 @@ class WeekStrip extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           // A day that changes state cross-fades to its new glyph; nothing
-          // grows or bounces.
+          // grows or bounces. The glyph grows with the text, to half as
+          // large again.
           AnimatedSwitcher(
             duration: Motion.of(context).d(Motion.medium),
-            child: KeyedSubtree(key: ValueKey(display), child: display.icon(context)),
+            child: KeyedSubtree(
+              key: ValueKey(display),
+              child: display.icon(context, size: scaler.clamp(maxScaleFactor: 1.5).scale(22)),
+            ),
           ),
           if (note != null) ...[
             const SizedBox(height: 4),
-            if (yomTov || fast)
+            if ((yomTov || fast) && scaler.scale(1) > 1.3)
+              // Enlarged text wraps between words ("Yom / Tov") rather than
+              // shrinking back to the size it was enlarged from.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: _inset),
+                child: WholeWords(note, style: noteStyle?.copyWith(letterSpacing: 0), textAlign: TextAlign.center),
+              )
+            else if (yomTov || fast)
               // One line across the day, untracked and shrunk a little if
               // need be ("Yom Tov" is about 50 px; a day on a 412 dp phone
               // has 48), so a Yom Tov week is no taller than any other. The

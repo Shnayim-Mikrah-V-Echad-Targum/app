@@ -281,6 +281,15 @@ void main() {
       expect(tester.getSize(find.byType(PassPips)), const Size(3 * 6 + 2 * 3, 6));
     });
 
+    testWidgets('scaled, lozenges and gaps grow together', (tester) async {
+      await pumpThemed(
+        tester,
+        const Center(child: PassPips(states: [done, pending, pending], size: PassPips.mini, scale: 2)),
+      );
+      expect(tester.getSize(find.byType(PassPips)), const Size(3 * 12 + 2 * 6, 12));
+      expect(pips(tester).map((p) => p.size), everyElement(12));
+    });
+
     testWidgets('done is filled in its ring colour, pending outlined, current ringed', (tester) async {
       await pumpThemed(tester, const Center(child: PassPips(states: [done, done, pending], current: 2)));
       final p = pips(tester);

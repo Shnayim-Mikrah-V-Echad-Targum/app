@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
@@ -132,6 +133,75 @@ void main() {
     await pumpThemed(tester, strip(), hebrew: true);
     expect(find.bySemanticsLabel(RegExp(r'^יום שישי, היום: עדיין לא\. ')), findsOneWidget);
     handle.dispose();
+  });
+
+  group('enlarged text', () {
+    // The glyph's switcher is as big as the glyph.
+    double glyphOf(WidgetTester tester, String weekday) =>
+        tester.getSize(find.descendant(of: dayOf(weekday), matching: find.byType(AnimatedSwitcher))).height;
+
+    // Grown with the text to half as large again, and no further.
+    for (final (scale, size) in [(1.0, 22.0), (1.3, 28.6), (2.0, 33.0), (3.0, 33.0)]) {
+      testWidgets('at ${scale}x each glyph is $size', (tester) async {
+        await pumpThemed(tester, strip(width: 600, statuses: {day(1): DayStatus.kept}), textScale: scale);
+        for (final weekday in ['Sunday', 'Monday', 'Thursday', 'Friday', 'Saturday']) {
+          expect(glyphOf(tester, weekday), moreOrLessEquals(size), reason: weekday);
+        }
+        // A kept day's check keeps its share of the disc.
+        expect(
+          tester.widget<Icon>(find.descendant(of: dayOf('Monday'), matching: find.byIcon(Icons.check))).size,
+          moreOrLessEquals(size * 14 / 22),
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('Yom Tov wraps between its words rather than shrinking', (tester) async {
+      for (final hebrew in [false, true]) {
+        await pumpThemed(tester, strip(), hebrew: hebrew, textScale: 2);
+        final reason = hebrew ? 'he' : 'en';
+        final text = hebrew ? 'יו״ט' : 'Yom Tov';
+        final note = find.text(text);
+        expect(note, findsOneWidget, reason: reason);
+        expect(find.ancestor(of: note, matching: find.byType(FittedBox)), findsNothing, reason: reason);
+        expectWordsWhole(tester, text);
+        // Within the day's wash, clear of its edges by 2 px.
+        final sunday = tester.getRect(dayOf(hebrew ? 'יום ראשון' : 'Sunday'));
+        expect(tester.getRect(note).left, greaterThanOrEqualTo(sunday.left + 4 - 0.01), reason: reason);
+        expect(tester.getRect(note).right, lessThanOrEqualTo(sunday.right - 4 + 0.01), reason: reason);
+        if (!hebrew) {
+          // At the size it was enlarged to, "Yom" over "Tov".
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.descendant(of: note, matching: find.byType(RichText)).first,
+          );
+          expect(paragraph.textScaler.scale(1), 2);
+          final boxes = paragraph.getBoxesForSelection(const TextSelection(baseOffset: 0, extentOffset: 7));
+          expect({for (final b in boxes) b.top.round()}, hasLength(2));
+        }
+        expect(tester.takeException(), isNull, reason: reason);
+      }
+    });
+
+    testWidgets("a quiet Tisha B'Av's date wraps too", (tester) async {
+      final tuesday = LocalDate(2027, 8, 10);
+      final planner = ReadingPlanner(
+        schedule: const ParshaSchedule(israel: false),
+        settingsAt: (_) => const PlanSettingsEntry(tishaBavQuiet: true),
+      );
+      final week = planner.planFor(planner.schedule.weekFor(tuesday));
+      await pumpThemed(tester, strip(week: week, today: tuesday), textScale: 2);
+      final note = find.descendant(of: dayOf('Thursday'), matching: find.text('9 Av'));
+      expect(note, findsOneWidget);
+      expect(find.ancestor(of: note, matching: find.byType(FittedBox)), findsNothing);
+      expectWordsWhole(tester, '9 Av');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a little larger text still keeps Yom Tov to one line', (tester) async {
+      await pumpThemed(tester, strip(), textScale: 1.3);
+      expect(find.ancestor(of: find.text('Yom Tov'), matching: find.byType(FittedBox)), findsOneWidget);
+      expect(tester.widget<Text>(find.text('Yom Tov')).maxLines, 1);
+    });
   });
 
   testWidgets('Shabbat and Yom Tov are washed and lit; only Yom Tov says so', (tester) async {

@@ -243,7 +243,11 @@ void main() {
           matching: find.byType(RichText),
         ));
         expect(name.textScaler.scale(13) / 13, inInclusiveRange(0.8 * scale, scale));
-        final icon = tester.getCenter(find.descendant(of: tileOf("Beha'alotcha"), matching: find.byIcon(Icons.timelapse)));
+        final timelapse = find.descendant(of: tileOf("Beha'alotcha"), matching: find.byIcon(Icons.timelapse));
+        // The icon grows with the text, to half as large again; whether the
+        // name fits beside it is measured at the size it is drawn.
+        expect(tester.widget<Icon>(timelapse).size, moreOrLessEquals(14 * (scale > 1.5 ? 1.5 : scale)));
+        final icon = tester.getCenter(timelapse);
         final text = tester.getCenter(find.descendant(of: tileOf("Beha'alotcha"), matching: find.text("Beha'alotcha")));
         expect(icon.dy < text.dy, stacked, reason: 'the icon above the name');
 
