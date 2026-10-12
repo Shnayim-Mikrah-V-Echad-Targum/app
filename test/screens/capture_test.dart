@@ -307,7 +307,8 @@ const _screens = {
   'haftarah_tab_listen': '/parsha/haftarah/5787:1',
   'haftarah': '/haftarah/5787:1',
   // Bereshit's own haftarah after Machar Chodesh's: folded, and for Chabad
-  // open, under the note that Chabad's haftarot are being verified.
+  // open, under the note that Chabad's haftarot are being verified, which
+  // Machar Chodesh's, the same in every custom, doesn't have.
   'haftarah_regular': '/haftarah/5787:1',
   'haftarah_chabad': '/haftarah/5787:1',
   'haftarah_chabad_regular': '/haftarah/5787:1',
@@ -319,6 +320,10 @@ const _screens = {
   'haftarah_read': '/haftarah/5787:1',
   // Shabbat Shuva with Ha'azinu 5787: Hosea, then Joel.
   'haftarah_books': '/haftarah/5786:53',
+  // Korach 5788 on 30 Sivan, with Sunday Rosh Chodesh too: Isaiah 66, then
+  // the first and last verses of Machar Chodesh, under I Samuel's head.
+  'haftarah_rosh_chodesh': '/haftarah/5788:38',
+  'haftarah_rosh_chodesh_sunday': '/haftarah/5788:38',
   // A book of the Torah just finished: Genesis, in the cycle of 5787.
   'celebrate': '/celebrate/sefer:5787:0',
   'progress': '/progress',
@@ -1348,6 +1353,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await Scrollable.ensureVisible(tester.element(side.evaluate().isNotEmpty ? side : focus), alignment: 0.5);
   },
   'haftarah_end': _scrollToEnd,
+  'haftarah_rosh_chodesh_sunday': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
   'haftarah_chapter': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
   'haftarah_read': _scrollToEnd,
   's_reading_end': _scrollToEnd,

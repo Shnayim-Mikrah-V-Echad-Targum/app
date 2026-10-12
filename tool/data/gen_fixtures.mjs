@@ -136,6 +136,14 @@ write('test/fixtures/yom_tov.json', yomTov);
 
 // ---------------------------------------------------------------------------
 // 4. Special haftarot (Shekalim, Rosh Chodesh, Chanukah, ...)
+//
+// hebcal's, but for Shabbat on the 30th, when Sunday is Rosh Chodesh too:
+// the app adds the first and last verses of Machar Chodesh to the Rosh
+// Chodesh haftarah (Rema OC 425:1), under a key of its own.
+
+function withSunday(hd, reason) {
+  return reason === 'Shabbat Rosh Chodesh' && hd.getDate() === 30 ? 'Shabbat Rosh Chodesh (and Sunday)' : reason;
+}
 
 const special = {diaspora: [], il: []};
 for (const il of [false, true]) {
@@ -145,7 +153,7 @@ for (const il of [false, true]) {
     const res = new Sedra(d.getFullYear(), il).lookup(d);
     if (res.chag) continue;
     const l = getLeyningOnDate(d, il);
-    special[il ? 'il' : 'diaspora'].push([iso(d), l?.reason?.haftara ?? null]);
+    special[il ? 'il' : 'diaspora'].push([iso(d), withSunday(d, l?.reason?.haftara ?? null)]);
   }
 }
 // Keep only non-null entries plus the date range, to keep the fixture small.
@@ -256,13 +264,14 @@ const ZMANIM_CITIES = [
 //  - Kedoshim after a special Shabbat: for Sephardim, its own haftarah.
 //    Chabad, whose Acharei Mot haftarah is the Ashkenazi one, keeps the
 //    Ashkenazi rule until a Chabad source is found.
+// Shabbat on the 30th is as in 4.
 
-function forCustom(nusach, parsha, reason) {
-  if (nusach === 'ashkenazi' || !reason) return reason;
+function forCustom(nusach, parsha, reason, hd) {
+  if (nusach === 'ashkenazi' || !reason) return withSunday(hd, reason);
   if (parsha === "Re'eh" && reason === 'Shabbat Rosh Chodesh') return "Re'eh on Shabbat Rosh Chodesh";
   if (reason === 'Ki Teitzei with 3rd Haftarah of Consolation') return null;
   if (reason === 'Kedoshim following Special Shabbat') return nusach === 'sephardi' ? null : reason;
-  return reason;
+  return withSunday(hd, reason);
 }
 
 const byCustom = {};
@@ -280,7 +289,7 @@ for (const il of [false, true]) {
     const reason = getLeyningOnDate(d, il)?.reason?.haftara ?? null;
     const parsha = res.parsha.join('-');
     for (const nusach of Object.keys(out)) {
-      const key = forCustom(nusach, parsha, reason);
+      const key = forCustom(nusach, parsha, reason, d);
       if (key) out[nusach][iso(d)] = key;
     }
   }

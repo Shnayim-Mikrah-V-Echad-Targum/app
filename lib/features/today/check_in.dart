@@ -298,12 +298,7 @@ class _CheckInSheetState extends State<CheckInSheet> {
                   value: _haftarah,
                   onChanged: (on) => setState(() => _haftarah = on!),
                   title: Text(l.haftarahLabel),
-                  subtitle: DotLine(
-                    [
-                      for (final p in haftarah.parts)
-                        names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse),
-                    ],
-                  ),
+                  subtitle: DotLine([for (final p in haftarah.parts) names.passage(p)]),
                 ),
               ),
             Padding(

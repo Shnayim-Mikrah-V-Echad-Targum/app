@@ -11,7 +11,7 @@ import 'models/verse_ref.dart';
 /// The haftarah to read for a given week, with the reason when it is a
 /// special one (e.g. "Shabbat Shekalim").
 class WeekHaftarah {
-  const WeekHaftarah(this.parts, {this.specialKey, this.regular, this.fallback = false});
+  const WeekHaftarah(this.parts, {this.specialKey, this.regular, this.fallback = false, this.regularFallback = false});
   final Haftarah parts;
   final String? specialKey;
 
@@ -20,9 +20,12 @@ class WeekHaftarah {
   /// Av does). Some read it as well; Chabad's custom is to.
   final Haftarah? regular;
 
-  /// Whether [parts], or [regular], is the Ashkenazi reading given for want
-  /// of the custom's own (see [HaftarahOptions.fallsBack]).
+  /// Whether [parts] is the Ashkenazi reading given for want of the
+  /// custom's own (see [HaftarahOptions.fallsBack]).
   final bool fallback;
+
+  /// Whether [regular] is, as [fallback] says of [parts].
+  final bool regularFallback;
 }
 
 /// Parsha metadata: names, aliyot and haftarot (assets/data/parshiyot.json).
@@ -106,7 +109,8 @@ class ParshaRepository {
           parts,
           specialKey: key,
           regular: displaced ? regular : null,
-          fallback: special.fallsBack(nusach) || (displaced && own.fallsBack(nusach)),
+          fallback: special.fallsBack(nusach),
+          regularFallback: displaced && own.fallsBack(nusach),
         );
       }
     }

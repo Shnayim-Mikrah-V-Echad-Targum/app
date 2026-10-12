@@ -25,7 +25,7 @@ class HaftarahRow extends StatelessWidget {
       icon: Icons.auto_stories_outlined,
       title: ctx.progress.haftarah != null ? l.haftarahRead : l.haftarahLabel,
       subtitle: [
-        h.parts.map((p) => names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse)).join(' · '),
+        names.haftarah(h.parts),
         if (h.specialKey case final key?) l.specialHaftarah(names.specialHaftarah(key)),
         if (h.regular != null) l.alsoRegularHaftarah,
       ].join('\n'),

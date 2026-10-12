@@ -112,7 +112,7 @@ void main() {
       expect(boxes, findsNWidgets(4), reason: 'Chamishi, Shishi, Shevi\'i and the haftarah');
       expect([for (final b in tester.widgetList<CheckboxListTile>(boxes)) b.value], everyElement(isTrue));
       expect(findDotLine('Genesis 4:19–22 · 4 verses'), findsOneWidget, reason: "Chamishi's reference");
-      expect(find.text('I Samuel 20:18–42'), findsOneWidget, reason: 'the haftarah of Machar Chodesh');
+      expect(find.text('I\u00A0Samuel 20:18–42'), findsOneWidget, reason: 'the haftarah of Machar Chodesh');
       expect(findDotLine('Read on Shabbat, October 10'), findsOneWidget);
 
       await tester.tap(find.text('Log reading'));

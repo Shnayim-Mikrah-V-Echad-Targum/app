@@ -159,6 +159,17 @@ class Names {
   /// "Genesis 7:17–8:14" / "בראשית ז, יז – ח, יד".
   String range(String bookName, int c1, int v1, int c2, int v2) => '${book(bookName)} ${verseRange(c1, v1, c2, v2)}';
 
+  /// One passage of a haftarah: "I Samuel 20:18–42" / "שמואל א כ, יח–מב", a
+  /// book's name of two words held on one line.
+  String passage(HaftarahPart p) {
+    final name = book(p.book).replaceAll(' ', _nbsp);
+    return '$name ${verseRange(p.start.chapter, p.start.verse, p.end.chapter, p.end.verse)}';
+  }
+
+  /// A haftarah's passages: "Isaiah 66:1–24 · I Samuel 20:18 · I Samuel
+  /// 20:42". A line may end after a dot, but never start with one.
+  String haftarah(Haftarah parts) => parts.map(passage).join('$_nbsp· ');
+
   /// [range] without the book, for a range in a book named nearby:
   /// "7:17–8:14" / "ז, יז – ח, יד".
   ///
@@ -166,14 +177,19 @@ class Names {
   /// before it as [AliyahNames.aliyahRange] holds it: closed up, "א, א–ו, ח"
   /// would read as chapter 1, verses 1–6 and 8. A range within a chapter
   /// stays closed: "ב, כ–כא". A chapter and its verse are held together, as
-  /// "1:1" is, so that a line breaks only after the book or the dash.
+  /// "1:1" is, so that a line breaks only after the book or the dash. A
+  /// range of one verse, as a haftarah adds, is the verse alone: "20:18", as
+  /// [reference] names it.
   String verseRange(int c1, int v1, int c2, int v2) {
+    final one = c1 == c2 && v1 == v2;
     if (_he) {
       String g(int n) => HebrewText.gematria(n, punctuate: false);
       final start = '${g(c1)},$_nbsp${g(v1)}';
+      if (one) return start;
       if (c1 == c2) return '$start–${g(v2)}';
       return '$start$_nbsp– ${g(c2)},$_nbsp${g(v2)}';
     }
+    if (one) return '$c1:$v1';
     final end = c1 == c2 ? '$v2' : '$c2:$v2';
     return '$c1:$v1–$end';
   }
@@ -311,6 +327,7 @@ class Names {
   @visibleForTesting
   static const specialHaftarotHe = {
     'Shabbat Rosh Chodesh': 'שבת ראש חודש',
+    'Shabbat Rosh Chodesh (and Sunday)': 'שבת ראש חודש, ומוסיפים פסוקים מ״מחר חודש״',
     'Shabbat Machar Chodesh': 'שבת מחר חודש',
     'Shabbat Shekalim': 'שבת שקלים',
     'Shabbat Shekalim (on Rosh Chodesh)': 'שבת שקלים (בראש חודש)',
@@ -339,6 +356,7 @@ class Names {
   @visibleForTesting
   static const specialHaftarotEn = {
     'Shabbat Rosh Chodesh': 'Shabbat Rosh Chodesh',
+    'Shabbat Rosh Chodesh (and Sunday)': 'Shabbat Rosh Chodesh, with verses for Sunday’s Rosh Chodesh',
     'Shabbat Machar Chodesh': 'Shabbat Machar Chodesh',
     'Shabbat Shekalim': 'Shabbat Shekalim',
     'Shabbat Shekalim (on Rosh Chodesh)': 'Shabbat Shekalim and Rosh Chodesh',

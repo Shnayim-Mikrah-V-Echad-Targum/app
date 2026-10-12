@@ -25,6 +25,10 @@ abstract final class _P {
 /// common practice (Shulchan Aruch OC 425, 428, 684–685; Mishnah Berurah
 /// ibid.). Sephardim and Chabad differ from Ashkenazim around Rosh Chodesh
 /// Elul, and Sephardim in Kedoshim, as noted below.
+///
+/// The keys are @hebcal's, but for two it doesn't give: Re'eh on Rosh
+/// Chodesh Elul for Sephardim and Chabad, and Rosh Chodesh on Shabbat and
+/// Sunday, which adds verses to the Rosh Chodesh haftarah.
 String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required HaftarahNusach nusach}) {
   final ashkenazi = nusach == HaftarahNusach.ashkenazi;
   final h = HebrewDate.fromLocalDate(shabbat);
@@ -75,7 +79,9 @@ String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required Hafta
     // the first and last verses of the Rosh Chodesh haftarah. Ashkenazim read
     // the Rosh Chodesh haftarah (Rema ibid.), and Re'eh's with Ki Tetze's.
     if (portion.number == _P.reeh && !ashkenazi) return "Re'eh on Shabbat Rosh Chodesh";
-    return 'Shabbat Rosh Chodesh';
+    // On the 30th, Sunday is Rosh Chodesh too, and the first and last verses
+    // of Machar Chodesh, its haftarah, are added (Rema OC 425:1).
+    return h.day == 30 ? 'Shabbat Rosh Chodesh (and Sunday)' : 'Shabbat Rosh Chodesh';
   }
 
   // Machar Chodesh: Rosh Chodesh is tomorrow. Not before Av, Elul or Tishrei,

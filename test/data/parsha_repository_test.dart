@@ -22,20 +22,58 @@ void main() {
       expect(refs(h.parts), 'I Samuel 20:18-20:42');
       expect(refs(h.regular), 'Isaiah 42:5-43:10');
       expect(h.fallback, isFalse);
+      expect(h.regularFallback, isFalse);
     });
 
     test('has the Sephardi regular haftarah for Sephardim', () {
       final h = repo.haftarahFor(bereshit, shabbat, HaftarahNusach.sephardi);
       expect(refs(h.regular), 'Isaiah 42:5-42:21');
       expect(h.fallback, isFalse, reason: 'a Sephardi reading not listed is the same as the Ashkenazi');
+      expect(h.regularFallback, isFalse);
     });
 
-    test('has the Ashkenazi readings for Chabad, and says so', () {
+    test('has the Ashkenazi readings for Chabad, and says so only of the regular one', () {
       final h = repo.haftarahFor(bereshit, shabbat, HaftarahNusach.chabad);
       expect(refs(h.parts), 'I Samuel 20:18-20:42');
       expect(refs(h.regular), 'Isaiah 42:5-43:10');
-      expect(h.fallback, isTrue);
+      expect(h.fallback, isFalse, reason: "every custom reads Machar Chodesh's the same");
+      expect(h.regularFallback, isTrue, reason: "the Ashkenazi and Sephardi readings of Bereshit's differ");
     });
+  });
+
+  test("a week whose haftarah every custom reads the same doesn't say Chabad's is the Ashkenazi one", () {
+    // Lech Lecha 5787: Isaiah 40:27–41:16.
+    final h = repo.haftarahFor(const PortionId(3), LocalDate(2026, 10, 24), HaftarahNusach.chabad);
+    expect(h.specialKey, isNull);
+    expect(refs(h.parts), 'Isaiah 40:27-41:16');
+    expect(h.fallback, isFalse);
+    expect(h.regularFallback, isFalse);
+  });
+
+  test("keeps hebcal's Chabad readings of special haftarot", () {
+    // Shabbat HaChodesh and Zachor 5786, from the weeks of the year.
+    const schedule = ParshaSchedule(israel: false);
+    final found = <String, WeekHaftarah>{};
+    var week = schedule.weekFor(LocalDate(2026, 1, 1));
+    for (var i = 0; i < 20 && found.length < 2; i++, week = schedule.nextWeek(week)) {
+      final h = repo.haftarahFor(week.portion, week.occasion, HaftarahNusach.chabad);
+      if (h.specialKey case final key? when key == 'Shabbat HaChodesh' || key == 'Shabbat Zachor') found[key] = h;
+    }
+    expect(refs(found['Shabbat HaChodesh']!.parts), 'Ezekiel 45:18-46:16');
+    expect(refs(found['Shabbat Zachor']!.parts), 'I Samuel 15:2-15:34');
+    for (final h in found.values) {
+      expect(h.fallback, isFalse, reason: "it is Chabad's own");
+    }
+  });
+
+  test('Shabbat Rosh Chodesh on the 30th adds the first and last verses of Machar Chodesh, for every custom', () {
+    // Korach 5788, on 30 Sivan, the first day of Rosh Chodesh Tammuz.
+    for (final n in HaftarahNusach.values) {
+      final h = repo.haftarahFor(const PortionId(38), LocalDate(2028, 6, 24), n);
+      expect(h.specialKey, 'Shabbat Rosh Chodesh (and Sunday)', reason: n.name);
+      expect(refs(h.parts), 'Isaiah 66:1-66:24, I Samuel 20:18-20:18, I Samuel 20:42-20:42', reason: n.name);
+      expect(h.fallback, isFalse, reason: n.name);
+    }
   });
 
   test('a week without a special haftarah has no regular one apart', () {
@@ -61,8 +99,10 @@ void main() {
 
     test("has the Rosh Chodesh haftarah for Ashkenazim, Re'eh's apart, and then both with Ki Tetze", () {
       final h = repo.haftarahFor(const PortionId(47), reeh, HaftarahNusach.ashkenazi);
-      expect(h.specialKey, 'Shabbat Rosh Chodesh');
-      expect(refs(h.parts), 'Isaiah 66:1-66:24');
+      // 30 Av, with Sunday Rosh Chodesh too: Machar Chodesh's first and last
+      // verses are added.
+      expect(h.specialKey, 'Shabbat Rosh Chodesh (and Sunday)');
+      expect(refs(h.parts), 'Isaiah 66:1-66:24, I Samuel 20:18-20:18, I Samuel 20:42-20:42');
       expect(refs(h.regular), 'Isaiah 54:11-55:5');
       final next = repo.haftarahFor(const PortionId(49), kiTeitzei, HaftarahNusach.ashkenazi);
       expect(refs(next.parts), 'Isaiah 54:1-54:10, Isaiah 54:11-55:5');
@@ -93,6 +133,7 @@ void main() {
         expect(refs(h.parts), 'Amos 9:7-9:15', reason: n.name);
         expect(refs(h.regular), 'Ezekiel 22:1-22:19', reason: n.name);
         expect(h.fallback, n == HaftarahNusach.chabad, reason: n.name);
+        expect(h.regularFallback, n == HaftarahNusach.chabad, reason: n.name);
       }
     });
 
@@ -110,6 +151,12 @@ void main() {
     expect(bereshit.fallsBack(HaftarahNusach.sephardi), isFalse);
     expect(bereshit.fallsBack(HaftarahNusach.ashkenazi), isFalse);
     expect(repo.portion(const PortionId(25)).haftarah.fallsBack(HaftarahNusach.chabad), isFalse, reason: 'Tzav');
+    // Where the Ashkenazi and Sephardi readings agree, Chabad's is taken to
+    // agree too.
+    final lechLecha = repo.portion(const PortionId(3)).haftarah;
+    expect(lechLecha.sephardi, isNull);
+    expect(lechLecha.chabad, isNull);
+    expect(lechLecha.fallsBack(HaftarahNusach.chabad), isFalse);
   });
 
   group('parsha names', () {

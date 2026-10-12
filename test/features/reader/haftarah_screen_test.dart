@@ -64,7 +64,10 @@ void main() {
     await _open(tester, '5787:1');
 
     expect(find.text('Haftarah · Bereshit'), findsOneWidget);
-    expect(tester.getSemantics(find.text('I Samuel 20:18–42')), isSemantics(label: 'I Samuel 20:18–42', isHeader: true));
+    expect(
+      tester.getSemantics(find.text('I\u00A0Samuel 20:18–42')),
+      isSemantics(label: 'I\u00A0Samuel 20:18–42', isHeader: true),
+    );
     expect(find.text('Shabbat Machar Chodesh'), findsOneWidget);
     expect(find.text('I Samuel'), findsNothing, reason: 'no label for the one book it is drawn from');
     expect(find.byType(ChapterHeading), findsNothing, reason: 'all in one chapter, and the regular haftarah folded');
@@ -96,9 +99,35 @@ void main() {
   testWidgets('drawn from two books, heads each with its name', (tester) async {
     // Shabbat Shuva with Ha'azinu 5786: Hosea 14:2–10, then Joel 2:15–27.
     await _open(tester, '5786:53');
-    expect(find.text('Hosea 14:2–10 · Joel 2:15–27'), findsOneWidget);
+    expect(findDotLine('Hosea 14:2–10 · Joel 2:15–27'), findsOneWidget);
     final books = tester.widgetList<ChapterHeading>(find.byType(ChapterHeading, skipOffstage: false));
     expect([for (final h in books) (h.hebrewName, h.name, h.chapter)], [('הושע', 'Hosea', null), ('יואל', 'Joel', null)]);
+  });
+
+  testWidgets("on Shabbat Rosh Chodesh on the 30th, adds Machar Chodesh's first and last verses", (tester) async {
+    // Korach 5788, on 30 Sivan: Isaiah 66, then I Samuel 20:18 and 20:42 for
+    // Sunday, Rosh Chodesh too.
+    final handle = tester.ensureSemantics();
+    final c = await _open(tester, '5788:38', now: DateTime(2028, 6, 20, 11));
+    // Its passages, a book's name of two words held on one line, break
+    // between them, and read as one heading.
+    final heading = findDotLine('Isaiah 66:1–24 · I\u00A0Samuel 20:18 · I\u00A0Samuel 20:42');
+    expect(heading, findsOneWidget);
+    expect(
+      tester.getSemantics(heading),
+      isSemantics(label: 'Isaiah 66:1–24\u00A0· I\u00A0Samuel 20:18\u00A0· I\u00A0Samuel 20:42', isHeader: true),
+    );
+    handle.dispose();
+    expect(find.text('Shabbat Rosh Chodesh, with verses for Sunday’s Rosh Chodesh'), findsOneWidget);
+    final books = tester.widgetList<ChapterHeading>(find.byType(ChapterHeading, skipOffstage: false));
+    expect([for (final h in books) h.name], ['Isaiah', 'I Samuel']);
+    final verses = c.read(haftarahTextProvider('5788:38')).requireValue;
+    expect(verses, hasLength(26));
+    expect([for (final v in verses.skip(23)) (v.book, v.hebrew.ref)], [
+      ('Isaiah', const VerseRef(66, 24)),
+      ('I Samuel', const VerseRef(20, 18)),
+      ('I Samuel', const VerseRef(20, 42)),
+    ]);
   });
 
   testWidgets('is marked read at its end, and marked not read only explicitly, which can be undone', (tester) async {
@@ -196,11 +225,28 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets("opens unfolded for Chabad, whose haftarot are the Ashkenazi ones for now, as it says", (tester) async {
+    testWidgets("opens unfolded for Chabad, saying above its verses that it is the Ashkenazi reading", (tester) async {
       await _open(tester, '5787:1', settings: _settings.withNusach(HaftarahNusach.chabad));
-      expect(find.text(_fallbackNote), findsOneWidget);
       expect(find.text(_regularTitle), findsOneWidget);
       expect(_regularChapter, findsOneWidget, reason: 'unfolded');
+      // Machar Chodesh's haftarah is the same in every custom, so the note
+      // is only the regular one's: under its heading, above its verses.
+      final note = find.text(_fallbackNote, skipOffstage: false);
+      expect(note, findsOneWidget);
+      final regular = find.byType(ExpansionTile);
+      expect(find.descendant(of: regular, matching: note), findsOneWidget);
+      await tester.ensureVisible(note);
+      await tester.pumpAndSettle();
+      final firstRegularVerse = find.descendant(of: regular, matching: find.byType(ScriptureVerse)).first;
+      expect(tester.getTopLeft(note).dy, greaterThan(tester.getBottomLeft(find.text(_regularTitle)).dy));
+      expect(tester.getBottomLeft(note).dy, lessThan(tester.getTopLeft(firstRegularVerse).dy));
+    });
+
+    testWidgets("says nothing for Chabad in a week whose haftarah every custom reads the same", (tester) async {
+      // Lech Lecha 5787: Isaiah 40:27–41:16.
+      await _open(tester, '5787:3', settings: _settings.withNusach(HaftarahNusach.chabad), now: DateTime(2026, 10, 20, 11));
+      expect(find.text('Haftarah · Lech Lecha'), findsOneWidget);
+      expect(find.text(_fallbackNote, skipOffstage: false), findsNothing);
     });
 
     testWidgets('is not shown, nor the note, in a week without a special one', (tester) async {

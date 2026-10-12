@@ -439,7 +439,8 @@ void main() {
       final haftarah = find.widgetWithText(PaperRow, 'Haftarah');
       expect(
         tester.widget<PaperRow>(haftarah).subtitle,
-        'I Samuel 20:18–42\nSpecial haftarah: Shabbat Machar Chodesh\nAlso the regular haftarah',
+        // The book's name held on one line.
+        'I\u00A0Samuel 20:18–42\nSpecial haftarah: Shabbat Machar Chodesh\nAlso the regular haftarah',
       );
       await tester.tap(haftarah);
       await loadTexts(tester);

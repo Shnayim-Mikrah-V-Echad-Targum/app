@@ -7,6 +7,7 @@ import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
+import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -64,6 +65,10 @@ void main() {
       expect(names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh"), 'Re’eh on Rosh Chodesh Elul');
       expect(names.specialHaftarah('Ki Teitzei with 3rd Haftarah of Consolation'), 'Ki Tetze, with Aniyah So’arah');
       expect(names.specialHaftarah("Not a key's"), 'Not a key’s');
+      expect(
+        names.specialHaftarah('Shabbat Rosh Chodesh (and Sunday)'),
+        'Shabbat Rosh Chodesh, with verses for Sunday’s Rosh Chodesh',
+      );
 
       names = Names(await _page(tester, hebrew: true));
       expect(names.specialHaftarah('Pinchas occurring after 17 Tammuz'), 'ראשונה דפורענותא (״דברי ירמיהו״)');
@@ -71,6 +76,7 @@ void main() {
       expect(names.specialHaftarah('Matot-Masei on Shabbat Rosh Chodesh'), 'מטות־מסעי בראש חודש אב');
       expect(names.specialHaftarah('Chanukah Day 8 (on Shabbat)'), 'שבת חנוכה השנייה');
       expect(names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh"), 'ראה בשבת ראש חודש אלול');
+      expect(names.specialHaftarah('Shabbat Rosh Chodesh (and Sunday)'), 'שבת ראש חודש, ומוסיפים פסוקים מ״מחר חודש״');
     });
 
     test('have no straight apostrophe in English', () {
@@ -246,6 +252,31 @@ void main() {
       expect(names.verseRange(7, 17, 8, 14), 'ז,\u00A0יז\u00A0– ח,\u00A0יד');
       expect(names.range('Isaiah', 42, 5, 43, 10), 'ישעיהו מב,\u00A0ה\u00A0– מג,\u00A0י');
     });
+
+    // As a haftarah adds the first and last verses of another.
+    testWidgets('of one verse is the verse alone', (tester) async {
+      var names = Names(await _page(tester, hebrew: false));
+      expect(names.range('I Samuel', 20, 18, 20, 18), 'I Samuel 20:18');
+      expect(names.range('I Samuel', 20, 18, 20, 18), names.reference('I Samuel', 20, 18));
+      names = Names(await _page(tester, hebrew: true));
+      expect(names.range('I Samuel', 20, 18, 20, 18), 'שמואל א כ,\u00A0יח');
+      expect(names.range('I Samuel', 20, 18, 20, 18), names.reference('I Samuel', 20, 18));
+    });
+  });
+
+  // "I" never ends a line with "Samuel" on the next, nor "·" starts one.
+  testWidgets("a haftarah's passages hold a book's name of two words, and each dot to the passage before it",
+      (tester) async {
+    const parts = [
+      HaftarahPart('Isaiah', VerseRef(66, 1), VerseRef(66, 24)),
+      HaftarahPart('I Samuel', VerseRef(20, 18), VerseRef(20, 18)),
+      HaftarahPart('I Samuel', VerseRef(20, 42), VerseRef(20, 42)),
+    ];
+    var names = Names(await _page(tester, hebrew: false));
+    expect(names.passage(parts[1]), 'I\u00A0Samuel 20:18');
+    expect(names.haftarah(parts), 'Isaiah 66:1–24\u00A0· I\u00A0Samuel 20:18\u00A0· I\u00A0Samuel 20:42');
+    names = Names(await _page(tester, hebrew: true));
+    expect(names.haftarah(parts), 'ישעיהו סו,\u00A0א–כד\u00A0· שמואל\u00A0א כ,\u00A0יח\u00A0· שמואל\u00A0א כ,\u00A0מב');
   });
 
   // As a range holds them, so that a long reference at large text breaks

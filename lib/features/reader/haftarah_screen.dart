@@ -18,6 +18,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
+import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
 import '../parsha/week_context.dart';
 import '../settings/app_settings.dart';
@@ -40,11 +41,6 @@ final regularHaftarahTextProvider = FutureProvider.family<List<HaftarahVerse>, S
   if (regular == null) return const [];
   return ref.watch(textRepositoryProvider).haftarah(regular);
 });
-
-/// The references of [haftarah]'s passages, e.g. "Isaiah 42:5–43:10".
-String haftarahRefs(Names names, Haftarah haftarah) => haftarah
-    .map((p) => names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse))
-    .join(' · ');
 
 /// The week's haftarah, read once, set as the reader sets the full text
 /// (DESIGN_SYSTEM.md §9): its reference at the head of the page, the verses
@@ -276,16 +272,25 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
             children: [
               Eyebrow('${l.haftarahTitle} · $parsha', breakAtHyphens: false),
               const Gap(Space.xs),
+              // Its passages break between them rather than inside one, and
+              // read as one heading.
               Semantics(
                 header: true,
                 headingLevel: 1,
-                child: Text(haftarahRefs(names, ctx.haftarah.parts), style: theme.textTheme.headlineSmall),
+                label: names.haftarah(ctx.haftarah.parts),
+                excludeSemantics: true,
+                child: DotLine(
+                  [for (final p in ctx.haftarah.parts) names.passage(p)],
+                  style: theme.textTheme.headlineSmall,
+                ),
               ),
               if (ctx.haftarah.specialKey case final key?) ...[
                 const Gap(Space.xs),
                 Text(names.specialHaftarah(key), style: SeferType.of(context).marginalia),
               ],
-              // Chabad's own reading isn't listed for this week yet.
+              // Chabad's own reading of this haftarah isn't listed yet, and
+              // the Ashkenazi and Sephardi ones differ. The regular haftarah,
+              // below, says so of itself.
               if (ctx.haftarah.fallback) ...[
                 const Gap(Space.lg),
                 NoticeBanner(icon: Icons.info_outline, text: l.chabadFallbackNote),
@@ -389,7 +394,8 @@ const _verseGap = 20.0;
 
 /// The portion's own haftarah, in a week a special one displaces it, for
 /// those who read it too. Chabad's custom is to, so it opens for them;
-/// otherwise it starts folded.
+/// otherwise it starts folded. Where Chabad's own reading of it isn't
+/// listed, a note above its verses says so.
 class _RegularHaftarah extends ConsumerWidget {
   const _RegularHaftarah({required this.ctx});
 
@@ -423,8 +429,16 @@ class _RegularHaftarah extends ConsumerWidget {
           style: theme.textTheme.titleMedium,
         ),
       ),
-      subtitle: Text(haftarahRefs(names, ctx.haftarah.regular!)),
-      children: [_RegularVerses(weekId: ctx.id)],
+      subtitle: Text(names.haftarah(ctx.haftarah.regular!)),
+      children: [
+        // As the page's head says of the special haftarah.
+        if (ctx.haftarah.regularFallback) ...[
+          const Gap(Space.sm),
+          NoticeBanner(icon: Icons.info_outline, text: l.chabadFallbackNote),
+          const Gap(Space.md),
+        ],
+        _RegularVerses(weekId: ctx.id),
+      ],
     );
   }
 }
