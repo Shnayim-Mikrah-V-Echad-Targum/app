@@ -225,11 +225,12 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
 }
 
 /// A thread in a forum's list (§9 Community): its title, run in the direction
-/// of its own language, under a Pinned or Locked tag if it is pinned or
-/// locked; the opening of its first post, in that post's direction; then who
-/// started it, when it was last active, how many replies it has had and the
-/// thanks its posts were given. One item for screen readers, which opens the
-/// thread, and says each tag too.
+/// of its own language from its own start edge, under a Pinned or Locked tag
+/// if it is pinned or locked; the opening of its first post, in that post's
+/// direction from its own start edge; then who started it, when it was last
+/// active, how many replies it has had and the thanks its posts were given,
+/// on the page's start edge, as the tags are. One item for screen readers,
+/// which opens the thread, and says each tag too.
 class ThreadTile extends ConsumerWidget {
   const ThreadTile({super.key, required this.thread, this.focusNode});
   final ThreadSummary thread;
@@ -247,9 +248,6 @@ class ThreadTile extends ConsumerWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     final title = threadDisplayTitle(context, ref, thread);
     final page = Directionality.of(context);
-    // Each title and excerpt runs its own way, but starts on the same edge as
-    // the rest.
-    final edge = page == TextDirection.rtl ? TextAlign.right : TextAlign.left;
     final excerpt = thread.excerpt;
     // Never cut short once the text is enlarged (WCAG 1.4.4).
     final enlarged = MediaQuery.textScalerOf(context).scale(1) > 1;
@@ -303,7 +301,6 @@ class ThreadTile extends ConsumerWidget {
                   title,
                   page: page,
                   style: text.titleMedium,
-                  textAlign: edge,
                   maxLines: enlarged ? null : 2,
                 ),
                 if (excerpt != null) ...[
@@ -312,7 +309,6 @@ class ThreadTile extends ConsumerWidget {
                     excerpt,
                     page: page,
                     style: text.bodySmall?.copyWith(color: theme.colorScheme.onSurface),
-                    textAlign: edge,
                     maxLines: enlarged ? null : 2,
                   ),
                 ],
@@ -329,20 +325,19 @@ class ThreadTile extends ConsumerWidget {
 }
 
 /// [text] written by a member, such as a thread's title or its excerpt: run
-/// in the direction of its own language and tagged with it, from the page's
-/// edge ([textAlign]), and cut short after [maxLines] lines. Never cut short
-/// ([maxLines] null, as at large text), each word stays whole, set smaller
-/// where it is too wide for the row, as the thread's own title is, unless
-/// too long to stay legible.
+/// in the direction of its own language and tagged with it, from its own
+/// start edge, so that each of its lines begins on the same edge, and cut
+/// short after [maxLines] lines. Never cut short ([maxLines] null, as at
+/// large text), each word stays whole, set smaller where it is too wide for
+/// the row, as the thread's own title is, unless too long to stay legible.
 class _OwnDirection extends StatelessWidget {
-  const _OwnDirection(this.text, {required this.page, this.style, required this.textAlign, this.maxLines});
+  const _OwnDirection(this.text, {required this.page, this.style, this.maxLines});
 
   final String text;
 
   /// The page's direction, for a text with no letter to take one from.
   final TextDirection page;
   final TextStyle? style;
-  final TextAlign textAlign;
   final int? maxLines;
 
   @override
@@ -356,7 +351,7 @@ class _OwnDirection extends StatelessWidget {
               text,
               style: style,
               textDirection: direction,
-              textAlign: textAlign,
+              textAlign: TextAlign.start,
               locale: locale,
               breakAtHyphens: true,
               minFontSize: WholeWords.smallestSize,
@@ -365,7 +360,7 @@ class _OwnDirection extends StatelessWidget {
               text,
               style: style,
               textDirection: direction,
-              textAlign: textAlign,
+              textAlign: TextAlign.start,
               maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
             ),

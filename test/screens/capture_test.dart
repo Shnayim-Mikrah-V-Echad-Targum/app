@@ -351,6 +351,8 @@ const _screens = {
   'thread_replying': '/community/thread/1',
   // Signed in, under your own post: its thanks counted, with no button.
   'thread_mine': '/community/thread/1',
+  // Editing that post: its field, with no counter until near the limit.
+  'thread_edit': '/community/thread/1',
   // Locked: no reply box, and no Reply under the posts.
   'thread_locked': '/community/thread/51',
   // A thread of 250 posts, open on its latest hundred, and at its end.
@@ -1020,6 +1022,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
   'thread_mine': _withOwnPost,
+  'thread_edit': _withOwnPost,
   'week_discuss': () async => _OpeningForever(),
   'welcome_restore': () async => _Cloud(),
   'welcome_restoring': () async {
@@ -1409,6 +1412,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(reply);
   },
   'thread_mine': _scrollToEnd,
+  // Your own post's menu, then Edit.
+  'thread_edit': (tester) async {
+    await _scrollToEnd(tester);
+    await tester.tap(find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)));
+    await _settle(tester);
+    await tester.tap(find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'edit'));
+  },
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
   's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),

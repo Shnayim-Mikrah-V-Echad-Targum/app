@@ -348,12 +348,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     _forumId ??= available.where((f) => f.slug == widget.forumSlug).firstOrNull?.id ?? available.firstOrNull?.id;
     final post = _forumId != null && !_sending ? _post : null;
     final g = Gutter.of(context);
-    Widget postLabel() => _sending
-        ? SizedBox.square(
-            dimension: 20,
-            child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.sending),
-          )
-        : Text(l.postAction);
     final apple = defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.iOS;
 
     return PageScaffold(
@@ -369,7 +363,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             // Compact in the app bar (§9 Compose), still a whole 48 to tap.
             style: const ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(64, 40))),
             onPressed: post,
-            child: postLabel(),
+            child: _sending
+                ? SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.sending),
+                  )
+                : Text(l.postAction),
           ),
         ),
       ],
@@ -424,6 +423,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                           TextField(
                             controller: _title,
                             focusNode: _titleFocus,
+                            // A long title wraps, all of it in view, rather
+                            // than scroll sideways, but stays one line of
+                            // text: Enter goes on to the message, and a line
+                            // break pasted in is a space.
+                            minLines: 1,
+                            maxLines: null,
+                            keyboardType: TextInputType.text,
+                            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[\r\n]+'), replacementString: ' ')],
                             maxLength: 150,
                             buildCounter: quietCounter,
                             textInputAction: TextInputAction.next,
@@ -466,10 +473,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                         onTap: () => context.push('/legal/guidelines'),
                       ),
                     ],
-                    const Gap(Space.xxl),
-                    FilledButton(onPressed: post, child: postLabel()),
+                    // Post is the app bar's alone, where it stays above the
+                    // keyboard.
                     if (_title.text.isNotEmpty || _body.text.isNotEmpty) ...[
-                      const Gap(Space.sm),
+                      const Gap(Space.lg),
                       Center(
                         child: TextButton.icon(
                           icon: const Icon(Icons.delete_outline),

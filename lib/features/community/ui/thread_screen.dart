@@ -317,10 +317,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
           // too wide for the page, unless too long to stay legible.
           child: WholeWords(
             title,
+            // In its own direction, from its own start edge, as its posts
+            // and its forum's list set it.
             textDirection: titleDirection,
-            // In its own direction, from the page's start edge, as its forum
-            // lists it.
-            textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.left,
+            textAlign: TextAlign.start,
             style: theme.textTheme.headlineSmall,
             breakAtHyphens: true,
             minFontSize: WholeWords.smallestSize,
@@ -1160,6 +1160,7 @@ class _EditPostDialogState extends State<_EditPostDialog> {
           minLines: 3,
           maxLines: 8,
           maxLength: 10000,
+          buildCounter: quietCounter,
           keyboardType: TextInputType.multiline,
           textDirection: autoDirection(value.text, fallback: Directionality.of(context)),
           decoration: InputDecoration(labelText: l.threadBodyLabel, alignLabelWithHint: true),
@@ -1382,10 +1383,13 @@ Future<(ReportReason, String?)?> showReportDialog(BuildContext context) {
               listenable: details,
               builder: (context, _) => TextField(
                 controller: details,
+                minLines: 3,
                 maxLines: 3,
                 maxLength: 1000,
+                buildCounter: quietCounter,
                 textDirection: autoDirection(details.text, fallback: Directionality.of(context)),
-                decoration: InputDecoration(labelText: l.reportDetails),
+                // At the top of its three lines, where what is typed begins.
+                decoration: InputDecoration(labelText: l.reportDetails, alignLabelWithHint: true),
               ),
             ),
           ],

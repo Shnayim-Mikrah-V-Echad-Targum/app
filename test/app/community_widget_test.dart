@@ -418,6 +418,16 @@ String? _focusedField(WidgetTester tester) {
   return null;
 }
 
+/// The edge [finder]'s text is set from, by where its first letter stands:
+/// left or right, as a paragraph that starts on that edge sets it.
+TextAlign _setFrom(WidgetTester tester, Finder finder) {
+  final paragraph = tester.renderObject<RenderParagraph>(finder);
+  final first = paragraph.getBoxesForSelection(const TextSelection(baseOffset: 0, extentOffset: 1)).first;
+  if (first.left.abs() < 0.5) return TextAlign.left;
+  if ((first.right - paragraph.size.width).abs() < 0.5) return TextAlign.right;
+  return TextAlign.center;
+}
+
 /// The week page's Discuss row, in either language.
 final _discuss = find.descendant(of: find.byType(WeeklyThreadOpener), matching: find.byType(PaperRow));
 
@@ -530,7 +540,6 @@ void main() {
     final title = find.widgetWithText(TextField, 'Title');
     final message = find.widgetWithText(TextField, 'Your message');
     final postInAppBar = find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post'));
-    final postBelow = find.descendant(of: find.byType(PageBody), matching: find.widgetWithText(FilledButton, 'Post'));
 
     testWidgets('picks its forum from chips with their icons, the one asked for chosen', (tester) async {
       await compose(tester);
@@ -573,8 +582,10 @@ void main() {
       final semantics = tester.ensureSemantics();
       await compose(tester);
       // Ready whenever a forum is chosen; until pressed, each field shows
-      // only what it needs.
+      // only what it needs. It is the page's one Post, in the app bar, where
+      // the keyboard never covers it.
       expect(tester.widget<FilledButton>(postInAppBar).onPressed, isNotNull);
+      expect(find.widgetWithText(FilledButton, 'Post'), findsOneWidget);
       expect(find.text('At least 5 characters'), findsOneWidget);
       expect(find.text('At least 2 characters'), findsOneWidget);
 
@@ -598,11 +609,52 @@ void main() {
       await tester.pump();
       expect(find.text('The title needs at least 5 characters.'), findsNothing);
       expect(find.text('The message needs at least 2 characters.'), findsOneWidget);
-      await tester.ensureVisible(postBelow);
-      await tester.tap(postBelow);
+      await tester.tap(postInAppBar);
       await tester.pump();
       expect(_focusedField(tester), 'Your message');
       semantics.dispose();
+    });
+
+    testWidgets('wraps a long title, which takes no line break, and goes on to the message', (tester) async {
+      await compose(tester);
+      final field = find.descendant(of: title, matching: find.byType(EditableText));
+      final oneLine = tester.getSize(field).height;
+      await tester.enterText(title, 'On the order of the second reading');
+      await tester.pump();
+      // Wrapped, all of it in view, rather than scrolled sideways.
+      expect(tester.getSize(field).height, greaterThan(oneLine * 1.5));
+      expect(tester.state<EditableTextState>(field).renderEditable.maxScrollExtent, 0);
+      // However long, up to its 150 characters.
+      await tester.enterText(title, List.filled(16, 'Question').join(' '));
+      await tester.pump();
+      expect(tester.getSize(field).height, greaterThan(oneLine * 5));
+      expect(tester.state<EditableTextState>(field).renderEditable.maxScrollExtent, 0);
+      // A line break pasted in is a space, so the title stays one line of
+      // text, as the forum lists it.
+      await tester.enterText(title, 'A question\non Rashi\r\nand Onkelos');
+      await tester.pump();
+      expect(tester.widget<TextField>(title).controller!.text, 'A question on Rashi and Onkelos');
+      // The keyboard's action goes on to the message.
+      expect(tester.widget<TextField>(title).textInputAction, TextInputAction.next);
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+      expect(_focusedField(tester), 'Your message');
+    });
+
+    testWidgets('offers to discard a draft, 16 under the guidelines, once anything is written', (tester) async {
+      await compose(tester);
+      final discard = find.widgetWithText(TextButton, 'Discard draft');
+      expect(discard, findsNothing);
+      await tester.enterText(message, 'A thought');
+      await tester.pump();
+      await tester.ensureVisible(discard);
+      await tester.pumpAndSettle();
+      expect(tester.getRect(discard).top - tester.getRect(find.byType(LinkedText)).bottom, moreOrLessEquals(16, epsilon: 0.5));
+      expect(tester.getCenter(discard).dx, moreOrLessEquals(tester.getCenter(find.byType(InfoCard)).dx, epsilon: 0.5));
+      await tester.tap(discard);
+      await tester.pump();
+      expect(tester.widget<TextField>(message).controller!.text, isEmpty);
+      expect(discard, findsNothing);
     });
 
     testWidgets('signed in with a name, is signed with it, and posts with Ctrl+Enter', (tester) async {
@@ -1000,10 +1052,11 @@ void main() {
       c.read(routerProvider).go('/community/thread/1');
       await tester.pumpAndSettle();
       expect(appBarTitle().data, 'שאלות ותשובות');
-      // English, from the page's start edge, as the forum lists it.
+      // English, from its own start edge, as the forum lists it.
       final heading = tester.widget<Text>(find.text('Why read the Targum rather than a translation?'));
       expect(heading.textDirection, TextDirection.ltr);
-      expect(heading.textAlign, TextAlign.right);
+      expect(heading.textAlign, TextAlign.start);
+      expect(_setFrom(tester, find.text('Why read the Targum rather than a translation?')), TextAlign.left);
     });
   });
 
@@ -1489,6 +1542,8 @@ void main() {
       final field = tester.widget<TextField>(find.descendant(of: dialog, matching: find.byType(TextField)));
       expect(field.decoration?.labelText, 'Your message');
       expect(field.maxLength, 10000);
+      // Its counter quiet until the message nears the limit, as Compose's.
+      expect(find.descendant(of: dialog, matching: find.textContaining('/10')), findsNothing);
       expect(tester.widget<EditableText>(find.descendant(of: dialog, matching: find.byType(EditableText))).focusNode.hasFocus, isTrue);
       // Save waits for a change, of 2 characters at least, as a reply does.
       FilledButton save() => tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'));
@@ -2114,6 +2169,37 @@ void main() {
       expect(find.text('Block Rivka'), findsOneWidget);
     });
 
+    testWidgets('asks for details in three lines, labelled at their top, counted only near the limit', (tester) async {
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+
+      await _openPostMenu(tester, 1);
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      final dialog = find.byType(AlertDialog);
+      final details = find.descendant(of: dialog, matching: find.byType(TextField));
+      final field = tester.widget<TextField>(details);
+      expect(field.minLines, 3);
+      expect(field.maxLength, 1000);
+      // The label sits in the first line, where what is typed begins, rather
+      // than in the middle of the box.
+      final editable = tester.getRect(find.descendant(of: details, matching: find.byType(EditableText)));
+      final label = tester.getRect(find.descendant(of: details, matching: find.text('Details (optional)')));
+      expect(editable.height, greaterThan(label.height * 2.5));
+      expect(label.center.dy, lessThan(editable.top + editable.height / 3));
+      // No "0/1000" from the start: a counter only near the limit, in the
+      // number format of the language.
+      expect(find.descendant(of: dialog, matching: find.textContaining('/1')), findsNothing);
+      await tester.enterText(details, 'x' * 799);
+      await tester.pump();
+      expect(find.descendant(of: dialog, matching: find.textContaining('/1')), findsNothing);
+      await tester.enterText(details, 'x' * 800);
+      await tester.pump();
+      expect(find.descendant(of: dialog, matching: find.text('800/1,000')), findsOneWidget);
+    });
+
     testWidgets('made before, in another session, says so', (tester) async {
       final forums = await _Member().signIn();
       await forums.report(postId: '2', reason: ReportReason.spam);
@@ -2306,15 +2392,16 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('in Hebrew, sets an English title from the right, and keeps an English name in its place', (tester) async {
+    testWidgets('in Hebrew, sets an English title from the left, and keeps an English name in its place', (tester) async {
       final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
       c.read(routerProvider).go('/community/forum/feedback');
       await tester.pumpAndSettle();
       const title = 'A warmer theme for reading at night?';
       final english = tester.widget<Text>(find.text(title));
       expect(english.textDirection, TextDirection.ltr, reason: 'so its question mark ends it');
-      expect(english.textAlign, TextAlign.right, reason: "from the Hebrew page's edge");
-      expect(tester.getRect(find.text(title)).right, closeTo(tester.getRect(find.widgetWithText(ThreadTile, title)).right - 16, 1));
+      expect(english.textAlign, TextAlign.start, reason: 'from its own start edge');
+      expect(_setFrom(tester, find.text(title)), TextAlign.left);
+      expect(tester.getRect(find.text(title)).left, closeTo(tester.getRect(find.widgetWithText(ThreadTile, title)).left + 16, 1));
       // The meta line runs right to left: the name, isolated, first, at the
       // right, then the time and the replies.
       final meta = find.descendant(of: find.widgetWithText(ThreadTile, title), matching: find.textContaining('\u2068Avraham\u2069\u00a0· '));
@@ -2422,14 +2509,15 @@ void main() {
       expect(find.descendant(of: weekly, matching: find.text('Just now\u00a0· No replies yet')), findsOneWidget);
     });
 
-    testWidgets("runs each title its own way from the page's edge, and keeps a Hebrew name in its place", (tester) async {
+    testWidgets('runs each title its own way from its own start edge, and keeps a Hebrew name in its place', (tester) async {
       final c = await _pump(tester);
       c.read(routerProvider).go('/community/forum/questions');
       await tester.pumpAndSettle();
       const question = 'עד מתי אפשר להשלים את הקריאה?';
       final hebrew = tester.widget<Text>(find.text(question));
       expect(hebrew.textDirection, TextDirection.rtl, reason: 'so its question mark ends it');
-      expect(hebrew.textAlign, TextAlign.left, reason: "from the English page's edge");
+      expect(hebrew.textAlign, TextAlign.start, reason: 'from its own start edge, so that its lines all start there');
+      expect(_setFrom(tester, find.text(question)), TextAlign.right);
       expect(tester.widget<Lang>(find.ancestor(of: find.text(question), matching: find.byType(Lang))).locale, const Locale('he'));
       expect(tester.widget<Text>(find.text('Why read Numbers 32:3 a third time?')).textDirection, TextDirection.ltr);
       // Isolated, so that the rest of the line stays after the name.
@@ -2641,7 +2729,8 @@ void main() {
       final excerpt = find.text(hebrewOpening);
       final text = tester.widget<Text>(excerpt);
       expect(text.textDirection, TextDirection.rtl, reason: 'so its question mark ends it');
-      expect(text.textAlign, TextAlign.left, reason: "from the English page's edge");
+      expect(text.textAlign, TextAlign.start, reason: 'from its own start edge, so that its lines all start there');
+      expect(_setFrom(tester, excerpt), TextAlign.right);
       expect(text.maxLines, 2);
       expect(text.style?.fontSize, Theme.of(tester.element(excerpt)).textTheme.bodySmall?.fontSize);
       expect(tester.widget<Lang>(find.ancestor(of: excerpt, matching: find.byType(Lang))).locale, const Locale('he'));
