@@ -626,6 +626,9 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - `tickMarkShape: SliderTickMarkShape.noTickMark`.
 - Value at the end in labelLarge with tabular figures; −/+ IconButtons 48.
 
+**Scrollbar**
+- The thumb is outline, a boundary as the slider's track is, and onSurfaceVariant under the pointer or while dragged, on every platform (`scrollbarTheme`). It is named because Material's own thumb on Android is the theme's highlight colour made opaque, which here would be the press wash's ink (§6.5) in full.
+
 **SegmentedButton**
 - Radius 10, height 48; selected primaryContainer with label w700 and a check icon (keep the M3 check here; it's the non-colour cue); unselected transparent with 1 px outline.
 - Focus: the ring goes around the whole group (Flutter gives each segment a plain shape of its own), so the focused segment is also washed in its ink at 24% and its label is underlined.

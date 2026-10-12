@@ -244,6 +244,51 @@ void main() {
     }
   }
 
+  // Material's thumb on Android (the platform tests run as) is the theme's
+  // highlight colour made opaque, and the highlight is the press wash: the
+  // theme names the thumb, or it would be drawn in full ink.
+  for (final mode in _modes) {
+    testWidgets('${mode.name}: a scrollbar’s thumb is outline, not the press wash in full ink', (tester) async {
+      final theme = _theme(mode);
+      final scheme = theme.colorScheme;
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(MaterialApp(
+        theme: theme,
+        home: Scaffold(
+          body: Scrollbar(
+            controller: controller,
+            thumbVisibility: true,
+            child: ListView(
+              controller: controller,
+              children: [for (var i = 0; i < 40; i++) SizedBox(height: 48, child: Text('$i'))],
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      final colors = <int>{};
+      expect(
+        find.byType(Scrollbar),
+        paints
+          ..everything((method, arguments) {
+            if (method == #drawRect || method == #drawRRect) {
+              final color = (arguments[1] as Paint).color;
+              if (color.a > 0) colors.add(color.toARGB32());
+            }
+            return true;
+          }),
+      );
+      // The thumb alone: the track is clear until the pointer is over it.
+      expect(colors, {scheme.outline.toARGB32()});
+
+      final thumb = theme.scrollbarTheme.thumbColor!;
+      expect(thumb.resolve({}), scheme.outline);
+      expect(thumb.resolve({WidgetState.hovered}), scheme.onSurfaceVariant);
+      expect(thumb.resolve({WidgetState.dragged}), scheme.onSurfaceVariant);
+    });
+  }
+
   for (final mode in [AppThemeMode.light, AppThemeMode.highContrastLight]) {
     testWidgets('${mode.name}: tonal buttons are techelet, not gold; destructive ones are error', (tester) async {
       final theme = _theme(mode);

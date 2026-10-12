@@ -500,6 +500,17 @@ abstract final class AppTheme {
         valueIndicatorColor: scheme.inverseSurface,
         valueIndicatorTextStyle: _tabular(labelLarge.copyWith(color: scheme.onInverseSurface)),
       ),
+      // §6.8: a scrollbar's thumb is a boundary in outline, as the slider's
+      // track is, and onSurfaceVariant under the pointer or dragged. Named,
+      // because Material's own on Android is the highlight colour made
+      // opaque, which is the 10% press wash above in full ink.
+      scrollbarTheme: ScrollbarThemeData(
+        thumbColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.dragged) || states.contains(WidgetState.hovered)
+              ? scheme.onSurfaceVariant
+              : scheme.outline,
+        ),
+      ),
       // §6.7. The label is Material's: bodyLarge in onSurfaceVariant, primary
       // when focused. In high contrast the enabled border is already 2 px,
       // and primary is barely apart from outline there (about 1.5:1), so
