@@ -80,9 +80,9 @@ class RestDayController extends Notifier<LocalDate?> {
 
     final now = TodayController.now();
     final date = rolloverDate(now);
-    // The day turns at 3 a.m. (five seconds after, as the reading day's).
-    var next = DateTime(now.year, now.month, now.day, 3, 0, 5);
-    if (!next.isAfter(now)) next = next.add(const Duration(days: 1));
+    // The day turns at 3 a.m., as the reading day does, or sooner at
+    // candle-lighting or nightfall.
+    var next = nextRollover(now);
     LocalDate? rest;
     bool keepsCitysClock(LocalDate day) => citysTimes && Zmanim.keepsClock(city, day, clock(day));
     if (JewishHolidays.isRestDay(date, israel: oneDayYomTov)) {
