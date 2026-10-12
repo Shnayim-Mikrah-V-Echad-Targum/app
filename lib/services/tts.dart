@@ -5,6 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+/// The speech rate Listen reads at unless the reader sets another, which the
+/// player and Settings call normal (speechRateLabel). Rates are on the
+/// setting's scale, 0.1 to 1.0, on which the engines' own normal pace is 0.5
+/// (see [TtsService.webEngine]): a little slower, for following the text.
+const kDefaultSpeechRate = 0.45;
+
 /// Text-to-speech for listening to the text (an aid, not a substitute for
 /// reading). Hebrew voices are used for both the Hebrew and the Aramaic.
 ///
@@ -51,13 +57,36 @@ class TtsService {
   @visibleForTesting
   static Duration settleTimeout = const Duration(milliseconds: 250);
 
+  /// Whether the engine is the browser's SpeechSynthesis, which takes 1 as
+  /// the voice's normal speed: it is given twice the rate, as flutter_tts
+  /// itself doubles the rate on Android and adds 0.5 to it on Windows (and
+  /// iOS takes 0.5 as normal), so that a rate sounds the same everywhere.
+  ///
+  /// The browser also loads its voices a moment after the page opens.
+  @visibleForTesting
+  static bool webEngine = kIsWeb;
+
+  /// How many times, and how far apart, the browser's voices are looked for
+  /// while it loads them (see [_webVoicesLoaded]).
+  static const _webVoiceLooks = 15;
+  static const _webVoiceLookInterval = Duration(milliseconds: 100);
+
   final FlutterTts _tts;
 
   /// The engine has reported an utterance started, and not yet stopped.
   bool _speaking = false;
 
   Completer<bool>? _utterance;
-  bool? _hebrewAvailable;
+
+  // A Hebrew voice has been found. Only that is kept: one may be installed
+  // later in the session, or (on the web) be loaded a moment later.
+  bool _hebrewFound = false;
+
+  // The browser has loaded its voices; or it has once been waited for in
+  // vain, after which they are looked for again but not waited for.
+  bool _webVoicesReady = false;
+  bool _webVoicesWaited = false;
+
   bool _disposed = false;
   bool _iosAudioReady = false;
   Timer? _release;
@@ -94,27 +123,54 @@ class TtsService {
     _utterance = null;
   }
 
-  /// Whether a Hebrew voice is installed. Null if it can't be determined.
+  /// Whether a Hebrew voice is installed. Null if it can't be determined,
+  /// as while the browser hasn't loaded its voices.
+  ///
+  /// Only a voice found is remembered: asked again after none was, it looks
+  /// again, so that one installed meanwhile is found.
   Future<bool?> hasHebrewVoice() async {
-    if (_hebrewAvailable != null) return _hebrewAvailable;
+    if (_hebrewFound) return true;
+    if (webEngine && !await _webVoicesLoaded()) return null;
+    bool available;
     try {
-      final available = await _tts.isLanguageAvailable('he-IL');
-      _hebrewAvailable = available == true || available == 1;
+      final answer = await _tts.isLanguageAvailable('he-IL');
+      available = answer == true || answer == 1;
     } catch (_) {
       try {
         final langs = (await _tts.getLanguages as List?)?.cast<Object?>() ?? const [];
-        _hebrewAvailable = langs.any((l) => '$l'.toLowerCase().startsWith('he') || '$l'.toLowerCase().startsWith('iw'));
+        available = langs.any((l) => '$l'.toLowerCase().startsWith('he') || '$l'.toLowerCase().startsWith('iw'));
       } catch (_) {
         return null;
       }
     }
-    return _hebrewAvailable;
+    return _hebrewFound = available;
+  }
+
+  /// Whether the browser has loaded its voices, waiting a second and a half
+  /// at most for them the first time: Chromium's list is empty until a
+  /// moment after the page opens, and until then the engine can neither pick
+  /// the voice for an utterance's language nor say whether there is one.
+  /// Never throws.
+  Future<bool> _webVoicesLoaded() async {
+    if (_webVoicesReady) return true;
+    final looks = _webVoicesWaited ? 1 : _webVoiceLooks;
+    try {
+      for (var i = 0; i < looks; i++) {
+        if (i > 0) await Future<void>.delayed(_webVoiceLookInterval);
+        final voices = await _tts.getVoices;
+        if (voices is List && voices.isNotEmpty) return _webVoicesReady = true;
+      }
+    } catch (_) {
+      return false;
+    }
+    _webVoicesWaited = true;
+    return false;
   }
 
   /// Speaks [text], stopping whatever is being spoken first, and completes
   /// when it is finished or stopped: with true if it was spoken to its end.
   /// Throws if the engine can't speak at all.
-  Future<bool> speak(String text, {required String language, double rate = 0.45}) async {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) async {
     final generation = ++_generation;
     _preparing++;
     try {
@@ -131,8 +187,11 @@ class TtsService {
     final c = _utterance = Completer<bool>();
     try {
       await _prepareIosAudio();
+      // The browser picks the language's voice from those it has loaded. A
+      // stop meanwhile is seen below, before anything is spoken.
+      if (webEngine) await _webVoicesLoaded();
       await _tts.setLanguage(language);
-      await _tts.setSpeechRate(rate);
+      await _tts.setSpeechRate(webEngine ? rate * 2 : rate);
       if (!kIsWeb) await _tts.awaitSpeakCompletion(false);
       if (generation == _generation) {
         _engineBusy = true;
@@ -258,7 +317,7 @@ class TtsService {
   List<String> _queue = const [];
   List<int> _groups = const [];
   String _queueLanguage = 'he-IL';
-  double _queueRate = 0.45;
+  double _queueRate = kDefaultSpeechRate;
   Completer<bool>? _queueEnd;
 
   // Changes whenever the queue is paused, moved, stopped or replaced, which
@@ -276,7 +335,7 @@ class TtsService {
   Future<bool> speakQueue(
     List<String> items, {
     required String language,
-    double rate = 0.45,
+    double rate = kDefaultSpeechRate,
     int startAt = 0,
     List<int>? groups,
   }) {

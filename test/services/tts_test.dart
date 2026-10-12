@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,6 +84,24 @@ class _Engine extends Fake implements FlutterTts {
   /// Whether it is told to end the iOS session after each utterance.
   bool? autoStop;
 
+  /// The languages it was told to speak in, in turn.
+  final languages = <String>[];
+
+  /// What it answers when asked whether there is a Hebrew voice.
+  Object? hebrew = true;
+
+  /// The voices it has, which the browser loads a moment after the page
+  /// opens.
+  List<Map<String, String>> voices = [
+    {'name': 'Carmit', 'locale': 'he-IL'},
+  ];
+
+  @override
+  Future<dynamic> isLanguageAvailable(String language) async => hebrew;
+
+  @override
+  Future<dynamic> get getVoices async => voices;
+
   @override
   Future<dynamic> autoStopSharedSession(bool autoStop) async {
     this.autoStop = autoStop;
@@ -106,6 +125,7 @@ class _Engine extends Fake implements FlutterTts {
 
   @override
   Future<dynamic> setLanguage(String language) async {
+    languages.add(language);
     await preparing?.future;
     return 1;
   }
@@ -180,6 +200,7 @@ void main() {
 
   tearDown(() {
     debugDefaultTargetPlatformOverride = null;
+    TtsService.webEngine = false;
     TtsService.releaseDelay = const Duration(milliseconds: 300);
     TtsService.finishedReleaseDelay = const Duration(seconds: 1);
     TtsService.settleTimeout = const Duration(milliseconds: 250);
@@ -548,6 +569,101 @@ void main() {
       engine.failSpeak = true;
       await expectLater(tts.speakQueue(['א'], language: 'he-IL'), throwsA(isA<PlatformException>()));
       expect(tts.currentIndex.value, isNull);
+    });
+
+    group('on the web', () {
+      setUp(() => TtsService.webEngine = true);
+      tearDown(() => TtsService.webEngine = false);
+
+      test("is given twice the rate, as the browser takes 1 as the voice's normal speed", () async {
+        unawaited(tts.speakQueue(['א'], language: 'he-IL', rate: 0.45));
+        await settled();
+        expect(engine.rates, [0.9]);
+        tts.setRate(0.65);
+        await settled();
+        expect(engine.rates.last, 1.3);
+      });
+    });
+  });
+
+  group('a Hebrew voice', () {
+    test('not found is looked for again, so that one installed meanwhile is found', () async {
+      final engine = _Engine()..hebrew = false;
+      final tts = TtsService(engine: engine);
+      expect(await tts.hasHebrewVoice(), isFalse);
+      engine.hebrew = true;
+      expect(await tts.hasHebrewVoice(), isTrue);
+      // Once found, it is kept.
+      engine.hebrew = false;
+      expect(await tts.hasHebrewVoice(), isTrue);
+    });
+
+    test('is unknown on the web while the browser has loaded no voices, which are not waited for twice', () {
+      fakeAsync((async) {
+        TtsService.webEngine = true;
+        final engine = _Engine()..voices = [];
+        final tts = TtsService(engine: engine);
+        (bool?,)? answer;
+        tts.hasHebrewVoice().then((a) => answer = (a,));
+        async.elapse(const Duration(seconds: 1));
+        expect(answer, isNull, reason: 'it waits for the voices to load');
+        async.elapse(const Duration(milliseconds: 500));
+        expect(answer, (null,));
+
+        // Asked again, it looks again, at once.
+        answer = null;
+        tts.hasHebrewVoice().then((a) => answer = (a,));
+        async.flushMicrotasks();
+        expect(answer, (null,));
+        engine.voices = [
+          {'name': 'Carmit', 'locale': 'he-IL'},
+        ];
+        tts.hasHebrewVoice().then((a) => answer = (a,));
+        async.flushMicrotasks();
+        expect(answer, (true,));
+      });
+    });
+
+    test("on the web, an utterance waits for the browser's voices before its language is set", () {
+      fakeAsync((async) {
+        TtsService.webEngine = true;
+        final engine = _Engine()..voices = [];
+        final tts = TtsService(engine: engine);
+        bool? spokenToEnd;
+        tts.speak('א', language: 'he-IL').then((s) => spokenToEnd = s);
+        async.elapse(const Duration(milliseconds: 300));
+        expect(engine.languages, isEmpty);
+        expect(engine.said, isEmpty);
+
+        engine.voices = [
+          {'name': 'Carmit', 'locale': 'he-IL'},
+        ];
+        async.elapse(const Duration(milliseconds: 100));
+        expect(engine.languages, ['he-IL']);
+        expect(engine.said, ['א']);
+        engine.finish();
+        async.flushMicrotasks();
+        expect(spokenToEnd, isTrue);
+      });
+    });
+
+    test('on the web, an utterance stopped while it waits for the voices is never spoken', () {
+      fakeAsync((async) {
+        TtsService.webEngine = true;
+        final engine = _Engine()..voices = [];
+        final tts = TtsService(engine: engine);
+        bool? spokenToEnd;
+        tts.speak('א', language: 'he-IL').then((s) => spokenToEnd = s);
+        async.elapse(const Duration(milliseconds: 200));
+        tts.stop();
+        engine.voices = [
+          {'name': 'Carmit', 'locale': 'he-IL'},
+        ];
+        async.elapse(const Duration(milliseconds: 200));
+        expect(spokenToEnd, isFalse);
+        expect(engine.said, isEmpty);
+        expect(engine.stops, 0, reason: 'nothing was speaking');
+      });
     });
   });
 }
