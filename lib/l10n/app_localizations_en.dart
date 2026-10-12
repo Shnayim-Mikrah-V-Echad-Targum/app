@@ -520,14 +520,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readTheHaftarah => 'Read the haftarah';
 
   @override
-  String get checkInTitle => 'Shavua tov! Did you read on Shabbat?';
+  String checkInTitle(String name) {
+    return 'Shavua tov! Did you read $name on Shabbat?';
+  }
 
   @override
   String get checkInBody =>
       'Log what you read from a printed Chumash — it counts just the same.';
 
   @override
-  String get checkInFinished => 'I finished it on Shabbat';
+  String checkInFinished(String name) {
+    return 'I finished $name on Shabbat';
+  }
 
   @override
   String get checkInPick => 'Choose aliyot';

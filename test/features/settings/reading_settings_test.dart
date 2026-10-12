@@ -255,11 +255,11 @@ void main() {
 
     testWidgets('is finished, haftarah and all, by the check-in after Shabbat', (tester) async {
       await turnHaftarahOff(tester, DateTime(2026, 10, 11, 10));
-      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsOneWidget);
-      await tester.tap(find.text('I finished it on Shabbat'));
+      expect(find.text('Shavua tov! Did you read Bereshit on Shabbat?'), findsOneWidget);
+      await tester.tap(find.text('I finished Bereshit on Shabbat'));
       await tester.pumpAndSettle();
       expect(c.read(progressProvider).week('5787:1').haftarah, LocalDate(2026, 10, 10));
-      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsNothing);
+      expect(find.text('Shavua tov! Did you read Bereshit on Shabbat?'), findsNothing);
       expect(find.text('Bereshit is still open'), findsNothing);
     });
 

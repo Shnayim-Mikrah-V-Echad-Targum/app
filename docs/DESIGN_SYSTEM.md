@@ -789,7 +789,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 
 **Bottom sheet**
 - Background paper; top radius 20; `showDragHandle: true` (36×4, outline at 40%).
-- Title titleLarge serif; padding 24 (16 under 360); max width 640, centred.
+- Title titleLarge serif (`SheetTitle`), its lines balanced where it wraps, so that no word stands alone on the last; padding 24 (16 under 360); max width 640, centred.
 
 **Dialog**
 - Background paper, radius 16, padding 24.
@@ -815,6 +815,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 - Inset within gutters (never full-bleed); secondaryContainer; radius 12; no border (2 px outline in high contrast).
 - Padding 12/16; icon 20 in onSecondaryContainer; bodyMedium onSecondaryContainer; optional trailing TextButton.
   - Beside or below a TextButton the end padding is 8: the button's own padding makes up the rest, and the text keeps 16.
+- **Title** (`title`): a heading in titleSmall onSecondaryContainer over the text. Where it wraps, its lines are balanced (`BalancedText`), so that no word stands alone on the last ("Shavua tov! Did you read / Bereshit on Shabbat?").
 - **Action below** (`actionBelow`): for a text longer than a line or two, which a trailing button would squeeze. The icon and text align to the top, and the TextButton sits under the text at the end, with 4 bottom padding.
   - A row of actions below that ends with a Tonal button (the after-Shabbat check-in, the welcome after a pause) is inset 4 more at the end and 8 more at the foot (`NoticeBanner.tonalActionInset`): a text button's own padding makes up the banner's, but the Tonal's fill shows, so it stands 12 from the banner's end and foot, as the text stands 12 from its top.
 - **Action ink:** the TextButton is `primary` where primary on secondaryContainer meets AA (4.5:1); otherwise, as in the high-contrast themes, it is `onSecondaryContainer`, with a 3 px focus ring in the same colour.
@@ -1087,7 +1088,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - The masthead is not a heading; the parsha name stays heading level 1.
 2. Paused banner and open-previous-week card: NoticeBanner style.
    - Resuming from the paused banner says `pauseEnded` in a status message. A pause that ended while the app was closed (not one made or changed once it was over, by its stamp's reading day: entered after the fact, or ended early) is welcomed instead, on the first reading day the app is opened after it, until the reader puts it away (a close button, `actionDismiss`; `pauseEndSeen`) or reads again: a NoticeBanner titled `pauseEnded` with `pauseEndedOn(date)`, a Tonal `pauseEndedStart` or `pauseEndedContinue` to `/read/{id}/{next}`, and a TextButton `catchUpOn(name)` to last week while it can still count. It offers last week itself, so the open-previous-week card waits until it is put away.
-   - **After-Shabbat check-in** (the open-previous-week card's first form): after a Shabbat whose parsha is unfinished, on the first reading day after it and on each one after that while the week can still count as late (`WeekStatus.inProgress`), until it is answered (`checkInAnsweredFor`). `checkInTitle` and `checkInBody`, then a TextButton `checkInNotThisTime`, a TextButton `checkInPick` and a Tonal `checkInFinished`. Choose aliyot opens one sheet, titled `checkInTitle`: each aliyah not yet read as a checked CheckboxListTile with its reference, the haftarah too where it is shown and not logged, the line `checkInReadOnShabbat` (or `checkInReadOn` once another day is chosen) beside a TextButton `changeDate` (`pickReadDate`), and a Filled `logReading` that logs every checked reading in one change. Logging, either way, answers the check-in and says so in a status message with Undo, which puts the week and the question back as they were.
+   - **After-Shabbat check-in** (the open-previous-week card's first form): after a Shabbat whose parsha is unfinished, on the first reading day after it and on each one after that while the week can still count as late (`WeekStatus.inProgress`), until it is answered (`checkInAnsweredFor`). `checkInTitle(name)` and `checkInBody`, then a TextButton `checkInNotThisTime`, a TextButton `checkInPick` and a Tonal `checkInFinished(name)`, each naming last week's parsha (both of a double portion, by its combined name), as this week's stands beneath. Choose aliyot opens one sheet, titled `checkInTitle(name)`: each aliyah not yet read as a checked CheckboxListTile with its reference, the haftarah too where it is shown and not logged, the line `checkInReadOnShabbat` (or `checkInReadOn` once another day is chosen) beside a TextButton `changeDate` (`pickReadDate`), and a Filled `logReading` that logs every checked reading in one change. Logging, either way, answers the check-in and says so in a status message with Undo, which puts the week and the question back as they were.
    - After the late window, a week that a double-up can still restore says so by the reader's parsha streak: `openWeekRestore(name, next, count)` with one, `openWeekRestoreZero` without.
    - After the paused banner, the **divergence notice**: a NoticeBanner with `info_outline` and the action below. It appears in a week when Israel and the Diaspora read different portions, for a reader whose reading and days of Yom Tov follow different places:
      - a visitor to Israel (Israel's reading, two days of Yom Tov): `readingDivergence`, with a TextButton `readingDivergenceOpen` to the home portion's week (last week's in Israel);
@@ -1432,6 +1433,8 @@ In order:
 | openTheParsha | Open the parsha | לפרשה |
 | weekCompleteNote | Ready to hear it read on Shabbat. | הכול מוכן לקריאת התורה בשבת. |
 | discussTheParsha | Discuss the parsha | לדיון בפרשה |
+| checkInTitle | Shavua tov! Did you read {name} on Shabbat? | שבוע טוב! קראת את פרשת {name} בשבת? |
+| checkInFinished | I finished {name} on Shabbat | סיימתי את פרשת {name} בשבת |
 | checkInNotThisTime | Not this time | לא הפעם |
 | checkInReadOnShabbat | Read on Shabbat, {date} | תאריך הקריאה: שבת, {date} |
 | changeDate | Change date | שינוי התאריך |

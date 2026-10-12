@@ -98,7 +98,7 @@ void main() {
       // The day and its month kept together on one line.
       expect(find.textContaining('October\u00A011,'), findsOneWidget);
       // It offers last week itself, so the check-in waits.
-      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsNothing);
+      expect(find.text('Shavua tov! Did you read Bereshit on Shabbat?'), findsNothing);
 
       await tester.tap(find.text('Catch up on Bereshit'));
       await tester.pump();
@@ -116,7 +116,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(c.read(settingsProvider).pauseEndSeen, _d(10, 11));
       expect(find.text('Welcome back! Your place is saved.'), findsNothing);
-      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsOneWidget);
+      expect(find.text('Shavua tov! Did you read Bereshit on Shabbat?'), findsOneWidget);
 
       await openToday(tester, settings: c.read(settingsProvider), now: monday, progress: halfRead());
       expect(find.text('Welcome back! Your place is saved.'), findsNothing);

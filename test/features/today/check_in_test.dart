@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -19,7 +20,9 @@ import '../../helpers.dart';
 /// Shabbat 10 October.
 final _settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 4));
 
-const _checkIn = 'Shavua tov! Did you read on Shabbat?';
+const _checkIn = 'Shavua tov! Did you read Bereshit on Shabbat?';
+
+const _finished = 'I finished Bereshit on Shabbat';
 
 /// Of Bereshit, Rishon to Revi'i read on their days.
 ProgressState _bereshit() {
@@ -174,7 +177,7 @@ void main() {
     testWidgets('finishes the parsha at once, which Undo takes back', (tester) async {
       final c = await openToday(tester);
       final before = bereshit(c);
-      await tester.tap(find.text('I finished it on Shabbat'));
+      await tester.tap(find.text(_finished));
       await tester.pumpAndSettle();
       expect(bereshit(c).isComplete, isTrue);
       expect(find.text('Chazak! Parshat Bereshit is complete.'), findsOneWidget);
@@ -193,20 +196,70 @@ void main() {
           tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(FilledButton)));
 
       await openToday(tester);
-      expect(banner().right - button('I finished it on Shabbat').right, 12);
-      expect(banner().bottom - button('I finished it on Shabbat').bottom, 12);
+      expect(banner().right - button(_finished).right, 12);
+      expect(banner().bottom - button(_finished).bottom, 12);
 
       // At the left in Hebrew.
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
-      expect(button('סיימתי את הפרשה בשבת').left - banner().left, 12);
-      expect(banner().bottom - button('סיימתי את הפרשה בשבת').bottom, 12);
+      expect(button('סיימתי את פרשת בראשית בשבת').left - banner().left, 12);
+      expect(banner().bottom - button('סיימתי את פרשת בראשית בשבת').bottom, 12);
+    });
+
+    testWidgets('names the parsha it asks about, above the next one', (tester) async {
+      await openToday(tester);
+      expect(find.text(_checkIn), findsOneWidget);
+      expect(find.text(_finished), findsOneWidget);
+      expect(find.bySemanticsLabel('Parshat Noach'), findsOneWidget, reason: "this week's, beneath it");
+      await tester.tap(find.text('Choose aliyot'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: find.byType(BottomSheet), matching: find.text(_checkIn)),
+        findsOneWidget,
+        reason: 'the sheet is titled with the same question',
+      );
+    });
+
+    testWidgets('balances its question where it wraps, leaving no word alone', (tester) async {
+      await openToday(tester);
+      // In the test font, set in full "Shavua tov! Did you / read Bereshit on
+      // / Shabbat?", and balanced "Shavua tov! Did / you read Bereshit / on
+      // Shabbat?".
+      final title = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.byType(NoticeBanner), matching: find.text(_checkIn)),
+      );
+      double lineOf(int offset) => title.getOffsetForCaret(TextPosition(offset: offset), Rect.zero).dy;
+      final lastLine = lineOf(_checkIn.length - 1);
+      expect(lineOf(0), lessThan(lastLine), reason: 'the question wraps');
+      expect(lineOf(_checkIn.lastIndexOf(' on ') + 1), lastLine, reason: 'the last line holds more than one word');
+    });
+
+    testWidgets('names both parshiyot of a week that reads them together', (tester) async {
+      // Vayakhel-Pekudei 5786, read together on Shabbat 14 March 2026.
+      final week = findWeekById(const ParshaSchedule(israel: false), '5786:22-23')!;
+      final sunday = week.occasion.addDays(1);
+      final settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 3, 1));
+      final progress = ProgressState(weeks: {
+        '5786:22-23': WeekProgress(weekId: '5786:22-23').withAliyah(0, week.occasion.addDays(-6)),
+      });
+      final now = DateTime(sunday.year, sunday.month, sunday.day, 9);
+      await openToday(tester, settings: settings, now: now, progress: progress);
+      expect(find.text('Shavua tov! Did you read Vayakhel-Pekudei on Shabbat?'), findsOneWidget);
+      expect(find.text('I finished Vayakhel-Pekudei on Shabbat'), findsOneWidget);
+
+      await openToday(tester, settings: settings.copyWith(language: AppLanguage.hebrew), now: now, progress: progress);
+      expect(find.text('שבוע טוב! קראת את פרשת ויקהל־פקודי בשבת?'), findsOneWidget);
+      expect(find.text('סיימתי את פרשת ויקהל־פקודי בשבת'), findsOneWidget);
     });
 
     testWidgets('in Hebrew', (tester) async {
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
+      const question = 'שבוע טוב! קראת את פרשת בראשית בשבת?';
+      expect(find.text(question), findsOneWidget);
+      expect(find.text('סיימתי את פרשת בראשית בשבת'), findsOneWidget);
       expect(find.text('לא הפעם'), findsOneWidget);
       await tester.tap(find.text('בחירת עליות'));
       await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(BottomSheet), matching: find.text(question)), findsOneWidget);
       expect(find.text('תאריך הקריאה: שבת, 10 באוקטובר'), findsOneWidget);
       expect(find.text('שינוי התאריך'), findsOneWidget);
       expect(find.text('סימון הקריאה'), findsOneWidget);

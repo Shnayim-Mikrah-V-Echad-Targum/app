@@ -807,11 +807,11 @@ abstract class AppLocalizations {
   /// **'Read the haftarah'**
   String get readTheHaftarah;
 
-  /// No description provided for @checkInTitle.
+  /// The after-Shabbat check-in on Today, and the title of its sheet: asks whether the parsha of the Shabbat just past was read on it, from a printed Chumash. name is that parsha, or the two read together.
   ///
   /// In en, this message translates to:
-  /// **'Shavua tov! Did you read on Shabbat?'**
-  String get checkInTitle;
+  /// **'Shavua tov! Did you read {name} on Shabbat?'**
+  String checkInTitle(String name);
 
   /// No description provided for @checkInBody.
   ///
@@ -819,11 +819,11 @@ abstract class AppLocalizations {
   /// **'Log what you read from a printed Chumash — it counts just the same.'**
   String get checkInBody;
 
-  /// No description provided for @checkInFinished.
+  /// The after-Shabbat check-in's button that logs the whole of the Shabbat's parsha as read on it. name is that parsha, as in checkInTitle.
   ///
   /// In en, this message translates to:
-  /// **'I finished it on Shabbat'**
-  String get checkInFinished;
+  /// **'I finished {name} on Shabbat'**
+  String checkInFinished(String name);
 
   /// No description provided for @checkInPick.
   ///

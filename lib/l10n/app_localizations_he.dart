@@ -526,14 +526,18 @@ class AppLocalizationsHe extends AppLocalizations {
   String get readTheHaftarah => 'לקריאת ההפטרה';
 
   @override
-  String get checkInTitle => 'שבוע טוב! קראת בשבת?';
+  String checkInTitle(String name) {
+    return 'שבוע טוב! קראת את פרשת $name בשבת?';
+  }
 
   @override
   String get checkInBody =>
       'אפשר לרשום מה שקראת מתוך חומש מודפס — זה נחשב בדיוק אותו הדבר.';
 
   @override
-  String get checkInFinished => 'סיימתי את הפרשה בשבת';
+  String checkInFinished(String name) {
+    return 'סיימתי את פרשת $name בשבת';
+  }
 
   @override
   String get checkInPick => 'בחירת עליות';

@@ -477,9 +477,27 @@
   "@readTheHaftarah": {
     "description": "A button that opens the week's haftarah."
   },
-  "checkInTitle": "Shavua tov! Did you read on Shabbat?",
+  "checkInTitle": "Shavua tov! Did you read {name} on Shabbat?",
+  "@checkInTitle": {
+    "description": "The after-Shabbat check-in on Today, and the title of its sheet: asks whether the parsha of the Shabbat just past was read on it, from a printed Chumash. name is that parsha, or the two read together.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
+      }
+    }
+  },
   "checkInBody": "Log what you read from a printed Chumash — it counts just the same.",
-  "checkInFinished": "I finished it on Shabbat",
+  "checkInFinished": "I finished {name} on Shabbat",
+  "@checkInFinished": {
+    "description": "The after-Shabbat check-in's button that logs the whole of the Shabbat's parsha as read on it. name is that parsha, as in checkInTitle.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
+      }
+    }
+  },
   "checkInPick": "Choose aliyot",
   "checkInNotThisTime": "Not this time",
   "@checkInNotThisTime": {

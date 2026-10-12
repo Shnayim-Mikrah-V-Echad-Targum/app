@@ -549,15 +549,15 @@ class NoticeBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // The notice's heading, which screen readers can move to: a node
-          // of its own.
+          // of its own. Balanced where it wraps, leaving no word alone on
+          // its last line.
           Semantics(
             container: true,
             header: true,
-            child: WholeWords(
+            child: BalancedText(
               title,
               style: theme.textTheme.titleSmall?.copyWith(color: ink),
               textAlign: TextAlign.start,
-              breakAtHyphens: true,
             ),
           ),
           message,
@@ -743,8 +743,8 @@ Future<T?> showAppSheet<T>({
       },
     );
 
-/// A sheet's title, under its drag handle: titleLarge, and a heading for
-/// screen readers.
+/// A sheet's title, under its drag handle: titleLarge, balanced where it
+/// wraps, and a heading for screen readers.
 class SheetTitle extends StatelessWidget {
   const SheetTitle(this.text, {super.key});
 
@@ -758,7 +758,12 @@ class SheetTitle extends StatelessWidget {
       child: Semantics(
         header: true,
         headingLevel: 2,
-        child: Text(text, style: Theme.of(context).textTheme.titleLarge),
+        // Across the sheet, so that balanced lines start at its start even
+        // in a column that centres its children.
+        child: SizedBox(
+          width: double.infinity,
+          child: BalancedText(text, style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.start),
+        ),
       ),
     );
   }

@@ -234,7 +234,7 @@ void main() {
       expect(find.text('Catching up'), findsNothing);
       expect(find.byType(WeekStrip), findsNothing);
       expect(find.byType(LedgerCard), findsNothing);
-      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsNothing);
+      expect(find.text('Shavua tov! Did you read Bereshit on Shabbat?'), findsNothing);
       // Nothing moves.
       await tester.pump();
       expect(tester.binding.hasScheduledFrame, isFalse);
@@ -337,7 +337,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Shabbat Shalom'), findsNothing);
-      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsOneWidget);
+      expect(find.text('Shavua tov! Did you read Bereshit on Shabbat?'), findsOneWidget);
     });
   });
 }

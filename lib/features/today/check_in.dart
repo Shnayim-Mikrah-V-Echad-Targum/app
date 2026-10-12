@@ -89,7 +89,8 @@ class PreviousWeekNotice extends ConsumerWidget {
     final l = context.l10n;
     return NoticeBanner(
       icon: Icons.import_contacts,
-      title: l.checkInTitle,
+      // By name: the title page beneath is another week's parsha.
+      title: l.checkInTitle(name),
       text: l.checkInBody,
       actionBelow: true,
       action: Padding(
@@ -119,7 +120,7 @@ class PreviousWeekNotice extends ConsumerWidget {
                   if (previous.haftarahDue) progress.markHaftarah(previous.id, previous.week.occasion);
                 },
               ),
-              child: Text(l.checkInFinished, textAlign: TextAlign.center),
+              child: Text(l.checkInFinished(name), textAlign: TextAlign.center),
             ),
           ],
         ),
@@ -137,6 +138,7 @@ class PreviousWeekNotice extends ConsumerWidget {
       isScrollControlled: true,
       builder: (context) => CheckInSheet(
         previous: previous,
+        name: name,
         today: today,
         offersHaftarah: (settings.haftarahEnabled || previous.haftarahRequired) && previous.progress.haftarah == null,
       ),
@@ -182,14 +184,24 @@ class PreviousWeekNotice extends ConsumerWidget {
 /// checked, and the day they were read.
 typedef CheckInLog = ({List<int> aliyot, bool haftarah, LocalDate date});
 
-/// The after-Shabbat check-in, in one sheet: each aliyah of [previous] not
-/// yet read, checked to begin with, and its haftarah if [offersHaftarah];
-/// the day they were read, Shabbat unless changed; and one button that logs
-/// them all. Returns a [CheckInLog].
+/// The after-Shabbat check-in, in one sheet, titled with the question that
+/// names [previous]'s parsha ([name]): each aliyah of it not yet read,
+/// checked to begin with, and its haftarah if [offersHaftarah]; the day they
+/// were read, Shabbat unless changed; and one button that logs them all.
+/// Returns a [CheckInLog].
 class CheckInSheet extends StatefulWidget {
-  const CheckInSheet({super.key, required this.previous, required this.today, required this.offersHaftarah});
+  const CheckInSheet({
+    super.key,
+    required this.previous,
+    required this.name,
+    required this.today,
+    required this.offersHaftarah,
+  });
 
   final WeekContext previous;
+
+  /// [previous]'s parsha, as the check-in names it.
+  final String name;
   final LocalDate today;
   final bool offersHaftarah;
 
@@ -225,7 +237,7 @@ class _CheckInSheetState extends State<CheckInSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SheetTitle(l.checkInTitle),
+            SheetTitle(l.checkInTitle(widget.name)),
             for (final a in _aliyot)
               CheckboxListTile(
                 controlAffinity: ListTileControlAffinity.leading,
