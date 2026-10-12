@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
+import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/core/calendar/special_haftarah.dart';
@@ -76,24 +78,98 @@ void main() {
       expect(key(kedoshim.addDays(-7), HaftarahNusach.ashkenazi), 'Shabbat Machar Chodesh');
     });
 
-    test("Ashkenazim read the Rosh Chodesh haftarah for Re'eh, then Re'eh's with Ki Tetze's", () {
-      expect(key(reeh, HaftarahNusach.ashkenazi), 'Shabbat Rosh Chodesh');
-      expect(key(kiTeitzei, HaftarahNusach.ashkenazi), 'Ki Teitzei with 3rd Haftarah of Consolation');
+    // Ashkenazim, and Chabad by Sefer HaMinhagim.
+    for (final nusach in [HaftarahNusach.ashkenazi, HaftarahNusach.chabad]) {
+      test("the ${nusach.name} custom reads the Rosh Chodesh haftarah for Re'eh, then Re'eh's with Ki Tetze's", () {
+        // On 30 Av, with verses for Sunday's Rosh Chodesh (below).
+        expect(key(reeh, nusach), 'Shabbat Rosh Chodesh (and Sunday)');
+        expect(key(kiTeitzei, nusach), 'Ki Teitzei with 3rd Haftarah of Consolation');
+      });
+    }
+
+    test('Ashkenazim read Acharei Mot’s haftarah for Kedoshim', () {
       expect(key(kedoshim, HaftarahNusach.ashkenazi), 'Kedoshim following Special Shabbat');
     });
 
-    for (final nusach in [HaftarahNusach.sephardi, HaftarahNusach.chabad]) {
-      test("the ${nusach.name} custom keeps Re'eh's own haftarah, and Ki Tetze's", () {
-        expect(key(reeh, nusach), "Re'eh on Shabbat Rosh Chodesh");
-        expect(key(kiTeitzei, nusach), isNull);
-      });
-    }
+    test("Sephardim keep Re'eh's own haftarah, with Machar Chodesh's verses on the 30th, and Ki Tetze's", () {
+      expect(key(reeh, HaftarahNusach.sephardi), "Re'eh on Shabbat Rosh Chodesh (and Sunday)");
+      expect(key(kiTeitzei, HaftarahNusach.sephardi), isNull);
+      // Re'eh 5789, on 30 Av too.
+      final reeh5789 = LocalDate(2029, 8, 11);
+      expect(schedule.portionOnShabbat(reeh5789), const PortionId(47));
+      expect(HebrewDate.fromLocalDate(reeh5789).day, 30);
+      expect(key(reeh5789, HaftarahNusach.sephardi), "Re'eh on Shabbat Rosh Chodesh (and Sunday)");
+      expect(key(reeh5789, HaftarahNusach.chabad), 'Shabbat Rosh Chodesh (and Sunday)');
+    });
+
+    test('Rosh Chodesh Elul on Shabbat is always 30 Av, with Sunday Rosh Chodesh too', () {
+      // 1 Elul falls the day before Rosh Hashanah's weekday, which is never
+      // Sunday.
+      for (var year = 5700; year <= 5900; year++) {
+        expect(HebrewDate(year, HebrewMonth.elul, 1).toLocalDate().isShabbat, isFalse, reason: '$year');
+      }
+    });
 
     test("Sephardim keep Kedoshim's own haftarah, and Chabad the Ashkenazi rule", () {
       expect(key(kedoshim, HaftarahNusach.sephardi), isNull);
       // Chabad reads Acharei Mot's haftarah as Ashkenazim do, and no Chabad
       // source yet says what it reads for Kedoshim after it is displaced.
       expect(key(kedoshim, HaftarahNusach.chabad), 'Kedoshim following Special Shabbat');
+    });
+  });
+
+  group('Shabbat Rosh Chodesh', () {
+    const schedule = ParshaSchedule(israel: false);
+
+    // Months whose Rosh Chodesh brings no other special haftarah (as
+    // Chanukah, Shekalim, HaChodesh, Av's and Elul's do).
+    const plain = {
+      HebrewMonth.iyar,
+      HebrewMonth.sivan,
+      HebrewMonth.tammuz,
+      HebrewMonth.cheshvan,
+      HebrewMonth.kislev,
+      HebrewMonth.shevat,
+    };
+
+    /// The first Shabbat on or after [from] that is the [day] of a month (1
+    /// or 30) and Rosh Chodesh of one of those months.
+    LocalDate next(LocalDate from, int day) {
+      var d = from;
+      while (!d.isShabbat) {
+        d = d.addDays(1);
+      }
+      for (;; d = d.addDays(7)) {
+        final h = HebrewDate.fromLocalDate(d);
+        final month = day == 30 ? HebrewDate.fromLocalDate(d.addDays(1)).month : h.month;
+        if (h.day == day && JewishHolidays.isRoshChodesh(h) && plain.contains(month)) return d;
+      }
+    }
+
+    test('on the 30th, with Sunday Rosh Chodesh too, adds verses of Machar Chodesh for every custom', () {
+      final shabbat = next(LocalDate(2026, 10, 10), 30);
+      // Korach 5788, on 30 Sivan.
+      expect(shabbat, LocalDate(2028, 6, 24));
+      expect(JewishHolidays.isRoshChodesh(HebrewDate.fromLocalDate(shabbat.addDays(1))), isTrue);
+      for (final nusach in HaftarahNusach.values) {
+        expect(
+          specialHaftarahKey(shabbat, schedule.portionOnShabbat(shabbat)!, nusach: nusach),
+          'Shabbat Rosh Chodesh (and Sunday)',
+          reason: nusach.name,
+        );
+      }
+    });
+
+    test('on the 1st is the Rosh Chodesh haftarah alone', () {
+      final shabbat = next(LocalDate(2026, 10, 10), 1);
+      expect(JewishHolidays.isRoshChodesh(HebrewDate.fromLocalDate(shabbat.addDays(1))), isFalse);
+      for (final nusach in HaftarahNusach.values) {
+        expect(
+          specialHaftarahKey(shabbat, schedule.portionOnShabbat(shabbat)!, nusach: nusach),
+          'Shabbat Rosh Chodesh',
+          reason: '$shabbat ${nusach.name}',
+        );
+      }
     });
   });
 }

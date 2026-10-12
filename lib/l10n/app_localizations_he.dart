@@ -258,6 +258,16 @@ class AppLocalizationsHe extends AppLocalizations {
   String get erevShabbat => 'ערב שבת';
 
   @override
+  String erevYomTov(String holiday) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'roshHashanah': 'ערב ראש השנה',
+      'yomKippur': 'ערב יום כיפור',
+      'other': 'ערב חג',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String get shabbatShalom => 'שבת שלום';
 
   @override
@@ -288,6 +298,16 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get shabbatBeginsTonight => 'שבת נכנסת הערב';
+
+  @override
+  String yomTovBeginsTonight(String holiday) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'roshHashanah': 'ראש השנה נכנס הערב',
+      'yomKippur': 'יום כיפור נכנס הערב',
+      'other': 'החג נכנס הערב',
+    });
+    return '$_temp0';
+  }
 
   @override
   String get allAliyot => 'כל העליות';
@@ -492,8 +512,29 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String openWeekLate(String date) {
-    return 'סיום עד $date עדיין נחשב.';
+  String openWeekLate(String when, String date) {
+    String _temp0 = intl.Intl.selectLogic(when, {
+      'today': 'סיום עד הלילה עדיין נחשב.',
+      'tomorrow': 'סיום עד מחר בלילה עדיין נחשב.',
+      'other': 'סיום עד סוף $date, עדיין נחשב.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String openWeekLateEve(String holiday, String when, String date) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'shabbat': 'השבת',
+      'roshHashanah': 'ראש השנה',
+      'yomKippur': 'יום כיפור',
+      'other': 'החג',
+    });
+    String _temp1 = intl.Intl.selectLogic(when, {
+      'today': 'הערב עדיין נחשב.',
+      'tomorrow': 'מחר בערב עדיין נחשב.',
+      'other': 'ב$date, עדיין נחשב.',
+    });
+    return 'סיום לפני כניסת $_temp0 $_temp1';
   }
 
   @override
@@ -531,12 +572,37 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String checkInTitleShabbatYomTov(String name) {
+    return 'שבוע טוב! קראת את פרשת $name בשבת וביום טוב?';
+  }
+
+  @override
+  String checkInTitleVezot(String name) {
+    return 'סיימת את פרשת $name ביום טוב?';
+  }
+
+  @override
+  String checkInTitleSimchatTorah(String name) {
+    return 'סיימת את פרשת $name בשמחת תורה?';
+  }
+
+  @override
   String get checkInBody =>
       'אפשר לרשום מה שקראת מתוך חומש מודפס — זה נחשב בדיוק אותו הדבר.';
 
   @override
   String checkInFinished(String name) {
     return 'סיימתי את פרשת $name בשבת';
+  }
+
+  @override
+  String checkInFinishedYomTov(String name) {
+    return 'סיימתי את פרשת $name ביום טוב';
+  }
+
+  @override
+  String checkInFinishedSimchatTorah(String name) {
+    return 'סיימתי את פרשת $name בשמחת תורה';
   }
 
   @override
@@ -548,6 +614,11 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String checkInReadOnShabbat(String date) {
     return 'תאריך הקריאה: שבת, $date';
+  }
+
+  @override
+  String checkInReadOnYomTov(String date) {
+    return 'תאריך הקריאה: יום טוב, $date';
   }
 
   @override
@@ -602,6 +673,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String readingDivergenceOpen(String name) {
     return 'לפרשת $name';
   }
+
+  @override
+  String get readingDivergenceChange => 'שינוי קריאת התורה';
 
   @override
   String get discussThisWeek => 'דיון על פרשת השבוע';
@@ -758,6 +832,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get whenOnShabbat => 'בשבת';
 
   @override
+  String get whenOnYomTov => 'ביום טוב';
+
+  @override
   String get whenPickDate => 'בחירת תאריך';
 
   @override
@@ -769,6 +846,11 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String aliyahOtherDivision(String range) {
     return 'לפי חלק מהמקורות: $range';
+  }
+
+  @override
+  String secondParshaBegins(String name, String ref) {
+    return 'פרשת $name מתחילה ב־$ref';
   }
 
   @override
@@ -1232,12 +1314,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get pauseManageBody => 'אפשר להאריך את ההשהיה או לסיים אותה עכשיו.';
-
-  @override
-  String get pauseExtendBy => 'להאריך בעוד';
-
-  @override
-  String get pauseExtend => 'הארכה';
 
   @override
   String get pauseAtMost =>
@@ -1826,14 +1902,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get fridayReminderTime => 'שעת התזכורת לערב שבת';
 
   @override
-  String get checkInReminder => 'תזכורת אחרי שבת';
+  String get checkInReminder => 'תזכורת אחרי שבת או יום טוב';
 
   @override
-  String get checkInReminderDesc => 'ביום ראשון בבוקר, לרשום מה שקראת בשבת';
+  String get checkInReminderDesc =>
+      'בבוקר שאחרי שבת או שמחת תורה, לרשום מה שקראת בהם';
 
   @override
   String get checkInReminderDescCity =>
-      'שעה אחרי צאת השבת, או ביום ראשון בבוקר כשהשבת יוצאת מאוחר, לרשום מה שקראת בשבת';
+      'שעה אחרי צאת השבת או שמחת תורה, או למחרת בבוקר כשהם יוצאים מאוחר, לרשום מה שקראת בהם';
 
   @override
   String get remindersShabbatNote =>
@@ -1939,7 +2016,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get notifChannelFriday => 'ערב שבת';
 
   @override
-  String get notifChannelCheckIn => 'אחרי שבת';
+  String get notifChannelCheckIn => 'אחרי שבת ויום טוב';
 
   @override
   String get notifChannelDailyDesc =>
@@ -1951,7 +2028,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notifChannelCheckInDesc =>
-      'אחרי שבת: תזכורת לרשום מה שנקרא, וגם הודעה כשהתזכורות נעצרות';
+      'אחרי שבת או שמחת תורה: תזכורת לרשום מה שנקרא, וגם הודעה כשהתזכורות נעצרות';
 
   @override
   String notifDailyTitle(String aliyah) {
@@ -1982,6 +2059,18 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notifCheckInBody => 'קראת בשבת? אפשר לרשום זאת באפליקציה.';
+
+  @override
+  String get notifCheckInBodyShabbatYomTov =>
+      'קראת בשבת וביום טוב? אפשר לרשום זאת באפליקציה.';
+
+  @override
+  String get notifCheckInBodyVezot =>
+      'קראת אותה ביום טוב? אפשר לרשום זאת באפליקציה.';
+
+  @override
+  String get notifCheckInBodySimchatTorah =>
+      'קראת אותה בשמחת תורה? אפשר לרשום זאת באפליקציה.';
 
   @override
   String get notifPausedTitle => 'התזכורות הושהו';
@@ -3303,7 +3392,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get extendPauseTitle => 'הארכת ההשהיה';
 
   @override
-  String get extendPauseBy => 'הארכה בעוד';
+  String get extendPauseBy => 'להאריך בעוד';
 
   @override
   String extendPauseUntil(String date) {

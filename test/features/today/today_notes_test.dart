@@ -77,13 +77,25 @@ void main() {
       expect(findWords('before Shabbat — or'), findsNothing);
     });
 
+    testWidgets('the banner dates the end of the pause in the Hebrew calendar in Hebrew', (tester) async {
+      // Paused to Sunday 18 October, 7 Cheshvan.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(language: AppLanguage.hebrew),
+        now: DateTime(2026, 10, 9, 11),
+        progress: ProgressState(pauses: [Pause(_d(10, 8), _d(10, 18), id: 'travel')]),
+      );
+      expect(findWords('בהשהיה עד יום ראשון, ז׳ בחשון. דבר אינו מתאפס בזמן ההשהיה.'), findsOneWidget);
+      expect(find.textContaining('באוקטובר.'), findsNothing);
+    });
+
     testWidgets('ending the pause by choice says so, without a welcome back', (tester) async {
       final c = await openToday(
         tester,
         now: DateTime(2026, 10, 9, 11),
         progress: ProgressState(pauses: [Pause(_d(10, 8), _d(10, 18), id: 'travel')]),
       );
-      await tester.tap(find.text('Resume'));
+      await tester.tap(find.text('End pause'));
       await tester.pumpAndSettle();
       expect(find.text('Welcome back! Your place is saved.'), findsOneWidget, reason: 'the status message alone');
       expect(find.textContaining('Your pause ended'), findsNothing);
@@ -119,6 +131,12 @@ void main() {
       expect(c.read(routerProvider).state.uri.path, '/read/5787:2/0');
     });
 
+    testWidgets('in Hebrew, says when it ended by the Hebrew date', (tester) async {
+      final hebrew = _settings.copyWith(language: AppLanguage.hebrew);
+      await openToday(tester, settings: hebrew, now: monday, progress: halfRead());
+      expect(findWords('ההשהיה הסתיימה ביום ראשון, ל׳ בתשרי, ושום דבר בזמנה לא נחשב לחובתך.'), findsOneWidget);
+    });
+
     testWidgets('can be put away, for good', (tester) async {
       final c = await openToday(tester, now: monday, progress: halfRead());
       await tester.tap(find.byTooltip('Dismiss'));
@@ -142,6 +160,27 @@ void main() {
       );
       expect(find.text('Continue this week’s parsha'), findsOneWidget);
       expect(find.textContaining('Catch up on'), findsNothing);
+    });
+
+    testWidgets('offers no week that can no longer count, and lets its check-in stand beneath', (tester) async {
+      // Paused before Rosh Hashanah's Shabbat, 14 to 18 September 2026, and
+      // back on Monday 5 October, after Simchat Torah: Vezot HaBerachah,
+      // which has no late window, can no longer count late, but is asked
+      // about.
+      await openToday(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: _d(9, 1)),
+        now: DateTime(2026, 10, 5, 9),
+        progress: ProgressState(pauses: [Pause(_d(9, 14), _d(9, 18), id: 'away')]),
+      );
+      expect(find.text('Welcome back! Your place is saved.'), findsOneWidget);
+      expect(find.textContaining('Catch up on'), findsNothing);
+      expect(find.text('Did you finish Vezot HaBerachah over Yom Tov?'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('Did you finish Vezot HaBerachah over Yom Tov?')).top,
+        greaterThan(tester.getRect(find.text('Welcome back! Your place is saved.')).bottom),
+        reason: 'beneath the welcome',
+      );
     });
 
     test('is welcomed until reading is logged for a day after it', () {

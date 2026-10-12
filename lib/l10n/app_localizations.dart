@@ -507,6 +507,12 @@ abstract class AppLocalizations {
   /// **'Erev Shabbat'**
   String get erevShabbat;
 
+  /// The eyebrow over the parsha's name in the Today hero on the afternoon before a Yom Tov that is not Shabbat, as erevShabbat on Friday. holiday is roshHashanah, yomKippur or other.
+  ///
+  /// In en, this message translates to:
+  /// **'{holiday, select, roshHashanah{Erev Rosh Hashanah} yomKippur{Erev Yom Kippur} other{Erev Yom Tov}}'**
+  String erevYomTov(String holiday);
+
   /// The greeting on Today's title page on Shabbat.
   ///
   /// In en, this message translates to:
@@ -566,6 +572,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shabbat begins this evening'**
   String get shabbatBeginsTonight;
+
+  /// In the Today hero on the day before a Yom Tov that is not Shabbat, in place of the countdown to Shabbat (shabbatInDays), as shabbatBeginsTonight on Friday. holiday is roshHashanah, yomKippur or other.
+  ///
+  /// In en, this message translates to:
+  /// **'{holiday, select, roshHashanah{Rosh Hashanah begins this evening} yomKippur{Yom Kippur begins this evening} other{Yom Tov begins this evening}}'**
+  String yomTovBeginsTonight(String holiday);
 
   /// A link under the rings in the Today hero to the week's page, which lists its seven aliyot.
   ///
@@ -771,11 +783,17 @@ abstract class AppLocalizations {
   /// **'{name} is still open'**
   String openWeekTitle(String name);
 
-  /// No description provided for @openWeekLate.
+  /// On Today's notice that last week's parsha is still open, within its late window: when its last day is. when is today, tomorrow or other; date is that day, with its weekday (a Hebrew date in the Hebrew UI), used only for other.
   ///
   /// In en, this message translates to:
-  /// **'Finish by {date} and it still counts.'**
-  String openWeekLate(String date);
+  /// **'{when, select, today{Finish by tonight and it still counts.} tomorrow{Finish by tomorrow night and it still counts.} other{Finish by the end of {date}, and it still counts.}}'**
+  String openWeekLate(String when, String date);
+
+  /// In place of openWeekLate when the late window's last reading day is the eve of Shabbat or Yom Tov (as when Yom Tov falls on the window's last day), so that it closes as that day of rest begins, not at night. holiday is shabbat, roshHashanah, yomKippur or other (a Yom Tov); when is today, tomorrow or other; date is that day, with its weekday (a Hebrew date in the Hebrew UI), used only for other.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish before {holiday, select, shabbat{Shabbat} roshHashanah{Rosh Hashanah} yomKippur{Yom Kippur} other{Yom Tov}} begins {when, select, today{this evening and it still counts.} tomorrow{tomorrow evening and it still counts.} other{on {date}, and it still counts.}}'**
+  String openWeekLateEve(String holiday, String when, String date);
 
   /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1. A no-break space keeps the last two words together, so neither is left alone on a line.
   ///
@@ -813,6 +831,24 @@ abstract class AppLocalizations {
   /// **'Shavua tov! Did you read {name} on Shabbat?'**
   String checkInTitle(String name);
 
+  /// As checkInTitle, when the days of rest after that Shabbat ran on into Yom Tov (Shavuot on Sunday, say), on any of which the parsha may have been read.
+  ///
+  /// In en, this message translates to:
+  /// **'Shavua tov! Did you read {name} over Shabbat and Yom Tov?'**
+  String checkInTitleShabbatYomTov(String name);
+
+  /// As checkInTitle, after Simchat Torah, the Yom Tov Vezot HaBerachah is read on: asks whether it was finished then, from a printed Chumash. name is Vezot HaBerachah, in the reader's style.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you finish {name} over Yom Tov?'**
+  String checkInTitleVezot(String name);
+
+  /// As checkInTitleVezot, for a reader to whom Simchat Torah, when Vezot HaBerachah was read, was not Yom Tov (one who keeps a single day of Yom Tov but hears the reading outside Israel, a day later). name is Vezot HaBerachah, in the reader's style.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you finish {name} on Simchat Torah?'**
+  String checkInTitleSimchatTorah(String name);
+
   /// No description provided for @checkInBody.
   ///
   /// In en, this message translates to:
@@ -824,6 +860,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I finished {name} on Shabbat'**
   String checkInFinished(String name);
+
+  /// As checkInFinished, after Simchat Torah: logs the whole of Vezot HaBerachah as read on that Yom Tov. name is Vezot HaBerachah, as in checkInTitleVezot. Yom Tov is held together by a no-break space, so that where large text wraps the label, Tov never stands alone on its last line.
+  ///
+  /// In en, this message translates to:
+  /// **'I finished {name} on Yom Tov'**
+  String checkInFinishedYomTov(String name);
+
+  /// As checkInFinishedYomTov, under checkInTitleSimchatTorah: logs the whole of Vezot HaBerachah as read on Simchat Torah, which was not Yom Tov for the reader. name is Vezot HaBerachah.
+  ///
+  /// In en, this message translates to:
+  /// **'I finished {name} on Simchat Torah'**
+  String checkInFinishedSimchatTorah(String name);
 
   /// No description provided for @checkInPick.
   ///
@@ -842,6 +890,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read on Shabbat, {date}'**
   String checkInReadOnShabbat(String date);
+
+  /// As checkInReadOnShabbat, for a Yom Tov: Simchat Torah, for Vezot HaBerachah, or a day of Yom Tov chosen instead. date is its day and month.
+  ///
+  /// In en, this message translates to:
+  /// **'Read on Yom Tov, {date}'**
+  String checkInReadOnYomTov(String date);
 
   /// As checkInReadOnShabbat, once another day is chosen. date is its weekday, day and month.
   ///
@@ -867,10 +921,10 @@ abstract class AppLocalizations {
   /// **'Paused until {date}. Nothing resets while paused.'**
   String pausedBanner(String date);
 
-  /// No description provided for @resume.
+  /// Under Today's paused banner, and in the dialog Settings' pause row opens while a pause lasts: ends the pause now.
   ///
   /// In en, this message translates to:
-  /// **'Resume'**
+  /// **'End pause'**
   String get resume;
 
   /// On Today, under pauseEnded, the first time it is opened after a pause has ended. date is the pause's last day.
@@ -920,6 +974,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open {name}'**
   String readingDivergenceOpen(String name);
+
+  /// Button on the divergence notice for a visitor to Israel that opens Settings → Reading & customs, where the Torah reading they hear is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the reading'**
+  String get readingDivergenceChange;
 
   /// No description provided for @discussThisWeek.
   ///
@@ -1173,6 +1233,12 @@ abstract class AppLocalizations {
   /// **'On Shabbat'**
   String get whenOnShabbat;
 
+  /// In the sheet that asks when reading was done, a day of Yom Tov in that week, read from a printed Chumash; its date is beneath.
+  ///
+  /// In en, this message translates to:
+  /// **'On Yom Tov'**
+  String get whenOnYomTov;
+
   /// No description provided for @whenPickDate.
   ///
   /// In en, this message translates to:
@@ -1196,6 +1262,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some sources use {range}'**
   String aliyahOtherDivision(String range);
+
+  /// In a week of two parshiyot read together, under the aliyah in which the second begins: its name and its first verse, without the book ('Pekudei begins at 38:21'; in Hebrew the verse is 'לח, כא').
+  ///
+  /// In en, this message translates to:
+  /// **'{name} begins at {ref}'**
+  String secondParshaBegins(String name, String ref);
 
   /// No description provided for @browseAll.
   ///
@@ -1950,25 +2022,13 @@ abstract class AppLocalizations {
   /// No description provided for @pauseManageBody.
   ///
   /// In en, this message translates to:
-  /// **'You can lengthen the pause, or resume now.'**
+  /// **'You can extend the pause, or end it now.'**
   String get pauseManageBody;
-
-  /// Over the choices of how many days to lengthen a pause by (1 day, 3 days…).
-  ///
-  /// In en, this message translates to:
-  /// **'Lengthen by'**
-  String get pauseExtendBy;
-
-  /// The button that lengthens the pause under way.
-  ///
-  /// In en, this message translates to:
-  /// **'Lengthen'**
-  String get pauseExtend;
 
   /// In place of pauseManageBody when the pause under way already runs its 30 days.
   ///
   /// In en, this message translates to:
-  /// **'A pause lasts 30 days at most. You can resume now.'**
+  /// **'A pause lasts 30 days at most. You can end it now.'**
   String get pauseAtMost;
 
   /// No description provided for @pauseStarted.
@@ -3039,22 +3099,22 @@ abstract class AppLocalizations {
   /// **'Erev Shabbat reminder time'**
   String get fridayReminderTime;
 
-  /// No description provided for @checkInReminder.
+  /// The reminder setting that, after a Shabbat whose parsha isn't finished (and the Yom Tov straight after it, if any), and after Simchat Torah while Vezot HaBerachah isn't, reminds the reader to log what they read then.
   ///
   /// In en, this message translates to:
-  /// **'After-Shabbat check-in'**
+  /// **'Check-in after Shabbat or Yom Tov'**
   String get checkInReminder;
 
-  /// No description provided for @checkInReminderDesc.
+  /// Under checkInReminder when no city is chosen for Shabbat times: the morning after the days of rest end.
   ///
   /// In en, this message translates to:
-  /// **'Sunday morning, to log what you read on Shabbat'**
+  /// **'The morning after Shabbat or Simchat Torah, to log what you read then'**
   String get checkInReminderDesc;
 
-  /// In place of checkInReminderDesc when a city is chosen for Shabbat times: on Motzaei Shabbat, unless that is after 10:30 PM.
+  /// In place of checkInReminderDesc when a city is chosen for Shabbat times: an hour after nightfall as the days of rest end, unless that is after 10:30 PM.
   ///
   /// In en, this message translates to:
-  /// **'An hour after Shabbat ends, or Sunday morning when it ends late, to log what you read on Shabbat'**
+  /// **'An hour after Shabbat or Simchat Torah ends, or the next morning when it ends late, to log what you read then'**
   String get checkInReminderDescCity;
 
   /// No description provided for @remindersShabbatNote.
@@ -3237,10 +3297,10 @@ abstract class AppLocalizations {
   /// **'Erev Shabbat'**
   String get notifChannelFriday;
 
-  /// No description provided for @notifChannelCheckIn.
+  /// Android notification channel name, shown in the system's notification settings: the check-in after Shabbat and after Simchat Torah.
   ///
   /// In en, this message translates to:
-  /// **'After Shabbat'**
+  /// **'After Shabbat and Yom Tov'**
   String get notifChannelCheckIn;
 
   /// Android notification channel description, shown in the system's notification settings.
@@ -3258,7 +3318,7 @@ abstract class AppLocalizations {
   /// Android notification channel description, shown in the system's notification settings.
   ///
   /// In en, this message translates to:
-  /// **'After Shabbat, a reminder to log what you read; also the note when reminders stop'**
+  /// **'After Shabbat or Simchat Torah, a reminder to log what you read; also the note when reminders stop'**
   String get notifChannelCheckInDesc;
 
   /// No description provided for @notifDailyTitle.
@@ -3302,6 +3362,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Did you read on Shabbat? Tap to log it.'**
   String get notifCheckInBody;
+
+  /// As notifCheckInBody, when the days of rest after Shabbat ran on into Yom Tov; it comes once that Yom Tov is over.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you read on Shabbat and Yom Tov? Tap to log it.'**
+  String get notifCheckInBodyShabbatYomTov;
+
+  /// The check-in reminder after Simchat Torah, under the title Vezot HaBerachah (the parsha's name): whether it was read on that Yom Tov, from a printed Chumash.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you read it on Yom Tov? Tap to log it.'**
+  String get notifCheckInBodyVezot;
+
+  /// As notifCheckInBodyVezot, for a reader to whom Simchat Torah was not Yom Tov (one who keeps a single day of Yom Tov but hears the reading outside Israel, a day later).
+  ///
+  /// In en, this message translates to:
+  /// **'Did you read it on Simchat Torah? Tap to log it.'**
+  String get notifCheckInBodySimchatTorah;
 
   /// The last notification, sent when the app has not been opened for two weeks; none follow until it is opened again.
   ///
@@ -5211,13 +5289,13 @@ abstract class AppLocalizations {
   /// **'End pause'**
   String get endPause;
 
-  /// On Progress while streaks are paused: makes the pause longer.
+  /// On Progress while streaks are paused, and in the dialog that extends a pause: makes the pause longer.
   ///
   /// In en, this message translates to:
   /// **'Extend'**
   String get extendPause;
 
-  /// No description provided for @extendPauseTitle.
+  /// The title of the dialog Progress's Extend opens. Settings' opens the same dialog titled pauseManageTitle.
   ///
   /// In en, this message translates to:
   /// **'Extend the pause'**

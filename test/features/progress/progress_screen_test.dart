@@ -158,7 +158,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Seven days from Wednesday 11 November: to Tuesday the 17th.
-    expect(find.text(en.pausedBanner('Tuesday, November 17')), findsOneWidget);
+    expect(find.text(en.pausedBanner('Tuesday, November\u00A017')), findsOneWidget);
     expect(find.widgetWithText(FilledButton, en.endPause), findsOneWidget);
     await tester.tap(await shown(tester, find.widgetWithText(TextButton, en.extendPause)));
     await tester.pumpAndSettle();
@@ -167,11 +167,11 @@ void main() {
     await tester.tap(find.descendant(of: dialog, matching: find.text('7 days')));
     await tester.pump();
     // What the pause would become, said as what it will be, not as done.
-    expect(find.descendant(of: dialog, matching: find.text(en.extendPauseUntil('Tuesday, November 24'))), findsOneWidget);
+    expect(find.descendant(of: dialog, matching: find.text(en.extendPauseUntil('Tuesday, November\u00A024'))), findsOneWidget);
     await tester.tap(find.descendant(of: dialog, matching: find.widgetWithText(FilledButton, en.extendPause)));
     await tester.pumpAndSettle();
     expect(c.read(progressProvider).pauses.single.end, LocalDate(2026, 11, 24));
-    expect(find.text(en.pausedBanner('Tuesday, November 24')), findsOneWidget);
+    expect(find.text(en.pausedBanner('Tuesday, November\u00A024')), findsOneWidget);
 
     await tester.tap(await shown(tester, find.widgetWithText(FilledButton, en.endPause)));
     await tester.pumpAndSettle();
@@ -239,16 +239,21 @@ void main() {
     });
   }
 
-  testWidgets('a pause reaches no further than 30 days ahead', (tester) async {
-    await openProgress(
-      tester,
-      progress: historyProgress().copyWith(pauses: [Pause(LocalDate(2026, 11, 11), LocalDate(2026, 12, 8))]),
-    );
-    await tester.tap(await shown(tester, find.widgetWithText(TextButton, en.extendPause)));
-    await tester.pumpAndSettle();
-    // To 8 December is 28 days: one more day is the most it can take.
-    expect(find.byType(SeferChoiceChip), findsOneWidget);
-    expect(find.text('1 day'), findsOneWidget);
+  testWidgets('a pause is extended to 30 days in all at most, counted from its first day', (tester) async {
+    for (final (start, end, offered) in [
+      // From 11 November to 8 December is 28 days: one more day is the most
+      // it can take.
+      (LocalDate(2026, 11, 11), LocalDate(2026, 12, 8), ['1 day']),
+      // From 1 November, ten days ago, to the 20th: 20 days, and a week more
+      // at most, though a pause made today could reach further.
+      (LocalDate(2026, 11, 1), LocalDate(2026, 11, 20), ['1 day', '3 days', '7 days']),
+    ]) {
+      await openProgress(tester, progress: historyProgress().copyWith(pauses: [Pause(start, end)]));
+      await tester.tap(await shown(tester, find.widgetWithText(TextButton, en.extendPause)));
+      await tester.pumpAndSettle();
+      final chips = find.descendant(of: find.byType(AlertDialog), matching: find.byType(SeferChoiceChip));
+      expect([for (final chip in tester.widgetList<SeferChoiceChip>(chips)) (chip.label as Text).data], offered);
+    }
   });
 
   testWidgets('the Record lists only what is done, newest first, with no locks or trophies', (tester) async {

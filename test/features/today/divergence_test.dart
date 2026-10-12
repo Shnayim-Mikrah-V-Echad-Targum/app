@@ -1,15 +1,18 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
 
 import '../../helpers.dart';
 
@@ -57,12 +60,55 @@ void main() {
       expect(find.text('Mark the whole parsha as read'), findsOneWidget, reason: "last week's portion in Israel is open");
     });
 
+    testWidgets('a visitor can change the reading they hear, in Settings', (tester) async {
+      final c = await openToday(tester, _visitor);
+      final change = find.widgetWithText(TextButton, 'Change the reading');
+      expect(change, findsOneWidget);
+      await tester.tap(change);
+      await tester.pumpAndSettle();
+      expect(c.read(routerProvider).state.uri.path, '/settings/reading');
+      expect(find.text('Which Torah reading will you hear this Shabbat?'), findsOneWidget);
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      expect(c.read(routerProvider).state.uri.path, '/today');
+    });
+
     testWidgets('an Israeli abroad is told that Israel is a parsha ahead, with nothing to open', (tester) async {
       await openToday(tester, _abroad);
       expect(find.text(_aheadNotice), findsOneWidget);
       expect(find.text('Beha’alotcha'), findsOneWidget);
       // Shelach is next week's reading for them, not open yet.
       expect(find.textContaining('Open '), findsNothing);
+      expect(find.text('Change the reading'), findsNothing);
+    });
+
+    Finder dismiss() => find.descendant(of: find.byType(NoticeBanner), matching: find.byTooltip('Dismiss'));
+
+    testWidgets('can be put away for the week, and is told again the next while the two differ', (tester) async {
+      final c = await openToday(tester, _visitor);
+      await tester.tap(dismiss());
+      await tester.pumpAndSettle();
+      expect(find.textContaining('In Israel this week'), findsNothing);
+      final settings = c.read(settingsProvider);
+      expect(settings.divergenceDismissedFor, '5787:37', reason: "this week's, Shelach's in Israel");
+      // The hero follows the reading heard, still.
+      expect(find.text('Shelach'), findsOneWidget);
+
+      // Later that week, it stays away.
+      await openToday(tester, settings, now: DateTime(2027, 6, 25, 10));
+      expect(find.textContaining('In Israel this week'), findsNothing);
+
+      // The next week Israel is still a parsha ahead, and says so.
+      await openToday(tester, settings, now: DateTime(2027, 6, 29, 10));
+      expect(find.textContaining('In Israel this week: Korach. Outside Israel: Shelach.'), findsOneWidget);
+    });
+
+    testWidgets('an Israeli abroad can put it away too', (tester) async {
+      final c = await openToday(tester, _abroad);
+      await tester.tap(dismiss());
+      await tester.pumpAndSettle();
+      expect(find.text(_aheadNotice), findsNothing);
+      expect(c.read(settingsProvider).divergenceDismissedFor, '5787:36', reason: "Beha’alotcha's, outside Israel");
     });
 
     for (final theme in [AppThemeMode.light, AppThemeMode.dark, AppThemeMode.highContrastLight, AppThemeMode.highContrastDark]) {
@@ -91,6 +137,36 @@ void main() {
       await openToday(tester, _abroad.copyWith(language: AppLanguage.hebrew));
       expect(find.textContaining('ארץ ישראל מקדימה בפרשה אחת'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('keeps a name of two parshiyot whole, in the notice and on its button', (tester) async {
+      // Tuesday 24 April 2029: outside Israel Acharei Mot and Kedoshim are
+      // read together, a week after Israel read them apart.
+      final visitor = _visitor.copyWith(joinDate: LocalDate(2029, 4, 22));
+      for (final (hebrew, name) in [(false, 'Mot-\u2060Kedoshim'), (true, 'מות־\u2060קדשים')]) {
+        for (final width in [360.0, 412.0, 600.0, 900.0, 1366.0]) {
+          tester.view.physicalSize = Size(width, 1400);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          await pumpApp(
+            tester,
+            settings: hebrew ? visitor.copyWith(language: AppLanguage.hebrew) : visitor,
+            now: DateTime(2029, 4, 24, 10),
+          );
+          await tester.pumpAndSettle();
+          final texts = [
+            for (final e in find.textContaining(name).evaluate())
+              if (e.renderObject is RenderParagraph) e.renderObject! as RenderParagraph,
+          ];
+          expect(texts, hasLength(2), reason: 'the notice and its Open button, at $width');
+          for (final paragraph in texts) {
+            final text = paragraph.text.toPlainText();
+            final at = text.indexOf(name);
+            double lineOf(int offset) => paragraph.getOffsetForCaret(TextPosition(offset: offset), Rect.zero).dy;
+            expect(lineOf(at + name.length - 1), lineOf(at), reason: '"$text" at $width: the name whole');
+          }
+        }
+      }
     });
 
     testWidgets('no notice for someone who keeps the customs of one place', (tester) async {

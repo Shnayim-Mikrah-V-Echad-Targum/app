@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,9 +15,9 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_clock.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/ui/widgets/ledger.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show TitlePageFrame;
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show SeferDivider, TitlePageFrame;
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart' show ParshaRings;
+import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart' show ParshaRings, RingsWithLegend;
 
 import '../../helpers.dart';
 
@@ -107,6 +109,56 @@ void main() {
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew), progress: _bereshit());
       expect(find.text('המשך · שלישי, תרגום'), findsOneWidget);
     });
+
+    // A phone, a wider compact window (a large phone at a small display
+    // size, or a narrowed window), a tablet beside the compact rail, at 100%
+    // and 150% text, and a desktop's column, in English and in Hebrew. The
+    // rings' group, as wide as the rings, the gap and the legend's natural
+    // width with its slack, is wider than 360 in each, and wider than the
+    // frame's content in a compact window or at large text: the button then
+    // spans the frame.
+    for (final (width, hebrew, scale, spans) in [
+      (412.0, false, 1.0, true),
+      (412.0, true, 1.0, true),
+      (500.0, false, 1.0, true),
+      (800.0, false, 1.0, false),
+      (800.0, false, 1.5, true),
+      (1366.0, false, 1.0, false),
+      (1366.0, true, 1.0, false),
+    ]) {
+      final what = spans
+          ? "spans a frame narrower than the rings' group"
+          : 'stands centred under the rings, as wide as their group';
+      final how = [if (hebrew) 'in Hebrew', if (scale != 1) 'at ${(scale * 100).round()}% text'];
+      testWidgets('$what at ${width.round()} dp${how.map((h) => ', $h').join()}', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await openToday(
+          tester,
+          size: Size(width, 1600),
+          settings: hebrew ? _settings.copyWith(language: AppLanguage.hebrew) : null,
+          progress: _bereshit(),
+        );
+        final button = tester.getRect(find.bySubtype<FilledButton>());
+        // The frame's content, which the button may span, and the rings'
+        // group, centred in it.
+        Rect column(Finder inside) => tester.getRect(find.ancestor(of: inside, matching: find.byType(Column)).first);
+        final content = column(find.byType(SeferDivider));
+        final rings = column(find.byType(RingsWithLegend));
+        expect(button.center.dx, moreOrLessEquals(content.center.dx));
+        expect(rings.center.dx, moreOrLessEquals(content.center.dx));
+        // The group is as wide as it may be in the frame; the button as wide
+        // as the group, or 360 should that be wider, within the frame.
+        expect(button.width, moreOrLessEquals(math.min(content.width, math.max(360, rings.width))));
+        if (spans) {
+          expect(rings.width, content.width);
+          expect(button.width, content.width);
+        } else {
+          expect(rings.width, greaterThan(360), reason: 'the button follows the group, not 360 alone');
+          expect(button.width, lessThan(content.width));
+        }
+      });
+    }
 
     testWidgets('gives way, once the parsha is read, to saying so', (tester) async {
       final c = await openToday(
@@ -286,6 +338,96 @@ void main() {
       expect(find.text('Shabbat in 2 days'), findsOneWidget);
     });
 
+    testWidgets('on the eve of Yom Tov, says it begins this evening, and from midday is headed by it',
+        (tester) async {
+      // Wednesday 20 September 2028, Erev Rosh Hashanah 5789, with no city
+      // chosen: Haazinu's Shabbat is three days off, but reading stops
+      // tonight.
+      final erev = DateTime(2028, 9, 20, 11);
+      await openToday(tester, now: erev, progress: ProgressState(weeks: {}));
+      expect(find.text('Rosh Hashanah begins this evening'), findsOneWidget);
+      expect(find.text('Shabbat in 3 days'), findsNothing);
+      expect(find.text('Parshat HaShavua'), findsOneWidget);
+
+      await openToday(tester, now: DateTime(2028, 9, 20, 12), progress: ProgressState(weeks: {}));
+      expect(find.text('Erev Rosh Hashanah'), findsOneWidget);
+      expect(find.text('Parshat HaShavua'), findsNothing);
+
+      await openToday(
+        tester,
+        settings: _settings.copyWith(language: AppLanguage.hebrew),
+        now: DateTime(2028, 9, 20, 12),
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('ערב ראש השנה'), findsOneWidget);
+      expect(find.text('ראש השנה נכנס הערב'), findsOneWidget);
+
+      // Wednesday 1 October 2025, Erev Yom Kippur 5786, in the week of
+      // Haazinu.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(joinDate: LocalDate(2025, 9, 1)),
+        now: DateTime(2025, 10, 1, 15),
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('Erev Yom Kippur'), findsOneWidget);
+      expect(find.text('Yom Kippur begins this evening'), findsOneWidget);
+
+      // Sunday 10 October 2027, Erev Yom Kippur 5788, when Haazinu was read
+      // before it: the week is Vezot HaBerachah's, but Simchat Torah, two
+      // weeks off, waits.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(joinDate: LocalDate(2027, 9, 1)),
+        now: DateTime(2027, 10, 10, 15),
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('Simchat Torah'), findsOneWidget);
+      expect(find.text('Yom Kippur begins this evening'), findsOneWidget);
+      expect(find.textContaining('Simchat Torah in'), findsNothing);
+
+      // Hoshana Rabbah 5789, Wednesday 11 October 2028: outside Israel,
+      // Shemini Atzeret begins this evening, and Simchat Torah is the day
+      // after; in Israel, Simchat Torah is tomorrow, and says so.
+      final hoshanaRabbah = DateTime(2028, 10, 11, 15);
+      final joined = _settings.copyWith(joinDate: LocalDate(2028, 9, 1));
+      await openToday(tester, settings: joined, now: hoshanaRabbah, progress: ProgressState(weeks: {}));
+      expect(find.text('Yom Tov begins this evening'), findsOneWidget);
+      await openToday(
+        tester,
+        settings: joined.locatedIn(ReadingSchedule.israel),
+        now: hoshanaRabbah,
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('Simchat Torah is tomorrow'), findsOneWidget);
+      expect(find.text('Yom Tov begins this evening'), findsNothing);
+
+      // Thursday 10 June 2027, Erev Shavuot, which outside Israel runs on
+      // into Shabbat.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(joinDate: LocalDate(2027, 6, 6)),
+        now: DateTime(2027, 6, 10, 15),
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('Erev Yom Tov'), findsOneWidget);
+      expect(find.text('Yom Tov begins this evening'), findsOneWidget);
+    });
+
+    testWidgets('on a Friday before Yom Tov, is Erev Shabbat', (tester) async {
+      // Friday 18 May 2029, with Shavuot on Sunday and Monday.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(joinDate: LocalDate(2029, 5, 1)),
+        now: DateTime(2029, 5, 18, 15),
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('Erev Shabbat'), findsOneWidget);
+      expect(find.text('Shabbat begins this evening'), findsOneWidget);
+      expect(find.text('Erev Yom Tov'), findsNothing);
+      expect(find.text('Yom Tov begins this evening'), findsNothing);
+    });
+
     testWidgets('in the week of Vezot HaBerachah, is headed Simchat Torah', (tester) async {
       // Hoshana Rabbah 5787, a Friday, in the afternoon.
       await openToday(
@@ -295,6 +437,39 @@ void main() {
       );
       expect(find.text('Simchat Torah'), findsOneWidget);
       expect(find.text('Erev Shabbat'), findsNothing);
+    });
+
+    testWidgets('in the week of Vezot HaBerachah, says on a Friday that Shabbat begins this evening', (tester) async {
+      final joined = _settings.copyWith(joinDate: LocalDate(2026, 9, 1));
+      // Friday 25 September 2026, Erev Sukkot 5787, which is on Shabbat,
+      // after Haazinu was read: not "Simchat Torah in 9 days", nor 8 in
+      // Israel.
+      for (final israel in [false, true]) {
+        await openToday(
+          tester,
+          settings: israel ? joined.locatedIn(ReadingSchedule.israel) : joined,
+          now: DateTime(2026, 9, 25, 11),
+          progress: ProgressState(weeks: {}),
+        );
+        expect(find.text('Simchat Torah'), findsOneWidget, reason: 'israel: $israel');
+        expect(find.text('Shabbat begins this evening'), findsOneWidget, reason: 'israel: $israel');
+        expect(find.textContaining('Simchat Torah in'), findsNothing, reason: 'israel: $israel');
+      }
+      // Hoshana Rabbah 5787, Friday 2 October 2026: outside Israel, Shabbat
+      // and Shemini Atzeret begin this evening, and Simchat Torah is two
+      // days off; in Israel, Simchat Torah is that Shabbat, tomorrow.
+      final hoshanaRabbah = DateTime(2026, 10, 2, 11);
+      await openToday(tester, settings: joined, now: hoshanaRabbah, progress: ProgressState(weeks: {}));
+      expect(find.text('Shabbat begins this evening'), findsOneWidget);
+      expect(find.text('Simchat Torah in 2 days'), findsNothing);
+      await openToday(
+        tester,
+        settings: joined.locatedIn(ReadingSchedule.israel),
+        now: hoshanaRabbah,
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('Simchat Torah is tomorrow'), findsOneWidget);
+      expect(find.text('Shabbat begins this evening'), findsNothing);
     });
 
     testWidgets("leads to all of the week's aliyot, within Today", (tester) async {
@@ -349,7 +524,8 @@ void main() {
       final haftarah = find.widgetWithText(PaperRow, 'Haftarah');
       expect(
         tester.widget<PaperRow>(haftarah).subtitle,
-        'I Samuel 20:18–42\nSpecial haftarah: Shabbat Machar Chodesh\nAlso the regular haftarah',
+        // The book's name held on one line, and its range.
+        'I\u00A0Samuel 20:18–\u206042\nSpecial haftarah: Shabbat Machar Chodesh\nAlso the regular haftarah',
       );
       await tester.tap(haftarah);
       await loadTexts(tester);

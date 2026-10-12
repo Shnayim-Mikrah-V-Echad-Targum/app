@@ -137,6 +137,11 @@ const _screens = {
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
   'today_haftarah_left': '/today',
+  // Bereshit unfinished, its check-in put aside on the Sunday after: open
+  // until the end of Tuesday, which it names.
+  'today_late': '/today',
+  'today_late_yomtov': '/today',
+  'today_welcome_vezot': '/today',
   'today_yomtov_oneday': '/today',
   'today_yomtov_twoday': '/today',
   'today_joined_midweek': '/today',
@@ -154,6 +159,8 @@ const _screens = {
   'today_thursday': '/today',
   'today_erev_yomtov': '/today',
   'today_erev_shabbat_yomtov': '/today',
+  // Erev Rosh Hashanah 5789 from midday, which heads the title page.
+  'today_erev_yomtov_afternoon': '/today',
   // Logging from a Chumash: the aliyot due, each checked.
   'today_book': '/today',
   // Shabbat Bereshit, and the first day of Shavuot 5789 (a Sunday, before a
@@ -175,6 +182,13 @@ const _screens = {
   // Motzaei Shabbat Bereshit, after nightfall in Jerusalem: the check-in,
   // under a running head with Sunday's date, the reading day's.
   'today_motzaei_shabbat': '/today',
+  // The Monday after Simchat Torah 5787 (outside Israel, on Sunday): the
+  // check-in about Vezot HaBerachah, and the days its sheet offers, each
+  // Yom Tov of its week.
+  'today_checkin_vezot': '/today',
+  'today_checkin_vezot_date': '/today',
+  // The Tuesday after Shabbat Bamidbar 5789 and Shavuot: asked about both.
+  'today_checkin_yomtov': '/today',
   // Wednesday of Noach: Bereshit can still be restored by doubling up.
   'today_restore': '/today',
   // The Monday after a pause that ended on Sunday: welcomed back.
@@ -211,6 +225,14 @@ const _screens = {
   // Chamishi of Acharei Mot-Kedoshim (5786), the longest title the reader's
   // app bar sets.
   'reader_long': '/read/5786:29-30/4',
+  // Revi'i of Vayakhel-Pekudei 5786, in which Pekudei begins: its name heads
+  // 38:21, in the full text and in the guided reader's step of the whole
+  // aliyah.
+  'reader_combined': '/read/5786:22-23/3?mode=full',
+  'reader_combined_guided': '/read/5786:22-23/3',
+  // Revi'i of Tazria-Metzora 5786: Metzora begins a chapter (14:1), its name
+  // over the chapter's head.
+  'reader_combined_chapter': '/read/5786:27-28/3?mode=full',
   // Shlishi of Matot-Masei (Numbers 32:1–19) read by section: the Targum
   // step of 32:1–4, with the third reading of 32:3.
   'reader_third': '/read/5787:42-43/2',
@@ -296,9 +318,11 @@ const _screens = {
   'haftarah_tab_listen': '/parsha/haftarah/5787:1',
   'haftarah': '/haftarah/5787:1',
   // Bereshit's own haftarah after Machar Chodesh's: folded, and for Chabad
-  // open, under the note that Chabad's haftarot are being verified.
+  // open, under the note that Chabad's haftarot are being verified, which
+  // Machar Chodesh's, the same in every custom, doesn't have.
   'haftarah_regular': '/haftarah/5787:1',
   'haftarah_chabad': '/haftarah/5787:1',
+  'haftarah_chabad_note': '/haftarah/5787:2',
   'haftarah_chabad_regular': '/haftarah/5787:1',
   // Nitzavim-Vayeilech 5786's (Isaiah 61:10–63:9): the head of its last
   // chapter, and its end, with the divider and the button. Then Bereshit's
@@ -308,6 +332,10 @@ const _screens = {
   'haftarah_read': '/haftarah/5787:1',
   // Shabbat Shuva with Ha'azinu 5787: Hosea, then Joel.
   'haftarah_books': '/haftarah/5786:53',
+  // Korach 5788 on 30 Sivan, with Sunday Rosh Chodesh too: Isaiah 66, then
+  // the first and last verses of Machar Chodesh, under I Samuel's head.
+  'haftarah_rosh_chodesh': '/haftarah/5788:38',
+  'haftarah_rosh_chodesh_sunday': '/haftarah/5788:38',
   // A book of the Torah just finished: Genesis, in the cycle of 5787.
   'celebrate': '/celebrate/sefer:5787:0',
   'progress': '/progress',
@@ -390,6 +418,10 @@ const _screens = {
   'settings': '/settings',
   // The language, chosen in a sheet.
   'settings_language': '/settings',
+  // Paused, as on Today: the pause row's dialog, which extends the pause or
+  // ends it; and a pause of 30 days, which it can only end.
+  'settings_paused': '/settings',
+  'settings_paused_full': '/settings',
   's_reading': '/settings/reading',
   's_reading_changed': '/settings/reading',
   // Its end: the haftarah, special days and parsha names.
@@ -565,6 +597,8 @@ const _screens = {
   // Progress paused, and asked how long to extend the pause.
   'progress_paused': '/progress',
   'progress_extend': '/progress',
+  // Asked how long to pause, and from which day.
+  'progress_pause': '/progress',
   // The sheet behind the grace row's "About streaks".
   'progress_about': '/progress',
   // A reader in their second year (see [_secondYear]): the year chips, last
@@ -584,6 +618,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
     screen: (s) => s.copyWith(fullTextWholeParsha: true),
   'reader_parsha_focus': (s) => s.copyWith(fullTextWholeParsha: true, focusMode: true),
   'reader_section': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
+  'reader_combined_guided': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   'reader_rashi': (s) => s.copyWith(showRashi: true),
   'reader_rashi_script': (s) => s.copyWith(showRashi: true, rashiScript: true),
   'reader_rashi_step': (s) => s.copyWith(secondReading: SecondReading.rashi),
@@ -630,6 +665,10 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
   // The check-in, answered on Sunday, gives way to the open week's notice.
   'today_haftarah_left': (s) => s.copyWith(haftarahRequired: true, checkInAnsweredFor: '5787:1'),
+  'today_late': (s) => s.copyWith(checkInAnsweredFor: '5787:1'),
+  // Shabbat 8 April 2028, its window closing on Tuesday, Pesach.
+  'today_late_yomtov': (s) => s.copyWith(joinDate: LocalDate(2028, 3, 26), checkInAnsweredFor: '5788:25'),
+  'today_welcome_vezot': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
   // The Tuesday after Shavuot 5789 (Sunday and Monday, 20 and 21 May) on
   // Israel's reading: one day of Yom Tov kept, then two (a visitor).
   'today_yomtov_oneday': (s) =>
@@ -660,16 +699,21 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_simchat_torah': (s) =>
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true, joinDate: LocalDate(2026, 9, 20)),
   'today_three_weeks': (s) => s.copyWith(joinDate: LocalDate(2027, 7, 18)),
-  'today_erev_yomtov': (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
+  for (final screen in ['today_erev_yomtov', 'today_erev_yomtov_afternoon'])
+    screen: (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
   'today_erev_shabbat_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_yom_kippur': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
   'today_friday_night': (s) => s.copyWith(city: _jerusalem),
   'today_motzaei_shabbat': (s) => s.copyWith(city: _jerusalem),
+  for (final screen in ['today_checkin_vezot', 'today_checkin_vezot_date'])
+    screen: (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
+  'today_checkin_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_erev_tisha_bav': (s) => s.copyWith(joinDate: LocalDate(2027, 8, 11)),
   for (final screen in ['today_tisha_bav', 'today_tisha_bav_week'])
     screen: (s) => s.copyWith(joinDate: LocalDate(2027, 8, 1)),
   'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
+  'haftarah_chabad_note': (s) => s.withNusach(HaftarahNusach.chabad),
   's_reading_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   'haftarah_chabad_regular': (s) => s.withNusach(HaftarahNusach.chabad),
 };
@@ -749,6 +793,12 @@ final _screenNow = <String, DateTime>{
   'today_divergence': DateTime(2029, 4, 24, 11),
   'today_divergence_abroad': DateTime(2029, 4, 24, 11),
   'today_haftarah_left': DateTime(2026, 10, 13, 11),
+  'today_late': DateTime(2026, 10, 11, 11),
+  // Erev Pesach 5788, Monday 10 April 2028.
+  'today_late_yomtov': DateTime(2028, 4, 10, 11),
+  // Monday 5 October 2026, after Simchat Torah, back from a pause that
+  // ended before Rosh Hashanah's Shabbat.
+  'today_welcome_vezot': DateTime(2026, 10, 5, 11),
   'today_yomtov_oneday': DateTime(2029, 5, 22, 11),
   'today_yomtov_twoday': DateTime(2029, 5, 22, 11),
   // Hoshana Rabbah 5787; Simchat Torah is on Shabbat in Israel.
@@ -759,6 +809,7 @@ final _screenNow = <String, DateTime>{
   'today_thursday': DateTime(2026, 10, 15, 11),
   // Wednesday 20 September 2028, before Rosh Hashanah and Haazinu's Shabbat.
   'today_erev_yomtov': DateTime(2028, 9, 20, 11),
+  'today_erev_yomtov_afternoon': DateTime(2028, 9, 20, 15),
   // Friday 18 May 2029, with Shavuot on Sunday and Monday.
   'today_erev_shabbat_yomtov': DateTime(2029, 5, 18, 11),
   'today_shabbat': DateTime(2026, 10, 10, 11),
@@ -771,6 +822,9 @@ final _screenNow = <String, DateTime>{
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
   'focus_sheet_tile': DateTime(2026, 10, 12, 11),
   'today_motzaei_shabbat': DateTime(2026, 10, 10, 20),
+  'today_checkin_vezot': DateTime(2026, 10, 5, 11),
+  'today_checkin_vezot_date': DateTime(2026, 10, 5, 11),
+  'today_checkin_yomtov': DateTime(2029, 5, 22, 11),
   'today_restore': DateTime(2026, 10, 14, 11),
   'today_pause_ended': DateTime(2026, 10, 12, 11),
   'today_grace': DateTime(2026, 10, 16, 11),
@@ -800,8 +854,15 @@ final _screenProgress = <String, ProgressState Function()>{
   'today_thursday': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
-  'today_erev_yomtov': () => ProgressState(weeks: {}),
+  for (final screen in ['today_erev_yomtov', 'today_erev_yomtov_afternoon']) screen: () => ProgressState(weeks: {}),
   'today_erev_shabbat_yomtov': () => ProgressState(weeks: {}),
+  for (final screen in ['today_checkin_vezot', 'today_checkin_vezot_date']) screen: () => ProgressState(weeks: {}),
+  'today_late_yomtov': () => ProgressState(weeks: {}),
+  'today_welcome_vezot': () => ProgressState(pauses: [Pause(LocalDate(2026, 9, 14), LocalDate(2026, 9, 18), id: 'away')]),
+  // Rishon of Bamidbar read on its Sunday.
+  'today_checkin_yomtov': () => ProgressState(weeks: {
+        '5789:34': WeekProgress(weekId: '5789:34').withAliyah(0, LocalDate(2029, 5, 13)),
+      }),
   'today_yomtov': () => ProgressState(weeks: {}),
   'today_yom_kippur': () => ProgressState(weeks: {}),
   'today_erev_tisha_bav': () => ProgressState(weeks: {}),
@@ -838,9 +899,14 @@ final _screenProgress = <String, ProgressState Function()>{
   // Nothing read yet: Rishon is the first aliyah ever finished.
   'reader_offer': () => ProgressState(weeks: {}),
   'reader_offer_city': () => ProgressState(weeks: {}),
-  'today_paused': () => ProgressState(
+  for (final screen in ['today_paused', 'settings_paused'])
+    screen: () => ProgressState(
+          weeks: _progress().weeks,
+          pauses: [Pause(LocalDate(2026, 10, 8), LocalDate(2026, 10, 18), id: 'travel')],
+        ),
+  'settings_paused_full': () => ProgressState(
         weeks: _progress().weeks,
-        pauses: [Pause(LocalDate(2026, 10, 8), LocalDate(2026, 10, 18), id: 'travel')],
+        pauses: [Pause(LocalDate(2026, 10, 1), LocalDate(2026, 10, 30), id: 'travel')],
       ),
   // Paused from Wednesday to the Friday after next.
   for (final screen in ['progress_paused', 'progress_extend'])
@@ -1337,7 +1403,14 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     final side = find.widgetWithText(SwitchRow, l.sideBySide);
     await Scrollable.ensureVisible(tester.element(side.evaluate().isNotEmpty ? side : focus), alignment: 0.5);
   },
+  for (final screen in ['reader_combined', 'reader_combined_guided', 'reader_combined_chapter'])
+    screen: (tester) => Scrollable.ensureVisible(
+          tester.element(find.byWidgetPredicate((w) => w is ChapterHeading && w.chapter == null)),
+          alignment: 0.3,
+        ),
   'haftarah_end': _scrollToEnd,
+  'haftarah_rosh_chodesh_sunday': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
   'haftarah_chapter': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
   'haftarah_read': _scrollToEnd,
   's_reading_end': _scrollToEnd,
@@ -1349,6 +1422,15 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // Choose aliyot, the check-in's second text button.
   'today_checkin_sheet': (tester) =>
       tester.tap(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(TextButton)).at(1)),
+  // Choose aliyot, then Change date, under all seven.
+  'today_checkin_vezot_date': (tester) async {
+    await tester.tap(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(TextButton)).at(1));
+    await _settle(tester);
+    final change = find.text(_l10n(tester).changeDate);
+    await tester.ensureVisible(change);
+    await _settle(tester);
+    await tester.tap(change);
+  },
   // Shevi'i's Targum logged, and the frame a third of the way round.
   'today_completing': (tester) async {
     ProviderScope.containerOf(tester.element(find.byType(TodayScreen)))
@@ -1566,6 +1648,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.pump();
     await tester.tap(find.text(_l10n(tester).extendPause));
   },
+  'progress_pause': (tester) async {
+    await tester.ensureVisible(find.text(_l10n(tester).pauseTitle));
+    await tester.pump();
+    await tester.tap(find.text(_l10n(tester).pauseTitle));
+  },
   'progress_about': (tester) => tester.tap(find.text(_l10n(tester).aboutStreaks)),
   'progress_past': (tester) async {
     final chip = find.byType(SeferChoiceChip).first;
@@ -1663,6 +1750,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.translate_outlined));
   },
+  for (final screen in ['settings_paused', 'settings_paused_full'])
+    screen: (tester) => tester.tap(find.byIcon(Icons.pause_circle_outline)),
   's_data_paste': _tapInTurn([
     () => find.byIcon(Icons.content_paste_outlined),
     () => find.byType(FilledButton),
@@ -1797,12 +1886,17 @@ const _bigPhoneScreens = {
   // What deleting the account takes with it, and the dialog's three
   // actions, stacked.
   'account_delete',
+  // The days of Yom Tov offered, more than a phone holds at this size.
+  'today_checkin_vezot_date',
+  // The day of rest's title page, taller than the space under the header.
+  'today_shabbat',
 };
 const _hugeModes = {'huge', 'hugehe'};
 // The reader with Listen's player over its bar too: the chrome is held at
 // 200% so that a verse shows beneath it. Browse, whose names stay whole.
 const _hugeScreens = {
   'today',
+  'today_shabbat',
   'reader',
   'reader_listen',
   'reader_preview',
@@ -1814,6 +1908,7 @@ const _hugeScreens = {
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
   'today',
+  'today_shabbat',
   'parsha',
   'week',
   'progress',
@@ -1851,6 +1946,9 @@ const _desktopScreens = {
   'today_shabbat',
   'today_complete',
   'today_checkin',
+  'today_checkin_vezot',
+  'today_checkin_vezot_date',
+  'today_checkin_yomtov',
   'today_divergence',
   'today_haftarah_left',
   'today_yomtov_oneday',
@@ -1880,6 +1978,7 @@ const _desktopScreens = {
   'celebrate',
   'reader_full',
   'reader_full_end',
+  'reader_combined',
   'reader_full_english',
   'reader_full_rashi_english',
   'reader_parsha',
@@ -2044,7 +2143,11 @@ const _bigTextScreens = {
   'today_complete',
   'today_checkin',
   'today_checkin_sheet',
+  'today_checkin_vezot',
+  'today_checkin_vezot_date',
   'today_pause_ended',
+  'today_welcome_vezot',
+  'today_divergence',
   'today_grace',
   'today_tisha_bav',
   'reader_offer',
@@ -2085,6 +2188,10 @@ const _bigTextScreens = {
   's_reading',
   'city',
   'today_paused',
+  'today_late',
+  // The dialog that extends a pause, from Progress and from Settings.
+  'progress_extend',
+  'settings_paused',
   'welcome',
   'welcome_restore',
   'welcome_location',

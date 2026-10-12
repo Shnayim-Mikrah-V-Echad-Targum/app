@@ -10,7 +10,8 @@ import 'fonts_change_scope.dart';
 /// October / 10"). A line that starts after a break starts with its part,
 /// not with a dot. A part too long for a line on its own wraps after a comma
 /// in it ("Read on Shabbat, / October 10") before it wraps anywhere else,
-/// and never between a number and the word after it ("about / 33 min").
+/// never between a number and the word after it ("about / 33 min"), and
+/// never inside a closed range ("Deuteronomy 33:8– / 12").
 ///
 /// Each line is a text of its own, whose words are kept whole ([WholeWords]).
 class DotLine extends StatelessWidget {
@@ -28,6 +29,10 @@ class DotLine extends StatelessWidget {
 
   /// A number's last digit and the space after it, before a word.
   static final _counted = RegExp(r'(\d) (?=\S)');
+
+  /// The dash of a closed range ("33:8–12", "ח–יב"), between two
+  /// characters that are not spaces: a spaced one may still end a line.
+  static final _closedDash = RegExp(r'(?<=\S)–(?=[^\s\u2060])');
 
   @override
   Widget build(BuildContext context) {
@@ -50,12 +55,16 @@ class DotLine extends StatelessWidget {
       }
 
       // Each clause of a part too long for a line, kept whole where it fits
-      // on one, and otherwise each number in it held to the word it counts.
+      // on one, and otherwise each number in it held to the word it counts
+      // and each closed range held together, so that the line breaks after
+      // the book ("Deuteronomy / 33:8–12", not "Deuteronomy 33:8– / 12").
       String wrappable(String part) {
         if (fits(part)) return part;
         return [
           for (final clause in part.split(', '))
-            fits(clause) ? clause.replaceAll(' ', nbsp) : clause.replaceAllMapped(_counted, (m) => '${m[1]}$nbsp'),
+            fits(clause)
+                ? clause.replaceAll(' ', nbsp)
+                : clause.replaceAllMapped(_counted, (m) => '${m[1]}$nbsp').replaceAll(_closedDash, '–⁠'),
         ].join(', ');
       }
 
@@ -83,11 +92,6 @@ class DotLine extends StatelessWidget {
 /// [text] with each spaced em dash held to the word before it, so that no
 /// line starts with a dash.
 String dashHeldToWord(String text) => text.replaceAll(' — ', '${DotLine.nbsp}— ');
-
-/// [date] ("Sunday, October 11") with its words held together but after a
-/// comma, so that a sentence that gives it breaks there if it must, never
-/// between a day and its month ("11 / באוקטובר").
-String dateHeldTogether(String date) => date.split(', ').map((c) => c.replaceAll(' ', DotLine.nbsp)).join(', ');
 
 /// [text] wrapped between its words, never inside one: a word too wide for
 /// the line on its own, as with large text, is set just small enough to fit.

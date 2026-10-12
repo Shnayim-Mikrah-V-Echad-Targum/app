@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,17 +62,13 @@ class TodayScreen extends ConsumerWidget {
       // Under the status bar, which no app bar clears here.
       body: SafeArea(
         bottom: false,
-        child: PageBody(
-          maxWidth: wide ? ContentWidth.todayWide : ContentWidth.list,
-          padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.s40),
-          children: rest != null
-              ? [
-                  _TodayHeader(today: rest, civil: ref.watch(civilDateProvider)),
-                  const Gap(Space.lg),
-                  _RestHero(date: rest),
-                ]
-              : _readingDay(context, ref, wide: wide),
-        ),
+        child: rest != null
+            ? _RestDay(rest: rest, civil: ref.watch(civilDateProvider))
+            : PageBody(
+                maxWidth: wide ? ContentWidth.todayWide : ContentWidth.list,
+                padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.s40),
+                children: _readingDay(context, ref, wide: wide),
+              ),
       ),
     );
   }
@@ -99,11 +97,17 @@ class TodayScreen extends ConsumerWidget {
     // day after.
     final quietFast = ref.watch(plannerProvider).isQuietTishaBav(today) || ref.watch(fastBegunProvider);
     final welcome = pauseEnd != null && pauseEnd != settings.pauseEndSeen && !quietFast ? pauseEnd : null;
+    // The welcome back offers last week while it can still count: within
+    // its late window, or restorable by doubling up. Vezot HaBerachah, asked
+    // about after Simchat Torah though it can no longer count late, is not.
+    final catchUp = previous?.status == WeekStatus.inProgress || previous?.status == WeekStatus.overdue
+        ? previous
+        : null;
     // Last week's notice, unless the welcome back offers that week itself.
     // On a quiet fast it waits too, and so it does while the check-in, which
     // is never asked on the fast, is still to come the day after it.
     final shownPrevious = previous != null &&
-            welcome == null &&
+            (welcome == null || catchUp == null) &&
             !quietFast &&
             !awaitsCheckIn(previous, today: today, settings: settings)
         ? previous
@@ -114,7 +118,7 @@ class TodayScreen extends ConsumerWidget {
         NoticeBanner(
           icon: Icons.pause_circle_outline,
           // Until the last day of the pauses that run on from today's.
-          text: l.pausedBanner(names.dateInText(pauseCovering(pauses, today)!.end)),
+          text: l.pausedBanner(names.practiceDate(pauseCovering(pauses, today)!.end)),
           // Two sentences, which beside the button would wrap into a
           // narrow column.
           actionBelow: true,
@@ -127,11 +131,13 @@ class TodayScreen extends ConsumerWidget {
         const Gap(Rhythm.cardGap),
       ],
       if (welcome != null) ...[
-        _PauseEndedNotice(end: welcome, ctx: ctx, previous: previous),
+        _PauseEndedNotice(end: welcome, ctx: ctx, previous: catchUp),
         const Gap(Rhythm.cardGap),
       ],
-      if (divergence != null) ...[
-        _DivergenceBanner(divergence: divergence, settings: settings),
+      // Until put away for this week: next week's, if the two still differ,
+      // is told again.
+      if (divergence != null && settings.divergenceDismissedFor != ctx.id) ...[
+        _DivergenceBanner(divergence: divergence, settings: settings, weekId: ctx.id),
         const Gap(Rhythm.cardGap),
       ],
       if (shownPrevious != null) ...[
@@ -243,8 +249,10 @@ class _Columns extends StatelessWidget {
   }
 }
 
-/// The running head and the masthead: today's date in both calendars, the
-/// app's name, and the guide a tap away.
+/// The running head and the masthead: today's date in both calendars; the
+/// app's name, or from [Breakpoints.expanded], where the extended rail
+/// beside the page already carries it, the tab's, as every other tab titles
+/// its page; and the guide a tap away.
 class _TodayHeader extends StatelessWidget {
   const _TodayHeader({required this.today, required this.civil});
 
@@ -281,9 +289,12 @@ class _TodayHeader extends StatelessWidget {
                 ),
               ),
               const Gap(2),
-              // The app's name, not a heading: the parsha's name below is
-              // the page's heading.
-              WholeWords(l.appTitle, style: theme.textTheme.headlineMedium, textAlign: TextAlign.start),
+              // Not a heading: the parsha's name below is the page's heading.
+              WholeWords(
+                MediaQuery.sizeOf(context).width >= Breakpoints.expanded ? l.navToday : l.appTitle,
+                style: theme.textTheme.headlineMedium,
+                textAlign: TextAlign.start,
+              ),
             ],
           ),
         ),
@@ -300,19 +311,24 @@ class _TodayHeader extends StatelessWidget {
 /// Names both portions in a week when Israel and the Diaspora read
 /// different ones, for a reader who hears one place's reading but keeps the
 /// other's days of Yom Tov. A visitor to Israel can open last week's portion
-/// in Israel, their home portion this week.
+/// in Israel, their home portion this week, or change the reading they hear
+/// in Settings. Either reader can put it away for the week [weekId].
 class _DivergenceBanner extends ConsumerWidget {
-  const _DivergenceBanner({required this.divergence, required this.settings});
+  const _DivergenceBanner({required this.divergence, required this.settings, required this.weekId});
 
   final ReadingDivergence divergence;
   final AppSettings settings;
+  final String weekId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final names = Names(context);
     final repo = ref.watch(parshaRepositoryProvider);
-    String name(PortionId p) => names.portion(repo.portion(p), ashkenazi: settings.ashkenaziNames);
+    // Each name whole, as a name of two parshiyot is kept ("Acharei" over
+    // "Mot-Kedoshim"), though the sentences around them may break after a
+    // hyphen.
+    String name(PortionId p) => WholeWords.unbroken(names.portion(repo.portion(p), ashkenazi: settings.ashkenaziNames));
     final (israel, diaspora) = (name(divergence.israel), name(divergence.diaspora));
     final previous = divergence.previous;
     return NoticeBanner(
@@ -321,12 +337,32 @@ class _DivergenceBanner extends ConsumerWidget {
           ? l.readingDivergence(israel, diaspora)
           : l.readingDivergenceAhead(israel, diaspora),
       actionBelow: true,
-      action: previous == null
-          ? null
-          : TextButton(
-              onPressed: () => context.push('/today/week/${weekIdFor(previous.portion, previous.occasion)}'),
-              child: Text(l.readingDivergenceOpen(name(previous.portion))),
-            ),
+      // In the order the notice speaks of them: reading both portions, or
+      // only the one heard, once Settings says which that is.
+      action: divergence.hearsIsrael
+          ? Wrap(
+              alignment: WrapAlignment.end,
+              spacing: Space.sm,
+              runSpacing: Space.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (previous != null)
+                  TextButton(
+                    // Room around a label that large text wraps.
+                    style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                    onPressed: () => context.push('/today/week/${weekIdFor(previous.portion, previous.occasion)}'),
+                    child: Text(l.readingDivergenceOpen(name(previous.portion)), textAlign: TextAlign.center),
+                  ),
+                TextButton(
+                  style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                  onPressed: () => context.push('/settings/reading'),
+                  child: Text(l.readingDivergenceChange, textAlign: TextAlign.center),
+                ),
+              ],
+            )
+          : null,
+      onDismiss: () => ref.read(settingsProvider.notifier).update((s) => s.copyWith(divergenceDismissedFor: weekId)),
+      dismissLabel: l.actionDismiss,
     );
   }
 }
@@ -365,6 +401,10 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
   /// frame has since drawn itself, by week id. In memory only.
   static final _seenOpen = <String>{};
   static final _framed = <String>{};
+
+  /// How wide the button may grow in a wide frame, where the rings' group
+  /// is narrower than this (§9 Today, 3).
+  static const _buttonWidth = 360.0;
 
   static void forgetCompletions() {
     _seenOpen.clear();
@@ -444,37 +484,48 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     final scheme = theme.colorScheme;
     final sefer = SeferType.of(context);
     final settings = widget.settings;
-    final hebrewUi = context.isHebrewUi;
     final portion = ctx.portion;
     final week = ctx.week;
     final today = ctx.today;
     final vezot = week.portion.isVezotHaberakhah;
     final friday = today.weekday == _friday;
     final complete = ctx.progress.isComplete;
+    // The eve of a Yom Tov that is not Shabbat, by the reader's days of Yom
+    // Tov: reading stops this evening, however far off Shabbat is.
+    final erevYomTov = JewishHolidays.erevYomTov(today, israel: settings.oneDayYomTov);
 
     final quietFast = widget.quietFast;
+    // Watched only on an eve, which it turns at midday.
+    final pastMidday = (friday || erevYomTov != null) && ref.watch(pastMiddayProvider);
     final eyebrow = vezot
         ? l.simchatTorahEyebrow
         : quietFast
             ? l.tishaBavTitle
-            : friday && ref.watch(pastMiddayProvider)
+            : friday && pastMidday
                 ? l.erevShabbat
-                : l.parshatHashavua;
+                : erevYomTov != null && pastMidday
+                    ? l.erevYomTov(erevYomTov.name)
+                    : l.parshatHashavua;
     final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
     final range = portion.range;
     final daysLeft = week.occasion.differenceInDays(today);
     // The days until the portion is read in synagogue: on Shabbat, or for
     // Vezot HaBerachah on Simchat Torah, which is seldom a Shabbat. On
-    // Friday, that Shabbat begins this evening.
+    // Friday, that Shabbat begins this evening, and on the eve of Yom Tov,
+    // that Yom Tov does: in the long week of Vezot HaBerachah too (Erev
+    // Sukkot, say, or a Friday Hoshana Rabbah), unless Simchat Torah is
+    // itself tomorrow, or today.
     final countdown = daysLeft < 0 || complete
         ? null
-        : vezot
+        : vezot && (!(friday || erevYomTov != null) || daysLeft <= 1)
             ? l.simchatTorahInDays(daysLeft)
             : friday
                 ? l.shabbatBeginsTonight
-                : week.occasion.isShabbat
-                    ? l.shabbatInDays(daysLeft)
-                    : null;
+                : erevYomTov != null
+                    ? l.yomTovBeginsTonight(erevYomTov.name)
+                    : week.occasion.isShabbat
+                        ? l.shabbatInDays(daysLeft)
+                        : null;
     // On the eve of Shabbat or Yom Tov, with a city chosen, when candles are
     // lit there tonight instead.
     final candles = ref.watch(candleLightingTodayProvider);
@@ -496,21 +547,7 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
             label: l.parshaLabel(name),
             style: sefer.hebrewDisplay.copyWith(fontSize: 46, height: 60 / 46),
           ),
-          if (hebrewUi)
-            Lang(
-              const Locale('en'),
-              // Whole, as the name above it is: "Acharei" over "Mot-Kedoshim".
-              child: WholeWords(
-                names.portionAlt(portion, ashkenazi: settings.ashkenaziNames),
-                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-                textDirection: TextDirection.ltr,
-              ),
-            )
-          else
-            // The heading already says it.
-            ExcludeSemantics(
-              child: WholeWords(name, style: theme.textTheme.headlineLarge?.copyWith(color: scheme.onSurface)),
-            ),
+          _LatinName(portion: portion, ashkenazi: settings.ashkenaziNames, style: theme.textTheme.headlineLarge),
           const Gap(Space.xs),
           DotLine(
             [
@@ -541,13 +578,24 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
           // On the fast, the rings and the way to the aliyot alone.
           if (!quietFast) ...[
             const Gap(Space.md),
-            FilledButton.icon(
-              // The hero's 52, and room around a label that large text wraps.
-              style: AppButtons.roomy(context, (24, 12, 6))
-                  .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
-              icon: const Icon(Icons.menu_book),
-              label: Text(_continueLabel(context), textAlign: TextAlign.center),
-              onPressed: () => context.push('/read/${ctx.id}/${ctx.nextAliyah}'),
+            // As wide as the rings' group, or _buttonWidth if that is
+            // wider, centred under the rings: the whole frame where that is
+            // narrower, as on a phone, in a compact window or at large text.
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: math.max(_buttonWidth, _HeroRings.widthFor(context, ctx, thirdLabel)),
+                ),
+                child: FilledButton.icon(
+                  // The hero's 52, as wide as it may be, and room around a
+                  // label that large text wraps.
+                  style: AppButtons.roomy(context, (24, 12, 6))
+                      .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
+                  icon: const Icon(Icons.menu_book),
+                  label: Text(_continueLabel(context), textAlign: TextAlign.center),
+                  onPressed: () => context.push('/read/${ctx.id}/${ctx.nextAliyah}'),
+                ),
+              ),
             ),
           ],
         ],
@@ -651,6 +699,41 @@ class _ParshaHeading extends StatelessWidget {
       );
 }
 
+/// The parsha's name in Latin letters, under its pointed name: in the
+/// English UI as the UI names it, in [style] and onSurface, for the eye
+/// alone, as the heading's label already says it; in the Hebrew UI its
+/// English name, small and muted, tagged as English.
+class _LatinName extends StatelessWidget {
+  const _LatinName({required this.portion, required this.ashkenazi, required this.style});
+
+  final PortionInfo portion;
+  final bool ashkenazi;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final names = Names(context);
+    final theme = Theme.of(context);
+    if (!context.isHebrewUi) {
+      return ExcludeSemantics(
+        child: WholeWords(
+          names.portion(portion, ashkenazi: ashkenazi),
+          style: style?.copyWith(color: theme.colorScheme.onSurface),
+        ),
+      );
+    }
+    return Lang(
+      const Locale('en'),
+      // Whole, as the name above it is: "Acharei" over "Mot-Kedoshim".
+      child: WholeWords(
+        names.portionAlt(portion, ashkenazi: ashkenazi),
+        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        textDirection: TextDirection.ltr,
+      ),
+    );
+  }
+}
+
 /// The hero's rings and their legend, centred in the frame, and under the
 /// legend's end the way to all seven aliyot.
 class _HeroRings extends StatelessWidget {
@@ -659,18 +742,20 @@ class _HeroRings extends StatelessWidget {
   final WeekContext ctx;
   final String? thirdLabel;
 
+  /// As wide as the rings and their legend side by side can use (§6.11),
+  /// so that they sit in the middle of a wide frame.
+  static double widthFor(BuildContext context, WeekContext ctx, String? thirdLabel) =>
+      ParshaRings.hero +
+      RingsWithLegend.gap +
+      RingLegend.naturalWidth(context, ctx.progress, thirdLabel: thirdLabel) +
+      RingsWithLegend.maxSlack;
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    // As wide as the rings and their legend side by side can use (§6.11),
-    // so that they sit in the middle of a wide frame.
-    final width = ParshaRings.hero +
-        RingsWithLegend.gap +
-        RingLegend.naturalWidth(context, ctx.progress, thirdLabel: thirdLabel) +
-        RingsWithLegend.maxSlack;
     return Center(
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: width),
+        constraints: BoxConstraints(maxWidth: widthFor(context, ctx, thirdLabel)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -732,21 +817,11 @@ CatchUpDay catchUpDayFor(LocalDate today, {required bool oneDayYomTov}) {
   if (JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(tomorrow))) return CatchUpDay.erevYomKippur;
   if (JewishHolidays.isRestDay(tomorrow, israel: oneDayYomTov)) {
     // Logged once the days of rest are over, after whichever ends them.
-    final endsWithShabbat = _lastDayOfRest(tomorrow, oneDayYomTov: oneDayYomTov).isShabbat;
+    final endsWithShabbat = JewishHolidays.lastRestDay(tomorrow, israel: oneDayYomTov).isShabbat;
     if (tomorrow.isShabbat) return endsWithShabbat ? CatchUpDay.erevShabbat : CatchUpDay.erevShabbatThenYomTov;
     return endsWithShabbat ? CatchUpDay.erevYomTovThenShabbat : CatchUpDay.erevYomTov;
   }
   return today.weekday == _thursday ? CatchUpDay.thursday : CatchUpDay.midweek;
-}
-
-/// The last of the days of rest that run on from [day], a day of rest, by
-/// the reader's custom for the days of Yom Tov.
-LocalDate _lastDayOfRest(LocalDate day, {required bool oneDayYomTov}) {
-  var last = day;
-  while (JewishHolidays.isRestDay(last.addDays(1), israel: oneDayYomTov)) {
-    last = last.addDays(1);
-  }
-  return last;
 }
 
 /// Today's reading (§9 Today, 4), or while aliyot planned for earlier days
@@ -933,7 +1008,7 @@ class _TodayCard extends ConsumerWidget {
       builder: (context) => _BookSheet(ctx: ctx, aliyot: aliyot),
     );
     if (chosen == null || chosen.isEmpty || !context.mounted) return;
-    final date = await pickReadDate(context, week: ctx.week, today: ctx.today);
+    final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
     if (date == null || !context.mounted) return;
     ref.read(progressProvider.notifier).markAliyot(ctx.id, chosen, date);
     hapticSuccess(ref);
@@ -1047,7 +1122,66 @@ class _FlushTextButton extends StatelessWidget {
   }
 }
 
-/// Today on Shabbat or Yom Tov ([restDayProvider], §9 Today, 8): candles, a
+/// Today on Shabbat or Yom Tov (§9 Today, 8): the header, and the day's
+/// title page in the space under it, two fifths of the way down what it
+/// leaves free, as a book's title stands a little above the middle of its
+/// page. Where large text makes the page taller than the screen, it
+/// scrolls.
+class _RestDay extends StatelessWidget {
+  const _RestDay({required this.rest, required this.civil});
+
+  /// The day of rest, and the device's date ([_TodayHeader]).
+  final LocalDate rest;
+  final LocalDate civil;
+
+  /// Two fifths of the free space above the title page, three below.
+  static const _place = Alignment(0, -0.2);
+
+  @override
+  Widget build(BuildContext context) {
+    final g = Gutter.of(context);
+    // In the page's column, gutters included, as a PageBody's; each heading,
+    // text and control a node of its own.
+    Widget column(Widget child) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: ContentWidth.list),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: g),
+              child: Semantics(explicitChildNodes: true, child: child),
+            ),
+          ),
+        );
+    // Built once, so that laying the page out again as it scrolls leaves it be.
+    final titlePage = Padding(
+      padding: EdgeInsets.only(top: Space.lg, bottom: Space.s40 + MediaQuery.paddingOf(context).bottom),
+      child: Align(alignment: _place, child: column(_RestHero(date: rest))),
+    );
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.only(top: Space.md),
+          sliver: SliverToBoxAdapter(child: column(_TodayHeader(today: rest, civil: civil))),
+        ),
+        // As tall as the screen leaves under the header, or as the title page
+        // with its margins where that is taller. A [SliverFillRemaining]
+        // would ask the page its intrinsic height, which its balanced lines,
+        // laid out by width, can't give.
+        SliverLayoutBuilder(
+          builder: (context, constraints) => SliverToBoxAdapter(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: math.max(0, constraints.viewportMainAxisExtent - constraints.precedingScrollExtent),
+              ),
+              child: titlePage,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The day of rest's title page ([restDayProvider], §9 Today, 8): candles, a
 /// greeting, the parsha's name, a word that reading from a printed Chumash
 /// is logged afterwards, and the way to the parsha. Nothing else, and
 /// nothing moves.
@@ -1069,7 +1203,7 @@ class _RestHero extends ConsumerWidget {
     final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
     bool yomTov(LocalDate d) => JewishHolidays.isYomTov(HebrewDate.fromLocalDate(d), israel: settings.oneDayYomTov);
     bool yomKippur(LocalDate d) => JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(d));
-    final last = _lastDayOfRest(date, oneDayYomTov: settings.oneDayYomTov);
+    final last = JewishHolidays.lastRestDay(date, israel: settings.oneDayYomTov);
     // The day's own greeting, on Shabbat too: Yom Kippur is a fast, and Rosh
     // Hashanah has its wish for the year.
     final greeting = yomKippur(date)
@@ -1088,9 +1222,9 @@ class _RestHero extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(child: ShabbatCandlesIcon(size: 40)),
+          const Center(child: ShabbatCandlesIcon(size: 48)),
           const Gap(Space.lg),
-          BalancedText(greeting, style: theme.textTheme.headlineMedium),
+          BalancedText(greeting, style: theme.textTheme.displaySmall),
           const Gap(Space.xl),
           Semantics(
             container: true,
@@ -1106,8 +1240,10 @@ class _RestHero extends ConsumerWidget {
                 _ParshaHeading(
                   portion: portion,
                   label: l.parshaLabel(name),
-                  style: SeferType.of(context).hebrewDisplay.copyWith(fontSize: 32, height: 44 / 32),
+                  style: SeferType.of(context).hebrewDisplay.copyWith(fontSize: 40, height: 52 / 40),
                 ),
+                // Smaller than the reading day's, as the name above it is.
+                _LatinName(portion: portion, ashkenazi: settings.ashkenaziNames, style: theme.textTheme.headlineSmall),
               ],
             ),
           ),
@@ -1175,6 +1311,10 @@ class _PauseEndedNotice extends ConsumerWidget {
   /// The pause's last day.
   final LocalDate end;
   final WeekContext ctx;
+
+  /// Last week, unfinished, while it can still count: within its late
+  /// window ([WeekStatus.inProgress]) or restorable by doubling up
+  /// ([WeekStatus.overdue]).
   final WeekContext? previous;
 
   @override
@@ -1202,7 +1342,7 @@ class _PauseEndedNotice extends ConsumerWidget {
     return NoticeBanner(
       icon: Icons.play_circle_outline,
       title: l.pauseEnded,
-      text: l.pauseEndedOn(names.dateInText(end)),
+      text: l.pauseEndedOn(names.practiceDate(end)),
       actionBelow: true,
       action: actions.isEmpty
           ? null

@@ -75,7 +75,7 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
     final open = ctx.isOpen && !ctx.progress.isComplete;
 
     Future<void> markWeek() async {
-      final date = await pickReadDate(context, week: ctx.week, today: ctx.today);
+      final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
       if (date == null || !context.mounted) return;
       ref.read(progressProvider.notifier).markWeek(ctx.id, date);
       hapticSuccess(ref);
@@ -139,7 +139,7 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
             _WeekHeader(ctx: ctx, namesKey: headingKey),
             if (!ctx.isOpen) ...[
               const Gap(Space.xl),
-              NoticeBanner(icon: Icons.visibility_outlined, text: l.previewNotOpen(names.dateInText(ctx.week.start))),
+              NoticeBanner(icon: Icons.visibility_outlined, text: l.previewNotOpen(names.practiceDate(ctx.week.start))),
             ],
             // Digits, which an eyebrow never holds; inset as a group's header.
             SectionHeader.plain(
@@ -316,8 +316,9 @@ class _StatusLine extends StatelessWidget {
 
 /// One aliyah on the week's sheet (§9 Parsha, 3): a disc with its Hebrew
 /// ordinal, or a check once its three readings are done; its name, verses
-/// and the time they take; the day it is planned for; and at the end, pips
-/// for its three readings over a menu.
+/// and the time they take; the day it is planned for; in a week of two
+/// parshiyot, where the second begins, in the aliyah it begins in; and at
+/// the end, pips for its three readings over a menu.
 ///
 /// Today's aliyot say so in bold, and those planned for a day gone by that
 /// are still to read give their day in the overdue colour, after a mark,
@@ -378,12 +379,24 @@ class _AliyahRow extends ConsumerWidget {
     // The reading under way: the next of the aliyah to read next.
     final current = ctx.isOpen && ctx.nextAliyah == aliyah ? passes.indexOf(false) : -1;
     final other = ctx.portion.alternativeAliyah(aliyah);
+    // In a week of two parshiyot, the aliyah the second begins in says
+    // where it does.
+    String? secondBegins;
+    if (ref.watch(parshaRepositoryProvider).secondParsha(ctx.portion) case final second?) {
+      final start = second.aliyot.first.start;
+      if (r.contains(start)) {
+        secondBegins = l.secondParshaBegins(
+          names.portion(second, ashkenazi: settings.ashkenaziNames),
+          names.verseRange(start.chapter, start.verse, start.chapter, start.verse),
+        );
+      }
+    }
     final scaler = MediaQuery.textScalerOf(context);
     final titleStyle = text.titleMedium!.copyWith(color: scheme.onSurface);
     final titleLine = scaler.scale(titleStyle.fontSize!) * titleStyle.height!;
 
     Future<void> markRead() async {
-      final date = await pickReadDate(context, week: ctx.week, today: ctx.today);
+      final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
       if (date == null || !context.mounted) return;
       ref.read(progressProvider.notifier).markAliyah(ctx.id, aliyah, date);
       hapticSuccess(ref);
@@ -433,6 +446,11 @@ class _AliyahRow extends ConsumerWidget {
         style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
       ),
       ?_plan(context, counts: (date) => !paused && !pauses.any((p) => p.contains(date))),
+      if (secondBegins != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: WholeWords(secondBegins, style: SeferType.of(context).marginalia, textAlign: TextAlign.start),
+        ),
       if (other != null)
         Padding(
           padding: const EdgeInsets.only(top: 2),

@@ -470,13 +470,18 @@ void main() {
         pauseEndSeen: _monday.addDays(-2),
         lastStripAck: _monday,
         stripNoteShownOn: _monday,
+        divergenceDismissedFor: '5787:1',
       );
       final (c, _) = await open(
         tester,
         settings: here,
         file: encodeBackup(
           backedUp(),
-          savedSettings.copyWith(checkInAnsweredFor: '5786:54', lastStripAck: _monday.addDays(-9)),
+          savedSettings.copyWith(
+            checkInAnsweredFor: '5786:54',
+            lastStripAck: _monday.addDays(-9),
+            divergenceDismissedFor: '5786:54',
+          ),
           now: DateTime.utc(2026, 10, 11, 12),
         ),
       );
@@ -492,6 +497,7 @@ void main() {
         (settings.checkInAnsweredFor, settings.pauseEndSeen, settings.lastStripAck, settings.stripNoteShownOn),
         ('5787:1', _monday.addDays(-2), _monday, _monday),
       );
+      expect(settings.divergenceDismissedFor, '5787:1');
     });
 
     for (final allows in [true, false]) {

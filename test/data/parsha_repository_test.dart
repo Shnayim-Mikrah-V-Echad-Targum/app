@@ -22,20 +22,58 @@ void main() {
       expect(refs(h.parts), 'I Samuel 20:18-20:42');
       expect(refs(h.regular), 'Isaiah 42:5-43:10');
       expect(h.fallback, isFalse);
+      expect(h.regularFallback, isFalse);
     });
 
     test('has the Sephardi regular haftarah for Sephardim', () {
       final h = repo.haftarahFor(bereshit, shabbat, HaftarahNusach.sephardi);
       expect(refs(h.regular), 'Isaiah 42:5-42:21');
       expect(h.fallback, isFalse, reason: 'a Sephardi reading not listed is the same as the Ashkenazi');
+      expect(h.regularFallback, isFalse);
     });
 
-    test('has the Ashkenazi readings for Chabad, and says so', () {
+    test('has the Ashkenazi readings for Chabad, and says so only of the regular one', () {
       final h = repo.haftarahFor(bereshit, shabbat, HaftarahNusach.chabad);
       expect(refs(h.parts), 'I Samuel 20:18-20:42');
       expect(refs(h.regular), 'Isaiah 42:5-43:10');
-      expect(h.fallback, isTrue);
+      expect(h.fallback, isFalse, reason: "every custom reads Machar Chodesh's the same");
+      expect(h.regularFallback, isTrue, reason: "the Ashkenazi and Sephardi readings of Bereshit's differ");
     });
+  });
+
+  test("a week whose haftarah every custom reads the same doesn't say Chabad's is the Ashkenazi one", () {
+    // Lech Lecha 5787: Isaiah 40:27–41:16.
+    final h = repo.haftarahFor(const PortionId(3), LocalDate(2026, 10, 24), HaftarahNusach.chabad);
+    expect(h.specialKey, isNull);
+    expect(refs(h.parts), 'Isaiah 40:27-41:16');
+    expect(h.fallback, isFalse);
+    expect(h.regularFallback, isFalse);
+  });
+
+  test("keeps hebcal's Chabad readings of special haftarot", () {
+    // Shabbat HaChodesh and Zachor 5786, from the weeks of the year.
+    const schedule = ParshaSchedule(israel: false);
+    final found = <String, WeekHaftarah>{};
+    var week = schedule.weekFor(LocalDate(2026, 1, 1));
+    for (var i = 0; i < 20 && found.length < 2; i++, week = schedule.nextWeek(week)) {
+      final h = repo.haftarahFor(week.portion, week.occasion, HaftarahNusach.chabad);
+      if (h.specialKey case final key? when key == 'Shabbat HaChodesh' || key == 'Shabbat Zachor') found[key] = h;
+    }
+    expect(refs(found['Shabbat HaChodesh']!.parts), 'Ezekiel 45:18-46:16');
+    expect(refs(found['Shabbat Zachor']!.parts), 'I Samuel 15:2-15:34');
+    for (final h in found.values) {
+      expect(h.fallback, isFalse, reason: "it is Chabad's own");
+    }
+  });
+
+  test('Shabbat Rosh Chodesh on the 30th adds the first and last verses of Machar Chodesh, for every custom', () {
+    // Korach 5788, on 30 Sivan, the first day of Rosh Chodesh Tammuz.
+    for (final n in HaftarahNusach.values) {
+      final h = repo.haftarahFor(const PortionId(38), LocalDate(2028, 6, 24), n);
+      expect(h.specialKey, 'Shabbat Rosh Chodesh (and Sunday)', reason: n.name);
+      expect(refs(h.parts), 'Isaiah 66:1-66:24, I Samuel 20:18-20:18, I Samuel 20:42-20:42', reason: n.name);
+      expect(h.fallback, isFalse, reason: n.name);
+    }
   });
 
   test('a week without a special haftarah has no regular one apart', () {
@@ -61,26 +99,41 @@ void main() {
 
     test("has the Rosh Chodesh haftarah for Ashkenazim, Re'eh's apart, and then both with Ki Tetze", () {
       final h = repo.haftarahFor(const PortionId(47), reeh, HaftarahNusach.ashkenazi);
-      expect(h.specialKey, 'Shabbat Rosh Chodesh');
-      expect(refs(h.parts), 'Isaiah 66:1-66:24');
+      // 30 Av, with Sunday Rosh Chodesh too: Machar Chodesh's first and last
+      // verses are added.
+      expect(h.specialKey, 'Shabbat Rosh Chodesh (and Sunday)');
+      expect(refs(h.parts), 'Isaiah 66:1-66:24, I Samuel 20:18-20:18, I Samuel 20:42-20:42');
       expect(refs(h.regular), 'Isaiah 54:11-55:5');
       final next = repo.haftarahFor(const PortionId(49), kiTeitzei, HaftarahNusach.ashkenazi);
       expect(refs(next.parts), 'Isaiah 54:1-54:10, Isaiah 54:11-55:5');
       expect(next.regular, isNull, reason: "Ki Tetze's own haftarah is its first part");
     });
 
-    for (final n in [HaftarahNusach.sephardi, HaftarahNusach.chabad]) {
-      test("has Re'eh's own for the ${n.name} custom, with the first and last verses of Rosh Chodesh's", () {
-        final h = repo.haftarahFor(const PortionId(47), reeh, n);
-        expect(h.specialKey, "Re'eh on Shabbat Rosh Chodesh");
-        expect(refs(h.parts), 'Isaiah 54:11-55:5, Isaiah 66:1-66:1, Isaiah 66:23-66:23');
-        expect(h.regular, isNull);
-        expect(h.fallback, isFalse, reason: "it is the custom's own reading");
-        final next = repo.haftarahFor(const PortionId(49), kiTeitzei, n);
-        expect(next.specialKey, isNull);
-        expect(refs(next.parts), 'Isaiah 54:1-54:10');
-      });
-    }
+    test("has Re'eh's own for Sephardim, with the first and last verses of Rosh Chodesh's and Machar Chodesh's", () {
+      final h = repo.haftarahFor(const PortionId(47), reeh, HaftarahNusach.sephardi);
+      expect(h.specialKey, "Re'eh on Shabbat Rosh Chodesh (and Sunday)");
+      expect(
+        refs(h.parts),
+        'Isaiah 54:11-55:5, Isaiah 66:1-66:1, Isaiah 66:23-66:23, I Samuel 20:18-20:18, I Samuel 20:42-20:42',
+      );
+      expect(h.regular, isNull);
+      expect(h.fallback, isFalse, reason: "it is the custom's own reading");
+      final next = repo.haftarahFor(const PortionId(49), kiTeitzei, HaftarahNusach.sephardi);
+      expect(next.specialKey, isNull);
+      expect(refs(next.parts), 'Isaiah 54:1-54:10');
+    });
+
+    test("has the Rosh Chodesh haftarah for Chabad, as Ashkenazim, and Re'eh's with Ki Tetze's", () {
+      // Re'eh 5789, on 30 Av too.
+      for (final shabbat in [reeh, LocalDate(2029, 8, 11)]) {
+        final h = repo.haftarahFor(const PortionId(47), shabbat, HaftarahNusach.chabad);
+        expect(h.specialKey, 'Shabbat Rosh Chodesh (and Sunday)', reason: '$shabbat');
+        expect(refs(h.parts), 'Isaiah 66:1-66:24, I Samuel 20:18-20:18, I Samuel 20:42-20:42', reason: '$shabbat');
+      }
+      final next = repo.haftarahFor(const PortionId(49), kiTeitzei, HaftarahNusach.chabad);
+      expect(next.specialKey, 'Ki Teitzei with 3rd Haftarah of Consolation');
+      expect(refs(next.parts), 'Isaiah 54:1-54:10, Isaiah 54:11-55:5');
+    });
   });
 
   group('Kedoshim 5782, after Acharei Mot gave way to Shabbat Machar Chodesh,', () {
@@ -93,6 +146,7 @@ void main() {
         expect(refs(h.parts), 'Amos 9:7-9:15', reason: n.name);
         expect(refs(h.regular), 'Ezekiel 22:1-22:19', reason: n.name);
         expect(h.fallback, n == HaftarahNusach.chabad, reason: n.name);
+        expect(h.regularFallback, n == HaftarahNusach.chabad, reason: n.name);
       }
     });
 
@@ -110,6 +164,42 @@ void main() {
     expect(bereshit.fallsBack(HaftarahNusach.sephardi), isFalse);
     expect(bereshit.fallsBack(HaftarahNusach.ashkenazi), isFalse);
     expect(repo.portion(const PortionId(25)).haftarah.fallsBack(HaftarahNusach.chabad), isFalse, reason: 'Tzav');
+    // Where the Ashkenazi and Sephardi readings agree, Chabad's is taken to
+    // agree too.
+    final lechLecha = repo.portion(const PortionId(3)).haftarah;
+    expect(lechLecha.sephardi, isNull);
+    expect(lechLecha.chabad, isNull);
+    expect(lechLecha.fallsBack(HaftarahNusach.chabad), isFalse);
+  });
+
+  group('the second parsha of two read together', () {
+    test('is the one after the first, and begins within an aliyah, where the first ends', () {
+      expect(repo.combined, hasLength(7));
+      for (final pair in repo.combined) {
+        final second = repo.secondParsha(pair)!;
+        final first = repo.byNumber(pair.id.number);
+        expect(second.id, PortionId(pair.id.number + 1), reason: pair.key);
+        final start = second.aliyot.first.start;
+        expect(pair.range.contains(start), isTrue, reason: pair.key);
+        expect(first.range.end < start && second.range.end == pair.range.end, isTrue, reason: pair.key);
+        // No aliyah of the week begins where the second does: the seam
+        // falls within one, which is why the week's page says where.
+        expect(pair.aliyot.where((a) => a.contains(start)), hasLength(1), reason: pair.key);
+        expect(pair.aliyot.any((a) => a.start == start), isFalse, reason: pair.key);
+      }
+    });
+
+    test('of Vayakhel-Pekudei is Pekudei, from 38:21, within Revi’i', () {
+      final pair = repo.portion(const PortionId(22, combined: true));
+      final pekudei = repo.secondParsha(pair)!;
+      expect(pekudei.key, 'Pekudei');
+      expect(pekudei.aliyot.first.start.toString(), '38:21');
+      expect(pair.aliyot.indexWhere((a) => a.contains(pekudei.aliyot.first.start)), 3);
+    });
+
+    test('is none for a portion of one parsha', () {
+      expect(repo.secondParsha(repo.byNumber(22)), isNull);
+    });
   });
 
   group('parsha names', () {
