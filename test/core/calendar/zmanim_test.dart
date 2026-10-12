@@ -8,6 +8,16 @@ import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 
 import 'fixtures.dart';
 
+const _jerusalemCity = City(
+  id: 281184,
+  nameEn: 'Jerusalem',
+  countryCode: 'IL',
+  latitude: 31.769,
+  longitude: 35.2163,
+  timeZone: 'Asia/Jerusalem',
+  candleMinutes: 40,
+);
+
 City _place(String name, double lat, double lon, String tz) =>
     City(id: 0, nameEn: name, countryCode: '', latitude: lat, longitude: lon, timeZone: tz);
 
@@ -48,6 +58,60 @@ void main() {
       expect(before, greaterThanOrEqualTo(Duration(minutes: minutes)), reason: name);
       expect(before, lessThan(Duration(minutes: minutes + 1)), reason: name);
     }
+  });
+
+  group("the reader's luach", () {
+    final jerusalem = city('Jerusalem');
+    final friday = LocalDate(2026, 10, 16);
+
+    test('candles are lit the minutes the reader chooses before sunset, rounded down', () {
+      final z = Zmanim.of(jerusalem, friday, candleMinutes: 30);
+      final lit = z.candleLighting!;
+      expect((lit.second, lit.millisecond), (0, 0));
+      final before = z.sunset!.difference(lit);
+      expect(before, greaterThanOrEqualTo(const Duration(minutes: 30)));
+      expect(before, lessThan(const Duration(minutes: 31)));
+      // Ten minutes after the city's own 40.
+      expect(lit.difference(Zmanim.of(jerusalem, friday).candleLighting!), const Duration(minutes: 10));
+    });
+
+    test('Shabbat ends a fixed time after sunset, rounded up', () {
+      final shabbat = friday.addDays(1);
+      for (final rule in [HavdalahRule.min42, HavdalahRule.min50, HavdalahRule.min72]) {
+        final z = Zmanim.of(jerusalem, shabbat, havdalah: rule);
+        final ends = z.havdalah!;
+        expect((ends.second, ends.millisecond), (0, 0), reason: '$rule');
+        final after = ends.difference(z.sunset!);
+        expect(after, greaterThanOrEqualTo(Duration(minutes: rule.minutes!)), reason: '$rule');
+        expect(after, lessThan(Duration(minutes: rule.minutes! + 1)), reason: '$rule');
+      }
+      // Later than nightfall at 8.5°, which in Jerusalem in October is
+      // about 37 minutes after sunset.
+      expect(Zmanim.of(jerusalem, shabbat, havdalah: HavdalahRule.min72).havdalah!.isAfter(
+            Zmanim.of(jerusalem, shabbat).havdalah!,
+          ), isTrue);
+      // Candle-lighting is the city's whatever the end of Shabbat.
+      expect(Zmanim.of(jerusalem, friday, havdalah: HavdalahRule.min72).candleLighting,
+          Zmanim.of(jerusalem, friday).candleLighting);
+    });
+
+    test('a fixed end of Shabbat is given where the sky never gets dark enough for nightfall', () {
+      final z = Zmanim.of(_place('Stockholm', 59.329, 18.069, 'Europe/Stockholm'), LocalDate(2026, 6, 20),
+          havdalah: HavdalahRule.min72);
+      expect(z.havdalah, isNotNull);
+      expect(z.havdalah!.difference(z.sunset!).inMinutes, 72);
+    });
+
+    test('the city with its customs gives the same times, and is equal by them', () {
+      const custom = ShabbatCity(_jerusalemCity, candleMinutes: 30, havdalah: HavdalahRule.min72);
+      final z = custom.on(friday);
+      final direct = Zmanim.of(_jerusalemCity, friday, candleMinutes: 30, havdalah: HavdalahRule.min72);
+      expect((z.candleLighting, z.havdalah), (direct.candleLighting, direct.havdalah));
+      expect(custom, const ShabbatCity(_jerusalemCity, candleMinutes: 30, havdalah: HavdalahRule.min72));
+      expect(custom, isNot(const ShabbatCity(_jerusalemCity, havdalah: HavdalahRule.min72)));
+      expect(custom.hashCode,
+          const ShabbatCity(_jerusalemCity, candleMinutes: 30, havdalah: HavdalahRule.min72).hashCode);
+    });
   });
 
   test('Havdalah is a whole minute after sunset', () {

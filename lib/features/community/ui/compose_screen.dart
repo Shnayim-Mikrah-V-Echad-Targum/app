@@ -191,7 +191,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _draftKept = false;
         _beginQuestion();
       } else {
-        _draftKept = !_body.text.contains('> ${verseText(text, ref.read(settingsProvider))}');
+        _draftKept = !quotesVerse(_body.text, text, ref.read(settingsProvider));
       }
     });
   }

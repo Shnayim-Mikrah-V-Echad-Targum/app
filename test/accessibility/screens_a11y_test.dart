@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/community/ui/thread_screen.dart' show PostCard;
 import 'package:shnayim_mikra/features/reader/reader_bottom_bar.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -179,8 +180,17 @@ void main() {
   // Bereshit shows them (test/helpers.dart): a grace day told under the
   // week, a special haftarah, aliyot left from days gone by on the week's
   // page, a year's Torah map, the forums' activity and a discussion. Each
-  // page is opened in English and then shown in Hebrew.
-  for (final route in ['/today', '/parsha', '/progress', '/community', '/settings', '/community/thread/1']) {
+  // page is opened in English and then shown in Hebrew. A forum's list of
+  // discussions holds the longest lines of facts ("… · thanked 13 times").
+  for (final route in [
+    '/today',
+    '/parsha',
+    '/progress',
+    '/community',
+    '/settings',
+    '/community/forum/questions',
+    '/community/thread/1',
+  ]) {
     testWidgets('no overflow or broken word at 300% on a 320 dp phone, in either language, on Friday: $route',
         (tester) async {
       tester.view.physicalSize = const Size(320, 640);
@@ -204,6 +214,7 @@ void main() {
         expect(find.textContaining('Shabbat Machar Chodesh'), findsOneWidget);
       }
       if (route == '/parsha') expect(find.byIcon(Icons.history), findsWidgets);
+      if (route == '/community/forum/questions') expect(find.textContaining('thanked'), findsWidgets);
       for (final language in [AppLanguage.system, AppLanguage.hebrew]) {
         c.read(settingsProvider.notifier).update((s) => s.copyWith(language: language));
         await tester.pumpAndSettle();
@@ -259,6 +270,163 @@ void main() {
       }
     });
   }
+
+  // The reply box's label is never cut short: at the largest text, on the
+  // smallest phone, the Reply button goes under the field, at its end, and
+  // the label stands on the outline. At 100% the button stays beside it.
+  group('the reply box', () {
+    Future<void> openThread(WidgetTester tester, {required bool hebrew, required double textScale}) => open(
+          tester,
+          '/community/thread/1',
+          settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.system),
+          size: const Size(320, 640),
+          textScale: textScale,
+        );
+
+    /// The field's label, as the field lays it out.
+    RenderParagraph label(WidgetTester tester, {required bool hebrew}) => tester.renderObject(find.descendant(
+          of: find.byType(InputDecorator),
+          matching: find.text(hebrew ? 'כתיבת תגובה' : 'Write a reply'),
+        ));
+
+    for (final hebrew in [false, true]) {
+      testWidgets('at 300% on a 320 dp phone, keeps its label whole, the button under the field${hebrew ? ', Hebrew' : ''}',
+          (tester) async {
+        await openThread(tester, hebrew: hebrew, textScale: 3);
+        expect(tester.takeException(), isNull);
+        expect(label(tester, hebrew: hebrew).didExceedMaxLines, isFalse);
+        final field = tester.getRect(find.byType(TextField));
+        final button = tester.getRect(find.byType(FilledButton));
+        expect(button.top, greaterThan(field.bottom));
+        // At the field's end.
+        if (hebrew) {
+          expect(button.left, moreOrLessEquals(field.left));
+        } else {
+          expect(button.right, moreOrLessEquals(field.right));
+        }
+      });
+
+      testWidgets('at 100% on a 320 dp phone, sets the button beside the field${hebrew ? ', Hebrew' : ''}',
+          (tester) async {
+        await openThread(tester, hebrew: hebrew, textScale: 1);
+        expect(tester.takeException(), isNull);
+        expect(label(tester, hebrew: hebrew).didExceedMaxLines, isFalse);
+        final field = tester.getRect(find.byType(TextField));
+        final button = tester.getRect(find.byType(FilledButton));
+        expect(button.bottom, lessThan(field.bottom), reason: 'level with a one-line field');
+        if (hebrew) {
+          expect(button.right, lessThan(field.left));
+        } else {
+          expect(button.left, greaterThan(field.right));
+        }
+      });
+    }
+
+    // The device's Bold text widens the label: at 300% on a 360 dp phone the
+    // whole width holds it in regular weight, but not in bold, so there it
+    // stands on the outline.
+    testWidgets('with Bold text at 300% on a 360 dp phone, keeps its label whole', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(boldText: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await open(tester, '/community/thread/1', size: const Size(360, 640), textScale: 3);
+      expect(tester.takeException(), isNull);
+      final paragraph = label(tester, hebrew: false);
+      expect(paragraph.text.style?.fontWeight, FontWeight.bold);
+      expect(paragraph.didExceedMaxLines, isFalse);
+    });
+
+    // A label on the outline stands half above the field: at large text, the
+    // field leaves room above it, so that the label stays clear of the
+    // composer's hairline, or of the post being answered.
+    for (final hebrew in [false, true]) {
+      for (final textScale in [2.0, 3.0]) {
+        testWidgets(
+            'at ${(textScale * 100).round()}% on a 320 dp phone, sets its label on the outline clear of what is '
+            'above${hebrew ? ', Hebrew' : ''}', (tester) async {
+          await openThread(tester, hebrew: hebrew, textScale: textScale);
+          final composer = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_Composer');
+          final hairline = tester.getRect(find.descendant(of: composer, matching: find.byType(Divider)));
+          double labelTop() => label(tester, hebrew: hebrew).localToGlobal(Offset.zero).dy;
+
+          // With the focus and nothing yet written, the label floats.
+          await tester.tap(find.byType(TextField));
+          await tester.pumpAndSettle();
+          expect(labelTop(), greaterThanOrEqualTo(hairline.bottom));
+
+          // The posts are built as they scroll into view, above the composer.
+          final reply = find.descendant(of: find.byType(PostCard), matching: find.byIcon(Icons.reply));
+          final list = find.descendant(of: find.byType(RefreshIndicator), matching: find.byType(Scrollable)).first;
+          for (var i = 0; i < 30 && reply.evaluate().isEmpty; i++) {
+            await tester.drag(list, const Offset(0, -200));
+            await tester.pumpAndSettle();
+          }
+          await tester.ensureVisible(reply.first);
+          await tester.pumpAndSettle();
+          await tester.tap(reply.first);
+          await tester.pumpAndSettle();
+          final strip = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_ReplyingTo');
+          expect(strip, findsOneWidget);
+          expect(tester.takeException(), isNull);
+          expect(labelTop(), greaterThanOrEqualTo(tester.getRect(strip).bottom));
+        });
+      }
+    }
+
+    // Five lines of 300% text, under the post being answered and over the
+    // button, made the reply box taller than a 640-high phone has room for:
+    // in Hebrew it covered half the app bar, and none of the thread showed.
+    for (final hebrew in [false, true]) {
+      testWidgets(
+          'at 300% on a 320×640 phone, answering a post at length, stays under the app bar'
+          '${hebrew ? ', Hebrew' : ''}', (tester) async {
+        await openThread(tester, hebrew: hebrew, textScale: 3);
+        final reply = find.descendant(of: find.byType(PostCard), matching: find.byIcon(Icons.reply));
+        final list = find.descendant(of: find.byType(RefreshIndicator), matching: find.byType(Scrollable)).first;
+        for (var i = 0; i < 30 && reply.evaluate().isEmpty; i++) {
+          await tester.drag(list, const Offset(0, -200));
+          await tester.pumpAndSettle();
+        }
+        await tester.ensureVisible(reply.first);
+        await tester.pumpAndSettle();
+        await tester.tap(reply.first);
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), List.filled(6, 'Thank you — that settles it for me.').join(' '));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final composer = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_Composer');
+        final appBar = tester.getRect(find.byType(AppBar).last);
+        // A line of the thread at least, between the app bar and the box.
+        expect(tester.getRect(composer).top, greaterThan(appBar.bottom + 72));
+        // What is written scrolls within the field, past its lines.
+        expect(tester.widget<TextField>(find.byType(TextField)).maxLines, lessThan(5));
+      });
+    }
+
+    testWidgets('at 100% on a phone, grows to five lines', (tester) async {
+      await openThread(tester, hebrew: false, textScale: 1);
+      expect(tester.widget<TextField>(find.byType(TextField)).maxLines, 5);
+    });
+
+    // The phone turned, say, or the text made smaller: the field moves, but
+    // stays the same field.
+    testWidgets('keeps the focus and what is written as the button moves beside the field', (tester) async {
+      await openThread(tester, hebrew: false, textScale: 3);
+      await tester.enterText(find.byType(TextField), 'Thank you.');
+      await tester.pump();
+      final field = find.descendant(of: find.byType(TextField), matching: find.byType(EditableText));
+      final editable = tester.state<EditableTextState>(field);
+      expect(editable.widget.focusNode.hasFocus, isTrue);
+      expect(tester.getRect(find.byType(FilledButton)).top, greaterThan(tester.getRect(find.byType(TextField)).bottom));
+
+      tester.platformDispatcher.textScaleFactorTestValue = 1;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(tester.getRect(find.byType(FilledButton)).left, greaterThan(tester.getRect(find.byType(TextField)).right));
+      expect(tester.state<EditableTextState>(field), same(editable));
+      expect(editable.widget.focusNode.hasFocus, isTrue);
+      expect(editable.textEditingValue.text, 'Thank you.');
+    });
+  });
 
   // §6.1: Tab reaches Today's main button, which takes the ring.
   testWidgets("Tab reaches Today's main button, which takes the focus ring", (tester) async {

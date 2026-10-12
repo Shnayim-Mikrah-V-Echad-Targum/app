@@ -25,6 +25,9 @@ import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
 
+/// How many digits the code that signs in has.
+const signInCodeLength = 6;
+
 /// A localized message for a community error. Check [alreadyDone] first: that
 /// is no error to show.
 String communityError(AppLocalizations l, Object e) {
@@ -43,6 +46,8 @@ String communityError(AppLocalizations l, Object e) {
     'already_reported' => l.errAlreadyReported,
     'invalid_name' => l.errInvalidName,
     'invalid_code' || 'otp_expired' => l.errInvalidCode,
+    // Said before the code goes to the server, where it would only fail.
+    'code_incomplete' => l.codeIncomplete(signInCodeLength),
     'invalid_email' || 'email_address_invalid' => l.errInvalidEmail,
     'not_signed_in' => l.errNotSignedIn,
     'forbidden' || 'category_restricted' || 'kind_not_allowed' => l.errForbidden,
@@ -69,7 +74,7 @@ CommunityField? fieldFor(String code) => switch (code) {
       'title_too_short' => CommunityField.title,
       'too_short' || 'too_many_links' || 'content_rejected' || 'duplicate_post' => CommunityField.body,
       'invalid_email' || 'email_address_invalid' => CommunityField.email,
-      'invalid_code' || 'otp_expired' => CommunityField.code,
+      'invalid_code' || 'otp_expired' || 'code_incomplete' => CommunityField.code,
       'invalid_name' || 'name_taken' => CommunityField.name,
       _ => null,
     };

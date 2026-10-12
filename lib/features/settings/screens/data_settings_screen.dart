@@ -442,7 +442,8 @@ class DataSettingsScreen extends ConsumerWidget {
               title: l.cloudBackup,
               subtitle: l.syncProgressDesc,
               subtitleMaxLines: null,
-              onTap: () => context.push('/settings/account'),
+              // The account's Save a backup file first comes back here.
+              onTap: () => context.push('/settings/account?from=data'),
             ),
             Builder(
               // The row's own context, where the iPad anchors the share sheet.

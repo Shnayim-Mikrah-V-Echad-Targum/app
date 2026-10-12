@@ -307,9 +307,9 @@
       }
     }
   },
-  "caughtUpNote": "Caught up — doubling up repaired yesterday.",
+  "caughtUpNote": "Caught up — today’s reading made up for yesterday.",
   "@caughtUpNote": {
-    "description": "Under Today's week strip when reading two days' aliyot today has made up for yesterday."
+    "description": "Under Today's week strip when reading two days' aliyot today has made up for yesterday. It says what happened in plain words, as the rescue of a missed parsha is named, with no word for doubling up."
   },
   "todayNothingPlanned": "No reading is planned for today. A good day to catch up or read ahead.",
   "todayCatchUpTitle": "Catching up",
@@ -436,9 +436,9 @@
       }
     }
   },
-  "openWeekRestore": "Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book.",
+  "openWeekRestore": "Finish {name} and {next} by Shabbat and your {count}-week streak continues — you can do this once in each book of the Torah.",
   "@openWeekRestore": {
-    "description": "On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.",
+    "description": "On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1. A no-break space keeps the last two words together, so neither is left alone on a line.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -451,7 +451,7 @@
       }
     }
   },
-  "openWeekRestoreZero": "Finish {name} and {next} by Shabbat and both count — one double-up per book.",
+  "openWeekRestoreZero": "Finish {name} and {next} by Shabbat and both count — you can do this once in each book of the Torah.",
   "@openWeekRestoreZero": {
     "description": "As openWeekRestore, when the reader has no parsha streak to continue.",
     "placeholders": {
@@ -680,11 +680,20 @@
   "weekStripLabel": "This week’s plan",
   "weekOnTime": "On time",
   "weekLate": "After Shabbat — still counts",
-  "weekRestored": "Doubled up",
-  "weekMadeUp": "Made up",
+  "weekRestored": "Finished with the next parsha",
+  "@weekRestored": {
+    "description": "A parsha's status: missed by its late window, then finished together with the next parsha by the next Shabbat (once in each book of the Torah), so the streak continues. weekOverdue is the same rescue still open; keep the two in the same words. No no-break spaces: in the Progress page's recent weeks, the line balances its words itself, and a pair held together would be set smaller there as one word."
+  },
+  "weekMadeUp": "Made up later",
+  "@weekMadeUp": {
+    "description": "A parsha's status: finished after its late window, but not together with the next parsha by the next Shabbat. It counts for the year, but the streak begins again."
+  },
   "weekMissed": "Not completed",
   "weekTransparent": "Not counted",
-  "weekOverdue": "Can still be restored",
+  "weekOverdue": "Can still be finished with the next parsha",
+  "@weekOverdue": {
+    "description": "A parsha's status: missed by its late window, and it can still count if it is finished together with the next parsha by the next Shabbat (see weekRestored)."
+  },
   "weekInProgress": "In progress",
   "plannedFor": "Planned for {day}",
   "@plannedFor": {
@@ -931,7 +940,7 @@
   "oneAliyahAtATime": "One aliyah at a time",
   "markAliyahRead": "Mark this aliyah as read",
   "keyboardShortcuts": "Keyboard shortcuts",
-  "translationDisclaimer": "A translation is a study aid. It does not take the place of the Targum.",
+  "translationDisclaimer": "Helps with the meaning; it doesn’t take the place of the Targum.",
   "mikraLabel": "Mikra",
   "targumLabel": "Targum Onkelos",
   "rashiLabel": "Rashi",
@@ -1037,7 +1046,7 @@
       }
     }
   },
-  "copyDivineName": "Write the Divine Name as ה׳",
+  "copyDivineName": "Write Divine Names as ה׳ and אלקים",
   "copyDivineNameDesc": "In a verse copied, shared or quoted in a question",
   "progressTitle": "Progress",
   "longest": "Longest: {value}",
@@ -1762,19 +1771,22 @@
   "@guideQuoteTranslation": {
     "description": "The Talmud's words that open the guide, in English. Shown in the English interface only, under the Hebrew."
   },
-  "guideWhatBody": "The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.",
+  "guideWhatBody": "The Shulchan Aruch sets the Talmud’s words down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.",
   "guideWhenTitle": "When",
-  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
+  "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed until Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
   "guideHowTitle": "How",
-  "guideHowBody": "Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.",
+  "guideHowBody": "Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.",
   "guidePassesCaption": "1 · Mikra  2 · Mikra  3 · Targum",
   "@guidePassesCaption": {
     "description": "Beside three marks for the three readings, at the top of the guide's How section: the text twice, then the Targum. No-break spaces keep each reading's number with its name."
   },
   "guideTargumTitle": "Targum or Rashi",
-  "guideTargumBody": "Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.",
+  "guideTargumBody": "Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.",
   "guideSpecialTitle": "Special cases",
-  "guideSpecialBody": "In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berachot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.",
+  "guideSpecialBody": "Atarot v’Divon (Numbers 32:3): Onkelos gives mostly the Aramaic forms of the place names, so many also read the verse a third time in Hebrew, following Rashi (Berachot 8b).\nVezot HaBerachah: read by the time it is read in shul on Simchat Torah, ideally on Hoshana Rabbah; Shemini Atzeret also counts.\nThe haftarah: many also read the week’s haftarah once.\nIn shul: reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14).\nTwo portions: in a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both.\nNo blessing: none is said.\nWomen and children: women are exempt, and those who take it on do so as a voluntary mitzvah; boys are trained in it from the age of chinuch.",
+  "@guideSpecialBody": {
+    "description": "Under the guide's Special cases heading: one case to a line, each shown after a bullet. Each line's words before its first colon and space are its lead-in, shown in bold; keep that colon and space."
+  },
   "guideShabbatTitle": "Shabbat and Yom Tov",
   "guideShabbatBody": "This app never asks you to open it on Shabbat or Yom Tov. Streaks pause on those days, reminders are never sent, and reading you do from a printed Chumash can be logged afterwards.",
   "guideSourcesTitle": "Sources",
@@ -1869,7 +1881,10 @@
     }
   },
   "deleteAccount": "Delete my account",
-  "deleteAccountConfirm": "This permanently deletes your account, your profile and everything you’ve posted. Your reading progress on this device is kept. This can’t be undone.",
+  "deleteAccountConfirm": "This permanently deletes your account, your profile, your posts and the cloud backup of your progress, bookmarks and notes. Where others have replied to a discussion you started, it stays, without your name. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.",
+  "@deleteAccountConfirm": {
+    "description": "The account's deletion dialog, shown whether or not backup is on now: a backup made earlier stays in the account until it is deleted. As the privacy policy says, a discussion the member started stays, without their name, where others posted in it (delete_my_account); called a discussion, as the forums call it."
+  },
   "accountDeleted": "Your account was deleted.",
   "newThread": "New discussion",
   "threadTitleLabel": "Title",
@@ -1886,9 +1901,9 @@
       }
     }
   },
-  "todahCount": "{count, plural, =1{1 thanks} other{{count} thanks}}",
+  "todahCount": "{count, plural, =1{Thanked once} other{Thanked {count} times}}",
   "@todahCount": {
-    "description": "How many have thanked a post: on its Todah button for screen readers, and under one's own post.",
+    "description": "How many have thanked one's own post, under it, for screen readers. The Todah button on others' posts says it with todahButtonCount.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -2001,9 +2016,9 @@
       }
     }
   },
-  "threadThanksCount": "{count, plural, =1{1 thanks} other{{count} thanks}}",
+  "threadThanksCount": "{count, plural, =1{thanked once} other{thanked {count} times}}",
   "@threadThanksCount": {
-    "description": "In a forum's list, after a discussion's replies: the thanks (todah) given to its posts, once there are any. A no-break space keeps the count with its word.",
+    "description": "In a forum's list, after a discussion's replies: how often its posts have been thanked (todah), once they have been. It runs on in a lowercase list (\"Rivka · 3 hours ago · 4 replies · thanked 12 times\"). A no-break space holds the count to its word, and nothing more, so that at large text on a phone the line can break after \"thanked\" rather than inside a word.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -2226,9 +2241,9 @@
       }
     }
   },
-  "searchNoResultsHint": "Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.",
+  "searchNoResultsHint": "Try fewer words, or another word or spelling.",
   "@searchNoResultsHint": {
-    "description": "Under searchNoResults, after a search in Hebrew. The Torah's spelling is often defective (חסר): אהרן rather than אהרון."
+    "description": "Under searchNoResults, after a search in Hebrew. By then the app has tried the Torah's spellings itself, with fewer ו and י, and found nothing either (see searchSpellingFallback), so this suggests only what it can't try."
   },
   "searchNoResultsHintEnglish": "Try fewer words, or the older English of the 1917 translation, such as “hath” for “has”.",
   "@searchNoResultsHintEnglish": {
@@ -2305,7 +2320,7 @@
   "@shortcutContinueReading": {
     "description": "Shortcut shown when the app's icon is long-pressed on Android and iOS; opens the reader at the first aliyah not yet read. Keep it under 25 characters."
   },
-  "shortcutLogFromBook": "Log reading from a book",
+  "shortcutLogFromBook": "Log a Chumash reading",
   "@shortcutLogFromBook": {
     "description": "Shortcut shown when the app's icon is long-pressed; opens this week's page to mark what was read from a printed Chumash. Keep it under 25 characters."
   },
@@ -2836,13 +2851,13 @@
     }
   },
   "sending": "Sending…",
-  "askedTag": "Asked",
+  "askedTag": "Question",
   "@askedTag": {
-    "description": "A small tag beside a member's name on their posts in a question they asked."
+    "description": "A small tag beside a member's name on the post that asked a question (a discussion in Questions & answers): it names the post. Their later posts there are tagged authorTag."
   },
   "authorTag": "Author",
   "@authorTag": {
-    "description": "A small tag beside a member's name on their posts in a discussion they started."
+    "description": "A small tag beside a member's name on their posts in a discussion they started (in a question, on all but the post that asked it, which is tagged askedTag): it names the person."
   },
   "todahAction": "Todah",
   "@todahAction": {
@@ -2955,5 +2970,109 @@
   "widgetTishaBav": "Torah study is set aside today",
   "@widgetTishaBav": {
     "description": "On the home-screen widget on Tisha B'Av, while no reading is planned on it, in place of the day's reading (as Today's card says, todayTishaBav). Keep it short."
+  },
+  "guideAppTitle": "Using the app",
+  "@guideAppTitle": {
+    "description": "The guide's first heading, under the Talmud's words that open it: how the app helps with the practice."
+  },
+  "guideAppBody": "Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikra, Mikra again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.",
+  "@guideAppBody": {
+    "description": "Under the guide's Using the app heading: one point to a line, each shown after a bullet. It quotes readFromBook, and names Today, Listen and grace days as the app does."
+  },
+  "saveBackupFirst": "Save a backup file first",
+  "@saveBackupFirst": {
+    "description": "In the account's deletion dialog: closes it and opens Your data, where a backup file can be exported."
+  },
+  "todahButtonCount": "{count, plural, =1{Thanked 1 time} other{Thanked {count} times}}",
+  "@todahButtonCount": {
+    "description": "On a post's Todah button, after what a tap does, for screen readers: how many have thanked it, always in digits, as the button shows the count, so that voice control finds the button by the number it shows too (WCAG 2.5.3).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeIncomplete": "Enter all {count} digits of the code.",
+  "@codeIncomplete": {
+    "description": "Under the sign-in code's boxes, when Sign in is pressed before every digit is typed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shabbatTimesSummaryYomTov": "Candle-lighting {candles}\nYom Tov candles after {after}",
+  "@shabbatTimesSummaryYomTov": {
+    "description": "This week's Shabbat times in the reader's city, under the city in Settings, when Yom Tov begins as Shabbat ends: its candles are lit only after Shabbat. candles and after are times of day, such as 6:07 PM.",
+    "placeholders": {
+      "candles": {
+        "type": "String"
+      },
+      "after": {
+        "type": "String"
+      }
+    }
+  },
+  "candleLightingSetting": "Candle-lighting",
+  "@candleLightingSetting": {
+    "description": "In Settings, under the city for Shabbat times: the row, and the title of its sheet, that sets how many minutes before sunset candles are lit, as the reader's local calendar (luach) has it."
+  },
+  "candleMinutesCityDefault": "City default ({minutes} min)",
+  "@candleMinutesCityDefault": {
+    "description": "The candle-lighting option that follows the city's own custom, which the app knows: minutes is how many minutes before sunset candles are lit there, such as 18 or 40.",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "18"
+      }
+    }
+  },
+  "candleMinutesBeforeSunset": "{minutes, plural, =1{1 minute before sunset} other{{minutes} minutes before sunset}}",
+  "@candleMinutesBeforeSunset": {
+    "description": "A candle-lighting option, chosen to match the reader's luach: candles are lit this many minutes before sunset (15, 18, 20, 22, 30 or 40).",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "22"
+      }
+    }
+  },
+  "shabbatEndsSetting": "Shabbat ends",
+  "@shabbatEndsSetting": {
+    "description": "In Settings, under the city for Shabbat times: the row, and the title of its sheet, that sets when Shabbat ends, as the reader's luach has it."
+  },
+  "havdalahNightfall": "Nightfall (sun 8.5° below)",
+  "@havdalahNightfall": {
+    "description": "The default end of Shabbat: nightfall, when three small stars are out, reckoned as the sun 8.5 degrees below the horizon."
+  },
+  "havdalahMinutesAfterSunset": "{minutes} minutes after sunset",
+  "@havdalahMinutesAfterSunset": {
+    "description": "An end of Shabbat a fixed time after sunset, as many luachs give it: 42 or 50 minutes.",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "42"
+      }
+    }
+  },
+  "havdalahRabbeinuTam": "72 minutes (Rabbeinu Tam)",
+  "@havdalahRabbeinuTam": {
+    "description": "An end of Shabbat 72 minutes after sunset, following Rabbeinu Tam."
+  },
+  "searchSpellingFallback": "No verse has “{query}”. Showing “{variant}”, as the Torah spells it.",
+  "@searchSpellingFallback": {
+    "description": "Above the results of a search in Hebrew that no verse holds as typed, when the same words with fewer ו and י, as the Torah often spells them (אהרן for אהרון, כהן for כוהן), were found instead. query is what the reader typed; variant is the Torah's spelling whose verses are shown.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      },
+      "variant": {
+        "type": "String"
+      }
+    }
+  },
+  "sourcesSunDescription": "Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 40 in Jerusalem and 30 in Haifa and Zikhron Ya’akov, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.",
+  "@sourcesSunDescription": {
+    "description": "On the Texts & sources page, under Sunrise and sunset: how Shabbat times are worked out, their defaults, and the choices Settings offers."
   }
 }

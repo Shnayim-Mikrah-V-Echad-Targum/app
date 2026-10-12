@@ -480,12 +480,16 @@ class _WeekRow extends StatelessWidget {
                     children: [
                       Icon(WeekStatusBadge.icon(status), size: 16, color: WeekStatusBadge.color(context, status)),
                       const Gap(6),
+                      // Its lines balanced, so that large text leaves no word
+                      // alone on the last ("parsha", "יותר") and starts none
+                      // with a dash; each word whole, one too wide for the
+                      // line set just small enough to fit.
                       Flexible(
-                        child: WholeWords(
+                        child: BalancedText(
                           WeekStatusBadge.label(context, status),
                           style: meta,
                           textAlign: TextAlign.start,
-                          breakAtHyphens: true,
+                          holdDashes: true,
                         ),
                       ),
                     ],
@@ -1401,7 +1405,17 @@ Future<void> _showTorahMapLegend(BuildContext context) => showAppSheet<void>(
                       children: [
                         SizedBox(width: 56, child: _TileFace(state: state, minHeight: 32)),
                         const SizedBox(width: 16),
-                        Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
+                        // Balanced, as the status is on its row, so that a
+                        // long one leaves no word alone ("parsha") and starts
+                        // no line with a dash.
+                        Expanded(
+                          child: BalancedText(
+                            label,
+                            style: theme.textTheme.bodyLarge,
+                            textAlign: TextAlign.start,
+                            holdDashes: true,
+                          ),
+                        ),
                       ],
                     ),
                   ),

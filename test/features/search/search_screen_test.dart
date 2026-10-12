@@ -63,12 +63,13 @@ void main() {
     WidgetTester tester, {
     String route = '/search',
     bool hebrew = false,
+    Size size = const Size(412, 915),
     double textScale = 1,
     bool buildIndex = false,
     AppSettings? settings,
     TextRepository? texts,
   }) async {
-    tester.view.physicalSize = const Size(412, 915);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(tester.view.reset);
@@ -204,9 +205,10 @@ void main() {
   testWidgets('says when nothing is found, and how a search in Hebrew might find it', (tester) async {
     await open(tester);
     await untilIndexed(tester);
-    await search(tester, 'אהרון');
-    expect(find.text('No verse matches “\u2068אהרון\u2069”.'), findsOneWidget);
-    expect(find.textContaining('leaves out ו\u00a0and\u00a0י'), findsOneWidget);
+    await search(tester, 'טלפון');
+    expect(find.text('No verse matches “\u2068טלפון\u2069”.'), findsOneWidget);
+    // It has tried the Torah's spellings already, so it asks for no more.
+    expect(find.text('Try fewer words, or another word or spelling.'), findsOneWidget);
 
     await search(tester, 'smartphone');
     expect(find.textContaining('“hath” for “has”'), findsOneWidget);
@@ -354,6 +356,51 @@ void main() {
     expect(said, ['1 verse found']);
   });
 
+  testWidgets('finds Hebrew written today as the Torah spells it, and says so', (tester) async {
+    final said = announcements(tester);
+    await open(tester);
+    await untilIndexed(tester);
+    await search(tester, 'אהרון');
+    const note = 'No verse has “\u2068אהרון\u2069”. Showing “\u2068אהרן\u2069”, as the Torah spells it.';
+    expect(find.text(note), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^The first 200 of \d+ verses$')), findsOneWidget);
+    expect(find.text('Exodus 4:14'), findsOneWidget);
+    expect(HebrewText.consonantsOnly(snippets(tester).first), contains('אהרן'));
+    // Nothing more to suggest.
+    expect(find.text('Try fewer words, or another word or spelling.'), findsNothing);
+    // Above the count, at the page's start.
+    expect(tester.getTopLeft(find.text(note)).dy, lessThan(tester.getTopLeft(find.textContaining('The first 200')).dy));
+    expect(tester.getTopLeft(find.text(note)).dx, tester.getTopLeft(find.textContaining('The first 200')).dx);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(said, [matches(RegExp('^${RegExp.escape(note)} \\d+ verses found\$'))]);
+
+    // Found as typed, it says nothing of spelling.
+    await search(tester, 'אהרן');
+    expect(find.textContaining('as the Torah spells it'), findsNothing);
+  });
+
+  // Hearing which spelling is shown is the point of the note, so an English
+  // voice hands both to a Hebrew one, as with the verses.
+  testWidgets('tags the two spellings in its note as Hebrew for screen readers', (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+    await untilIndexed(tester);
+    await search(tester, 'אהרון');
+    const note = 'No verse has “\u2068אהרון\u2069”. Showing “\u2068אהרן\u2069”, as the Torah spells it.';
+    final label = tester.getSemantics(find.text(note)).getSemanticsData().attributedLabel;
+    // Read with the count under it.
+    expect(label.string, startsWith(note));
+    expect(
+      [
+        for (final a in label.attributes)
+          if (a is LocaleStringAttribute) (label.string.substring(a.range.start, a.range.end), a.locale),
+      ],
+      [('אהרון', const Locale('he')), ('אהרן', const Locale('he'))],
+    );
+    handle.dispose();
+  });
+
   // Genesis 15:2, אֲדֹנָי יֱהֹוִה: the hiriq under the Name says it is read
   // Elohim, so its spoken text must keep the vowels the page leaves out.
   testWidgets('speaks a verse from its vowels when they are hidden', (tester) async {
@@ -375,6 +422,46 @@ void main() {
     // Genesis 1:7, the first verse found, has אֶת־הָרָקִיעַ.
     await search(tester, 'הרקיע');
     expect(snippets(tester).first, contains('־\u2060'));
+  });
+
+  testWidgets('parts words joined by a maqaf only where they are too wide together for a line', (tester) async {
+    await open(tester, size: const Size(320, 640), textScale: 3);
+    await tester.pumpAndSettle();
+    // Genesis 1:7, the first verse found, has אֶת־הָרָקִיעַ, too wide for
+    // a line at this size.
+    await search(tester, 'הרקיע');
+    expect(tester.takeException(), isNull);
+    final box = tester.renderObject<RenderMarkedText>(find.byType(MarkedText).first);
+    final marked = tester.widget<MarkedText>(find.byType(MarkedText).first);
+    final text = marked.text.toPlainText();
+    expect(text, contains(RegExp('־(?!\u2060)')), reason: 'a maqaf parted from the word after it');
+
+    // Each word stands on one line: none is wider than the line on its own.
+    for (final word in RegExp('[^ ־\u2060\u00A0]+').allMatches(text)) {
+      final lines = {
+        for (final b in box.getBoxesForSelection(TextSelection(baseOffset: word.start, extentOffset: word.end)))
+          b.bottom.round(),
+      };
+      expect(lines, hasLength(1), reason: '"${word[0]}" of "$text"');
+    }
+
+    // The marks lie over what was found, the joiners left out before them.
+    expect(marked.marks, isNotEmpty);
+    for (final m in marked.marks) {
+      expect(HebrewText.consonantsOnly(text.substring(m.start, m.end)), 'הרקיע');
+    }
+  });
+
+  test('marks move back over the word joiners left out before them', () {
+    const before = 'אֶת־\u2060הָרָקִיעַ וּבֵין־\u2060הַמַּיִם';
+    const after = 'אֶת־הָרָקִיעַ וּבֵין־\u2060הַמַּיִם';
+    final marks = [
+      TextRange(start: before.indexOf('הָ'), end: before.indexOf(' ')),
+      TextRange(start: before.indexOf('הַ'), end: before.length),
+    ];
+    final shifted = shiftForRemovedJoiners(before, after, marks);
+    expect([for (final m in shifted) after.substring(m.start, m.end)], ['הָרָקִיעַ', 'הַמַּיִם']);
+    expect(shiftForRemovedJoiners(after, after, shifted), shifted, reason: 'none left out');
   });
 
   testWidgets('labels the translation as a translation', (tester) async {
@@ -460,6 +547,8 @@ void main() {
         await search(tester, 'אברהם');
         expect(tester.takeException(), isNull);
         await search(tester, 'אהרון');
+        expect(tester.takeException(), isNull);
+        await search(tester, 'טלפון');
         expect(tester.takeException(), isNull);
       });
     }

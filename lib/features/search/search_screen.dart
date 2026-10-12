@@ -8,12 +8,14 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/text_repository.dart';
+import '../../l10n/app_localizations.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../parsha/week_context.dart';
+import '../reader/scripture_text.dart' show JoinsThatFit, joinWhereFits;
 import '../settings/app_settings.dart';
 import 'marked_text.dart';
 import 'query_direction.dart';
@@ -112,16 +114,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _announceSoon();
   }
 
-  /// Tells a screen reader how many verses were found, once typing pauses.
+  /// Tells a screen reader how many verses were found, once typing pauses,
+  /// and for what spelling, if not the one typed. An announcement is plain
+  /// text, read in the interface's voice; the note on the page, tagged with
+  /// its Hebrew, reads the two spellings in a Hebrew one.
   void _announceSoon() {
     _announcement?.cancel();
     _announcement = Timer(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       final results = _search(ref.read(verseIndexProvider).index, ref.read(settingsProvider).showNikud);
       if (results == null || !isSearchable(_query.text)) return;
+      final l = context.l10n;
+      final count = l.searchResultsAnnounced(results.total);
       SemanticsService.sendAnnouncement(
         View.of(context),
-        context.l10n.searchResultsAnnounced(results.total),
+        switch (_spellingNote(l, results)) {
+          final note? => '$note $count',
+          null => count,
+        },
         Directionality.of(context),
       );
     });
@@ -293,6 +303,33 @@ class _NoResults extends StatelessWidget {
   }
 }
 
+/// What [results] say of the Torah's spelling found in place of what was
+/// typed ([SearchResults.spelling]), the two kept each in its own direction
+/// within the sentence; null if what was typed was found.
+String? _spellingNote(AppLocalizations l, SearchResults results) => switch (results.spelling) {
+      final spelling? => l.searchSpellingFallback('\u2068${results.query.trim()}\u2069', '\u2068${spelling.trim()}\u2069'),
+      null => null,
+    };
+
+/// [note] ([_spellingNote]) for a screen reader, with what was typed and the
+/// Torah's spelling tagged as Hebrew, as the verses are (DESIGN.md §8), so
+/// that an English voice hands both to a Hebrew one: hearing which spelling
+/// is shown is the point of the note.
+AttributedString _spellingNoteLabel(String note, SearchResults results) {
+  final attributes = <StringAttribute>[];
+  var from = 0;
+  for (final words in [results.query.trim(), results.spelling!.trim()]) {
+    final at = note.indexOf('\u2068$words\u2069', from);
+    if (at < 0) continue;
+    attributes.add(LocaleStringAttribute(
+      range: TextRange(start: at + 1, end: at + 1 + words.length),
+      locale: const Locale('he'),
+    ));
+    from = at + words.length + 2;
+  }
+  return AttributedString(note, attributes: attributes);
+}
+
 /// The verses found, under the parsha of each.
 class _Results extends ConsumerWidget {
   const _Results({required this.results, required this.onOpen});
@@ -313,6 +350,7 @@ class _Results extends ConsumerWidget {
     final summary = results.truncated
         ? l.searchResultsFirst(results.hits.length, results.total)
         : l.searchResultsCount(results.total);
+    final note = _spellingNote(l, results);
     // Built as they scroll into view: a search can list 200 verses. Each
     // search's list starts at its top, with its count.
     return ListView.builder(
@@ -324,8 +362,26 @@ class _Results extends ConsumerWidget {
         if (i == 0) {
           return _Width(
             child: Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(4, 16, 4, 0),
-              child: Text(summary, style: muted),
+              // A spelling of the Torah's, found in place of what was typed,
+              // is said where a search that finds nothing says so.
+              padding: EdgeInsetsDirectional.fromSTEB(4, note == null ? 16 : 24, 4, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (note != null) ...[
+                    Semantics(
+                      attributedLabel: _spellingNoteLabel(note, results),
+                      excludeSemantics: true,
+                      child: Text(
+                        note,
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    const Gap(8),
+                  ],
+                  Text(summary, style: muted),
+                ],
+              ),
             ),
           );
         }
@@ -499,13 +555,46 @@ class _SnippetText extends StatelessWidget {
     // With bold text every letter is bold, and in high contrast the wash is
     // close to the paper: each mark is outlined too.
     final outlined = MediaQuery.boldTextOf(context) || SeferColors.of(context).isHighContrast;
-    return MarkedText(
-      TextSpan(children: spans, style: base),
-      marks: marks,
-      color: scheme.secondaryContainer,
-      outline: outlined ? scheme.onSecondaryContainer : null,
-      textDirection: hebrew ? TextDirection.rtl : TextDirection.ltr,
-      locale: Locale(hebrew ? 'he' : 'en'),
+    final locale = Locale(hebrew ? 'he' : 'en');
+    final text = TextSpan(children: spans);
+    // Words a maqaf joins stay on one line where they fit on one, as in the
+    // reader; where they don't, the line ends after the maqaf rather than
+    // inside a word, and the marks move back over the joiners left out.
+    return JoinsThatFit(
+      text: text,
+      style: base,
+      locale: locale,
+      builder: (context, fitted) => MarkedText(
+        TextSpan(style: base, children: [fitted]),
+        marks: identical(fitted, text)
+            ? marks
+            : shiftForRemovedJoiners(
+                text.toPlainText(includeSemanticsLabels: false),
+                fitted.toPlainText(includeSemanticsLabels: false),
+                marks,
+              ),
+        color: scheme.secondaryContainer,
+        outline: outlined ? scheme.onSecondaryContainer : null,
+        textDirection: hebrew ? TextDirection.rtl : TextDirection.ltr,
+        locale: locale,
+      ),
     );
   }
+}
+
+/// [marks], ranges of [before], moved to stand over the same characters of
+/// [after], which is [before] with some of its word joiners (U+2060) left
+/// out, as [joinWhereFits] leaves them out.
+List<TextRange> shiftForRemovedJoiners(String before, String after, List<TextRange> marks) {
+  // Where each offset of [before] falls in [after].
+  final offsets = List.filled(before.length + 1, after.length);
+  for (var i = 0, j = 0; i < before.length; i++) {
+    offsets[i] = j;
+    if (j < after.length && before.codeUnitAt(i) == after.codeUnitAt(j)) {
+      j++;
+    } else {
+      assert(before.codeUnitAt(i) == 0x2060, 'only word joiners are left out');
+    }
+  }
+  return [for (final m in marks) TextRange(start: offsets[m.start], end: offsets[m.end])];
 }

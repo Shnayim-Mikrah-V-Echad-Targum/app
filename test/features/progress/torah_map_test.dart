@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../../helpers.dart';
@@ -71,7 +72,7 @@ void main() {
       ('Bereshit: On time', status.done, null, Icons.check, status.onDone),
       ('Noach: After Shabbat — still counts', status.late, null, Icons.check_circle_outline, status.onLate),
       ('Lech Lecha: Not completed', sefer.paper, BorderSide(color: scheme.outline), Icons.remove, status.neutral),
-      ('Vayera: Made up', sefer.paper, BorderSide(color: status.late, width: 1.5), Icons.history, status.late),
+      ('Vayera: Made up later', sefer.paper, BorderSide(color: status.late, width: 1.5), Icons.history, status.late),
       ('Chayei Sarah: On time', status.done, null, Icons.check, status.onDone),
       ('Toldot: In progress', scheme.primaryContainer, BorderSide(color: scheme.primary, width: 2), Icons.timelapse,
           scheme.onPrimaryContainer),
@@ -287,15 +288,16 @@ void main() {
     for (final label in [
       'On time',
       'After Shabbat — still counts',
-      'Doubled up',
-      'Made up',
+      'Finished with the next parsha',
+      'Made up later',
       'Not completed',
-      'Can still be restored',
+      'Can still be finished with the next parsha',
       'In progress',
       'Upcoming',
       'Not counted',
     ]) {
-      expect(find.descendant(of: sheet, matching: find.text(label)), findsOneWidget, reason: label);
+      // As it is set: a dash held to the word before it by a no-break space.
+      expect(find.descendant(of: sheet, matching: find.text(dashHeldToWord(label))), findsOneWidget, reason: label);
     }
     // Each label beside a swatch of its tile.
     expect(find.descendant(of: sheet, matching: find.byType(Ink)), findsNWidgets(9));

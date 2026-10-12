@@ -97,7 +97,7 @@ class _AboutScreenState extends State<AboutScreen> with HeadingReveal<AboutScree
               PaperRow(
                 icon: Icons.description_outlined,
                 title: l.licensesTitle,
-                onTap: () => showLicensePage(context: context, applicationName: l.appTitleFull),
+                onTap: () => _showLicenses(context, l.appTitleFull),
               ),
             ],
           ),
@@ -178,4 +178,23 @@ class _AboutHeader extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Flutter's own licence pages, as showLicensePage opens them. Their app
+/// bars are the framework's, which the app can't wrap in a ScrolledUnderRule
+/// (§6.2), so these alone keep Material's scrolled-under elevation, its
+/// shadow hairline-thin in outlineVariant (high contrast's bar has its rule
+/// already): the licence text never slips under the bar unmarked.
+void _showLicenses(BuildContext context, String applicationName) {
+  final theme = Theme.of(context);
+  final appBars = theme.appBarTheme.copyWith(
+    scrolledUnderElevation: SeferColors.of(context).isHighContrast ? 0 : 1,
+    shadowColor: theme.colorScheme.outlineVariant,
+  );
+  Navigator.of(context).push(MaterialPageRoute<void>(
+    builder: (context) => Theme(
+      data: theme.copyWith(appBarTheme: appBars),
+      child: LicensePage(applicationName: applicationName),
+    ),
+  ));
 }

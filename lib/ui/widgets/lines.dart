@@ -433,19 +433,31 @@ class _RenderFitWord extends RenderProxyBox {
 /// set just small enough to fit, as [WholeWords] sets it.
 ///
 /// With [bySentence], text too long for one line sets each sentence on a
-/// line or more of its own.
+/// line or more of its own. With [holdDashes], a spaced em dash is held to
+/// the word before it ([dashHeldToWord]), so that no line starts with one,
+/// wherever the two fit on a line together; where they don't (very large
+/// text on a phone), the words are set at their size rather than smaller.
 ///
 /// Like [WholeWords], it answers intrinsic size queries, so it may stand in
 /// a dialog ([IntrinsicWidth]) or a row as tall as its tallest cell
-/// ([IntrinsicHeight]); with [bySentence] it doesn't, as whether the text
-/// fits on one line is decided at layout ([LayoutBuilder]).
+/// ([IntrinsicHeight]); with [bySentence], or [holdDashes] and a spaced
+/// dash in the text, it doesn't, as whether the text fits on one line, or
+/// the dash's pair does, is decided at layout ([LayoutBuilder]).
 class BalancedText extends StatelessWidget {
-  const BalancedText(this.text, {super.key, required this.style, this.textAlign = TextAlign.center, this.bySentence = false});
+  const BalancedText(
+    this.text, {
+    super.key,
+    required this.style,
+    this.textAlign = TextAlign.center,
+    this.bySentence = false,
+    this.holdDashes = false,
+  });
 
   final String text;
   final TextStyle? style;
   final TextAlign textAlign;
   final bool bySentence;
+  final bool holdDashes;
 
   static final _sentenceBreak = RegExp(r'(?<=[.?!])\s+(?=\S)');
 
@@ -456,18 +468,30 @@ class BalancedText extends StatelessWidget {
           child: WholeWords(text, style: style, textAlign: textAlign, breakAtHyphens: true),
         );
 
+    final held = holdDashes ? dashHeldToWord(text) : text;
     final sentences = bySentence ? text.split(_sentenceBreak) : [text];
-    if (sentences.length == 1) return balanced(text);
+    if (sentences.length == 1 && held == text) return balanced(text);
     // Measured again when a font arrives.
     FontsChangeScope.watch(context);
     return LayoutBuilder(builder: (context, constraints) {
       final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
-      final whole = TextPainter(
-        text: TextSpan(text: text, style: style?.merge(bold) ?? bold),
-        textDirection: Directionality.of(context),
-        textScaler: MediaQuery.textScalerOf(context),
-        locale: Localizations.maybeLocaleOf(context),
-      )..layout(maxWidth: constraints.maxWidth);
+      TextPainter painter(String text) => TextPainter(
+            text: TextSpan(text: text, style: style?.merge(bold) ?? bold),
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+            locale: Localizations.maybeLocaleOf(context),
+          )..layout(maxWidth: constraints.maxWidth);
+
+      var text = this.text;
+      if (held != text) {
+        // Held where the dash and the word before it fit on a line.
+        final p = painter(held);
+        if (p.minIntrinsicWidth <= constraints.maxWidth) text = held;
+        p.dispose();
+      }
+      final sentences = bySentence ? text.split(_sentenceBreak) : [text];
+      if (sentences.length == 1) return balanced(text);
+      final whole = painter(text);
       final oneLine = whole.computeLineMetrics().length <= 1;
       whole.dispose();
       if (oneLine) return balanced(text);

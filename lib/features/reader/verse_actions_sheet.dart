@@ -38,10 +38,11 @@ class ChosenVerse {
 /// [verse] as text that leaves the app, copied, shared or quoted in a post:
 /// as the reader shows it, with the vowels and cantillation it shows, the
 /// qere, and the ketiv where it is shown, but without notes; and with the
-/// Divine Name written ה׳ unless the reader has turned that off. Unlike
-/// [displayHebrew], it adds no word joiners or no-break spaces, which would
-/// travel with the text.
-String verseText(Verse verse, AppSettings s) {
+/// Divine Names written ה׳ and אלקים unless the reader has turned that off
+/// ([HebrewText.replaceDivineName]): with [targum], for Targum Onkelos, only
+/// Elohim as Hebrew spells it. Unlike [displayHebrew], it adds no word
+/// joiners or no-break spaces, which would travel with the text.
+String verseText(Verse verse, AppSettings s, {bool targum = false}) {
   String shown(String text) => HebrewText.forDisplay(text, nikud: s.showNikud, teamim: s.showTeamim);
   final b = StringBuffer();
   for (final segment in verse.segments) {
@@ -60,7 +61,7 @@ String verseText(Verse verse, AppSettings s) {
     }
   }
   final text = b.toString().replaceAll(RegExp(r'\s{2,}'), ' ').trim();
-  return s.copyDivineNameAsHashem ? HebrewText.replaceDivineName(text) : text;
+  return s.copyDivineNameAsHashem ? HebrewText.replaceDivineName(text, targum: targum) : text;
 }
 
 /// [verse] as it is copied or shared: its Hebrew, then its Targum and its
@@ -68,7 +69,7 @@ String verseText(Verse verse, AppSettings s) {
 /// last its [reference] ("— Genesis 3:22").
 String verseCopy(ChosenVerse verse, AppSettings s, {required String reference}) => [
       verseText(verse.hebrew, s),
-      if (verse.targum case final targum?) verseText(targum, s),
+      if (verse.targum case final targum?) verseText(targum, s, targum: true),
       if (verse.english case final english? when english.isNotEmpty) english,
       '— $reference',
     ].join('\n');
@@ -82,6 +83,13 @@ String verseCopy(ChosenVerse verse, AppSettings s, {required String reference}) 
 /// direction from the Hebrew quoted first (autoDirection).
 String verseQuote(Verse verse, AppSettings s, {required bool leftToRight}) =>
     '${leftToRight ? '\u200E' : ''}> ${verseText(verse, s)}\n\n';
+
+/// Whether [body] quotes [verse] as [verseQuote] begins a question on it,
+/// however the Divine Names are written in the quote: a draft begun while
+/// the reader had them written out, or kept from before Elohim was written
+/// אלקים, still quotes the verse.
+bool quotesVerse(String body, Verse verse, AppSettings s) => HebrewText.replaceDivineName(body)
+    .contains('> ${HebrewText.replaceDivineName(verseText(verse, s))}');
 
 /// Where "Ask about this verse" leads: a new discussion in Questions &
 /// answers, which begins with the verse ([ComposeScreen.verse]). Within

@@ -346,7 +346,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get caughtUpNote => 'Caught up — doubling up repaired yesterday.';
+  String get caughtUpNote =>
+      'Caught up — today’s reading made up for yesterday.';
 
   @override
   String get todayNothingPlanned =>
@@ -500,12 +501,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String openWeekRestore(String name, String next, int count) {
-    return 'Finish $name and $next by Shabbat and your $count-week streak continues — one double-up per book.';
+    return 'Finish $name and $next by Shabbat and your $count-week streak continues — you can do this once in each book of the Torah.';
   }
 
   @override
   String openWeekRestoreZero(String name, String next) {
-    return 'Finish $name and $next by Shabbat and both count — one double-up per book.';
+    return 'Finish $name and $next by Shabbat and both count — you can do this once in each book of the Torah.';
   }
 
   @override
@@ -690,10 +691,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weekLate => 'After Shabbat — still counts';
 
   @override
-  String get weekRestored => 'Doubled up';
+  String get weekRestored => 'Finished with the next parsha';
 
   @override
-  String get weekMadeUp => 'Made up';
+  String get weekMadeUp => 'Made up later';
 
   @override
   String get weekMissed => 'Not completed';
@@ -702,7 +703,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weekTransparent => 'Not counted';
 
   @override
-  String get weekOverdue => 'Can still be restored';
+  String get weekOverdue => 'Can still be finished with the next parsha';
 
   @override
   String get weekInProgress => 'In progress';
@@ -960,7 +961,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get translationDisclaimer =>
-      'A translation is a study aid. It does not take the place of the Targum.';
+      'Helps with the meaning; it doesn’t take the place of the Targum.';
 
   @override
   String get mikraLabel => 'Mikra';
@@ -1139,7 +1140,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get copyDivineName => 'Write the Divine Name as ה׳';
+  String get copyDivineName => 'Write Divine Names as ה׳ and אלקים';
 
   @override
   String get copyDivineNameDesc =>
@@ -2158,21 +2159,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideWhatBody =>
-      'The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.';
+      'The Shulchan Aruch sets the Talmud’s words down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.';
 
   @override
   String get guideWhenTitle => 'When';
 
   @override
   String get guideWhenBody =>
-      'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).';
+      'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed until Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).';
 
   @override
   String get guideHowTitle => 'How';
 
   @override
   String get guideHowBody =>
-      'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.';
+      'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.';
 
   @override
   String get guidePassesCaption => '1 · Mikra  2 · Mikra  3 · Targum';
@@ -2182,14 +2183,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideTargumBody =>
-      'Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.';
+      'Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.';
 
   @override
   String get guideSpecialTitle => 'Special cases';
 
   @override
   String get guideSpecialBody =>
-      'In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berachot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.';
+      'Atarot v’Divon (Numbers 32:3): Onkelos gives mostly the Aramaic forms of the place names, so many also read the verse a third time in Hebrew, following Rashi (Berachot 8b).\nVezot HaBerachah: read by the time it is read in shul on Simchat Torah, ideally on Hoshana Rabbah; Shemini Atzeret also counts.\nThe haftarah: many also read the week’s haftarah once.\nIn shul: reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14).\nTwo portions: in a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both.\nNo blessing: none is said.\nWomen and children: women are exempt, and those who take it on do so as a voluntary mitzvah; boys are trained in it from the age of chinuch.';
 
   @override
   String get guideShabbatTitle => 'Shabbat and Yom Tov';
@@ -2327,7 +2328,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountConfirm =>
-      'This permanently deletes your account, your profile and everything you’ve posted. Your reading progress on this device is kept. This can’t be undone.';
+      'This permanently deletes your account, your profile, your posts and the cloud backup of your progress, bookmarks and notes. Where others have replied to a discussion you started, it stays, without your name. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.';
 
   @override
   String get accountDeleted => 'Your account was deleted.';
@@ -2363,8 +2364,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count thanks',
-      one: '1 thanks',
+      other: 'Thanked $count times',
+      one: 'Thanked once',
     );
     return '$_temp0';
   }
@@ -2537,8 +2538,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count thanks',
-      one: '1 thanks',
+      other: 'thanked $count times',
+      one: 'thanked once',
     );
     return '$_temp0';
   }
@@ -2806,7 +2807,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchNoResultsHint =>
-      'Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.';
+      'Try fewer words, or another word or spelling.';
 
   @override
   String get searchNoResultsHintEnglish =>
@@ -2868,7 +2869,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutContinueReading => 'Continue reading';
 
   @override
-  String get shortcutLogFromBook => 'Log reading from a book';
+  String get shortcutLogFromBook => 'Log a Chumash reading';
 
   @override
   String get shortcutThisWeek => 'This week’s parsha';
@@ -3380,7 +3381,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sending => 'Sending…';
 
   @override
-  String get askedTag => 'Asked';
+  String get askedTag => 'Question';
 
   @override
   String get authorTag => 'Author';
@@ -3465,4 +3466,77 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get widgetTishaBav => 'Torah study is set aside today';
+
+  @override
+  String get guideAppTitle => 'Using the app';
+
+  @override
+  String get guideAppBody =>
+      'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikra, Mikra again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.';
+
+  @override
+  String get saveBackupFirst => 'Save a backup file first';
+
+  @override
+  String todahButtonCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Thanked $count times',
+      one: 'Thanked 1 time',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeIncomplete(int count) {
+    return 'Enter all $count digits of the code.';
+  }
+
+  @override
+  String shabbatTimesSummaryYomTov(String candles, String after) {
+    return 'Candle-lighting $candles\nYom Tov candles after $after';
+  }
+
+  @override
+  String get candleLightingSetting => 'Candle-lighting';
+
+  @override
+  String candleMinutesCityDefault(int minutes) {
+    return 'City default ($minutes min)';
+  }
+
+  @override
+  String candleMinutesBeforeSunset(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes before sunset',
+      one: '1 minute before sunset',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shabbatEndsSetting => 'Shabbat ends';
+
+  @override
+  String get havdalahNightfall => 'Nightfall (sun 8.5° below)';
+
+  @override
+  String havdalahMinutesAfterSunset(int minutes) {
+    return '$minutes minutes after sunset';
+  }
+
+  @override
+  String get havdalahRabbeinuTam => '72 minutes (Rabbeinu Tam)';
+
+  @override
+  String searchSpellingFallback(String query, String variant) {
+    return 'No verse has “$query”. Showing “$variant”, as the Torah spells it.';
+  }
+
+  @override
+  String get sourcesSunDescription =>
+      'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 40 in Jerusalem and 30 in Haifa and Zikhron Ya’akov, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.';
 }

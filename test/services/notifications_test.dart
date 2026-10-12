@@ -545,7 +545,7 @@ void main() {
       expect(service.reschedules, 6);
     });
 
-    test('plans again when the city for Shabbat times changes, once its times can be worked out', () {
+    test('plans again when the city for Shabbat times, or the reader\'s times there, change', () {
       // As the app loads the time zones after its first frame.
       Zmanim.timeZone('UTC');
       const london = City(
@@ -558,8 +558,14 @@ void main() {
       );
       change((s) => s.copyWith(city: london));
       expect(service.reschedules, 2);
-      change((s) => s.copyWith(city: null));
+      // The reader's luach: candles lit 30 minutes before sunset, and
+      // Shabbat ending 72 minutes after it.
+      change((s) => s.copyWith(candleMinutesOverride: 30));
       expect(service.reschedules, 3);
+      change((s) => s.copyWith(havdalah: HavdalahRule.min72));
+      expect(service.reschedules, 4);
+      change((s) => s.copyWith(city: null));
+      expect(service.reschedules, 5);
     });
   });
 

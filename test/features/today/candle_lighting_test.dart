@@ -58,6 +58,13 @@ void main() {
     expect(find.text('Shabbat begins this evening'), findsNothing);
   });
 
+  // The reader's own minutes, as their luach has them: 30 before sunset in
+  // place of London's 18, so 12 minutes earlier.
+  testWidgets("follows the reader's candle-lighting minutes", (tester) async {
+    await openToday(tester, _settings.copyWith(candleMinutesOverride: 30), _friday);
+    expect(text('Candle-lighting 5:35 PM'), findsOneWidget);
+  });
+
   testWidgets('in Hebrew, the time is a left-to-right run', (tester) async {
     await openToday(tester, _settings.copyWith(language: AppLanguage.hebrew), _friday);
     expect(find.text('הדלקת נרות \u206617:47\u2069'), findsOneWidget);

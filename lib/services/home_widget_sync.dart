@@ -611,7 +611,7 @@ final homeWidgetSyncProvider = Provider<void>((ref) {
         secondReading: s.secondReading,
         oneDayYomTov: s.oneDayYomTov,
         joinDate: s.joinDate,
-        city: s.city,
+        place: s.shabbatCity,
       )));
   String? Function() payload;
   if (!s.onboarded) {
@@ -628,12 +628,13 @@ final homeWidgetSyncProvider = Provider<void>((ref) {
     final repo = ref.watch(parshaRepositoryProvider);
     final settings = ref.read(settingsProvider);
     final progress = ref.read(progressProvider);
-    final city = s.city;
-    final citysTimes = city != null && timeZonesReady(ref);
+    final place = s.place;
+    final citysTimes = place != null && timeZonesReady(ref);
     final clock = ref.watch(deviceClockProvider);
+    // By the reader's customs, as Today rests by them.
     RestTimes? restTimes(LocalDate day) {
-      if (!citysTimes || !Zmanim.keepsClock(city, day, clock(day))) return null;
-      final times = Zmanim.of(city, day);
+      if (!citysTimes || !Zmanim.keepsClock(place.city, day, clock(day))) return null;
+      final times = place.on(day);
       return (
         candleLighting: times.minutesOf(times.candleLighting),
         sunset: times.minutesOf(times.sunset),

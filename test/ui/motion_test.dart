@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -80,11 +81,33 @@ void main() {
   });
 
   group('the theme', () {
-    test('turns off ink splashes while motion is reduced', () {
-      expect(_theme(reduceMotion: true).splashFactory, NoSplash.splashFactory);
-      expect(_theme().splashFactory, isNot(NoSplash.splashFactory));
+    test('spreads no ink while motion is reduced, but washes a control as it is pressed', () {
+      expect(_theme(reduceMotion: true).splashFactory, isA<PressWash>().having((w) => w.reduced, 'reduced', isTrue));
+      expect(_theme().splashFactory, isNot(isA<PressWash>()));
       expect(_theme(reduceMotion: true).extension<Motion>()!.reduced, isTrue);
       expect(_theme().extension<Motion>()!.reduced, isFalse);
+    });
+
+    test('no spreading ink on Apple platforms, where a press washes the control', () {
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      for (final platform in TargetPlatform.values) {
+        debugDefaultTargetPlatformOverride = platform;
+        final splash = _theme().splashFactory;
+        switch (platform) {
+          case TargetPlatform.iOS || TargetPlatform.macOS:
+            expect(splash, isA<PressWash>().having((w) => w.reduced, 'reduced', isFalse), reason: platform.name);
+          // Material's own elsewhere.
+          case TargetPlatform.android:
+            expect(splash, InkSparkle.splashFactory, reason: platform.name);
+          case _:
+            expect(splash, InkRipple.splashFactory, reason: platform.name);
+        }
+        expect(
+          _theme(reduceMotion: true).splashFactory,
+          isA<PressWash>().having((w) => w.reduced, 'reduced', isTrue),
+          reason: platform.name,
+        );
+      }
     });
 
     test('page transitions: each platform its own, a fade on the web and desktop', () {
