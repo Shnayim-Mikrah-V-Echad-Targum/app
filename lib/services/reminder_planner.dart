@@ -145,7 +145,9 @@ ReminderZmanim Function(LocalDate) reminderZmanim(City city,
 ///
 /// Rules (see docs/research/streaks_ux.md §10.10):
 ///  * never on Shabbat or Yom Tov, nor on their eve after midday;
-///  * nothing after midday on Erev Tisha B'Av, when Torah study stops;
+///  * nothing after midday on Erev Tisha B'Av, when Torah study stops, nor
+///    on the fast while it has no reading planned; the check-in after a
+///    Shabbat just before it comes the morning after it;
 ///  * at most one a day — Erev Shabbat > after-Shabbat check-in > daily;
 ///  * daily reminders only on planned days whose reading isn't done yet;
 ///  * nothing during a pause, and after a pause that runs past the [days]
@@ -205,6 +207,8 @@ List<PlannedReminder> planReminders({
     }
     if (rest(date.addDays(1)) && minutes >= cutoffOn(date)) return false;
     if (JewishHolidays.isTishaBav(date.addDays(1)) && minutes >= kErevCutoffMinutes) return false;
+    // Nothing on the fast itself while it has no reading planned.
+    if (planner.isQuietTishaBav(date)) return false;
     return true;
   }
 
@@ -282,15 +286,21 @@ List<PlannedReminder> planReminders({
         after = after.addDays(1);
       }
       // On Motzaei Shabbat, or at the end of a Yom Tov that follows it, when
-      // that is known and not too late; otherwise the next morning. Chosen
-      // by the calendar alone: once the evening's has been sent, a plan made
-      // later that evening must not send the morning's too.
+      // that is known and not too late; otherwise the next morning, or the
+      // one after Tisha B'Av, when its greeting is not given (Shulchan Aruch
+      // OC 554:20), whatever is planned on the fast. Chosen by the calendar
+      // alone: once the evening's has been sent, a plan made later that
+      // evening must not send the morning's too.
       final lastRest = after.addDays(-1);
       final havdalah = timesOf(lastRest)?.havdalah;
       final evening = havdalah == null ? null : havdalah + kCheckInAfterHavdalah;
+      var morning = after;
+      while (JewishHolidays.isTishaBav(morning)) {
+        morning = morning.addDays(1);
+      }
       offer(evening != null && evening <= kCheckInLatestMinutes && fits(lastRest, evening, afterRest: true)
           ? PlannedReminder(kind: ReminderKind.checkIn, date: lastRest, minutes: evening, plan: plan)
-          : PlannedReminder(kind: ReminderKind.checkIn, date: after, minutes: prefs.checkInMinutes, plan: plan));
+          : PlannedReminder(kind: ReminderKind.checkIn, date: morning, minutes: prefs.checkInMinutes, plan: plan));
     }
 
     week = planner.schedule.nextWeek(week);
