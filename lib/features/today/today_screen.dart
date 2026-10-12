@@ -578,8 +578,9 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
           // On the fast, the rings and the way to the aliyot alone.
           if (!quietFast) ...[
             const Gap(Space.md),
-            // Full width on a phone; in a wider frame, centred under the
-            // rings as wide as their group, or _buttonWidth if that is wider.
+            // As wide as the rings' group, or _buttonWidth if that is
+            // wider, centred under the rings: the whole frame where that is
+            // narrower, as on a phone, in a compact window or at large text.
             Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(

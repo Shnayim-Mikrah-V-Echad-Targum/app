@@ -132,6 +132,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(heading, findsOneWidget);
       expect(tester.widget<ChapterHeading>(heading).headingLevel, 3);
+      // Between 38:20 and 38:21, as in a single aliyah.
+      final rect = tester.getRect(heading);
+      expect(rect.top, greaterThanOrEqualTo(tester.getRect(verseGroup(const VerseRef(38, 20))).bottom));
+      expect(rect.bottom, lessThanOrEqualTo(tester.getRect(verseGroup(_pekudei)).top));
+    });
+
+    testWidgets("heads a parsha that begins a chapter before the chapter's own heading", (tester) async {
+      // Tazria-Metzora 5786: Metzora begins at Leviticus 14:1, in Revi'i.
+      final chapter = find.byWidgetPredicate((w) => w is ChapterHeading && w.chapter == 14, skipOffstage: false);
+      await open(tester, '/read/5786:27-28/3?mode=full');
+      await tester.scrollUntilVisible(heading, 300, scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
+      expect(tester.widget<ChapterHeading>(heading).name, 'Metzora');
+      expect(chapter, findsOneWidget);
+      final first = verseGroup(const VerseRef(14, 1));
+      expect(tester.getRect(heading).bottom, lessThanOrEqualTo(tester.getRect(chapter).top));
+      expect(tester.getRect(chapter).bottom, lessThanOrEqualTo(tester.getRect(first).top));
     });
 
     testWidgets('heads it in each reading of its step in the guided reader, and no other', (tester) async {

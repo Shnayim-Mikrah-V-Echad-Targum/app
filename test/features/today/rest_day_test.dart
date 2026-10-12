@@ -332,7 +332,9 @@ void main() {
       // The parsha's English name under its Hebrew one, read in English.
       final latin = find.text('Bereshit');
       expect(latin, findsOneWidget);
-      expect(find.ancestor(of: latin, matching: find.byType(Lang)), findsOneWidget);
+      final lang = find.ancestor(of: latin, matching: find.byType(Lang));
+      expect(lang, findsOneWidget);
+      expect(tester.widget<Lang>(lang).locale, const Locale('en'), reason: 'tagged English, in the Hebrew UI');
       expect(find.bySemanticsLabel('Bereshit'), findsOneWidget);
       handle.dispose();
     });

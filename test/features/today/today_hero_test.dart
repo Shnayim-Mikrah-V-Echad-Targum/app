@@ -110,15 +110,32 @@ void main() {
       expect(find.text('המשך · שלישי, תרגום'), findsOneWidget);
     });
 
-    // A phone, a tablet beside the compact rail, and a desktop's column,
-    // in English and in Hebrew.
-    for (final (width, hebrew) in [(412.0, false), (412.0, true), (800.0, false), (1366.0, false), (1366.0, true)]) {
-      final phone = width < 600;
-      final what = phone ? "spans a phone's frame" : 'stands centred under the rings, as wide as they are or 360';
-      testWidgets('$what at ${width.round()} dp${hebrew ? ', in Hebrew' : ''}', (tester) async {
+    // A phone, a wider compact window (a large phone at a small display
+    // size, or a narrowed window), a tablet beside the compact rail, at 100%
+    // and 150% text, and a desktop's column, in English and in Hebrew. The
+    // rings' group, as wide as the rings, the gap and the legend's natural
+    // width with its slack, is wider than 360 in each, and wider than the
+    // frame's content in a compact window or at large text: the button then
+    // spans the frame.
+    for (final (width, hebrew, scale, spans) in [
+      (412.0, false, 1.0, true),
+      (412.0, true, 1.0, true),
+      (500.0, false, 1.0, true),
+      (800.0, false, 1.0, false),
+      (800.0, false, 1.5, true),
+      (1366.0, false, 1.0, false),
+      (1366.0, true, 1.0, false),
+    ]) {
+      final what = spans
+          ? "spans a frame narrower than the rings' group"
+          : 'stands centred under the rings, as wide as their group';
+      final how = [if (hebrew) 'in Hebrew', if (scale != 1) 'at ${(scale * 100).round()}% text'];
+      testWidgets('$what at ${width.round()} dp${how.map((h) => ', $h').join()}', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
         await openToday(
           tester,
-          size: Size(width, 1200),
+          size: Size(width, 1600),
           settings: hebrew ? _settings.copyWith(language: AppLanguage.hebrew) : null,
           progress: _bereshit(),
         );
@@ -129,12 +146,15 @@ void main() {
         final content = column(find.byType(SeferDivider));
         final rings = column(find.byType(RingsWithLegend));
         expect(button.center.dx, moreOrLessEquals(content.center.dx));
-        if (phone) {
-          expect(content.width, lessThan(360));
+        expect(rings.center.dx, moreOrLessEquals(content.center.dx));
+        // The group is as wide as it may be in the frame; the button as wide
+        // as the group, or 360 should that be wider, within the frame.
+        expect(button.width, moreOrLessEquals(math.min(content.width, math.max(360, rings.width))));
+        if (spans) {
+          expect(rings.width, content.width);
           expect(button.width, content.width);
         } else {
-          expect(rings.center.dx, moreOrLessEquals(content.center.dx));
-          expect(button.width, moreOrLessEquals(math.max(360, rings.width)));
+          expect(rings.width, greaterThan(360), reason: 'the button follows the group, not 360 alone');
           expect(button.width, lessThan(content.width));
         }
       });
