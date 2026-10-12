@@ -407,6 +407,8 @@ const _screens = {
   // Large print in force, then Low vision just applied, with its Undo.
   's_a11y_active': '/settings/accessibility',
   's_a11y_undo': '/settings/accessibility',
+  // Low vision applied from the keyboard: its Undo stays, with Close.
+  's_a11y_undo_keys': '/settings/accessibility',
   's_a11y_web': '/settings/accessibility',
   's_reminders': '/settings/reminders',
   // As on a phone, where reminders can be scheduled, with all three on.
@@ -1322,6 +1324,17 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
       .jumpTo(700),
   // Low vision, the second row's second card.
   's_a11y_undo': (tester) => tester.tap(find.text(tester.element(find.byType(Scaffold).last).l10n.presetLowVision)),
+  's_a11y_undo_keys': (tester) async {
+    await _keyboardFocus(
+      tester,
+      find.ancestor(
+        of: find.text(tester.element(find.byType(Scaffold).last).l10n.presetLowVision),
+        matching: find.byType(MergeSemantics),
+      ),
+    );
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+  },
   'focus_button': (tester) => _keyboardFocus(tester, find.byType(FilledButton).first),
   'focus_day': (tester) =>
       _keyboardFocus(tester, find.descendant(of: find.byType(WeekStrip), matching: find.byType(SeferInkWell)).at(1)),
@@ -1792,6 +1805,7 @@ const _desktopScreens = {
   // and within one beside the rail.
   'snackbar',
   's_a11y_undo',
+  's_a11y_undo_keys',
   'thread_refreshed',
   'forum_refreshed',
   'sheet_display',

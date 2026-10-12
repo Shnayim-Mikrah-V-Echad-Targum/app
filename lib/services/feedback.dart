@@ -10,9 +10,12 @@ import '../ui/theme/motion.dart';
 
 /// Status messages that are both visible and announced to screen readers
 /// (WCAG 4.1.3), shown for 4 s, or 8 s when they offer an [action]
-/// (docs/DESIGN_SYSTEM.md §6.19). A screen reader user keeps an action's
-/// message until they dismiss it. Each page shows it as its
-/// [StatusMessageArea] sets it, wherever it was shown from.
+/// (docs/DESIGN_SYSTEM.md §6.19). A message with an action stays until
+/// dismissed, with a Close button, for screen-reader users and wherever the
+/// keyboard is in use, as on a desktop (WCAG 2.2.1): a desktop doesn't tell
+/// the app that a screen reader is on, and the keyboard takes a while to
+/// reach the action. On touch it leaves after 8 s. Each page shows it as
+/// its [StatusMessageArea] sets it, wherever it was shown from.
 void showStatus(BuildContext context, String message, {SnackBarAction? action}) {
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger != null) {
@@ -21,12 +24,17 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
     // shown without motion). Either way it is gone before a changed setting
     // makes showSnackBar replace the animation controller it runs on.
     _dismissCurrent(messenger, reduced: reduced);
+    // One that stays goes as the next is shown, above.
+    final persist = action != null &&
+        (MediaQuery.accessibleNavigationOf(context) ||
+            FocusManager.instance.highlightMode == FocusHighlightMode.traditional);
     messenger.showSnackBar(
       SnackBar(
         content: Text(message),
         action: action,
         duration: Duration(seconds: action == null ? 4 : 8),
-        persist: action != null && MediaQuery.accessibleNavigationOf(context),
+        persist: persist,
+        showCloseIcon: persist,
       ),
       // Always named, so the messenger keeps one animation controller for as
       // long as the setting doesn't change.
