@@ -207,8 +207,11 @@ class Names {
   /// [dateLong] for a sentence: it wraps after its weekday's comma or not at
   /// all, never between a day and its month ("October / 11", "11 /
   /// באוקטובר").
-  String dateInText(LocalDate d) =>
-      [for (final part in dateLong(d).split(', ')) part.replaceAll(' ', '\u00A0')].join(', ');
+  String dateInText(LocalDate d) => _heldTogether(dateLong(d));
+
+  /// [date]'s words held together by no-break spaces, but after a comma.
+  static String _heldTogether(String date) =>
+      [for (final part in date.split(', ')) part.replaceAll(' ', _nbsp)].join(', ');
 
   /// "11 October" (no weekday).
   String dateMonthDay(LocalDate d) => DateFormat.MMMMd(context.localeName).format(d.toDateTime());
@@ -240,17 +243,41 @@ class Names {
     return _he ? '${HebrewText.gematria(h.day)} ב$month' : '${h.day} $month';
   }
 
+  /// A day of the practice (a Shabbat, a pause's last day, the day a parsha
+  /// opens or its late window closes, the day something was read) in a
+  /// sentence: [dateInText] in English, "Sunday, October 11", and in the
+  /// Hebrew UI the Hebrew date with its weekday, without the year, "יום
+  /// ראשון, ל׳ בתשרי", held together as [dateInText] is
+  /// (docs/DESIGN_SYSTEM.md §4.6).
+  String practiceDate(LocalDate d) => _heldTogether(_practiceDateLong(d));
+
+  /// [practiceDate] without its weekday, after a word that names the day:
+  /// "Read on Shabbat, October 10", "שבת, כ״ט בתשרי".
+  String practiceDayMonth(LocalDate d) => _he ? hebrewDayMonth(d) : dateMonthDay(d);
+
+  /// A day of the practice in a list or on a chip, briefly: "Oct 10", or in
+  /// the Hebrew UI "כ״ט בתשרי". With its year where [today] is given and is
+  /// in another year, a Hebrew one in the Hebrew UI: "Oct 10, 2025", "כ״ט
+  /// בתשרי תשפ״ו".
+  String practiceDateShort(LocalDate d, {LocalDate? today}) {
+    if (_he) {
+      final otherYear = today != null && HebrewDate.fromLocalDate(d).year != HebrewDate.fromLocalDate(today).year;
+      return otherYear ? hebrewDate(d) : hebrewDayMonth(d);
+    }
+    return today != null && d.year != today.year ? dateShortWithYear(d) : dateShort(d);
+  }
+
+  String _practiceDateLong(LocalDate d) => _he ? '${weekday(d)}, ${hebrewDayMonth(d)}' : dateLong(d);
+
   /// When [week]'s portion is read in synagogue: "Read on Shabbat,
   /// 10 October", or for Vezot HaBerachah "Read on Simchat Torah, Sunday,
   /// 4 October". The Hebrew UI dates it in the Hebrew calendar, without the
   /// year: "נקראת בשבת, כ״ט בתשרי".
   String readOnLabel(ReadingWeek week) {
     final d = week.occasion;
-    if (week.portion.isVezotHaberakhah) {
-      // Simchat Torah is seldom a Shabbat, so it gives the weekday too.
-      return _l.readOnSimchatTorah(_he ? '${weekday(d)}, ${hebrewDayMonth(d)}' : dateLong(d));
-    }
-    return _l.readOnShabbat(_he ? hebrewDayMonth(d) : dateMonthDay(d));
+    // Simchat Torah is seldom a Shabbat, so it gives the weekday too.
+    if (week.portion.isVezotHaberakhah) return _l.readOnSimchatTorah(_practiceDateLong(d));
+    return _l.readOnShabbat(practiceDayMonth(d));
   }
 
   String hebrewMonth(int year, int month) {

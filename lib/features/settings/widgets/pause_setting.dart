@@ -56,7 +56,7 @@ Future<void> showPauseOptions(BuildContext context, WidgetRef ref, ({LocalDate s
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
-        title: Text(l.pauseManageTitle(names.dateInText(pause.end))),
+        title: Text(l.pauseManageTitle(names.practiceDate(pause.end))),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -98,6 +98,6 @@ Future<void> showPauseOptions(BuildContext context, WidgetRef ref, ({LocalDate s
       final end = pause.end.addDays(days!);
       // From the day after, so that the two run on as one.
       ref.read(progressProvider.notifier).addPause(pause.end.addDays(1), end);
-      showStatus(context, l.pauseStarted(names.dateLong(end)));
+      showStatus(context, l.pauseStarted(names.practiceDate(end)));
   }
 }

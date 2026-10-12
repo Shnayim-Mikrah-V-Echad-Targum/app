@@ -184,7 +184,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     icon: Icons.history,
                     title: name(e.plan.portion),
                     breakTitleAtHyphens: false,
-                    subtitle: names.dateLong(e.plan.week.occasion),
+                    subtitle: names.practiceDate(e.plan.week.occasion),
                     onTap: () => context.push('/progress/week/${e.plan.weekId}'),
                   ),
               ],
@@ -461,7 +461,7 @@ class _WeekRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     final meta = theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
     // The year only for a week of another one.
-    final date = occasion.year == today.year ? names.dateShort(occasion) : names.dateShortWithYear(occasion);
+    final date = names.practiceDateShort(occasion, today: today);
     final content = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 72),
       child: Padding(
@@ -607,7 +607,7 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
                   children: [
                     Text(l.pauseTitle, style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurface)),
                     Text(
-                      l.pausedBanner(names.dateLong(pause.end)),
+                      l.pausedBanner(names.practiceDate(pause.end)),
                       style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                     const Gap(Space.md),
@@ -683,7 +683,7 @@ Future<void> _showExtendPauseDialog(BuildContext context, WidgetRef ref, LocalDa
                 ),
                 const Gap(Space.lg),
                 Text(
-                  l.extendPauseUntil(names.dateLong(end.addDays(days))),
+                  l.extendPauseUntil(names.practiceDate(end.addDays(days))),
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ],
@@ -700,7 +700,7 @@ Future<void> _showExtendPauseDialog(BuildContext context, WidgetRef ref, LocalDa
   if (ok != true) return;
   final until = end.addDays(days);
   ref.read(progressProvider.notifier).extendPause(today, until);
-  if (context.mounted) showStatus(context, l.pauseStarted(names.dateLong(until)));
+  if (context.mounted) showStatus(context, l.pauseStarted(names.practiceDate(until)));
 }
 
 /// What the reader has finished so far, newest first (§9 Progress): only
@@ -1452,7 +1452,11 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
                 children: [
                   for (final b in const [0, 1, 2, 3])
                     SeferChoiceChip(
-                      label: Text(b == 0 ? l.whenToday : (b == 1 ? l.whenYesterday : names.dateShort(today.addDays(-b)))),
+                      label: Text(switch (b) {
+                        0 => l.whenToday,
+                        1 => l.whenYesterday,
+                        _ => names.practiceDateShort(today.addDays(-b)),
+                      }),
                       selected: backdate == b,
                       onSelected: (_) => setState(() => backdate = b),
                     ),
@@ -1472,7 +1476,7 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
   final start = today.addDays(-backdate);
   final end = start.addDays(days - 1);
   ref.read(progressProvider.notifier).addPause(start, end);
-  if (context.mounted) showStatus(context, l.pauseStarted(names.dateLong(end)));
+  if (context.mounted) showStatus(context, l.pauseStarted(names.practiceDate(end)));
 }
 
 /// [text]'s width on one line in [style], merged with the ambient style, at

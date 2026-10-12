@@ -264,7 +264,8 @@ void main() {
       await tester.tap(find.text('בחירת עליות'));
       await tester.pumpAndSettle();
       expect(find.descendant(of: find.byType(BottomSheet), matching: find.text(question)), findsOneWidget);
-      expect(findDotLine('תאריך הקריאה: שבת, 10 באוקטובר'), findsOneWidget);
+      // Dated in the Hebrew calendar, as the hero dates the same Shabbat.
+      expect(findDotLine('תאריך הקריאה: שבת, כ״ט בתשרי'), findsOneWidget);
       expect(find.text('שינוי התאריך'), findsOneWidget);
       expect(find.text('סימון הקריאה'), findsOneWidget);
     });
@@ -347,16 +348,17 @@ void main() {
       await tester.tap(find.text('Change date'));
       await tester.pumpAndSettle();
       // Simchat Torah, Shemini Atzeret and the first two days of Sukkot,
-      // latest first; yesterday is named as the Yom Tov it was.
+      // latest first; yesterday is named as the Yom Tov it was. Each date is
+      // held together but after its comma.
       final days = [
         for (final tile in tester.widgetList<ListTile>(find.widgetWithText(ListTile, 'On Yom Tov')))
-          (tile.subtitle! as DotLine).parts.single,
+          (tile.subtitle! as DotLine).parts.single.replaceAll('\u00A0', ' '),
       ];
       expect(days, ['Sunday, October 4', 'Saturday, October 3', 'Sunday, September 27', 'Saturday, September 26']);
       expect(find.widgetWithText(ListTile, 'Yesterday'), findsNothing);
       expect(find.widgetWithText(ListTile, 'On Shabbat'), findsNothing);
 
-      await tester.tap(find.ancestor(of: findDotLine('Saturday, October 3'), matching: find.byType(ListTile)));
+      await tester.tap(find.ancestor(of: findDotLine('Saturday, October\u00A03'), matching: find.byType(ListTile)));
       await tester.pumpAndSettle();
       expect(findDotLine('Read on Yom Tov, October 3'), findsOneWidget);
       await tester.ensureVisible(find.text('Log reading'));

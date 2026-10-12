@@ -540,7 +540,7 @@ class _MarkReadState extends ConsumerState<_MarkRead> {
                   ),
                 ),
               ),
-              TextSpan(text: l.haftarahReadOn(Names(context).dateLong(read))),
+              TextSpan(text: l.haftarahReadOn(Names(context).practiceDate(read))),
             ]),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),

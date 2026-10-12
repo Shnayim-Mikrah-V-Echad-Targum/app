@@ -166,7 +166,7 @@ void main() {
         (LocalDate(2026, 10, 12), LocalDate(2026, 10, 18)),
         (LocalDate(2026, 10, 19), LocalDate(2026, 10, 25)),
       ]);
-      expect(find.text('Paused until Sunday, October 25.'), findsOneWidget, reason: 'the status message');
+      expect(find.text('Paused until Sunday, October\u00A025.'), findsOneWidget, reason: 'the status message');
       expect(
         find.descendant(
           of: find.widgetWithText(PaperRow, 'Pause streaks'),

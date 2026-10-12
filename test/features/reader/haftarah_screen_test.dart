@@ -111,7 +111,7 @@ void main() {
     await tester.tap(mark);
     await tester.pumpAndSettle();
     expect(read(), LocalDate(2026, 10, 9));
-    expect(find.textContaining('Read on Friday, October 9', findRichText: true), findsOneWidget);
+    expect(find.textContaining(wordsRegExp('Read on Friday, October 9'), findRichText: true), findsOneWidget);
     expect(find.text('Mark the haftarah as read'), findsNothing);
 
     // Let the confirmation go.
@@ -126,7 +126,7 @@ void main() {
     await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();
     expect(read(), LocalDate(2026, 10, 9), reason: 'the day it was read, restored');
-    expect(find.textContaining('Read on Friday, October 9', findRichText: true), findsOneWidget);
+    expect(find.textContaining(wordsRegExp('Read on Friday, October 9'), findRichText: true), findsOneWidget);
   });
 
   testWidgets('keeps the focus on whichever of its buttons takes the place of the one pressed', (tester) async {

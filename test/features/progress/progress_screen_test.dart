@@ -158,7 +158,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Seven days from Wednesday 11 November: to Tuesday the 17th.
-    expect(find.text(en.pausedBanner('Tuesday, November 17')), findsOneWidget);
+    expect(find.text(en.pausedBanner('Tuesday, November\u00A017')), findsOneWidget);
     expect(find.widgetWithText(FilledButton, en.endPause), findsOneWidget);
     await tester.tap(await shown(tester, find.widgetWithText(TextButton, en.extendPause)));
     await tester.pumpAndSettle();
@@ -167,11 +167,11 @@ void main() {
     await tester.tap(find.descendant(of: dialog, matching: find.text('7 days')));
     await tester.pump();
     // What the pause would become, said as what it will be, not as done.
-    expect(find.descendant(of: dialog, matching: find.text(en.extendPauseUntil('Tuesday, November 24'))), findsOneWidget);
+    expect(find.descendant(of: dialog, matching: find.text(en.extendPauseUntil('Tuesday, November\u00A024'))), findsOneWidget);
     await tester.tap(find.descendant(of: dialog, matching: find.widgetWithText(FilledButton, en.extendPause)));
     await tester.pumpAndSettle();
     expect(c.read(progressProvider).pauses.single.end, LocalDate(2026, 11, 24));
-    expect(find.text(en.pausedBanner('Tuesday, November 24')), findsOneWidget);
+    expect(find.text(en.pausedBanner('Tuesday, November\u00A024')), findsOneWidget);
 
     await tester.tap(await shown(tester, find.widgetWithText(FilledButton, en.endPause)));
     await tester.pumpAndSettle();

@@ -60,7 +60,7 @@ class SettingsScreen extends ConsumerWidget {
             PaperRow(
               icon: Icons.pause_circle_outline,
               title: l.pauseAction,
-              subtitle: pause == null ? l.settingsPauseDesc : l.pausedBanner(names.dateInText(pause.end)),
+              subtitle: pause == null ? l.settingsPauseDesc : l.pausedBanner(names.practiceDate(pause.end)),
               subtitleMaxLines: null,
               chevron: false,
               onTap: () => pause == null ? showPauseDialog(context, ref) : showPauseOptions(context, ref, pause),

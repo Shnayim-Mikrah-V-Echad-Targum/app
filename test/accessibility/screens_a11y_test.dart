@@ -466,8 +466,8 @@ void main() {
     }
 
     // In Hebrew the notice is longer: it breaks where it must, but no line
-    // starts with its dash ("— הפרשה"), and a day keeps its month ("11 /
-    // באוקטובר").
+    // starts with its dash ("— הפרשה"), and a day keeps its month ("ל׳ /
+    // בתשרי").
     testWidgets('at 300% on a 320 dp phone, the Hebrew preview notice keeps its dash and its date with their words',
         (tester) async {
       tester.view.physicalSize = const Size(320, 640);
@@ -495,7 +495,7 @@ void main() {
       double top(int i) => paragraph.getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1)).first.top;
       final dash = text.indexOf('—');
       expect(top(dash), top(dash - 2), reason: 'the dash on the line of the word before it');
-      expect(top(text.indexOf('באוקטובר')), top(text.indexOf('11')), reason: 'the day on the line of its month');
+      expect(top(text.indexOf('בתשרי')), top(text.indexOf('ל׳')), reason: 'the day on the line of its month');
       expect(top(text.length - 1), greaterThan(top(0)), reason: 'on more than one line at this size');
       expect(tester.takeException(), isNull);
     });

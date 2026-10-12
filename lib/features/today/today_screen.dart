@@ -114,7 +114,7 @@ class TodayScreen extends ConsumerWidget {
         NoticeBanner(
           icon: Icons.pause_circle_outline,
           // Until the last day of the pauses that run on from today's.
-          text: l.pausedBanner(names.dateInText(pauseCovering(pauses, today)!.end)),
+          text: l.pausedBanner(names.practiceDate(pauseCovering(pauses, today)!.end)),
           // Two sentences, which beside the button would wrap into a
           // narrow column.
           actionBelow: true,
@@ -1227,7 +1227,7 @@ class _PauseEndedNotice extends ConsumerWidget {
     return NoticeBanner(
       icon: Icons.play_circle_outline,
       title: l.pauseEnded,
-      text: l.pauseEndedOn(names.dateInText(end)),
+      text: l.pauseEndedOn(names.practiceDate(end)),
       actionBelow: true,
       action: actions.isEmpty
           ? null

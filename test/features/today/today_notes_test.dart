@@ -77,6 +77,18 @@ void main() {
       expect(findWords('before Shabbat — or'), findsNothing);
     });
 
+    testWidgets('the banner dates the end of the pause in the Hebrew calendar in Hebrew', (tester) async {
+      // Paused to Sunday 18 October, 7 Cheshvan.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(language: AppLanguage.hebrew),
+        now: DateTime(2026, 10, 9, 11),
+        progress: ProgressState(pauses: [Pause(_d(10, 8), _d(10, 18), id: 'travel')]),
+      );
+      expect(findWords('בהשהיה עד יום ראשון, ז׳ בחשון. דבר אינו מתאפס בזמן ההשהיה.'), findsOneWidget);
+      expect(find.textContaining('באוקטובר.'), findsNothing);
+    });
+
     testWidgets('ending the pause by choice says so, without a welcome back', (tester) async {
       final c = await openToday(
         tester,
@@ -117,6 +129,12 @@ void main() {
       await tester.tap(find.text('Start this week’s parsha'));
       await tester.pump();
       expect(c.read(routerProvider).state.uri.path, '/read/5787:2/0');
+    });
+
+    testWidgets('in Hebrew, says when it ended by the Hebrew date', (tester) async {
+      final hebrew = _settings.copyWith(language: AppLanguage.hebrew);
+      await openToday(tester, settings: hebrew, now: monday, progress: halfRead());
+      expect(findWords('ההשהיה הסתיימה ביום ראשון, ל׳ בתשרי, ושום דבר בזמנה לא נחשב לחובתך.'), findsOneWidget);
     });
 
     testWidgets('can be put away, for good', (tester) async {

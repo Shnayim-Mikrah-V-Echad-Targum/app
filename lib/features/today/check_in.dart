@@ -72,7 +72,7 @@ class PreviousWeekNotice extends ConsumerWidget {
       text: [
         if (onlyHaftarah) l.openWeekHaftarahLeft,
         if (!overdue)
-          l.openWeekLate(names.dateInText(engine.lateDeadlineOf(previous.week)))
+          l.openWeekLate(names.practiceDate(engine.lateDeadlineOf(previous.week)))
         else if (streak > 0)
           l.openWeekRestore(name, nextName, streak)
         else
@@ -260,10 +260,10 @@ class _CheckInSheetState extends State<CheckInSheet> {
     final occasion = widget.previous.week.occasion;
     // Shabbat, Yom Tov, or another day, by name.
     final readOn = _date == occasion && occasion.isShabbat
-        ? l.checkInReadOnShabbat(names.dateMonthDay(_date))
+        ? l.checkInReadOnShabbat(names.practiceDayMonth(_date))
         : isNamedYomTov(_date, oneDayYomTov: widget.oneDayYomTov)
-            ? l.checkInReadOnYomTov(names.dateMonthDay(_date))
-            : l.checkInReadOn(names.dateInText(_date));
+            ? l.checkInReadOnYomTov(names.practiceDayMonth(_date))
+            : l.checkInReadOn(names.practiceDate(_date));
     return SafeArea(
       child: SingleChildScrollView(
         child: Column(

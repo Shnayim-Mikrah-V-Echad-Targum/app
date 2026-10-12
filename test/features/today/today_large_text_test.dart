@@ -134,9 +134,9 @@ void main() {
     final revii = find.byWidgetPredicate((w) => w is DotLine && w.parts.length == 2 && w.parts.last == '21 פסוקים');
     expect(revii, findsOneWidget);
     expect(_lines(tester, revii), ['בראשית ג, כב – ד, יח', '21 פסוקים']);
-    final day = findDotLine('תאריך הקריאה: שבת, 10 באוקטובר');
+    final day = findDotLine('תאריך הקריאה: שבת, כ״ט בתשרי');
     expect(day, findsOneWidget);
-    expect(_lines(tester, day), ['תאריך הקריאה: שבת,', '10 באוקטובר']);
+    expect(_lines(tester, day), ['תאריך הקריאה: שבת,', 'כ״ט בתשרי']);
     expect(tester.takeException(), isNull);
   });
 }

@@ -37,12 +37,12 @@ Future<LocalDate?> pickReadDate(
       if (isNamedYomTov(d, oneDayYomTov: oneDayYomTov) && !(onShabbat && d == week.occasion)) d,
   ];
   final options = <(IconData, String, String?, LocalDate)>[
-    (Icons.today, l.whenToday, names.dateLong(today), today),
+    (Icons.today, l.whenToday, names.practiceDate(today), today),
     // Unless it is named as the Shabbat or Yom Tov it was.
     if (yesterday >= earliest && !(onShabbat && yesterday == week.occasion) && !yomTov.contains(yesterday))
-      (Icons.history, l.whenYesterday, names.dateLong(yesterday), yesterday),
-    if (onShabbat) (Icons.wb_sunny_outlined, l.whenOnShabbat, names.dateLong(week.occasion), week.occasion),
-    for (final d in yomTov) (Icons.wb_sunny_outlined, l.whenOnYomTov, names.dateLong(d), d),
+      (Icons.history, l.whenYesterday, names.practiceDate(yesterday), yesterday),
+    if (onShabbat) (Icons.wb_sunny_outlined, l.whenOnShabbat, names.practiceDate(week.occasion), week.occasion),
+    for (final d in yomTov) (Icons.wb_sunny_outlined, l.whenOnYomTov, names.practiceDate(d), d),
   ];
 
   return showAppSheet<LocalDate>(

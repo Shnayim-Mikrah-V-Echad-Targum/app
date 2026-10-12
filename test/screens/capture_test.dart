@@ -561,6 +561,8 @@ const _screens = {
   // Progress paused, and asked how long to extend the pause.
   'progress_paused': '/progress',
   'progress_extend': '/progress',
+  // Asked how long to pause, and from which day.
+  'progress_pause': '/progress',
   // The sheet behind the grace row's "About streaks".
   'progress_about': '/progress',
   // A reader in their second year (see [_secondYear]): the year chips, last
@@ -1561,6 +1563,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.ensureVisible(find.text(_l10n(tester).extendPause));
     await tester.pump();
     await tester.tap(find.text(_l10n(tester).extendPause));
+  },
+  'progress_pause': (tester) async {
+    await tester.ensureVisible(find.text(_l10n(tester).pauseTitle));
+    await tester.pump();
+    await tester.tap(find.text(_l10n(tester).pauseTitle));
   },
   'progress_about': (tester) => tester.tap(find.text(_l10n(tester).aboutStreaks)),
   'progress_past': (tester) async {

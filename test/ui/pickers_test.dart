@@ -16,14 +16,14 @@ import 'package:shnayim_mikra/ui/widgets/read_date_sheet.dart';
 void main() {
   /// A page with one button, which runs [open] and keeps what it returns.
   Future<void> pumpLauncher(WidgetTester tester, Future<Object?> Function(BuildContext) open,
-      {required bool reduceMotion, required void Function(Object?) onResult}) async {
+      {required bool reduceMotion, required void Function(Object?) onResult, bool hebrew = false}) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(
       theme: AppTheme.build(
-          mode: AppThemeMode.light, uiFont: UiFont.standard, hebrewUi: false, reduceMotion: reduceMotion),
-      locale: const Locale('en'),
+          mode: AppThemeMode.light, uiFont: UiFont.standard, hebrewUi: hebrew, reduceMotion: reduceMotion),
+      locale: Locale(hebrew ? 'he' : 'en'),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -119,18 +119,20 @@ void main() {
     );
     final monday = LocalDate(2026, 10, 5);
 
-    Future<List<(String, String?)>> rows(WidgetTester tester, {required bool oneDayYomTov}) async {
+    /// Each row's title and its date, no-break spaces read as spaces.
+    Future<List<(String, String?)>> rows(WidgetTester tester, {required bool oneDayYomTov, bool hebrew = false}) async {
       await pumpLauncher(
         tester,
         (context) => pickReadDate(context, week: vezot, today: monday, oneDayYomTov: oneDayYomTov),
         reduceMotion: false,
         onResult: (_) {},
+        hebrew: hebrew,
       );
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
       return [
         for (final tile in tester.widgetList<ListTile>(find.byType(ListTile)))
-          ((tile.title! as Text).data!, (tile.subtitle as DotLine?)?.parts.single),
+          ((tile.title! as Text).data!, (tile.subtitle as DotLine?)?.parts.single.replaceAll('\u00A0', ' ')),
       ];
     }
 
@@ -155,6 +157,17 @@ void main() {
         ('On Yom Tov', 'Saturday, October 3'),
         ('On Yom Tov', 'Saturday, September 26'),
         ('Choose a date', null),
+      ]);
+    });
+
+    testWidgets('are dated in the Hebrew calendar in Hebrew, as the check-in dates them', (tester) async {
+      expect(await rows(tester, oneDayYomTov: false, hebrew: true), [
+        ('היום', 'יום שני, כ״ד בתשרי'),
+        ('ביום טוב', 'יום ראשון, כ״ג בתשרי'),
+        ('ביום טוב', 'יום שבת, כ״ב בתשרי'),
+        ('ביום טוב', 'יום ראשון, ט״ז בתשרי'),
+        ('ביום טוב', 'יום שבת, ט״ו בתשרי'),
+        ('בחירת תאריך', null),
       ]);
     });
 

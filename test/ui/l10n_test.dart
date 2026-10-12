@@ -164,6 +164,42 @@ void main() {
     expect(names.dateInText(day).replaceAll('\u00A0', ' '), names.dateLong(day));
   });
 
+  group('a day of the practice', () {
+    // Shabbat Bereshit, 10 October 2026 (29 Tishrei 5787), and the Sunday
+    // after it (30 Tishrei).
+    final shabbat = LocalDate(2026, 10, 10);
+    final sunday = LocalDate(2026, 10, 11);
+    final roshHashanah5788 = HebrewDate(5788, HebrewMonth.tishrei, 1).toLocalDate();
+
+    testWidgets('is the Gregorian date in English, as before', (tester) async {
+      final names = Names(await _page(tester, hebrew: false));
+      expect(names.practiceDate(sunday), 'Sunday, October\u00A011');
+      expect(names.practiceDate(sunday), names.dateInText(sunday));
+      expect(names.practiceDayMonth(shabbat), 'October 10');
+      expect(names.practiceDateShort(shabbat), 'Oct 10');
+      // The year only for a day of another year than today's.
+      expect(names.practiceDateShort(shabbat, today: LocalDate(2026, 12, 31)), 'Oct 10');
+      expect(names.practiceDateShort(shabbat, today: LocalDate(2027, 1, 1)), 'Oct 10, 2026');
+    });
+
+    testWidgets('is the Hebrew date in Hebrew, without the year, held together but after its comma', (tester) async {
+      final names = Names(await _page(tester, hebrew: true));
+      expect(names.practiceDate(sunday), 'יום\u00A0ראשון, ל׳\u00A0בתשרי');
+      expect(names.practiceDate(shabbat).replaceAll('\u00A0', ' '), 'יום שבת, כ״ט בתשרי');
+      // Adar I's name is two words, held to its day too.
+      expect(
+        names.practiceDate(HebrewDate(5787, HebrewMonth.adar, 14).toLocalDate()).split(', ').last,
+        'י״ד\u00A0באדר\u00A0א׳',
+      );
+      expect(names.practiceDayMonth(shabbat), 'כ״ט בתשרי');
+      expect(names.practiceDateShort(shabbat), 'כ״ט בתשרי');
+      // The year only in another Hebrew year, not another Gregorian one.
+      expect(names.practiceDateShort(shabbat, today: LocalDate(2027, 1, 1)), 'כ״ט בתשרי');
+      expect(names.practiceDateShort(shabbat, today: roshHashanah5788.addDays(-1)), 'כ״ט בתשרי');
+      expect(names.practiceDateShort(shabbat, today: roshHashanah5788), 'כ״ט בתשרי תשפ״ז');
+    });
+  });
+
   testWidgets("a book's parshiyot are counted beside its name: 12 parshiyot, and 12 פרשות", (tester) async {
     var context = await _page(tester, hebrew: false);
     expect(context.l10n.browseBookParshiyot(12), '12 parshiyot');
