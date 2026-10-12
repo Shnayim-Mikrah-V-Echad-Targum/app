@@ -1332,7 +1332,7 @@ In order:
 - A Match-device switch, then theme swatches (§6.24).
 - Sliders per §6.8.
 - Toggles in PaperGroups:
-  - Text: nikud, ta'amim, ketiv, verse numbers, the Divine Name as ה׳ in a verse that leaves the app (`copyDivineName`, `DivineNameSwitch`), justify;
+  - Text: nikud, ta'amim, ketiv, verse numbers, the Divine Names as ה׳ and אלקים in a verse that leaves the app (`copyDivineName`, `DivineNameSwitch`), justify;
   - Study aids: English, Rashi, Rashi script (NEW);
   - Reading: focus mode, bold (on and disabled while the device's Bold text is on, as a SwitchRow above), keep screen on.
 - Line width as a SegmentedButton.

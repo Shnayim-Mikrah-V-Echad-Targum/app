@@ -144,16 +144,58 @@ void main() {
       expect(HebrewText.replaceDivineName('קוּמָ֣ה ׀ יְהֹוָ֗ה  וְיָפֻ֙צוּ֙'), 'קוּמָ֣ה ׀ ה׳  וְיָפֻ֙צוּ֙');
     });
 
+    test('writes ק for the ה of Elohim, keeping every vowel and cantillation mark', () {
+      expect(HebrewText.replaceDivineName('אֱלֹהִים'), 'אֱלֹקִים');
+      expect(HebrewText.replaceDivineName('אֱלֹהִ֗ים'), 'אֱלֹקִ֗ים');
+      expect(HebrewText.replaceDivineName('אלהים'), 'אלקים');
+    });
+
+    test('in Elohim with any suffix, and only the Name’s ה', () {
+      expect(HebrewText.replaceDivineName('אֱלֹהֶיךָ'), 'אֱלֹקֶיךָ');
+      expect(HebrewText.replaceDivineName('אֱלֹהֵי'), 'אֱלֹקֵי');
+      expect(HebrewText.replaceDivineName('אֱלֹהָיו'), 'אֱלֹקָיו');
+      expect(HebrewText.replaceDivineName('אֱלֹהֵינוּ'), 'אֱלֹקֵינוּ');
+      expect(HebrewText.replaceDivineName('אֱלֹהֵיכֶם'), 'אֱלֹקֵיכֶם');
+      expect(HebrewText.replaceDivineName('אֱלֹהֶיהָ'), 'אֱלֹקֶיהָ');
+      // The suffix's ה is no part of the Name.
+      expect(HebrewText.replaceDivineName('אֱלֹהֵיהֶם'), 'אֱלֹקֵיהֶם');
+      expect(HebrewText.replaceDivineName('אֱלֹהֵיהֶן'), 'אֱלֹקֵיהֶן');
+    });
+
+    test('in Elohim after a prefix, which keeps its letters and vowels', () {
+      expect(HebrewText.replaceDivineName('לֵאלֹהִים'), 'לֵאלֹקִים');
+      expect(HebrewText.replaceDivineName('וֵאלֹהֵי'), 'וֵאלֹקֵי');
+      expect(HebrewText.replaceDivineName('מֵאֱלֹהֶ֔יךָ'), 'מֵאֱלֹקֶ֔יךָ');
+      // The article's ה is no part of the Name either.
+      expect(HebrewText.replaceDivineName('הָאֱלֹהִים'), 'הָאֱלֹקִים');
+      expect(HebrewText.replaceDivineName('וְהָאֱלֹהִ֗ים'), 'וְהָאֱלֹקִ֗ים');
+      expect(HebrewText.replaceDivineName('וּלְאֱלֹהֵיהֶ֑ם'), 'וּלְאֱלֹקֵיהֶ֑ם');
+    });
+
+    test('keeps the punctuation around Elohim, and the maqafs and spaces between words', () {
+      expect(HebrewText.replaceDivineName('אֶת־הָאֱלֹהִ֑ים'), 'אֶת־הָאֱלֹקִ֑ים');
+      expect(HebrewText.replaceDivineName('יְהֹוָ֥ה אֱלֹהֵיכֶֽם׃'), 'ה׳ אֱלֹקֵיכֶֽם׃');
+      expect(HebrewText.replaceDivineName('(אֱלֹהִים)'), '(אֱלֹקִים)');
+    });
+
     test('changes nothing else', () {
-      for (final word in ['יְהוּדָה', 'וְהָיָה', 'אֱלֹהִים', 'יְיָ', 'הוֹוָה', 'יהוהו', 'ייהוה', '']) {
+      for (final word in [
+        ...['יְהוּדָה', 'וְהָיָה', 'יְיָ', 'הוֹוָה', 'יהוהו', 'ייהוה', ''],
+        // "These", "to her", "to them", "a question", and "their gods" as
+        // Deuteronomy 32:37 mocks the idols.
+        ...['אֵלֶּה', 'הָאֵלֶּה', 'וְאֵלֶּה', 'אֵלֶיהָ', 'אֲלֵהֶם', 'שְׁאֵלָה', 'אֱלֹהֵימוֹ'],
+      ]) {
         expect(HebrewText.replaceDivineName(word), word, reason: word);
       }
-      expect(HebrewText.replaceDivineName(genesis11), genesis11);
+    });
+
+    test('in Genesis 1:1', () {
+      expect(HebrewText.replaceDivineName(genesis11), 'בְּרֵאשִׁ֖ית בָּרָ֣א אֱלֹקִ֑ים אֵ֥ת הַשָּׁמַ֖יִם וְאֵ֥ת הָאָֽרֶץ׃');
     });
 
     test('in Genesis 3:22', () {
       const verse = 'וַיֹּ֣אמֶר ׀ יְהֹוָ֣ה אֱלֹהִ֗ים הֵ֤ן הָֽאָדָם֙ הָיָה֙ כְּאַחַ֣ד מִמֶּ֔נּוּ';
-      expect(HebrewText.replaceDivineName(verse), 'וַיֹּ֣אמֶר ׀ ה׳ אֱלֹהִ֗ים הֵ֤ן הָֽאָדָם֙ הָיָה֙ כְּאַחַ֣ד מִמֶּ֔נּוּ');
+      expect(HebrewText.replaceDivineName(verse), 'וַיֹּ֣אמֶר ׀ ה׳ אֱלֹקִ֗ים הֵ֤ן הָֽאָדָם֙ הָיָה֙ כְּאַחַ֣ד מִמֶּ֔נּוּ');
     });
   });
 

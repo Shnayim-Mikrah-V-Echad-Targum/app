@@ -1135,7 +1135,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get copyDivineName => 'Write the Divine Name as ה׳';
+  String get copyDivineName => 'Write Divine Names as ה׳ and אלקים';
 
   @override
   String get copyDivineNameDesc =>

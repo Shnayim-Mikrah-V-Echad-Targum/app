@@ -1806,7 +1806,7 @@ abstract class AppLocalizations {
   /// No description provided for @copyDivineName.
   ///
   /// In en, this message translates to:
-  /// **'Write the Divine Name as ה׳'**
+  /// **'Write Divine Names as ה׳ and אלקים'**
   String get copyDivineName;
 
   /// No description provided for @copyDivineNameDesc.

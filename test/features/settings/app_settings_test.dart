@@ -361,7 +361,7 @@ void main() {
     );
   });
 
-  test('the Divine Name is copied as ה׳ unless the reader turns it off, also in settings saved before it existed', () {
+  test('the Divine Names are copied as ה׳ and אלקים unless the reader turns it off, also in settings saved before it existed', () {
     expect(const AppSettings().copyDivineNameAsHashem, isTrue);
     expect(AppSettings.fromJson({}).copyDivineNameAsHashem, isTrue);
     const off = AppSettings(copyDivineNameAsHashem: false);

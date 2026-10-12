@@ -1025,7 +1025,7 @@
       }
     }
   },
-  "copyDivineName": "Write the Divine Name as ה׳",
+  "copyDivineName": "Write Divine Names as ה׳ and אלקים",
   "copyDivineNameDesc": "In a verse copied, shared or quoted in a question",
   "progressTitle": "Progress",
   "longest": "Longest: {value}",

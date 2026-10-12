@@ -286,7 +286,7 @@ HE = {
   "parshaNotes": "ההערות שלך על הפרשה",
   "notesCount": "{count, plural, =1{הערה אחת} =2{שתי הערות} other{{count} הערות}}",
   "bookmarksCount": "{count, plural, =1{סימנייה אחת} =2{שתי סימניות} other{{count} סימניות}}",
-  "copyDivineName": "כתיבת שם הוי״ה כ־ה׳",
+  "copyDivineName": "כתיבת שמות הקודש כ־ה׳ וכ־אלקים",
   "copyDivineNameDesc": "בפסוק שמעתיקים, משתפים או מצטטים בשאלה",
   "progressTitle": "התקדמות",
   "longest": "הארוך ביותר: {value}",

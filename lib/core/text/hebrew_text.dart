@@ -53,15 +53,38 @@ abstract final class HebrewText {
   // HebrewSpeech finds it to speak it.
   static final _divineName = RegExp(r'^([ובכלמשה]{0,2})יהוה$');
 
-  /// Writes the Divine Name (יהוה, however pointed or cantillated) as ה׳, as
-  /// it is written where it may be erased or thrown away: in a verse copied,
-  /// shared or quoted in a post. A prefix keeps its letters and vowels
-  /// (לַיהוָה becomes לַה׳), and the punctuation around the word stays.
-  /// Nothing else changes: the spaces and maqafs between words, and every
-  /// other word, are left as they are.
-  static String replaceDivineName(String text) => text.splitMapJoin(_word, onMatch: (m) => _hashem(m[0]!));
+  // Elohim, alone or with any of its suffixes (אלהי, אלהיך, אלהינו,
+  // אלהיהם…), after up to two prefix letters. Not אלה alone, which is
+  // "these", nor אלהם, "to them".
+  static final _elohim = RegExp(r'^([ובכלמשה]{0,2})אלה(ים|י|יך|יכם|יכן|ינו|יו|יה|יהם|יהן)$');
+
+  /// Writes the Divine Names as they are written where they may be erased
+  /// or thrown away: in a verse copied, shared or quoted in a post.
+  ///
+  /// The Tetragrammaton (יהוה, however pointed or cantillated) becomes ה׳,
+  /// a prefix keeping its letters and vowels (לַיהוָה becomes לַה׳). In
+  /// Elohim, with any prefix or suffix, ק stands for its ה, and every vowel
+  /// and cantillation mark stays: אֱלֹהִ֗ים becomes אֱלֹקִ֗ים, and
+  /// וֵאלֹהֵי becomes וֵאלֹקֵי. The punctuation around a word stays. Nothing
+  /// else changes: the spaces and maqafs between words, and every other
+  /// word, are left as they are.
+  static String replaceDivineName(String text) =>
+      text.splitMapJoin(_word, onMatch: (m) => _elokim(_hashem(m[0]!)));
 
   static bool _isLetter(int unit) => unit >= 0x05D0 && unit <= 0x05EA;
+
+  static String _elokim(String word) {
+    final letters = String.fromCharCodes(word.codeUnits.where(_isLetter));
+    final prefix = _elohim.firstMatch(letters)?[1];
+    if (prefix == null) return word;
+    // The Name's ה, its third letter after the prefix's. Its marks follow
+    // it, so they stay with the ק.
+    var i = 0;
+    for (var left = prefix.length + 2; i < word.length; i++) {
+      if (_isLetter(word.codeUnitAt(i)) && left-- == 0) break;
+    }
+    return word.replaceRange(i, i + 1, 'ק');
+  }
 
   static String _hashem(String word) {
     final letters = String.fromCharCodes(word.codeUnits.where(_isLetter));

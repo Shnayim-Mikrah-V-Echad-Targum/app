@@ -1142,7 +1142,7 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get copyDivineName => 'כתיבת שם הוי״ה כ־ה׳';
+  String get copyDivineName => 'כתיבת שמות הקודש כ־ה׳ וכ־אלקים';
 
   @override
   String get copyDivineNameDesc => 'בפסוק שמעתיקים, משתפים או מצטטים בשאלה';

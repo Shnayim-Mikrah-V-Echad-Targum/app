@@ -288,8 +288,9 @@ class AppSettings {
   final bool showKetiv;
   final bool showVerseNumbers;
 
-  /// Write the Divine Name as ה׳ in a verse copied, shared or quoted in a
-  /// post, which may be erased or thrown away (DESIGN.md §3).
+  /// Write the Divine Names as ה׳ and אלקים in a verse copied, shared or
+  /// quoted in a post, which may be erased or thrown away (DESIGN.md §3).
+  /// Named, and stored, for the first of them, which was once the only one.
   final bool copyDivineNameAsHashem;
   final bool justify;
   final LineWidth lineWidth;
