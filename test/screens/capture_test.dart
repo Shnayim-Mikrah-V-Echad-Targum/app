@@ -1941,6 +1941,8 @@ const _narrowScreens = {
   'reader_long',
   'reader_listen',
   'reader_listen_full',
+  // The guide's card, its rhythm 16 under 360 dp, and its lists.
+  'guide',
 };
 const _bigTextScreens = {
   // A held message with Undo and Close, at twice the text size.

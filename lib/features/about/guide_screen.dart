@@ -12,8 +12,9 @@ import '../../ui/widgets/ornaments.dart';
 
 /// A short, sourced explanation of the practice and how the app supports it,
 /// set as long-form reading (docs/DESIGN_SYSTEM.md §9): the Talmud's words
-/// that it rests on, then the practice, the reading and the special days,
-/// each part under a divider, and the sources it comes from.
+/// that it rests on, then how to use the app, the practice, the reading, and
+/// the special cases and days, each part under a divider, and the sources it
+/// comes from.
 class GuideScreen extends StatelessWidget {
   const GuideScreen({super.key});
 
@@ -21,12 +22,22 @@ class GuideScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final type = SeferType.of(context);
-    // The parts of the guide, a divider between each: what the practice is
-    // and when; how to read; and the special days.
-    final parts = [
-      [(l.guideWhatTitle, l.guideWhatBody, null), (l.guideWhenTitle, l.guideWhenBody, null)],
-      [(l.guideHowTitle, l.guideHowBody, const _Passes()), (l.guideTargumTitle, l.guideTargumBody, null)],
-      [(l.guideSpecialTitle, l.guideSpecialBody, null), (l.guideShabbatTitle, l.guideShabbatBody, null)],
+    Widget paragraph(String text) => _Selectable(text, style: type.longformBody);
+    // The parts of the guide, a divider between each: using the app; what
+    // the practice is and when; how to read; the special cases and days; and
+    // the sources. Each section is a heading and what follows it.
+    final parts = <List<(String, List<Widget>)>>[
+      [(l.guideAppTitle, [_Items(l.guideAppBody, style: type.longformBody, spacing: Space.sm)])],
+      [(l.guideWhatTitle, [paragraph(l.guideWhatBody)]), (l.guideWhenTitle, [paragraph(l.guideWhenBody)])],
+      [
+        (l.guideHowTitle, [const _Passes(), paragraph(l.guideHowBody)]),
+        (l.guideTargumTitle, [paragraph(l.guideTargumBody)]),
+      ],
+      [
+        (l.guideSpecialTitle, [_Items(l.guideSpecialBody, style: type.longformBody, spacing: Space.sm, leadIns: true)]),
+        (l.guideShabbatTitle, [paragraph(l.guideShabbatBody)]),
+      ],
+      [(l.guideSourcesTitle, [_Items(l.guideSourcesBody, style: type.marginalia, spacing: Space.xs)])],
     ];
     return PageScaffold(
       leading: homeLeading(context),
@@ -39,16 +50,8 @@ class GuideScreen extends StatelessWidget {
           const _Quote(),
           for (final (i, part) in parts.indexed) ...[
             if (i > 0) ...[const Gap(Rhythm.sectionGap + Space.xs), const SeferDivider()],
-            for (final (title, body, lead) in part) ...[
-              _Heading(title),
-              ?lead,
-              SelectableText(body, style: type.longformBody),
-            ],
+            for (final (title, body) in part) ...[_Heading(title), ...body],
           ],
-          const Gap(Rhythm.sectionGap + Space.xs),
-          const SeferDivider(),
-          _Heading(l.guideSourcesTitle),
-          const _Sources(),
           const Gap(Rhythm.sectionGap),
           NoticeBanner(icon: Icons.info_outline, text: l.disclaimer),
         ],
@@ -170,34 +173,81 @@ class _Passes extends StatelessWidget {
   }
 }
 
-/// The guide's sources, one to a line, each after a small lozenge.
-class _Sources extends StatelessWidget {
-  const _Sources();
+/// A list of the guide's, one item to a line of [text], each after a small
+/// lozenge (6 at the text's own size), its wrapped lines hanging from the
+/// lozenge rather than running back under it, and [spacing] between items.
+///
+/// With [leadIns], an item's words up to its first colon are its lead-in,
+/// heavier than the rest, so that the cases can be found at a glance.
+class _Items extends StatelessWidget {
+  const _Items(this.text, {required this.style, required this.spacing, this.leadIns = false});
+
+  final String text;
+  final TextStyle style;
+  final double spacing;
+  final bool leadIns;
+
+  static const _lozenge = 6.0;
 
   @override
   Widget build(BuildContext context) {
-    final style = SeferType.of(context).marginalia;
-    // The lozenge sits in the middle of its line's first line.
-    final line = MediaQuery.textScalerOf(context).scale(style.fontSize!) * style.height!;
+    // The lozenge grows with the text, and sits in the middle of its item's
+    // first line.
+    final size = MediaQuery.textScalerOf(context).scale(style.fontSize!);
+    final lozenge = _lozenge * size / style.fontSize!;
+    final line = size * style.height!;
+    final items = text.split('\n');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final source in context.l10n.guideSourcesBody.split('\n'))
-          Padding(
-            padding: const EdgeInsets.only(bottom: Space.xs),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(top: (line - 6) / 2),
-                  child: const Lozenge(size: 6),
-                ),
-                const Gap(Space.md),
-                Expanded(child: SelectableText(source, style: style)),
-              ],
-            ),
+        for (final (i, item) in items.indexed) ...[
+          if (i > 0) Gap(spacing),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: (line - lozenge) / 2),
+                child: Lozenge(size: lozenge),
+              ),
+              const Gap(Space.md),
+              Expanded(child: _Selectable(item, style: style, leadIn: leadIns)),
+            ],
           ),
+        ],
       ],
+    );
+  }
+}
+
+/// Text of the guide's that can be selected and copied, in [style], set in
+/// bold where Bold text is on, as [Text] would be by itself.
+///
+/// With [leadIn], its words up to its first colon are its lead-in, a step
+/// heavier than the rest.
+class _Selectable extends StatelessWidget {
+  const _Selectable(this.text, {required this.style, this.leadIn = false});
+
+  final String text;
+  final TextStyle style;
+  final bool leadIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = MediaQuery.boldTextOf(context) ? style.merge(const TextStyle(fontWeight: FontWeight.bold)) : style;
+    final colon = leadIn ? text.indexOf(': ') : -1;
+    if (colon < 0) return SelectableText(text, style: body);
+    // Semibold after the long-form serifs' Medium; otherwise Bold, the next
+    // weight bundled, after high contrast's heavier serifs or an
+    // accessibility font's Regular. Never lighter than the rest: where that
+    // is Bold already (Bold text, Frank Ruhl Libre in high contrast), so is
+    // the lead-in.
+    final weight = body.fontWeight == FontWeight.w500 ? FontWeight.w600 : FontWeight.w700;
+    return SelectableText.rich(
+      TextSpan(children: [
+        TextSpan(text: text.substring(0, colon + 1), style: TextStyle(fontWeight: weight)),
+        TextSpan(text: text.substring(colon + 1)),
+      ]),
+      style: body,
     );
   }
 }

@@ -3597,6 +3597,18 @@ abstract class AppLocalizations {
   /// **'Why we ask'**
   String get onbWhyAsk;
 
+  /// The guide's first heading, under the Talmud's words that open it: how the app helps with the practice.
+  ///
+  /// In en, this message translates to:
+  /// **'Using the app'**
+  String get guideAppTitle;
+
+  /// Under the guide's Using the app heading: one point to a line, each shown after a bullet. It quotes readFromBook, and names Today, Listen and grace days as the app does.
+  ///
+  /// In en, this message translates to:
+  /// **'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikra, Mikra again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.'**
+  String get guideAppBody;
+
   /// No description provided for @guideWhatTitle.
   ///
   /// In en, this message translates to:
@@ -3618,7 +3630,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhatBody.
   ///
   /// In en, this message translates to:
-  /// **'The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.'**
+  /// **'The Shulchan Aruch sets the Talmud’s words down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.'**
   String get guideWhatBody;
 
   /// No description provided for @guideWhenTitle.
@@ -3630,7 +3642,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhenBody.
   ///
   /// In en, this message translates to:
-  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
+  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed until Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
   String get guideWhenBody;
 
   /// No description provided for @guideHowTitle.
@@ -3642,7 +3654,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideHowBody.
   ///
   /// In en, this message translates to:
-  /// **'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.'**
+  /// **'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.'**
   String get guideHowBody;
 
   /// Beside three marks for the three readings, at the top of the guide's How section: the text twice, then the Targum. No-break spaces keep each reading's number with its name.
@@ -3660,7 +3672,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideTargumBody.
   ///
   /// In en, this message translates to:
-  /// **'Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.'**
+  /// **'Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.'**
   String get guideTargumBody;
 
   /// No description provided for @guideSpecialTitle.
@@ -3669,10 +3681,10 @@ abstract class AppLocalizations {
   /// **'Special cases'**
   String get guideSpecialTitle;
 
-  /// No description provided for @guideSpecialBody.
+  /// Under the guide's Special cases heading: one case to a line, each shown after a bullet. Each line's words before its first colon and space are its lead-in, shown in bold; keep that colon and space.
   ///
   /// In en, this message translates to:
-  /// **'In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berachot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
+  /// **'Atarot v’Divon (Numbers 32:3): Onkelos gives mostly the Aramaic forms of the place names, so many also read the verse a third time in Hebrew, following Rashi (Berachot 8b).\nVezot HaBerachah: read by the time it is read in shul on Simchat Torah, ideally on Hoshana Rabbah; Shemini Atzeret also counts.\nThe haftarah: many also read the week’s haftarah once.\nIn shul: reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14).\nTwo portions: in a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both.\nNo blessing: none is said.\nWomen and children: women are exempt, and those who take it on do so as a voluntary mitzvah; boys are trained in it from the age of chinuch.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.
