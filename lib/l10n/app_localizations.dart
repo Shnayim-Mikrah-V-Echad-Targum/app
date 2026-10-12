@@ -627,10 +627,10 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{{weekdays} was covered by a grace day — your rhythm continues.} other{{weekdays} were covered by grace days — your rhythm continues.}}'**
   String graceUsedNoteShort(int count, String weekdays);
 
-  /// Under Today's week strip when reading two days' aliyot today has made up for yesterday.
+  /// Under Today's week strip when reading two days' aliyot today has made up for yesterday. It says what happened in plain words, as the rescue of a missed parsha is named, with no word for doubling up.
   ///
   /// In en, this message translates to:
-  /// **'Caught up — doubling up repaired yesterday.'**
+  /// **'Caught up — today’s reading made up for yesterday.'**
   String get caughtUpNote;
 
   /// No description provided for @todayNothingPlanned.
@@ -777,16 +777,16 @@ abstract class AppLocalizations {
   /// **'Finish by {date} and it still counts.'**
   String openWeekLate(String date);
 
-  /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.
+  /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1. A no-break space keeps the last two words together, so neither is left alone on a line.
   ///
   /// In en, this message translates to:
-  /// **'Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book.'**
+  /// **'Finish {name} and {next} by Shabbat and your {count}-week streak continues — you can do this once in each book of the Torah.'**
   String openWeekRestore(String name, String next, int count);
 
   /// As openWeekRestore, when the reader has no parsha streak to continue.
   ///
   /// In en, this message translates to:
-  /// **'Finish {name} and {next} by Shabbat and both count — one double-up per book.'**
+  /// **'Finish {name} and {next} by Shabbat and both count — you can do this once in each book of the Torah.'**
   String openWeekRestoreZero(String name, String next);
 
   /// No description provided for @openWeekHaftarahLeft.
@@ -1065,16 +1065,16 @@ abstract class AppLocalizations {
   /// **'After Shabbat — still counts'**
   String get weekLate;
 
-  /// No description provided for @weekRestored.
+  /// A parsha's status: missed by its late window, then finished together with the next parsha by the next Shabbat (once in each book of the Torah), so the streak continues. weekOverdue is the same rescue still open; keep the two in the same words. No no-break spaces: in the Progress page's recent weeks, the line balances its words itself, and a pair held together would be set smaller there as one word.
   ///
   /// In en, this message translates to:
-  /// **'Doubled up'**
+  /// **'Finished with the next parsha'**
   String get weekRestored;
 
-  /// No description provided for @weekMadeUp.
+  /// A parsha's status: finished after its late window, but not together with the next parsha by the next Shabbat. It counts for the year, but the streak begins again.
   ///
   /// In en, this message translates to:
-  /// **'Made up'**
+  /// **'Made up later'**
   String get weekMadeUp;
 
   /// No description provided for @weekMissed.
@@ -1089,10 +1089,10 @@ abstract class AppLocalizations {
   /// **'Not counted'**
   String get weekTransparent;
 
-  /// No description provided for @weekOverdue.
+  /// A parsha's status: missed by its late window, and it can still count if it is finished together with the next parsha by the next Shabbat (see weekRestored).
   ///
   /// In en, this message translates to:
-  /// **'Can still be restored'**
+  /// **'Can still be finished with the next parsha'**
   String get weekOverdue;
 
   /// No description provided for @weekInProgress.
@@ -1500,7 +1500,7 @@ abstract class AppLocalizations {
   /// No description provided for @translationDisclaimer.
   ///
   /// In en, this message translates to:
-  /// **'A translation is a study aid. It does not take the place of the Targum.'**
+  /// **'Helps with the meaning; it doesn’t take the place of the Targum.'**
   String get translationDisclaimer;
 
   /// No description provided for @mikraLabel.
@@ -1806,7 +1806,7 @@ abstract class AppLocalizations {
   /// No description provided for @copyDivineName.
   ///
   /// In en, this message translates to:
-  /// **'Write the Divine Name as ה׳'**
+  /// **'Write Divine Names as ה׳ and אלקים'**
   String get copyDivineName;
 
   /// No description provided for @copyDivineNameDesc.
@@ -3618,7 +3618,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhatBody.
   ///
   /// In en, this message translates to:
-  /// **'The Shulchan Aruch sets these words of the Talmud down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.'**
+  /// **'The Shulchan Aruch sets the Talmud’s words down as law (Orach Chaim 285): each week, a person completes on their own the portion the community reads aloud on Shabbat, keeping pace with it.'**
   String get guideWhatBody;
 
   /// No description provided for @guideWhenTitle.
@@ -3630,7 +3630,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhenBody.
   ///
   /// In en, this message translates to:
-  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
+  /// **'You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed until Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).'**
   String get guideWhenBody;
 
   /// No description provided for @guideHowTitle.
@@ -3642,7 +3642,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideHowBody.
   ///
   /// In en, this message translates to:
-  /// **'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.'**
+  /// **'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.'**
   String get guideHowBody;
 
   /// Beside three marks for the three readings, at the top of the guide's How section: the text twice, then the Targum. No-break spaces keep each reading's number with its name.
@@ -3660,7 +3660,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideTargumBody.
   ///
   /// In en, this message translates to:
-  /// **'Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.'**
+  /// **'Rashi’s commentary may take the place of the Targum, since it explains the text; a God-fearing person reads both (SA 285:2). A plain translation is a helpful study aid but is not a substitute for the Targum. Someone who doesn’t understand Rashi’s Hebrew may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein). Ask your rav.'**
   String get guideTargumBody;
 
   /// No description provided for @guideSpecialTitle.
@@ -3669,10 +3669,10 @@ abstract class AppLocalizations {
   /// **'Special cases'**
   String get guideSpecialTitle;
 
-  /// No description provided for @guideSpecialBody.
+  /// Under the guide's Special cases heading: one case to a line, each shown after a bullet. Each line's words before its first colon and space are its lead-in, shown in bold; keep that colon and space.
   ///
   /// In en, this message translates to:
-  /// **'In “Atarot v’Divon” (Numbers 32:3), Onkelos gives mostly the Aramaic forms of the place names; following Rashi (Berachot 8b), many also read it a third time in Hebrew. Vezot HaBerachah is read before Simchat Torah, ideally on Hoshana Rabbah. Many also read the week’s haftarah once. Reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14). In a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both. There is no blessing. Women and children who take on the practice do so as a voluntary mitzvah.'**
+  /// **'Atarot v’Divon (Numbers 32:3): Onkelos gives mostly the Aramaic forms of the place names, so many also read the verse a third time in Hebrew, following Rashi (Berachot 8b).\nVezot HaBerachah: read by the time it is read in shul on Simchat Torah, ideally on Hoshana Rabbah; Shemini Atzeret also counts.\nThe haftarah: many also read the week’s haftarah once.\nIn shul: reading quietly along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14).\nTwo portions: in a double-portion week, read both. When Israel and the Diaspora read different portions, travelers usually read both.\nNo blessing: none is said.\nWomen and children: women are exempt, and those who take it on do so as a voluntary mitzvah; boys are trained in it from the age of chinuch.'**
   String get guideSpecialBody;
 
   /// No description provided for @guideShabbatTitle.
@@ -3903,10 +3903,10 @@ abstract class AppLocalizations {
   /// **'Delete my account'**
   String get deleteAccount;
 
-  /// No description provided for @deleteAccountConfirm.
+  /// The account's deletion dialog, shown whether or not backup is on now: a backup made earlier stays in the account until it is deleted. As the privacy policy says, a discussion the member started stays, without their name, where others posted in it (delete_my_account); called a discussion, as the forums call it.
   ///
   /// In en, this message translates to:
-  /// **'This permanently deletes your account, your profile and everything you’ve posted. Your reading progress on this device is kept. This can’t be undone.'**
+  /// **'This permanently deletes your account, your profile, your posts and the cloud backup of your progress, bookmarks and notes. Where others have replied to a discussion you started, it stays, without your name. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.'**
   String get deleteAccountConfirm;
 
   /// No description provided for @accountDeleted.
@@ -3963,10 +3963,10 @@ abstract class AppLocalizations {
   /// **'Replying to {name}'**
   String replyingTo(String name);
 
-  /// How many have thanked a post: on its Todah button for screen readers, and under one's own post.
+  /// How many have thanked one's own post, under it, for screen readers. The Todah button on others' posts says it with todahButtonCount.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 thanks} other{{count} thanks}}'**
+  /// **'{count, plural, =1{Thanked once} other{Thanked {count} times}}'**
   String todahCount(int count);
 
   /// The Todah button's name for screen readers, which holds the word the button shows (Todah), so that voice control finds it by what it says.
@@ -4239,10 +4239,10 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}'**
   String postsCount(int count);
 
-  /// In a forum's list, after a discussion's replies: the thanks (todah) given to its posts, once there are any. A no-break space keeps the count with its word.
+  /// In a forum's list, after a discussion's replies: how often its posts have been thanked (todah), once they have been. It runs on in a lowercase list ("Rivka · 3 hours ago · 4 replies · thanked 12 times"). A no-break space holds the count to its word, and nothing more, so that at large text on a phone the line can break after "thanked" rather than inside a word.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 thanks} other{{count} thanks}}'**
+  /// **'{count, plural, =1{thanked once} other{thanked {count} times}}'**
   String threadThanksCount(int count);
 
   /// Under a forum's description on the Community page: how many discussions it has. A no-break space keeps the count with its word.
@@ -4617,10 +4617,10 @@ abstract class AppLocalizations {
   /// **'No verse matches “{query}”.'**
   String searchNoResults(String query);
 
-  /// Under searchNoResults, after a search in Hebrew. The Torah's spelling is often defective (חסר): אהרן rather than אהרון.
+  /// Under searchNoResults, after a search in Hebrew. By then the app has tried the Torah's spellings itself, with fewer ו and י, and found nothing either (see searchSpellingFallback), so this suggests only what it can't try.
   ///
   /// In en, this message translates to:
-  /// **'Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.'**
+  /// **'Try fewer words, or another word or spelling.'**
   String get searchNoResultsHint;
 
   /// Under searchNoResults, after a search in English. The translation is the JPS 1917.
@@ -4680,7 +4680,7 @@ abstract class AppLocalizations {
   /// Shortcut shown when the app's icon is long-pressed; opens this week's page to mark what was read from a printed Chumash. Keep it under 25 characters.
   ///
   /// In en, this message translates to:
-  /// **'Log reading from a book'**
+  /// **'Log a Chumash reading'**
   String get shortcutLogFromBook;
 
   /// Shortcut shown when the app's icon is long-pressed; opens the Parsha tab. Keep it under 25 characters.
@@ -5355,13 +5355,13 @@ abstract class AppLocalizations {
   /// **'Sending…'**
   String get sending;
 
-  /// A small tag beside a member's name on their posts in a question they asked.
+  /// A small tag beside a member's name on the post that asked a question (a discussion in Questions & answers): it names the post. Their later posts there are tagged authorTag.
   ///
   /// In en, this message translates to:
-  /// **'Asked'**
+  /// **'Question'**
   String get askedTag;
 
-  /// A small tag beside a member's name on their posts in a discussion they started.
+  /// A small tag beside a member's name on their posts in a discussion they started (in a question, on all but the post that asked it, which is tagged askedTag): it names the person.
   ///
   /// In en, this message translates to:
   /// **'Author'**
@@ -5486,6 +5486,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Torah study is set aside today'**
   String get widgetTishaBav;
+
+  /// The guide's first heading, under the Talmud's words that open it: how the app helps with the practice.
+  ///
+  /// In en, this message translates to:
+  /// **'Using the app'**
+  String get guideAppTitle;
+
+  /// Under the guide's Using the app heading: one point to a line, each shown after a bullet. It quotes readFromBook, and names Today, Listen and grace days as the app does.
+  ///
+  /// In en, this message translates to:
+  /// **'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikra, Mikra again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.'**
+  String get guideAppBody;
+
+  /// In the account's deletion dialog: closes it and opens Your data, where a backup file can be exported.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a backup file first'**
+  String get saveBackupFirst;
+
+  /// On a post's Todah button, after what a tap does, for screen readers: how many have thanked it, always in digits, as the button shows the count, so that voice control finds the button by the number it shows too (WCAG 2.5.3).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Thanked 1 time} other{Thanked {count} times}}'**
+  String todahButtonCount(int count);
+
+  /// Under the sign-in code's boxes, when Sign in is pressed before every digit is typed.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter all {count} digits of the code.'**
+  String codeIncomplete(int count);
+
+  /// This week's Shabbat times in the reader's city, under the city in Settings, when Yom Tov begins as Shabbat ends: its candles are lit only after Shabbat. candles and after are times of day, such as 6:07 PM.
+  ///
+  /// In en, this message translates to:
+  /// **'Candle-lighting {candles}\nYom Tov candles after {after}'**
+  String shabbatTimesSummaryYomTov(String candles, String after);
+
+  /// In Settings, under the city for Shabbat times: the row, and the title of its sheet, that sets how many minutes before sunset candles are lit, as the reader's local calendar (luach) has it.
+  ///
+  /// In en, this message translates to:
+  /// **'Candle-lighting'**
+  String get candleLightingSetting;
+
+  /// The candle-lighting option that follows the city's own custom, which the app knows: minutes is how many minutes before sunset candles are lit there, such as 18 or 40.
+  ///
+  /// In en, this message translates to:
+  /// **'City default ({minutes} min)'**
+  String candleMinutesCityDefault(int minutes);
+
+  /// A candle-lighting option, chosen to match the reader's luach: candles are lit this many minutes before sunset (15, 18, 20, 22, 30 or 40).
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{1 minute before sunset} other{{minutes} minutes before sunset}}'**
+  String candleMinutesBeforeSunset(int minutes);
+
+  /// In Settings, under the city for Shabbat times: the row, and the title of its sheet, that sets when Shabbat ends, as the reader's luach has it.
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat ends'**
+  String get shabbatEndsSetting;
+
+  /// The default end of Shabbat: nightfall, when three small stars are out, reckoned as the sun 8.5 degrees below the horizon.
+  ///
+  /// In en, this message translates to:
+  /// **'Nightfall (sun 8.5° below)'**
+  String get havdalahNightfall;
+
+  /// An end of Shabbat a fixed time after sunset, as many luachs give it: 42 or 50 minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} minutes after sunset'**
+  String havdalahMinutesAfterSunset(int minutes);
+
+  /// An end of Shabbat 72 minutes after sunset, following Rabbeinu Tam.
+  ///
+  /// In en, this message translates to:
+  /// **'72 minutes (Rabbeinu Tam)'**
+  String get havdalahRabbeinuTam;
+
+  /// Above the results of a search in Hebrew that no verse holds as typed, when the same words with fewer ו and י, as the Torah often spells them (אהרן for אהרון, כהן for כוהן), were found instead. query is what the reader typed; variant is the Torah's spelling whose verses are shown.
+  ///
+  /// In en, this message translates to:
+  /// **'No verse has “{query}”. Showing “{variant}”, as the Torah spells it.'**
+  String searchSpellingFallback(String query, String variant);
+
+  /// On the Texts & sources page, under Sunrise and sunset: how Shabbat times are worked out, their defaults, and the choices Settings offers.
+  ///
+  /// In en, this message translates to:
+  /// **'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 40 in Jerusalem and 30 in Haifa and Zikhron Ya’akov, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.'**
+  String get sourcesSunDescription;
 }
 
 class _AppLocalizationsDelegate

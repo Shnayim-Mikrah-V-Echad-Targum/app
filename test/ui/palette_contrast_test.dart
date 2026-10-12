@@ -73,6 +73,8 @@ final _textPairs = <String, _Pair>{
 /// and hairline are decorative and exempt.
 final _uiPairs = <String, _Pair>{
   'outline / surface': (t) => (t.scheme.outline, t.scheme.surface),
+  // Also the slider's inactive track, on a settings card or a sheet, and
+  // the sheet's drag handle.
   'outline / paper': (t) => (t.scheme.outline, t.sefer.paper),
   'outline / surfaceContainer': (t) => (t.scheme.outline, t.scheme.surfaceContainer),
   'focus / surface': (t) => (t.sefer.focus, t.scheme.surface),

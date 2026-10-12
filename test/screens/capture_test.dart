@@ -131,7 +131,8 @@ const _screens = {
   // A backup file chosen: what it holds, with nothing here to merge with.
   'welcome_import': '/welcome',
   'today': '/today',
-  // With a city for Shabbat times: on Erev Shabbat, candle-lighting there.
+  // With a city for Shabbat times: on Erev Shabbat, candle-lighting there,
+  // by the reader's luach (30 minutes before sunset, not Jerusalem's 40).
   'today_candles': '/today',
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
@@ -378,6 +379,8 @@ const _screens = {
   'account_member': '/community/account',
   'account_edit': '/community/account',
   'account_blocked': '/community/account',
+  // Delete my account: what goes with it, and a backup file first.
+  'account_delete': '/community/account',
   // Keyboard focus on the privacy link in its sentence.
   'focus_link': '/community/account',
   'account_settings': '/settings/account',
@@ -392,8 +395,14 @@ const _screens = {
   // Its end: the haftarah, special days and parsha names.
   's_reading_end': '/settings/reading',
   // The city for Shabbat times, and its list: as it opens, searched, and
-  // searched for a place that isn't there.
+  // searched for a place that isn't there. The page itself has Jerusalem,
+  // at its own minutes; here the reader's luach sets its times.
   's_reading_city': '/settings/reading',
+  // The luach's candle-lighting minutes and end of Shabbat, chosen in
+  // sheets; and in a week whose Shabbat runs into Yom Tov (Shavuot 5789).
+  's_reading_candles': '/settings/reading',
+  's_reading_havdalah': '/settings/reading',
+  's_reading_yomtov': '/settings/reading',
   'city': '/settings/reading/city',
   'city_search': '/settings/reading/city',
   'city_many': '/settings/reading/city',
@@ -449,8 +458,10 @@ const _screens = {
   'about': '/settings/about',
   'sources': '/sources',
   'guide': '/guide',
-  // The special cases, Shabbat and the sources, at its end.
+  // The special cases, Shabbat and the sources, at its end; and with Bold
+  // text, where each case's lead-in stands on a line of its own.
   'guide_end': '/guide',
+  'guide_end_bold': '/guide',
   // The privacy policy, open to every visitor; and at its end, the way to
   // reach us.
   'legal': '/legal/privacy',
@@ -461,7 +472,8 @@ const _screens = {
   'forum_missing': '/community/forum/xyz',
   // Search: the index being built the first time, then the page as it
   // opens, a phrase, a word in many verses, a word found only in the
-  // Targum, English, and a spelling the Torah doesn't use.
+  // Targum, English, a word the Torah has in no spelling, and one it spells
+  // with fewer ו and י, whose verses are shown.
   'search_preparing': '/search',
   'search': '/search',
   'search_results': '/search',
@@ -469,6 +481,7 @@ const _screens = {
   'search_targum': '/search',
   'search_english': '/search',
   'search_none': '/search',
+  'search_spelling': '/search',
   // Go to verse, from the Parsha tab's search button: as it opens, a verse
   // found, one past the end of its chapter, and words to search for. Then
   // the verse in the reader, and in focus mode.
@@ -579,6 +592,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
   's_a11y_speech': (s) => s.copyWith(speechRate: 0.65),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
+  'guide_end_bold': (s) => s.copyWith(boldText: true),
   's_reminders_on': (s) => s.copyWith(
         dailyReminder: true,
         dailyReminderMinutes: 7 * 60 + 30,
@@ -626,8 +640,12 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
   for (final screen in ['progress_years', 'progress_past', 'progress_record'])
     screen: (s) => s.copyWith(joinDate: secondYearJoinDate),
-  's_reading_city': (s) => s.copyWith(city: _jerusalem),
-  'today_candles': (s) => s.copyWith(city: _jerusalem),
+  's_reading': (s) => s.copyWith(city: _jerusalem),
+  's_reading_city': (s) => s.copyWith(city: _jerusalem, candleMinutesOverride: 30, havdalah: HavdalahRule.min72),
+  's_reading_candles': (s) => s.copyWith(city: _jerusalem, candleMinutesOverride: 30),
+  's_reading_havdalah': (s) => s.copyWith(city: _jerusalem, havdalah: HavdalahRule.min72),
+  's_reading_yomtov': (s) => s.copyWith(city: _jerusalem, joinDate: LocalDate(2029, 5, 1)),
+  'today_candles': (s) => s.copyWith(city: _jerusalem, candleMinutesOverride: 30),
   's_reminders_city': (s) => s.copyWith(
         dailyReminder: true,
         dailyReminderMinutes: 7 * 60 + 30,
@@ -747,6 +765,8 @@ final _screenNow = <String, DateTime>{
   'today_yomtov': DateTime(2029, 5, 20, 11),
   'today_yom_kippur': DateTime(2026, 9, 21, 11),
   'today_friday_night': DateTime(2026, 10, 9, 20),
+  // The Tuesday before Shabbat 19 May 2029, with Shavuot on Sunday.
+  's_reading_yomtov': DateTime(2029, 5, 15, 11),
   'today_checkin': DateTime(2026, 10, 12, 11),
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
   'focus_sheet_tile': DateTime(2026, 10, 12, 11),
@@ -986,7 +1006,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_report': _signedIn,
   'community_member': _signedIn,
   'account_name': _signedIn,
-  for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked'])
+  for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked', 'account_delete'])
     screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
   for (final screen in ['forum_error', 'thread_error', 'moderation_error']) screen: () async => _Offline(),
@@ -1134,6 +1154,14 @@ final _openShortcuts = _tapInTurn([
   () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
   () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'keys'),
 ]);
+
+/// Opens the sheet of the Shabbat times' row marked by [icon], once the row
+/// is in view.
+Future<void> _openShabbatTimesSheet(WidgetTester tester, IconData icon) async {
+  await Scrollable.ensureVisible(tester.element(find.byIcon(icon)), alignment: 0.5);
+  await _settle(tester);
+  await tester.tap(find.byIcon(icon));
+}
 
 /// Waits for the verse index, built from every book of the Torah, and
 /// searches for [query].
@@ -1335,6 +1363,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(find.byIcon(Icons.import_contacts));
   },
   'guide_end': _scrollToEnd,
+  'guide_end_bold': _scrollToEnd,
   'legal_end': _scrollToEnd,
   // The regular haftarah's heading, with the special one's end above it.
   'haftarah_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.6),
@@ -1344,8 +1373,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   's_reading_chabad': (tester) =>
       Scrollable.ensureVisible(tester.element(find.byType(SegmentedButton<HaftarahNusach>)), alignment: 0.3),
   'thread_long_end': _scrollToEnd,
-  // Reply on the last post.
+  // Reply on the last post, which large text leaves out of view.
   'thread_replying': (tester) async {
+    await _scrollToEnd(tester);
     final reply = find.descendant(of: find.byType(PostCard).last, matching: find.widgetWithIcon(TextButton, Icons.reply));
     await tester.ensureVisible(reply);
     await tester.tap(reply);
@@ -1419,6 +1449,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'account_edit': (tester) => tester.tap(find.byIcon(Icons.edit_outlined)),
   'account_blocked': (tester) => tester.tap(find.byIcon(Icons.block)),
+  'account_delete': (tester) async {
+    await tester.ensureVisible(find.byIcon(Icons.delete_forever_outlined));
+    await _settle(tester);
+    await tester.tap(find.byIcon(Icons.delete_forever_outlined));
+  },
   // Sheni's tab in the reader's aliyah ribbon.
   'focus_tab': (tester) =>
       _keyboardFocus(tester, find.descendant(of: find.byType(AliyahRibbon), matching: find.byType(SeferInkWell)).at(1)),
@@ -1557,6 +1592,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.text(tester.element(find.byType(Scaffold).last).l10n.resetProgress)),
   's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
+  's_reading_yomtov': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
+  's_reading_candles': (tester) => _openShabbatTimesSheet(tester, Icons.wb_twilight_outlined),
+  's_reading_havdalah': (tester) => _openShabbatTimesSheet(tester, Icons.bedtime_outlined),
   // The plan's last choice brought into view, so that the tap reaches it
   // rather than the navigation bar over where it would be.
   's_reading_changed': (tester) =>
@@ -1582,7 +1620,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'search_many': (tester) => _search(tester, 'אברהם'),
   'search_targum': (tester) => _search(tester, 'בקדמין'),
   'search_english': (tester) => _search(tester, 'ladder'),
-  'search_none': (tester) => _search(tester, 'אהרון'),
+  'search_none': (tester) => _search(tester, 'טלפון'),
+  'search_spelling': (tester) => _search(tester, 'אהרון'),
   'goto': (tester) => _goTo(tester, ''),
   'goto_verse': (tester) => _goTo(tester, 'בראשית כח יב'),
   'goto_missing': (tester) => _goTo(tester, 'Gen 28:30'),
@@ -1751,11 +1790,27 @@ final _modes = [
 
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
-const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
+const _bigPhoneScreens = {
+  'welcome',
+  'welcome_location',
+  'welcome_plan',
+  // What deleting the account takes with it, and the dialog's three
+  // actions, stacked.
+  'account_delete',
+};
 const _hugeModes = {'huge', 'hugehe'};
 // The reader with Listen's player over its bar too: the chrome is held at
 // 200% so that a verse shows beneath it. Browse, whose names stay whole.
-const _hugeScreens = {'today', 'reader', 'reader_listen', 'reader_preview', 'browse'};
+const _hugeScreens = {
+  'today',
+  'reader',
+  'reader_listen',
+  'reader_preview',
+  'browse',
+  // The reply box, its button under the field, and while answering a post.
+  'thread',
+  'thread_replying',
+};
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
   'today',
@@ -1764,11 +1819,16 @@ const _hugeTallScreens = {
   'progress',
   'settings',
   'community',
+  // A forum's discussions, the longest lines of facts among them.
+  'forum_questions',
   'thread',
   'haftarah',
   'browse',
   // The offer to move the daily reminder, its button under its text.
   's_reminders_far',
+  // Verses found, where words a maqaf joins part only if they must.
+  'search_many',
+  'search_spelling',
 };
 const _hugeWideScreens = {'parsha', 'settings'};
 
@@ -1866,6 +1926,7 @@ const _desktopScreens = {
   'account',
   'account_code',
   'account_member',
+  'account_delete',
   'compose',
   'browse',
   'browse_summer',
@@ -1957,6 +2018,8 @@ const _narrowScreens = {
   'reader_long',
   'reader_listen',
   'reader_listen_full',
+  // The guide's card, its rhythm 16 under 360 dp, and its lists.
+  'guide',
 };
 const _bigTextScreens = {
   // A held message with Undo and Close, at twice the text size.
@@ -1998,6 +2061,7 @@ const _bigTextScreens = {
   'account_code',
   'account_name',
   'account_member',
+  'account_delete',
   'thread',
   'thread_replying',
   'forum_questions',
@@ -2013,7 +2077,10 @@ const _bigTextScreens = {
   'compose_verse_draft',
   'search_many',
   'search_none',
+  'search_spelling',
   's_reading_city',
+  's_reading_candles',
+  's_reading_havdalah',
   'settings',
   's_reading',
   'city',
@@ -2034,6 +2101,8 @@ const _bigTextScreens = {
   'kit_progress',
   'kit_week',
   'progress_map',
+  // The Torah map's legend, each state's name balanced over its lines.
+  'legend_map',
   'about',
   'guide',
   'sources',

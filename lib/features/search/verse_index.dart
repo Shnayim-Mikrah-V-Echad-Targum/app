@@ -75,6 +75,76 @@ abstract final class SearchText {
   static bool hasHebrew(String folded) => folded.codeUnits.any((c) => c >= 0x05D0 && c <= 0x05EA);
 }
 
+/// Hebrew as the Torah spells it, from Hebrew as it is written today, which
+/// spells out vowels with ו and י that the Torah mostly leaves out (אהרון
+/// for אהרן, כוהן for כהן, אלוהים for אלהים), and doubles a ו or י that
+/// stands for a consonant (מצווה for מצוה). Only the letters inside a word
+/// of three or more change, never its first or last: a ו at the start is
+/// often "and".
+abstract final class TorahSpelling {
+  static bool _isVowelLetter(int c) => c == 0x05D5 || c == 0x05D9;
+
+  /// Whether the letter at [i] of [word] is a ו or י inside it, and the
+  /// word long enough to change.
+  static bool _inner(String word, int i) =>
+      word.length >= 3 && i > 0 && i < word.length - 1 && _isVowelLetter(word.codeUnitAt(i));
+
+  /// [folded] text ([SearchText.fold]) with each ו or י doubled inside a
+  /// word written once: מצווה as מצוה.
+  static String collapse(String folded) => [
+        for (final word in folded.split(' '))
+          String.fromCharCodes([
+            for (var i = 0; i < word.length; i++)
+              if (!(i > 1 && _inner(word, i) && word.codeUnitAt(i) == word.codeUnitAt(i - 1))) word.codeUnitAt(i),
+          ]),
+      ].join(' ');
+
+  /// What matches [folded] text with any of the single ו and י inside its
+  /// words left out, as the Torah might spell it; null if it has none.
+  static RegExp? optional(String folded) {
+    final pattern = StringBuffer();
+    var any = false;
+    for (final (w, word) in folded.split(' ').indexed) {
+      if (w > 0) pattern.write(' ');
+      for (var i = 0; i < word.length; i++) {
+        pattern.write(RegExp.escape(word[i]));
+        if (_inner(word, i)) {
+          pattern.write('?');
+          any = true;
+        }
+      }
+    }
+    return any ? RegExp(pattern.toString()) : null;
+  }
+
+  /// [typed] spelled as [spelling], which is its fold ([SearchText.fold])
+  /// with some of its letters left out: the same letters left out of
+  /// [typed], with their marks, and everything else as it was typed, its
+  /// final letters and punctuation too.
+  static String respell(String typed, String spelling) {
+    final (:folded, :sources) = SearchText.foldWithSources(typed);
+    final dropped = <int>{};
+    for (var i = 0, j = 0; i < folded.length; i++) {
+      if (j < spelling.length && folded.codeUnitAt(i) == spelling.codeUnitAt(j)) {
+        j++;
+      } else {
+        dropped.add(sources[i]);
+      }
+    }
+    final out = StringBuffer();
+    for (var i = 0; i < typed.length; i++) {
+      if (!dropped.contains(i)) {
+        out.writeCharCode(typed.codeUnitAt(i));
+        continue;
+      }
+      while (i + 1 < typed.length && HebrewText.isMark(typed.codeUnitAt(i + 1))) {
+        i++;
+      }
+    }
+    return out.toString();
+  }
+}
+
 /// The layers search reads, in the order a result shows them.
 const searchLayers = [TextLayer.mikra, TextLayer.onkelos, TextLayer.english];
 
@@ -224,10 +294,15 @@ class VerseHit {
 
 /// What one search found.
 class SearchResults {
-  const SearchResults({required this.query, required this.hits, required this.total});
+  const SearchResults({required this.query, required this.hits, required this.total, this.spelling});
 
   /// The search as it was typed.
   final String query;
+
+  /// For Hebrew that no verse holds as typed, the Torah's own spelling of
+  /// it, with fewer ו and י ([TorahSpelling]), whose verses these are,
+  /// written as [query] is ([TorahSpelling.respell]). Otherwise null.
+  final String? spelling;
 
   /// The first verses found, at most [kSearchLimit], in the Torah's order.
   final List<VerseHit> hits;
@@ -304,9 +379,27 @@ class VerseIndex {
   /// them, and how many there are in all. A Hebrew search reads the Mikra and
   /// the Targum, any other the translation. The Hebrew of a result has its
   /// vowels if [nikud], and never its cantillation.
+  ///
+  /// Hebrew that no verse holds as typed is looked for as the Torah spells
+  /// it ([TorahSpelling]): first with a ו or י doubled inside a word written
+  /// once, then with the single ones inside its words left out too, as few
+  /// as the Torah does. The verses of the first spelling the Torah has are
+  /// found, and the results say which it was ([SearchResults.spelling]).
   SearchResults search(String query, {int limit = kSearchLimit, bool nikud = true}) {
     if (!isSearchable(query)) return SearchResults(query: query, hits: const [], total: 0);
     final q = SearchText.fold(query);
+    final found = _search(q, limit: limit, nikud: nikud);
+    if (found.total == 0 && SearchText.hasHebrew(q)) {
+      if (_torahSpelling(q) case final spelling?) {
+        final (:hits, :total) = _search(spelling, limit: limit, nikud: nikud);
+        return SearchResults(query: query, hits: hits, total: total, spelling: TorahSpelling.respell(query, spelling));
+      }
+    }
+    return SearchResults(query: query, hits: found.hits, total: found.total);
+  }
+
+  /// The verses that hold [q], folded, as [search] finds them.
+  ({List<VerseHit> hits, int total}) _search(String q, {required int limit, required bool nikud}) {
     final hebrew = SearchText.hasHebrew(q);
     final layers = hebrew ? const [TextLayer.mikra, TextLayer.onkelos] : const [TextLayer.english];
     final hits = <VerseHit>[];
@@ -325,7 +418,35 @@ class VerseIndex {
         for (final layer in found) _snippet(layer, i, q, nikud),
       ]));
     }
-    return SearchResults(query: query, hits: hits, total: total);
+    return (hits: hits, total: total);
+  }
+
+  /// The Torah's spelling of [q], folded Hebrew that no verse holds: [q]
+  /// with each doubled ו or י inside a word written once, if the Torah has
+  /// that; or else with single ones inside its words left out too, as the
+  /// Torah has it with the fewest left out, and of those, in the most
+  /// verses. Null if the Torah has it in none of these ways.
+  String? _torahSpelling(String q) {
+    final mikra = _keys[TextLayer.mikra]!;
+    final collapsed = TorahSpelling.collapse(q);
+    if (collapsed != q && mikra.any((key) => key.contains(collapsed))) return collapsed;
+    final pattern = TorahSpelling.optional(collapsed);
+    if (pattern == null) return null;
+    final verses = <String, int>{};
+    for (final key in mikra) {
+      for (final spelling in {for (final m in pattern.allMatches(key)) m[0]!}) {
+        verses[spelling] = (verses[spelling] ?? 0) + 1;
+      }
+    }
+    String? best;
+    for (final MapEntry(key: spelling, value: count) in verses.entries) {
+      if (best == null ||
+          spelling.length > best.length ||
+          spelling.length == best.length && count > verses[best]!) {
+        best = spelling;
+      }
+    }
+    return best;
   }
 
   LayerSnippet _snippet(TextLayer layer, int verse, String? query, bool nikud) {

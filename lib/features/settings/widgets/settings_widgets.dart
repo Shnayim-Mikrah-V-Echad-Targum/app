@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fonts_change_scope.dart';
+import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
 
 /// One option in a [ChoiceGroup].
@@ -203,6 +205,88 @@ class ChoiceGroup<T> extends StatelessWidget {
   }
 }
 
+/// Opens a sheet of [choices] under [title], over the whole window, the
+/// navigation too: radio rows on one sheet of paper, as a [ChoiceGroup]'s,
+/// with [value] chosen, for a setting whose row shows its value. [onChanged]
+/// is given each choice as it is made. A tap, or Space or Enter, chooses and
+/// closes the sheet, on the choice already made too; the arrow keys move the
+/// choice from row to row, and leave the sheet open for the next. [T] may be
+/// nullable, for a choice of none (a default).
+Future<void> showChoiceSheet<T>({
+  required BuildContext context,
+  required String title,
+  required T value,
+  required List<Choice<T>> choices,
+  required ValueChanged<T> onChanged,
+}) {
+  // The rows are radios of the choices' places, so that a null from the
+  // group says only that the chosen row was activated again (its radio is
+  // toggleable), never that a choice of none was made.
+  var chosen = choices.indexWhere((c) => c.value == value);
+  return showAppSheet<void>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    builder: (context) => SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: Space.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SheetTitle(title),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sheetPadding(context)),
+              child: StatefulBuilder(
+                builder: (context, setState) => RadioGroup<int>(
+                  groupValue: chosen,
+                  onChanged: (i) {
+                    // A choice made, by a tap, Space or Enter on another row,
+                    // or by an arrow key, which leaves the sheet open; or,
+                    // null, the chosen row tapped, or Space or Enter on it,
+                    // which confirms it.
+                    if (i != null) {
+                      setState(() => chosen = i);
+                      onChanged(choices[i].value);
+                      if (HardwareKeyboard.instance.logicalKeysPressed.any(_arrowKeys.contains)) return;
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: PaperGroup(
+                    ruleInset: _RadioRow.textStart,
+                    children: [
+                      for (final (i, c) in choices.indexed)
+                        _RadioRow<int>(
+                          choice: Choice(
+                            i,
+                            c.title,
+                            subtitle: c.subtitle,
+                            semanticsLabel: c.semanticsLabel,
+                            sampleStyle: c.sampleStyle,
+                          ),
+                          toggleable: true,
+                          balanced: true,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// The keys that move a radio group's choice from row to row.
+final _arrowKeys = {
+  LogicalKeyboardKey.arrowUp,
+  LogicalKeyboardKey.arrowDown,
+  LogicalKeyboardKey.arrowLeft,
+  LogicalKeyboardKey.arrowRight,
+};
+
 /// The heading of a [ChoiceGroup.prominent]: the question in headlineSmall,
 /// and any help under it in bodyMedium, inset 4 as a group header's eyebrow
 /// is, and 16 above the cards.
@@ -329,11 +413,26 @@ class _Segments<T> extends StatelessWidget {
 /// As a [card], it is a sheet of its own (see [ChoiceGroup.prominent]),
 /// marked as [selected] by its wash and border as well as its radio.
 class _RadioRow<T> extends StatefulWidget {
-  const _RadioRow({super.key, required this.choice, this.card = false, this.selected = false});
+  const _RadioRow({
+    super.key,
+    required this.choice,
+    this.card = false,
+    this.selected = false,
+    this.toggleable = false,
+    this.balanced = false,
+  });
 
   final Choice<T> choice;
   final bool card;
   final bool selected;
+
+  /// Whether the title's lines are balanced, so that one wrapped by large
+  /// text leaves no word alone on its last ("15 minutes / before sunset").
+  final bool balanced;
+
+  /// Whether activating the row already chosen tells the group, with null,
+  /// rather than doing nothing (see [RadioListTile.toggleable]).
+  final bool toggleable;
 
   /// Where the text starts, as in a [PaperRow] with an icon: the radio's
   /// circle (20 in a 40 box) at 16, as an icon is.
@@ -383,7 +482,11 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
       data: theme.copyWith(focusColor: Colors.transparent),
       child: RadioListTile<T>(
         value: choice.value,
+        toggleable: widget.toggleable,
         title: switch (choice.sampleStyle) {
+          // In the list tile's own title style, which it measures in.
+          null when widget.balanced && choice.semanticsLabel == null =>
+            BalancedText(choice.title, style: theme.textTheme.bodyLarge, textAlign: TextAlign.start),
           null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
           final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
         },

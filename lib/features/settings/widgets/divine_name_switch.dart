@@ -6,8 +6,9 @@ import '../../../ui/l10n.dart';
 import 'settings_widgets.dart';
 
 /// Display → Text: whether a verse that leaves the app, copied, shared or
-/// quoted in a question, writes the Divine Name as ה׳ (DESIGN.md §3). On by
-/// default. A row of the Text group's paper, as its other switches are.
+/// quoted in a question, writes the Divine Names as ה׳ and אלקים (DESIGN.md
+/// §3). On by default. A row of the Text group's paper, as its other
+/// switches are.
 class DivineNameSwitch extends ConsumerWidget {
   const DivineNameSwitch({super.key});
 

@@ -67,9 +67,10 @@ void main() {
   late BookText onkelos;
   late BookText english;
   late Verse samuel20_18;
-  // Genesis 3:22 as the data writes it: the Divine Name, and the verse with
-  // the Name written ה׳ in its place.
+  // Genesis 3:22 as the data writes it: the Divine Name, and Elohim; and the
+  // verse with the Name written ה׳ in its place, and Elohim אלקים.
   late String name;
+  late String elohim;
   late String hebrew3_22;
   setUpAll(() async {
     final repo = TextRepository();
@@ -79,15 +80,18 @@ void main() {
     samuel20_18 = (await repo.hebrewVerse(const BookVerse('I Samuel', VerseRef(20, 18))))!;
     final raw = mikra.verse(genesis3_22.ref).readText;
     name = raw.split(' ').singleWhere((w) => HebrewText.consonantsOnly(w) == 'יהוה');
-    hebrew3_22 = raw.replaceFirst(name, 'ה׳');
+    elohim = raw.split(' ').singleWhere((w) => HebrewText.consonantsOnly(w) == 'אלהים');
+    hebrew3_22 = raw.replaceFirst(name, 'ה׳').replaceFirst(elohim, elohim.replaceFirst('ה', 'ק'));
   });
 
   group('the text that leaves the app', () {
-    test('is the verse as shown, with the Divine Name written ה׳', () {
+    test('is the verse as shown, with the Divine Names written ה׳ and אלקים', () {
       final text = verseText(mikra.verse(genesis3_22.ref), const AppSettings());
       expect(text, hebrew3_22);
-      expect(HebrewText.consonantsOnly(text), startsWith('ויאמר ה׳ אלהים הן האדם'));
+      expect(text, contains(' ׀ ה׳ אֱלֹקִ֗ים '), reason: 'every vowel and cantillation mark kept');
+      expect(HebrewText.consonantsOnly(text), startsWith('ויאמר ה׳ אלקים הן האדם'));
       expect(HebrewText.consonantsOnly(text), isNot(contains('יהוה')));
+      expect(HebrewText.consonantsOnly(text), isNot(contains('אלהים')));
       // Nothing the screen adds to keep words together travels with it.
       expect(text, isNot(contains('\u2060')));
       expect(text, isNot(contains('\u00a0')));
@@ -139,7 +143,9 @@ void main() {
       final lines = verseCopy(chosen, const AppSettings(), reference: 'Genesis 3:22').split('\n');
       expect(lines, hasLength(4));
       expect(lines[0], verseText(mikra.verse(r), const AppSettings()));
-      expect(lines[1], onkelos.verse(r).readText);
+      // The Targum's Hebrew Elohim as the Torah's.
+      expect(lines[1], verseText(onkelos.verse(r), const AppSettings(), targum: true));
+      expect(lines[1], startsWith('וַאֲמַר יְיָ אֱלֹקִים '));
       expect(lines[2], startsWith('And the LORD God said'));
       expect(lines[3], '— Genesis 3:22');
       expect(
@@ -148,11 +154,63 @@ void main() {
       );
     });
 
+    // Onkelos's Aramaic forms of Elohim are the rabbinic advisor's to decide
+    // (docs/DESIGN.md §11): every one stays as written, even where its
+    // letters are a Hebrew form's, as "my God" in Exodus 15:2 (אלהי); only
+    // Elohim as Hebrew spells it is written אלקים, as in the Torah.
+    test('copied with the Targum, writes its Aramaic forms of Elohim as they are', () async {
+      final repo = TextRepository();
+      final exodus = await repo.book(TextLayer.mikra, 'Exodus');
+      final exodusTargum = await repo.book(TextLayer.onkelos, 'Exodus');
+      final deuteronomy = await repo.book(TextLayer.mikra, 'Deuteronomy');
+      final deuteronomyTargum = await repo.book(TextLayer.onkelos, 'Deuteronomy');
+      List<String> copied(BookText torah, BookText targum, VerseRef r) => [
+            for (final line in verseCopy(
+              ChosenVerse(at: BookVerse('', r), hebrew: torah.verse(r), targum: targum.verse(r)),
+              const AppSettings(),
+              reference: '',
+            ).split('\n'))
+              HebrewText.consonantsOnly(line),
+          ];
+
+      // "This is my God… the God of my father": the Torah's אלהי is the Name;
+      // the Targum's אלהי ("my God") and אלהא stay.
+      final song = copied(exodus, exodusTargum, const VerseRef(15, 2));
+      expect(song[0], contains('אלקי אבי'));
+      expect(song[1], contains('דין אלהי '));
+      expect(song[1], contains('אלהא דאבהתי'));
+      expect(song[1], isNot(contains('אלק')));
+
+      // "The LORD your God, He is God, the faithful God": the Targum keeps the
+      // Hebrew אלהים there, between its own אלהך and אלהא.
+      final faithful = copied(deuteronomy, deuteronomyTargum, const VerseRef(7, 9));
+      expect(faithful[0], contains('ה׳ אלקיך הוא האלקים'));
+      expect(faithful[1], contains('יי אלהך הוא אלקים אלהא מהימנא'));
+    });
+
     test('quoted in a question, runs from the left in the English UI, where the question will', () {
       final verse = mikra.verse(genesis3_22.ref);
       final hebrew = verseText(verse, const AppSettings());
       expect(verseQuote(verse, const AppSettings(), leftToRight: true), '\u200E> $hebrew\n\n');
       expect(verseQuote(verse, const AppSettings(), leftToRight: false), '> $hebrew\n\n');
+    });
+
+    test('quoted in a question, is found there however the Names were written', () {
+      final verse = mikra.verse(genesis3_22.ref);
+      const s = AppSettings();
+      const off = AppSettings(copyDivineNameAsHashem: false);
+      expect(quotesVerse('${verseQuote(verse, s, leftToRight: true)}Why "like one of us"?', verse, s), isTrue);
+      expect(quotesVerse('${verseQuote(verse, s, leftToRight: false)}למה "כאחד ממנו"?', verse, s), isTrue);
+      // Begun while the reader had the Names written out, and asked again
+      // since they chose otherwise, or the other way round.
+      expect(quotesVerse('> ${verse.readText}\n\nWhy?', verse, s), isTrue);
+      expect(quotesVerse(verseQuote(verse, s, leftToRight: true), verse, off), isTrue);
+      // Kept from before Elohim was written אלקים.
+      expect(quotesVerse('> ${verse.readText.replaceFirst(name, 'ה׳')}\n\nWhy?', verse, s), isTrue);
+      // Another verse's question, or none.
+      expect(quotesVerse(verseQuote(mikra.verse(const VerseRef(3, 23)), s, leftToRight: true), verse, s), isFalse);
+      expect(quotesVerse('Why does Onkelos keep some names?', verse, s), isFalse);
+      expect(quotesVerse('', verse, s), isFalse);
     });
 
     test('asks in Questions & answers, naming the verse as a link does', () {
@@ -280,7 +338,10 @@ void main() {
       expect(find.text('Verse copied'), findsOneWidget);
       final lines = copied!.split('\n');
       expect(lines.first, hebrew3_22);
-      expect(lines[1], onkelos.verse(genesis3_22.ref).readText, reason: 'the Targum, which the reader reads');
+      // Onkelos too writes אֱלֹהִים here, after the Name as he writes it.
+      final targum = onkelos.verse(genesis3_22.ref).readText;
+      expect(targum, contains('יְיָ אֱלֹהִים'));
+      expect(lines[1], targum.replaceFirst('יְיָ אֱלֹהִים', 'יְיָ אֱלֹקִים'), reason: 'the Targum, which the reader reads');
       expect(lines.last, '— Genesis 3:22');
     });
 
@@ -318,7 +379,9 @@ void main() {
       await tester.tap(inSheet(find.text('Copy')));
       await tester.pumpAndSettle();
       expect(copied, contains(name));
+      expect(copied, contains(elohim));
       expect(copied, isNot(contains('ה׳')));
+      expect(copied, isNot(contains('אֱלֹקִ')));
     });
 
     testWidgets('a secondary click opens the options too, and Shift+F10 those of the verse in view', (tester) async {
@@ -658,6 +721,22 @@ void main() {
       expect(field(1).text, isEmpty);
     });
 
+    testWidgets('a draft quoting the verse with Elohim written out, as questions once did, is its question already',
+        (tester) async {
+      final body = '\u200E> ${mikra.verse(genesis3_22.ref).readText.replaceFirst(name, 'ה׳')}\n\nWhy "like one of us"?';
+      final draft = jsonEncode({'title': 'Question on Genesis 3:22', 'body': body});
+      final c = await open(tester, '/community/new?forum=questions&verse=Genesis%203:22', stored: {'draft.newThread': draft});
+      await untilKept(tester);
+      expect(find.byType(NoticeBanner), findsNothing, reason: 'the draft is a question on this verse');
+      expect(field(tester, 1).text, body);
+
+      // Another verse's question waits on it.
+      c.read(routerProvider).go('/community/new?forum=questions&verse=Genesis%203:23');
+      await untilKept(tester);
+      expect(find.text('Your unsent draft is kept. Discard it to ask about Genesis 3:23 instead.'), findsOneWidget);
+      expect(field(tester, 1).text, body);
+    });
+
     testWidgets('in the Hebrew UI, the question is in Hebrew and runs from the right', (tester) async {
       await open(
         tester,
@@ -708,9 +787,9 @@ void main() {
       expect(fields[1].controller!.text, '\u200E> ${samuel20_18.readText}\n\n');
     });
 
-    testWidgets('Display has the switch for the Divine Name, on by default', (tester) async {
+    testWidgets('Display has the switch for the Divine Names, on by default', (tester) async {
       final c = await open(tester, '/settings/display');
-      final row = find.widgetWithText(SwitchRow, 'Write the Divine Name as ה׳');
+      final row = find.widgetWithText(SwitchRow, 'Write Divine Names as ה׳ and אלקים');
       await tester.scrollUntilVisible(row, 200, scrollable: find.byType(Scrollable).first);
       await Scrollable.ensureVisible(tester.element(row), alignment: 0.5);
       await tester.pumpAndSettle();

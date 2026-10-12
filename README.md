@@ -56,7 +56,7 @@ Accessibility is a core requirement, not an add-on. See [docs/ACCESSIBILITY.md](
 
 **Reminders**
 - Daily, check-in and Erev Shabbat reminders. They never fire on Shabbat or Yom Tov, and never more than one a day. On the eve none is due after midday or, with a city chosen for Shabbat times, none arrives from an hour before candle-lighting, allowing for Android delivering a reminder up to an hour late.
-- On Android and iOS, shortcuts on the app's icon (Continue reading, Log reading from a book, This week's parsha) and a home-screen widget: this week's parsha, how far each of the three readings has come and today's reading, with Continue on the larger size. It rests on Shabbat and Yom Tov with the day's greeting, and turns to each new day by itself, from the days ahead the app sends it whenever it runs.
+- On Android and iOS, shortcuts on the app's icon (Continue reading, Log a Chumash reading, This week's parsha) and a home-screen widget: this week's parsha, how far each of the three readings has come and today's reading, with Continue on the larger size. It rests on Shabbat and Yom Tov with the day's greeting, and turns to each new day by itself, from the days ahead the app sends it whenever it runs.
 
 **Community**
 - Forums, including an automatic thread for each week's parsha.

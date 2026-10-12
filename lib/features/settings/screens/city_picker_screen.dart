@@ -38,8 +38,14 @@ class _CityPickerScreenState extends ConsumerState<CityPickerScreen> {
 
   void _choose(City? city) {
     // A reader who has chosen here knows of the city, and isn't offered one
-    // in Reminders again if they later go without.
-    ref.read(settingsProvider.notifier).update((s) => s.copyWith(city: city, cityOfferAnswered: true));
+    // in Reminders again if they later go without. Candle-lighting minutes
+    // are a place's custom, so another city brings its own; when Shabbat
+    // ends is the reader's, and stays.
+    ref.read(settingsProvider.notifier).update((s) => s.copyWith(
+          city: city,
+          cityOfferAnswered: true,
+          candleMinutesOverride: city?.id == s.city?.id ? s.candleMinutesOverride : null,
+        ));
     context.pop();
   }
 

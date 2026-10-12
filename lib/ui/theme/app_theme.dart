@@ -6,11 +6,13 @@ import '../../features/settings/app_settings.dart';
 import 'focus.dart';
 import 'motion.dart';
 import 'palette.dart';
+import 'press_wash.dart';
 import 'typography.dart';
 
 export 'focus.dart';
 export 'layout.dart';
 export 'motion.dart';
+export 'press_wash.dart';
 export 'sefer_colors.dart';
 export 'status_colors.dart';
 export 'typography.dart';
@@ -96,6 +98,44 @@ abstract final class AppButtons {
   }
 }
 
+/// The slider's track (§6.8): the part filled [activeHeight] high, primary,
+/// and the rest [inactiveHeight] high, outline (the theme's trackHeight), so
+/// that the value reads from the track's weight, not only its colour.
+class SliderTrack extends RoundedRectSliderTrackShape {
+  const SliderTrack();
+
+  static const double inactiveHeight = 2;
+  static const double activeHeight = 6;
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset offset, {
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required TextDirection textDirection,
+    required Offset thumbCenter,
+    Offset? secondaryOffset,
+    bool isDiscrete = false,
+    bool isEnabled = false,
+    double additionalActiveTrackHeight = 2,
+  }) =>
+      super.paint(
+        context,
+        offset,
+        parentBox: parentBox,
+        sliderTheme: sliderTheme,
+        enableAnimation: enableAnimation,
+        textDirection: textDirection,
+        thumbCenter: thumbCenter,
+        secondaryOffset: secondaryOffset,
+        isDiscrete: isDiscrete,
+        isEnabled: isEnabled,
+        additionalActiveTrackHeight: activeHeight - (sliderTheme.trackHeight ?? inactiveHeight),
+      );
+}
+
 abstract final class AppTheme {
   /// The concrete theme to paint: `system` follows the platform brightness.
   static AppThemeMode resolve(AppThemeMode mode, Brightness platformBrightness) => switch (mode) {
@@ -176,9 +216,20 @@ abstract final class AppTheme {
       shadowColor: scheme.shadow,
       extensions: [status, sefer, seferType, Motion(reduced: reduceMotion)],
       // §8: each platform's transition, or none while motion is reduced, when
-      // ink doesn't spread either (pressed controls still show their wash).
+      // ink doesn't spread either. On Apple platforms, and with motion
+      // reduced, a press washes the whole control at once instead, and holds
+      // long enough to be seen after a quick tap (PressWash).
       pageTransitionsTheme: AppPageTransitions.theme(reduced: reduceMotion),
-      splashFactory: reduceMotion ? NoSplash.splashFactory : null,
+      splashFactory: reduceMotion ||
+              defaultTargetPlatform == TargetPlatform.iOS ||
+              defaultTargetPlatform == TargetPlatform.macOS
+          ? PressWash(reduced: reduceMotion)
+          : null,
+      // §6.5's pressed wash, 10% of the ink, for the ink wells that have no
+      // overlay of their own (rows, cards, list tiles), where Material's
+      // default is a 40% grey.
+      splashColor: scheme.onSurface.withValues(alpha: 0.10),
+      highlightColor: scheme.onSurface.withValues(alpha: 0.10),
     );
 
     // ThemeData has filled in what the text theme leaves to the platform (the
@@ -201,16 +252,17 @@ abstract final class AppTheme {
     // phone's 72 px slot in bold.
     final navLabel = text.labelSmall!.copyWith(letterSpacing: 0);
     return base.copyWith(
-      // §6.2. Scrolled content slips under a hairline-thin shadow in
-      // outlineVariant; in high contrast the bar has a 2 px rule instead.
+      // §6.2. Never a shadow: scrolled content slips under a hairline
+      // (ScrolledUnderRule, around each app bar), and in high contrast the
+      // bar has a 2 px rule all the time.
       appBarTheme: AppBarTheme(
         toolbarHeight: 64,
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: highContrast ? 0 : 1,
-        shadowColor: scheme.outlineVariant,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
         shape: highContrast ? Border(bottom: BorderSide(color: scheme.outline, width: 2)) : null,
         centerTitle: false,
         titleTextStyle: text.titleLarge!.copyWith(color: scheme.onSurface),
@@ -419,15 +471,20 @@ abstract final class AppTheme {
           return highContrast ? const Icon(Icons.close, size: 16) : null;
         }),
       ),
-      // §6.8: a 4 px track with a round 20 px thumb, and no tick marks. Every
+      // §6.8: a track with a round 20 px thumb, and no tick marks. Every
       // shape is named, so neither of Material's slider generations (the
-      // deprecated year2023 flag picks between them) shows through.
+      // deprecated year2023 flag picks between them) shows through. The
+      // inactive track is a boundary in outline (3:1, 4.5:1 in high
+      // contrast), so the whole range shows, not just the part filled; it is
+      // 2 high, and the part filled 6 (SliderTrack), so the two read apart by
+      // their weight as well as their colour, which high contrast's primary
+      // and outline barely tell apart.
       sliderTheme: SliderThemeData(
-        trackHeight: 4,
+        trackHeight: SliderTrack.inactiveHeight,
         activeTrackColor: scheme.primary,
-        inactiveTrackColor: scheme.surfaceContainerHighest,
+        inactiveTrackColor: scheme.outline,
         thumbColor: scheme.primary,
-        trackShape: const RoundedRectSliderTrackShape(),
+        trackShape: const SliderTrack(),
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 0, pressedElevation: 0),
         tickMarkShape: SliderTickMarkShape.noTickMark,
         overlayShape: FocusRingSliderOverlay(ring: sefer.focus, gap: sefer.focusGap),
@@ -442,6 +499,17 @@ abstract final class AppTheme {
         valueIndicatorShape: const RoundedRectSliderValueIndicatorShape(),
         valueIndicatorColor: scheme.inverseSurface,
         valueIndicatorTextStyle: _tabular(labelLarge.copyWith(color: scheme.onInverseSurface)),
+      ),
+      // §6.8: a scrollbar's thumb is a boundary in outline, as the slider's
+      // track is, and onSurfaceVariant under the pointer or dragged. Named,
+      // because Material's own on Android is the highlight colour made
+      // opaque, which is the 10% press wash above in full ink.
+      scrollbarTheme: ScrollbarThemeData(
+        thumbColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.dragged) || states.contains(WidgetState.hovered)
+              ? scheme.onSurfaceVariant
+              : scheme.outline,
+        ),
       ),
       // §6.7. The label is Material's: bodyLarge in onSurfaceVariant, primary
       // when focused. In high contrast the enabled border is already 2 px,
@@ -534,9 +602,9 @@ abstract final class AppTheme {
         ),
         clipBehavior: Clip.antiAlias,
         showDragHandle: true,
-        // The handle is also a dismiss button, so high contrast draws it in
-        // full.
-        dragHandleColor: highContrast ? scheme.outline : scheme.outline.withValues(alpha: 0.4),
+        // The handle is also a dismiss button, so it is drawn in full outline,
+        // as a control's boundary (3:1).
+        dragHandleColor: scheme.outline,
         dragHandleSize: const Size(36, 4),
         constraints: const BoxConstraints(maxWidth: 640),
       ),

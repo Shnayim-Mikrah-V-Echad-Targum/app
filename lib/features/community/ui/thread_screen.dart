@@ -180,18 +180,19 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 
   /// The tag beside the name of the member who started [t] on their posts:
-  /// Asked in a question, and Author in any other discussion. None in a
-  /// weekly thread, which is the community's.
-  static String? _authorTag(AppLocalizations l, ThreadSummary? t, Post post) {
+  /// Question on the post that asked it ([opening], in a question), and
+  /// Author on the rest of theirs, as in any other discussion, so that a
+  /// later word of thanks isn't called a question. None in a weekly thread,
+  /// which is the community's.
+  static String? _authorTag(AppLocalizations l, ThreadSummary? t, Post post, {required bool opening}) {
     final author = t?.authorId;
     if (t == null || t.kind == ThreadKind.weekly || author == null || post.authorId != author) return null;
-    return t.kind == ThreadKind.question ? l.askedTag : l.authorTag;
+    return t.kind == ThreadKind.question && opening ? l.askedTag : l.authorTag;
   }
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final theme = Theme.of(context);
     final thread = ref.watch(threadProvider(widget.threadId));
     final posts = ref.watch(postsProvider(widget.threadId));
     final user = ref.watch(communityUserProvider).value;
@@ -206,12 +207,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final forum = t == null ? null : forums.value?.where((f) => f.id == t.forumId).firstOrNull;
     final forumName = forum?.name(context.isHebrewUi) ?? (forums.isLoading || t == null ? null : l.communityTitle);
     final canReply = t != null && (!t.locked || isMod);
-
-    // Posts reach into the gutter at their end, where their menu buttons end
-    // (see PostCard.menuBleed); everything else keeps to the column.
-    final g = Gutter.of(context);
-    Widget inColumn(Widget child) =>
-        Padding(padding: const EdgeInsetsDirectional.only(end: PostCard.menuBleed), child: child);
 
     final content = RefreshablePage(
       refresh: _refresh,
@@ -236,145 +231,31 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               ],
             ),
         ],
-        body: Column(
-          children: [
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  try {
-                    await _refresh();
-                  } catch (e) {
-                    if (context.mounted) showStatus(context, communityError(l, e));
-                  }
-                },
-                child: posts.when(
-                  // Fetched again, the posts shown stay until the new ones come.
-                  skipError: posts.hasValue,
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  // In the page's column, and pulled to try again.
-                  error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
-                  data: (page) {
-                    final list = page.posts;
-                    final byId = {for (final p in list) p.id: p};
-                    // With earlier posts not yet loaded, the thread's own
-                    // count, and each post numbered within the whole thread.
-                    // Loaded in full, the count of those shown: the server's
-                    // counts posts the reader can't see, such as a blocked
-                    // member's.
-                    final total = page.hasEarlier ? max(t?.postCount ?? 0, list.length) : list.length;
-                    final offset = total - list.length;
-                    // The post that opened the thread, once it is loaded: the
-                    // first shown, if its member began the thread as it was
-                    // begun. A weekly thread opens with none of its own; nor
-                    // does a thread whose opening post is hidden (deleted, or
-                    // its member blocked).
-                    final first = list.firstOrNull;
-                    final opening = offset == 0 &&
-                            t != null &&
-                            t.kind != ThreadKind.weekly &&
-                            first != null &&
-                            first.authorId != null &&
-                            first.authorId == t.authorId &&
-                            first.createdAt.difference(t.createdAt).abs() < const Duration(minutes: 1)
-                        ? first.id
-                        : null;
-                    return PageBody.builder(
-                      controller: _scroll,
-                      padding: EdgeInsetsDirectional.fromSTEB(g, Space.sm, g - PostCard.menuBleed, Space.s40),
-                      header: <Widget>[
-                        if (t != null) ...[
-                          // The page's one heading of level 1, which names it,
-                          // in its own language.
-                          Lang(
-                            Locale(titleDirection == TextDirection.rtl ? 'he' : 'en'),
-                            child: Semantics(
-                              header: true,
-                              headingLevel: 1,
-                              namesRoute: true,
-                              // Each word whole, set smaller where the largest
-                              // text leaves one too wide for the page, unless
-                              // too long to stay legible.
-                              child: WholeWords(
-                                title,
-                                textDirection: titleDirection,
-                                // In its own direction, from the page's start
-                                // edge, as its forum lists it.
-                                textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.left,
-                                style: theme.textTheme.headlineSmall,
-                                breakAtHyphens: true,
-                                minFontSize: WholeWords.smallestSize,
-                              ),
-                            ),
-                          ),
-                          // An empty thread says so below.
-                          if (list.isNotEmpty) ...[
-                            const Gap(Space.xs),
-                            Text(
-                              l.postsCount(total),
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                            ),
-                          ],
-                          if (t.locked) ...[const Gap(Space.md), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
-                          const Gap(Space.lg),
-                        ],
-                        // The reply box beneath is its action.
-                        if (list.isEmpty && t != null) EmptyState(message: emptyThreadMessage(context, ref, t)),
-                        if (page.hasEarlier)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Center(
-                              child: TextButton.icon(
-                                // Enabled while it loads, so that it keeps the keyboard focus.
-                                focusNode: _earlierFocus,
-                                onPressed: _loadEarlier,
-                                icon: _loadingEarlier
-                                    ? SizedBox.square(
-                                        dimension: 18,
-                                        child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
-                                      )
-                                    : const Icon(Icons.expand_less),
-                                label: Text(l.showEarlierPosts),
-                              ),
-                            ),
-                          ),
-                      ].map(inColumn).toList(),
-                      itemCount: list.length,
-                      // Each post under a hairline, the first under the
-                      // thread's title.
-                      itemBuilder: (context, i) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          inColumn(const _Hairline()),
-                          PostCard(
-                            key: ValueKey(list[i].id),
-                            post: list[i],
-                            number: offset + i + 1,
-                            total: total,
-                            opening: list[i].id == opening,
-                            tag: _authorTag(l, t, list[i]),
-                            focusNode: list[i].id == _firstPostFocused ? _firstPostFocus : null,
-                            // As loaded, or else as fetched with the reply.
-                            quote: switch (byId[list[i].replyToId]) {
-                              final p? => QuotedPost(authorName: p.authorName, body: p.body),
-                              null => list[i].quote,
-                            },
-                            isMine: user != null && list[i].authorId == user.id,
-                            isModerator: isMod,
-                            onReply: canReply
-                                ? () {
-                                    setState(() => _replyTo = list[i]);
-                                    _focus.requestFocus();
-                                  }
-                                : null,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
+        body: RefreshIndicator(
+          onRefresh: () async {
+            try {
+              await _refresh();
+            } catch (e) {
+              if (context.mounted) showStatus(context, communityError(l, e));
+            }
+          },
+          child: posts.when(
+            // Fetched again, the posts shown stay until the new ones come.
+            skipError: posts.hasValue,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            // In the page's column, and pulled to try again.
+            error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
+            data: (page) => _postsList(
+              context,
+              page,
+              t: t,
+              title: title,
+              titleDirection: titleDirection,
+              userId: user?.id,
+              isMod: isMod,
+              canReply: canReply,
             ),
-          ],
+          ),
         ),
         // In the page's bottom bar, as the reader's bar is, so that status
         // messages the page shows stand above it rather than over it (§6.19).
@@ -393,6 +274,161 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     // The thread's list, which a tap on the iOS status bar scrolls to the
     // top. No other list takes it up by itself.
     return PrimaryScrollController(controller: _scroll, automaticallyInheritForPlatforms: const {}, child: content);
+  }
+
+  /// The head of the page, as items of its column: the thread's title, the
+  /// page's one heading of level 1, in its own language; under it the count
+  /// of its posts, where [postCount] is given; and in a locked thread, the
+  /// notice that says so.
+  List<Widget> _titleBlock(
+    BuildContext context,
+    ThreadSummary t, {
+    required String title,
+    required TextDirection titleDirection,
+    int? postCount,
+  }) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    return [
+      Lang(
+        Locale(titleDirection == TextDirection.rtl ? 'he' : 'en'),
+        child: Semantics(
+          header: true,
+          headingLevel: 1,
+          namesRoute: true,
+          // Each word whole, set smaller where the largest text leaves one
+          // too wide for the page, unless too long to stay legible.
+          child: WholeWords(
+            title,
+            textDirection: titleDirection,
+            // In its own direction, from the page's start edge, as its forum
+            // lists it.
+            textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.left,
+            style: theme.textTheme.headlineSmall,
+            breakAtHyphens: true,
+            minFontSize: WholeWords.smallestSize,
+          ),
+        ),
+      ),
+      if (postCount != null) ...[
+        const Gap(Space.xs),
+        Text(
+          l.postsCount(postCount),
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+      ],
+      if (t.locked) ...[const Gap(Space.md), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
+      const Gap(Space.lg),
+    ];
+  }
+
+  /// The page's column: the thread's title over its posts, each built only
+  /// as it scrolls into view, and Show earlier posts above them while there
+  /// are any.
+  Widget _postsList(
+    BuildContext context,
+    ThreadPosts page, {
+    required ThreadSummary? t,
+    required String title,
+    required TextDirection titleDirection,
+    required String? userId,
+    required bool isMod,
+    required bool canReply,
+  }) {
+    final l = context.l10n;
+    // Posts reach into the gutter at their end, where their menu buttons end
+    // (see PostCard.menuBleed); everything else keeps to the column.
+    final g = Gutter.of(context);
+    Widget inColumn(Widget child) =>
+        Padding(padding: const EdgeInsetsDirectional.only(end: PostCard.menuBleed), child: child);
+
+    final list = page.posts;
+    final byId = {for (final p in list) p.id: p};
+    // With earlier posts not yet loaded, the thread's own count, and each
+    // post numbered within the whole thread. Loaded in full, the count of
+    // those shown: the server's counts posts the reader can't see, such as a
+    // blocked member's.
+    final total = page.hasEarlier ? max(t?.postCount ?? 0, list.length) : list.length;
+    final offset = total - list.length;
+    // The post that opened the thread, once it is loaded: the first shown,
+    // if its member began the thread as it was begun. A weekly thread opens
+    // with none of its own; nor does a thread whose opening post is hidden
+    // (deleted, or its member blocked).
+    final first = list.firstOrNull;
+    final opening = offset == 0 &&
+            t != null &&
+            t.kind != ThreadKind.weekly &&
+            first != null &&
+            first.authorId != null &&
+            first.authorId == t.authorId &&
+            first.createdAt.difference(t.createdAt).abs() < const Duration(minutes: 1)
+        ? first.id
+        : null;
+    return PageBody.builder(
+      controller: _scroll,
+      padding: EdgeInsetsDirectional.fromSTEB(g, Space.sm, g - PostCard.menuBleed, Space.s40),
+      header: <Widget>[
+        if (t != null)
+          // An empty thread says so below, with no count.
+          ..._titleBlock(
+            context,
+            t,
+            title: title,
+            titleDirection: titleDirection,
+            postCount: list.isEmpty ? null : total,
+          ),
+        // The reply box beneath is its action.
+        if (list.isEmpty && t != null) EmptyState(message: emptyThreadMessage(context, ref, t)),
+        if (page.hasEarlier)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Center(
+              child: TextButton.icon(
+                // Enabled while it loads, so that it keeps the keyboard focus.
+                focusNode: _earlierFocus,
+                onPressed: _loadEarlier,
+                icon: _loadingEarlier
+                    ? SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
+                      )
+                    : const Icon(Icons.expand_less),
+                label: Text(l.showEarlierPosts),
+              ),
+            ),
+          ),
+      ].map(inColumn).toList(),
+      itemCount: list.length,
+      // Each post under a hairline, the first under the thread's title.
+      itemBuilder: (context, i) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          inColumn(const _Hairline()),
+          PostCard(
+            key: ValueKey(list[i].id),
+            post: list[i],
+            number: offset + i + 1,
+            total: total,
+            opening: list[i].id == opening,
+            tag: _authorTag(l, t, list[i], opening: list[i].id == opening),
+            focusNode: list[i].id == _firstPostFocused ? _firstPostFocus : null,
+            // As loaded, or else as fetched with the reply.
+            quote: switch (byId[list[i].replyToId]) {
+              final p? => QuotedPost(authorName: p.authorName, body: p.body),
+              null => list[i].quote,
+            },
+            isMine: userId != null && list[i].authorId == userId,
+            isModerator: isMod,
+            onReply: canReply
+                ? () {
+                    setState(() => _replyTo = list[i]);
+                    _focus.requestFocus();
+                  }
+                : null,
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -413,6 +449,43 @@ class _Composer extends StatelessWidget {
   final VoidCallback onCancelReply;
   final VoidCallback? onSend;
 
+  /// What the outlined field leaves its label of its width: its padding of
+  /// 12 at either side, and the 4 its outline's gap keeps about the label.
+  static const _labelInsets = 2 * 12.0 + 2 * 4.0;
+
+  /// The size of the field's label on its outline, of its size within.
+  static const _floatingLabelScale = 0.75;
+
+  static const _bold = TextStyle(fontWeight: FontWeight.bold);
+
+  /// The most lines the field grows to.
+  static const _maxLines = 5;
+
+  /// The share of the screen's visible height that the field's lines may
+  /// take. Five lines of large text on a short phone, under the post being
+  /// answered and over the button, would push the reply box up over the app
+  /// bar and leave none of the thread in view.
+  static const _linesShare = 0.3;
+
+  /// The width of [text] in [style], on one line, as a Text sets it: at the
+  /// reader's text size, in bold where the device asks for bold text, and in
+  /// the page's language, which picks its fallback fonts.
+  static double _textWidth(BuildContext context, String text, TextStyle? style) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: MediaQuery.boldTextOf(context) ? (style ?? const TextStyle()).merge(_bold) : style,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+      maxLines: 1,
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return width;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -420,6 +493,12 @@ class _Composer extends StatelessWidget {
     final scheme = theme.colorScheme;
     final sefer = SeferColors.of(context);
     final replyTo = this.replyTo;
+    // As many lines as the field's share of the screen holds, up to five:
+    // past them, what is written scrolls within the field.
+    final body = theme.textTheme.bodyLarge!;
+    final lineHeight = MediaQuery.textScalerOf(context).scale(body.fontSize!) * (body.height ?? 1.5);
+    final visibleHeight = MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).bottom;
+    final maxLines = (visibleHeight * _linesShare / lineHeight).floor().clamp(1, _maxLines);
     // Docked on the page's own paper under a hairline, apart from the
     // navigation bar's cooler band below it, and as wide as the column of
     // posts above it, with the same gutters.
@@ -450,39 +529,86 @@ class _Composer extends StatelessWidget {
                             onCancel: onCancelReply,
                           ),
                         ),
-                      Row(
-                        // The button stays by the last line as the field grows.
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: controller,
-                              focusNode: focusNode,
-                              minLines: 1,
-                              maxLines: 5,
-                              maxLength: 10000,
-                              buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-                              // Empty, the cursor waits at the interface's start.
-                              textDirection: autoDirection(controller.text, fallback: Directionality.of(context)),
-                              keyboardType: TextInputType.multiline,
-                              decoration: InputDecoration(labelText: l.replyLabel),
-                            ),
-                          ),
-                          const Gap(Space.md),
-                          Padding(
-                            // Level with a one-line field, 56 high.
-                            padding: const EdgeInsets.only(bottom: Space.xs),
-                            child: FilledButton(
-                              onPressed: onSend,
-                              child: sending
-                                  ? SizedBox.square(
-                                      dimension: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.sending),
-                                    )
-                                  : Text(l.replyAction),
-                            ),
-                          ),
-                        ],
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          // The field's label is never cut short. Where the
+                          // button beside the field would leave it too little
+                          // room (large text on a phone), the button goes under
+                          // the field, at its end; and where even the whole
+                          // width is too little, the label stands on the
+                          // outline, at the size it takes there when the field
+                          // has the focus. One Flex either way, so that the
+                          // field keeps the focus as it moves (the phone
+                          // turned, say).
+                          final label = theme.textTheme.bodyLarge!;
+                          final labelWidth = _textWidth(context, l.replyLabel, label) + _labelInsets;
+                          // Material's padding at 100%, which only narrows as
+                          // the text grows.
+                          final buttonWidth = _textWidth(context, l.replyAction, theme.textTheme.labelLarge) + 48;
+                          final stacked = constraints.maxWidth - buttonWidth - Space.md < labelWidth;
+                          // On the outline, half the label's line stands above
+                          // the field: the field sets its label one font size
+                          // high, and on the outline at three quarters of that.
+                          // At large text that is more than the space above the
+                          // field holds (the 12 under the hairline, or the 8
+                          // under the post being answered), so the field
+                          // leaves the rest.
+                          final floatingHalf =
+                              MediaQuery.textScalerOf(context).scale(label.fontSize!) * _floatingLabelScale / 2;
+                          final labelRoom = max(0.0, floatingHalf - (replyTo != null ? Space.sm : Space.md));
+                          return Flex(
+                            direction: stacked ? Axis.vertical : Axis.horizontal,
+                            // Beside the field, the button stays by its last
+                            // line as it grows.
+                            crossAxisAlignment: stacked ? CrossAxisAlignment.stretch : CrossAxisAlignment.end,
+                            children: [
+                              Flexible(
+                                flex: stacked ? 0 : 1,
+                                fit: FlexFit.tight,
+                                child: Padding(
+                                  padding: EdgeInsets.only(top: labelRoom),
+                                  child: TextField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    minLines: 1,
+                                    maxLines: maxLines,
+                                    maxLength: 10000,
+                                    buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                                    // Empty, the cursor waits at the interface's start.
+                                    textDirection: autoDirection(controller.text, fallback: Directionality.of(context)),
+                                    keyboardType: TextInputType.multiline,
+                                    decoration: InputDecoration(
+                                      labelText: l.replyLabel,
+                                      floatingLabelBehavior: constraints.maxWidth < labelWidth
+                                          ? FloatingLabelBehavior.always
+                                          : FloatingLabelBehavior.auto,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Gap(stacked ? Space.sm : Space.md),
+                              Padding(
+                                // Beside the field, level with it while it has
+                                // one line, 56 high.
+                                padding: EdgeInsets.only(bottom: stacked ? 0 : Space.xs),
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  widthFactor: 1,
+                                  heightFactor: 1,
+                                  child: FilledButton(
+                                    onPressed: onSend,
+                                    child: sending
+                                        ? SizedBox.square(
+                                            dimension: 20,
+                                            child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.sending),
+                                          )
+                                        : Text(l.replyAction),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -565,8 +691,8 @@ class PostCard extends ConsumerWidget {
   /// Whether this is the post that opened the thread.
   final bool opening;
 
-  /// A tag beside the writer's name: Asked, say, on the posts of the member
-  /// who asked the question.
+  /// A tag beside the writer's name: Question, say, on the post that asked
+  /// the thread's question, and Author on its writer's other posts.
   final String? tag;
 
   /// The post it replies to.
@@ -1157,7 +1283,8 @@ class _TodahButtonState extends ConsumerState<_TodahButton> {
       // Merged into the button's node: a toggle, on once thanks are given.
       label: Semantics(
         toggled: _given,
-        label: _count == 0 ? action : '$action. ${l.todahCount(_count)}',
+        // The count in digits, as the button shows it.
+        label: _count == 0 ? action : '$action. ${l.todahButtonCount(_count)}',
         excludeSemantics: true,
         child: Row(
           mainAxisSize: MainAxisSize.min,

@@ -187,6 +187,13 @@ class RenderMarkedText extends RenderBox with RelayoutWhenSystemFontsChangeMixin
     size = constraints.constrain(_painter.size);
   }
 
+  /// The boxes that [selection] of the text takes up as it is laid out, as
+  /// [RenderParagraph.getBoxesForSelection] gives them.
+  List<TextBox> getBoxesForSelection(TextSelection selection, {ui.BoxHeightStyle boxHeightStyle = ui.BoxHeightStyle.tight}) {
+    _layout(constraints);
+    return _painter.getBoxesForSelection(selection, boxHeightStyle: boxHeightStyle);
+  }
+
   @override
   bool hitTestSelf(Offset position) => true;
 
