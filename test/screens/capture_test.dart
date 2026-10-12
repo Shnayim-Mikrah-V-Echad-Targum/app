@@ -401,11 +401,18 @@ const _screens = {
   // The preview at a small size, whole, in focus mode with a theme chosen.
   's_display_small': '/settings/display',
   's_fonts': '/settings/display',
+  // With Rashi shown: the switch for Rashi script, in view.
+  's_display_rashi': '/settings/display',
   's_a11y': '/settings/accessibility',
   // Large print in force, then Low vision just applied, with its Undo.
   's_a11y_active': '/settings/accessibility',
   's_a11y_undo': '/settings/accessibility',
+  // Low vision applied from the keyboard: its Undo stays, with Close.
+  's_a11y_undo_keys': '/settings/accessibility',
   's_a11y_web': '/settings/accessibility',
+  // The device's Reduce motion and Bold text on: the switches show them.
+  's_a11y_device': '/settings/accessibility',
+  's_display_device': '/settings/display',
   's_reminders': '/settings/reminders',
   // As on a phone, where reminders can be scheduled, with all three on.
   's_reminders_on': '/settings/reminders',
@@ -415,6 +422,8 @@ const _screens = {
   's_reminders_offer': '/settings/reminders',
   // All three on, following the Shabbat times of the city chosen.
   's_reminders_city': '/settings/reminders',
+  // A daily reminder at 8 PM after Shacharit: the offer to move it to 7:30.
+  's_reminders_far': '/settings/reminders',
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
   // A backup file chosen: what it holds, and whether to merge it.
@@ -494,7 +503,16 @@ const _screens = {
   'focus_field': '/community/account',
   'focus_tab': '/read/5787:1/2',
   'focus_menu': '/week/5787:1',
+  // The week's menu, opened from the keyboard, its second item focused.
+  'focus_menu_item': '/week/5787:1',
+  // A tile in the check-in's sheet (ringed inside), and in the import
+  // dialog (ringed outside, its text being at its edge).
+  'focus_sheet_tile': '/today',
+  'focus_dialog_tile': '/settings/data',
   'focus_nav': '/today',
+  // Today's tab, the selected one: at the very top of the rail, which
+  // scrolls in a short window.
+  'focus_nav_today': '/today',
   'focus_segment': '/welcome',
   'focus_fab': '/community/forum/parsha',
   'focus_thread': '/community/forum/questions',
@@ -546,10 +564,18 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_rashi_script': (s) => s.copyWith(showRashi: true, rashiScript: true),
   'reader_rashi_step': (s) => s.copyWith(secondReading: SecondReading.rashi),
   's_display_small': (s) => s.copyWith(readingScale: 0.6, focusMode: true, theme: AppThemeMode.sepia),
+  's_display_rashi': (s) => s.copyWith(showRashi: true),
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
-  's_reminders_on': (s) =>
-      s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true, habitAnchor: HabitAnchor.shacharit),
+  's_reminders_on': (s) => s.copyWith(
+        dailyReminder: true,
+        dailyReminderMinutes: 7 * 60 + 30,
+        fridayReminder: true,
+        checkInReminder: true,
+        habitAnchor: HabitAnchor.shacharit,
+      ),
+  's_reminders_far': (s) =>
+      s.copyWith(dailyReminder: true, dailyReminderMinutes: 20 * 60, habitAnchor: HabitAnchor.shacharit),
   'reader_offer': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   'reader_offer_city': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   // Reading by section, so that 32:3 is read with the verses around it.
@@ -592,6 +618,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_candles': (s) => s.copyWith(city: _jerusalem),
   's_reminders_city': (s) => s.copyWith(
         dailyReminder: true,
+        dailyReminderMinutes: 7 * 60 + 30,
         fridayReminder: true,
         checkInReminder: true,
         habitAnchor: HabitAnchor.shacharit,
@@ -707,6 +734,7 @@ final _screenNow = <String, DateTime>{
   'today_friday_night': DateTime(2026, 10, 9, 20),
   'today_checkin': DateTime(2026, 10, 12, 11),
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
+  'focus_sheet_tile': DateTime(2026, 10, 12, 11),
   'today_restore': DateTime(2026, 10, 14, 11),
   'today_pause_ended': DateTime(2026, 10, 12, 11),
   'today_grace': DateTime(2026, 10, 16, 11),
@@ -830,6 +858,12 @@ ProgressState _readThrough(int last, {required int partly, LocalDate? on}) {
   return ProgressState(weeks: {'5787:1': w});
 }
 
+/// Screens shown with the device's own accessibility settings on.
+const _deviceFeatures = {
+  's_a11y_device': FakeAccessibilityFeatures(disableAnimations: true, boldText: true),
+  's_display_device': FakeAccessibilityFeatures(boldText: true),
+};
+
 /// Screens captured as their setup leaves them, partway through an
 /// animation.
 const _unsettled = {'today_completing'};
@@ -864,7 +898,7 @@ final _longNotes = jsonEncode({
 });
 
 /// Screens where the reader chooses [_backupFile] to restore.
-const _choosesBackup = {'s_data_import', 's_data_replace', 'welcome_import'};
+const _choosesBackup = {'s_data_import', 's_data_replace', 'welcome_import', 'focus_dialog_tile'};
 
 /// A backup made on another phone on the Thursday of Bereshit: the last
 /// eleven weeks of 5786 read, and a pause over Sukkot.
@@ -884,7 +918,7 @@ String _backupFile() {
 }
 
 /// Screens shown where reminders are available.
-const _remindersSupported = {'s_reminders_on', 's_reminders_city', 'reader_offer'};
+const _remindersSupported = {'s_reminders_on', 's_reminders_city', 's_reminders_far', 'reader_offer'};
 
 /// Screens shown where reminders are available and the OS allows them.
 const _remindersAllowed = {'s_reminders_offer', 'reader_offer_city'};
@@ -1291,12 +1325,36 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
   's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),
+  // Halfway down, clear of the preview pinned over the page.
+  's_display_rashi': (tester) => Scrollable.ensureVisible(
+        tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.rashiScriptDesc)),
+        alignment: 0.5,
+      ),
   's_display_scrolled': (tester) async => tester
       .state<ScrollableState>(find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)))
       .position
       .jumpTo(700),
   // Low vision, the second row's second card.
   's_a11y_undo': (tester) => tester.tap(find.text(tester.element(find.byType(Scaffold).last).l10n.presetLowVision)),
+  's_a11y_undo_keys': (tester) async {
+    await _keyboardFocus(
+      tester,
+      find.ancestor(
+        of: find.text(tester.element(find.byType(Scaffold).last).l10n.presetLowVision),
+        matching: find.byType(MergeSemantics),
+      ),
+    );
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+  },
+  's_a11y_device': (tester) => Scrollable.ensureVisible(
+        tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.reduceMotion)),
+        alignment: 0.5,
+      ),
+  's_display_device': (tester) => Scrollable.ensureVisible(
+        tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.boldText)),
+        alignment: 0.5,
+      ),
   'focus_button': (tester) => _keyboardFocus(tester, find.byType(FilledButton).first),
   'focus_day': (tester) =>
       _keyboardFocus(tester, find.descendant(of: find.byType(WeekStrip), matching: find.byType(SeferInkWell)).at(1)),
@@ -1340,6 +1398,18 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
         tester,
         find.descendant(of: find.byType(Card), matching: find.byType(PopupMenuButton<String>)).first,
       ),
+  'focus_nav_today': (tester) => _keyboardFocus(
+        tester,
+        find
+            .ancestor(
+              of: find.descendant(
+                of: find.byWidgetPredicate((w) => w is NavigationBar || w is NavigationRail),
+                matching: find.byIcon(Icons.today),
+              ),
+              matching: find.byWidgetPredicate((w) => w is InkResponse),
+            )
+            .first,
+      ),
   // The Parsha tab of the navigation bar or rail.
   'focus_nav': (tester) => _keyboardFocus(
         tester,
@@ -1353,6 +1423,27 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
             )
             .first,
       ),
+  'focus_menu_item': (tester) async {
+    await _keyboardFocus(
+      tester,
+      find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
+    );
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+  },
+  'focus_sheet_tile': (tester) async {
+    await tester.tap(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(TextButton)).at(1));
+    await tester.pumpAndSettle();
+    await _keyboardFocus(tester, find.byType(CheckboxListTile).at(1));
+  },
+  'focus_dialog_tile': (tester) async {
+    await tester.tap(find.byIcon(Icons.download_outlined));
+    await _settle(tester);
+    await _keyboardFocus(tester, find.byType(CheckboxListTile));
+  },
   // The second segment of the language switch: the group is ringed, the
   // segment washed and underlined.
   'focus_segment': (tester) => _keyboardFocus(
@@ -1549,7 +1640,7 @@ Future<void> _openWeekMenu(WidgetTester tester, {int? item}) async {
   await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)));
   await tester.pumpAndSettle();
   if (item != null) {
-    await tester.tap(find.byType(PopupMenuItem<String>).at(item));
+    await tester.tap(find.byType(SeferMenuItem<String>).at(item));
     await tester.pumpAndSettle();
   }
 }
@@ -1621,13 +1712,29 @@ final _modes = [
   // The same, tall, for the screens in [_hugeTallScreens]: the whole page.
   _Mode('hugetall', const Size(320, 3600), (s) => s, textScale: 3),
   _Mode('hugetallhe', const Size(320, 3600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 3),
+  // A phone held sideways, where the rail scrolls, for the screens in
+  // [_sidewaysScreens].
+  _Mode('sideways', const Size(800, 360), (s) => s),
 ];
+
+const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 const _hugeModes = {'huge', 'hugehe'};
 const _hugeScreens = {'today', 'reader'};
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
-const _hugeTallScreens = {'today', 'parsha', 'week', 'progress', 'settings', 'community', 'thread', 'haftarah'};
+const _hugeTallScreens = {
+  'today',
+  'parsha',
+  'week',
+  'progress',
+  'settings',
+  'community',
+  'thread',
+  'haftarah',
+  // The offer to move the daily reminder, its button under its text.
+  's_reminders_far',
+};
 
 const _narrowDesktopScreens = {
   'today',
@@ -1735,10 +1842,12 @@ const _desktopScreens = {
   // and within one beside the rail.
   'snackbar',
   's_a11y_undo',
+  's_a11y_undo_keys',
   'thread_refreshed',
   'forum_refreshed',
   'sheet_display',
   'focus_nav',
+  'focus_nav_today',
   'kit_ornaments',
   'kit_rows',
   'kit_progress',
@@ -1812,6 +1921,12 @@ const _narrowScreens = {
   'reader_listen_full',
 };
 const _bigTextScreens = {
+  // A held message with Undo and Close, at twice the text size.
+  's_a11y_undo_keys',
+  // A focus ring on a menu item and on tiles, at twice the text size.
+  'focus_menu_item',
+  'focus_sheet_tile',
+  'focus_dialog_tile',
   's_display',
   's_a11y',
   'sheet_display_full',
@@ -1835,6 +1950,7 @@ const _bigTextScreens = {
   's_reminders_on',
   's_reminders_offer',
   's_reminders_city',
+  's_reminders_far',
   'today_candles',
   'community',
   'compose',
@@ -1941,6 +2057,7 @@ void main() {
       if (mode.tag == 'desk1200' && !_narrowDesktopScreens.contains(entry.key)) continue;
       if (_hugeModes.contains(mode.tag) && !_hugeScreens.contains(entry.key)) continue;
       if (_hugeTallModes.contains(mode.tag) && !_hugeTallScreens.contains(entry.key)) continue;
+      if (mode.tag == 'sideways' && !_sidewaysScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {
@@ -1949,6 +2066,9 @@ void main() {
         addTearDown(tester.view.reset);
         tester.platformDispatcher.textScaleFactorTestValue = mode.textScale;
         addTearDown(tester.platformDispatcher.clearAllTestValues);
+        if (_deviceFeatures[entry.key] case final features?) {
+          tester.platformDispatcher.accessibilityFeaturesTestValue = features;
+        }
         // As though the app had just started.
         TodayScreen.forgetCompletions();
         if (_webKeys.contains(entry.key)) {

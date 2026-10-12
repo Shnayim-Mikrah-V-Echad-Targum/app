@@ -25,7 +25,7 @@ final _joined = LocalDate(2026, 9, 1);
 const _applies = 'Applies from this week on';
 
 /// The haftarah's switch, under the Haftarah section's heading.
-const _haftarahSwitch = "Read the week's haftarah once";
+const _haftarahSwitch = 'Read the week’s haftarah once';
 
 void main() {
   late ProviderContainer c;
@@ -141,8 +141,8 @@ void main() {
   });
 
   testWidgets("the last verse's repeat follows the Chabad custom until the reader sets it", (tester) async {
-    const desc = "Repeat the parsha's last verse in Hebrew after its Targum";
-    const chabadDesc = "Repeat the parsha's last verse in Hebrew after its Targum (Chabad custom: not repeated)";
+    const desc = 'Repeat the parsha’s last verse in Hebrew after its Targum';
+    const chabadDesc = 'Repeat the parsha’s last verse in Hebrew after its Targum (Chabad custom: not repeated)';
     bool repeat() => c.read(settingsProvider).repeatLastVerse;
     await openReadingSettings(tester);
     expect(find.text(desc), findsOneWidget);

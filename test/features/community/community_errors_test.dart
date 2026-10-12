@@ -33,7 +33,7 @@ void main() {
     final l = lookupAppLocalizations(const Locale('en'));
 
     test('for a post reported already says so, and nothing about names', () {
-      expect(communityError(l, const CommunityException('already_reported')), "You've already reported this post.");
+      expect(communityError(l, const CommunityException('already_reported')), 'You’ve already reported this post.');
       expect(communityError(l, const CommunityException('name_taken')), 'That name is taken.');
     });
 

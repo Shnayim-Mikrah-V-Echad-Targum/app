@@ -135,6 +135,19 @@ void main() {
       expect(move(7 * 60 + 30, HabitAnchor.shacharit, null), 7 * 60 + 30);
     });
 
+    test('is near a reminder within four hours of its usual time, either side of midnight', () {
+      // 7:30 for Shacharit.
+      expect(HabitAnchor.shacharit.isNear(7 * 60 + 30), isTrue);
+      expect(HabitAnchor.shacharit.isNear(11 * 60 + 30), isTrue);
+      expect(HabitAnchor.shacharit.isNear(3 * 60 + 30), isTrue);
+      expect(HabitAnchor.shacharit.isNear(11 * 60 + 31), isFalse);
+      expect(HabitAnchor.shacharit.isNear(20 * 60), isFalse, reason: 'an 8 PM reminder');
+      // 21:30 before bed: half past midnight is three hours on.
+      expect(HabitAnchor.bed.isNear(30), isTrue);
+      expect(HabitAnchor.bed.isNear(7 * 60), isFalse);
+      expect(HabitAnchor.dinner.isNear(15 * 60 + 59), isFalse);
+    });
+
     test('anything else is no anchor', () {
       for (final raw in ['after lunch', 'Shacharit', '', 3, true, <String, dynamic>{}]) {
         expect(AppSettings.fromJson({'habitAnchor': raw}).habitAnchor, isNull, reason: '$raw');

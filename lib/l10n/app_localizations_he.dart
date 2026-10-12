@@ -1709,6 +1709,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get reduceMotionDesc => 'כיבוי אנימציות וחגיגות נעות';
 
   @override
+  String get settingOnInDevice => 'מופעל בהגדרות המכשיר';
+
+  @override
   String get haptics => 'משוב רטט';
 
   @override
@@ -1903,6 +1906,14 @@ class AppLocalizationsHe extends AppLocalizations {
   String get openSystemSettings => 'פתיחת ההגדרות';
 
   @override
+  String reminderMoveHint(String time, String usual) {
+    return 'התזכורת מגיעה ב־$time. להעביר ל־$usual?';
+  }
+
+  @override
+  String get reminderMove => 'העברה';
+
+  @override
   String get primingTitle => 'רוצה תזכורת יומית עדינה?';
 
   @override
@@ -1960,13 +1971,13 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notifFridayBody =>
-      'אם עוד לא סיימת, יש עוד זמן — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי שבת.';
+      'יש עוד זמן — אפשר גם לסיים בשבת בבוקר מתוך חומש ולרשום אחרי שבת.';
 
   @override
   String get notifCheckInTitle => 'שבוע טוב!';
 
   @override
-  String get notifCheckInBody => 'קראת בשבת? אפשר לרשום זאת כאן.';
+  String get notifCheckInBody => 'קראת בשבת? אפשר לרשום זאת באפליקציה.';
 
   @override
   String get notifPausedTitle => 'התזכורות הושהו';
@@ -2225,6 +2236,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get signInPrompt => 'יש להתחבר כדי לכתוב, להודות או לדווח.';
+
+  @override
+  String get settingsAccountDesc => 'התחברות כדי לכתוב, להודות או לדווח';
 
   @override
   String signedInAs(String name) {

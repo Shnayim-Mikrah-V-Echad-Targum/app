@@ -12,7 +12,7 @@ data = json.load(open(os.path.join(root, 'assets/data/parshiyot.json')))
 BOOKS = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy']
 
 CATEGORIES = [
-    ('parsha', 'Parshat HaShavua', 'פרשת השבוע', "A discussion thread for every week's parsha.", 'שרשור דיון לכל פרשת שבוע.', 1, False),
+    ('parsha', 'Parshat HaShavua', 'פרשת השבוע', 'A discussion thread for every week’s parsha.', 'שרשור דיון לכל פרשת שבוע.', 1, False),
     ('questions', 'Questions & answers', 'שאלות ותשובות', 'Ask about a verse, a Targum or a Rashi.', 'שאלות על פסוק, תרגום או רש״י.', 2, False),
     ('divrei-torah', 'Divrei Torah', 'דברי תורה', 'Share an insight on the parsha.', 'שיתוף חידוש על הפרשה.', 3, False),
     ('chavruta', 'Chavruta & encouragement', 'חברותא ועידוד', 'Find a learning partner and keep each other going.', 'מציאת חברותא ועידוד הדדי.', 4, False),

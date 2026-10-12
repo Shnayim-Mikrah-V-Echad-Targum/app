@@ -38,12 +38,12 @@ void main() {
     );
 
     await pumpLedger(tester, const LedgerCard(parshaStreak: 3, daysOnTrack: 0, beginsWith: 'Noach'));
-    expect(find.text("Begins with today's reading"), findsOneWidget);
+    expect(find.text('Begins with today’s reading'), findsOneWidget);
     expect(find.text('Begins with Noach'), findsNothing);
     expect(find.text('0'), findsNothing);
     expect(
       tester.getSemantics(find.byType(LedgerCard)),
-      isSemantics(label: "Parsha streak: 3. Days on track: begins with today's reading", isButton: false),
+      isSemantics(label: 'Parsha streak: 3. Days on track: begins with today’s reading', isButton: false),
     );
     handle.dispose();
   });
@@ -110,7 +110,7 @@ void main() {
       ),
       textScale: 3,
     );
-    for (final text in ['Begins with Noach', "Begins with today's reading", 'Parsha streak', 'Days on track']) {
+    for (final text in ['Begins with Noach', 'Begins with today’s reading', 'Parsha streak', 'Days on track']) {
       expectWordsWhole(tester, text);
     }
     expect(tester.takeException(), isNull);

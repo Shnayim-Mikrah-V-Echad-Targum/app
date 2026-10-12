@@ -202,7 +202,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tapAt(centreOf(tester, line, 'GitHub issues'));
       await tester.pumpAndSettle();
-      expect(find.text("The link couldn't be opened here."), findsOneWidget);
+      expect(find.text('The link couldn’t be opened here.'), findsOneWidget);
     });
 
     testWidgets('can be selected and copied, its paragraphs one text', (tester) async {

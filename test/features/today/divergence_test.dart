@@ -27,11 +27,11 @@ final _visitor = AppSettings(
 /// An Israeli abroad: the reading outside Israel, one day of Yom Tov.
 final _abroad = _visitor.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true);
 
-const _notice = "In Israel this week: Shelach. Outside Israel: Beha'alotcha. Visitors from abroad usually read both. "
-    "If you daven with a minyan reading Beha'alotcha, read only that one, and set the reading you'll hear to "
+const _notice = 'In Israel this week: Shelach. Outside Israel: Beha’alotcha. Visitors from abroad usually read both. '
+    'If you daven with a minyan reading Beha’alotcha, read only that one, and set the reading you’ll hear to '
     'Outside Israel in Settings.';
 
-const _aheadNotice = "In Israel this week: Shelach. Outside Israel: Beha'alotcha. Israel is a parsha ahead, so you'll "
+const _aheadNotice = 'In Israel this week: Shelach. Outside Israel: Beha’alotcha. Israel is a parsha ahead, so you’ll '
     'read Shelach next week.';
 
 void main() {
@@ -51,16 +51,16 @@ void main() {
       // The title page's name, under its Hebrew.
       expect(find.text('Shelach'), findsOneWidget, reason: 'the week follows the reading heard');
 
-      await tester.tap(find.widgetWithText(TextButton, "Open Beha'alotcha"));
+      await tester.tap(find.widgetWithText(TextButton, 'Open Beha’alotcha'));
       await tester.pumpAndSettle();
-      expect(find.text("Parshat Beha'alotcha"), findsOneWidget);
+      expect(find.text('Parshat Beha’alotcha'), findsOneWidget);
       expect(find.text('Mark the whole parsha as read'), findsOneWidget, reason: "last week's portion in Israel is open");
     });
 
     testWidgets('an Israeli abroad is told that Israel is a parsha ahead, with nothing to open', (tester) async {
       await openToday(tester, _abroad);
       expect(find.text(_aheadNotice), findsOneWidget);
-      expect(find.text("Beha'alotcha"), findsOneWidget);
+      expect(find.text('Beha’alotcha'), findsOneWidget);
       // Shelach is next week's reading for them, not open yet.
       expect(find.textContaining('Open '), findsNothing);
     });

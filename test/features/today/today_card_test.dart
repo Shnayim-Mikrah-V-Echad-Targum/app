@@ -63,7 +63,7 @@ void main() {
     testWidgets('the card gathers every aliyah due, with an honest estimate', (tester) async {
       await openToday(tester, progress: _bereshit());
       expect(find.text('Catching up'), findsOneWidget);
-      expect(find.text("Shlishi – Shevi'i"), findsOneWidget);
+      expect(find.text('Shlishi – Shevi’i'), findsOneWidget);
       // Shlishi's Targum, and all three readings of the other four.
       expect(find.text('5 aliyot · 96 verses · about 33 min'), findsOneWidget);
       expect(
@@ -92,7 +92,7 @@ void main() {
       expect(find.text('Genesis 2:20–3:21 · 27 verses'), findsOneWidget, reason: "Shlishi's reference");
 
       // Shevi'i is left for Shabbat morning.
-      await tester.tap(find.widgetWithText(CheckboxListTile, "Shevi'i"));
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Shevi’i'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
@@ -108,7 +108,7 @@ void main() {
       expect(find.text('Marked as read'), findsOneWidget);
       // One aliyah is left, and it is today's.
       expect(find.text('Catching up'), findsNothing);
-      expect(find.text("Shishi and Shevi'i"), findsOneWidget);
+      expect(find.text('Shishi and Shevi’i'), findsOneWidget);
     });
 
     testWidgets('with nothing checked, the sheet logs nothing', (tester) async {
@@ -117,7 +117,7 @@ void main() {
       await show(tester, book);
       await tester.tap(book);
       await tester.pumpAndSettle();
-      for (final name in ['Shlishi', "Revi'i", 'Chamishi', 'Shishi', "Shevi'i"]) {
+      for (final name in ['Shlishi', 'Revi’i', 'Chamishi', 'Shishi', 'Shevi’i']) {
         await tester.tap(find.widgetWithText(CheckboxListTile, name));
         await tester.pump();
       }
@@ -137,7 +137,7 @@ void main() {
       expect(findWords('3 aliyot to catch up — very normal midweek.'), findsOneWidget);
 
       await openToday(tester, now: DateTime(2026, 10, 14, 10));
-      expect(find.text("Rishon – Revi'i"), findsOneWidget);
+      expect(find.text('Rishon – Revi’i'), findsOneWidget);
       expect(findWords('4 aliyot to catch up — very normal midweek.'), findsOneWidget);
     });
 
@@ -371,7 +371,7 @@ void main() {
     testWidgets("shows today's reading, and logs it from a Chumash", (tester) async {
       // Thursday of Noach, with Rishon to Revi'i read on their days.
       final c = await openToday(tester, now: DateTime(2026, 10, 15, 10), progress: _noach({0, 1, 2, 3}));
-      expect(find.text("Today's reading"), findsOneWidget);
+      expect(find.text('Today’s reading'), findsOneWidget);
       expect(find.text('Chamishi'), findsOneWidget);
       expect(find.textContaining('to catch up'), findsNothing);
       // The hero's button opens Chamishi already.
@@ -394,13 +394,13 @@ void main() {
       final week = c.read(progressProvider).week('5787:2');
       expect([for (var a = 0; a < 7; a++) week.isAliyahDone(a)], [true, true, true, true, true, false, false]);
       expect(week.units[4], everyElement(LocalDate(2026, 10, 15)));
-      expect(find.text("Today's reading is done"), findsOneWidget);
+      expect(find.text('Today’s reading is done'), findsOneWidget);
     });
 
     testWidgets("counts the verses and minutes of what is left of today's reading", (tester) async {
       // Erev Shabbat Noach, with everything but Shevi'i read.
       final c = await openToday(tester, now: DateTime(2026, 10, 16, 10), progress: _noach({0, 1, 2, 3, 4, 5}));
-      expect(find.text("Shishi and Shevi'i"), findsOneWidget);
+      expect(find.text('Shishi and Shevi’i'), findsOneWidget);
       final ctx = c.read(currentWeekContextProvider);
       final shevii = ctx.aliyahVerses[6];
       expect(
@@ -419,7 +419,7 @@ void main() {
         ),
       );
       expect(find.text('Catching up'), findsNothing);
-      expect(find.text("Shishi and Shevi'i"), findsOneWidget);
+      expect(find.text('Shishi and Shevi’i'), findsOneWidget);
       expect(find.textContaining('to catch up'), findsNothing);
       final read = find.widgetWithText(FilledButton, 'Read Shishi');
       await show(tester, read);
@@ -445,7 +445,7 @@ void main() {
       final boxes = find.byType(CheckboxListTile);
       expect([for (final b in tester.widgetList<CheckboxListTile>(boxes)) ((b.title as Text).data, b.value)], [
         ('Shishi', true),
-        ("Shevi'i", true),
+        ('Shevi’i', true),
       ]);
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
@@ -457,7 +457,7 @@ void main() {
 
     testWidgets("says when today's reading is done", (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 15, 10), progress: _noach({0, 1, 2, 3, 4}));
-      expect(find.text("Today's reading is done"), findsOneWidget);
+      expect(find.text('Today’s reading is done'), findsOneWidget);
       expect(find.text('I read it in a Chumash'), findsNothing);
     });
 

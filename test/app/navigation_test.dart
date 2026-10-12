@@ -237,7 +237,7 @@ void main() {
       router.go('/community/forum/xyz');
       await tester.pumpAndSettle();
       expect(find.text('Page not found'), findsOneWidget);
-      expect(find.text("This forum couldn't be found. It may have moved or closed."), findsOneWidget);
+      expect(find.text('This forum couldn’t be found. It may have moved or closed.'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
 
       await tester.tap(find.widgetWithText(FilledButton, 'All forums'));
@@ -253,7 +253,7 @@ void main() {
       for (var i = 0; i < 3; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
-      expect(find.text("Couldn't reach the server. Check your connection and try again."), findsOneWidget);
+      expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.widgetWithText(TextButton, 'Try again'), findsOneWidget);
       expect(find.text('All forums'), findsOneWidget);
@@ -413,7 +413,7 @@ void main() {
       final router = await _pump(tester);
       router.go('/parsha/week/5787:2');
       await tester.pumpAndSettle();
-      final discuss = find.text("Discuss this week's parsha");
+      final discuss = find.text('Discuss this week’s parsha');
       await tester.ensureVisible(discuss);
       await tester.pumpAndSettle();
       await tester.tap(discuss);
@@ -426,7 +426,7 @@ void main() {
     });
 
     Future<void> tapDiscuss(WidgetTester tester) async {
-      final discuss = find.text("Discuss this week's parsha");
+      final discuss = find.text('Discuss this week’s parsha');
       await tester.ensureVisible(discuss);
       await tester.pumpAndSettle();
       await tester.tap(discuss);
@@ -587,7 +587,7 @@ void main() {
         }
       }
       await _pump(tester, progress: ProgressState(weeks: {'5787:1': week}));
-      await tester.tap(find.widgetWithText(FilledButton, "Continue · Shevi'i"));
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue · Shevi’i'));
       await _loadTexts(tester);
       await tester.tap(find.byTooltip('More options'));
       await tester.pumpAndSettle();

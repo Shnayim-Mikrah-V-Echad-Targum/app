@@ -294,6 +294,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           context,
           l.posted,
           action: SnackBarAction(label: l.viewPostedThread, onPressed: () => router.go('/community/thread/$id')),
+          outlivesPage: true,
         );
         context.pop();
       } else {

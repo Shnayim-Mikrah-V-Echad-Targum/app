@@ -26,7 +26,7 @@ void main() {
   }
 
   Future<void> openLocationStep(WidgetTester tester) async {
-    await tester.tap(find.text("Start this week's parsha"));
+    await tester.tap(find.text('Start this week’s parsha'));
     await tester.pumpAndSettle();
     expect(find.text('Where will you be this Shabbat?'), findsOneWidget);
   }

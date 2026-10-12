@@ -118,7 +118,7 @@ void main() {
       final row = find.widgetWithText(SwitchRow, 'Show streak numbers');
       expect(tester.getSemantics(row), isSemantics(hasToggledState: true, isToggled: true));
       expect(tester.getSemantics(row), isSemantics(isButton: false));
-      await tester.tap(find.text('Hide them if you\'d rather focus on the learning itself'));
+      await tester.tap(find.text('Hide them if you’d rather focus on the learning itself'));
       await tester.pumpAndSettle();
       expect(c.read(settingsProvider).showStreaks, isFalse);
       handle.dispose();
@@ -265,7 +265,8 @@ void main() {
 
     testWidgets("the account's row asks to sign in, or names who is signed in", (tester) async {
       await open(tester, '/settings');
-      expect(find.text('Sign in to post, say thanks or report.'), findsOneWidget);
+      // A subtitle, without a full stop, as every other row's is.
+      expect(find.text('Sign in to post, say todah or report'), findsOneWidget);
 
       final forums = DemoForumRepository();
       await forums.verifyCode('reader@example.org', '123456');
@@ -359,8 +360,32 @@ void main() {
       final title = tester.widget<Text>(find.text('Reset all progress'));
       expect(title.style?.color, Theme.of(tester.element(reset)).colorScheme.error);
       expect(find.descendant(of: reset, matching: find.byType(Icon)), findsNothing);
-      expect(find.text("This can't be undone."), findsOneWidget);
+      expect(find.text('This can’t be undone.'), findsOneWidget);
     });
+
+    for (final hebrew in [false, true]) {
+      testWidgets('no description is cut short on a 320 dp phone${hebrew ? ', in Hebrew' : ''}', (tester) async {
+        tester.view.physicalSize = const Size(320, 2000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final c = await pumpApp(
+          tester,
+          settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.english),
+          now: now,
+        );
+        c.read(routerProvider).go('/settings/data');
+        await tester.pumpAndSettle();
+        final rows = find.byWidgetPredicate((w) => w is PaperRow && w.subtitle != null);
+        // Cloud backup, Export, Import, Paste and Reset.
+        expect(rows, findsNWidgets(5));
+        for (final row in tester.widgetList<PaperRow>(rows)) {
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.descendant(of: find.byWidget(row), matching: find.text(row.subtitle!)).first,
+          );
+          expect(paragraph.didExceedMaxLines, isFalse, reason: row.subtitle);
+        }
+      });
+    }
 
     testWidgets('the reset is confirmed with the destructive button, and Cancel keeps everything', (tester) async {
       final progress = ProgressState(

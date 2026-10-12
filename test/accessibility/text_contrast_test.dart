@@ -1,18 +1,22 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
+import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
+import 'every_theme.dart' show themes;
 import 'routes.dart';
 
 /// Text contrast (WCAG 1.4.3) where a page needs more than opening it: the
 /// reminders as a phone schedules them, and the Torah map's tiles. Every
-/// route in every theme is checked in semantics_invariants_test.dart.
+/// route in every theme is checked in semantics_invariants_test.dart and
+/// semantics_invariants_pages_test.dart.
 ///
 /// textContrastGuideline reads the colours from the rendered pixels around
 /// each text and takes the most common dark and light ones. That only works
@@ -37,7 +41,34 @@ void main() {
   testWidgets('text contrast: reminders, where they can be scheduled, with all of them on', (tester) async {
     await expectReadableText(tester, '/settings/reminders', settings: a11yRemindersOn, notifications: PhoneNotifications());
     expect(find.text('Daily reminder time'), findsOneWidget);
+    expect(find.text('Move'), findsOneWidget);
   });
+
+  // A switch that the device's own setting holds on is disabled, which the
+  // guideline passes over, but the line under it says why: it is read at
+  // the full contrast of a description, in every theme.
+  for (final (route, title, features) in [
+    ('/settings/accessibility', 'Reduce motion', const FakeAccessibilityFeatures(disableAnimations: true)),
+    ('/settings/display', 'Bold text', const FakeAccessibilityFeatures(boldText: true)),
+  ]) {
+    testWidgets("text contrast: why $title's switch is held on by the device, in every theme", (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = features;
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      for (final theme in themes) {
+        await openRoute(tester, route, settings: AppSettings(onboardingComplete: true, theme: theme), now: a11yMonday);
+        final note = find.text('On in your device’s settings');
+        await tester.ensureVisible(note);
+        await tester.pumpAndSettle();
+        final color = tester.renderObject<RenderParagraph>(note).text.style!.color!;
+        final paper = SeferColors.of(tester.element(note)).paper;
+        expect(color.a, 1, reason: '${theme.name}: not dimmed');
+        expect(_contrast(color, paper), greaterThanOrEqualTo(4.5), reason: theme.name);
+        // The title is dimmed with the switch, as an inactive control's.
+        final heading = tester.renderObject<RenderParagraph>(find.text(title)).text.style!.color!;
+        expect(heading.a, lessThan(0.5), reason: '${theme.name}: the title dimmed');
+      }
+    });
+  }
 
   // The Torah map with a tile in every past state, and the week strip above
   // it. textContrastGuideline finds text by its node's label, and a tile's
@@ -113,4 +144,9 @@ void main() {
       handle.dispose();
     });
   }
+}
+
+double _contrast(Color a, Color b) {
+  final (la, lb) = (a.computeLuminance(), b.computeLuminance());
+  return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
 }

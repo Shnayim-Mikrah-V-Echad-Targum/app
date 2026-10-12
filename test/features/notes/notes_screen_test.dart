@@ -7,18 +7,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/features/community/ui/compose_screen.dart';
 import 'package:shnayim_mikra/features/notes/domain/annotations.dart';
 import 'package:shnayim_mikra/features/notes/note_dialog.dart';
 import 'package:shnayim_mikra/features/notes/notes_screen.dart';
+import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/reader/verse_actions_sheet.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/features/settings/screens/data_settings_screen.dart';
+import 'package:shnayim_mikra/services/backup_files.dart';
 
+import '../../fake_backup_files.dart';
 import '../../helpers.dart';
 
 const _genesis3_22 = BookVerse('Genesis', VerseRef(3, 22));
@@ -521,7 +525,7 @@ void main() {
 
     testWidgets('a week with none shows no row', (tester) async {
       await open(tester, '/week/5787:2');
-      await tester.scrollUntilVisible(find.text('Discuss this week\'s parsha'), 200, scrollable: find.byType(Scrollable).first);
+      await tester.scrollUntilVisible(find.text('Discuss this week’s parsha'), 200, scrollable: find.byType(Scrollable).first);
       expect(find.text('Your notes on this parsha'), findsNothing);
     });
 
@@ -535,45 +539,85 @@ void main() {
     });
   });
 
-  testWidgets('a backup exported holds them, and imported merges them, a deletion included', (tester) async {
+  testWidgets('a backup exported holds them, and imported restores them, even replacing the progress', (tester) async {
     var c = await open(tester, '/settings/data');
     WidgetRef ref() => tester.element(find.byType(DataSettingsScreen)) as WidgetRef;
     final file = exportBackup(ref());
     expect(parseBackup(file)!.annotations, c.read(annotationsProvider));
 
-    // Elsewhere, Genesis 1:1's note was deleted after the backup was made,
-    // and Genesis 3:22's written again.
-    final elsewhere = jsonEncode({
+    // Since the backup was made, Genesis 1:1's note was deleted here, and
+    // Genesis 3:22's bookmark taken away and its note rewritten.
+    final here = jsonEncode({
       'Genesis 1:1': {'b': false, 'n': null, 'u': 10},
       'Genesis 3:22': {'b': false, 'n': 'Rewritten', 'u': 11},
     });
     tester.view.physicalSize = const Size(412, 915);
-    c = await pumpApp(tester, now: friday, stored: {AnnotationsController.storageKey: elsewhere});
+    c = await pumpApp(tester, now: friday, stored: {AnnotationsController.storageKey: here});
     c.read(routerProvider).go('/settings/data');
     await tester.pumpAndSettle();
     expect(await importBackup(ref(), parseBackup(file)!, replace: true), BackupImport.restored);
-    final merged = c.read(annotationsProvider);
-    expect(merged[_genesis1_1], isNull, reason: 'deleted after the backup');
-    expect(merged[_genesis3_22]!.note, 'Rewritten');
-    expect(merged[const BookVerse('Exodus', VerseRef(3, 14))]!.bookmarked, isTrue, reason: 'restored from the backup');
+    final restored = c.read(annotationsProvider);
+    expect(restored[_genesis1_1]?.note, 'In the beginning', reason: 'deleted here since, and brought back');
+    expect(restored[_genesis3_22]!.note, 'Rewritten', reason: 'changed here since');
+    expect(restored[_genesis3_22]!.bookmarked, isTrue, reason: 'taken away here since, and brought back');
+    expect(restored[const BookVerse('Exodus', VerseRef(3, 14))]!.bookmarked, isTrue, reason: 'restored from the backup');
   });
 
-  testWidgets('a backup merged in merges them too, verse by verse', (tester) async {
+  testWidgets('a backup merged in restores them too, verse by verse', (tester) async {
     var c = await open(tester, '/settings/data');
     WidgetRef ref() => tester.element(find.byType(DataSettingsScreen)) as WidgetRef;
     final file = exportBackup(ref());
-    final elsewhere = jsonEncode({
+    final here = jsonEncode({
       'Genesis 1:1': {'b': false, 'n': null, 'u': 10},
+      'Genesis 2:3': {'b': true, 'n': null, 'u': 2},
       'Leviticus 19:18': {'b': true, 'n': 'Love your neighbour', 'u': 12},
     });
-    c = await pumpApp(tester, now: friday, stored: {AnnotationsController.storageKey: elsewhere});
+    c = await pumpApp(tester, now: friday, stored: {AnnotationsController.storageKey: here});
     c.read(routerProvider).go('/settings/data');
     await tester.pumpAndSettle();
     expect(await importBackup(ref(), parseBackup(file)!), BackupImport.restored);
     final merged = c.read(annotationsProvider);
-    expect(merged[_genesis1_1], isNull, reason: 'deleted here after the backup');
+    expect(merged[_genesis1_1]?.note, 'In the beginning', reason: 'deleted here since, and brought back');
     expect(merged[_genesis3_22]!.note, 'Why “like one of us”?', reason: 'from the backup');
+    expect(merged[const BookVerse('Genesis', VerseRef(2, 3))], isNull, reason: 'taken away in the backup, later');
     expect(merged[const BookVerse('Leviticus', VerseRef(19, 18))]!.note, 'Love your neighbour', reason: 'kept from here');
+  });
+
+  testWidgets('a note deleted after a backup was exported is listed again once it is imported', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final file = encodeBackup(
+      const ProgressState(),
+      const AppSettings(onboardingComplete: true),
+      annotations: Annotations.fromJson(jsonDecode(_stored)),
+      now: DateTime(2026, 10, 8),
+    );
+    final c = await pumpApp(
+      tester,
+      now: friday,
+      // Rishon read here, so that the backup is merged in.
+      progress: ProgressState(weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAliyah(0, LocalDate(2026, 10, 9))}),
+      stored: {AnnotationsController.storageKey: _stored},
+      overrides: [backupFilesProvider.overrideWithValue(FakeBackupFiles(file: file))],
+    );
+    c.read(annotationsProvider.notifier).setNote(_genesis1_1, null);
+    c.read(routerProvider).go('/notes');
+    await settle(tester);
+    expect(find.text('In the beginning'), findsNothing);
+
+    c.read(routerProvider).go('/settings/data');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Import progress'));
+    await tester.pumpAndSettle();
+    expect(find.text('Merge this backup with the progress on this device? Merging keeps everything from both.'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Merge'));
+    await tester.pumpAndSettle();
+    expect(find.text('Progress imported.'), findsOneWidget);
+
+    c.read(routerProvider).go('/notes');
+    await settle(tester);
+    expect(find.text('In the beginning'), findsOneWidget);
   });
 
   for (final everywhere in [false, true]) {

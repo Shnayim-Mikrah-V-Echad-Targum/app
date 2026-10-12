@@ -215,12 +215,16 @@ class _FontChips extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               // The word in that font, named for screen
-                              // readers.
+                              // readers. One word, which the columns are
+                              // chosen to fit: it never breaks.
                               Text(
                                 _sample,
                                 semanticsLabel: names[fonts[i]],
                                 textAlign: TextAlign.center,
                                 style: scriptureSampleStyle(fonts[i], 18),
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.fade,
                               ),
                               // The chosen one underlined, as its sample can't
                               // be bold: a mark that doesn't rest on colour.

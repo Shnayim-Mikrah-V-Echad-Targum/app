@@ -57,6 +57,20 @@ void main() {
     expect(config['languages'], 'en-us, he-il');
   });
 
+  // Task Manager shows the executable's description, and Windows the
+  // package's, so both are typeset as the app's own text is.
+  test('the executable and the package describe the app with a typeset apostrophe', () {
+    final rc = File('windows/runner/Runner.rc').readAsStringSync();
+    // Under this pragma alone, rc.exe reads the script's ’ as UTF-8.
+    expect(rc, contains('#pragma code_page(65001)'));
+    expect(rc, contains('VALUE "FileDescription", "Shnayim Mikra v’Echad Targum" "\\0"'));
+    // msix_config sets none, so the package takes the pubspec's.
+    expect(config['description'], isNull);
+    final description = (loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap)['description'] as String;
+    expect(description, startsWith('Shnayim Mikra v’Echad Targum — '));
+    expect(description, isNot(contains("'")));
+  });
+
   testWidgets('the logo is the rounded tile of app_icon.ico', (tester) async {
     expect(config['logo_path'], 'windows/msix/logo.png');
     final logo = await _pixels(tester, 'windows/msix/logo.png');

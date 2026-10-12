@@ -156,7 +156,7 @@ void main() {
     final button = find.byType(WeekStripLegendButton);
     expect(button, findsOneWidget);
     final header = find.ancestor(of: button, matching: find.byType(SectionHeader));
-    expect(find.descendant(of: header, matching: find.text("This week's plan")), findsOneWidget);
+    expect(find.descendant(of: header, matching: find.text('This week’s plan')), findsOneWidget);
     await tester.tap(button);
     await tester.pumpAndSettle();
     expect(find.widgetWithText(SheetTitle, 'Legend'), findsOneWidget);
@@ -222,7 +222,7 @@ void main() {
     // away, and only in that book. In the week of Beha'alotcha (the longest
     // word), its tile has the bold and the icon of the current parsha, and
     // the unread parshiyot before it have icons too.
-    const numbers = ['Bamidbar', 'Naso', "Beha'alotcha", 'Shelach', 'Korach', 'Chukat', 'Balak', 'Pinchas'];
+    const numbers = ['Bamidbar', 'Naso', 'Beha’alotcha', 'Shelach', 'Korach', 'Chukat', 'Balak', 'Pinchas'];
     for (final (size, scale, columns, stacked) in [
       (const Size(360, 2600), 1.0, 3, true),
       // Android's "Large" font: still three columns.
@@ -239,12 +239,12 @@ void main() {
         expect(firstRow(tester, numbers), columns);
         // Shrunk, if at all, by no more than a fifth.
         final name = tester.renderObject<RenderParagraph>(find.descendant(
-          of: find.descendant(of: tileOf("Beha'alotcha"), matching: find.text("Beha'alotcha")),
+          of: find.descendant(of: tileOf('Beha’alotcha'), matching: find.text('Beha’alotcha')),
           matching: find.byType(RichText),
         ));
         expect(name.textScaler.scale(13) / 13, inInclusiveRange(0.8 * scale, scale));
-        final icon = tester.getCenter(find.descendant(of: tileOf("Beha'alotcha"), matching: find.byIcon(Icons.timelapse)));
-        final text = tester.getCenter(find.descendant(of: tileOf("Beha'alotcha"), matching: find.text("Beha'alotcha")));
+        final icon = tester.getCenter(find.descendant(of: tileOf('Beha’alotcha'), matching: find.byIcon(Icons.timelapse)));
+        final text = tester.getCenter(find.descendant(of: tileOf('Beha’alotcha'), matching: find.text('Beha’alotcha')));
         expect(icon.dy < text.dy, stacked, reason: 'the icon above the name');
 
         for (final book in ['Genesis', 'Exodus', 'Leviticus', 'Deuteronomy']) {
@@ -253,7 +253,7 @@ void main() {
           await tester.tap(headerOf(book));
           await tester.pumpAndSettle();
         }
-        for (final name in ["Beha'alotcha", 'Vayishlach', 'Mishpatim', 'Bechukotai', "Va'etchanan", 'Nitzavim']) {
+        for (final name in ['Beha’alotcha', 'Vayishlach', 'Mishpatim', 'Bechukotai', 'Va’etchanan', 'Nitzavim']) {
           final text = find.descendant(
             of: find.descendant(of: tileOf(name), matching: find.text(name)),
             matching: find.byType(RichText),
@@ -263,7 +263,7 @@ void main() {
           expect({for (final b in boxes) b.top}, hasLength(1), reason: name);
         }
         // Its icon above it, a one-line name still fits the 52 dp tile.
-        if (scale == 1) expect(tester.getSize(tileOf("Beha'alotcha")).height, 52);
+        if (scale == 1) expect(tester.getSize(tileOf('Beha’alotcha')).height, 52);
         expect(tester.takeException(), isNull);
       });
     }
@@ -271,7 +271,7 @@ void main() {
 
   testWidgets('the info button opens, by keyboard, a sheet of every tile state', (tester) async {
     await openProgress(tester);
-    final help = find.byTooltip("Each tile is one parsha of this year's cycle.");
+    final help = find.byTooltip('Each tile is one parsha of this year’s cycle.');
     expect(help, findsOneWidget);
     await tabInto(tester, help);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);

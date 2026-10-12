@@ -230,7 +230,7 @@ void main() {
       // No rings, buttons to read, Today card, week or streaks.
       expect(find.byType(ParshaRings), findsNothing);
       expect(find.bySubtype<FilledButton>(), findsNothing);
-      expect(find.text("Today's reading"), findsNothing);
+      expect(find.text('Today’s reading'), findsNothing);
       expect(find.text('Catching up'), findsNothing);
       expect(find.byType(WeekStrip), findsNothing);
       expect(find.byType(LedgerCard), findsNothing);
@@ -277,12 +277,12 @@ void main() {
       // Yom Kippur 5787, on Monday 21 September 2026, a fast: no "Chag
       // Sameach", and logged after Yom Kippur.
       await openToday(tester, settings: joined, now: DateTime(2026, 9, 21, 11));
-      expect(find.text("G'mar Chatimah Tovah"), findsOneWidget);
+      expect(find.text('G’mar Chatimah Tovah'), findsOneWidget);
       expect(find.text('Chag Sameach'), findsNothing);
       expect(find.text('You can log it after Yom Kippur.'), findsOneWidget);
       // On Shabbat too, as in 5785.
       await openToday(tester, settings: joined, now: DateTime(2024, 10, 12, 11));
-      expect(find.text("G'mar Chatimah Tovah"), findsOneWidget);
+      expect(find.text('G’mar Chatimah Tovah'), findsOneWidget);
       expect(find.text('Shabbat Shalom'), findsNothing);
       expect(find.text('You can log it after Yom Kippur.'), findsOneWidget);
 

@@ -126,10 +126,10 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
             _ => null,
           },
           itemBuilder: (context) => [
-            PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),
-            if (open) PopupMenuItem(value: 'all', child: Text(l.markWholeWeek)),
-            if (ctx.progress.completedUnits > 0) PopupMenuItem(value: 'clear', child: Text(l.clearWeek)),
-            PopupMenuItem(value: 'notes', child: Text(l.notesTitle)),
+            SeferMenuItem(value: 'full', child: Text(l.fullTextMode)),
+            if (open) SeferMenuItem(value: 'all', child: Text(l.markWholeWeek)),
+            if (ctx.progress.completedUnits > 0) SeferMenuItem(value: 'clear', child: Text(l.clearWeek)),
+            SeferMenuItem(value: 'notes', child: Text(l.notesTitle)),
           ],
         ),
       ],
@@ -488,10 +488,10 @@ class _AliyahRow extends ConsumerWidget {
                     if (v == 'full') context.push('/read/${ctx.id}/$aliyah?mode=full&from=week');
                   },
                   itemBuilder: (context) => [
-                    PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),
-                    if (!done && ctx.isOpen) PopupMenuItem(value: 'read', child: Text(l.actionMarkRead)),
+                    SeferMenuItem(value: 'full', child: Text(l.fullTextMode)),
+                    if (!done && ctx.isOpen) SeferMenuItem(value: 'read', child: Text(l.actionMarkRead)),
                     if (progress.units[aliyah].any((d) => d != null))
-                      PopupMenuItem(value: 'unread', child: Text(l.actionMarkUnread)),
+                      SeferMenuItem(value: 'unread', child: Text(l.actionMarkUnread)),
                   ],
                 ),
               ],

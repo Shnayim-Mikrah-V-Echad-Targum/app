@@ -19,7 +19,7 @@ void main() {
     useTolerantGoldens();
   });
 
-  const samples = ["Revi'i · רביעי", 'בְּרֵאשִׁית'];
+  const samples = ['Revi’i · רביעי', 'בְּרֵאשִׁית'];
   // The system font is the platform's: not the same from one machine to
   // the next.
   final fonts = UiFont.values.where((f) => f != UiFont.system);

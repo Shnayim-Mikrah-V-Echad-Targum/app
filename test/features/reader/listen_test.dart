@@ -245,7 +245,7 @@ void main() {
       await open(tester, '/read/5787:2/0?mode=full', _FailingTts());
       await tester.tap(find.byTooltip('Listen'));
       await tester.pumpAndSettle();
-      expect(find.text("Text-to-speech isn't available on this device."), findsOneWidget);
+      expect(find.text('Text-to-speech isn’t available on this device.'), findsOneWidget);
       expect(player, findsNothing);
       expect(highlighted(tester), isEmpty);
       expect(find.byTooltip('Listen'), findsOneWidget);

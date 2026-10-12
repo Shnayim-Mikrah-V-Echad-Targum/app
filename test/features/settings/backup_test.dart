@@ -336,7 +336,7 @@ void main() {
       expect(find.text('Replace the progress here?'), findsOneWidget);
       expect(
         find.text('This erases the reading history and streaks on this device, and keeps only what the backup holds. '
-            "It can't be undone."),
+            'It can’t be undone.'),
         findsOneWidget,
       );
       final replace = find.widgetWithText(FilledButton, 'Replace');
@@ -513,7 +513,7 @@ void main() {
         expect(
           find.text(allows
               ? 'Progress imported.'
-              : "Progress imported. Reminders are off, since notifications aren't allowed for this app."),
+              : 'Progress imported. Reminders are off, since notifications aren’t allowed for this app.'),
           findsOneWidget,
         );
         if (allows) return;
@@ -559,7 +559,7 @@ void main() {
         final before = c.read(progressProvider);
         await chooseFile(tester);
         expect(find.byType(AlertDialog), findsNothing);
-        expect(find.text("That backup couldn't be read."), findsOneWidget);
+        expect(find.text('That backup couldn’t be read.'), findsOneWidget);
         expect(c.read(progressProvider), before);
       }
     });
@@ -588,12 +588,12 @@ void main() {
       await tester.enterText(find.byType(TextField), '{"app": "shnayim_mikra"}');
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pump();
-      expect(find.text("That backup couldn't be read."), findsOneWidget);
+      expect(find.text('That backup couldn’t be read.'), findsOneWidget);
 
       await tester.tap(find.text('Paste from clipboard'));
       await tester.pump();
       expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, file);
-      expect(find.text("That backup couldn't be read."), findsNothing);
+      expect(find.text('That backup couldn’t be read.'), findsNothing);
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();
 
@@ -619,7 +619,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      const failed = "Couldn't paste from the clipboard. Paste into the field instead.";
+      const failed = 'Couldn’t paste from the clipboard. Paste into the field instead.';
 
       testWidgets('says so when the browser won\'t give the clipboard', (tester) async {
         await openPaste(tester, () async => throw PlatformException(code: 'denied'));
@@ -666,7 +666,7 @@ void main() {
 
         final saved = files.saved.single;
         expect(saved.name, 'shnayim-mikra-backup-2026-10-12.json');
-        expect(saved.subject, "Shnayim Mikra v'Echad Targum");
+        expect(saved.subject, 'Shnayim Mikra v’Echad Targum');
         final backup = parseBackup(saved.data)!;
         expect(backup.progress, c.read(progressProvider));
         expect(backup.settings!.toJson(), c.read(settingsProvider).toJson());

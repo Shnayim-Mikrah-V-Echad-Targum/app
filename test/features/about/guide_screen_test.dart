@@ -27,7 +27,7 @@ void main() {
     expect(when, findsOneWidget);
     expect(find.textContaining('until Simchat Torah (SA 285:4; MB 285:12).'), findsOneWidget);
     expect(find.textContaining('may read Rashi in a language they understand (MB 285:5; Rav Moshe Feinstein)'), findsOneWidget);
-    expect(find.textContaining("along with the ba'al koreh, word for word, counts as one of the readings (MB 285:14)"),
+    expect(find.textContaining('along with the ba’al koreh, word for word, counts as one of the readings (MB 285:14)'),
         findsOneWidget);
     expect(find.textContaining('do so as a voluntary mitzvah.'), findsOneWidget);
   });
@@ -50,7 +50,7 @@ void main() {
       tester.getSemantics(words),
       isSemantics(label: 'לְעוֹלָם יַשְׁלִים אָדָם פָּרָשִׁיּוֹתָיו עִם הַצִּבּוּר, שְׁנַיִם מִקְרָא וְאֶחָד תַּרְגּוּם'),
     );
-    expect(find.text('Berakhot 8a'), findsOneWidget);
+    expect(find.text('Berachot 8a'), findsOneWidget);
     expect(
       find.text('A person should always complete their portions with the community: the text twice and the Targum once.'),
       findsOneWidget,
@@ -81,8 +81,8 @@ void main() {
       final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true));
       c.read(routerProvider).go('/guide');
       await tester.pumpAndSettle();
-      final card = tester.getRect(find.ancestor(of: find.text('Berakhot 8a'), matching: find.byType(Card)).first);
-      final source = tester.getRect(find.ancestor(of: find.text('Berakhot 8a'), matching: find.byType(Column)).first);
+      final card = tester.getRect(find.ancestor(of: find.text('Berachot 8a'), matching: find.byType(Card)).first);
+      final source = tester.getRect(find.ancestor(of: find.text('Berachot 8a'), matching: find.byType(Column)).first);
       expect(source.left - card.left, padding);
       expect(card.right - source.right, padding);
     });
@@ -102,7 +102,7 @@ void main() {
     expect(tester.getTopLeft(find.byType(PassPips)).dy, lessThan(tester.getTopLeft(find.textContaining('Read verse by verse')).dy));
 
     for (final source in [
-      'Berakhot 8a–b',
+      'Berachot 8a–b',
       'Shulchan Aruch, Orach Chaim 285',
       'Mishnah Berurah 285',
       'Kitzur Shulchan Aruch 72',

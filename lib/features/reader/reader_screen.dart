@@ -1357,16 +1357,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                       }
                     },
                     itemBuilder: (context) => [
-                      PopupMenuItem(value: 'mode', child: Text(_fullText ? l.guidedMode : l.fullTextMode)),
+                      SeferMenuItem(value: 'mode', child: Text(_fullText ? l.guidedMode : l.fullTextMode)),
                       if (_fullText)
-                        PopupMenuItem(
+                        SeferMenuItem(
                           value: 'parsha',
                           child: Text(s.fullTextWholeParsha ? l.oneAliyahAtATime : l.wholeParsha),
                         ),
                       if (ctx.isOpen && !ctx.progress.isAliyahDone(_aliyah))
-                        PopupMenuItem(value: 'mark', child: Text(l.markAliyahRead)),
-                      PopupMenuItem(value: 'week', child: Text(l.backToWeek)),
-                      PopupMenuItem(value: 'keys', child: Text(l.keyboardShortcuts)),
+                        SeferMenuItem(value: 'mark', child: Text(l.markAliyahRead)),
+                      SeferMenuItem(value: 'week', child: Text(l.backToWeek)),
+                      SeferMenuItem(value: 'keys', child: Text(l.keyboardShortcuts)),
                     ],
                   ),
                 ],

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/search/go_to_verse_sheet.dart';
@@ -30,15 +31,59 @@ class AppShell extends StatelessWidget {
   static const railWidth = 80.0;
   static const extendedRailWidth = 256.0;
 
-  /// The rail's keyboard focus wash, in onSurface at this opacity: the bar's
-  /// (see AppTheme's navigationBarTheme), as neither draws a ring.
-  static const _focusWash = 0.32;
+  /// The indicators that the destinations' focus rings go around (§6.9 and
+  /// §6.10): Material's own sizes, with the theme's corners.
+  static const _barIndicator = Size(64, 32);
+  static const _railIndicator = Size(56, 32);
 
   void _go(int index) => shell.goBranch(index, initialLocation: index == shell.currentIndex);
 
-  // Ctrl+K (⌘K) goes to a verse, or searches, from any tab.
+  /// Whether Today's tab is on show at its root, with no page of its own
+  /// open: the one place the system's Back leaves the app.
+  bool get _atToday => shell.currentIndex == 0 && shell.shellRouteContext.routerState.uri.path == '/today';
+
+  /// For [WidgetsApp.onNavigationNotification]: tells Android whether the
+  /// app handles Back, which Android 13 and later ask before they send it to
+  /// the app, and before a back swipe previews the home screen. It answers as
+  /// the framework does, but on Today's root. go_router has each tab's
+  /// navigator, a hidden tab's too, refuse to close the tabs while it has a
+  /// page open, so the app would claim Back there whenever another tab held a
+  /// page; on Today's root it handles Back only while something on show can
+  /// be closed.
+  static bool reportBack(GoRouter router, NavigationNotification notification) {
+    switch (WidgetsBinding.instance.lifecycleState) {
+      case null || AppLifecycleState.detached:
+        // As the framework: not until the app is running.
+        break;
+      case _:
+        final atToday = router.routerDelegate.currentConfiguration.uri.path == '/today' && !router.canPop();
+        SystemNavigator.setFrameworkHandlesBack(notification.canHandlePop && !atToday);
+    }
+    return true;
+  }
+
   @override
-  Widget build(BuildContext context) => GoToVerseShortcut(child: _layout(context));
+  Widget build(BuildContext context) => PopScope(
+        // Today is where the app starts, so the system's Back leaves the app
+        // only from its root: at the root of another tab it returns to Today,
+        // as Today's tab would. A page within a tab, or over the tabs, is
+        // popped first, by its own navigator. While Today's tab has a page
+        // open, the scope refuses the pop as well, so that the app goes on
+        // saying it handles Back as the tab is shown again.
+        canPop: _atToday,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          if (shell.currentIndex != 0) {
+            shell.goBranch(0);
+          } else if (_atToday) {
+            // Refused for a page open in a hidden tab (see [reportBack]):
+            // from Today's root, Back leaves the app all the same.
+            SystemNavigator.pop();
+          }
+        },
+        // Ctrl+K (⌘K) goes to a verse, or searches, from any tab.
+        child: GoToVerseShortcut(child: _layout(context)),
+      );
 
   Widget _layout(BuildContext context) {
     final l = context.l10n;
@@ -71,7 +116,11 @@ class AppShell extends StatelessWidget {
                 onSelected: _go,
                 destinations: [
                   for (final (icon, selected, label) in items)
-                    NavigationDestination(icon: Icon(icon), selectedIcon: Icon(selected), label: label),
+                    NavigationDestination(
+                      icon: IndicatorFocusRing(indicator: _barIndicator, radius: 16, child: Icon(icon)),
+                      selectedIcon: IndicatorFocusRing(indicator: _barIndicator, radius: 16, child: Icon(selected)),
+                      label: label,
+                    ),
                 ],
               ),
             ),
@@ -88,10 +137,10 @@ class AppShell extends StatelessWidget {
           children: [
             // Keyboard users reach the rail first, then the page.
             FocusTraversalGroup(
-              // The rail draws no ring either, so keyboard focus is the bar's
-              // strong wash rather than the theme's 24% tint.
+              // Keyboard focus is the ring around the indicator alone, as on
+              // the bar: the theme's tint as well would only muddy it.
               child: Theme(
-                data: theme.copyWith(focusColor: theme.colorScheme.onSurface.withValues(alpha: _focusWash)),
+                data: theme.copyWith(focusColor: Colors.transparent),
                 child: DecoratedBox(
                   decoration: BoxDecoration(border: BorderDirectional(end: hairline)),
                   child: Padding(
@@ -110,17 +159,25 @@ class AppShell extends StatelessWidget {
                       destinations: [
                         for (final (icon, selected, label) in items)
                           NavigationRailDestination(
-                            icon: Icon(icon),
-                            selectedIcon: Icon(selected),
+                            icon: IndicatorFocusRing(indicator: _railIndicator, radius: 12, child: Icon(icon)),
+                            selectedIcon: IndicatorFocusRing(
+                              indicator: _railIndicator,
+                              radius: 12,
+                              child: Icon(selected),
+                            ),
                             label: _RailLabel(label, extended: extended),
                             // Beside their labels, destinations are 56 high
                             // (Material's 44 is short of a tap target). Under
-                            // them, they keep Material's 64, whose spacing the
-                            // framework fixes (§6.10), and leave the labels 76
-                            // of the rail's 80, which the longest needs in bold.
+                            // them, they take Material's 64, whose spacing the
+                            // framework fixes (§6.10), and 6 more above the
+                            // indicator, which Material sets at the very top:
+                            // the focus ring stands 5 out from it, and the
+                            // rail, scrolling in a short window, would cut its
+                            // top off at its edge. They leave the labels 76 of
+                            // the rail's 80, which the longest needs in bold.
                             padding: extended
                                 ? const EdgeInsets.symmetric(vertical: 6)
-                                : const EdgeInsets.symmetric(horizontal: 2),
+                                : const EdgeInsets.fromLTRB(2, 6, 2, 0),
                           ),
                       ],
                     ),

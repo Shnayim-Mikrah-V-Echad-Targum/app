@@ -96,8 +96,10 @@ void showBackupImportStatus(
 /// [Backup.joinDate]), so that the history from both counts; replacing, it
 /// is the one saved with the backup, if any.
 ///
-/// Its bookmarks and notes are merged with those here either way, as a sync
-/// merges them: replacing erases the reading history, never a note.
+/// Its bookmarks and notes are restored either way, alongside those here
+/// (see [AnnotationsController.restore]): one it holds comes back even if
+/// removed here since, and one changed here since keeps its change.
+/// Replacing erases the reading history, never a note.
 ///
 /// Its settings come too only [withSettings], keeping this device's record
 /// of having offered reminders and of what Today has asked and said here.
@@ -123,7 +125,7 @@ Future<BackupImport> importBackup(
     unknownPauses: backup.unknownPauses,
     outlast: backup.progress.resetAt,
   );
-  ref.read(annotationsProvider.notifier).merge(backup.annotations);
+  ref.read(annotationsProvider.notifier).restore(backup.annotations);
   final restored = withSettings ? backup.settings : null;
   if (restored == null) {
     if (joinDate != current.joinDate) settings.update((s) => s.copyWith(joinDate: joinDate));
@@ -265,11 +267,15 @@ class _ImportDialogState extends State<_ImportDialog> {
           if (widget.merge) ...[const SizedBox(height: 12), Text(l.importMergeBody)],
           if (backup.settings != null) ...[
             const SizedBox(height: 8),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _withSettings,
-              onChanged: (v) => setState(() => _withSettings = v ?? false),
-              title: Text(l.importAlsoSettings),
+            // Its text starts at its very edge, so its ring is outside it.
+            TileFocusRing(
+              outside: true,
+              child: CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _withSettings,
+                onChanged: (v) => setState(() => _withSettings = v ?? false),
+                title: Text(l.importAlsoSettings),
+              ),
             ),
           ],
         ],
@@ -443,7 +449,10 @@ class DataSettingsScreen extends ConsumerWidget {
               builder: (context) => PaperRow(
                 icon: Icons.ios_share_outlined,
                 title: l.exportData,
+                // What the file holds, never cut short: on a 360 dp phone
+                // it takes three lines.
                 subtitle: l.exportDataDesc,
+                subtitleMaxLines: null,
                 chevron: false,
                 onTap: () => exportBackupFile(context, ref),
               ),

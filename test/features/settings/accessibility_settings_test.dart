@@ -8,6 +8,8 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikra/ui/theme/motion.dart';
 
 import '../../helpers.dart';
 
@@ -54,6 +56,52 @@ void main() {
         expect(presetActive(c.read(settingsProvider), preset), isFalse);
       });
     }
+
+    testWidgets('applied from the keyboard, a later Undo takes back the preset alone', (tester) async {
+      FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+      addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+      final c = await open(tester, before);
+      final was = c.read(settingsProvider);
+      await tester.tap(card('Low vision'));
+      await tester.pumpAndSettle();
+      expect(find.text('Low vision applied'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 10));
+      expect(find.widgetWithText(SnackBarAction, 'Undo'), findsOneWidget, reason: 'held for the keyboard');
+
+      // Changed since, the message still showing: Reduce motion on this
+      // page, and the text size the preset set.
+      await tester.ensureVisible(find.widgetWithText(SwitchRow, 'Reduce motion'));
+      await tester.tap(find.widgetWithText(SwitchRow, 'Reduce motion'));
+      await tester.pumpAndSettle();
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(readingScale: 2.2));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+      await tester.pumpAndSettle();
+      final now = c.read(settingsProvider);
+      expect(now.reduceMotion, isTrue, reason: 'a setting the preset leaves alone, changed since');
+      expect(now.readingScale, 2.2, reason: 'changed since the preset set it');
+      expect((now.theme, now.lineHeight, now.boldText, now.focusMode, now.lineWidth),
+          (was.theme, was.lineHeight, was.boldText, was.focusMode, was.lineWidth),
+          reason: 'what the preset alone set is as it was');
+    });
+
+    testWidgets('applied from the keyboard, its Undo leaves with the page', (tester) async {
+      FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+      addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+      final c = await open(tester, before);
+      await tester.tap(card('Low vision'));
+      await tester.pumpAndSettle();
+      expect(find.text('Low vision applied'), findsOneWidget);
+
+      // Back to Settings, where the reading plan, the reminders and the rest
+      // are a tap away: an Undo there could take back changes made in them.
+      c.read(routerProvider).pop();
+      await tester.pumpAndSettle();
+      expect(c.read(routerProvider).state.uri.path, '/settings');
+      expect(find.text('Low vision applied'), findsNothing);
+      expect(find.widgetWithText(SnackBarAction, 'Undo'), findsNothing);
+    });
 
     testWidgets('Reset display is a text button under them, and can be undone too', (tester) async {
       final c = await open(tester, before);
@@ -127,4 +175,88 @@ void main() {
       handle.dispose();
     });
   }
+
+  group("Reduce motion, while the device's is on", () {
+    final row = find.widgetWithText(SwitchRow, 'Reduce motion');
+    Switch toggle(WidgetTester tester) =>
+        tester.widget<Switch>(find.descendant(of: row, matching: find.byType(Switch)));
+
+    /// Turns the device's own Reduce motion on or off.
+    Future<void> device(WidgetTester tester, {required bool reduced}) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(disableAnimations: reduced);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows it on and disabled, saying that the device has it on', (tester) async {
+      final handle = tester.ensureSemantics();
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      final c = await open(tester, const AppSettings(onboardingComplete: true));
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      expect(toggle(tester).value, isTrue, reason: 'in force, though the app’s own is off');
+      expect(toggle(tester).onChanged, isNull);
+      expect(find.descendant(of: row, matching: find.text('On in your device’s settings')), findsOneWidget);
+      expect(find.text('Turn off animations and moving celebrations'), findsNothing);
+      expect(
+        tester.getSemantics(row),
+        isSemantics(
+          label: 'Reduce motion\nOn in your device’s settings',
+          hasToggledState: true,
+          isToggled: true,
+          hasEnabledState: true,
+          isEnabled: false,
+        ),
+      );
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).reduceMotion, isFalse);
+
+      // The device's turned off: the app's own setting again, to change.
+      await device(tester, reduced: false);
+      expect(toggle(tester).value, isFalse);
+      expect(toggle(tester).onChanged, isNotNull);
+      expect(find.descendant(of: row, matching: find.text('Turn off animations and moving celebrations')), findsOneWidget);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).reduceMotion, isTrue);
+      handle.dispose();
+    });
+
+    testWidgets("on iOS, where it is the device's Reduce Motion, shows it on and reduces the app's motion",
+        (tester) async {
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await open(tester, const AppSettings(onboardingComplete: true));
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      expect(Motion.of(tester.element(row)).reduced, isFalse);
+      // iOS reports Reduce Motion as a feature of its own, and not as
+      // disableAnimations.
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+      await tester.pumpAndSettle();
+      expect(toggle(tester).value, isTrue);
+      expect(toggle(tester).onChanged, isNull);
+      expect(find.descendant(of: row, matching: find.text('On in your device’s settings')), findsOneWidget);
+      expect(Motion.of(tester.element(row)).reduced, isTrue, reason: 'in force for the app');
+
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures();
+      await tester.pumpAndSettle();
+      expect(toggle(tester).value, isFalse);
+      expect(toggle(tester).onChanged, isNotNull);
+      expect(Motion.of(tester.element(row)).reduced, isFalse);
+    });
+
+    testWidgets("is shown as it turns on with the app's own already on", (tester) async {
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await open(tester, const AppSettings(onboardingComplete: true, reduceMotion: true));
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      expect(toggle(tester).value, isTrue);
+      expect(toggle(tester).onChanged, isNotNull);
+      await device(tester, reduced: true);
+      expect(toggle(tester).value, isTrue);
+      expect(toggle(tester).onChanged, isNull, reason: 'the app’s motion was already reduced; the switch still hears of it');
+      expect(find.descendant(of: row, matching: find.text('On in your device’s settings')), findsOneWidget);
+    });
+  });
 }

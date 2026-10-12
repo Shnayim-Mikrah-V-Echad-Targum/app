@@ -128,6 +128,11 @@ void main() {
       expect(parse('כי תשא ל, יב'), verse('Exodus', 30, 12));
       expect(parse("Re'eh 11:26"), verse('Deuteronomy', 11, 26));
       expect(parse('Reeh 11:26'), verse('Deuteronomy', 11, 26));
+      // As the app writes the names, with a curly apostrophe, and as typed.
+      expect(parse('Re’eh 11:26'), verse('Deuteronomy', 11, 26));
+      expect(parse('Beha’alotcha 9:1'), verse('Numbers', 9, 1));
+      expect(parse("Beha'alotcha 9:1"), verse('Numbers', 9, 1));
+      expect(parse('Ha’azinu 32:1'), verse('Deuteronomy', 32, 1));
       expect(parse('נח ו ט'), verse('Genesis', 6, 9));
       expect(parse('צו ו א'), verse('Leviticus', 6, 1));
     });

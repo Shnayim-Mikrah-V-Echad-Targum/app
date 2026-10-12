@@ -889,12 +889,14 @@ class _BookSheetState extends State<_BookSheet> {
           children: [
             SheetTitle(l.readFromBookTitle),
             for (final a in widget.aliyot)
-              CheckboxListTile(
-                controlAffinity: ListTileControlAffinity.leading,
-                value: _checked.contains(a),
-                onChanged: (on) => setState(() => on! ? _checked.add(a) : _checked.remove(a)),
-                title: Text(names.aliyah(a)),
-                subtitle: Text(aliyahReference(context, widget.ctx, a)),
+              TileFocusRing(
+                child: CheckboxListTile(
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: _checked.contains(a),
+                  onChanged: (on) => setState(() => on! ? _checked.add(a) : _checked.remove(a)),
+                  title: Text(names.aliyah(a)),
+                  subtitle: Text(aliyahReference(context, widget.ctx, a)),
+                ),
               ),
             Padding(
               padding: EdgeInsets.fromLTRB(padding, Space.sm, padding, Space.lg),

@@ -152,7 +152,7 @@ void main() {
         reason: "the rings' own label",
       );
       expect(bereshit.next, 'Continue · Shlishi, Targum', reason: "Today's button");
-      expect(on(t, LocalDate(2026, 10, 9)).first.line, "Catching up: Shlishi – Shevi'i");
+      expect(on(t, LocalDate(2026, 10, 9)).first.line, 'Catching up: Shlishi – Shevi’i');
 
       // Shabbat rests, with the parsha read that day.
       final shabbat = only(t, LocalDate(2026, 10, 10));
@@ -183,7 +183,7 @@ void main() {
           progress: ProgressState(weeks: {
             '5787:2': week.withAliyah(0, LocalDate(2026, 10, 11)).withAliyah(1, LocalDate(2026, 10, 12)),
           }));
-      expect(only(t, LocalDate(2026, 10, 12)).line, "Today's reading is done");
+      expect(only(t, LocalDate(2026, 10, 12)).line, 'Today’s reading is done');
       expect(only(t, LocalDate(2026, 10, 13)).line, 'Today: Shlishi');
 
       // Every aliyah read: the week is complete, with nothing to continue.
@@ -269,7 +269,7 @@ void main() {
       // read on Simchat Torah.
       final tishrei = timeline(DateTime(2026, 9, 10, 10), settings: AppSettings(joinDate: LocalDate(2026, 9, 1)));
       expect(only(tishrei, LocalDate(2026, 9, 12)).line, 'Shanah Tovah');
-      expect(only(tishrei, LocalDate(2026, 9, 21)).line, "G'mar Chatimah Tovah");
+      expect(only(tishrei, LocalDate(2026, 9, 21)).line, 'G’mar Chatimah Tovah');
       expect(only(tishrei, LocalDate(2026, 9, 20)).kind, WidgetDayKind.erevYomTov, reason: 'Erev Yom Kippur');
       expect(only(tishrei, LocalDate(2026, 9, 26)).line, 'Chag Sameach', reason: 'Sukkot');
       expect(only(tishrei, LocalDate(2026, 10, 4)).eyebrow, 'Simchat Torah');
@@ -396,7 +396,7 @@ void main() {
         'week': 0,
         'kind': 'erevShabbat',
         'eyebrow': 'Parshat HaShavua',
-        'line': "Catching up: Shlishi – Shevi'i",
+        'line': 'Catching up: Shlishi – Shevi’i',
       });
       expect((json['weeks'] as List).last, containsPair('next', 'Start · Rishon'));
       expect((json['weeks'] as List).first, containsPair('m1', 3));

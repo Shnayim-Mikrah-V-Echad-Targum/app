@@ -82,7 +82,7 @@ class SettingsScreen extends ConsumerWidget {
               Icons.person_outline,
               l.settingsAccount,
               // A name in either script keeps its own direction in the sentence.
-              user == null ? l.signInPrompt : (name == null ? null : l.signedInAs('\u2068$name\u2069')),
+              user == null ? l.settingsAccountDesc : (name == null ? null : l.signedInAs('\u2068$name\u2069')),
               '/settings/account',
             ),
             page(Icons.backup_outlined, l.settingsData, l.settingsDataDesc, '/settings/data'),
