@@ -270,19 +270,28 @@ void main() {
     });
   });
 
-  // "I" never ends a line with "Samuel" on the next, nor "·" starts one.
-  testWidgets("a haftarah's passages hold a book's name of two words, and each dot to the passage before it",
+  // "I" never ends a line with "Samuel" on the next, nor "·" starts one,
+  // nor does a line end inside a closed range ("45:16– / 46:18").
+  testWidgets(
+      "a haftarah's passages hold a book's name of two words, a closed range, and each dot to the passage before it",
       (tester) async {
     const parts = [
       HaftarahPart('Isaiah', VerseRef(66, 1), VerseRef(66, 24)),
       HaftarahPart('I Samuel', VerseRef(20, 18), VerseRef(20, 18)),
       HaftarahPart('I Samuel', VerseRef(20, 42), VerseRef(20, 42)),
     ];
+    const ezekiel = HaftarahPart('Ezekiel', VerseRef(45, 16), VerseRef(46, 18));
     var names = Names(await _page(tester, hebrew: false));
     expect(names.passage(parts[1]), 'I\u00A0Samuel 20:18');
-    expect(names.haftarah(parts), 'Isaiah 66:1–24\u00A0· I\u00A0Samuel 20:18\u00A0· I\u00A0Samuel 20:42');
+    expect(names.passage(ezekiel), 'Ezekiel 45:16–\u206046:18');
+    expect(names.haftarah(parts), 'Isaiah 66:1–\u206024\u00A0· I\u00A0Samuel 20:18\u00A0· I\u00A0Samuel 20:42');
     names = Names(await _page(tester, hebrew: true));
-    expect(names.haftarah(parts), 'ישעיהו סו,\u00A0א–כד\u00A0· שמואל\u00A0א כ,\u00A0יח\u00A0· שמואל\u00A0א כ,\u00A0מב');
+    expect(
+      names.haftarah(parts),
+      'ישעיהו סו,\u00A0א–\u2060כד\u00A0· שמואל\u00A0א כ,\u00A0יח\u00A0· שמואל\u00A0א כ,\u00A0מב',
+    );
+    // Across chapters, the spaced dash may still end a line (§4.6).
+    expect(names.passage(ezekiel), 'יחזקאל מה,\u00A0טז\u00A0– מו,\u00A0יח');
   });
 
   // As a range holds them, so that a long reference at large text breaks

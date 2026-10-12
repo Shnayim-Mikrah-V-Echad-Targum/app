@@ -64,9 +64,10 @@ void main() {
     await _open(tester, '5787:1');
 
     expect(find.text('Haftarah · Bereshit'), findsOneWidget);
+    // Its range held together by a word joiner after the dash.
     expect(
-      tester.getSemantics(find.text('I\u00A0Samuel 20:18–42')),
-      isSemantics(label: 'I\u00A0Samuel 20:18–42', isHeader: true),
+      tester.getSemantics(find.text('I\u00A0Samuel 20:18–\u206042')),
+      isSemantics(label: 'I\u00A0Samuel 20:18–\u206042', isHeader: true),
     );
     expect(find.text('Shabbat Machar Chodesh'), findsOneWidget);
     expect(find.text('I Samuel'), findsNothing, reason: 'no label for the one book it is drawn from');
@@ -99,7 +100,7 @@ void main() {
   testWidgets('drawn from two books, heads each with its name', (tester) async {
     // Shabbat Shuva with Ha'azinu 5786: Hosea 14:2–10, then Joel 2:15–27.
     await _open(tester, '5786:53');
-    expect(findDotLine('Hosea 14:2–10 · Joel 2:15–27'), findsOneWidget);
+    expect(findDotLine('Hosea 14:2–\u206010 · Joel 2:15–\u206027'), findsOneWidget);
     final books = tester.widgetList<ChapterHeading>(find.byType(ChapterHeading, skipOffstage: false));
     expect([for (final h in books) (h.hebrewName, h.name, h.chapter)], [('הושע', 'Hosea', null), ('יואל', 'Joel', null)]);
   });
@@ -111,11 +112,11 @@ void main() {
     final c = await _open(tester, '5788:38', now: DateTime(2028, 6, 20, 11));
     // Its passages, a book's name of two words held on one line, break
     // between them, and read as one heading.
-    final heading = findDotLine('Isaiah 66:1–24 · I\u00A0Samuel 20:18 · I\u00A0Samuel 20:42');
+    final heading = findDotLine('Isaiah 66:1–\u206024 · I\u00A0Samuel 20:18 · I\u00A0Samuel 20:42');
     expect(heading, findsOneWidget);
     expect(
       tester.getSemantics(heading),
-      isSemantics(label: 'Isaiah 66:1–24\u00A0· I\u00A0Samuel 20:18\u00A0· I\u00A0Samuel 20:42', isHeader: true),
+      isSemantics(label: 'Isaiah 66:1–\u206024\u00A0· I\u00A0Samuel 20:18\u00A0· I\u00A0Samuel 20:42', isHeader: true),
     );
     handle.dispose();
     expect(find.text('Shabbat Rosh Chodesh, with verses for Sunday’s Rosh Chodesh'), findsOneWidget);
@@ -181,7 +182,7 @@ void main() {
       final c = await _open(tester, '5787:1');
       expect(find.text('Shabbat Machar Chodesh'), findsOneWidget);
       expect(find.text(_regularTitle), findsOneWidget);
-      expect(find.text('Isaiah 42:5–43:10'), findsOneWidget);
+      expect(find.text('Isaiah 42:5–\u206043:10'), findsOneWidget);
       expect(_regularChapter, findsNothing, reason: 'folded');
       expect(find.text(_fallbackNote), findsNothing);
 
@@ -214,7 +215,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester.getSemantics(find.text(_regularTitle)),
-        isSemantics(label: '$_regularTitle\nIsaiah 42:5–43:10', isHeader: true, hint: 'Collapsed'),
+        isSemantics(label: '$_regularTitle\nIsaiah 42:5–\u206043:10', isHeader: true, hint: 'Collapsed'),
       );
       await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
       await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));

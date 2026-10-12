@@ -48,6 +48,19 @@ void main() {
       expect(tester.getSize(find.textContaining('aa')).height, 20, reason: 'two lines, the number on the second');
     });
 
+    testWidgets('holds a closed range together in a part too long for a line', (tester) async {
+      // "Deuteronomy / 33:8–12", not "Deuteronomy 33:8– / 12"; a spaced dash
+      // may still end a line.
+      expect(await lines(tester, ['aaaa 11–22', 'bb'], width: 80), ['aaaa 11–⁠22', 'bb']);
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.textContaining('aaaa'), matching: find.byType(RichText)),
+      );
+      double lineOf(int offset) => paragraph.getOffsetForCaret(TextPosition(offset: offset), Rect.zero).dy;
+      expect(lineOf(0), lessThan(lineOf(5)), reason: 'the range on a line of its own');
+      expect(lineOf(5), lineOf(9), reason: 'the whole range on that line');
+      expect(await lines(tester, ['aaaa 11 – 22', 'bb'], width: 80), ['aaaa 11\u00A0– 22', 'bb']);
+    });
+
     testWidgets('measures its parts in the ambient style, as they are drawn', (tester) async {
       // A list tile's subtitle, say: its style is the tile's. With a letter
       // spacing of 1, the three parts are 198 wide, too wide for 180.

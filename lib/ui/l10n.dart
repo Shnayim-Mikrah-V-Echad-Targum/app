@@ -160,11 +160,19 @@ class Names {
   String range(String bookName, int c1, int v1, int c2, int v2) => '${book(bookName)} ${verseRange(c1, v1, c2, v2)}';
 
   /// One passage of a haftarah: "I Samuel 20:18–42" / "שמואל א כ, יח–מב", a
-  /// book's name of two words held on one line.
+  /// book's name of two words held on one line, and a closed range held
+  /// together by a word joiner after its dash, so that a line breaks after
+  /// the book ("Ezekiel / 45:16–46:18", never "Ezekiel 45:16– / 46:18"), or
+  /// after the spaced dash of a Hebrew range across chapters.
   String passage(HaftarahPart p) {
     final name = book(p.book).replaceAll(' ', _nbsp);
-    return '$name ${verseRange(p.start.chapter, p.start.verse, p.end.chapter, p.end.verse)}';
+    final verses = verseRange(p.start.chapter, p.start.verse, p.end.chapter, p.end.verse);
+    return '$name ${verses.replaceAll(_closedDash, '–\u2060')}';
   }
+
+  /// The dash of a closed range ("45:16–46:18", "יח–מב"), between two
+  /// characters that are not spaces.
+  static final _closedDash = RegExp(r'(?<=\S)–(?=[^\s\u2060])');
 
   /// A haftarah's passages: "Isaiah 66:1–24 · I Samuel 20:18 · I Samuel
   /// 20:42". A line may end after a dot, but never start with one.
