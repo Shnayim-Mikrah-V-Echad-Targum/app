@@ -468,10 +468,10 @@ void main() {
       expect(find.text(en.todayNothingPlanned), findsNothing);
       expect(find.text(en.readFromBook), findsNothing);
       expect(find.text(en.openWeekTitle('Devarim')), findsNothing);
-      // The week strip names the fast.
+      // The week strip names the fast, on today's day.
       await show(tester, find.text('9 Av'));
       expect(find.text('9 Av'), findsOneWidget);
-      expect(find.bySemanticsLabel(RegExp(r'^Thursday: .*\. Tisha B’Av$')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^Thursday, today: .*\. Tisha B’Av$')), findsOneWidget);
 
       // The next day, as on any other: the reading, and last week's notice.
       await openToday(tester, settings: settings, now: DateTime(2027, 8, 13, 11), progress: behind());

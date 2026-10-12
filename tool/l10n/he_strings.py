@@ -164,6 +164,7 @@ HE = {
   "yomTovShort": "יו״ט",
   "tishaBavShort": "ט׳ באב",
   "dayChipLabel": "{day}: {status}",
+  "dayChipLabelToday": "{day}, היום: {status}",
   "weekStripLabel": "התוכנית לשבוע זה",
   "weekOnTime": "בזמן",
   "weekLate": "אחרי שבת — עדיין נחשב",

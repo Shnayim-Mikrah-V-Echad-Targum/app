@@ -1065,11 +1065,17 @@ abstract class AppLocalizations {
   /// **'9 Av'**
   String get tishaBavShort;
 
-  /// No description provided for @dayChipLabel.
+  /// Read by screen readers, and shown as the tooltip, for a day of the week strip: the weekday's name (Names.weekday) and how the day stands (dayKept, dayOpen and so on).
   ///
   /// In en, this message translates to:
   /// **'{day}: {status}'**
   String dayChipLabel(String day, String status);
+
+  /// As dayChipLabel, for today's day in the week strip, so a screen reader can find it: the weekday's name (Names.weekday) and how the day stands (dayKept, dayOpen and so on).
+  ///
+  /// In en, this message translates to:
+  /// **'{day}, today: {status}'**
+  String dayChipLabelToday(String day, String status);
 
   /// No description provided for @weekStripLabel.
   ///

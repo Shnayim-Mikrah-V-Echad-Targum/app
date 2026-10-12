@@ -704,6 +704,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String dayChipLabelToday(String day, String status) {
+    return '$day, היום: $status';
+  }
+
+  @override
   String get weekStripLabel => 'התוכנית לשבוע זה';
 
   @override

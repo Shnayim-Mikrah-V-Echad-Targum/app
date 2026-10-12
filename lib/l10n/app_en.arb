@@ -687,12 +687,29 @@
   },
   "dayChipLabel": "{day}: {status}",
   "@dayChipLabel": {
+    "description": "Read by screen readers, and shown as the tooltip, for a day of the week strip: the weekday's name (Names.weekday) and how the day stands (dayKept, dayOpen and so on).",
     "placeholders": {
       "day": {
-        "type": "String"
+        "type": "String",
+        "example": "Tuesday"
       },
       "status": {
-        "type": "String"
+        "type": "String",
+        "example": "Not yet"
+      }
+    }
+  },
+  "dayChipLabelToday": "{day}, today: {status}",
+  "@dayChipLabelToday": {
+    "description": "As dayChipLabel, for today's day in the week strip, so a screen reader can find it: the weekday's name (Names.weekday) and how the day stands (dayKept, dayOpen and so on).",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "Friday"
+      },
+      "status": {
+        "type": "String",
+        "example": "Not yet"
       }
     }
   },

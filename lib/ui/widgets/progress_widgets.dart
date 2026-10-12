@@ -895,8 +895,12 @@ class WeekStrip extends StatelessWidget {
     final isToday = d == today;
     // Tisha B'Av with no reading planned on it, which names the reason.
     final fast = !rest && planned == null && JewishHolidays.isTishaBav(d);
+    // Today says so, so a screen reader can find it; the weekday comes
+    // first either way.
     final semantic = [
-      l.dayChipLabel(names.weekday(d), display.label(context)),
+      isToday
+          ? l.dayChipLabelToday(names.weekday(d), display.label(context))
+          : l.dayChipLabel(names.weekday(d), display.label(context)),
       if (dayAliyot.isNotEmpty) names.aliyot(dayAliyot),
       if (fast) l.tishaBavTitle,
     ].join('. ');

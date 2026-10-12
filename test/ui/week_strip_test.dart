@@ -116,6 +116,24 @@ void main() {
         Icons.radio_button_unchecked);
   });
 
+  testWidgets("today's label says so, the weekday first, read or not", (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpThemed(tester, strip());
+    const unread = "Friday, today: Not yet. Shishi and Shevi'i";
+    expect(tester.getSemantics(dayOf('Friday')), isSemantics(label: unread, isButton: true, isSelected: false));
+    expect(find.byTooltip(unread), findsOneWidget);
+    // No other day is taken for today.
+    expect(find.bySemanticsLabel(RegExp('today')), findsOneWidget);
+    expect(find.bySemanticsLabel("Thursday: Not yet. Revi'i and Chamishi"), findsOneWidget);
+
+    await pumpThemed(tester, strip(statuses: {day(5): DayStatus.kept}));
+    expect(find.bySemanticsLabel(RegExp(r'^Friday, today: Read\. ')), findsOneWidget);
+
+    await pumpThemed(tester, strip(), hebrew: true);
+    expect(find.bySemanticsLabel(RegExp(r'^יום שישי, היום: עדיין לא\. ')), findsOneWidget);
+    handle.dispose();
+  });
+
   testWidgets('Shabbat and Yom Tov are washed and lit; only Yom Tov says so', (tester) async {
     await pumpThemed(tester, strip());
     for (final weekday in ['Sunday', 'Saturday']) {

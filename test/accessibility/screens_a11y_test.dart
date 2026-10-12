@@ -463,6 +463,8 @@ void main() {
     final handle = tester.ensureSemantics();
     await open(tester, '/today', settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
     expect(find.text('היום'), findsWidgets);
+    // Today's day of the week strip says so.
+    expect(find.bySemanticsLabel(RegExp(r'^יום שני, היום: ')), findsOneWidget);
     final dir = Directionality.of(tester.element(find.byType(Scaffold).first));
     expect(dir, TextDirection.rtl);
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
@@ -477,9 +479,10 @@ void main() {
     testWidgets('a day of the week strip is a button that can be activated', (tester) async {
       final handle = tester.ensureSemantics();
       final c = await open(tester, '/today');
-      // "Monday: …", not the running head ("Monday, October 12 · …").
+      // Today's day, "Monday, today: …", not the running head ("Monday,
+      // October 12 · …").
       expect(
-        tester.getSemantics(find.bySemanticsLabel(RegExp('^Monday: '))),
+        tester.getSemantics(find.bySemanticsLabel(RegExp('^Monday, today: '))),
         isSemantics(isButton: true, hasTapAction: true, isFocusable: true),
       );
       // Shabbat has no reading to open.
@@ -487,7 +490,7 @@ void main() {
         tester.getSemantics(find.bySemanticsLabel(RegExp('^Saturday: '))),
         isSemantics(isButton: false, hasTapAction: false),
       );
-      tester.semantics.tap(find.semantics.byLabel(RegExp('^Monday: ')));
+      tester.semantics.tap(find.semantics.byLabel(RegExp('^Monday, today: ')));
       await tester.pump();
       await tester.pump();
       expect(location(c), '/read/5787:2/1', reason: "Monday's reading is Sheni");

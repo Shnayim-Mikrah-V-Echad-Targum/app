@@ -693,7 +693,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - `LayoutBuilder`: when a seventh of the width is under 48, or under the widest weekday label at the current text size, the strip takes two rows, Sunday to Wednesday and then Thursday to Shabbat, in a four-column grid.
 - A card around the strip alone uses `WeekStrip.cardPadding` (8), so the days stay in one row on a 412 dp phone (52 each).
 - `WeekStripLegendButton`: an `info_outline` IconButton (tooltip `statusLegend`) for the strip's card or section header. It opens a sheet that shows every glyph beside its label, today and rest days on their fills.
-- Keep the existing Tooltip and Semantics labels. Each day is one node with the ink well's tap and focus.
+- Each day is one node with the ink well's tap and focus, its label and tooltip `dayChipLabel` ("Tuesday: Not yet. Sheni"). Today's says so, so a screen reader can find it (WCAG 1.3.1): `dayChipLabelToday` ("Friday, today: Not yet. Shishi and Shevi'i" / "יום שישי, היום: …"), the weekday still first. It is not marked selected: today is not a choice the strip makes.
 
 ### 6.14 Torah map (progress_screen.dart tile())
 
