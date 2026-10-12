@@ -2115,7 +2115,7 @@ void main() {
       expect(tester.getSize(disc), const Size(32, 32));
       expect(find.byTooltip('Account & community'), findsOneWidget);
       // The sign-in row goes, and a moderator's reports come.
-      expect(find.text('Sign in to post, say thanks or report.'), findsNothing);
+      expect(find.text('Sign in to post, say todah or report.'), findsNothing);
       expect(find.text('Reports to review'), findsOneWidget);
     });
 

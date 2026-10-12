@@ -2234,7 +2234,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openDiscussion => 'Open the discussion';
 
   @override
-  String get signInPrompt => 'Sign in to post, say thanks or report.';
+  String get signInPrompt => 'Sign in to post, say todah or report.';
 
   @override
   String get settingsAccountDesc => 'Sign in to post, say todah or report';

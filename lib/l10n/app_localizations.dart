@@ -3750,7 +3750,7 @@ abstract class AppLocalizations {
   /// No description provided for @signInPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to post, say thanks or report.'**
+  /// **'Sign in to post, say todah or report.'**
   String get signInPrompt;
 
   /// Settings, under the Account row's title while no one is signed in on this device. Todah is the forum's button that thanks a post's author.

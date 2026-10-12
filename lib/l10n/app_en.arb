@@ -1790,7 +1790,7 @@
     }
   },
   "openDiscussion": "Open the discussion",
-  "signInPrompt": "Sign in to post, say thanks or report.",
+  "signInPrompt": "Sign in to post, say todah or report.",
   "settingsAccountDesc": "Sign in to post, say todah or report",
   "@settingsAccountDesc": {
     "description": "Settings, under the Account row's title while no one is signed in on this device. Todah is the forum's button that thanks a post's author."

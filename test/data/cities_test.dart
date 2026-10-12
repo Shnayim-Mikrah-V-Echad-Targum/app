@@ -144,6 +144,11 @@ void main() {
       expect(raanana.name(hebrew: true), 'רעננה');
       expect(directory.search('Xi’an').first.name(hebrew: false), 'Xi’an');
       expect(names(directory.search("Xi'an")).first, 'Xi’an');
+      // With no Hebrew name, the Hebrew UI shows the English one as typeset.
+      final haIl = directory.search('Hail').firstWhere((c) => c.nameEn == "Ha'il");
+      expect(haIl.nameHe, isNull);
+      expect(haIl.name(hebrew: true), 'Ha’il');
+      expect(haIl.name(hebrew: false), 'Ha’il');
     });
 
     test('finds the usual other spellings', () {

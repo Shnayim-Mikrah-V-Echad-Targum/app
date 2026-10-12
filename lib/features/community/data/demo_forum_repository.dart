@@ -60,7 +60,7 @@ class DemoForumRepository implements ForumRepository {
         slug: 'parsha',
         nameEn: 'Parshat HaShavua',
         nameHe: 'פרשת השבוע',
-        descriptionEn: 'A discussion thread for every week\'s parsha.',
+        descriptionEn: 'A discussion thread for every week’s parsha.',
         descriptionHe: 'שרשור דיון לכל פרשת שבוע.',
       ),
       Forum(

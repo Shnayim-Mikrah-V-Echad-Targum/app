@@ -46,8 +46,9 @@ class City {
   final int candleMinutes;
 
   /// The name in the UI's language, an English one's apostrophes typeset
-  /// (Ra’anana; GeoNames gives some straight and some curly).
-  String name({required bool hebrew}) => hebrew ? (nameHe ?? nameEn) : nameEn.replaceAll("'", '’');
+  /// (Ra’anana; GeoNames gives some straight and some curly), also where the
+  /// Hebrew UI falls back to it for want of a Hebrew name.
+  String name({required bool hebrew}) => (hebrew ? nameHe : null) ?? nameEn.replaceAll("'", '’');
 
   /// Reads a place in the shape cities.json and the settings store it.
   /// Throws a [FormatException] if it can't be read or isn't a real place.

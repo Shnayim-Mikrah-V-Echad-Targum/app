@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 
 /// The interface's text is typeset, not typed: an apostrophe is ’ (U+2019)
 /// and quotation marks are “ ” (Hebrew’s geresh and gershayim are ׳ and ״),
@@ -50,6 +51,15 @@ void main() {
     collect((legal['titles'] as Map)['en'], 'titles/en');
     expect(texts, hasLength(greaterThan(20)));
     expect(straight(texts), isEmpty, reason: 'In assets/legal/legal.json, write ’ for \' and “ ” for ".');
+  });
+
+  test('no forum the demo seeds has a straight apostrophe or quotation mark in its English', () async {
+    // The Community page and each forum's page show these as they are; the
+    // server's are checked in supabase/tests/behavior.sql.
+    final forums = await DemoForumRepository().forums();
+    expect(forums, isNotEmpty);
+    expect(straight({for (final f in forums) ...{'${f.slug} name': f.nameEn, '${f.slug} description': f.descriptionEn}}), isEmpty,
+        reason: 'In lib/features/community/data/demo_forum_repository.dart, write ’ for \' and “ ” for ".');
   });
 
   test('the check sees what it is for', () {

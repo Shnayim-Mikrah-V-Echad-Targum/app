@@ -865,7 +865,7 @@ Centred, max width 480:
 2. 16 gap, then the title in headlineMedium (displaySmall from 600 dp): `aliyahDoneTitle`, "Revi’i is complete". The warmer `aliyahComplete` ("Yasher koach! Revi’i is complete.") is what is spoken, by the announcement or, where the platform takes none, the title's live region.
 3. 8 gap, then a marginalia line about the aliyah to continue with (the first after this one not yet read, then the first before it): `nextAliyahLength`, "Chamishi is 31 verses."
 4. 24 gap, then actions: Filled "Next aliyah · Chamishi" (52 high, a trailing chevron) and Text "Done". The first button takes the focus.
-5. Once everything planned for today and before is read, with the parsha unfinished, a marginalia line comes first: `todayReadingDone`, "That's today's reading. See you tomorrow." (or "See you on Sunday." when the next day with reading is later; a day whose aliyot were read ahead has none left), or on the plan's last day `erevShabbatDone`, "That's this week's reading. Shabbat shalom!" ("The rest is for Shabbat morning." when the plan leaves aliyot for it, and "Chag sameach!" when Yom Tov begins the next day). Done is then the Filled button, and continuing a Text "Keep going: Chamishi". While anything planned is still unread, the panel stays as in 4.
+5. Once everything planned for today and before is read, with the parsha unfinished, a marginalia line comes first: `todayReadingDone`, "That’s today’s reading. See you tomorrow." (or "See you on Sunday." when the next day with reading is later; a day whose aliyot were read ahead has none left), or on the plan's last day `erevShabbatDone`, "That’s this week’s reading. Shabbat shalom!" ("The rest is for Shabbat morning." when the plan leaves aliyot for it, and "Chag sameach!" when Yom Tov begins the next day). Done is then the Filled button, and continuing a Text "Keep going: Chamishi". While anything planned is still unread, the panel stays as in 4.
 6. When the parsha is complete:
    - the title becomes `parshaDoneTitle`, "Parshat Bereshit is complete" (`parshaComplete` is spoken);
    - a status line, bodyMedium onSurfaceVariant after the status's icon in its colour (§6.14), says how the week stands, from its WeekEvaluation: on time, "On time · 3-week parsha streak · +1 grace day" (the grace day only when finishing earned one; the streak and the grace day are left out while streak numbers are hidden, and when the finish completed nothing new, as stepping again through a parsha read weeks ago, which shows the plain status); late, "After Shabbat — and it still counts. Your streak continues."; doubled up, "Finished together with the next parsha — your streak continues.";
@@ -1275,7 +1275,7 @@ In order:
 - A new account starts with a machine's name ("user_1a2b3c4d"), so signing in leads to a name step: the member's initial at 56 as the name is typed, headlineSmall "Display name", the field (named by the heading, so it shows no label of its own) with the helper "Shown with your posts. 2–40 characters.", and Filled "Save name". The field takes the focus as the step appears, after the code or as the page opens on it. Opened to sign in before a post, the page goes back only once the name is saved; a post never goes out under a machine's name (`ensureSignedIn(named: true)` asks for one first).
 - Signed in: a card with the initial on a 56 px disc, the name in titleLarge (or the email until a name is chosen), the email in bodySmall, a Moderator chip, and an edit button that opens a dialog titled "Display name" with the field and Save.
   - Cloud backup: one row, "Back up my progress", with its switch (the row toggles it, and reads as one switch to screen readers: the switch itself, beside Sync now, is no item or tab stop of its own), "Last synced …" as its subtitle and Sync now (`Icons.sync`) beside the switch while backup is on; what backing up does in bodySmall under the group; the notice to update when a newer version wrote the backup.
-  - Privacy & safety: "Blocked members (n)", with "You haven't blocked anyone." under it when there are none, and otherwise a sheet that lists them with Unblock; a moderator's reports. The count shows once it is known: while it loads, or can't, the row says "Blocked members" and still opens the sheet, which says why and offers Try again. An Unblock that fails says why under its member, in the sheet (a status message would sit behind it), and its button waits while it is sent.
+  - Privacy & safety: "Blocked members (n)", with "You haven’t blocked anyone." under it when there are none, and otherwise a sheet that lists them with Unblock; a moderator's reports. The count shows once it is known: while it loads, or can't, the row says "Blocked members" and still opens the sheet, which says why and offers Try again. An Unblock that fails says why under its member, in the sheet (a status message would sit behind it), and its button waits while it is sent.
   - Account: Sign out, and Delete my account in error's ink, whose confirmation is Filled error / onError.
 
 ### Settings (settings_screen.dart and screens/)
@@ -1313,7 +1313,7 @@ In order:
 - Sections with GroupHeaders, their settings 24 apart:
   - **Where & when:** the reading heard and the days of Yom Tov as SegmentedButtons, Shabbat times (the city), the weekly plan, the after-Shabbat window;
   - **How I read:** the method, the second reading, then End with Mikra and the third-reading prompts as switch rows;
-  - **Haftarah:** its switch ("Read the week's haftarah once", the section naming it); while it is on, set in by 16 behind a 2 px outlineVariant start rule, the custom as a SegmentedButton [Ashkenazi | Sephardi | Chabad] and "Count the haftarah toward completion";
+  - **Haftarah:** its switch ("Read the week’s haftarah once", the section naming it); while it is on, set in by 16 behind a 2 px outlineVariant start rule, the custom as a SegmentedButton [Ashkenazi | Sephardi | Chabad] and "Count the haftarah toward completion";
   - **Special days:** Tisha B'Av and Chol HaMoed;
   - **Parsha names:** a SegmentedButton.
 - Radio groups inside PaperGroups with 56/72 rows.
@@ -1343,7 +1343,7 @@ In order:
 
 **Your data**
 - Group 1, "Backup & restore": a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export (`ios_share_outlined`), Import (`download_outlined`) and "Paste backup text" (`content_paste_outlined`), which open dialogs and have no chevron.
-- Group 2, apart: "Reset all progress" in error-coloured text with no icon tile, and "This can't be undone." under it. The confirm dialog uses the destructive Filled button.
+- Group 2, apart: "Reset all progress" in error-coloured text with no icon tile, and "This can’t be undone." under it. The confirm dialog uses the destructive Filled button.
 
 ### Onboarding (onboarding_screen.dart; phone_welcome, he_welcome, dark_welcome, desktop_welcome)
 
@@ -1358,7 +1358,7 @@ In order:
   - body in bodyLarge onSurfaceVariant.
   - The English name, the body and the disclaimer set their lines evenly (`BalancedText`, lib/ui/widgets/lines.dart), so no word is left alone on a last line; the body keeps "once —" (and "פעם אחת —") together with no-break spaces.
   - The two names, display sizes already, grow with the text to 1.4× at most, so that with very large text the call to action isn't pushed far below the fold; the body and the buttons grow in full.
-- Outside the frame: 24 gap, a Filled "Start this week's parsha" 52 high (max width 400).
+- Outside the frame: 24 gap, a Filled "Start this week’s parsha" 52 high (max width 400).
 - An 8 gap, then a TextButton "I already use Shnayim Mikra" (the same max width), which opens the restore sheet: sign in (only with a real community backend), a backup file, or pasted text. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
 - Then, 16 below, the disclaimer in bodySmall onSurfaceVariant.
 
