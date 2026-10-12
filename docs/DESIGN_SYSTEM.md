@@ -539,8 +539,8 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 ### 6.2 App bar
 
-- Height 64; background surface; `surfaceTintColor` transparent; `scrolledUnderElevation: 1` with `shadowColor: outlineVariant`, giving a hairline when scrolled.
-- High contrast: no elevation and a 2 px bottom outline.
+- Height 64; background surface; `surfaceTintColor` transparent; `scrolledUnderElevation: 0`, so never a shadow. When content scrolls under it, a 1 px hairline (`hairline`, full width, in the bar's last row) fades in over 150 ms (`Motion.short`, standard; at once under Reduce Motion), and out again at the top: `ScrolledUnderRule` (common.dart) wraps the app bar of `PageScaffold` and of the reader, and follows the app bar's own `notificationPredicate` (the reader's is off while the text scrolls under the aliyah ribbon, which has its own rule).
+- High contrast: a permanent 2 px bottom outline, and no hairline.
 - Title: titleLarge (serif), onSurface, start-aligned. Where it has no room beside the actions (a wider interface font, or enlarged text, beside the Demo tag), it is set a little smaller, to 75% at most, and cut short only past that.
 - Icons: 24, onSurfaceVariant, with 48 tap targets.
 - Two-line variant (reader, haftarah): an Eyebrow over titleLarge, `toolbarHeight: 64`.

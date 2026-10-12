@@ -201,16 +201,17 @@ abstract final class AppTheme {
     // phone's 72 px slot in bold.
     final navLabel = text.labelSmall!.copyWith(letterSpacing: 0);
     return base.copyWith(
-      // §6.2. Scrolled content slips under a hairline-thin shadow in
-      // outlineVariant; in high contrast the bar has a 2 px rule instead.
+      // §6.2. Never a shadow: scrolled content slips under a hairline
+      // (ScrolledUnderRule, around each app bar), and in high contrast the
+      // bar has a 2 px rule all the time.
       appBarTheme: AppBarTheme(
         toolbarHeight: 64,
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: highContrast ? 0 : 1,
-        shadowColor: scheme.outlineVariant,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
         shape: highContrast ? Border(bottom: BorderSide(color: scheme.outline, width: 2)) : null,
         centerTitle: false,
         titleTextStyle: text.titleLarge!.copyWith(color: scheme.onSurface),

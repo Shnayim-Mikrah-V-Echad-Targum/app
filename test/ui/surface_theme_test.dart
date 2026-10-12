@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
@@ -35,13 +36,14 @@ void main() {
       // Floating paper is outlined in high contrast, where paper is surface.
       final floatingEdge = hc ? BorderSide(color: scheme.outline, width: 2) : BorderSide.none;
 
-      test('app bar: 64 high on surface, a hairline shadow when scrolled under', () {
+      test('app bar: 64 high on surface, and never a shadow', () {
         final bar = theme.appBarTheme;
         expect(bar.toolbarHeight, 64);
         expect(bar.backgroundColor, scheme.surface);
         expect(bar.elevation, 0);
-        expect(bar.scrolledUnderElevation, hc ? 0 : 1);
-        expect(bar.shadowColor, scheme.outlineVariant);
+        // Scrolled under, a hairline instead (ScrolledUnderRule, below).
+        expect(bar.scrolledUnderElevation, 0);
+        expect(bar.shadowColor, Colors.transparent);
         expect(bar.shape, hc ? Border(bottom: BorderSide(color: scheme.outline, width: 2)) : isNull);
         expect(bar.centerTitle, isFalse);
         expect(bar.titleTextStyle!.fontFamily, text.titleLarge!.fontFamily);
@@ -205,31 +207,115 @@ void main() {
       });
     }
 
+    /// The rule [ScrolledUnderRule] paints over its app bar: where, and in
+    /// what colour; null for none.
+    (Rect, Color)? rule(WidgetTester tester) {
+      final paint = tester.renderObject<RenderCustomPaint>(
+        find.descendant(of: find.byType(ScrolledUnderRule), matching: find.byType(CustomPaint)).first,
+      );
+      final canvas = TestRecordingCanvas();
+      paint.foregroundPainter!.paint(canvas, paint.size);
+      final rects = [
+        for (final call in canvas.invocations)
+          if (call.invocation.memberName == #drawRect)
+            (call.invocation.positionalArguments[0] as Rect, (call.invocation.positionalArguments[1] as Paint).color),
+      ];
+      expect(canvas.invocations.length, rects.length, reason: 'it paints nothing but the rule');
+      expect(rects.length, lessThanOrEqualTo(1));
+      return rects.firstOrNull;
+    }
+
+    Widget scrolling({AppBar? appBar}) => Scaffold(
+          appBar: ScrolledUnderRule(appBar: appBar ?? AppBar(title: const Text('Progress'))),
+          body: ListView(children: [for (var i = 0; i < 40; i++) ListTile(title: Text('Row $i'))]),
+        );
+
     for (final mode in [AppThemeMode.light, AppThemeMode.highContrastDark]) {
-      testWidgets('${mode.name}: the app bar takes no tint when content scrolls under it', (tester) async {
+      testWidgets('${mode.name}: content scrolled under the app bar brings a hairline, never a shadow or tint',
+          (tester) async {
         final theme = _theme(mode);
         final scheme = theme.colorScheme;
-        await pump(
-          tester,
-          theme,
-          Scaffold(
-            appBar: AppBar(title: const Text('Progress')),
-            body: ListView(children: [for (var i = 0; i < 40; i++) ListTile(title: Text('Row $i'))]),
-          ),
-        );
+        final sefer = theme.extension<SeferColors>()!;
+        final hc = sefer.isHighContrast;
+        await pump(tester, theme, scrolling());
         Material bar() =>
             tester.widget<Material>(find.descendant(of: find.byType(AppBar), matching: find.byType(Material)).first);
-        expect(tester.getSize(find.byType(AppBar)).height, 64);
+        expect(tester.getSize(find.byType(ScrolledUnderRule)).height, 64);
         expect(bar().elevation, 0);
+        expect(rule(tester), isNull);
 
         await tester.drag(find.byType(ListView), const Offset(0, -300));
+        await tester.pump();
+        await tester.pump(Motion.short ~/ 2);
+        // Fading in, in high contrast not at all: the bar's 2 px rule is
+        // there all the time.
+        final fading = rule(tester);
+        if (hc) {
+          expect(fading, isNull);
+        } else {
+          expect(fading!.$2.a, inExclusiveRange(0, 1));
+        }
+
         await tester.pumpAndSettle();
-        final hc = mode == AppThemeMode.highContrastDark;
-        expect(bar().elevation, hc ? 0 : 1);
+        expect(bar().elevation, 0);
         expect(bar().color, scheme.surface);
         expect(bar().surfaceTintColor, Colors.transparent);
-        expect(bar().shadowColor, scheme.outlineVariant);
+        // A full-width rule in the bar's last pixel row.
+        final shown = rule(tester);
+        if (hc) {
+          expect(shown, isNull);
+        } else {
+          expect(shown!.$1, const Rect.fromLTWH(0, 63, 412, 1));
+          expect(shown.$2, isSameColorAs(sefer.hairline));
+        }
+        if (hc) expect(bar().shape, Border(bottom: BorderSide(color: scheme.outline, width: 2)));
+
+        // Back at the top, it fades out.
+        await tester.drag(find.byType(ListView), const Offset(0, 600));
+        await tester.pumpAndSettle();
+        expect(rule(tester), isNull);
       });
     }
+
+    testWidgets('with motion reduced, the rule is there at once', (tester) async {
+      await pump(tester, _theme(AppThemeMode.light, reduceMotion: true), scrolling());
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pump();
+      expect(rule(tester)?.$2, isSameColorAs(Palettes.seferLight.hairline));
+    });
+
+    testWidgets('it follows the app bar\'s predicate, and a new one clears it', (tester) async {
+      final theme = _theme(AppThemeMode.light);
+      bool never(ScrollNotification _) => false;
+      await pump(tester, theme, scrolling(appBar: AppBar(notificationPredicate: never)));
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(rule(tester), isNull);
+
+      await tester.pumpWidget(MaterialApp(theme: theme, home: scrolling()));
+      await tester.drag(find.byType(ListView), const Offset(0, -100));
+      await tester.pumpAndSettle();
+      expect(rule(tester)?.$2, isSameColorAs(Palettes.seferLight.hairline));
+
+      // The text now scrolls under something else, with its own rule.
+      await tester.pumpWidget(MaterialApp(theme: theme, home: scrolling(appBar: AppBar(notificationPredicate: never))));
+      await tester.pumpAndSettle();
+      expect(rule(tester), isNull);
+    });
+
+    testWidgets('every page\'s app bar has the rule', (tester) async {
+      await pump(
+        tester,
+        _theme(AppThemeMode.light),
+        PageScaffold(
+          titleText: 'Progress',
+          body: PageBody(children: [for (var i = 0; i < 40; i++) ListTile(title: Text('Row $i'))]),
+        ),
+      );
+      expect(find.descendant(of: find.byType(ScrolledUnderRule), matching: find.byType(AppBar)), findsOneWidget);
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(rule(tester)?.$2, isSameColorAs(Palettes.seferLight.hairline));
+    });
   });
 }

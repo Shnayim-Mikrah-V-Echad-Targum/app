@@ -1107,6 +1107,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// The side padding of the reading column.
   static const _columnPadding = 20.0;
 
+  /// The app bar's predicate while the text scrolls under something else
+  /// with its own rule: the same function at every build, as
+  /// [ScrolledUnderRule] asks.
+  static bool _neverScrolledUnder(ScrollNotification _) => false;
+
   /// The reader's app bar (DESIGN_SYSTEM.md §6.2), in two lines: the parsha
   /// as an eyebrow over the aliyah, which the English UI names in Hebrew too
   /// ("Revi'i · רביעי"). Its title starts where the text does, and its
@@ -1141,35 +1146,37 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final start = max(_columnPadding, (width - (columnWidth ?? ScriptureStyles(context, s).maxLineWidth)) / 2);
     final leading = homeLeading(context);
     final hasLeading = leading != null || (ModalRoute.canPopOf(context) ?? false);
-    return AppBar(
-      leading: leading,
-      toolbarHeight: height,
-      // The inset goes before the title alone (as PageScaffold's does): as
-      // titleSpacing it would be kept after it too, and a wide window would
-      // leave the title no room beside the actions.
-      titleSpacing: 0,
-      actionsPadding: EdgeInsetsDirectional.only(end: start - _columnPadding),
-      notificationPredicate: scrolledUnder ? defaultScrollNotificationPredicate : (_) => false,
-      title: Padding(
-        padding: EdgeInsetsDirectional.only(
-          start: hasLeading ? max(NavigationToolbar.kMiddleSpacing, start - kToolbarHeight) : start,
-          end: NavigationToolbar.kMiddleSpacing,
-        ),
-        // The app bar makes it a heading; this gives its level, as every
-        // page's title has.
-        child: Semantics(
-          headingLevel: 1,
-          label: '$parsha · $aliyah',
-          child: ExcludeSemantics(
-            child: _ReaderTitle(
-              parsha: parsha,
-              aliyah: aliyah,
-              hebrew: context.isHebrewUi ? null : Names.aliyahHebrew(_aliyah),
+    return ScrolledUnderRule(
+      appBar: AppBar(
+        leading: leading,
+        toolbarHeight: height,
+        // The inset goes before the title alone (as PageScaffold's does): as
+        // titleSpacing it would be kept after it too, and a wide window would
+        // leave the title no room beside the actions.
+        titleSpacing: 0,
+        actionsPadding: EdgeInsetsDirectional.only(end: start - _columnPadding),
+        notificationPredicate: scrolledUnder ? defaultScrollNotificationPredicate : _neverScrolledUnder,
+        title: Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: hasLeading ? max(NavigationToolbar.kMiddleSpacing, start - kToolbarHeight) : start,
+            end: NavigationToolbar.kMiddleSpacing,
+          ),
+          // The app bar makes it a heading; this gives its level, as every
+          // page's title has.
+          child: Semantics(
+            headingLevel: 1,
+            label: '$parsha · $aliyah',
+            child: ExcludeSemantics(
+              child: _ReaderTitle(
+                parsha: parsha,
+                aliyah: aliyah,
+                hebrew: context.isHebrewUi ? null : Names.aliyahHebrew(_aliyah),
+              ),
             ),
           ),
         ),
+        actions: actions,
       ),
-      actions: actions,
     );
   }
 

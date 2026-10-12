@@ -197,38 +197,40 @@ class PageScaffold extends StatelessWidget {
           final shown = title ?? AppBarTitle(titleText);
           return Scaffold(
             appBar: showAppBar
-                ? AppBar(
-                    leading: leading,
-                    // The title's inset goes before it, and a gutter after it:
-                    // as the app bar's titleSpacing, the inset would be kept
-                    // after it too, which leaves a narrow column's title (the
-                    // account's) no room at all on a wide screen.
-                    titleSpacing: 0,
-                    actionsPadding: EdgeInsetsDirectional.only(end: inset - g),
-                    excludeHeaderSemantics: !titleNamesPage || titleRevealed != null,
-                    title: showTitle
-                        ? Padding(
-                            padding: EdgeInsetsDirectional.only(
-                              start: hasLeading ? math.max(g, inset - _leadingWidth) : inset,
-                              end: g,
-                            ),
-                            child: switch (titleRevealed) {
-                              // The app bar makes it a heading; this gives its level.
-                              null when titleNamesPage => Semantics(headingLevel: 1, child: shown),
-                              null => shown,
-                              final revealed => ExcludeSemantics(
-                                  child: AnimatedOpacity(
-                                    opacity: revealed ? 1 : 0,
-                                    duration: Motion.of(context).d(Motion.short),
-                                    curve: Motion.standard,
-                                    child: shown,
+                ? ScrolledUnderRule(
+                    appBar: AppBar(
+                      leading: leading,
+                      // The title's inset goes before it, and a gutter after
+                      // it: as the app bar's titleSpacing, the inset would be
+                      // kept after it too, which leaves a narrow column's
+                      // title (the account's) no room at all on a wide screen.
+                      titleSpacing: 0,
+                      actionsPadding: EdgeInsetsDirectional.only(end: inset - g),
+                      excludeHeaderSemantics: !titleNamesPage || titleRevealed != null,
+                      title: showTitle
+                          ? Padding(
+                              padding: EdgeInsetsDirectional.only(
+                                start: hasLeading ? math.max(g, inset - _leadingWidth) : inset,
+                                end: g,
+                              ),
+                              child: switch (titleRevealed) {
+                                // The app bar makes it a heading; this gives its level.
+                                null when titleNamesPage => Semantics(headingLevel: 1, child: shown),
+                                null => shown,
+                                final revealed => ExcludeSemantics(
+                                    child: AnimatedOpacity(
+                                      opacity: revealed ? 1 : 0,
+                                      duration: Motion.of(context).d(Motion.short),
+                                      curve: Motion.standard,
+                                      child: shown,
+                                    ),
                                   ),
-                                ),
-                            },
-                          )
-                        : null,
-                    actions: actions,
-                    bottom: bottom,
+                              },
+                            )
+                          : null,
+                      actions: actions,
+                      bottom: bottom,
+                    ),
                   )
                 : null,
             body: body,
@@ -271,6 +273,108 @@ class _ColumnEndFab extends StandardFabLocation with FabFloatOffsetY {
 
   @override
   int get hashCode => Object.hash(contentMaxWidth, gutter);
+}
+
+/// An [appBar] with a hairline along its foot while content is scrolled
+/// under it (docs/DESIGN_SYSTEM.md §6.2), where Material would lift it on a
+/// blurred shadow. The rule fades in and out over [Motion.short], at once while
+/// motion is reduced. High contrast draws none: the bar has its 2 px rule
+/// there all the time.
+///
+/// It watches the scroll views the app bar's own
+/// [AppBar.notificationPredicate] picks. A predicate that is not the
+/// identical function from one build to the next clears the rule, so give
+/// one that never changes (a top-level or static function).
+class ScrolledUnderRule extends StatefulWidget implements PreferredSizeWidget {
+  const ScrolledUnderRule({super.key, required this.appBar});
+
+  final AppBar appBar;
+
+  @override
+  Size get preferredSize => appBar.preferredSize;
+
+  @override
+  State<ScrolledUnderRule> createState() => _ScrolledUnderRuleState();
+}
+
+class _ScrolledUnderRuleState extends State<ScrolledUnderRule> with SingleTickerProviderStateMixin {
+  late final AnimationController _fade = AnimationController(vsync: this);
+  late final Animation<double> _opacity = CurvedAnimation(parent: _fade, curve: Motion.standard);
+  ScrollNotificationObserverState? _observer;
+  bool _scrolled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _fade.duration = Motion.of(context).d(Motion.short);
+    _observer?.removeListener(_scrollChanged);
+    _observer = ScrollNotificationObserver.maybeOf(context)?..addListener(_scrollChanged);
+  }
+
+  @override
+  void didUpdateWidget(ScrolledUnderRule old) {
+    super.didUpdateWidget(old);
+    // Another predicate may not pick the scroll view the rule was set by.
+    if (!identical(old.appBar.notificationPredicate, widget.appBar.notificationPredicate)) _show(false);
+  }
+
+  @override
+  void dispose() {
+    _observer?.removeListener(_scrollChanged);
+    _fade.dispose();
+    super.dispose();
+  }
+
+  /// As [AppBar] decides it is scrolled under: by vertical scrolling alone.
+  void _scrollChanged(ScrollNotification notification) {
+    if (notification is! ScrollUpdateNotification || !widget.appBar.notificationPredicate(notification)) return;
+    final metrics = notification.metrics;
+    switch (metrics.axisDirection) {
+      case AxisDirection.down:
+        _show(metrics.extentBefore > 0);
+      case AxisDirection.up:
+        _show(metrics.extentAfter > 0);
+      case AxisDirection.left || AxisDirection.right:
+        break;
+    }
+  }
+
+  void _show(bool scrolled) {
+    if (scrolled == _scrolled) return;
+    _scrolled = scrolled;
+    scrolled ? _fade.forward() : _fade.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sefer = SeferColors.of(context);
+    return CustomPaint(
+      foregroundPainter: _BottomRulePainter(color: sefer.isHighContrast ? null : sefer.hairline, opacity: _opacity),
+      child: widget.appBar,
+    );
+  }
+}
+
+/// A 1 px rule along the bottom edge, in [color] at [opacity]; none without
+/// a colour.
+class _BottomRulePainter extends CustomPainter {
+  _BottomRulePainter({required this.color, required this.opacity}) : super(repaint: opacity);
+
+  final Color? color;
+  final Animation<double> opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final color = this.color;
+    if (color == null || opacity.value == 0) return;
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height - 1, size.width, 1),
+      Paint()..color = color.withValues(alpha: color.a * opacity.value),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_BottomRulePainter old) => old.color != color || old.opacity != opacity;
 }
 
 /// An app bar's title, in the app bar's style: set a little smaller where
