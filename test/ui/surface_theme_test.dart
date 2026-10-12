@@ -129,7 +129,8 @@ void main() {
         expect(_side(sheet.shape), floatingEdge);
         expect(sheet.showDragHandle, isTrue);
         expect(sheet.dragHandleSize, const Size(36, 4));
-        expect(sheet.dragHandleColor, hc ? scheme.outline : scheme.outline.withValues(alpha: 0.4));
+        // In full: the handle is also a dismiss button.
+        expect(sheet.dragHandleColor, scheme.outline);
         expect(sheet.constraints, const BoxConstraints(maxWidth: 640));
       });
 

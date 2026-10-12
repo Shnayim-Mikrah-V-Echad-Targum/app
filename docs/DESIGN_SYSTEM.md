@@ -240,7 +240,7 @@ Targets:
 | onInverseSurface / inverseSurface (snackbar) | 12.55 | 13.91 | 10.82 | 21.00 | 21.00 |
 | inversePrimary / inverseSurface (snackbar action) | 8.32 | 8.36 | 7.57 | 13.24 | 13.95 |
 | outline / surface (UI boundaries) | 3.89 | 5.36 | 3.96 | 21.00 | 21.00 |
-| outline / paper | 4.09 | 5.02 | 4.32 | 21.00 | 21.00 |
+| outline / paper (also the slider's inactive track and the sheet's drag handle) | 4.09 | 5.02 | 4.32 | 21.00 | 21.00 |
 | outline / surfaceContainer | 3.41 | 4.70 | 3.48 | 18.76 | 19.17 |
 | neutral / paper (missed glyph) | 4.53 | 5.27 | 4.60 | 8.45 | 11.18 |
 | focus / surface (ring) | 9.72 | 10.80 | 8.58 | 21.00 | 21.00 |
@@ -622,7 +622,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - High contrast: icons on both states (keep the check/close thumbIcon, app_theme.dart:258).
 
 **Slider**
-- Active track primary, inactive surfaceContainerHighest, height 4; round thumb primary 20 (`RoundSliderThumbShape(enabledThumbRadius: 10)`). Every shape is named in the theme, so the deprecated `year2023` flag is left unset and neither Material slider generation shows through.
+- Active track primary, inactive outline (a boundary, at 3:1 or 4.5:1 in high contrast, so the whole range shows), height 4, the active part 2 px taller (`RoundedRectSliderTrackShape`), so it reads apart from the inactive part without colour; round thumb primary 20 (`RoundSliderThumbShape(enabledThumbRadius: 10)`). Every shape is named in the theme, so the deprecated `year2023` flag is left unset and neither Material slider generation shows through.
 - `tickMarkShape: SliderTickMarkShape.noTickMark`.
 - Value at the end in labelLarge with tabular figures; −/+ IconButtons 48.
 
@@ -794,7 +794,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 ### 6.19 Sheets, dialogs, snackbars, tooltips
 
 **Bottom sheet**
-- Background paper; top radius 20; `showDragHandle: true` (36×4, outline at 40%).
+- Background paper; top radius 20; `showDragHandle: true` (36×4, in full outline: the handle is also a dismiss button, so it is held to a control's 3:1).
 - Title titleLarge serif; padding 24 (16 under 360); max width 640, centred.
 
 **Dialog**
@@ -811,7 +811,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 
 **Tooltip:** inverseSurface, radius 6, bodySmall in onInverseSurface; waitDuration 400 ms (existing).
 
-**High contrast:** paper and surface are the same colour there, so sheets and dialogs (including the date and time pickers) also take a 2 px outline, and the drag handle, which is also a dismiss button, is drawn in full `outline`.
+**High contrast:** paper and surface are the same colour there, so sheets and dialogs (including the date and time pickers) also take a 2 px outline.
 
 **Code:** open dialogs with `showAppDialog` and sheets with `showAppSheet` (common.dart; a sheet's heading is `SheetTitle`), and status messages with `showStatus` (feedback.dart). They carry the timing and Reduce Motion; test/ui/motion_usage_test.dart fails on a direct `showDialog`, `showModalBottomSheet`, picker or `showSnackBar`, and on a `DropdownButton`, whose menu always fades in: a picker field is a select-only `DropdownMenu`, which opens at once.
 

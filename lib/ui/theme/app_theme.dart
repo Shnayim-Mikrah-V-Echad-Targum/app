@@ -422,11 +422,13 @@ abstract final class AppTheme {
       ),
       // §6.8: a 4 px track with a round 20 px thumb, and no tick marks. Every
       // shape is named, so neither of Material's slider generations (the
-      // deprecated year2023 flag picks between them) shows through.
+      // deprecated year2023 flag picks between them) shows through. The
+      // inactive track is a boundary in outline (3:1, 4.5:1 in high
+      // contrast), so the whole range shows, not just the part filled.
       sliderTheme: SliderThemeData(
         trackHeight: 4,
         activeTrackColor: scheme.primary,
-        inactiveTrackColor: scheme.surfaceContainerHighest,
+        inactiveTrackColor: scheme.outline,
         thumbColor: scheme.primary,
         trackShape: const RoundedRectSliderTrackShape(),
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 0, pressedElevation: 0),
@@ -535,9 +537,9 @@ abstract final class AppTheme {
         ),
         clipBehavior: Clip.antiAlias,
         showDragHandle: true,
-        // The handle is also a dismiss button, so high contrast draws it in
-        // full.
-        dragHandleColor: highContrast ? scheme.outline : scheme.outline.withValues(alpha: 0.4),
+        // The handle is also a dismiss button, so it is drawn in full outline,
+        // as a control's boundary (3:1).
+        dragHandleColor: scheme.outline,
         dragHandleSize: const Size(36, 4),
         constraints: const BoxConstraints(maxWidth: 640),
       ),

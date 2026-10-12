@@ -170,7 +170,8 @@ void main() {
         final s = theme.sliderTheme;
         expect(s.trackHeight, 4);
         expect(s.activeTrackColor, scheme.primary);
-        expect(s.inactiveTrackColor, scheme.surfaceContainerHighest);
+        // The whole range shows: the track is a boundary, in outline.
+        expect(s.inactiveTrackColor, scheme.outline);
         expect(s.thumbColor, scheme.primary);
         expect(s.tickMarkShape, SliderTickMarkShape.noTickMark);
         expect(s.thumbShape, isA<RoundSliderThumbShape>().having((t) => t.enabledThumbRadius, 'radius', 10));
