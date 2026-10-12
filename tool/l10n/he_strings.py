@@ -880,7 +880,7 @@ HE = {
   "endPause": "סיום ההשהיה",
   "extendPause": "הארכה",
   "extendPauseTitle": "הארכת ההשהיה",
-  "extendPauseBy": "הארכה בעוד",
+  "extendPauseBy": "להאריך בעוד",
   "recordTitle": "הושלם עד כה",
   "milestoneSiyumFrom": "סיום התורה מפרשת {name}",
   "extendPauseUntil": "ההשהיה תסתיים ב{date}.",

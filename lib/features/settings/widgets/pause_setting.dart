@@ -16,9 +16,11 @@ const kMaxPauseDays = 30;
 /// The days a pause covering [day] runs, through any pauses that overlap it
 /// or follow it without a day between, as one: null when none covers [day].
 /// A pause made while another lasts is part of the same rest, whichever was
-/// made first.
+/// made first. A pause over before [day] is not, even one that ran up to
+/// it or into it: each pause lasts [kMaxPauseDays] at most on its own, and
+/// a new one may follow one ended (docs/research/streaks_ux.md §10.6).
 ({LocalDate start, LocalDate end})? pauseCovering(Iterable<Pause> pauses, LocalDate day) {
-  final live = [for (final p in pauses) if (!p.deleted) p];
+  final live = [for (final p in pauses) if (!p.deleted && p.end >= day) p];
   final covering = live.where((p) => p.contains(day));
   if (covering.isEmpty) return null;
   var start = covering.map((p) => p.start).reduce((a, b) => a < b ? a : b);
@@ -45,9 +47,10 @@ void resumePause(BuildContext context, WidgetRef ref) {
   showStatus(context, context.l10n.pauseEnded);
 }
 
-/// The days by which [pause] may be extended: as long as it then lasts
-/// [kMaxPauseDays] in all, counted from its first day, as a new pause may.
-/// (A pause covering today has a day already, so a month more never fits.)
+/// The days by which [pause] ([pauseCovering]'s) may be extended: as long
+/// as it then lasts [kMaxPauseDays] in all, counted from its first day, as a
+/// new pause may. (A pause covering today has a day already, so a month more
+/// never fits.)
 List<int> pauseExtensions(({LocalDate start, LocalDate end}) pause) => [
       for (final d in const [1, 3, 7, 14])
         if (pause.end.addDays(d).differenceInDays(pause.start) + 1 <= kMaxPauseDays) d,
@@ -69,6 +72,9 @@ Future<void> showExtendPause(
 }) async {
   final l = context.l10n;
   final names = Names(context);
+  // The day the pause covers as the dialog opens: one that turns while it
+  // is open must not leave the extension with no pause to lengthen.
+  final today = ref.read(todayProvider);
   final choices = pauseExtensions(pause);
   if (choices.isEmpty && !offerEnd) return;
   var days = choices.contains(7) ? 7 : choices.lastOrNull;
@@ -134,8 +140,9 @@ Future<void> showExtendPause(
       resumePause(context, ref);
     case _PauseAction.extend:
       final end = pause.end.addDays(days!);
-      ref.read(progressProvider.notifier).extendPause(ref.read(todayProvider), end);
-      showStatus(context, l.pauseStarted(names.practiceDate(end)));
+      if (ref.read(progressProvider.notifier).extendPause(today, end)) {
+        showStatus(context, l.pauseStarted(names.practiceDate(end)));
+      }
     case null:
     // Cancelled.
   }

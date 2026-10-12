@@ -3392,7 +3392,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get extendPauseTitle => 'הארכת ההשהיה';
 
   @override
-  String get extendPauseBy => 'הארכה בעוד';
+  String get extendPauseBy => 'להאריך בעוד';
 
   @override
   String extendPauseUntil(String date) {
