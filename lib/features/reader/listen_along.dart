@@ -131,10 +131,12 @@ class ListenController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Ends the Listen and stops speech.
+  /// Ends the Listen, and stops speech if it is this page's: another page's
+  /// Listen, which has taken the voice over from it, goes on.
   Future<void> stop() {
+    final ours = _ours;
     end();
-    return tts.stop();
+    return ours ? tts.stop() : Future.value();
   }
 
   void pause() {

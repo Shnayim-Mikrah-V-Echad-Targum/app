@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -64,9 +66,21 @@ class HaftarahScreen extends ConsumerStatefulWidget {
 }
 
 class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
-  // Kept for dispose(), when ref can no longer be used.
   late final TtsService _tts;
   late final ListenController _listen;
+
+  // Listen pauses as the app is hidden, and as a call or another app's
+  // audio takes over.
+  late final AppLifecycleListener _lifecycle;
+  late final StreamSubscription<void> _interruptions;
+
+  // Whether the page is shown: its tickers are off while its tab is out of
+  // sight or another page covers it, and its secondary animation runs
+  // forward as a page comes over it (only pages drive it, not sheets, menus
+  // or dialogs). Listen stops while it isn't, as it does when the page is
+  // left.
+  bool _tickersOn = true;
+  Animation<double>? _covering;
 
   // One per verse of the haftarah, for the first in view, where Listen
   // starts.
@@ -77,15 +91,46 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
     super.initState();
     _tts = ref.read(ttsProvider);
     _listen = ListenController(_tts)..addListener(_listenChanged);
+    _lifecycle = AppLifecycleListener(onHide: _pauseListening);
+    _interruptions = _tts.interruptions.listen((_) {
+      if (mounted) _pauseListening();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _tickersOn = TickerMode.valuesOf(context).enabled;
+    final covering = ModalRoute.of(context)?.secondaryAnimation;
+    if (covering != _covering) {
+      _covering?.removeStatusListener(_coveringChanged);
+      _covering = covering?..addStatusListener(_coveringChanged);
+    }
+    // After the frame: stopping sets state, as the player goes.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _stopIfHidden());
+  }
+
+  void _coveringChanged(AnimationStatus _) => _stopIfHidden();
+
+  /// Stops Listen while the page's tab is out of sight or another page
+  /// covers it, as leaving it does. Sheets, menus and dialogs over it leave
+  /// it be.
+  void _stopIfHidden() {
+    if (!mounted || !_listen.active) return;
+    if (_tickersOn && (_covering?.isDismissed ?? true)) return;
+    _listen.stop();
   }
 
   @override
   void dispose() {
-    _listen
-      ..removeListener(_listenChanged)
-      ..dispose();
-    // The voice goes with the page, as the reader's does.
-    _tts.stop();
+    _lifecycle.dispose();
+    unawaited(_interruptions.cancel());
+    _covering?.removeStatusListener(_coveringChanged);
+    // The voice goes with the page, as the reader's does, unless another
+    // page's Listen has taken it over.
+    _listen.removeListener(_listenChanged);
+    _listen.stop();
+    _listen.dispose();
     super.dispose();
   }
 
@@ -152,8 +197,14 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
     } else if (_listen.paused) {
       _listen.resume();
     } else {
-      _listen.pause();
+      _pauseListening();
     }
+  }
+
+  /// Pauses Listen at the verse it reads, for Play to go on from: from the
+  /// player, and as the app is hidden or a call comes.
+  void _pauseListening() {
+    if (_listen.active && !_listen.paused) _listen.pause();
   }
 
   /// Listen's keys, as the reader binds them: in either language, as the
@@ -254,7 +305,7 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
       bottomNavigationBar: listening
           ? ListenBar(
               paused: _listen.paused,
-              onPlayPause: _listen.paused ? _listen.resume : _listen.pause,
+              onPlayPause: _listen.paused ? _listen.resume : _pauseListening,
               onPrevious: _listen.hasPrevious ? _listen.previous : null,
               onNext: _listen.hasNext ? _listen.next : null,
               rate: settings.speechRate,

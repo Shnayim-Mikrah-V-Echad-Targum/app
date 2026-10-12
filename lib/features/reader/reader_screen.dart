@@ -199,7 +199,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   // at, out of sight until it is there.
   bool _placing = false;
 
-  // Kept for dispose(), when ref can no longer be used.
   late final TtsService _tts;
 
   // Listen, from its start until it ends or is stopped (DESIGN.md §3): the
@@ -210,6 +209,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   // next, and whether it is paused there.
   Timer? _listenOn;
   bool _listenHeld = false;
+
+  // Listen pauses as the app is hidden, and as a call or another app's
+  // audio takes over.
+  late final AppLifecycleListener _lifecycle;
+  late final StreamSubscription<void> _interruptions;
+
+  // Whether the reader is shown: its tickers are off while another page
+  // covers it, and its secondary animation runs forward as one comes over
+  // it (only pages drive it, not sheets, menus or dialogs). Listen stops
+  // while it isn't, as it does when the reader is left.
+  bool _tickersOn = true;
+  Animation<double>? _covering;
 
   // The step was reached by Listen along, whose voice reads it: it is not
   // announced as well, which would speak over it.
@@ -224,19 +235,50 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     super.initState();
     _tts = ref.read(ttsProvider);
     _listen = ListenController(_tts)..addListener(_listenChanged);
+    _lifecycle = AppLifecycleListener(onHide: _pauseListening);
+    _interruptions = _tts.interruptions.listen((_) {
+      if (mounted) _pauseListening();
+    });
     if (ref.read(settingsProvider).keepScreenOn) {
       WakelockPlus.enable().catchError((_) {});
     }
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _tickersOn = TickerMode.valuesOf(context).enabled;
+    final covering = ModalRoute.of(context)?.secondaryAnimation;
+    if (covering != _covering) {
+      _covering?.removeStatusListener(_coveringChanged);
+      _covering = covering?..addStatusListener(_coveringChanged);
+    }
+    // After the frame: stopping sets state, as the player goes.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _stopIfHidden());
+  }
+
+  void _coveringChanged(AnimationStatus _) => _stopIfHidden();
+
+  /// Stops Listen while another page covers the reader, as leaving it does.
+  /// Sheets, menus and dialogs over it leave it be.
+  void _stopIfHidden() {
+    if (!mounted || !_listen.active) return;
+    if (_tickersOn && (_covering?.isDismissed ?? true)) return;
+    _stopListening();
+  }
+
+  @override
   void dispose() {
+    _lifecycle.dispose();
+    unawaited(_interruptions.cancel());
+    _covering?.removeStatusListener(_coveringChanged);
     WakelockPlus.disable().catchError((_) {});
     _listenOn?.cancel();
-    _listen
-      ..removeListener(_listenChanged)
-      ..dispose();
-    _tts.stop();
+    // The voice goes with the reader, unless another page's Listen has taken
+    // it over.
+    _listen.removeListener(_listenChanged);
+    _listen.stop();
+    _listen.dispose();
     _scroll.dispose();
     for (final node in [_nextFocus, _backFocus, _finishFocus, _panelFocus, _readerFocus]) {
       node.dispose();
@@ -862,18 +904,27 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void _playPause(ReaderTexts texts, ReaderFlow flow) {
     if (!_listen.active) {
       _startListening(texts, flow);
-    } else if (_listenOn != null) {
-      // Paused in the breath between one reading and the next.
+    } else if (_listenHeld) {
+      _listenOnNow();
+    } else if (_listenOn == null && _listen.paused) {
+      _listen.resume();
+    } else {
+      _pauseListening();
+    }
+  }
+
+  /// Pauses Listen at the verse it reads, or in the breath between Listen
+  /// along's readings; Play goes on from there. From the player, and as the
+  /// app is hidden or a call comes.
+  void _pauseListening() {
+    if (!_listen.active) return;
+    if (_listenOn != null) {
       _listenOn!.cancel();
       setState(() {
         _listenOn = null;
         _listenHeld = true;
       });
-    } else if (_listenHeld) {
-      _listenOnNow();
-    } else if (_listen.paused) {
-      _listen.resume();
-    } else {
+    } else if (!_listenHeld && !_listen.paused) {
       _listen.pause();
     }
   }
@@ -909,7 +960,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _listen.setRate(rate);
   }
 
-  /// Stops Listen, and any speech.
+  /// Stops Listen, and its speech.
   void _stopListening() {
     _listenOn?.cancel();
     _listenOn = null;

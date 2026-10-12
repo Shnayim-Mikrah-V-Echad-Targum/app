@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' show BoxHeightStyle;
 
@@ -17,6 +18,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
@@ -266,6 +268,37 @@ class RecordingTts extends TtsService {
     spoken.add((text, language));
     return true;
   }
+}
+
+/// Speech that holds each utterance until the test lets it reach its end
+/// ([finish]), as a voice takes its time over a verse.
+class HeldTts extends RecordingTts {
+  Completer<bool>? _current;
+
+  @override
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) {
+    // The next utterance stops the one before, as the engine's does.
+    _current?.complete(false);
+    spoken.add((text, language));
+    return (_current = Completer<bool>()).future;
+  }
+
+  @override
+  Future<void> stop() {
+    _current?.complete(false);
+    _current = null;
+    return super.stop();
+  }
+
+  /// The utterance being spoken reaches its end.
+  void finish() {
+    final c = _current;
+    _current = null;
+    c?.complete(true);
+  }
+
+  /// The last thing asked for, as letters alone.
+  String get last => HebrewText.consonantsOnly(spoken.last.$1);
 }
 
 class _SilentEngine extends Fake implements FlutterTts {

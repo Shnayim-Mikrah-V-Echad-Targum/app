@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
@@ -370,14 +371,160 @@ void main() {
     });
   });
 
-  test('elsewhere, the audio session is left alone', () async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  group('on Android', () {
+    setUp(() => debugDefaultTargetPlatformOverride = TargetPlatform.android);
+
+    test('the first Listen takes audio focus before speaking, and gives it up once speech stops', () async {
+      final engine = _FakeTts();
+      final tts = TtsService(engine: engine);
+      expect(sessionCalls, isEmpty, reason: 'opening the reader must not duck music');
+
+      final spoken = tts.speak('בראשית ברא', language: 'he-IL');
+      await pumpEventQueue();
+      expect(sessionCalls, ['activate']);
+      expect(engine.calls, contains('speak'));
+      expect(engine.calls, isNot(contains('setIosAudioCategory')));
+      await tts.stop();
+      await spoken;
+      await settle();
+      expect(sessionCalls, ['activate', 'deactivate']);
+
+      // Taken again for the next Listen.
+      await listen(tts);
+      await settle();
+      expect(sessionCalls, ['activate', 'deactivate', 'activate', 'deactivate']);
+    });
+
+    group('a queue', () {
+      late _Engine engine;
+      late TtsService tts;
+      setUp(() {
+        engine = _Engine();
+        tts = TtsService(engine: engine);
+      });
+
+      Future<void> settled() => Future<void>.delayed(const Duration(milliseconds: 5));
+
+      test('holds focus from one verse to the next, and gives it up once spoken to its end', () async {
+        final done = tts.speakQueue(['mikra 1', 'targum 1', 'mikra 2'], language: 'he-IL', groups: [0, 0, 1]);
+        await settled();
+        engine.finish();
+        await settled();
+        tts.next();
+        await settled();
+        expect(engine.said, ['mikra 1', 'targum 1', 'mikra 2']);
+        expect(sessionCalls, ['activate'], reason: 'music stays ducked between verses');
+
+        engine.finish();
+        expect(await done, isTrue);
+        await settled();
+        expect(sessionCalls, ['activate', 'deactivate']);
+      });
+
+      test('gives focus up while paused, and takes it again once resumed', () async {
+        unawaited(tts.speakQueue(['א', 'ב'], language: 'he-IL'));
+        await settled();
+        await tts.pause();
+        await settled();
+        expect(sessionCalls, ['activate', 'deactivate']);
+
+        tts.resume();
+        await settled();
+        expect(sessionCalls, ['activate', 'deactivate', 'activate']);
+        expect(engine.said, ['א', 'א']);
+      });
+    });
+
+    test('focus refused (during a call, say), speech goes ahead, and focus is asked for again', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(TtsService.audioSessionChannel, (call) async {
+        sessionCalls.add(call.method);
+        return false;
+      });
+      final engine = _FakeTts();
+      final tts = TtsService(engine: engine);
+      await listen(tts);
+      await settle();
+      expect(engine.calls, contains('speak'));
+      expect(sessionCalls, ['activate'], reason: 'there is no focus to give up');
+
+      await listen(tts);
+      expect(sessionCalls, ['activate', 'activate']);
+    });
+
+    test('a Listen stopped while focus is asked for gives it up', () async {
+      final asked = Completer<bool>();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(TtsService.audioSessionChannel, (call) async {
+        sessionCalls.add(call.method);
+        return call.method == 'activate' ? asked.future : true;
+      });
+      final engine = _FakeTts();
+      final tts = TtsService(engine: engine);
+      final spoken = tts.speak('בראשית ברא', language: 'he-IL');
+      await pumpEventQueue();
+      await tts.stop();
+      asked.complete(true);
+      expect(await spoken, isFalse);
+      await settle();
+      expect(engine.calls, isNot(contains('speak')));
+      expect(sessionCalls, ['activate', 'deactivate']);
+    });
+  });
+
+  test('on Windows, the audio session is left alone', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
     final engine = _FakeTts();
     await listen(TtsService(engine: engine));
     await settle();
     expect(engine.calls, contains('speak'));
     expect(engine.calls, isNot(contains('setIosAudioCategory')));
     expect(sessionCalls, isEmpty);
+  });
+
+  test("a call, or another app's audio, taking over is told as an interruption", () async {
+    final tts = TtsService(engine: _FakeTts());
+    var interruptions = 0;
+    final subscription = tts.interruptions.listen((_) => interruptions++);
+    addTearDown(subscription.cancel);
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+      TtsService.audioSessionChannel.name,
+      TtsService.audioSessionChannel.codec.encodeMethodCall(const MethodCall('focusLost')),
+      (_) {},
+    );
+    await pumpEventQueue();
+    expect(interruptions, 1);
+  });
+
+  group('the native side', () {
+    final dart = File('lib/services/tts.dart').readAsStringSync();
+    final android =
+        File('android/app/src/main/kotlin/org/shnayimmikra/shnayim_mikra/MainActivity.kt').readAsStringSync();
+    final ios = File('ios/Runner/AppDelegate.swift').readAsStringSync();
+
+    test('answers on the same channel', () {
+      final name = TtsService.audioSessionChannel.name;
+      expect(android, contains('MethodChannel(messenger, "$name")'));
+      expect(ios, contains('FlutterMethodChannel(name: "$name"'));
+    });
+
+    test('on Android, takes focus that ducks other audio, and tells when it is lost', () {
+      for (final method in ['activate', 'deactivate']) {
+        expect(dart, contains("invokeMethod<bool>('$method')"));
+        expect(android, contains('"$method" ->'));
+      }
+      expect(android, contains('AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK'));
+      expect(android, contains('CONTENT_TYPE_SPEECH'));
+      expect(android, contains('AudioManager.AUDIOFOCUS_LOSS_TRANSIENT'));
+      expect(android, contains('invokeMethod("focusLost", null)'));
+    });
+
+    test('on iOS, ends the session, and tells when it is interrupted', () {
+      expect(ios, contains('call.method == "deactivate"'));
+      expect(ios, contains('AVAudioSession.interruptionNotification'));
+      expect(ios, contains('invokeMethod("focusLost", arguments: nil)'));
+      expect(dart, contains("call.method == 'focusLost'"));
+    });
   });
 
   group('a queue', () {

@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikra/features/reader/listen_along.dart';
@@ -20,37 +19,6 @@ import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 
 import '../../helpers.dart';
-
-/// Speech that holds each utterance until the test lets it reach its end
-/// ([finish]), as a voice takes its time over a verse.
-class _HeldTts extends RecordingTts {
-  Completer<bool>? _current;
-
-  @override
-  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) {
-    // The next utterance stops the one before, as the engine's does.
-    _current?.complete(false);
-    spoken.add((text, language));
-    return (_current = Completer<bool>()).future;
-  }
-
-  @override
-  Future<void> stop() {
-    _current?.complete(false);
-    _current = null;
-    return super.stop();
-  }
-
-  /// The utterance being spoken reaches its end.
-  void finish() {
-    final c = _current;
-    _current = null;
-    c?.complete(true);
-  }
-
-  /// The last thing asked for, as letters alone.
-  String get last => HebrewText.consonantsOnly(spoken.last.$1);
-}
 
 /// Speech on a device that has none: every queue fails.
 class _FailingTts extends RecordingTts {
@@ -121,7 +89,7 @@ void main() {
   group('in the full text, Listen', () {
     testWidgets('highlights each verse as it is read, with its Targum, and goes on from the same verse after a pause',
         (tester) async {
-      final tts = _HeldTts();
+      final tts = HeldTts();
       await open(tester, '/read/5787:2/0?mode=full', tts);
       expect(player, findsNothing);
       await tester.tap(find.byTooltip('Listen'));
@@ -163,7 +131,7 @@ void main() {
     });
 
     testWidgets('moves verse by verse, and is played and paused, from the keyboard', (tester) async {
-      final tts = _HeldTts();
+      final tts = HeldTts();
       await open(tester, '/read/5787:2/0?mode=full', tts);
       await press(tester, LogicalKeyboardKey.keyL);
       expect(highlighted(tester), [0]);
@@ -183,7 +151,7 @@ void main() {
     });
 
     testWidgets('starts at the first verse in view, and the text follows the voice', (tester) async {
-      final tts = _HeldTts();
+      final tts = HeldTts();
       await open(tester, '/read/5787:2/0?mode=full', tts);
       // Scrolled so that the fourth verse (6:12) is the first in view.
       unawaited(Scrollable.ensureVisible(tester.element(find.byType(VerseGroup).at(3))));
@@ -205,7 +173,7 @@ void main() {
 
     testWidgets('in focus mode, ↓ and ↑ move the voice, which stays the focused verse, paused or not',
         (tester) async {
-      final tts = _HeldTts();
+      final tts = HeldTts();
       await open(tester, '/read/5787:2/0?mode=full', tts,
           settings: const AppSettings(onboardingComplete: true, focusMode: true));
       await tester.tap(find.byTooltip('Listen'));
@@ -253,7 +221,7 @@ void main() {
     });
 
     testWidgets('in focus mode, the verse being read is the focused one, and none of those dimmed', (tester) async {
-      final tts = _HeldTts();
+      final tts = HeldTts();
       await open(tester, '/read/5787:2/0?mode=full', tts,
           settings: const AppSettings(onboardingComplete: true, focusMode: true));
       await tester.tap(find.byTooltip('Listen'));
@@ -271,7 +239,7 @@ void main() {
 
   group('in the guided reader, Listen', () {
     testWidgets('highlights each verse of a section as it is read', (tester) async {
-      final tts = _HeldTts();
+      final tts = HeldTts();
       await open(tester, '/read/5787:2/0', tts,
           settings: const AppSettings(onboardingComplete: true, method: ReadingMethod.sectionBySection));
       await tester.tap(find.byTooltip('Listen'));
@@ -414,7 +382,7 @@ void main() {
   });
 
   testWidgets('a rate chosen from the player is kept, and the verse is read again at it', (tester) async {
-    final tts = _HeldTts();
+    final tts = HeldTts();
     final c = await open(tester, '/read/5787:2/0?mode=full', tts);
     await tester.tap(find.byTooltip('Listen'));
     await tester.pumpAndSettle();
@@ -434,7 +402,7 @@ void main() {
 
   testWidgets("the haftarah's verses are highlighted as they are read, and the voice goes with the page",
       (tester) async {
-    final tts = _HeldTts();
+    final tts = HeldTts();
     final c = await open(
       tester,
       '/today/haftarah/5787:1',
@@ -470,7 +438,7 @@ void main() {
             settings: settings.copyWith(joinDate: LocalDate(2026, 10, 4)), now: DateTime(2026, 10, 9, 10));
 
     testWidgets('Listen starts at the first verse in view', (tester) async {
-      final tts = _HeldTts();
+      final tts = HeldTts();
       await openHaftarah(tester, tts);
       // Scrolled so that the fifth verse is the first in view.
       unawaited(Scrollable.ensureVisible(tester.element(find.byType(SpeakingVerseMark).at(4))));
@@ -481,7 +449,7 @@ void main() {
     });
 
     testWidgets('the keys play, pause and move verse by verse, as the reader\'s do', (tester) async {
-      final tts = _HeldTts();
+      final tts = HeldTts();
       await openHaftarah(tester, tts);
       await press(tester, LogicalKeyboardKey.keyL);
       expect(player, findsOneWidget);
@@ -502,7 +470,7 @@ void main() {
     testWidgets('on the web, L alone plays and pauses, where single keys are on', (tester) async {
       ReaderScreen.singleKeyPlatform = true;
       addTearDown(() => ReaderScreen.singleKeyPlatform = false);
-      final tts = _HeldTts();
+      final tts = HeldTts();
       await openHaftarah(tester, tts, settings: const AppSettings(onboardingComplete: true, singleKeyShortcuts: true));
       await tester.sendKeyEvent(LogicalKeyboardKey.keyL);
       await tester.pumpAndSettle();
@@ -515,7 +483,7 @@ void main() {
 
   testWidgets('the rate the Settings slider stepped back to is marked, and choosing it starts nothing again',
       (tester) async {
-    final tts = _HeldTts();
+    final tts = HeldTts();
     // 10% and seven steps of 5%, as the slider sets it.
     const stepped = 0.1 + 7 * 0.05;
     expect(stepped, isNot(0.45));
