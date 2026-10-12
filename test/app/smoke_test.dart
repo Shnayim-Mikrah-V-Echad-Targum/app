@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,8 +8,10 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/about/guide_screen.dart';
 import 'package:shnayim_mikra/features/about/legal_screen.dart';
 import 'package:shnayim_mikra/features/about/sources_screen.dart';
+import 'package:shnayim_mikra/features/notes/notes_screen.dart';
 import 'package:shnayim_mikra/features/parsha/parsha_tab.dart';
 import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
+import 'package:shnayim_mikra/features/progress/progress_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 
@@ -15,14 +19,45 @@ import '../helpers.dart';
 
 /// Records each time the app leaves, as the system's Back does when the app
 /// has nowhere to go back to.
-List<MethodCall> _recordExits(WidgetTester tester) {
+List<MethodCall> _recordExits(WidgetTester tester) => _recordBack(tester).exits;
+
+/// Records what the app tells the system about Back: each time it leaves,
+/// and each time it says whether it handles Back itself. Android 13 and
+/// later send Back to the app only while it does (a back swipe otherwise
+/// previews the home screen, and leaves). The app says so only once it is
+/// running, as it is here.
+({List<MethodCall> exits, List<bool> handlesBack}) _recordBack(WidgetTester tester) {
   final exits = <MethodCall>[];
+  final handlesBack = <bool>[];
   tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
     if (call.method == 'SystemNavigator.pop') exits.add(call);
+    if (call.method == 'SystemNavigator.setFrameworkHandlesBack') handlesBack.add(call.arguments as bool);
     return null;
   });
   addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
-  return exits;
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  return (exits: exits, handlesBack: handlesBack);
+}
+
+/// Android's predictive back gesture: a swipe from the screen's edge,
+/// released.
+Future<void> _backSwipe(WidgetTester tester) async {
+  Future<void> send(String method, [Map<String, Object>? arguments]) =>
+      tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        'flutter/backgesture',
+        const StandardMethodCodec().encodeMethodCall(MethodCall(method, arguments)),
+        (_) {},
+      );
+  await send('startBackGesture', {
+    'touchOffset': [5.0, 300.0],
+    'progress': 0.0,
+    'swipeEdge': 0,
+  });
+  await tester.pump();
+  await send('updateBackGestureProgress', {'x': 200.0, 'y': 300.0, 'progress': 0.5, 'swipeEdge': 0});
+  await tester.pump();
+  await send('commitBackGesture');
+  await tester.pumpAndSettle();
 }
 
 /// A destination of the navigation rail (the default test window is
@@ -133,6 +168,160 @@ void main() {
 
     expect(await tester.binding.handlePopRoute(), isFalse);
     expect(exits, hasLength(1));
+  });
+
+  testWidgets('Back closes a page over another tab, then returns to Today', (tester) async {
+    final exits = _recordExits(tester);
+    final c = await pumpApp(tester);
+    final router = c.read(routerProvider);
+    await tester.pumpAndSettle();
+    await tester.tap(_tab('Progress'));
+    await tester.pumpAndSettle();
+    router.push('/notes');
+    await tester.pumpAndSettle();
+    expect(find.byType(NotesScreen), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, '/progress');
+    expect(find.byType(NotesScreen), findsNothing);
+    expect(find.byType(ProgressScreen), findsOneWidget);
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, '/today');
+    expect(exits, isEmpty);
+  });
+
+  testWidgets('the app handles Back wherever there is somewhere to go back to', (tester) async {
+    final back = _recordBack(tester);
+    final c = await pumpApp(tester);
+    final router = c.read(routerProvider);
+    await tester.pumpAndSettle();
+    expect(back.handlesBack.last, isFalse, reason: 'Today');
+
+    await tester.tap(_tab('Progress'));
+    await tester.pumpAndSettle();
+    expect(back.handlesBack.last, isTrue, reason: 'Progress');
+
+    // Today with this week's page open, shown again by Back or by its tab:
+    // its tab's navigator says nothing as it is, and Back must still close
+    // the page rather than leave the app.
+    await tester.tap(_tab('Today'));
+    await tester.pumpAndSettle();
+    expect(back.handlesBack.last, isFalse, reason: 'Today');
+    router.push('/today/week/5787:2');
+    await tester.pumpAndSettle();
+    expect(back.handlesBack.last, isTrue, reason: 'a week open in Today');
+    for (final returnBy in ['Back', 'the tab']) {
+      await tester.tap(_tab('Progress'));
+      await tester.pumpAndSettle();
+      expect(back.handlesBack.last, isTrue, reason: 'Progress');
+      if (returnBy == 'Back') {
+        expect(await tester.binding.handlePopRoute(), isTrue);
+      } else {
+        await tester.tap(_tab('Today'));
+      }
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, '/today/week/5787:2', reason: 'back to Today by $returnBy');
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+      expect(back.handlesBack.last, isTrue, reason: 'a week open in Today, back to it by $returnBy');
+    }
+
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, '/today');
+    expect(find.byType(WeekOverviewScreen), findsNothing);
+    expect(back.handlesBack.last, isFalse, reason: 'Today');
+    expect(back.exits, isEmpty);
+  });
+
+  testWidgets('Back leaves the app from Today, even with a page open in another tab', (tester) async {
+    final back = _recordBack(tester);
+    final c = await pumpApp(tester);
+    final router = c.read(routerProvider);
+    await tester.pumpAndSettle();
+    router.go('/parsha/week/5787:2');
+    await tester.pumpAndSettle();
+    expect(back.handlesBack.last, isTrue, reason: 'a week open in Parsha');
+
+    await tester.tap(_tab('Today'));
+    await tester.pumpAndSettle();
+    // So a back swipe previews the home screen.
+    expect(back.handlesBack.last, isFalse, reason: 'Today, with a week open in Parsha');
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(back.exits, hasLength(1));
+
+    // The week is still open in Parsha.
+    await tester.tap(_tab('Parsha'));
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, '/parsha/week/5787:2');
+    expect(back.handlesBack.last, isTrue, reason: 'a week open in Parsha');
+  });
+
+  group('a back swipe', () {
+    testWidgets('on another tab returns to Today, leaving the page open there', (tester) async {
+      final c = await pumpApp(tester);
+      final router = c.read(routerProvider);
+      await tester.pumpAndSettle();
+      router.push('/today/week/5787:2');
+      await tester.pumpAndSettle();
+      await tester.tap(_tab('Progress'));
+      await tester.pumpAndSettle();
+
+      await _backSwipe(tester);
+      expect(_selectedTab(tester), 0);
+      expect(router.state.uri.path, '/today/week/5787:2');
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+    });
+
+    testWidgets("closes the page on show alone, not one in another tab", (tester) async {
+      final c = await pumpApp(tester);
+      final router = c.read(routerProvider);
+      await tester.pumpAndSettle();
+      router.push('/today/week/5787:2');
+      await tester.pumpAndSettle();
+      await tester.tap(_tab('Parsha'));
+      await tester.pumpAndSettle();
+      router.push('/parsha/week/5787:3');
+      await tester.pumpAndSettle();
+
+      await _backSwipe(tester);
+      expect(router.state.uri.path, '/parsha');
+      expect(find.byType(ParshaTab), findsOneWidget);
+      expect(find.byType(WeekOverviewScreen), findsNothing);
+
+      await tester.tap(_tab('Today'));
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, '/today/week/5787:2');
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+    });
+
+    testWidgets('closes a page over the tabs, or a dialog, and not the page beneath it', (tester) async {
+      final c = await pumpApp(tester);
+      final router = c.read(routerProvider);
+      await tester.pumpAndSettle();
+      router.go('/parsha/week/5787:2');
+      await tester.pumpAndSettle();
+
+      router.push('/notes');
+      await tester.pumpAndSettle();
+      await _backSwipe(tester);
+      expect(find.byType(NotesScreen), findsNothing);
+      expect(router.state.uri.path, '/parsha/week/5787:2');
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+
+      unawaited(showDialog<void>(
+        context: tester.element(find.byType(WeekOverviewScreen)),
+        builder: (_) => const AlertDialog(content: Text('A dialog')),
+      ));
+      await tester.pumpAndSettle();
+      await _backSwipe(tester);
+      expect(find.text('A dialog'), findsNothing);
+      expect(router.state.uri.path, '/parsha/week/5787:2');
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+    });
   });
 
   testWidgets('a step of onboarding opens at its own address, over the welcome', (tester) async {

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/search/go_to_verse_sheet.dart';
@@ -37,15 +38,48 @@ class AppShell extends StatelessWidget {
 
   void _go(int index) => shell.goBranch(index, initialLocation: index == shell.currentIndex);
 
+  /// Whether Today's tab is on show at its root, with no page of its own
+  /// open: the one place the system's Back leaves the app.
+  bool get _atToday => shell.currentIndex == 0 && shell.shellRouteContext.routerState.uri.path == '/today';
+
+  /// For [WidgetsApp.onNavigationNotification]: tells Android whether the
+  /// app handles Back, which Android 13 and later ask before they send it to
+  /// the app, and before a back swipe previews the home screen. It answers as
+  /// the framework does, but on Today's root. go_router has each tab's
+  /// navigator, a hidden tab's too, refuse to close the tabs while it has a
+  /// page open, so the app would claim Back there whenever another tab held a
+  /// page; on Today's root it handles Back only while something on show can
+  /// be closed.
+  static bool reportBack(GoRouter router, NavigationNotification notification) {
+    switch (WidgetsBinding.instance.lifecycleState) {
+      case null || AppLifecycleState.detached:
+        // As the framework: not until the app is running.
+        break;
+      case _:
+        final atToday = router.routerDelegate.currentConfiguration.uri.path == '/today' && !router.canPop();
+        SystemNavigator.setFrameworkHandlesBack(notification.canHandlePop && !atToday);
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) => PopScope(
         // Today is where the app starts, so the system's Back leaves the app
-        // only from there: at the root of another tab it returns to Today, as
-        // Today's tab would. A page within a tab, or over the tabs, is popped
-        // first, by its own navigator.
-        canPop: shell.currentIndex == 0,
+        // only from its root: at the root of another tab it returns to Today,
+        // as Today's tab would. A page within a tab, or over the tabs, is
+        // popped first, by its own navigator. While Today's tab has a page
+        // open, the scope refuses the pop as well, so that the app goes on
+        // saying it handles Back as the tab is shown again.
+        canPop: _atToday,
         onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) shell.goBranch(0);
+          if (didPop) return;
+          if (shell.currentIndex != 0) {
+            shell.goBranch(0);
+          } else if (_atToday) {
+            // Refused for a page open in a hidden tab (see [reportBack]):
+            // from Today's root, Back leaves the app all the same.
+            SystemNavigator.pop();
+          }
         },
         // Ctrl+K (⌘K) goes to a verse, or searches, from any tab.
         child: GoToVerseShortcut(child: _layout(context)),

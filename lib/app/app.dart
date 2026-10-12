@@ -19,6 +19,7 @@ import 'device_accessibility.dart';
 import 'pending_saves.dart';
 import 'providers.dart';
 import 'router.dart';
+import 'shell.dart';
 import 'system_bars.dart';
 import 'window_title_bar.dart';
 
@@ -205,6 +206,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
       color: shown.colorScheme.surface,
       debugShowCheckedModeBanner: false,
       routerConfig: router,
+      onNavigationNotification: (notification) => AppShell.reportBack(router, notification),
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [
