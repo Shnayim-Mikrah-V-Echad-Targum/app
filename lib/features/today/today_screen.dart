@@ -93,10 +93,11 @@ class TodayScreen extends ConsumerWidget {
     final pauseEnd = ref.watch(
       progressProvider.select((p) => pauseEndToWelcome(p, today, oneDayYomTov: settings.oneDayYomTov)),
     );
-    // Tisha B'Av, with no reading planned on it: nothing on the page invites
-    // any, so the welcome back, which offers this week's parsha and last
-    // week's, waits for the day after.
-    final quietFast = ref.watch(plannerProvider).isQuietTishaBav(today);
+    // Tisha B'Av, with no reading planned on it, or its eve from sunset in
+    // the reader's city: nothing on the page invites any, so the welcome
+    // back, which offers this week's parsha and last week's, waits for the
+    // day after.
+    final quietFast = ref.watch(plannerProvider).isQuietTishaBav(today) || ref.watch(fastBegunProvider);
     final welcome = pauseEnd != null && pauseEnd != settings.pauseEndSeen && !quietFast ? pauseEnd : null;
     // Last week's notice, unless the welcome back offers that week itself.
     // On a quiet fast it waits too, and so it does while the check-in, which
@@ -820,11 +821,13 @@ class _TodayCard extends ConsumerWidget {
       // run past it: the card names the day the parsha goes on, if any.
       final name = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
       final pauses = ref.watch(progressProvider.select((p) => p.pauses));
+      final planner = ref.watch(plannerProvider);
       final tomorrow = ctx.today.addDays(1);
       LocalDate? resumes;
       if (!ctx.progress.isComplete) {
+        // From sunset on its eve, tomorrow is the fast itself.
         for (var d = tomorrow; d < ctx.week.occasion; d = d.addDays(1)) {
-          if (!pauses.any((p) => p.contains(d)) && ctx.readsOn(d)) {
+          if (!planner.isQuietTishaBav(d) && !pauses.any((p) => p.contains(d)) && ctx.readsOn(d)) {
             resumes = d;
             break;
           }

@@ -232,7 +232,7 @@ void main() {
     });
 
     test('with a city, rests from candle-lighting until nightfall, as Today does', () {
-      const times = (candleLighting: 17 * 60 + 30, nightfall: 18 * 60 + 40);
+      const times = (candleLighting: 17 * 60 + 30, sunset: 17 * 60 + 48, nightfall: 18 * 60 + 40);
       final t = timeline(DateTime(2026, 10, 9, 13), restTimes: (_) => times);
       expect(on(t, LocalDate(2026, 10, 9)).single.until, DateTime(2026, 10, 9, 17, 30));
       expect(only(t, LocalDate(2026, 10, 10)).until, DateTime(2026, 10, 10, 18, 40));
@@ -281,7 +281,7 @@ void main() {
       // Two weeks before Pesach 5785, which begins on Sunday 13 April, the
       // day after the timeline's last Shabbat: outside Israel for two days.
       final settings = AppSettings(joinDate: LocalDate(2024, 9, 1));
-      const times = (candleLighting: 19 * 60, nightfall: 20 * 60 + 10);
+      const times = (candleLighting: 19 * 60, sunset: 19 * 60 + 18, nightfall: 20 * 60 + 10);
       final diaspora = timeline(DateTime(2025, 3, 31, 10), settings: settings, restTimes: (_) => times);
       expect(diaspora.days.last.date, LocalDate(2025, 4, 14));
       final shabbat = only(diaspora, LocalDate(2025, 4, 12));
@@ -403,6 +403,39 @@ void main() {
       expect(postponed.weeks[monday.week].next, 'Start · Rishon');
     });
 
+    test("with a city, is quiet from sunset on the eve of Tisha B'Av, as Today is", () {
+      // Wednesday 11 August 2027, 8 Av 5787: the fast begins at sunset.
+      final settings = AppSettings(joinDate: LocalDate(2027, 8, 1));
+      final eve = LocalDate(2027, 8, 11);
+      const times = (candleLighting: 19 * 60, sunset: 19 * 60 + 39, nightfall: 20 * 60 + 10);
+      final t = timeline(DateTime(2027, 8, 11, 9), settings: settings, restTimes: (_) => times);
+      final [day, evening] = on(t, eve);
+      expect(
+        (day.kind, day.eyebrow, day.until),
+        (WidgetDayKind.weekday, 'Parshat HaShavua', DateTime(2027, 8, 11, 19, 39)),
+      );
+      expect(t.weeks[day.week].next, isNotNull);
+      expect(
+        (evening.kind, evening.eyebrow, evening.line, evening.until),
+        (WidgetDayKind.tishaBav, 'Tisha B’Av', 'Torah study is set aside today', null),
+      );
+      expect(t.weeks[evening.week].next, isNull, reason: 'no Continue, as on the fast');
+      expect(evening.week, only(t, LocalDate(2027, 8, 12)).week, reason: "the fast's own week");
+      // After sunset, only the evening's.
+      expect(on(timeline(DateTime(2027, 8, 11, 20), settings: settings, restTimes: (_) => times), eve), [
+        isA<WidgetDay>().having((d) => d.kind, 'kind', WidgetDayKind.tishaBav),
+      ]);
+
+      // Without a city, or a reading planned on the fast, the day as before.
+      expect(only(timeline(DateTime(2027, 8, 11, 9), settings: settings), eve).kind, WidgetDayKind.weekday);
+      final reading = timeline(
+        DateTime(2027, 8, 11, 9),
+        settings: settings.copyWith(tishaBavQuiet: false),
+        restTimes: (_) => times,
+      );
+      expect(only(reading, eve).until, isNull);
+    });
+
     test("in Hebrew, with the app's words and the reader's spelling", () {
       final t = timeline(
         captureNow,
@@ -468,7 +501,7 @@ void main() {
         DateTime(2026, 9, 5, 12),
         l: he,
         settings: AppSettings(joinDate: LocalDate(2026, 9, 1), language: AppLanguage.hebrew),
-        restTimes: (_) => (candleLighting: 18 * 60, nightfall: 19 * 60 + 15),
+        restTimes: (_) => (candleLighting: 18 * 60, sunset: 18 * 60 + 18, nightfall: 19 * 60 + 15),
       );
       expect({for (final d in longest.days) d.date}.length, greaterThanOrEqualTo(30));
       expect(utf8.encode(longest.encode()).length, lessThan(8 * 1024));

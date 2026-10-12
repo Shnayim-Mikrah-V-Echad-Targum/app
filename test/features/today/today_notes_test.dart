@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/today/today_clock.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart' show InfoCard;
 import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../helpers.dart';
 
@@ -591,6 +596,90 @@ void main() {
         await openToday(tester, settings: settings.copyWith(tishaBavQuiet: false), now: fast, progress: returned());
         expect(welcome, findsOneWidget);
         expect(offers, findsOneWidget);
+      });
+    });
+
+    // With Jerusalem chosen for Shabbat times, on a device on its clock.
+    group('from sunset on its eve', () {
+      const jerusalem = City(
+        id: 281184,
+        nameEn: 'Jerusalem',
+        nameHe: 'ירושלים',
+        countryCode: 'IL',
+        latitude: 31.769,
+        longitude: 35.2163,
+        timeZone: 'Asia/Jerusalem',
+        candleMinutes: 40,
+      );
+      final overrides = [
+        timeZoneDatabaseProvider.overrideWith((ref) async {}),
+        // Tests run on UTC.
+        deviceClockProvider.overrideWithValue(
+          (LocalDate d) =>
+              tz.TZDateTime(Zmanim.timeZone(jerusalem.timeZone)!, d.year, d.month, d.day, 12).timeZoneOffset,
+        ),
+      ];
+
+      Future<void> open(WidgetTester tester, DateTime now, {AppSettings? reader}) async {
+        tester.view.physicalSize = const Size(412, 915);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await pumpApp(
+          tester,
+          settings: reader ?? settings.copyWith(city: jerusalem),
+          now: now,
+          progress: behind(),
+          overrides: overrides,
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('Today is quiet, as on the fast, in the city', (tester) async {
+        // Wednesday 11 August 2027, 8 Av, after Eicha: sunset was at 19:39.
+        await open(tester, DateTime(2027, 8, 11, 21, 30));
+        expect(find.text('Tisha B’Av'), findsOneWidget);
+        // Tomorrow is the fast itself.
+        expect(find.text("$setAside Va'etchanan continues on Friday."), findsOneWidget);
+        expect(filled, findsNothing);
+        expect(find.text(en.todayCatchUpTitle), findsNothing);
+        expect(find.text(en.readFromBook), findsNothing);
+        expect(find.text(en.openWeekTitle('Devarim')), findsNothing);
+
+        // Before sunset, the eve as before.
+        await open(tester, DateTime(2027, 8, 11, 18));
+        expect(find.text('Tisha B’Av'), findsNothing);
+        expect(find.text(en.readFromBook), findsOneWidget);
+        expect(filled, findsWidgets);
+        expect(find.text("Erev Tisha B'Av: many finish their learning before midday."), findsOneWidget);
+      });
+
+      testWidgets('not without a city, nor where reading is planned on the fast', (tester) async {
+        await open(tester, DateTime(2027, 8, 11, 21, 30), reader: settings);
+        expect(find.text('Tisha B’Av'), findsNothing);
+        expect(find.text(en.readFromBook), findsOneWidget);
+        final planned = settings.copyWith(city: jerusalem, tishaBavQuiet: false);
+        await open(tester, DateTime(2027, 8, 11, 21, 30), reader: planned);
+        expect(find.text('Tisha B’Av'), findsNothing);
+      });
+
+      testWidgets('turns at sunset while the app is open', (tester) async {
+        final c = await pumpApp(
+          tester,
+          settings: settings.copyWith(city: jerusalem),
+          now: DateTime(2027, 8, 11, 19),
+          progress: behind(),
+          overrides: overrides,
+        );
+        await tester.pumpAndSettle();
+        TodayController.autoRollover = true;
+        addTearDown(() => TodayController.autoRollover = false);
+        c.invalidate(fastBegunProvider);
+        expect(c.read(fastBegunProvider), isFalse);
+        TodayController.now = () => DateTime(2027, 8, 11, 19, 40);
+        await tester.pump(const Duration(minutes: 40));
+        expect(c.read(fastBegunProvider), isTrue);
+        await tester.pumpAndSettle();
+        expect(find.text('Tisha B’Av'), findsOneWidget);
       });
     });
 

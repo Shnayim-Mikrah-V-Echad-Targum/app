@@ -79,7 +79,7 @@ The JPS translation is offered only as a study aid and is labelled so. It never 
 - an aliyah a day and Shevi'i on Shabbat morning, logged afterwards (Gra, MB 285:8)
 - everything on Erev Shabbat: after Shacharit (Arizal) or after midday (Shelah, Shulchan Aruch HaRav)
 
-Tisha B'Av is a quiet day, unless the reader turns that off: Torah study is set aside on the fast, but for the passages of mourning (SA OC 554:1). Today is then headed by the fast, says so, and asks for no reading: no button, nothing to catch up on or log, and no word of last week's parsha until the next day; the home-screen widget and the reminders keep quiet too. Greetings are not given on the fast (554:20), so the check-in after a Shabbat straight before it, which begins "Shavua tov", waits for the day after, whatever is planned on it. Chol HaMoed can optionally be quiet.
+Tisha B'Av is a quiet day, unless the reader turns that off: Torah study is set aside on the fast, but for the passages of mourning (SA OC 554:1). Today is then headed by the fast, says so, and asks for no reading: no button, nothing to catch up on or log, and no word of last week's parsha until the next day; the home-screen widget and the reminders keep quiet too. The fast begins at sunset: with a city chosen for Shabbat times, and the device on its clock, Today and the widget are quiet from sunset on the eve, as the reminders are from midday; without one, from the morning of the fast. Greetings are not given on the fast (554:20), so the check-in after a Shabbat straight before it, which begins "Shavua tov", waits for the day after, whatever is planned on it. Chol HaMoed can optionally be quiet.
 
 ## 4. Streaks
 

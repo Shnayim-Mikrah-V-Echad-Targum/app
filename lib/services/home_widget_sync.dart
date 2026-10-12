@@ -245,9 +245,10 @@ class WidgetTimeline {
   String encode() => jsonEncode(toJson());
 }
 
-/// When candles are lit and Shabbat ends in the reader's city, in minutes
-/// after midnight on the device's clock, on a day it keeps the city's.
-typedef RestTimes = ({int? candleLighting, int? nightfall});
+/// When candles are lit, the sun sets and Shabbat ends in the reader's
+/// city, in minutes after midnight on the device's clock, on a day it keeps
+/// the city's. Sunset begins Tisha B'Av on its eve.
+typedef RestTimes = ({int? candleLighting, int? sunset, int? nightfall});
 
 /// The widget's timeline as of [now] (see [WidgetTimeline]), in [l]'s
 /// language, for a reader with [settings] and [progress], planned by
@@ -433,15 +434,30 @@ WidgetTimeline widgetTimeline({
                 ? WidgetDayKind.erevShabbat
                 : WidgetDayKind.erevYomTov;
     final line = readingLine(contextFor(week, day), paused: paused);
-    // The day of rest begins as candles are lit in the city.
-    final candles = eve ? restTimes?.call(day)?.candleLighting : null;
-    final until = candles == null ? null : at(day, candles);
+    // The day of rest begins as candles are lit in the city, and a quiet
+    // Tisha B'Av at sunset, as Today turns then (FastBegunController).
+    final fastEve = planner.isQuietTishaBav(tomorrow);
+    final turn = eve
+        ? restTimes?.call(day)?.candleLighting
+        : fastEve
+            ? restTimes?.call(day)?.sunset
+            : null;
+    final until = turn == null ? null : at(day, turn);
     // From midday on Friday, Today's eyebrow is Erev Shabbat.
     if (day.weekday == _friday && !vezot) {
       add(WidgetDay(date: day, until: at(day, 12 * 60), week: index, kind: kind, eyebrow: eyebrow, line: line));
       add(WidgetDay(date: day, until: until, week: index, kind: kind, eyebrow: l.erevShabbat, line: line));
     } else {
       add(WidgetDay(date: day, until: until, week: index, kind: kind, eyebrow: eyebrow, line: line));
+    }
+    if (fastEve && until != null) {
+      add(WidgetDay(
+        date: day,
+        week: indexOf(schedule.weekFor(tomorrow), tomorrow, quiet: true),
+        kind: WidgetDayKind.tishaBav,
+        eyebrow: l.tishaBavTitle,
+        line: l.widgetTishaBav,
+      ));
     }
   }
   final rests = {
@@ -618,7 +634,11 @@ final homeWidgetSyncProvider = Provider<void>((ref) {
     RestTimes? restTimes(LocalDate day) {
       if (!citysTimes || !Zmanim.keepsClock(city, day, clock(day))) return null;
       final times = Zmanim.of(city, day);
-      return (candleLighting: times.minutesOf(times.candleLighting), nightfall: times.minutesOf(times.havdalah));
+      return (
+        candleLighting: times.minutesOf(times.candleLighting),
+        sunset: times.minutesOf(times.sunset),
+        nightfall: times.minutesOf(times.havdalah),
+      );
     }
 
     final l = _appLocalizations(s.language);

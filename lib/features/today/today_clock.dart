@@ -123,6 +123,53 @@ class RestDayController extends Notifier<LocalDate?> {
 
 final restDayProvider = NotifierProvider<RestDayController, LocalDate?>(RestDayController.new);
 
+/// Whether Tisha B'Av, with no reading planned on it
+/// ([ReadingPlanner.isQuietTishaBav]), has begun on the evening of the
+/// reading day, its eve: from sunset in the city chosen for Shabbat times,
+/// on a day the device keeps the city's clock, as the fast begins then.
+/// Today and the home-screen widget are quiet from then on, as on the fast
+/// itself (docs/DESIGN_SYSTEM.md §9 Today, 2–4). Without a city, nothing
+/// says when the evening comes, and they keep quiet from the morning, as
+/// the reading day turns, as the reminders without a city keep to midday.
+class FastBegunController extends Notifier<bool> {
+  Timer? _timer;
+  AppLifecycleListener? _lifecycle;
+
+  @override
+  bool build() {
+    // Again as the reading day turns, or the app resumes.
+    final today = ref.watch(todayProvider);
+    final planner = ref.watch(plannerProvider);
+    final city = ref.watch(settingsProvider.select((s) => s.city));
+    final clock = ref.watch(deviceClockProvider);
+    final citysTimes = city != null && timeZonesReady(ref);
+    _lifecycle ??= AppLifecycleListener(onResume: ref.invalidateSelf);
+    ref.onDispose(() {
+      _timer?.cancel();
+      _lifecycle?.dispose();
+      _lifecycle = null;
+    });
+    if (!planner.isQuietTishaBav(today.addDays(1)) || !citysTimes || !Zmanim.keepsClock(city, today, clock(today))) {
+      return false;
+    }
+    final times = Zmanim.of(city, today);
+    final minutes = times.minutesOf(times.sunset);
+    if (minutes == null) return false;
+    // On the device's clock, which is the city's.
+    final sunset = DateTime(today.year, today.month, today.day, 0, minutes);
+    final now = TodayController.now();
+    if (!now.isBefore(sunset)) return true;
+    // Tests turn the timers off, as they do the reading day's.
+    if (TodayController.autoRollover) _timer = Timer(sunset.difference(now), ref.invalidateSelf);
+    return false;
+  }
+
+  @override
+  bool updateShouldNotify(bool previous, bool next) => previous != next;
+}
+
+final fastBegunProvider = NotifierProvider<FastBegunController, bool>(FastBegunController.new);
+
 /// The device's date, as the app keeps it ([rolloverDate]): it turns at
 /// 3 a.m., and is checked again whenever the app resumes. Unlike the
 /// reading day it never passes over a day of rest, and unlike
