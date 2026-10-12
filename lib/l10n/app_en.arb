@@ -1392,6 +1392,10 @@
   "previewLabel": "Preview",
   "reduceMotion": "Reduce motion",
   "reduceMotionDesc": "Turn off animations and moving celebrations",
+  "settingOnInDevice": "On in your device’s settings",
+  "@settingOnInDevice": {
+    "description": "Under the Reduce motion or Bold text switch while the device has that setting on, in place of the switch's description: the switch shows it on, and can't be turned off in the app."
+  },
   "haptics": "Haptic feedback",
   "singleKeyShortcuts": "Single-key shortcuts",
   "singleKeyShortcutsDesc": "While reading, T, N, L, + and − work on their own, without Ctrl. Turn this off if you use speech input or screen-reader quick keys.",

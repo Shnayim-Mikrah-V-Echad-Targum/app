@@ -15,6 +15,7 @@ import '../services/optional_fonts.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/fonts_change_scope.dart';
 import 'celebrations.dart';
+import 'device_accessibility.dart';
 import 'pending_saves.dart';
 import 'providers.dart';
 import 'router.dart';
@@ -222,19 +223,24 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
           : (light.brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light),
       builder: (context, child) {
         final mq = MediaQuery.of(context);
-        return MediaQuery(
-          data: mq.copyWith(
-            boldText: mq.boldText || settings.boldText,
-            disableAnimations: reduceMotion,
-            highContrast: systemHighContrast || AppTheme.isHighContrast(settings.theme),
-          ),
-          child: SystemBars(
-            child: WindowTitleBar(
-              child: FontsChangeScope(
-                // Status messages set for pages as wide as the window: those
-                // over the tabs, and a phone's (the shell sets them for the
-                // pane beside the rail).
-                child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+        // The device's own, for the switches that show the app's.
+        return DeviceAccessibility(
+          disableAnimations: mq.disableAnimations,
+          boldText: mq.boldText,
+          child: MediaQuery(
+            data: mq.copyWith(
+              boldText: mq.boldText || settings.boldText,
+              disableAnimations: reduceMotion,
+              highContrast: systemHighContrast || AppTheme.isHighContrast(settings.theme),
+            ),
+            child: SystemBars(
+              child: WindowTitleBar(
+                child: FontsChangeScope(
+                  // Status messages set for pages as wide as the window: those
+                  // over the tabs, and a phone's (the shell sets them for the
+                  // pane beside the rail).
+                  child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+                ),
               ),
             ),
           ),

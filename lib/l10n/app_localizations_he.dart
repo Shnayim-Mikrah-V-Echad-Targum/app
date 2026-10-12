@@ -1706,6 +1706,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get reduceMotionDesc => 'כיבוי אנימציות וחגיגות נעות';
 
   @override
+  String get settingOnInDevice => 'מופעל בהגדרות המכשיר';
+
+  @override
   String get haptics => 'משוב רטט';
 
   @override

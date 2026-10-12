@@ -410,6 +410,9 @@ const _screens = {
   // Low vision applied from the keyboard: its Undo stays, with Close.
   's_a11y_undo_keys': '/settings/accessibility',
   's_a11y_web': '/settings/accessibility',
+  // The device's Reduce motion and Bold text on: the switches show them.
+  's_a11y_device': '/settings/accessibility',
+  's_display_device': '/settings/display',
   's_reminders': '/settings/reminders',
   // As on a phone, where reminders can be scheduled, with all three on.
   's_reminders_on': '/settings/reminders',
@@ -851,6 +854,12 @@ ProgressState _readThrough(int last, {required int partly, LocalDate? on}) {
       .withPosition(partly, const [99, 99, 0]);
   return ProgressState(weeks: {'5787:1': w});
 }
+
+/// Screens shown with the device's own accessibility settings on.
+const _deviceFeatures = {
+  's_a11y_device': FakeAccessibilityFeatures(disableAnimations: true, boldText: true),
+  's_display_device': FakeAccessibilityFeatures(boldText: true),
+};
 
 /// Screens captured as their setup leaves them, partway through an
 /// animation.
@@ -1335,6 +1344,14 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
   },
+  's_a11y_device': (tester) => Scrollable.ensureVisible(
+        tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.reduceMotion)),
+        alignment: 0.5,
+      ),
+  's_display_device': (tester) => Scrollable.ensureVisible(
+        tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.boldText)),
+        alignment: 0.5,
+      ),
   'focus_button': (tester) => _keyboardFocus(tester, find.byType(FilledButton).first),
   'focus_day': (tester) =>
       _keyboardFocus(tester, find.descendant(of: find.byType(WeekStrip), matching: find.byType(SeferInkWell)).at(1)),
@@ -2025,6 +2042,9 @@ void main() {
         addTearDown(tester.view.reset);
         tester.platformDispatcher.textScaleFactorTestValue = mode.textScale;
         addTearDown(tester.platformDispatcher.clearAllTestValues);
+        if (_deviceFeatures[entry.key] case final features?) {
+          tester.platformDispatcher.accessibilityFeaturesTestValue = features;
+        }
         // As though the app had just started.
         TodayScreen.forgetCompletions();
         if (_webKeys.contains(entry.key)) {

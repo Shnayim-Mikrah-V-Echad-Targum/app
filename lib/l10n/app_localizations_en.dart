@@ -1703,6 +1703,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reduceMotionDesc => 'Turn off animations and moving celebrations';
 
   @override
+  String get settingOnInDevice => 'On in your device’s settings';
+
+  @override
   String get haptics => 'Haptic feedback';
 
   @override

@@ -162,6 +162,45 @@ void main() {
     expect(c.read(settingsProvider).rashiScript, isTrue);
   });
 
+  testWidgets("Bold text, while the device's is on, is shown on and disabled, saying so", (tester) async {
+    final handle = tester.ensureSemantics();
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(boldText: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    final c = await open(tester);
+    final row = find.widgetWithText(SwitchRow, 'Bold text');
+    Switch toggle() => tester.widget<Switch>(find.descendant(of: row, matching: find.byType(Switch)));
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    expect(toggle().value, isTrue, reason: 'in force, though the app’s own is off');
+    expect(toggle().onChanged, isNull);
+    expect(find.descendant(of: row, matching: find.text('On in your device’s settings')), findsOneWidget);
+    expect(
+      tester.getSemantics(row),
+      isSemantics(
+        label: 'Bold text\nOn in your device’s settings',
+        hasToggledState: true,
+        isToggled: true,
+        hasEnabledState: true,
+        isEnabled: false,
+      ),
+    );
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(c.read(settingsProvider).boldText, isFalse);
+
+    // The device's turned off: the app's own setting again, with no
+    // description, to change.
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures();
+    await tester.pumpAndSettle();
+    expect(toggle().value, isFalse);
+    expect(toggle().onChanged, isNotNull);
+    expect(find.text('On in your device’s settings'), findsNothing);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(c.read(settingsProvider).boldText, isTrue);
+    handle.dispose();
+  });
+
   testWidgets('line width is a segmented control, and line spacing starts at 1.6', (tester) async {
     final handle = tester.ensureSemantics();
     final c = await open(tester, settings: const AppSettings(onboardingComplete: true, lineHeight: 1.7));

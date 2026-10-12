@@ -42,7 +42,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - On the web, Flutter's semantics tree is turned on at startup (`SemanticsBinding.ensureSemantics`), so screen readers work without the hidden "enable accessibility" button.
 
 ### Vision
-- **Themes:** light, dark, sepia, high-contrast light and high-contrast dark. They follow the system setting or can be set manually. The app also honours the platform's high-contrast and bold-text settings.
+- **Themes:** light, dark, sepia, high-contrast light and high-contrast dark. They follow the system setting or can be set manually. The app also honours the platform's high-contrast and bold-text settings; while the device's bold text is on, the *Bold text* switch (*Settings → Display*) shows it on, disabled, and says it is on in the device's settings.
 - **Text size:**
   - The interface follows the system text size; layouts are tested at 200%, and Today, Parsha, Progress, Community, a discussion, Settings and the reader at 300% on a 320 dp phone. A word of the interface never breaks across lines: a label with a word too wide for its room, at the largest sizes, is set just small enough for it, and a name of two parshiyot ("Vayakhel-Pekudei") stays whole. Words that may be of any length, such as an email address or a discussion's title, are set no smaller than 12 px, and one too long even at that size wraps. In scripture, words joined by a maqaf stay on one line where the column has room for them; where it hasn't, the line ends after the maqaf, never inside a word. Only a word wider than the column on its own breaks, as some do at the largest reading size on a phone.
   - Scripture has its own reading size (0.5×–5×), which **multiplies** the system size. People with low vision can make the text very large without breaking the interface.
@@ -107,7 +107,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - Onboarding has four short screens, and every choice can be changed later.
 
 ### Motion, sound and haptics
-- **Reduce motion** follows the system setting and can also be set in the app. It removes page transitions and celebration animations.
+- **Reduce motion** follows the system setting and can also be set in the app. It removes page transitions and celebration animations. While the system's is on, the app's switch shows it on, disabled, and says it is on in the device's settings.
 - Haptics can be turned off.
 - Nothing plays sound without the user asking. Text-to-speech starts only on request.
 - **Listen** reads verse by verse, for readers who follow by ear: the verse being read is highlighted (a techelet rule at its start, which is the cue in high contrast too) and kept in view, scrolling at once under Reduce Motion. The player beneath the text pauses and goes on from the same verse, moves back or on a verse, sets the speech rate and stops; each of its buttons is named for screen readers and takes a 48 dp tap. *Listen along* reads the guided reader's steps one after another, hands-free, to the end of the aliyah.

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../app/device_accessibility.dart';
 import '../../../app/providers.dart';
 import '../../../core/text/hebrew_text.dart';
 import '../../../services/feedback.dart';
@@ -54,6 +55,9 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
     void update(AppSettings Function(AppSettings) f) => ref.read(settingsProvider.notifier).update(f);
+    // The device's Reduce motion is in force whatever the app's says: the
+    // switch shows it on, and leaves it to the device's settings.
+    final deviceReduced = DeviceAccessibility.disableAnimationsOf(context);
     final presets = [
       (DisplayPreset.largePrint, l.presetLargePrint, l.presetLargePrintDesc, Icons.format_size),
       (DisplayPreset.dyslexia, l.presetDyslexia, l.presetDyslexiaDesc, Icons.spellcheck),
@@ -117,9 +121,9 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             SwitchRow(
               icon: Icons.motion_photos_off_outlined,
               title: l.reduceMotion,
-              subtitle: l.reduceMotionDesc,
-              value: s.reduceMotion,
-              onChanged: (v) => update((s) => s.copyWith(reduceMotion: v)),
+              subtitle: deviceReduced ? l.settingOnInDevice : l.reduceMotionDesc,
+              value: s.reduceMotion || deviceReduced,
+              onChanged: deviceReduced ? null : (v) => update((s) => s.copyWith(reduceMotion: v)),
             ),
             SwitchRow(
               icon: Icons.vibration_outlined,

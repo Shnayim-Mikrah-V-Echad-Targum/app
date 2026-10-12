@@ -1294,6 +1294,7 @@ In order:
 - `SettingsPage(paper: true)` stands its paper on the gutters; pages not yet set in paper keep `PageBody.tilePadding`, and a `ChoiceGroup` on them takes a 16 margin.
 - `ChoiceGroup`: a `SettingHeading` (level 2, a GroupHeader; or level 3, a subheading in titleMedium onSurface for one of several settings in a section), its help in bodyMedium onSurfaceVariant or, with `helpIsSource`, a `SourceNote` (marginalia on surfaceContainerLow, radius 12, padding 12; outlined in high contrast), or a `source`'s note and then the help, then radio rows on one PaperGroup (a RadioListTile underneath, its text where a PaperRow's starts, ringed rather than washed when focused) or, `segmented`, a SegmentedButton (§6.8). `prominent`, for a question on a page of its own (onboarding's steps): the question in headlineSmall as a level-2 heading, plain help only, and the options as paper radio cards (§9 Onboarding).
 - `SwitchRow`: a PaperRow whose whole row toggles its switch, read as one switch; its description is never cut short; disabled with no `onChanged`, when its words and icon are dimmed to 38% as Material dims a disabled control's (the switch shows it in its own way).
+  - A switch for a setting the device can turn on too (Reduce motion, Bold text), while the device has it on, is on and disabled, with `settingOnInDevice` ("On in your device’s settings") in place of its description: the device's is in force whatever the app's says. The app's MediaQuery has each on where either turns it on, so the switch reads the device's own from `DeviceAccessibility` (lib/app/device_accessibility.dart).
 
 **Display**
 - The preview becomes a paper "page" showing a chapter head, two verses, a Targum line and a setumah mark. It reflects settings live and is pinned at the top: `SliverPersistentHeader`, collapsing 220 → 140.
@@ -1304,7 +1305,7 @@ In order:
 - Toggles in PaperGroups:
   - Text: nikud, ta'amim, ketiv, verse numbers, the Divine Name as ה׳ in a verse that leaves the app (`copyDivineName`, `DivineNameSwitch`), justify;
   - Study aids: English, Rashi, Rashi script (NEW);
-  - Reading: focus mode, bold, keep screen on.
+  - Reading: focus mode, bold (on and disabled while the device's Bold text is on, as a SwitchRow above), keep screen on.
 - Line width as a SegmentedButton.
 - Scripture fonts as radio rows whose title is "בְּרֵאשִׁית בָּרָא" at 22 in that font, named under it; interface fonts likewise, "Aa Bb אב" in each family, Device font included. Screen readers read the names alone. Every font's regular face is loaded as the page opens (`OptionalFonts.ensureSamples`), so each sample is drawn in its own; an interface font's bold waits until it is chosen.
 
@@ -1326,6 +1327,7 @@ In order:
   - Applying one says so with Undo, which restores the settings exactly as they were.
 - Reset display as a TextButton (`restart_alt`) under the grid, with the same Undo.
 - The remaining rows in PaperGroups: the Display page, Motion and touch, the screen reader's text and the Divine Name, speech rate, and Statement and feedback.
+  - Reduce motion is on and disabled while the device's is on (as a SwitchRow above).
 
 **Reader display sheet** (lib/features/reader/display_sheet.dart)
 - Opens at 42% of the screen over a light scrim (`Colors.black12`), so the verse it changes stays in view; drawn up, 95%.

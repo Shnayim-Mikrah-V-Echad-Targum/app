@@ -2817,6 +2817,12 @@ abstract class AppLocalizations {
   /// **'Turn off animations and moving celebrations'**
   String get reduceMotionDesc;
 
+  /// Under the Reduce motion or Bold text switch while the device has that setting on, in place of the switch's description: the switch shows it on, and can't be turned off in the app.
+  ///
+  /// In en, this message translates to:
+  /// **'On in your device’s settings'**
+  String get settingOnInDevice;
+
   /// No description provided for @haptics.
   ///
   /// In en, this message translates to:
