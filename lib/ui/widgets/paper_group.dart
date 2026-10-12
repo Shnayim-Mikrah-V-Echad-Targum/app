@@ -279,8 +279,17 @@ class _RowRule extends CustomPainter {
 /// stacks: the title, the subtitle and the detail line take its full width,
 /// the icon and chevron go on the title's line (or on a line of their own
 /// above it, where they would crowd the title), and a trailing control goes
-/// under the text. A title set smaller to keep a long word whole sets the
-/// lines under it no larger, so that it is never the smaller.
+/// under the text. Whether it stacks depends only on its width, the text's
+/// size and whether it has an icon, never on what is at its end at the
+/// moment, so that the rows of a group decide alike and a row keeps its
+/// layout as a control at its end comes and goes. A title set smaller to
+/// keep a long word whole sets the lines under it no larger as drawn, so
+/// that it is never the smaller.
+///
+/// It decides at layout how to set itself ([LayoutBuilder]), and so doesn't
+/// answer intrinsic size queries: in a dialog, whose content is sized to its
+/// intrinsic width, give it a width of its own ([SizedBox]), and never set
+/// it in a row as tall as its tallest cell ([IntrinsicHeight]).
 class PaperRow extends StatelessWidget {
   const PaperRow({
     super.key,
@@ -299,6 +308,7 @@ class PaperRow extends StatelessWidget {
     this.valueLocale,
     this.trailing,
     this.mergeTrailing = false,
+    this.progress,
     this.onTap,
     this.selected,
     this.toggled,
@@ -359,6 +369,11 @@ class PaperRow extends StatelessWidget {
   /// rather than as a control of its own.
   final bool mergeTrailing;
 
+  /// A spinner while the row's tap is under way (a discussion opening),
+  /// in the chevron's place, 20 square at most: the row keeps its layout as
+  /// it comes and goes.
+  final Widget? progress;
+
   final VoidCallback? onTap;
 
   /// Whether the row is the one chosen of a list, for screen readers; null
@@ -404,11 +419,27 @@ class PaperRow extends StatelessWidget {
   /// at nearly its size. Narrower, the icon goes on a line of its own.
   static const double _narrowestTitle = 88;
 
+  /// What a row allows at its end in deciding whether to stack: the widest
+  /// control a row has there, a switch, whatever it has at the moment, so
+  /// that the rows of a group decide alike, and a row keeps its layout as
+  /// a control comes and goes (a spinner, a button shown while a setting is
+  /// on).
+  static const double _endAllowance = _controlGap + 52;
+
+  /// How much [scaler] enlarges text [fontSize] high, a row's title's
+  /// (bodyLarge's 16) by default. On Android 14 and later the system's
+  /// scale is not linear, growing large text less than small, so widths
+  /// are compared by the title's own factor, not scaled as a font size.
+  static double _factor(TextScaler scaler, [double fontSize = 16]) => scaler.scale(fontSize) / fontSize;
+
   /// Whether text [width] wide, beside a row's leading and trailing columns,
-  /// is squeezed at [scaler]'s size: as only enlarged text ever is. Such a
-  /// row stacks its columns instead, as a [PaperRow] does.
-  static bool squeezes(TextScaler scaler, double width) =>
-      scaler.scale(1) > 1 && width < scaler.scale(_narrowestText);
+  /// is squeezed at [scaler]'s size, for a title [fontSize] high: as only
+  /// enlarged text ever is. Such a row stacks its columns instead, as a
+  /// [PaperRow] does.
+  static bool squeezes(TextScaler scaler, double width, {double fontSize = 16}) {
+    final factor = _factor(scaler, fontSize);
+    return factor > 1 && width < _narrowestText * factor;
+  }
 
   bool get _hasLead => icon != null || leading != null;
 
@@ -435,20 +466,42 @@ class PaperRow extends StatelessWidget {
     final trailing = this.trailing;
     final besideTitle = value == null && trailing is ButtonStyleButton ? trailing : null;
     final control = besideTitle == null ? trailing : null;
-    final chevronIcon = Icon(Icons.chevron_right, size: _chevronSize, color: scheme.outline);
+    final progress = this.progress;
+    // The chevron, or a spinner in its place.
+    final chevron = this.chevron || progress != null;
+    final chevronIcon = progress == null
+        ? Icon(Icons.chevron_right, size: _chevronSize, color: scheme.outline)
+        : SizedBox.square(dimension: _chevronSize, child: Center(child: progress));
     final scaler = MediaQuery.textScalerOf(context);
+    final titleSize = titleStyle.fontSize ?? 16;
+    final factor = _factor(scaler, titleSize);
     // Text is never cut short once it is enlarged (WCAG 1.4.4).
-    final enlarged = scaler.scale(1) > 1;
+    final enlarged = factor > 1;
 
     // The title, with a value or a labelled button at the end of its line,
     // and the lines under it. Where the title is set smaller, at [fit], to
     // keep a long word whole, they are set no larger than it, so that the
     // title is never the smaller.
     ({Widget heading, List<Widget> under}) texts(double fit) {
+      // As drawn, scaled: a scaler that isn't linear (Android's) grows a
+      // small size more than a large one.
+      final limit = fit * scaler.scale(titleSize);
       TextStyle? atMost(TextStyle? style) {
         final size = style?.fontSize;
-        final limit = titleStyle.fontSize! * fit;
-        return fit >= 1 || size == null || size <= limit ? style : style!.copyWith(fontSize: limit);
+        if (size == null || scaler.scale(size) <= limit + 0.01) return style;
+        // The size the scaler draws at the limit: it grows every size, if
+        // not in proportion, so the size is found by halving.
+        var low = 0.0;
+        var high = size;
+        for (var i = 0; i < 24; i++) {
+          final mid = (low + high) / 2;
+          if (scaler.scale(mid) > limit) {
+            high = mid;
+          } else {
+            low = mid;
+          }
+        }
+        return style!.copyWith(fontSize: low);
       }
 
       final muted = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
@@ -511,9 +564,26 @@ class PaperRow extends StatelessWidget {
       );
     }
 
-    // The icon, the text and the controls side by side.
-    Widget sideBySide() {
-      final (:heading, :under) = texts(1);
+    // About as wide as the controls at the end of the row as they are now:
+    // a control merged into the row is a switch or a checkbox, no wider
+    // than a switch.
+    final endWidth = (control == null ? 0 : _controlGap + (mergeTrailing ? 52 : _controlWidth(control))) +
+        (chevron ? _controlGap + _chevronSize : 0);
+
+    // The icon, the text and the controls side by side, in [width].
+    Widget sideBySide(double width) {
+      // A long word set smaller in the title sets the lines under it no
+      // larger here too.
+      final fit = !enlarged
+          ? 1.0
+          : WholeWords.scaleIn(
+              context,
+              title,
+              width: width - _start - _end - (_hasLead ? _iconSlot : 0) - endWidth,
+              style: titleStyle,
+              breakAtHyphens: breakTitleAtHyphens,
+            );
+      final (:heading, :under) = texts(fit);
       // A value ends the title's line. With a subtitle or a detail line under
       // them, the icon and the end of the row line up with that line too,
       // rather than with the middle of the row, so the value and chevron stay
@@ -562,7 +632,9 @@ class PaperRow extends StatelessWidget {
     // The text the row's full width: the title's line, with the icon and
     // chevron while they leave the title room enough, or else on a line of
     // their own above it; the lines under it; and a control under them.
-    (Widget, bool leadAbove) stacked(double width) {
+    // Returns where the text starts, for the hairline under it: null where
+    // the group's own inset says.
+    (Widget, double? textStart) stacked(double width) {
       // Growing with the text, a little, as a mark beside large words.
       final iconSize = scaler.clamp(maxScaleFactor: 1.5).scale(22);
       final icon = this.icon;
@@ -573,7 +645,7 @@ class PaperRow extends StatelessWidget {
       final textWidth = width - _start - _end;
       // Judged with room for a chevron whether or not the row has one, so
       // that the rows of a group decide alike.
-      final leadBeside = lead == null || textWidth - leadWidth - chevronWidth >= scaler.scale(_narrowestTitle);
+      final leadBeside = lead == null || textWidth - leadWidth - chevronWidth >= _narrowestTitle * factor;
       final chevronBeside = chevron && leadBeside;
       final fit = WholeWords.scaleIn(
         context,
@@ -614,21 +686,27 @@ class PaperRow extends StatelessWidget {
             ),
         ],
       );
-      return (column, lead != null && !leadBeside);
+      // With the icon above it, all its text starts at the row's start;
+      // with an icon grown beside it, where the title does.
+      final textStart = lead == null
+          ? null
+          : !leadBeside
+              ? PaperGroup.plainInset
+              : _start + leadWidth;
+      return (column, textStart);
     }
 
-    // About as wide as the controls at the end of the row: a control merged
-    // into the row is a switch or a checkbox, no wider than a switch.
-    final endWidth = (control == null ? 0 : _controlGap + (mergeTrailing ? 52 : _controlWidth(control))) +
-        (chevron ? _controlGap + _chevronSize : 0);
     final content = LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final squeezed = squeezes(scaler, width - _start - _end - (_hasLead ? _iconSlot : 0) - endWidth);
-        final (body, leadAbove) = squeezed ? stacked(width) : (sideBySide(), false);
-        // With the icon above it, all its text starts at the row's start, and
-        // so does the hairline under it.
-        _RowPlace.ruleStartOf(context)?.value = leadAbove ? PaperGroup.plainInset : null;
+        final squeezed = squeezes(
+          scaler,
+          width - _start - _end - (_hasLead ? _iconSlot : 0) - _endAllowance,
+          fontSize: titleSize,
+        );
+        final (body, textStart) = squeezed ? stacked(width) : (sideBySide(width), null);
+        // The hairline under the row starts where its text does.
+        _RowPlace.ruleStartOf(context)?.value = textStart == PaperGroup.iconInset ? null : textStart;
         return ConstrainedBox(
           constraints: BoxConstraints(minHeight: subtitle == null && detail == null ? 56 : 72),
           child: Padding(padding: const EdgeInsetsDirectional.fromSTEB(_start, 12, _end, 12), child: body),

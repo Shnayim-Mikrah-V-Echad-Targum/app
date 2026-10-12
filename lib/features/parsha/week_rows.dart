@@ -50,7 +50,8 @@ class DiscussRow extends StatelessWidget {
         builder: (context, progress, open) => PaperRow(
           icon: Icons.forum_outlined,
           title: context.l10n.discussThisWeek,
-          trailing: progress,
+          // In the chevron's place, so the row keeps its layout.
+          progress: progress,
           onTap: open,
         ),
       );
