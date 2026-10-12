@@ -155,6 +155,47 @@ void main() {
     });
   }
 
+  // The day of rest's title page, set in the space under the header (§9
+  // Today, 8), is taller than the screen at this size: it scrolls, and the
+  // way to the parsha is reached. It meets the guidelines at a phone's size.
+  for (final hebrew in [false, true]) {
+    final language = hebrew ? ', Hebrew' : '';
+    final settings = AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.system);
+    final shabbat = DateTime(2026, 10, 10, 11);
+
+    testWidgets('no overflow or broken word at 300% on a 320 dp phone: /today on Shabbat$language', (tester) async {
+      final c = await openRoute(
+        tester,
+        '/today',
+        settings: settings,
+        now: shabbat,
+        size: const Size(320, 640),
+        textScale: 3,
+      );
+      expect(tester.takeException(), isNull);
+      expectWholeWords(tester);
+      final open = find.text(hebrew ? 'לפרשה' : 'Open the parsha');
+      expect(tester.getRect(open).top, greaterThan(640), reason: 'below the screen at first');
+      await tester.scrollUntilVisible(open, 200, scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(open);
+      await tester.pumpAndSettle();
+      expect(c.read(routerProvider).state.uri.path, '/today/week/5787:1');
+    });
+
+    testWidgets('a11y guidelines: /today on Shabbat$language', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openRoute(tester, '/today', settings: settings, now: shabbat);
+      expect(tester.takeException(), isNull);
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(semanticsInvariants));
+      handle.dispose();
+    });
+  }
+
   // A name of two parshiyot, of more than one word, stays whole: "Acharei"
   // over "Mot-Kedoshim", never "Acharei Mot-" over "Kedoshim". The Hebrew
   // UI names it in English under the Hebrew.
@@ -634,8 +675,8 @@ void main() {
     }
 
     // In Hebrew the notice is longer: it breaks where it must, but no line
-    // starts with its dash ("— הפרשה"), and a day keeps its month ("11 /
-    // באוקטובר").
+    // starts with its dash ("— הפרשה"), and a day keeps its month ("ל׳ /
+    // בתשרי").
     testWidgets('at 300% on a 320 dp phone, the Hebrew preview notice keeps its dash and its date with their words',
         (tester) async {
       tester.view.physicalSize = const Size(320, 640);
@@ -663,7 +704,7 @@ void main() {
       double top(int i) => paragraph.getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1)).first.top;
       final dash = text.indexOf('—');
       expect(top(dash), top(dash - 2), reason: 'the dash on the line of the word before it');
-      expect(top(text.indexOf('באוקטובר')), top(text.indexOf('11')), reason: 'the day on the line of its month');
+      expect(top(text.indexOf('בתשרי')), top(text.indexOf('ל׳')), reason: 'the day on the line of its month');
       expect(top(text.length - 1), greaterThan(top(0)), reason: 'on more than one line at this size');
       expect(tester.takeException(), isNull);
     });

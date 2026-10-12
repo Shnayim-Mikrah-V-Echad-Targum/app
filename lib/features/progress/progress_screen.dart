@@ -26,6 +26,7 @@ import '../../ui/widgets/sefer_choice_chip.dart';
 import '../../ui/widgets/year_bar.dart';
 import '../parsha/week_context.dart';
 import '../reader/sefer_complete_screen.dart';
+import '../settings/widgets/pause_setting.dart';
 import 'domain/milestones.dart';
 import 'domain/parsha_standing.dart';
 import 'domain/progress_models.dart';
@@ -184,7 +185,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     icon: Icons.history,
                     title: name(e.plan.portion),
                     breakTitleAtHyphens: false,
-                    subtitle: names.dateLong(e.plan.week.occasion),
+                    subtitle: names.practiceDate(e.plan.week.occasion),
                     onTap: () => context.push('/progress/week/${e.plan.weekId}'),
                   ),
               ],
@@ -461,7 +462,7 @@ class _WeekRow extends StatelessWidget {
     final scheme = theme.colorScheme;
     final meta = theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
     // The year only for a week of another one.
-    final date = occasion.year == today.year ? names.dateShort(occasion) : names.dateShortWithYear(occasion);
+    final date = names.practiceDateShort(occasion, today: today);
     final content = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 72),
       child: Padding(
@@ -551,16 +552,15 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
         if (mounted && node.context != null) node.requestFocus();
       });
 
-  void _end(LocalDate today) {
+  void _end() {
     final hadFocus = _endPause.hasFocus;
-    ref.read(progressProvider.notifier).endPause(today);
-    showStatus(context, context.l10n.pauseEnded);
+    resumePause(context, ref);
     if (hadFocus) _focusAfterFrame(_row);
   }
 
-  Future<void> _extendPause(LocalDate end) async {
+  Future<void> _extendPause(({LocalDate start, LocalDate end}) pause) async {
     final hadFocus = _extend.hasFocus;
-    await _showExtendPauseDialog(context, ref, end);
+    await showExtendPause(context, ref, pause);
     if (!mounted || !hadFocus) return;
     // The focus comes back to Extend from the dialog, unless Extend is gone.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -589,8 +589,10 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final today = ref.watch(todayProvider);
-    final pause = ref.watch(progressProvider.select((p) => p.pauses)).firstWhere((p) => p.contains(today));
-    final canExtend = _canExtend = _extensions(today, pause.end).isNotEmpty;
+    // Until the last day of the pauses that run on from today's, as Today
+    // and Settings say, and extended by the same rule as there.
+    final pause = ref.watch(progressProvider.select((p) => pauseCovering(p.pauses, today)))!;
+    final canExtend = _canExtend = pauseExtensions(pause).isNotEmpty;
     return PaperGroup(
       children: [
         Padding(
@@ -611,7 +613,7 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
                   children: [
                     Text(l.pauseTitle, style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurface)),
                     Text(
-                      l.pausedBanner(names.dateLong(pause.end)),
+                      l.pausedBanner(names.practiceDate(pause.end)),
                       style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                     const Gap(Space.md),
@@ -622,13 +624,13 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
                         FilledButton.tonal(
                           focusNode: _endPause,
                           style: AppButtons.tonal(context),
-                          onPressed: () => _end(today),
+                          onPressed: _end,
                           child: Text(l.endPause),
                         ),
                         if (canExtend)
                           TextButton(
                             focusNode: _extend,
-                            onPressed: () => _extendPause(pause.end),
+                            onPressed: () => _extendPause(pause),
                             child: Text(l.extendPause),
                           ),
                       ],
@@ -642,69 +644,6 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
       ],
     );
   }
-}
-
-/// The days a pause ending on [end] may be extended by, as of [today]: a
-/// pause reaches no further than 30 days ahead, as a new one may.
-List<int> _extensions(LocalDate today, LocalDate end) =>
-    [for (final d in const [1, 3, 7, 14]) if (end.addDays(d) <= today.addDays(_maxPauseDays - 1)) d];
-
-/// The longest pause, counted from its first day.
-const _maxPauseDays = 30;
-
-Future<void> _showExtendPauseDialog(BuildContext context, WidgetRef ref, LocalDate end) async {
-  final l = context.l10n;
-  final names = Names(context);
-  final today = ref.read(todayProvider);
-  final choices = _extensions(today, end);
-  if (choices.isEmpty) return;
-  var days = choices.first;
-  final ok = await showAppDialog<bool>(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) {
-        final theme = Theme.of(context);
-        return AlertDialog(
-          title: Text(l.extendPauseTitle),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l.extendPauseBy, style: theme.textTheme.titleSmall),
-                const Gap(Space.sm),
-                Wrap(
-                  spacing: Space.sm,
-                  runSpacing: Space.sm,
-                  children: [
-                    for (final d in choices)
-                      SeferChoiceChip(
-                        label: Text(l.daysCount(d)),
-                        selected: days == d,
-                        onSelected: (_) => setState(() => days = d),
-                      ),
-                  ],
-                ),
-                const Gap(Space.lg),
-                Text(
-                  l.extendPauseUntil(names.dateLong(end.addDays(days))),
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.extendPause)),
-          ],
-        );
-      },
-    ),
-  );
-  if (ok != true) return;
-  final until = end.addDays(days);
-  ref.read(progressProvider.notifier).extendPause(today, until);
-  if (context.mounted) showStatus(context, l.pauseStarted(names.dateLong(until)));
 }
 
 /// What the reader has finished so far, newest first (§9 Progress): only
@@ -1466,7 +1405,11 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
                 children: [
                   for (final b in const [0, 1, 2, 3])
                     SeferChoiceChip(
-                      label: Text(b == 0 ? l.whenToday : (b == 1 ? l.whenYesterday : names.dateShort(today.addDays(-b)))),
+                      label: Text(switch (b) {
+                        0 => l.whenToday,
+                        1 => l.whenYesterday,
+                        _ => names.practiceDateShort(today.addDays(-b)),
+                      }),
                       selected: backdate == b,
                       onSelected: (_) => setState(() => backdate = b),
                     ),
@@ -1486,7 +1429,7 @@ Future<void> showPauseDialog(BuildContext context, WidgetRef ref) async {
   final start = today.addDays(-backdate);
   final end = start.addDays(days - 1);
   ref.read(progressProvider.notifier).addPause(start, end);
-  if (context.mounted) showStatus(context, l.pauseStarted(names.dateLong(end)));
+  if (context.mounted) showStatus(context, l.pauseStarted(names.practiceDate(end)));
 }
 
 /// [text]'s width on one line in [style], merged with the ambient style, at

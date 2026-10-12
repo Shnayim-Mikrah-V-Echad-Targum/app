@@ -36,7 +36,7 @@ bool haftarahCovers(Haftarah outer, Haftarah inner) => inner.every((p) => outer.
 /// Sephardi readings are listed wherever they differ, so a Sephardi
 /// fallback is the same reading. Chabad's are listed only where they have
 /// been sourced so far, so a Chabad fallback may not be the Chabad reading
-/// (see [fallsBack]).
+/// where the customs differ (see [fallsBack]).
 class HaftarahOptions {
   const HaftarahOptions({required this.ashkenazi, this.sephardi, this.chabad});
 
@@ -63,8 +63,13 @@ class HaftarahOptions {
 
   /// Whether [forNusach] gives [nusach] the Ashkenazi reading for want of
   /// its own, rather than because the two are the same: so far, a Chabad
-  /// reading that isn't listed.
-  bool fallsBack(HaftarahNusach nusach) => nusach == HaftarahNusach.chabad && chabad == null;
+  /// reading that isn't listed, where the Ashkenazi and Sephardi readings
+  /// differ. Where they agree, Chabad's is taken to be the same.
+  ///
+  /// That is a stopgap until a sourced table of Chabad's haftarot lands: it
+  /// says nothing where Chabad adds verses of its own to a reading the
+  /// others share.
+  bool fallsBack(HaftarahNusach nusach) => nusach == HaftarahNusach.chabad && chabad == null && sephardi != null;
 }
 
 /// Metadata for one weekly reading (a single parsha or a combined pair).

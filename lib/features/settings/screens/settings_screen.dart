@@ -56,14 +56,16 @@ class SettingsScreen extends ConsumerWidget {
               onChanged: (v) => ref.read(settingsProvider.notifier).update((s) => s.copyWith(showStreaks: v)),
             ),
             // A dialog, not a page: no chevron. While paused, it offers to
-            // lengthen the pause or end it, rather than make another.
+            // extend the pause, as Progress does, or end it, rather than make
+            // another.
             PaperRow(
               icon: Icons.pause_circle_outline,
               title: l.pauseAction,
-              subtitle: pause == null ? l.settingsPauseDesc : l.pausedBanner(names.dateInText(pause.end)),
+              subtitle: pause == null ? l.settingsPauseDesc : l.pausedBanner(names.practiceDate(pause.end)),
               subtitleMaxLines: null,
               chevron: false,
-              onTap: () => pause == null ? showPauseDialog(context, ref) : showPauseOptions(context, ref, pause),
+              onTap: () =>
+                  pause == null ? showPauseDialog(context, ref) : showExtendPause(context, ref, pause, offerEnd: true),
             ),
           ],
         ),

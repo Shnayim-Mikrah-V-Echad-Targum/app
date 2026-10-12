@@ -159,6 +159,25 @@ class Names {
   /// "Genesis 7:17–8:14" / "בראשית ז, יז – ח, יד".
   String range(String bookName, int c1, int v1, int c2, int v2) => '${book(bookName)} ${verseRange(c1, v1, c2, v2)}';
 
+  /// One passage of a haftarah: "I Samuel 20:18–42" / "שמואל א כ, יח–מב", a
+  /// book's name of two words held on one line, and a closed range held
+  /// together by a word joiner after its dash, so that a line breaks after
+  /// the book ("Ezekiel / 45:16–46:18", never "Ezekiel 45:16– / 46:18"), or
+  /// after the spaced dash of a Hebrew range across chapters.
+  String passage(HaftarahPart p) {
+    final name = book(p.book).replaceAll(' ', _nbsp);
+    final verses = verseRange(p.start.chapter, p.start.verse, p.end.chapter, p.end.verse);
+    return '$name ${verses.replaceAll(_closedDash, '–\u2060')}';
+  }
+
+  /// The dash of a closed range ("45:16–46:18", "יח–מב"), between two
+  /// characters that are not spaces.
+  static final _closedDash = RegExp(r'(?<=\S)–(?=[^\s\u2060])');
+
+  /// A haftarah's passages: "Isaiah 66:1–24 · I Samuel 20:18 · I Samuel
+  /// 20:42". A line may end after a dot, but never start with one.
+  String haftarah(Haftarah parts) => parts.map(passage).join('$_nbsp· ');
+
   /// [range] without the book, for a range in a book named nearby:
   /// "7:17–8:14" / "ז, יז – ח, יד".
   ///
@@ -166,14 +185,19 @@ class Names {
   /// before it as [AliyahNames.aliyahRange] holds it: closed up, "א, א–ו, ח"
   /// would read as chapter 1, verses 1–6 and 8. A range within a chapter
   /// stays closed: "ב, כ–כא". A chapter and its verse are held together, as
-  /// "1:1" is, so that a line breaks only after the book or the dash.
+  /// "1:1" is, so that a line breaks only after the book or the dash. A
+  /// range of one verse, as a haftarah adds, is the verse alone: "20:18", as
+  /// [reference] names it.
   String verseRange(int c1, int v1, int c2, int v2) {
+    final one = c1 == c2 && v1 == v2;
     if (_he) {
       String g(int n) => HebrewText.gematria(n, punctuate: false);
       final start = '${g(c1)},$_nbsp${g(v1)}';
+      if (one) return start;
       if (c1 == c2) return '$start–${g(v2)}';
       return '$start$_nbsp– ${g(c2)},$_nbsp${g(v2)}';
     }
+    if (one) return '$c1:$v1';
     final end = c1 == c2 ? '$v2' : '$c2:$v2';
     return '$c1:$v1–$end';
   }
@@ -207,8 +231,11 @@ class Names {
   /// [dateLong] for a sentence: it wraps after its weekday's comma or not at
   /// all, never between a day and its month ("October / 11", "11 /
   /// באוקטובר").
-  String dateInText(LocalDate d) =>
-      [for (final part in dateLong(d).split(', ')) part.replaceAll(' ', '\u00A0')].join(', ');
+  String dateInText(LocalDate d) => _heldTogether(dateLong(d));
+
+  /// [date]'s words held together by no-break spaces, but after a comma.
+  static String _heldTogether(String date) =>
+      [for (final part in date.split(', ')) part.replaceAll(' ', _nbsp)].join(', ');
 
   /// "11 October" (no weekday).
   String dateMonthDay(LocalDate d) => DateFormat.MMMMd(context.localeName).format(d.toDateTime());
@@ -240,17 +267,41 @@ class Names {
     return _he ? '${HebrewText.gematria(h.day)} ב$month' : '${h.day} $month';
   }
 
+  /// A day of the practice (a Shabbat, a pause's last day, the day a parsha
+  /// opens or its late window closes, the day something was read) in a
+  /// sentence: [dateInText] in English, "Sunday, October 11", and in the
+  /// Hebrew UI the Hebrew date with its weekday, without the year, "יום
+  /// ראשון, ל׳ בתשרי", held together as [dateInText] is
+  /// (docs/DESIGN_SYSTEM.md §4.6).
+  String practiceDate(LocalDate d) => _heldTogether(_practiceDateLong(d));
+
+  /// [practiceDate] without its weekday, after a word that names the day:
+  /// "Read on Shabbat, October 10", "שבת, כ״ט בתשרי".
+  String practiceDayMonth(LocalDate d) => _he ? hebrewDayMonth(d) : dateMonthDay(d);
+
+  /// A day of the practice in a list or on a chip, briefly: "Oct 10", or in
+  /// the Hebrew UI "כ״ט בתשרי". With its year where [today] is given and is
+  /// in another year, a Hebrew one in the Hebrew UI: "Oct 10, 2025", "כ״ט
+  /// בתשרי תשפ״ו".
+  String practiceDateShort(LocalDate d, {LocalDate? today}) {
+    if (_he) {
+      final otherYear = today != null && HebrewDate.fromLocalDate(d).year != HebrewDate.fromLocalDate(today).year;
+      return otherYear ? hebrewDate(d) : hebrewDayMonth(d);
+    }
+    return today != null && d.year != today.year ? dateShortWithYear(d) : dateShort(d);
+  }
+
+  String _practiceDateLong(LocalDate d) => _he ? '${weekday(d)}, ${hebrewDayMonth(d)}' : dateLong(d);
+
   /// When [week]'s portion is read in synagogue: "Read on Shabbat,
   /// 10 October", or for Vezot HaBerachah "Read on Simchat Torah, Sunday,
   /// 4 October". The Hebrew UI dates it in the Hebrew calendar, without the
   /// year: "נקראת בשבת, כ״ט בתשרי".
   String readOnLabel(ReadingWeek week) {
     final d = week.occasion;
-    if (week.portion.isVezotHaberakhah) {
-      // Simchat Torah is seldom a Shabbat, so it gives the weekday too.
-      return _l.readOnSimchatTorah(_he ? '${weekday(d)}, ${hebrewDayMonth(d)}' : dateLong(d));
-    }
-    return _l.readOnShabbat(_he ? hebrewDayMonth(d) : dateMonthDay(d));
+    // Simchat Torah is seldom a Shabbat, so it gives the weekday too.
+    if (week.portion.isVezotHaberakhah) return _l.readOnSimchatTorah(_practiceDateLong(d));
+    return _l.readOnShabbat(practiceDayMonth(d));
   }
 
   String hebrewMonth(int year, int month) {
@@ -284,6 +335,7 @@ class Names {
   @visibleForTesting
   static const specialHaftarotHe = {
     'Shabbat Rosh Chodesh': 'שבת ראש חודש',
+    'Shabbat Rosh Chodesh (and Sunday)': 'שבת ראש חודש, ומוסיפים פסוקים מ״מחר חודש״',
     'Shabbat Machar Chodesh': 'שבת מחר חודש',
     'Shabbat Shekalim': 'שבת שקלים',
     'Shabbat Shekalim (on Rosh Chodesh)': 'שבת שקלים (בראש חודש)',
@@ -306,12 +358,13 @@ class Names {
     'Masei on Shabbat Rosh Chodesh': 'מסעי בראש חודש אב',
     'Matot-Masei on Shabbat Rosh Chodesh': 'מטות־מסעי בראש חודש אב',
     'Ki Teitzei with 3rd Haftarah of Consolation': 'כי תצא עם ״עניה סוערה״',
-    "Re'eh on Shabbat Rosh Chodesh": 'ראה בשבת ראש חודש אלול',
+    "Re'eh on Shabbat Rosh Chodesh (and Sunday)": 'ראה בשבת ראש חודש אלול, ומוסיפים פסוקים מ״מחר חודש״',
   };
 
   @visibleForTesting
   static const specialHaftarotEn = {
     'Shabbat Rosh Chodesh': 'Shabbat Rosh Chodesh',
+    'Shabbat Rosh Chodesh (and Sunday)': 'Shabbat Rosh Chodesh, with verses for Sunday’s Rosh Chodesh',
     'Shabbat Machar Chodesh': 'Shabbat Machar Chodesh',
     'Shabbat Shekalim': 'Shabbat Shekalim',
     'Shabbat Shekalim (on Rosh Chodesh)': 'Shabbat Shekalim and Rosh Chodesh',
@@ -334,6 +387,6 @@ class Names {
     'Masei on Shabbat Rosh Chodesh': 'Masei on Rosh Chodesh Av',
     'Matot-Masei on Shabbat Rosh Chodesh': 'Matot-Masei on Rosh Chodesh Av',
     'Ki Teitzei with 3rd Haftarah of Consolation': 'Ki Tetze, with Aniyah So’arah',
-    "Re'eh on Shabbat Rosh Chodesh": 'Re’eh on Rosh Chodesh Elul',
+    "Re'eh on Shabbat Rosh Chodesh (and Sunday)": 'Re’eh on Rosh Chodesh Elul, with verses for Sunday’s Rosh Chodesh',
   };
 }

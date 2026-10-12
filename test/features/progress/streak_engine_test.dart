@@ -235,6 +235,22 @@ void main() {
     );
   });
 
+  test('Vezot HaBerachah read on Yom Tov and logged after it is on time', () {
+    // 5787 outside Israel: Shemini Atzeret on Shabbat 3 October 2026, and
+    // Simchat Torah, when Vezot HaBerachah is read, on Sunday 4 October.
+    // Read on Shemini Atzeret, from a printed Chumash, and logged on Monday.
+    final log = Log(planner)..readAll('2026-10-01', '2026-10-03');
+    expect(log.idFor('2026-10-01'), '5786:54');
+    final s = engine.evaluate(progress: log.map, joinDate: d('2026-09-01'), today: d('2026-10-05'));
+    final vezot = s.weeks.singleWhere((w) => w.plan.weekId == '5786:54');
+    expect(vezot.status, WeekStatus.onTime);
+    expect(vezot.completedOn, d('2026-10-03'));
+
+    // Not logged, it has no late window to wait in.
+    final unlogged = engine.evaluate(progress: const {}, joinDate: d('2026-09-01'), today: d('2026-10-05'));
+    expect(unlogged.weeks.singleWhere((w) => w.plan.weekId == '5786:54').status, WeekStatus.missed);
+  });
+
   group('changing settings', () {
     /// An engine whose plan settings changed as [entries] (oldest first) say.
     StreakEngine engineWith(List<PlanSettingsEntry> entries) => StreakEngine(

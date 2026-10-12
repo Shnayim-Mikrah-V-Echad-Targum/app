@@ -62,24 +62,29 @@ void main() {
       pauseEndSeen: LocalDate(2026, 10, 11),
       lastStripAck: LocalDate(2026, 10, 16),
       stripNoteShownOn: LocalDate(2026, 10, 15),
+      divergenceDismissedFor: '5789:30',
     );
     final back = AppSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
     expect(
-      (back.checkInAnsweredFor, back.pauseEndSeen, back.lastStripAck, back.stripNoteShownOn),
-      ('5787:1', LocalDate(2026, 10, 11), LocalDate(2026, 10, 16), LocalDate(2026, 10, 15)),
+      (back.checkInAnsweredFor, back.pauseEndSeen, back.lastStripAck, back.stripNoteShownOn, back.divergenceDismissedFor),
+      ('5787:1', LocalDate(2026, 10, 11), LocalDate(2026, 10, 16), LocalDate(2026, 10, 15), '5789:30'),
     );
     final none = AppSettings.fromJson({});
     expect(
-      [none.checkInAnsweredFor, none.pauseEndSeen, none.lastStripAck, none.stripNoteShownOn],
+      [none.checkInAnsweredFor, none.pauseEndSeen, none.lastStripAck, none.stripNoteShownOn, none.divergenceDismissedFor],
       everyElement(isNull),
     );
     // Values that can't be read are none.
-    final odd = AppSettings.fromJson({'checkInAnsweredFor': 3, 'pauseEndSeen': 'Sunday', 'lastStripAck': null});
-    expect([odd.checkInAnsweredFor, odd.pauseEndSeen, odd.lastStripAck], everyElement(isNull));
+    final odd = AppSettings.fromJson(
+      {'checkInAnsweredFor': 3, 'pauseEndSeen': 'Sunday', 'lastStripAck': null, 'divergenceDismissedFor': 30},
+    );
+    expect([odd.checkInAnsweredFor, odd.pauseEndSeen, odd.lastStripAck, odd.divergenceDismissedFor], everyElement(isNull));
     // Undoing a check-in clears its answer.
     expect(s.copyWith(checkInAnsweredFor: null).checkInAnsweredFor, isNull);
     expect(s.copyWith(plan: ReadingPlanType.erevShabbat).checkInAnsweredFor, '5787:1');
+    expect(s.copyWith(divergenceDismissedFor: null).divergenceDismissedFor, isNull);
+    expect(s.copyWith(plan: ReadingPlanType.erevShabbat).divergenceDismissedFor, '5789:30');
   });
 
   group('habit anchor', () {

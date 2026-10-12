@@ -7,6 +7,7 @@ import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
+import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -61,16 +62,27 @@ void main() {
       expect(names.specialHaftarah('Shabbat Zachor'), 'Shabbat Zachor');
       expect(names.specialHaftarah('Not a key'), 'Not a key', reason: 'an unknown key is shown as it is');
       // The calendar's keys have straight apostrophes; the names, curly ones.
-      expect(names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh"), 'Re’eh on Rosh Chodesh Elul');
+      expect(
+        names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh (and Sunday)"),
+        'Re’eh on Rosh Chodesh Elul, with verses for Sunday’s Rosh Chodesh',
+      );
       expect(names.specialHaftarah('Ki Teitzei with 3rd Haftarah of Consolation'), 'Ki Tetze, with Aniyah So’arah');
       expect(names.specialHaftarah("Not a key's"), 'Not a key’s');
+      expect(
+        names.specialHaftarah('Shabbat Rosh Chodesh (and Sunday)'),
+        'Shabbat Rosh Chodesh, with verses for Sunday’s Rosh Chodesh',
+      );
 
       names = Names(await _page(tester, hebrew: true));
       expect(names.specialHaftarah('Pinchas occurring after 17 Tammuz'), 'ראשונה דפורענותא (״דברי ירמיהו״)');
       expect(names.specialHaftarah('Masei on Shabbat Rosh Chodesh'), 'מסעי בראש חודש אב');
       expect(names.specialHaftarah('Matot-Masei on Shabbat Rosh Chodesh'), 'מטות־מסעי בראש חודש אב');
       expect(names.specialHaftarah('Chanukah Day 8 (on Shabbat)'), 'שבת חנוכה השנייה');
-      expect(names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh"), 'ראה בשבת ראש חודש אלול');
+      expect(
+        names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh (and Sunday)"),
+        'ראה בשבת ראש חודש אלול, ומוסיפים פסוקים מ״מחר חודש״',
+      );
+      expect(names.specialHaftarah('Shabbat Rosh Chodesh (and Sunday)'), 'שבת ראש חודש, ומוסיפים פסוקים מ״מחר חודש״');
     });
 
     test('have no straight apostrophe in English', () {
@@ -164,6 +176,42 @@ void main() {
     expect(names.dateInText(day).replaceAll('\u00A0', ' '), names.dateLong(day));
   });
 
+  group('a day of the practice', () {
+    // Shabbat Bereshit, 10 October 2026 (29 Tishrei 5787), and the Sunday
+    // after it (30 Tishrei).
+    final shabbat = LocalDate(2026, 10, 10);
+    final sunday = LocalDate(2026, 10, 11);
+    final roshHashanah5788 = HebrewDate(5788, HebrewMonth.tishrei, 1).toLocalDate();
+
+    testWidgets('is the Gregorian date in English, as before', (tester) async {
+      final names = Names(await _page(tester, hebrew: false));
+      expect(names.practiceDate(sunday), 'Sunday, October\u00A011');
+      expect(names.practiceDate(sunday), names.dateInText(sunday));
+      expect(names.practiceDayMonth(shabbat), 'October 10');
+      expect(names.practiceDateShort(shabbat), 'Oct 10');
+      // The year only for a day of another year than today's.
+      expect(names.practiceDateShort(shabbat, today: LocalDate(2026, 12, 31)), 'Oct 10');
+      expect(names.practiceDateShort(shabbat, today: LocalDate(2027, 1, 1)), 'Oct 10, 2026');
+    });
+
+    testWidgets('is the Hebrew date in Hebrew, without the year, held together but after its comma', (tester) async {
+      final names = Names(await _page(tester, hebrew: true));
+      expect(names.practiceDate(sunday), 'יום\u00A0ראשון, ל׳\u00A0בתשרי');
+      expect(names.practiceDate(shabbat).replaceAll('\u00A0', ' '), 'יום שבת, כ״ט בתשרי');
+      // Adar I's name is two words, held to its day too.
+      expect(
+        names.practiceDate(HebrewDate(5787, HebrewMonth.adar, 14).toLocalDate()).split(', ').last,
+        'י״ד\u00A0באדר\u00A0א׳',
+      );
+      expect(names.practiceDayMonth(shabbat), 'כ״ט בתשרי');
+      expect(names.practiceDateShort(shabbat), 'כ״ט בתשרי');
+      // The year only in another Hebrew year, not another Gregorian one.
+      expect(names.practiceDateShort(shabbat, today: LocalDate(2027, 1, 1)), 'כ״ט בתשרי');
+      expect(names.practiceDateShort(shabbat, today: roshHashanah5788.addDays(-1)), 'כ״ט בתשרי');
+      expect(names.practiceDateShort(shabbat, today: roshHashanah5788), 'כ״ט בתשרי תשפ״ז');
+    });
+  });
+
   testWidgets("a book's parshiyot are counted beside its name: 12 parshiyot, and 12 פרשות", (tester) async {
     var context = await _page(tester, hebrew: false);
     expect(context.l10n.browseBookParshiyot(12), '12 parshiyot');
@@ -210,6 +258,40 @@ void main() {
       expect(names.verseRange(7, 17, 8, 14), 'ז,\u00A0יז\u00A0– ח,\u00A0יד');
       expect(names.range('Isaiah', 42, 5, 43, 10), 'ישעיהו מב,\u00A0ה\u00A0– מג,\u00A0י');
     });
+
+    // As a haftarah adds the first and last verses of another.
+    testWidgets('of one verse is the verse alone', (tester) async {
+      var names = Names(await _page(tester, hebrew: false));
+      expect(names.range('I Samuel', 20, 18, 20, 18), 'I Samuel 20:18');
+      expect(names.range('I Samuel', 20, 18, 20, 18), names.reference('I Samuel', 20, 18));
+      names = Names(await _page(tester, hebrew: true));
+      expect(names.range('I Samuel', 20, 18, 20, 18), 'שמואל א כ,\u00A0יח');
+      expect(names.range('I Samuel', 20, 18, 20, 18), names.reference('I Samuel', 20, 18));
+    });
+  });
+
+  // "I" never ends a line with "Samuel" on the next, nor "·" starts one,
+  // nor does a line end inside a closed range ("45:16– / 46:18").
+  testWidgets(
+      "a haftarah's passages hold a book's name of two words, a closed range, and each dot to the passage before it",
+      (tester) async {
+    const parts = [
+      HaftarahPart('Isaiah', VerseRef(66, 1), VerseRef(66, 24)),
+      HaftarahPart('I Samuel', VerseRef(20, 18), VerseRef(20, 18)),
+      HaftarahPart('I Samuel', VerseRef(20, 42), VerseRef(20, 42)),
+    ];
+    const ezekiel = HaftarahPart('Ezekiel', VerseRef(45, 16), VerseRef(46, 18));
+    var names = Names(await _page(tester, hebrew: false));
+    expect(names.passage(parts[1]), 'I\u00A0Samuel 20:18');
+    expect(names.passage(ezekiel), 'Ezekiel 45:16–\u206046:18');
+    expect(names.haftarah(parts), 'Isaiah 66:1–\u206024\u00A0· I\u00A0Samuel 20:18\u00A0· I\u00A0Samuel 20:42');
+    names = Names(await _page(tester, hebrew: true));
+    expect(
+      names.haftarah(parts),
+      'ישעיהו סו,\u00A0א–\u2060כד\u00A0· שמואל\u00A0א כ,\u00A0יח\u00A0· שמואל\u00A0א כ,\u00A0מב',
+    );
+    // Across chapters, the spaced dash may still end a line (§4.6).
+    expect(names.passage(ezekiel), 'יחזקאל מה,\u00A0טז\u00A0– מו,\u00A0יח');
   });
 
   // As a range holds them, so that a long reference at large text breaks

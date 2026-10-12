@@ -10,6 +10,7 @@ import '../../data/parsha_repository.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/reading_plan.dart';
 import '../progress/domain/streak_engine.dart';
+import '../settings/app_settings.dart';
 
 /// Finds the reading week for a stable week id such as `"5787:22-23"`.
 ReadingWeek? findWeekById(ParshaSchedule schedule, String id) {
@@ -103,6 +104,53 @@ LocalDate firstDayToAskAfter(LocalDate occasion, {required bool oneDayYomTov}) {
   }
   return day;
 }
+
+/// Whether Today checks in after [previous] was read in synagogue, asking
+/// what was read then from a printed Chumash: after a Shabbat, and after
+/// Simchat Torah, the Yom Tov that Vezot HaBerachah is read on (MB 285:18),
+/// when nobody reads from a device either.
+bool _checksIn(WeekContext previous) => previous.week.occasion.isShabbat || previous.week.portion.isVezotHaberakhah;
+
+/// The first day Today can ask after [previous]'s Shabbat, or Simchat Torah
+/// ([firstDayToAskAfter]): past the days of rest that run on from it, and
+/// past Tisha B'Av straight after it, whatever the reader plans on the fast,
+/// since the check-in's greeting is not given then (Shulchan Aruch OC
+/// 554:20).
+LocalDate checkInDay(WeekContext previous, {required AppSettings settings}) =>
+    firstDayToAskAfter(previous.week.occasion, oneDayYomTov: settings.oneDayYomTov);
+
+/// Whether Today asks after [previous]'s Shabbat what was read on it from a
+/// printed Chumash: on the first day it can ([checkInDay]), and on each
+/// reading day after that while the week can still count as late, until the
+/// reader answers (see [AppSettings.checkInAnsweredFor]). Vezot HaBerachah,
+/// which has no late window, is asked about from the first reading day after
+/// Simchat Torah until the next parsha is read: Bereshit, the Shabbat after
+/// it, or Noach where Bereshit's Shabbat is among the days of rest straight
+/// after Simchat Torah (outside Israel when Simchat Torah is a Friday), so
+/// that it is asked about every year. A week that counts neither way (begun
+/// before the reader joined, or paused, [WeekStatus.transparent]), or that
+/// the streak engine doesn't judge at all, is not asked about.
+bool asksCheckIn(WeekContext previous, {required LocalDate today, required AppSettings settings}) {
+  if (!_checksIn(previous) || settings.checkInAnsweredFor == previous.id) return false;
+  if (previous.status == null || previous.status == WeekStatus.transparent) return false;
+  final firstDayAfter = checkInDay(previous, settings: settings);
+  if (previous.week.portion.isVezotHaberakhah) {
+    final next = ParshaSchedule(israel: previous.week.israel).nextOccasion(firstDayAfter);
+    return today >= firstDayAfter && today < next.date;
+  }
+  // Without a late window the week is overdue from Sunday, and still asked
+  // about on it.
+  return today == firstDayAfter || (today > firstDayAfter && previous.status == WeekStatus.inProgress);
+}
+
+/// Whether [previous]'s check-in is still to come on [today], a reading day
+/// before [checkInDay]: Tisha B'Av straight after Shabbat. Today then holds
+/// back the rest of last week's notice too, so that the check-in is the
+/// first word about it.
+bool awaitsCheckIn(WeekContext previous, {required LocalDate today, required AppSettings settings}) =>
+    _checksIn(previous) &&
+    settings.checkInAnsweredFor != previous.id &&
+    today < checkInDay(previous, settings: settings);
 
 /// Everything the UI needs about one week, bundled.
 class WeekContext {
@@ -246,16 +294,30 @@ WeekContext _contextFor(Ref ref, ReadingWeek week) {
 }
 
 /// The previous week, when it still needs attention: unfinished (perhaps
-/// only its haftarah) and either within its late window or restorable by
+/// only its haftarah) and either still asked about by the check-in
+/// ([asksCheckIn]: Vezot HaBerachah, which has no late window, through the
+/// week after Simchat Torah), within its late window, or restorable by
 /// doubling up.
+///
+/// Where Bereshit was read on the Shabbat straight after Simchat Torah,
+/// Vezot HaBerachah's check-in, two weeks back, comes first: it is asked
+/// after that Shabbat until it is answered, and Bereshit's then.
 final openPreviousWeekProvider = Provider<WeekContext?>((ref) {
   final current = ref.watch(currentWeekProvider);
   final schedule = ref.watch(scheduleProvider);
+  final settings = ref.watch(settingsProvider);
+  final today = ref.watch(todayProvider);
+  final join = settings.joinDate;
+  bool joinedBy(ReadingWeek week) => join == null || week.occasion >= join;
   final previous = schedule.previousWeek(current);
+  final beforeIt = schedule.previousWeek(previous);
+  if (beforeIt.portion.isVezotHaberakhah && joinedBy(beforeIt)) {
+    final vezot = _contextFor(ref, beforeIt);
+    if (!vezot.isFinished && asksCheckIn(vezot, today: today, settings: settings)) return vezot;
+  }
   final ctx = _contextFor(ref, previous);
-  if (ctx.isFinished) return null;
-  final join = ref.watch(settingsProvider.select((s) => s.joinDate));
-  if (join != null && previous.occasion < join) return null;
+  if (ctx.isFinished || !joinedBy(previous)) return null;
+  if (asksCheckIn(ctx, today: today, settings: settings)) return ctx;
   final s = ctx.status;
   if (s == WeekStatus.inProgress || s == WeekStatus.overdue) return ctx;
   return null;

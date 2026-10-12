@@ -408,7 +408,7 @@ void main() {
 
     testWidgets('opens the list of cities, and the reminders then follow the city chosen', (tester) async {
       final c = await openReminders(tester, _Notifications());
-      await tapText(tester, 'After-Shabbat check-in');
+      await tapText(tester, 'Check-in after Shabbat or Yom Tov');
       await tapText(tester, 'Choose a city');
       expect(find.byType(CityPickerScreen), findsOneWidget);
       expect(c.read(routerProvider).state.uri.path, '/settings/reminders/city');
@@ -428,7 +428,8 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text('An hour after Shabbat ends, or Sunday morning when it ends late, to log what you read on Shabbat'),
+        find.text('An hour after Shabbat or Simchat Torah ends, or the next morning when it ends late, '
+            'to log what you read then'),
         findsOneWidget,
       );
     });
@@ -468,7 +469,7 @@ void main() {
       );
       expect(find.text('A gentle nudge at your chosen time'), findsNothing);
       expect(find.text('Friday morning, only if the parsha isn’t finished'), findsNothing);
-      expect(find.text('Sunday morning, to log what you read on Shabbat'), findsNothing);
+      expect(find.text('The morning after Shabbat or Simchat Torah, to log what you read then'), findsNothing);
     });
 
     group('the Erev Shabbat time picked', () {

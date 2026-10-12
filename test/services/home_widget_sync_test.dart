@@ -236,6 +236,31 @@ void main() {
       expect([for (final d in afternoon) d.eyebrow], ['Erev Shabbat']);
     });
 
+    test('turns to Erev Yom Tov at midday on its eve, in the words of Today', () {
+      // Wednesday 20 September 2028, Erev Rosh Hashanah 5789.
+      final erev = LocalDate(2028, 9, 20);
+      final settings = AppSettings(joinDate: LocalDate(2028, 9, 1));
+      final morning = on(timeline(DateTime(2028, 9, 20, 10), settings: settings), erev);
+      expect([for (final d in morning) (d.kind, d.eyebrow, d.until)], [
+        (WidgetDayKind.erevYomTov, 'Parshat HaShavua', DateTime(2028, 9, 20, 12)),
+        (WidgetDayKind.erevYomTov, 'Erev Rosh Hashanah', null),
+      ]);
+      final hebrew = on(
+        timeline(DateTime(2028, 9, 20, 13), l: he, settings: settings.copyWith(language: AppLanguage.hebrew)),
+        erev,
+      );
+      expect([for (final d in hebrew) d.eyebrow], ['ערב ראש השנה']);
+
+      // Erev Yom Kippur 5786, in the week of Haazinu.
+      final yomKippur = timeline(DateTime(2025, 10, 1, 13), settings: AppSettings(joinDate: LocalDate(2025, 9, 1)));
+      expect([for (final d in on(yomKippur, LocalDate(2025, 10, 1))) d.eyebrow], ['Erev Yom Kippur']);
+
+      // Erev Yom Kippur 5787 is in the week of Vezot HaBerachah, whose
+      // eyebrow, Simchat Torah, stays all day, as Today's does.
+      final vezot = timeline(DateTime(2026, 9, 20, 10), settings: AppSettings(joinDate: LocalDate(2026, 9, 1)));
+      expect([for (final d in on(vezot, LocalDate(2026, 9, 20))) d.eyebrow], ['Simchat Torah']);
+    });
+
     test('with a city, rests from candle-lighting until nightfall, as Today does', () {
       const times = (candleLighting: 17 * 60 + 30, sunset: 17 * 60 + 48, nightfall: 18 * 60 + 40);
       final t = timeline(DateTime(2026, 10, 9, 13), restTimes: (_) => times);
@@ -257,7 +282,11 @@ void main() {
     test('in weeks with Yom Tov, by the days of Yom Tov kept', () {
       // Shavuot 5787: Friday and Shabbat outside Israel.
       final diaspora = timeline(DateTime(2027, 6, 7, 10), settings: AppSettings(joinDate: LocalDate(2026, 9, 1)));
-      expect(only(diaspora, LocalDate(2027, 6, 10)).kind, WidgetDayKind.erevYomTov);
+      // Its eve, Erev Yom Tov from midday.
+      expect([for (final d in on(diaspora, LocalDate(2027, 6, 10))) (d.kind, d.eyebrow)], [
+        (WidgetDayKind.erevYomTov, 'Parshat HaShavua'),
+        (WidgetDayKind.erevYomTov, 'Erev Yom Tov'),
+      ]);
       for (final day in [LocalDate(2027, 6, 11), LocalDate(2027, 6, 12)]) {
         final d = only(diaspora, day);
         expect((d.kind, d.line), (WidgetDayKind.yomTov, 'Chag Sameach'), reason: '$day');

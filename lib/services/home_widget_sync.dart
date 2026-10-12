@@ -177,9 +177,10 @@ class WidgetDay {
   final LocalDate date;
 
   /// When the entry gives way to the next before the day turns: at midday
-  /// on Friday, when the eyebrow turns to Erev Shabbat, and with a city for
-  /// Shabbat times, as candles are lit on the eve of a day of rest and at
-  /// nightfall as it ends, as Today turns then.
+  /// on Friday and on the eve of Yom Tov, when the eyebrow turns to Erev
+  /// Shabbat or Erev Yom Tov, and with a city for Shabbat times, as candles
+  /// are lit on the eve of a day of rest and at nightfall as it ends, as
+  /// Today turns then.
   final DateTime? until;
 
   /// The index of its week in [WidgetTimeline.weeks].
@@ -443,10 +444,19 @@ WidgetTimeline widgetTimeline({
             ? restTimes?.call(day)?.sunset
             : null;
     final until = turn == null ? null : at(day, turn);
-    // From midday on Friday, Today's eyebrow is Erev Shabbat.
-    if (day.weekday == _friday && !vezot) {
+    // From midday on Friday, Today's eyebrow is Erev Shabbat, and on the eve
+    // of Yom Tov, Erev Yom Tov.
+    final erevYomTov = JewishHolidays.erevYomTov(day, israel: israel);
+    final afternoon = vezot
+        ? null
+        : day.weekday == _friday
+            ? l.erevShabbat
+            : erevYomTov == null
+                ? null
+                : l.erevYomTov(erevYomTov.name);
+    if (afternoon != null) {
       add(WidgetDay(date: day, until: at(day, 12 * 60), week: index, kind: kind, eyebrow: eyebrow, line: line));
-      add(WidgetDay(date: day, until: until, week: index, kind: kind, eyebrow: l.erevShabbat, line: line));
+      add(WidgetDay(date: day, until: until, week: index, kind: kind, eyebrow: afternoon, line: line));
     } else {
       add(WidgetDay(date: day, until: until, week: index, kind: kind, eyebrow: eyebrow, line: line));
     }
