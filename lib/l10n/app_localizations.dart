@@ -4980,7 +4980,7 @@ abstract class AppLocalizations {
   /// On the Texts & sources page, under Sunrise and sunset: how Shabbat times are worked out, their defaults, and the choices Settings offers.
   ///
   /// In en, this message translates to:
-  /// **'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 30 in Haifa and 40 in Jerusalem, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.'**
+  /// **'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 40 in Jerusalem and 30 in Haifa and Zikhron Ya’akov, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.'**
   String get sourcesSunDescription;
 
   /// No description provided for @onbStarterTitle.

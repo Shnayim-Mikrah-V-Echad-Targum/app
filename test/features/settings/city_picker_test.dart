@@ -44,6 +44,7 @@ void main() {
     DateTime? now,
     int? candleMinutes,
     HavdalahRule havdalah = HavdalahRule.degrees85,
+    bool oneDayYomTov = false,
   }) async {
     final c = await pumpApp(
       tester,
@@ -53,6 +54,7 @@ void main() {
         city: city,
         candleMinutesOverride: candleMinutes,
         havdalah: havdalah,
+        oneDayYomTov: oneDayYomTov,
         language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
       ),
       now: now ?? _now,
@@ -178,9 +180,13 @@ void main() {
       expect(find.text('25\u00a0minutes before sunset'), findsOneWidget);
       await tapText(tester, 'Candle-lighting');
       final options = [
-        for (final tile in tester.widgetList<RadioListTile<int?>>(find.byType(RadioListTile<int?>))) tile.value,
+        for (final tile in tester.widgetList<RadioListTile<int>>(find.byType(RadioListTile<int>)))
+          (tile.title! as Text).data,
       ];
-      expect(options, [null, 15, 18, 20, 22, 25, 30, 40]);
+      expect(options, [
+        'City default (40\u00a0min)',
+        for (final minutes in [15, 18, 20, 22, 25, 30, 40]) '$minutes\u00a0minutes before sunset',
+      ]);
     });
 
     testWidgets('the arrow keys move the choice and keep the sheet open', (tester) async {
@@ -189,7 +195,7 @@ void main() {
       // Focus on the chosen row, as Tab gives it.
       final nightfall = find.ancestor(
         of: find.text('Nightfall (sun 8.5°\u00a0below)').last,
-        matching: find.byType(RadioListTile<HavdalahRule>),
+        matching: find.byType(RadioListTile<int>),
       );
       final focus = tester.widget<Focus>(find.descendant(of: nightfall, matching: find.byType(Focus)).first);
       focus.focusNode!.requestFocus();
@@ -208,12 +214,78 @@ void main() {
       expect(find.text('50\u00a0minutes after sunset'), findsOneWidget);
     });
 
+    // The focused row is always the chosen one (Tab reaches only it, and the
+    // arrows choose as they move), so Enter and Space confirm it.
+    for (final key in [LogicalKeyboardKey.enter, LogicalKeyboardKey.numpadEnter, LogicalKeyboardKey.space]) {
+      testWidgets('${key.keyLabel} closes the sheet on the choice the arrow keys made', (tester) async {
+        final c = await open(tester, '/settings/reading', city: jerusalem);
+        await tapText(tester, 'Shabbat ends');
+        final nightfall = find.ancestor(
+          of: find.text('Nightfall (sun 8.5°\u00a0below)').last,
+          matching: find.byType(RadioListTile<int>),
+        );
+        tester.widget<Focus>(find.descendant(of: nightfall, matching: find.byType(Focus)).first).focusNode!.requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+        expect(find.text('72\u00a0minutes (Rabbeinu Tam)'), findsOneWidget, reason: 'still open');
+        await tester.sendKeyEvent(key);
+        await tester.pumpAndSettle();
+        expect(find.text('72\u00a0minutes (Rabbeinu Tam)'), findsNothing, reason: 'closed');
+        expect(c.read(settingsProvider).havdalah, HavdalahRule.min50);
+        expect(find.text('50\u00a0minutes after sunset'), findsOneWidget);
+      });
+    }
+
+    // Seeing the choice already made, and tapping it (or activating it with a
+    // screen reader), closes the sheet with nothing changed.
+    testWidgets('a tap on the choice already made closes the sheet', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final c = await open(tester, '/settings/reading', city: jerusalem);
+      await tapText(tester, 'Shabbat ends');
+      final nightfall = find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.text('Nightfall (sun 8.5°\u00a0below)'),
+      );
+      await tester.tap(nightfall);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(c.read(settingsProvider).havdalah, HavdalahRule.degrees85);
+
+      await tapText(tester, 'Shabbat ends');
+      final row = find.ancestor(of: nightfall, matching: find.byType(RadioListTile<int>));
+      expect(tester.getSemantics(row), isSemantics(isChecked: true, hasCheckedState: true, hasTapAction: true));
+      tester.semantics.tap(find.semantics.byLabel(RegExp('^Nightfall')));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(c.read(settingsProvider).havdalah, HavdalahRule.degrees85);
+      semantics.dispose();
+    });
+
     testWidgets('when Yom Tov follows Shabbat, says when its candles are lit', (tester) async {
       // Shabbat 19 May 2029, then Shavuot on Sunday.
       await open(tester, '/settings/reading', city: jerusalem, now: DateTime(2029, 5, 15, 10));
       expect(text('Candle-lighting 6:51 PM\nYom Tov candles after 8:13 PM'), findsOneWidget);
       expect(find.textContaining('\nShabbat ends'), findsNothing);
     });
+
+    // Shabbat 26 September 2026 is the first day of Sukkot, and Sunday its
+    // second only where two days of Yom Tov are kept: there its candles are
+    // lit after Shabbat; with one day, Sunday is Chol HaMoed and Shabbat
+    // simply ends.
+    for (final oneDay in [false, true]) {
+      testWidgets(
+          'when Shabbat is the first day of Yom Tov, follows the days of Yom Tov kept: '
+          '${oneDay ? 'one' : 'two'}', (tester) async {
+        await open(tester, '/settings/reading',
+            city: named('London'), now: DateTime(2026, 9, 22, 10), oneDayYomTov: oneDay);
+        final summary = find.textContaining(RegExp('^Candle-lighting '));
+        expect(summary, findsOneWidget);
+        final secondLine = tester.widget<Text>(summary).data!.split('\n').last;
+        expect(secondLine, startsWith(oneDay ? 'Shabbat ends ' : 'Yom Tov candles after '));
+      });
+    }
 
     testWidgets("says so when the device doesn't know the city's time zone", (tester) async {
       const nowhere = City(
