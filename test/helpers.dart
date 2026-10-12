@@ -32,6 +32,7 @@ import 'package:shnayim_mikra/services/optional_fonts.dart';
 import 'package:shnayim_mikra/services/reminder_planner.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 
 ParshaRepository? _repo;
 
@@ -330,6 +331,14 @@ class _NoPlugin extends Fake implements FlutterLocalNotificationsPlugin {}
 /// spaces, as a line of parts sets them to keep a clause together when a
 /// part is too long for a line of its own (DotLine).
 Finder findWords(String words) => find.textContaining(wordsRegExp(RegExp.escape(words)));
+
+/// Finds the line of parts ([DotLine]) that reads [text] with its parts
+/// between middle dots ("5 aliyot · 96 verses · about 33 min"), however its
+/// lines break.
+Finder findDotLine(String text) => find.byWidgetPredicate(
+      (w) => w is DotLine && w.parts.join(DotLine.separator) == text,
+      description: 'line of parts "$text"',
+    );
 
 /// [pattern] with each space matching a no-break space too (see [findWords]).
 RegExp wordsRegExp(String pattern) => RegExp(pattern.replaceAll(' ', '[ \u00A0]'));

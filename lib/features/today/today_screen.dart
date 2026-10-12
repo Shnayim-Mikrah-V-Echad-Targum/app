@@ -873,9 +873,9 @@ class _TodayCard extends ConsumerWidget {
           textAlign: TextAlign.start,
           breakAtHyphens: true,
         ),
-        Text(
-          [l.aliyotCount(due.length), l.versesCount(versesOf(due)), l.minutesEstimate(ctx.remainingMinutes(due))]
-              .join(' · '),
+        // Each fact whole, on a line of its own where they don't fit on one.
+        DotLine(
+          [l.aliyotCount(due.length), l.versesCount(versesOf(due)), l.minutesEstimate(ctx.remainingMinutes(due))],
           style: muted,
         ),
         ...marginalia([line, ...notes]),
@@ -890,7 +890,7 @@ class _TodayCard extends ConsumerWidget {
       children = [
         _CardHeader(l.todayReadingTitle),
         WholeWords(names.aliyot(day.aliyot), style: theme.textTheme.headlineSmall, textAlign: TextAlign.start),
-        Text(
+        DotLine(
           [
             // What is left to read, and once it is read, what was.
             if (unread.isEmpty)
@@ -899,7 +899,7 @@ class _TodayCard extends ConsumerWidget {
               l.versesCount(versesOf(unread)),
               l.minutesEstimate(ctx.remainingMinutes(unread)),
             ],
-          ].join(' · '),
+          ],
           style: muted,
         ),
         ...marginalia(notes),
@@ -985,7 +985,7 @@ class _BookSheetState extends State<_BookSheet> {
                 value: _checked.contains(a),
                 onChanged: (on) => setState(() => on! ? _checked.add(a) : _checked.remove(a)),
                 title: Text(names.aliyah(a)),
-                subtitle: Text(aliyahReference(context, widget.ctx, a)),
+                subtitle: aliyahReference(context, widget.ctx, a),
               ),
             Padding(
               padding: EdgeInsets.fromLTRB(padding, Space.sm, padding, Space.lg),

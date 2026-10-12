@@ -110,9 +110,9 @@ void main() {
       final boxes = find.byType(CheckboxListTile);
       expect(boxes, findsNWidgets(4), reason: 'Chamishi, Shishi, Shevi\'i and the haftarah');
       expect([for (final b in tester.widgetList<CheckboxListTile>(boxes)) b.value], everyElement(isTrue));
-      expect(find.text('Genesis 4:19–22 · 4 verses'), findsOneWidget, reason: "Chamishi's reference");
+      expect(findDotLine('Genesis 4:19–22 · 4 verses'), findsOneWidget, reason: "Chamishi's reference");
       expect(find.text('I Samuel 20:18–42'), findsOneWidget, reason: 'the haftarah of Machar Chodesh');
-      expect(find.text('Read on Shabbat, October 10'), findsOneWidget);
+      expect(findDotLine('Read on Shabbat, October 10'), findsOneWidget);
 
       await tester.tap(find.text('Log reading'));
       await tester.pumpAndSettle();
@@ -263,7 +263,7 @@ void main() {
       await tester.tap(find.text('בחירת עליות'));
       await tester.pumpAndSettle();
       expect(find.descendant(of: find.byType(BottomSheet), matching: find.text(question)), findsOneWidget);
-      expect(find.text('תאריך הקריאה: שבת, 10 באוקטובר'), findsOneWidget);
+      expect(findDotLine('תאריך הקריאה: שבת, 10 באוקטובר'), findsOneWidget);
       expect(find.text('שינוי התאריך'), findsOneWidget);
       expect(find.text('סימון הקריאה'), findsOneWidget);
     });

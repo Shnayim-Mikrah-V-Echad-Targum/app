@@ -9,25 +9,33 @@ import 'fonts_change_scope.dart';
 /// breaks between two parts rather than inside one ("Read on Shabbat,
 /// October / 10"). A line that starts after a break starts with its part,
 /// not with a dot. A part too long for a line on its own wraps after a comma
-/// in it ("Read on Shabbat, / October 10") before it wraps anywhere else.
+/// in it ("Read on Shabbat, / October 10") before it wraps anywhere else,
+/// and never between a number and the word after it ("about / 33 min").
 ///
 /// Each line is a text of its own, whose words are kept whole ([WholeWords]).
 class DotLine extends StatelessWidget {
-  const DotLine(this.parts, {super.key, required this.style, this.textAlign = TextAlign.start});
+  const DotLine(this.parts, {super.key, this.style, this.textAlign = TextAlign.start});
 
   final List<String> parts;
+
+  /// Merged with the ambient one, as a [Text]'s is: a list tile's subtitle
+  /// needs none of its own.
   final TextStyle? style;
   final TextAlign textAlign;
 
   static const separator = ' · ';
   static const nbsp = '\u00A0';
 
+  /// A number's last digit and the space after it, before a word.
+  static final _counted = RegExp(r'(\d) (?=\S)');
+
   @override
   Widget build(BuildContext context) {
     // Measured again when a font arrives.
     FontsChangeScope.watch(context);
     return LayoutBuilder(builder: (context, constraints) {
-      final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
+      var measured = DefaultTextStyle.of(context).style.merge(style);
+      if (MediaQuery.boldTextOf(context)) measured = measured.merge(const TextStyle(fontWeight: FontWeight.bold));
       final painter = TextPainter(
         textDirection: Directionality.of(context),
         textScaler: MediaQuery.textScalerOf(context),
@@ -36,17 +44,19 @@ class DotLine extends StatelessWidget {
       );
       bool fits(String text) {
         painter
-          ..text = TextSpan(text: text, style: style?.merge(bold) ?? bold)
+          ..text = TextSpan(text: text, style: measured)
           ..layout(maxWidth: constraints.maxWidth);
         return !painter.didExceedMaxLines;
       }
 
       // Each clause of a part too long for a line, kept whole where it fits
-      // on one.
+      // on one, and otherwise each number in it held to the word it counts.
       String wrappable(String part) {
         if (fits(part)) return part;
-        return [for (final clause in part.split(', ')) fits(clause) ? clause.replaceAll(' ', nbsp) : clause]
-            .join(', ');
+        return [
+          for (final clause in part.split(', '))
+            fits(clause) ? clause.replaceAll(' ', nbsp) : clause.replaceAllMapped(_counted, (m) => '${m[1]}$nbsp'),
+        ].join(', ');
       }
 
       final lines = <String>[];

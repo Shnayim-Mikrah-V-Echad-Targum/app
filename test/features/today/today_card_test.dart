@@ -65,7 +65,7 @@ void main() {
       expect(find.text('Catching up'), findsOneWidget);
       expect(find.text("Shlishi\u00A0– Shevi'i"), findsOneWidget);
       // Shlishi's Targum, and all three readings of the other four.
-      expect(find.text('5 aliyot · 96 verses · about 33 min'), findsOneWidget);
+      expect(findDotLine('5 aliyot · 96 verses · about 33 min'), findsOneWidget);
       expect(
         findWords('5 aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after '
             'Shabbat.'),
@@ -89,7 +89,7 @@ void main() {
       final boxes = find.byType(CheckboxListTile);
       expect(boxes, findsNWidgets(5));
       expect([for (final b in tester.widgetList<CheckboxListTile>(boxes)) b.value], everyElement(isTrue));
-      expect(find.text('Genesis 2:20–3:21 · 27 verses'), findsOneWidget, reason: "Shlishi's reference");
+      expect(findDotLine('Genesis 2:20–3:21 · 27 verses'), findsOneWidget, reason: "Shlishi's reference");
 
       // Shevi'i is left for Shabbat morning.
       await tester.tap(find.widgetWithText(CheckboxListTile, "Shevi'i"));
@@ -165,7 +165,7 @@ void main() {
     testWidgets('on Erev Shabbat, it counts every aliyah left before Shabbat', (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 16, 10));
       expect(find.text('The whole parsha'), findsOneWidget);
-      expect(find.text('7 aliyot · 153 verses · about 64 min'), findsOneWidget);
+      expect(findDotLine('7 aliyot · 153 verses · about 64 min'), findsOneWidget);
       expect(
         findWords('7 aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after '
             'Shabbat.'),
@@ -404,7 +404,7 @@ void main() {
       final ctx = c.read(currentWeekContextProvider);
       final shevii = ctx.aliyahVerses[6];
       expect(
-        find.text('${shevii == 1 ? '1 verse' : '$shevii verses'} · about ${ctx.remainingMinutes([6])} min'),
+        findDotLine('${shevii == 1 ? '1 verse' : '$shevii verses'} · about ${ctx.remainingMinutes([6])} min'),
         findsOneWidget,
         reason: "Shevi'i's alone, not Shishi's too",
       );

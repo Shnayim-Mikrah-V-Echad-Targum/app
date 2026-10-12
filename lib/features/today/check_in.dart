@@ -8,6 +8,7 @@ import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
+import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/read_date_sheet.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
@@ -43,13 +44,18 @@ bool awaitsCheckIn(WeekContext previous, {required LocalDate today, required App
     settings.checkInAnsweredFor != previous.id &&
     today < checkInDay(previous, settings: settings);
 
-/// "Genesis 2:20–3:21 · 23 verses": where aliyah [aliyah] of [ctx]'s
-/// portion is, and how long.
-String aliyahReference(BuildContext context, WeekContext ctx, int aliyah) {
+/// Where aliyah [aliyah] of [ctx]'s portion is, and how long: "Genesis
+/// 2:20–3:21 · 23 verses", each part kept whole on a line of its own where
+/// the two don't fit on one ([DotLine]).
+Widget aliyahReference(BuildContext context, WeekContext ctx, int aliyah) {
   final names = Names(context);
   final r = ctx.portion.aliyot[aliyah];
-  return '${names.range(r.book, r.start.chapter, r.start.verse, r.end.chapter, r.end.verse)}'
-      ' · ${context.l10n.versesCount(ctx.aliyahVerses[aliyah])}';
+  return DotLine(
+    [
+      names.range(r.book, r.start.chapter, r.start.verse, r.end.chapter, r.end.verse),
+      context.l10n.versesCount(ctx.aliyahVerses[aliyah]),
+    ],
+  );
 }
 
 /// Last week's parsha while it still needs attention (docs/DESIGN_SYSTEM.md
@@ -257,7 +263,7 @@ class _CheckInSheetState extends State<CheckInSheet> {
                 value: _checked.contains(a),
                 onChanged: (on) => setState(() => on! ? _checked.add(a) : _checked.remove(a)),
                 title: Text(names.aliyah(a)),
-                subtitle: Text(aliyahReference(context, widget.previous, a)),
+                subtitle: aliyahReference(context, widget.previous, a),
               ),
             if (widget.offersHaftarah)
               CheckboxListTile(
@@ -265,10 +271,11 @@ class _CheckInSheetState extends State<CheckInSheet> {
                 value: _haftarah,
                 onChanged: (on) => setState(() => _haftarah = on!),
                 title: Text(l.haftarahLabel),
-                subtitle: Text(
-                  haftarah.parts
-                      .map((p) => names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse))
-                      .join(' · '),
+                subtitle: DotLine(
+                  [
+                    for (final p in haftarah.parts)
+                      names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse),
+                  ],
                 ),
               ),
             Padding(
@@ -278,10 +285,14 @@ class _CheckInSheetState extends State<CheckInSheet> {
                 alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text(
-                    onShabbat
-                        ? l.checkInReadOnShabbat(names.dateMonthDay(_date))
-                        : l.checkInReadOn(names.dateInText(_date)),
+                  // Broken, if it must be, after its comma: "Read on
+                  // Shabbat, / October 10", never inside the date.
+                  DotLine(
+                    [
+                      onShabbat
+                          ? l.checkInReadOnShabbat(names.dateMonthDay(_date))
+                          : l.checkInReadOn(names.dateInText(_date)),
+                    ],
                     style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   TextButton(onPressed: _changeDate, child: Text(l.changeDate)),
