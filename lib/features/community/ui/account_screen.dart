@@ -629,13 +629,23 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
         title: Text(l.deleteAccount),
         content: Text(l.deleteAccountConfirm),
+        // Stacked at large text, where a label may wrap: centred, with room
+        // above and below it, as Today's buttons have.
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, _Deletion.backUpFirst), child: Text(l.saveBackupFirst)),
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
+          TextButton(
+            style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+            onPressed: () => Navigator.pop(context, _Deletion.backUpFirst),
+            child: Text(l.saveBackupFirst, textAlign: TextAlign.center),
+          ),
+          TextButton(
+            style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.actionCancel, textAlign: TextAlign.center),
+          ),
           FilledButton(
-            style: AppButtons.destructive(context),
+            style: AppButtons.destructive(context).merge(AppButtons.roomy(context, (24, 12, 6))),
             onPressed: () => Navigator.pop(context, _Deletion.delete),
-            child: Text(l.deleteAccount),
+            child: Text(l.deleteAccount, textAlign: TextAlign.center),
           ),
         ],
       ),

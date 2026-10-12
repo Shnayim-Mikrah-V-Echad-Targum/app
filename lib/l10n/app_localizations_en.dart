@@ -2331,7 +2331,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountConfirm =>
-      'This permanently deletes your account, your profile, your posts and the cloud backup of your progress, bookmarks and notes. Topics you started that others replied to stay, without your name. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.';
+      'This permanently deletes your account, your profile, your posts and the cloud backup of your progress, bookmarks and notes. Where others have replied to a discussion you started, it stays, without your name. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.';
 
   @override
   String get saveBackupFirst => 'Save a backup file first';

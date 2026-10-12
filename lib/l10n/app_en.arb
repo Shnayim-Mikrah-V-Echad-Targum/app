@@ -1868,9 +1868,9 @@
     }
   },
   "deleteAccount": "Delete my account",
-  "deleteAccountConfirm": "This permanently deletes your account, your profile, your posts and the cloud backup of your progress, bookmarks and notes. Topics you started that others replied to stay, without your name. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.",
+  "deleteAccountConfirm": "This permanently deletes your account, your profile, your posts and the cloud backup of your progress, bookmarks and notes. Where others have replied to a discussion you started, it stays, without your name. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.",
   "@deleteAccountConfirm": {
-    "description": "The account's deletion dialog, shown whether or not backup is on now: a backup made earlier stays in the account until it is deleted. As the privacy policy says, a topic the member started stays, without their name, where others posted in it (delete_my_account)."
+    "description": "The account's deletion dialog, shown whether or not backup is on now: a backup made earlier stays in the account until it is deleted. As the privacy policy says, a discussion the member started stays, without their name, where others posted in it (delete_my_account); called a discussion, as the forums call it."
   },
   "saveBackupFirst": "Save a backup file first",
   "@saveBackupFirst": {
