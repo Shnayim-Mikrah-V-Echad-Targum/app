@@ -323,6 +323,11 @@ class _StatusLine extends StatelessWidget {
 /// are still to read give their day in the overdue colour, after a mark,
 /// and say so to a screen reader too; never for a day that doesn't count
 /// (before joining, or paused). A tap opens the reader.
+///
+/// Where text so large would leave the lines a word or two each between the
+/// disc and the pips ([PaperRow.squeezes]), the row stacks, as a paper row
+/// does: the disc and the name, then the lines the row's full width, then
+/// the pips and the menu at either end of a line of their own.
 class _AliyahRow extends ConsumerWidget {
   const _AliyahRow({required this.ctx, required this.aliyah});
 
@@ -408,96 +413,113 @@ class _AliyahRow extends ConsumerWidget {
       ),
     );
 
-    final content = Padding(
-      padding: const EdgeInsetsDirectional.only(start: _start, end: _end),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(padding: const EdgeInsets.symmetric(vertical: Space.md), child: disc),
-          const SizedBox(width: _discGap),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: Space.md),
+    // Each word of the row whole, as very large text between the disc and
+    // the pips would not keep it.
+    final name = WholeWords(
+      names.aliyah(aliyah),
+      style: titleStyle,
+      textAlign: TextAlign.start,
+      // With its number, for a screen reader.
+      semanticsLabel: l.aliyahWithName(names.aliyah(aliyah), aliyah + 1),
+    );
+    final lines = [
+      DotLine(
+        [
+          // The book is the page's, named at its head.
+          _unbroken(names.verseRange(r.start.chapter, r.start.verse, r.end.chapter, r.end.verse)),
+          l.versesCount(verses),
+          l.minutesEstimate((verses * kSecondsPerVerse / 60).ceil()),
+        ],
+        style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+      ),
+      ?_plan(context, counts: (date) => !paused && !pauses.any((p) => p.contains(date))),
+      if (other != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: WholeWords(
+            l.aliyahOtherDivision(
+              _unbroken(names.verseRange(other.start.chapter, other.start.verse, other.end.chapter, other.end.verse)),
+            ),
+            style: SeferType.of(context).marginalia,
+            textAlign: TextAlign.start,
+            breakAtHyphens: true,
+          ),
+        ),
+    ];
+    final pips = PassPips(
+      states: [for (final d in passes) d ? PipState.done : PipState.pending],
+      current: current < 0 ? null : current,
+    );
+    final menu = PopupMenuButton<String>(
+      tooltip: l.moreOptionsFor(names.aliyah(aliyah)),
+      popUpAnimationStyle: Motion.of(context).style,
+      onSelected: (v) {
+        if (v == 'read') markRead();
+        if (v == 'unread') {
+          ref.read(progressProvider.notifier).markAliyah(ctx.id, aliyah, null);
+          showStatus(context, l.markedUnread);
+        }
+        if (v == 'full') context.push('/read/${ctx.id}/$aliyah?mode=full&from=week');
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),
+        if (!done && ctx.isOpen) PopupMenuItem(value: 'read', child: Text(l.actionMarkRead)),
+        if (progress.units[aliyah].any((d) => d != null))
+          PopupMenuItem(value: 'unread', child: Text(l.actionMarkUnread)),
+      ],
+    );
+
+    // The disc, the name and its lines, and the pips over the menu, side by
+    // side.
+    Widget sideBySide() => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(padding: const EdgeInsets.symmetric(vertical: Space.md), child: disc),
+            const SizedBox(width: _discGap),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: Space.md),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [name, ...lines]),
+              ),
+            ),
+            const SizedBox(width: _trailingGap),
+            SizedBox(
+              width: _trailing,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Each word of the row whole, as very large text between the
-                  // disc and the pips would not keep it.
-                  WholeWords(
-                    names.aliyah(aliyah),
-                    style: titleStyle,
-                    textAlign: TextAlign.start,
-                    // With its number, for a screen reader.
-                    semanticsLabel: l.aliyahWithName(names.aliyah(aliyah), aliyah + 1),
+                  // On the title's line.
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.md),
+                    child: SizedBox(height: titleLine, child: Center(child: pips)),
                   ),
-                  DotLine(
-                    [
-                      // The book is the page's, named at its head.
-                      _unbroken(names.verseRange(r.start.chapter, r.start.verse, r.end.chapter, r.end.verse)),
-                      l.versesCount(verses),
-                      l.minutesEstimate((verses * kSecondsPerVerse / 60).ceil()),
-                    ],
-                    style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                  ),
-                  ?_plan(context, counts: (date) => !paused && !pauses.any((p) => p.contains(date))),
-                  if (other != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: WholeWords(
-                        l.aliyahOtherDivision(
-                          _unbroken(
-                            names.verseRange(other.start.chapter, other.start.verse, other.end.chapter, other.end.verse),
-                          ),
-                        ),
-                        style: SeferType.of(context).marginalia,
-                        textAlign: TextAlign.start,
-                        breakAtHyphens: true,
-                      ),
-                    ),
+                  menu,
                 ],
               ),
             ),
-          ),
-          const SizedBox(width: _trailingGap),
-          SizedBox(
-            width: _trailing,
-            child: Column(
-              children: [
-                // On the title's line.
-                Padding(
-                  padding: const EdgeInsets.only(top: Space.md),
-                  child: SizedBox(
-                    height: titleLine,
-                    child: Center(
-                      child: PassPips(
-                        states: [for (final d in passes) d ? PipState.done : PipState.pending],
-                        current: current < 0 ? null : current,
-                      ),
-                    ),
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  tooltip: l.moreOptionsFor(names.aliyah(aliyah)),
-                  popUpAnimationStyle: Motion.of(context).style,
-                  onSelected: (v) {
-                    if (v == 'read') markRead();
-                    if (v == 'unread') {
-                      ref.read(progressProvider.notifier).markAliyah(ctx.id, aliyah, null);
-                      showStatus(context, l.markedUnread);
-                    }
-                    if (v == 'full') context.push('/read/${ctx.id}/$aliyah?mode=full&from=week');
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(value: 'full', child: Text(l.fullTextMode)),
-                    if (!done && ctx.isOpen) PopupMenuItem(value: 'read', child: Text(l.actionMarkRead)),
-                    if (progress.units[aliyah].any((d) => d != null))
-                      PopupMenuItem(value: 'unread', child: Text(l.actionMarkUnread)),
-                  ],
-                ),
-              ],
+          ],
+        );
+
+    // The disc and the name, the lines the row's full width under them, and
+    // the pips and the menu at either end of a line of their own.
+    Widget stacked() => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: Space.md),
+              child: Row(children: [disc, const SizedBox(width: _discGap), Expanded(child: name)]),
             ),
-          ),
-        ],
+            ...lines,
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [pips, menu]),
+          ],
+        );
+
+    final content = Padding(
+      padding: const EdgeInsetsDirectional.only(start: _start, end: _end),
+      child: LayoutBuilder(
+        builder: (context, constraints) =>
+            PaperRow.squeezes(scaler, constraints.maxWidth - _disc - _discGap - _trailingGap - _trailing)
+                ? stacked()
+                : sideBySide(),
       ),
     );
 

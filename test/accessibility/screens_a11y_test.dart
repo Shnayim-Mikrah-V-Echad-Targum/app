@@ -13,6 +13,7 @@ import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
 import 'package:shnayim_mikra/ui/widgets/lines.dart' show WholeWords;
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../helpers.dart';
 import 'routes.dart';
@@ -205,6 +206,53 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: language.name);
         expectWholeWords(tester);
+      }
+    });
+  }
+
+  // §6.3 and §9 Parsha, 3: at the largest text on the smallest phone, the
+  // whole page, a row stacks rather than squeeze its text between its icon
+  // and its chevron. No row's title is drawn smaller than its subtitle, as
+  // a title once was beside them to keep a long word whole, and the week's
+  // aliyot give each fact a line of its own, whole, rather than a word.
+  for (final route in ['/settings', '/parsha']) {
+    testWidgets('at 300% on a 320 dp phone, in either language, no row title is smaller than its subtitle: $route',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 3600);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: captureJoinDate),
+        now: captureNow,
+        progress: captureProgress(),
+      );
+      c.read(routerProvider).go(route);
+      await tester.pumpAndSettle();
+      for (final hebrew in [false, true]) {
+        final language = hebrew ? AppLanguage.hebrew : AppLanguage.system;
+        c.read(settingsProvider.notifier).update((s) => s.copyWith(language: language));
+        await tester.pumpAndSettle();
+        final page = find.byType(Scrollable).first;
+        tester.state<ScrollableState>(page).position.jumpTo(0);
+        await tester.pumpAndSettle();
+        final checked = <String>{};
+        // Down the page, a viewport at a time, so that every row is built.
+        while (true) {
+          expect(tester.takeException(), isNull, reason: hebrew ? 'he' : 'en');
+          expectWholeWords(tester);
+          checked.addAll(_expectTitlesNoSmallerThanSubtitles(tester));
+          if (route == '/parsha') _expectFactsWhole(tester, hebrew: hebrew);
+          final position = tester.state<ScrollableState>(page).position;
+          if (position.pixels >= position.maxScrollExtent) break;
+          position.jumpTo(position.pixels + 2000);
+          await tester.pumpAndSettle();
+        }
+        // As far as the page's foot.
+        final last = route == '/parsha' ? (hebrew ? 'הפטרה' : 'Haftarah') : (hebrew ? 'אודות האפליקציה' : 'About this app');
+        expect(checked, contains(last));
       }
     });
   }
@@ -521,4 +569,47 @@ void main() {
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
+}
+
+/// Checks that each paper row with a subtitle draws its title at least as
+/// large as the subtitle, and gives their titles. Sizes are as drawn: the
+/// style's, scaled as the text is, and set smaller where a long word needs.
+Iterable<String> _expectTitlesNoSmallerThanSubtitles(WidgetTester tester) sync* {
+  for (final element in find.byWidgetPredicate((w) => w is PaperRow && w.subtitle != null).evaluate()) {
+    final row = element.widget as PaperRow;
+    final box = element.renderObject!;
+    final paragraphs = tester.renderObjectList<RenderParagraph>(
+      find.descendant(of: find.byElementPredicate((e) => e == element), matching: find.byType(RichText)),
+    );
+    double drawn(String text) {
+      final paragraph = paragraphs.firstWhere((p) => p.text.toPlainText() == text);
+      final transform = paragraph.getTransformTo(box);
+      return paragraph.textScaler.scale(paragraph.text.style!.fontSize!) *
+          Offset(transform.entry(0, 0), transform.entry(1, 0)).distance;
+    }
+
+    // A hair's leeway for the arithmetic of the sizes, no more.
+    expect(drawn(row.title), greaterThanOrEqualTo(drawn(row.subtitle!) - 0.01), reason: row.title);
+    yield row.title;
+  }
+}
+
+/// Checks that each fact of an aliyah's row on the week's page, its verses
+/// and the time they take, stays on one line.
+void _expectFactsWhole(WidgetTester tester, {required bool hebrew}) {
+  final facts = find.byWidgetPredicate((w) {
+    if (w is! RichText) return false;
+    final text = w.text.toPlainText();
+    return hebrew
+        ? text.contains('פסוקים') || text.contains('דק׳')
+        : text.contains('verses') || text.contains('min');
+  });
+  for (final paragraph in tester.renderObjectList<RenderParagraph>(facts)) {
+    final text = paragraph.text.toPlainText();
+    final lines = {
+      for (final box in paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: text.length)))
+        box.top,
+    };
+    expect(lines, hasLength(1), reason: text);
+  }
 }
