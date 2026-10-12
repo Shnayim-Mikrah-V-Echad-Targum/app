@@ -158,6 +158,15 @@ void main() {
     expect(button, findsOneWidget);
     final header = find.ancestor(of: button, matching: find.byType(SectionHeader));
     expect(find.descendant(of: header, matching: find.text('This week’s plan')), findsOneWidget);
+    // Inside the strip's card, as on Today, its words on the line of the
+    // other cards' content: the card's 8, and 12 more.
+    final card = find.ancestor(of: find.byType(WeekStrip), matching: find.byType(InfoCard));
+    expect(find.descendant(of: card, matching: header), findsOneWidget);
+    final year = find.ancestor(of: find.text('This year'), matching: find.byType(InfoCard));
+    expect(tester.getTopLeft(find.text('This week’s plan')).dx, tester.getTopLeft(find.text('This year')).dx);
+    expect(tester.getTopLeft(find.text('This week’s plan')).dx - tester.getTopLeft(card).dx, 20);
+    // A section apart from This year's card above it.
+    expect(tester.getTopLeft(card).dy - tester.getBottomLeft(year).dy, 28);
     await tester.tap(button);
     await tester.pumpAndSettle();
     expect(find.widgetWithText(SheetTitle, 'Legend'), findsOneWidget);
@@ -170,6 +179,20 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(tileOf('Vayikra'), findsOneWidget);
+  });
+
+  testWidgets("a book's Hebrew name is in gold, the rubric's colour, as Browse names it", (tester) async {
+    await openProgress(tester);
+    final names = tester.widget<RichText>(
+      find.descendant(of: headerOf('Genesis'), matching: find.textContaining('בראשית', findRichText: true)).first,
+    );
+    TextSpan? hebrew;
+    names.text.visitChildren((span) {
+      if (span is TextSpan && span.text == 'בראשית') hebrew = span;
+      return hebrew == null;
+    });
+    expect(hebrew?.style?.color, Palettes.light.secondary);
+    expect(hebrew?.style?.fontSize, 18);
   });
 
   testWidgets('the Hebrew header drops the English name', (tester) async {

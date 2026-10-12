@@ -148,7 +148,7 @@
   "readingDivergenceOpen": "לפרשת {name}",
   "readingDivergenceChange": "שינוי קריאת התורה",
   "discussThisWeek": "דיון על פרשת השבוע",
-  "thisWeek": "השבוע",
+  "thisWeek": "ועוד השבוע",
   "streakParsha": "רצף פרשות",
   "streakDays": "ימים לפי התוכנית",
   "weeksCount": "{count, plural, =1{שבוע אחד} =2{שבועיים} other{{count} שבועות}}",

@@ -151,16 +151,29 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             verses: _versesRead(repo, progress.weeks, cycle),
             secondReading: names.secondReading(settings.secondReading),
           ),
-          SectionHeader(l.weekStripLabel, trailing: const WeekStripLegendButton()),
+          const Gap(Rhythm.sectionGap),
+          // Its header inside the card, as on Today.
           InfoCard(
             padding: WeekStrip.cardPadding,
-            child: WeekStrip(
-              plan: current.plan,
-              today: current.today,
-              statuses: summary.days,
-              oneDayYomTov: settings.oneDayYomTov,
-              joinDate: settings.joinDate,
-              onDayTap: (d) => context.push('/read/${current.id}/${d.aliyot.first}'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // On the line of the other cards' content: the card's 8,
+                // and 12 more.
+                SectionHeader(
+                  l.weekStripLabel,
+                  trailing: const WeekStripLegendButton(),
+                  padding: const EdgeInsetsDirectional.only(start: Space.md),
+                ),
+                WeekStrip(
+                  plan: current.plan,
+                  today: current.today,
+                  statuses: summary.days,
+                  oneDayYomTov: settings.oneDayYomTov,
+                  joinDate: settings.joinDate,
+                  onDayTap: (d) => context.push('/read/${current.id}/${d.aliyot.first}'),
+                ),
+              ],
             ),
           ),
           // An earlier year's map is named for its year, which in English
@@ -1209,11 +1222,12 @@ class _BookHeader extends StatelessWidget {
     final scheme = theme.colorScheme;
     final sefer = SeferColors.of(context);
     final latin = kTorahBooks[book];
+    // In gold, the rubric's colour, as Browse names its books.
     final hebrew = SeferType.of(context).hebrewDisplay.copyWith(
           fontSize: 18,
           // Frank Ruhl Libre is set heavier in high contrast.
           fontWeight: sefer.isHighContrast ? FontWeight.w700 : FontWeight.w600,
-          color: scheme.onSurface,
+          color: scheme.secondary,
         );
     return Semantics(
       container: true,

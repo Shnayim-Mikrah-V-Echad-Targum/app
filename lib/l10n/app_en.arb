@@ -713,9 +713,9 @@
     "description": "Button on the divergence notice for a visitor to Israel that opens Settings → Reading & customs, where the Torah reading they hear is chosen."
   },
   "discussThisWeek": "Discuss this week’s parsha",
-  "thisWeek": "This week",
+  "thisWeek": "Also this week",
   "@thisWeek": {
-    "description": "The heading over the haftarah and the discussion on Today."
+    "description": "The heading over the haftarah and the discussion on Today, under the week strip, whose card is headed This week’s plan (weekStripLabel): the rest of what the week holds besides its reading plan."
   },
   "streakParsha": "Parsha streak",
   "streakDays": "Days on track",

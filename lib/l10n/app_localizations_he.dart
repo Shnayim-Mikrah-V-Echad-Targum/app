@@ -681,7 +681,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get discussThisWeek => 'דיון על פרשת השבוע';
 
   @override
-  String get thisWeek => 'השבוע';
+  String get thisWeek => 'ועוד השבוע';
 
   @override
   String get streakParsha => 'רצף פרשות';

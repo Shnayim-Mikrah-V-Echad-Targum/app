@@ -987,10 +987,10 @@ abstract class AppLocalizations {
   /// **'Discuss this week’s parsha'**
   String get discussThisWeek;
 
-  /// The heading over the haftarah and the discussion on Today.
+  /// The heading over the haftarah and the discussion on Today, under the week strip, whose card is headed This week’s plan (weekStripLabel): the rest of what the week holds besides its reading plan.
   ///
   /// In en, this message translates to:
-  /// **'This week'**
+  /// **'Also this week'**
   String get thisWeek;
 
   /// No description provided for @streakParsha.

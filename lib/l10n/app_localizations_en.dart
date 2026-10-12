@@ -676,7 +676,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discussThisWeek => 'Discuss this week’s parsha';
 
   @override
-  String get thisWeek => 'This week';
+  String get thisWeek => 'Also this week';
 
   @override
   String get streakParsha => 'Parsha streak';

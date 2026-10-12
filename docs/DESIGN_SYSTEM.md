@@ -736,7 +736,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 A tile's screen-reader label and tooltip name its exact status ("Noach: Finished with the next parsha", "Lech Lecha: Can still be finished with the next parsha"). The rescue of a missed parsha has one name in every string, the plain words of what it takes: finished with the next parsha ("הושלם עם הפרשה הבאה"), never a double-up or a restore.
 
 **Book header row**
-- Hebrew book name (FRL 600 18), a 8 gap, the Latin name (titleSmall), and "3 of 12" end-aligned in bodySmall with tabular figures, then an `expand_more` chevron that turns over `Motion.short`. The two names are one paragraph, so with large text the Latin name wraps under the Hebrew one.
+- Hebrew book name (FRL 600 18 in `secondary`, the rubric's gold, as Browse names its books), a 8 gap, the Latin name (titleSmall), and "3 of 12" end-aligned in bodySmall with tabular figures, then an `expand_more` chevron that turns over `Motion.short`. The two names are one paragraph, so with large text the Latin name wraps under the Hebrew one.
 - In the Hebrew UI, the Latin name is dropped.
 - The row (min 48) is a SeferInkWell that folds or opens its book. Only the book with the current portion starts open, so the map is the current book plus four headers. Semantics: a level-3 heading and a button with an expanded state, labelled `torahMapBook` ("Genesis: 3 of 12 parshiyot").
 
@@ -1157,10 +1157,11 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
    - **Erev Tisha B'Av** (`JewishHolidays.isTishaBav(today + 1)`): a marginalia line `erevTishaBavNote`.
    - **Tisha B'Av** with no reading planned on it, in place of everything above: the eyebrow `todayReadingTitle` (the title page above names the fast), then bodyMedium onSurfaceVariant `todayTishaBav` ("Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).") and, while the parsha is unfinished, the day it goes on: `todayTishaBavTomorrow(name)` ("Va’etchanan continues tomorrow.") where the card will have reading tomorrow (aliyot planned for it, or earlier ones to catch up on) and no pause covers it, otherwise `todayTishaBavOn(name, weekday)` ("Va’etchanan continues on Friday.") for the first such day before Shabbat, as with the whole parsha on Erev Shabbat or a pause that runs past the fast, and nothing where there is none. The day after the fast is always a reading day, but the reader's plan need not have reading on it. No aliyot, no catching up, no actions (not even `readFromBook`), no notes. A reader who has turned the setting off gets the day's reading like any other.
 5. **WeekStrip card** (§6.13).
+   - Its header inside the card: the SectionHeader `weekStripLabel` ("This week’s plan") with the legend button, its words 12 in from the card's 8 (`WeekStrip.cardPadding`), on the line of the other cards' content. Progress frames its strip alike.
    - Under the strip, at most one marginalia line, with a close IconButton (18, onSurfaceVariant, tooltip `actionDismiss`) on its first line's centre, inset like the card's header, its lines balanced: first the grace days spent within the last week, every one not yet told, named together ("Monday and Tuesday were covered by grace days…", `graceUsedNote(count, weekdays, parsha)`, or `graceUsedNoteShort` when finishing this parsha by Shabbat would not earn one back), then today read ahead (`todayAhead`), then yesterday made up today (`caughtUpNote`).
    - A grace day is news once the planned day after it is over without the reading made up. A line tells only what was decided after the day the reader last put it away (`lastStripAck`) or last saw one (`stripNoteShownOn`, recorded while the page is in sight): seen, a line stays for the rest of the day and is not told again.
 6. **LedgerCard**, if `showStreaks` (§6.12).
-7. **"This week" PaperGroup:**
+7. **"Also this week" PaperGroup** (`thisWeek`, "ועוד השבוע"), the rest of the week beside the plan the strip's card heads ("This week’s plan"):
    - Haftarah row: `auto_stories_outlined`, title "Haftarah", subtitle the reference, plus a second subtitle line for a special haftarah.
    - Discuss row: `forum_outlined`, `discussThisWeek`; while the discussion opens, a spinner in its chevron's place.
    - These replace two separate cards.
@@ -1168,12 +1169,12 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
    - The header's running head gives the day of rest's Hebrew date, beside the device's date (1): from candle-lighting on its eve, still the eve's.
    - The hero (TitlePageFrame, padding 40 above and 24 elsewhere, 28 and 16 under 360 dp) shows candles at 48, 16, the day's greeting in displaySmall (`gmarChatimaTova` on Yom Kippur and `shanaTova` on Rosh Hashanah, on Shabbat too; `chagSameach` on the festivals' Yom Tov; otherwise `shabbatShalom`), 20, the eyebrow `parshatHashavua` (`simchatTorahEyebrow` for Vezot HaBerachah), 4, the pointed parsha name in hebrewDisplay 40/52 (heading level 1, `parshaLabel(name)`) and directly under it the Latin name, as on a reading day's hero (3): in the English UI a size smaller, in headlineSmall onSurface, for the eye alone, as the heading's label says it; in the Hebrew UI, as there, in bodyMedium onSurfaceVariant, tagged `en`. Then 16, and bodyMedium onSurfaceVariant `restDayBody`, or `restDayBodyChag` when the days of rest end with Yom Tov (`restDayBodyYomKippur` with Yom Kippur). The parsha is the week the day falls in: the one read today, or on the Shabbat after a Yom Tov.
    - The title page stands in the space under the header, in the page's 720 column: 16 below the header and 40 above the page's foot, two fifths of the free space above it and three below, as a book's title stands a little above the middle of its page, so that it doesn't sit at the top of an empty screen. Where it is taller than that space, as with large text, it follows the header 16 below it and the page scrolls.
-   - No rings, CTAs, notices, Today card, week strip, ledger or "This week"; only a TextButton `openTheParsha` to its week, /today/week/{id}.
+   - No rings, CTAs, notices, Today card, week strip, ledger or "Also this week"; only a TextButton `openTheParsha` to its week, /today/week/{id}.
    - Nothing animates.
    - The wording goes to the rabbinic advisor (DESIGN.md §11).
 9. **Desktop ≥1200:**
    - A container of max width 1040 with columns 7/5 and a 24 gap.
-   - Left: any notices, the hero and the Today card. Right: week strip, ledger, "This week".
+   - Left: any notices, the hero and the Today card. Right: week strip, ledger, "Also this week".
    - The header runs across the container above them, so its help button ends where the columns do, as an app bar's actions end on the column's edge, and the two columns start level under it.
    - Each column is a focus traversal group, so Tab goes down the left column before the right, in the order a screen reader reads them, rather than across to the week strip, which stands higher on the page than the hero's controls.
    - The day of rest keeps the single 720 column: its title page is all there is.
@@ -1271,7 +1272,7 @@ In order:
    - headlineSmall `parshiyotOfYear(0, 54)`;
    - bodySmall "5787 · 50 verses read twice with Targum", the verses of the year shown;
    - YearBar.
-4. **This week's plan:** WeekStrip card.
+4. **This week’s plan:** the WeekStrip card, framed as on Today (§9 Today, 5): `WeekStrip.cardPadding`, its SectionHeader `weekStripLabel` with the legend button inside the card, its words 12 in from the card's 8 so that they stand on the line of the other cards' content; 28 below This year's card.
 5. **Torah map** (§6.14), keeping the info button.
 6. **Make-up list:** unchanged content, as a PaperGroup, for this year's weeks only.
 7. **Recent weeks:** a PaperGroup. Rows show the name in titleMedium, a status icon plus label in bodySmall (wrapped at the reader's text size with its lines balanced, `BalancedText`, so large text leaves no word alone on its last line: "הושלם / מאוחר יותר"; the labels hold no no-break spaces, which would make a pair one word, set smaller to fit), and the date end-aligned in bodySmall with tabular figures (with the year for a week of another year), then a chevron.

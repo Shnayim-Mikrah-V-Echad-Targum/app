@@ -519,7 +519,8 @@ void main() {
       final group = find.ancestor(of: find.text('Discuss this week’s parsha'), matching: find.byType(PaperGroup));
       await tester.ensureVisible(group);
       await tester.pumpAndSettle();
-      expect(find.text('This week'), findsOneWidget);
+      // Headed apart from the week strip's "This week’s plan" above it.
+      expect(find.widgetWithText(GroupHeader, 'Also this week'), findsOneWidget);
       expect(find.descendant(of: group, matching: find.byType(PaperRow)), findsNWidgets(2));
       final haftarah = find.widgetWithText(PaperRow, 'Haftarah');
       expect(

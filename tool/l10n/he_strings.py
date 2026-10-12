@@ -143,7 +143,7 @@ HE = {
   "readingDivergenceAhead": "בארץ ישראל קוראים השבוע את פרשת {israel}, ובחוץ לארץ את פרשת {diaspora}. ארץ ישראל מקדימה בפרשה אחת, ואת פרשת {israel} קוראים כאן בשבוע הבא.",
   "readingDivergenceOpen": "לפרשת {name}",
   "discussThisWeek": "דיון על פרשת השבוע",
-  "thisWeek": "השבוע",
+  "thisWeek": "ועוד השבוע",
   "streakParsha": "רצף פרשות",
   "streakDays": "ימים לפי התוכנית",
   "weeksCount": "{count, plural, =1{שבוע אחד} =2{שבועיים} other{{count} שבועות}}",
