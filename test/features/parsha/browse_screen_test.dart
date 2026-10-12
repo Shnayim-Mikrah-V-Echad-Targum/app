@@ -12,6 +12,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/widgets/lang.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
@@ -123,7 +124,7 @@ void main() {
       await open(tester);
       final lech = row('Lech Lecha');
       expect(find.descendant(of: lech, matching: find.text('3')), findsOneWidget);
-      expect(find.descendant(of: lech, matching: find.text('לך־לך')), findsOneWidget);
+      expect(find.descendant(of: lech, matching: find.text(WholeWords.unbroken('לך־לך'))), findsOneWidget);
       expect(partsOf(tester, lech), containsAllInOrder(['Genesis 12:1–17:27', 'October 24']));
       // No icon of a book on every row, and no chevron on a phone.
       expect(find.byIcon(Icons.menu_book_outlined), findsNothing);

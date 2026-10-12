@@ -173,6 +173,28 @@ class _BookHeader extends StatelessWidget {
           fontWeight: SeferColors.of(context).isHighContrast ? FontWeight.w700 : FontWeight.w600,
           color: scheme.secondary,
         );
+    final english = context.isHebrewUi ? null : theme.textTheme.titleSmall?.copyWith(color: muted);
+    final countText = context.l10n.browseBookParshiyot(count);
+    final countStyle = theme.textTheme.labelSmall?.copyWith(
+      color: muted,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    // One paragraph, so that with large text the English name wraps under
+    // the Hebrew one; each word whole.
+    final names = WholeWords.rich(
+      TextSpan(children: [
+        TextSpan(text: kTorahBooksHe[book], style: hebrew, locale: const Locale('he')),
+        if (english != null) ...[
+          const WidgetSpan(child: SizedBox(width: Space.sm)),
+          TextSpan(text: kTorahBooks[book], style: english),
+        ],
+      ]),
+      textAlign: TextAlign.start,
+      semanticsLabel: Names(context).book(kTorahBooks[book]),
+    );
+    final countLabel = WholeWords(countText, style: countStyle, textAlign: TextAlign.start);
+    // Measured again when a font arrives.
+    FontsChangeScope.watch(context);
     return Padding(
       // Inset as a group's header is.
       padding: EdgeInsetsDirectional.fromSTEB(Space.xs, top, Space.xs, Space.sm),
@@ -180,34 +202,22 @@ class _BookHeader extends StatelessWidget {
         child: Semantics(
           header: true,
           headingLevel: 2,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Expanded(
-                // One paragraph, so that with large text the English name
-                // wraps under the Hebrew one.
-                child: Text.rich(
-                  TextSpan(children: [
-                    TextSpan(text: kTorahBooksHe[book], style: hebrew, locale: const Locale('he')),
-                    if (!context.isHebrewUi) ...[
-                      const WidgetSpan(child: SizedBox(width: Space.sm)),
-                      TextSpan(text: kTorahBooks[book], style: theme.textTheme.titleSmall?.copyWith(color: muted)),
-                    ],
-                  ]),
-                  semanticsLabel: Names(context).book(kTorahBooks[book]),
-                ),
-              ),
-              const SizedBox(width: Space.md),
-              Text(
-                context.l10n.browseBookParshiyot(count),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: muted,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
+          child: LayoutBuilder(builder: (context, constraints) {
+            final width = _lineWidth(context, kTorahBooksHe[book], hebrew, locale: const Locale('he')) +
+                (english == null ? 0 : Space.sm + _lineWidth(context, kTorahBooks[book], english)) +
+                Space.md +
+                _lineWidth(context, countText, countStyle);
+            if (width <= constraints.maxWidth) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [Expanded(child: names), const SizedBox(width: Space.md), countLabel],
+              );
+            }
+            // With large text, the count under the names rather than
+            // squeezing them a letter to a line.
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [names, countLabel]);
+          }),
         ),
       ),
     );
@@ -278,19 +288,24 @@ class _ParshaRow extends StatelessWidget {
     // holds it.
     final markScaler = MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.5);
 
-    final hebrewName = Text(
+    // Each word of a name kept whole, and a maqaf's words together
+    // ("לך־לך"): set smaller where one is too wide for the row, never
+    // broken across lines.
+    final hebrewName = WholeWords(
       hebrewUi ? names.portion(portion, ashkenazi: ashkenazi) : names.portionAlt(portion, ashkenazi: ashkenazi),
       style: sefer.hebrewDisplay.copyWith(
         fontSize: hebrewUi ? 20 : 18,
         height: hebrewUi ? 28 / 20 : 26 / 18,
         color: hebrewUi ? scheme.onSurface : scheme.onSurfaceVariant,
       ),
+      textAlign: TextAlign.start,
       textDirection: TextDirection.rtl,
       locale: const Locale('he'),
     );
-    final latinName = Text(
+    final latinName = WholeWords(
       latin,
       style: hebrewUi ? muted : text.titleLarge?.copyWith(fontSize: 20, height: 26 / 20, color: scheme.onSurface),
+      textAlign: TextAlign.start,
       textDirection: TextDirection.ltr,
     );
     // The title in the UI's language, and the name in the other at its end.
@@ -446,8 +461,8 @@ class _ParshaRow extends StatelessWidget {
 class _NameLine extends StatelessWidget {
   const _NameLine({required this.title, required this.name, required this.nameInEnglish});
 
-  final Text title;
-  final Text name;
+  final WholeWords title;
+  final WholeWords name;
   final bool nameInEnglish;
 
   static const double _gap = Space.md;
@@ -470,17 +485,22 @@ class _NameLine extends StatelessWidget {
   }
 
   /// How wide [text] is set on one line.
-  static double _width(BuildContext context, Text text) {
-    final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
-    final painter = TextPainter(
-      text: TextSpan(text: text.data, style: DefaultTextStyle.of(context).style.merge(text.style).merge(bold)),
-      textDirection: text.textDirection ?? Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      locale: text.locale,
-      maxLines: 1,
-    )..layout();
-    final width = painter.width;
-    painter.dispose();
-    return width;
-  }
+  static double _width(BuildContext context, WholeWords text) =>
+      _lineWidth(context, text.text!, text.style, direction: text.textDirection, locale: text.locale);
+}
+
+/// How wide [text] is set on one line in [style], merged into the ambient
+/// style as a [Text] merges it, and bold where the platform asks for bold.
+double _lineWidth(BuildContext context, String text, TextStyle? style, {TextDirection? direction, Locale? locale}) {
+  final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: DefaultTextStyle.of(context).style.merge(style).merge(bold)),
+    textDirection: direction ?? Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    locale: locale,
+    maxLines: 1,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
 }
