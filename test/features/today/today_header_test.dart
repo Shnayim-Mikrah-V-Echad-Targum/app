@@ -89,12 +89,15 @@ void main() {
       expect(runningHead(tester), 'יום שבת, כ״ט בתשרי תשפ״ז · 10 באוקטובר');
     });
 
-    testWidgets("on Motzaei Shabbat keeps the device's date beside Sunday's Hebrew one", (tester) async {
-      // After nightfall in Jerusalem the reading day is Sunday's.
+    testWidgets('on Motzaei Shabbat gives the reading day, as the rest of the page does', (tester) async {
+      // After nightfall in Jerusalem the reading day is Sunday's: its
+      // reading, the strip's today and the days to Shabbat all count from
+      // it, and so does the head.
       await openToday(tester, DateTime(2026, 10, 10, 20));
-      expect(runningHead(tester), 'Saturday, October 10 · 30 Tishrei 5787');
+      expect(runningHead(tester), 'Sunday, October 11 · 30 Tishrei 5787');
+      expect(find.textContaining('Saturday'), findsNothing);
       await openToday(tester, DateTime(2026, 10, 10, 20), language: AppLanguage.hebrew);
-      expect(runningHead(tester), 'יום ראשון, ל׳ בתשרי תשפ״ז · 10 באוקטובר');
+      expect(runningHead(tester), 'יום ראשון, ל׳ בתשרי תשפ״ז · 11 באוקטובר');
     });
   });
 

@@ -127,7 +127,8 @@ final restDayProvider = NotifierProvider<RestDayController, LocalDate?>(RestDayC
 /// 3 a.m., and is checked again whenever the app resumes. Unlike the
 /// reading day it never passes over a day of rest, and unlike
 /// [restDayProvider] it doesn't turn at candle-lighting or nightfall:
-/// Today's running head gives it as the civil date (docs/DESIGN_SYSTEM.md
+/// Today's running head gives it as the civil date on a day of rest, which
+/// from candle-lighting on its eve is the next day's (docs/DESIGN_SYSTEM.md
 /// §9 Today, 1).
 class CivilDateController extends Notifier<LocalDate> {
   Timer? _timer;

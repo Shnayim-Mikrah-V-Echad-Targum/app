@@ -172,7 +172,7 @@ const _screens = {
   'today_checkin': '/today',
   'today_checkin_sheet': '/today',
   // Motzaei Shabbat Bereshit, after nightfall in Jerusalem: the check-in,
-  // under a running head with Saturday's date and Sunday's Hebrew one.
+  // under a running head with Sunday's date, the reading day's.
   'today_motzaei_shabbat': '/today',
   // Wednesday of Noach: Bereshit can still be restored by doubling up.
   'today_restore': '/today',

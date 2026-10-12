@@ -185,8 +185,9 @@ class TodayScreen extends ConsumerWidget {
       ),
     ];
     return [
-      // On Motzaei Shabbat the reading day is already Sunday's.
-      _TodayHeader(today: today, civil: ref.watch(civilDateProvider)),
+      // The reading day in both calendars: on Motzaei Shabbat after
+      // nightfall it is already Sunday, as the rest of the page counts it.
+      _TodayHeader(today: today, civil: today),
       const Gap(Space.lg),
       _Columns(main: reading, side: week, wide: wide),
     ];
@@ -249,10 +250,10 @@ class _TodayHeader extends StatelessWidget {
   /// The reading day, or the day of rest: the Hebrew date and its weekday.
   final LocalDate today;
 
-  /// The device's date ([civilDateProvider]): the Gregorian date. It
-  /// differs from [today] only in an evening that has begun the next day
-  /// by the Hebrew reckoning: on Friday night from candle-lighting, already
-  /// Shabbat, and on Motzaei Shabbat after nightfall, already Sunday.
+  /// The Gregorian date. On a day of rest it is the device's date
+  /// ([civilDateProvider]), which differs from [today] only on its eve
+  /// from candle-lighting, already Shabbat or Yom Tov by the Hebrew
+  /// reckoning; on a reading day it is [today] itself.
   final LocalDate civil;
 
   @override
