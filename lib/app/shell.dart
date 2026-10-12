@@ -168,12 +168,16 @@ class AppShell extends StatelessWidget {
                             label: _RailLabel(label, extended: extended),
                             // Beside their labels, destinations are 56 high
                             // (Material's 44 is short of a tap target). Under
-                            // them, they keep Material's 64, whose spacing the
-                            // framework fixes (§6.10), and leave the labels 76
-                            // of the rail's 80, which the longest needs in bold.
+                            // them, they take Material's 64, whose spacing the
+                            // framework fixes (§6.10), and 6 more above the
+                            // indicator, which Material sets at the very top:
+                            // the focus ring stands 5 out from it, and the
+                            // rail, scrolling in a short window, would cut its
+                            // top off at its edge. They leave the labels 76 of
+                            // the rail's 80, which the longest needs in bold.
                             padding: extended
                                 ? const EdgeInsets.symmetric(vertical: 6)
-                                : const EdgeInsets.symmetric(horizontal: 2),
+                                : const EdgeInsets.fromLTRB(2, 6, 2, 0),
                           ),
                       ],
                     ),

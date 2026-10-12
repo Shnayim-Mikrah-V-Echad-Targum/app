@@ -186,10 +186,12 @@ void main() {
       expect(tester.getSize(rail).width, AppShell.railWidth);
     });
 
-    testWidgets("destinations keep Material's 64, which the framework's spacing fixes", (tester) async {
+    testWidgets("destinations take Material's 64, which the framework's spacing fixes, and room above for the ring",
+        (tester) async {
       await open(tester, tablet);
       for (final label in ['Today', 'Parsha', 'Progress', 'Community', 'Settings']) {
-        expect(tester.getSize(destinationOf(label)).height, 64, reason: label);
+        // 6 above the indicator, which the focus ring stands 5 out from.
+        expect(tester.getSize(destinationOf(label)).height, 64 + 6, reason: label);
       }
     });
 

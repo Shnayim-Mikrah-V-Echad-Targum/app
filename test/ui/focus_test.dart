@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/features/community/data/models.dart';
+import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
@@ -443,6 +446,35 @@ void main() {
         });
       }
 
+      testWidgets('$name, the selected one, from the keyboard', (tester) async {
+        _keyboardMode();
+        await openRoute(tester, '/today', size: size, now: DateTime(2026, 10, 9, 11));
+        final sefer = SeferColors.of(tester.element(find.byType(Scaffold).first));
+        // Today's selected icon: an IndicatorFocusRing of its own.
+        final today = find.descendant(
+          of: find.byWidgetPredicate((w) => w is NavigationBar || w is NavigationRail),
+          matching: find.byIcon(Icons.today),
+        );
+        expect(ringOf(tester, today), isNull);
+        Focus.of(tester.element(today)).requestFocus();
+        await tester.pumpAndSettle();
+        final shape = RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: tester.getSize(today).center(Offset.zero),
+            width: indicator.width,
+            height: indicator.height,
+          ),
+          Radius.circular(radius),
+        );
+        // The gap and ring stand clear of the selected indicator's fill.
+        expect(
+          find.ancestor(of: today, matching: find.byType(CustomPaint)).first,
+          paints
+            ..rrect(rrect: shape.inflate(1), color: sefer.focusGap, strokeWidth: 2, style: PaintingStyle.stroke)
+            ..rrect(rrect: shape.inflate(3.5), color: sefer.focus, strokeWidth: 3, style: PaintingStyle.stroke),
+        );
+      });
+
       testWidgets('$name focused under touch shows no ring', (tester) async {
         FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTouch;
         addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
@@ -454,6 +486,93 @@ void main() {
         expect(ringOf(tester, parsha), isNull);
       });
     }
+  });
+
+  testWidgets('the rail, scrolling in a short window, cuts off no ring as Tab moves through it', (tester) async {
+    _keyboardMode();
+    // A phone held sideways.
+    await openRoute(tester, '/today', size: const Size(800, 360), now: DateTime(2026, 10, 9, 11));
+    final rail = find.byType(NavigationRail);
+    final viewport = tester.getRect(find.descendant(of: rail, matching: find.byType(SingleChildScrollView)));
+    final icons = {
+      for (final (label, icon) in [
+        ('Today', Icons.today),
+        ('Parsha', Icons.menu_book_outlined),
+        ('Progress', Icons.donut_large_outlined),
+        ('Community', Icons.forum_outlined),
+        ('Settings', Icons.settings_outlined),
+      ])
+        label: find.descendant(of: rail, matching: find.byIcon(icon)),
+    };
+    // The destinations are taller together than the window: the rail scrolls,
+    // and clips what lies past its edges.
+    expect(tester.getRect(icons['Settings']!).bottom + 40, greaterThan(viewport.bottom));
+
+    // Today, at the top of the rail's scrolling content, then on with Tab,
+    // which scrolls each destination into view.
+    Focus.of(tester.element(icons['Today']!)).requestFocus();
+    await tester.pumpAndSettle();
+    final ringed = <String>{};
+    for (var i = 0; i < 12 && ringed.length < icons.length; i++) {
+      if (i > 0) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
+      }
+      for (final MapEntry(key: label, value: icon) in icons.entries) {
+        if (!Focus.of(tester.element(icon)).hasPrimaryFocus) continue;
+        ringed.add(label);
+        // The ring's outer edge: 5 out from the 56×32 indicator, centred on
+        // the icon.
+        final ring = Rect.fromCenter(center: tester.getCenter(icon), width: 56 + 10, height: 32 + 10);
+        expect(viewport.contains(ring.topLeft) && viewport.contains(ring.bottomRight), isTrue,
+            reason: '$label: $ring within $viewport');
+      }
+    }
+    expect(ringed, icons.keys.toSet(), reason: 'Tab reached every destination');
+  });
+
+  testWidgets('the reasons to report a post are ringed from the keyboard, within the dialog', (tester) async {
+    _keyboardMode();
+    await tester.pumpWidget(MaterialApp(
+      theme: _theme(AppThemeMode.light),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(child: TextButton(onPressed: () => showReportDialog(context), child: const Text('Report'))),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('Report'));
+    await tester.pumpAndSettle();
+    final rings = find.byType(TileFocusRing);
+    expect(rings, findsNWidgets(6));
+    final viewport = tester.getRect(
+      find.descendant(of: find.byType(AlertDialog), matching: find.byType(SingleChildScrollView)).first,
+    );
+
+    // Tab to the first reason.
+    final first = rings.first;
+    for (var i = 0; i < 10; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final focused = FocusManager.instance.primaryFocus?.context;
+      if (focused != null && find.descendant(of: first, matching: find.byWidget(focused.widget)).evaluate().isNotEmpty) {
+        break;
+      }
+    }
+    final ringPaint = find.descendant(of: first, matching: find.byType(CustomPaint)).first;
+    expect(tester.widget<CustomPaint>(ringPaint).foregroundPainter, isNotNull);
+    // 4 out from the tile's sides, as high as it is, and within the
+    // dialog's scrolling content, which clips.
+    final tile = tester.getRect(find.descendant(of: first, matching: find.byType(RadioListTile<ReportReason>)));
+    final outer = RRect.fromRectAndRadius(Rect.fromLTRB(-7, 0, tile.width + 7, tile.height), const Radius.circular(8));
+    expect(ringPaint, paints..drrect(outer: outer, inner: outer.deflate(3), color: Palettes.seferLight.focus));
+    expect(viewport.left, lessThanOrEqualTo(tile.left - 7));
+    expect(viewport.right, greaterThanOrEqualTo(tile.right + 7));
+    // With no wash under it.
+    final inkWell = find.descendant(of: first, matching: find.byType(InkWell));
+    expect(Theme.of(tester.element(inkWell)).focusColor, Colors.transparent);
   });
 
   group('a popup menu item', () {

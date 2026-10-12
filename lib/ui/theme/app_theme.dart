@@ -168,7 +168,8 @@ abstract final class AppTheme {
       visualDensity: VisualDensity.standard,
       // The tint Material gives a focused ink well. Controls, rows, menu items
       // and the tiles in TileFocusRing draw the ring instead (§6.1) and clear
-      // it; a few list tiles still show it.
+      // it; the tiles of the date, restore, blocked-members and language
+      // sheets, and the haftarah page's ExpansionTile, still show it.
       focusColor: scheme.onSurface.withValues(alpha: 0.24),
       scaffoldBackgroundColor: scheme.surface,
       cardColor: sefer.paper,

@@ -510,6 +510,9 @@ const _screens = {
   'focus_sheet_tile': '/today',
   'focus_dialog_tile': '/settings/data',
   'focus_nav': '/today',
+  // Today's tab, the selected one: at the very top of the rail, which
+  // scrolls in a short window.
+  'focus_nav_today': '/today',
   'focus_segment': '/welcome',
   'focus_fab': '/community/forum/parsha',
   'focus_thread': '/community/forum/questions',
@@ -1395,6 +1398,18 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
         tester,
         find.descendant(of: find.byType(Card), matching: find.byType(PopupMenuButton<String>)).first,
       ),
+  'focus_nav_today': (tester) => _keyboardFocus(
+        tester,
+        find
+            .ancestor(
+              of: find.descendant(
+                of: find.byWidgetPredicate((w) => w is NavigationBar || w is NavigationRail),
+                matching: find.byIcon(Icons.today),
+              ),
+              matching: find.byWidgetPredicate((w) => w is InkResponse),
+            )
+            .first,
+      ),
   // The Parsha tab of the navigation bar or rail.
   'focus_nav': (tester) => _keyboardFocus(
         tester,
@@ -1697,7 +1712,12 @@ final _modes = [
   // The same, tall, for the screens in [_hugeTallScreens]: the whole page.
   _Mode('hugetall', const Size(320, 3600), (s) => s, textScale: 3),
   _Mode('hugetallhe', const Size(320, 3600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 3),
+  // A phone held sideways, where the rail scrolls, for the screens in
+  // [_sidewaysScreens].
+  _Mode('sideways', const Size(800, 360), (s) => s),
 ];
+
+const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 const _hugeModes = {'huge', 'hugehe'};
@@ -1827,6 +1847,7 @@ const _desktopScreens = {
   'forum_refreshed',
   'sheet_display',
   'focus_nav',
+  'focus_nav_today',
   'kit_ornaments',
   'kit_rows',
   'kit_progress',
@@ -2034,6 +2055,7 @@ void main() {
       if (mode.tag == 'desk1200' && !_narrowDesktopScreens.contains(entry.key)) continue;
       if (_hugeModes.contains(mode.tag) && !_hugeScreens.contains(entry.key)) continue;
       if (_hugeTallModes.contains(mode.tag) && !_hugeTallScreens.contains(entry.key)) continue;
+      if (mode.tag == 'sideways' && !_sidewaysScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {
