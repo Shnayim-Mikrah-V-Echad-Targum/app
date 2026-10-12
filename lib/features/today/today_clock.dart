@@ -122,3 +122,35 @@ class RestDayController extends Notifier<LocalDate?> {
 }
 
 final restDayProvider = NotifierProvider<RestDayController, LocalDate?>(RestDayController.new);
+
+/// The device's date, as the app keeps it ([rolloverDate]): it turns at
+/// 3 a.m., and is checked again whenever the app resumes. Unlike the
+/// reading day it never passes over a day of rest, and unlike
+/// [restDayProvider] it doesn't turn at candle-lighting or nightfall:
+/// Today's running head gives it as the civil date (docs/DESIGN_SYSTEM.md
+/// §9 Today, 1).
+class CivilDateController extends Notifier<LocalDate> {
+  Timer? _timer;
+  AppLifecycleListener? _lifecycle;
+
+  @override
+  LocalDate build() {
+    // Again whenever the reading day is brought up to date.
+    ref.watch(todayProvider);
+    _lifecycle ??= AppLifecycleListener(onResume: ref.invalidateSelf);
+    ref.onDispose(() {
+      _timer?.cancel();
+      _lifecycle?.dispose();
+      _lifecycle = null;
+    });
+    final now = TodayController.now();
+    // Tests turn the timers off, as they do the reading day's.
+    if (TodayController.autoRollover) _timer = Timer(nextRollover(now).difference(now), ref.invalidateSelf);
+    return rolloverDate(now);
+  }
+
+  @override
+  bool updateShouldNotify(LocalDate previous, LocalDate next) => previous != next;
+}
+
+final civilDateProvider = NotifierProvider<CivilDateController, LocalDate>(CivilDateController.new);

@@ -64,7 +64,11 @@ class TodayScreen extends ConsumerWidget {
           maxWidth: wide ? ContentWidth.todayWide : ContentWidth.list,
           padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.s40),
           children: rest != null
-              ? [_TodayHeader(today: rest), const Gap(Space.lg), _RestHero(date: rest)]
+              ? [
+                  _TodayHeader(today: rest, civil: ref.watch(civilDateProvider)),
+                  const Gap(Space.lg),
+                  _RestHero(date: rest),
+                ]
               : _readingDay(context, ref, wide: wide),
         ),
       ),
@@ -169,7 +173,8 @@ class TodayScreen extends ConsumerWidget {
       ),
     ];
     return [
-      _TodayHeader(today: today),
+      // On Motzaei Shabbat the reading day is already Sunday's.
+      _TodayHeader(today: today, civil: ref.watch(civilDateProvider)),
       const Gap(Space.lg),
       _Columns(main: reading, side: week, wide: wide),
     ];
@@ -227,19 +232,27 @@ class _Columns extends StatelessWidget {
 /// The running head and the masthead: today's date in both calendars, the
 /// app's name, and the guide a tap away.
 class _TodayHeader extends StatelessWidget {
-  const _TodayHeader({required this.today});
+  const _TodayHeader({required this.today, required this.civil});
 
+  /// The reading day, or the day of rest: the Hebrew date and its weekday.
   final LocalDate today;
+
+  /// The device's date ([civilDateProvider]): the Gregorian date. It
+  /// differs from [today] only in an evening that has begun the next day
+  /// by the Hebrew reckoning: on Friday night from candle-lighting, already
+  /// Shabbat, and on Motzaei Shabbat after nightfall, already Sunday.
+  final LocalDate civil;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final names = Names(context);
     final theme = Theme.of(context);
-    // Each UI's own calendar first.
+    // Each UI's own calendar first, with its weekday: on Friday night,
+    // "Friday, October 9 · 29 Tishrei 5787", and in Hebrew Shabbat's.
     final runningHead = context.isHebrewUi
-        ? ['${names.weekday(today)}, ${names.hebrewDate(today)}', names.dateMonthDay(today)]
-        : [names.dateLong(today), names.hebrewDate(today)];
+        ? ['${names.weekday(today)}, ${names.hebrewDate(today)}', names.dateMonthDay(civil)]
+        : [names.dateLong(civil), names.hebrewDate(today)];
     return Row(
       children: [
         Expanded(

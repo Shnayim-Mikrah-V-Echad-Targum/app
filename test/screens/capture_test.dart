@@ -171,6 +171,9 @@ const _screens = {
   // sheet.
   'today_checkin': '/today',
   'today_checkin_sheet': '/today',
+  // Motzaei Shabbat Bereshit, after nightfall in Jerusalem: the check-in,
+  // under a running head with Saturday's date and Sunday's Hebrew one.
+  'today_motzaei_shabbat': '/today',
   // Wednesday of Noach: Bereshit can still be restored by doubling up.
   'today_restore': '/today',
   // The Monday after a pause that ended on Sunday: welcomed back.
@@ -608,6 +611,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_yom_kippur': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
   'today_friday_night': (s) => s.copyWith(city: _jerusalem),
+  'today_motzaei_shabbat': (s) => s.copyWith(city: _jerusalem),
   'today_erev_tisha_bav': (s) => s.copyWith(joinDate: LocalDate(2027, 8, 11)),
   'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   's_reading_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
@@ -631,7 +635,7 @@ const _jerusalem = City(
 final _screenOverrides = <String, List<Override>>{
   for (final screen in ['city', 'city_search', 'city_many', 'city_none'])
     screen: [deviceTimeZoneProvider.overrideWith((ref) async => 'Asia/Jerusalem')],
-  for (final screen in ['today_candles', 'today_friday_night'])
+  for (final screen in ['today_candles', 'today_friday_night', 'today_motzaei_shabbat'])
     screen: [
       timeZoneDatabaseProvider.overrideWith((ref) async {}),
       // A device in Jerusalem, on its clock: tests run on UTC.
@@ -707,6 +711,7 @@ final _screenNow = <String, DateTime>{
   'today_friday_night': DateTime(2026, 10, 9, 20),
   'today_checkin': DateTime(2026, 10, 12, 11),
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
+  'today_motzaei_shabbat': DateTime(2026, 10, 10, 20),
   'today_restore': DateTime(2026, 10, 14, 11),
   'today_pause_ended': DateTime(2026, 10, 12, 11),
   'today_grace': DateTime(2026, 10, 16, 11),

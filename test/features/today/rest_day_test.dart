@@ -310,7 +310,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Shabbat Shalom'), findsOneWidget);
-      expect(find.textContaining('Saturday, October 10'), findsOneWidget);
+      // Shabbat's Hebrew date, beside the device's, which is still Friday's.
+      expect(find.textContaining('29 Tishrei 5787'), findsOneWidget);
+      expect(find.textContaining('Friday, October 9'), findsOneWidget);
       expect(find.bySubtype<FilledButton>(), findsNothing);
     });
 
