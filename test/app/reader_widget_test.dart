@@ -294,7 +294,7 @@ void main() {
     await tester.tap(find.byTooltip('More options'));
     await tester.pumpAndSettle();
     expect(find.text('Guided reading'), findsOneWidget);
-    expect(find.widgetWithText(PopupMenuItem<String>, 'Mark this aliyah as read'), findsOneWidget);
+    expect(find.widgetWithText(SeferMenuItem<String>, 'Mark this aliyah as read'), findsOneWidget);
     await tester.tap(find.text('Guided reading'));
     await tester.pumpAndSettle();
     expect(find.byType(AliyahRibbon), findsOneWidget);

@@ -66,9 +66,11 @@ void main() {
           expect((selected.letterSpacing, unselected.letterSpacing), (0, 0));
         });
 
-        test('bar: keyboard focus is a strong wash; press and hover the usual ones', () {
+        // The shell rings the focused destination's indicator instead; null
+        // would fall back to ThemeData.focusColor's wash.
+        test('bar: no wash for keyboard focus; press and hover the usual ones', () {
           final overlay = bar.overlayColor!;
-          expect(overlay.resolve({WidgetState.focused}), scheme.onSurface.withValues(alpha: 0.32));
+          expect(overlay.resolve({WidgetState.focused}), Colors.transparent);
           expect(overlay.resolve({WidgetState.pressed}), scheme.onSurface.withValues(alpha: 0.10));
           expect(overlay.resolve({WidgetState.hovered}), scheme.onSurface.withValues(alpha: 0.06));
           expect(overlay.resolve(_unselected), isNull);

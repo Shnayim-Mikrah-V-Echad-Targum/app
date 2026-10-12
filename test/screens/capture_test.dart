@@ -498,6 +498,12 @@ const _screens = {
   'focus_field': '/community/account',
   'focus_tab': '/read/5787:1/2',
   'focus_menu': '/week/5787:1',
+  // The week's menu, opened from the keyboard, its second item focused.
+  'focus_menu_item': '/week/5787:1',
+  // A tile in the check-in's sheet (ringed inside), and in the import
+  // dialog (ringed outside, its text being at its edge).
+  'focus_sheet_tile': '/today',
+  'focus_dialog_tile': '/settings/data',
   'focus_nav': '/today',
   'focus_segment': '/welcome',
   'focus_fab': '/community/forum/parsha',
@@ -720,6 +726,7 @@ final _screenNow = <String, DateTime>{
   'today_friday_night': DateTime(2026, 10, 9, 20),
   'today_checkin': DateTime(2026, 10, 12, 11),
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
+  'focus_sheet_tile': DateTime(2026, 10, 12, 11),
   'today_restore': DateTime(2026, 10, 14, 11),
   'today_pause_ended': DateTime(2026, 10, 12, 11),
   'today_grace': DateTime(2026, 10, 16, 11),
@@ -877,7 +884,7 @@ final _longNotes = jsonEncode({
 });
 
 /// Screens where the reader chooses [_backupFile] to restore.
-const _choosesBackup = {'s_data_import', 's_data_replace', 'welcome_import'};
+const _choosesBackup = {'s_data_import', 's_data_replace', 'welcome_import', 'focus_dialog_tile'};
 
 /// A backup made on another phone on the Thursday of Bereshit: the last
 /// eleven weeks of 5786 read, and a pause over Sukkot.
@@ -1371,6 +1378,27 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
             )
             .first,
       ),
+  'focus_menu_item': (tester) async {
+    await _keyboardFocus(
+      tester,
+      find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
+    );
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+  },
+  'focus_sheet_tile': (tester) async {
+    await tester.tap(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(TextButton)).at(1));
+    await tester.pumpAndSettle();
+    await _keyboardFocus(tester, find.byType(CheckboxListTile).at(1));
+  },
+  'focus_dialog_tile': (tester) async {
+    await tester.tap(find.byIcon(Icons.download_outlined));
+    await _settle(tester);
+    await _keyboardFocus(tester, find.byType(CheckboxListTile));
+  },
   // The second segment of the language switch: the group is ringed, the
   // segment washed and underlined.
   'focus_segment': (tester) => _keyboardFocus(
@@ -1567,7 +1595,7 @@ Future<void> _openWeekMenu(WidgetTester tester, {int? item}) async {
   await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)));
   await tester.pumpAndSettle();
   if (item != null) {
-    await tester.tap(find.byType(PopupMenuItem<String>).at(item));
+    await tester.tap(find.byType(SeferMenuItem<String>).at(item));
     await tester.pumpAndSettle();
   }
 }
@@ -1841,6 +1869,10 @@ const _narrowScreens = {
   'reader_listen_full',
 };
 const _bigTextScreens = {
+  // A focus ring on a menu item and on tiles, at twice the text size.
+  'focus_menu_item',
+  'focus_sheet_tile',
+  'focus_dialog_tile',
   's_display',
   's_a11y',
   'sheet_display_full',

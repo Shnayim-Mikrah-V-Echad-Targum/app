@@ -267,11 +267,15 @@ class _ImportDialogState extends State<_ImportDialog> {
           if (widget.merge) ...[const SizedBox(height: 12), Text(l.importMergeBody)],
           if (backup.settings != null) ...[
             const SizedBox(height: 8),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _withSettings,
-              onChanged: (v) => setState(() => _withSettings = v ?? false),
-              title: Text(l.importAlsoSettings),
+            // Its text starts at its very edge, so its ring is outside it.
+            TileFocusRing(
+              outside: true,
+              child: CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _withSettings,
+                onChanged: (v) => setState(() => _withSettings = v ?? false),
+                title: Text(l.importAlsoSettings),
+              ),
             ),
           ],
         ],

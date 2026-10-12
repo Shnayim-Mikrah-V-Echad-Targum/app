@@ -83,7 +83,7 @@ New and changed files:
   - `abstract final class AppTypography { static TextTheme textTheme({required ColorScheme scheme, required UiFont uiFont, required bool hebrewUi, required bool highContrast}); static SeferType sefer({...same}) }`
   - `SeferType extends ThemeExtension<SeferType>`.
 - `lib/ui/theme/motion.dart`: `Motion` tokens and `Motion.of(context)`.
-- `lib/ui/theme/focus.dart`: `FocusRingBorder` and `SeferInkWell`.
+- `lib/ui/theme/focus.dart`: `FocusRingBorder`, `SeferInkWell` and the rings of navigation destinations, menu items and list tiles.
 - `lib/ui/theme/app_theme.dart`:
   - signature becomes `AppTheme.build({required AppThemeMode mode /* resolved; never system */, required UiFont uiFont, required bool hebrewUi, required bool reduceMotion})`;
   - `AppTheme.scheme()` returns the `Palettes.*` constants;
@@ -530,6 +530,11 @@ Controls pick the ring as they build, but Material rebuilds them only when their
 - when focused and `FocusManager.instance.highlightMode == FocusHighlightMode.traditional`, a foreground `ShapeDecoration(RoundedRectangleBorder(radius, side: BorderSide(color: focus, width: 3, strokeAlign: outside)))`;
 - only for its own focus: `onFocusChange` also fires while a control inside it (a PaperRow's trailing menu or text button) has focus, and that control draws its own ring, so the row draws none.
 
+Navigation destinations, menu items and list tiles have no shape a ring can go on, and Material marks their focus only with a wash in onSurface, under 3:1 (on the bar, darker than the selected indicator, so focus read as selection). Each draws the ring instead, and clears the wash. The rings below ask the focus manager for the highlight mode, as `SeferInkWell` does, since a popup menu keeps the theme it was opened with.
+- **Bar and rail** (`IndicatorFocusRing`, around each destination's icon and selected icon): `FocusRingBorder`'s gap and ring around the indicator, 64×32 radius 16 on the bar and 56×32 radius 12 on the rail, centred on the icon, whether or not the destination is selected. Nothing between the icon and the bar clips it.
+- **Popup menu items** (`SeferMenuItem`, a `PopupMenuItem` whose content is a `MenuItemFocusRing`): a 3 px ring in focus inside the item, 4 in from its edges, radius 8 (the menu's own edges are near). The content is laid out as Material's (12 in, centred in at least 48), so the item has no padding of its own, and kept 10 clear of the item's top and bottom, so that a label set on two lines by large text clears the ring.
+- **List tiles** (`TileFocusRing`, around a ListTile or CheckboxListTile): a 3 px ring in focus, radius 8, 4 in from the tile's edges as a menu item's, clear of the edges (and the high-contrast outline) of a sheet the tile spans. A tile with no content padding, in a dialog, has its text and icons at its sides, so its ring stands 4 out from them instead, as high as the tile (`outside: true`). The few tiles in sheets that later become PaperRows still show the wash.
+
 Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7). The ring appears instantly.
 
 ### 6.2 App bar
@@ -632,7 +637,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Icons 24, outlined; filled when selected.
 - Labels always shown, labelSmall with letter spacing 0, so "Community" fits a 360 dp phone's 72 px slot in bold: selected onSurface w700, unselected onSurfaceVariant w500 (6.51:1).
 - Large text: the labels grow (Material allows up to 1.3×) only while the widest, in bold, still fits its slot on one line, so no word ever breaks; a font too wide even at its normal size shrinks them, to 70% at most. The bar grows to fit them (72 at 1×).
-- Keyboard focus: an onSurface wash at 32% over the indicator (the bar draws no ring). The indicator moves over Material's 500 ms, or at once under Reduce Motion.
+- Keyboard focus: the §6.1 ring around the indicator (no wash). The indicator moves over Material's 500 ms, or at once under Reduce Motion.
 - Icons: Today `today`; Parsha `menu_book`; Progress `donut_large_outlined`/`donut_large` (echoes the rings; replaces the sparkle `insights`); Community `forum`; Settings `settings`.
 
 ### 6.10 Navigation rail (≥600)
@@ -641,7 +646,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Leading: the app mark (`AppMark`, 40×40, ClipRRect radius 10). It draws mark_128.png wherever 128 px covers the pixels drawn and icon.png above that: decoding the 1024 px master straight to 40 px breaks up the letters.
 - Extended at ≥1200: the mark plus a 12 gap plus the wordmark "Shnayim Mikra" (EBG 500 20/24) or "שניים מקרא" (FRL 500 20/24) in onSurface. Semantics header. Replaces "SM" / "ש״מ".
 - Indicator primaryContainer radius 12; destination height 56 in the extended rail. The compact rail keeps Material's 64 (the 32 indicator, 4, a 16 px label and 12 below), spacing the framework fixes.
-- Keyboard focus: the bar's onSurface wash at 32% (the rail draws no ring either).
+- Keyboard focus: the §6.1 ring around the indicator (no wash).
 
 ### 6.11 ParshaRings and RingLegend (progress_widgets.dart)
 

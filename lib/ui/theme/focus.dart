@@ -290,6 +290,268 @@ class _SeferInkWellState extends State<SeferInkWell> {
   }
 }
 
+/// Rebuilds a focus ring as the user switches between keyboard and touch,
+/// which changes no focus. The rings ask the focus manager for the mode
+/// rather than reading [FocusHighlight], as a popup menu keeps the theme it
+/// was opened with.
+mixin _KeyboardHighlight<T extends StatefulWidget> on State<T> {
+  /// Whether keyboard focus is being shown.
+  bool get keyboardHighlight => FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+
+  /// Whether the ring would show in keyboard mode, and so must be rebuilt
+  /// when the mode changes.
+  bool get ringFocused;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addHighlightModeListener(_highlightModeChanged);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_highlightModeChanged);
+    super.dispose();
+  }
+
+  void _highlightModeChanged(FocusHighlightMode mode) {
+    if (ringFocused) setState(() {});
+  }
+}
+
+/// The keyboard focus ring (§6.1) of a navigation bar or rail destination,
+/// around its indicator: the destination's icon and selected icon go in it.
+///
+/// While the destination has keyboard focus, it paints [FocusRingBorder]'s
+/// gap and ring around a rounded rectangle of the [indicator]'s size and
+/// [radius], centred on the icon as the indicator is, whether or not the
+/// indicator shows. Material marks the focus only with a wash over the
+/// indicator, too faint to see, and in the light themes darker than the
+/// selected indicator; the ring reads as focus, never as selection.
+///
+/// The ring reaches 5 px past the indicator, so nothing between the icon and
+/// the bar may clip it.
+class IndicatorFocusRing extends StatefulWidget {
+  const IndicatorFocusRing({super.key, required this.child, required this.indicator, required this.radius});
+
+  final Widget child;
+
+  /// The size of the indicator that the ring goes around.
+  final Size indicator;
+
+  /// The indicator's corner radius.
+  final double radius;
+
+  @override
+  State<IndicatorFocusRing> createState() => _IndicatorFocusRingState();
+}
+
+class _IndicatorFocusRingState extends State<IndicatorFocusRing> with _KeyboardHighlight {
+  // The destination's ink well is the nearest focus node above its icon.
+  bool _destinationFocused({bool createDependency = true}) =>
+      Focus.maybeOf(context, createDependency: createDependency)?.hasPrimaryFocus ?? false;
+
+  @override
+  bool get ringFocused => _destinationFocused(createDependency: false);
+
+  @override
+  Widget build(BuildContext context) {
+    final sefer = SeferColors.of(context);
+    return CustomPaint(
+      // Only the painter changes, so showing the ring never rebuilds the icon.
+      foregroundPainter: _destinationFocused() && keyboardHighlight
+          ? _IndicatorRingPainter(
+              indicator: widget.indicator,
+              radius: widget.radius,
+              ring: sefer.focus,
+              gap: sefer.focusGap,
+            )
+          : null,
+      child: widget.child,
+    );
+  }
+}
+
+class _IndicatorRingPainter extends CustomPainter {
+  const _IndicatorRingPainter({required this.indicator, required this.radius, required this.ring, required this.gap});
+
+  final Size indicator;
+  final double radius;
+  final Color ring;
+  final Color gap;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // FocusRingBorder's own gap and ring, as every other control draws them.
+    FocusRingBorder(borderRadius: BorderRadius.all(Radius.circular(radius)), ring: ring, gap: gap).paint(
+      canvas,
+      Rect.fromCenter(center: size.center(Offset.zero), width: indicator.width, height: indicator.height),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_IndicatorRingPainter old) =>
+      old.indicator != indicator || old.radius != radius || old.ring != ring || old.gap != gap;
+}
+
+/// A popup menu item's content, laid out as Material lays it out (12 in from
+/// the start, centred in 48 at least), which draws the keyboard focus ring
+/// (§6.1) while the item has keyboard focus: 3 px, 4 px in from the item's
+/// edges, radius 8. It lies inside the item, as the menu's own edges are
+/// near. The content is kept 10 clear of the item's top and bottom, so that
+/// a label that large text sets on two lines clears the ring too (and the
+/// labels around it); one line at the usual size still makes an item 48
+/// high.
+///
+/// It fills the item, which must have no padding of its own: [SeferMenuItem]
+/// puts it in one.
+class MenuItemFocusRing extends StatefulWidget {
+  const MenuItemFocusRing({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<MenuItemFocusRing> createState() => _MenuItemFocusRingState();
+}
+
+class _MenuItemFocusRingState extends State<MenuItemFocusRing> with _KeyboardHighlight {
+  // The item's ink well is the nearest focus node above its content.
+  bool _itemFocused({bool createDependency = true}) =>
+      Focus.maybeOf(context, createDependency: createDependency)?.hasPrimaryFocus ?? false;
+
+  @override
+  bool get ringFocused => _itemFocused(createDependency: false);
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+        foregroundPainter: _itemFocused() && keyboardHighlight
+            ? _InsetRingPainter(ring: SeferColors.of(context).focus, inset: const EdgeInsets.all(4))
+            : null,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
+          child: SizedBox(
+            width: double.infinity,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), child: widget.child),
+            ),
+          ),
+        ),
+      );
+}
+
+/// A 3 px [ring] whose outer edge lies [inset] in from the edges of what it
+/// is painted over (out from an edge whose inset is negative), its corners
+/// of [radius].
+class _InsetRingPainter extends CustomPainter {
+  const _InsetRingPainter({required this.ring, required this.inset, this.radius = 8});
+
+  final Color ring;
+  final EdgeInsets inset;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(radius)),
+      side: BorderSide(color: ring, width: 3, strokeAlign: BorderSide.strokeAlignInside),
+    ).paint(canvas, inset.deflateRect(Offset.zero & size));
+  }
+
+  @override
+  bool shouldRepaint(_InsetRingPainter old) => old.ring != ring || old.inset != inset || old.radius != radius;
+}
+
+/// A [PopupMenuItem] that shows keyboard focus with a [MenuItemFocusRing]
+/// alone. Material would also wash the item in ThemeData.focusColor, which
+/// muddies the ring, and on the speech rates' menu would look like the
+/// chosen rate's highlight.
+class SeferMenuItem<T> extends PopupMenuItem<T> {
+  const SeferMenuItem({super.key, super.value, super.onTap, super.enabled, required Widget super.child})
+      : super(padding: EdgeInsets.zero);
+
+  @override
+  PopupMenuItemState<T, SeferMenuItem<T>> createState() => _SeferMenuItemState<T>();
+}
+
+class _SeferMenuItemState<T> extends PopupMenuItemState<T, SeferMenuItem<T>> {
+  @override
+  Widget buildChild() => MenuItemFocusRing(child: widget.child!);
+
+  @override
+  Widget build(BuildContext context) => Theme(
+        // For the item's ink well, which Material gives no focus colour of
+        // its own.
+        data: Theme.of(context).copyWith(focusColor: Colors.transparent),
+        // A Theme also resets the icon theme, which stays the menu's.
+        child: IconTheme(data: IconTheme.of(context), child: super.build(context)),
+      );
+}
+
+/// A [ListTile], or a CheckboxListTile or RadioListTile, that shows keyboard
+/// focus with a 3 px ring in [SeferColors.focus], as [SeferInkWell] does,
+/// instead of Material's wash, which it clears.
+///
+/// The ring lies inside the tile, 4 px in from its edges as a menu item's
+/// is, clear of the edges (and the high-contrast outline) of a sheet that
+/// the tile spans. Or, [outside], it stands 4 px out from the tile's sides,
+/// and spans its height: for a tile with no content padding, in a dialog's
+/// padded content, whose text and icons are at its sides. (Its height
+/// leaves room enough above and below them.)
+class TileFocusRing extends StatefulWidget {
+  const TileFocusRing({super.key, required this.child, this.radius = 8, this.outside = false});
+
+  final Widget child;
+
+  /// The ring's outer corner radius.
+  final double radius;
+
+  /// Whether the ring stands out from the tile's sides rather than inside it.
+  final bool outside;
+
+  @override
+  State<TileFocusRing> createState() => _TileFocusRingState();
+}
+
+class _TileFocusRingState extends State<TileFocusRing> with _KeyboardHighlight {
+  /// Inside: 4 px in all round. Outside: a 4 px gap beside the tile, then
+  /// the ring.
+  static const _inside = EdgeInsets.all(4);
+  static const _outside = EdgeInsets.symmetric(horizontal: -(4 + 3.0));
+
+  bool _focused = false;
+
+  @override
+  bool get ringFocused => _focused;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomPaint(
+      // Only the painter changes, so showing the ring never rebuilds the tile
+      // (and drops its focus).
+      foregroundPainter: _focused && keyboardHighlight
+          ? _InsetRingPainter(
+              ring: SeferColors.of(context).focus,
+              inset: widget.outside ? _outside : _inside,
+              radius: widget.radius,
+            )
+          : null,
+      // Told whenever the tile's own focus node, inside it, gains or loses
+      // focus.
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        includeSemantics: false,
+        onFocusChange: (focused) {
+          if (focused != _focused) setState(() => _focused = focused);
+        },
+        child: Theme(data: theme.copyWith(focusColor: Colors.transparent), child: widget.child),
+      ),
+    );
+  }
+}
+
 /// A slider's overlay: Material's translucent halo while it is hovered or
 /// dragged, and the focus ring (§6.1) around its round thumb while it has
 /// keyboard focus.

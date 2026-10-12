@@ -22,6 +22,7 @@ import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
+import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/app_mark.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/lang.dart';
@@ -1331,7 +1332,7 @@ void main() {
       // Its outer edge, in the gutter, takes the tap too.
       await tester.tapAt(box.centerRight - const Offset(2, 0));
       await tester.pumpAndSettle();
-      expect(find.byType(PopupMenuItem<String>), findsWidgets);
+      expect(find.byType(SeferMenuItem<String>), findsWidgets);
     });
 
     testWidgets('of your own, unthanked, puts Reply where the others put Todah, in line with the text', (tester) async {
@@ -1382,8 +1383,8 @@ void main() {
         matching: find.byTooltip('More options for Leah'),
       ));
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(PopupMenuItem<String>, 'Edit'), findsOneWidget);
-      expect(find.widgetWithText(PopupMenuItem<String>, 'Reply'), findsNothing, reason: 'Reply is under each post instead');
+      expect(find.widgetWithText(SeferMenuItem<String>, 'Edit'), findsOneWidget);
+      expect(find.widgetWithText(SeferMenuItem<String>, 'Reply'), findsNothing, reason: 'Reply is under each post instead');
       await tester.tap(find.text('Edit'));
       await tester.pumpAndSettle();
 

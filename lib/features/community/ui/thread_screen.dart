@@ -231,8 +231,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               popUpAnimationStyle: Motion.of(context).style,
               onSelected: _moderate,
               itemBuilder: (context) => [
-                PopupMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
-                PopupMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
+                SeferMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
+                SeferMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
               ],
             ),
         ],
@@ -691,11 +691,11 @@ class PostCard extends ConsumerWidget {
     // A post you can do nothing more with, such as a former member's that
     // you have reported, has no menu.
     final menu = <PopupMenuEntry<String>>[
-      if (isMine) PopupMenuItem(value: 'edit', child: Text(l.actionEdit)),
-      if (isMine || isModerator) PopupMenuItem(value: 'delete', child: Text(l.actionDelete)),
-      if (!isMine && !reported) PopupMenuItem(value: 'report', child: Text(l.actionReport)),
-      if (!isMine && post.authorId != null) PopupMenuItem(value: 'block', child: Text(l.blockUser(name))),
-      if (isModerator && !isMine) PopupMenuItem(value: 'hide', child: Text(l.hidePost)),
+      if (isMine) SeferMenuItem(value: 'edit', child: Text(l.actionEdit)),
+      if (isMine || isModerator) SeferMenuItem(value: 'delete', child: Text(l.actionDelete)),
+      if (!isMine && !reported) SeferMenuItem(value: 'report', child: Text(l.actionReport)),
+      if (!isMine && post.authorId != null) SeferMenuItem(value: 'block', child: Text(l.blockUser(name))),
+      if (isModerator && !isMine) SeferMenuItem(value: 'hide', child: Text(l.hidePost)),
     ];
 
     // The header's first line is the name's: the initial is centred on it,

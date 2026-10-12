@@ -154,7 +154,7 @@ class _RateButton extends StatelessWidget {
       popUpAnimationStyle: Motion.of(context).style,
       initialValue: rates.firstWhere((r) => sameSpeechRate(r, rate)),
       items: [
-        for (final r in rates) PopupMenuItem(value: r, child: _RateChoice(rate: r, chosen: sameSpeechRate(r, rate))),
+        for (final r in rates) SeferMenuItem(value: r, child: _RateChoice(rate: r, chosen: sameSpeechRate(r, rate))),
       ],
     );
     if (chosen != null && !sameSpeechRate(chosen, rate)) onRate(chosen);

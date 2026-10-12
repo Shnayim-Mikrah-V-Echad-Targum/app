@@ -227,23 +227,27 @@ class _CheckInSheetState extends State<CheckInSheet> {
           children: [
             SheetTitle(l.checkInTitle),
             for (final a in _aliyot)
-              CheckboxListTile(
-                controlAffinity: ListTileControlAffinity.leading,
-                value: _checked.contains(a),
-                onChanged: (on) => setState(() => on! ? _checked.add(a) : _checked.remove(a)),
-                title: Text(names.aliyah(a)),
-                subtitle: Text(aliyahReference(context, widget.previous, a)),
+              TileFocusRing(
+                child: CheckboxListTile(
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: _checked.contains(a),
+                  onChanged: (on) => setState(() => on! ? _checked.add(a) : _checked.remove(a)),
+                  title: Text(names.aliyah(a)),
+                  subtitle: Text(aliyahReference(context, widget.previous, a)),
+                ),
               ),
             if (widget.offersHaftarah)
-              CheckboxListTile(
-                controlAffinity: ListTileControlAffinity.leading,
-                value: _haftarah,
-                onChanged: (on) => setState(() => _haftarah = on!),
-                title: Text(l.haftarahLabel),
-                subtitle: Text(
-                  haftarah.parts
-                      .map((p) => names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse))
-                      .join(' · '),
+              TileFocusRing(
+                child: CheckboxListTile(
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: _haftarah,
+                  onChanged: (on) => setState(() => _haftarah = on!),
+                  title: Text(l.haftarahLabel),
+                  subtitle: Text(
+                    haftarah.parts
+                        .map((p) => names.range(p.book, p.start.chapter, p.start.verse, p.end.chapter, p.end.verse))
+                        .join(' · '),
+                  ),
                 ),
               ),
             Padding(

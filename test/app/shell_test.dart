@@ -50,7 +50,7 @@ void main() {
       final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
       expect([
         for (final d in bar.destinations.cast<NavigationDestination>())
-          ((d.icon as Icon).icon, (d.selectedIcon! as Icon).icon, d.label),
+          (_icon(d.icon), _icon(d.selectedIcon!), d.label),
       ], [
         (Icons.today_outlined, Icons.today, 'Today'),
         (Icons.menu_book_outlined, Icons.menu_book, 'Parsha'),
@@ -194,24 +194,28 @@ void main() {
     });
 
     for (final mode in [AppThemeMode.light, AppThemeMode.highContrastDark]) {
-      testWidgets('${mode.name}: keyboard focus on a destination is the bar\'s strong wash', (tester) async {
+      testWidgets('${mode.name}: keyboard focus on a destination is the ring around its indicator, with no wash',
+          (tester) async {
         FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
         addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
         await open(tester, tablet, settings: AppSettings(onboardingComplete: true, theme: mode));
         final parsha = destinationOf('Parsha');
-        final scheme = Theme.of(tester.element(parsha)).colorScheme;
-        final wash = scheme.onSurface.withValues(alpha: 0.32);
-        expect(Theme.of(tester.element(parsha)).focusColor, wash);
-        Focus.of(tester.element(find.descendant(of: parsha, matching: find.byType(Icon)).first)).requestFocus();
+        final sefer = SeferColors.of(tester.element(parsha));
+        expect(Theme.of(tester.element(parsha)).focusColor, Colors.transparent);
+        final icon = find.descendant(of: parsha, matching: find.byType(Icon)).first;
+        Focus.of(tester.element(icon)).requestFocus();
         await tester.pumpAndSettle();
-        // The ink highlight stores its colour in bytes, so allow for rounding.
-        bool isWash(Color c) => [
-              (c.r, wash.r),
-              (c.g, wash.g),
-              (c.b, wash.b),
-              (c.a, wash.a),
-            ].every((pair) => (pair.$1 - pair.$2).abs() < 0.01);
-        expect(rail, paints..something((_, arguments) => arguments.whereType<Paint>().any((p) => isWash(p.color))));
+        // The 56 × 32 indicator, centred on the icon.
+        final indicator = RRect.fromRectAndRadius(
+          Rect.fromCenter(center: tester.getCenter(icon), width: 56, height: 32),
+          const Radius.circular(12),
+        ).shift(-tester.getTopLeft(find.ancestor(of: icon, matching: find.byType(IndicatorFocusRing)).first));
+        expect(
+          find.ancestor(of: icon, matching: find.byType(CustomPaint)).first,
+          paints
+            ..rrect(rrect: indicator.inflate(1), color: sefer.focusGap, strokeWidth: 2, style: PaintingStyle.stroke)
+            ..rrect(rrect: indicator.inflate(3.5), color: sefer.focus, strokeWidth: 3, style: PaintingStyle.stroke),
+        );
       });
     }
 
@@ -344,3 +348,6 @@ void main() {
     expect(inRail(find.byIcon(Icons.donut_large)), findsOneWidget);
   });
 }
+
+/// The icon a destination shows, inside its focus ring.
+IconData? _icon(Widget icon) => ((icon as IndicatorFocusRing).child as Icon).icon;

@@ -30,9 +30,10 @@ class AppShell extends StatelessWidget {
   static const railWidth = 80.0;
   static const extendedRailWidth = 256.0;
 
-  /// The rail's keyboard focus wash, in onSurface at this opacity: the bar's
-  /// (see AppTheme's navigationBarTheme), as neither draws a ring.
-  static const _focusWash = 0.32;
+  /// The indicators that the destinations' focus rings go around (§6.9 and
+  /// §6.10): Material's own sizes, with the theme's corners.
+  static const _barIndicator = Size(64, 32);
+  static const _railIndicator = Size(56, 32);
 
   void _go(int index) => shell.goBranch(index, initialLocation: index == shell.currentIndex);
 
@@ -81,7 +82,11 @@ class AppShell extends StatelessWidget {
                 onSelected: _go,
                 destinations: [
                   for (final (icon, selected, label) in items)
-                    NavigationDestination(icon: Icon(icon), selectedIcon: Icon(selected), label: label),
+                    NavigationDestination(
+                      icon: IndicatorFocusRing(indicator: _barIndicator, radius: 16, child: Icon(icon)),
+                      selectedIcon: IndicatorFocusRing(indicator: _barIndicator, radius: 16, child: Icon(selected)),
+                      label: label,
+                    ),
                 ],
               ),
             ),
@@ -98,10 +103,10 @@ class AppShell extends StatelessWidget {
           children: [
             // Keyboard users reach the rail first, then the page.
             FocusTraversalGroup(
-              // The rail draws no ring either, so keyboard focus is the bar's
-              // strong wash rather than the theme's 24% tint.
+              // Keyboard focus is the ring around the indicator alone, as on
+              // the bar: the theme's tint as well would only muddy it.
               child: Theme(
-                data: theme.copyWith(focusColor: theme.colorScheme.onSurface.withValues(alpha: _focusWash)),
+                data: theme.copyWith(focusColor: Colors.transparent),
                 child: DecoratedBox(
                   decoration: BoxDecoration(border: BorderDirectional(end: hairline)),
                   child: Padding(
@@ -120,8 +125,12 @@ class AppShell extends StatelessWidget {
                       destinations: [
                         for (final (icon, selected, label) in items)
                           NavigationRailDestination(
-                            icon: Icon(icon),
-                            selectedIcon: Icon(selected),
+                            icon: IndicatorFocusRing(indicator: _railIndicator, radius: 12, child: Icon(icon)),
+                            selectedIcon: IndicatorFocusRing(
+                              indicator: _railIndicator,
+                              radius: 12,
+                              child: Icon(selected),
+                            ),
                             label: _RailLabel(label, extended: extended),
                             // Beside their labels, destinations are 56 high
                             // (Material's 44 is short of a tap target). Under

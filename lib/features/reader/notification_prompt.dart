@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../services/feedback.dart';
 import '../../services/notifications.dart';
 import '../../ui/l10n.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../settings/app_settings.dart';
 import '../settings/screens/reminder_settings_screen.dart';
@@ -57,24 +58,28 @@ Future<void> maybeOfferReminders(BuildContext context, WidgetRef ref, {required 
                     }),
                   ),
                   const Gap(8),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.schedule),
-                    // Read out once choosing a routine has changed it.
-                    title: Semantics(
-                      liveRegion: timeMoved,
-                      child: Text(l.reminderAtTime(context.ltrRun(Names(context).time(minutes)))),
+                  // Its icons are at its very edges, so its ring is outside it.
+                  TileFocusRing(
+                    outside: true,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.schedule),
+                      // Read out once choosing a routine has changed it.
+                      title: Semantics(
+                        liveRegion: timeMoved,
+                        child: Text(l.reminderAtTime(context.ltrRun(Names(context).time(minutes)))),
+                      ),
+                      trailing: const Icon(Icons.edit_outlined),
+                      onTap: () async {
+                        final picked = await pickReminderTime(context, minutes);
+                        if (picked != null && context.mounted) {
+                          setState(() {
+                            minutes = picked;
+                            timePicked = true;
+                          });
+                        }
+                      },
                     ),
-                    trailing: const Icon(Icons.edit_outlined),
-                    onTap: () async {
-                      final picked = await pickReminderTime(context, minutes);
-                      if (picked != null && context.mounted) {
-                        setState(() {
-                          minutes = picked;
-                          timePicked = true;
-                        });
-                      }
-                    },
                   ),
                 ],
               ),
