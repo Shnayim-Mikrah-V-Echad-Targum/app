@@ -822,6 +822,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 **NoticeBanner**
 - Inset within gutters (never full-bleed); secondaryContainer; radius 12; no border (2 px outline in high contrast).
 - Padding 12/16; icon 20 in onSecondaryContainer; bodyMedium onSecondaryContainer; optional trailing TextButton.
+  - The text holds each spaced dash to the word before it (`dashHeldToWord`), so that no line starts with one, as the Hebrew preview notice's "— הפרשה" did at 300%. A date in it is held together but after its comma (`dateHeldTogether`): the preview notice breaks "ביום ראשון, / 11 באוקטובר", never "11 / באוקטובר".
   - Beside or below a TextButton the end padding is 8: the button's own padding makes up the rest, and the text keeps 16.
 - **Title** (`title`): a heading in titleSmall onSecondaryContainer over the text. Where it wraps, its lines are balanced (`BalancedText`), so that no word stands alone on the last ("Shavua tov! Did you read / Bereshit on Shabbat?"). Like `WholeWords`, `BalancedText` answers intrinsic size queries (but for `bySentence`), so a titled notice or a sheet's title may stand in a dialog or an `IntrinsicHeight` row.
 - **Action below** (`actionBelow`): for a text longer than a line or two, which a trailing button would squeeze. The icon and text align to the top, and the TextButton sits under the text at the end, with 4 bottom padding.

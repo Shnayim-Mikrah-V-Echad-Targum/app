@@ -463,6 +463,41 @@ void main() {
       });
     }
 
+    // In Hebrew the notice is longer: it breaks where it must, but no line
+    // starts with its dash ("— הפרשה"), and a day keeps its month ("11 /
+    // באוקטובר").
+    testWidgets('at 300% on a 320 dp phone, the Hebrew preview notice keeps its dash and its date with their words',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: captureJoinDate, language: AppLanguage.hebrew),
+        now: captureNow,
+      );
+      c.read(routerProvider).go('/read/5787:2/0');
+      await tester.pump();
+      await tester.pump();
+      for (var i = 0; i < 30 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.textContaining('תצוגה מקדימה'), matching: find.byType(RichText)),
+      );
+      final text = paragraph.text.toPlainText();
+      double top(int i) => paragraph.getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1)).first.top;
+      final dash = text.indexOf('—');
+      expect(top(dash), top(dash - 2), reason: 'the dash on the line of the word before it');
+      expect(top(text.indexOf('באוקטובר')), top(text.indexOf('11')), reason: 'the day on the line of its month');
+      expect(top(text.length - 1), greaterThan(top(0)), reason: 'on more than one line at this size');
+      expect(tester.takeException(), isNull);
+    });
+
     // The reading size multiplies the system's, so a maqaf's words outgrow
     // the column at 100% text too. (At the largest, 500%, a long word is
     // wider than a phone's column on its own, and breaks.)

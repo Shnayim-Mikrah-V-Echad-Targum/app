@@ -269,7 +269,7 @@ void main() {
 
     testWidgets("of next week's preview have no reading under way, no today and nothing behind", (tester) async {
       await open(tester, route: '/week/5787:2');
-      expect(find.textContaining('Preview — this parsha opens for credit'), findsOneWidget);
+      expect(findWords('Preview — this parsha opens for credit'), findsOneWidget);
       expect(find.text('Planned for today'), findsNothing);
       expect(find.byIcon(Icons.history), findsNothing);
       expect([for (final p in tester.widgetList<PassPips>(find.byType(PassPips))) p.current], everyElement(isNull));

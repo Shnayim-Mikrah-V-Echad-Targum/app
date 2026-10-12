@@ -542,8 +542,8 @@ class NoticeBanner extends StatelessWidget {
     final ink = scheme.onSecondaryContainer;
     final style = (marginalia ? SeferType.of(context).marginalia : theme.textTheme.bodyMedium)?.copyWith(color: ink);
     // Each word whole, set smaller where the largest text leaves one too
-    // wide for the banner.
-    Widget message = WholeWords(text, style: style, textAlign: TextAlign.start, breakAtHyphens: true);
+    // wide for the banner, and no line started by a dash.
+    Widget message = WholeWords(dashHeldToWord(text), style: style, textAlign: TextAlign.start, breakAtHyphens: true);
     if (title case final title?) {
       message = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

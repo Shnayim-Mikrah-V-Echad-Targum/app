@@ -359,6 +359,12 @@ void main() {
     });
   });
 
+  test('dateHeldTogether holds a date together but after its comma', () {
+    expect(dateHeldTogether('Sunday, October 11'), 'Sunday, October\u00A011');
+    expect(dateHeldTogether('יום ראשון, 11 באוקטובר'), 'יום\u00A0ראשון, 11\u00A0באוקטובר');
+    expect(dateHeldTogether('October 11'), 'October\u00A011');
+  });
+
   test('dashHeldToWord holds each spaced em dash to the word before it', () {
     expect(dashHeldToWord('Two aliyot — very normal — midweek.'), 'Two aliyot\u00A0— very normal\u00A0— midweek.');
     expect(dashHeldToWord('עוד 3 עליות להשלים — רגיל'), 'עוד 3 עליות להשלים\u00A0— רגיל');

@@ -23,6 +23,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
+import '../../ui/widgets/lines.dart' show dateHeldTogether;
 import '../../ui/widgets/ornaments.dart' show Eyebrow, SeferDivider;
 import '../../ui/widgets/progress_widgets.dart' show WeekStatusBadge;
 import '../notes/domain/annotations.dart';
@@ -1338,7 +1339,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             maxScaleFactor: ReaderScreen.chromeMaxTextScale,
             child: NoticeBanner(
               icon: Icons.visibility_outlined,
-              text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
+              // Its date whole: a line breaks after the weekday, if it must.
+              text: l.previewNotOpen(dateHeldTogether(Names(context).dateLong(ctx.week.start))),
             ),
           );
     // Focus mode reads the full text alone: the overflow menu still switches
