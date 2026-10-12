@@ -63,12 +63,13 @@ void main() {
     WidgetTester tester, {
     String route = '/search',
     bool hebrew = false,
+    Size size = const Size(412, 915),
     double textScale = 1,
     bool buildIndex = false,
     AppSettings? settings,
     TextRepository? texts,
   }) async {
-    tester.view.physicalSize = const Size(412, 915);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(tester.view.reset);
@@ -375,6 +376,46 @@ void main() {
     // Genesis 1:7, the first verse found, has אֶת־הָרָקִיעַ.
     await search(tester, 'הרקיע');
     expect(snippets(tester).first, contains('־\u2060'));
+  });
+
+  testWidgets('parts words joined by a maqaf only where they are too wide together for a line', (tester) async {
+    await open(tester, size: const Size(320, 640), textScale: 3);
+    await tester.pumpAndSettle();
+    // Genesis 1:7, the first verse found, has אֶת־הָרָקִיעַ, too wide for
+    // a line at this size.
+    await search(tester, 'הרקיע');
+    expect(tester.takeException(), isNull);
+    final box = tester.renderObject<RenderMarkedText>(find.byType(MarkedText).first);
+    final marked = tester.widget<MarkedText>(find.byType(MarkedText).first);
+    final text = marked.text.toPlainText();
+    expect(text, contains(RegExp('־(?!\u2060)')), reason: 'a maqaf parted from the word after it');
+
+    // Each word stands on one line: none is wider than the line on its own.
+    for (final word in RegExp('[^ ־\u2060\u00A0]+').allMatches(text)) {
+      final lines = {
+        for (final b in box.getBoxesForSelection(TextSelection(baseOffset: word.start, extentOffset: word.end)))
+          b.bottom.round(),
+      };
+      expect(lines, hasLength(1), reason: '"${word[0]}" of "$text"');
+    }
+
+    // The marks lie over what was found, the joiners left out before them.
+    expect(marked.marks, isNotEmpty);
+    for (final m in marked.marks) {
+      expect(HebrewText.consonantsOnly(text.substring(m.start, m.end)), 'הרקיע');
+    }
+  });
+
+  test('marks move back over the word joiners left out before them', () {
+    const before = 'אֶת־\u2060הָרָקִיעַ וּבֵין־\u2060הַמַּיִם';
+    const after = 'אֶת־הָרָקִיעַ וּבֵין־\u2060הַמַּיִם';
+    final marks = [
+      TextRange(start: before.indexOf('הָ'), end: before.indexOf(' ')),
+      TextRange(start: before.indexOf('הַ'), end: before.length),
+    ];
+    final shifted = shiftForRemovedJoiners(before, after, marks);
+    expect([for (final m in shifted) after.substring(m.start, m.end)], ['הָרָקִיעַ', 'הַמַּיִם']);
+    expect(shiftForRemovedJoiners(after, after, shifted), shifted, reason: 'none left out');
   });
 
   testWidgets('labels the translation as a translation', (tester) async {

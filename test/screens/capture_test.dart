@@ -1779,6 +1779,8 @@ const _hugeTallScreens = {
   'haftarah',
   // The offer to move the daily reminder, its button under its text.
   's_reminders_far',
+  // Verses found, where words a maqaf joins part only if they must.
+  'search_many',
 };
 
 const _narrowDesktopScreens = {
