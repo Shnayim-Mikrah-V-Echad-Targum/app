@@ -810,6 +810,18 @@
       }
     }
   },
+  "secondParshaBegins": "{name} begins at {ref}",
+  "@secondParshaBegins": {
+    "description": "In a week of two parshiyot read together, under the aliyah in which the second begins: its name and its first verse, without the book ('Pekudei begins at 38:21'; in Hebrew the verse is 'לח, כא').",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
   "browseAll": "All parshiyot",
   "browseTitle": "The Torah",
   "browseBookParshiyot": "{count, plural, =1{1 parsha} other{{count} parshiyot}}",

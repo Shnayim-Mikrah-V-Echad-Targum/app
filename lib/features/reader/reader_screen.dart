@@ -1346,6 +1346,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     // modes and marks the aliyah read.
     final showRibbon = !(_fullText && s.focusMode);
     final names = Names(context);
+    // In a week of two parshiyot, the second's name heads the verse it
+    // begins at.
+    final second = ref.read(parshaRepositoryProvider).secondParsha(ctx.portion);
+    final secondParsha = second == null
+        ? null
+        : _SecondParsha(
+            start: second.aliyot.first.start,
+            hebrewName: names.portionPointed(second),
+            name: names.portion(second, ashkenazi: s.ashkenaziNames),
+          );
 
     // The text scrolls by keyboard as well: with ↑, ↓, Page Up, Page Down
     // and Space on the web, and Ctrl (⌘) with ↑ or ↓ elsewhere, the keys
@@ -1475,6 +1485,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                               verses: flow.verses,
                               texts: texts,
                               settings: s,
+                              secondParsha: secondParsha,
                               parallel: parallel,
                               width: columnWidth,
                               scroll: _scroll,
@@ -1561,6 +1572,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   flow: flow,
                                   texts: texts,
                                   settings: s,
+                                  secondParsha: secondParsha,
                                   aliyah: _aliyah,
                                   chunk: _chunk,
                                   step: _step,
@@ -1910,6 +1922,7 @@ class _GuidedStep extends StatelessWidget {
     required this.flow,
     required this.texts,
     required this.settings,
+    this.secondParsha,
     required this.aliyah,
     required this.chunk,
     required this.step,
@@ -1928,6 +1941,11 @@ class _GuidedStep extends StatelessWidget {
   final ReaderFlow flow;
   final ReaderTexts texts;
   final AppSettings settings;
+
+  /// In a week of two parshiyot, the second, whose name heads its first
+  /// verse.
+  final _SecondParsha? secondParsha;
+
   final int aliyah;
   final int chunk;
   final int step;
@@ -2121,6 +2139,7 @@ class _GuidedStep extends StatelessWidget {
                         ),
                         const Gap(12),
                         for (final (i, r) in refs.indexed) ...[
+                          if (secondParsha case final second? when r == second.start) second.heading(settings),
                           if (r.verse == 1) ChapterHeading(chapter: r.chapter, settings: settings),
                           // The Targum again, after the Hebrew of a verse read
                           // a third time among it.
@@ -2473,6 +2492,27 @@ class _StandingLine extends StatelessWidget {
   }
 }
 
+/// The second of two parshiyot read together: the verse it begins at, which
+/// its name heads, set as a chapter's head is (DESIGN_SYSTEM.md §4.7).
+class _SecondParsha {
+  const _SecondParsha({required this.start, required this.hebrewName, required this.name});
+
+  /// Its first verse.
+  final VerseRef start;
+
+  /// Its pointed Hebrew name, in gold.
+  final String hebrewName;
+
+  /// Its name in the UI's language: beneath in the English UI, and what a
+  /// screen reader hears.
+  final String name;
+
+  /// The heading over [start], at [level] as the chapters' headings around
+  /// it.
+  Widget heading(AppSettings settings, {int level = 2}) =>
+      ChapterHeading.book(hebrewName: hebrewName, name: name, settings: settings, headingLevel: level);
+}
+
 /// What the full text of the whole parsha needs beyond one aliyah's.
 class _Whole {
   const _Whole({
@@ -2510,6 +2550,7 @@ class _FullText extends StatelessWidget {
     required this.verses,
     required this.texts,
     required this.settings,
+    this.secondParsha,
     required this.parallel,
     required this.width,
     required this.scroll,
@@ -2532,6 +2573,11 @@ class _FullText extends StatelessWidget {
 
   final ReaderTexts texts;
   final AppSettings settings;
+
+  /// In a week of two parshiyot, the second, whose name heads its first
+  /// verse.
+  final _SecondParsha? secondParsha;
+
   final bool parallel;
 
   /// The text's measure.
@@ -2690,6 +2736,10 @@ class _FullText extends StatelessWidget {
                     besideDirection: beside == targum ? TextDirection.rtl : TextDirection.ltr,
                   ),
                 ),
+              // The second parsha's name, over its chapter's when it begins
+              // one, as a Chumash heads it.
+              if (secondParsha case final second? when r == second.start)
+                second.heading(settings, level: whole == null ? 2 : 3),
               // At each chapter's start, and at the aliyah's, to say where it
               // begins: in the whole parsha, beneath the aliyah's heading.
               if (r.verse == 1 || first)

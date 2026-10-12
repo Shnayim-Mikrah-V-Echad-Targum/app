@@ -1245,6 +1245,12 @@ abstract class AppLocalizations {
   /// **'Some sources use {range}'**
   String aliyahOtherDivision(String range);
 
+  /// In a week of two parshiyot read together, under the aliyah in which the second begins: its name and its first verse, without the book ('Pekudei begins at 38:21'; in Hebrew the verse is 'לח, כא').
+  ///
+  /// In en, this message translates to:
+  /// **'{name} begins at {ref}'**
+  String secondParshaBegins(String name, String ref);
+
   /// No description provided for @browseAll.
   ///
   /// In en, this message translates to:

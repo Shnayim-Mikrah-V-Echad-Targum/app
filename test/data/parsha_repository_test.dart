@@ -159,6 +159,36 @@ void main() {
     expect(lechLecha.fallsBack(HaftarahNusach.chabad), isFalse);
   });
 
+  group('the second parsha of two read together', () {
+    test('is the one after the first, and begins within an aliyah, where the first ends', () {
+      expect(repo.combined, hasLength(7));
+      for (final pair in repo.combined) {
+        final second = repo.secondParsha(pair)!;
+        final first = repo.byNumber(pair.id.number);
+        expect(second.id, PortionId(pair.id.number + 1), reason: pair.key);
+        final start = second.aliyot.first.start;
+        expect(pair.range.contains(start), isTrue, reason: pair.key);
+        expect(first.range.end < start && second.range.end == pair.range.end, isTrue, reason: pair.key);
+        // No aliyah of the week begins where the second does: the seam
+        // falls within one, which is why the week's page says where.
+        expect(pair.aliyot.where((a) => a.contains(start)), hasLength(1), reason: pair.key);
+        expect(pair.aliyot.any((a) => a.start == start), isFalse, reason: pair.key);
+      }
+    });
+
+    test('of Vayakhel-Pekudei is Pekudei, from 38:21, within Revi’i', () {
+      final pair = repo.portion(const PortionId(22, combined: true));
+      final pekudei = repo.secondParsha(pair)!;
+      expect(pekudei.key, 'Pekudei');
+      expect(pekudei.aliyot.first.start.toString(), '38:21');
+      expect(pair.aliyot.indexWhere((a) => a.contains(pekudei.aliyot.first.start)), 3);
+    });
+
+    test('is none for a portion of one parsha', () {
+      expect(repo.secondParsha(repo.byNumber(22)), isNull);
+    });
+  });
+
   group('parsha names', () {
     const combined = [22, 27, 29, 32, 39, 42, 51];
 

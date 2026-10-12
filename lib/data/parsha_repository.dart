@@ -93,6 +93,11 @@ class ParshaRepository {
 
   PortionInfo byNumber(int number) => _singles[number - 1];
 
+  /// The second of the two parshiyot [pair] reads together, whose first
+  /// verse is where it begins among their verses (Pekudei at 38:21, within
+  /// Revi’i of Vayakhel-Pekudei); null for a portion of one parsha.
+  PortionInfo? secondParsha(PortionInfo pair) => pair.id.combined ? byNumber(pair.id.number + 1) : null;
+
   /// The haftarah read on [occasion] for [portion] by [nusach], accounting
   /// for special Shabbatot. Vezot HaBerachah's haftarah is that of Simchat
   /// Torah.

@@ -823,6 +823,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String secondParshaBegins(String name, String ref) {
+    return 'פרשת $name מתחילה ב־$ref';
+  }
+
+  @override
   String get browseAll => 'כל הפרשות';
 
   @override

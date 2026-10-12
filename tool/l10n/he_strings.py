@@ -199,6 +199,7 @@ HE = {
   "markedRead": "סומן כנקרא",
   "markedUnread": "סומן כלא נקרא",
   "aliyahOtherDivision": "לפי חלק מהמקורות: {range}",
+  "secondParshaBegins": "פרשת {name} מתחילה ב־{ref}",
   "browseAll": "כל הפרשות",
   "browseTitle": "התורה",
   "browseBookParshiyot": "{count, plural, =1{פרשה אחת} other{{count} פרשות}}",

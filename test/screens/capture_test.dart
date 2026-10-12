@@ -222,6 +222,14 @@ const _screens = {
   // Chamishi of Acharei Mot-Kedoshim (5786), the longest title the reader's
   // app bar sets.
   'reader_long': '/read/5786:29-30/4',
+  // Revi'i of Vayakhel-Pekudei 5786, in which Pekudei begins: its name heads
+  // 38:21, in the full text and in the guided reader's step of the whole
+  // aliyah.
+  'reader_combined': '/read/5786:22-23/3?mode=full',
+  'reader_combined_guided': '/read/5786:22-23/3',
+  // Revi'i of Tazria-Metzora 5786: Metzora begins a chapter (14:1), its name
+  // over the chapter's head.
+  'reader_combined_chapter': '/read/5786:27-28/3?mode=full',
   // Shlishi of Matot-Masei (Numbers 32:1–19) read by section: the Targum
   // step of 32:1–4, with the third reading of 32:3.
   'reader_third': '/read/5787:42-43/2',
@@ -594,6 +602,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
     screen: (s) => s.copyWith(fullTextWholeParsha: true),
   'reader_parsha_focus': (s) => s.copyWith(fullTextWholeParsha: true, focusMode: true),
   'reader_section': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
+  'reader_combined_guided': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   'reader_rashi': (s) => s.copyWith(showRashi: true),
   'reader_rashi_script': (s) => s.copyWith(showRashi: true, rashiScript: true),
   'reader_rashi_step': (s) => s.copyWith(secondReading: SecondReading.rashi),
@@ -1352,6 +1361,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     final side = find.widgetWithText(SwitchRow, l.sideBySide);
     await Scrollable.ensureVisible(tester.element(side.evaluate().isNotEmpty ? side : focus), alignment: 0.5);
   },
+  for (final screen in ['reader_combined', 'reader_combined_guided', 'reader_combined_chapter'])
+    screen: (tester) => Scrollable.ensureVisible(
+          tester.element(find.byWidgetPredicate((w) => w is ChapterHeading && w.chapter == null)),
+          alignment: 0.3,
+        ),
   'haftarah_end': _scrollToEnd,
   'haftarah_rosh_chodesh_sunday': (tester) =>
       Scrollable.ensureVisible(tester.element(find.byType(ChapterHeading).last), alignment: 0.3),
@@ -1890,6 +1904,7 @@ const _desktopScreens = {
   'celebrate',
   'reader_full',
   'reader_full_end',
+  'reader_combined',
   'reader_full_english',
   'reader_full_rashi_english',
   'reader_parsha',

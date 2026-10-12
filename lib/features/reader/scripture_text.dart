@@ -1276,9 +1276,10 @@ class ChapterHeading extends StatelessWidget {
       : hebrewName = null,
         name = null;
 
-  /// The head of a book's verses in a haftarah drawn from more than one
-  /// book, set as a chapter's: the book's [hebrewName] in gold and, in the
-  /// English UI, its [name] beneath. Screen readers hear [name].
+  /// A head set as a chapter's, naming what begins there: a book's verses in
+  /// a haftarah drawn from more than one book, or the second of two
+  /// parshiyot read together. Its [hebrewName] in gold and, in the English
+  /// UI, its [name] beneath. Screen readers hear [name].
   const ChapterHeading.book({
     super.key,
     required String this.hebrewName,

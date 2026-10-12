@@ -445,6 +445,7 @@ Rules:
 - Flanked by 32 px hairlines with a 12 px gap.
 - English UI only: below it, "Chapter 3" (existing `chapterLabel`, not uppercased) in labelMedium `onSurfaceVariant`.
 - 16 px above, 8 px below. This replaces the start-aligned "Chapter 3" label (phone_reader_full.png).
+- In a week of two parshiyot read together, the verse the second begins at is headed by its name, set the same way (`ChapterHeading.book`): the pointed Hebrew name in gold ("פְקוּדֵי" over 38:21) and, in the English UI, its name beneath ("Pekudei"); in the guided reader, at each step that shows the verse. One heading to a screen reader, named in the UI's language, at the level of the chapters' headings around it, and above the chapter's own head where it begins one.
 
 **Petuchah / setumah**
 - `SectionBreakMark` (§7.3) replaces the grey letter in reader_screen.dart full-text rendering.
@@ -1185,6 +1186,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - Title in titleMedium, e.g. "Rishon" (read out as `aliyahWithName`, "Rishon · aliyah 1"); subtitle bodySmall "1:1–2:3 · 34 verses · about 15 min", without the book, which the header names, so that it keeps to one line on a phone; a second line bodySmall "Planned for Monday":
      - today's aliyot: `plannedForToday` ("Planned for today") in onSurface w700;
      - an aliyah still to read after its day: its day in `overdue`, after a 14 px `history` icon, and read as `plannedForOverdue` ("Planned for Wednesday, still to read"; `plannedForShabbatOverdue` for Shabbat morning), since the colour and mark say it to the eye alone. Never for a day that doesn't count: before the reader joined, one a pause covered, any while paused, or in a week not counted (`WeekStatus.transparent`), which stays neutral (§3.4).
+   - In a week of two parshiyot read together, the aliyah the second begins in says where, in a line of marginalia under its plan: `secondParshaBegins` ("Pekudei begins at 38:21", under Revi’i of Vayakhel-Pekudei; "פרשת פקודי מתחילה ב־לח, כא"), the verse without the book.
    - The alternative-division note becomes a third line in marginalia ("Some sources use 4:19–26", `aliyahOtherDivision`, in either UI, its verses kept on one line). It keeps marginalia's own size, the EB Garamond floor of §4.5.
    - Trailing: PassPips (size 12) on the title's line, the reading under way ringed in the row of the aliyah the reading continues at, above the existing overflow menu, in a 52 column 4 from the text and 10 from the end.
    - Large text: where the text between the disc and that column would be narrower than 112 as scaled (`PaperRow.squeezes`, as a PaperRow stacks), the row stacks: the disc and the name on one line, the lines under them the row's full width ("1:1–2:3 · 34 verses", a fact to a line where two don't fit), then the pips at the start and the menu at the end of a line of their own.

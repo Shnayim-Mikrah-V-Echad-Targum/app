@@ -816,6 +816,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String secondParshaBegins(String name, String ref) {
+    return '$name begins at $ref';
+  }
+
+  @override
   String get browseAll => 'All parshiyot';
 
   @override
