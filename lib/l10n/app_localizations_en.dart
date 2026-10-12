@@ -2439,6 +2439,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deletePostConfirm => 'Delete this post?';
 
   @override
+  String get cantBeUndone => 'This can’t be undone.';
+
+  @override
   String get postDeleted => 'Post deleted.';
 
   @override

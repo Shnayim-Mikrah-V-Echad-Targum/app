@@ -681,6 +681,7 @@ HE = {
   "edited": "נערך",
   "editPostTitle": "עריכת הודעה",
   "deletePostConfirm": "למחוק את ההודעה?",
+  "cantBeUndone": "אי אפשר לבטל פעולה זו.",
   "postDeleted": "ההודעה נמחקה.",
   "posted": "פורסם.",
   "viewPostedThread": "לדיון",

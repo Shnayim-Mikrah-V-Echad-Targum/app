@@ -13,6 +13,7 @@ import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/lang.dart';
 import '../../../ui/widgets/lines.dart';
+import '../../../ui/widgets/sefer_tag.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -796,7 +797,7 @@ class PostCard extends ConsumerWidget {
           // The first post's edit is its thread's excerpt.
           if (ok != null) await run(() => repo.editPost(post.id, ok), recount: true);
         case 'delete':
-          final ok = await _confirm(context, title: l.deletePostConfirm, action: l.actionDelete);
+          final ok = await _confirm(context, title: l.deletePostConfirm, message: l.cantBeUndone, action: l.actionDelete, destructive: true);
           if (ok) await run(() => repo.deletePost(post.id), success: l.postDeleted, recount: true);
         case 'report':
           if (!await ensureSignedIn(context, ref) || !context.mounted) return;
@@ -1053,39 +1054,13 @@ class _Byline extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(name, textDirection: autoDirection(name, fallback: Directionality.of(context)), style: text.titleSmall),
-            if (tag != null) Padding(padding: const EdgeInsetsDirectional.only(start: Space.sm), child: _Tag(tag)),
+            if (tag != null) Padding(padding: const EdgeInsetsDirectional.only(start: Space.sm), child: SeferTag(tag)),
             if (oneLine) timeText(' · $time'),
           ],
         );
         if (oneLine) return nameAndTag;
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [nameAndTag, timeText(time)]);
       },
-    );
-  }
-}
-
-/// A small tag beside a writer's name, as the Demo tag is set (§6.20):
-/// labelSmall on gold-ink paper.
-class _Tag extends StatelessWidget {
-  const _Tag(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.secondaryContainer,
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
-        // The pale fill alone barely shows in high contrast.
-        border: SeferColors.of(context).isHighContrast ? Border.all(color: scheme.outline, width: 2) : null,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-        child: Text(text, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSecondaryContainer)),
-      ),
     );
   }
 }
@@ -1366,7 +1341,16 @@ class _TodahButtonState extends ConsumerState<_TodahButton> {
   }
 }
 
-Future<bool> _confirm(BuildContext context, {required String title, String? message, required String action}) async =>
+/// Asks to confirm [action], true once confirmed. A [destructive] one, which
+/// can't be undone (deleting a post, not blocking a member), is confirmed in
+/// error / onError (§6.5).
+Future<bool> _confirm(
+  BuildContext context, {
+  required String title,
+  String? message,
+  required String action,
+  bool destructive = false,
+}) async =>
     await showAppDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1374,7 +1358,11 @@ Future<bool> _confirm(BuildContext context, {required String title, String? mess
         content: message == null ? null : Text(message),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.l10n.actionCancel)),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(action)),
+          FilledButton(
+            style: destructive ? AppButtons.destructive(context) : null,
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(action),
+          ),
         ],
       ),
     ) ??

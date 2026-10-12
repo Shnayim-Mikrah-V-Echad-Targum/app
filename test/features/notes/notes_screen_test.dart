@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -165,7 +165,10 @@ void main() {
       await tester.tap(inSheet(find.text('Your note')));
       await tester.pumpAndSettle();
       expect(tester.widget<TextField>(inDialog(find.byType(TextField))).controller!.text, 'A question for the table');
-      await tester.tap(inDialog(find.text('Delete')));
+      // Delete is in error's ink, and asks nothing more: Undo brings it back.
+      final delete = inDialog(find.text('Delete'));
+      expect(tester.renderObject<RenderParagraph>(delete).text.style?.color, Theme.of(tester.element(delete)).colorScheme.error);
+      await tester.tap(delete);
       await tester.pumpAndSettle();
       expect(find.text('Note deleted'), findsOneWidget);
       expect(c.read(annotationsProvider)[_genesis3_22], isNull);

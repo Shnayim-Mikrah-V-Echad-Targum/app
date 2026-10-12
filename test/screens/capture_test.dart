@@ -356,6 +356,8 @@ const _screens = {
   'thread_mine': '/community/thread/1',
   // Editing that post: its field, with no counter until near the limit.
   'thread_edit': '/community/thread/1',
+  // Asked to confirm deleting that post, in error's ink.
+  'thread_delete': '/community/thread/1',
   // Locked: no reply box, and no Reply under the posts.
   'thread_locked': '/community/thread/51',
   // A thread of 250 posts, open on its latest hundred, and at its end.
@@ -1031,6 +1033,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_long_end': _withLongThread,
   'thread_mine': _withOwnPost,
   'thread_edit': _withOwnPost,
+  'thread_delete': _withOwnPost,
   'thread_verse': _withVerseQuestion,
   'forum_verse': _withVerseQuestion,
   'thread_verse_edit': () => _withVerseQuestion(mine: true),
@@ -1482,6 +1485,12 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)));
     await _settle(tester);
     await tester.tap(find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'edit'));
+  },
+  'thread_delete': (tester) async {
+    await _scrollToEnd(tester);
+    await tester.tap(find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)));
+    await _settle(tester);
+    await tester.tap(find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'delete'));
   },
   'thread_verse_edit': (tester) async {
     await tester.tap(find.descendant(of: find.byType(PostCard).first, matching: find.byType(PopupMenuButton<String>)));

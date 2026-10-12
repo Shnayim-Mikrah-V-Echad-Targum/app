@@ -2435,6 +2435,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get deletePostConfirm => 'למחוק את ההודעה?';
 
   @override
+  String get cantBeUndone => 'אי אפשר לבטל פעולה זו.';
+
+  @override
   String get postDeleted => 'ההודעה נמחקה.';
 
   @override

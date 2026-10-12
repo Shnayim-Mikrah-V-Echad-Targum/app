@@ -1960,6 +1960,10 @@
   "edited": "edited",
   "editPostTitle": "Edit post",
   "deletePostConfirm": "Delete this post?",
+  "cantBeUndone": "This can’t be undone.",
+  "@cantBeUndone": {
+    "description": "The message of a dialog that confirms what can't be undone, such as deleting a post, under its question."
+  },
   "postDeleted": "Post deleted.",
   "posted": "Posted.",
   "viewPostedThread": "View",

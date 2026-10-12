@@ -7,6 +7,7 @@ import '../../app/providers.dart';
 import '../../data/models/verse_ref.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../community/ui/community_ui.dart' show autoDirection, quietCounter;
 import 'domain/annotations.dart';
@@ -123,7 +124,14 @@ class _NoteDialogState extends State<NoteDialog> {
           // Stacked on a narrow screen, Save comes first.
           actionsOverflowDirection: VerticalDirection.up,
           actions: [
-            if (widget.note != null) TextButton(onPressed: () => Navigator.pop(context, ''), child: Text(l.actionDelete)),
+            // In error's ink, with no confirmation: the status message offers
+            // Undo.
+            if (widget.note != null)
+              TextButton(
+                style: AppButtons.destructiveText(context),
+                onPressed: () => Navigator.pop(context, ''),
+                child: Text(l.actionDelete),
+              ),
             TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
             FilledButton(onPressed: _changed(value.text) ? _save : null, child: Text(l.actionSave)),
           ],

@@ -29,6 +29,7 @@ import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/fallbacks.dart';
 import 'package:shnayim_mikra/ui/widgets/lang.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikra/ui/widgets/sefer_tag.dart';
 
 import '../helpers.dart';
 
@@ -1902,7 +1903,10 @@ void main() {
       await _openPostMenu(tester, 1);
       await tester.tap(find.text('Block Rivka'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Block Rivka'));
+      // A block can be undone: confirmed with the plain Filled button.
+      final block = find.widgetWithText(FilledButton, 'Block Rivka');
+      expect(tester.widget<FilledButton>(block).style, isNull);
+      await tester.tap(block);
       await tester.pumpAndSettle();
       expect(find.byType(PostCard), findsOneWidget);
       expect(find.text('1 post'), findsOneWidget);
@@ -1931,7 +1935,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      // A deletion can't be undone: the dialog says so, and confirms it in
+      // error's ink.
+      final dialog = find.byType(AlertDialog);
+      expect(find.descendant(of: dialog, matching: find.text('Delete this post?')), findsOneWidget);
+      expect(find.descendant(of: dialog, matching: find.text('This can’t be undone.')), findsOneWidget);
+      final confirm = find.descendant(of: dialog, matching: find.widgetWithText(FilledButton, 'Delete'));
+      final scheme = Theme.of(tester.element(confirm)).colorScheme;
+      expect(tester.widget<FilledButton>(confirm).style?.backgroundColor?.resolve({}), scheme.error);
+      expect(tester.widget<FilledButton>(confirm).style?.foregroundColor?.resolve({}), scheme.onError);
+      await tester.tap(confirm);
       await tester.pumpAndSettle();
       await _scrollThreadTo(tester, find.text('2 posts'), up: true);
       expect(find.text('2 posts'), findsOneWidget);
@@ -2289,10 +2302,18 @@ void main() {
       expect(find.byTooltip('Sign in'), findsNWidgets(1));
 
       await forums.verifyCode('reader@example.org', '123456');
+      c.invalidate(myProfileProvider);
+      await tester.pumpAndSettle();
+      // Until a name is chosen, the machine's ("user_1a2b3c4d") gives no
+      // initial: a person on the disc, not a "U".
+      final disc = find.descendant(of: appBar, matching: find.byType(InitialDisc));
+      expect(disc, findsOneWidget);
+      expect(find.descendant(of: disc, matching: find.byIcon(Icons.person_outline)), findsOneWidget);
+      expect(find.descendant(of: disc, matching: find.byType(Text)), findsNothing);
+
       await forums.updateDisplayName('rivka');
       c.invalidate(myProfileProvider);
       await tester.pumpAndSettle();
-      final disc = find.descendant(of: appBar, matching: find.byType(InitialDisc));
       expect(disc, findsOneWidget);
       expect(find.descendant(of: disc, matching: find.text('R')), findsOneWidget);
       expect(tester.getSize(disc), const Size(32, 32));
@@ -3261,7 +3282,13 @@ void main() {
       expect(find.descendant(of: card, matching: find.text('Rivka')), findsOneWidget);
       expect(find.descendant(of: card, matching: find.text('reader@example.org')), findsOneWidget);
       expect(tester.getSize(find.descendant(of: card, matching: find.byType(InitialDisc))), const Size(56, 56));
-      expect(find.descendant(of: card, matching: find.widgetWithText(Chip, 'Moderator')), findsOneWidget);
+      // A moderator's tag, with its shield: a label, not a chip, so nothing
+      // about it reads as a control.
+      final tag = find.descendant(of: card, matching: find.byType(SeferTag));
+      expect(find.descendant(of: tag, matching: find.text('Moderator')), findsOneWidget);
+      expect(find.descendant(of: tag, matching: find.byIcon(Icons.shield_outlined)), findsOneWidget);
+      expect(find.descendant(of: card, matching: find.byType(Chip)), findsNothing);
+      expect(find.descendant(of: tag, matching: find.byType(InkWell)), findsNothing);
       // The name once, on the card: no heading over a field of the same name.
       expect(find.text('Display name'), findsNothing);
 

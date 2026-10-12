@@ -16,6 +16,7 @@ import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
+import '../../../ui/widgets/sefer_tag.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -962,7 +963,7 @@ class _NameDialogState extends State<_NameDialog> {
 }
 
 /// The member signed in, on a card: their initial on a 56 px disc, their
-/// name, the email they sign in with, a moderator's chip, and a button that
+/// name, the email they sign in with, a moderator's tag, and a button that
 /// edits the name.
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({required this.name, required this.email, required this.moderator, required this.onEdit});
@@ -1015,11 +1016,7 @@ class _ProfileCard extends StatelessWidget {
                   const Gap(Space.sm),
                   Align(
                     alignment: AlignmentDirectional.centerStart,
-                    child: Chip(
-                      avatar: Icon(Icons.shield_outlined, size: 18, color: scheme.onSurfaceVariant),
-                      label: Text(l.moderatorBadge),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                    child: SeferTag(l.moderatorBadge, icon: Icons.shield_outlined),
                   ),
                 ],
               ],

@@ -4089,6 +4089,12 @@ abstract class AppLocalizations {
   /// **'Delete this post?'**
   String get deletePostConfirm;
 
+  /// The message of a dialog that confirms what can't be undone, such as deleting a post, under its question.
+  ///
+  /// In en, this message translates to:
+  /// **'This can’t be undone.'**
+  String get cantBeUndone;
+
   /// No description provided for @postDeleted.
   ///
   /// In en, this message translates to:

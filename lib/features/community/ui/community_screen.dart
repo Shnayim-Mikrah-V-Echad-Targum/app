@@ -47,9 +47,12 @@ class CommunityScreen extends ConsumerWidget {
           refreshButton,
           IconButton(
             tooltip: user == null ? l.signInTitle : l.settingsAccount,
-            // Signed in, the member's initial; until their profile comes, a
-            // person on the same disc.
-            icon: user == null ? const Icon(Icons.person_outline) : InitialDisc(profile?.displayName ?? ''),
+            // Signed in, the member's initial; a person on the same disc until
+            // their profile comes, and while it has a machine's name
+            // ("user_1a2b3c4d"), whose initial would be no one's.
+            icon: user == null
+                ? const Icon(Icons.person_outline)
+                : InitialDisc(profile != null && profile.hasChosenName ? profile.displayName : ''),
             onPressed: () => context.push('/community/account'),
           ),
         ],
