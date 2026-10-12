@@ -143,8 +143,8 @@ void main() {
       final lines = verseCopy(chosen, const AppSettings(), reference: 'Genesis 3:22').split('\n');
       expect(lines, hasLength(4));
       expect(lines[0], verseText(mikra.verse(r), const AppSettings()));
-      // The Targum's Names as the Torah's.
-      expect(lines[1], verseText(onkelos.verse(r), const AppSettings()));
+      // The Targum's Hebrew Elohim as the Torah's.
+      expect(lines[1], verseText(onkelos.verse(r), const AppSettings(), targum: true));
       expect(lines[1], startsWith('וַאֲמַר יְיָ אֱלֹקִים '));
       expect(lines[2], startsWith('And the LORD God said'));
       expect(lines[3], '— Genesis 3:22');
@@ -152,6 +152,40 @@ void main() {
         verseCopy(ChosenVerse(at: genesis3_22, hebrew: mikra.verse(r)), const AppSettings(), reference: 'בראשית ג, כב'),
         '${lines[0]}\n— בראשית ג, כב',
       );
+    });
+
+    // Onkelos's Aramaic forms of Elohim are the rabbinic advisor's to decide
+    // (docs/DESIGN.md §11): every one stays as written, even where its
+    // letters are a Hebrew form's, as "my God" in Exodus 15:2 (אלהי); only
+    // Elohim as Hebrew spells it is written אלקים, as in the Torah.
+    test('copied with the Targum, writes its Aramaic forms of Elohim as they are', () async {
+      final repo = TextRepository();
+      final exodus = await repo.book(TextLayer.mikra, 'Exodus');
+      final exodusTargum = await repo.book(TextLayer.onkelos, 'Exodus');
+      final deuteronomy = await repo.book(TextLayer.mikra, 'Deuteronomy');
+      final deuteronomyTargum = await repo.book(TextLayer.onkelos, 'Deuteronomy');
+      List<String> copied(BookText torah, BookText targum, VerseRef r) => [
+            for (final line in verseCopy(
+              ChosenVerse(at: BookVerse('', r), hebrew: torah.verse(r), targum: targum.verse(r)),
+              const AppSettings(),
+              reference: '',
+            ).split('\n'))
+              HebrewText.consonantsOnly(line),
+          ];
+
+      // "This is my God… the God of my father": the Torah's אלהי is the Name;
+      // the Targum's אלהי ("my God") and אלהא stay.
+      final song = copied(exodus, exodusTargum, const VerseRef(15, 2));
+      expect(song[0], contains('אלקי אבי'));
+      expect(song[1], contains('דין אלהי '));
+      expect(song[1], contains('אלהא דאבהתי'));
+      expect(song[1], isNot(contains('אלק')));
+
+      // "The LORD your God, He is God, the faithful God": the Targum keeps the
+      // Hebrew אלהים there, between its own אלהך and אלהא.
+      final faithful = copied(deuteronomy, deuteronomyTargum, const VerseRef(7, 9));
+      expect(faithful[0], contains('ה׳ אלקיך הוא האלקים'));
+      expect(faithful[1], contains('יי אלהך הוא אלקים אלהא מהימנא'));
     });
 
     test('quoted in a question, runs from the left in the English UI, where the question will', () {

@@ -160,6 +160,9 @@ void main() {
       // The suffix's ה is no part of the Name.
       expect(HebrewText.replaceDivineName('אֱלֹהֵיהֶם'), 'אֱלֹקֵיהֶם');
       expect(HebrewText.replaceDivineName('אֱלֹהֵיהֶן'), 'אֱלֹקֵיהֶן');
+      // The poetic "their gods" of Deuteronomy 32:37, of the idols as
+      // elsewhere.
+      expect(HebrewText.replaceDivineName('אֱלֹהֵ֔ימוֹ'), 'אֱלֹקֵ֔ימוֹ');
     });
 
     test('in Elohim after a prefix, which keeps its letters and vowels', () {
@@ -181,11 +184,31 @@ void main() {
     test('changes nothing else', () {
       for (final word in [
         ...['יְהוּדָה', 'וְהָיָה', 'יְיָ', 'הוֹוָה', 'יהוהו', 'ייהוה', ''],
-        // "These", "to her", "to them", "a question", and "their gods" as
-        // Deuteronomy 32:37 mocks the idols.
-        ...['אֵלֶּה', 'הָאֵלֶּה', 'וְאֵלֶּה', 'אֵלֶיהָ', 'אֲלֵהֶם', 'שְׁאֵלָה', 'אֱלֹהֵימוֹ'],
+        // "These", "to her", "to them" (masculine and feminine), and "a
+        // question".
+        ...['אֵלֶּה', 'הָאֵלֶּה', 'וְאֵלֶּה', 'אֵלֶיהָ', 'אֲלֵהֶם', 'אֲלֵהֶן', 'שְׁאֵלָה'],
       ]) {
         expect(HebrewText.replaceDivineName(word), word, reason: word);
+      }
+    });
+
+    // Whether Onkelos's own forms of the Name should be written otherwise
+    // is for the rabbinic advisor (docs/DESIGN.md §11): until then, only
+    // Elohim as Hebrew spells it is, the same in the Targum as in the Torah.
+    test('on a line of the Targum, writes only Elohim as Hebrew spells it so', () {
+      expect(HebrewText.replaceDivineName('אֱלֹהִים', targum: true), 'אֱלֹקִים');
+      expect(HebrewText.replaceDivineName('הוּא אֱלֹהִים אֱלָהָא', targum: true), 'הוּא אֱלֹקִים אֱלָהָא');
+      for (final word in [
+        // Onkelos's Name, and its Aramaic forms of Elohim: "God", "your
+        // God", "your (plural) God", "our God", "his God", "their God", with
+        // prefixes.
+        ...['יְיָ', 'דַּיְיָ', 'אֱלָהָא', 'אֱלָהָךְ', 'אֱלָהָכוֹן', 'אֱלָהַנָא', 'אֱלָהֵהּ', 'אֱלָהֲהוֹן', 'לֶאֱלָהָא', 'דֶאֱלָהָךְ'],
+        // Those whose letters are a Hebrew form's: "my God" and "his God".
+        ...['אֱלָהַי', 'אֱלָהָי', 'אֱלָהֵיהּ'],
+        // "But".
+        ...['אֱלָהֵן', 'אֶלָּהֵין'],
+      ]) {
+        expect(HebrewText.replaceDivineName(word, targum: true), word, reason: word);
       }
     });
 
