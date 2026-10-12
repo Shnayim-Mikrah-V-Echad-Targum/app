@@ -1315,8 +1315,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   's_reading_chabad': (tester) =>
       Scrollable.ensureVisible(tester.element(find.byType(SegmentedButton<HaftarahNusach>)), alignment: 0.3),
   'thread_long_end': _scrollToEnd,
-  // Reply on the last post.
+  // Reply on the last post, which large text leaves out of view.
   'thread_replying': (tester) async {
+    await _scrollToEnd(tester);
     final reply = find.descendant(of: find.byType(PostCard).last, matching: find.widgetWithIcon(TextButton, Icons.reply));
     await tester.ensureVisible(reply);
     await tester.tap(reply);
@@ -1721,7 +1722,13 @@ const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 const _hugeModes = {'huge', 'hugehe'};
-const _hugeScreens = {'today', 'reader'};
+const _hugeScreens = {
+  'today',
+  'reader',
+  // The reply box, its button under the field, and while answering a post.
+  'thread',
+  'thread_replying',
+};
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
   'today',

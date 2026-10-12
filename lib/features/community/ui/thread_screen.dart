@@ -447,6 +447,26 @@ class _Composer extends StatelessWidget {
   final VoidCallback onCancelReply;
   final VoidCallback? onSend;
 
+  /// What the outlined field leaves its label of its width: its padding of
+  /// 12 at either side, and the 4 its outline's gap keeps about the label.
+  static const _labelInsets = 2 * 12.0 + 2 * 4.0;
+
+  /// The size of the field's label on its outline, of its size within.
+  static const _floatingLabelScale = 0.75;
+
+  /// The width of [text] in [style], on one line at the reader's text size.
+  static double _textWidth(BuildContext context, String text, TextStyle? style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return width;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -484,39 +504,83 @@ class _Composer extends StatelessWidget {
                             onCancel: onCancelReply,
                           ),
                         ),
-                      Row(
-                        // The button stays by the last line as the field grows.
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: controller,
-                              focusNode: focusNode,
-                              minLines: 1,
-                              maxLines: 5,
-                              maxLength: 10000,
-                              buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-                              // Empty, the cursor waits at the interface's start.
-                              textDirection: autoDirection(controller.text, fallback: Directionality.of(context)),
-                              keyboardType: TextInputType.multiline,
-                              decoration: InputDecoration(labelText: l.replyLabel),
-                            ),
-                          ),
-                          const Gap(Space.md),
-                          Padding(
-                            // Level with a one-line field, 56 high.
-                            padding: const EdgeInsets.only(bottom: Space.xs),
-                            child: FilledButton(
-                              onPressed: onSend,
-                              child: sending
-                                  ? SizedBox.square(
-                                      dimension: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.sending),
-                                    )
-                                  : Text(l.replyAction),
-                            ),
-                          ),
-                        ],
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          // The field's label is never cut short. Where the
+                          // button beside the field would leave it too little
+                          // room (large text on a phone), the button goes under
+                          // the field, at its end; and where even the whole
+                          // width is too little, the label stands on the
+                          // outline, at the size it takes there when the field
+                          // has the focus. One Flex either way, so that the
+                          // field keeps the focus as it moves (the phone
+                          // turned, say).
+                          final label = theme.textTheme.bodyLarge!;
+                          final labelWidth = _textWidth(context, l.replyLabel, label) + _labelInsets;
+                          // Material's padding at 100%, which only narrows as
+                          // the text grows.
+                          final buttonWidth = _textWidth(context, l.replyAction, theme.textTheme.labelLarge) + 48;
+                          final stacked = constraints.maxWidth - buttonWidth - Space.md < labelWidth;
+                          // On the outline, half the label's line stands above
+                          // the field: more, at large text, than the 12 above
+                          // it holds at 100%, so the field leaves the rest.
+                          final floatingLine = MediaQuery.textScalerOf(context).scale(label.fontSize!) *
+                              (label.height ?? 1.4) *
+                              _floatingLabelScale;
+                          final labelRoom = max(0.0, floatingLine / 2 - Space.md);
+                          return Flex(
+                            direction: stacked ? Axis.vertical : Axis.horizontal,
+                            // Beside the field, the button stays by its last
+                            // line as it grows.
+                            crossAxisAlignment: stacked ? CrossAxisAlignment.stretch : CrossAxisAlignment.end,
+                            children: [
+                              Flexible(
+                                flex: stacked ? 0 : 1,
+                                fit: FlexFit.tight,
+                                child: Padding(
+                                  padding: EdgeInsets.only(top: labelRoom),
+                                  child: TextField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    minLines: 1,
+                                    maxLines: 5,
+                                    maxLength: 10000,
+                                    buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                                    // Empty, the cursor waits at the interface's start.
+                                    textDirection: autoDirection(controller.text, fallback: Directionality.of(context)),
+                                    keyboardType: TextInputType.multiline,
+                                    decoration: InputDecoration(
+                                      labelText: l.replyLabel,
+                                      floatingLabelBehavior: constraints.maxWidth < labelWidth
+                                          ? FloatingLabelBehavior.always
+                                          : FloatingLabelBehavior.auto,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Gap(stacked ? Space.sm : Space.md),
+                              Padding(
+                                // Beside the field, level with it while it has
+                                // one line, 56 high.
+                                padding: EdgeInsets.only(bottom: stacked ? 0 : Space.xs),
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  widthFactor: 1,
+                                  heightFactor: 1,
+                                  child: FilledButton(
+                                    onPressed: onSend,
+                                    child: sending
+                                        ? SizedBox.square(
+                                            dimension: 20,
+                                            child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.sending),
+                                          )
+                                        : Text(l.replyAction),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),

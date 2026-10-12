@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -208,6 +209,78 @@ void main() {
       }
     });
   }
+
+  // The reply box's label is never cut short: at the largest text, on the
+  // smallest phone, the Reply button goes under the field, at its end, and
+  // the label stands on the outline. At 100% the button stays beside it.
+  group('the reply box', () {
+    Future<void> openThread(WidgetTester tester, {required bool hebrew, required double textScale}) => open(
+          tester,
+          '/community/thread/1',
+          settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.system),
+          size: const Size(320, 640),
+          textScale: textScale,
+        );
+
+    /// The field's label, as the field lays it out.
+    RenderParagraph label(WidgetTester tester, {required bool hebrew}) => tester.renderObject(find.descendant(
+          of: find.byType(InputDecorator),
+          matching: find.text(hebrew ? 'כתיבת תגובה' : 'Write a reply'),
+        ));
+
+    for (final hebrew in [false, true]) {
+      testWidgets('at 300% on a 320 dp phone, keeps its label whole, the button under the field${hebrew ? ', Hebrew' : ''}',
+          (tester) async {
+        await openThread(tester, hebrew: hebrew, textScale: 3);
+        expect(tester.takeException(), isNull);
+        expect(label(tester, hebrew: hebrew).didExceedMaxLines, isFalse);
+        final field = tester.getRect(find.byType(TextField));
+        final button = tester.getRect(find.byType(FilledButton));
+        expect(button.top, greaterThan(field.bottom));
+        // At the field's end.
+        if (hebrew) {
+          expect(button.left, moreOrLessEquals(field.left));
+        } else {
+          expect(button.right, moreOrLessEquals(field.right));
+        }
+      });
+
+      testWidgets('at 100% on a 320 dp phone, sets the button beside the field${hebrew ? ', Hebrew' : ''}',
+          (tester) async {
+        await openThread(tester, hebrew: hebrew, textScale: 1);
+        expect(tester.takeException(), isNull);
+        expect(label(tester, hebrew: hebrew).didExceedMaxLines, isFalse);
+        final field = tester.getRect(find.byType(TextField));
+        final button = tester.getRect(find.byType(FilledButton));
+        expect(button.bottom, lessThan(field.bottom), reason: 'level with a one-line field');
+        if (hebrew) {
+          expect(button.right, lessThan(field.left));
+        } else {
+          expect(button.left, greaterThan(field.right));
+        }
+      });
+    }
+
+    // The phone turned, say, or the text made smaller: the field moves, but
+    // stays the same field.
+    testWidgets('keeps the focus and what is written as the button moves beside the field', (tester) async {
+      await openThread(tester, hebrew: false, textScale: 3);
+      await tester.enterText(find.byType(TextField), 'Thank you.');
+      await tester.pump();
+      final field = find.descendant(of: find.byType(TextField), matching: find.byType(EditableText));
+      final editable = tester.state<EditableTextState>(field);
+      expect(editable.widget.focusNode.hasFocus, isTrue);
+      expect(tester.getRect(find.byType(FilledButton)).top, greaterThan(tester.getRect(find.byType(TextField)).bottom));
+
+      tester.platformDispatcher.textScaleFactorTestValue = 1;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(tester.getRect(find.byType(FilledButton)).left, greaterThan(tester.getRect(find.byType(TextField)).right));
+      expect(tester.state<EditableTextState>(field), same(editable));
+      expect(editable.widget.focusNode.hasFocus, isTrue);
+      expect(editable.textEditingValue.text, 'Thank you.');
+    });
+  });
 
   // §6.1: Tab reaches Today's main button, which takes the ring.
   testWidgets("Tab reaches Today's main button, which takes the focus ring", (tester) async {
