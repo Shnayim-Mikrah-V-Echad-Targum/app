@@ -189,6 +189,7 @@ class ReadingSettingsScreen extends ConsumerWidget {
             children: [
               SwitchRow(
                 title: l.tishaBavQuiet,
+                subtitle: l.tishaBavQuietDesc,
                 value: s.tishaBavQuiet,
                 onChanged: (v) => update((s) => s.copyWith(tishaBavQuiet: v)),
               ),

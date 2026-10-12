@@ -8,7 +8,10 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart' show InfoCard;
 import 'package:shnayim_mikra/ui/widgets/lines.dart';
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../../helpers.dart';
@@ -422,6 +425,102 @@ void main() {
       progress: const ProgressState(),
     );
     expect(find.textContaining('Tisha B'), findsNothing);
+  });
+
+  group("on Tisha B'Av", () {
+    // Thursday 12 August 2027, 9 Av 5787, in the week of Va'etchanan
+    // (5787:45), which began on Sunday. The reader joined the Sunday before,
+    // in the week of Devarim (5787:44).
+    final fast = DateTime(2027, 8, 12, 11);
+    final settings = _settings.copyWith(joinDate: LocalDate(2027, 8, 1));
+    final sunday = LocalDate(2027, 8, 8);
+
+    /// Devarim half read; of Va'etchanan, Rishon to Shlishi read on their
+    /// days, and Wednesday's Revi'i not yet: behind, on any other day.
+    ProgressState behind() => ProgressState(weeks: {
+          '5787:44': _onTheirDays('5787:44', LocalDate(2027, 8, 1), upTo: 3),
+          '5787:45': _onTheirDays('5787:45', sunday, upTo: 3),
+        });
+
+    const setAside =
+        'Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).';
+    final continues = RegExp(r"Va.etchanan continues tomorrow\.$");
+    final filled = find.byWidgetPredicate((w) => w is FilledButton);
+    final en = lookupAppLocalizations(const Locale('en'));
+
+    testWidgets('Today invites no reading: no button, nothing to catch up on or log, no word of last week',
+        (tester) async {
+      await openToday(tester, settings: settings, now: fast, progress: behind());
+      // The fast heads the title page, and today's card says why it has
+      // no reading.
+      expect(find.text('Tisha B’Av'), findsOneWidget);
+      expect(find.text(en.parshatHashavua), findsNothing);
+      final card = find.ancestor(of: find.textContaining(setAside), matching: find.byType(InfoCard));
+      expect(find.descendant(of: card, matching: find.text(en.todayReadingTitle)), findsOneWidget);
+      expect(find.textContaining(setAside), findsOneWidget);
+      expect(find.textContaining(continues), findsOneWidget);
+      // The week's progress stays, and the way to its aliyot.
+      expect(find.byType(ParshaRings), findsOneWidget);
+      expect(find.text('All aliyot'), findsOneWidget);
+      // But nothing that asks for reading.
+      expect(filled, findsNothing);
+      expect(find.text(en.todayCatchUpTitle), findsNothing);
+      expect(find.text(en.todayNothingPlanned), findsNothing);
+      expect(find.text(en.readFromBook), findsNothing);
+      expect(find.text(en.openWeekTitle('Devarim')), findsNothing);
+      // The week strip names the fast.
+      await show(tester, find.text('9 Av'));
+      expect(find.text('9 Av'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^Thursday: .*\. Tisha B’Av$')), findsOneWidget);
+
+      // The next day, as on any other: the reading, and last week's notice.
+      await openToday(tester, settings: settings, now: DateTime(2027, 8, 13, 11), progress: behind());
+      expect(find.text('Tisha B’Av'), findsNothing);
+      expect(find.text(en.todayCatchUpTitle), findsOneWidget);
+      expect(find.text(en.readFromBook), findsOneWidget);
+      expect(filled, findsWidgets);
+      expect(find.text(en.openWeekTitle('Devarim')), findsOneWidget);
+    });
+
+    testWidgets('in Hebrew', (tester) async {
+      await openToday(tester, settings: settings.copyWith(language: AppLanguage.hebrew), now: fast, progress: behind());
+      expect(find.text('תשעה באב'), findsOneWidget);
+      expect(
+        find.text('היום אין לומדים תורה, מלבד הדברים הרעים (איוב, איכה ומקצת ירמיהו). פרשת ואתחנן נמשכת מחר.'),
+        findsOneWidget,
+      );
+      expect(filled, findsNothing);
+      await show(tester, find.text('ט׳ באב'));
+      expect(find.text('ט׳ באב'), findsOneWidget);
+    });
+
+    testWidgets('a finished parsha offers neither its haftarah nor its discussion, nor goes on tomorrow',
+        (tester) async {
+      await openToday(
+        tester,
+        settings: settings.copyWith(haftarahEnabled: true),
+        now: fast,
+        progress: ProgressState(weeks: {'5787:45': WeekProgress(weekId: '5787:45').withAll(LocalDate(2027, 8, 11))}),
+      );
+      expect(find.bySemanticsLabel(RegExp('parsha is complete')), findsOneWidget);
+      // The tonal haftarah button, and the discussion's, on the title page.
+      expect(filled, findsNothing);
+      expect(
+        find.descendant(of: find.byType(TitlePageFrame), matching: find.byIcon(Icons.forum_outlined)),
+        findsNothing,
+      );
+      expect(find.text(setAside), findsOneWidget);
+      expect(find.textContaining(continues), findsNothing);
+    });
+
+    testWidgets('a reader who plans a reading on the fast is asked for it, as on any day', (tester) async {
+      await openToday(tester, settings: settings.copyWith(tishaBavQuiet: false), now: fast, progress: behind());
+      expect(find.textContaining('Tisha B'), findsNothing);
+      expect(find.text(en.parshatHashavua), findsOneWidget);
+      expect(find.text(en.todayCatchUpTitle), findsOneWidget);
+      expect(filled, findsWidgets);
+      expect(find.text('9 Av'), findsNothing);
+    });
   });
 
   setUp(TodayScreen.forgetCompletions);

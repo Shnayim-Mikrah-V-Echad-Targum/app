@@ -459,6 +459,18 @@ class AppLocalizationsHe extends AppLocalizations {
       'ערב תשעה באב: רבים מסיימים את הלימוד לפני חצות היום.';
 
   @override
+  String get tishaBavTitle => 'תשעה באב';
+
+  @override
+  String get todayTishaBav =>
+      'היום אין לומדים תורה, מלבד הדברים הרעים (איוב, איכה ומקצת ירמיהו).';
+
+  @override
+  String todayTishaBavTomorrow(String portion) {
+    return 'פרשת $portion נמשכת מחר.';
+  }
+
+  @override
   String get startReading => 'התחלת קריאה';
 
   @override
@@ -682,6 +694,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get yomTovShort => 'יו״ט';
+
+  @override
+  String get tishaBavShort => 'ט׳ באב';
 
   @override
   String dayChipLabel(String day, String status) {
@@ -1518,6 +1533,10 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get tishaBavQuiet => 'ללא קריאה מתוכננת בתשעה באב';
+
+  @override
+  String get tishaBavQuietDesc =>
+      'ביום זה אין לומדים תורה, מלבד הדברים הרעים (שולחן ערוך או״ח תקנד, א)';
 
   @override
   String get cholHamoedQuiet => 'ללא קריאה מתוכננת בחול המועד';
@@ -2869,6 +2888,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get widgetPaused => 'בהשהיה · אפשר לקרוא מתי שנוח';
+
+  @override
+  String get widgetTishaBav => 'היום אין לומדים תורה';
 
   @override
   String get widgetWeekComplete => 'הפרשה הושלמה · יישר כוח!';

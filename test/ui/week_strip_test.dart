@@ -174,6 +174,40 @@ void main() {
     }
   });
 
+  testWidgets("a quiet Tisha B'Av is named by its date, on one line; one with a reading is a day like any other",
+      (tester) async {
+    // The week of Va'etchanan 5787: Thursday 12 August 2027 is 9 Av.
+    final tuesday = LocalDate(2027, 8, 10);
+    for (final quiet in [true, false]) {
+      final planner = ReadingPlanner(
+        schedule: const ParshaSchedule(israel: false),
+        settingsAt: (_) => PlanSettingsEntry(tishaBavQuiet: quiet),
+      );
+      final week = planner.planFor(planner.schedule.weekFor(tuesday));
+      for (final hebrew in [false, true]) {
+        await pumpThemed(tester, strip(week: week, today: tuesday), hebrew: hebrew);
+        final weekday = hebrew ? 'יום חמישי' : 'Thursday';
+        final note = find.descendant(of: dayOf(weekday), matching: find.text(hebrew ? 'ט׳ באב' : '9 Av'));
+        final reason = 'quiet: $quiet, ${hebrew ? 'he' : 'en'}';
+        // Never a day of rest.
+        expect(fillOf(tester, weekday), isNull, reason: reason);
+        if (quiet) {
+          expect(note, findsOneWidget, reason: reason);
+          expect(tester.widget<Text>(note).maxLines, 1, reason: reason);
+          expect(find.descendant(of: dayOf(weekday), matching: find.byIcon(Icons.horizontal_rule)), findsOneWidget,
+              reason: reason);
+          // Named as the reason there is no reading.
+          expect(find.bySemanticsLabel(RegExp('^$weekday: .*\\. ${hebrew ? 'תשעה באב' : 'Tisha B’Av'}\$')),
+              findsOneWidget,
+              reason: reason);
+        } else {
+          expect(note, findsNothing, reason: reason);
+          expect(find.bySemanticsLabel(RegExp('^$weekday: (?!.*(Tisha|תשעה))')), findsOneWidget, reason: reason);
+        }
+      }
+    }
+  });
+
   testWidgets('Hebrew: Yom Tov reads יו״ט, and the week runs from the right', (tester) async {
     await pumpThemed(tester, strip(), hebrew: true);
     expect(find.text('יו״ט'), findsOneWidget);

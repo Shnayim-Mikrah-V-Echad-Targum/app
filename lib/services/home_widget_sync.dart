@@ -92,7 +92,11 @@ enum WidgetDayKind {
   yomTov,
 
   /// A reading day within a pause.
-  paused;
+  paused,
+
+  /// Tisha B'Av, with no reading planned on it: the week's progress, as
+  /// Today keeps its rings, but no reading asked for and no Continue.
+  tishaBav;
 
   bool get rests => this == shabbat || this == yomTov;
 }
@@ -315,7 +319,11 @@ WidgetTimeline widgetTimeline({
 
   final weeks = <WidgetWeek>[];
   final weekIndex = <String, int>{};
-  int indexOf(ReadingWeek week, LocalDate day) => weekIndex[week.id] ??= () {
+  // A quiet Tisha B'Av has its week to itself, without Continue, as Today
+  // has no button that day: the widgets show Continue wherever a week has
+  // one.
+  int indexOf(ReadingWeek week, LocalDate day, {bool quiet = false}) =>
+      weekIndex[quiet ? '${week.id} quiet' : week.id] ??= () {
         final ctx = contextFor(week, day);
         final p = ctx.progress;
         int count(ReadingPass pass) => [for (var a = 0; a < kAliyot; a++) a].where((a) => p.isUnitDone(a, pass)).length;
@@ -339,7 +347,7 @@ WidgetTimeline widgetTimeline({
           mikra1: counts[0],
           mikra2: counts[1],
           targum: counts[2],
-          next: p.isComplete ? null : continueLabel(ctx),
+          next: p.isComplete || quiet ? null : continueLabel(ctx),
         ));
         return weeks.length - 1;
       }();
@@ -385,6 +393,18 @@ WidgetTimeline widgetTimeline({
   for (var day = first; day <= last; day = day.addDays(1)) {
     // The parsha read today, or on the Shabbat this day comes before.
     final week = schedule.weekFor(day);
+    // Tisha B'Av, with no reading planned on it: as Today, headed by the
+    // fast, with no reading asked for.
+    if (planner.isQuietTishaBav(day)) {
+      add(WidgetDay(
+        date: day,
+        week: indexOf(week, day, quiet: true),
+        kind: WidgetDayKind.tishaBav,
+        eyebrow: l.tishaBavTitle,
+        line: l.widgetTishaBav,
+      ));
+      continue;
+    }
     final index = indexOf(week, day);
     final vezot = week.portion.isVezotHaberakhah;
     final eyebrow = vezot ? l.simchatTorahEyebrow : l.parshatHashavua;

@@ -461,6 +461,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Erev Tisha B\'Av: many finish their learning before midday.';
 
   @override
+  String get tishaBavTitle => 'Tisha B’Av';
+
+  @override
+  String get todayTishaBav =>
+      'Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).';
+
+  @override
+  String todayTishaBavTomorrow(String portion) {
+    return '$portion continues tomorrow.';
+  }
+
+  @override
   String get startReading => 'Start reading';
 
   @override
@@ -674,6 +686,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yomTovShort => 'Yom Tov';
+
+  @override
+  String get tishaBavShort => '9 Av';
 
   @override
   String dayChipLabel(String day, String status) {
@@ -1516,6 +1531,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tishaBavQuiet => 'No reading planned on Tisha B\'Av';
+
+  @override
+  String get tishaBavQuietDesc =>
+      'Torah study is set aside on the fast, apart from the passages of mourning (Shulchan Aruch OC 554:1)';
 
   @override
   String get cholHamoedQuiet => 'No reading planned on Chol HaMoed';
@@ -2877,6 +2896,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get widgetPaused => 'Paused · read whenever you like';
+
+  @override
+  String get widgetTishaBav => 'Torah study is set aside today';
 
   @override
   String get widgetWeekComplete => 'Parsha complete · Yasher koach!';

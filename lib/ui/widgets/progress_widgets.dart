@@ -893,14 +893,23 @@ class WeekStrip extends StatelessWidget {
         ? const <int>[]
         : planned?.aliyot ?? (d == plan.week.occasion ? plan.shabbatAliyot : const <int>[]);
     final isToday = d == today;
+    // Tisha B'Av with no reading planned on it, which names the reason.
+    final fast = !rest && planned == null && JewishHolidays.isTishaBav(d);
     final semantic = [
       l.dayChipLabel(names.weekday(d), display.label(context)),
       if (dayAliyot.isNotEmpty) names.aliyot(dayAliyot),
+      if (fast) l.tishaBavTitle,
     ].join('. ');
     // Under the glyph, those aliyot as ordinals; on a Yom Tov that is not
-    // Shabbat, that it is one, so Simchat Torah is not taken for Shabbat.
+    // Shabbat, that it is one, so Simchat Torah is not taken for Shabbat;
+    // and on a quiet Tisha B'Av the fast, by its date, which fits the day
+    // where its name would wrap.
     final yomTov = rest && !d.isShabbat;
-    final note = yomTov ? l.yomTovShort : (dayAliyot.isEmpty ? null : aliyahOrdinals(dayAliyot));
+    final note = yomTov
+        ? l.yomTovShort
+        : fast
+            ? l.tishaBavShort
+            : (dayAliyot.isEmpty ? null : aliyahOrdinals(dayAliyot));
     final noteStyle = theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant);
     final content = Container(
       constraints: const BoxConstraints(minHeight: 68),
@@ -933,7 +942,7 @@ class WeekStrip extends StatelessWidget {
           ),
           if (note != null) ...[
             const SizedBox(height: 4),
-            if (yomTov)
+            if (yomTov || fast)
               // One line across the day, untracked and shrunk a little if
               // need be ("Yom Tov" is about 50 px; a day on a 412 dp phone
               // has 48), so a Yom Tov week is no taller than any other. The

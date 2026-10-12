@@ -91,6 +91,16 @@ void main() {
     expect(swift, contains('rests[date] != nil'));
   });
 
+  test("both widgets rest on the app's days of rest alone, and show Continue wherever the week has one", () {
+    // Any other day, a quiet Tisha B'Av among them, is a reading day, whose
+    // Continue the app leaves out by giving its week none.
+    expect({for (final k in WidgetDayKind.values) if (k.rests) k.name}, {'shabbat', 'yomTov'});
+    expect(provider, contains('val rests get() = kind == "shabbat" || kind == "yomTov"'));
+    expect(swift, contains('var rests: Bool { kind == "shabbat" || kind == "yomTov" }'));
+    expect(provider, contains('next = week.next.takeIf { reading }'));
+    expect(swift, contains('if let next = week.next, let url = URL(string: timeline.continueLink)'));
+  });
+
   group('Android', () {
     final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
 

@@ -121,6 +121,21 @@ void main() {
     expect(help.fontStyle, isNot(FontStyle.italic));
   });
 
+  testWidgets("the Tisha B'Av switch says why the fast has no reading", (tester) async {
+    tester.view.physicalSize = const Size(412, 4000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await openReadingSettings(tester);
+    const why = 'Torah study is set aside on the fast, apart from the passages of mourning (Shulchan Aruch OC 554:1)';
+    final row = find.ancestor(of: find.text(why), matching: find.byType(SwitchRow));
+    expect(row, findsOneWidget);
+    expect(find.descendant(of: row, matching: find.textContaining('on Tisha B')), findsOneWidget);
+    expect(c.read(settingsProvider).tishaBavQuiet, isTrue);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(c.read(settingsProvider).tishaBavQuiet, isFalse);
+  });
+
   testWidgets("the haftarah's custom and whether it counts show only while it is read, set in under it",
       (tester) async {
     await openReadingSettings(tester);

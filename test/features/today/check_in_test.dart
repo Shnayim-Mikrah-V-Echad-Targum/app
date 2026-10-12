@@ -3,6 +3,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
+import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
@@ -12,6 +14,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/check_in.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
 
 import '../../helpers.dart';
@@ -264,6 +267,33 @@ void main() {
       expect(find.text('שינוי התאריך'), findsOneWidget);
       expect(find.text('סימון הקריאה'), findsOneWidget);
     });
+
+    testWidgets("waits for the day after Tisha B'Av, when no greeting is given", (tester) async {
+      // Sunday 3 August 2025, 9 Av 5785, the day after Shabbat Devarim, of
+      // which Rishon to Revi'i were read on their days.
+      final settings = _settings.copyWith(joinDate: LocalDate(2025, 7, 20));
+      var devarim = WeekProgress(weekId: '5785:44');
+      for (var a = 0; a < 4; a++) {
+        devarim = devarim.withAliyah(a, LocalDate(2025, 7, 27).addDays(a));
+      }
+      final progress = ProgressState(weeks: {'5785:44': devarim});
+      final en = lookupAppLocalizations(const Locale('en'));
+      // Whatever is planned on the fast.
+      for (final quiet in [true, false]) {
+        await openToday(
+          tester,
+          settings: settings.copyWith(tishaBavQuiet: quiet),
+          now: DateTime(2025, 8, 3, 11),
+          progress: progress,
+        );
+        expect(find.text(en.checkInTitle('Devarim')), findsNothing, reason: 'quiet: $quiet');
+        // Nor, while it waits, the rest of last week's notice.
+        expect(find.text(en.openWeekTitle('Devarim')), findsNothing, reason: 'quiet: $quiet');
+        expect(find.byType(NoticeBanner), findsNothing, reason: 'quiet: $quiet');
+      }
+      await openToday(tester, settings: settings, now: DateTime(2025, 8, 4, 9), progress: progress);
+      expect(find.text(en.checkInTitle('Devarim')), findsOneWidget);
+    });
   });
 
   group('a week still open after its late window', () {
@@ -325,5 +355,28 @@ void main() {
     // ask about.
     final vezot = previous(occasion: LocalDate(2026, 10, 4), id: '5786:54');
     expect(asksCheckIn(vezot, today: LocalDate(2026, 10, 5), settings: _settings), isFalse);
+
+    // Tisha B'Av on the Sunday after Shabbat Devarim (5785), or postponed to
+    // it from Shabbat (5789): the check-in, which greets the reader, waits
+    // for Monday, and Today with it.
+    for (final (year, shabbat) in [
+      (5785, LocalDate(2025, 8, 2)),
+      (5789, HebrewDate(5789, HebrewMonth.av, 9).toLocalDate()),
+    ]) {
+      final devarim = previous(occasion: shabbat, id: '$year:44');
+      expect(devarim.week.occasion, shabbat, reason: '$year');
+      final sunday = shabbat.addDays(1);
+      expect(JewishHolidays.isTishaBav(sunday), isTrue, reason: '$year');
+      expect(checkInDay(devarim, settings: _settings), sunday.addDays(1), reason: '$year');
+      expect(asksCheckIn(devarim, today: sunday, settings: _settings), isFalse, reason: '$year');
+      expect(awaitsCheckIn(devarim, today: sunday, settings: _settings), isTrue, reason: '$year');
+      expect(asksCheckIn(devarim, today: sunday.addDays(1), settings: _settings), isTrue, reason: '$year');
+      expect(awaitsCheckIn(devarim, today: sunday.addDays(1), settings: _settings), isFalse, reason: '$year');
+      final answered = _settings.copyWith(checkInAnsweredFor: '$year:44');
+      expect(awaitsCheckIn(devarim, today: sunday, settings: answered), isFalse, reason: '$year');
+    }
+    // On a Tuesday or a Thursday, the fast comes after it: Sunday asks.
+    final devarim = previous(occasion: LocalDate(2027, 8, 7), id: '5787:44');
+    expect(checkInDay(devarim, settings: _settings), LocalDate(2027, 8, 8));
   });
 }

@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
@@ -341,6 +342,65 @@ void main() {
       expect(after.line, startsWith('Catching up:'));
       // Today's button still leads on.
       expect(t.weeks.first.next, 'Start · Rishon');
+    });
+
+    test("on Tisha B'Av, is headed by the fast and asks for no reading, as Today is", () {
+      // Monday 9 August 2027, in the week of Va'etchanan 5787 (5787:45), with
+      // Rishon read on Sunday: Thursday the 12th is 9 Av.
+      final settings = AppSettings(joinDate: LocalDate(2027, 8, 1));
+      final progress = ProgressState(weeks: {
+        '5787:45': WeekProgress(weekId: '5787:45').withAliyah(0, LocalDate(2027, 8, 8)),
+      });
+      final now = DateTime(2027, 8, 9, 9);
+      final fast = LocalDate(2027, 8, 12);
+      final t = timeline(now, settings: settings, progress: progress);
+      final day = only(t, fast);
+      expect(
+        (day.kind, day.eyebrow, day.line),
+        (WidgetDayKind.tishaBav, 'Tisha B’Av', 'Torah study is set aside today'),
+      );
+      // The week's progress, as Today keeps its rings, but no Continue, as
+      // Today has no button: the fast has the week to itself.
+      final week = t.weeks[day.week];
+      final regular = t.weeks[only(t, fast.addDays(-1)).week];
+      expect(week.id, regular.id);
+      expect(
+        (week.mikra1, week.progress, week.spokenProgress),
+        (regular.mikra1, regular.progress, regular.spokenProgress),
+      );
+      expect(regular.next, 'Continue · Sheni');
+      expect(week.next, isNull);
+      expect(week.toJson().containsKey('next'), isFalse);
+      // The day after, a reading day like any other, without a greeting.
+      final friday = on(t, fast.addDays(1)).first;
+      expect((friday.kind, friday.week), (WidgetDayKind.erevShabbat, only(t, fast.addDays(-1)).week));
+      expect(friday.line, startsWith('Catching up: '));
+
+      final hebrew = only(
+        timeline(now, l: he, settings: settings.copyWith(language: AppLanguage.hebrew), progress: progress),
+        fast,
+      );
+      expect((hebrew.eyebrow, hebrew.line), ('תשעה באב', 'היום אין לומדים תורה'));
+
+      // A reader who plans a reading on the fast is asked for it.
+      final reading = timeline(now, settings: settings.copyWith(tishaBavQuiet: false), progress: progress);
+      final asked = only(reading, fast);
+      expect((asked.kind, asked.eyebrow), (WidgetDayKind.weekday, 'Parshat HaShavua'));
+      expect(asked.line, startsWith('Catching up: '));
+      expect(reading.weeks.where((w) => w.id == '5787:45').single.next, 'Continue · Sheni');
+
+      // Postponed from Shabbat, the fast opens the week (Sunday 10 Av 5789).
+      final sunday = HebrewDate(5789, HebrewMonth.av, 10).toLocalDate();
+      final postponed = timeline(
+        DateTime(sunday.year, sunday.month, sunday.day, 9),
+        settings: AppSettings(joinDate: sunday.addDays(-21)),
+      );
+      final first = postponed.days.first;
+      expect((first.date, first.kind, first.eyebrow), (sunday, WidgetDayKind.tishaBav, 'Tisha B’Av'));
+      expect(postponed.weeks[first.week].next, isNull);
+      final monday = postponed.days[1];
+      expect((monday.kind, monday.eyebrow), (WidgetDayKind.weekday, 'Parshat HaShavua'));
+      expect(postponed.weeks[monday.week].next, 'Start · Rishon');
     });
 
     test("in Hebrew, with the app's words and the reader's spelling", () {

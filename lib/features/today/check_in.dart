@@ -15,20 +15,38 @@ import '../progress/domain/progress_models.dart';
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
 
+/// The first day Today can ask after [previous]'s Shabbat: past the days of
+/// rest that run on from it, and past Tisha B'Av straight after it, whatever
+/// the reader plans on the fast, since the check-in's greeting is not given
+/// then (Shulchan Aruch OC 554:20).
+LocalDate checkInDay(WeekContext previous, {required AppSettings settings}) {
+  var day = previous.week.occasion.addDays(1);
+  while (JewishHolidays.isRestDay(day, israel: settings.oneDayYomTov) || JewishHolidays.isTishaBav(day)) {
+    day = day.addDays(1);
+  }
+  return day;
+}
+
 /// Whether Today asks after [previous]'s Shabbat what was read on it from a
-/// printed Chumash: on the first reading day after it, and on each one
-/// after that while the week can still count as late, until the reader
-/// answers (see [AppSettings.checkInAnsweredFor]).
+/// printed Chumash: on the first day it can ([checkInDay]), and on each
+/// reading day after that while the week can still count as late, until the
+/// reader answers (see [AppSettings.checkInAnsweredFor]).
 bool asksCheckIn(WeekContext previous, {required LocalDate today, required AppSettings settings}) {
   if (!previous.week.occasion.isShabbat || settings.checkInAnsweredFor == previous.id) return false;
-  var firstDayAfter = previous.week.occasion.addDays(1);
-  while (JewishHolidays.isRestDay(firstDayAfter, israel: settings.oneDayYomTov)) {
-    firstDayAfter = firstDayAfter.addDays(1);
-  }
+  final firstDayAfter = checkInDay(previous, settings: settings);
   // Without a late window the week is overdue from Sunday, and still asked
   // about on it.
   return today == firstDayAfter || (today > firstDayAfter && previous.status == WeekStatus.inProgress);
 }
+
+/// Whether [previous]'s check-in is still to come on [today], a reading day
+/// before [checkInDay]: Tisha B'Av straight after Shabbat. Today then holds
+/// back the rest of last week's notice too, so that the check-in is the
+/// first word about it.
+bool awaitsCheckIn(WeekContext previous, {required LocalDate today, required AppSettings settings}) =>
+    previous.week.occasion.isShabbat &&
+    settings.checkInAnsweredFor != previous.id &&
+    today < checkInDay(previous, settings: settings);
 
 /// "Genesis 2:20–3:21 · 23 verses": where aliyah [aliyah] of [ctx]'s
 /// portion is, and how long.

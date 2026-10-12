@@ -711,6 +711,24 @@ abstract class AppLocalizations {
   /// **'Erev Tisha B\'Av: many finish their learning before midday.'**
   String get erevTishaBavNote;
 
+  /// On Today on Tisha B'Av, while no reading is planned on it: the eyebrow of the title page, in place of Parshat HaShavua, and of the home-screen widget.
+  ///
+  /// In en, this message translates to:
+  /// **'Tisha B’Av'**
+  String get tishaBavTitle;
+
+  /// Today's card on Tisha B'Av, while no reading is planned on it, in place of today's reading: on the fast, Torah is not studied, but for the sad passages (Shulchan Aruch OC 554:1–2). Followed by todayTishaBavTomorrow while the week's parsha is unfinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).'**
+  String get todayTishaBav;
+
+  /// After todayTishaBav, while the week's parsha is unfinished: the day after Tisha B'Av is always a reading day. portion is the week's parsha.
+  ///
+  /// In en, this message translates to:
+  /// **'{portion} continues tomorrow.'**
+  String todayTishaBavTomorrow(String portion);
+
   /// No description provided for @startReading.
   ///
   /// In en, this message translates to:
@@ -1040,6 +1058,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yom Tov'**
   String get yomTovShort;
+
+  /// Under Tisha B'Av in the week strip, while no reading is planned on it (on the 10th of Av too, when the fast is postponed from Shabbat): the fast, by its date. Keep it short: the day is about 48 dp wide.
+  ///
+  /// In en, this message translates to:
+  /// **'9 Av'**
+  String get tishaBavShort;
 
   /// No description provided for @dayChipLabel.
   ///
@@ -2450,6 +2474,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No reading planned on Tisha B\'Av'**
   String get tishaBavQuiet;
+
+  /// Under the switch tishaBavQuiet in Reading & customs: why no reading is planned on Tisha B'Av.
+  ///
+  /// In en, this message translates to:
+  /// **'Torah study is set aside on the fast, apart from the passages of mourning (Shulchan Aruch OC 554:1)'**
+  String get tishaBavQuietDesc;
 
   /// No description provided for @cholHamoedQuiet.
   ///
@@ -4688,6 +4718,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paused · read whenever you like'**
   String get widgetPaused;
+
+  /// On the home-screen widget on Tisha B'Av, while no reading is planned on it, in place of the day's reading (as Today's card says, todayTishaBav). Keep it short.
+  ///
+  /// In en, this message translates to:
+  /// **'Torah study is set aside today'**
+  String get widgetTishaBav;
 
   /// On the home-screen widget, once every aliyah of the week is read. Keep it short.
   ///

@@ -399,6 +399,24 @@
   "@erevTishaBavNote": {
     "description": "On Today's reading card on the day before Tisha B'Av, when many have the custom not to learn Torah from midday."
   },
+  "tishaBavTitle": "Tisha B’Av",
+  "@tishaBavTitle": {
+    "description": "On Today on Tisha B'Av, while no reading is planned on it: the eyebrow of the title page, in place of Parshat HaShavua, and of the home-screen widget."
+  },
+  "todayTishaBav": "Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).",
+  "@todayTishaBav": {
+    "description": "Today's card on Tisha B'Av, while no reading is planned on it, in place of today's reading: on the fast, Torah is not studied, but for the sad passages (Shulchan Aruch OC 554:1–2). Followed by todayTishaBavTomorrow while the week's parsha is unfinished."
+  },
+  "todayTishaBavTomorrow": "{portion} continues tomorrow.",
+  "@todayTishaBavTomorrow": {
+    "description": "After todayTishaBav, while the week's parsha is unfinished: the day after Tisha B'Av is always a reading day. portion is the week's parsha.",
+    "placeholders": {
+      "portion": {
+        "type": "String",
+        "example": "Va'etchanan"
+      }
+    }
+  },
   "startReading": "Start reading",
   "readFromBook": "I read it in a Chumash",
   "readFromBookTitle": "Which aliyot did you read?",
@@ -662,6 +680,10 @@
   "yomTovShort": "Yom Tov",
   "@yomTovShort": {
     "description": "Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide, and a longer word is shrunk to fit one line."
+  },
+  "tishaBavShort": "9 Av",
+  "@tishaBavShort": {
+    "description": "Under Tisha B'Av in the week strip, while no reading is planned on it (on the 10th of Av too, when the fast is postponed from Shabbat): the fast, by its date. Keep it short: the day is about 48 dp wide."
   },
   "dayChipLabel": "{day}: {status}",
   "@dayChipLabel": {
@@ -1293,6 +1315,10 @@
   "lateNone": "No window",
   "lateWindowDesc": "Reading finished after Shabbat, until this time, still counts (Shulchan Aruch OC 285:4).",
   "tishaBavQuiet": "No reading planned on Tisha B'Av",
+  "tishaBavQuietDesc": "Torah study is set aside on the fast, apart from the passages of mourning (Shulchan Aruch OC 554:1)",
+  "@tishaBavQuietDesc": {
+    "description": "Under the switch tishaBavQuiet in Reading & customs: why no reading is planned on Tisha B'Av."
+  },
   "cholHamoedQuiet": "No reading planned on Chol HaMoed",
   "appliesFromThisWeek": "Applies from this week on",
   "@appliesFromThisWeek": {
@@ -2306,6 +2332,10 @@
   "widgetPaused": "Paused · read whenever you like",
   "@widgetPaused": {
     "description": "On the home-screen widget, on a day within a pause (\"Life happens\"): nothing counts against the reader. Keep it short."
+  },
+  "widgetTishaBav": "Torah study is set aside today",
+  "@widgetTishaBav": {
+    "description": "On the home-screen widget on Tisha B'Av, while no reading is planned on it, in place of the day's reading (as Today's card says, todayTishaBav). Keep it short."
   },
   "widgetWeekComplete": "Parsha complete · Yasher koach!",
   "@widgetWeekComplete": {

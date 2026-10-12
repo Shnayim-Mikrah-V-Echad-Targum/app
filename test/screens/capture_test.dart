@@ -102,10 +102,10 @@ ProgressState _yearRead() {
 }
 
 /// Week [id], whose first reading day is [first], read an aliyah a day,
-/// with the last two on the fifth day.
-WeekProgress _readOnTheirDays(String id, LocalDate first) {
+/// with the last two on the fifth day, up to aliyah [upTo] (exclusive).
+WeekProgress _readOnTheirDays(String id, LocalDate first, {int upTo = 7}) {
   var w = WeekProgress(weekId: id);
-  for (var a = 0; a < 7; a++) {
+  for (var a = 0; a < upTo; a++) {
     w = w.withAliyah(a, first.addDays(a < 6 ? a : 4));
   }
   return w;
@@ -182,6 +182,10 @@ const _screens = {
   'today_grace': '/today',
   // Erev Tisha B'Av 5787, the day the reader joined.
   'today_erev_tisha_bav': '/today',
+  // Tisha B'Av 5787, behind on Va'etchanan and with Devarim still open:
+  // the fast heads the page, which invites no reading; and its week strip.
+  'today_tisha_bav': '/today',
+  'today_tisha_bav_week': '/today',
   'parsha': '/parsha',
   // Scrolled past its head: the app bar names the parsha.
   'parsha_scrolled': '/parsha',
@@ -613,6 +617,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_friday_night': (s) => s.copyWith(city: _jerusalem),
   'today_motzaei_shabbat': (s) => s.copyWith(city: _jerusalem),
   'today_erev_tisha_bav': (s) => s.copyWith(joinDate: LocalDate(2027, 8, 11)),
+  for (final screen in ['today_tisha_bav', 'today_tisha_bav_week'])
+    screen: (s) => s.copyWith(joinDate: LocalDate(2027, 8, 1)),
   'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   's_reading_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   'haftarah_chabad_regular': (s) => s.withNusach(HaftarahNusach.chabad),
@@ -716,6 +722,9 @@ final _screenNow = <String, DateTime>{
   'today_pause_ended': DateTime(2026, 10, 12, 11),
   'today_grace': DateTime(2026, 10, 16, 11),
   'today_erev_tisha_bav': DateTime(2027, 8, 11, 11),
+  // Thursday 12 August 2027, 9 Av 5787.
+  'today_tisha_bav': DateTime(2027, 8, 12, 11),
+  'today_tisha_bav_week': DateTime(2027, 8, 12, 11),
   // Tuesday of Matot-Masei 5787.
   'reader_third': DateTime(2027, 7, 27, 11),
   'browse_summer': DateTime(2027, 7, 14, 11),
@@ -743,6 +752,13 @@ final _screenProgress = <String, ProgressState Function()>{
   'today_yomtov': () => ProgressState(weeks: {}),
   'today_yom_kippur': () => ProgressState(weeks: {}),
   'today_erev_tisha_bav': () => ProgressState(weeks: {}),
+  // Devarim read on its days but for Shevi'i; of Va'etchanan, Rishon to
+  // Shlishi on theirs, and Wednesday's aliyot not yet.
+  for (final screen in ['today_tisha_bav', 'today_tisha_bav_week'])
+    screen: () => ProgressState(weeks: {
+          '5787:44': _readOnTheirDays('5787:44', LocalDate(2027, 8, 1), upTo: 6),
+          '5787:45': _readOnTheirDays('5787:45', LocalDate(2027, 8, 8), upTo: 3),
+        }),
   // Every aliyah read on its day; the haftarah not yet.
   'today_complete': () => ProgressState(weeks: {'5787:1': _readOnTheirDays('5787:1', LocalDate(2026, 10, 5))}),
   // All but the Targum of Shevi'i, which the capture logs.
@@ -1260,6 +1276,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_third': _scrollToEnd,
   // The haftarah, near the end of Today.
   'today_three_weeks': _scrollToEnd,
+  'today_tisha_bav_week': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(WeekStrip)), alignment: 0.5),
   // Choose aliyot, the check-in's second text button.
   'today_checkin_sheet': (tester) =>
       tester.tap(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(TextButton)).at(1)),
@@ -1662,6 +1680,8 @@ const _desktopScreens = {
   'today_pause_ended',
   'today_grace',
   'today_book',
+  // The fast: the title page without its button.
+  'today_tisha_bav',
   'parsha',
   'parsha_scrolled',
   'week',
@@ -1835,6 +1855,7 @@ const _bigTextScreens = {
   'today_checkin_sheet',
   'today_pause_ended',
   'today_grace',
+  'today_tisha_bav',
   'reader_offer',
   'reader_offer_city',
   's_reminders_on',
