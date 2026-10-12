@@ -322,6 +322,41 @@ void main() {
       }
     }
 
+    // Five lines of 300% text, under the post being answered and over the
+    // button, made the reply box taller than a 640-high phone has room for:
+    // in Hebrew it covered half the app bar, and none of the thread showed.
+    for (final hebrew in [false, true]) {
+      testWidgets(
+          'at 300% on a 320×640 phone, answering a post at length, stays under the app bar'
+          '${hebrew ? ', Hebrew' : ''}', (tester) async {
+        await openThread(tester, hebrew: hebrew, textScale: 3);
+        final reply = find.descendant(of: find.byType(PostCard), matching: find.byIcon(Icons.reply));
+        final list = find.descendant(of: find.byType(RefreshIndicator), matching: find.byType(Scrollable)).first;
+        for (var i = 0; i < 30 && reply.evaluate().isEmpty; i++) {
+          await tester.drag(list, const Offset(0, -200));
+          await tester.pumpAndSettle();
+        }
+        await tester.ensureVisible(reply.first);
+        await tester.pumpAndSettle();
+        await tester.tap(reply.first);
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), List.filled(6, 'Thank you — that settles it for me.').join(' '));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final composer = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_Composer');
+        final appBar = tester.getRect(find.byType(AppBar).last);
+        // A line of the thread at least, between the app bar and the box.
+        expect(tester.getRect(composer).top, greaterThan(appBar.bottom + 72));
+        // What is written scrolls within the field, past its lines.
+        expect(tester.widget<TextField>(find.byType(TextField)).maxLines, lessThan(5));
+      });
+    }
+
+    testWidgets('at 100% on a phone, grows to five lines', (tester) async {
+      await openThread(tester, hebrew: false, textScale: 1);
+      expect(tester.widget<TextField>(find.byType(TextField)).maxLines, 5);
+    });
+
     // The phone turned, say, or the text made smaller: the field moves, but
     // stays the same field.
     testWidgets('keeps the focus and what is written as the button moves beside the field', (tester) async {

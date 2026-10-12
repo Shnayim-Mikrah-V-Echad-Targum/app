@@ -458,6 +458,15 @@ class _Composer extends StatelessWidget {
 
   static const _bold = TextStyle(fontWeight: FontWeight.bold);
 
+  /// The most lines the field grows to.
+  static const _maxLines = 5;
+
+  /// The share of the screen's visible height that the field's lines may
+  /// take. Five lines of large text on a short phone, under the post being
+  /// answered and over the button, would push the reply box up over the app
+  /// bar and leave none of the thread in view.
+  static const _linesShare = 0.3;
+
   /// The width of [text] in [style], on one line, as a Text sets it: at the
   /// reader's text size, in bold where the device asks for bold text, and in
   /// the page's language, which picks its fallback fonts.
@@ -484,6 +493,12 @@ class _Composer extends StatelessWidget {
     final scheme = theme.colorScheme;
     final sefer = SeferColors.of(context);
     final replyTo = this.replyTo;
+    // As many lines as the field's share of the screen holds, up to five:
+    // past them, what is written scrolls within the field.
+    final body = theme.textTheme.bodyLarge!;
+    final lineHeight = MediaQuery.textScalerOf(context).scale(body.fontSize!) * (body.height ?? 1.5);
+    final visibleHeight = MediaQuery.sizeOf(context).height - MediaQuery.viewInsetsOf(context).bottom;
+    final maxLines = (visibleHeight * _linesShare / lineHeight).floor().clamp(1, _maxLines);
     // Docked on the page's own paper under a hairline, apart from the
     // navigation bar's cooler band below it, and as wide as the column of
     // posts above it, with the same gutters.
@@ -556,7 +571,7 @@ class _Composer extends StatelessWidget {
                                     controller: controller,
                                     focusNode: focusNode,
                                     minLines: 1,
-                                    maxLines: 5,
+                                    maxLines: maxLines,
                                     maxLength: 10000,
                                     buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
                                     // Empty, the cursor waits at the interface's start.
