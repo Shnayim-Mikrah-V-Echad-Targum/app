@@ -26,15 +26,22 @@ final deviceTimeZoneProvider = FutureProvider<String?>((ref) async {
   }
 });
 
-/// This week's Shabbat in the reader's city: Friday's times, for lighting
-/// candles, and Shabbat's, for when it ends. Null until a city is chosen.
-final shabbatTimesProvider = Provider<({Zmanim friday, Zmanim shabbat})?>((ref) {
-  final city = ref.watch(settingsProvider.select((s) => s.city));
-  if (city == null) return null;
+/// This week's Shabbat in the reader's city, by the reader's customs:
+/// Friday's times, for lighting candles, and Shabbat's, for when it ends,
+/// and whether Yom Tov follows it straight after, by the reader's days of
+/// Yom Tov, whose candles are lit once it ends. Null until a city is chosen.
+final shabbatTimesProvider = Provider<({Zmanim friday, Zmanim shabbat, bool yomTovFollows})?>((ref) {
+  final place = ref.watch(settingsProvider.select((s) => s.shabbatCity));
+  if (place == null) return null;
+  final oneDayYomTov = ref.watch(settingsProvider.select((s) => s.oneDayYomTov));
   // The reading day is never Shabbat itself, so this is the coming Friday,
   // or today.
   final friday = ref.watch(todayProvider).onOrAfter(5);
-  return (friday: Zmanim.of(city, friday), shabbat: Zmanim.of(city, friday.addDays(1)));
+  return (
+    friday: place.on(friday),
+    shabbat: place.on(friday.addDays(1)),
+    yomTovFollows: JewishHolidays.isRestDay(friday.addDays(2), israel: oneDayYomTov),
+  );
 });
 
 /// The time-zone database, which a city's times need, for what works them
@@ -59,22 +66,22 @@ bool timeZonesReady(Ref ref) => tz.timeZoneDatabase.isInitialized || ref.watch(t
 /// Tests, whose clock is UTC, put a city's clock in its place.
 final deviceClockProvider = Provider<Duration Function(LocalDate date)>((ref) => deviceNoonOffset);
 
-/// Candle-lighting today in the reader's city, for Today, when today is the
-/// eve of Shabbat or Yom Tov by the reader's own days of Yom Tov. Null on
-/// other days, without a city, where it can't be given (the sun doesn't
-/// set), and until the time-zone database is in. Null too when the device
-/// doesn't keep the city's clock that day, as for a traveller who has left
-/// the city behind: the line doesn't name the city, and its time there
-/// would read as the local one. The reminders then keep to their rules
-/// without a city, for the same reason.
+/// Candle-lighting today in the reader's city, by the reader's minutes or
+/// the city's, for Today, when today is the eve of Shabbat or Yom Tov by the
+/// reader's own days of Yom Tov. Null on other days, without a city, where
+/// it can't be given (the sun doesn't set), and until the time-zone database
+/// is in. Null too when the device doesn't keep the city's clock that day,
+/// as for a traveller who has left the city behind: the line doesn't name
+/// the city, and its time there would read as the local one. The reminders
+/// then keep to their rules without a city, for the same reason.
 final candleLightingTodayProvider = Provider<tz.TZDateTime?>((ref) {
-  final city = ref.watch(settingsProvider.select((s) => s.city));
-  if (city == null) return null;
+  final place = ref.watch(settingsProvider.select((s) => s.shabbatCity));
+  if (place == null) return null;
   final oneDayYomTov = ref.watch(settingsProvider.select((s) => s.oneDayYomTov));
   // The reading day is never Shabbat or Yom Tov itself.
   final today = ref.watch(todayProvider);
   if (!JewishHolidays.isRestDay(today.addDays(1), israel: oneDayYomTov)) return null;
   if (!timeZonesReady(ref)) return null;
-  if (!Zmanim.keepsClock(city, today, ref.watch(deviceClockProvider)(today))) return null;
-  return Zmanim.of(city, today).candleLighting;
+  if (!Zmanim.keepsClock(place.city, today, ref.watch(deviceClockProvider)(today))) return null;
+  return place.on(today).candleLighting;
 });

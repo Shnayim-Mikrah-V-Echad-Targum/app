@@ -4521,6 +4521,54 @@ abstract class AppLocalizations {
   /// **'This device can’t tell the time in that city, so its times can’t be shown.'**
   String get shabbatTimesUnavailable;
 
+  /// This week's Shabbat times in the reader's city, under the city in Settings, when Yom Tov begins as Shabbat ends: its candles are lit only after Shabbat. candles and after are times of day, such as 6:07 PM.
+  ///
+  /// In en, this message translates to:
+  /// **'Candle-lighting {candles}\nYom Tov candles after {after}'**
+  String shabbatTimesSummaryYomTov(String candles, String after);
+
+  /// In Settings, under the city for Shabbat times: the row, and the title of its sheet, that sets how many minutes before sunset candles are lit, as the reader's local calendar (luach) has it.
+  ///
+  /// In en, this message translates to:
+  /// **'Candle-lighting'**
+  String get candleLightingSetting;
+
+  /// The candle-lighting option that follows the city's own custom, which the app knows: minutes is how many minutes before sunset candles are lit there, such as 18 or 40.
+  ///
+  /// In en, this message translates to:
+  /// **'City default ({minutes} min)'**
+  String candleMinutesCityDefault(int minutes);
+
+  /// A candle-lighting option, chosen to match the reader's luach: candles are lit this many minutes before sunset (15, 18, 20, 22, 30 or 40).
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{1 minute before sunset} other{{minutes} minutes before sunset}}'**
+  String candleMinutesBeforeSunset(int minutes);
+
+  /// In Settings, under the city for Shabbat times: the row, and the title of its sheet, that sets when Shabbat ends, as the reader's luach has it.
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat ends'**
+  String get shabbatEndsSetting;
+
+  /// The default end of Shabbat: nightfall, when three small stars are out, reckoned as the sun 8.5 degrees below the horizon.
+  ///
+  /// In en, this message translates to:
+  /// **'Nightfall (sun 8.5° below)'**
+  String get havdalahNightfall;
+
+  /// An end of Shabbat a fixed time after sunset, as many luachs give it: 42 or 50 minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} minutes after sunset'**
+  String havdalahMinutesAfterSunset(int minutes);
+
+  /// An end of Shabbat 72 minutes after sunset, following Rabbeinu Tam.
+  ///
+  /// In en, this message translates to:
+  /// **'72 minutes (Rabbeinu Tam)'**
+  String get havdalahRabbeinuTam;
+
   /// No description provided for @cityPickerTitle.
   ///
   /// In en, this message translates to:
@@ -4916,6 +4964,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. In the Torah, where Ashkenazi and Sephardi scrolls differ from the Aleppo Codex, the text follows the scrolls, with the Codex’s reading in a note. Otherwise it is converted to a structured format without changing the text.'**
   String get sourcesMamDescription;
+
+  /// On the Texts & sources page, under Sunrise and sunset: how Shabbat times are worked out, their defaults, and the choices Settings offers.
+  ///
+  /// In en, this message translates to:
+  /// **'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 30 in Haifa and 40 in Jerusalem, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.'**
+  String get sourcesSunDescription;
 
   /// No description provided for @onbStarterTitle.
   ///

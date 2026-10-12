@@ -73,9 +73,7 @@ class SourcesScreen extends StatelessWidget {
       ),
       _Source(
         he ? 'זריחה ושקיעה' : 'Sunrise and sunset',
-        he
-            ? 'מחושבות במכשיר לפי הנוסחאות של מחשבון השמש של NOAA (על פי Meeus, Astronomical Algorithms), ונבדקו מול Hebcal. זמני הדלקת הנרות וצאת השבת כמו ב־Hebcal.'
-            : 'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose candle-lighting and Havdalah times they follow.',
+        l.sourcesSunDescription,
         he ? 'נחלת הכלל' : 'Public domain',
         'https://gml.noaa.gov/grad/solcalc/',
       ),

@@ -6,6 +6,51 @@ import 'package:timezone/timezone.dart' as tz;
 import 'city.dart';
 import 'local_date.dart';
 
+/// When Shabbat ends, as the reader's luach has it. Persisted by name.
+enum HavdalahRule {
+  /// Nightfall, when three small stars are out: the sun 8.5° below the
+  /// horizon, as Hebcal has it.
+  degrees85(null),
+
+  /// A fixed time after sunset, as many luachs give it.
+  min42(42),
+  min50(50),
+
+  /// 72 minutes after sunset (Rabbeinu Tam).
+  min72(72);
+
+  const HavdalahRule(this.minutes);
+
+  /// Minutes after sunset, or null for [degrees85].
+  final int? minutes;
+}
+
+/// The reader's city for Shabbat times, with the customs its times follow:
+/// the reader's own candle-lighting minutes, or else the city's, and when
+/// Shabbat ends. The settings give it (AppSettings.shabbatCity), so that
+/// everything that works the times out (the settings, Today, the reminders
+/// and the home-screen widget) follows the same choices.
+class ShabbatCity {
+  const ShabbatCity(this.city, {this.candleMinutes, this.havdalah = HavdalahRule.degrees85});
+
+  final City city;
+
+  /// Minutes before sunset that candles are lit, in place of the city's
+  /// ([City.candleMinutes]); null for the city's.
+  final int? candleMinutes;
+  final HavdalahRule havdalah;
+
+  /// The times on [date] (see [Zmanim.of]).
+  Zmanim on(LocalDate date) => Zmanim.of(city, date, candleMinutes: candleMinutes, havdalah: havdalah);
+
+  @override
+  bool operator ==(Object other) =>
+      other is ShabbatCity && other.city == city && other.candleMinutes == candleMinutes && other.havdalah == havdalah;
+
+  @override
+  int get hashCode => Object.hash(city, candleMinutes, havdalah);
+}
+
 /// The sun's times, and Shabbat's, on one day in one place, on the place's
 /// own clock. Worked out on the device and never fetched (DESIGN.md §2).
 ///
@@ -15,9 +60,11 @@ import 'local_date.dart';
 class Zmanim {
   const Zmanim._(this.date, {this.sunrise, this.sunset, this.candleLighting, this.havdalah, this.timeZoneKnown = true});
 
-  /// The times of [city] on [date]. Every time is null in a time zone the
+  /// The times of [city] on [date]: candles lit [candleMinutes] before
+  /// sunset, or the city's own minutes ([City.candleMinutes]), and Shabbat
+  /// ending by the [havdalah] rule. Every time is null in a time zone the
   /// device doesn't know ([timeZoneKnown]).
-  factory Zmanim.of(City city, LocalDate date) {
+  factory Zmanim.of(City city, LocalDate date, {int? candleMinutes, HavdalahRule havdalah = HavdalahRule.degrees85}) {
     final location = timeZone(city.timeZone);
     if (location == null) return Zmanim._(date, timeZoneKnown: false);
     final lat = city.latitude, lon = city.longitude;
@@ -33,12 +80,16 @@ class Zmanim {
     }
     tz.TZDateTime? at(double? minutes) => minutes == null ? null : _instant(day, minutes, location);
     final sunset = at(_Sun.event(day, lat, lon, _sunsetZenith, rising: false));
-    final nightfall = at(_Sun.event(day, lat, lon, _havdalahZenith, rising: false));
+    final nightfall = switch (havdalah.minutes) {
+      null => at(_Sun.event(day, lat, lon, _havdalahZenith, rising: false)),
+      final minutes => sunset?.add(Duration(minutes: minutes)),
+    };
     return Zmanim._(
       date,
       sunrise: at(_Sun.event(day, lat, lon, _sunsetZenith, rising: true)),
       sunset: sunset,
-      candleLighting: sunset == null ? null : _toMinute(sunset.subtract(Duration(minutes: city.candleMinutes))),
+      candleLighting:
+          sunset == null ? null : _toMinute(sunset.subtract(Duration(minutes: candleMinutes ?? city.candleMinutes))),
       havdalah: nightfall == null ? null : _toMinute(nightfall, up: true),
     );
   }
@@ -54,13 +105,16 @@ class Zmanim {
   final tz.TZDateTime? sunrise;
   final tz.TZDateTime? sunset;
 
-  /// [sunset] less the place's candle-lighting minutes ([City.candleMinutes]),
-  /// rounded down to the minute so that it is never late.
+  /// [sunset] less the candle-lighting minutes, the reader's or the place's
+  /// ([City.candleMinutes]), rounded down to the minute so that it is never
+  /// late.
   final tz.TZDateTime? candleLighting;
 
-  /// Nightfall, when three small stars are out: the sun 8.5° below the
-  /// horizon. Rounded up to the minute so that it is never early. Null where
-  /// the sky never gets that dark, as in a northern summer above about 58°.
+  /// When Shabbat ends, rounded up to the minute so that it is never early.
+  /// By default nightfall, when three small stars are out: the sun 8.5°
+  /// below the horizon ([HavdalahRule.degrees85]), null where the sky never
+  /// gets that dark, as in a northern summer above about 58°. By a fixed
+  /// rule, that many minutes after [sunset], null where the sun doesn't set.
   final tz.TZDateTime? havdalah;
 
   /// [time] as minutes after the midnight that begins [date] on the place's

@@ -5,13 +5,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
@@ -24,6 +28,7 @@ import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/app_shortcuts.dart';
 import 'package:shnayim_mikra/services/home_widget_sync.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../helpers.dart';
 
@@ -537,12 +542,13 @@ void main() {
     tearDown(() => TodayController.now = clock);
 
     /// A container kept alive the way the app keeps it, with the widget's
-    /// [service].
-    ProviderContainer containerFor(HomeWidgetService service) {
+    /// [service], and any other [overrides].
+    ProviderContainer containerFor(HomeWidgetService service, {List<Override> overrides = const []}) {
       final c = ProviderContainer(overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         parshaRepositoryProvider.overrideWithValue(repo),
         homeWidgetServiceProvider.overrideWithValue(service),
+        ...overrides,
       ]);
       c.listen(homeWidgetSyncProvider, (_, _) {});
       addTearDown(c.dispose);
@@ -635,6 +641,55 @@ void main() {
         async.elapse(const Duration(seconds: 2));
         expect(fake.saved, hasLength(3));
         expect(kindOn('2027-06-12'), 'yomTov');
+      });
+    });
+
+    test("with a city, turns at the reader's candle-lighting and end of Shabbat, and again as they change", () async {
+      const jerusalem = City(
+        id: 281184,
+        nameEn: 'Jerusalem',
+        countryCode: 'IL',
+        latitude: 31.769,
+        longitude: 35.2163,
+        timeZone: 'Asia/Jerusalem',
+        candleMinutes: 40,
+      );
+      await store(AppSettings(joinDate: captureJoinDate, onboardingComplete: true, city: jerusalem));
+      final location = Zmanim.timeZone(jerusalem.timeZone)!;
+      final (fake, service) = await platform();
+      fakeAsync((async) {
+        final c = containerFor(service, overrides: [
+          timeZoneDatabaseProvider.overrideWith((ref) async {}),
+          // A device in Jerusalem, on its clock: tests run on UTC.
+          deviceClockProvider
+              .overrideWithValue((d) => tz.TZDateTime(location, d.year, d.month, d.day, 12).timeZoneOffset),
+        ]);
+        async.elapse(const Duration(seconds: 2));
+        final friday = LocalDate(2026, 10, 30), shabbat = friday.addDays(1);
+        // When the last entry of [day] ends.
+        DateTime? until(LocalDate day) {
+          final entries = (fake.lastTimeline['days'] as List).cast<Map<String, dynamic>>();
+          final ms = entries.lastWhere((d) => d['date'] == day.toIso())['until'] as int?;
+          return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+        }
+
+        DateTime at(Zmanim z, tz.TZDateTime? time) =>
+            DateTime(z.date.year, z.date.month, z.date.day, 0, z.minutesOf(time)!);
+        final cityFriday = Zmanim.of(jerusalem, friday), cityShabbat = Zmanim.of(jerusalem, shabbat);
+        expect(until(friday), at(cityFriday, cityFriday.candleLighting));
+        expect(until(shabbat), at(cityShabbat, cityShabbat.havdalah));
+
+        c
+            .read(settingsProvider.notifier)
+            .update((s) => s.copyWith(candleMinutesOverride: 30, havdalah: HavdalahRule.min72));
+        async.elapse(const Duration(seconds: 2));
+        expect(fake.saved, hasLength(2));
+        final luachFriday = Zmanim.of(jerusalem, friday, candleMinutes: 30);
+        final luachShabbat = Zmanim.of(jerusalem, shabbat, havdalah: HavdalahRule.min72);
+        expect(until(friday), at(luachFriday, luachFriday.candleLighting));
+        expect(until(shabbat), at(luachShabbat, luachShabbat.havdalah));
+        // Ten minutes after the city's own forty.
+        expect(until(friday)!.difference(at(cityFriday, cityFriday.candleLighting)), const Duration(minutes: 10));
       });
     });
 

@@ -12,6 +12,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/city_directory.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/city_picker_screen.dart';
@@ -41,6 +42,8 @@ void main() {
     bool hebrew = false,
     bool loadForReal = false,
     DateTime? now,
+    int? candleMinutes,
+    HavdalahRule havdalah = HavdalahRule.degrees85,
   }) async {
     final c = await pumpApp(
       tester,
@@ -48,6 +51,8 @@ void main() {
         onboardingComplete: true,
         joinDate: LocalDate(2026, 9, 1),
         city: city,
+        candleMinutesOverride: candleMinutes,
+        havdalah: havdalah,
         language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
       ),
       now: now ?? _now,
@@ -79,6 +84,8 @@ void main() {
       expect(find.text('Shabbat times'), findsOneWidget);
       expect(find.text('Not set'), findsOneWidget);
       expect(find.textContaining('Candle-lighting'), findsNothing);
+      // Nor the times' minutes, which need a city.
+      expect(find.text('Shabbat ends'), findsNothing);
 
       await tapText(tester, 'City');
       expect(find.byType(CityPickerScreen), findsOneWidget);
@@ -100,7 +107,8 @@ void main() {
     // Far north in summer the sky never gets dark enough for Shabbat to end.
     testWidgets('gives only candle-lighting where Shabbat has no nightfall', (tester) async {
       await open(tester, '/settings/reading', city: named('Stockholm'), now: DateTime(2026, 6, 16, 10));
-      final summary = find.textContaining('Candle-lighting');
+      // The summary under the city, not the row of the minutes.
+      final summary = find.textContaining('Candle-lighting ');
       expect(summary, findsOneWidget);
       expect(tester.widget<Text>(summary).data, startsWith('Candle-lighting '));
       expect(tester.widget<Text>(summary).data, isNot(contains('\n')));
@@ -110,7 +118,101 @@ void main() {
     testWidgets('says when there is no sunset at all', (tester) async {
       await open(tester, '/settings/reading', city: named('Murmansk'), now: DateTime(2026, 12, 15, 10));
       expect(find.text('There is no sunset there this Shabbat. Ask your rav about the times.'), findsOneWidget);
-      expect(find.textContaining('Candle-lighting'), findsNothing);
+      expect(find.textContaining('Candle-lighting '), findsNothing);
+    });
+
+    testWidgets('sets the times as the reader\'s luach has them, once a city is chosen', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final c = await open(tester, '/settings/reading', city: jerusalem);
+      // Each a row of the city's paper, read as one button: what it sets,
+      // and how.
+      for (final (title, value) in [
+        ('Candle-lighting', 'City default (40\u00a0min)'),
+        ('Shabbat ends', 'Nightfall (sun 8.5°\u00a0below)'),
+      ]) {
+        final row = find.ancestor(of: find.text(title), matching: find.byType(PaperRow));
+        expect(find.descendant(of: find.byType(PaperGroup).first, matching: row), findsOneWidget, reason: title);
+        expect(tester.getSemantics(row), isSemantics(label: '$title\n$value', isButton: true, hasTapAction: true));
+      }
+
+      // Candles lit 30 minutes before sunset, rather than Jerusalem's 40.
+      await tapText(tester, 'Candle-lighting');
+      expect(find.text('15\u00a0minutes before sunset'), findsOneWidget);
+      expect(find.text('40\u00a0minutes before sunset'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await tapText(tester, '30\u00a0minutes before sunset');
+      expect(find.text('15\u00a0minutes before sunset'), findsNothing, reason: 'the sheet closes as one is chosen');
+      expect(c.read(settingsProvider).candleMinutesOverride, 30);
+      expect(find.text('30\u00a0minutes before sunset'), findsOneWidget);
+      expect(text('Candle-lighting 5:36 PM\nShabbat ends 6:42 PM'), findsOneWidget);
+
+      // Shabbat ending 72 minutes after sunset.
+      await tapText(tester, 'Shabbat ends');
+      await tapText(tester, '72\u00a0minutes (Rabbeinu Tam)');
+      expect(c.read(settingsProvider).havdalah, HavdalahRule.min72);
+      expect(find.text('72\u00a0minutes (Rabbeinu Tam)'), findsOneWidget);
+      expect(text('Candle-lighting 5:36 PM\nShabbat ends 7:17 PM'), findsOneWidget);
+
+      // And back to the city's own minutes.
+      await tapText(tester, 'Candle-lighting');
+      await tapText(tester, 'City default (40\u00a0min)');
+      expect(c.read(settingsProvider).candleMinutesOverride, isNull);
+      expect(text('Candle-lighting 5:26 PM\nShabbat ends 7:17 PM'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('in Hebrew', (tester) async {
+      await open(tester, '/settings/reading',
+          city: jerusalem, hebrew: true, candleMinutes: 22, havdalah: HavdalahRule.min50);
+      expect(find.text('הדלקת נרות'), findsOneWidget);
+      expect(find.text('22\u00a0דקות לפני השקיעה'), findsOneWidget);
+      expect(find.text('צאת השבת'), findsOneWidget);
+      expect(find.text('50\u00a0דקות אחרי השקיעה'), findsOneWidget);
+      await tapText(tester, 'צאת השבת');
+      expect(find.text('צאת הכוכבים (\u20668.5°\u2069)'), findsOneWidget);
+      expect(find.text('72\u00a0דקות (רבנו תם)'), findsOneWidget);
+    });
+
+    testWidgets('lists minutes a backup brought among the others', (tester) async {
+      await open(tester, '/settings/reading', city: jerusalem, candleMinutes: 25);
+      expect(find.text('25\u00a0minutes before sunset'), findsOneWidget);
+      await tapText(tester, 'Candle-lighting');
+      final options = [
+        for (final tile in tester.widgetList<RadioListTile<int?>>(find.byType(RadioListTile<int?>))) tile.value,
+      ];
+      expect(options, [null, 15, 18, 20, 22, 25, 30, 40]);
+    });
+
+    testWidgets('the arrow keys move the choice and keep the sheet open', (tester) async {
+      final c = await open(tester, '/settings/reading', city: jerusalem);
+      await tapText(tester, 'Shabbat ends');
+      // Focus on the chosen row, as Tab gives it.
+      final nightfall = find.ancestor(
+        of: find.text('Nightfall (sun 8.5°\u00a0below)').last,
+        matching: find.byType(RadioListTile<HavdalahRule>),
+      );
+      final focus = tester.widget<Focus>(find.descendant(of: nightfall, matching: find.byType(Focus)).first);
+      focus.focusNode!.requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).havdalah, HavdalahRule.min42);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).havdalah, HavdalahRule.min50);
+      expect(find.text('72\u00a0minutes (Rabbeinu Tam)'), findsOneWidget, reason: 'still open');
+      // Escape closes it, with the choice made.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('72\u00a0minutes (Rabbeinu Tam)'), findsNothing);
+      expect(find.text('50\u00a0minutes after sunset'), findsOneWidget);
+    });
+
+    testWidgets('when Yom Tov follows Shabbat, says when its candles are lit', (tester) async {
+      // Shabbat 19 May 2029, then Shavuot on Sunday.
+      await open(tester, '/settings/reading', city: jerusalem, now: DateTime(2029, 5, 15, 10));
+      expect(text('Candle-lighting 6:51 PM\nYom Tov candles after 8:13 PM'), findsOneWidget);
+      expect(find.textContaining('\nShabbat ends'), findsNothing);
     });
 
     testWidgets("says so when the device doesn't know the city's time zone", (tester) async {
@@ -261,6 +363,24 @@ void main() {
       await open(tester, '/settings/reading/city');
       expect(find.text('In your time zone'), findsNothing);
       expect(find.textContaining('every place of 100,000 people'), findsOneWidget);
+    });
+
+    testWidgets("another city brings its own candle-lighting minutes, and keeps the end of Shabbat", (tester) async {
+      final c =
+          await open(tester, '/settings/reading', city: jerusalem, candleMinutes: 30, havdalah: HavdalahRule.min72);
+      // The same city again keeps the reader's minutes.
+      await tapText(tester, 'City');
+      await tapText(tester, 'Jerusalem');
+      expect(c.read(settingsProvider).candleMinutesOverride, 30);
+
+      await tapText(tester, 'City');
+      await tester.enterText(find.byType(TextField), 'london');
+      await tester.pumpAndSettle();
+      await tapText(tester, 'London');
+      expect(c.read(settingsProvider).city?.nameEn, 'London');
+      expect(c.read(settingsProvider).candleMinutesOverride, isNull);
+      expect(c.read(settingsProvider).havdalah, HavdalahRule.min72);
+      expect(find.text('City default (18\u00a0min)'), findsOneWidget);
     });
 
     testWidgets('can go back to no city', (tester) async {

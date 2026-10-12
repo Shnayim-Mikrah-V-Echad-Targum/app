@@ -324,9 +324,12 @@ void main() {
       return (d) => tz.TZDateTime(location, d.year, d.month, d.day, 12).timeZoneOffset;
     }
 
-    /// [city]'s times, on a device that keeps [city]'s clock (or [device]'s).
-    ReminderZmanim Function(LocalDate) timesIn(City city, {City? device}) =>
-        reminderZmanim(city, deviceOffset: clockOf(device ?? city));
+    /// [city]'s times, by the city's customs or the reader's, on a device
+    /// that keeps [city]'s clock (or [device]'s).
+    ReminderZmanim Function(LocalDate) timesIn(City city,
+            {City? device, int? candleMinutes, HavdalahRule havdalah = HavdalahRule.degrees85}) =>
+        reminderZmanim(ShabbatCity(city, candleMinutes: candleMinutes, havdalah: havdalah),
+            deviceOffset: clockOf(device ?? city));
     int candles(City city, LocalDate d) => timesIn(city)(d).candles!;
     int havdalah(City city, LocalDate d) => timesIn(city)(d).havdalah!;
 
@@ -337,6 +340,8 @@ void main() {
       ReminderPrefs prefs, {
       City? city,
       City? device,
+      int? candleMinutes,
+      HavdalahRule havdalah = HavdalahRule.degrees85,
       ReadingPlanner planner = planner,
     }) =>
         planReminders(
@@ -345,7 +350,9 @@ void main() {
           progressOf: empty,
           now: DateTime(from.year, from.month, from.day, 8),
           today: from,
-          zmanim: city == null ? null : timesIn(city, device: device),
+          zmanim: city == null
+              ? null
+              : timesIn(city, device: device, candleMinutes: candleMinutes, havdalah: havdalah),
           days: 8,
         );
     PlannedReminder? on(List<PlannedReminder> reminders, LocalDate d) =>
@@ -393,6 +400,22 @@ void main() {
         // Without a city, on Sunday morning.
         expect(on(plan(sunday, checkIn), shabbat), isNull);
         expect(on(plan(sunday, checkIn), shabbat.addDays(1))!.minutes, checkIn.checkInMinutes);
+      });
+
+      test("all follow the reader's luach: its candle-lighting minutes and the end of Shabbat", () {
+        final shabbat = friday.addDays(1);
+        final luach = timesIn(london, candleMinutes: 15, havdalah: HavdalahRule.min72);
+        // London lights 18 minutes before sunset unless the reader says
+        // otherwise.
+        expect(luach(friday).candles, candles(london, friday) + 3);
+        expect(luach(shabbat).havdalah, greaterThan(havdalah(london, shabbat)));
+
+        const erevShabbat = ReminderPrefs(erevShabbat: true, erevShabbatMinutes: 14 * 60);
+        expect(on(plan(sunday, erevShabbat, city: london, candleMinutes: 15), friday)!.minutes,
+            luach(friday).candles! - kErevShabbatBeforeCandles);
+        final r = on(plan(sunday, const ReminderPrefs(checkIn: true), city: london, havdalah: HavdalahRule.min72),
+            shabbat)!;
+        expect(r.minutes, luach(shabbat).havdalah! + kCheckInAfterHavdalah);
       });
     });
 

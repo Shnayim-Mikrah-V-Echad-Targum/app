@@ -112,6 +112,27 @@ void main() {
       expect(await restAt(lit, settings: settings), LocalDate(2028, 9, 21));
     });
 
+    test("by the reader's luach: from its candle-lighting until Shabbat ends by its rule", () async {
+      final settings = _settings.copyWith(city: _jerusalem, candleMinutesOverride: 30, havdalah: HavdalahRule.min72);
+      final friday = Zmanim.of(_jerusalem, LocalDate(2026, 10, 9), candleMinutes: 30);
+      final candles = DateTime(2026, 10, 9, 0, friday.minutesOf(friday.candleLighting)!);
+      // Ten minutes after the city's own forty.
+      final cityCandles = Zmanim.of(_jerusalem, LocalDate(2026, 10, 9));
+      expect(friday.minutesOf(friday.candleLighting), cityCandles.minutesOf(cityCandles.candleLighting)! + 10);
+      expect(await restAt(candles.subtract(const Duration(minutes: 1)), settings: settings), isNull);
+      expect(await restAt(candles, settings: settings), LocalDate(2026, 10, 10));
+
+      final shabbat = Zmanim.of(_jerusalem, LocalDate(2026, 10, 10), havdalah: HavdalahRule.min72);
+      final ends = DateTime(2026, 10, 10, 0, shabbat.minutesOf(shabbat.havdalah)!);
+      expect(shabbat.minutesOf(shabbat.havdalah)! - shabbat.minutesOf(shabbat.sunset)!, inInclusiveRange(72, 73));
+      // Past nightfall at 8.5°, Shabbat goes on until the luach's time.
+      final nightfall = Zmanim.of(_jerusalem, LocalDate(2026, 10, 10));
+      expect(await restAt(DateTime(2026, 10, 10, 0, nightfall.minutesOf(nightfall.havdalah)!), settings: settings),
+          LocalDate(2026, 10, 10));
+      expect(await restAt(ends.subtract(const Duration(minutes: 1)), settings: settings), LocalDate(2026, 10, 10));
+      expect(await restAt(ends, settings: settings), isNull);
+    });
+
     test("not from candle-lighting on a device that has left the city's clock behind", () async {
       final settings = _settings.copyWith(city: _jerusalem);
       SharedPreferences.setMockInitialValues({SettingsController.storageKey: jsonEncode(settings.toJson())});

@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import '../core/calendar/city.dart';
 import '../core/calendar/jewish_holidays.dart';
 import '../core/calendar/local_date.dart';
 import '../core/calendar/zmanim.dart';
@@ -121,18 +120,18 @@ const kCheckInAfterHavdalah = 60;
 /// for the morning.
 const kCheckInLatestMinutes = 22 * 60 + 30;
 
-/// The Shabbat times of [city], for [planReminders]. On a day the device's
-/// clock differs from the city's, as when travelling with the city left
-/// behind, there are none, and the planner keeps to its rules for when no
-/// city is chosen. [deviceOffset] stands in for the device's offset from
-/// UTC on a day, for tests.
+/// The Shabbat times of [place], by the reader's customs, for
+/// [planReminders]. On a day the device's clock differs from the city's, as
+/// when travelling with the city left behind, there are none, and the
+/// planner keeps to its rules for when no city is chosen. [deviceOffset]
+/// stands in for the device's offset from UTC on a day, for tests.
 ///
 /// Needs the time-zone database, which it loads if no one has.
-ReminderZmanim Function(LocalDate) reminderZmanim(City city,
+ReminderZmanim Function(LocalDate) reminderZmanim(ShabbatCity place,
     {Duration Function(LocalDate date) deviceOffset = deviceNoonOffset}) {
   return (date) {
-    if (!Zmanim.keepsClock(city, date, deviceOffset(date))) return (candles: null, havdalah: null);
-    final z = Zmanim.of(city, date);
+    if (!Zmanim.keepsClock(place.city, date, deviceOffset(date))) return (candles: null, havdalah: null);
+    final z = place.on(date);
     return (candles: z.minutesOf(z.candleLighting), havdalah: z.minutesOf(z.havdalah));
   };
 }

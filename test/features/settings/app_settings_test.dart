@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -407,6 +408,55 @@ void main() {
     test('isn\'t part of how weeks are planned', () {
       const before = AppSettings();
       expect(before.copyWith(city: _jerusalem).planSettings.sameSettingsAs(before.planSettings), isTrue);
+    });
+  });
+
+  group("the reader's luach", () {
+    test("by default, the city's candle-lighting minutes and nightfall at 8.5°", () {
+      for (final s in [const AppSettings(), AppSettings.fromJson({})]) {
+        expect(s.candleMinutesOverride, isNull);
+        expect(s.havdalah, HavdalahRule.degrees85);
+      }
+    });
+
+    test('round-trips through JSON, so a backup keeps it, and can be cleared', () {
+      final s = const AppSettings(city: _jerusalem).copyWith(candleMinutesOverride: 30, havdalah: HavdalahRule.min72);
+      final back = AppSettings.fromJson(jsonDecode(jsonEncode(s.toJson())) as Map<String, dynamic>);
+      expect(back.candleMinutesOverride, 30);
+      expect(back.havdalah, HavdalahRule.min72);
+      expect(back.toJson(), s.toJson());
+      // Another setting changed keeps it; the city's own minutes come back
+      // when it is cleared.
+      expect(back.copyWith(theme: AppThemeMode.dark).candleMinutesOverride, 30);
+      expect(back.copyWith(candleMinutesOverride: null).candleMinutesOverride, isNull);
+    });
+
+    test("minutes or a rule that can't be read are the defaults, and the rest of the settings kept", () {
+      for (final minutes in ['30', -5, 120, 30.5]) {
+        final s = AppSettings.fromJson({
+          ...const AppSettings(theme: AppThemeMode.dark).toJson(),
+          'candleMinutesOverride': minutes,
+          'havdalah': 'sunrise',
+        });
+        expect(s.candleMinutesOverride, isNull, reason: '$minutes');
+        expect(s.havdalah, HavdalahRule.degrees85);
+        expect(s.theme, AppThemeMode.dark);
+      }
+    });
+
+    test('goes with the city to everything that gives its times, and is nothing without one', () {
+      expect(const AppSettings(candleMinutesOverride: 22, havdalah: HavdalahRule.min50).shabbatCity, isNull);
+      expect(
+        const AppSettings(city: _jerusalem, candleMinutesOverride: 22, havdalah: HavdalahRule.min50).shabbatCity,
+        const ShabbatCity(_jerusalem, candleMinutes: 22, havdalah: HavdalahRule.min50),
+      );
+      expect(const AppSettings(city: _jerusalem).shabbatCity, const ShabbatCity(_jerusalem));
+    });
+
+    test('isn\'t part of how weeks are planned', () {
+      const before = AppSettings(city: _jerusalem);
+      final after = before.copyWith(candleMinutesOverride: 15, havdalah: HavdalahRule.min42);
+      expect(after.planSettings.sameSettingsAs(before.planSettings), isTrue);
     });
   });
 

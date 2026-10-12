@@ -131,7 +131,8 @@ const _screens = {
   // A backup file chosen: what it holds, with nothing here to merge with.
   'welcome_import': '/welcome',
   'today': '/today',
-  // With a city for Shabbat times: on Erev Shabbat, candle-lighting there.
+  // With a city for Shabbat times: on Erev Shabbat, candle-lighting there,
+  // by the reader's luach (30 minutes before sunset, not Jerusalem's 40).
   'today_candles': '/today',
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
@@ -385,8 +386,14 @@ const _screens = {
   // Its end: the haftarah, special days and parsha names.
   's_reading_end': '/settings/reading',
   // The city for Shabbat times, and its list: as it opens, searched, and
-  // searched for a place that isn't there.
+  // searched for a place that isn't there. The page itself has Jerusalem,
+  // at its own minutes; here the reader's luach sets its times.
   's_reading_city': '/settings/reading',
+  // The luach's candle-lighting minutes and end of Shabbat, chosen in
+  // sheets; and in a week whose Shabbat runs into Yom Tov (Shavuot 5789).
+  's_reading_candles': '/settings/reading',
+  's_reading_havdalah': '/settings/reading',
+  's_reading_yomtov': '/settings/reading',
   'city': '/settings/reading/city',
   'city_search': '/settings/reading/city',
   'city_many': '/settings/reading/city',
@@ -616,8 +623,12 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_joined_midweek': (s) => s.copyWith(joinDate: LocalDate(2026, 10, 7)),
   for (final screen in ['progress_years', 'progress_past', 'progress_record'])
     screen: (s) => s.copyWith(joinDate: secondYearJoinDate),
-  's_reading_city': (s) => s.copyWith(city: _jerusalem),
-  'today_candles': (s) => s.copyWith(city: _jerusalem),
+  's_reading': (s) => s.copyWith(city: _jerusalem),
+  's_reading_city': (s) => s.copyWith(city: _jerusalem, candleMinutesOverride: 30, havdalah: HavdalahRule.min72),
+  's_reading_candles': (s) => s.copyWith(city: _jerusalem, candleMinutesOverride: 30),
+  's_reading_havdalah': (s) => s.copyWith(city: _jerusalem, havdalah: HavdalahRule.min72),
+  's_reading_yomtov': (s) => s.copyWith(city: _jerusalem, joinDate: LocalDate(2029, 5, 1)),
+  'today_candles': (s) => s.copyWith(city: _jerusalem, candleMinutesOverride: 30),
   's_reminders_city': (s) => s.copyWith(
         dailyReminder: true,
         dailyReminderMinutes: 7 * 60 + 30,
@@ -734,6 +745,8 @@ final _screenNow = <String, DateTime>{
   'today_yomtov': DateTime(2029, 5, 20, 11),
   'today_yom_kippur': DateTime(2026, 9, 21, 11),
   'today_friday_night': DateTime(2026, 10, 9, 20),
+  // The Tuesday before Shabbat 19 May 2029, with Shavuot on Sunday.
+  's_reading_yomtov': DateTime(2029, 5, 15, 11),
   'today_checkin': DateTime(2026, 10, 12, 11),
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
   'focus_sheet_tile': DateTime(2026, 10, 12, 11),
@@ -1110,6 +1123,14 @@ final _openShortcuts = _tapInTurn([
   () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
   () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'keys'),
 ]);
+
+/// Opens the sheet of the Shabbat times' row marked by [icon], once the row
+/// is in view.
+Future<void> _openShabbatTimesSheet(WidgetTester tester, IconData icon) async {
+  await Scrollable.ensureVisible(tester.element(find.byIcon(icon)), alignment: 0.5);
+  await _settle(tester);
+  await tester.tap(find.byIcon(icon));
+}
 
 /// Waits for the verse index, built from every book of the Torah, and
 /// searches for [query].
@@ -1536,6 +1557,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.text(tester.element(find.byType(Scaffold).last).l10n.resetProgress)),
   's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
+  's_reading_yomtov': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
+  's_reading_candles': (tester) => _openShabbatTimesSheet(tester, Icons.wb_twilight_outlined),
+  's_reading_havdalah': (tester) => _openShabbatTimesSheet(tester, Icons.bedtime_outlined),
   // The plan's last choice brought into view, so that the tap reaches it
   // rather than the navigation bar over where it would be.
   's_reading_changed': (tester) =>
@@ -2000,6 +2024,8 @@ const _bigTextScreens = {
   'search_many',
   'search_none',
   's_reading_city',
+  's_reading_candles',
+  's_reading_havdalah',
   'settings',
   's_reading',
   'city',

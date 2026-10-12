@@ -2724,6 +2724,44 @@ class AppLocalizationsHe extends AppLocalizations {
       'המכשיר אינו יודע מה השעה בעיר הזו, ולכן אי אפשר להציג את הזמנים בה.';
 
   @override
+  String shabbatTimesSummaryYomTov(String candles, String after) {
+    return 'הדלקת נרות $candles\nהדלקת נרות יום טוב אחרי $after';
+  }
+
+  @override
+  String get candleLightingSetting => 'הדלקת נרות';
+
+  @override
+  String candleMinutesCityDefault(int minutes) {
+    return 'ברירת המחדל של העיר ($minutes דק׳)';
+  }
+
+  @override
+  String candleMinutesBeforeSunset(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes דקות לפני השקיעה',
+      one: 'דקה אחת לפני השקיעה',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shabbatEndsSetting => 'צאת השבת';
+
+  @override
+  String get havdalahNightfall => 'צאת הכוכבים (⁦8.5°⁩)';
+
+  @override
+  String havdalahMinutesAfterSunset(int minutes) {
+    return '$minutes דקות אחרי השקיעה';
+  }
+
+  @override
+  String get havdalahRabbeinuTam => '72 דקות (רבנו תם)';
+
+  @override
   String get cityPickerTitle => 'בחירת עיר';
 
   @override
@@ -3059,6 +3097,10 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get sourcesMamDescription =>
       'נוסח התורה וההפטרות, על פי כתר ארם צובה וכתבי יד קרובים, בעריכת אבי קדיש וחבריו בוויקיטקסט העברי, דרך ספריא. בתורה, במקומות שבהם ספרי התורה של אשכנז וספרד שונים מכתר ארם צובה, הנוסח הוא כספרי התורה, ונוסח הכתר מובא בהערה. מלבד זאת הותאם לתצוגה מובנית ללא שינוי בנוסח.';
+
+  @override
+  String get sourcesSunDescription =>
+      'מחושבות במכשיר לפי הנוסחאות של מחשבון השמש של NOAA (על פי Meeus, Astronomical Algorithms), ונבדקו מול Hebcal, שזמניו הם ברירת המחדל: הדלקת נרות 18 דקות לפני השקיעה, 20 בישראל, 30 בחיפה ו־40 בירושלים, וצאת השבת כשהשמש ⁦8.5°⁩ מתחת לאופק. בהגדרות, תחת קריאה ומנהגים, אפשר לבחור דקות אחרות להדלקת הנרות, ולבחור שהשבת תצא 42, 50 או 72 דקות אחרי השקיעה, כמו בלוח המקומי.';
 
   @override
   String get onbStarterTitle => 'השבוע';

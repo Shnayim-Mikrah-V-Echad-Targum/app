@@ -412,7 +412,7 @@ final reminderSchedulerProvider = Provider<void>((ref) {
         fridayReminderMinutes: s.fridayReminderMinutes,
         checkInReminder: s.checkInReminder,
         habitAnchor: s.habitAnchor,
-        city: s.city,
+        place: s.shabbatCity,
         language: s.language,
         ashkenaziNames: s.ashkenaziNames,
       )));
@@ -431,10 +431,11 @@ final reminderSchedulerProvider = Provider<void>((ref) {
     checkIn: settings.checkInReminder,
   );
   final on = prefs.daily || prefs.erevShabbat || prefs.checkIn;
-  // With a city, reminders follow its Shabbat times, worked out once the
-  // time-zone database is in; scheduling them waits for it anyway.
-  final city = settings.city;
-  if (on && city != null && !timeZonesReady(ref)) return;
+  // With a city, reminders follow its Shabbat times, by the reader's
+  // customs, worked out once the time-zone database is in; scheduling them
+  // waits for it anyway.
+  final place = settings.place;
+  if (on && place != null && !timeZonesReady(ref)) return;
   final reminders = on
       ? planReminders(
           prefs: prefs,
@@ -443,7 +444,7 @@ final reminderSchedulerProvider = Provider<void>((ref) {
           now: DateTime.now(),
           today: today,
           pauses: progress.pauses,
-          zmanim: city == null ? null : reminderZmanim(city, deviceOffset: ref.watch(deviceClockProvider)),
+          zmanim: place == null ? null : reminderZmanim(place, deviceOffset: ref.watch(deviceClockProvider)),
         )
       : const <PlannedReminder>[];
 

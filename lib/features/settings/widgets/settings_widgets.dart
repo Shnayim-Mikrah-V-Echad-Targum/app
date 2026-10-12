@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
@@ -202,6 +203,71 @@ class ChoiceGroup<T> extends StatelessWidget {
     );
   }
 }
+
+/// Opens a sheet of [choices] under [title], over the whole window, the
+/// navigation too: radio rows on one sheet of paper, as a [ChoiceGroup]'s,
+/// with [value] chosen, for a setting whose row shows its value. [onChanged]
+/// is given each choice as it is made. A tap, or Space or Enter, chooses and
+/// closes the sheet; the arrow keys move the choice from row to row, and
+/// leave the sheet open for the next. [T] may be nullable, for a choice of
+/// none (a default).
+Future<void> showChoiceSheet<T>({
+  required BuildContext context,
+  required String title,
+  required T value,
+  required List<Choice<T>> choices,
+  required ValueChanged<T> onChanged,
+}) {
+  var chosen = value;
+  return showAppSheet<void>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    builder: (context) => SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: Space.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SheetTitle(title),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sheetPadding(context)),
+              child: StatefulBuilder(
+                builder: (context, setState) => RadioGroup<T>(
+                  groupValue: chosen,
+                  onChanged: (v) {
+                    // Null only for a nullable choice: a radio can't be
+                    // unselected here.
+                    if (v is! T) return;
+                    final moved = HardwareKeyboard.instance.logicalKeysPressed.any(_arrowKeys.contains);
+                    if (v != chosen) {
+                      setState(() => chosen = v);
+                      onChanged(v);
+                    }
+                    if (!moved) Navigator.pop(context);
+                  },
+                  child: PaperGroup(
+                    ruleInset: _RadioRow.textStart,
+                    children: [for (final c in choices) _RadioRow<T>(choice: c)],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// The keys that move a radio group's choice from row to row.
+final _arrowKeys = {
+  LogicalKeyboardKey.arrowUp,
+  LogicalKeyboardKey.arrowDown,
+  LogicalKeyboardKey.arrowLeft,
+  LogicalKeyboardKey.arrowRight,
+};
 
 /// The heading of a [ChoiceGroup.prominent]: the question in headlineSmall,
 /// and any help under it in bodyMedium, inset 4 as a group header's eyebrow

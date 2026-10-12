@@ -2729,6 +2729,44 @@ class AppLocalizationsEn extends AppLocalizations {
       'This device can’t tell the time in that city, so its times can’t be shown.';
 
   @override
+  String shabbatTimesSummaryYomTov(String candles, String after) {
+    return 'Candle-lighting $candles\nYom Tov candles after $after';
+  }
+
+  @override
+  String get candleLightingSetting => 'Candle-lighting';
+
+  @override
+  String candleMinutesCityDefault(int minutes) {
+    return 'City default ($minutes min)';
+  }
+
+  @override
+  String candleMinutesBeforeSunset(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes before sunset',
+      one: '1 minute before sunset',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shabbatEndsSetting => 'Shabbat ends';
+
+  @override
+  String get havdalahNightfall => 'Nightfall (sun 8.5° below)';
+
+  @override
+  String havdalahMinutesAfterSunset(int minutes) {
+    return '$minutes minutes after sunset';
+  }
+
+  @override
+  String get havdalahRabbeinuTam => '72 minutes (Rabbeinu Tam)';
+
+  @override
   String get cityPickerTitle => 'Choose a city';
 
   @override
@@ -3057,6 +3095,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get sourcesMamDescription =>
       'Hebrew text of the Torah and haftarot, based on the Aleppo Codex and related manuscripts, edited by Avi Kadish and collaborators on Hebrew Wikisource, via Sefaria. In the Torah, where Ashkenazi and Sephardi scrolls differ from the Aleppo Codex, the text follows the scrolls, with the Codex’s reading in a note. Otherwise it is converted to a structured format without changing the text.';
+
+  @override
+  String get sourcesSunDescription =>
+      'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 30 in Haifa and 40 in Jerusalem, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.';
 
   @override
   String get onbStarterTitle => 'This week';

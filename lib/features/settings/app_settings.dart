@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../../core/calendar/city.dart';
 import '../../core/calendar/local_date.dart';
+import '../../core/calendar/zmanim.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart';
 import '../progress/domain/reading_plan.dart';
@@ -213,6 +214,8 @@ class AppSettings {
     this.checkInReminder = false,
     this.habitAnchor,
     this.city,
+    this.candleMinutesOverride,
+    this.havdalah = HavdalahRule.degrees85,
     this.cityOfferAnswered = false,
     this.language = AppLanguage.system,
     this.onboardingComplete = false,
@@ -354,6 +357,14 @@ class AppSettings {
   /// It stays on the device.
   final City? city;
 
+  /// How many minutes before sunset candles are lit, as the reader's luach
+  /// has it, in place of the city's own ([City.candleMinutes]); null for the
+  /// city's. Choosing another city goes back to its own.
+  final int? candleMinutesOverride;
+
+  /// When Shabbat ends, as the reader's luach has it.
+  final HavdalahRule havdalah;
+
   /// Whether the offer of a city, in Settings → Reminders, has been answered:
   /// put aside, or a city chosen. Until then it is made while reminders are
   /// on without a city, however they were turned on.
@@ -397,6 +408,13 @@ class AppSettings {
   final LocalDate? stripNoteShownOn;
 
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
+
+  /// The city for Shabbat times with the reader's customs for them, which
+  /// everything that gives the times follows; null without a city.
+  ShabbatCity? get shabbatCity => switch (city) {
+        null => null,
+        final city => ShabbatCity(city, candleMinutes: candleMinutesOverride, havdalah: havdalah),
+      };
 
   /// These settings with [nusach] as the reader's custom. Until the reader
   /// sets [repeatLastVerse] themselves, it follows the custom: Chabad's is
@@ -532,6 +550,8 @@ class AppSettings {
     bool? checkInReminder,
     Object? habitAnchor = _keep,
     Object? city = _keep,
+    Object? candleMinutesOverride = _keep,
+    HavdalahRule? havdalah,
     bool? cityOfferAnswered,
     AppLanguage? language,
     bool? onboardingComplete,
@@ -598,6 +618,9 @@ class AppSettings {
         checkInReminder: checkInReminder ?? this.checkInReminder,
         habitAnchor: identical(habitAnchor, _keep) ? this.habitAnchor : habitAnchor as HabitAnchor?,
         city: identical(city, _keep) ? this.city : city as City?,
+        candleMinutesOverride:
+            identical(candleMinutesOverride, _keep) ? this.candleMinutesOverride : candleMinutesOverride as int?,
+        havdalah: havdalah ?? this.havdalah,
         cityOfferAnswered: cityOfferAnswered ?? this.cityOfferAnswered,
         language: language ?? this.language,
         onboardingComplete: onboardingComplete ?? this.onboardingComplete,
@@ -682,6 +705,8 @@ class AppSettings {
         'checkInReminder': checkInReminder,
         'habitAnchor': habitAnchor?.name,
         'city': city?.toJson(),
+        'candleMinutesOverride': candleMinutesOverride,
+        'havdalah': havdalah.name,
         'cityOfferAnswered': cityOfferAnswered,
         'language': language.name,
         'onboardingComplete': onboardingComplete,
@@ -775,6 +800,8 @@ class AppSettings {
       checkInReminder: b('checkInReminder', d.checkInReminder),
       habitAnchor: HabitAnchor.parse(j['habitAnchor']),
       city: _readCity(j['city']),
+      candleMinutesOverride: _readCandleMinutes(j['candleMinutesOverride']),
+      havdalah: e(HavdalahRule.values, j['havdalah'], d.havdalah),
       cityOfferAnswered: b('cityOfferAnswered', d.cityOfferAnswered),
       language: e(AppLanguage.values, j['language'], d.language),
       onboardingComplete: b('onboardingComplete', d.onboardingComplete),
@@ -798,6 +825,10 @@ class AppSettings {
       return null;
     }
   }
+
+  /// Reads [candleMinutesOverride]: minutes before sunset, within what a
+  /// city's own may be ([City.fromJson]); anything else is the city's.
+  static int? _readCandleMinutes(Object? raw) => raw is int && raw >= 0 && raw <= 90 ? raw : null;
 
   /// Reads [planHistory], oldest first, skipping entries that can't be read.
   /// Settings saved before it existed have none: the settings saved with
