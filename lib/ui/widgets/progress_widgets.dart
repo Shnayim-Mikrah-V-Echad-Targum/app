@@ -811,11 +811,20 @@ class WeekStrip extends StatelessWidget {
   static const double _margin = 2;
   static const double _inset = 2;
 
+  /// A day's glyph as drawn: 22, growing with the text to half as large
+  /// again, and never smaller, as with system text under 100%. The legend
+  /// draws the glyphs so too.
+  static double _glyphSize(BuildContext context) =>
+      MediaQuery.textScalerOf(context).clamp(minScaleFactor: 1, maxScaleFactor: 1.5).scale(22);
+
   @override
   Widget build(BuildContext context) {
     final end = plan.week.occasion.isShabbat ? plan.week.occasion : plan.week.occasion.onOrAfter(6);
     final days = [for (var i = 6; i >= 0; i--) end.addDays(-i)];
-    final cells = [for (final d in days) _day(context, d)];
+    // Each day knows the width its content has, for whether its note fits
+    // on one line.
+    List<Widget> cells(double dayWidth) =>
+        [for (final d in days) _day(context, d, contentWidth: dayWidth - 2 * (_margin + _inset))];
     return Semantics(
       label: context.l10n.weekStripLabel,
       container: true,
@@ -826,14 +835,16 @@ class WeekStrip extends StatelessWidget {
         type: MaterialType.transparency,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            if (constraints.maxWidth / 7 >= _dayWidthNeeded(context, days)) return _row(cells);
+            final width = constraints.maxWidth;
+            if (width / 7 >= _dayWidthNeeded(context, days)) return _row(cells(width / 7));
+            final twoRows = cells(width / 4);
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _row(cells.sublist(0, 4)),
+                _row(twoRows.sublist(0, 4)),
                 const SizedBox(height: 2 * _margin),
                 // Thursday under Sunday, and Shabbat under Tuesday.
-                _row([...cells.sublist(4), const SizedBox.shrink()]),
+                _row([...twoRows.sublist(4), const SizedBox.shrink()]),
               ],
             );
           },
@@ -872,7 +883,23 @@ class WeekStrip extends StatelessWidget {
         ),
       );
 
-  Widget _day(BuildContext context, LocalDate d) {
+  /// Whether [note] in [style] fits [width] on one line, at its size.
+  static bool _fitsOneLine(BuildContext context, String note, TextStyle? style, double width) {
+    final painter = TextPainter(
+      text: TextSpan(text: note, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+      maxLines: 1,
+    )..layout();
+    final fits = painter.width <= width + 0.5;
+    painter.dispose();
+    return fits;
+  }
+
+  /// Day [d], whose content (inside its margins and insets) is
+  /// [contentWidth] wide.
+  Widget _day(BuildContext context, LocalDate d, {required double contentWidth}) {
     final l = context.l10n;
     final names = Names(context);
     final theme = Theme.of(context);
@@ -915,7 +942,9 @@ class WeekStrip extends StatelessWidget {
             ? l.tishaBavShort
             : (dayAliyot.isEmpty ? null : aliyahOrdinals(dayAliyot));
     final noteStyle = theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant);
-    final scaler = MediaQuery.textScalerOf(context);
+    // Yom Tov and the fast untracked, on one line where it fits at its size.
+    final namedStyle = noteStyle?.copyWith(letterSpacing: 0);
+    final named = note != null && (yomTov || fast);
     final content = Container(
       constraints: const BoxConstraints(minHeight: 68),
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -946,29 +975,26 @@ class WeekStrip extends StatelessWidget {
             duration: Motion.of(context).d(Motion.medium),
             child: KeyedSubtree(
               key: ValueKey(display),
-              child: display.icon(context, size: scaler.clamp(maxScaleFactor: 1.5).scale(22)),
+              child: display.icon(context, size: _glyphSize(context)),
             ),
           ),
           if (note != null) ...[
             const SizedBox(height: 4),
-            if ((yomTov || fast) && scaler.scale(1) > 1.3)
-              // Enlarged text wraps between words ("Yom / Tov") rather than
-              // shrinking back to the size it was enlarged from.
+            if (named && !_fitsOneLine(context, note, namedStyle, contentWidth))
+              // Too wide for the day at its size, it wraps between words
+              // ("Yom / Tov") rather than shrink below it, which at 100%
+              // would set it under labelSmall's 12, the smallest the
+              // interface is set at.
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: _inset),
-                child: WholeWords(note, style: noteStyle?.copyWith(letterSpacing: 0), textAlign: TextAlign.center),
+                child: WholeWords(note, style: namedStyle, textAlign: TextAlign.center),
               )
-            else if (yomTov || fast)
-              // One line across the day, untracked and shrunk a little if
-              // need be ("Yom Tov" is about 50 px; a day on a 412 dp phone
-              // has 48), so a Yom Tov week is no taller than any other. The
-              // inset keeps it off the edges of the wash.
+            else if (named)
+              // One line across the day, untracked. The inset keeps it off
+              // the edges of the wash.
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: _inset),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(note, maxLines: 1, softWrap: false, style: noteStyle?.copyWith(letterSpacing: 0)),
-                ),
+                child: Text(note, maxLines: 1, softWrap: false, textAlign: TextAlign.center, style: namedStyle),
               )
             else
               Padding(
@@ -1055,6 +1081,7 @@ class _WeekStripLegend extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final padding = sheetPadding(context);
+    final glyph = WeekStrip._glyphSize(context);
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 16),
@@ -1069,10 +1096,11 @@ class _WeekStripLegend extends StatelessWidget {
                 child: Row(
                   children: [
                     // Today and rest days with their fills, as the strip
-                    // shows them.
+                    // shows them, and every glyph at the strip's size,
+                    // growing with the text as it does.
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 36 * glyph / 22,
+                      height: 36 * glyph / 22,
                       alignment: Alignment.center,
                       decoration: switch (d) {
                         DayDisplay.today => BoxDecoration(
@@ -1084,7 +1112,7 @@ class _WeekStripLegend extends StatelessWidget {
                           BoxDecoration(color: SeferColors.of(context).restWash, borderRadius: _dayRadius),
                         _ => null,
                       },
-                      child: d.icon(context),
+                      child: d.icon(context, size: glyph),
                     ),
                     const SizedBox(width: 16),
                     Expanded(

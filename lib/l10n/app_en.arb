@@ -693,7 +693,7 @@
   },
   "yomTovShort": "Yom Tov",
   "@yomTovShort": {
-    "description": "Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide, and a longer word is shrunk to fit one line."
+    "description": "Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide; where the words don't fit on one line at their size, they wrap, never shrink."
   },
   "tishaBavShort": "9 Av",
   "@tishaBavShort": {

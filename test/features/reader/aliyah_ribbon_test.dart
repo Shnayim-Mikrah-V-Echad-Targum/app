@@ -106,8 +106,9 @@ void main() {
   }
 
   // Beside a name at twice its size, the pips are twice theirs: 12 px, 6
-  // apart, and no larger with larger text, as the ribbon grows no further.
-  for (final (scale, pip) in [(1.0, 6.0), (1.5, 9.0), (2.0, 12.0), (3.0, 12.0)]) {
+  // apart, and no larger with larger text, as the ribbon grows no further;
+  // nor smaller than 6 with text under 100% (Android's Small).
+  for (final (scale, pip) in [(0.85, 6.0), (1.0, 6.0), (1.5, 9.0), (2.0, 12.0), (3.0, 12.0)]) {
     testWidgets('at ${scale}x text the pips are $pip px, under the name', (tester) async {
       await pump(tester, textScale: scale);
       final pips = find.descendant(of: tab('Sheni'), matching: find.byType(PassPips));

@@ -1059,7 +1059,7 @@ abstract class AppLocalizations {
   /// **'Today'**
   String get dayToday;
 
-  /// Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide, and a longer word is shrunk to fit one line.
+  /// Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide; where the words don't fit on one line at their size, they wrap, never shrink.
   ///
   /// In en, this message translates to:
   /// **'Yom Tov'**

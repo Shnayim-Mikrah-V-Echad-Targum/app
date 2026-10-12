@@ -233,6 +233,8 @@ void main() {
       (const Size(430, 2600), 1.0, 3, false),
       (const Size(1366, 1600), 1.0, 6, true),
       (const Size(412, 4000), 2.0, 2, true),
+      // Android's "Small" font: the icons keep their size.
+      (const Size(430, 2600), 0.85, 3, false),
     ]) {
       testWidgets('one-word names stay whole at ${size.width.round()} dp and ${scale}x', (tester) async {
         await openProgress(tester, size: size, textScale: scale, now: DateTime(2027, 6, 23, 10));
@@ -246,7 +248,7 @@ void main() {
         final timelapse = find.descendant(of: tileOf("Beha'alotcha"), matching: find.byIcon(Icons.timelapse));
         // The icon grows with the text, to half as large again; whether the
         // name fits beside it is measured at the size it is drawn.
-        expect(tester.widget<Icon>(timelapse).size, moreOrLessEquals(14 * (scale > 1.5 ? 1.5 : scale)));
+        expect(tester.widget<Icon>(timelapse).size, moreOrLessEquals(14 * scale.clamp(1, 1.5)));
         final icon = tester.getCenter(timelapse);
         final text = tester.getCenter(find.descendant(of: tileOf("Beha'alotcha"), matching: find.text("Beha'alotcha")));
         expect(icon.dy < text.dy, stacked, reason: 'the icon above the name');

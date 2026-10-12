@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
@@ -141,7 +142,8 @@ void main() {
         tester.getSize(find.descendant(of: dayOf(weekday), matching: find.byType(AnimatedSwitcher))).height;
 
     // Grown with the text to half as large again, and no further.
-    for (final (scale, size) in [(1.0, 22.0), (1.3, 28.6), (2.0, 33.0), (3.0, 33.0)]) {
+    // Never smaller, as with system text under 100% (Android's Small).
+    for (final (scale, size) in [(0.85, 22.0), (1.0, 22.0), (1.3, 28.6), (2.0, 33.0), (3.0, 33.0)]) {
       testWidgets('at ${scale}x each glyph is $size', (tester) async {
         await pumpThemed(tester, strip(width: 600, statuses: {day(1): DayStatus.kept}), textScale: scale);
         for (final weekday in ['Sunday', 'Monday', 'Thursday', 'Friday', 'Saturday']) {
@@ -197,10 +199,14 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a little larger text still keeps Yom Tov to one line', (tester) async {
+    // Once a day held it to one line by shrinking it, which at 100% to 130%
+    // drew it under labelSmall's 12; now it wraps wherever it doesn't fit
+    // at its size (week_strip_note_test.dart, with the app's fonts).
+    testWidgets('a little larger text wraps Yom Tov too, rather than shrink it', (tester) async {
       await pumpThemed(tester, strip(), textScale: 1.3);
-      expect(find.ancestor(of: find.text('Yom Tov'), matching: find.byType(FittedBox)), findsOneWidget);
-      expect(tester.widget<Text>(find.text('Yom Tov')).maxLines, 1);
+      expect(find.ancestor(of: find.text('Yom Tov'), matching: find.byType(FittedBox)), findsNothing);
+      expect(find.ancestor(of: find.text('Yom Tov'), matching: find.byType(WholeWords)), findsOneWidget);
+      expectWordsWhole(tester, 'Yom Tov');
     });
   });
 
@@ -215,13 +221,16 @@ void main() {
     expect(find.text('Yom Tov'), findsOneWidget);
   });
 
-  testWidgets('a Yom Tov week is no taller than any other: its note keeps to one line', (tester) async {
+  // Where a day has room for it: in the test font, whose letters are as wide
+  // as the type is high, "Yom Tov" at 12 is 84 wide, so a day of 100.
+  testWidgets('where a day has room, a Yom Tov week is no taller than any other: its note keeps to one line',
+      (tester) async {
     // The week of Noach has no Yom Tov.
     final noach = planner.planFor(planner.schedule.weekFor(LocalDate(2026, 10, 14)));
     for (final hebrew in [false, true]) {
-      await pumpThemed(tester, strip(week: noach, today: LocalDate(2026, 10, 14)), hebrew: hebrew);
+      await pumpThemed(tester, strip(week: noach, today: LocalDate(2026, 10, 14), width: 700), hebrew: hebrew);
       final plain = tester.getSize(find.byType(WeekStrip)).height;
-      await pumpThemed(tester, strip(), hebrew: hebrew);
+      await pumpThemed(tester, strip(width: 700), hebrew: hebrew);
       expect(tester.getSize(find.byType(WeekStrip)).height, plain, reason: hebrew ? 'he' : 'en');
       final note = find.text(hebrew ? 'יו״ט' : 'Yom Tov');
       // Within the day's wash (the slot less its 2 px margins), and clear of
@@ -273,7 +282,9 @@ void main() {
       );
       final week = planner.planFor(planner.schedule.weekFor(tuesday));
       for (final hebrew in [false, true]) {
-        await pumpThemed(tester, strip(week: week, today: tuesday), hebrew: hebrew);
+        // Days with room for the date in the test font, as a phone's have
+        // in the app's (week_strip_note_test.dart).
+        await pumpThemed(tester, strip(week: week, today: tuesday, width: 700), hebrew: hebrew);
         final weekday = hebrew ? 'יום חמישי' : 'Thursday';
         final note = find.descendant(of: dayOf(weekday), matching: find.text(hebrew ? 'ט׳ באב' : '9 Av'));
         final reason = 'quiet: $quiet, ${hebrew ? 'he' : 'en'}';
@@ -450,4 +461,21 @@ void main() {
     expect(find.byType(TodayMark), findsOneWidget);
     expect(find.byType(ShabbatCandlesIcon), findsOneWidget);
   });
+
+  // As the strip draws them, so that the legend doesn't explain 33 px glyphs
+  // with 22 px ones beside 32 px words.
+  for (final (scale, size) in [(0.85, 22.0), (1.0, 22.0), (2.0, 33.0), (3.0, 33.0)]) {
+    testWidgets('at ${scale}x the legend draws each glyph $size, in a swatch to match', (tester) async {
+      await pumpThemed(tester, const Center(child: WeekStripLegendButton()), textScale: scale);
+      await tester.tap(find.byTooltip('Legend'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      // The swatch of today's glyph, filled and edged as the strip's day.
+      final today = find.ancestor(of: find.byType(TodayMark), matching: find.byType(Container)).first;
+      expect(tester.getSize(today), Size.square(36 * size / 22));
+      expect(tester.getSize(find.byType(TodayMark)).height, moreOrLessEquals(size));
+      final check = find.descendant(of: find.byType(BottomSheet), matching: find.byIcon(Icons.check));
+      expect(tester.widget<Icon>(check).size, moreOrLessEquals(size * 14 / 22));
+    });
+  }
 }

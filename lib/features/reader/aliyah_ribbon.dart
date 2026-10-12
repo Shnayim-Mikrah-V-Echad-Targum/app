@@ -195,7 +195,8 @@ class _AliyahRibbonState extends State<AliyahRibbon> {
     final state = done == passes.length
         ? l.tabRead
         : (week.isAliyahStarted(a, widget.aliyahVerses[a]) ? l.tabPartial(done) : l.tabNotStarted);
-    final pipScale = MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 2).scale(1);
+    // Growing with the text to twice their size, and never smaller.
+    final pipScale = MediaQuery.textScalerOf(context).clamp(minScaleFactor: 1, maxScaleFactor: 2).scale(1);
     final content = Column(
       mainAxisSize: MainAxisSize.min,
       children: [

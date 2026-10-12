@@ -903,10 +903,10 @@ const double _tileIcon = 14;
 const double _tileIconGap = 4;
 
 /// A tile's icon as drawn: [_tileIcon], growing with the text to half as
-/// large again. Both the tile and the measure of whether its name fits
-/// beside the icon take it from here, so they agree.
+/// large again, and never smaller. Both the tile and the measure of whether
+/// its name fits beside the icon take it from here, so they agree.
 double _tileIconSize(BuildContext context) =>
-    MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.5).scale(_tileIcon);
+    MediaQuery.textScalerOf(context).clamp(minScaleFactor: 1, maxScaleFactor: 1.5).scale(_tileIcon);
 
 /// Every parsha of one year's cycle as a tile, book by book
 /// (docs/DESIGN_SYSTEM.md §6.14). Each book has a header that folds it away;
