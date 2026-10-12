@@ -146,7 +146,15 @@ class TtsService {
   /// again, so that one installed meanwhile is found.
   Future<bool?> hasHebrewVoice() async {
     if (_hebrewFound) return true;
-    if (webEngine && !await _webVoicesLoaded()) return null;
+    if (webEngine) {
+      // From the browser's list as it is now: the plugin answers
+      // isLanguageAvailable from the first list it saw, and so never finds
+      // a voice the browser loads later (Edge's online voices come a moment
+      // after its own) or one installed while the page is open.
+      final voices = await _webVoices();
+      if (voices == null) return null;
+      return _hebrewFound = voices.any((v) => _isHebrew('${v is Map ? v['locale'] : v}'));
+    }
     bool available;
     try {
       final answer = await _tts.isLanguageAvailable('he-IL');
@@ -154,7 +162,7 @@ class TtsService {
     } catch (_) {
       try {
         final langs = (await _tts.getLanguages as List?)?.cast<Object?>() ?? const [];
-        available = langs.any((l) => '$l'.toLowerCase().startsWith('he') || '$l'.toLowerCase().startsWith('iw'));
+        available = langs.any((l) => _isHebrew('$l'));
       } catch (_) {
         return null;
       }
@@ -162,25 +170,37 @@ class TtsService {
     return _hebrewFound = available;
   }
 
-  /// Whether the browser has loaded its voices, waiting a second and a half
-  /// at most for them the first time: Chromium's list is empty until a
-  /// moment after the page opens, and until then the engine can neither pick
-  /// the voice for an utterance's language nor say whether there is one.
-  /// Never throws.
-  Future<bool> _webVoicesLoaded() async {
-    if (_webVoicesReady) return true;
-    final looks = _webVoicesWaited ? 1 : _webVoiceLooks;
+  /// Whether [locale] ("he-IL", or Android's old "iw") is Hebrew's.
+  static bool _isHebrew(String locale) {
+    final l = locale.toLowerCase();
+    return l.startsWith('he') || l.startsWith('iw');
+  }
+
+  /// Whether the browser has loaded its voices (see [_webVoices]). Never
+  /// throws.
+  Future<bool> _webVoicesLoaded() async => _webVoicesReady || await _webVoices() != null;
+
+  /// The browser's voices, read afresh; null while it has loaded none,
+  /// waiting a second and a half at most for them the first time:
+  /// Chromium's list is empty until a moment after the page opens, and until
+  /// then the engine can neither pick the voice for an utterance's language
+  /// nor say whether there is one. Never throws.
+  Future<List<Object?>?> _webVoices() async {
+    final looks = _webVoicesReady || _webVoicesWaited ? 1 : _webVoiceLooks;
     try {
       for (var i = 0; i < looks; i++) {
         if (i > 0) await Future<void>.delayed(_webVoiceLookInterval);
         final voices = await _tts.getVoices;
-        if (voices is List && voices.isNotEmpty) return _webVoicesReady = true;
+        if (voices is List && voices.isNotEmpty) {
+          _webVoicesReady = true;
+          return voices.cast<Object?>();
+        }
       }
     } catch (_) {
-      return false;
+      return null;
     }
     _webVoicesWaited = true;
-    return false;
+    return null;
   }
 
   /// Speaks [text], stopping whatever is being spoken first, and completes
@@ -212,7 +232,12 @@ class TtsService {
       if (generation == _generation) {
         _engineBusy = true;
         final result = await _tts.speak(text);
-        if (result != 1 && result != null && result != true && identical(_utterance, c)) _engineStopped();
+        if (result != 1 && result != null && result != true && identical(_utterance, c)) {
+          // Refused (a broken or unbound engine): no handler will report
+          // it, so the audio focus taken for it is given up here.
+          _engineStopped();
+          _releaseAudioSessionSoon();
+        }
       } else {
         // Stopped, or overtaken, while the session was being readied for it.
         _releaseAudioSessionSoon();
@@ -220,6 +245,7 @@ class TtsService {
     } catch (_) {
       // Unless another utterance has taken its place meanwhile.
       if (identical(_utterance, c)) _engineStopped();
+      _releaseAudioSessionSoon();
       rethrow;
     }
     return c.future;

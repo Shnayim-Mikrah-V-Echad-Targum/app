@@ -79,6 +79,10 @@ class _Engine extends Fake implements FlutterTts {
   bool failSpeak = false;
   bool cancelsWhenSilent = false;
 
+  /// What [speak] returns: 0 where the engine refuses the utterance, as an
+  /// unbound Android engine does, reporting nothing more.
+  Object? speakResult = 1;
+
   /// Holds each utterance in preparation, at its language, until completed.
   Completer<void>? preparing;
 
@@ -97,8 +101,16 @@ class _Engine extends Fake implements FlutterTts {
     {'name': 'Carmit', 'locale': 'he-IL'},
   ];
 
+  // The languages of the first voices it saw, on the web: flutter_tts 4.2.5
+  // reads the browser's list for isLanguageAvailable only while it has none.
+  List<String>? _webLanguages;
+
   @override
-  Future<dynamic> isLanguageAvailable(String language) async => hebrew;
+  Future<dynamic> isLanguageAvailable(String language) async {
+    if (!TtsService.webEngine) return hebrew;
+    if (_webLanguages == null || _webLanguages!.isEmpty) _webLanguages = [for (final v in voices) v['locale']!];
+    return _webLanguages!.any((l) => l.toLowerCase() == language.toLowerCase());
+  }
 
   @override
   Future<dynamic> get getVoices async => voices;
@@ -143,6 +155,7 @@ class _Engine extends Fake implements FlutterTts {
   @override
   Future<dynamic> speak(String text, {bool focus = false}) async {
     if (failSpeak) throw PlatformException(code: 'no-engine');
+    if (speakResult != 1) return speakResult;
     said.add(text);
     rates.add(_rate);
     talking = true;
@@ -433,6 +446,23 @@ void main() {
         expect(sessionCalls, ['activate', 'deactivate', 'activate']);
         expect(engine.said, ['א', 'א']);
       });
+    });
+
+    // An engine that is broken, unbound or without the language returns a
+    // failure for speak, and reports nothing more.
+    test('an utterance the engine refuses gives focus up, as one stopped does', () async {
+      final engine = _Engine()..speakResult = 0;
+      final tts = TtsService(engine: engine);
+      expect(await tts.speak('בראשית ברא', language: 'he-IL'), isFalse);
+      await settle();
+      expect(sessionCalls, ['activate', 'deactivate'], reason: "other apps' music comes back up");
+
+      // Parked as paused in a queue, as if interrupted: still given up.
+      sessionCalls.clear();
+      unawaited(tts.speakQueue(['א', 'ב'], language: 'he-IL'));
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      expect(tts.paused.value, isTrue);
+      expect(sessionCalls, ['activate', 'deactivate']);
     });
 
     test('focus refused (during a call, say), speech goes ahead, and focus is asked for again', () async {
@@ -769,6 +799,43 @@ void main() {
         async.flushMicrotasks();
         expect(answer, (true,));
       });
+    });
+
+    // Chromium's list is empty until a moment after the page opens.
+    test('on the web, is found among voices the browser loads while it is asked', () {
+      fakeAsync((async) {
+        TtsService.webEngine = true;
+        final engine = _Engine()..voices = [];
+        final tts = TtsService(engine: engine);
+        (bool?,)? answer;
+        tts.hasHebrewVoice().then((a) => answer = (a,));
+        async.elapse(const Duration(milliseconds: 300));
+        expect(answer, isNull);
+        engine.voices = [
+          {'name': 'Google US English', 'locale': 'en-US'},
+          {'name': 'Carmit', 'locale': 'he-IL'},
+        ];
+        async.elapse(const Duration(milliseconds: 100));
+        expect(answer, (true,));
+      });
+    });
+
+    // As Edge loads its own voices first and its online ones (Hila, Avri) a
+    // moment later, or as a voice is installed while the page is open: the
+    // engine's own answer still comes from the first list it saw.
+    test('on the web, is found once the browser adds it to voices it had already loaded', () async {
+      TtsService.webEngine = true;
+      final engine = _Engine()
+        ..voices = [
+          {'name': 'Microsoft Mark', 'locale': 'en-US'},
+        ];
+      final tts = TtsService(engine: engine);
+      expect(await tts.hasHebrewVoice(), isFalse);
+      engine.voices = [
+        ...engine.voices,
+        {'name': 'Microsoft Hila Online (Natural)', 'locale': 'he-IL'},
+      ];
+      expect(await tts.hasHebrewVoice(), isTrue);
     });
 
     test("on the web, an utterance waits for the browser's voices before its language is set", () {
