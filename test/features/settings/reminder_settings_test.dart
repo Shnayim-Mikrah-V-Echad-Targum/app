@@ -125,6 +125,101 @@ void main() {
     handle.dispose();
   });
 
+  group('a reminder far from its routine', () {
+    /// The text [data], whatever spaces the time format puts before "PM".
+    Finder text(String data) => find.byWidgetPredicate(
+          (w) => w is Text && w.data?.replaceAll(RegExp('[\u00A0\u202F]'), ' ') == data,
+        );
+    const hint = 'Your reminder comes at 8:00 PM. Move it to 7:30 AM?';
+
+    testWidgets('is offered the routine’s time, and moved there with the focus on it', (tester) async {
+      final c = await openReminders(
+        tester,
+        _Notifications(),
+        settings: const AppSettings(
+          onboardingComplete: true,
+          dailyReminder: true,
+          dailyReminderMinutes: 20 * 60,
+          habitAnchor: HabitAnchor.shacharit,
+        ),
+      );
+      final handle = tester.ensureSemantics();
+      expect(text(hint), findsOneWidget);
+      final theme = Theme.of(tester.element(text(hint)));
+      final style = tester.renderObject<RenderParagraph>(text(hint)).text.style!;
+      expect(style.fontSize, theme.textTheme.bodySmall!.fontSize);
+      expect(style.color, theme.colorScheme.onSurfaceVariant);
+      expect(tester.getSize(find.widgetWithText(TextButton, 'Move')).height, greaterThanOrEqualTo(48));
+
+      await tester.ensureVisible(find.text('Move'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Move'));
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).dailyReminderMinutes, 7 * 60 + 30);
+      expect(c.read(settingsProvider).habitAnchor, HabitAnchor.shacharit);
+      expect(text(hint), findsNothing);
+      expect(find.text('Move'), findsNothing);
+      // The button gone, the time it moved has the focus and is read out.
+      expect(
+        tester.getSemantics(find.text('Daily reminder time')),
+        isSemantics(isLiveRegion: true, isFocused: true),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('is offered nothing when it comes near the routine, or has none', (tester) async {
+      final c = await openReminders(
+        tester,
+        _Notifications(),
+        settings: const AppSettings(
+          onboardingComplete: true,
+          dailyReminder: true,
+          dailyReminderMinutes: 9 * 60,
+          habitAnchor: HabitAnchor.shacharit,
+        ),
+      );
+      expect(find.text('Move'), findsNothing);
+
+      // A time picked far from it brings the offer.
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(dailyReminderMinutes: 20 * 60));
+      await tester.pumpAndSettle();
+      expect(text(hint), findsOneWidget);
+
+      // As does nothing once the routine is cleared, or the reminder off.
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(habitAnchor: null));
+      await tester.pumpAndSettle();
+      expect(find.text('Move'), findsNothing);
+      c
+          .read(settingsProvider.notifier)
+          .update((s) => s.copyWith(habitAnchor: HabitAnchor.shacharit, dailyReminder: false));
+      await tester.pumpAndSettle();
+      expect(find.text('Move'), findsNothing);
+    });
+
+    testWidgets('is offered in Hebrew too, its button under the text once the text is enlarged', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await openReminders(
+        tester,
+        _Notifications(),
+        settings: const AppSettings(
+          onboardingComplete: true,
+          language: AppLanguage.hebrew,
+          dailyReminder: true,
+          dailyReminderMinutes: 20 * 60,
+          habitAnchor: HabitAnchor.shacharit,
+        ),
+      );
+      final hebrew = find.textContaining('התזכורת מגיעה ב־20:00. להעביר ל־7:30?', findRichText: true);
+      expect(hebrew, findsOneWidget);
+      final button = find.widgetWithText(TextButton, 'העברה');
+      expect(tester.getTopLeft(button).dy, greaterThanOrEqualTo(tester.getBottomLeft(hebrew).dy));
+      // At the end of the line, which in Hebrew is its left.
+      expect(tester.getTopLeft(button).dx, lessThan(tester.getTopLeft(hebrew).dx + 1));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   testWidgets('one chosen by an earlier version, saved as its label, shows as chosen', (tester) async {
     await openReminders(
       tester,

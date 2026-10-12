@@ -56,5 +56,12 @@ const a11ySettings = AppSettings(onboardingComplete: true);
 
 /// All three reminders on, for the reminders page as a phone shows it, where
 /// they can be scheduled (with PhoneNotifications from test/helpers.dart).
-const a11yRemindersOn =
-    AppSettings(onboardingComplete: true, dailyReminder: true, fridayReminder: true, checkInReminder: true);
+/// The daily one comes at 8 PM after Shacharit, so the page offers to move
+/// it to Shacharit's time.
+const a11yRemindersOn = AppSettings(
+  onboardingComplete: true,
+  dailyReminder: true,
+  fridayReminder: true,
+  checkInReminder: true,
+  habitAnchor: HabitAnchor.shacharit,
+);

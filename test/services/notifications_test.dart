@@ -477,14 +477,14 @@ void main() {
       }
 
       change((s) => s.copyWith(habitAnchor: HabitAnchor.dinner));
-      expect(await bodies(), everyElement(endsWith(' · After dinner — it’s yours.')));
+      expect(await bodies(), everyElement(endsWith(' · After dinner — your time for the parsha.')));
 
       change((s) => s.copyWith(language: AppLanguage.hebrew));
       expect(await bodies(), everyElement(endsWith(' · אחרי ארוחת הערב — זה הזמן שלך.')));
 
       change((s) => s.copyWith(habitAnchor: null, language: AppLanguage.english));
       final cleared = await bodies();
-      expect(cleared, everyElement(isNot(contains('it’s yours'))));
+      expect(cleared, everyElement(isNot(contains('After dinner'))));
       expect(cleared.last, endsWith(' min'));
     });
 
@@ -531,8 +531,9 @@ void main() {
       final minutes = (verses * 25 / 60).ceil();
       expect(
         copyIn(en)(friday),
-        (title: 'Today: Shishi, Shevi’i', body: 'Parshat Noach · $verses verses · about $minutes min'),
+        (title: 'Today: Shishi and Shevi’i', body: 'Parshat Noach · $verses verses · about $minutes min'),
       );
+      expect(copyIn(he)(friday).title, 'היום: שישי ושביעי');
       expect(copyIn(he)(friday).body, he.notifDailyBody('נח', he.versesCount(verses), minutes));
     });
 
@@ -558,7 +559,10 @@ void main() {
         expect(copy.title, 'Today: Revi’i');
         expect(copy.body, contains('After Shacharit'));
         expect(copy.body, contains('about 9 min'));
-        expect(copy.body, 'Parshat Bereshit · 21 verses · about 9 min · After Shacharit — it’s yours.');
+        expect(
+          copy.body,
+          'Parshat Bereshit · 21 verses · about 9 min · After Shacharit — your time for the parsha.',
+        );
         expect(describe(revii, he, HabitAnchor.shacharit).body, 'פרשת בראשית · 21 פסוקים · כ־9 דק׳ · אחרי שחרית — זה הזמן שלך.');
       });
 
@@ -570,11 +574,35 @@ void main() {
         final r = PlannedReminder(
           kind: ReminderKind.daily,
           date: revii.date,
-          minutes: revii.minutes,
+          minutes: 21 * 60,
           plan: revii.plan,
           aliyot: const [0, 1, 2, 3, 4, 5, 6],
         );
-        expect(describe(r, en, HabitAnchor.bed).body, endsWith(' · Before bed — it’s yours.'));
+        expect(describe(r, en, HabitAnchor.bed).body, endsWith(' · Before bed — your time for the parsha.'));
+      });
+
+      test('is left out of a reminder far from its usual time: no Shacharit at 8 PM', () {
+        final evening = PlannedReminder(
+          kind: ReminderKind.daily,
+          date: revii.date,
+          minutes: 20 * 60,
+          plan: revii.plan,
+          aliyot: revii.aliyot,
+        );
+        expect(describe(evening, en, HabitAnchor.shacharit).body, 'Parshat Bereshit · 21 verses · about 9 min');
+        expect(describe(evening, he, HabitAnchor.shacharit).body, 'פרשת בראשית · 21 פסוקים · כ־9 דק׳');
+        // Four hours on is still near.
+        final late = PlannedReminder(
+          kind: ReminderKind.daily,
+          date: revii.date,
+          minutes: 11 * 60 + 30,
+          plan: revii.plan,
+          aliyot: revii.aliyot,
+        );
+        expect(
+          describe(late, en, HabitAnchor.shacharit).body,
+          endsWith(' · After Shacharit — your time for the parsha.'),
+        );
       });
 
       test('is named in every language, each routine its own way', () {
@@ -622,10 +650,18 @@ void main() {
 
     test('the Erev Shabbat and check-in reminders have a title and a body', () {
       final plan = planFrom(DateTime(2026, 10, 11, 8));
-      final friday = copyIn(en)(plan.firstWhere((r) => r.kind == ReminderKind.erevShabbat));
-      expect(friday, (title: en.notifFridayTitle('Noach'), body: en.notifFridayBody));
-      final checkIn = copyIn(en)(plan.firstWhere((r) => r.kind == ReminderKind.checkIn));
-      expect(checkIn, (title: en.notifCheckInTitle, body: en.notifCheckInBody));
+      final erevShabbat = plan.firstWhere((r) => r.kind == ReminderKind.erevShabbat);
+      final checkIn = plan.firstWhere((r) => r.kind == ReminderKind.checkIn);
+      expect(copyIn(en)(erevShabbat), (
+        title: 'Erev Shabbat · Parshat Noach',
+        body: 'There’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.',
+      ));
+      expect(copyIn(he)(erevShabbat), (
+        title: 'ערב שבת · פרשת נח',
+        body: 'יש עוד זמן — אפשר גם לסיים בשבת בבוקר מתוך חומש ולרשום אחרי שבת.',
+      ));
+      expect(copyIn(en)(checkIn), (title: 'Shavua tov!', body: 'Did you read on Shabbat? Tap to log it.'));
+      expect(copyIn(he)(checkIn), (title: 'שבוע טוב!', body: 'קראת בשבת? אפשר לרשום זאת באפליקציה.'));
     });
   });
 }

@@ -12,6 +12,7 @@ import '../../../services/reminder_planner.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../../../ui/widgets/progress_widgets.dart' show ShabbatCandlesIcon;
 import '../app_settings.dart';
@@ -63,6 +64,16 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
   /// Whether choosing a routine has moved the daily reminder's time here:
   /// from then on the time is read out as it changes.
   bool _timeMoved = false;
+
+  /// The daily reminder's time, which takes the focus from the button that
+  /// moves it, as that button goes.
+  final _timeFocus = FocusNode(debugLabel: 'daily reminder time');
+
+  @override
+  void dispose() {
+    _timeFocus.dispose();
+    super.dispose();
+  }
 
   /// Scrolls the offer of a city, just made, into view if it is below the
   /// screen, as it is at large text sizes once the daily reminder's rows
@@ -187,6 +198,7 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
                 title: l.dailyReminderTime,
                 value: names.time(s.dailyReminderMinutes),
                 liveRegion: _timeMoved,
+                focusNode: _timeFocus,
                 onTap: () => pickTime(s.dailyReminderMinutes, (m) => update((s) => s.copyWith(dailyReminderMinutes: m))),
               ),
               Padding(
@@ -208,6 +220,20 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
                         update((s) => s.copyWith(habitAnchor: a, dailyReminderMinutes: minutes));
                       },
                     ),
+                    // A reminder far from its routine's usual time leaves
+                    // the routine out (HabitAnchor.isNear): it is offered
+                    // that time.
+                    if (s.habitAnchor case final anchor? when !anchor.isNear(s.dailyReminderMinutes)) ...[
+                      const Gap(8),
+                      _MoveTimeHint(
+                        text: l.reminderMoveHint(names.time(s.dailyReminderMinutes), names.time(anchor.usualMinutes)),
+                        onMove: () {
+                          setState(() => _timeMoved = true);
+                          update((s) => s.copyWith(dailyReminderMinutes: anchor.usualMinutes));
+                          _timeFocus.requestFocus();
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -285,6 +311,39 @@ class _ReminderSettingsScreenState extends ConsumerState<ReminderSettingsScreen>
               ),
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Says that the daily reminder comes far from its routine's usual time, in
+/// small print, with a button that moves it there: at the end of the text,
+/// or under it once the text is enlarged, rather than squeeze it.
+class _MoveTimeHint extends StatelessWidget {
+  const _MoveTimeHint({required this.text, required this.onMove});
+
+  final String text;
+  final VoidCallback onMove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final button = TextButton(onPressed: onMove, child: Text(context.l10n.reminderMove));
+    if (MediaQuery.textScalerOf(context).scale(1) > 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          WholeWords(text, style: style, textAlign: TextAlign.start, breakAtHyphens: true),
+          Align(alignment: AlignmentDirectional.centerEnd, child: button),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: Text(text, style: style)),
+        const Gap(8),
+        button,
       ],
     );
   }

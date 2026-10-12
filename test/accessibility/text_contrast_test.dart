@@ -38,6 +38,7 @@ void main() {
   testWidgets('text contrast: reminders, where they can be scheduled, with all of them on', (tester) async {
     await expectReadableText(tester, '/settings/reminders', settings: a11yRemindersOn, notifications: PhoneNotifications());
     expect(find.text('Daily reminder time'), findsOneWidget);
+    expect(find.text('Move'), findsOneWidget);
   });
 
   // The Torah map with a tile in every past state, and the week strip above

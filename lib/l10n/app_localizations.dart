@@ -3117,31 +3117,31 @@ abstract class AppLocalizations {
   /// **'get ready for bed'**
   String get anchorBed;
 
-  /// The reader's chosen routine, named in the daily reminder: 'After Shacharit — it's yours.'
+  /// The reader's chosen routine, named in the daily reminder: 'After Shacharit — your time for the parsha.'
   ///
   /// In en, this message translates to:
   /// **'After Shacharit'**
   String get anchorCueShacharit;
 
-  /// The reader's chosen routine, named in the daily reminder: 'After breakfast — it's yours.'
+  /// The reader's chosen routine, named in the daily reminder: 'After breakfast — your time for the parsha.'
   ///
   /// In en, this message translates to:
   /// **'After breakfast'**
   String get anchorCueBreakfast;
 
-  /// The reader's chosen routine, named in the daily reminder: 'On your commute — it's yours.'
+  /// The reader's chosen routine, named in the daily reminder: 'On your commute — your time for the parsha.'
   ///
   /// In en, this message translates to:
   /// **'On your commute'**
   String get anchorCueCommute;
 
-  /// The reader's chosen routine, named in the daily reminder: 'After dinner — it's yours.'
+  /// The reader's chosen routine, named in the daily reminder: 'After dinner — your time for the parsha.'
   ///
   /// In en, this message translates to:
   /// **'After dinner'**
   String get anchorCueDinner;
 
-  /// The reader's chosen routine, named in the daily reminder: 'Before bed — it's yours.'
+  /// The reader's chosen routine, named in the daily reminder: 'Before bed — your time for the parsha.'
   ///
   /// In en, this message translates to:
   /// **'Before bed'**
@@ -3176,6 +3176,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open settings'**
   String get openSystemSettings;
+
+  /// Under the routines in the daily reminder's settings, when the reminder's time is far from the chosen routine's usual time (an 8 PM reminder after Shacharit), so that the reminder doesn't name the routine. With the button reminderMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Your reminder comes at {time}. Move it to {usual}?'**
+  String reminderMoveHint(String time, String usual);
+
+  /// Button, after reminderMoveHint: moves the daily reminder to the routine's usual time.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get reminderMove;
 
   /// No description provided for @primingTitle.
   ///
@@ -3252,7 +3264,7 @@ abstract class AppLocalizations {
   /// Ends the daily reminder when the reader has tied the reading to a routine, after ' · '.
   ///
   /// In en, this message translates to:
-  /// **'{cue} — it’s yours.'**
+  /// **'{cue} — your time for the parsha.'**
   String notifDailyAnchor(String cue);
 
   /// No description provided for @notifFridayTitle.
@@ -3261,10 +3273,10 @@ abstract class AppLocalizations {
   /// **'Erev Shabbat · Parshat {parsha}'**
   String notifFridayTitle(String parsha);
 
-  /// No description provided for @notifFridayBody.
+  /// The Erev Shabbat reminder, sent only while the week's parsha isn't finished.
   ///
   /// In en, this message translates to:
-  /// **'If you haven’t finished, there’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.'**
+  /// **'There’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.'**
   String get notifFridayBody;
 
   /// No description provided for @notifCheckInTitle.

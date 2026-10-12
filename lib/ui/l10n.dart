@@ -17,6 +17,14 @@ import '../l10n/app_localizations.dart';
 /// side of it stays with the Hebrew sentence.
 String ltr(String s) => '\u2066$s\u2069';
 
+/// [items] as a list in a sentence in [l]'s language: "Monday", "Monday
+/// and Tuesday", "Monday, Tuesday and Wednesday".
+String joinWithAnd(AppLocalizations l, List<String> items) {
+  if (items.isEmpty) return '';
+  if (items.length == 1) return items.single;
+  return l.andJoiner(items.sublist(0, items.length - 1).join(', '), items.last);
+}
+
 extension L10nContext on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 
@@ -73,13 +81,8 @@ class Names {
     return andList(indices.map(aliyah).toList());
   }
 
-  /// [items] as a list in a sentence: "Monday", "Monday and Tuesday",
-  /// "Monday, Tuesday and Wednesday".
-  String andList(List<String> items) {
-    if (items.isEmpty) return '';
-    if (items.length == 1) return items.single;
-    return _l.andJoiner(items.sublist(0, items.length - 1).join(', '), items.last);
-  }
+  /// [items] as a list in a sentence ([joinWithAnd]).
+  String andList(List<String> items) => joinWithAnd(_l, items);
 
   /// What the reader reads after the Torah's two readings, as [reading]
   /// says: "Targum", "Rashi" or "Onkelos and Rashi".

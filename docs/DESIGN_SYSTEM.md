@@ -1330,6 +1330,7 @@ In order:
 
 **Reminders**
 - Native: a PaperGroup for each reminder: its switch row and, once on, its time as a row's value (and for the daily reminder, the routine chips), 12 apart; the offer of a city below them, 28 apart.
+- A daily reminder more than four hours from its routine's usual time (`HabitAnchor.isNear`) leaves the routine out of its message, and under the chips, 8 below them, `reminderMoveHint` ("Your reminder comes at 8:00 PM. Move it to 7:30 AM?") in bodySmall onSurfaceVariant offers that time, with a TextButton `reminderMove` at its end, or under it at the end once the text is enlarged. Moving it gives the time's row the focus, which reads out the new time.
 - The Shabbat note is a NoticeBanner with candles (§7.6, in `rest`): "Never on Shabbat or Yom Tov, and at most once a day."
 - Web: one NoticeBanner (`install_mobile`) saying that reminders need the installed app, with "Get the app" where the build gives `INSTALL_URL`, over the three reminders' switch rows, disabled and off, whatever a backup from a phone brought (replaces two stacked banners).
 

@@ -1489,23 +1489,23 @@
   "anchorBed": "get ready for bed",
   "anchorCueShacharit": "After Shacharit",
   "@anchorCueShacharit": {
-    "description": "The reader's chosen routine, named in the daily reminder: 'After Shacharit — it's yours.'"
+    "description": "The reader's chosen routine, named in the daily reminder: 'After Shacharit — your time for the parsha.'"
   },
   "anchorCueBreakfast": "After breakfast",
   "@anchorCueBreakfast": {
-    "description": "The reader's chosen routine, named in the daily reminder: 'After breakfast — it's yours.'"
+    "description": "The reader's chosen routine, named in the daily reminder: 'After breakfast — your time for the parsha.'"
   },
   "anchorCueCommute": "On your commute",
   "@anchorCueCommute": {
-    "description": "The reader's chosen routine, named in the daily reminder: 'On your commute — it's yours.'"
+    "description": "The reader's chosen routine, named in the daily reminder: 'On your commute — your time for the parsha.'"
   },
   "anchorCueDinner": "After dinner",
   "@anchorCueDinner": {
-    "description": "The reader's chosen routine, named in the daily reminder: 'After dinner — it's yours.'"
+    "description": "The reader's chosen routine, named in the daily reminder: 'After dinner — your time for the parsha.'"
   },
   "anchorCueBed": "Before bed",
   "@anchorCueBed": {
-    "description": "The reader's chosen routine, named in the daily reminder: 'Before bed — it's yours.'"
+    "description": "The reader's chosen routine, named in the daily reminder: 'Before bed — your time for the parsha.'"
   },
   "notificationsUnsupported": "Reminders need the installed app, on your phone or computer. Below are the reminders it can send.",
   "getTheApp": "Get the app",
@@ -1517,6 +1517,24 @@
   "openSystemSettings": "Open settings",
   "@openSystemSettings": {
     "description": "Opens the device's notification settings for this app, from the dialog saying notifications are off."
+  },
+  "reminderMoveHint": "Your reminder comes at {time}. Move it to {usual}?",
+  "@reminderMoveHint": {
+    "description": "Under the routines in the daily reminder's settings, when the reminder's time is far from the chosen routine's usual time (an 8 PM reminder after Shacharit), so that the reminder doesn't name the routine. With the button reminderMove.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "8:00 PM"
+      },
+      "usual": {
+        "type": "String",
+        "example": "7:30 AM"
+      }
+    }
+  },
+  "reminderMove": "Move",
+  "@reminderMove": {
+    "description": "Button, after reminderMoveHint: moves the daily reminder to the routine's usual time."
   },
   "primingTitle": "Want a gentle daily nudge?",
   "primingBody": "Never on Shabbat or Yom Tov, and at most one a day. Change it anytime.",
@@ -1569,7 +1587,7 @@
       }
     }
   },
-  "notifDailyAnchor": "{cue} — it’s yours.",
+  "notifDailyAnchor": "{cue} — your time for the parsha.",
   "@notifDailyAnchor": {
     "description": "Ends the daily reminder when the reader has tied the reading to a routine, after ' · '.",
     "placeholders": {
@@ -1587,7 +1605,10 @@
       }
     }
   },
-  "notifFridayBody": "If you haven’t finished, there’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.",
+  "notifFridayBody": "There’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.",
+  "@notifFridayBody": {
+    "description": "The Erev Shabbat reminder, sent only while the week's parsha isn't finished."
+  },
   "notifCheckInTitle": "Shavua tov!",
   "notifCheckInBody": "Did you read on Shabbat? Tap to log it.",
   "notifPausedTitle": "Reminders paused",

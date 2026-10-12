@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../../core/calendar/city.dart';
 import '../../core/calendar/local_date.dart';
 import '../../core/text/hebrew_text.dart';
@@ -122,6 +124,14 @@ enum HabitAnchor {
         dinner => 20 * 60,
         bed => 21 * 60 + 30,
       };
+
+  /// Whether a reminder at [minutes] after midnight may name the routine:
+  /// within four hours of its [usualMinutes], either side of midnight, so
+  /// that an 8 PM reminder never says "After Shacharit".
+  bool isNear(int minutes) {
+    final apart = (usualMinutes - minutes).abs();
+    return math.min(apart, 24 * 60 - apart) <= 4 * 60;
+  }
 
   /// The daily reminder's time, now [minutes], once the routine [next] is
   /// chosen in place of [previous]: [next]'s usual time while [minutes] is

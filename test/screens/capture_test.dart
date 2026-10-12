@@ -417,6 +417,8 @@ const _screens = {
   's_reminders_offer': '/settings/reminders',
   // All three on, following the Shabbat times of the city chosen.
   's_reminders_city': '/settings/reminders',
+  // A daily reminder at 8 PM after Shacharit: the offer to move it to 7:30.
+  's_reminders_far': '/settings/reminders',
   's_data': '/settings/data',
   's_data_reset': '/settings/data',
   // A backup file chosen: what it holds, and whether to merge it.
@@ -551,8 +553,15 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_display_rashi': (s) => s.copyWith(showRashi: true),
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
-  's_reminders_on': (s) =>
-      s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true, habitAnchor: HabitAnchor.shacharit),
+  's_reminders_on': (s) => s.copyWith(
+        dailyReminder: true,
+        dailyReminderMinutes: 7 * 60 + 30,
+        fridayReminder: true,
+        checkInReminder: true,
+        habitAnchor: HabitAnchor.shacharit,
+      ),
+  's_reminders_far': (s) =>
+      s.copyWith(dailyReminder: true, dailyReminderMinutes: 20 * 60, habitAnchor: HabitAnchor.shacharit),
   'reader_offer': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   'reader_offer_city': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   // Reading by section, so that 32:3 is read with the verses around it.
@@ -595,6 +604,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_candles': (s) => s.copyWith(city: _jerusalem),
   's_reminders_city': (s) => s.copyWith(
         dailyReminder: true,
+        dailyReminderMinutes: 7 * 60 + 30,
         fridayReminder: true,
         checkInReminder: true,
         habitAnchor: HabitAnchor.shacharit,
@@ -887,7 +897,7 @@ String _backupFile() {
 }
 
 /// Screens shown where reminders are available.
-const _remindersSupported = {'s_reminders_on', 's_reminders_city', 'reader_offer'};
+const _remindersSupported = {'s_reminders_on', 's_reminders_city', 's_reminders_far', 'reader_offer'};
 
 /// Screens shown where reminders are available and the OS allows them.
 const _remindersAllowed = {'s_reminders_offer', 'reader_offer_city'};
@@ -1635,7 +1645,18 @@ const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 const _hugeModes = {'huge', 'hugehe'};
 const _hugeScreens = {'today', 'reader'};
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
-const _hugeTallScreens = {'today', 'parsha', 'week', 'progress', 'settings', 'community', 'thread', 'haftarah'};
+const _hugeTallScreens = {
+  'today',
+  'parsha',
+  'week',
+  'progress',
+  'settings',
+  'community',
+  'thread',
+  'haftarah',
+  // The offer to move the daily reminder, its button under its text.
+  's_reminders_far',
+};
 
 const _narrowDesktopScreens = {
   'today',
@@ -1843,6 +1864,7 @@ const _bigTextScreens = {
   's_reminders_on',
   's_reminders_offer',
   's_reminders_city',
+  's_reminders_far',
   'today_candles',
   'community',
   'compose',

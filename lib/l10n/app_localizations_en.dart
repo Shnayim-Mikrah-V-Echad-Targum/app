@@ -1899,6 +1899,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openSystemSettings => 'Open settings';
 
   @override
+  String reminderMoveHint(String time, String usual) {
+    return 'Your reminder comes at $time. Move it to $usual?';
+  }
+
+  @override
+  String get reminderMove => 'Move';
+
+  @override
   String get primingTitle => 'Want a gentle daily nudge?';
 
   @override
@@ -1946,7 +1954,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String notifDailyAnchor(String cue) {
-    return '$cue — it’s yours.';
+    return '$cue — your time for the parsha.';
   }
 
   @override
@@ -1956,7 +1964,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifFridayBody =>
-      'If you haven’t finished, there’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.';
+      'There’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.';
 
   @override
   String get notifCheckInTitle => 'Shavua tov!';

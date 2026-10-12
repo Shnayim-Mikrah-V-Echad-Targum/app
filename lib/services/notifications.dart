@@ -19,6 +19,7 @@ import '../data/parsha_repository.dart';
 import '../features/progress/domain/reading_plan.dart' show kSecondsPerVerse;
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
+import '../ui/l10n.dart' show joinWithAnd;
 import '../ui/theme/palette.dart';
 import 'reminder_planner.dart';
 
@@ -342,7 +343,8 @@ String reminderRoute(PlannedReminder r) => switch (r.kind) {
 
 /// The words of reminder [r] in [l]'s language: for the daily reading, the
 /// aliyot due as the title, and the portion and length as the body, ending
-/// with the routine the reader tied the reading to, [anchor], if any.
+/// with the routine the reader tied the reading to, [anchor], if any and if
+/// the reminder comes near its time ([HabitAnchor.isNear]).
 ReminderCopy reminderCopy(
   PlannedReminder r, {
   required AppLocalizations l,
@@ -359,14 +361,16 @@ ReminderCopy reminderCopy(
       final verses = l.versesCount(count);
       // All three readings of each verse, as Today estimates them.
       final minutes = (count * kSecondsPerVerse / 60).ceil();
-      final cue = anchor == null ? '' : ' · ${l.notifDailyAnchor(anchorCue(anchor, l))}';
+      // A morning routine isn't named in an evening reminder, nor on an
+      // Erev Shabbat that brings an evening one forward to the afternoon.
+      final cue = anchor == null || !anchor.isNear(r.minutes) ? '' : ' · ${l.notifDailyAnchor(anchorCue(anchor, l))}';
       // The whole portion in one day: named once, in the title.
       if (r.aliyot.length == 7) {
         return (title: l.notifDailyTitle(l.parshaLabel(parsha)), body: '$verses · ${l.minutesEstimate(minutes)}$cue');
       }
       final names = [l.aliyah1, l.aliyah2, l.aliyah3, l.aliyah4, l.aliyah5, l.aliyah6, l.aliyah7];
       return (
-        title: l.notifDailyTitle(r.aliyot.map((a) => names[a]).join(', ')),
+        title: l.notifDailyTitle(joinWithAnd(l, [for (final a in r.aliyot) names[a]])),
         body: '${l.notifDailyBody(parsha, verses, minutes)}$cue',
       );
     case ReminderKind.erevShabbat:
