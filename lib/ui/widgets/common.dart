@@ -557,8 +557,9 @@ class InfoCard extends StatelessWidget {
 }
 
 /// A banner for important, non-blocking information (§6.20): bodyMedium on
-/// a secondaryContainer wash, radius 12, with no border but high contrast's
-/// 2 px outline. Place it within the page's gutters, never full-bleed.
+/// a secondaryContainer wash, under an optional heading in titleMedium,
+/// radius 12, with no border but high contrast's 2 px outline. Place it
+/// within the page's gutters, never full-bleed.
 class NoticeBanner extends StatelessWidget {
   const NoticeBanner({
     super.key,
@@ -586,8 +587,9 @@ class NoticeBanner extends StatelessWidget {
   final VoidCallback? onDismiss;
   final String? dismissLabel;
 
-  /// A line in titleSmall over [text], for a notice that needs one: its
-  /// heading.
+  /// A line in titleMedium over [text], for a notice that needs one: its
+  /// heading, a size above the text, so that it reads as a heading rather
+  /// than as the text's first sentence.
   final String? title;
   final Widget? action;
 
@@ -645,25 +647,23 @@ class NoticeBanner extends StatelessWidget {
     final scheme = theme.colorScheme;
     final ink = scheme.onSecondaryContainer;
     final style = (marginalia ? SeferType.of(context).marginalia : theme.textTheme.bodyMedium)?.copyWith(color: ink);
-    // Each word whole, set smaller where the largest text leaves one too
-    // wide for the banner, and no line started by a dash.
-    Widget message = WholeWords(dashHeldToWord(text), style: style, textAlign: TextAlign.start, breakAtHyphens: true);
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(color: ink);
+    // Balanced where it wraps, leaving no word alone on its last line; each
+    // word whole, set smaller where the largest text leaves one too wide for
+    // the banner, and no line started by a dash.
+    Widget message = BalancedText(dashHeldToWord(text), style: style, textAlign: TextAlign.start);
     if (title case final title?) {
       message = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // The notice's heading, which screen readers can move to: a node
-          // of its own. Balanced where it wraps, leaving no word alone on
-          // its last line.
+          // of its own, balanced as the text is.
           Semantics(
             container: true,
             header: true,
-            child: BalancedText(
-              title,
-              style: theme.textTheme.titleSmall?.copyWith(color: ink),
-              textAlign: TextAlign.start,
-            ),
+            child: BalancedText(title, style: titleStyle, textAlign: TextAlign.start),
           ),
+          const Gap(2),
           message,
         ],
       );
@@ -672,10 +672,12 @@ class NoticeBanner extends StatelessWidget {
     final action = _legible(context);
     final below = actionBelow ? action : null;
     final dismiss = onDismiss;
-    // Marginalia's first line is taller than the icon, which is centred on it.
-    final markTop = marginalia && title == null
-        ? math.max(0.0, (MediaQuery.textScalerOf(context).scale(style!.fontSize!) * style.height! - 20) / 2)
-        : 0.0;
+    // The height of the first line: the title's, or the text's.
+    final first = title != null ? titleStyle! : style!;
+    final firstLine = MediaQuery.textScalerOf(context).scale(first.fontSize!) * first.height!;
+    // A title's first line, and marginalia's, is taller than the icon,
+    // which is centred on it.
+    final markTop = title != null || marginalia ? math.max(0.0, (firstLine - 20) / 2) : 0.0;
     return Card(
       color: scheme.secondaryContainer,
       // The fill sets it apart; only high contrast outlines it (§6.20).
@@ -718,9 +720,11 @@ class NoticeBanner extends StatelessWidget {
             ),
             if (below == null) ?action,
             if (dismiss != null)
-              // Raised to the first line, its 48 dp target reaching the edge.
+              // Centred on the first line, its 48 dp target reaching the
+              // edge at most: raised into the padding while the line is
+              // shorter than the target.
               Transform.translate(
-                offset: const Offset(0, -12),
+                offset: Offset(0, math.max(-12.0, (firstLine - 48) / 2)),
                 child: IconButton(
                   tooltip: dismissLabel,
                   icon: Icon(Icons.close, size: 20, color: ink),

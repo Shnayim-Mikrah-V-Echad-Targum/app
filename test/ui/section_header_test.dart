@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
@@ -83,13 +84,17 @@ void main() {
       );
       final context = tester.element(find.byType(NoticeBanner));
       final title = tester.widget<Text>(find.text('Bereshit is still open')).style;
-      expect(title?.fontSize, Theme.of(context).textTheme.titleSmall?.fontSize);
-      expect(title?.color, Palettes.light.onSecondaryContainer);
+      final text = tester.widget<Text>(find.text('Finish by Tuesday.')).style;
+      // A size above the text, so that it reads as a heading rather than
+      // as the text's first sentence.
+      expect(title?.fontSize, Theme.of(context).textTheme.titleMedium?.fontSize);
+      expect(title!.fontSize!, greaterThan(text!.fontSize!));
+      expect(title.color, Palettes.light.onSecondaryContainer);
       expect(tester.getTopLeft(find.text('Finish by Tuesday.')).dy,
-          tester.getBottomLeft(find.text('Bereshit is still open')).dy);
-      // The icon beside the title's line, not the middle of both.
+          tester.getBottomLeft(find.text('Bereshit is still open')).dy + 2);
+      // The icon centred on the title's line, not the middle of both.
       expect(tester.getCenter(find.byIcon(Icons.schedule)).dy,
-          closeTo(tester.getCenter(find.text('Bereshit is still open')).dy, 1));
+          closeTo(tester.getCenter(find.text('Bereshit is still open')).dy, 0.5));
       // The notice's heading, which a screen reader can move to.
       expect(tester.getSemantics(find.text('Bereshit is still open')), isSemantics(isHeader: true));
       expect(tester.getSemantics(find.text('Finish by Tuesday.')), isNot(isSemantics(isHeader: true)));
@@ -128,10 +133,77 @@ void main() {
       expect(close, findsOneWidget);
       expect(tester.getSize(find.byType(IconButton)), const Size(48, 48), reason: 'a 48 dp target');
       // On the title's line, at the end.
-      expect(tester.getCenter(find.byIcon(Icons.close)).dy, closeTo(tester.getCenter(find.text('Welcome back')).dy, 3));
+      expect(tester.getCenter(find.byIcon(Icons.close)).dy, closeTo(tester.getCenter(find.text('Welcome back')).dy, 0.5));
       expect(tester.getRect(find.byType(NoticeBanner)).right - tester.getRect(find.byType(IconButton)).right, 4);
       await tester.tap(close);
       expect(dismissed, 1);
+    });
+
+    // At twice the size the title's line is as tall as the close button's
+    // 48 dp target, and twice the icon's height and a half.
+    for (final hebrew in [false, true]) {
+      testWidgets('centres its icon and close button on a title that large text enlarges${hebrew ? ', in Hebrew' : ''}',
+          (tester) async {
+        final title = hebrew ? 'ברוכים השבים' : 'Welcome back';
+        await pumpThemed(
+          tester,
+          NoticeBanner(
+            icon: Icons.play_circle_outline,
+            title: title,
+            text: hebrew ? 'ההשהיה הסתיימה.' : 'Your pause has ended.',
+            onDismiss: () {},
+            dismissLabel: 'Dismiss',
+          ),
+          hebrew: hebrew,
+          textScale: 2,
+        );
+        final line = tester.getRect(find.text(title));
+        expect(line.height, 48, reason: 'one line of titleMedium, 16/24, at twice the size');
+        expect(tester.getCenter(find.byIcon(Icons.play_circle_outline)).dy, closeTo(line.center.dy, 0.5));
+        expect(tester.getCenter(find.byIcon(Icons.close)).dy, closeTo(line.center.dy, 0.5));
+        // Within the banner's padding: lowered from the edge it reaches at
+        // the usual size.
+        final banner = tester.getRect(find.byType(Card));
+        expect(tester.getRect(find.byType(IconButton)).top - banner.top, 12);
+      });
+    }
+
+    // "same." alone under "Chumash — it counts just the" on a 360 dp phone,
+    // and "חומש." under the Hebrew restore notice.
+    testWidgets('balances its text, leaving no word alone on its last line', (tester) async {
+      // In the test font, each letter and space 15 wide: across the banner
+      // "aaaa bbbb cccc / dd", and balanced "aaaa bbbb / cccc dd".
+      const text = 'aaaa bbbb cccc dd';
+      await pumpThemed(
+        tester,
+        const Align(
+          alignment: AlignmentDirectional.topStart,
+          child: SizedBox(width: 300, child: NoticeBanner(icon: Icons.info_outline, text: text)),
+        ),
+      );
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(text));
+      double lineOf(int offset) => paragraph.getOffsetForCaret(TextPosition(offset: offset), Rect.zero).dy;
+      final full = tester.getSize(find.byType(Expanded)).width;
+      expect(full, inInclusiveRange(15.0 * 14, 15.0 * 17 - 1), reason: 'three words to a line across the banner');
+      expect(lineOf(0), lessThan(lineOf(text.length - 1)), reason: 'it wraps');
+      expect(lineOf(text.indexOf('cccc')), lineOf(text.length - 1));
+      // At the start, beside the icon.
+      expect(tester.getRect(find.text(text)).left, tester.getRect(find.byIcon(Icons.info_outline)).right + 12);
+    });
+
+    testWidgets('sets its balanced text at the start in Hebrew, on the right', (tester) async {
+      const text = 'אאאא בבבב גגגג דד';
+      await pumpThemed(
+        tester,
+        const Align(
+          alignment: AlignmentDirectional.topStart,
+          child: SizedBox(width: 300, child: NoticeBanner(icon: Icons.info_outline, text: text)),
+        ),
+        hebrew: true,
+      );
+      final box = tester.getRect(find.text(text));
+      expect(box.width, lessThan(tester.getSize(find.byType(Expanded)).width), reason: 'balanced');
+      expect(box.right, tester.getRect(find.byIcon(Icons.info_outline)).left - 12);
     });
 
     testWidgets('puts its close button at the top end in Hebrew too, on the left', (tester) async {
