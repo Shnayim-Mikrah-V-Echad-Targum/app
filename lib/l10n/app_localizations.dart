@@ -957,6 +957,12 @@ abstract class AppLocalizations {
   /// **'Open {name}'**
   String readingDivergenceOpen(String name);
 
+  /// Button on the divergence notice for a visitor to Israel that opens Settings → Reading & customs, where the Torah reading they hear is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the reading'**
+  String get readingDivergenceChange;
+
   /// No description provided for @discussThisWeek.
   ///
   /// In en, this message translates to:

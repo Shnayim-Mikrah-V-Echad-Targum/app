@@ -644,6 +644,9 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get readingDivergenceChange => 'שינוי קריאת התורה';
+
+  @override
   String get discussThisWeek => 'דיון על פרשת השבוע';
 
   @override

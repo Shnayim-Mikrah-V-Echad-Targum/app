@@ -130,8 +130,10 @@ class TodayScreen extends ConsumerWidget {
         _PauseEndedNotice(end: welcome, ctx: ctx, previous: previous),
         const Gap(Rhythm.cardGap),
       ],
-      if (divergence != null) ...[
-        _DivergenceBanner(divergence: divergence, settings: settings),
+      // Until put away for this week: next week's, if the two still differ,
+      // is told again.
+      if (divergence != null && settings.divergenceDismissedFor != ctx.id) ...[
+        _DivergenceBanner(divergence: divergence, settings: settings, weekId: ctx.id),
         const Gap(Rhythm.cardGap),
       ],
       if (shownPrevious != null) ...[
@@ -300,12 +302,14 @@ class _TodayHeader extends StatelessWidget {
 /// Names both portions in a week when Israel and the Diaspora read
 /// different ones, for a reader who hears one place's reading but keeps the
 /// other's days of Yom Tov. A visitor to Israel can open last week's portion
-/// in Israel, their home portion this week.
+/// in Israel, their home portion this week, or change the reading they hear
+/// in Settings. Either reader can put it away for the week [weekId].
 class _DivergenceBanner extends ConsumerWidget {
-  const _DivergenceBanner({required this.divergence, required this.settings});
+  const _DivergenceBanner({required this.divergence, required this.settings, required this.weekId});
 
   final ReadingDivergence divergence;
   final AppSettings settings;
+  final String weekId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -321,12 +325,32 @@ class _DivergenceBanner extends ConsumerWidget {
           ? l.readingDivergence(israel, diaspora)
           : l.readingDivergenceAhead(israel, diaspora),
       actionBelow: true,
-      action: previous == null
-          ? null
-          : TextButton(
-              onPressed: () => context.push('/today/week/${weekIdFor(previous.portion, previous.occasion)}'),
-              child: Text(l.readingDivergenceOpen(name(previous.portion))),
-            ),
+      // In the order the notice speaks of them: reading both portions, or
+      // only the one heard, once Settings says which that is.
+      action: divergence.hearsIsrael
+          ? Wrap(
+              alignment: WrapAlignment.end,
+              spacing: Space.sm,
+              runSpacing: Space.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (previous != null)
+                  TextButton(
+                    // Room around a label that large text wraps.
+                    style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                    onPressed: () => context.push('/today/week/${weekIdFor(previous.portion, previous.occasion)}'),
+                    child: Text(l.readingDivergenceOpen(name(previous.portion)), textAlign: TextAlign.center),
+                  ),
+                TextButton(
+                  style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                  onPressed: () => context.push('/settings/reading'),
+                  child: Text(l.readingDivergenceChange, textAlign: TextAlign.center),
+                ),
+              ],
+            )
+          : null,
+      onDismiss: () => ref.read(settingsProvider.notifier).update((s) => s.copyWith(divergenceDismissedFor: weekId)),
+      dismissLabel: l.actionDismiss,
     );
   }
 }

@@ -666,6 +666,10 @@
       }
     }
   },
+  "readingDivergenceChange": "Change the reading",
+  "@readingDivergenceChange": {
+    "description": "Button on the divergence notice for a visitor to Israel that opens Settings → Reading & customs, where the Torah reading they hear is chosen."
+  },
   "discussThisWeek": "Discuss this week’s parsha",
   "thisWeek": "This week",
   "@thisWeek": {

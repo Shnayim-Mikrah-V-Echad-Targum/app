@@ -638,6 +638,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get readingDivergenceChange => 'Change the reading';
+
+  @override
   String get discussThisWeek => 'Discuss this week’s parsha';
 
   @override

@@ -2024,6 +2024,7 @@ const _bigTextScreens = {
   'today_checkin_vezot',
   'today_checkin_vezot_date',
   'today_pause_ended',
+  'today_divergence',
   'today_grace',
   'today_tisha_bav',
   'reader_offer',

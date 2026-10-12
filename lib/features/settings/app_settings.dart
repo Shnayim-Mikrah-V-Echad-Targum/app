@@ -224,6 +224,7 @@ class AppSettings {
     this.pauseEndSeen,
     this.lastStripAck,
     this.stripNoteShownOn,
+    this.divergenceDismissedFor,
   });
 
   // Calendar and customs
@@ -396,6 +397,11 @@ class AppSettings {
   /// acknowledged, as though put away.
   final LocalDate? stripNoteShownOn;
 
+  /// The week whose notice that Israel and the Diaspora read different
+  /// portions the reader last put away: it is not shown again that week,
+  /// but comes back the next if the two still differ.
+  final String? divergenceDismissedFor;
+
   bool get ashkenaziNames => nameStyle == NameStyle.ashkenazi;
 
   /// These settings with [nusach] as the reader's custom. Until the reader
@@ -542,6 +548,7 @@ class AppSettings {
     Object? pauseEndSeen = _keep,
     Object? lastStripAck = _keep,
     Object? stripNoteShownOn = _keep,
+    Object? divergenceDismissedFor = _keep,
   }) =>
       AppSettings(
         readingSchedule: readingSchedule ?? this.readingSchedule,
@@ -610,6 +617,9 @@ class AppSettings {
         lastStripAck: identical(lastStripAck, _keep) ? this.lastStripAck : lastStripAck as LocalDate?,
         stripNoteShownOn:
             identical(stripNoteShownOn, _keep) ? this.stripNoteShownOn : stripNoteShownOn as LocalDate?,
+        divergenceDismissedFor: identical(divergenceDismissedFor, _keep)
+            ? this.divergenceDismissedFor
+            : divergenceDismissedFor as String?,
       );
 
   /// These settings with what Today has said on this device taken from
@@ -620,6 +630,7 @@ class AppSettings {
         pauseEndSeen: device.pauseEndSeen,
         lastStripAck: device.lastStripAck,
         stripNoteShownOn: device.stripNoteShownOn,
+        divergenceDismissedFor: device.divergenceDismissedFor,
       );
 
   static const _keep = Object();
@@ -692,6 +703,7 @@ class AppSettings {
         'pauseEndSeen': pauseEndSeen?.rd,
         'lastStripAck': lastStripAck?.rd,
         'stripNoteShownOn': stripNoteShownOn?.rd,
+        'divergenceDismissedFor': divergenceDismissedFor,
       };
 
   /// Reads settings, tolerating missing or unknown values so that older and
@@ -785,6 +797,7 @@ class AppSettings {
       pauseEndSeen: date('pauseEndSeen'),
       lastStripAck: date('lastStripAck'),
       stripNoteShownOn: date('stripNoteShownOn'),
+      divergenceDismissedFor: j['divergenceDismissedFor'] is String ? j['divergenceDismissedFor'] as String : null,
     );
   }
 
