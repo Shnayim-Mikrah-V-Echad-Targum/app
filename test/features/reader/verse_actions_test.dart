@@ -301,10 +301,10 @@ void main() {
       await open(tester, '/read/5787:1/3', settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
       await tester.longPress(find.byType(ScriptureVerse).first);
       await tester.pumpAndSettle();
-      expect(inSheet(find.text('בראשית ג, כב')), findsOneWidget);
+      expect(inSheet(find.text('בראשית ג,\u00A0כב')), findsOneWidget);
       await tester.tap(inSheet(find.text('העתקה')));
       await tester.pumpAndSettle();
-      expect(copied!.split('\n').last, '— בראשית ג, כב');
+      expect(copied!.split('\n').last, '— בראשית ג,\u00A0כב');
     });
 
     testWidgets('the Name is written out where the reader asks for that', (tester) async {
@@ -666,7 +666,7 @@ void main() {
       );
       await untilQuoted(tester);
       final fields = tester.widgetList<TextField>(find.byType(TextField)).toList();
-      expect(fields[0].controller!.text, 'שאלה על בראשית ג, כב');
+      expect(fields[0].controller!.text, 'שאלה על בראשית ג,\u00A0כב');
       expect(fields[1].controller!.text, '> $hebrew3_22\n\n');
     });
 

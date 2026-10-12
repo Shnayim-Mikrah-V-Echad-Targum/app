@@ -286,7 +286,7 @@ void main() {
     await open(tester, hebrew: true);
     await untilIndexed(tester);
     await search(tester, 'ויצא יעקב');
-    expect(find.text('בראשית כח, י'), findsOneWidget);
+    expect(find.text('בראשית כח,\u00A0י'), findsOneWidget);
     expect(find.text('פסוק אחד'), findsOneWidget);
   });
 

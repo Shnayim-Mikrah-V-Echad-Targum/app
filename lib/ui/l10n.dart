@@ -175,11 +175,13 @@ class Names {
     return '$c1:$v1–$end';
   }
 
-  /// One verse: "Genesis 28:10" / "בראשית כח, י".
+  /// One verse: "Genesis 28:10" / "בראשית כח, י", its chapter held to its
+  /// verse by a no-break space, as in [verseRange] and as "28:10" holds
+  /// together, so that a line never ends between them.
   String reference(String bookName, int chapter, int verse) {
     if (_he) {
       final g = HebrewText.gematria;
-      return '${book(bookName)} ${g(chapter, punctuate: false)}, ${g(verse, punctuate: false)}';
+      return '${book(bookName)} ${g(chapter, punctuate: false)},$_nbsp${g(verse, punctuate: false)}';
     }
     return '${book(bookName)} $chapter:$verse';
   }

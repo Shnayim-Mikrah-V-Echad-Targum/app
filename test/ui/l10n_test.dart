@@ -185,6 +185,13 @@ void main() {
     });
   });
 
+  // As a range holds them, so that a long reference at large text breaks
+  // after the book, never between "כח," and "י".
+  testWidgets('one verse holds its chapter to its verse, in Hebrew as "28:10" does in English', (tester) async {
+    expect(Names(await _page(tester, hebrew: false)).reference('Genesis', 28, 10), 'Genesis 28:10');
+    expect(Names(await _page(tester, hebrew: true)).reference('Genesis', 28, 10), 'בראשית כח,\u00A0י');
+  });
+
   testWidgets('a reading of an aliyah is named as the rings\' legend names it', (tester) async {
     var names = Names(await _page(tester, hebrew: false));
     expect(

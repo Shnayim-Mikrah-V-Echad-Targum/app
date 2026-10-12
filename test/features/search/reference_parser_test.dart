@@ -1,9 +1,13 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/search/reference_parser.dart';
+import 'package:shnayim_mikra/ui/l10n.dart';
+
+import '../../helpers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +20,20 @@ void main() {
 
   TypedReference? parse(String s, {String? currentBook}) => parser.parse(s, currentBook: currentBook);
   VerseReference verse(String book, int chapter, int verse) => VerseReference(book, VerseRef(chapter, verse));
+
+  // A reference copied from the app, as Names writes it now, into Go to
+  // verse: built here from Names itself, so that a change to how the app
+  // writes one that the parser can't read fails.
+  for (final hebrew in [false, true]) {
+    testWidgets('reads a reference and a range as the ${hebrew ? 'Hebrew' : 'English'} UI writes them',
+        (tester) async {
+      await pumpThemed(tester, const SizedBox(key: Key('page')), hebrew: hebrew);
+      final names = Names(tester.element(find.byKey(const Key('page'))));
+      expect(parse(names.reference('Genesis', 28, 10)), verse('Genesis', 28, 10));
+      expect(parse(names.range('Genesis', 7, 17, 8, 14)), verse('Genesis', 7, 17));
+      expect(parse(names.range('Genesis', 2, 20, 2, 25)), verse('Genesis', 2, 20));
+    });
+  }
 
   group('books and verses', () {
     test('the examples', () {
@@ -78,6 +96,9 @@ void main() {
       // As the Hebrew UI writes a range across chapters, its dash spaced.
       expect(parse('בראשית ז, יז\u00A0– ח, יד'), verse('Genesis', 7, 17));
       expect(parse('בראשית ז, יז – ח, יד'), verse('Genesis', 7, 17));
+      // Exactly as the app writes it, every chapter held to its verse.
+      expect(parse('בראשית ז,\u00A0יז\u00A0– ח,\u00A0יד'), verse('Genesis', 7, 17));
+      expect(parse('בראשית כח,\u00A0י'), verse('Genesis', 28, 10));
       expect(parse('לך-לך יב, א-ה'), verse('Genesis', 12, 1));
       // With spaces around the hyphen.
       expect(parse('Gen 28:12 - 15'), verse('Genesis', 28, 12));

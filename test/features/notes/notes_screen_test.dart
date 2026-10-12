@@ -412,7 +412,7 @@ void main() {
                   a.range.end >= start + note.length);
         }
 
-        final row = tester.getSemantics(find.bySemanticsLabel(RegExp(hebrew ? r'^בראשית ג, כב\. ' : r'^Genesis 3:22\. ')));
+        final row = tester.getSemantics(find.bySemanticsLabel(RegExp(hebrew ? '^בראשית ג,\u00A0כב\\. ' : r'^Genesis 3:22\. ')));
         expect(tagged(row.attributedLabel), isTrue, reason: row.attributedLabel.toString());
 
         // And under Your note in the verse's options.
@@ -463,7 +463,7 @@ void main() {
     testWidgets('in the Hebrew UI, names each verse and chapter in Hebrew', (tester) async {
       await open(tester, '/notes', settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
       expect(find.text('סימניות והערות'), findsOneWidget);
-      expect(find.text('בראשית ג, כב'), findsOneWidget);
+      expect(find.text('בראשית ג,\u00A0כב'), findsOneWidget);
       expect(find.text('פרק ג'), findsNWidgets(2));
     });
   });
