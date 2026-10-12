@@ -44,4 +44,41 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  // The catch-up card's run of aliyot, at the largest text on the smallest
+  // phone: "Shlishi –" over "Shevi'i", never a line that starts with the
+  // dash. Too wide for the line, "Shlishi –" is set a little smaller.
+  for (final hebrew in [false, true]) {
+    testWidgets('a run of aliyot to catch up on starts no line with its dash${hebrew ? ', in Hebrew' : ''}',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 3600);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await pumpApp(
+        tester,
+        settings: AppSettings(
+          onboardingComplete: true,
+          joinDate: captureJoinDate,
+          language: hebrew ? AppLanguage.hebrew : AppLanguage.english,
+        ),
+        now: captureNow,
+        progress: captureProgress(),
+      );
+      final run = hebrew ? 'שלישי\u00A0– שביעי' : "Shlishi\u00A0– Shevi'i";
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.text(run), matching: find.byType(RichText)),
+      );
+      double lineOf(int offset) => paragraph
+          .getBoxesForSelection(TextSelection(baseOffset: offset, extentOffset: offset + 1))
+          .single
+          .top;
+      final dash = run.indexOf('–');
+      expect(lineOf(dash), lineOf(0), reason: 'the dash ends the first line');
+      expect(lineOf(run.length - 1), greaterThan(lineOf(0)), reason: 'on two lines at this size');
+      expect(tester.takeException(), isNull);
+      expectWholeWords(tester);
+    });
+  }
 }

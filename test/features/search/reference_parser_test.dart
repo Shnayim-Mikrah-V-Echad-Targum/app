@@ -75,6 +75,9 @@ void main() {
       expect(parse('Gen 28:12-15'), verse('Genesis', 28, 12));
       expect(parse('Gen 28:12–29:3'), verse('Genesis', 28, 12));
       expect(parse('בראשית ז, יז–ח, יד'), verse('Genesis', 7, 17));
+      // As the Hebrew UI writes a range across chapters, its dash spaced.
+      expect(parse('בראשית ז, יז\u00A0– ח, יד'), verse('Genesis', 7, 17));
+      expect(parse('בראשית ז, יז – ח, יד'), verse('Genesis', 7, 17));
       expect(parse('לך-לך יב, א-ה'), verse('Genesis', 12, 1));
       // With spaces around the hyphen.
       expect(parse('Gen 28:12 - 15'), verse('Genesis', 28, 12));

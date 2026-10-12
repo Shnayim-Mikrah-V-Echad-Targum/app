@@ -99,7 +99,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining(wordsRegExp(r'^נקראת בשבת, כ״ט בתשרי( · 10 באוקטובר 2026)?$')), findsOneWidget);
       expect(find.textContaining(wordsRegExp(r'^(נקראת בשבת, כ״ט בתשרי · )?10 באוקטובר 2026$')), findsOneWidget);
-      expect(find.textContaining(wordsRegExp(r'^(בראשית א, א–ו, ח · )?146 פסוקים$')), findsOneWidget);
+      expect(find.textContaining(wordsRegExp(r'^(בראשית א, א – ו, ח · )?146 פסוקים$')), findsOneWidget);
     });
   });
 

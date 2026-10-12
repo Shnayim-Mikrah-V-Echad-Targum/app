@@ -265,7 +265,7 @@ void main() {
       );
       // At the end of the title's line: to its left.
       expect(tester.getRect(english).right, lessThan(tester.getRect(find.text('נח')).left));
-      expect(partsOf(tester, row('נח')), containsAllInOrder(['בראשית ו, ט–יא, לב', 'ו׳ בחשון']));
+      expect(partsOf(tester, row('נח')), containsAllInOrder(['בראשית ו, ט – יא, לב', 'ו׳ בחשון']));
     });
   });
 

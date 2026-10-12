@@ -839,7 +839,15 @@ class _TodayCard extends ConsumerWidget {
       };
       children = [
         _CardHeader(l.todayCatchUpTitle),
-        Text(names.aliyotSpan(due), style: theme.textTheme.headlineSmall),
+        // Whole words: a name, and a run's dash with the name before it
+        // ("Shlishi –"), set smaller where too wide for the line rather
+        // than broken, so that no line starts with the dash.
+        WholeWords(
+          names.aliyotSpan(due),
+          style: theme.textTheme.headlineSmall,
+          textAlign: TextAlign.start,
+          breakAtHyphens: true,
+        ),
         Text(
           [l.aliyotCount(due.length), l.versesCount(versesOf(due)), l.minutesEstimate(ctx.remainingMinutes(due))]
               .join(' · '),
@@ -856,7 +864,7 @@ class _TodayCard extends ConsumerWidget {
       final unread = day.aliyot.where((a) => !ctx.progress.isAliyahDone(a)).toList();
       children = [
         _CardHeader(l.todayReadingTitle),
-        Text(names.aliyot(day.aliyot), style: theme.textTheme.headlineSmall),
+        WholeWords(names.aliyot(day.aliyot), style: theme.textTheme.headlineSmall, textAlign: TextAlign.start),
         Text(
           [
             // What is left to read, and once it is read, what was.

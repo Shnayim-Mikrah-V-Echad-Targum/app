@@ -63,7 +63,7 @@ void main() {
     testWidgets('the card gathers every aliyah due, with an honest estimate', (tester) async {
       await openToday(tester, progress: _bereshit());
       expect(find.text('Catching up'), findsOneWidget);
-      expect(find.text("Shlishi – Shevi'i"), findsOneWidget);
+      expect(find.text("Shlishi\u00A0– Shevi'i"), findsOneWidget);
       // Shlishi's Targum, and all three readings of the other four.
       expect(find.text('5 aliyot · 96 verses · about 33 min'), findsOneWidget);
       expect(
@@ -131,13 +131,13 @@ void main() {
     // day from Sunday, and Shishi and Shevi'i on Friday. Nothing read.
     testWidgets('from Sunday to Wednesday, it is midweek', (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 13, 10));
-      expect(find.text('Rishon – Shlishi'), findsOneWidget);
+      expect(find.text('Rishon\u00A0– Shlishi'), findsOneWidget);
       // Every aliyah the card names, today's too, counted alike.
       expect(find.textContaining(RegExp(r'^3 aliyot · \d+ verses')), findsOneWidget);
       expect(findWords('3 aliyot to catch up — very normal midweek.'), findsOneWidget);
 
       await openToday(tester, now: DateTime(2026, 10, 14, 10));
-      expect(find.text("Rishon – Revi'i"), findsOneWidget);
+      expect(find.text("Rishon\u00A0– Revi'i"), findsOneWidget);
       expect(findWords('4 aliyot to catch up — very normal midweek.'), findsOneWidget);
     });
 
@@ -156,7 +156,7 @@ void main() {
 
     testWidgets('on Thursday, two days remain before Shabbat', (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 15, 10));
-      expect(find.text('Rishon – Chamishi'), findsOneWidget);
+      expect(find.text('Rishon\u00A0– Chamishi'), findsOneWidget);
       expect(find.textContaining(RegExp(r'^5 aliyot · \d+ verses')), findsOneWidget);
       expect(findWords('5 aliyot to catch up — and there are still two days before Shabbat.'), findsOneWidget);
       expect(find.textContaining('midweek'), findsNothing);
@@ -183,7 +183,7 @@ void main() {
         settings: _settings.copyWith(joinDate: LocalDate(2028, 5, 1)),
         now: DateTime(2028, 5, 30, 10),
       );
-      expect(find.text('Rishon – Chamishi'), findsOneWidget);
+      expect(find.text('Rishon\u00A0– Chamishi'), findsOneWidget);
       expect(
         findWords('5 aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.'),
         findsOneWidget,
@@ -236,7 +236,7 @@ void main() {
         settings: _settings.copyWith(joinDate: LocalDate(2029, 9, 1)),
         now: DateTime(2029, 9, 18, 10),
       );
-      expect(find.text('Rishon – Shlishi'), findsOneWidget);
+      expect(find.text('Rishon\u00A0– Shlishi'), findsOneWidget);
       expect(
         findWords('3 aliyot to catch up before Yom Kippur — and there is still time after it, too.'),
         findsOneWidget,
@@ -249,7 +249,7 @@ void main() {
       final hebrew = _settings.copyWith(language: AppLanguage.hebrew);
       await openToday(tester, settings: hebrew, now: DateTime(2026, 10, 13, 10));
       expect(find.text('משלימים'), findsOneWidget);
-      expect(find.text('ראשון – שלישי'), findsOneWidget);
+      expect(find.text('ראשון\u00A0– שלישי'), findsOneWidget);
       expect(findWords('עוד 3 עליות להשלים — רגיל לגמרי באמצע השבוע.'), findsOneWidget);
 
       await openToday(tester, settings: hebrew, now: DateTime(2026, 10, 15, 10));
@@ -359,7 +359,7 @@ void main() {
       // Rishon and Sheni are not expected.
       final joined = _settings.copyWith(joinDate: LocalDate(2026, 10, 7), starterCatchUp: false);
       await openToday(tester, settings: joined, now: DateTime(2026, 10, 8, 10));
-      expect(find.text('Shlishi – Chamishi'), findsOneWidget);
+      expect(find.text('Shlishi\u00A0– Chamishi'), findsOneWidget);
       expect(findWords('3 aliyot to catch up — and there are still two days before Shabbat.'), findsOneWidget);
       expect(find.text('Start · Shlishi'), findsOneWidget);
       expect(find.textContaining('Rishon'), findsNothing);

@@ -153,7 +153,7 @@ void main() {
         reason: "the rings' own label",
       );
       expect(bereshit.next, 'Continue · Shlishi, Targum', reason: "Today's button");
-      expect(on(t, LocalDate(2026, 10, 9)).first.line, "Catching up: Shlishi – Shevi'i");
+      expect(on(t, LocalDate(2026, 10, 9)).first.line, "Catching up: Shlishi\u00A0– Shevi'i");
 
       // Shabbat rests, with the parsha read that day.
       final shabbat = only(t, LocalDate(2026, 10, 10));
@@ -167,7 +167,7 @@ void main() {
       final sunday = only(t, LocalDate(2026, 10, 11));
       expect((sunday.kind, sunday.week, sunday.line), (WidgetDayKind.weekday, 1, 'Today: Rishon'));
       expect(only(t, LocalDate(2026, 10, 12)).line, 'Catching up: Rishon and Sheni');
-      expect(only(t, LocalDate(2026, 10, 13)).line, 'Catching up: Rishon – Shlishi');
+      expect(only(t, LocalDate(2026, 10, 13)).line, 'Catching up: Rishon\u00A0– Shlishi');
       expect(on(t, LocalDate(2026, 10, 16)).last.line, 'Catching up: The whole parsha');
       expect(only(t, LocalDate(2026, 10, 17)).kind, WidgetDayKind.shabbat);
     });
@@ -418,7 +418,7 @@ void main() {
       expect(bereshit.next, 'המשך · שלישי, תרגום');
       final friday = on(t, LocalDate(2026, 10, 9));
       expect([for (final d in friday) d.eyebrow], ['פרשת השבוע', 'ערב שבת']);
-      expect(friday.first.line, 'משלימים: שלישי – שביעי');
+      expect(friday.first.line, 'משלימים: שלישי\u00A0– שביעי');
       expect(only(t, LocalDate(2026, 10, 10)).line, 'שבת שלום');
       expect(only(t, LocalDate(2026, 10, 11)).line, 'היום: ראשון');
 
@@ -456,7 +456,7 @@ void main() {
         'week': 0,
         'kind': 'erevShabbat',
         'eyebrow': 'Parshat HaShavua',
-        'line': "Catching up: Shlishi – Shevi'i",
+        'line': "Catching up: Shlishi\u00A0– Shevi'i",
       });
       expect((json['weeks'] as List).last, containsPair('next', 'Start · Rishon'));
       expect((json['weeks'] as List).first, containsPair('m1', 3));
