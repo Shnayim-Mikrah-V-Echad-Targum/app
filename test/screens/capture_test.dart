@@ -136,6 +136,9 @@ const _screens = {
   'today_divergence': '/today',
   'today_divergence_abroad': '/today',
   'today_haftarah_left': '/today',
+  // Bereshit unfinished, its check-in put aside on the Sunday after: open
+  // until the end of Tuesday, which it names.
+  'today_late': '/today',
   'today_yomtov_oneday': '/today',
   'today_yomtov_twoday': '/today',
   'today_joined_midweek': '/today',
@@ -627,6 +630,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
   // The check-in, answered on Sunday, gives way to the open week's notice.
   'today_haftarah_left': (s) => s.copyWith(haftarahRequired: true, checkInAnsweredFor: '5787:1'),
+  'today_late': (s) => s.copyWith(checkInAnsweredFor: '5787:1'),
   // The Tuesday after Shavuot 5789 (Sunday and Monday, 20 and 21 May) on
   // Israel's reading: one day of Yom Tov kept, then two (a visitor).
   'today_yomtov_oneday': (s) =>
@@ -746,6 +750,7 @@ final _screenNow = <String, DateTime>{
   'today_divergence': DateTime(2029, 4, 24, 11),
   'today_divergence_abroad': DateTime(2029, 4, 24, 11),
   'today_haftarah_left': DateTime(2026, 10, 13, 11),
+  'today_late': DateTime(2026, 10, 11, 11),
   'today_yomtov_oneday': DateTime(2029, 5, 22, 11),
   'today_yomtov_twoday': DateTime(2029, 5, 22, 11),
   // Hoshana Rabbah 5787; Simchat Torah is on Shabbat in Israel.
@@ -2068,6 +2073,7 @@ const _bigTextScreens = {
   's_reading',
   'city',
   'today_paused',
+  'today_late',
   'welcome',
   'welcome_restore',
   'welcome_location',

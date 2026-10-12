@@ -514,8 +514,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String openWeekLate(String date) {
-    return 'Finish by $date and it still counts.';
+  String openWeekLate(String when, String date) {
+    String _temp0 = intl.Intl.selectLogic(when, {
+      'today': 'Finish by tonight and it still counts.',
+      'tomorrow': 'Finish by tomorrow night and it still counts.',
+      'other': 'Finish by the end of $date, and it still counts.',
+    });
+    return '$_temp0';
   }
 
   @override

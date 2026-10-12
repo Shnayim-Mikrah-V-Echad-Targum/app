@@ -412,6 +412,51 @@ void main() {
     expect(find.text('שבוע טוב! קראת את פרשת במדבר בשבת וביום טוב?'), findsOneWidget);
   });
 
+  group('a week still open within its late window', () {
+    test('closes today, tomorrow, or on a day it names', () {
+      final tuesday = LocalDate(2026, 10, 13);
+      expect(lateDeadlineDay(tuesday, today: tuesday), 'today');
+      expect(lateDeadlineDay(tuesday, today: LocalDate(2026, 10, 12)), 'tomorrow');
+      expect(lateDeadlineDay(tuesday, today: LocalDate(2026, 10, 11)), 'other');
+    });
+
+    // Bereshit's window closes at the end of Tuesday 13 October, 2 Cheshvan.
+    final answered = _settings.copyWith(checkInAnsweredFor: '5787:1');
+
+    testWidgets('says so by tonight on its last day, by tomorrow night the day before, and else by its date',
+        (tester) async {
+      for (final (day, words) in [
+        (11, 'Finish by the end of Tuesday, October 13, and it still counts.'),
+        (12, 'Finish by tomorrow night and it still counts.'),
+        (13, 'Finish by tonight and it still counts.'),
+      ]) {
+        await openToday(tester, settings: answered, now: DateTime(2026, 10, day, 9));
+        expect(find.text('Bereshit is still open'), findsOneWidget);
+        expect(findWords(words), findsOneWidget, reason: 'on October $day');
+      }
+    });
+
+    testWidgets('in Hebrew, by the Hebrew date', (tester) async {
+      final hebrew = answered.copyWith(language: AppLanguage.hebrew);
+      for (final (day, words) in [
+        (11, 'סיום עד סוף יום שלישי, ב׳ בחשון, עדיין נחשב.'),
+        (12, 'סיום עד מחר בלילה עדיין נחשב.'),
+        (13, 'סיום עד הלילה עדיין נחשב.'),
+      ]) {
+        await openToday(tester, settings: hebrew, now: DateTime(2026, 10, day, 9));
+        expect(findWords(words), findsOneWidget, reason: 'on October $day');
+      }
+    });
+
+    testWidgets('closes when the reader’s window does: at the end of Wednesday', (tester) async {
+      final wednesday = answered.copyWith(lateWindow: LateWindow.wednesday);
+      await openToday(tester, settings: wednesday, now: DateTime(2026, 10, 12, 9));
+      expect(findWords('Finish by the end of Wednesday, October 14, and it still counts.'), findsOneWidget);
+      await openToday(tester, settings: wednesday, now: DateTime(2026, 10, 14, 9));
+      expect(findWords('Finish by tonight and it still counts.'), findsOneWidget);
+    });
+  });
+
   group('a week still open after its late window', () {
     testWidgets('can be restored by doubling up, which keeps a streak going', (tester) async {
       // Wednesday of Noach, with a two-week streak before Bereshit.

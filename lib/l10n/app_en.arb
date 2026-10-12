@@ -446,9 +446,13 @@
       }
     }
   },
-  "openWeekLate": "Finish by {date} and it still counts.",
+  "openWeekLate": "{when, select, today{Finish by tonight and it still counts.} tomorrow{Finish by tomorrow night and it still counts.} other{Finish by the end of {date}, and it still counts.}}",
   "@openWeekLate": {
+    "description": "On Today's notice that last week's parsha is still open, within its late window: when its last day is. when is today, tomorrow or other; date is that day, with its weekday (a Hebrew date in the Hebrew UI), used only for other.",
     "placeholders": {
+      "when": {
+        "type": "String"
+      },
       "date": {
         "type": "String"
       }

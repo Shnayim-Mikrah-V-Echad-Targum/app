@@ -783,11 +783,11 @@ abstract class AppLocalizations {
   /// **'{name} is still open'**
   String openWeekTitle(String name);
 
-  /// No description provided for @openWeekLate.
+  /// On Today's notice that last week's parsha is still open, within its late window: when its last day is. when is today, tomorrow or other; date is that day, with its weekday (a Hebrew date in the Hebrew UI), used only for other.
   ///
   /// In en, this message translates to:
-  /// **'Finish by {date} and it still counts.'**
-  String openWeekLate(String date);
+  /// **'{when, select, today{Finish by tonight and it still counts.} tomorrow{Finish by tomorrow night and it still counts.} other{Finish by the end of {date}, and it still counts.}}'**
+  String openWeekLate(String when, String date);
 
   /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.
   ///

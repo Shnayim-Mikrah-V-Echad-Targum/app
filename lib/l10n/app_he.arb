@@ -114,7 +114,7 @@
   "haftarahLabel": "הפטרה",
   "haftarahRead": "ההפטרה נקראה",
   "openWeekTitle": "פרשת {name} עדיין פתוחה",
-  "openWeekLate": "סיום עד {date} עדיין נחשב.",
+  "openWeekLate": "{when, select, today{סיום עד הלילה עדיין נחשב.} tomorrow{סיום עד מחר בלילה עדיין נחשב.} other{סיום עד סוף {date}, עדיין נחשב.}}",
   "openWeekRestore": "{count, plural, =1{סיום {name} ו{next} עד שבת ימשיך את הרצף של שבוע אחד — השלמה כפולה אחת לכל חומש.} other{סיום {name} ו{next} עד שבת ימשיך את הרצף של {count} שבועות — השלמה כפולה אחת לכל חומש.}}",
   "openWeekRestoreZero": "אם מסיימים את {name} ואת {next} עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש.",
   "openWeekHaftarahLeft": "נשארה רק ההפטרה.",

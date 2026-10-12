@@ -512,8 +512,13 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String openWeekLate(String date) {
-    return 'סיום עד $date עדיין נחשב.';
+  String openWeekLate(String when, String date) {
+    String _temp0 = intl.Intl.selectLogic(when, {
+      'today': 'סיום עד הלילה עדיין נחשב.',
+      'tomorrow': 'סיום עד מחר בלילה עדיין נחשב.',
+      'other': 'סיום עד סוף $date, עדיין נחשב.',
+    });
+    return '$_temp0';
   }
 
   @override

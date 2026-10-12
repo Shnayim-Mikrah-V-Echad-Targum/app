@@ -28,6 +28,15 @@ String checkInQuestion(AppLocalizations l, WeekContext previous, String name, {r
       : l.checkInTitle(name);
 }
 
+/// When a late window closing on [deadline] ends, as of [today], for
+/// [AppLocalizations.openWeekLate]: 'today' (by tonight), 'tomorrow' (by
+/// tomorrow night), or 'other' (by the end of the day it names).
+String lateDeadlineDay(LocalDate deadline, {required LocalDate today}) => deadline == today
+    ? 'today'
+    : deadline == today.addDays(1)
+        ? 'tomorrow'
+        : 'other';
+
 /// Where aliyah [aliyah] of [ctx]'s portion is, and how long: "Genesis
 /// 2:20–3:21 · 23 verses", each part kept whole on a line of its own where
 /// the two don't fit on one ([DotLine]).
@@ -66,13 +75,14 @@ class PreviousWeekNotice extends ConsumerWidget {
     final nextName = names.portion(current.portion, ashkenazi: settings.ashkenaziNames);
     final streak = ref.watch(streakSummaryProvider.select((s) => s.parshaStreak));
     final onlyHaftarah = previous.progress.isComplete;
+    final deadline = engine.lateDeadlineOf(previous.week);
     return NoticeBanner(
       icon: Icons.schedule,
       title: l.openWeekTitle(name),
       text: [
         if (onlyHaftarah) l.openWeekHaftarahLeft,
         if (!overdue)
-          l.openWeekLate(names.practiceDate(engine.lateDeadlineOf(previous.week)))
+          l.openWeekLate(lateDeadlineDay(deadline, today: today), names.practiceDate(deadline))
         else if (streak > 0)
           l.openWeekRestore(name, nextName, streak)
         else
