@@ -29,7 +29,12 @@ import 'community_ui.dart';
 /// to it only once the account has a name of its own, so that no post is
 /// signed "user_1a2b3c4d"; unless the action posts nothing ([needsName]).
 class AccountScreen extends ConsumerStatefulWidget {
-  const AccountScreen({super.key, this.returnWhenSignedIn = false, this.needsName = true});
+  const AccountScreen({
+    super.key,
+    this.returnWhenSignedIn = false,
+    this.needsName = true,
+    this.openedFromData = false,
+  });
 
   /// Opened to sign in before an action (e.g. posting): go back to it once
   /// signed in.
@@ -39,6 +44,11 @@ class AccountScreen extends ConsumerStatefulWidget {
   /// has none of its own yet, before going back. Restoring a backup from the
   /// Welcome posts nothing, so goes back at once.
   final bool needsName;
+
+  /// Opened from Your data (its Cloud backup row), which is the page beneath:
+  /// saving a backup file first goes back to it, rather than opening a
+  /// second Your data above.
+  final bool openedFromData;
 
   @override
   ConsumerState<AccountScreen> createState() => _AccountScreenState();
@@ -605,7 +615,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   /// Asks first, saying what goes with the account: the backup too, which
   /// outlives turning backup off, so it is said either way. A backup file
-  /// can be saved first, from Your data.
+  /// can be saved first, from Your data, whose Back comes back here.
   Future<void> _deleteAccount() async {
     final l = context.l10n;
     final repo = ref.read(forumRepositoryProvider);
@@ -632,7 +642,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
     if (!mounted) return;
     if (choice == _Deletion.backUpFirst) {
-      openTabPage(context, '/settings/data');
+      if (widget.openedFromData && context.canPop()) {
+        context.pop();
+      } else {
+        openTabPage(context, '/settings/data');
+      }
       return;
     }
     if (choice != _Deletion.delete) return;
@@ -714,6 +728,10 @@ class _CodeBoxes extends StatelessWidget {
           autofillHints: const [AutofillHints.oneTimeCode],
           inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(length)],
           showCursor: false,
+          // The focus coming back never selects the whole code, as it would
+          // on the web and desktops, where a click on Sign in takes the
+          // focus away: the selection an error sets stands (see _showError).
+          selectAllOnFocus: false,
           style: digit.copyWith(color: Colors.transparent),
           decoration: const InputDecoration(
             isCollapsed: true,

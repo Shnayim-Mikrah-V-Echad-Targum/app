@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -2798,6 +2799,46 @@ void main() {
       semantics.dispose();
     });
 
+    // On a desktop (and on the web), a click on Sign in takes the focus from
+    // the field, which takes it back with the error: the digits typed stay
+    // all the same, and a wrong code is still replaced by what is typed next.
+    testWidgets('keeps the digits typed when a click on Sign in finds the code cut short', (tester) async {
+      final forums = _CheckedCodes(refuses: true);
+      await account(tester, forums: forums);
+      await sendCode(tester);
+      final code = tester.widget<TextField>(codeField).controller!;
+      Future<void> type(String digit) async {
+        tester.testTextInput.updateEditingValue(code.value.replaced(code.selection, digit));
+        await tester.pumpAndSettle();
+      }
+
+      await tester.enterText(codeField, '123');
+      await tester.pump();
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: tester.getCenter(find.widgetWithText(FilledButton, 'Sign in')));
+      addTearDown(mouse.removePointer);
+      await mouse.down(tester.getCenter(find.widgetWithText(FilledButton, 'Sign in')));
+      await tester.pump();
+      expect(codeFocused(tester), isFalse, reason: 'a click elsewhere takes the focus');
+      await mouse.up();
+      await tester.pumpAndSettle();
+      expect(find.text('Enter all 6 digits of the code.'), findsOneWidget);
+      expect(codeFocused(tester), isTrue);
+      expect(code.selection, const TextSelection.collapsed(offset: 3));
+      await type('4');
+      expect(code.text, '1234');
+
+      // The sixth digit sends it, and the wrong code is selected, so what is
+      // typed next replaces it.
+      await type('5');
+      await type('6');
+      expect(forums.checked, ['123456']);
+      expect(find.text('That code didn’t work. Check it and try again.'), findsOneWidget);
+      expect(code.selection, const TextSelection(baseOffset: 0, extentOffset: 6));
+      await type('7');
+      expect(code.text, '7');
+    }, variant: TargetPlatformVariant.desktop());
+
     for (final announces in [true, false]) {
       testWidgets(
           'says where the code went once, on the page, '
@@ -3006,6 +3047,56 @@ void main() {
       await tester.pumpAndSettle();
       await openDialog();
       expect(tester.getSize(find.descendant(of: dialog, matching: find.byType(Material)).first).width, 560);
+    });
+
+    // In Settings, Your data opens above the account, and Back comes back to
+    // it. Where Your data is beneath the account (its Cloud backup row opened
+    // it), the account goes back to that one, rather than opening a second
+    // above, which Back would lead round to again.
+    testWidgets('in Settings, saves a backup file first in Your data, never a second one above the account',
+        (tester) async {
+      final forums = DemoForumRepository();
+      await forums.verifyCode('reader@example.org', '123456');
+      await forums.updateDisplayName('Rivka');
+      final c = await _pump(tester, forums: forums);
+      Future<void> backUpFirst() async {
+        final delete = find.text('Delete my account');
+        await tester.ensureVisible(delete);
+        await tester.pumpAndSettle();
+        await tester.tap(delete);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Save a backup file first'));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsNothing);
+      }
+
+      Future<void> open(String row) async {
+        await tester.ensureVisible(find.text(row));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(row));
+        await tester.pumpAndSettle();
+      }
+
+      c.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      await open('Account & community');
+      expect(_location(c), '/settings/account');
+      await backUpFirst();
+      expect(_location(c), '/settings/data');
+      await _goBack(tester);
+      expect(_location(c), '/settings/account');
+      await _goBack(tester);
+      expect(_location(c), '/settings');
+
+      await open('Your data');
+      await open('Cloud backup');
+      expect(find.byType(AccountScreen), findsOneWidget);
+      await backUpFirst();
+      expect(_location(c), '/settings/data');
+      expect(find.byType(AccountScreen), findsNothing, reason: 'the account is closed, not left beneath');
+      expect(forums.currentUser, isNotNull, reason: 'nothing is deleted');
+      await _goBack(tester);
+      expect(_location(c), '/settings');
     });
 
     testWidgets('reads its backup row as one switch, Sync now an item of its own', (tester) async {

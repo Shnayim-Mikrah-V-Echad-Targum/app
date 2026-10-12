@@ -54,7 +54,11 @@ GoRoute _haftarah(String path) => _route(path, (s) => HaftarahScreen(weekId: s.p
 List<RouteBase> _weekPages() => [_week('week/:id'), _haftarah('haftarah/:id')];
 
 /// The account page, in Community and in Settings: each tab keeps its own.
-AccountScreen _account(GoRouterState s) => AccountScreen(returnWhenSignedIn: s.uri.queryParameters['then'] == 'back');
+/// ?then=back goes back once signed in; ?from=data says Your data is beneath.
+AccountScreen _account(GoRouterState s) => AccountScreen(
+      returnWhenSignedIn: s.uri.queryParameters['then'] == 'back',
+      openedFromData: s.uri.queryParameters['from'] == 'data',
+    );
 
 final routerProvider = Provider<GoRouter>((ref) {
   final onboarded = ValueNotifier<bool>(ref.read(settingsProvider).onboardingComplete);

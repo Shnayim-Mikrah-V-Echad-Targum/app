@@ -3915,10 +3915,10 @@ abstract class AppLocalizations {
   /// **'Delete my account'**
   String get deleteAccount;
 
-  /// The account's deletion dialog, shown whether or not backup is on now: a backup made earlier stays in the account until it is deleted.
+  /// The account's deletion dialog, shown whether or not backup is on now: a backup made earlier stays in the account until it is deleted. As the privacy policy says, a topic the member started stays, without their name, where others posted in it (delete_my_account).
   ///
   /// In en, this message translates to:
-  /// **'This permanently deletes your account, your profile, everything you’ve posted and the cloud backup of your progress, bookmarks and notes. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.'**
+  /// **'This permanently deletes your account, your profile, your posts and the cloud backup of your progress, bookmarks and notes. Topics you started that others replied to stay, without your name. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.'**
   String get deleteAccountConfirm;
 
   /// In the account's deletion dialog: closes it and opens Your data, where a backup file can be exported.
