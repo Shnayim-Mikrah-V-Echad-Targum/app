@@ -449,7 +449,10 @@ class DataSettingsScreen extends ConsumerWidget {
               builder: (context) => PaperRow(
                 icon: Icons.ios_share_outlined,
                 title: l.exportData,
+                // What the file holds, never cut short: on a 360 dp phone
+                // it takes three lines.
                 subtitle: l.exportDataDesc,
+                subtitleMaxLines: null,
                 chevron: false,
                 onTap: () => exportBackupFile(context, ref),
               ),

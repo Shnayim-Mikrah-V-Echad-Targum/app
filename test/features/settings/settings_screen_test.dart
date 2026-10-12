@@ -363,6 +363,30 @@ void main() {
       expect(find.text('This can’t be undone.'), findsOneWidget);
     });
 
+    for (final hebrew in [false, true]) {
+      testWidgets('no description is cut short on a 320 dp phone${hebrew ? ', in Hebrew' : ''}', (tester) async {
+        tester.view.physicalSize = const Size(320, 2000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final c = await pumpApp(
+          tester,
+          settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.english),
+          now: now,
+        );
+        c.read(routerProvider).go('/settings/data');
+        await tester.pumpAndSettle();
+        final rows = find.byWidgetPredicate((w) => w is PaperRow && w.subtitle != null);
+        // Cloud backup, Export, Import, Paste and Reset.
+        expect(rows, findsNWidgets(5));
+        for (final row in tester.widgetList<PaperRow>(rows)) {
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.descendant(of: find.byWidget(row), matching: find.text(row.subtitle!)).first,
+          );
+          expect(paragraph.didExceedMaxLines, isFalse, reason: row.subtitle);
+        }
+      });
+    }
+
     testWidgets('the reset is confirmed with the destructive button, and Cancel keeps everything', (tester) async {
       final progress = ProgressState(
         weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9))},

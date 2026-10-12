@@ -1343,7 +1343,7 @@ In order:
 - Web: one NoticeBanner (`install_mobile`) saying that reminders need the installed app, with "Get the app" where the build gives `INSTALL_URL`, over the three reminders' switch rows, disabled and off, whatever a backup from a phone brought (replaces two stacked banners).
 
 **Your data**
-- Group 1, "Backup & restore": a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export (`ios_share_outlined`), Import (`download_outlined`) and "Paste backup text" (`content_paste_outlined`), which open dialogs and have no chevron.
+- Group 1, "Backup & restore": a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export (`ios_share_outlined`), Import (`download_outlined`) and "Paste backup text" (`content_paste_outlined`), which open dialogs and have no chevron. The descriptions of Cloud backup and Export, which say what each keeps, are never cut short (`subtitleMaxLines: null`): Export's takes three lines on a 360 dp phone.
 - Group 2, apart: "Reset all progress" in error-coloured text with no icon tile, and "This can’t be undone." under it. The confirm dialog uses the destructive Filled button.
 
 ### Onboarding (onboarding_screen.dart; phone_welcome, he_welcome, dark_welcome, desktop_welcome)
