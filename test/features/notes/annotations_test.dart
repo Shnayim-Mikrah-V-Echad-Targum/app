@@ -435,6 +435,17 @@ void main() {
       expect(here.restoring(removedEarlier), here);
     });
 
+    test('takes what it holds that isn\'t here at all with its own times, so a later change elsewhere still wins', () {
+      final backedUp = Annotations.empty.withNote(_genesis3_22, 'First thought');
+      clock = 2000;
+      final cloud = backedUp.withNote(_genesis3_22, 'Second thought');
+      clock = 3000;
+      final restored = Annotations.empty.restoring(backedUp);
+      expect(restored, backedUp, reason: 'as the backup has it, not as a change made now');
+      expect(Annotations.merge(restored, cloud)[_genesis3_22]!.note, 'Second thought');
+      expect(Annotations.merge(cloud, restored)[_genesis3_22]!.note, 'Second thought');
+    });
+
     test('adds what it holds that isn\'t here at all, keeps what is only here, and changes nothing twice', () {
       final backup = Annotations.fromJson({
         'Genesis 1:1': {'b': true, 'n': 'Bereshit', 'bu': 5, 'nu': 4, 'u': 5, 'c': 'gold'},
@@ -446,7 +457,7 @@ void main() {
       });
       final restored = here.restoring(backup);
       expect(restored.toJson(), {
-        'Genesis 1:1': {'b': true, 'n': 'Bereshit', 'bu': 1000, 'nu': 1000, 'u': 1000, 'c': 'gold'},
+        'Genesis 1:1': {'b': true, 'n': 'Bereshit', 'bu': 5, 'nu': 4, 'u': 5, 'c': 'gold'},
         'Genesis 1:2': 'from a newer version',
         'Genesis 1:3': 'from a newer version here',
         'Exodus 3:14': {'b': true, 'n': null, 'bu': 7, 'nu': 7, 'u': 7},
@@ -611,6 +622,46 @@ void main() {
       await tablet.read(progressSyncProvider.notifier).syncNow();
       expect(tablet.read(annotationsProvider)[_genesis3_22]?.note, 'For Shabbat');
       tablet.dispose();
+    });
+  });
+
+  group('a backup file imported on a new device', () {
+    test('gives way to a later change made on another device, on every device', () async {
+      final cloud = _Cloud();
+
+      // The phone writes a note and saves a backup file, then edits the note,
+      // which reaches the cloud.
+      var phone = await _device(cloud);
+      phone.read(annotationsProvider.notifier).setNote(_genesis3_22, 'First thought');
+      final file = encodeBackup(
+        const ProgressState(),
+        const AppSettings(),
+        annotations: phone.read(annotationsProvider),
+        now: DateTime.utc(2026, 10, 1),
+      );
+      clock = 2000;
+      phone.read(annotationsProvider.notifier).setNote(_genesis3_22, 'Second thought');
+      expect(await phone.read(progressSyncProvider.notifier).syncNow(), isTrue);
+      final phoneStorage = _storage(phone);
+      phone.dispose();
+
+      // A new tablet restores the file, then turns backup on.
+      clock = 3000;
+      final tablet = await _device(cloud, stored: {
+        SettingsController.storageKey: jsonEncode(const AppSettings(onboardingComplete: true).toJson()),
+      });
+      tablet.read(annotationsProvider.notifier).restore(parseBackup(file)!.annotations);
+      expect(tablet.read(annotationsProvider)[_genesis3_22]?.note, 'First thought');
+      tablet.read(settingsProvider.notifier).update((s) => s.copyWith(cloudSync: true));
+      expect(await tablet.read(progressSyncProvider.notifier).syncNow(), isTrue);
+      expect(tablet.read(annotationsProvider)[_genesis3_22]?.note, 'Second thought');
+      expect(syncPayloadAnnotations(cloud.backup!)[_genesis3_22]?.note, 'Second thought');
+      tablet.dispose();
+
+      phone = await _device(cloud, stored: phoneStorage);
+      await phone.read(progressSyncProvider.notifier).syncNow();
+      expect(phone.read(annotationsProvider)[_genesis3_22]?.note, 'Second thought');
+      phone.dispose();
     });
   });
 

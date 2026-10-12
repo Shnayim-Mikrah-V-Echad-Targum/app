@@ -794,9 +794,10 @@ class AnnotationsController extends Notifier<Annotations> {
     if (merged != state) _set(merged);
   }
 
-  /// Restores [backup], a backup file's: what it holds comes back, even if
-  /// removed here since (see [Annotations.restoring]). Like [merge], changes
-  /// nothing where nothing would change.
+  /// Restores [backup], a backup file's: it merges in as a sync's does, and
+  /// what it holds that was removed here since comes back too (see
+  /// [Annotations.restoring]). Like [merge], changes nothing where nothing
+  /// would change.
   void restore(Annotations backup) {
     final next = state.restoring(backup);
     if (next != state) _set(next);

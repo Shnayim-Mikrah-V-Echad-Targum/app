@@ -236,25 +236,25 @@ class Annotations {
   }
 
   /// These annotations with [backup]'s restored, as importing a backup file
-  /// restores them: a bookmark or a note it holds that isn't marked here
-  /// comes back, even if removed here since, as a change made now, which the
-  /// next sync carries to the reader's other devices. Everything else merges
-  /// as a sync does ([merge]): a note changed here since keeps its change,
-  /// and a removal the backup holds, later than what is here, still removes
-  /// it.
+  /// restores them: they merge as a sync does ([merge]), each with its own
+  /// times, so that a note changed since the backup was made, here or on
+  /// another device, keeps its change, and a removal the backup holds, later
+  /// than what is here, still removes it. A bookmark or a note it holds that
+  /// this device holds a later removal of (taken away here, or removed
+  /// elsewhere and synced) comes back all the same, as a change made now,
+  /// which the next sync carries to the reader's other devices.
   Annotations restoring(Annotations backup) {
     final restored = <String, Annotation>{};
-    // The rest of the backup: removals, and what is marked here already.
-    final rest = <String, Annotation>{};
     for (final MapEntry(:key, value: theirs) in backup.entries.entries) {
+      // A verse with nothing here at all takes the backup's as it is: a
+      // newer change to it, in the cloud, must still win.
       final mine = entries[key];
-      final bookmark = theirs.bookmarked && !(mine?.bookmarked ?? false);
-      final note = theirs.hasNote && !(mine?.hasNote ?? false);
-      if (!bookmark && !note) {
-        rest[key] = theirs;
-        continue;
-      }
-      final both = mine?.mergedWith(theirs) ?? theirs;
+      if (mine == null) continue;
+      // What the merge would leave removed.
+      final bookmark = theirs.bookmarked && !mine.bookmarked && mine.bookmarkAt >= theirs.bookmarkAt;
+      final note = theirs.hasNote && !mine.hasNote && mine.noteAt >= theirs.noteAt;
+      if (!bookmark && !note) continue;
+      final both = mine.mergedWith(theirs);
       final stamp = ProgressClock.after(both.updatedAt);
       restored[key] = Annotation(
         bookmarked: bookmark || both.bookmarked,
@@ -263,10 +263,10 @@ class Annotations {
         noteAt: note ? stamp : both.noteAt,
         // A verse marked here keeps what a newer version stored with it here;
         // one restored whole takes the backup's.
-        extra: mine == null || mine.isRemoved ? theirs.extra : both.extra,
+        extra: mine.isRemoved ? theirs.extra : both.extra,
       );
     }
-    return merge(Annotations({...entries, ...restored}, unknown), Annotations(rest, backup.unknown));
+    return merge(Annotations({...entries, ...restored}, unknown), backup);
   }
 
   /// Reads stored or synced annotations leniently: an entry that can't be
