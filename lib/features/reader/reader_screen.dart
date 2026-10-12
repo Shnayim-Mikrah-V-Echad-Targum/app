@@ -104,6 +104,13 @@ class ReaderScreen extends ConsumerStatefulWidget {
   /// for tests.
   static bool singleKeyPlatform = kIsWeb;
 
+  /// The most the chrome around the text (the aliyah ribbon, the bars
+  /// beneath the text and the step's title) grows with the system text:
+  /// 200%, as WCAG 1.4.4 asks. Larger text goes to the scripture alone,
+  /// which the chrome would otherwise crowd off a phone's screen. The app
+  /// bar keeps to less (1.34, as Flutter's does).
+  static const double chromeMaxTextScale = 2;
+
   @override
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
 }
@@ -1429,13 +1436,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 child: Column(
                   children: [
                     if (showRibbon)
-                      AliyahRibbon(
-                        week: ctx.progress,
-                        aliyahVerses: ctx.aliyahVerses,
-                        selected: _aliyah,
-                        // In the whole parsha, a tab scrolls to its aliyah.
-                        onSelected: whole ? _showAliyah : _goToAliyah,
-                        maxWidth: columnWidth,
+                      MediaQuery.withClampedTextScaling(
+                        maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+                        child: AliyahRibbon(
+                          week: ctx.progress,
+                          aliyahVerses: ctx.aliyahVerses,
+                          selected: _aliyah,
+                          // In the whole parsha, a tab scrolls to its aliyah.
+                          onSelected: whole ? _showAliyah : _goToAliyah,
+                          maxWidth: columnWidth,
+                        ),
                       ),
                     if (!ctx.isOpen)
                       Center(
@@ -1575,41 +1585,49 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Widget? _bottomBars(WeekContext ctx, ReaderTexts texts, ReaderFlow flow, AppSettings s, double columnWidth) {
     final steps = !_fullText && !_finished;
     if (!steps && !_listen.active) return null;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_listen.active)
-          KeyedSubtree(
-            key: const ValueKey('listen'),
-            // Above the bottom bar, which keeps clear of the gesture bar.
-            child: MediaQuery.removePadding(
-              context: context,
-              removeBottom: steps,
-              child: ListenBar(
-                paused: _listen.paused || _listenHeld,
-                onPlayPause: () => _playPause(texts, flow),
-                onPrevious: _canListenBack ? () => _listenBack(texts, flow) : null,
-                onNext: _canListenOn ? _listenOnVerse : null,
-                rate: s.speechRate,
-                onRate: _setSpeechRate,
-                onStop: _stopListening,
+    // Their labels grow to twice their size at most (chromeMaxTextScale).
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+      child: Builder(
+        // So that the player's padding, taken from this context, keeps the
+        // clamp.
+        builder: (context) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_listen.active)
+              KeyedSubtree(
+                key: const ValueKey('listen'),
+                // Above the bottom bar, which keeps clear of the gesture bar.
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeBottom: steps,
+                  child: ListenBar(
+                    paused: _listen.paused || _listenHeld,
+                    onPlayPause: () => _playPause(texts, flow),
+                    onPrevious: _canListenBack ? () => _listenBack(texts, flow) : null,
+                    onNext: _canListenOn ? _listenOnVerse : null,
+                    rate: s.speechRate,
+                    onRate: _setSpeechRate,
+                    onStop: _stopListening,
+                    maxWidth: columnWidth,
+                  ),
+                ),
+              ),
+            if (steps)
+              ReaderBottomBar(
+                key: const ValueKey('steps'),
+                flow: flow,
+                chunk: _chunk,
+                step: _step,
+                onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
+                onNext: () => _next(ctx, flow),
+                backFocus: _backFocus,
+                nextFocus: _nextFocus,
                 maxWidth: columnWidth,
               ),
-            ),
-          ),
-        if (steps)
-          ReaderBottomBar(
-            key: const ValueKey('steps'),
-            flow: flow,
-            chunk: _chunk,
-            step: _step,
-            onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
-            onNext: () => _next(ctx, flow),
-            backFocus: _backFocus,
-            nextFocus: _nextFocus,
-            maxWidth: columnWidth,
-          ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -2069,7 +2087,16 @@ class _GuidedStep extends StatelessWidget {
                           // is one, and elsewhere as it appears.
                           liveRegion: !quiet && !MediaQuery.supportsAnnounceOf(context),
                           label: '$stepTitle\n${l.stepOf(step + 1, steps.length)}',
-                          child: ExcludeSemantics(child: Text(stepTitle, style: theme.textTheme.bodyLarge)),
+                          child: ExcludeSemantics(
+                            child: Text(
+                              stepTitle,
+                              style: theme.textTheme.bodyLarge,
+                              // At most twice its size, as the rest of the
+                              // chrome, so that the verse shows beneath it.
+                              textScaler: MediaQuery.textScalerOf(context)
+                                  .clamp(maxScaleFactor: ReaderScreen.chromeMaxTextScale),
+                            ),
+                          ),
                         ),
                         const Gap(12),
                         for (final (i, r) in refs.indexed) ...[

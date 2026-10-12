@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/reader/reader_bottom_bar.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
@@ -321,6 +323,51 @@ void main() {
         await openReader(tester, hebrew: hebrew, textScale: 3, size: const Size(320, 640));
         expect(tester.takeException(), isNull);
         expect(find.byType(ScriptureVerse), findsWidgets);
+        expectWholeWords(tester);
+      });
+    }
+
+    // The chrome grows to 200% at most, so that the reader opens on a verse
+    // rather than on its ribbon and bars alone: as the capture harness shows
+    // it, on Shlishi's Targum, whose title once took two lines in Hebrew.
+    for (final hebrew in [false, true]) {
+      testWidgets('at 300% on a 320 dp phone, the guided reader opens with a verse in view${hebrew ? ', Hebrew' : ''}',
+          (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = 3;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearAllTestValues);
+        final c = await pumpApp(
+          tester,
+          settings: AppSettings(
+            onboardingComplete: true,
+            joinDate: captureJoinDate,
+            language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
+          ),
+          now: captureNow,
+          progress: captureProgress(),
+        );
+        c.read(routerProvider).go('/read/5787:1/2');
+        await tester.pump();
+        await tester.pump();
+        for (var i = 0; i < 30 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+          await tester.pump();
+        }
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text(hebrew ? 'קריאת התרגום' : 'Read the Targum'), findsOneWidget);
+        final bar = tester.getSize(find.byType(ReaderBottomBar)).height;
+        final verse = find.byType(ScriptureVerse).first;
+        expect(tester.getTopLeft(verse).dy, lessThan(640 - bar - 48));
+        // Its first line, whole, above the bar: the text is the verse's
+        // tallest paragraph, beside its number.
+        final text = tester
+            .renderObjectList<RenderParagraph>(find.descendant(of: verse, matching: find.byType(RichText)))
+            .reduce((a, b) => a.size.height >= b.size.height ? a : b);
+        final firstLine = text.localToGlobal(Offset.zero).dy + text.getFullHeightForCaret(const TextPosition(offset: 0));
+        expect(firstLine, lessThanOrEqualTo(640 - bar));
         expectWholeWords(tester);
       });
     }

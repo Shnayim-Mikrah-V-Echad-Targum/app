@@ -1591,15 +1591,64 @@ void main() {
       expect(next.right, moreOrLessEquals(column.right, epsilon: 1));
     });
 
-    testWidgets('on a narrow phone, where the reader is goes above Back and Next, which share the width', (tester) async {
-      await open(tester, '/read/5787:2/0', size: const Size(360, 780));
-      final where = tester.getRect(find.text('Verse 1 of 14'));
-      final back = tester.getRect(find.widgetWithText(TextButton, 'Back'));
-      final next = tester.getRect(find.widgetWithText(FilledButton, 'Next'));
-      expect(where.bottom, lessThanOrEqualTo(back.top));
-      expect(back.top, moreOrLessEquals(next.top, epsilon: 4));
-      expect(back.width, moreOrLessEquals(next.width, epsilon: 1));
+    // Two rows rather than three, which with large text on a phone leaves
+    // the verse more room.
+    for (final hebrew in [false, true]) {
+      testWidgets(
+          'on a narrow phone, where the reader is ends the progress bar\'s line, above Back and Next, which share the width'
+          '${hebrew ? ', Hebrew' : ''}', (tester) async {
+        await open(
+          tester,
+          '/read/5787:2/0',
+          size: const Size(360, 780),
+          settings: AppSettings(
+            onboardingComplete: true,
+            notificationPromptShown: true,
+            language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
+          ),
+        );
+        final where = tester.getRect(find.text(hebrew ? 'פסוק 1 מתוך 14' : 'Verse 1 of 14'));
+        final progress = tester.getRect(
+          find.descendant(of: find.byType(ReaderBottomBar), matching: find.byType(LinearProgressIndicator)),
+        );
+        final back = tester.getRect(find.widgetWithText(TextButton, hebrew ? 'הקודם' : 'Back'));
+        final next = tester.getRect(find.widgetWithText(FilledButton, hebrew ? 'הבא' : 'Next'));
+        expect(where.center.dy, moreOrLessEquals(progress.center.dy, epsilon: 1));
+        if (hebrew) {
+          // Mirrored: the bar from the right, the position at the left end.
+          expect(progress.left, greaterThan(where.right));
+          expect(where.left, moreOrLessEquals(next.left, epsilon: 1));
+        } else {
+          expect(progress.right, lessThan(where.left));
+          expect(where.right, moreOrLessEquals(next.right, epsilon: 1));
+        }
+        expect(where.bottom, lessThanOrEqualTo(back.top));
+        expect(back.top, moreOrLessEquals(next.top, epsilon: 4));
+        expect(back.width, moreOrLessEquals(next.width, epsilon: 1));
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    // WCAG 1.4.4 asks for 200%; past it, the room goes to the scripture,
+    // which the chrome would otherwise crowd off a phone's screen.
+    testWidgets('past 200% text, the ribbon, the bottom bar and the step\'s title grow no more, and the verse does',
+        (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await open(tester, '/read/5787:2/0', size: const Size(412, 2600));
+      Size size(Finder finder) => tester.getSize(finder);
+      final ribbon = size(find.byType(AliyahRibbon));
+      final bar = size(find.byType(ReaderBottomBar));
+      final title = size(find.text('Read the Hebrew'));
+      final verse = size(find.byType(ScriptureVerse).first);
+
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expect(size(find.byType(AliyahRibbon)), ribbon);
+      expect(size(find.byType(ReaderBottomBar)), bar);
+      expect(size(find.text('Read the Hebrew')), title);
+      expect(size(find.byType(ScriptureVerse).first).height, greaterThan(verse.height));
     });
 
     testWidgets('the bottom bar runs under the gesture bar, with its buttons above it', (tester) async {

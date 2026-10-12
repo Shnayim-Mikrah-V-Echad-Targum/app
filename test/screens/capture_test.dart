@@ -1652,7 +1652,9 @@ final _modes = [
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 const _hugeModes = {'huge', 'hugehe'};
-const _hugeScreens = {'today', 'reader'};
+// The reader with Listen's player over its bar too: the chrome is held at
+// 200% so that a verse shows beneath it.
+const _hugeScreens = {'today', 'reader', 'reader_listen'};
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {'today', 'parsha', 'week', 'progress', 'settings', 'community', 'thread', 'haftarah'};
 

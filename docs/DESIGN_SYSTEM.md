@@ -735,7 +735,7 @@ A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled 
 ### 6.16 AliyahRibbon (replaces _AliyahSelector, reader_screen.dart:517-549; fixes D5)
 
 **Layout**
-- At least 76 high, growing with the text, with a 1 px hairline below. Horizontal padding 8.
+- At least 76 high, growing with the text to 200% at most (as the rest of the reader's chrome, §9 Reader, guided), with a 1 px hairline below. Horizontal padding 8.
 - `LayoutBuilder`: if a seventh of the width is at least 56 and holds the widest name in bold (labelSmall without tracking, as the navigation bar's labels), use a Row of 7 Expanded tabs. Otherwise (a narrow phone, or large text) the tabs scroll, each 64 wide or as wide as the widest name needs, and the selected tab is scrolled into view (`Scrollable.ensureVisible`, duration `Motion.medium`). No name is ever cut.
 - Hidden in the full text while focus mode is on; the overflow menu still switches modes and marks the aliyah read.
 
@@ -762,7 +762,7 @@ Row of three Expanded segments with an 8 gap. Each segment is a Column:
   - Upcoming: ringTrack.
 
 Below the track:
-- 8 gap, then ONE instruction line in bodyLarge onSurface: the existing step title ("Read the Hebrew", "Read the Hebrew again", "Read the Targum"). Screen readers hear it with the step's count ("Read the Hebrew again, Reading 2 of 3"), as a live region where the platform takes no announcements; they skip the track, which shows the same.
+- 8 gap, then ONE instruction line in bodyLarge onSurface, growing with the text to 200% at most: the existing step title ("Read the Hebrew", "Read the Hebrew again", "Read the Targum"). Screen readers hear it with the step's count ("Read the Hebrew again, Reading 2 of 3"), as a live region where the platform takes no announcements; they skip the track, which shows the same.
 - 12 gap, then the chapter heading (§4.7) when a chapter starts, then the verse.
 
 Nothing else sits above the first verse. A label stays on one line, set a little smaller should large text need it. The third segment is named for what is read in it: the Targum or Rashi, or "Mikra" for a verse read a third time in Hebrew. Ending with the last verse once more comes after all three.
@@ -781,7 +781,8 @@ Nothing else sits above the first verse. A label stays on one line, set a little
   - **Centre:** `Expanded(Center(Text('Verse 1 of 21', labelMedium, onSurfaceVariant, tabular figures)))`.
   - **Next:** `FilledButton` min 128×52, label "Next" with a trailing `Icons.chevron_right` (mirrored).
   - On the final step of the aliyah, the label becomes `finishStep` ("Finish") with a leading check.
-- Below 400 wide, or when large text sets 14sp past 24, "Verse 1 of 21" goes above Back and Next, which share the width.
+- Below 400 wide, or when large text sets 14sp past 24, the bar is two rows: the progress bar with "Verse 1 of 21" at the end of its line, 12 after it and centred on it, then Back and Next, 12 apart, sharing the width. The position never takes a row of its own, which with large text on a phone would take the verse's room.
+- Its text grows to 200% at most (§9 Reader, guided).
 
 It sits in the scaffold's bottom slot, so status messages rise above it, and runs under the gesture bar in surface, so no strip of another colour shows beneath it. Keep the keyboard shortcuts.
 
@@ -926,6 +927,7 @@ While Listen reads, playing or paused, a player sits above the reader's bottom b
 - At its start, the speech rate: a Text button in onSurfaceVariant, `speed` 18 and the rate as Settings shows it, relative to the default (`speechRateLabel`): "Normal" (`speechRateNormal`), else a multiple of it to one decimal ("1.2×", `speechRateTimes`, a left-to-right run in Hebrew so that the sign stays after the number); labelLarge, tabular figures. Tooltip `speechRate`, read as `speechRateValue` ("Speech rate: Normal"). The icon goes where the rate would have no room beside it, and the rate is set smaller before it is ever cut short. It opens a menu (paper, §6.19) of 0.6×, 0.8×, Normal, 1.2×, 1.4×, 1.8× and 2.2×, with the rate set among them if it is another: each a radio icon (`radio_button_checked` in primary, unchecked in onSurfaceVariant) and its rate, the one chosen in w700. A rate chosen is the setting's (Settings → Accessibility → Speech rate), and the verse being read starts again at it.
 - At its centre, left to right in either language, as media controls are: `skip_previous_rounded` (`listenPreviousVerse`), 8, a tonal 48 dp icon button in primaryContainer / onPrimaryContainer with `pause_rounded` (`listenPause`) or `play_arrow_rounded` (`listenResume`), 8, and `skip_next_rounded` (`listenNextVerse`). Back and on are disabled where there is no verse to move to; between Listen along's readings, back reads the last verse again and on goes to the next reading.
 - At its end, `close` (`stopListening`).
+- In the reader, its text grows to 200% at most, as the bottom bar's (§9 Reader, guided).
 - The app bar's Listen button reads `stopListening` with `stop_circle_outlined` while the player shows.
 
 ### 6.29 Bookmarks and notes (lib/features/notes/)
@@ -1198,6 +1200,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 - **_Note** (no Targum or Rashi available; reader_screen.dart:736-760): a NoticeBanner with `info_outline` (replaces tertiaryContainer).
 - Bottom bar per §6.18; finished panel per §6.23.
 - Desktop: ribbon, track, text and bottom bar all share one centred column.
+- Large text: the chrome around the text stops growing before the text does. The app bar's title grows to 1.34× (as Flutter's), and the ribbon, the step's title, the bottom bar and Listen's player to 2×, the 200% that WCAG 1.4.4 asks for (`ReaderScreen.chromeMaxTextScale`); past that, only the scripture grows. At 300% on a 320 × 640 phone, the reader opens with the first line of a verse in view above the bottom bar, in either language.
 - The keyboard shortcuts (F1, or the menu's Keyboard shortcuts): a dialog (§6.19) of rows, the action in bodyMedium and its keys as keycaps at the end. Where the rows run past the dialog's foot (a phone, large text), they scroll with their scrollbar kept in sight, in a 12 band of the end padding clear of the keys, so that a list cut off between two rows isn't taken to be complete.
 
 ### Reader, full text (phone_reader_full, desktop_reader_full)
