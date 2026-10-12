@@ -307,7 +307,7 @@ void main() {
 
       final rows = find.byType(SwitchRow);
       expect(rows, findsNWidgets(3));
-      for (final title in ['Daily reminder', 'Erev Shabbat reminder', 'After-Shabbat check-in']) {
+      for (final title in ['Daily reminder', 'Erev Shabbat reminder', 'Check-in after Shabbat or Yom Tov']) {
         final row = find.widgetWithText(SwitchRow, title);
         expect(tester.getSemantics(row), isSemantics(hasEnabledState: true, isEnabled: false), reason: title);
         // Its words dimmed as a disabled control's.

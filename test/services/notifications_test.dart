@@ -724,5 +724,22 @@ void main() {
       expect(copyIn(he)(checkIn), (title: 'וזאת הברכה', body: 'קראת אותה ביום טוב? אפשר לרשום זאת באפליקציה.'));
       expect(reminderCopy(checkIn, l: en, repo: repo, ashkenaziNames: true).title, 'Vezos HaBerachah');
     });
+
+    test('names Simchat Torah where that day was no Yom Tov for the reader', () {
+      // One day of Yom Tov, and the reading outside Israel.
+      final checkIn = planReminders(
+        prefs: const ReminderPrefs(checkIn: true),
+        planner: const ReadingPlanner(schedule: ParshaSchedule(israel: false), oneDayYomTov: true),
+        progressOf: (id) => WeekProgress(weekId: id),
+        now: DateTime(2026, 9, 30, 8),
+        today: LocalDate(2026, 9, 30),
+      ).firstWhere((r) => r.kind == ReminderKind.checkIn);
+      expect(checkIn.plan.weekId, '5786:54');
+      expect(
+        copyIn(en)(checkIn),
+        (title: 'Vezot HaBerachah', body: 'Did you read it on Simchat Torah? Tap to log it.'),
+      );
+      expect(copyIn(he)(checkIn), (title: 'וזאת הברכה', body: 'קראת אותה בשמחת תורה? אפשר לרשום זאת באפליקציה.'));
+    });
   });
 }

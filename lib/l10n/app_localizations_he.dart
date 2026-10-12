@@ -522,6 +522,22 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String openWeekLateEve(String holiday, String when, String date) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'shabbat': 'השבת',
+      'roshHashanah': 'ראש השנה',
+      'yomKippur': 'יום כיפור',
+      'other': 'החג',
+    });
+    String _temp1 = intl.Intl.selectLogic(when, {
+      'today': 'הערב עדיין נחשב.',
+      'tomorrow': 'מחר בערב עדיין נחשב.',
+      'other': 'ב$date, עדיין נחשב.',
+    });
+    return 'סיום לפני כניסת $_temp0 $_temp1';
+  }
+
+  @override
   String openWeekRestore(String name, String next, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -566,6 +582,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String checkInTitleSimchatTorah(String name) {
+    return 'סיימת את $name בשמחת תורה?';
+  }
+
+  @override
   String get checkInBody =>
       'אפשר לרשום מה שקראת מתוך חומש מודפס — זה נחשב בדיוק אותו הדבר.';
 
@@ -576,7 +597,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String checkInFinishedYomTov(String name) {
-    return 'סיימתי את $name ביום טוב';
+    return 'סיימתי את $name ביום טוב';
+  }
+
+  @override
+  String checkInFinishedSimchatTorah(String name) {
+    return 'סיימתי את $name בשמחת תורה';
   }
 
   @override
@@ -1876,14 +1902,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get fridayReminderTime => 'שעת התזכורת לערב שבת';
 
   @override
-  String get checkInReminder => 'תזכורת אחרי שבת';
+  String get checkInReminder => 'תזכורת אחרי שבת או יום טוב';
 
   @override
-  String get checkInReminderDesc => 'ביום ראשון בבוקר, לרשום מה שקראת בשבת';
+  String get checkInReminderDesc =>
+      'בבוקר שאחרי שבת או שמחת תורה, לרשום מה שקראת בהם';
 
   @override
   String get checkInReminderDescCity =>
-      'שעה אחרי צאת השבת, או ביום ראשון בבוקר כשהשבת יוצאת מאוחר, לרשום מה שקראת בשבת';
+      'שעה אחרי צאת השבת או שמחת תורה, או למחרת בבוקר כשהם יוצאים מאוחר, לרשום מה שקראת בהם';
 
   @override
   String get remindersShabbatNote =>
@@ -1989,7 +2016,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get notifChannelFriday => 'ערב שבת';
 
   @override
-  String get notifChannelCheckIn => 'אחרי שבת';
+  String get notifChannelCheckIn => 'אחרי שבת ויום טוב';
 
   @override
   String get notifChannelDailyDesc =>
@@ -2001,7 +2028,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notifChannelCheckInDesc =>
-      'אחרי שבת: תזכורת לרשום מה שנקרא, וגם הודעה כשהתזכורות נעצרות';
+      'אחרי שבת או שמחת תורה: תזכורת לרשום מה שנקרא, וגם הודעה כשהתזכורות נעצרות';
 
   @override
   String notifDailyTitle(String aliyah) {
@@ -2040,6 +2067,10 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get notifCheckInBodyVezot =>
       'קראת אותה ביום טוב? אפשר לרשום זאת באפליקציה.';
+
+  @override
+  String get notifCheckInBodySimchatTorah =>
+      'קראת אותה בשמחת תורה? אפשר לרשום זאת באפליקציה.';
 
   @override
   String get notifPausedTitle => 'התזכורות הושהו';

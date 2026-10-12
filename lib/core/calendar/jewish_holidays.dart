@@ -37,11 +37,13 @@ abstract final class JewishHolidays {
 
   /// Which Yom Tov begins this evening when [date], a reading day, is the
   /// eve of one that is not Shabbat (Yom Kippur among them), by [israel]'s
-  /// days of Yom Tov; null when tomorrow is Shabbat or no Yom Tov.
+  /// days of Yom Tov; null when tomorrow is Shabbat or no Yom Tov, and when
+  /// [date] is itself a day of rest, as Shabbat before Shavuot or the first
+  /// day of Rosh Hashanah is: no one's reading stops on its evening.
   static ErevYomTov? erevYomTov(LocalDate date, {required bool israel}) {
     final tomorrow = date.addDays(1);
     final hebrew = HebrewDate.fromLocalDate(tomorrow);
-    if (tomorrow.isShabbat || !isYomTov(hebrew, israel: israel)) return null;
+    if (isRestDay(date, israel: israel) || tomorrow.isShabbat || !isYomTov(hebrew, israel: israel)) return null;
     if (isYomKippur(hebrew)) return ErevYomTov.yomKippur;
     return isRoshHashanah(hebrew) ? ErevYomTov.roshHashanah : ErevYomTov.other;
   }

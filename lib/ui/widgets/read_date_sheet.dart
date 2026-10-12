@@ -17,7 +17,9 @@ bool isNamedYomTov(LocalDate day, {required bool oneDayYomTov}) {
 
 /// Asks when something was read — supporting the honor-system logging of
 /// reading done from a printed Chumash, on Shabbat itself and on each Yom
-/// Tov of [week] (by the reader's custom, [oneDayYomTov]) before [today].
+/// Tov of [week] (by the reader's custom, [oneDayYomTov]) before [today],
+/// and of the days of rest that run on from its Shabbat (Shavuot on the
+/// Sunday after, say), which the check-in asks about too.
 Future<LocalDate?> pickReadDate(
   BuildContext context, {
   required ReadingWeek week,
@@ -31,9 +33,10 @@ Future<LocalDate?> pickReadDate(
   final onShabbat = week.occasion < today && week.occasion.isShabbat;
   // Latest first, as the rows above them: Vezot HaBerachah's week holds
   // Sukkot, Shemini Atzeret and Simchat Torah, on any of which it may have
-  // been read.
+  // been read, and a Shabbat may run on into Yom Tov.
+  final lastRest = JewishHolidays.lastRestDay(week.occasion, israel: oneDayYomTov);
   final yomTov = [
-    for (var d = week.occasion < yesterday ? week.occasion : yesterday; d >= week.start; d = d.addDays(-1))
+    for (var d = lastRest < yesterday ? lastRest : yesterday; d >= week.start; d = d.addDays(-1))
       if (isNamedYomTov(d, oneDayYomTov: oneDayYomTov) && !(onShabbat && d == week.occasion)) d,
   ];
   final options = <(IconData, String, String?, LocalDate)>[

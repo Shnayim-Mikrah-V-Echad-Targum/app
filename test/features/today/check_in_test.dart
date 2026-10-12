@@ -303,7 +303,8 @@ void main() {
     // Simchat Torah, when Vezot HaBerachah is read, on Sunday 4 October.
     final joined = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 9, 1));
     const question = 'Did you finish Vezot HaBerachah over Yom Tov?';
-    const finished = 'I finished Vezot HaBerachah on Yom Tov';
+    // "Yom Tov" held together, so that Tov never stands alone.
+    const finished = 'I finished Vezot HaBerachah on Yom\u00A0Tov';
     WeekProgress vezot(ProviderContainer c) => c.read(progressProvider).week('5786:54');
 
     testWidgets('asks about Vezot HaBerachah on Monday, and logs it as read on Yom Tov, on time', (tester) async {
@@ -377,13 +378,122 @@ void main() {
         progress: const ProgressState(),
       );
       expect(find.text('סיימת את וזאת הברכה ביום טוב?'), findsOneWidget);
-      expect(find.text('סיימתי את וזאת הברכה ביום טוב'), findsOneWidget);
+      expect(find.text('סיימתי את וזאת הברכה ביום\u00A0טוב'), findsOneWidget);
+    });
+
+    testWidgets('balances its button’s label where large text wraps it, leaving no word alone', (tester) async {
+      final handle = tester.ensureSemantics();
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      for (final (settings, label) in [
+        (joined, finished),
+        (joined.copyWith(language: AppLanguage.hebrew), 'סיימתי את וזאת הברכה ביום\u00A0טוב'),
+      ]) {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await pumpApp(tester, settings: settings, now: DateTime(2026, 10, 5, 9), progress: const ProgressState());
+        await tester.pumpAndSettle();
+        final text = find.descendant(of: find.byType(FilledButton), matching: find.text(label));
+        expect(text, findsOneWidget, reason: 'the whole label, as one text');
+        final paragraph = tester.renderObject<RenderParagraph>(text);
+        double lineOf(int offset) => paragraph.getOffsetForCaret(TextPosition(offset: offset), Rect.zero).dy;
+        final lastLine = lineOf(label.length - 1);
+        expect(lineOf(0), lessThan(lastLine), reason: 'it wraps');
+        // The word before the last, "Yom", is on the last line too.
+        expect(lineOf(label.lastIndexOf(RegExp('[ \u00A0]')) - 1), lastLine, reason: '$label: no word alone');
+        final button = find.ancestor(of: text, matching: find.byType(FilledButton));
+        expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
+        expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
+        expect(tester.getSemantics(button), matchesSemantics(label: label, isButton: true, hasTapAction: true,
+            hasEnabledState: true, isEnabled: true, isFocusable: true, hasFocusAction: true));
+      }
+      handle.dispose();
     });
 
     testWidgets('is not asked of a reader who joined on Simchat Torah', (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 5, 9), progress: const ProgressState());
       expect(find.text(question), findsNothing);
       expect(find.byType(NoticeBanner), findsNothing);
+    });
+
+    testWidgets('asks about Simchat Torah by name where it was no Yom Tov for the reader, and dates it plainly',
+        (tester) async {
+      // One day of Yom Tov, and the reading outside Israel: Yom Tov ended on
+      // Shemini Atzeret, the day before.
+      final c = await openToday(
+        tester,
+        settings: joined.copyWith(oneDayYomTov: true),
+        now: DateTime(2026, 10, 5, 9),
+        progress: const ProgressState(),
+      );
+      expect(find.text('Did you finish Vezot HaBerachah on Simchat Torah?'), findsOneWidget);
+      expect(find.text(question), findsNothing);
+      expect(find.text('I finished Vezot HaBerachah on Simchat Torah'), findsOneWidget);
+      expect(find.text(finished), findsNothing);
+      await tester.tap(find.text('Choose aliyot'));
+      await tester.pumpAndSettle();
+      expect(findDotLine('Read on Sunday, October\u00A04'), findsOneWidget);
+      Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('I finished Vezot HaBerachah on Simchat Torah'));
+      await tester.pumpAndSettle();
+      expect(vezot(c).units, everyElement(everyElement(LocalDate(2026, 10, 4))), reason: 'Simchat Torah');
+
+      await openToday(
+        tester,
+        settings: joined.copyWith(oneDayYomTov: true, language: AppLanguage.hebrew),
+        now: DateTime(2026, 10, 5, 9),
+        progress: const ProgressState(),
+      );
+      expect(find.text('סיימת את וזאת הברכה בשמחת תורה?'), findsOneWidget);
+      expect(find.text('סיימתי את וזאת הברכה בשמחת תורה'), findsOneWidget);
+    });
+  });
+
+  group('when Simchat Torah is a Friday and Bereshit is read the next day', () {
+    // 5789 outside Israel: Simchat Torah on Friday 13 October 2028, and
+    // Bereshit on Shabbat 14 October. Sunday 15 October is the first reading
+    // day after both.
+    final joined = AppSettings(onboardingComplete: true, joinDate: LocalDate(2028, 9, 1));
+    const vezotQuestion = 'Did you finish Vezot HaBerachah over Yom Tov?';
+    const bereshitQuestion = 'Shavua tov! Did you read Bereshit on Shabbat?';
+    final sunday = DateTime(2028, 10, 15, 9);
+    String idOf(LocalDate d) {
+      final week = const ParshaSchedule(israel: false).weekFor(d);
+      return weekIdFor(week.portion, week.occasion);
+    }
+
+    testWidgets('asks about Vezot HaBerachah first, and then about Bereshit', (tester) async {
+      final c = await openToday(tester, settings: joined, now: sunday, progress: const ProgressState());
+      expect(find.text(vezotQuestion), findsOneWidget);
+      expect(find.text(bereshitQuestion), findsNothing, reason: 'one question at a time');
+      expect(find.byType(NoticeBanner), findsOneWidget);
+
+      await tester.tap(find.text('I finished Vezot HaBerachah on Yom\u00A0Tov'));
+      await tester.pumpAndSettle();
+      final vezot = c.read(progressProvider).week(idOf(LocalDate(2028, 10, 13)));
+      expect(vezot.units, everyElement(everyElement(LocalDate(2028, 10, 13))), reason: 'Simchat Torah');
+      final status = c.read(streakSummaryProvider).weeks.singleWhere((w) => w.plan.weekId == vezot.weekId).status;
+      expect(status, WeekStatus.onTime);
+      expect(find.text(vezotQuestion), findsNothing);
+      expect(find.text(bereshitQuestion), findsOneWidget);
+    });
+
+    testWidgets('asks about Vezot HaBerachah through the week, until Noach is read, once put aside asks Bereshit',
+        (tester) async {
+      await openToday(tester, settings: joined, now: DateTime(2028, 10, 20, 9), progress: const ProgressState());
+      expect(find.text(vezotQuestion), findsOneWidget, reason: 'Friday');
+
+      final c = await openToday(tester, settings: joined, now: sunday, progress: const ProgressState());
+      await tester.tap(find.text('Not this time'));
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).checkInAnsweredFor, idOf(LocalDate(2028, 10, 13)));
+      expect(find.text(bereshitQuestion), findsOneWidget);
+
+      await openToday(tester, settings: joined, now: DateTime(2028, 10, 22, 9), progress: const ProgressState());
+      expect(find.text(vezotQuestion), findsNothing, reason: 'after Noach');
     });
   });
 
@@ -402,6 +512,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.descendant(of: find.byType(BottomSheet), matching: find.text(question)), findsOneWidget);
     expect(findDotLine('Read on Shabbat, May 19'), findsOneWidget);
+    // The days it asks about: Shabbat, and both days of Shavuot after it,
+    // latest first; yesterday is named as the Yom Tov it was.
+    await tester.ensureVisible(find.text('Change date'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Change date'));
+    await tester.pumpAndSettle();
+    final days = [
+      for (final tile in tester.widgetList<ListTile>(find.widgetWithText(ListTile, 'On Yom Tov')))
+        (tile.subtitle! as DotLine).parts.single.replaceAll('\u00A0', ' '),
+    ];
+    expect(days, ['Monday, May 21', 'Sunday, May 20']);
+    expect(find.widgetWithText(ListTile, 'Yesterday'), findsNothing);
+    expect(find.widgetWithText(ListTile, 'On Shabbat'), findsOneWidget);
+    await tester.tap(find.ancestor(of: findDotLine('Sunday, May\u00A020'), matching: find.byType(ListTile)));
+    await tester.pumpAndSettle();
+    expect(findDotLine('Read on Yom Tov, May 20'), findsOneWidget);
 
     await openToday(
       tester,
@@ -454,6 +580,89 @@ void main() {
       expect(findWords('Finish by the end of Wednesday, October 14, and it still counts.'), findsOneWidget);
       await openToday(tester, settings: wednesday, now: DateTime(2026, 10, 14, 9));
       expect(findWords('Finish by tonight and it still counts.'), findsOneWidget);
+    });
+
+    test('closes on its last reading day, before a day of rest, as that day of rest begins', () {
+      // Pesach 5788 on Tuesday 11 April 2028, the Tuesday window's last day:
+      // the reading day before it, Erev Pesach, in Israel and outside it.
+      for (final oneDayYomTov in [false, true]) {
+        expect(lastLateReadingDay(LocalDate(2028, 4, 11), oneDayYomTov: oneDayYomTov), LocalDate(2028, 4, 10));
+      }
+      // Shavuot 5788 in Israel, Wednesday 31 May 2028.
+      expect(lastLateReadingDay(LocalDate(2028, 5, 31), oneDayYomTov: true), LocalDate(2028, 5, 30));
+      expect(lastLateReadingDay(LocalDate(2026, 10, 13), oneDayYomTov: false), LocalDate(2026, 10, 13));
+      // What begins that evening.
+      expect(restBeginsAfter(LocalDate(2028, 4, 10), oneDayYomTov: false), 'other');
+      expect(restBeginsAfter(LocalDate(2028, 5, 30), oneDayYomTov: true), 'other');
+      expect(restBeginsAfter(LocalDate(2028, 9, 20), oneDayYomTov: false), 'roshHashanah');
+      // Tuesday 18 September 2029, Erev Yom Kippur 5790, the Wednesday
+      // window's last reading day after Shabbat Shuva.
+      expect(restBeginsAfter(LocalDate(2029, 9, 18), oneDayYomTov: false), 'yomKippur');
+      expect(restBeginsAfter(LocalDate(2026, 10, 16), oneDayYomTov: false), 'shabbat');
+      expect(restBeginsAfter(LocalDate(2026, 10, 13), oneDayYomTov: false), isNull);
+    });
+
+    group('where the window ends on Yom Tov', () {
+      String idOf(LocalDate shabbat, {bool israel = false}) {
+        final week = ParshaSchedule(israel: israel).weekFor(shabbat);
+        return weekIdFor(week.portion, week.occasion);
+      }
+
+      testWidgets('says to finish before Yom Tov begins, on Erev Pesach and the day before', (tester) async {
+        // Shabbat 8 April 2028, then Pesach on Tuesday, the window's last day.
+        final id = idOf(LocalDate(2028, 4, 8));
+        final settings =
+            AppSettings(onboardingComplete: true, joinDate: LocalDate(2028, 3, 26), checkInAnsweredFor: id);
+        for (final (day, words) in [
+          (9, 'Finish before Yom Tov begins tomorrow evening and it still counts.'),
+          (10, 'Finish before Yom Tov begins this evening and it still counts.'),
+        ]) {
+          await openToday(tester, settings: settings, now: DateTime(2028, 4, day, 9), progress: const ProgressState());
+          expect(findWords(words), findsOneWidget, reason: 'on April $day');
+          expect(find.textContaining('night'), findsNothing, reason: 'on April $day');
+        }
+        await openToday(
+          tester,
+          settings: settings.copyWith(language: AppLanguage.hebrew),
+          now: DateTime(2028, 4, 10, 9),
+          progress: const ProgressState(),
+        );
+        expect(findWords('סיום לפני כניסת החג הערב עדיין נחשב.'), findsOneWidget);
+      });
+
+      testWidgets('in Israel, before Shavuot on the Wednesday window’s last day', (tester) async {
+        // Shabbat 27 May 2028, then Shavuot on Wednesday the 31st.
+        final id = idOf(LocalDate(2028, 5, 27), israel: true);
+        final settings = AppSettings(
+          onboardingComplete: true,
+          joinDate: LocalDate(2028, 5, 14),
+          checkInAnsweredFor: id,
+          lateWindow: LateWindow.wednesday,
+        ).locatedIn(ReadingSchedule.israel);
+        for (final (day, words) in [
+          (28, 'Finish before Yom Tov begins on Tuesday, May 30, and it still counts.'),
+          (29, 'Finish before Yom Tov begins tomorrow evening and it still counts.'),
+          (30, 'Finish before Yom Tov begins this evening and it still counts.'),
+        ]) {
+          await openToday(tester, settings: settings, now: DateTime(2028, 5, day, 9), progress: const ProgressState());
+          expect(findWords(words), findsOneWidget, reason: 'on May $day');
+        }
+        // With the Tuesday window, its last day is Erev Shavuot itself.
+        await openToday(
+          tester,
+          settings: settings.copyWith(lateWindow: LateWindow.tuesday),
+          now: DateTime(2028, 5, 30, 9),
+          progress: const ProgressState(),
+        );
+        expect(findWords('Finish before Yom Tov begins this evening and it still counts.'), findsOneWidget);
+        await openToday(
+          tester,
+          settings: settings.copyWith(language: AppLanguage.hebrew),
+          now: DateTime(2028, 5, 28, 9),
+          progress: const ProgressState(),
+        );
+        expect(findWords('סיום לפני כניסת החג ביום שלישי, ה׳ בסיון, עדיין נחשב.'), findsOneWidget);
+      });
     });
   });
 
@@ -591,5 +800,26 @@ void main() {
     expect(question(bamidbar, oneDayYomTov: true), en.checkInTitleShabbatYomTov('X'));
     expect(question(vezot), en.checkInTitleVezot('X'));
     expect(question(vezotIsrael, oneDayYomTov: true), en.checkInTitleVezot('X'), reason: 'on Shabbat, but Yom Tov too');
+    // Simchat Torah outside Israel is no Yom Tov for one who keeps one day.
+    expect(question(vezot, oneDayYomTov: true), en.checkInTitleSimchatTorah('X'));
+
+    // Simchat Torah on Friday 13 October 2028 outside Israel, and Bereshit
+    // on the Shabbat straight after: asked from Sunday until Noach is read.
+    final vezot5789 = previous(occasion: LocalDate(2028, 10, 13), id: '5788:54', status: WeekStatus.missed);
+    expect(checkInDay(vezot5789, settings: _settings), LocalDate(2028, 10, 15));
+    for (var day = LocalDate(2028, 10, 15); day < LocalDate(2028, 10, 21); day = day.addDays(1)) {
+      expect(asksCheckIn(vezot5789, today: day, settings: _settings), isTrue, reason: '$day');
+    }
+    expect(asksCheckIn(vezot5789, today: LocalDate(2028, 10, 22), settings: _settings), isFalse);
+    // And in Israel, on Thursday 12 October, asked on Friday alone, before
+    // Bereshit; for a visitor keeping two days, from Sunday.
+    final vezot5789Israel =
+        previous(occasion: LocalDate(2028, 10, 12), id: '5788:54', status: WeekStatus.missed, israel: true);
+    final israeli5789 = _settings.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true);
+    expect(asksCheckIn(vezot5789Israel, today: LocalDate(2028, 10, 13), settings: israeli5789), isTrue);
+    expect(asksCheckIn(vezot5789Israel, today: LocalDate(2028, 10, 15), settings: israeli5789), isFalse);
+    final visitor = _settings.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: false);
+    expect(asksCheckIn(vezot5789Israel, today: LocalDate(2028, 10, 15), settings: visitor), isTrue);
+    expect(asksCheckIn(vezot5789Israel, today: LocalDate(2028, 10, 20), settings: visitor), isTrue);
   });
 }

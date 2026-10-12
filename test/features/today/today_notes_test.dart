@@ -162,6 +162,27 @@ void main() {
       expect(find.textContaining('Catch up on'), findsNothing);
     });
 
+    testWidgets('offers no week that can no longer count, and lets its check-in stand beneath', (tester) async {
+      // Paused before Rosh Hashanah's Shabbat, 14 to 18 September 2026, and
+      // back on Monday 5 October, after Simchat Torah: Vezot HaBerachah,
+      // which has no late window, can no longer count late, but is asked
+      // about.
+      await openToday(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: _d(9, 1)),
+        now: DateTime(2026, 10, 5, 9),
+        progress: ProgressState(pauses: [Pause(_d(9, 14), _d(9, 18), id: 'away')]),
+      );
+      expect(find.text('Welcome back! Your place is saved.'), findsOneWidget);
+      expect(find.textContaining('Catch up on'), findsNothing);
+      expect(find.text('Did you finish Vezot HaBerachah over Yom Tov?'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('Did you finish Vezot HaBerachah over Yom Tov?')).top,
+        greaterThan(tester.getRect(find.text('Welcome back! Your place is saved.')).bottom),
+        reason: 'beneath the welcome',
+      );
+    });
+
     test('is welcomed until reading is logged for a day after it', () {
       final today = _d(10, 12);
       expect(pauseEndToWelcome(ProgressState(pauses: [pause]), today), _d(10, 11));

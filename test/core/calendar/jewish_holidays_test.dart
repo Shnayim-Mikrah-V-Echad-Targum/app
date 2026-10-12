@@ -49,11 +49,27 @@ void main() {
     }
     // In Israel the seventh day of Pesach is the last.
     expect(eve(LocalDate(2027, 4, 28), israel: true), isNull);
-    // Before a Yom Tov on Shabbat, as Yom Kippur 5789, it is Erev Shabbat;
-    // and so it is before Shavuot 5789 on Sunday.
+    // Before a Yom Tov on Shabbat, as Yom Kippur 5789, it is Erev Shabbat,
+    // as any Friday is, Friday 18 May 2029 among them.
     expect(eve(LocalDate(2028, 9, 29)), isNull);
     expect(eve(LocalDate(2029, 5, 18)), isNull);
     expect(eve(LocalDate(2026, 10, 14)), isNull);
+  });
+
+  test('a day of rest is no eve, though Yom Tov begins as it ends', () {
+    ErevYomTov? eve(LocalDate date, {bool israel = false}) => JewishHolidays.erevYomTov(date, israel: israel);
+    // Shabbat 19 May 2029, before Shavuot 5789 on Sunday.
+    expect(eve(LocalDate(2029, 5, 19)), isNull);
+    expect(eve(LocalDate(2029, 5, 19), israel: true), isNull);
+    // The first day of Rosh Hashanah 5789, Thursday 21 September 2028, and
+    // outside Israel the first day of Pesach 5787, Thursday 22 April 2027,
+    // each with a second day of Yom Tov on Friday.
+    expect(eve(LocalDate(2028, 9, 21)), isNull);
+    expect(eve(LocalDate(2028, 9, 21), israel: true), isNull);
+    expect(eve(LocalDate(2027, 4, 22)), isNull);
+    // In Israel that Thursday is the one day of Yom Tov, and Friday Chol
+    // HaMoed.
+    expect(eve(LocalDate(2027, 4, 22), israel: true), isNull);
   });
 
   test('Chanukah days', () {

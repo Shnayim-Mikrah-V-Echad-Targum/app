@@ -524,6 +524,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String openWeekLateEve(String holiday, String when, String date) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'shabbat': 'Shabbat',
+      'roshHashanah': 'Rosh Hashanah',
+      'yomKippur': 'Yom Kippur',
+      'other': 'Yom Tov',
+    });
+    String _temp1 = intl.Intl.selectLogic(when, {
+      'today': 'this evening and it still counts.',
+      'tomorrow': 'tomorrow evening and it still counts.',
+      'other': 'on $date, and it still counts.',
+    });
+    return 'Finish before $_temp0 begins $_temp1';
+  }
+
+  @override
   String openWeekRestore(String name, String next, int count) {
     return 'Finish $name and $next by Shabbat and your $count-week streak continues — one double-up per book.';
   }
@@ -560,6 +576,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String checkInTitleSimchatTorah(String name) {
+    return 'Did you finish $name on Simchat Torah?';
+  }
+
+  @override
   String get checkInBody =>
       'Log what you read from a printed Chumash — it counts just the same.';
 
@@ -570,7 +591,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String checkInFinishedYomTov(String name) {
-    return 'I finished $name on Yom Tov';
+    return 'I finished $name on Yom Tov';
+  }
+
+  @override
+  String checkInFinishedSimchatTorah(String name) {
+    return 'I finished $name on Simchat Torah';
   }
 
   @override
@@ -1874,15 +1900,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fridayReminderTime => 'Erev Shabbat reminder time';
 
   @override
-  String get checkInReminder => 'After-Shabbat check-in';
+  String get checkInReminder => 'Check-in after Shabbat or Yom Tov';
 
   @override
   String get checkInReminderDesc =>
-      'Sunday morning, to log what you read on Shabbat';
+      'The morning after Shabbat or Simchat Torah, to log what you read then';
 
   @override
   String get checkInReminderDescCity =>
-      'An hour after Shabbat ends, or Sunday morning when it ends late, to log what you read on Shabbat';
+      'An hour after Shabbat or Simchat Torah ends, or the next morning when it ends late, to log what you read then';
 
   @override
   String get remindersShabbatNote =>
@@ -1988,7 +2014,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifChannelFriday => 'Erev Shabbat';
 
   @override
-  String get notifChannelCheckIn => 'After Shabbat';
+  String get notifChannelCheckIn => 'After Shabbat and Yom Tov';
 
   @override
   String get notifChannelDailyDesc =>
@@ -2000,7 +2026,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifChannelCheckInDesc =>
-      'After Shabbat, a reminder to log what you read; also the note when reminders stop';
+      'After Shabbat or Simchat Torah, a reminder to log what you read; also the note when reminders stop';
 
   @override
   String notifDailyTitle(String aliyah) {
@@ -2039,6 +2065,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notifCheckInBodyVezot =>
       'Did you read it on Yom Tov? Tap to log it.';
+
+  @override
+  String get notifCheckInBodySimchatTorah =>
+      'Did you read it on Simchat Torah? Tap to log it.';
 
   @override
   String get notifPausedTitle => 'Reminders paused';

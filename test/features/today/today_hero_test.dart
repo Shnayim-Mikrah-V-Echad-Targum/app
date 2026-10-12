@@ -419,6 +419,39 @@ void main() {
       expect(find.text('Erev Shabbat'), findsNothing);
     });
 
+    testWidgets('in the week of Vezot HaBerachah, says on a Friday that Shabbat begins this evening', (tester) async {
+      final joined = _settings.copyWith(joinDate: LocalDate(2026, 9, 1));
+      // Friday 25 September 2026, Erev Sukkot 5787, which is on Shabbat,
+      // after Haazinu was read: not "Simchat Torah in 9 days", nor 8 in
+      // Israel.
+      for (final israel in [false, true]) {
+        await openToday(
+          tester,
+          settings: israel ? joined.locatedIn(ReadingSchedule.israel) : joined,
+          now: DateTime(2026, 9, 25, 11),
+          progress: ProgressState(weeks: {}),
+        );
+        expect(find.text('Simchat Torah'), findsOneWidget, reason: 'israel: $israel');
+        expect(find.text('Shabbat begins this evening'), findsOneWidget, reason: 'israel: $israel');
+        expect(find.textContaining('Simchat Torah in'), findsNothing, reason: 'israel: $israel');
+      }
+      // Hoshana Rabbah 5787, Friday 2 October 2026: outside Israel, Shabbat
+      // and Shemini Atzeret begin this evening, and Simchat Torah is two
+      // days off; in Israel, Simchat Torah is that Shabbat, tomorrow.
+      final hoshanaRabbah = DateTime(2026, 10, 2, 11);
+      await openToday(tester, settings: joined, now: hoshanaRabbah, progress: ProgressState(weeks: {}));
+      expect(find.text('Shabbat begins this evening'), findsOneWidget);
+      expect(find.text('Simchat Torah in 2 days'), findsNothing);
+      await openToday(
+        tester,
+        settings: joined.locatedIn(ReadingSchedule.israel),
+        now: hoshanaRabbah,
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('Simchat Torah is tomorrow'), findsOneWidget);
+      expect(find.text('Shabbat begins this evening'), findsNothing);
+    });
+
     testWidgets("leads to all of the week's aliyot, within Today", (tester) async {
       final c = await openToday(tester, progress: _bereshit());
       await tester.tap(find.text('All aliyot'));

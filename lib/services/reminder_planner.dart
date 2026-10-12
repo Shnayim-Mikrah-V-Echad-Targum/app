@@ -26,6 +26,7 @@ class PlannedReminder {
     required this.plan,
     this.aliyot = const [],
     this.afterYomTov = false,
+    this.onYomTov = true,
   });
 
   final ReminderKind kind;
@@ -44,6 +45,11 @@ class PlannedReminder {
   /// run on into Yom Tov, as when Shavuot falls on the Sunday, so that it
   /// asks about both.
   final bool afterYomTov;
+
+  /// For the check-in after Simchat Torah: whether that day was Yom Tov for
+  /// the reader. It is not for one who keeps a single day of Yom Tov but
+  /// hears the reading outside Israel, a day after theirs.
+  final bool onYomTov;
 
   /// Stable, unique per day and kind.
   int get id => date.rd * 10 + kind.index;
@@ -254,7 +260,12 @@ List<PlannedReminder> planReminders({
     }
   }
   // Start a week back: last week's after-Shabbat check-in may be due today.
+  // Or two, where that week is Bereshit, read on the Shabbat straight after
+  // Simchat Torah: Vezot HaBerachah's check-in then comes after that Shabbat,
+  // before Bereshit's, as Today asks it first.
   var week = planner.schedule.previousWeek(planner.schedule.weekFor(today));
+  final beforeIt = planner.schedule.previousWeek(week);
+  if (beforeIt.portion.isVezotHaberakhah) week = beforeIt;
   while (week.start <= end) {
     final plan = planner.planFor(week);
     final progress = progressOf(plan.weekId);
@@ -289,31 +300,44 @@ List<PlannedReminder> planReminders({
     }
 
     // After a Shabbat, and after Simchat Torah, the Yom Tov Vezot HaBerachah
-    // is read on (MB 285:18), which Today asks about too.
+    // is read on (MB 285:18), which Today asks about too. The day it comes is
+    // the first Today asks on (firstDayToAskAfter): where Bereshit's Shabbat
+    // follows Simchat Torah straight away, after that Shabbat, which takes
+    // the place of Bereshit's own check-in that day.
     if (prefs.checkIn && !progress.isComplete && (week.occasion.isShabbat || week.portion.isVezotHaberakhah)) {
       // On Motzaei Shabbat, or at the end of a Yom Tov that follows it, when
       // that is known and not too late; otherwise the next morning, or the
       // one after Tisha B'Av, when its greeting is not given (Shulchan Aruch
       // OC 554:20), whatever is planned on the fast. Chosen by the calendar
       // alone: once the evening's has been sent, a plan made later that
-      // evening must not send the morning's too.
+      // evening must not send the morning's too. A Simchat Torah that is not
+      // Yom Tov for the reader has no evening's: it is still the reading day
+      // Vezot HaBerachah is read on, and Today asks the morning after.
       final lastRest = JewishHolidays.lastRestDay(week.occasion, israel: planner.oneDayYomTov);
-      final havdalah = timesOf(lastRest)?.havdalah;
+      final havdalah = rest(lastRest) ? timesOf(lastRest)?.havdalah : null;
       final evening = havdalah == null ? null : havdalah + kCheckInAfterHavdalah;
       var morning = lastRest.addDays(1);
       while (JewishHolidays.isTishaBav(morning)) {
         morning = morning.addDays(1);
       }
       final afterYomTov = lastRest != week.occasion;
+      final onYomTov = rest(week.occasion);
       offer(evening != null && evening <= kCheckInLatestMinutes && fits(lastRest, evening, afterRest: true)
           ? PlannedReminder(
-              kind: ReminderKind.checkIn, date: lastRest, minutes: evening, plan: plan, afterYomTov: afterYomTov)
+              kind: ReminderKind.checkIn,
+              date: lastRest,
+              minutes: evening,
+              plan: plan,
+              afterYomTov: afterYomTov,
+              onYomTov: onYomTov,
+            )
           : PlannedReminder(
               kind: ReminderKind.checkIn,
               date: morning,
               minutes: prefs.checkInMinutes,
               plan: plan,
               afterYomTov: afterYomTov,
+              onYomTov: onYomTov,
             ));
     }
 

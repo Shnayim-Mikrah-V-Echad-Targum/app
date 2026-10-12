@@ -139,6 +139,8 @@ const _screens = {
   // Bereshit unfinished, its check-in put aside on the Sunday after: open
   // until the end of Tuesday, which it names.
   'today_late': '/today',
+  'today_late_yomtov': '/today',
+  'today_welcome_vezot': '/today',
   'today_yomtov_oneday': '/today',
   'today_yomtov_twoday': '/today',
   'today_joined_midweek': '/today',
@@ -649,6 +651,9 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   // The check-in, answered on Sunday, gives way to the open week's notice.
   'today_haftarah_left': (s) => s.copyWith(haftarahRequired: true, checkInAnsweredFor: '5787:1'),
   'today_late': (s) => s.copyWith(checkInAnsweredFor: '5787:1'),
+  // Shabbat 8 April 2028, its window closing on Tuesday, Pesach.
+  'today_late_yomtov': (s) => s.copyWith(joinDate: LocalDate(2028, 3, 26), checkInAnsweredFor: '5788:25'),
+  'today_welcome_vezot': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
   // The Tuesday after Shavuot 5789 (Sunday and Monday, 20 and 21 May) on
   // Israel's reading: one day of Yom Tov kept, then two (a visitor).
   'today_yomtov_oneday': (s) =>
@@ -769,6 +774,11 @@ final _screenNow = <String, DateTime>{
   'today_divergence_abroad': DateTime(2029, 4, 24, 11),
   'today_haftarah_left': DateTime(2026, 10, 13, 11),
   'today_late': DateTime(2026, 10, 11, 11),
+  // Erev Pesach 5788, Monday 10 April 2028.
+  'today_late_yomtov': DateTime(2028, 4, 10, 11),
+  // Monday 5 October 2026, after Simchat Torah, back from a pause that
+  // ended before Rosh Hashanah's Shabbat.
+  'today_welcome_vezot': DateTime(2026, 10, 5, 11),
   'today_yomtov_oneday': DateTime(2029, 5, 22, 11),
   'today_yomtov_twoday': DateTime(2029, 5, 22, 11),
   // Hoshana Rabbah 5787; Simchat Torah is on Shabbat in Israel.
@@ -825,6 +835,8 @@ final _screenProgress = <String, ProgressState Function()>{
   for (final screen in ['today_erev_yomtov', 'today_erev_yomtov_afternoon']) screen: () => ProgressState(weeks: {}),
   'today_erev_shabbat_yomtov': () => ProgressState(weeks: {}),
   for (final screen in ['today_checkin_vezot', 'today_checkin_vezot_date']) screen: () => ProgressState(weeks: {}),
+  'today_late_yomtov': () => ProgressState(weeks: {}),
+  'today_welcome_vezot': () => ProgressState(pauses: [Pause(LocalDate(2026, 9, 14), LocalDate(2026, 9, 18), id: 'away')]),
   // Rishon of Bamidbar read on its Sunday.
   'today_checkin_yomtov': () => ProgressState(weeks: {
         '5789:34': WeekProgress(weekId: '5789:34').withAliyah(0, LocalDate(2029, 5, 13)),
@@ -2072,6 +2084,7 @@ const _bigTextScreens = {
   'today_checkin_vezot',
   'today_checkin_vezot_date',
   'today_pause_ended',
+  'today_welcome_vezot',
   'today_divergence',
   'today_grace',
   'today_tisha_bav',

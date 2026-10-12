@@ -555,6 +555,75 @@ void main() {
       });
     });
 
+    group('Vezot HaBerachah when Simchat Torah is a Friday: 13 October 2028 outside Israel', () {
+      final simchatTorah = LocalDate(2028, 10, 13);
+      final bereshit = simchatTorah.addDays(1);
+      final sunday = simchatTorah.addDays(2);
+      // Planned on Hoshana Rabbah, Wednesday 11 October, before Yom Tov.
+      final hoshanaRabbah = LocalDate(2028, 10, 11);
+      String idOf(LocalDate d) {
+        final w = planner.schedule.weekFor(d);
+        return weekIdFor(w.portion, w.occasion);
+      }
+
+      List<PlannedReminder> planOn(LocalDate today, {City? city, Set<String> finished = const {}}) => planReminders(
+            prefs: const ReminderPrefs(checkIn: true),
+            planner: planner,
+            progressOf: (w) =>
+                finished.contains(w) ? WeekProgress(weekId: w).withAll(LocalDate(2028, 10, 11)) : empty(w),
+            now: DateTime(today.year, today.month, today.day, 8),
+            today: today,
+            zmanim: city == null ? null : timesIn(city),
+            days: 8,
+          );
+
+      test('the days are as expected: Bereshit is read on the Shabbat straight after it', () {
+        expect(planner.schedule.weekFor(simchatTorah).portion.isVezotHaberakhah, isTrue);
+        expect(planner.schedule.weekFor(bereshit).portion, const PortionId(1));
+        expect(planner.schedule.weekFor(bereshit).occasion, bereshit);
+        expect(JewishHolidays.lastRestDay(simchatTorah, israel: false), bereshit);
+      });
+
+      test('asks about Vezot HaBerachah after that Shabbat, as Today does first, and not Bereshit that day', () {
+        final evening = on(planOn(hoshanaRabbah, city: newYork), bereshit)!;
+        final afterHavdalah = havdalah(newYork, bereshit) + kCheckInAfterHavdalah;
+        expect((evening.kind, evening.minutes), (ReminderKind.checkIn, afterHavdalah));
+        expect(evening.plan.weekId, idOf(simchatTorah));
+        expect(on(planOn(hoshanaRabbah, city: newYork), sunday), isNull, reason: 'one check-in, not two');
+        // Without a city, on Sunday morning; and so when planned again that
+        // morning, before it is due.
+        for (final from in [hoshanaRabbah, sunday]) {
+          final morning = on(planOn(from), sunday)!;
+          expect((morning.kind, morning.minutes), (ReminderKind.checkIn, const ReminderPrefs().checkInMinutes));
+          expect(morning.plan.weekId, idOf(simchatTorah), reason: 'planned on $from');
+        }
+      });
+
+      test('asks about Bereshit once Vezot HaBerachah is finished', () {
+        for (final from in [hoshanaRabbah, sunday]) {
+          final morning = on(planOn(from, finished: {idOf(simchatTorah)}), sunday)!;
+          expect(morning.kind, ReminderKind.checkIn);
+          expect(morning.plan.weekId, idOf(bereshit), reason: 'planned on $from');
+        }
+      });
+    });
+
+    test('for one day of Yom Tov and the reading outside Israel, the morning after Simchat Torah, its own weekday', () {
+      // Simchat Torah, Sunday 4 October 2026, is no Yom Tov for this reader:
+      // Today asks on Monday, so the check-in comes then, not on Sunday night.
+      const israeliAbroad = ReadingPlanner(schedule: ParshaSchedule(israel: false), oneDayYomTov: true);
+      final simchatTorah = LocalDate(2026, 10, 4);
+      const checkIn = ReminderPrefs(checkIn: true);
+      final reminders = plan(LocalDate(2026, 9, 30), checkIn, city: newYork, planner: israeliAbroad);
+      expect(on(reminders, simchatTorah), isNull);
+      final r = on(reminders, simchatTorah.addDays(1))!;
+      expect((r.kind, r.minutes), (ReminderKind.checkIn, const ReminderPrefs().checkInMinutes));
+      expect(r.plan.portion.isVezotHaberakhah, isTrue);
+      expect(r.onYomTov, isFalse);
+      // For a reader to whom it is Yom Tov, it is.
+      expect(on(plan(LocalDate(2026, 9, 30), checkIn, city: newYork), simchatTorah)!.onYomTov, isTrue);
+    });
+
     // Greetings are not given on Tisha B'Av (Shulchan Aruch OC 554:20), and
     // the check-in begins with one: it comes the morning after the fast,
     // whatever is planned on it.

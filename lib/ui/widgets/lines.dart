@@ -84,11 +84,6 @@ class DotLine extends StatelessWidget {
 /// line starts with a dash.
 String dashHeldToWord(String text) => text.replaceAll(' — ', '${DotLine.nbsp}— ');
 
-/// [date] ("Sunday, October 11") with its words held together but after a
-/// comma, so that a sentence that gives it breaks there if it must, never
-/// between a day and its month ("11 / באוקטובר").
-String dateHeldTogether(String date) => date.split(', ').map((c) => c.replaceAll(' ', DotLine.nbsp)).join(', ');
-
 /// [text] wrapped between its words, never inside one: a word too wide for
 /// the line on its own, as with large text, is set just small enough to fit.
 /// Centred unless [textAlign] says otherwise. Its [style] is merged with the

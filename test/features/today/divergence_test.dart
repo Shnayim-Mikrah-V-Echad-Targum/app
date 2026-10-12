@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -136,6 +137,36 @@ void main() {
       await openToday(tester, _abroad.copyWith(language: AppLanguage.hebrew));
       expect(find.textContaining('ארץ ישראל מקדימה בפרשה אחת'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('keeps a name of two parshiyot whole, in the notice and on its button', (tester) async {
+      // Tuesday 24 April 2029: outside Israel Acharei Mot and Kedoshim are
+      // read together, a week after Israel read them apart.
+      final visitor = _visitor.copyWith(joinDate: LocalDate(2029, 4, 22));
+      for (final (hebrew, name) in [(false, 'Mot-\u2060Kedoshim'), (true, 'מות־\u2060קדשים')]) {
+        for (final width in [360.0, 412.0, 600.0, 900.0, 1366.0]) {
+          tester.view.physicalSize = Size(width, 1400);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          await pumpApp(
+            tester,
+            settings: hebrew ? visitor.copyWith(language: AppLanguage.hebrew) : visitor,
+            now: DateTime(2029, 4, 24, 10),
+          );
+          await tester.pumpAndSettle();
+          final texts = [
+            for (final e in find.textContaining(name).evaluate())
+              if (e.renderObject is RenderParagraph) e.renderObject! as RenderParagraph,
+          ];
+          expect(texts, hasLength(2), reason: 'the notice and its Open button, at $width');
+          for (final paragraph in texts) {
+            final text = paragraph.text.toPlainText();
+            final at = text.indexOf(name);
+            double lineOf(int offset) => paragraph.getOffsetForCaret(TextPosition(offset: offset), Rect.zero).dy;
+            expect(lineOf(at + name.length - 1), lineOf(at), reason: '"$text" at $width: the name whole');
+          }
+        }
+      }
     });
 
     testWidgets('no notice for someone who keeps the customs of one place', (tester) async {

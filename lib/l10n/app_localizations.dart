@@ -789,6 +789,12 @@ abstract class AppLocalizations {
   /// **'{when, select, today{Finish by tonight and it still counts.} tomorrow{Finish by tomorrow night and it still counts.} other{Finish by the end of {date}, and it still counts.}}'**
   String openWeekLate(String when, String date);
 
+  /// In place of openWeekLate when the late window's last reading day is the eve of Shabbat or Yom Tov (as when Yom Tov falls on the window's last day), so that it closes as that day of rest begins, not at night. holiday is shabbat, roshHashanah, yomKippur or other (a Yom Tov); when is today, tomorrow or other; date is that day, with its weekday (a Hebrew date in the Hebrew UI), used only for other.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish before {holiday, select, shabbat{Shabbat} roshHashanah{Rosh Hashanah} yomKippur{Yom Kippur} other{Yom Tov}} begins {when, select, today{this evening and it still counts.} tomorrow{tomorrow evening and it still counts.} other{on {date}, and it still counts.}}'**
+  String openWeekLateEve(String holiday, String when, String date);
+
   /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.
   ///
   /// In en, this message translates to:
@@ -837,6 +843,12 @@ abstract class AppLocalizations {
   /// **'Did you finish {name} over Yom Tov?'**
   String checkInTitleVezot(String name);
 
+  /// As checkInTitleVezot, for a reader to whom Simchat Torah, when Vezot HaBerachah was read, was not Yom Tov (one who keeps a single day of Yom Tov but hears the reading outside Israel, a day later). name is Vezot HaBerachah, in the reader's style.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you finish {name} on Simchat Torah?'**
+  String checkInTitleSimchatTorah(String name);
+
   /// No description provided for @checkInBody.
   ///
   /// In en, this message translates to:
@@ -849,11 +861,17 @@ abstract class AppLocalizations {
   /// **'I finished {name} on Shabbat'**
   String checkInFinished(String name);
 
-  /// As checkInFinished, after Simchat Torah: logs the whole of Vezot HaBerachah as read on that Yom Tov. name is Vezot HaBerachah, as in checkInTitleVezot.
+  /// As checkInFinished, after Simchat Torah: logs the whole of Vezot HaBerachah as read on that Yom Tov. name is Vezot HaBerachah, as in checkInTitleVezot. Yom Tov is held together by a no-break space, so that where large text wraps the label, Tov never stands alone on its last line.
   ///
   /// In en, this message translates to:
-  /// **'I finished {name} on Yom Tov'**
+  /// **'I finished {name} on Yom Tov'**
   String checkInFinishedYomTov(String name);
+
+  /// As checkInFinishedYomTov, under checkInTitleSimchatTorah: logs the whole of Vezot HaBerachah as read on Simchat Torah, which was not Yom Tov for the reader. name is Vezot HaBerachah.
+  ///
+  /// In en, this message translates to:
+  /// **'I finished {name} on Simchat Torah'**
+  String checkInFinishedSimchatTorah(String name);
 
   /// No description provided for @checkInPick.
   ///
@@ -3081,22 +3099,22 @@ abstract class AppLocalizations {
   /// **'Erev Shabbat reminder time'**
   String get fridayReminderTime;
 
-  /// No description provided for @checkInReminder.
+  /// The reminder setting that, after a Shabbat whose parsha isn't finished (and the Yom Tov straight after it, if any), and after Simchat Torah while Vezot HaBerachah isn't, reminds the reader to log what they read then.
   ///
   /// In en, this message translates to:
-  /// **'After-Shabbat check-in'**
+  /// **'Check-in after Shabbat or Yom Tov'**
   String get checkInReminder;
 
-  /// No description provided for @checkInReminderDesc.
+  /// Under checkInReminder when no city is chosen for Shabbat times: the morning after the days of rest end.
   ///
   /// In en, this message translates to:
-  /// **'Sunday morning, to log what you read on Shabbat'**
+  /// **'The morning after Shabbat or Simchat Torah, to log what you read then'**
   String get checkInReminderDesc;
 
-  /// In place of checkInReminderDesc when a city is chosen for Shabbat times: on Motzaei Shabbat, unless that is after 10:30 PM.
+  /// In place of checkInReminderDesc when a city is chosen for Shabbat times: an hour after nightfall as the days of rest end, unless that is after 10:30 PM.
   ///
   /// In en, this message translates to:
-  /// **'An hour after Shabbat ends, or Sunday morning when it ends late, to log what you read on Shabbat'**
+  /// **'An hour after Shabbat or Simchat Torah ends, or the next morning when it ends late, to log what you read then'**
   String get checkInReminderDescCity;
 
   /// No description provided for @remindersShabbatNote.
@@ -3279,10 +3297,10 @@ abstract class AppLocalizations {
   /// **'Erev Shabbat'**
   String get notifChannelFriday;
 
-  /// No description provided for @notifChannelCheckIn.
+  /// Android notification channel name, shown in the system's notification settings: the check-in after Shabbat and after Simchat Torah.
   ///
   /// In en, this message translates to:
-  /// **'After Shabbat'**
+  /// **'After Shabbat and Yom Tov'**
   String get notifChannelCheckIn;
 
   /// Android notification channel description, shown in the system's notification settings.
@@ -3300,7 +3318,7 @@ abstract class AppLocalizations {
   /// Android notification channel description, shown in the system's notification settings.
   ///
   /// In en, this message translates to:
-  /// **'After Shabbat, a reminder to log what you read; also the note when reminders stop'**
+  /// **'After Shabbat or Simchat Torah, a reminder to log what you read; also the note when reminders stop'**
   String get notifChannelCheckInDesc;
 
   /// No description provided for @notifDailyTitle.
@@ -3356,6 +3374,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Did you read it on Yom Tov? Tap to log it.'**
   String get notifCheckInBodyVezot;
+
+  /// As notifCheckInBodyVezot, for a reader to whom Simchat Torah was not Yom Tov (one who keeps a single day of Yom Tov but hears the reading outside Israel, a day later).
+  ///
+  /// In en, this message translates to:
+  /// **'Did you read it on Simchat Torah? Tap to log it.'**
+  String get notifCheckInBodySimchatTorah;
 
   /// The last notification, sent when the app has not been opened for two weeks; none follow until it is opened again.
   ///

@@ -19,14 +19,28 @@ import '../progress/domain/streak_engine.dart';
 /// The check-in's question about [previous], whose parsha is [name]: after
 /// Shabbat, or after Shabbat and the Yom Tov straight after it, as the
 /// reader keeps its days ([oneDayYomTov]), when the reading is logged; for
-/// Vezot HaBerachah, after Simchat Torah.
+/// Vezot HaBerachah, after Simchat Torah, over Yom Tov, or on Simchat Torah
+/// by name where that day was not Yom Tov for the reader
+/// ([simchatTorahIsYomTov]).
 String checkInQuestion(AppLocalizations l, WeekContext previous, String name, {required bool oneDayYomTov}) {
   final occasion = previous.week.occasion;
-  if (previous.week.portion.isVezotHaberakhah) return l.checkInTitleVezot(name);
+  if (previous.week.portion.isVezotHaberakhah) {
+    return simchatTorahIsYomTov(previous, oneDayYomTov: oneDayYomTov)
+        ? l.checkInTitleVezot(name)
+        : l.checkInTitleSimchatTorah(name);
+  }
   return JewishHolidays.lastRestDay(occasion, israel: oneDayYomTov) != occasion
       ? l.checkInTitleShabbatYomTov(name)
       : l.checkInTitle(name);
 }
+
+/// Whether Simchat Torah, the day [vezot]'s Vezot HaBerachah was read, was
+/// Yom Tov for the reader: it was not for one who keeps a single day of Yom
+/// Tov but hears the reading outside Israel, a day after theirs. The
+/// check-in then speaks of Simchat Torah, as its sheet dates that day
+/// plainly.
+bool simchatTorahIsYomTov(WeekContext vezot, {required bool oneDayYomTov}) =>
+    isNamedYomTov(vezot.week.occasion, oneDayYomTov: oneDayYomTov);
 
 /// When a late window closing on [deadline] ends, as of [today], for
 /// [AppLocalizations.openWeekLate]: 'today' (by tonight), 'tomorrow' (by
@@ -36,6 +50,29 @@ String lateDeadlineDay(LocalDate deadline, {required LocalDate today}) => deadli
     : deadline == today.addDays(1)
         ? 'tomorrow'
         : 'other';
+
+/// The last day on which a week whose late window closes on [deadline]
+/// ([StreakEngine.lateDeadlineOf]) can be finished on the device and still
+/// count, as Today tells it: [deadline], or where that is a day of rest by
+/// the reader's days of Yom Tov ([oneDayYomTov]), as when Pesach falls on
+/// the Tuesday, the last reading day before it. Reading logged on a day of
+/// rest counts for the next reading day, past the window, so Today never
+/// points the reader at one. (A reading from a printed Chumash on that Yom
+/// Tov, logged for it afterwards, still counts.)
+LocalDate lastLateReadingDay(LocalDate deadline, {required bool oneDayYomTov}) {
+  var day = deadline;
+  while (JewishHolidays.isRestDay(day, israel: oneDayYomTov)) {
+    day = day.addDays(-1);
+  }
+  return day;
+}
+
+/// What begins on the evening of [day], a reading day, for
+/// [AppLocalizations.openWeekLateEve]: 'shabbat' before Shabbat, the Yom
+/// Tov's [ErevYomTov.name] on its eve, by the reader's days of Yom Tov
+/// ([oneDayYomTov]), and null on any other day, whose night still counts.
+String? restBeginsAfter(LocalDate day, {required bool oneDayYomTov}) =>
+    day.addDays(1).isShabbat ? 'shabbat' : JewishHolidays.erevYomTov(day, israel: oneDayYomTov)?.name;
 
 /// Where aliyah [aliyah] of [ctx]'s portion is, and how long: "Genesis
 /// 2:20–3:21 · 23 verses", each part kept whole on a line of its own where
@@ -75,14 +112,20 @@ class PreviousWeekNotice extends ConsumerWidget {
     final nextName = names.portion(current.portion, ashkenazi: settings.ashkenaziNames);
     final streak = ref.watch(streakSummaryProvider.select((s) => s.parshaStreak));
     final onlyHaftarah = previous.progress.isComplete;
-    final deadline = engine.lateDeadlineOf(previous.week);
+    // On its eve, the window closes as Shabbat or Yom Tov begins, not at
+    // night.
+    final lastDay = lastLateReadingDay(engine.lateDeadlineOf(previous.week), oneDayYomTov: settings.oneDayYomTov);
+    final when = lateDeadlineDay(lastDay, today: today);
+    final eve = restBeginsAfter(lastDay, oneDayYomTov: settings.oneDayYomTov);
     return NoticeBanner(
       icon: Icons.schedule,
       title: l.openWeekTitle(name),
       text: [
         if (onlyHaftarah) l.openWeekHaftarahLeft,
         if (!overdue)
-          l.openWeekLate(lateDeadlineDay(deadline, today: today), names.practiceDate(deadline))
+          eve == null
+              ? l.openWeekLate(when, names.practiceDate(lastDay))
+              : l.openWeekLateEve(eve, when, names.practiceDate(lastDay))
         else if (streak > 0)
           l.openWeekRestore(name, nextName, streak)
         else
@@ -138,10 +181,14 @@ class PreviousWeekNotice extends ConsumerWidget {
               // Logged for the day it was read in synagogue, Simchat Torah
               // for Vezot HaBerachah. As wide as its label, as a Text is,
               // and where a long name wraps it, balanced, leaving no word
-              // alone ("Tov").
+              // alone; its "Yom Tov" is held together, so "Tov" never is.
               child: IntrinsicWidth(
                 child: BalancedText(
-                  previous.week.portion.isVezotHaberakhah ? l.checkInFinishedYomTov(name) : l.checkInFinished(name),
+                  !previous.week.portion.isVezotHaberakhah
+                      ? l.checkInFinished(name)
+                      : simchatTorahIsYomTov(previous, oneDayYomTov: oneDayYomTov)
+                          ? l.checkInFinishedYomTov(name)
+                          : l.checkInFinishedSimchatTorah(name),
                   style: null,
                 ),
               ),

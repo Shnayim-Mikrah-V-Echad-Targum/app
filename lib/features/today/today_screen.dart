@@ -97,11 +97,17 @@ class TodayScreen extends ConsumerWidget {
     // day after.
     final quietFast = ref.watch(plannerProvider).isQuietTishaBav(today) || ref.watch(fastBegunProvider);
     final welcome = pauseEnd != null && pauseEnd != settings.pauseEndSeen && !quietFast ? pauseEnd : null;
+    // The welcome back offers last week while it can still count: within
+    // its late window, or restorable by doubling up. Vezot HaBerachah, asked
+    // about after Simchat Torah though it can no longer count late, is not.
+    final catchUp = previous?.status == WeekStatus.inProgress || previous?.status == WeekStatus.overdue
+        ? previous
+        : null;
     // Last week's notice, unless the welcome back offers that week itself.
     // On a quiet fast it waits too, and so it does while the check-in, which
     // is never asked on the fast, is still to come the day after it.
     final shownPrevious = previous != null &&
-            welcome == null &&
+            (welcome == null || catchUp == null) &&
             !quietFast &&
             !awaitsCheckIn(previous, today: today, settings: settings)
         ? previous
@@ -125,7 +131,7 @@ class TodayScreen extends ConsumerWidget {
         const Gap(Rhythm.cardGap),
       ],
       if (welcome != null) ...[
-        _PauseEndedNotice(end: welcome, ctx: ctx, previous: previous),
+        _PauseEndedNotice(end: welcome, ctx: ctx, previous: catchUp),
         const Gap(Rhythm.cardGap),
       ],
       // Until put away for this week: next week's, if the two still differ,
@@ -319,7 +325,10 @@ class _DivergenceBanner extends ConsumerWidget {
     final l = context.l10n;
     final names = Names(context);
     final repo = ref.watch(parshaRepositoryProvider);
-    String name(PortionId p) => names.portion(repo.portion(p), ashkenazi: settings.ashkenaziNames);
+    // Each name whole, as a name of two parshiyot is kept ("Acharei" over
+    // "Mot-Kedoshim"), though the sentences around them may break after a
+    // hyphen.
+    String name(PortionId p) => WholeWords.unbroken(names.portion(repo.portion(p), ashkenazi: settings.ashkenaziNames));
     final (israel, diaspora) = (name(divergence.israel), name(divergence.diaspora));
     final previous = divergence.previous;
     return NoticeBanner(
@@ -504,10 +513,11 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     // Vezot HaBerachah on Simchat Torah, which is seldom a Shabbat. On
     // Friday, that Shabbat begins this evening, and on the eve of Yom Tov,
     // that Yom Tov does: in the long week of Vezot HaBerachah too (Erev
-    // Sukkot, say), unless the Yom Tov is Simchat Torah itself.
+    // Sukkot, say, or a Friday Hoshana Rabbah), unless Simchat Torah is
+    // itself tomorrow, or today.
     final countdown = daysLeft < 0 || complete
         ? null
-        : vezot && (erevYomTov == null || daysLeft <= 1)
+        : vezot && (!(friday || erevYomTov != null) || daysLeft <= 1)
             ? l.simchatTorahInDays(daysLeft)
             : friday
                 ? l.shabbatBeginsTonight
@@ -1300,6 +1310,10 @@ class _PauseEndedNotice extends ConsumerWidget {
   /// The pause's last day.
   final LocalDate end;
   final WeekContext ctx;
+
+  /// Last week, unfinished, while it can still count: within its late
+  /// window ([WeekStatus.inProgress]) or restorable by doubling up
+  /// ([WeekStatus.overdue]).
   final WeekContext? previous;
 
   @override
