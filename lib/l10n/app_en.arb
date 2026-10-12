@@ -409,11 +409,25 @@
   },
   "todayTishaBavTomorrow": "{portion} continues tomorrow.",
   "@todayTishaBavTomorrow": {
-    "description": "After todayTishaBav, while the week's parsha is unfinished: the day after Tisha B'Av is always a reading day. portion is the week's parsha.",
+    "description": "After todayTishaBav, while the week's parsha is unfinished and the reader's plan has reading for the next day (the day after Tisha B'Av is always a reading day, but a plan may leave it empty, or a pause may run past it; see todayTishaBavOn). portion is the week's parsha.",
     "placeholders": {
       "portion": {
         "type": "String",
         "example": "Va'etchanan"
+      }
+    }
+  },
+  "todayTishaBavOn": "{portion} continues on {weekday}.",
+  "@todayTishaBavOn": {
+    "description": "After todayTishaBav, in place of todayTishaBavTomorrow, when the reader's plan has nothing to read the next day (the whole parsha on Erev Shabbat, say) or a pause runs past it: the next day of the week with reading. portion is the week's parsha; weekday is that day's name, as 'Friday'.",
+    "placeholders": {
+      "portion": {
+        "type": "String",
+        "example": "Va'etchanan"
+      },
+      "weekday": {
+        "type": "String",
+        "example": "Friday"
       }
     }
   },

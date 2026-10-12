@@ -343,6 +343,27 @@ void main() {
         await settle(tester);
         expectWeekPage(tester, lechLecha);
       });
+
+      // Tisha B'Av on the Sunday after Devarim, 9 Av 5785 and 10 Av 5789:
+      // Today's check-in waits for Monday, and so does Devarim's page here.
+      for (final (year, fast) in [(5785, DateTime(2025, 8, 3, 10)), (5789, DateTime(2029, 7, 22, 10))]) {
+        final devarim = '$year:44';
+        final halfRead = ProgressState(weeks: {
+          devarim: WeekProgress(weekId: devarim).withAliyah(0, LocalDate.fromDateTime(fast).addDays(-6)),
+        });
+        for (final (moment, now, week) in [
+          ("on Tisha B'Av, the new week", fast, '$year:45'),
+          ('the day after it, the week just read', fast.add(const Duration(days: 1)), devarim),
+        ]) {
+          testWidgets("past Tisha B'Av straight after Shabbat, as Today's check-in: $moment, in $year", (tester) async {
+            final (_, plugin) = await pump(tester, progress: halfRead);
+            TodayController.now = () => now;
+            plugin.handler!('log_from_book');
+            await settle(tester);
+            expectWeekPage(tester, week);
+          });
+        }
+      }
     });
 
     testWidgets("This week's parsha opens the Parsha tab, from wherever the app was", (tester) async {

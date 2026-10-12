@@ -723,11 +723,17 @@ abstract class AppLocalizations {
   /// **'Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).'**
   String get todayTishaBav;
 
-  /// After todayTishaBav, while the week's parsha is unfinished: the day after Tisha B'Av is always a reading day. portion is the week's parsha.
+  /// After todayTishaBav, while the week's parsha is unfinished and the reader's plan has reading for the next day (the day after Tisha B'Av is always a reading day, but a plan may leave it empty, or a pause may run past it; see todayTishaBavOn). portion is the week's parsha.
   ///
   /// In en, this message translates to:
   /// **'{portion} continues tomorrow.'**
   String todayTishaBavTomorrow(String portion);
+
+  /// After todayTishaBav, in place of todayTishaBavTomorrow, when the reader's plan has nothing to read the next day (the whole parsha on Erev Shabbat, say) or a pause runs past it: the next day of the week with reading. portion is the week's parsha; weekday is that day's name, as 'Friday'.
+  ///
+  /// In en, this message translates to:
+  /// **'{portion} continues on {weekday}.'**
+  String todayTishaBavOn(String portion, String weekday);
 
   /// No description provided for @startReading.
   ///

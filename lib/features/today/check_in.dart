@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
-import '../../core/calendar/jewish_holidays.dart';
 import '../../core/calendar/local_date.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
@@ -15,17 +14,13 @@ import '../progress/domain/progress_models.dart';
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
 
-/// The first day Today can ask after [previous]'s Shabbat: past the days of
-/// rest that run on from it, and past Tisha B'Av straight after it, whatever
-/// the reader plans on the fast, since the check-in's greeting is not given
-/// then (Shulchan Aruch OC 554:20).
-LocalDate checkInDay(WeekContext previous, {required AppSettings settings}) {
-  var day = previous.week.occasion.addDays(1);
-  while (JewishHolidays.isRestDay(day, israel: settings.oneDayYomTov) || JewishHolidays.isTishaBav(day)) {
-    day = day.addDays(1);
-  }
-  return day;
-}
+/// The first day Today can ask after [previous]'s Shabbat
+/// ([firstDayToAskAfter]): past the days of rest that run on from it, and
+/// past Tisha B'Av straight after it, whatever the reader plans on the fast,
+/// since the check-in's greeting is not given then (Shulchan Aruch OC
+/// 554:20).
+LocalDate checkInDay(WeekContext previous, {required AppSettings settings}) =>
+    firstDayToAskAfter(previous.week.occasion, oneDayYomTov: settings.oneDayYomTov);
 
 /// Whether Today asks after [previous]'s Shabbat what was read on it from a
 /// printed Chumash: on the first day it can ([checkInDay]), and on each

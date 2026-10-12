@@ -473,6 +473,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String todayTishaBavOn(String portion, String weekday) {
+    return '$portion continues on $weekday.';
+  }
+
+  @override
   String get startReading => 'Start reading';
 
   @override

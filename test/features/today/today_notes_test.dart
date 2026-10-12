@@ -5,6 +5,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
@@ -511,6 +512,86 @@ void main() {
       );
       expect(find.text(setAside), findsOneWidget);
       expect(find.textContaining(continues), findsNothing);
+    });
+
+    // The day after the fast is always a reading day, but the reader's plan
+    // may leave it empty, or a pause run past it.
+    group('says when the parsha goes on', () {
+      // Sunday 3 August 2025, 9 Av 5785 put off from Shabbat, in the week
+      // of Va'etchanan (5785:45). The reader joined the Sunday before.
+      final sundayFast = DateTime(2025, 8, 3, 11);
+      final joined = _settings.copyWith(joinDate: LocalDate(2025, 7, 27));
+
+      testWidgets('on Friday, with the whole parsha on Erev Shabbat', (tester) async {
+        final erevShabbat = joined.copyWith(plan: ReadingPlanType.erevShabbat);
+        await openToday(tester, settings: erevShabbat, now: sundayFast, progress: const ProgressState());
+        expect(find.text("$setAside Va'etchanan continues on Friday."), findsOneWidget);
+        expect(find.textContaining(continues), findsNothing);
+        // Where the card says nothing is planned the next day.
+        await openToday(tester, settings: erevShabbat, now: DateTime(2025, 8, 4, 11), progress: const ProgressState());
+        expect(find.text(en.todayNothingPlanned), findsOneWidget);
+      });
+
+      testWidgets('on the day a pause that runs past the fast ends', (tester) async {
+        await openToday(
+          tester,
+          settings: joined,
+          now: sundayFast,
+          progress: ProgressState(pauses: [Pause(LocalDate(2025, 8, 1), LocalDate(2025, 8, 4), id: 'travel')]),
+        );
+        expect(find.text("$setAside Va'etchanan continues on Tuesday."), findsOneWidget);
+      });
+
+      testWidgets('not at all, where nothing is to read before Shabbat', (tester) async {
+        // Thursday's fast, paused through Friday.
+        await openToday(
+          tester,
+          settings: settings,
+          now: fast,
+          progress: behind().copyWith(pauses: [Pause(LocalDate(2027, 8, 12), LocalDate(2027, 8, 13), id: 'travel')]),
+        );
+        expect(find.text(setAside), findsOneWidget);
+      });
+
+      testWidgets('in Hebrew', (tester) async {
+        await openToday(
+          tester,
+          settings: joined.copyWith(plan: ReadingPlanType.erevShabbat, language: AppLanguage.hebrew),
+          now: sundayFast,
+          progress: const ProgressState(),
+        );
+        expect(
+          find.text('היום אין לומדים תורה, מלבד הדברים הרעים (איוב, איכה ומקצת ירמיהו). פרשת ואתחנן נמשכת ביום שישי.'),
+          findsOneWidget,
+        );
+      });
+    });
+
+    // A pause that ended on Wednesday, while the app was closed.
+    group('the welcome back after a pause', () {
+      ProgressState returned() =>
+          behind().copyWith(pauses: [Pause(LocalDate(2027, 8, 9), LocalDate(2027, 8, 11), id: 'travel')]);
+      final welcome = find.text('Welcome back! Your place is saved.');
+      final offers = find.textContaining(RegExp(r"^(Continue|Start) this week's parsha$"));
+
+      testWidgets('waits for the day after the fast', (tester) async {
+        await openToday(tester, settings: settings, now: fast, progress: returned());
+        expect(welcome, findsNothing);
+        expect(offers, findsNothing);
+        expect(find.textContaining('Your pause ended'), findsNothing);
+
+        await openToday(tester, settings: settings, now: DateTime(2027, 8, 13, 11), progress: returned());
+        expect(welcome, findsOneWidget);
+        expect(findWords('Your pause ended on Wednesday, August 11, and nothing during it counts against you.'),
+            findsOneWidget);
+        expect(offers, findsOneWidget);
+      });
+
+      testWidgets('comes on the fast for a reader who plans a reading on it', (tester) async {
+        await openToday(tester, settings: settings.copyWith(tishaBavQuiet: false), now: fast, progress: returned());
+        expect(welcome, findsOneWidget);
+        expect(offers, findsOneWidget);
+      });
     });
 
     testWidgets('a reader who plans a reading on the fast is asked for it, as on any day', (tester) async {

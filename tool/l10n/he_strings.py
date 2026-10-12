@@ -107,6 +107,7 @@ HE = {
   "tishaBavTitle": "תשעה באב",
   "todayTishaBav": "היום אין לומדים תורה, מלבד הדברים הרעים (איוב, איכה ומקצת ירמיהו).",
   "todayTishaBavTomorrow": "פרשת {portion} נמשכת מחר.",
+  "todayTishaBavOn": "פרשת {portion} נמשכת ב{weekday}.",
   "startReading": "התחלת קריאה",
   "readFromBook": "קראתי בחומש",
   "readFromBookTitle": "אילו עליות נקראו?",

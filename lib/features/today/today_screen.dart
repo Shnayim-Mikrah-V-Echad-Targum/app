@@ -814,13 +814,32 @@ class _TodayCard extends ConsumerWidget {
     final List<Widget> children;
     if (quietFast) {
       // Nothing to read, catch up on or log: only the passages of mourning
-      // are studied, and the week's parsha goes on tomorrow, always a
-      // reading day. The title page above is headed by the fast.
+      // are studied. The title page above is headed by the fast. The day
+      // after it is always a reading day, but the reader's plan may have
+      // nothing on it (the whole parsha on Erev Shabbat), or a pause may
+      // run past it: the card names the day the parsha goes on, if any.
       final name = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
+      final pauses = ref.watch(progressProvider.select((p) => p.pauses));
+      final tomorrow = ctx.today.addDays(1);
+      LocalDate? resumes;
+      if (!ctx.progress.isComplete) {
+        for (var d = tomorrow; d < ctx.week.occasion; d = d.addDays(1)) {
+          if (!pauses.any((p) => p.contains(d)) && ctx.readsOn(d)) {
+            resumes = d;
+            break;
+          }
+        }
+      }
       children = [
         _CardHeader(l.todayReadingTitle),
         Text(
-          [l.todayTishaBav, if (!ctx.progress.isComplete) l.todayTishaBavTomorrow(name)].join(' '),
+          [
+            l.todayTishaBav,
+            if (resumes == tomorrow)
+              l.todayTishaBavTomorrow(name)
+            else if (resumes != null)
+              l.todayTishaBavOn(name, names.weekday(resumes)),
+          ].join(' '),
           style: muted,
         ),
       ];
