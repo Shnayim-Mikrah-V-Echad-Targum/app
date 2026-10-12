@@ -50,6 +50,40 @@ void main() {
     });
   });
 
+  group('TorahSpelling', () {
+    test('writes a ו or י doubled inside a word once', () {
+      expect(TorahSpelling.collapse(SearchText.fold('מצווה')), 'מצוה');
+      expect(TorahSpelling.collapse(SearchText.fold('שמיים')), 'שמימ');
+      expect(TorahSpelling.collapse(SearchText.fold('ציווה את משה')), 'ציוה את משה');
+    });
+
+    test('never changes the first or last letter of a word, nor a word of two', () {
+      // A ו at the start, "and", before a word that begins with one.
+      expect(TorahSpelling.collapse('וויקח'), 'וויקח');
+      expect(TorahSpelling.collapse('קוו'), 'קוו');
+      expect(TorahSpelling.collapse('יי'), 'יי');
+      expect(TorahSpelling.optional('ויו'), isNotNull);
+      expect(TorahSpelling.optional('ויו')!.hasMatch('וו'), isTrue);
+      expect(TorahSpelling.optional('וי'), isNull, reason: 'a word of two letters');
+      expect(TorahSpelling.optional('את משה'), isNull, reason: 'no ו or י inside a word');
+    });
+
+    test('matches the words with any single ו or י inside them left out', () {
+      final pattern = TorahSpelling.optional(SearchText.fold('אוהל מועד'))!;
+      for (final spelling in ['אוהל מועד', 'אהל מועד', 'אוהל מעד', 'אהל מעד']) {
+        expect(pattern.stringMatch('ויבא אל $spelling'), spelling);
+      }
+      expect(pattern.hasMatch('אל מעד'), isFalse, reason: 'only the ו and י are left out');
+    });
+
+    test('respells what was typed, keeping its final letters, marks and punctuation', () {
+      expect(TorahSpelling.respell('כוהן', 'כהנ'), 'כהן');
+      expect(TorahSpelling.respell('מצווה', 'מצוה'), 'מצוה');
+      expect(TorahSpelling.respell(' אוהל־מועד ', 'אהל מועד'), ' אהל־מועד ');
+      expect(TorahSpelling.respell('אֱלוֹהִים', 'אלהימ'), 'אֱלהִים');
+    });
+  });
+
   group('Snippet', () {
     test('marks every match, with the marks on its last letter', () {
       final s = Snippet.find('וַיֵּצֵא יַעֲקֹב מִבְּאֵר שָׁבַע וַיֵּלֶךְ חָרָנָה׃', SearchText.fold('ויצא יעקב'), wordStart: false);
@@ -185,6 +219,37 @@ void main() {
       expect(results.hits, hasLength(kSearchLimit));
       expect(results.total, greaterThan(1500));
       expect(results.truncated, isTrue);
+    });
+
+    test('finds Hebrew written today as the Torah spells it, and says so', () {
+      for (final (typed, torah) in [
+        ('אהרון', 'אהרן'),
+        ('אלוהים', 'אלהים'),
+        // Only the doubled ו written once.
+        ('מצווה', 'מצוה'),
+        ('כוהן', 'כהן'),
+        // The fewest letters left out: צוה, not צה.
+        ('ציווה', 'צוה'),
+        ('אוהל מועד', 'אהל מועד'),
+      ]) {
+        final results = index.search(typed);
+        final spelled = index.search(torah);
+        expect(results.spelling, torah, reason: typed);
+        expect(results.query, typed);
+        expect(results.total, spelled.total, reason: typed);
+        expect([for (final h in results.hits) (h.book, h.ref)], [for (final h in spelled.hits) (h.book, h.ref)]);
+        expect(spelled.spelling, isNull, reason: 'found as typed');
+      }
+      // The Torah's spelling is marked in each verse.
+      final hit = index.search('אהרון').hits.first;
+      expect(HebrewText.consonantsOnly(matched(hit.snippets.first.snippet).first), 'אהרן');
+    });
+
+    test('a search that the Torah has in no spelling finds nothing', () {
+      for (final typed in ['טלפון', 'smartphone', 'סמארטפון']) {
+        final results = index.search(typed);
+        expect((results.total, results.spelling), (0, null), reason: typed);
+      }
     });
 
     test('a single letter is too short to search for', () {

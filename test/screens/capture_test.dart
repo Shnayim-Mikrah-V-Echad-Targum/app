@@ -459,7 +459,8 @@ const _screens = {
   'forum_missing': '/community/forum/xyz',
   // Search: the index being built the first time, then the page as it
   // opens, a phrase, a word in many verses, a word found only in the
-  // Targum, English, and a spelling the Torah doesn't use.
+  // Targum, English, a word the Torah has in no spelling, and one it spells
+  // with fewer ו and י, whose verses are shown.
   'search_preparing': '/search',
   'search': '/search',
   'search_results': '/search',
@@ -467,6 +468,7 @@ const _screens = {
   'search_targum': '/search',
   'search_english': '/search',
   'search_none': '/search',
+  'search_spelling': '/search',
   // Go to verse, from the Parsha tab's search button: as it opens, a verse
   // found, one past the end of its chapter, and words to search for. Then
   // the verse in the reader, and in focus mode.
@@ -1585,7 +1587,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'search_many': (tester) => _search(tester, 'אברהם'),
   'search_targum': (tester) => _search(tester, 'בקדמין'),
   'search_english': (tester) => _search(tester, 'ladder'),
-  'search_none': (tester) => _search(tester, 'אהרון'),
+  'search_none': (tester) => _search(tester, 'טלפון'),
+  'search_spelling': (tester) => _search(tester, 'אהרון'),
   'goto': (tester) => _goTo(tester, ''),
   'goto_verse': (tester) => _goTo(tester, 'בראשית כח יב'),
   'goto_missing': (tester) => _goTo(tester, 'Gen 28:30'),
@@ -1781,6 +1784,7 @@ const _hugeTallScreens = {
   's_reminders_far',
   // Verses found, where words a maqaf joins part only if they must.
   'search_many',
+  'search_spelling',
 };
 
 const _narrowDesktopScreens = {
@@ -2025,6 +2029,7 @@ const _bigTextScreens = {
   'compose_verse_draft',
   'search_many',
   'search_none',
+  'search_spelling',
   's_reading_city',
   's_reading_candles',
   's_reading_havdalah',

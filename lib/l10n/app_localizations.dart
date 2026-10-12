@@ -4701,6 +4701,12 @@ abstract class AppLocalizations {
   /// **'Try fewer words, or the older English of the 1917 translation, such as “hath” for “has”.'**
   String get searchNoResultsHintEnglish;
 
+  /// Above the results of a search in Hebrew that no verse holds as typed, when the same words with fewer ו and י, as the Torah often spells them (אהרן for אהרון, כהן for כוהן), were found instead. query is what the reader typed; variant is the Torah's spelling whose verses are shown.
+  ///
+  /// In en, this message translates to:
+  /// **'No verse has “{query}”. Showing “{variant}”, as the Torah spells it.'**
+  String searchSpellingFallback(String query, String variant);
+
   /// Read out by screen readers once typing in the Torah search pauses.
   ///
   /// In en, this message translates to:

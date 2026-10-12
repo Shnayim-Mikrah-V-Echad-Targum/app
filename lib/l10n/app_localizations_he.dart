@@ -2857,6 +2857,11 @@ class AppLocalizationsHe extends AppLocalizations {
       'כדאי לנסות פחות מילים, או את האנגלית הישנה של התרגום משנת 1917, למשל ״hath״ במקום ״has״.';
 
   @override
+  String searchSpellingFallback(String query, String variant) {
+    return 'אין פסוק עם ״$query״. מוצגות התוצאות עבור ״$variant״, כפי שנכתב בתורה.';
+  }
+
+  @override
   String searchResultsAnnounced(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

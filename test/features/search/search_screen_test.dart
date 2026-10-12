@@ -205,8 +205,8 @@ void main() {
   testWidgets('says when nothing is found, and how a search in Hebrew might find it', (tester) async {
     await open(tester);
     await untilIndexed(tester);
-    await search(tester, 'אהרון');
-    expect(find.text('No verse matches “\u2068אהרון\u2069”.'), findsOneWidget);
+    await search(tester, 'טלפון');
+    expect(find.text('No verse matches “\u2068טלפון\u2069”.'), findsOneWidget);
     expect(find.textContaining('leaves out ו\u00a0and\u00a0י'), findsOneWidget);
 
     await search(tester, 'smartphone');
@@ -355,6 +355,30 @@ void main() {
     expect(said, ['1 verse found']);
   });
 
+  testWidgets('finds Hebrew written today as the Torah spells it, and says so', (tester) async {
+    final said = announcements(tester);
+    await open(tester);
+    await untilIndexed(tester);
+    await search(tester, 'אהרון');
+    const note = 'No verse has “\u2068אהרון\u2069”. Showing “\u2068אהרן\u2069”, as the Torah spells it.';
+    expect(find.text(note), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^The first 200 of \d+ verses$')), findsOneWidget);
+    expect(find.text('Exodus 4:14'), findsOneWidget);
+    expect(HebrewText.consonantsOnly(snippets(tester).first), contains('אהרן'));
+    // Nothing more to suggest.
+    expect(find.textContaining('leaves out ו'), findsNothing);
+    // Above the count, at the page's start.
+    expect(tester.getTopLeft(find.text(note)).dy, lessThan(tester.getTopLeft(find.textContaining('The first 200')).dy));
+    expect(tester.getTopLeft(find.text(note)).dx, tester.getTopLeft(find.textContaining('The first 200')).dx);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(said, [matches(RegExp('^${RegExp.escape(note)} \\d+ verses found\$'))]);
+
+    // Found as typed, it says nothing of spelling.
+    await search(tester, 'אהרן');
+    expect(find.textContaining('as the Torah spells it'), findsNothing);
+  });
+
   // Genesis 15:2, אֲדֹנָי יֱהֹוִה: the hiriq under the Name says it is read
   // Elohim, so its spoken text must keep the vowels the page leaves out.
   testWidgets('speaks a verse from its vowels when they are hidden', (tester) async {
@@ -501,6 +525,8 @@ void main() {
         await search(tester, 'אברהם');
         expect(tester.takeException(), isNull);
         await search(tester, 'אהרון');
+        expect(tester.takeException(), isNull);
+        await search(tester, 'טלפון');
         expect(tester.takeException(), isNull);
       });
     }

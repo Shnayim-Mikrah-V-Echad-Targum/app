@@ -2862,6 +2862,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try fewer words, or the older English of the 1917 translation, such as “hath” for “has”.';
 
   @override
+  String searchSpellingFallback(String query, String variant) {
+    return 'No verse has “$query”. Showing “$variant”, as the Torah spells it.';
+  }
+
+  @override
   String searchResultsAnnounced(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
