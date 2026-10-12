@@ -80,25 +80,32 @@ void main() {
   });
 
   group('the theme', () {
-    test('turns off ink splashes while motion is reduced', () {
-      expect(_theme(reduceMotion: true).splashFactory, NoSplash.splashFactory);
-      expect(_theme().splashFactory, isNot(NoSplash.splashFactory));
+    test('spreads no ink while motion is reduced, but washes a control as it is pressed', () {
+      expect(_theme(reduceMotion: true).splashFactory, isA<PressWash>().having((w) => w.reduced, 'reduced', isTrue));
+      expect(_theme().splashFactory, isNot(isA<PressWash>()));
       expect(_theme(reduceMotion: true).extension<Motion>()!.reduced, isTrue);
       expect(_theme().extension<Motion>()!.reduced, isFalse);
     });
 
-    test('no ink on Apple platforms, where the pressed wash is the feedback', () {
+    test('no spreading ink on Apple platforms, where a press washes the control', () {
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
       for (final platform in TargetPlatform.values) {
         debugDefaultTargetPlatformOverride = platform;
-        final expected = switch (platform) {
-          TargetPlatform.iOS || TargetPlatform.macOS => NoSplash.splashFactory,
+        final splash = _theme().splashFactory;
+        switch (platform) {
+          case TargetPlatform.iOS || TargetPlatform.macOS:
+            expect(splash, isA<PressWash>().having((w) => w.reduced, 'reduced', isFalse), reason: platform.name);
           // Material's own elsewhere.
-          TargetPlatform.android => InkSparkle.splashFactory,
-          _ => InkRipple.splashFactory,
-        };
-        expect(_theme().splashFactory, expected, reason: platform.name);
-        expect(_theme(reduceMotion: true).splashFactory, NoSplash.splashFactory, reason: platform.name);
+          case TargetPlatform.android:
+            expect(splash, InkSparkle.splashFactory, reason: platform.name);
+          case _:
+            expect(splash, InkRipple.splashFactory, reason: platform.name);
+        }
+        expect(
+          _theme(reduceMotion: true).splashFactory,
+          isA<PressWash>().having((w) => w.reduced, 'reduced', isTrue),
+          reason: platform.name,
+        );
       }
     });
 

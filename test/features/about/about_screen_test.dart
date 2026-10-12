@@ -85,6 +85,27 @@ void main() {
     expect(find.text('How it works'), findsNothing);
   });
 
+  // Flutter's own pages, whose app bars have no ScrolledUnderRule of the
+  // app's: they keep Material's hairline-thin shadow as the text scrolls
+  // under them (§6.2), but for high contrast's permanent rule.
+  for (final (theme, elevation) in [(AppThemeMode.light, 1.0), (AppThemeMode.highContrastLight, 0.0)]) {
+    testWidgets('the licences mark the text scrolled under their app bar (${theme.name})', (tester) async {
+      tester.view.physicalSize = const Size(412, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(tester, settings: AppSettings(onboardingComplete: true, theme: theme));
+      c.read(routerProvider).go('/settings/about');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open-source licenses'));
+      await tester.pumpAndSettle();
+      final page = find.byType(LicensePage);
+      expect(page, findsOneWidget);
+      final appBars = Theme.of(tester.element(page)).appBarTheme;
+      expect(appBars.scrolledUnderElevation, elevation);
+      expect(appBars.shadowColor, Theme.of(tester.element(page)).colorScheme.outlineVariant);
+    });
+  }
+
   testWidgets("in Hebrew, the contact group's rows say what they do, not the group's name again", (tester) async {
     AppConfig.debugSupportEmail = 'help@example.org';
     addTearDown(() => AppConfig.debugSupportEmail = null);

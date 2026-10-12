@@ -539,7 +539,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 ### 6.2 App bar
 
-- Height 64; background surface; `surfaceTintColor` transparent; `scrolledUnderElevation: 0`, so never a shadow. When content scrolls under it, a 1 px hairline (`hairline`, full width, in the bar's last row) fades in over 150 ms (`Motion.short`, standard; at once under Reduce Motion), and out again at the top: `ScrolledUnderRule` (common.dart) wraps the app bar of `PageScaffold` and of the reader, and follows the app bar's own `notificationPredicate` (the reader's is off while the text scrolls under the aliyah ribbon, which has its own rule).
+- Height 64; background surface; `surfaceTintColor` transparent; `scrolledUnderElevation: 0`, so never a shadow. When content scrolls under it, a 1 px hairline (`hairline`, full width, in the bar's last row) fades in over 150 ms (`Motion.short`, standard; at once under Reduce Motion), and out again at the top: `ScrolledUnderRule` (common.dart) wraps the app bar of `PageScaffold` and of the reader, and follows the app bar's own `notificationPredicate` (the reader's is off while the text scrolls under the aliyah ribbon, which has its own rule). Flutter's own licence pages (About → Open-source licenses), whose app bars the app doesn't build, keep Material's scrolled-under elevation instead, its shadow hairline-thin in outlineVariant (none in high contrast), so their text never slips under the bar unmarked.
 - High contrast: a permanent 2 px bottom outline, and no hairline.
 - Title: titleLarge (serif), onSurface, start-aligned. Where it has no room beside the actions (a wider interface font, or enlarged text, beside the Demo tag), it is set a little smaller, to 75% at most, and cut short only past that.
 - Icons: 24, onSurfaceVariant, with 48 tap targets.
@@ -622,7 +622,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - High contrast: icons on both states (keep the check/close thumbIcon, app_theme.dart:258).
 
 **Slider**
-- Active track primary, inactive outline (a boundary, at 3:1 or 4.5:1 in high contrast, so the whole range shows), height 4, the active part 2 px taller (`RoundedRectSliderTrackShape`), so it reads apart from the inactive part without colour; round thumb primary 20 (`RoundSliderThumbShape(enabledThumbRadius: 10)`). Every shape is named in the theme, so the deprecated `year2023` flag is left unset and neither Material slider generation shows through.
+- Active track primary, inactive outline (a boundary, at 3:1 or 4.5:1 in high contrast, so the whole range shows), the inactive part 2 high and the active part 6 (`SliderTrack`, app_theme.dart), so it reads apart from the inactive part by its weight, not only its colour: in high contrast primary and outline are barely apart (about 1.5:1); round thumb primary 20 (`RoundSliderThumbShape(enabledThumbRadius: 10)`). Every shape is named in the theme, so the deprecated `year2023` flag is left unset and neither Material slider generation shows through.
 - `tickMarkShape: SliderTickMarkShape.noTickMark`.
 - Value at the end in labelLarge with tabular figures; −/+ IconButtons 48.
 
@@ -1059,9 +1059,9 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - The Android slides mirror in RTL, as Android's own do: in Hebrew the next page arrives from the left (`FadeForwardsDirectionalPageTransitionsBuilder`).
 - An Android back swipe keeps the predictive back gesture (on by default from Android 16 for apps targeting it): the page follows the finger and reveals the one beneath, in the framework's `PredictiveBackPageTransitionsBuilder`. Every other push and pop uses the directional slides.
 
-**Reduce Motion everywhere:** dialogs, sheets, snackbars and every `PopupMenuButton` (`popUpAnimationStyle: Motion.of(context).style`) appear at once, and `ThemeData.splashFactory` is `NoSplash`.
+**Reduce Motion everywhere:** dialogs, sheets, snackbars and every `PopupMenuButton` (`popUpAnimationStyle: Motion.of(context).style`) appear at once, and ink doesn't spread: `ThemeData.splashFactory` is `PressWash(reduced: true)` (below), whose wash holds 100 ms after a press and goes at once.
 
-**Ink:** none on Apple platforms (iOS and macOS, in a browser too), where the pressed wash (10% of the control's ink, §6.5) is the feedback: `splashFactory` is `NoSplash` there as well. Android keeps Material's `InkSparkle`, and the web and other desktops `InkRipple`.
+**Ink:** none that spreads on Apple platforms (iOS and macOS, in a browser too), which darken a control while it is pressed: `splashFactory` is `PressWash` there, a wash of the press colour over the whole shape of the control (its corners, or its custom border) from the moment it is pressed, which never grows. A quick tap in a scroll view is pressed and released in one frame, before an ink well's highlight can fade in, so the wash holds 50 ms after the press ends and then fades over `Motion.short`; a press held stays washed until it ends. Its colour is the control's pressed overlay (10% of its ink, §6.5), or for the ink wells with none of their own (rows, cards, list tiles) `ThemeData.splashColor`, which, as `highlightColor`, is 10% of onSurface rather than Material's 40% grey. Android keeps Material's `InkSparkle`, and the web and other desktops `InkRipple`.
 
 **Reader**
 - Step and verse change: `AnimatedSwitcher`, 180 ms, opacity only, keyed by (chunk, step). No horizontal slides.

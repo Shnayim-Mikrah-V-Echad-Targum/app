@@ -166,9 +166,12 @@ void main() {
         expect(off?.icon, hc ? Icons.close : null);
       });
 
-      test('slider: a 4 px track, a round 20 px thumb and no tick marks', () {
+      test('slider: a 2 px track filled 6 high, a round 20 px thumb and no tick marks', () {
         final s = theme.sliderTheme;
-        expect(s.trackHeight, 4);
+        // The part filled stands apart by its weight, not only its colour:
+        // in high contrast primary and outline are barely apart.
+        expect(s.trackHeight, 2);
+        expect(s.trackShape, isA<SliderTrack>());
         expect(s.activeTrackColor, scheme.primary);
         // The whole range shows: the track is a boundary, in outline.
         expect(s.inactiveTrackColor, scheme.outline);
@@ -207,6 +210,38 @@ void main() {
         expect(label.resolve({WidgetState.disabled})!.fontSize, theme.textTheme.bodyLarge!.fontSize);
       });
     });
+  }
+
+  // The filled part of a slider reads apart from the rest by its weight:
+  // in high contrast, primary and outline are some 1.5:1 apart.
+  for (final mode in _modes) {
+    for (final direction in TextDirection.values) {
+      testWidgets('${mode.name}, ${direction.name}: a slider is filled 6 high over a 2 px track', (tester) async {
+        final theme = _theme(mode);
+        await _pump(
+          tester,
+          theme,
+          Directionality(
+            textDirection: direction,
+            child: SizedBox(width: 300, child: Slider(value: 0.5, onChanged: (_) {})),
+          ),
+        );
+        // By colour, as 32-bit values: the slider's colours are tweened.
+        final heights = <int, double>{};
+        expect(
+          find.byType(Slider),
+          paints
+            ..everything((method, arguments) {
+              if (method == #drawRRect) {
+                heights[(arguments[1] as Paint).color.toARGB32()] = (arguments[0] as RRect).height;
+              }
+              return true;
+            }),
+        );
+        expect(heights[theme.colorScheme.primary.toARGB32()], SliderTrack.activeHeight);
+        expect(heights[theme.colorScheme.outline.toARGB32()], SliderTrack.inactiveHeight);
+      });
+    }
   }
 
   for (final mode in [AppThemeMode.light, AppThemeMode.highContrastLight]) {
