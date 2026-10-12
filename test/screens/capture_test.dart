@@ -447,8 +447,10 @@ const _screens = {
   'about': '/settings/about',
   'sources': '/sources',
   'guide': '/guide',
-  // The special cases, Shabbat and the sources, at its end.
+  // The special cases, Shabbat and the sources, at its end; and with Bold
+  // text, where each case's lead-in stands on a line of its own.
   'guide_end': '/guide',
+  'guide_end_bold': '/guide',
   // The privacy policy, open to every visitor; and at its end, the way to
   // reach us.
   'legal': '/legal/privacy',
@@ -578,6 +580,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_display_rashi': (s) => s.copyWith(showRashi: true),
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
+  'guide_end_bold': (s) => s.copyWith(boldText: true),
   's_reminders_on': (s) => s.copyWith(
         dailyReminder: true,
         dailyReminderMinutes: 7 * 60 + 30,
@@ -1331,6 +1334,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(find.byIcon(Icons.import_contacts));
   },
   'guide_end': _scrollToEnd,
+  'guide_end_bold': _scrollToEnd,
   'legal_end': _scrollToEnd,
   // The regular haftarah's heading, with the special one's end above it.
   'haftarah_regular': (tester) => _showRegularHaftarah(tester, alignment: 0.6),

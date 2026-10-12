@@ -178,7 +178,8 @@ class _Passes extends StatelessWidget {
 /// lozenge rather than running back under it, and [spacing] between items.
 ///
 /// With [leadIns], an item's words up to its first colon are its lead-in,
-/// heavier than the rest, so that the cases can be found at a glance.
+/// heavier than the rest, or where the rest is Bold already, on a line of its
+/// own, so that the cases can be found at a glance.
 class _Items extends StatelessWidget {
   const _Items(this.text, {required this.style, required this.spacing, this.leadIns = false});
 
@@ -222,8 +223,8 @@ class _Items extends StatelessWidget {
 /// Text of the guide's that can be selected and copied, in [style], set in
 /// bold where Bold text is on, as [Text] would be by itself.
 ///
-/// With [leadIn], its words up to its first colon are its lead-in, a step
-/// heavier than the rest.
+/// With [leadIn], its words up to its first colon are its lead-in, set apart
+/// from the rest so that it can be found at a glance (see [leadInWeight]).
 class _Selectable extends StatelessWidget {
   const _Selectable(this.text, {required this.style, this.leadIn = false});
 
@@ -231,21 +232,36 @@ class _Selectable extends StatelessWidget {
   final TextStyle style;
   final bool leadIn;
 
+  /// A lead-in's weight over a [body] that is lighter than Bold: Semibold
+  /// over EB Garamond's Medium, and Bold over anything else, the next weight
+  /// bundled that shows as a step: over Frank Ruhl Libre's Medium (whose
+  /// Semibold barely does at this size), high contrast's Semibold serifs, or
+  /// an accessibility font's Regular. Null where the body is Bold already
+  /// (Bold text, or Frank Ruhl Libre in high contrast): no weight is left to
+  /// set the lead-in apart, so it stands on a line of its own instead.
+  static FontWeight? leadInWeight(TextStyle body) {
+    final weight = body.fontWeight ?? FontWeight.w400;
+    if (weight.value >= FontWeight.w700.value) return null;
+    return weight == FontWeight.w500 && body.fontFamily == 'EBGaramond' ? FontWeight.w600 : FontWeight.w700;
+  }
+
   @override
   Widget build(BuildContext context) {
     final body = MediaQuery.boldTextOf(context) ? style.merge(const TextStyle(fontWeight: FontWeight.bold)) : style;
     final colon = leadIn ? text.indexOf(': ') : -1;
     if (colon < 0) return SelectableText(text, style: body);
-    // Semibold after the long-form serifs' Medium; otherwise Bold, the next
-    // weight bundled, after high contrast's heavier serifs or an
-    // accessibility font's Regular. Never lighter than the rest: where that
-    // is Bold already (Bold text, Frank Ruhl Libre in high contrast), so is
-    // the lead-in.
-    final weight = body.fontWeight == FontWeight.w500 ? FontWeight.w600 : FontWeight.w700;
+    final weight = leadInWeight(body);
+    final lead = text.substring(0, colon + 1);
+    final rest = text.substring(colon + 1);
     return SelectableText.rich(
       TextSpan(children: [
-        TextSpan(text: text.substring(0, colon + 1), style: TextStyle(fontWeight: weight)),
-        TextSpan(text: text.substring(colon + 1)),
+        if (weight != null) ...[
+          TextSpan(text: lead, style: TextStyle(fontWeight: weight)),
+          TextSpan(text: rest),
+        ] else ...[
+          TextSpan(text: '$lead\n'),
+          TextSpan(text: rest.trimLeft()),
+        ],
       ]),
       style: body,
     );

@@ -195,9 +195,11 @@ void main() {
     });
   }
 
-  for (final (language, leadIns) in [
+  for (final (language, weight, leadIns) in [
     (
       AppLanguage.english,
+      // Semibold over EB Garamond's Medium.
+      FontWeight.w600,
       [
         'Atarot v’Divon (Numbers 32:3):',
         'Vezot HaBerachah:',
@@ -210,6 +212,8 @@ void main() {
     ),
     (
       AppLanguage.hebrew,
+      // Bold over Frank Ruhl Libre's Medium, whose Semibold barely shows.
+      FontWeight.w700,
       [
         'עטרות ודיבון (במדבר לב, ג):',
         'וזאת הברכה:',
@@ -221,7 +225,7 @@ void main() {
       ],
     ),
   ]) {
-    testWidgets('in ${language.name}, sets the special cases as seven items, each led by its case in semibold',
+    testWidgets('in ${language.name}, sets the special cases as seven items, each led by its case, heavier',
         (tester) async {
       await openGuide(tester, language);
       final finder = find.byWidgetPredicate((w) => w is SelectableText && w.textSpan != null);
@@ -232,7 +236,7 @@ void main() {
         expect(item.style, body, reason: 'upright, in the long-form body');
         final [lead, rest] = item.textSpan!.children!.cast<TextSpan>();
         expect(lead.text, leadIns[i]);
-        expect(lead.style?.fontWeight, FontWeight.w600);
+        expect(lead.style?.fontWeight, weight);
         expect(rest.style, isNull, reason: 'the rest in the body’s own weight');
         expect(rest.text, startsWith(' '));
       }
@@ -244,7 +248,12 @@ void main() {
     });
   }
 
+  // A lead-in is always set apart from the text after it: heavier by a step
+  // that shows, or, where the text is Bold already and no heavier weight is
+  // left, on a line of its own.
   for (final (name, settings, body, lead) in [
+    ('in English', const AppSettings(), FontWeight.w500, FontWeight.w600),
+    ('in Hebrew', const AppSettings(language: AppLanguage.hebrew), FontWeight.w500, FontWeight.w700),
     // High contrast sets the serifs heavier: EB Garamond in Semibold, Frank
     // Ruhl Libre in Bold, the heaviest bundled.
     ('in high contrast', const AppSettings(theme: AppThemeMode.highContrastDark), FontWeight.w600, FontWeight.w700),
@@ -252,13 +261,20 @@ void main() {
       'in Hebrew in high contrast',
       const AppSettings(theme: AppThemeMode.highContrastDark, language: AppLanguage.hebrew),
       FontWeight.w700,
-      FontWeight.w700,
+      null,
     ),
     // The accessibility fonts bundle Regular and Bold only.
     ('in an accessibility font', const AppSettings(uiFont: UiFont.atkinson), FontWeight.w400, FontWeight.w700),
-    ('with Bold text', const AppSettings(boldText: true), FontWeight.w700, FontWeight.w700),
+    ('with Bold text', const AppSettings(boldText: true), FontWeight.w700, null),
+    // The low-vision preset turns Bold text on, as the high-contrast one does.
+    (
+      'with the low-vision preset',
+      applyPreset(const AppSettings(), DisplayPreset.lowVision, darkPreferred: false),
+      FontWeight.w700,
+      null,
+    ),
   ]) {
-    testWidgets('$name, the text is set in its weight, and a lead-in never lighter', (tester) async {
+    testWidgets('$name, the text is set in its weight, and a lead-in stands apart from it', (tester) async {
       tester.view.physicalSize = const Size(412, 4000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -271,12 +287,28 @@ void main() {
         if (text.style!.fontStyle == FontStyle.italic) continue; // the sources' marginalia
         expect(text.style?.fontWeight, body);
       }
-      final items = tester.widgetList<SelectableText>(
-        find.byWidgetPredicate((w) => w is SelectableText && w.textSpan != null),
-      );
+      final finder = find.byWidgetPredicate((w) => w is SelectableText && w.textSpan != null);
+      final items = tester.widgetList<SelectableText>(finder).toList();
       expect(items, hasLength(7));
-      for (final item in items) {
-        expect((item.textSpan!.children!.first as TextSpan).style?.fontWeight, lead);
+      for (final (i, item) in items.indexed) {
+        final [first, rest] = item.textSpan!.children!.cast<TextSpan>();
+        if (lead != null) {
+          expect(first.style?.fontWeight, lead);
+          expect(rest.text, startsWith(' '), reason: 'the text runs on after the lead-in');
+        } else {
+          // As heavy as the text: on a line of its own, above it.
+          expect(first.style?.fontWeight, isNull);
+          expect(first.text, endsWith(':\n'));
+          expect(rest.text, isNot(startsWith(' ')));
+          final paragraph = tester
+              .state<EditableTextState>(find.descendant(of: finder.at(i), matching: find.byType(EditableText)))
+              .renderEditable;
+          final leadEnd = first.text!.length - 1;
+          final leadLine = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: leadEnd)).last;
+          final restLine =
+              paragraph.getBoxesForSelection(TextSelection(baseOffset: leadEnd + 1, extentOffset: leadEnd + 2)).first;
+          expect(restLine.top, greaterThanOrEqualTo(leadLine.bottom - 0.5), reason: 'the text begins under it');
+        }
       }
     });
   }
@@ -293,6 +325,16 @@ void main() {
           (r) => r.top >= text.top && r.bottom <= text.top + firstLine,
         );
     expect(lozenge.center.dy, closeTo(text.top + firstLine / 2, 0.5));
+  });
+
+  // Using the app names the buttons and the tab as the app labels them, so a
+  // label renamed must be renamed in the guide too.
+  test('names Today, its Chumash button and Listen as the app does, in either language', () {
+    for (final l in [lookupAppLocalizations(const Locale('en')), lookupAppLocalizations(const Locale('he'))]) {
+      expect(l.guideAppBody, contains(l.navToday), reason: l.localeName);
+      expect(l.guideAppBody, contains(l.readFromBook), reason: l.localeName);
+      expect(l.guideAppBody, contains(l.listen), reason: l.localeName);
+    }
   });
 
   test('keeps each source in a sentence to one line, and never starts a line with a dash', () {
