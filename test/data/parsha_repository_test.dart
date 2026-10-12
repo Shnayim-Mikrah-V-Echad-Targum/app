@@ -109,18 +109,31 @@ void main() {
       expect(next.regular, isNull, reason: "Ki Tetze's own haftarah is its first part");
     });
 
-    for (final n in [HaftarahNusach.sephardi, HaftarahNusach.chabad]) {
-      test("has Re'eh's own for the ${n.name} custom, with the first and last verses of Rosh Chodesh's", () {
-        final h = repo.haftarahFor(const PortionId(47), reeh, n);
-        expect(h.specialKey, "Re'eh on Shabbat Rosh Chodesh");
-        expect(refs(h.parts), 'Isaiah 54:11-55:5, Isaiah 66:1-66:1, Isaiah 66:23-66:23');
-        expect(h.regular, isNull);
-        expect(h.fallback, isFalse, reason: "it is the custom's own reading");
-        final next = repo.haftarahFor(const PortionId(49), kiTeitzei, n);
-        expect(next.specialKey, isNull);
-        expect(refs(next.parts), 'Isaiah 54:1-54:10');
-      });
-    }
+    test("has Re'eh's own for Sephardim, with the first and last verses of Rosh Chodesh's and Machar Chodesh's", () {
+      final h = repo.haftarahFor(const PortionId(47), reeh, HaftarahNusach.sephardi);
+      expect(h.specialKey, "Re'eh on Shabbat Rosh Chodesh (and Sunday)");
+      expect(
+        refs(h.parts),
+        'Isaiah 54:11-55:5, Isaiah 66:1-66:1, Isaiah 66:23-66:23, I Samuel 20:18-20:18, I Samuel 20:42-20:42',
+      );
+      expect(h.regular, isNull);
+      expect(h.fallback, isFalse, reason: "it is the custom's own reading");
+      final next = repo.haftarahFor(const PortionId(49), kiTeitzei, HaftarahNusach.sephardi);
+      expect(next.specialKey, isNull);
+      expect(refs(next.parts), 'Isaiah 54:1-54:10');
+    });
+
+    test("has the Rosh Chodesh haftarah for Chabad, as Ashkenazim, and Re'eh's with Ki Tetze's", () {
+      // Re'eh 5789, on 30 Av too.
+      for (final shabbat in [reeh, LocalDate(2029, 8, 11)]) {
+        final h = repo.haftarahFor(const PortionId(47), shabbat, HaftarahNusach.chabad);
+        expect(h.specialKey, 'Shabbat Rosh Chodesh (and Sunday)', reason: '$shabbat');
+        expect(refs(h.parts), 'Isaiah 66:1-66:24, I Samuel 20:18-20:18, I Samuel 20:42-20:42', reason: '$shabbat');
+      }
+      final next = repo.haftarahFor(const PortionId(49), kiTeitzei, HaftarahNusach.chabad);
+      expect(next.specialKey, 'Ki Teitzei with 3rd Haftarah of Consolation');
+      expect(refs(next.parts), 'Isaiah 54:1-54:10, Isaiah 54:11-55:5');
+    });
   });
 
   group('Kedoshim 5782, after Acharei Mot gave way to Shabbat Machar Chodesh,', () {

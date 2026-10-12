@@ -321,6 +321,7 @@ const _screens = {
   // Machar Chodesh's, the same in every custom, doesn't have.
   'haftarah_regular': '/haftarah/5787:1',
   'haftarah_chabad': '/haftarah/5787:1',
+  'haftarah_chabad_note': '/haftarah/5787:2',
   'haftarah_chabad_regular': '/haftarah/5787:1',
   // Nitzavim-Vayeilech 5786's (Isaiah 61:10–63:9): the head of its last
   // chapter, and its end, with the divider and the button. Then Bereshit's
@@ -694,6 +695,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   for (final screen in ['today_tisha_bav', 'today_tisha_bav_week'])
     screen: (s) => s.copyWith(joinDate: LocalDate(2027, 8, 1)),
   'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
+  'haftarah_chabad_note': (s) => s.withNusach(HaftarahNusach.chabad),
   's_reading_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   'haftarah_chabad_regular': (s) => s.withNusach(HaftarahNusach.chabad),
 };

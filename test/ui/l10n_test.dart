@@ -62,7 +62,10 @@ void main() {
       expect(names.specialHaftarah('Shabbat Zachor'), 'Shabbat Zachor');
       expect(names.specialHaftarah('Not a key'), 'Not a key', reason: 'an unknown key is shown as it is');
       // The calendar's keys have straight apostrophes; the names, curly ones.
-      expect(names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh"), 'Re’eh on Rosh Chodesh Elul');
+      expect(
+        names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh (and Sunday)"),
+        'Re’eh on Rosh Chodesh Elul, with verses for Sunday’s Rosh Chodesh',
+      );
       expect(names.specialHaftarah('Ki Teitzei with 3rd Haftarah of Consolation'), 'Ki Tetze, with Aniyah So’arah');
       expect(names.specialHaftarah("Not a key's"), 'Not a key’s');
       expect(
@@ -75,7 +78,10 @@ void main() {
       expect(names.specialHaftarah('Masei on Shabbat Rosh Chodesh'), 'מסעי בראש חודש אב');
       expect(names.specialHaftarah('Matot-Masei on Shabbat Rosh Chodesh'), 'מטות־מסעי בראש חודש אב');
       expect(names.specialHaftarah('Chanukah Day 8 (on Shabbat)'), 'שבת חנוכה השנייה');
-      expect(names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh"), 'ראה בשבת ראש חודש אלול');
+      expect(
+        names.specialHaftarah("Re'eh on Shabbat Rosh Chodesh (and Sunday)"),
+        'ראה בשבת ראש חודש אלול, ומוסיפים פסוקים מ״מחר חודש״',
+      );
       expect(names.specialHaftarah('Shabbat Rosh Chodesh (and Sunday)'), 'שבת ראש חודש, ומוסיפים פסוקים מ״מחר חודש״');
     });
 

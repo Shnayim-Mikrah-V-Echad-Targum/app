@@ -597,6 +597,9 @@ async function main() {
       const entry = {ashkenazi: refs(l.haft)};
       if (l.seph) entry.sephardi = refs(l.seph);
       // hebcal lists Chabad's own for a few (Shabbat Zachor, HaChodesh).
+      // Not for HaChodesh on Rosh Chodesh, which until Chabad's reading is
+      // sourced (its HaChodesh with the Rosh Chodesh verses, presumably)
+      // falls back to the Ashkenazi one, with the page's note.
       if (l.chabad) entry.chabad = refs(l.chabad);
       const prev = special[reason];
       if (prev && JSON.stringify(prev) !== JSON.stringify(entry)) throw new Error(`Inconsistent special haftarah ${reason}`);
@@ -605,17 +608,21 @@ async function main() {
     }
   }
   // hebcal follows the Ashkenazi custom for Re'eh on Rosh Chodesh Elul (the
-  // Rosh Chodesh haftarah). Sephardim and Chabad read Re'eh's own, the third
-  // of consolation (Shulchan Aruch OC 425:1), adding the first and last
-  // verses of the Rosh Chodesh haftarah. Only they are given this key
+  // Rosh Chodesh haftarah), which Chabad keeps too (Sefer HaMinhagim). That
+  // Shabbat is always 30 Av, with Sunday Rosh Chodesh too. Sephardim read
+  // Re'eh's own, the third of consolation (Shulchan Aruch OC 425:1), adding
+  // the first and last verses of the Rosh Chodesh haftarah and of Machar
+  // Chodesh. Only they are given this key
   // (lib/core/calendar/special_haftarah.dart), so every custom lists it.
   {
     const reeh = [
       {k: 'Isaiah', b: '54:11', e: '55:5'},
       {k: 'Isaiah', b: '66:1', e: '66:1'},
       {k: 'Isaiah', b: '66:23', e: '66:23'},
+      {k: 'I Samuel', b: '20:18', e: '20:18'},
+      {k: 'I Samuel', b: '20:42', e: '20:42'},
     ];
-    special["Re'eh on Shabbat Rosh Chodesh"] = {ashkenazi: reeh, sephardi: reeh, chabad: reeh};
+    special["Re'eh on Shabbat Rosh Chodesh (and Sunday)"] = {ashkenazi: reeh, sephardi: reeh, chabad: reeh};
     allHaftarahRefs.push(...reeh);
   }
   // Shabbat on the 30th, when Sunday is Rosh Chodesh too: the Rosh Chodesh

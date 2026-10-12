@@ -242,6 +242,22 @@ void main() {
       expect(tester.getBottomLeft(note).dy, lessThan(tester.getTopLeft(firstRegularVerse).dy));
     });
 
+    testWidgets("says under the page's heading, for Chabad, that a week's own haftarah is the Ashkenazi reading",
+        (tester) async {
+      // Noach 5787, with no special haftarah: Isaiah 54:1–55:5 for
+      // Ashkenazim, 54:1–10 for Sephardim, and none yet sourced for Chabad.
+      final chabad = _settings.withNusach(HaftarahNusach.chabad);
+      await _open(tester, '5787:2', settings: chabad, now: DateTime(2026, 10, 13, 11));
+      final heading = find.text('Haftarah · Noach');
+      expect(heading, findsOneWidget);
+      expect(find.byType(ExpansionTile), findsNothing, reason: 'no regular haftarah gives way');
+      final note = find.text(_fallbackNote, skipOffstage: false);
+      expect(note, findsOneWidget);
+      final firstVerse = find.byType(ScriptureVerse).first;
+      expect(tester.getTopLeft(note).dy, greaterThan(tester.getBottomLeft(heading).dy));
+      expect(tester.getBottomLeft(note).dy, lessThan(tester.getTopLeft(firstVerse).dy));
+    });
+
     testWidgets("says nothing for Chabad in a week whose haftarah every custom reads the same", (tester) async {
       // Lech Lecha 5787: Isaiah 40:27–41:16.
       await _open(tester, '5787:3', settings: _settings.withNusach(HaftarahNusach.chabad), now: DateTime(2026, 10, 20, 11));

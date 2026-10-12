@@ -254,23 +254,24 @@ const ZMANIM_CITIES = [
 
 // 6. Special haftarot by custom, 5780–5800
 //
-// hebcal gives the Ashkenazi custom. Sephardim and Chabad differ in two
-// cases, and Sephardim in a third, which lib/core/calendar/special_haftarah.dart
-// must find on its own:
-//  - Re'eh on Rosh Chodesh Elul: Re'eh's own haftarah with the first and last
-//    verses of the Rosh Chodesh haftarah (Shulchan Aruch OC 425:1), rather
-//    than the Rosh Chodesh haftarah;
+// hebcal gives the Ashkenazi custom. Sephardim differ in three cases, which
+// lib/core/calendar/special_haftarah.dart must find on its own:
+//  - Re'eh on Rosh Chodesh Elul, always 30 Av: Re'eh's own haftarah with the
+//    first and last verses of the Rosh Chodesh haftarah (Shulchan Aruch OC
+//    425:1) and of Machar Chodesh, Sunday's, rather than the Rosh Chodesh
+//    haftarah;
 //  - Ki Teitzei two weeks later: its own haftarah, not joined to Re'eh's;
-//  - Kedoshim after a special Shabbat: for Sephardim, its own haftarah.
-//    Chabad, whose Acharei Mot haftarah is the Ashkenazi one, keeps the
-//    Ashkenazi rule until a Chabad source is found.
+//  - Kedoshim after a special Shabbat: its own haftarah.
+// Chabad keeps the Ashkenazi rule in all three: for Re'eh and Ki Teitzei by
+// Sefer HaMinhagim, and for Kedoshim, as its Acharei Mot haftarah is the
+// Ashkenazi one, until a Chabad source is found.
 // Shabbat on the 30th is as in 4.
 
 function forCustom(nusach, parsha, reason, hd) {
-  if (nusach === 'ashkenazi' || !reason) return withSunday(hd, reason);
-  if (parsha === "Re'eh" && reason === 'Shabbat Rosh Chodesh') return "Re'eh on Shabbat Rosh Chodesh";
+  if (nusach !== 'sephardi' || !reason) return withSunday(hd, reason);
+  if (parsha === "Re'eh" && reason === 'Shabbat Rosh Chodesh') return "Re'eh on Shabbat Rosh Chodesh (and Sunday)";
   if (reason === 'Ki Teitzei with 3rd Haftarah of Consolation') return null;
-  if (reason === 'Kedoshim following Special Shabbat') return nusach === 'sephardi' ? null : reason;
+  if (reason === 'Kedoshim following Special Shabbat') return null;
   return withSunday(hd, reason);
 }
 

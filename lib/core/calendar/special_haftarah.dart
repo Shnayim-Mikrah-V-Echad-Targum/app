@@ -23,14 +23,14 @@ abstract final class _P {
 /// Returns a key into `specialHaftarot` in assets/data/parshiyot.json, or
 /// null when the portion's own haftarah is read. The precedence follows the
 /// common practice (Shulchan Aruch OC 425, 428, 684–685; Mishnah Berurah
-/// ibid.). Sephardim and Chabad differ from Ashkenazim around Rosh Chodesh
-/// Elul, and Sephardim in Kedoshim, as noted below.
+/// ibid.). Sephardim differ from Ashkenazim around Rosh Chodesh Elul and in
+/// Kedoshim, as noted below; Chabad keeps the Ashkenazi rules here.
 ///
 /// The keys are @hebcal's, but for two it doesn't give: Re'eh on Rosh
-/// Chodesh Elul for Sephardim and Chabad, and Rosh Chodesh on Shabbat and
-/// Sunday, which adds verses to the Rosh Chodesh haftarah.
+/// Chodesh Elul for Sephardim, and Rosh Chodesh on Shabbat and Sunday, which
+/// adds verses to the Rosh Chodesh haftarah.
 String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required HaftarahNusach nusach}) {
-  final ashkenazi = nusach == HaftarahNusach.ashkenazi;
+  final sephardi = nusach == HaftarahNusach.sephardi;
   final h = HebrewDate.fromLocalDate(shabbat);
   final y = h.year;
   final rd = shabbat.rd;
@@ -74,11 +74,14 @@ String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required Hafta
       if (portion.number == _P.masei && !portion.combined) return 'Masei on Shabbat Rosh Chodesh';
       if (portion.number == _P.matot && portion.combined) return 'Matot-Masei on Shabbat Rosh Chodesh';
     }
-    // Re'eh on Rosh Chodesh Elul: Sephardim and Chabad read its own
-    // haftarah, the third of consolation (Shulchan Aruch OC 425:1), adding
-    // the first and last verses of the Rosh Chodesh haftarah. Ashkenazim read
-    // the Rosh Chodesh haftarah (Rema ibid.), and Re'eh's with Ki Tetze's.
-    if (portion.number == _P.reeh && !ashkenazi) return "Re'eh on Shabbat Rosh Chodesh";
+    // Re'eh on Rosh Chodesh Elul, always 30 Av (1 Elul is never Shabbat, as
+    // Rosh Hashanah is never Sunday), so Sunday is Rosh Chodesh too:
+    // Sephardim read its own haftarah, the third of consolation (Shulchan
+    // Aruch OC 425:1), adding the first and last verses of the Rosh Chodesh
+    // haftarah and of Machar Chodesh. Ashkenazim and Chabad read the Rosh
+    // Chodesh haftarah (Rema ibid.; Sefer HaMinhagim), with Machar Chodesh's
+    // verses (below), and Re'eh's with Ki Tetze's.
+    if (portion.number == _P.reeh && sephardi) return "Re'eh on Shabbat Rosh Chodesh (and Sunday)";
     // On the 30th, Sunday is Rosh Chodesh too, and the first and last verses
     // of Machar Chodesh, its haftarah, are added (Rema OC 425:1).
     return h.day == 30 ? 'Shabbat Rosh Chodesh (and Sunday)' : 'Shabbat Rosh Chodesh';
@@ -101,9 +104,10 @@ String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required Hafta
     return 'Pinchas occurring after 17 Tammuz';
   }
 
-  // When Re'eh fell on Rosh Chodesh Elul, Ashkenazim join its haftarah (the
-  // third of consolation) to Ki Tetze's, which continues it in Isaiah 54.
-  if (portion.number == _P.kiTeitzei && ashkenazi) {
+  // When Re'eh fell on Rosh Chodesh Elul, Ashkenazim and Chabad join its
+  // haftarah (the third of consolation) to Ki Tetze's, which continues it in
+  // Isaiah 54.
+  if (portion.number == _P.kiTeitzei && !sephardi) {
     final reeh = HebrewDate.fromRd(rd - 14);
     if (JewishHolidays.isRoshChodesh(reeh)) {
       return 'Ki Teitzei with 3rd Haftarah of Consolation';
