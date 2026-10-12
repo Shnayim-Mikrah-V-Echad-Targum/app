@@ -262,7 +262,7 @@ class RecordingTts extends TtsService {
   String get spokenText => spoken.map((s) => s.$1).join(' ');
 
   @override
-  Future<bool> speak(String text, {required String language, double rate = 0.45}) async {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) async {
     spoken.add((text, language));
     return true;
   }

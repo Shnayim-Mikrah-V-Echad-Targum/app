@@ -1455,11 +1455,23 @@ abstract class AppLocalizations {
   /// **'Next verse'**
   String get listenNextVerse;
 
-  /// The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is a percentage, as Settings shows it: "45%".
+  /// The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is as the player and Settings show it, relative to the default: speechRateNormal ("Normal") or speechRateTimes ("1.2×").
   ///
   /// In en, this message translates to:
   /// **'Speech rate: {rate}'**
   String speechRateValue(String rate);
+
+  /// The default speech rate, as the player that shows while Listen reads, and Settings → Accessibility → Speech rate, show it. Agrees with "Speech rate" (speechRate).
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get speechRateNormal;
+
+  /// Any other speech rate, as a multiple of the default (Normal): "0.6×", "1.2×", "2.2×". Shown in the Listen player's rate menu and on the Speech rate slider in Settings → Accessibility.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate}×'**
+  String speechRateTimes(String rate);
 
   /// No description provided for @listenAlong.
   ///
@@ -2996,6 +3008,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Motion and touch'**
   String get a11yGroupMotion;
+
+  /// Heading in Accessibility over the speech rate slider, which sets how fast Listen reads aloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech'**
+  String get a11yGroupSpeech;
 
   /// Heading in Accessibility over the accessibility statement and Send feedback.
   ///

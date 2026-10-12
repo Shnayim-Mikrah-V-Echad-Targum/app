@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/tts.dart';
+import '../../ui/l10n.dart';
 
 /// What Listen reads (DESIGN.md §3): one utterance for each layer of each
 /// verse, in order (the Mikra, then its Targum), each with the verse it
@@ -173,9 +176,11 @@ class ListenController extends ChangeNotifier {
   }
 }
 
-/// The speech rates the player offers: the setting's scale (0.1 to 1.0, as
-/// Settings → Accessibility shows it, in percent), with the default, 0.45,
-/// among them.
+/// The speech rates the player offers, on the setting's scale (0.1 to 1.0;
+/// the web engine is given twice the setting, see [TtsService.webEngine]),
+/// with the default, [kDefaultSpeechRate], among them. They are shown
+/// relative to it ([speechRateLabel]): 0.6×, 0.8×, Normal, 1.2×, 1.4×, 1.8×
+/// and 2.2×.
 const kSpeechRates = [0.25, 0.35, 0.45, 0.55, 0.65, 0.8, 1.0];
 
 /// [kSpeechRates], with [current] among them if it is set to another.
@@ -190,5 +195,11 @@ List<double> speechRatesWith(double current) {
 /// 0.45000000000000007).
 bool sameSpeechRate(double a, double b) => (a - b).abs() < 0.001;
 
-/// A speech rate as Settings → Accessibility shows it: "45%".
-String speechRateLabel(double rate) => '${(rate * 100).round()}%';
+/// A speech rate as the player and Settings → Accessibility show it,
+/// relative to the default: "Normal" at it, else "1.2×". In the Hebrew UI the
+/// multiple is a left-to-right run, so that the sign stays after the number.
+String speechRateLabel(AppLocalizations l, double rate) {
+  if (sameSpeechRate(rate, kDefaultSpeechRate)) return l.speechRateNormal;
+  final times = l.speechRateTimes(NumberFormat('0.0', l.localeName).format(rate / kDefaultSpeechRate));
+  return l.localeName.startsWith('he') ? ltr(times) : times;
+}

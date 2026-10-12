@@ -2,6 +2,7 @@ import '../../core/calendar/city.dart';
 import '../../core/calendar/local_date.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart';
+import '../../services/tts.dart' show kDefaultSpeechRate;
 import '../progress/domain/reading_plan.dart';
 
 enum AppThemeMode { system, light, dark, sepia, highContrastLight, highContrastDark }
@@ -193,7 +194,7 @@ class AppSettings {
     this.singleKeyShortcuts = true,
     this.screenReaderText = ScreenReaderText.simplified,
     this.divineName = DivineNameSpeech.adonai,
-    this.speechRate = 0.45,
+    this.speechRate = kDefaultSpeechRate,
     this.showStreaks = true,
     this.cloudSync = false,
     this.dailyReminder = false,

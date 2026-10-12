@@ -933,10 +933,24 @@
   "listenNextVerse": "Next verse",
   "speechRateValue": "Speech rate: {rate}",
   "@speechRateValue": {
-    "description": "The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is a percentage, as Settings shows it: \"45%\".",
+    "description": "The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is as the player and Settings show it, relative to the default: speechRateNormal (\"Normal\") or speechRateTimes (\"1.2×\").",
     "placeholders": {
       "rate": {
         "type": "String"
+      }
+    }
+  },
+  "speechRateNormal": "Normal",
+  "@speechRateNormal": {
+    "description": "The default speech rate, as the player that shows while Listen reads, and Settings → Accessibility → Speech rate, show it. Agrees with \"Speech rate\" (speechRate)."
+  },
+  "speechRateTimes": "{rate}×",
+  "@speechRateTimes": {
+    "description": "Any other speech rate, as a multiple of the default (Normal): \"0.6×\", \"1.2×\", \"2.2×\". Shown in the Listen player's rate menu and on the Speech rate slider in Settings → Accessibility.",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "1.2"
       }
     }
   },
@@ -1479,6 +1493,10 @@
   "a11yGroupMotion": "Motion and touch",
   "@a11yGroupMotion": {
     "description": "Heading in Accessibility over the switches for reduced motion, haptic feedback and single-key shortcuts."
+  },
+  "a11yGroupSpeech": "Speech",
+  "@a11yGroupSpeech": {
+    "description": "Heading in Accessibility over the speech rate slider, which sets how fast Listen reads aloud."
   },
   "a11yGroupMore": "Statement and feedback",
   "@a11yGroupMore": {

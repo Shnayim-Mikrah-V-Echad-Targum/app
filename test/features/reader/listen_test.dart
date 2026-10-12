@@ -16,6 +16,7 @@ import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 
 import '../../helpers.dart';
@@ -26,7 +27,7 @@ class _HeldTts extends RecordingTts {
   Completer<bool>? _current;
 
   @override
-  Future<bool> speak(String text, {required String language, double rate = 0.45}) {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) {
     // The next utterance stops the one before, as the engine's does.
     _current?.complete(false);
     spoken.add((text, language));
@@ -55,7 +56,7 @@ class _HeldTts extends RecordingTts {
 class _FailingTts extends RecordingTts {
   @override
   Future<bool> speakQueue(List<String> items,
-          {required String language, double rate = 0.45, int startAt = 0, List<int>? groups}) =>
+          {required String language, double rate = kDefaultSpeechRate, int startAt = 0, List<int>? groups}) =>
       Future.error(PlatformException(code: 'no-engine'));
 }
 
@@ -418,13 +419,17 @@ void main() {
     await tester.tap(find.byTooltip('Listen'));
     await tester.pumpAndSettle();
     final said = tts.spoken.length;
-    await tester.tap(find.text('45%'));
+    expect(
+      tester.getSemantics(find.descendant(of: player, matching: find.text('Normal'))),
+      isSemantics(label: 'Speech rate: Normal'),
+    );
+    await tester.tap(find.text('Normal'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('65%').last);
+    await tester.tap(find.text('1.4×').last);
     await tester.pumpAndSettle();
     expect(c.read(settingsProvider).speechRate, 0.65);
     expect(tts.spoken.length, said + 1);
-    expect(find.descendant(of: player, matching: find.text('65%')), findsOneWidget);
+    expect(find.descendant(of: player, matching: find.text('1.4×')), findsOneWidget);
   });
 
   testWidgets("the haftarah's verses are highlighted as they are read, and the voice goes with the page",
@@ -519,14 +524,15 @@ void main() {
     await tester.tap(find.byTooltip('Listen'));
     await tester.pumpAndSettle();
     final said = tts.spoken.length;
-    await tester.tap(find.descendant(of: player, matching: find.text('45%')));
+    await tester.tap(find.descendant(of: player, matching: find.text('Normal')));
     await tester.pumpAndSettle();
     final checked = find.byIcon(Icons.radio_button_checked);
     expect(checked, findsOneWidget);
-    expect(find.descendant(of: find.ancestor(of: checked, matching: find.byType(Row)).first, matching: find.text('45%')), findsOneWidget);
-    expect(find.text('45%'), findsNWidgets(2), reason: 'the menu has no second 45%');
+    expect(find.descendant(of: find.ancestor(of: checked, matching: find.byType(Row)).first, matching: find.text('Normal')),
+        findsOneWidget);
+    expect(find.text('Normal'), findsNWidgets(2), reason: 'the menu has no second Normal');
 
-    await tester.tap(find.text('45%').last);
+    await tester.tap(find.text('Normal').last);
     await tester.pumpAndSettle();
     expect(tts.spoken.length, said, reason: 'the verse being read goes on');
     expect(c.read(settingsProvider).speechRate, stepped);
@@ -538,7 +544,21 @@ void main() {
     expect(sameSpeechRate(0.1 + 7 * 0.05, 0.45), isTrue);
     expect(sameSpeechRate(0.5, 0.45), isFalse);
     expect(speechRatesWith(0.5), [0.25, 0.35, 0.45, 0.5, 0.55, 0.65, 0.8, 1.0]);
-    expect(speechRateLabel(0.45), '45%');
+  });
+
+  test('a rate is shown relative to the default, normal', () {
+    final en = lookupAppLocalizations(const Locale('en'));
+    expect([for (final r in kSpeechRates) speechRateLabel(en, r)], ['0.6×', '0.8×', 'Normal', '1.2×', '1.4×', '1.8×', '2.2×']);
+    // As the Settings slider steps to it.
+    expect(speechRateLabel(en, 0.1 + 7 * 0.05), 'Normal');
+    expect(speechRateLabel(en, 0.1), '0.2×');
+    expect(speechRateLabel(en, 0.9), '2.0×');
+
+    // In Hebrew, the multiple keeps its sign after it, as a left-to-right run.
+    final he = lookupAppLocalizations(const Locale('he'));
+    expect(speechRateLabel(he, kDefaultSpeechRate), 'רגיל');
+    expect(speechRateLabel(he, 0.55), '\u20661.2×\u2069');
+    expect(he.speechRateValue(speechRateLabel(he, kDefaultSpeechRate)), 'קצב הקראה: רגיל');
   });
 
   test("a queue's verses: where one starts, or the next after it", () {

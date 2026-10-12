@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 
 import '../../helpers.dart';
 
@@ -100,6 +101,35 @@ void main() {
       handle.dispose();
     });
   });
+
+  for (final (language, locale, normal, faster) in [
+    (AppLanguage.english, 'en', 'Normal', '1.1×'),
+    // The multiple a left-to-right run, so that its sign stays after it.
+    (AppLanguage.hebrew, 'he', 'רגיל', '\u20661.1×\u2069'),
+  ]) {
+    testWidgets('the speech rate has a heading of its own, and reads relative to normal (${language.name})',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final l = lookupAppLocalizations(Locale(locale));
+      final c = await open(tester, AppSettings(onboardingComplete: true, language: language));
+      final slider = find.byType(Slider);
+      await tester.ensureVisible(slider);
+      await tester.pumpAndSettle();
+
+      final heading = find.bySemanticsLabel(l.a11yGroupSpeech);
+      expect(tester.getSemantics(heading), isSemantics(isHeader: true));
+      expect(tester.getBottomLeft(heading).dy, lessThan(tester.getTopLeft(find.text(l.speechRate)).dy));
+      expect(tester.getSemantics(slider), isSemantics(label: l.speechRate, value: normal, isSlider: true));
+      expect(find.text(normal), findsOneWidget, reason: 'the value shows by its title');
+
+      await tester.tap(find.byTooltip(l.increaseSetting(l.speechRate)));
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).speechRate, closeTo(0.5, 0.001), reason: 'the setting keeps its own scale');
+      expect(tester.getSemantics(slider), isSemantics(label: l.speechRate, value: faster, isSlider: true));
+      expect(find.text(faster), findsOneWidget);
+      handle.dispose();
+    });
+  }
 
   for (final (language, written, spoken) in [
     (AppLanguage.hebrew, 'א-דני', 'שם אדנות'),

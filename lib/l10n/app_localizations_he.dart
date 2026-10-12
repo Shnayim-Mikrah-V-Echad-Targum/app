@@ -949,6 +949,14 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get speechRateNormal => 'רגיל';
+
+  @override
+  String speechRateTimes(String rate) {
+    return '$rate×';
+  }
+
+  @override
   String get listenAlong => 'השמעה רציפה';
 
   @override
@@ -1805,6 +1813,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get a11yGroupMotion => 'תנועה ומגע';
+
+  @override
+  String get a11yGroupSpeech => 'הקראה';
 
   @override
   String get a11yGroupMore => 'הצהרה ומשוב';

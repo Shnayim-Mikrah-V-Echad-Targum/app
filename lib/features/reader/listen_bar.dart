@@ -165,7 +165,7 @@ class _RateButton extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final label = speechRateLabel(rate);
+    final label = speechRateLabel(l, rate);
     final style = theme.textTheme.labelLarge!.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -225,6 +225,7 @@ class _RateChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l = context.l10n;
     return Semantics(
       inMutuallyExclusiveGroup: true,
       checked: chosen,
@@ -238,7 +239,7 @@ class _RateChoice extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            speechRateLabel(rate),
+            speechRateLabel(l, rate),
             style: TextStyle(
               fontWeight: chosen ? FontWeight.w700 : null,
               fontFeatures: const [FontFeature.tabularFigures()],

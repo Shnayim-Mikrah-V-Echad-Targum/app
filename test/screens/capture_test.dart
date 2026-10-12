@@ -413,6 +413,8 @@ const _screens = {
   's_a11y_active': '/settings/accessibility',
   's_a11y_undo': '/settings/accessibility',
   's_a11y_web': '/settings/accessibility',
+  // Scrolled to Speech, the rate set faster than normal.
+  's_a11y_speech': '/settings/accessibility',
   's_reminders': '/settings/reminders',
   // As on a phone, where reminders can be scheduled, with all three on.
   's_reminders_on': '/settings/reminders',
@@ -554,6 +556,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_rashi_step': (s) => s.copyWith(secondReading: SecondReading.rashi),
   's_display_small': (s) => s.copyWith(readingScale: 0.6, focusMode: true, theme: AppThemeMode.sepia),
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
+  's_a11y_speech': (s) => s.copyWith(speechRate: 0.65),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   's_reminders_on': (s) =>
       s.copyWith(dailyReminder: true, fridayReminder: true, checkInReminder: true, habitAnchor: HabitAnchor.shacharit),
@@ -667,7 +670,7 @@ const _listening = {
 /// that Listen stays at the verse it has reached.
 class _HeldTts extends RecordingTts {
   @override
-  Future<bool> speak(String text, {required String language, double rate = 0.45}) {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) {
     spoken.add((text, language));
     return Completer<bool>().future;
   }
@@ -1173,6 +1176,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(find.byIcon(Icons.sticky_note_2_outlined));
   },
   'week_notes': _scrollToEnd,
+  's_a11y_speech': _scrollToEnd,
   for (final screen in [
     'reader_listen',
     'reader_listen_full',
@@ -1187,7 +1191,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'reader_listen_rate': (tester) async {
     await _listenOnTwo(tester);
-    await tester.tap(find.text('45%'));
+    await tester.tap(find.byTooltip(tester.element(find.byType(Scaffold).last).l10n.speechRate));
   },
   // Past the times what failed to load is tried again, so that none is
   // still waiting as the test ends.

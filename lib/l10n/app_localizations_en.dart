@@ -942,6 +942,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get speechRateNormal => 'Normal';
+
+  @override
+  String speechRateTimes(String rate) {
+    return '$rate×';
+  }
+
+  @override
   String get listenAlong => 'Listen along';
 
   @override
@@ -1804,6 +1812,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get a11yGroupMotion => 'Motion and touch';
+
+  @override
+  String get a11yGroupSpeech => 'Speech';
 
   @override
   String get a11yGroupMore => 'Statement and feedback';
