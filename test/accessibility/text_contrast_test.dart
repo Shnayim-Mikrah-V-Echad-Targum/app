@@ -72,7 +72,7 @@ void main() {
 
   // The Torah map with a tile in every past state, and the week strip above
   // it. textContrastGuideline finds text by its node's label, and a tile's
-  // label also names its state ("Noach: Made up"), as a day's names its
+  // label also names its state ("Vayera: Made up later"), as a day's names its
   // status and a book header's its count, so the guideline skips them; their
   // colours are checked here instead: a tile's name against its fill and its
   // icon against the fill as a graphic, a filled day's weekday and aliyot
@@ -104,7 +104,7 @@ void main() {
         'Bereshit: On time',
         'Noach: After Shabbat — still counts',
         'Lech Lecha: Not completed',
-        'Vayera: Made up',
+        'Vayera: Made up later',
         'Toldot: In progress',
         'Vayetze: Upcoming',
       ]) {

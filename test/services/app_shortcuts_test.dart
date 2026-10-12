@@ -149,7 +149,7 @@ void main() {
       final (container, plugin) = await start(const AppSettings(onboardingComplete: true));
       expect(shown(plugin), [
         ('continue_reading', 'Continue reading', 'ic_launcher'),
-        ('log_from_book', 'Log reading from a book', 'ic_launcher'),
+        ('log_from_book', 'Log a Chumash reading', 'ic_launcher'),
         ('this_week', 'This week’s parsha', 'ic_launcher'),
       ]);
       expectShortEnough(plugin);
@@ -158,7 +158,7 @@ void main() {
       container.read(appShortcutsProvider);
       expect(shown(plugin), [
         ('continue_reading', 'המשך קריאה', 'ic_launcher'),
-        ('log_from_book', 'רישום קריאה מתוך ספר', 'ic_launcher'),
+        ('log_from_book', 'רישום קריאה מתוך חומש', 'ic_launcher'),
         ('this_week', 'פרשת השבוע', 'ic_launcher'),
       ]);
       expectShortEnough(plugin);
@@ -188,7 +188,7 @@ void main() {
 
       tester.platformDispatcher.localesTestValue = const [Locale('he', 'IL')];
       await tester.pump();
-      expect([for (final i in plugin.items!) i.localizedTitle], ['המשך קריאה', 'רישום קריאה מתוך ספר', 'פרשת השבוע']);
+      expect([for (final i in plugin.items!) i.localizedTitle], ['המשך קריאה', 'רישום קריאה מתוך חומש', 'פרשת השבוע']);
 
       tester.platformDispatcher.localesTestValue = const [Locale('en', 'US')];
       await tester.pump();
@@ -291,7 +291,7 @@ void main() {
       expect(location(router), '/read/$noach/0');
     });
 
-    testWidgets('Log reading from a book opens the week over Today', (tester) async {
+    testWidgets('Log a Chumash reading opens the week over Today', (tester) async {
       final (router, plugin) = await pump(tester);
       plugin.handler!('log_from_book');
       await settle(tester);
@@ -312,7 +312,7 @@ void main() {
 
     // From Shabbat through the day after it, the current week is already the
     // next parsha; what was read from a Chumash on Shabbat is the last one's.
-    group('Log reading from a book after Shabbat', () {
+    group('Log a Chumash reading after Shabbat', () {
       final motzeiShabbat = DateTime(2026, 10, 17, 21);
       final sunday = DateTime(2026, 10, 18, 10);
 

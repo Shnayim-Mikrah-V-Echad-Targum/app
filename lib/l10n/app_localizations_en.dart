@@ -500,12 +500,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String openWeekRestore(String name, String next, int count) {
-    return 'Finish $name and $next by Shabbat and your $count-week streak continues — one double-up per book.';
+    return 'Finish $name and $next by Shabbat and your $count-week streak continues — you can do this once in each book of the Torah.';
   }
 
   @override
   String openWeekRestoreZero(String name, String next) {
-    return 'Finish $name and $next by Shabbat and both count — one double-up per book.';
+    return 'Finish $name and $next by Shabbat and both count — you can do this once in each book of the Torah.';
   }
 
   @override
@@ -686,10 +686,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weekLate => 'After Shabbat — still counts';
 
   @override
-  String get weekRestored => 'Doubled up';
+  String get weekRestored => 'Finished with the next parsha';
 
   @override
-  String get weekMadeUp => 'Made up';
+  String get weekMadeUp => 'Made up later';
 
   @override
   String get weekMissed => 'Not completed';
@@ -698,7 +698,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weekTransparent => 'Not counted';
 
   @override
-  String get weekOverdue => 'Can still be restored';
+  String get weekOverdue => 'Can still be finished with the next parsha';
 
   @override
   String get weekInProgress => 'In progress';
@@ -956,7 +956,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get translationDisclaimer =>
-      'A translation is a study aid. It does not take the place of the Targum.';
+      'Helps with the meaning; it doesn’t take the place of the Targum.';
 
   @override
   String get mikraLabel => 'Mikra';
@@ -2362,8 +2362,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count thanks',
-      one: '1 thanks',
+      other: 'Thanked $count times',
+      one: 'Thanked once',
     );
     return '$_temp0';
   }
@@ -2536,8 +2536,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count thanks',
-      one: '1 thanks',
+      other: 'thanked $count times',
+      one: 'thanked once',
     );
     return '$_temp0';
   }
@@ -2872,7 +2872,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutContinueReading => 'Continue reading';
 
   @override
-  String get shortcutLogFromBook => 'Log reading from a book';
+  String get shortcutLogFromBook => 'Log a Chumash reading';
 
   @override
   String get shortcutThisWeek => 'This week’s parsha';
@@ -3384,7 +3384,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sending => 'Sending…';
 
   @override
-  String get askedTag => 'Asked';
+  String get askedTag => 'Question';
 
   @override
   String get authorTag => 'Author';

@@ -777,16 +777,16 @@ abstract class AppLocalizations {
   /// **'Finish by {date} and it still counts.'**
   String openWeekLate(String date);
 
-  /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.
+  /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1. A no-break space keeps the last two words together, so neither is left alone on a line.
   ///
   /// In en, this message translates to:
-  /// **'Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book.'**
+  /// **'Finish {name} and {next} by Shabbat and your {count}-week streak continues — you can do this once in each book of the Torah.'**
   String openWeekRestore(String name, String next, int count);
 
   /// As openWeekRestore, when the reader has no parsha streak to continue.
   ///
   /// In en, this message translates to:
-  /// **'Finish {name} and {next} by Shabbat and both count — one double-up per book.'**
+  /// **'Finish {name} and {next} by Shabbat and both count — you can do this once in each book of the Torah.'**
   String openWeekRestoreZero(String name, String next);
 
   /// No description provided for @openWeekHaftarahLeft.
@@ -1065,16 +1065,16 @@ abstract class AppLocalizations {
   /// **'After Shabbat — still counts'**
   String get weekLate;
 
-  /// No description provided for @weekRestored.
+  /// A parsha's status: missed by its late window, then finished together with the next parsha by the next Shabbat (once in each book of the Torah), so the streak continues. weekOverdue is the same rescue still open; keep the two in the same words. A no-break space keeps "next parsha" together.
   ///
   /// In en, this message translates to:
-  /// **'Doubled up'**
+  /// **'Finished with the next parsha'**
   String get weekRestored;
 
-  /// No description provided for @weekMadeUp.
+  /// A parsha's status: finished after its late window, but not together with the next parsha by the next Shabbat. It counts for the year, but the streak begins again.
   ///
   /// In en, this message translates to:
-  /// **'Made up'**
+  /// **'Made up later'**
   String get weekMadeUp;
 
   /// No description provided for @weekMissed.
@@ -1089,10 +1089,10 @@ abstract class AppLocalizations {
   /// **'Not counted'**
   String get weekTransparent;
 
-  /// No description provided for @weekOverdue.
+  /// A parsha's status: missed by its late window, and it can still count if it is finished together with the next parsha by the next Shabbat (see weekRestored).
   ///
   /// In en, this message translates to:
-  /// **'Can still be restored'**
+  /// **'Can still be finished with the next parsha'**
   String get weekOverdue;
 
   /// No description provided for @weekInProgress.
@@ -1500,7 +1500,7 @@ abstract class AppLocalizations {
   /// No description provided for @translationDisclaimer.
   ///
   /// In en, this message translates to:
-  /// **'A translation is a study aid. It does not take the place of the Targum.'**
+  /// **'Helps with the meaning; it doesn’t take the place of the Targum.'**
   String get translationDisclaimer;
 
   /// No description provided for @mikraLabel.
@@ -3972,7 +3972,7 @@ abstract class AppLocalizations {
   /// How many have thanked a post: on its Todah button for screen readers, and under one's own post.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 thanks} other{{count} thanks}}'**
+  /// **'{count, plural, =1{Thanked once} other{Thanked {count} times}}'**
   String todahCount(int count);
 
   /// The Todah button's name for screen readers, which holds the word the button shows (Todah), so that voice control finds it by what it says.
@@ -4245,10 +4245,10 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No posts yet} =1{1 post} other{{count} posts}}'**
   String postsCount(int count);
 
-  /// In a forum's list, after a discussion's replies: the thanks (todah) given to its posts, once there are any. A no-break space keeps the count with its word.
+  /// In a forum's list, after a discussion's replies: how often its posts have been thanked (todah), once they have been. It runs on in a lowercase list ("Rivka · 3 hours ago · 4 replies · thanked 12 times"). No-break spaces keep the words together.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 thanks} other{{count} thanks}}'**
+  /// **'{count, plural, =1{thanked once} other{thanked {count} times}}'**
   String threadThanksCount(int count);
 
   /// Under a forum's description on the Community page: how many discussions it has. A no-break space keeps the count with its word.
@@ -4692,7 +4692,7 @@ abstract class AppLocalizations {
   /// Shortcut shown when the app's icon is long-pressed; opens this week's page to mark what was read from a printed Chumash. Keep it under 25 characters.
   ///
   /// In en, this message translates to:
-  /// **'Log reading from a book'**
+  /// **'Log a Chumash reading'**
   String get shortcutLogFromBook;
 
   /// Shortcut shown when the app's icon is long-pressed; opens the Parsha tab. Keep it under 25 characters.
@@ -5370,7 +5370,7 @@ abstract class AppLocalizations {
   /// A small tag beside a member's name on their posts in a question they asked.
   ///
   /// In en, this message translates to:
-  /// **'Asked'**
+  /// **'Question'**
   String get askedTag;
 
   /// A small tag beside a member's name on their posts in a discussion they started.

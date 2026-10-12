@@ -256,14 +256,14 @@ void main() {
       expect(findWords('עוד 5 עליות להשלים — ויש עוד יומיים עד שבת.'), findsOneWidget);
 
       await openToday(tester, settings: hebrew, progress: _bereshit());
-      expect(findWords('עוד 5 עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.'), findsOneWidget);
+      expect(findWords('עוד 5 עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי השבת.'), findsOneWidget);
 
       await openToday(
         tester,
         settings: hebrew.copyWith(joinDate: LocalDate(2028, 5, 1)),
         now: DateTime(2028, 5, 30, 10),
       );
-      expect(findWords('עוד 5 עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג.'), findsOneWidget);
+      expect(findWords('עוד 5 עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולרשום אחרי החג.'), findsOneWidget);
 
       await openToday(
         tester,
@@ -271,7 +271,7 @@ void main() {
         now: DateTime(2028, 9, 20, 10),
       );
       expect(
-        findWords('עוד 7 עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת.'),
+        findWords('עוד 7 עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולרשום אחרי השבת.'),
         findsOneWidget,
       );
 
@@ -281,7 +281,7 @@ void main() {
         now: DateTime(2029, 5, 18, 10),
       );
       expect(
-        findWords('עוד 7 עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג.'),
+        findWords('עוד 7 עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי החג.'),
         findsOneWidget,
       );
 
@@ -305,7 +305,7 @@ void main() {
       // Erev Shabbat, with all but Chamishi read.
       await openToday(tester, settings: hebrew, now: DateTime(2026, 10, 16, 10), progress: _noach({0, 1, 2, 3, 5, 6}));
       expect(
-        findWords('עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.'),
+        findWords('עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי השבת.'),
         findsOneWidget,
       );
     });

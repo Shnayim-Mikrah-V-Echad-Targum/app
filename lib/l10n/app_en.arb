@@ -436,9 +436,9 @@
       }
     }
   },
-  "openWeekRestore": "Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book.",
+  "openWeekRestore": "Finish {name} and {next} by Shabbat and your {count}-week streak continues — you can do this once in each book of the Torah.",
   "@openWeekRestore": {
-    "description": "On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1.",
+    "description": "On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1. A no-break space keeps the last two words together, so neither is left alone on a line.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -451,7 +451,7 @@
       }
     }
   },
-  "openWeekRestoreZero": "Finish {name} and {next} by Shabbat and both count — one double-up per book.",
+  "openWeekRestoreZero": "Finish {name} and {next} by Shabbat and both count — you can do this once in each book of the Torah.",
   "@openWeekRestoreZero": {
     "description": "As openWeekRestore, when the reader has no parsha streak to continue.",
     "placeholders": {
@@ -659,11 +659,20 @@
   "weekStripLabel": "This week’s plan",
   "weekOnTime": "On time",
   "weekLate": "After Shabbat — still counts",
-  "weekRestored": "Doubled up",
-  "weekMadeUp": "Made up",
+  "weekRestored": "Finished with the next parsha",
+  "@weekRestored": {
+    "description": "A parsha's status: missed by its late window, then finished together with the next parsha by the next Shabbat (once in each book of the Torah), so the streak continues. weekOverdue is the same rescue still open; keep the two in the same words. A no-break space keeps \"next parsha\" together."
+  },
+  "weekMadeUp": "Made up later",
+  "@weekMadeUp": {
+    "description": "A parsha's status: finished after its late window, but not together with the next parsha by the next Shabbat. It counts for the year, but the streak begins again."
+  },
   "weekMissed": "Not completed",
   "weekTransparent": "Not counted",
-  "weekOverdue": "Can still be restored",
+  "weekOverdue": "Can still be finished with the next parsha",
+  "@weekOverdue": {
+    "description": "A parsha's status: missed by its late window, and it can still count if it is finished together with the next parsha by the next Shabbat (see weekRestored)."
+  },
   "weekInProgress": "In progress",
   "plannedFor": "Planned for {day}",
   "@plannedFor": {
@@ -910,7 +919,7 @@
   "oneAliyahAtATime": "One aliyah at a time",
   "markAliyahRead": "Mark this aliyah as read",
   "keyboardShortcuts": "Keyboard shortcuts",
-  "translationDisclaimer": "A translation is a study aid. It does not take the place of the Targum.",
+  "translationDisclaimer": "Helps with the meaning; it doesn’t take the place of the Targum.",
   "mikraLabel": "Mikra",
   "targumLabel": "Targum Onkelos",
   "rashiLabel": "Rashi",
@@ -1872,7 +1881,7 @@
       }
     }
   },
-  "todahCount": "{count, plural, =1{1 thanks} other{{count} thanks}}",
+  "todahCount": "{count, plural, =1{Thanked once} other{Thanked {count} times}}",
   "@todahCount": {
     "description": "How many have thanked a post: on its Todah button for screen readers, and under one's own post.",
     "placeholders": {
@@ -1987,9 +1996,9 @@
       }
     }
   },
-  "threadThanksCount": "{count, plural, =1{1 thanks} other{{count} thanks}}",
+  "threadThanksCount": "{count, plural, =1{thanked once} other{thanked {count} times}}",
   "@threadThanksCount": {
-    "description": "In a forum's list, after a discussion's replies: the thanks (todah) given to its posts, once there are any. A no-break space keeps the count with its word.",
+    "description": "In a forum's list, after a discussion's replies: how often its posts have been thanked (todah), once they have been. It runs on in a lowercase list (\"Rivka · 3 hours ago · 4 replies · thanked 12 times\"). No-break spaces keep the words together.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -2300,7 +2309,7 @@
   "@shortcutContinueReading": {
     "description": "Shortcut shown when the app's icon is long-pressed on Android and iOS; opens the reader at the first aliyah not yet read. Keep it under 25 characters."
   },
-  "shortcutLogFromBook": "Log reading from a book",
+  "shortcutLogFromBook": "Log a Chumash reading",
   "@shortcutLogFromBook": {
     "description": "Shortcut shown when the app's icon is long-pressed; opens this week's page to mark what was read from a printed Chumash. Keep it under 25 characters."
   },
@@ -2831,7 +2840,7 @@
     }
   },
   "sending": "Sending…",
-  "askedTag": "Asked",
+  "askedTag": "Question",
   "@askedTag": {
     "description": "A small tag beside a member's name on their posts in a question they asked."
   },

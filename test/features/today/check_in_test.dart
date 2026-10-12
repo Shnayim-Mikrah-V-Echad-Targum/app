@@ -209,12 +209,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('תאריך הקריאה: שבת, 10 באוקטובר'), findsOneWidget);
       expect(find.text('שינוי התאריך'), findsOneWidget);
-      expect(find.text('סימון הקריאה'), findsOneWidget);
+      expect(find.text('רישום הקריאה'), findsOneWidget);
     });
   });
 
   group('a week still open after its late window', () {
-    testWidgets('can be restored by doubling up, which keeps a streak going', (tester) async {
+    testWidgets('can still be finished with the next parsha, which keeps a streak going', (tester) async {
       // Wednesday of Noach, with a two-week streak before Bereshit.
       final monday = LocalDate(2026, 9, 21);
       var weeks = <String, WeekProgress>{};
@@ -228,7 +228,10 @@ void main() {
         progress: ProgressState(weeks: {...weeks, ..._bereshit().weeks}),
       );
       expect(
-        find.text('Finish Bereshit and Noach by Shabbat and your 2-week streak continues — one double-up per book.'),
+        find.text(
+          'Finish Bereshit and Noach by Shabbat and your 2-week streak continues — '
+          'you can do this once in each book of the\u00a0Torah.',
+        ),
         findsOneWidget,
       );
     });
@@ -236,13 +239,13 @@ void main() {
     testWidgets('says both count, with no streak to keep', (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 14, 9));
       expect(
-        find.text('Finish Bereshit and Noach by Shabbat and both count — one double-up per book.'),
+        find.text('Finish Bereshit and Noach by Shabbat and both count — you can do this once in each book of the\u00a0Torah.'),
         findsOneWidget,
       );
       expect(find.textContaining('streak continues'), findsNothing);
 
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew), now: DateTime(2026, 10, 14, 9));
-      expect(find.text('אם מסיימים את בראשית ואת נח עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש.'), findsOneWidget);
+      expect(find.text('אם מסיימים את בראשית ואת נח עד שבת, שתיהן נחשבות — אפשר לעשות זאת פעם אחת בכל\u00a0חומש.'), findsOneWidget);
     });
   });
 

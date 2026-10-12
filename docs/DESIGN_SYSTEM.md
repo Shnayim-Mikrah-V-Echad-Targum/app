@@ -721,7 +721,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 | upcoming | paper | hairline | onSurfaceVariant | none |
 | untracked | paper | hairline | onSurfaceVariant | pause_circle_outline |
 
-A tile's screen-reader label and tooltip name its exact status ("Noach: Doubled up", "Lech Lecha: Can still be restored").
+A tile's screen-reader label and tooltip name its exact status ("Noach: Finished with the next parsha", "Lech Lecha: Can still be finished with the next parsha"). The rescue of a missed parsha has one name in every string, the plain words of what it takes: finished with the next parsha ("הושלם עם הפרשה הבאה"), never a double-up or a restore.
 
 **Book header row**
 - Hebrew book name (FRL 600 18), a 8 gap, the Latin name (titleSmall), and "3 of 12" end-aligned in bodySmall with tabular figures, then an `expand_more` chevron that turns over `Motion.short`. The two names are one paragraph, so with large text the Latin name wraps under the Hebrew one.
@@ -840,13 +840,13 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 - **Header row:**
   - 32 px initial disc in secondaryContainer, initial in EBG 600 16 onSecondaryContainer (`InitialDisc`, excluded from semantics; a person when the name is empty), centred on the name's first line however large the text;
   - 12 gap, then the author in titleSmall in its OWN Text with `textDirection: autoDirection(name)`;
-  - on the posts of the member who began the thread, a tag in labelSmall on secondaryContainer, radius 6 (outlined in high contrast): "Asked" in a question, "Author" in any other discussion, none in a weekly thread;
+  - on the posts of the member who began the thread, a tag in labelSmall on secondaryContainer, radius 6 (outlined in high contrast): "Question" in a question, "Author" in any other discussion, none in a weekly thread;
   - then " · " and the relative time in bodySmall onSurfaceVariant in a separate Text, with the full date in a tooltip; when the three don't fit on one line (enlarged text, a long name) the time goes under the name, without the separator;
   - then the overflow menu, its 48 dp box reaching 12 into the end gutter so that its glyph lines up with the column's edge, as the app bar's do with the screen's. The post itself reaches into the gutter by as much (`PostCard.menuBleed`), so the whole box takes a tap; the rest of the post keeps to the column. Reply is not in it.
   - Separate widgets fix the mixed-direction header in he_thread.png. Screen readers hear one label: name, tag, full date and "edited".
 - **Body:** bodyLarge 16/26 in both UIs (NSH in Hebrew), `autoDirection`, tagged with its language, start-inset 44 to align with the name. A quoted post sits above it on surfaceContainerLow with a 2 px gold-ink (`secondary`) start rule, in bodySmall onSurfaceVariant.
 - **Footer**, its icons in line with the text:
-  - TextButton "Todah" with `volunteer_activism_outlined` 18 (filled `volunteer_activism` when given), then the count in tabular figures once there is one. A toggle for screen readers, named for what a tap does and how many have thanked, in words that hold the one it shows ("Say todah to Rivka. 4 thanks"), so that voice control finds it by them.
+  - TextButton "Todah" with `volunteer_activism_outlined` 18 (filled `volunteer_activism` when given), then the count in tabular figures once there is one. A toggle for screen readers, named for what a tap does and how many have thanked, in words that hold the one it shows ("Say todah to Rivka. Thanked 4 times"), so that voice control finds it by them.
   - The footer's buttons keep their 12 start padding at any text size (Material's would shrink), so their icons stay in line with the text.
   - 8 gap, then TextButton "Reply" with `Icons.reply` 18 ("Reply to Rivka" for screen readers), on every post the reader can answer; none in a locked thread, except for moderators.
   - Under your own post, no Todah button: the icon and count in onSurfaceVariant, once it has been thanked; until then Reply comes first.
@@ -869,7 +869,7 @@ Centred, max width 480:
 5. Once everything planned for today and before is read, with the parsha unfinished, a marginalia line comes first: `todayReadingDone`, "That’s today’s reading. See you tomorrow." (or "See you on Sunday." when the next day with reading is later; a day whose aliyot were read ahead has none left), or on the plan's last day `erevShabbatDone`, "That’s this week’s reading. Shabbat shalom!" ("The rest is for Shabbat morning." when the plan leaves aliyot for it, and "Chag sameach!" when Yom Tov begins the next day). Done is then the Filled button, and continuing a Text "Keep going: Chamishi". While anything planned is still unread, the panel stays as in 4.
 6. When the parsha is complete:
    - the title becomes `parshaDoneTitle`, "Parshat Bereshit is complete" (`parshaComplete` is spoken);
-   - a status line, bodyMedium onSurfaceVariant after the status's icon in its colour (§6.14), says how the week stands, from its WeekEvaluation: on time, "On time · 3-week parsha streak · +1 grace day" (the grace day only when finishing earned one; the streak and the grace day are left out while streak numbers are hidden, and when the finish completed nothing new, as stepping again through a parsha read weeks ago, which shows the plain status); late, "After Shabbat — and it still counts. Your streak continues."; doubled up, "Finished together with the next parsha — your streak continues.";
+   - a status line, bodyMedium onSurfaceVariant after the status's icon in its colour (§6.14), says how the week stands, from its WeekEvaluation: on time, "On time · 3-week parsha streak · +1 grace day" (the grace day only when finishing earned one; the streak and the grace day are left out while streak numbers are hidden, and when the finish completed nothing new, as stepping again through a parsha read weeks ago, which shows the plain status); late, "After Shabbat — and it still counts. Your streak continues."; finished with the next parsha, "Finished together with the next parsha — your streak continues.";
    - a Tonal "Read the haftarah" (if enabled and not read) over a Text "Done", or else a Filled "Done".
 
 **Sefer complete** (`lib/features/reader/sefer_complete_screen.dart`, `/celebrate/sefer:5787:0`): a one-time full-screen page, centred, max width 480. SeferDivider, then "חֲזַק חֲזַק וְנִתְחַזֵּק" in hebrewDisplay 40/56 primary, untranslated (a level-1 heading, read from its letters), then SeferDivider, then bodyMedium onSurfaceVariant `seferDoneBody`, "Genesis complete — 1,533 verses, twice, with Targum.", then a Filled "Continue". It fades in over 400 ms (at once under Reduce Motion) and never auto-dismisses.
@@ -1094,7 +1094,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 2. Paused banner and open-previous-week card: NoticeBanner style.
    - Resuming from the paused banner says `pauseEnded` in a status message. A pause that ended while the app was closed (not one made or changed once it was over, by its stamp's reading day: entered after the fact, or ended early) is welcomed instead, on the first reading day the app is opened after it, until the reader puts it away (a close button, `actionDismiss`; `pauseEndSeen`) or reads again: a NoticeBanner titled `pauseEnded` with `pauseEndedOn(date)`, a Tonal `pauseEndedStart` or `pauseEndedContinue` to `/read/{id}/{next}`, and a TextButton `catchUpOn(name)` to last week while it can still count. It offers last week itself, so the open-previous-week card waits until it is put away.
    - **After-Shabbat check-in** (the open-previous-week card's first form): after a Shabbat whose parsha is unfinished, on the first reading day after it and on each one after that while the week can still count as late (`WeekStatus.inProgress`), until it is answered (`checkInAnsweredFor`). `checkInTitle` and `checkInBody`, then a TextButton `checkInNotThisTime`, a TextButton `checkInPick` and a Tonal `checkInFinished`. Choose aliyot opens one sheet, titled `checkInTitle`: each aliyah not yet read as a checked CheckboxListTile with its reference, the haftarah too where it is shown and not logged, the line `checkInReadOnShabbat` (or `checkInReadOn` once another day is chosen) beside a TextButton `changeDate` (`pickReadDate`), and a Filled `logReading` that logs every checked reading in one change. Logging, either way, answers the check-in and says so in a status message with Undo, which puts the week and the question back as they were.
-   - After the late window, a week that a double-up can still restore says so by the reader's parsha streak: `openWeekRestore(name, next, count)` with one, `openWeekRestoreZero` without.
+   - After the late window, a week that can still be finished with the next parsha says so by the reader's parsha streak: `openWeekRestore(name, next, count)` with one, `openWeekRestoreZero` without.
    - After the paused banner, the **divergence notice**: a NoticeBanner with `info_outline` and the action below. It appears in a week when Israel and the Diaspora read different portions, for a reader whose reading and days of Yom Tov follow different places:
      - a visitor to Israel (Israel's reading, two days of Yom Tov): `readingDivergence`, with a TextButton `readingDivergenceOpen` to the home portion's week (last week's in Israel);
      - an Israeli abroad (the Diaspora's reading, one day): `readingDivergenceAhead`, with no action.
@@ -1267,7 +1267,7 @@ In order:
 **Forum**
 - The description in bodyMedium onSurfaceVariant.
 - Parshat HaShavua first shows this week's card, as on Home, so that forum is never empty.
-- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines); 2 below it the excerpt of its first post, bodySmall onSurface, in its own direction and tagged with its language like the title, 2 lines (whole once the text is enlarged), and none where the reader may not see that post; then 4 below it (2 below the title where there is no excerpt), bodySmall onSurfaceVariant "Rivka · 3 hours ago · 4 replies · 12 thanks" with the name isolated, the thanks only once there are any. A pinned or locked thread has a 16 px icon (`push_pin_outlined`, `lock_outline`) and a labelSmall tag ("Pinned", "Locked") above its title, so that the row says so wherever it is met, not only under its group's heading; screen readers hear the tags first. No leading icon or chevron.
+- GroupHeader "Pinned" and "Recent", each over a PaperGroup of thread rows. A row: title titleMedium with `autoDirection` (in its own direction, from the page's start edge, 2 lines); 2 below it the excerpt of its first post, bodySmall onSurface, in its own direction and tagged with its language like the title, 2 lines (whole once the text is enlarged), and none where the reader may not see that post; then 4 below it (2 below the title where there is no excerpt), bodySmall onSurfaceVariant "Rivka · 3 hours ago · 4 replies · thanked 12 times" with the name isolated, the thanks only once there are any. A pinned or locked thread has a 16 px icon (`push_pin_outlined`, `lock_outline`) and a labelSmall tag ("Pinned", "Locked") above its title, so that the row says so wherever it is met, not only under its group's heading; screen readers hear the tags first. No leading icon or chevron.
 - The rows are built only as they scroll into view, each its share of its group's paper (`PaperGroupRow`), as a forum paged through may hold hundreds. Each but the last lays its paper a little past its foot, and each but the first leaves as much of its top bare, so that the row below, painted after it, never covers the foot of its focus ring.
 - Empty state per §6.22 with `emptyForum`, its action New discussion; in a locked forum, to a member who may not begin one there, `emptyLockedForum` ("No discussions here yet.") with no action.
 - FAB: extended "New discussion", primaryContainer / onPrimaryContainer, radius 12, elevation 2.
@@ -1438,17 +1438,17 @@ In order:
 | chagSameach | Chag Sameach | חג שמח |
 | shanaTova | Shanah Tovah | שנה טובה |
 | gmarChatimaTova | G’mar Chatimah Tovah | גמר חתימה טובה |
-| restDayBody | Reading from a printed Chumash today? You can log it after Shabbat. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת. |
-| restDayBodyChag | Reading from a printed Chumash today? You can log it after Yom Tov. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג. |
-| restDayBodyYomKippur | Reading from a printed Chumash today? You can log it after Yom Kippur. | קוראים היום מתוך חומש? אפשר לסמן זאת אחרי יום כיפור. |
+| restDayBody | Reading from a printed Chumash today? You can log it after Shabbat. | קוראים היום מתוך חומש? אפשר לרשום זאת אחרי השבת. |
+| restDayBodyChag | Reading from a printed Chumash today? You can log it after Yom Tov. | קוראים היום מתוך חומש? אפשר לרשום זאת אחרי החג. |
+| restDayBodyYomKippur | Reading from a printed Chumash today? You can log it after Yom Kippur. | קוראים היום מתוך חומש? אפשר לרשום זאת אחרי יום כיפור. |
 | openTheParsha | Open the parsha | לפרשה |
 | weekCompleteNote | Ready to hear it read on Shabbat. | הכול מוכן לקריאת התורה בשבת. |
 | discussTheParsha | Discuss the parsha | לדיון בפרשה |
 | checkInNotThisTime | Not this time | לא הפעם |
 | checkInReadOnShabbat | Read on Shabbat, {date} | תאריך הקריאה: שבת, {date} |
 | changeDate | Change date | שינוי התאריך |
-| logReading | Log reading | סימון הקריאה |
-| openWeekRestoreZero | Finish {name} and {next} by Shabbat and both count — one double-up per book. | אם מסיימים את {name} ואת {next} עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש. |
+| logReading | Log reading | רישום הקריאה (logging is לרשום throughout; סימון is kept for the mark-as-read actions) |
+| openWeekRestoreZero | Finish {name} and {next} by Shabbat and both count — you can do this once in each book of the Torah. | אם מסיימים את {name} ואת {next} עד שבת, שתיהן נחשבות — אפשר לעשות זאת פעם אחת בכל חומש. |
 | pausedTodayNote | Paused — read whenever you like; nothing counts against you. | בהשהיה — אפשר לקרוא מתי שנוח; שום דבר לא נחשב לחובתך. |
 | pauseEndedOn | Your pause ended on {date}, and nothing during it counts against you. | ההשהיה הסתיימה ב{date}, ושום דבר בזמנה לא נחשב לחובתך. |
 | graceUsedNote | plural: {weekdays} was covered by a grace day / {weekdays} were covered by grace days — your rhythm continues. You’ll earn one back when you finish {parsha} by Shabbat. | plural: {weekdays} כוסה ביום חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום החסד יחזור. / {weekdays} כוסו בימי חסד — הקצב נמשך. עם סיום פרשת {parsha} עד שבת, יום חסד אחד יחזור. (a no-break space inside יום חסד) |
@@ -1461,7 +1461,7 @@ In order:
 | recordTitle | Finished so far | הושלם עד כה |
 | demoTag | Demo | הדגמה |
 | emptyForum | No discussions yet — begin the first. | עדיין אין דיונים — אפשר לפתוח את הראשון. |
-| askedTag / authorTag | Asked / Author | שאלה / פתיחת הדיון (no slashed gender forms) |
+| askedTag / authorTag | Question / Author | שאלה / פתיחת הדיון (no slashed gender forms) |
 | todahAction | Todah | תודה |
 | replyToName | Reply to {name} | תגובה ל{name} |
 | sending | Sending… | בשליחה… |
@@ -1477,13 +1477,16 @@ In order:
   - Hebrew: "{count, plural, =1{עוד עלייה אחת להשלים — רגיל לגמרי באמצע השבוע.} other{עוד {count} עליות להשלים — רגיל לגמרי באמצע השבוע.}}"
 - On the other days the line is honest about the day (§9 Today, 4):
   - `todayBehindThursday`: "{count} aliyot to catch up — and there are still two days before Shabbat." / "עוד {count} עליות להשלים — ויש עוד יומיים עד שבת."
-  - `todayLastDayShabbat`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת."
-  - `todayLastDayYomTov`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג."
-  - `todayLastDayShabbatThenYomTov`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג."
-  - `todayLastDayYomTovThenShabbat`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת."
+  - `todayLastDayShabbat`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי השבת."
+  - `todayLastDayYomTov`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולרשום אחרי החג."
+  - `todayLastDayShabbatThenYomTov`: "{count} aliyot left to read before Shabbat — or finish Shabbat morning from a Chumash and log it after Yom Tov." / "עוד {count} עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי החג."
+  - `todayLastDayYomTovThenShabbat`: "{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat." / "עוד {count} עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולרשום אחרי השבת."
   - `todayLastDayYomKippur`: "{count} aliyot to catch up before Yom Kippur — and there is still time after it, too." / "עוד {count} עליות להשלים לפני יום כיפור — ויש זמן גם אחריו."
   - Each has a singular form ("One aliyah…" / "עוד עלייה אחת…").
-- `openWeekRestore` takes the reader's parsha streak: "Finish {name} and {next} by Shabbat and your {count}-week streak continues — one double-up per book." / "סיום {name} ו{next} עד שבת ימשיך את הרצף של {count} שבועות — השלמה כפולה אחת לכל חומש." (one week: "של שבוע אחד").
+- `openWeekRestore` takes the reader's parsha streak: "Finish {name} and {next} by Shabbat and your {count}-week streak continues — you can do this once in each book of the Torah." / "סיום {name} ו{next} עד שבת ימשיך את הרצף של {count} שבועות — אפשר לעשות זאת פעם אחת בכל חומש." (one week: "של שבוע אחד").
+- The parsha statuses name the rescue as the banner does: `weekRestored` "Finished with the next parsha" / "הושלם עם הפרשה הבאה", `weekOverdue` "Can still be finished with the next parsha" / "עוד אפשר להשלים עם הפרשה הבאה", and `weekMadeUp` "Made up later" / "הושלם מאוחר יותר".
+- `translationDisclaimer`, under the translation's switch: "Helps with the meaning; it doesn’t take the place of the Targum." / "עוזר להבין את הפשט, אך אינו בא במקום תרגום אונקלוס." The Hebrew names Onkelos, since תרגום is the word for both.
+- Thanks are counted in words that agree with one: `todahCount` "Thanked once" / "Thanked {count} times"; in a forum row's lowercase list, `threadThanksCount` "thanked 12 times". The shortcut `shortcutLogFromBook` is "Log a Chumash reading" / "רישום קריאה מתוך חומש", within the 25 characters a launcher shows.
 - `guideTitle`: "How it works" / "איך זה עובד".
 - `settingsAbout`: "About this app" / "אודות האפליקציה".
 

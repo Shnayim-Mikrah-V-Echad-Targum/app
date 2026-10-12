@@ -270,15 +270,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get gmarChatimaTova => 'גמר חתימה טובה';
 
   @override
-  String get restDayBody => 'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי השבת.';
+  String get restDayBody => 'קוראים היום מתוך חומש? אפשר לרשום זאת אחרי השבת.';
 
   @override
   String get restDayBodyChag =>
-      'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי החג.';
+      'קוראים היום מתוך חומש? אפשר לרשום זאת אחרי החג.';
 
   @override
   String get restDayBodyYomKippur =>
-      'קוראים היום מתוך חומש? אפשר לסמן זאת אחרי יום כיפור.';
+      'קוראים היום מתוך חומש? אפשר לרשום זאת אחרי יום כיפור.';
 
   @override
   String get openTheParsha => 'לפרשה';
@@ -397,8 +397,8 @@ class AppLocalizationsHe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'עוד $count עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.',
-      one: 'עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי השבת.',
+          'עוד $count עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי השבת.',
+      one: 'עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי השבת.',
     );
     return '$_temp0';
   }
@@ -409,8 +409,8 @@ class AppLocalizationsHe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'עוד $count עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג.',
-      one: 'עוד עלייה אחת לקרוא לפני החג — או לסיים בחג מתוך חומש ולסמן אחרי החג.',
+          'עוד $count עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולרשום אחרי החג.',
+      one: 'עוד עלייה אחת לקרוא לפני החג — או לסיים בחג מתוך חומש ולרשום אחרי החג.',
     );
     return '$_temp0';
   }
@@ -421,8 +421,8 @@ class AppLocalizationsHe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'עוד $count עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג.',
-      one: 'עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולסמן אחרי החג.',
+          'עוד $count עליות לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי החג.',
+      one: 'עוד עלייה אחת לקרוא לפני שבת — או לסיים בשבת בבוקר מתוך חומש ולרשום אחרי החג.',
     );
     return '$_temp0';
   }
@@ -433,8 +433,8 @@ class AppLocalizationsHe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'עוד $count עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת.',
-      one: 'עוד עלייה אחת לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולסמן אחרי השבת.',
+          'עוד $count עליות לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולרשום אחרי השבת.',
+      one: 'עוד עלייה אחת לקרוא לפני החג — או לסיים בחג או בשבת מתוך חומש ולרשום אחרי השבת.',
     );
     return '$_temp0';
   }
@@ -502,16 +502,16 @@ class AppLocalizationsHe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'סיום $name ו$next עד שבת ימשיך את הרצף של $count שבועות — השלמה כפולה אחת לכל חומש.',
+          'סיום $name ו$next עד שבת ימשיך את הרצף של $count שבועות — אפשר לעשות זאת פעם אחת בכל חומש.',
       one:
-          'סיום $name ו$next עד שבת ימשיך את הרצף של שבוע אחד — השלמה כפולה אחת לכל חומש.',
+          'סיום $name ו$next עד שבת ימשיך את הרצף של שבוע אחד — אפשר לעשות זאת פעם אחת בכל חומש.',
     );
     return '$_temp0';
   }
 
   @override
   String openWeekRestoreZero(String name, String next) {
-    return 'אם מסיימים את $name ואת $next עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש.';
+    return 'אם מסיימים את $name ואת $next עד שבת, שתיהן נחשבות — אפשר לעשות זאת פעם אחת בכל חומש.';
   }
 
   @override
@@ -555,7 +555,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get changeDate => 'שינוי התאריך';
 
   @override
-  String get logReading => 'סימון הקריאה';
+  String get logReading => 'רישום הקריאה';
 
   @override
   String pausedBanner(String date) {
@@ -647,7 +647,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dayKept => 'נקרא';
 
   @override
-  String get dayAhead => 'לפני התוכנית';
+  String get dayAhead => 'נקרא מראש';
 
   @override
   String get dayCaughtUp => 'הושלם למחרת';
@@ -694,10 +694,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get weekLate => 'אחרי שבת — עדיין נחשב';
 
   @override
-  String get weekRestored => 'הושלם עם הפרשה הבאה';
+  String get weekRestored => 'הושלם עם הפרשה הבאה';
 
   @override
-  String get weekMadeUp => 'הושלם מאוחר';
+  String get weekMadeUp => 'הושלם מאוחר יותר';
 
   @override
   String get weekMissed => 'לא הושלם';
@@ -706,7 +706,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get weekTransparent => 'לא נספר';
 
   @override
-  String get weekOverdue => 'עוד אפשר להשלים';
+  String get weekOverdue => 'עוד אפשר להשלים עם הפרשה הבאה';
 
   @override
   String get weekInProgress => 'בתהליך';
@@ -963,7 +963,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get translationDisclaimer =>
-      'התרגום הוא עזר ללימוד, ואינו בא במקום התרגום (אונקלוס).';
+      'עוזר להבין את הפשט, אך אינו בא במקום תרגום אונקלוס.';
 
   @override
   String get mikraLabel => 'מקרא';
@@ -1697,7 +1697,7 @@ class AppLocalizationsHe extends AppLocalizations {
       'במסך רחב, הטקסט המלא מציג את תרגום אונקלוס, או את התרגום לאנגלית, בטור לצד כל פסוק';
 
   @override
-  String get keepScreenOn => 'המסך יישאר דלוק בזמן קריאה';
+  String get keepScreenOn => 'השארת המסך דלוק בזמן קריאה';
 
   @override
   String get previewLabel => 'תצוגה מקדימה';
@@ -2867,7 +2867,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shortcutContinueReading => 'המשך קריאה';
 
   @override
-  String get shortcutLogFromBook => 'רישום קריאה מתוך ספר';
+  String get shortcutLogFromBook => 'רישום קריאה מתוך חומש';
 
   @override
   String get shortcutThisWeek => 'פרשת השבוע';
@@ -3083,7 +3083,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get onbStarterTodayDesc => 'התוכנית המלאה מהשבוע הבא';
 
   @override
-  String get onbRestore => 'כבר יש לי נתונים באפליקציה';
+  String get onbRestore => 'שחזור התקדמות קיימת';
 
   @override
   String get onbRestoreTitle => 'שחזור ההתקדמות';

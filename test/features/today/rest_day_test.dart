@@ -292,7 +292,7 @@ void main() {
       await openToday(tester, settings: hebrew, now: DateTime(2026, 9, 21, 11));
       expect(find.text('גמר חתימה טובה'), findsOneWidget);
       expect(find.text('חג שמח'), findsNothing);
-      expect(find.text('אפשר לסמן זאת אחרי יום כיפור.'), findsOneWidget);
+      expect(find.text('אפשר לרשום זאת אחרי יום כיפור.'), findsOneWidget);
     });
 
     testWidgets("rests from candle-lighting on Friday evening in the reader's city", (tester) async {
@@ -318,7 +318,7 @@ void main() {
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
       expect(find.text('שבת שלום'), findsOneWidget);
       expect(find.text('קוראים היום מתוך חומש?'), findsOneWidget);
-      expect(find.text('אפשר לסמן זאת אחרי השבת.'), findsOneWidget);
+      expect(find.text('אפשר לרשום זאת אחרי השבת.'), findsOneWidget);
       expect(find.text('לפרשה'), findsOneWidget);
     });
 
