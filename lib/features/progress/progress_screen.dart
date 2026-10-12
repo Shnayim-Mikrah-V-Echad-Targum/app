@@ -26,6 +26,7 @@ import '../../ui/widgets/sefer_choice_chip.dart';
 import '../../ui/widgets/year_bar.dart';
 import '../parsha/week_context.dart';
 import '../reader/sefer_complete_screen.dart';
+import '../settings/widgets/pause_setting.dart';
 import 'domain/milestones.dart';
 import 'domain/parsha_standing.dart';
 import 'domain/progress_models.dart';
@@ -547,16 +548,15 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
         if (mounted && node.context != null) node.requestFocus();
       });
 
-  void _end(LocalDate today) {
+  void _end() {
     final hadFocus = _endPause.hasFocus;
-    ref.read(progressProvider.notifier).endPause(today);
-    showStatus(context, context.l10n.pauseEnded);
+    resumePause(context, ref);
     if (hadFocus) _focusAfterFrame(_row);
   }
 
-  Future<void> _extendPause(LocalDate end) async {
+  Future<void> _extendPause(({LocalDate start, LocalDate end}) pause) async {
     final hadFocus = _extend.hasFocus;
-    await _showExtendPauseDialog(context, ref, end);
+    await showExtendPause(context, ref, pause);
     if (!mounted || !hadFocus) return;
     // The focus comes back to Extend from the dialog, unless Extend is gone.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -585,8 +585,10 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final today = ref.watch(todayProvider);
-    final pause = ref.watch(progressProvider.select((p) => p.pauses)).firstWhere((p) => p.contains(today));
-    final canExtend = _canExtend = _extensions(today, pause.end).isNotEmpty;
+    // Until the last day of the pauses that run on from today's, as Today
+    // and Settings say, and extended by the same rule as there.
+    final pause = ref.watch(progressProvider.select((p) => pauseCovering(p.pauses, today)))!;
+    final canExtend = _canExtend = pauseExtensions(pause).isNotEmpty;
     return PaperGroup(
       children: [
         Padding(
@@ -618,13 +620,13 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
                         FilledButton.tonal(
                           focusNode: _endPause,
                           style: AppButtons.tonal(context),
-                          onPressed: () => _end(today),
+                          onPressed: _end,
                           child: Text(l.endPause),
                         ),
                         if (canExtend)
                           TextButton(
                             focusNode: _extend,
-                            onPressed: () => _extendPause(pause.end),
+                            onPressed: () => _extendPause(pause),
                             child: Text(l.extendPause),
                           ),
                       ],
@@ -638,69 +640,6 @@ class _LifeHappensState extends ConsumerState<_LifeHappens> {
       ],
     );
   }
-}
-
-/// The days a pause ending on [end] may be extended by, as of [today]: a
-/// pause reaches no further than 30 days ahead, as a new one may.
-List<int> _extensions(LocalDate today, LocalDate end) =>
-    [for (final d in const [1, 3, 7, 14]) if (end.addDays(d) <= today.addDays(_maxPauseDays - 1)) d];
-
-/// The longest pause, counted from its first day.
-const _maxPauseDays = 30;
-
-Future<void> _showExtendPauseDialog(BuildContext context, WidgetRef ref, LocalDate end) async {
-  final l = context.l10n;
-  final names = Names(context);
-  final today = ref.read(todayProvider);
-  final choices = _extensions(today, end);
-  if (choices.isEmpty) return;
-  var days = choices.first;
-  final ok = await showAppDialog<bool>(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) {
-        final theme = Theme.of(context);
-        return AlertDialog(
-          title: Text(l.extendPauseTitle),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l.extendPauseBy, style: theme.textTheme.titleSmall),
-                const Gap(Space.sm),
-                Wrap(
-                  spacing: Space.sm,
-                  runSpacing: Space.sm,
-                  children: [
-                    for (final d in choices)
-                      SeferChoiceChip(
-                        label: Text(l.daysCount(d)),
-                        selected: days == d,
-                        onSelected: (_) => setState(() => days = d),
-                      ),
-                  ],
-                ),
-                const Gap(Space.lg),
-                Text(
-                  l.extendPauseUntil(names.practiceDate(end.addDays(days))),
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l.extendPause)),
-          ],
-        );
-      },
-    ),
-  );
-  if (ok != true) return;
-  final until = end.addDays(days);
-  ref.read(progressProvider.notifier).extendPause(today, until);
-  if (context.mounted) showStatus(context, l.pauseStarted(names.practiceDate(until)));
 }
 
 /// What the reader has finished so far, newest first (§9 Progress): only

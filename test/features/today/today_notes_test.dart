@@ -95,7 +95,7 @@ void main() {
         now: DateTime(2026, 10, 9, 11),
         progress: ProgressState(pauses: [Pause(_d(10, 8), _d(10, 18), id: 'travel')]),
       );
-      await tester.tap(find.text('Resume'));
+      await tester.tap(find.text('End pause'));
       await tester.pumpAndSettle();
       expect(find.text('Welcome back! Your place is saved.'), findsOneWidget, reason: 'the status message alone');
       expect(find.textContaining('Your pause ended'), findsNothing);

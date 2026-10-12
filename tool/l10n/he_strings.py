@@ -327,8 +327,6 @@ HE = {
   "pauseStarting": "החל מ־",
   "pauseManageTitle": "בהשהיה עד {date}",
   "pauseManageBody": "אפשר להאריך את ההשהיה או לסיים אותה עכשיו.",
-  "pauseExtendBy": "להאריך בעוד",
-  "pauseExtend": "הארכה",
   "pauseAtMost": "השהיה נמשכת 30 יום לכל היותר. אפשר לסיים אותה עכשיו.",
   "pauseStarted": "בהשהיה עד {date}.",
   "pauseEnded": "ברוכים השבים! המקום שלך שמור.",

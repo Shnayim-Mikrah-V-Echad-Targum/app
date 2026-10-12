@@ -606,7 +606,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get resume => 'Resume';
+  String get resume => 'End pause';
 
   @override
   String pauseEndedOn(String date) {
@@ -1276,17 +1276,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pauseManageBody => 'You can lengthen the pause, or resume now.';
-
-  @override
-  String get pauseExtendBy => 'Lengthen by';
-
-  @override
-  String get pauseExtend => 'Lengthen';
+  String get pauseManageBody => 'You can extend the pause, or end it now.';
 
   @override
   String get pauseAtMost =>
-      'A pause lasts 30 days at most. You can resume now.';
+      'A pause lasts 30 days at most. You can end it now.';
 
   @override
   String pauseStarted(String date) {

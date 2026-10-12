@@ -5,6 +5,7 @@ import '../../../app/providers.dart';
 import '../../../core/calendar/local_date.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
+import '../../../ui/theme/layout.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/sefer_choice_chip.dart';
 import '../../progress/domain/progress_models.dart';
@@ -44,60 +45,100 @@ void resumePause(BuildContext context, WidgetRef ref) {
   showStatus(context, context.l10n.pauseEnded);
 }
 
-/// While a pause lasts until [pause]'s end: lengthen it from the day after,
-/// as far as [kMaxPauseDays] in all, or resume now.
-Future<void> showPauseOptions(BuildContext context, WidgetRef ref, ({LocalDate start, LocalDate end}) pause) async {
+/// The days by which [pause] may be extended: as long as it then lasts
+/// [kMaxPauseDays] in all, counted from its first day, as a new pause may.
+/// (A pause covering today has a day already, so a month more never fits.)
+List<int> pauseExtensions(({LocalDate start, LocalDate end}) pause) => [
+      for (final d in const [1, 3, 7, 14])
+        if (pause.end.addDays(d).differenceInDays(pause.start) + 1 <= kMaxPauseDays) d,
+    ];
+
+/// Asks how many days longer [pause] (today's, run on as [pauseCovering]
+/// has it) should last, a week chosen if there is room for one and otherwise
+/// the most there is, and moves its end out to then. Progress's Extend and
+/// Settings' pause row both open it, with the same choices and change.
+///
+/// With [offerEnd], as Settings opens it, it is titled until when the pause
+/// lasts and offers End pause too, alone with Cancel once the pause has no
+/// room left; otherwise it opens only while there is room.
+Future<void> showExtendPause(
+  BuildContext context,
+  WidgetRef ref,
+  ({LocalDate start, LocalDate end}) pause, {
+  bool offerEnd = false,
+}) async {
   final l = context.l10n;
   final names = Names(context);
-  final length = pause.end.differenceInDays(pause.start) + 1;
-  final choices = [for (final d in const [1, 3, 7, 14, 30]) if (length + d <= kMaxPauseDays) d];
+  final choices = pauseExtensions(pause);
+  if (choices.isEmpty && !offerEnd) return;
   var days = choices.contains(7) ? 7 : choices.lastOrNull;
-  final action = await showAppDialog<String>(
+  final action = await showAppDialog<_PauseAction>(
     context: context,
     builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: Text(l.pauseManageTitle(names.practiceDate(pause.end))),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(choices.isEmpty ? l.pauseAtMost : l.pauseManageBody),
-              if (choices.isNotEmpty) ...[
-                const Gap(16),
-                Text(l.pauseExtendBy, style: Theme.of(context).textTheme.titleSmall),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final d in choices)
-                      SeferChoiceChip(
-                        label: Text(l.daysCount(d)),
-                        selected: days == d,
-                        onSelected: (_) => setState(() => days = d),
-                      ),
-                  ],
-                ),
+      builder: (context, setState) {
+        final theme = Theme.of(context);
+        final chosen = days;
+        return AlertDialog(
+          title: Text(offerEnd ? l.pauseManageTitle(names.practiceDate(pause.end)) : l.extendPauseTitle),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (offerEnd) ...[
+                  Text(chosen == null ? l.pauseAtMost : l.pauseManageBody),
+                  if (chosen != null) const Gap(Space.lg),
+                ],
+                if (chosen != null) ...[
+                  Text(l.extendPauseBy, style: theme.textTheme.titleSmall),
+                  const Gap(Space.sm),
+                  Wrap(
+                    spacing: Space.sm,
+                    runSpacing: Space.sm,
+                    children: [
+                      for (final d in choices)
+                        SeferChoiceChip(
+                          label: Text(l.daysCount(d)),
+                          selected: chosen == d,
+                          onSelected: (_) => setState(() => days = d),
+                        ),
+                    ],
+                  ),
+                  const Gap(Space.lg),
+                  // What the pause would become, said as what it will be.
+                  Text(
+                    l.extendPauseUntil(names.practiceDate(pause.end.addDays(chosen))),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, 'resume'), child: Text(l.resume)),
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
-          if (choices.isNotEmpty)
-            FilledButton(onPressed: () => Navigator.pop(context, 'extend'), child: Text(l.pauseExtend)),
-        ],
-      ),
+          actions: [
+            if (offerEnd)
+              TextButton(onPressed: () => Navigator.pop(context, _PauseAction.end), child: Text(l.resume)),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
+            if (chosen != null)
+              FilledButton(
+                onPressed: () => Navigator.pop(context, _PauseAction.extend),
+                child: Text(l.extendPause),
+              ),
+          ],
+        );
+      },
     ),
   );
   if (!context.mounted) return;
   switch (action) {
-    case 'resume':
+    case _PauseAction.end:
       resumePause(context, ref);
-    case 'extend' when days != null:
+    case _PauseAction.extend:
       final end = pause.end.addDays(days!);
-      // From the day after, so that the two run on as one.
-      ref.read(progressProvider.notifier).addPause(pause.end.addDays(1), end);
+      ref.read(progressProvider.notifier).extendPause(ref.read(todayProvider), end);
       showStatus(context, l.pauseStarted(names.practiceDate(end)));
+    case null:
+    // Cancelled.
   }
 }
+
+enum _PauseAction { end, extend }

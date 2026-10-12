@@ -399,6 +399,10 @@ const _screens = {
   'settings': '/settings',
   // The language, chosen in a sheet.
   'settings_language': '/settings',
+  // Paused, as on Today: the pause row's dialog, which extends the pause or
+  // ends it; and a pause of 30 days, which it can only end.
+  'settings_paused': '/settings',
+  'settings_paused_full': '/settings',
   's_reading': '/settings/reading',
   's_reading_changed': '/settings/reading',
   // Its end: the haftarah, special days and parsha names.
@@ -847,9 +851,14 @@ final _screenProgress = <String, ProgressState Function()>{
   // Nothing read yet: Rishon is the first aliyah ever finished.
   'reader_offer': () => ProgressState(weeks: {}),
   'reader_offer_city': () => ProgressState(weeks: {}),
-  'today_paused': () => ProgressState(
+  for (final screen in ['today_paused', 'settings_paused'])
+    screen: () => ProgressState(
+          weeks: _progress().weeks,
+          pauses: [Pause(LocalDate(2026, 10, 8), LocalDate(2026, 10, 18), id: 'travel')],
+        ),
+  'settings_paused_full': () => ProgressState(
         weeks: _progress().weeks,
-        pauses: [Pause(LocalDate(2026, 10, 8), LocalDate(2026, 10, 18), id: 'travel')],
+        pauses: [Pause(LocalDate(2026, 10, 1), LocalDate(2026, 10, 30), id: 'travel')],
       ),
   // Paused from Wednesday to the Friday after next.
   for (final screen in ['progress_paused', 'progress_extend'])
@@ -1667,6 +1676,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.translate_outlined));
   },
+  for (final screen in ['settings_paused', 'settings_paused_full'])
+    screen: (tester) => tester.tap(find.byIcon(Icons.pause_circle_outline)),
   's_data_paste': _tapInTurn([
     () => find.byIcon(Icons.content_paste_outlined),
     () => find.byType(FilledButton),
@@ -2074,6 +2085,9 @@ const _bigTextScreens = {
   'city',
   'today_paused',
   'today_late',
+  // The dialog that extends a pause, from Progress and from Settings.
+  'progress_extend',
+  'settings_paused',
   'welcome',
   'welcome_restore',
   'welcome_location',

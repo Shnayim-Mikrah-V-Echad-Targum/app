@@ -1285,12 +1285,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get pauseManageBody => 'אפשר להאריך את ההשהיה או לסיים אותה עכשיו.';
 
   @override
-  String get pauseExtendBy => 'להאריך בעוד';
-
-  @override
-  String get pauseExtend => 'הארכה';
-
-  @override
   String get pauseAtMost =>
       'השהיה נמשכת 30 יום לכל היותר. אפשר לסיים אותה עכשיו.';
 

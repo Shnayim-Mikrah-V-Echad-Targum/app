@@ -903,10 +903,10 @@ abstract class AppLocalizations {
   /// **'Paused until {date}. Nothing resets while paused.'**
   String pausedBanner(String date);
 
-  /// No description provided for @resume.
+  /// Under Today's paused banner, and in the dialog Settings' pause row opens while a pause lasts: ends the pause now.
   ///
   /// In en, this message translates to:
-  /// **'Resume'**
+  /// **'End pause'**
   String get resume;
 
   /// On Today, under pauseEnded, the first time it is opened after a pause has ended. date is the pause's last day.
@@ -1998,25 +1998,13 @@ abstract class AppLocalizations {
   /// No description provided for @pauseManageBody.
   ///
   /// In en, this message translates to:
-  /// **'You can lengthen the pause, or resume now.'**
+  /// **'You can extend the pause, or end it now.'**
   String get pauseManageBody;
-
-  /// Over the choices of how many days to lengthen a pause by (1 day, 3 days…).
-  ///
-  /// In en, this message translates to:
-  /// **'Lengthen by'**
-  String get pauseExtendBy;
-
-  /// The button that lengthens the pause under way.
-  ///
-  /// In en, this message translates to:
-  /// **'Lengthen'**
-  String get pauseExtend;
 
   /// In place of pauseManageBody when the pause under way already runs its 30 days.
   ///
   /// In en, this message translates to:
-  /// **'A pause lasts 30 days at most. You can resume now.'**
+  /// **'A pause lasts 30 days at most. You can end it now.'**
   String get pauseAtMost;
 
   /// No description provided for @pauseStarted.
@@ -5271,13 +5259,13 @@ abstract class AppLocalizations {
   /// **'End pause'**
   String get endPause;
 
-  /// On Progress while streaks are paused: makes the pause longer.
+  /// On Progress while streaks are paused, and in the dialog that extends a pause: makes the pause longer.
   ///
   /// In en, this message translates to:
   /// **'Extend'**
   String get extendPause;
 
-  /// No description provided for @extendPauseTitle.
+  /// The title of the dialog Progress's Extend opens. Settings' opens the same dialog titled pauseManageTitle.
   ///
   /// In en, this message translates to:
   /// **'Extend the pause'**

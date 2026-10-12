@@ -144,28 +144,26 @@ void main() {
       );
     });
 
-    testWidgets('while paused, the row offers to lengthen the pause, and says the later day', (tester) async {
+    testWidgets('while paused, the row offers to extend the pause, and says the later day', (tester) async {
       final c = await open(tester, '/settings');
       await tester.tap(find.text('Pause streaks'));
       await tester.pumpAndSettle();
       await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
       await tester.pumpAndSettle();
 
-      // Again: lengthened by a week from the day after, not a second pause
-      // laid over the first.
+      // Again: extended by a week, as Progress extends it, the pause itself
+      // running on rather than a second one laid after it.
       await tester.tap(find.text('Pause streaks'));
       await tester.pumpAndSettle();
       expect(find.descendant(of: find.byType(AlertDialog), matching: findWords('Paused until Sunday, October 18')),
           findsOneWidget);
-      expect(find.text('Lengthen by'), findsOneWidget);
+      expect(find.text('Extend by'), findsOneWidget);
+      expect(find.text('The pause will end on Sunday, October\u00A025.'), findsOneWidget);
       await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('7 days')));
-      await tester.tap(find.widgetWithText(FilledButton, 'Lengthen'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Extend'));
       await tester.pumpAndSettle();
       final pauses = c.read(progressProvider).pauses;
-      expect([for (final p in pauses) (p.start, p.end)], [
-        (LocalDate(2026, 10, 12), LocalDate(2026, 10, 18)),
-        (LocalDate(2026, 10, 19), LocalDate(2026, 10, 25)),
-      ]);
+      expect([for (final p in pauses) (p.start, p.end)], [(LocalDate(2026, 10, 12), LocalDate(2026, 10, 25))]);
       expect(find.text('Paused until Sunday, October\u00A025.'), findsOneWidget, reason: 'the status message');
       expect(
         find.descendant(
@@ -192,7 +190,7 @@ void main() {
       expect(findWords('Paused until Sunday, October 25. Nothing resets while paused.'), findsOneWidget);
     });
 
-    testWidgets('while paused, the row resumes, as Today does', (tester) async {
+    testWidgets('while paused, the row ends the pause, as Today does', (tester) async {
       final c = await open(
         tester,
         '/settings',
@@ -200,7 +198,7 @@ void main() {
       );
       await tester.tap(find.text('Pause streaks'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Resume'));
+      await tester.tap(find.widgetWithText(TextButton, 'End pause'));
       await tester.pumpAndSettle();
       expect(c.read(progressProvider).pauses.single.end, LocalDate(2026, 10, 11));
       expect(c.read(settingsProvider).pauseEndSeen, LocalDate(2026, 10, 11));
@@ -208,7 +206,7 @@ void main() {
       expect(find.text('Illness, travel, mourning, a new baby: nothing resets while paused'), findsOneWidget);
     });
 
-    testWidgets('a pause already 30 days long can only be resumed', (tester) async {
+    testWidgets('a pause already 30 days long can only be ended', (tester) async {
       await open(
         tester,
         '/settings',
@@ -216,9 +214,9 @@ void main() {
       );
       await tester.tap(find.text('Pause streaks'));
       await tester.pumpAndSettle();
-      expect(find.text('A pause lasts 30 days at most. You can resume now.'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Lengthen'), findsNothing);
-      expect(find.widgetWithText(TextButton, 'Resume'), findsOneWidget);
+      expect(find.text('A pause lasts 30 days at most. You can end it now.'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Extend'), findsNothing);
+      expect(find.widgetWithText(TextButton, 'End pause'), findsOneWidget);
     });
 
     for (final hebrew in [false, true]) {
