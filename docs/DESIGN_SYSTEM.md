@@ -1473,8 +1473,8 @@ In order:
 | checkInTitle | Shavua tov! Did you read {name} on Shabbat? | שבוע טוב! קראת את פרשת {name} בשבת? |
 | checkInFinished | I finished {name} on Shabbat | סיימתי את פרשת {name} בשבת |
 | checkInTitleShabbatYomTov | Shavua tov! Did you read {name} over Shabbat and Yom Tov? | שבוע טוב! קראת את פרשת {name} בשבת וביום טוב? |
-| checkInTitleVezot | Did you finish {name} over Yom Tov? | סיימת את {name} ביום טוב? |
-| checkInFinishedYomTov | I finished {name} on Yom Tov | סיימתי את {name} ביום טוב |
+| checkInTitleVezot | Did you finish {name} over Yom Tov? | סיימת את פרשת {name} ביום טוב? |
+| checkInFinishedYomTov | I finished {name} on Yom Tov | סיימתי את פרשת {name} ביום טוב |
 | checkInNotThisTime | Not this time | לא הפעם |
 | checkInReadOnShabbat | Read on Shabbat, {date} | תאריך הקריאה: שבת, {date} |
 | checkInReadOnYomTov | Read on Yom Tov, {date} | תאריך הקריאה: יום טוב, {date} |

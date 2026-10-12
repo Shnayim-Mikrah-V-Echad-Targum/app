@@ -578,12 +578,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String checkInTitleVezot(String name) {
-    return 'סיימת את $name ביום טוב?';
+    return 'סיימת את פרשת $name ביום טוב?';
   }
 
   @override
   String checkInTitleSimchatTorah(String name) {
-    return 'סיימת את $name בשמחת תורה?';
+    return 'סיימת את פרשת $name בשמחת תורה?';
   }
 
   @override
@@ -597,12 +597,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String checkInFinishedYomTov(String name) {
-    return 'סיימתי את $name ביום טוב';
+    return 'סיימתי את פרשת $name ביום טוב';
   }
 
   @override
   String checkInFinishedSimchatTorah(String name) {
-    return 'סיימתי את $name בשמחת תורה';
+    return 'סיימתי את פרשת $name בשמחת תורה';
   }
 
   @override

@@ -377,8 +377,8 @@ void main() {
         now: DateTime(2026, 10, 5, 9),
         progress: const ProgressState(),
       );
-      expect(find.text('סיימת את וזאת הברכה ביום טוב?'), findsOneWidget);
-      expect(find.text('סיימתי את וזאת הברכה ביום\u00A0טוב'), findsOneWidget);
+      expect(find.text('סיימת את פרשת וזאת הברכה ביום טוב?'), findsOneWidget);
+      expect(find.text('סיימתי את פרשת וזאת הברכה ביום\u00A0טוב'), findsOneWidget);
     });
 
     testWidgets('balances its button’s label where large text wraps it, leaving no word alone', (tester) async {
@@ -387,7 +387,7 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       for (final (settings, label) in [
         (joined, finished),
-        (joined.copyWith(language: AppLanguage.hebrew), 'סיימתי את וזאת הברכה ביום\u00A0טוב'),
+        (joined.copyWith(language: AppLanguage.hebrew), 'סיימתי את פרשת וזאת הברכה ביום\u00A0טוב'),
       ]) {
         tester.view.physicalSize = const Size(360, 800);
         tester.view.devicePixelRatio = 1;
@@ -447,8 +447,8 @@ void main() {
         now: DateTime(2026, 10, 5, 9),
         progress: const ProgressState(),
       );
-      expect(find.text('סיימת את וזאת הברכה בשמחת תורה?'), findsOneWidget);
-      expect(find.text('סיימתי את וזאת הברכה בשמחת תורה'), findsOneWidget);
+      expect(find.text('סיימת את פרשת וזאת הברכה בשמחת תורה?'), findsOneWidget);
+      expect(find.text('סיימתי את פרשת וזאת הברכה בשמחת תורה'), findsOneWidget);
     });
   });
 
