@@ -61,9 +61,10 @@ void main() {
       tester.getRect(find.ancestor(of: find.byType(WeekStrip), matching: find.byType(InfoCard)));
   Rect today(WidgetTester tester) =>
       tester.getRect(find.ancestor(of: find.text('Catching up'), matching: find.byType(InfoCard)));
-  // The masthead, rather than the rail's name.
-  Rect header(WidgetTester tester) =>
-      tester.getRect(find.descendant(of: find.byType(TodayScreen), matching: find.text('Shnayim Mikra')));
+  // The masthead, which on a desktop is the tab's name, the rail beside it
+  // carrying the app's.
+  Finder masthead(String text) => find.descendant(of: find.byType(TodayScreen), matching: find.text(text));
+  Rect header(WidgetTester tester) => tester.getRect(masthead(_en.navToday));
 
   group('on a desktop', () {
     // 1366 wide: a pane of 1109 beside the rail, and in it a container of
@@ -189,7 +190,42 @@ void main() {
       expect(hero(tester).width, ContentWidth.list - 2 * 32);
       expect(hero(tester).center.dx, _rail + 1109 / 2);
     });
+
+    for (final (hebrew, rest) in [(false, false), (true, false), (false, true), (true, true)]) {
+      final when = '${rest ? ' on the day of rest' : ''}${hebrew ? ', in Hebrew' : ''}';
+      testWidgets("titles the page with the tab's name, not the app's, which the rail beside it carries$when",
+          (tester) async {
+        final handle = tester.ensureSemantics();
+        final l = hebrew ? _he : _en;
+        await openToday(
+          tester,
+          size,
+          settings: hebrew ? _settings.copyWith(language: AppLanguage.hebrew) : null,
+          now: rest ? _shabbat : null,
+        );
+        expect(masthead(l.navToday), findsOneWidget);
+        expect(masthead(l.appTitle), findsNothing);
+        expect(find.text(l.appTitle), findsOneWidget, reason: "the rail's wordmark");
+        expect(tester.getSemantics(masthead(l.navToday)), isSemantics(isHeader: false));
+        handle.dispose();
+      });
+    }
   });
+
+  // A phone's or a tablet's rail is the mark alone, and so is a window's
+  // under 1200: the masthead names the app.
+  for (final (width, hebrew) in [(412.0, false), (412.0, true), (800.0, false), (1199.0, false)]) {
+    testWidgets("at ${width.round()} dp${hebrew ? ', in Hebrew' : ''}, the masthead names the app", (tester) async {
+      final l = hebrew ? _he : _en;
+      await openToday(
+        tester,
+        Size(width, 1200),
+        settings: hebrew ? _settings.copyWith(language: AppLanguage.hebrew) : null,
+      );
+      expect(masthead(l.appTitle), findsOneWidget);
+      expect(masthead(l.navToday), findsNothing);
+    });
+  }
 
   // The narrowest desktop: a pane of 943 beside the rail, and the week's
   // seven days still in one row; and every text twice its size.

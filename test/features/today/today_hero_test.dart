@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,9 +15,9 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_clock.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/ui/widgets/ledger.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show TitlePageFrame;
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show SeferDivider, TitlePageFrame;
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart' show ParshaRings;
+import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart' show ParshaRings, RingsWithLegend;
 
 import '../../helpers.dart';
 
@@ -107,6 +109,36 @@ void main() {
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew), progress: _bereshit());
       expect(find.text('המשך · שלישי, תרגום'), findsOneWidget);
     });
+
+    // A phone, a tablet beside the compact rail, and a desktop's column,
+    // in English and in Hebrew.
+    for (final (width, hebrew) in [(412.0, false), (412.0, true), (800.0, false), (1366.0, false), (1366.0, true)]) {
+      final phone = width < 600;
+      final what = phone ? "spans a phone's frame" : 'stands centred under the rings, as wide as they are or 360';
+      testWidgets('$what at ${width.round()} dp${hebrew ? ', in Hebrew' : ''}', (tester) async {
+        await openToday(
+          tester,
+          size: Size(width, 1200),
+          settings: hebrew ? _settings.copyWith(language: AppLanguage.hebrew) : null,
+          progress: _bereshit(),
+        );
+        final button = tester.getRect(find.bySubtype<FilledButton>());
+        // The frame's content, which the button may span, and the rings'
+        // group, centred in it.
+        Rect column(Finder inside) => tester.getRect(find.ancestor(of: inside, matching: find.byType(Column)).first);
+        final content = column(find.byType(SeferDivider));
+        final rings = column(find.byType(RingsWithLegend));
+        expect(button.center.dx, moreOrLessEquals(content.center.dx));
+        if (phone) {
+          expect(content.width, lessThan(360));
+          expect(button.width, content.width);
+        } else {
+          expect(rings.center.dx, moreOrLessEquals(content.center.dx));
+          expect(button.width, moreOrLessEquals(math.max(360, rings.width)));
+          expect(button.width, lessThan(content.width));
+        }
+      });
+    }
 
     testWidgets('gives way, once the parsha is read, to saying so', (tester) async {
       final c = await openToday(

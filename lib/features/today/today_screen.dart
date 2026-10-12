@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -245,8 +247,10 @@ class _Columns extends StatelessWidget {
   }
 }
 
-/// The running head and the masthead: today's date in both calendars, the
-/// app's name, and the guide a tap away.
+/// The running head and the masthead: today's date in both calendars; the
+/// app's name, or from [Breakpoints.expanded], where the extended rail
+/// beside the page already carries it, the tab's, as every other tab titles
+/// its page; and the guide a tap away.
 class _TodayHeader extends StatelessWidget {
   const _TodayHeader({required this.today, required this.civil});
 
@@ -283,9 +287,12 @@ class _TodayHeader extends StatelessWidget {
                 ),
               ),
               const Gap(2),
-              // The app's name, not a heading: the parsha's name below is
-              // the page's heading.
-              WholeWords(l.appTitle, style: theme.textTheme.headlineMedium, textAlign: TextAlign.start),
+              // Not a heading: the parsha's name below is the page's heading.
+              WholeWords(
+                MediaQuery.sizeOf(context).width >= Breakpoints.expanded ? l.navToday : l.appTitle,
+                style: theme.textTheme.headlineMedium,
+                textAlign: TextAlign.start,
+              ),
             ],
           ),
         ),
@@ -389,6 +396,10 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
   /// frame has since drawn itself, by week id. In memory only.
   static final _seenOpen = <String>{};
   static final _framed = <String>{};
+
+  /// How wide the button may grow in a wide frame, where the rings' group
+  /// is narrower than this (§9 Today, 3).
+  static const _buttonWidth = 360.0;
 
   static void forgetCompletions() {
     _seenOpen.clear();
@@ -576,13 +587,23 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
           // On the fast, the rings and the way to the aliyot alone.
           if (!quietFast) ...[
             const Gap(Space.md),
-            FilledButton.icon(
-              // The hero's 52, and room around a label that large text wraps.
-              style: AppButtons.roomy(context, (24, 12, 6))
-                  .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
-              icon: const Icon(Icons.menu_book),
-              label: Text(_continueLabel(context), textAlign: TextAlign.center),
-              onPressed: () => context.push('/read/${ctx.id}/${ctx.nextAliyah}'),
+            // Full width on a phone; in a wider frame, centred under the
+            // rings as wide as their group, or _buttonWidth if that is wider.
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: math.max(_buttonWidth, _HeroRings.widthFor(context, ctx, thirdLabel)),
+                ),
+                child: FilledButton.icon(
+                  // The hero's 52, as wide as it may be, and room around a
+                  // label that large text wraps.
+                  style: AppButtons.roomy(context, (24, 12, 6))
+                      .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
+                  icon: const Icon(Icons.menu_book),
+                  label: Text(_continueLabel(context), textAlign: TextAlign.center),
+                  onPressed: () => context.push('/read/${ctx.id}/${ctx.nextAliyah}'),
+                ),
+              ),
             ),
           ],
         ],
@@ -694,18 +715,20 @@ class _HeroRings extends StatelessWidget {
   final WeekContext ctx;
   final String? thirdLabel;
 
+  /// As wide as the rings and their legend side by side can use (§6.11),
+  /// so that they sit in the middle of a wide frame.
+  static double widthFor(BuildContext context, WeekContext ctx, String? thirdLabel) =>
+      ParshaRings.hero +
+      RingsWithLegend.gap +
+      RingLegend.naturalWidth(context, ctx.progress, thirdLabel: thirdLabel) +
+      RingsWithLegend.maxSlack;
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    // As wide as the rings and their legend side by side can use (§6.11),
-    // so that they sit in the middle of a wide frame.
-    final width = ParshaRings.hero +
-        RingsWithLegend.gap +
-        RingLegend.naturalWidth(context, ctx.progress, thirdLabel: thirdLabel) +
-        RingsWithLegend.maxSlack;
     return Center(
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: width),
+        constraints: BoxConstraints(maxWidth: widthFor(context, ctx, thirdLabel)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
