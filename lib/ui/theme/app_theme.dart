@@ -572,6 +572,11 @@ abstract final class AppTheme {
         elevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
         insetPadding: const EdgeInsets.all(16),
+        // The share of a message's width its action and Close may take
+        // before they go under it (Material's is 0.25): enough for the
+        // Hebrew Undo, "ביטול פעולה", and Close beside a message on a 320 dp
+        // phone. StatusMessageArea lowers it as the text grows.
+        actionOverflowThreshold: 0.45,
       ),
       tooltipTheme: TooltipThemeData(
         waitDuration: const Duration(milliseconds: 400),

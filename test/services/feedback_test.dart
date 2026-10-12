@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/feedback.dart';
+import 'package:shnayim_mikra/ui/theme/app_theme.dart';
+
+import '../helpers.dart';
 
 void main() {
   /// Shows a status message where announcements are taken, and returns
@@ -103,6 +109,85 @@ void main() {
       expect(find.text('Low vision applied'), findsNothing);
     });
 
+    group('that stays', () {
+      final navigator = GlobalKey<NavigatorState>();
+
+      /// A second page, over the first, whose button shows a held message,
+      /// with [outlivesPage] as given, and closes the page if [thenClose].
+      Future<void> pumpPages(WidgetTester tester, {bool outlivesPage = false, bool thenClose = false}) async {
+        await tester.pumpWidget(MaterialApp(navigatorKey: navigator, home: const Scaffold(body: Text('First'))));
+        unawaited(navigator.currentState!.push(MaterialPageRoute<void>(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () {
+                showStatus(
+                  context,
+                  'Low vision applied',
+                  action: SnackBarAction(label: 'Undo', onPressed: () {}),
+                  outlivesPage: outlivesPage,
+                );
+                if (thenClose) Navigator.pop(context);
+              },
+              child: const Text('Low vision'),
+            ),
+          ),
+        )));
+        await tester.pumpAndSettle();
+        await pressByKeyboard(tester);
+      }
+
+      testWidgets('leaves as its page is closed', (tester) async {
+        await pumpPages(tester);
+        expect(find.text('Low vision applied'), findsOneWidget);
+        navigator.currentState!.pop();
+        await tester.pumpAndSettle();
+        expect(find.text('First'), findsOneWidget);
+        expect(find.text('Low vision applied'), findsNothing);
+      });
+
+      testWidgets('leaves as another page covers its own', (tester) async {
+        await pumpPages(tester);
+        unawaited(navigator.currentState!.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('Next')))));
+        await tester.pumpAndSettle();
+        expect(find.text('Next'), findsOneWidget);
+        expect(find.text('Low vision applied'), findsNothing);
+      });
+
+      testWidgets('leaves as its page is hidden, with its tab', (tester) async {
+        final hidden = ValueNotifier(false);
+        addTearDown(hidden.dispose);
+        await tester.pumpWidget(MaterialApp(
+          home: ValueListenableBuilder(
+            valueListenable: hidden,
+            // As the router hides a tab other than the one shown.
+            builder: (context, off, child) => TickerMode(enabled: !off, child: child!),
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () =>
+                      showStatus(context, 'Low vision applied', action: SnackBarAction(label: 'Undo', onPressed: () {})),
+                  child: const Text('Low vision'),
+                ),
+              ),
+            ),
+          ),
+        ));
+        await pressByKeyboard(tester);
+        expect(find.text('Low vision applied'), findsOneWidget);
+        hidden.value = true;
+        await tester.pumpAndSettle();
+        expect(find.text('Low vision applied'), findsNothing);
+      });
+
+      testWidgets('outlives a page that shows it as it closes, if it says so', (tester) async {
+        await pumpPages(tester, outlivesPage: true, thenClose: true);
+        expect(find.text('First'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 10));
+        await tester.pumpAndSettle();
+        expect(find.text('Low vision applied'), findsOneWidget, reason: 'on the page beneath, held');
+      });
+    });
+
     testWidgets('that stays gives way to the next message, rather than holding it in a queue', (tester) async {
       var shown = 0;
       await tester.pumpWidget(MaterialApp(
@@ -125,6 +210,55 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Message 1'), findsNothing);
       expect(find.text('Message 2'), findsOneWidget);
+    });
+  });
+
+  group('a held message in Hebrew, its Undo and Close', () {
+    setUpAll(loadBundledFonts);
+
+    Future<void> show(WidgetTester tester, {required double width, double textScale = 1}) async {
+      tester.view.physicalSize = Size(width, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tester.platformDispatcher.textScaleFactorTestValue = textScale;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.build(mode: AppThemeMode.light, uiFont: UiFont.standard, hebrewUi: true, reduceMotion: false),
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: StatusMessageArea.window(child: child!),
+        ),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showStatus(
+                context,
+                'הוחל: ראייה ירודה',
+                action: SnackBarAction(label: 'ביטול פעולה', onPressed: () {}),
+              ),
+              child: const Text('ראייה ירודה'),
+            ),
+          ),
+        ),
+      ));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Close'), findsOneWidget, reason: 'held, for the keyboard');
+    }
+
+    double middle(WidgetTester tester, Finder f) => tester.getCenter(f).dy;
+
+    testWidgets('stay on its line on a 320 dp phone', (tester) async {
+      await show(tester, width: 320);
+      final line = middle(tester, find.text('הוחל: ראייה ירודה'));
+      expect(middle(tester, find.text('ביטול פעולה')), moreOrLessEquals(line, epsilon: 2));
+      expect(middle(tester, find.byTooltip('Close')), moreOrLessEquals(line, epsilon: 2));
+    });
+
+    testWidgets('go under it at twice the text size, where they would leave it no room', (tester) async {
+      await show(tester, width: 412, textScale: 2);
+      expect(middle(tester, find.text('ביטול פעולה')), greaterThan(tester.getBottomLeft(find.text('הוחל: ראייה ירודה')).dy));
     });
   });
 

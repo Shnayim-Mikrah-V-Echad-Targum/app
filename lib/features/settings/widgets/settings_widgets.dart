@@ -669,8 +669,8 @@ class _PreviewHeader extends SliverPersistentHeaderDelegate {
 /// A setting that is on or off, as a row of paper (§6.3): its title and
 /// description, never cut short, and at the end a switch that the whole row
 /// toggles. It reads as one item, a switch; with no [onChanged] it shows
-/// what it would set, disabled. It is a [PaperRow], so that its group rules
-/// it off as one.
+/// what it would set, disabled, its subtitle saying why (§9). It is a
+/// [PaperRow], so that its group rules it off as one.
 class SwitchRow extends PaperRow {
   SwitchRow({
     super.key,
@@ -686,55 +686,34 @@ class SwitchRow extends PaperRow {
           mergeTrailing: true,
           // The row takes the focus and rings itself; the switch shows the
           // state, and toggles it when tapped itself.
-          trailing: _Undimmed(
-            child: ExcludeFocus(
-              child: Switch(value: value, onChanged: onChanged, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
-            ),
+          trailing: ExcludeFocus(
+            child: Switch(value: value, onChanged: onChanged, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
           ),
         );
 
   @override
   Widget build(BuildContext context) {
     if (onTap != null) return super.build(context);
-    // Disabled: its words and icon dimmed as Material dims a disabled
+    // Disabled: its title and icon dimmed as Material dims a disabled
     // control's (38%), so that the row doesn't look as if a tap would do
-    // something. The switch shows it in its own way, undimmed again.
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return _UndimmedTheme(
-      theme: theme,
-      child: Theme(
-        data: theme.copyWith(
-          colorScheme: scheme.copyWith(
-            onSurface: scheme.onSurface.withValues(alpha: 0.38),
-            onSurfaceVariant: scheme.onSurfaceVariant.withValues(alpha: 0.38),
-          ),
-        ),
-        child: Builder(builder: super.build),
-      ),
+    // something; the switch shows it in its own way. Its subtitle is not:
+    // it says why the switch won't move (the device has the setting on),
+    // for readers who may well have low vision.
+    final scheme = Theme.of(context).colorScheme;
+    return PaperRow(
+      icon: icon,
+      iconColor: (iconColor ?? scheme.onSurfaceVariant).withValues(alpha: 0.38),
+      title: title,
+      breakTitleAtHyphens: breakTitleAtHyphens,
+      titleStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.38)).merge(titleStyle),
+      subtitle: subtitle,
+      subtitleMaxLines: subtitleMaxLines,
+      subtitleLocale: subtitleLocale,
+      subtitleStyle: subtitleStyle,
+      detail: detail,
+      trailing: trailing,
+      mergeTrailing: mergeTrailing,
+      chevron: chevron,
     );
-  }
-}
-
-/// The theme a disabled [SwitchRow] had before it dimmed its words.
-class _UndimmedTheme extends InheritedWidget {
-  const _UndimmedTheme({required this.theme, required super.child});
-
-  final ThemeData theme;
-
-  @override
-  bool updateShouldNotify(_UndimmedTheme old) => old.theme != theme;
-}
-
-/// [child] in the theme of the [SwitchRow] around it before it dimmed.
-class _Undimmed extends StatelessWidget {
-  const _Undimmed({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.dependOnInheritedWidgetOfExactType<_UndimmedTheme>()?.theme;
-    return theme == null ? child : Theme(data: theme, child: child);
   }
 }

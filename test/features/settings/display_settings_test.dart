@@ -201,6 +201,25 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets("Bold text is shown disabled as the device's turns on with the app's own already on", (tester) async {
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await open(tester, settings: const AppSettings(onboardingComplete: true, boldText: true));
+    final row = find.widgetWithText(SwitchRow, 'Bold text');
+    Switch toggle() => tester.widget<Switch>(find.descendant(of: row, matching: find.byType(Switch)));
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    expect(toggle().value, isTrue);
+    expect(toggle().onChanged, isNotNull);
+
+    // The text is bold already, so the app's MediaQuery doesn't change:
+    // the switch hears of the device's alone.
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(boldText: true);
+    await tester.pumpAndSettle();
+    expect(toggle().value, isTrue);
+    expect(toggle().onChanged, isNull);
+    expect(find.descendant(of: row, matching: find.text('On in your device’s settings')), findsOneWidget);
+  });
+
   testWidgets('line width is a segmented control, and line spacing starts at 1.6', (tester) async {
     final handle = tester.ensureSemantics();
     final c = await open(tester, settings: const AppSettings(onboardingComplete: true, lineHeight: 1.7));

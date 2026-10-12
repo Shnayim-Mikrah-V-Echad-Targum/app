@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,13 +11,20 @@ import '../ui/theme/motion.dart';
 
 /// Status messages that are both visible and announced to screen readers
 /// (WCAG 4.1.3), shown for 4 s, or 8 s when they offer an [action]
-/// (docs/DESIGN_SYSTEM.md §6.19). A message with an action stays until
-/// dismissed, with a Close button, for screen-reader users and wherever the
-/// keyboard is in use, as on a desktop (WCAG 2.2.1): a desktop doesn't tell
-/// the app that a screen reader is on, and the keyboard takes a while to
-/// reach the action. On touch it leaves after 8 s. Each page shows it as
-/// its [StatusMessageArea] sets it, wherever it was shown from.
-void showStatus(BuildContext context, String message, {SnackBarAction? action}) {
+/// (docs/DESIGN_SYSTEM.md §6.19). Each page shows it as its
+/// [StatusMessageArea] sets it, wherever it was shown from.
+///
+/// A message with an action is held, with a Close button, for screen-reader
+/// users and while focus is shown for the keyboard (WCAG 2.2.1): on a
+/// desktop, or in a desktop's browser, until a touch, and on a phone or
+/// tablet once a key is pressed. A desktop doesn't tell the app that a
+/// screen reader is on, and the keyboard takes a while to reach the action.
+/// Otherwise it leaves after 8 s. A held message leaves as the page that
+/// showed it is left (popped, covered by another page, or hidden with its
+/// tab): its action, an Undo say, is about what was done there, and could
+/// undo more by the time it was pressed elsewhere. Unless it
+/// [outlivesPage], as one shown by a page as it closes, about what it did.
+void showStatus(BuildContext context, String message, {SnackBarAction? action, bool outlivesPage = false}) {
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger != null) {
     final reduced = Motion.of(context).reduced;
@@ -28,9 +36,15 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
     final persist = action != null &&
         (MediaQuery.accessibleNavigationOf(context) ||
             FocusManager.instance.highlightMode == FocusHighlightMode.traditional);
+    // The page that showed it. A sheet or a dialog closing as it shows it
+    // has it held, as before, rather than gone at once.
+    final page = ModalRoute.of(context);
+    final content = Text(message);
     messenger.showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: persist && !outlivesPage && page is PageRoute
+            ? _LeavesWithPage(page: page, shown: TickerMode.getValuesNotifier(context), child: content)
+            : content,
         action: action,
         duration: Duration(seconds: action == null ? 4 : 8),
         persist: persist,
@@ -48,6 +62,65 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action}) 
   if (!kIsWeb && defaultTargetPlatform != TargetPlatform.iOS && MediaQuery.supportsAnnounceOf(context)) {
     SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
   }
+}
+
+/// A held message's content, which takes the message away once [page] is
+/// no longer on show: popped, covered by another page, or hidden with its
+/// tab ([shown], its tickers, stopped). Every page's Scaffold shows the
+/// message, and each copy watches the page that showed it.
+class _LeavesWithPage extends StatefulWidget {
+  const _LeavesWithPage({required this.page, required this.shown, required this.child});
+
+  final ModalRoute<Object?> page;
+  final ValueListenable<TickerModeData> shown;
+  final Widget child;
+
+  @override
+  State<_LeavesWithPage> createState() => _LeavesWithPageState();
+}
+
+class _LeavesWithPageState extends State<_LeavesWithPage> {
+  bool _leaving = false;
+
+  bool get _onShow {
+    final page = widget.page;
+    return (page.animation?.isForwardOrCompleted ?? false) &&
+        (page.secondaryAnimation?.isDismissed ?? true) &&
+        widget.shown.value.enabled;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.page.animation?.addStatusListener(_statusChanged);
+    widget.page.secondaryAnimation?.addStatusListener(_statusChanged);
+    widget.shown.addListener(_check);
+    // Shown on a page that has been left already, as a copy on the page
+    // beneath one being popped is.
+    _check();
+  }
+
+  @override
+  void dispose() {
+    widget.page.animation?.removeStatusListener(_statusChanged);
+    widget.page.secondaryAnimation?.removeStatusListener(_statusChanged);
+    widget.shown.removeListener(_check);
+    super.dispose();
+  }
+
+  void _statusChanged(AnimationStatus _) => _check();
+
+  void _check() {
+    if (_leaving || _onShow) return;
+    _leaving = true;
+    // After the frame: the tickers' notice comes as the page rebuilds.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// The widest a status message is set from [Breakpoints.medium]: a sheet's
@@ -109,18 +182,26 @@ class StatusMessageArea extends StatelessWidget {
     // Set from the app's own theme, rather than from what an area around
     // this one (the window's, around the pane's) made of it.
     final base = context.dependOnInheritedWidgetOfExactType<_StatusMessageBase>()?.theme ?? theme.snackBarTheme;
-    final messages = statusMessageTheme(
+    var messages = statusMessageTheme(
       base,
       windowWidth: MediaQuery.sizeOf(context).width,
       width: width,
       padding: MediaQuery.paddingOf(context),
     );
+    // Material weighs the action against the message's width at its
+    // unscaled size; enlarged, it takes that much more of the line.
+    final threshold = messages.actionOverflowThreshold;
+    final scale = MediaQuery.textScalerOf(context).scale(_actionFontSize) / _actionFontSize;
+    if (threshold != null && scale > 1) messages = messages.copyWith(actionOverflowThreshold: threshold / scale);
     return _StatusMessageBase(
       theme: base,
       child: Theme(data: messages == theme.snackBarTheme ? theme : theme.copyWith(snackBarTheme: messages), child: child),
     );
   }
 }
+
+/// labelLarge's size, an action's, for the text scale it is set at.
+const _actionFontSize = 14.0;
 
 /// The app's own theme for status messages, under a [StatusMessageArea].
 class _StatusMessageBase extends InheritedWidget {

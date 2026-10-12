@@ -103,6 +103,18 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     });
   }
 
+  /// Whether the device asks for less motion: Android's Remove animations
+  /// and the like come as MediaQuery's disableAnimations, but iOS's Reduce
+  /// Motion comes only as an accessibility feature of its own, which
+  /// MediaQuery leaves out.
+  static bool _deviceReducesMotion(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context) || View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
+
+  // MediaQuery, which rebuilds the app as the other features change, has no
+  // field for iOS's Reduce Motion, so its change alone wouldn't.
+  @override
+  void didChangeAccessibilityFeatures() => setState(() {});
+
   // The text theme follows the platform's language when the app does, and
   // so do the shortcuts' titles.
   @override
@@ -160,7 +172,8 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     if (OptionalFonts.isLoaded(settings.uiFont.family)) _uiFont = settings.uiFont;
 
     final systemHighContrast = MediaQuery.highContrastOf(context);
-    final reduceMotion = settings.reduceMotion || MediaQuery.disableAnimationsOf(context);
+    final deviceReducesMotion = _deviceReducesMotion(context);
+    final reduceMotion = settings.reduceMotion || deviceReducesMotion;
 
     final hebrewUi = _hebrewUi(settings.language);
 
@@ -227,7 +240,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
         final mq = MediaQuery.of(context);
         // The device's own, for the switches that show the app's.
         return DeviceAccessibility(
-          disableAnimations: mq.disableAnimations,
+          disableAnimations: deviceReducesMotion,
           boldText: mq.boldText,
           child: MediaQuery(
             data: mq.copyWith(

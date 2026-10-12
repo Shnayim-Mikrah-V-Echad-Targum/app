@@ -877,6 +877,30 @@ AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPrefe
 bool presetActive(AppSettings s, DisplayPreset p) =>
     [false, true].any((dark) => _sameDisplay(applyPreset(s, p, darkPreferred: dark), s));
 
+/// [now] with the display settings a preset may set (those [presetActive]
+/// compares) put back from [after] to [before], as undoing a preset that
+/// turned [before] into [after]: each that still holds what the preset left
+/// in it. Those changed since, and every other setting, stay as they are
+/// now, so that an Undo pressed later takes back the preset alone.
+AppSettings undoDisplayChange(AppSettings now, {required AppSettings before, required AppSettings after}) {
+  T back<T>(T Function(AppSettings s) field) => field(now) == field(after) ? field(before) : field(now);
+  return now.copyWith(
+    theme: back((s) => s.theme),
+    readingScale: back((s) => s.readingScale),
+    lineHeight: back((s) => s.lineHeight),
+    wordSpacing: back((s) => s.wordSpacing),
+    letterSpacing: back((s) => s.letterSpacing),
+    showNikud: back((s) => s.showNikud),
+    showTeamim: back((s) => s.showTeamim),
+    justify: back((s) => s.justify),
+    lineWidth: back((s) => s.lineWidth),
+    scriptureFont: back((s) => s.scriptureFont),
+    uiFont: back((s) => s.uiFont),
+    boldText: back((s) => s.boldText),
+    focusMode: back((s) => s.focusMode),
+  );
+}
+
 /// Whether [a] and [b] show the text alike: every display setting a preset
 /// may set. Applying a preset changes only its own, so comparing them all
 /// compares just those.

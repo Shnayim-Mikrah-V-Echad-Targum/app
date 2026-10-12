@@ -39,15 +39,23 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
     }
   }
 
-  /// Applies [preset], saying so with a way to undo it: back to the settings
-  /// exactly as they were.
+  /// Applies [preset], saying so with a way to undo it: back to the display
+  /// settings as they were, but for any changed since.
   static void _apply(BuildContext context, WidgetRef ref, DisplayPreset preset, String message) {
     final l = context.l10n;
     final notifier = ref.read(settingsProvider.notifier);
     final before = ref.read(settingsProvider);
     final dark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
     notifier.update((s) => applyPreset(s, preset, darkPreferred: dark));
-    showStatus(context, message, action: SnackBarAction(label: l.actionUndo, onPressed: () => notifier.replace(before)));
+    final after = ref.read(settingsProvider);
+    showStatus(
+      context,
+      message,
+      action: SnackBarAction(
+        label: l.actionUndo,
+        onPressed: () => notifier.update((s) => undoDisplayChange(s, before: before, after: after)),
+      ),
+    );
   }
 
   @override

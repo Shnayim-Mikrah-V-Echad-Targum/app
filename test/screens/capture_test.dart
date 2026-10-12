@@ -1921,6 +1921,8 @@ const _narrowScreens = {
   'reader_listen_full',
 };
 const _bigTextScreens = {
+  // A held message with Undo and Close, at twice the text size.
+  's_a11y_undo_keys',
   // A focus ring on a menu item and on tiles, at twice the text size.
   'focus_menu_item',
   'focus_sheet_tile',
