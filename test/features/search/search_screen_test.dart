@@ -207,7 +207,8 @@ void main() {
     await untilIndexed(tester);
     await search(tester, 'טלפון');
     expect(find.text('No verse matches “\u2068טלפון\u2069”.'), findsOneWidget);
-    expect(find.textContaining('leaves out ו\u00a0and\u00a0י'), findsOneWidget);
+    // It has tried the Torah's spellings already, so it asks for no more.
+    expect(find.text('Try fewer words, or another word or spelling.'), findsOneWidget);
 
     await search(tester, 'smartphone');
     expect(find.textContaining('“hath” for “has”'), findsOneWidget);
@@ -366,7 +367,7 @@ void main() {
     expect(find.text('Exodus 4:14'), findsOneWidget);
     expect(HebrewText.consonantsOnly(snippets(tester).first), contains('אהרן'));
     // Nothing more to suggest.
-    expect(find.textContaining('leaves out ו'), findsNothing);
+    expect(find.text('Try fewer words, or another word or spelling.'), findsNothing);
     // Above the count, at the page's start.
     expect(tester.getTopLeft(find.text(note)).dy, lessThan(tester.getTopLeft(find.textContaining('The first 200')).dy));
     expect(tester.getTopLeft(find.text(note)).dx, tester.getTopLeft(find.textContaining('The first 200')).dx);
@@ -377,6 +378,27 @@ void main() {
     // Found as typed, it says nothing of spelling.
     await search(tester, 'אהרן');
     expect(find.textContaining('as the Torah spells it'), findsNothing);
+  });
+
+  // Hearing which spelling is shown is the point of the note, so an English
+  // voice hands both to a Hebrew one, as with the verses.
+  testWidgets('tags the two spellings in its note as Hebrew for screen readers', (tester) async {
+    final handle = tester.ensureSemantics();
+    await open(tester);
+    await untilIndexed(tester);
+    await search(tester, 'אהרון');
+    const note = 'No verse has “\u2068אהרון\u2069”. Showing “\u2068אהרן\u2069”, as the Torah spells it.';
+    final label = tester.getSemantics(find.text(note)).getSemanticsData().attributedLabel;
+    // Read with the count under it.
+    expect(label.string, startsWith(note));
+    expect(
+      [
+        for (final a in label.attributes)
+          if (a is LocaleStringAttribute) (label.string.substring(a.range.start, a.range.end), a.locale),
+      ],
+      [('אהרון', const Locale('he')), ('אהרן', const Locale('he'))],
+    );
+    handle.dispose();
   });
 
   // Genesis 15:2, אֲדֹנָי יֱהֹוִה: the hiriq under the Name says it is read

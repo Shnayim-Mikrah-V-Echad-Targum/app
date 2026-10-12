@@ -2308,9 +2308,9 @@
       }
     }
   },
-  "searchNoResultsHint": "Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.",
+  "searchNoResultsHint": "Try fewer words, or another word or spelling.",
   "@searchNoResultsHint": {
-    "description": "Under searchNoResults, after a search in Hebrew. The Torah's spelling is often defective (חסר): אהרן rather than אהרון."
+    "description": "Under searchNoResults, after a search in Hebrew. By then the app has tried the Torah's spellings itself, with fewer ו and י, and found nothing either (see searchSpellingFallback), so this suggests only what it can't try."
   },
   "searchNoResultsHintEnglish": "Try fewer words, or the older English of the 1917 translation, such as “hath” for “has”.",
   "@searchNoResultsHintEnglish": {

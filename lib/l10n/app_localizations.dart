@@ -4695,10 +4695,10 @@ abstract class AppLocalizations {
   /// **'No verse matches “{query}”.'**
   String searchNoResults(String query);
 
-  /// Under searchNoResults, after a search in Hebrew. The Torah's spelling is often defective (חסר): אהרן rather than אהרון.
+  /// Under searchNoResults, after a search in Hebrew. By then the app has tried the Torah's spellings itself, with fewer ו and י, and found nothing either (see searchSpellingFallback), so this suggests only what it can't try.
   ///
   /// In en, this message translates to:
-  /// **'Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.'**
+  /// **'Try fewer words, or another word or spelling.'**
   String get searchNoResultsHint;
 
   /// Under searchNoResults, after a search in English. The translation is the JPS 1917.

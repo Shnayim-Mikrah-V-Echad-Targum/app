@@ -115,7 +115,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   /// Tells a screen reader how many verses were found, once typing pauses,
-  /// and for what spelling, if not the one typed.
+  /// and for what spelling, if not the one typed. An announcement is plain
+  /// text, read in the interface's voice; the note on the page, tagged with
+  /// its Hebrew, reads the two spellings in a Hebrew one.
   void _announceSoon() {
     _announcement?.cancel();
     _announcement = Timer(const Duration(milliseconds: 800), () {
@@ -309,6 +311,25 @@ String? _spellingNote(AppLocalizations l, SearchResults results) => switch (resu
       null => null,
     };
 
+/// [note] ([_spellingNote]) for a screen reader, with what was typed and the
+/// Torah's spelling tagged as Hebrew, as the verses are (DESIGN.md §8), so
+/// that an English voice hands both to a Hebrew one: hearing which spelling
+/// is shown is the point of the note.
+AttributedString _spellingNoteLabel(String note, SearchResults results) {
+  final attributes = <StringAttribute>[];
+  var from = 0;
+  for (final words in [results.query.trim(), results.spelling!.trim()]) {
+    final at = note.indexOf('\u2068$words\u2069', from);
+    if (at < 0) continue;
+    attributes.add(LocaleStringAttribute(
+      range: TextRange(start: at + 1, end: at + 1 + words.length),
+      locale: const Locale('he'),
+    ));
+    from = at + words.length + 2;
+  }
+  return AttributedString(note, attributes: attributes);
+}
+
 /// The verses found, under the parsha of each.
 class _Results extends ConsumerWidget {
   const _Results({required this.results, required this.onOpen});
@@ -348,7 +369,14 @@ class _Results extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (note != null) ...[
-                    Text(note, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    Semantics(
+                      attributedLabel: _spellingNoteLabel(note, results),
+                      excludeSemantics: true,
+                      child: Text(
+                        note,
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
                     const Gap(8),
                   ],
                   Text(summary, style: muted),

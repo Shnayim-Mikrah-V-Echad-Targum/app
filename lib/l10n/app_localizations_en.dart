@@ -2867,7 +2867,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchNoResultsHint =>
-      'Try fewer words, or the Torah’s own spelling, which often leaves out ו and י.';
+      'Try fewer words, or another word or spelling.';
 
   @override
   String get searchNoResultsHintEnglish =>

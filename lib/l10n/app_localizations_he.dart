@@ -2861,7 +2861,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get searchNoResultsHint =>
-      'כדאי לנסות פחות מילים, או את הכתיב שבתורה, שלעיתים קרובות אין בו ו׳ וי׳.';
+      'כדאי לנסות פחות מילים, מילה אחרת או כתיב אחר.';
 
   @override
   String get searchNoResultsHintEnglish =>
