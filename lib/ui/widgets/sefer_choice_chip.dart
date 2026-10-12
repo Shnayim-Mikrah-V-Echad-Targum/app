@@ -40,6 +40,7 @@ class SeferChoiceChip extends StatelessWidget {
     // for. So the label carries that padding itself, and is set as wide as
     // it was measured. The chip comes out the same size either way.
     final wraps = avatar == null && padding != null && labelPadding != null;
+    final sides = wraps ? padding + labelPadding : EdgeInsets.zero;
     return Theme(
       data: theme.copyWith(focusColor: Colors.transparent, canvasColor: Colors.transparent),
       child: ChoiceChip(
@@ -48,10 +49,7 @@ class SeferChoiceChip extends StatelessWidget {
         labelPadding: wraps ? EdgeInsets.only(top: labelPadding.top, bottom: labelPadding.bottom) : null,
         label: wraps
             ? Padding(
-                padding: EdgeInsets.only(
-                  left: padding.left + labelPadding.left,
-                  right: padding.right + labelPadding.right,
-                ),
+                padding: EdgeInsets.only(left: sides.left, right: sides.right),
                 child: Builder(builder: (context) {
                   final ambient = DefaultTextStyle.of(context);
                   return DefaultTextStyle(
