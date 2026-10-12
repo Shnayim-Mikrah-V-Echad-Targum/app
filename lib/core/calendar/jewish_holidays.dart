@@ -1,6 +1,11 @@
 import 'hebrew_date.dart';
 import 'local_date.dart';
 
+/// The Yom Tov whose eve a day is ([JewishHolidays.erevYomTov]), as the app
+/// names it: Rosh Hashanah and Yom Kippur by name, the festivals as Yom Tov.
+/// Its [name] is the select of the strings that name it.
+enum ErevYomTov { roshHashanah, yomKippur, other }
+
 /// Festival rules needed by the app: which days are Yom Tov (no device use,
 /// so they never count against a streak and never get notifications).
 abstract final class JewishHolidays {
@@ -29,6 +34,17 @@ abstract final class JewishHolidays {
 
   /// Yom Kippur.
   static bool isYomKippur(HebrewDate date) => date.month == HebrewMonth.tishrei && date.day == 10;
+
+  /// Which Yom Tov begins this evening when [date], a reading day, is the
+  /// eve of one that is not Shabbat (Yom Kippur among them), by [israel]'s
+  /// days of Yom Tov; null when tomorrow is Shabbat or no Yom Tov.
+  static ErevYomTov? erevYomTov(LocalDate date, {required bool israel}) {
+    final tomorrow = date.addDays(1);
+    final hebrew = HebrewDate.fromLocalDate(tomorrow);
+    if (tomorrow.isShabbat || !isYomTov(hebrew, israel: israel)) return null;
+    if (isYomKippur(hebrew)) return ErevYomTov.yomKippur;
+    return isRoshHashanah(hebrew) ? ErevYomTov.roshHashanah : ErevYomTov.other;
+  }
 
   /// Shabbat or Yom Tov: a day on which the app expects no activity.
   static bool isRestDay(LocalDate date, {required bool israel}) =>

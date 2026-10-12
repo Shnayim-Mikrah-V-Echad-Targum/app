@@ -451,30 +451,41 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     final vezot = week.portion.isVezotHaberakhah;
     final friday = today.weekday == _friday;
     final complete = ctx.progress.isComplete;
+    // The eve of a Yom Tov that is not Shabbat, by the reader's days of Yom
+    // Tov: reading stops this evening, however far off Shabbat is.
+    final erevYomTov = JewishHolidays.erevYomTov(today, israel: settings.oneDayYomTov);
 
     final quietFast = widget.quietFast;
+    // Watched only on an eve, which it turns at midday.
+    final pastMidday = (friday || erevYomTov != null) && ref.watch(pastMiddayProvider);
     final eyebrow = vezot
         ? l.simchatTorahEyebrow
         : quietFast
             ? l.tishaBavTitle
-            : friday && ref.watch(pastMiddayProvider)
+            : friday && pastMidday
                 ? l.erevShabbat
-                : l.parshatHashavua;
+                : erevYomTov != null && pastMidday
+                    ? l.erevYomTov(erevYomTov.name)
+                    : l.parshatHashavua;
     final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
     final range = portion.range;
     final daysLeft = week.occasion.differenceInDays(today);
     // The days until the portion is read in synagogue: on Shabbat, or for
     // Vezot HaBerachah on Simchat Torah, which is seldom a Shabbat. On
-    // Friday, that Shabbat begins this evening.
+    // Friday, that Shabbat begins this evening, and on the eve of Yom Tov,
+    // that Yom Tov does: in the long week of Vezot HaBerachah too (Erev
+    // Sukkot, say), unless the Yom Tov is Simchat Torah itself.
     final countdown = daysLeft < 0 || complete
         ? null
-        : vezot
+        : vezot && (erevYomTov == null || daysLeft <= 1)
             ? l.simchatTorahInDays(daysLeft)
             : friday
                 ? l.shabbatBeginsTonight
-                : week.occasion.isShabbat
-                    ? l.shabbatInDays(daysLeft)
-                    : null;
+                : erevYomTov != null
+                    ? l.yomTovBeginsTonight(erevYomTov.name)
+                    : week.occasion.isShabbat
+                        ? l.shabbatInDays(daysLeft)
+                        : null;
     // On the eve of Shabbat or Yom Tov, with a city chosen, when candles are
     // lit there tonight instead.
     final candles = ref.watch(candleLightingTodayProvider);

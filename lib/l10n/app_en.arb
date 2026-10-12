@@ -191,6 +191,15 @@
   "@erevShabbat": {
     "description": "The eyebrow over the parsha's name in the Today hero on Friday afternoon."
   },
+  "erevYomTov": "{holiday, select, roshHashanah{Erev Rosh Hashanah} yomKippur{Erev Yom Kippur} other{Erev Yom Tov}}",
+  "@erevYomTov": {
+    "description": "The eyebrow over the parsha's name in the Today hero on the afternoon before a Yom Tov that is not Shabbat, as erevShabbat on Friday. holiday is roshHashanah, yomKippur or other.",
+    "placeholders": {
+      "holiday": {
+        "type": "String"
+      }
+    }
+  },
   "shabbatShalom": "Shabbat Shalom",
   "@shabbatShalom": {
     "description": "The greeting on Today's title page on Shabbat."
@@ -230,6 +239,15 @@
   "shabbatBeginsTonight": "Shabbat begins this evening",
   "@shabbatBeginsTonight": {
     "description": "In the Today hero on Friday, in place of the countdown to Shabbat (shabbatInDays)."
+  },
+  "yomTovBeginsTonight": "{holiday, select, roshHashanah{Rosh Hashanah begins this evening} yomKippur{Yom Kippur begins this evening} other{Yom Tov begins this evening}}",
+  "@yomTovBeginsTonight": {
+    "description": "In the Today hero on the day before a Yom Tov that is not Shabbat, in place of the countdown to Shabbat (shabbatInDays), as shabbatBeginsTonight on Friday. holiday is roshHashanah, yomKippur or other.",
+    "placeholders": {
+      "holiday": {
+        "type": "String"
+      }
+    }
   },
   "allAliyot": "All aliyot",
   "@allAliyot": {

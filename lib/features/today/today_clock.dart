@@ -10,8 +10,9 @@ import '../../core/calendar/local_date.dart';
 import '../../core/calendar/zmanim.dart';
 
 /// Whether the reading day has reached midday on the device's clock: from
-/// then on a Friday is Erev Shabbat proper. It turns at noon, and is checked
-/// again whenever the app resumes, as the reading day is.
+/// then on a Friday is Erev Shabbat proper, as the eve of Yom Tov is Erev
+/// Yom Tov. It turns at noon, and is checked again whenever the app resumes,
+/// as the reading day is.
 class MiddayController extends Notifier<bool> {
   Timer? _timer;
   AppLifecycleListener? _lifecycle;

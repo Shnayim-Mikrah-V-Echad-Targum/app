@@ -153,6 +153,8 @@ const _screens = {
   'today_thursday': '/today',
   'today_erev_yomtov': '/today',
   'today_erev_shabbat_yomtov': '/today',
+  // Erev Rosh Hashanah 5789 from midday, which heads the title page.
+  'today_erev_yomtov_afternoon': '/today',
   // Logging from a Chumash: the aliyot due, each checked.
   'today_book': '/today',
   // Shabbat Bereshit, and the first day of Shavuot 5789 (a Sunday, before a
@@ -649,7 +651,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_simchat_torah': (s) =>
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true, joinDate: LocalDate(2026, 9, 20)),
   'today_three_weeks': (s) => s.copyWith(joinDate: LocalDate(2027, 7, 18)),
-  'today_erev_yomtov': (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
+  for (final screen in ['today_erev_yomtov', 'today_erev_yomtov_afternoon'])
+    screen: (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
   'today_erev_shabbat_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_yom_kippur': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
@@ -751,6 +754,7 @@ final _screenNow = <String, DateTime>{
   'today_thursday': DateTime(2026, 10, 15, 11),
   // Wednesday 20 September 2028, before Rosh Hashanah and Haazinu's Shabbat.
   'today_erev_yomtov': DateTime(2028, 9, 20, 11),
+  'today_erev_yomtov_afternoon': DateTime(2028, 9, 20, 15),
   // Friday 18 May 2029, with Shavuot on Sunday and Monday.
   'today_erev_shabbat_yomtov': DateTime(2029, 5, 18, 11),
   'today_shabbat': DateTime(2026, 10, 10, 11),
@@ -793,7 +797,7 @@ final _screenProgress = <String, ProgressState Function()>{
   'today_thursday': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
       }),
-  'today_erev_yomtov': () => ProgressState(weeks: {}),
+  for (final screen in ['today_erev_yomtov', 'today_erev_yomtov_afternoon']) screen: () => ProgressState(weeks: {}),
   'today_erev_shabbat_yomtov': () => ProgressState(weeks: {}),
   for (final screen in ['today_checkin_vezot', 'today_checkin_vezot_date']) screen: () => ProgressState(weeks: {}),
   // Rishon of Bamidbar read on its Sunday.

@@ -258,6 +258,16 @@ class AppLocalizationsHe extends AppLocalizations {
   String get erevShabbat => 'ערב שבת';
 
   @override
+  String erevYomTov(String holiday) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'roshHashanah': 'ערב ראש השנה',
+      'yomKippur': 'ערב יום כיפור',
+      'other': 'ערב חג',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String get shabbatShalom => 'שבת שלום';
 
   @override
@@ -288,6 +298,16 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get shabbatBeginsTonight => 'שבת נכנסת הערב';
+
+  @override
+  String yomTovBeginsTonight(String holiday) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'roshHashanah': 'ראש השנה נכנס הערב',
+      'yomKippur': 'יום כיפור נכנס הערב',
+      'other': 'החג נכנס הערב',
+    });
+    return '$_temp0';
+  }
 
   @override
   String get allAliyot => 'כל העליות';

@@ -37,6 +37,25 @@ void main() {
     expect(JewishHolidays.lastRestDay(LocalDate(2026, 10, 10), israel: false), LocalDate(2026, 10, 10));
   });
 
+  test('the eve of a Yom Tov on a weekday names it, by the days kept', () {
+    ErevYomTov? eve(LocalDate date, {bool israel = false}) => JewishHolidays.erevYomTov(date, israel: israel);
+    expect(eve(LocalDate(2028, 9, 20)), ErevYomTov.roshHashanah);
+    expect(eve(LocalDate(2025, 10, 1)), ErevYomTov.yomKippur);
+    // Erev Shavuot 5787, a Thursday, and the eve of the seventh day of
+    // Pesach 5787, a Tuesday.
+    for (final israel in [false, true]) {
+      expect(eve(LocalDate(2027, 6, 10), israel: israel), ErevYomTov.other);
+      expect(eve(LocalDate(2027, 4, 27), israel: israel), ErevYomTov.other);
+    }
+    // In Israel the seventh day of Pesach is the last.
+    expect(eve(LocalDate(2027, 4, 28), israel: true), isNull);
+    // Before a Yom Tov on Shabbat, as Yom Kippur 5789, it is Erev Shabbat;
+    // and so it is before Shavuot 5789 on Sunday.
+    expect(eve(LocalDate(2028, 9, 29)), isNull);
+    expect(eve(LocalDate(2029, 5, 18)), isNull);
+    expect(eve(LocalDate(2026, 10, 14)), isNull);
+  });
+
   test('Chanukah days', () {
     expect(JewishHolidays.chanukahDay(const HebrewDate(5787, HebrewMonth.kislev, 25)), 1);
     expect(JewishHolidays.chanukahDay(const HebrewDate(5787, HebrewMonth.tevet, 2)), 8);

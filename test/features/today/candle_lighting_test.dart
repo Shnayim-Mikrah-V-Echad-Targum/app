@@ -63,15 +63,16 @@ void main() {
     expect(find.text('הדלקת נרות \u206617:47\u2069'), findsOneWidget);
   });
 
-  testWidgets('on Erev Yom Tov, in place of the countdown to Shabbat', (tester) async {
+  testWidgets('on Erev Yom Tov, in place of saying that it begins this evening', (tester) async {
     // Wednesday 20 September 2028, Erev Rosh Hashanah 5789, in the week of
     // Haazinu, which is read on Shabbat the 23rd.
     final erev = DateTime(2028, 9, 20, 10);
     await openToday(tester, _settings.copyWith(city: null), erev);
-    expect(find.text('Shabbat in 3 days'), findsOneWidget);
+    expect(find.text('Rosh Hashanah begins this evening'), findsOneWidget);
 
     await openToday(tester, _settings, erev);
     expect(find.textContaining('Candle-lighting'), findsOneWidget);
+    expect(find.text('Rosh Hashanah begins this evening'), findsNothing);
     expect(find.text('Shabbat in 3 days'), findsNothing);
   });
 

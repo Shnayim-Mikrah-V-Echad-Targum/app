@@ -507,6 +507,12 @@ abstract class AppLocalizations {
   /// **'Erev Shabbat'**
   String get erevShabbat;
 
+  /// The eyebrow over the parsha's name in the Today hero on the afternoon before a Yom Tov that is not Shabbat, as erevShabbat on Friday. holiday is roshHashanah, yomKippur or other.
+  ///
+  /// In en, this message translates to:
+  /// **'{holiday, select, roshHashanah{Erev Rosh Hashanah} yomKippur{Erev Yom Kippur} other{Erev Yom Tov}}'**
+  String erevYomTov(String holiday);
+
   /// The greeting on Today's title page on Shabbat.
   ///
   /// In en, this message translates to:
@@ -566,6 +572,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shabbat begins this evening'**
   String get shabbatBeginsTonight;
+
+  /// In the Today hero on the day before a Yom Tov that is not Shabbat, in place of the countdown to Shabbat (shabbatInDays), as shabbatBeginsTonight on Friday. holiday is roshHashanah, yomKippur or other.
+  ///
+  /// In en, this message translates to:
+  /// **'{holiday, select, roshHashanah{Rosh Hashanah begins this evening} yomKippur{Yom Kippur begins this evening} other{Yom Tov begins this evening}}'**
+  String yomTovBeginsTonight(String holiday);
 
   /// A link under the rings in the Today hero to the week's page, which lists its seven aliyot.
   ///
