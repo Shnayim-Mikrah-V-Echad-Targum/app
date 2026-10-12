@@ -525,12 +525,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String checkInTitleShabbatYomTov(String name) {
+    return 'Shavua tov! Did you read $name over Shabbat and Yom Tov?';
+  }
+
+  @override
+  String checkInTitleVezot(String name) {
+    return 'Did you finish $name over Yom Tov?';
+  }
+
+  @override
   String get checkInBody =>
       'Log what you read from a printed Chumash — it counts just the same.';
 
   @override
   String checkInFinished(String name) {
     return 'I finished $name on Shabbat';
+  }
+
+  @override
+  String checkInFinishedYomTov(String name) {
+    return 'I finished $name on Yom Tov';
   }
 
   @override
@@ -542,6 +557,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String checkInReadOnShabbat(String date) {
     return 'Read on Shabbat, $date';
+  }
+
+  @override
+  String checkInReadOnYomTov(String date) {
+    return 'Read on Yom Tov, $date';
   }
 
   @override
@@ -749,6 +769,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whenOnShabbat => 'On Shabbat';
+
+  @override
+  String get whenOnYomTov => 'On Yom Tov';
 
   @override
   String get whenPickDate => 'Choose a date';
@@ -1981,6 +2004,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifCheckInBody => 'Did you read on Shabbat? Tap to log it.';
+
+  @override
+  String get notifCheckInBodyShabbatYomTov =>
+      'Did you read on Shabbat and Yom Tov? Tap to log it.';
+
+  @override
+  String get notifCheckInBodyVezot =>
+      'Did you read it on Yom Tov? Tap to log it.';
 
   @override
   String get notifPausedTitle => 'Reminders paused';

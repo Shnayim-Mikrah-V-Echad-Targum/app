@@ -380,7 +380,10 @@ ReminderCopy reminderCopy(
     case ReminderKind.erevShabbat:
       return (title: l.notifFridayTitle(parsha), body: l.notifFridayBody);
     case ReminderKind.checkIn:
-      return (title: l.notifCheckInTitle, body: l.notifCheckInBody);
+      // Vezot HaBerachah is read on Simchat Torah, a Yom Tov: by name, with
+      // no "Shavua tov".
+      if (r.plan.portion.isVezotHaberakhah) return (title: parsha, body: l.notifCheckInBodyVezot);
+      return (title: l.notifCheckInTitle, body: r.afterYomTov ? l.notifCheckInBodyShabbatYomTov : l.notifCheckInBody);
     case ReminderKind.paused:
       return (title: l.notifPausedTitle, body: l.notifPausedBody(parsha));
   }

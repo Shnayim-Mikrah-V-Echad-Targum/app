@@ -513,6 +513,46 @@ void main() {
       expect(on(reminders, shabbat.addDays(1)), isNull);
       final r = on(reminders, monday)!;
       expect((r.kind, r.minutes), (ReminderKind.checkIn, havdalah(newYork, monday) + kCheckInAfterHavdalah));
+      expect(r.afterYomTov, isTrue, reason: 'it asks about both');
+      // Without a city, on Tuesday morning, about both still.
+      final morning = on(plan(shabbat.addDays(-6), const ReminderPrefs(checkIn: true)), monday.addDays(1))!;
+      expect((morning.kind, morning.afterYomTov), (ReminderKind.checkIn, true));
+    });
+
+    group('Vezot HaBerachah, read on Simchat Torah: Sunday 4 October 2026 outside Israel', () {
+      final simchatTorah = LocalDate(2026, 10, 4);
+      final monday = simchatTorah.addDays(1);
+
+      test('the check-in comes after Havdalah on Sunday night', () {
+        final reminders = plan(LocalDate(2026, 9, 30), const ReminderPrefs(checkIn: true), city: newYork);
+        final r = on(reminders, simchatTorah)!;
+        expect((r.kind, r.minutes), (ReminderKind.checkIn, havdalah(newYork, simchatTorah) + kCheckInAfterHavdalah));
+        expect(r.plan.portion.isVezotHaberakhah, isTrue);
+        expect(r.afterYomTov, isFalse, reason: 'Simchat Torah ends the days of rest itself');
+        expect(on(reminders, monday), isNull, reason: 'one check-in, not two');
+      });
+
+      test('or, without a city, on Monday morning, over the day’s own reminder', () {
+        final reminders = plan(LocalDate(2026, 9, 30), all);
+        expect(on(reminders, simchatTorah), isNull);
+        final r = on(reminders, monday)!;
+        expect((r.kind, r.minutes), (ReminderKind.checkIn, const ReminderPrefs().checkInMinutes));
+        expect(r.plan.portion.isVezotHaberakhah, isTrue);
+      });
+
+      test('not once it is finished', () {
+        final week = planner.schedule.weekFor(simchatTorah);
+        final id = weekIdFor(week.portion, week.occasion);
+        final reminders = planReminders(
+          prefs: const ReminderPrefs(checkIn: true),
+          planner: planner,
+          progressOf: (w) => w == id ? WeekProgress(weekId: id).withAll(LocalDate(2026, 10, 2)) : empty(w),
+          now: DateTime(2026, 9, 30, 8),
+          today: LocalDate(2026, 9, 30),
+          days: 8,
+        );
+        expect(reminders.where((r) => r.kind == ReminderKind.checkIn && r.plan.weekId == id), isEmpty);
+      });
     });
 
     // Greetings are not given on Tisha B'Av (Shulchan Aruch OC 554:20), and

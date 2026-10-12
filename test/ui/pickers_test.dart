@@ -7,6 +7,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/reminder_settings_screen.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/read_date_sheet.dart';
 
 /// The date and time pickers, which the app builds itself to show them its
@@ -66,7 +67,7 @@ void main() {
       Object? result = 'none';
       await pumpLauncher(
         tester,
-        (context) => pickReadDate(context, week: week, today: today),
+        (context) => pickReadDate(context, week: week, today: today, oneDayYomTov: false),
         reduceMotion: reduceMotion,
         onResult: (r) => result = r,
       );
@@ -105,6 +106,81 @@ void main() {
       expect(result, 9 * 60 + 45);
     });
   }
+
+  group('the days of rest offered', () {
+    // The week of Vezot HaBerachah 5787 outside Israel, from Shabbat Shuva to
+    // Simchat Torah on Sunday 4 October; today is the Monday after.
+    final vezot = ReadingWeek(
+      portion: const PortionId(kVezotHaberakhah),
+      occasion: LocalDate(2026, 10, 4),
+      start: LocalDate(2026, 9, 20),
+      plan: const [],
+      israel: false,
+    );
+    final monday = LocalDate(2026, 10, 5);
+
+    Future<List<(String, String?)>> rows(WidgetTester tester, {required bool oneDayYomTov}) async {
+      await pumpLauncher(
+        tester,
+        (context) => pickReadDate(context, week: vezot, today: monday, oneDayYomTov: oneDayYomTov),
+        reduceMotion: false,
+        onResult: (_) {},
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      return [
+        for (final tile in tester.widgetList<ListTile>(find.byType(ListTile)))
+          ((tile.title! as Text).data!, (tile.subtitle as DotLine?)?.parts.single),
+      ];
+    }
+
+    testWidgets('are each Yom Tov of the week, latest first, Yom Kippur not among them', (tester) async {
+      expect(await rows(tester, oneDayYomTov: false), [
+        ('Today', 'Monday, October 5'),
+        // Yesterday is named as the Yom Tov it was.
+        ('On Yom Tov', 'Sunday, October 4'),
+        ('On Yom Tov', 'Saturday, October 3'),
+        ('On Yom Tov', 'Sunday, September 27'),
+        ('On Yom Tov', 'Saturday, September 26'),
+        ('Choose a date', null),
+      ]);
+    });
+
+    testWidgets('follow the days of Yom Tov the reader keeps', (tester) async {
+      // An Israeli abroad, who hears the Diaspora's reading: Simchat Torah
+      // was the day after Yom Tov for them.
+      expect(await rows(tester, oneDayYomTov: true), [
+        ('Today', 'Monday, October 5'),
+        ('Yesterday', 'Sunday, October 4'),
+        ('On Yom Tov', 'Saturday, October 3'),
+        ('On Yom Tov', 'Saturday, September 26'),
+        ('Choose a date', null),
+      ]);
+    });
+
+    testWidgets('name Shabbat as such, though it is Yom Tov too', (tester) async {
+      // Israel's week of Vezot HaBerachah, read on Shabbat 3 October.
+      final israel = ReadingWeek(
+        portion: const PortionId(kVezotHaberakhah),
+        occasion: LocalDate(2026, 10, 3),
+        start: LocalDate(2026, 9, 20),
+        plan: const [],
+        israel: true,
+      );
+      await pumpLauncher(
+        tester,
+        (context) => pickReadDate(context, week: israel, today: LocalDate(2026, 10, 4), oneDayYomTov: true),
+        reduceMotion: false,
+        onResult: (_) {},
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(
+        [for (final tile in tester.widgetList<ListTile>(find.byType(ListTile))) (tile.title! as Text).data],
+        ['Today', 'On Shabbat', 'On Yom Tov', 'Choose a date'],
+      );
+    });
+  });
 
   testWidgets('cancelling the time picker returns nothing', (tester) async {
     Object? result = 'none';

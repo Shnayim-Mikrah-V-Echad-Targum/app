@@ -531,12 +531,27 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String checkInTitleShabbatYomTov(String name) {
+    return 'שבוע טוב! קראת את פרשת $name בשבת וביום טוב?';
+  }
+
+  @override
+  String checkInTitleVezot(String name) {
+    return 'סיימת את $name ביום טוב?';
+  }
+
+  @override
   String get checkInBody =>
       'אפשר לרשום מה שקראת מתוך חומש מודפס — זה נחשב בדיוק אותו הדבר.';
 
   @override
   String checkInFinished(String name) {
     return 'סיימתי את פרשת $name בשבת';
+  }
+
+  @override
+  String checkInFinishedYomTov(String name) {
+    return 'סיימתי את $name ביום טוב';
   }
 
   @override
@@ -548,6 +563,11 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String checkInReadOnShabbat(String date) {
     return 'תאריך הקריאה: שבת, $date';
+  }
+
+  @override
+  String checkInReadOnYomTov(String date) {
+    return 'תאריך הקריאה: יום טוב, $date';
   }
 
   @override
@@ -756,6 +776,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get whenOnShabbat => 'בשבת';
+
+  @override
+  String get whenOnYomTov => 'ביום טוב';
 
   @override
   String get whenPickDate => 'בחירת תאריך';
@@ -1982,6 +2005,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notifCheckInBody => 'קראת בשבת? אפשר לרשום זאת באפליקציה.';
+
+  @override
+  String get notifCheckInBodyShabbatYomTov =>
+      'קראת בשבת וביום טוב? אפשר לרשום זאת באפליקציה.';
+
+  @override
+  String get notifCheckInBodyVezot =>
+      'קראת אותה ביום טוב? אפשר לרשום זאת באפליקציה.';
 
   @override
   String get notifPausedTitle => 'התזכורות הושהו';

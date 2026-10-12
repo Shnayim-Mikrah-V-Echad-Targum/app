@@ -35,6 +35,16 @@ abstract final class JewishHolidays {
       date.isShabbat ||
       isYomTov(HebrewDate.fromLocalDate(date), israel: israel);
 
+  /// The last of the days of rest that run on from [date], itself one: a
+  /// Shabbat, say, or the Yom Tov straight after it.
+  static LocalDate lastRestDay(LocalDate date, {required bool israel}) {
+    var last = date;
+    while (isRestDay(last.addDays(1), israel: israel)) {
+      last = last.addDays(1);
+    }
+    return last;
+  }
+
   /// Chol HaMoed or a festival day of Pesach or Sukkot (including Shemini
   /// Atzeret / Simchat Torah). A Shabbat in this range has no weekly portion.
   static bool isPesachOrSukkot(HebrewDate date, {required bool israel}) {

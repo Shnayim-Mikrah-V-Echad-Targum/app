@@ -732,21 +732,11 @@ CatchUpDay catchUpDayFor(LocalDate today, {required bool oneDayYomTov}) {
   if (JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(tomorrow))) return CatchUpDay.erevYomKippur;
   if (JewishHolidays.isRestDay(tomorrow, israel: oneDayYomTov)) {
     // Logged once the days of rest are over, after whichever ends them.
-    final endsWithShabbat = _lastDayOfRest(tomorrow, oneDayYomTov: oneDayYomTov).isShabbat;
+    final endsWithShabbat = JewishHolidays.lastRestDay(tomorrow, israel: oneDayYomTov).isShabbat;
     if (tomorrow.isShabbat) return endsWithShabbat ? CatchUpDay.erevShabbat : CatchUpDay.erevShabbatThenYomTov;
     return endsWithShabbat ? CatchUpDay.erevYomTovThenShabbat : CatchUpDay.erevYomTov;
   }
   return today.weekday == _thursday ? CatchUpDay.thursday : CatchUpDay.midweek;
-}
-
-/// The last of the days of rest that run on from [day], a day of rest, by
-/// the reader's custom for the days of Yom Tov.
-LocalDate _lastDayOfRest(LocalDate day, {required bool oneDayYomTov}) {
-  var last = day;
-  while (JewishHolidays.isRestDay(last.addDays(1), israel: oneDayYomTov)) {
-    last = last.addDays(1);
-  }
-  return last;
 }
 
 /// Today's reading (§9 Today, 4), or while aliyot planned for earlier days
@@ -933,7 +923,7 @@ class _TodayCard extends ConsumerWidget {
       builder: (context) => _BookSheet(ctx: ctx, aliyot: aliyot),
     );
     if (chosen == null || chosen.isEmpty || !context.mounted) return;
-    final date = await pickReadDate(context, week: ctx.week, today: ctx.today);
+    final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
     if (date == null || !context.mounted) return;
     ref.read(progressProvider.notifier).markAliyot(ctx.id, chosen, date);
     hapticSuccess(ref);
@@ -1069,7 +1059,7 @@ class _RestHero extends ConsumerWidget {
     final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
     bool yomTov(LocalDate d) => JewishHolidays.isYomTov(HebrewDate.fromLocalDate(d), israel: settings.oneDayYomTov);
     bool yomKippur(LocalDate d) => JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(d));
-    final last = _lastDayOfRest(date, oneDayYomTov: settings.oneDayYomTov);
+    final last = JewishHolidays.lastRestDay(date, israel: settings.oneDayYomTov);
     // The day's own greeting, on Shabbat too: Yom Kippur is a fast, and Rosh
     // Hashanah has its wish for the year.
     final greeting = yomKippur(date)

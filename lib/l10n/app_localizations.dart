@@ -813,6 +813,18 @@ abstract class AppLocalizations {
   /// **'Shavua tov! Did you read {name} on Shabbat?'**
   String checkInTitle(String name);
 
+  /// As checkInTitle, when the days of rest after that Shabbat ran on into Yom Tov (Shavuot on Sunday, say), on any of which the parsha may have been read.
+  ///
+  /// In en, this message translates to:
+  /// **'Shavua tov! Did you read {name} over Shabbat and Yom Tov?'**
+  String checkInTitleShabbatYomTov(String name);
+
+  /// As checkInTitle, after Simchat Torah, the Yom Tov Vezot HaBerachah is read on: asks whether it was finished then, from a printed Chumash. name is Vezot HaBerachah, in the reader's style.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you finish {name} over Yom Tov?'**
+  String checkInTitleVezot(String name);
+
   /// No description provided for @checkInBody.
   ///
   /// In en, this message translates to:
@@ -824,6 +836,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I finished {name} on Shabbat'**
   String checkInFinished(String name);
+
+  /// As checkInFinished, after Simchat Torah: logs the whole of Vezot HaBerachah as read on that Yom Tov. name is Vezot HaBerachah, as in checkInTitleVezot.
+  ///
+  /// In en, this message translates to:
+  /// **'I finished {name} on Yom Tov'**
+  String checkInFinishedYomTov(String name);
 
   /// No description provided for @checkInPick.
   ///
@@ -842,6 +860,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read on Shabbat, {date}'**
   String checkInReadOnShabbat(String date);
+
+  /// As checkInReadOnShabbat, for a Yom Tov: Simchat Torah, for Vezot HaBerachah, or a day of Yom Tov chosen instead. date is its day and month.
+  ///
+  /// In en, this message translates to:
+  /// **'Read on Yom Tov, {date}'**
+  String checkInReadOnYomTov(String date);
 
   /// As checkInReadOnShabbat, once another day is chosen. date is its weekday, day and month.
   ///
@@ -1172,6 +1196,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On Shabbat'**
   String get whenOnShabbat;
+
+  /// In the sheet that asks when reading was done, a day of Yom Tov in that week, read from a printed Chumash; its date is beneath.
+  ///
+  /// In en, this message translates to:
+  /// **'On Yom Tov'**
+  String get whenOnYomTov;
 
   /// No description provided for @whenPickDate.
   ///
@@ -3302,6 +3332,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Did you read on Shabbat? Tap to log it.'**
   String get notifCheckInBody;
+
+  /// As notifCheckInBody, when the days of rest after Shabbat ran on into Yom Tov; it comes once that Yom Tov is over.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you read on Shabbat and Yom Tov? Tap to log it.'**
+  String get notifCheckInBodyShabbatYomTov;
+
+  /// The check-in reminder after Simchat Torah, under the title Vezot HaBerachah (the parsha's name): whether it was read on that Yom Tov, from a printed Chumash.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you read it on Yom Tov? Tap to log it.'**
+  String get notifCheckInBodyVezot;
 
   /// The last notification, sent when the app has not been opened for two weeks; none follow until it is opened again.
   ///

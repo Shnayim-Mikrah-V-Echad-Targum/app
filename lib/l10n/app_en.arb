@@ -487,6 +487,26 @@
       }
     }
   },
+  "checkInTitleShabbatYomTov": "Shavua tov! Did you read {name} over Shabbat and Yom Tov?",
+  "@checkInTitleShabbatYomTov": {
+    "description": "As checkInTitle, when the days of rest after that Shabbat ran on into Yom Tov (Shavuot on Sunday, say), on any of which the parsha may have been read.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bamidbar"
+      }
+    }
+  },
+  "checkInTitleVezot": "Did you finish {name} over Yom Tov?",
+  "@checkInTitleVezot": {
+    "description": "As checkInTitle, after Simchat Torah, the Yom Tov Vezot HaBerachah is read on: asks whether it was finished then, from a printed Chumash. name is Vezot HaBerachah, in the reader's style.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Vezot HaBerachah"
+      }
+    }
+  },
   "checkInBody": "Log what you read from a printed Chumash — it counts just the same.",
   "checkInFinished": "I finished {name} on Shabbat",
   "@checkInFinished": {
@@ -495,6 +515,16 @@
       "name": {
         "type": "String",
         "example": "Bereshit"
+      }
+    }
+  },
+  "checkInFinishedYomTov": "I finished {name} on Yom Tov",
+  "@checkInFinishedYomTov": {
+    "description": "As checkInFinished, after Simchat Torah: logs the whole of Vezot HaBerachah as read on that Yom Tov. name is Vezot HaBerachah, as in checkInTitleVezot.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Vezot HaBerachah"
       }
     }
   },
@@ -510,6 +540,16 @@
       "date": {
         "type": "String",
         "example": "10 October"
+      }
+    }
+  },
+  "checkInReadOnYomTov": "Read on Yom Tov, {date}",
+  "@checkInReadOnYomTov": {
+    "description": "As checkInReadOnShabbat, for a Yom Tov: Simchat Torah, for Vezot HaBerachah, or a day of Yom Tov chosen instead. date is its day and month.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "4 October"
       }
     }
   },
@@ -725,6 +765,10 @@
   "whenToday": "Today",
   "whenYesterday": "Yesterday",
   "whenOnShabbat": "On Shabbat",
+  "whenOnYomTov": "On Yom Tov",
+  "@whenOnYomTov": {
+    "description": "In the sheet that asks when reading was done, a day of Yom Tov in that week, read from a printed Chumash; its date is beneath."
+  },
   "whenPickDate": "Choose a date",
   "markedRead": "Marked as read",
   "markedUnread": "Marked as not read",
@@ -1640,6 +1684,14 @@
   },
   "notifCheckInTitle": "Shavua tov!",
   "notifCheckInBody": "Did you read on Shabbat? Tap to log it.",
+  "notifCheckInBodyShabbatYomTov": "Did you read on Shabbat and Yom Tov? Tap to log it.",
+  "@notifCheckInBodyShabbatYomTov": {
+    "description": "As notifCheckInBody, when the days of rest after Shabbat ran on into Yom Tov; it comes once that Yom Tov is over."
+  },
+  "notifCheckInBodyVezot": "Did you read it on Yom Tov? Tap to log it.",
+  "@notifCheckInBodyVezot": {
+    "description": "The check-in reminder after Simchat Torah, under the title Vezot HaBerachah (the parsha's name): whether it was read on that Yom Tov, from a printed Chumash."
+  },
   "notifPausedTitle": "Reminders paused",
   "@notifPausedTitle": {
     "description": "The last notification, sent when the app has not been opened for two weeks; none follow until it is opened again."

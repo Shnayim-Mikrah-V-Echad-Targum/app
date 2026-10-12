@@ -174,6 +174,13 @@ const _screens = {
   // Motzaei Shabbat Bereshit, after nightfall in Jerusalem: the check-in,
   // under a running head with Sunday's date, the reading day's.
   'today_motzaei_shabbat': '/today',
+  // The Monday after Simchat Torah 5787 (outside Israel, on Sunday): the
+  // check-in about Vezot HaBerachah, and the days its sheet offers, each
+  // Yom Tov of its week.
+  'today_checkin_vezot': '/today',
+  'today_checkin_vezot_date': '/today',
+  // The Tuesday after Shabbat Bamidbar 5789 and Shavuot: asked about both.
+  'today_checkin_yomtov': '/today',
   // Wednesday of Noach: Bereshit can still be restored by doubling up.
   'today_restore': '/today',
   // The Monday after a pause that ended on Sunday: welcomed back.
@@ -648,6 +655,9 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_yom_kippur': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
   'today_friday_night': (s) => s.copyWith(city: _jerusalem),
   'today_motzaei_shabbat': (s) => s.copyWith(city: _jerusalem),
+  for (final screen in ['today_checkin_vezot', 'today_checkin_vezot_date'])
+    screen: (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
+  'today_checkin_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_erev_tisha_bav': (s) => s.copyWith(joinDate: LocalDate(2027, 8, 11)),
   for (final screen in ['today_tisha_bav', 'today_tisha_bav_week'])
     screen: (s) => s.copyWith(joinDate: LocalDate(2027, 8, 1)),
@@ -751,6 +761,9 @@ final _screenNow = <String, DateTime>{
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
   'focus_sheet_tile': DateTime(2026, 10, 12, 11),
   'today_motzaei_shabbat': DateTime(2026, 10, 10, 20),
+  'today_checkin_vezot': DateTime(2026, 10, 5, 11),
+  'today_checkin_vezot_date': DateTime(2026, 10, 5, 11),
+  'today_checkin_yomtov': DateTime(2029, 5, 22, 11),
   'today_restore': DateTime(2026, 10, 14, 11),
   'today_pause_ended': DateTime(2026, 10, 12, 11),
   'today_grace': DateTime(2026, 10, 16, 11),
@@ -782,6 +795,11 @@ final _screenProgress = <String, ProgressState Function()>{
       }),
   'today_erev_yomtov': () => ProgressState(weeks: {}),
   'today_erev_shabbat_yomtov': () => ProgressState(weeks: {}),
+  for (final screen in ['today_checkin_vezot', 'today_checkin_vezot_date']) screen: () => ProgressState(weeks: {}),
+  // Rishon of Bamidbar read on its Sunday.
+  'today_checkin_yomtov': () => ProgressState(weeks: {
+        '5789:34': WeekProgress(weekId: '5789:34').withAliyah(0, LocalDate(2029, 5, 13)),
+      }),
   'today_yomtov': () => ProgressState(weeks: {}),
   'today_yom_kippur': () => ProgressState(weeks: {}),
   'today_erev_tisha_bav': () => ProgressState(weeks: {}),
@@ -1321,6 +1339,15 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // Choose aliyot, the check-in's second text button.
   'today_checkin_sheet': (tester) =>
       tester.tap(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(TextButton)).at(1)),
+  // Choose aliyot, then Change date, under all seven.
+  'today_checkin_vezot_date': (tester) async {
+    await tester.tap(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(TextButton)).at(1));
+    await _settle(tester);
+    final change = find.text(_l10n(tester).changeDate);
+    await tester.ensureVisible(change);
+    await _settle(tester);
+    await tester.tap(change);
+  },
   // Shevi'i's Targum logged, and the frame a third of the way round.
   'today_completing': (tester) async {
     ProviderScope.containerOf(tester.element(find.byType(TodayScreen)))
@@ -1751,7 +1778,13 @@ final _modes = [
 
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
-const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
+const _bigPhoneScreens = {
+  'welcome',
+  'welcome_location',
+  'welcome_plan',
+  // The days of Yom Tov offered, more than a phone holds at this size.
+  'today_checkin_vezot_date',
+};
 const _hugeModes = {'huge', 'hugehe'};
 // The reader with Listen's player over its bar too: the chrome is held at
 // 200% so that a verse shows beneath it. Browse, whose names stay whole.
@@ -1791,6 +1824,9 @@ const _desktopScreens = {
   'today_shabbat',
   'today_complete',
   'today_checkin',
+  'today_checkin_vezot',
+  'today_checkin_vezot_date',
+  'today_checkin_yomtov',
   'today_divergence',
   'today_haftarah_left',
   'today_yomtov_oneday',
@@ -1981,6 +2017,8 @@ const _bigTextScreens = {
   'today_complete',
   'today_checkin',
   'today_checkin_sheet',
+  'today_checkin_vezot',
+  'today_checkin_vezot_date',
   'today_pause_ended',
   'today_grace',
   'today_tisha_bav',

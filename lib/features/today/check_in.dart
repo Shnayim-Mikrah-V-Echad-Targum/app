@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../core/calendar/jewish_holidays.dart';
 import '../../core/calendar/local_date.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
@@ -13,36 +15,18 @@ import '../../ui/widgets/read_date_sheet.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/streak_engine.dart';
-import '../settings/app_settings.dart';
 
-/// The first day Today can ask after [previous]'s Shabbat
-/// ([firstDayToAskAfter]): past the days of rest that run on from it, and
-/// past Tisha B'Av straight after it, whatever the reader plans on the fast,
-/// since the check-in's greeting is not given then (Shulchan Aruch OC
-/// 554:20).
-LocalDate checkInDay(WeekContext previous, {required AppSettings settings}) =>
-    firstDayToAskAfter(previous.week.occasion, oneDayYomTov: settings.oneDayYomTov);
-
-/// Whether Today asks after [previous]'s Shabbat what was read on it from a
-/// printed Chumash: on the first day it can ([checkInDay]), and on each
-/// reading day after that while the week can still count as late, until the
-/// reader answers (see [AppSettings.checkInAnsweredFor]).
-bool asksCheckIn(WeekContext previous, {required LocalDate today, required AppSettings settings}) {
-  if (!previous.week.occasion.isShabbat || settings.checkInAnsweredFor == previous.id) return false;
-  final firstDayAfter = checkInDay(previous, settings: settings);
-  // Without a late window the week is overdue from Sunday, and still asked
-  // about on it.
-  return today == firstDayAfter || (today > firstDayAfter && previous.status == WeekStatus.inProgress);
+/// The check-in's question about [previous], whose parsha is [name]: after
+/// Shabbat, or after Shabbat and the Yom Tov straight after it, as the
+/// reader keeps its days ([oneDayYomTov]), when the reading is logged; for
+/// Vezot HaBerachah, after Simchat Torah.
+String checkInQuestion(AppLocalizations l, WeekContext previous, String name, {required bool oneDayYomTov}) {
+  final occasion = previous.week.occasion;
+  if (previous.week.portion.isVezotHaberakhah) return l.checkInTitleVezot(name);
+  return JewishHolidays.lastRestDay(occasion, israel: oneDayYomTov) != occasion
+      ? l.checkInTitleShabbatYomTov(name)
+      : l.checkInTitle(name);
 }
-
-/// Whether [previous]'s check-in is still to come on [today], a reading day
-/// before [checkInDay]: Tisha B'Av straight after Shabbat. Today then holds
-/// back the rest of last week's notice too, so that the check-in is the
-/// first word about it.
-bool awaitsCheckIn(WeekContext previous, {required LocalDate today, required AppSettings settings}) =>
-    previous.week.occasion.isShabbat &&
-    settings.checkInAnsweredFor != previous.id &&
-    today < checkInDay(previous, settings: settings);
 
 /// Where aliyah [aliyah] of [ctx]'s portion is, and how long: "Genesis
 /// 2:20–3:21 · 23 verses", each part kept whole on a line of its own where
@@ -102,14 +86,16 @@ class PreviousWeekNotice extends ConsumerWidget {
     );
   }
 
-  /// Asks what was read on Shabbat: put aside for this time, chosen aliyah
-  /// by aliyah in a sheet, or the whole parsha.
+  /// Asks what was read on Shabbat (or on Yom Tov): put aside for this
+  /// time, chosen aliyah by aliyah in a sheet, or the whole parsha.
   Widget _checkIn(BuildContext context, WidgetRef ref, String name) {
     final l = context.l10n;
+    final oneDayYomTov = ref.watch(settingsProvider.select((s) => s.oneDayYomTov));
+    final question = checkInQuestion(l, previous, name, oneDayYomTov: oneDayYomTov);
     return NoticeBanner(
       icon: Icons.import_contacts,
       // By name: the title page beneath is another week's parsha.
-      title: l.checkInTitle(name),
+      title: question,
       text: l.checkInBody,
       actionBelow: true,
       action: Padding(
@@ -124,7 +110,7 @@ class PreviousWeekNotice extends ConsumerWidget {
               onPressed: () => _answer(ref.read(settingsProvider.notifier)),
               child: Text(l.checkInNotThisTime),
             ),
-            TextButton(onPressed: () => _choose(context, ref, name), child: Text(l.checkInPick)),
+            TextButton(onPressed: () => _choose(context, ref, name, question), child: Text(l.checkInPick)),
             // Tonal: the hero's is the page's one filled button.
             FilledButton.tonal(
               // Room around a label that large text wraps.
@@ -139,7 +125,16 @@ class PreviousWeekNotice extends ConsumerWidget {
                   if (previous.haftarahDue) progress.markHaftarah(previous.id, previous.week.occasion);
                 },
               ),
-              child: Text(l.checkInFinished(name), textAlign: TextAlign.center),
+              // Logged for the day it was read in synagogue, Simchat Torah
+              // for Vezot HaBerachah. As wide as its label, as a Text is,
+              // and where a long name wraps it, balanced, leaving no word
+              // alone ("Tov").
+              child: IntrinsicWidth(
+                child: BalancedText(
+                  previous.week.portion.isVezotHaberakhah ? l.checkInFinishedYomTov(name) : l.checkInFinished(name),
+                  style: null,
+                ),
+              ),
             ),
           ],
         ),
@@ -149,16 +144,18 @@ class PreviousWeekNotice extends ConsumerWidget {
 
   void _answer(SettingsController settings) => settings.update((s) => s.copyWith(checkInAnsweredFor: previous.id));
 
-  /// Logs what the check-in sheet says was read, all at once.
-  Future<void> _choose(BuildContext context, WidgetRef ref, String name) async {
+  /// Logs what the check-in sheet, titled with the notice's [question],
+  /// says was read, all at once.
+  Future<void> _choose(BuildContext context, WidgetRef ref, String name, String question) async {
     final settings = ref.read(settingsProvider);
     final log = await showAppSheet<CheckInLog>(
       context: context,
       isScrollControlled: true,
       builder: (context) => CheckInSheet(
         previous: previous,
-        name: name,
+        title: question,
         today: today,
+        oneDayYomTov: settings.oneDayYomTov,
         offersHaftarah: (settings.haftarahEnabled || previous.haftarahRequired) && previous.progress.haftarah == null,
       ),
     );
@@ -204,24 +201,30 @@ class PreviousWeekNotice extends ConsumerWidget {
 typedef CheckInLog = ({List<int> aliyot, bool haftarah, LocalDate date});
 
 /// The after-Shabbat check-in, in one sheet, titled with the question that
-/// names [previous]'s parsha ([name]): each aliyah of it not yet read,
+/// names [previous]'s parsha ([title]): each aliyah of it not yet read,
 /// checked to begin with, and its haftarah if [offersHaftarah]; the day they
-/// were read, Shabbat unless changed; and one button that logs them all.
-/// Returns a [CheckInLog].
+/// were read, Shabbat (or Simchat Torah) unless changed; and one button that
+/// logs them all. Returns a [CheckInLog].
 class CheckInSheet extends StatefulWidget {
   const CheckInSheet({
     super.key,
     required this.previous,
-    required this.name,
+    required this.title,
     required this.today,
+    required this.oneDayYomTov,
     required this.offersHaftarah,
   });
 
   final WeekContext previous;
 
-  /// [previous]'s parsha, as the check-in names it.
-  final String name;
+  /// The check-in's question ([checkInQuestion]), naming [previous]'s
+  /// parsha.
+  final String title;
   final LocalDate today;
+
+  /// Whether the reader keeps one day of Yom Tov, which decides the days
+  /// called Yom Tov.
+  final bool oneDayYomTov;
   final bool offersHaftarah;
 
   @override
@@ -238,7 +241,12 @@ class _CheckInSheetState extends State<CheckInSheet> {
   late LocalDate _date = widget.previous.week.occasion;
 
   Future<void> _changeDate() async {
-    final date = await pickReadDate(context, week: widget.previous.week, today: widget.today);
+    final date = await pickReadDate(
+      context,
+      week: widget.previous.week,
+      today: widget.today,
+      oneDayYomTov: widget.oneDayYomTov,
+    );
     if (date != null && mounted) setState(() => _date = date);
   }
 
@@ -249,14 +257,20 @@ class _CheckInSheetState extends State<CheckInSheet> {
     final theme = Theme.of(context);
     final padding = sheetPadding(context);
     final haftarah = widget.previous.haftarah;
-    final onShabbat = _date == widget.previous.week.occasion;
+    final occasion = widget.previous.week.occasion;
+    // Shabbat, Yom Tov, or another day, by name.
+    final readOn = _date == occasion && occasion.isShabbat
+        ? l.checkInReadOnShabbat(names.dateMonthDay(_date))
+        : isNamedYomTov(_date, oneDayYomTov: widget.oneDayYomTov)
+            ? l.checkInReadOnYomTov(names.dateMonthDay(_date))
+            : l.checkInReadOn(names.dateInText(_date));
     return SafeArea(
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SheetTitle(l.checkInTitle(widget.name)),
+            SheetTitle(widget.title),
             for (final a in _aliyot)
               TileFocusRing(
                 child: CheckboxListTile(
@@ -292,11 +306,7 @@ class _CheckInSheetState extends State<CheckInSheet> {
                   // Broken, if it must be, after its comma: "Read on
                   // Shabbat, / October 10", never inside the date.
                   DotLine(
-                    [
-                      onShabbat
-                          ? l.checkInReadOnShabbat(names.dateMonthDay(_date))
-                          : l.checkInReadOn(names.dateInText(_date)),
-                    ],
+                    [readOn],
                     style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   TextButton(onPressed: _changeDate, child: Text(l.changeDate)),

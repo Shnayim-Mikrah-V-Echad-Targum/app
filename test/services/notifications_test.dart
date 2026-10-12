@@ -706,5 +706,23 @@ void main() {
       expect(copyIn(en)(checkIn), (title: 'Shavua tov!', body: 'Did you read on Shabbat? Tap to log it.'));
       expect(copyIn(he)(checkIn), (title: 'שבוע טוב!', body: 'קראת בשבת? אפשר לרשום זאת באפליקציה.'));
     });
+
+    test('the check-in after Shabbat and the Yom Tov straight after it asks about both', () {
+      // Shabbat Bamidbar 5789, then Shavuot on Sunday and Monday.
+      final checkIn = planFrom(DateTime(2029, 5, 14, 8), prefs: const ReminderPrefs(checkIn: true))
+          .firstWhere((r) => r.kind == ReminderKind.checkIn);
+      expect(checkIn.date, LocalDate(2029, 5, 22));
+      expect(copyIn(en)(checkIn), (title: 'Shavua tov!', body: 'Did you read on Shabbat and Yom Tov? Tap to log it.'));
+      expect(copyIn(he)(checkIn), (title: 'שבוע טוב!', body: 'קראת בשבת וביום טוב? אפשר לרשום זאת באפליקציה.'));
+    });
+
+    test('the check-in after Simchat Torah names Vezot HaBerachah, in the reader’s style', () {
+      final checkIn = planFrom(DateTime(2026, 9, 30, 8), prefs: const ReminderPrefs(checkIn: true))
+          .firstWhere((r) => r.kind == ReminderKind.checkIn);
+      expect((checkIn.date, checkIn.plan.weekId), (LocalDate(2026, 10, 5), '5786:54'));
+      expect(copyIn(en)(checkIn), (title: 'Vezot HaBerachah', body: 'Did you read it on Yom Tov? Tap to log it.'));
+      expect(copyIn(he)(checkIn), (title: 'וזאת הברכה', body: 'קראת אותה ביום טוב? אפשר לרשום זאת באפליקציה.'));
+      expect(reminderCopy(checkIn, l: en, repo: repo, ashkenaziNames: true).title, 'Vezos HaBerachah');
+    });
   });
 }
