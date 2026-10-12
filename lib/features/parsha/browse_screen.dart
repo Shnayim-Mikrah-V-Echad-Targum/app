@@ -203,8 +203,13 @@ class _BookHeader extends StatelessWidget {
           header: true,
           headingLevel: 2,
           child: LayoutBuilder(builder: (context, constraints) {
+            // The gap between the names is a widget in the text, which the
+            // text scales as it scales the paragraph's own size: 16 at 200%.
+            final scaler = MediaQuery.textScalerOf(context);
+            final paragraphSize = DefaultTextStyle.of(context).style.fontSize ?? kDefaultFontSize;
+            final gap = Space.sm * scaler.scale(paragraphSize) / paragraphSize;
             final width = _lineWidth(context, kTorahBooksHe[book], hebrew, locale: const Locale('he')) +
-                (english == null ? 0 : Space.sm + _lineWidth(context, kTorahBooks[book], english)) +
+                (english == null ? 0 : gap + _lineWidth(context, kTorahBooks[book], english)) +
                 Space.md +
                 _lineWidth(context, countText, countStyle);
             if (width <= constraints.maxWidth) {
