@@ -39,7 +39,9 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
   final android = _FakeAndroid();
   int cancels = 0;
   int schedules = 0;
-  bool failNextSchedule = false;
+
+  /// The ids of reminders the platform refuses.
+  final throwFor = <int>{};
 
   @override
   Future<void> cancelAll() async {
@@ -60,10 +62,7 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
     DateTimeComponents? matchDateTimeComponents,
   }) async {
     await Future<void>.delayed(Duration.zero);
-    if (failNextSchedule) {
-      failNextSchedule = false;
-      throw Exception('platform failure');
-    }
+    if (throwFor.contains(id)) throw ArgumentError.value(id, 'id', 'refused');
     schedules++;
     scheduled[id] = (
       title: title,
@@ -100,9 +99,14 @@ class _FakeAndroid extends Fake implements AndroidFlutterLocalNotificationsPlugi
   }
 }
 
+/// Midnight before the plans the tests schedule, which begin on 11 October
+/// 2026: the time it is for a service, unless a test says otherwise.
+DateTime _beforePlans() => DateTime(2026, 10, 11);
+
 /// A service scheduling through [plugin], whose time zones (UTC, set in
-/// setUpAll) need no loading.
-NotificationService _service(_FakePlugin plugin) => NotificationService.forTesting(plugin, loadTimeZones: () async {});
+/// setUpAll) need no loading, and for which it is [now].
+NotificationService _service(_FakePlugin plugin, {DateTime Function() now = _beforePlans}) =>
+    NotificationService.forTesting(plugin, loadTimeZones: () async {}, now: now);
 
 /// A service that counts how often reminders are handed to it, and keeps
 /// the last of them, how they were worded and what it scheduled.
@@ -223,15 +227,41 @@ void main() {
       expect(plugin.android.channels['daily']!.name, he.notifChannelDaily);
     });
 
-    test('a plan that failed to schedule is tried again', () async {
-      final plugin = _FakePlugin()..failNextSchedule = true;
-      final service = _service(plugin);
+    test('a reminder the platform refuses costs only itself, and the plan is tried again', () async {
       final plan = planFrom(DateTime(2026, 10, 11, 8));
+      final plugin = _FakePlugin()..throwFor.add(plan.first.id);
+      final service = _service(plugin);
 
       await service.reschedule(plan, en, copyIn(en));
-      expect(plugin.scheduled, isEmpty);
+      expect(plugin.scheduled.keys.toSet(), ids(plan.sublist(1)), reason: 'the rest are still scheduled');
+
+      plugin.throwFor.clear();
       await service.reschedule(plan, en, copyIn(en));
+      expect(plugin.cancels, 2, reason: 'the same plan, once it failed, is scheduled again');
       expect(plugin.scheduled.keys.toSet(), ids(plan));
+    });
+
+    test('a reminder refused in the middle of the plan leaves those after it scheduled', () async {
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      final refused = plan[plan.length ~/ 2];
+      final plugin = _FakePlugin()..throwFor.add(refused.id);
+
+      await _service(plugin).reschedule(plan, en, copyIn(en));
+      expect(plugin.scheduled.keys.toSet(), ids(plan)..remove(refused.id));
+    });
+
+    test('a reminder that comes due while it is scheduled is passed over, and the rest are scheduled', () async {
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      final plugin = _FakePlugin();
+      // Two seconds before the first: too late to schedule it.
+      final service = _service(plugin, now: () => plan.first.localDateTime.subtract(const Duration(seconds: 2)));
+
+      await service.reschedule(plan, en, copyIn(en));
+      expect(plugin.scheduled.keys.toSet(), ids(plan.sublist(1)));
+
+      // Passed over, it is no failure: the plan isn't scheduled again.
+      await service.reschedule(plan, en, copyIn(en));
+      expect(plugin.cancels, 1);
     });
 
     test('channels are created with names and descriptions in the app language', () async {
@@ -352,13 +382,13 @@ void main() {
     test('are never loaded without a reminder to schedule', () async {
       var loads = 0;
       final plugin = _FakePlugin();
-      final service = NotificationService.forTesting(plugin, loadTimeZones: () async => loads++);
+      final service = NotificationService.forTesting(plugin, loadTimeZones: () async => loads++, now: _beforePlans);
       await service.reschedule(reminders, en, copyIn(en));
       await service.reschedule(const [], en, copyIn(en));
       expect(loads, 1, reason: 'once, for the first reminders');
       expect(plugin.cancels, 2, reason: 'clearing the reminders needs no time zones');
 
-      final none = NotificationService.forTesting(_FakePlugin(), loadTimeZones: () async => loads++);
+      final none = NotificationService.forTesting(_FakePlugin(), loadTimeZones: () async => loads++, now: _beforePlans);
       await none.reschedule(const [], en, copyIn(en));
       expect(loads, 1);
     });
@@ -366,7 +396,7 @@ void main() {
     test('are waited for before scheduling', () async {
       final loaded = Completer<void>();
       final plugin = _FakePlugin();
-      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future);
+      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future, now: _beforePlans);
       final done = service.reschedule(reminders, en, copyIn(en));
       for (var i = 0; i < 4; i++) {
         await Future<void>.delayed(Duration.zero);
@@ -381,7 +411,7 @@ void main() {
     test('a call taken over while it waited for them schedules nothing', () async {
       final loaded = Completer<void>();
       final plugin = _FakePlugin();
-      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future);
+      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future, now: _beforePlans);
       final first = service.reschedule(reminders, en, copyIn(en));
       // Let the first start waiting for the time zones.
       for (var i = 0; i < 4; i++) {

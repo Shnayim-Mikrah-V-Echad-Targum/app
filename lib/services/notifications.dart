@@ -28,20 +28,23 @@ typedef ReminderCopy = ({String title, String body});
 /// Local notifications on Android, iOS, macOS and Windows. Scheduled
 /// notifications aren't available in browsers, so the web build has none.
 class NotificationService {
-  NotificationService._(this._plugin, {required this.supported, Future<void> Function()? loadTimeZones})
+  NotificationService._(this._plugin,
+      {required this.supported, Future<void> Function()? loadTimeZones, this._now = DateTime.now})
       : _loadTimeZones = loadTimeZones ?? _loadTimeZoneDatabase;
 
   /// For tests and unsupported platforms.
   NotificationService.disabled()
       : _plugin = null,
         supported = false,
-        _loadTimeZones = _loadTimeZoneDatabase;
+        _loadTimeZones = _loadTimeZoneDatabase,
+        _now = DateTime.now;
 
   /// A service that schedules through [plugin], with [loadTimeZones] in place
-  /// of loading the time-zone database.
+  /// of loading the time-zone database, and [now] in place of the clock.
   @visibleForTesting
-  NotificationService.forTesting(FlutterLocalNotificationsPlugin plugin, {required Future<void> Function() loadTimeZones})
-      : this._(plugin, supported: true, loadTimeZones: loadTimeZones);
+  NotificationService.forTesting(FlutterLocalNotificationsPlugin plugin,
+      {required Future<void> Function() loadTimeZones, DateTime Function() now = DateTime.now})
+      : this._(plugin, supported: true, loadTimeZones: loadTimeZones, now: now);
 
   static Future<NotificationService> create() async {
     final supported = !kIsWeb &&
@@ -108,6 +111,7 @@ class NotificationService {
   final bool supported;
 
   final Future<void> Function() _loadTimeZones;
+  final DateTime Function() _now;
 
   /// The time-zone database loading, from the first reminder to schedule:
   /// most readers have none, and never load it.
@@ -213,6 +217,10 @@ class NotificationService {
   /// for the time-zone database, loaded for the first reminders (clearing
   /// them never loads it); a call superseded while it waited schedules
   /// nothing.
+  ///
+  /// A reminder that has come due since it was planned is passed over, and
+  /// one the platform refuses costs only itself: the others are scheduled
+  /// all the same, and the next call tries the whole plan again.
   Future<void> reschedule(
       List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) {
     final call = ++_latest;
@@ -237,9 +245,10 @@ class NotificationService {
       // A later call has taken over while this one waited.
       if (call != _latest) return;
     }
+    final AndroidScheduleMode mode;
     try {
       final android = p.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      final mode = await _scheduleMode(android);
+      mode = await _scheduleMode(android);
       if (android != null) {
         // Creating a channel that exists updates its name and description,
         // so they follow the app's language.
@@ -249,9 +258,18 @@ class NotificationService {
         }
       }
       await p.cancelAll();
-      for (final (i, r) in reminders.indexed) {
-        final (:title, :body) = copy[i];
-        final (channelId, channelName, channelDescription) = _channel(r.kind, l);
+    } catch (e) {
+      debugPrint('Could not schedule reminders: $e');
+      return;
+    }
+    var failed = false;
+    for (final (i, r) in reminders.indexed) {
+      // Due by now, or so soon that it would be by the time the platform
+      // has it, which refuses a time in the past.
+      if (!r.localDateTime.isAfter(_now().add(const Duration(seconds: 5)))) continue;
+      final (:title, :body) = copy[i];
+      final (channelId, channelName, channelDescription) = _channel(r.kind, l);
+      try {
         await p.zonedSchedule(
           id: r.id,
           title: title,
@@ -277,11 +295,14 @@ class NotificationService {
           androidScheduleMode: mode,
           payload: reminderRoute(r),
         );
+      } catch (e) {
+        failed = true;
+        debugPrint('Could not schedule reminder ${r.id}: $e');
       }
-      _lastSignature = signature;
-    } catch (e) {
-      debugPrint('Could not schedule reminders: $e');
     }
+    // Remembered only once all of it is in, so that the same plan comes
+    // again for what is missing.
+    if (!failed) _lastSignature = signature;
   }
 
   /// The id, name and description of the Android channel a reminder of
