@@ -191,7 +191,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final theme = Theme.of(context);
     final thread = ref.watch(threadProvider(widget.threadId));
     final posts = ref.watch(postsProvider(widget.threadId));
     final user = ref.watch(communityUserProvider).value;
@@ -206,12 +205,6 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final forum = t == null ? null : forums.value?.where((f) => f.id == t.forumId).firstOrNull;
     final forumName = forum?.name(context.isHebrewUi) ?? (forums.isLoading || t == null ? null : l.communityTitle);
     final canReply = t != null && (!t.locked || isMod);
-
-    // Posts reach into the gutter at their end, where their menu buttons end
-    // (see PostCard.menuBleed); everything else keeps to the column.
-    final g = Gutter.of(context);
-    Widget inColumn(Widget child) =>
-        Padding(padding: const EdgeInsetsDirectional.only(end: PostCard.menuBleed), child: child);
 
     final content = RefreshablePage(
       refresh: _refresh,
@@ -236,145 +229,31 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               ],
             ),
         ],
-        body: Column(
-          children: [
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  try {
-                    await _refresh();
-                  } catch (e) {
-                    if (context.mounted) showStatus(context, communityError(l, e));
-                  }
-                },
-                child: posts.when(
-                  // Fetched again, the posts shown stay until the new ones come.
-                  skipError: posts.hasValue,
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  // In the page's column, and pulled to try again.
-                  error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
-                  data: (page) {
-                    final list = page.posts;
-                    final byId = {for (final p in list) p.id: p};
-                    // With earlier posts not yet loaded, the thread's own
-                    // count, and each post numbered within the whole thread.
-                    // Loaded in full, the count of those shown: the server's
-                    // counts posts the reader can't see, such as a blocked
-                    // member's.
-                    final total = page.hasEarlier ? max(t?.postCount ?? 0, list.length) : list.length;
-                    final offset = total - list.length;
-                    // The post that opened the thread, once it is loaded: the
-                    // first shown, if its member began the thread as it was
-                    // begun. A weekly thread opens with none of its own; nor
-                    // does a thread whose opening post is hidden (deleted, or
-                    // its member blocked).
-                    final first = list.firstOrNull;
-                    final opening = offset == 0 &&
-                            t != null &&
-                            t.kind != ThreadKind.weekly &&
-                            first != null &&
-                            first.authorId != null &&
-                            first.authorId == t.authorId &&
-                            first.createdAt.difference(t.createdAt).abs() < const Duration(minutes: 1)
-                        ? first.id
-                        : null;
-                    return PageBody.builder(
-                      controller: _scroll,
-                      padding: EdgeInsetsDirectional.fromSTEB(g, Space.sm, g - PostCard.menuBleed, Space.s40),
-                      header: <Widget>[
-                        if (t != null) ...[
-                          // The page's one heading of level 1, which names it,
-                          // in its own language.
-                          Lang(
-                            Locale(titleDirection == TextDirection.rtl ? 'he' : 'en'),
-                            child: Semantics(
-                              header: true,
-                              headingLevel: 1,
-                              namesRoute: true,
-                              // Each word whole, set smaller where the largest
-                              // text leaves one too wide for the page, unless
-                              // too long to stay legible.
-                              child: WholeWords(
-                                title,
-                                textDirection: titleDirection,
-                                // In its own direction, from the page's start
-                                // edge, as its forum lists it.
-                                textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.left,
-                                style: theme.textTheme.headlineSmall,
-                                breakAtHyphens: true,
-                                minFontSize: WholeWords.smallestSize,
-                              ),
-                            ),
-                          ),
-                          // An empty thread says so below.
-                          if (list.isNotEmpty) ...[
-                            const Gap(Space.xs),
-                            Text(
-                              l.postsCount(total),
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                            ),
-                          ],
-                          if (t.locked) ...[const Gap(Space.md), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
-                          const Gap(Space.lg),
-                        ],
-                        // The reply box beneath is its action.
-                        if (list.isEmpty && t != null) EmptyState(message: emptyThreadMessage(context, ref, t)),
-                        if (page.hasEarlier)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Center(
-                              child: TextButton.icon(
-                                // Enabled while it loads, so that it keeps the keyboard focus.
-                                focusNode: _earlierFocus,
-                                onPressed: _loadEarlier,
-                                icon: _loadingEarlier
-                                    ? SizedBox.square(
-                                        dimension: 18,
-                                        child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
-                                      )
-                                    : const Icon(Icons.expand_less),
-                                label: Text(l.showEarlierPosts),
-                              ),
-                            ),
-                          ),
-                      ].map(inColumn).toList(),
-                      itemCount: list.length,
-                      // Each post under a hairline, the first under the
-                      // thread's title.
-                      itemBuilder: (context, i) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          inColumn(const _Hairline()),
-                          PostCard(
-                            key: ValueKey(list[i].id),
-                            post: list[i],
-                            number: offset + i + 1,
-                            total: total,
-                            opening: list[i].id == opening,
-                            tag: _authorTag(l, t, list[i]),
-                            focusNode: list[i].id == _firstPostFocused ? _firstPostFocus : null,
-                            // As loaded, or else as fetched with the reply.
-                            quote: switch (byId[list[i].replyToId]) {
-                              final p? => QuotedPost(authorName: p.authorName, body: p.body),
-                              null => list[i].quote,
-                            },
-                            isMine: user != null && list[i].authorId == user.id,
-                            isModerator: isMod,
-                            onReply: canReply
-                                ? () {
-                                    setState(() => _replyTo = list[i]);
-                                    _focus.requestFocus();
-                                  }
-                                : null,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
+        body: RefreshIndicator(
+          onRefresh: () async {
+            try {
+              await _refresh();
+            } catch (e) {
+              if (context.mounted) showStatus(context, communityError(l, e));
+            }
+          },
+          child: posts.when(
+            // Fetched again, the posts shown stay until the new ones come.
+            skipError: posts.hasValue,
+            loading: () => const Center(child: CircularProgressIndicator()),
+            // In the page's column, and pulled to try again.
+            error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
+            data: (page) => _postsList(
+              context,
+              page,
+              t: t,
+              title: title,
+              titleDirection: titleDirection,
+              userId: user?.id,
+              isMod: isMod,
+              canReply: canReply,
             ),
-          ],
+          ),
         ),
         // In the page's bottom bar, as the reader's bar is, so that status
         // messages the page shows stand above it rather than over it (§6.19).
@@ -393,6 +272,161 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     // The thread's list, which a tap on the iOS status bar scrolls to the
     // top. No other list takes it up by itself.
     return PrimaryScrollController(controller: _scroll, automaticallyInheritForPlatforms: const {}, child: content);
+  }
+
+  /// The head of the page, as items of its column: the thread's title, the
+  /// page's one heading of level 1, in its own language; under it the count
+  /// of its posts, where [postCount] is given; and in a locked thread, the
+  /// notice that says so.
+  List<Widget> _titleBlock(
+    BuildContext context,
+    ThreadSummary t, {
+    required String title,
+    required TextDirection titleDirection,
+    int? postCount,
+  }) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    return [
+      Lang(
+        Locale(titleDirection == TextDirection.rtl ? 'he' : 'en'),
+        child: Semantics(
+          header: true,
+          headingLevel: 1,
+          namesRoute: true,
+          // Each word whole, set smaller where the largest text leaves one
+          // too wide for the page, unless too long to stay legible.
+          child: WholeWords(
+            title,
+            textDirection: titleDirection,
+            // In its own direction, from the page's start edge, as its forum
+            // lists it.
+            textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.left,
+            style: theme.textTheme.headlineSmall,
+            breakAtHyphens: true,
+            minFontSize: WholeWords.smallestSize,
+          ),
+        ),
+      ),
+      if (postCount != null) ...[
+        const Gap(Space.xs),
+        Text(
+          l.postsCount(postCount),
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+      ],
+      if (t.locked) ...[const Gap(Space.md), NoticeBanner(icon: Icons.lock_outline, text: l.lockedThread)],
+      const Gap(Space.lg),
+    ];
+  }
+
+  /// The page's column: the thread's title over its posts, each built only
+  /// as it scrolls into view, and Show earlier posts above them while there
+  /// are any.
+  Widget _postsList(
+    BuildContext context,
+    ThreadPosts page, {
+    required ThreadSummary? t,
+    required String title,
+    required TextDirection titleDirection,
+    required String? userId,
+    required bool isMod,
+    required bool canReply,
+  }) {
+    final l = context.l10n;
+    // Posts reach into the gutter at their end, where their menu buttons end
+    // (see PostCard.menuBleed); everything else keeps to the column.
+    final g = Gutter.of(context);
+    Widget inColumn(Widget child) =>
+        Padding(padding: const EdgeInsetsDirectional.only(end: PostCard.menuBleed), child: child);
+
+    final list = page.posts;
+    final byId = {for (final p in list) p.id: p};
+    // With earlier posts not yet loaded, the thread's own count, and each
+    // post numbered within the whole thread. Loaded in full, the count of
+    // those shown: the server's counts posts the reader can't see, such as a
+    // blocked member's.
+    final total = page.hasEarlier ? max(t?.postCount ?? 0, list.length) : list.length;
+    final offset = total - list.length;
+    // The post that opened the thread, once it is loaded: the first shown,
+    // if its member began the thread as it was begun. A weekly thread opens
+    // with none of its own; nor does a thread whose opening post is hidden
+    // (deleted, or its member blocked).
+    final first = list.firstOrNull;
+    final opening = offset == 0 &&
+            t != null &&
+            t.kind != ThreadKind.weekly &&
+            first != null &&
+            first.authorId != null &&
+            first.authorId == t.authorId &&
+            first.createdAt.difference(t.createdAt).abs() < const Duration(minutes: 1)
+        ? first.id
+        : null;
+    return PageBody.builder(
+      controller: _scroll,
+      padding: EdgeInsetsDirectional.fromSTEB(g, Space.sm, g - PostCard.menuBleed, Space.s40),
+      header: <Widget>[
+        if (t != null)
+          // An empty thread says so below, with no count.
+          ..._titleBlock(
+            context,
+            t,
+            title: title,
+            titleDirection: titleDirection,
+            postCount: list.isEmpty ? null : total,
+          ),
+        // The reply box beneath is its action.
+        if (list.isEmpty && t != null) EmptyState(message: emptyThreadMessage(context, ref, t)),
+        if (page.hasEarlier)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Center(
+              child: TextButton.icon(
+                // Enabled while it loads, so that it keeps the keyboard focus.
+                focusNode: _earlierFocus,
+                onPressed: _loadEarlier,
+                icon: _loadingEarlier
+                    ? SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.loading),
+                      )
+                    : const Icon(Icons.expand_less),
+                label: Text(l.showEarlierPosts),
+              ),
+            ),
+          ),
+      ].map(inColumn).toList(),
+      itemCount: list.length,
+      // Each post under a hairline, the first under the thread's title.
+      itemBuilder: (context, i) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          inColumn(const _Hairline()),
+          PostCard(
+            key: ValueKey(list[i].id),
+            post: list[i],
+            number: offset + i + 1,
+            total: total,
+            opening: list[i].id == opening,
+            tag: _authorTag(l, t, list[i]),
+            focusNode: list[i].id == _firstPostFocused ? _firstPostFocus : null,
+            // As loaded, or else as fetched with the reply.
+            quote: switch (byId[list[i].replyToId]) {
+              final p? => QuotedPost(authorName: p.authorName, body: p.body),
+              null => list[i].quote,
+            },
+            isMine: userId != null && list[i].authorId == userId,
+            isModerator: isMod,
+            onReply: canReply
+                ? () {
+                    setState(() => _replyTo = list[i]);
+                    _focus.requestFocus();
+                  }
+                : null,
+          ),
+        ],
+      ),
+    );
   }
 }
 
