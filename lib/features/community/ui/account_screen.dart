@@ -13,6 +13,7 @@ import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/app_mark.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../data/backend.dart';
@@ -1091,25 +1092,21 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
           children: [
             SheetTitle(l.blockedUsersTitle),
             members.when(
+              // Tried again, a failure stays, its button spinning, until the
+              // outcome.
+              skipLoadingOnReload: members.hasError,
               loading: () => Padding(
                 padding: const EdgeInsets.all(Space.xxl),
                 child: Center(child: CircularProgressIndicator(semanticsLabel: l.loading)),
               ),
-              error: (e, _) => Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  note(communityError(l, e)),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: padding - Space.sm),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton(
-                        onPressed: () => ref.invalidate(blockedUsersProvider),
-                        child: Text(l.actionRetry),
-                      ),
-                    ),
-                  ),
-                ],
+              error: (e, _) => Padding(
+                padding: EdgeInsets.fromLTRB(padding, Space.sm, padding, 0),
+                child: ErrorMessage(
+                  message: communityError(l, e),
+                  // The members are fetched again with the list of them.
+                  onRetry: () => ref.invalidate(blockedUsersProvider),
+                  retrying: members.isLoading,
+                ),
               ),
               data: (list) => list.isEmpty
                   ? note(l.noBlockedMembers)

@@ -10,6 +10,7 @@ import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/lang.dart';
 import '../../../ui/widgets/lines.dart';
 import '../data/backend.dart';
@@ -148,10 +149,16 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
 
   /// Fetches the thread and its latest posts again. Fails as the backend does.
   Future<void> _refresh() async {
+    _retry();
+    await ref.read(postsProvider(widget.threadId).future);
+  }
+
+  /// Fetches the thread and its latest posts again, as [_refresh] does,
+  /// without waiting: the posts' failure says if it fails again.
+  void _retry() {
     ref
       ..invalidate(threadProvider(widget.threadId))
       ..invalidate(postsProvider(widget.threadId));
-    await ref.read(postsProvider(widget.threadId).future);
   }
 
   Future<void> _loadEarlier() async {
@@ -243,8 +250,17 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
             // Fetched again, the posts shown stay until the new ones come.
             skipError: posts.hasValue,
             loading: () => const Center(child: CircularProgressIndicator()),
-            // In the page's column, and pulled to try again.
-            error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
+            // Under the thread's title, where it is known, and pulled, or
+            // its button pressed, to try again.
+            error: (e, _) => PageBody(
+              children: [
+                if (t != null) ...[
+                  ..._titleBlock(context, t, title: title, titleDirection: titleDirection),
+                  const Gap(Space.lg),
+                ],
+                ErrorMessage(message: communityError(l, e), onRetry: _retry, retrying: posts.isLoading),
+              ],
+            ),
             data: (page) => _postsList(
               context,
               page,
@@ -259,7 +275,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         ),
         // In the page's bottom bar, as the reader's bar is, so that status
         // messages the page shows stand above it rather than over it (§6.19).
-        bottomNavigationBar: canReply
+        // Only under the posts: none while they load, or can't.
+        bottomNavigationBar: canReply && posts.hasValue
             ? _Composer(
                 controller: _reply,
                 focusNode: _focus,

@@ -168,21 +168,21 @@ void main() {
         await tester.pumpAndSettle();
       }
 
+      // Centred in the column, as an empty state is (§6.22), with Try again
+      // under it: in the pane beside the rail, never across the window.
       for (final hebrew in [false, true]) {
         final (l, language) = hebrew ? (_he, ', in Hebrew') : (_en, '');
-        testWidgets("a forum's threads start under its title$language", (tester) async {
+        testWidgets("a forum's threads are said under its title, centred$language", (tester) async {
           await openOffline(tester, '/community/forum/questions', hebrew: hebrew);
           final message = tester.getRect(find.text(l.errNetwork));
           final title = tester.getRect(_title(hebrew ? 'שאלות ותשובות' : 'Questions & answers'));
-          if (hebrew) {
-            // The rail at the right, and the column's content ending 32 in.
-            expect(message.right, title.right);
-            expect(message.right, 1109 - (1109 - 720) / 2 - 32);
-          } else {
-            expect(message.left, title.left);
-            expect(message.left, 257 + (1109 - 720) / 2 + 32);
-          }
-          expect(message.width, lessThanOrEqualTo(720 - 2 * 32), reason: "a line no longer than the column's");
+          // The rail at the left, or in Hebrew at the right, and the pane's
+          // 720 column centred beside it.
+          final column = hebrew ? 1109 / 2 : 257 + 1109 / 2;
+          expect(message.center.dx, closeTo(column, 0.5));
+          expect(message.width, lessThanOrEqualTo(320));
+          expect(message.top, greaterThan(title.bottom));
+          expect(tester.getRect(find.widgetWithText(FilledButton, l.actionRetry)).center.dx, closeTo(column, 0.5));
         });
       }
 
@@ -190,8 +190,8 @@ void main() {
         testWidgets('so are $route', (tester) async {
           await openOffline(tester, route);
           final message = tester.getRect(find.text(_en.errNetwork));
-          expect(message.left, 257 + (1109 - 720) / 2 + 32);
-          expect(message.width, lessThanOrEqualTo(720 - 2 * 32));
+          expect(message.center.dx, closeTo(257 + 1109 / 2, 0.5));
+          expect(message.width, lessThanOrEqualTo(320));
         });
       }
     });

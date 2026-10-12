@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/retry.dart';
 import '../../notes/domain/annotations.dart';
 import '../../progress/domain/progress_merge.dart';
 import '../../progress/domain/progress_models.dart';
@@ -26,7 +27,9 @@ final myProfileProvider = FutureProvider<Profile?>((ref) async {
   return ref.watch(forumRepositoryProvider).myProfile();
 });
 
-final forumsProvider = FutureProvider<List<Forum>>((ref) => ref.watch(forumRepositoryProvider).forums());
+/// The forums. Like the threads, posts and blocked members below, tried
+/// again only when the reader asks ([noRetry]).
+final forumsProvider = FutureProvider<List<Forum>>((ref) => ref.watch(forumRepositoryProvider).forums(), retry: noRetry);
 
 /// How many discussions each forum lists, and when one was last posted in,
 /// by forum id, for the Community page. Fetched again with the forums'
@@ -108,7 +111,7 @@ class ForumThreads extends AsyncNotifier<ThreadsPage> {
   }
 }
 
-final threadsProvider = AsyncNotifierProvider.family<ForumThreads, ThreadsPage, int?>(ForumThreads.new);
+final threadsProvider = AsyncNotifierProvider.family<ForumThreads, ThreadsPage, int?>(ForumThreads.new, retry: noRetry);
 
 final threadProvider = FutureProvider.family<ThreadSummary, String>(
   (ref, id) => ref.watch(forumRepositoryProvider).thread(id),
@@ -203,13 +206,14 @@ class ThreadPostsNotifier extends AsyncNotifier<ThreadPosts> {
   }
 }
 
-final postsProvider = AsyncNotifierProvider.family<ThreadPostsNotifier, ThreadPosts, String>(ThreadPostsNotifier.new);
+final postsProvider =
+    AsyncNotifierProvider.family<ThreadPostsNotifier, ThreadPosts, String>(ThreadPostsNotifier.new, retry: noRetry);
 
 final blockedUsersProvider = FutureProvider<Set<String>>((ref) async {
   final user = await ref.watch(communityUserProvider.future);
   if (user == null) return <String>{};
   return ref.watch(forumRepositoryProvider).blockedUsers();
-});
+}, retry: noRetry);
 
 /// The members the reader has blocked, with their names, for managing the
 /// list. Fetched again with [blockedUsersProvider].
@@ -217,7 +221,7 @@ final blockedMembersProvider = FutureProvider<List<(String id, String name)>>((r
   final blocked = await ref.watch(blockedUsersProvider.future);
   if (blocked.isEmpty) return const [];
   return ref.watch(forumRepositoryProvider).blockedMembers();
-});
+}, retry: noRetry);
 
 /// Posts reported in this session, whose Report action is hidden. They are
 /// the account's own, so another account starts afresh.

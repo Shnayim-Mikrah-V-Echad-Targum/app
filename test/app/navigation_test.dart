@@ -249,14 +249,17 @@ void main() {
       final forums = _Offline();
       final router = await _pump(tester, forums: forums);
       router.go('/community/forum/parsha');
-      // Not after every retry: as soon as the first attempt fails.
+      // As soon as the attempt fails: the forums are tried again only when
+      // the reader asks.
       for (var i = 0; i < 3; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
       expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.widgetWithText(TextButton, 'Try again'), findsOneWidget);
-      expect(find.text('All forums'), findsOneWidget);
+      // Try again first, as the page's one Tonal button, and the way back
+      // to the forums beside it.
+      expect(find.widgetWithText(FilledButton, 'Try again'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'All forums'), findsOneWidget);
 
       forums.online = true;
       await tester.tap(find.text('Try again'));

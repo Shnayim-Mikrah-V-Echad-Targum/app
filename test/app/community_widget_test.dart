@@ -26,6 +26,7 @@ import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/app_mark.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/fallbacks.dart';
 import 'package:shnayim_mikra/ui/widgets/lang.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
@@ -113,6 +114,39 @@ class _Gated extends DemoForumRepository {
   }
 }
 
+/// A community whose forums' threads are asked for ([asked] times), wait
+/// for [gate], and then fail while [offline].
+class _HeldThreads extends DemoForumRepository {
+  Completer<void>? gate;
+  bool offline = false;
+  int asked = 0;
+
+  @override
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) async {
+    asked++;
+    await gate?.future;
+    if (offline) throw Exception('offline');
+    return super.threads(forumId: forumId, parshaNumber: parshaNumber, after: after, limit: limit);
+  }
+}
+
+/// A community whose forums, and whose reports, fail to load while
+/// [offline].
+class _OfflineCommunity extends DemoForumRepository {
+  bool offline = true;
+
+  @override
+  Future<List<Forum>> forums() async => offline ? throw Exception('offline') : super.forums();
+
+  @override
+  Future<List<Report>> openReports() async => offline ? throw Exception('offline') : super.openReports();
+}
+
 /// A community whose threads' earlier posts fail to load while [offline].
 class _NoEarlier extends DemoForumRepository {
   bool offline = false;
@@ -186,10 +220,13 @@ class _CountingThreads extends _Member {
   }
 }
 
-/// A member whose blocked members can't be fetched (offline).
+/// A member whose blocked members can't be fetched while [offline], and
+/// who has blocked none.
 class _NoBlockedList extends DemoForumRepository {
+  bool offline = true;
+
   @override
-  Future<Set<String>> blockedUsers() async => throw Exception('offline');
+  Future<Set<String>> blockedUsers() async => offline ? throw Exception('offline') : super.blockedUsers();
 }
 
 /// A member whose Unblock waits for [gate], is counted, and fails.
@@ -2400,6 +2437,195 @@ void main() {
     });
   });
 
+  group('what cannot load', () {
+    const offline = 'Couldn’t reach the server. Check your connection and try again.';
+    final retry = find.widgetWithText(FilledButton, 'Try again');
+
+    testWidgets("a forum's discussions say why, under no floating button, and come when tried again", (tester) async {
+      final forums = _FlakyForum()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing, reason: 'nothing to begin a discussion over');
+      // It can be pulled to try again too.
+      final scrollable = tester.widget<Scrollable>(find.descendant(of: find.byType(ErrorState), matching: find.byType(Scrollable)));
+      expect(scrollable.physics, isA<AlwaysScrollableScrollPhysics>());
+
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.text('Why read the Targum rather than a translation?'), findsOneWidget);
+      expect(find.byType(ErrorState), findsNothing);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+
+    testWidgets('tried again, say so on the button, which keeps the focus, until the outcome', (tester) async {
+      final forums = _HeldThreads()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      // Never tried again behind the reader's back.
+      await tester.pump(const Duration(minutes: 1));
+      expect(forums.asked, 1);
+      Focus.of(tester.element(find.text('Try again'))).requestFocus();
+      await tester.pump();
+      forums.gate = Completer<void>();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      // While it is tried again the message stays, and the button, still
+      // enabled and with the focus, spins.
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+      expect(find.descendant(of: retry, matching: find.byType(CircularProgressIndicator)), findsOneWidget);
+      expect(tester.widget<FilledButton>(retry).onPressed, isNotNull);
+      expect(Focus.of(tester.element(find.text('Try again'))).hasPrimaryFocus, isTrue);
+
+      forums.gate!.complete();
+      await tester.pumpAndSettle();
+      expect(forums.asked, 2);
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget, reason: 'failed again');
+      expect(find.descendant(of: retry, matching: find.byType(CircularProgressIndicator)), findsNothing);
+      expect(Focus.of(tester.element(find.text('Try again'))).hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('a thread keeps its title, says why, and docks no reply box until its posts come', (tester) async {
+      final forums = _Flaky()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final heading = find.bySemanticsLabel('Why read the Targum rather than a translation?');
+      expect(find.text('Why read the Targum rather than a translation?'), findsOneWidget);
+      expect(heading, findsWidgets);
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Write a reply'), findsNothing);
+
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.byType(PostCard), findsNWidgets(2));
+      expect(find.byType(ErrorMessage), findsNothing);
+      expect(find.widgetWithText(TextField, 'Write a reply'), findsOneWidget);
+    });
+
+    testWidgets('the forums on the Community page say why, and come when tried again', (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      expect(find.byType(ThisWeekCard), findsOneWidget, reason: 'the rest of the page stays');
+
+      forums.offline = false;
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.text('Questions & answers'), findsOneWidget);
+      expect(find.byType(ErrorMessage), findsNothing);
+    });
+
+    testWidgets('the reports to review say why, and come when tried again', (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/moderation');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.byType(ErrorState), findsNothing);
+    });
+  });
+
+  group("a forum's floating button", () {
+    testWidgets('is not offered over an empty forum, whose own button is the one invitation', (tester) async {
+      final c = await _pump(tester, forums: DemoForumRepository(samples: false));
+      c.read(routerProvider).go('/community/forum/divrei-torah');
+      await tester.pumpAndSettle();
+      expect(find.text('New discussion'), findsOneWidget);
+      expect(find.descendant(of: find.byType(EmptyState), matching: find.text('New discussion')), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
+    });
+
+    testWidgets("is offered over the week's forum, never empty", (tester) async {
+      final c = await _pump(tester, forums: DemoForumRepository(samples: false));
+      c.read(routerProvider).go('/community/forum/parsha');
+      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+
+    for (final reduced in [false, true]) {
+      testWidgets(reduced ? 'appears at once under Reduce Motion' : 'fades in as the discussions come, without turning',
+          (tester) async {
+        final forums = _HeldThreads()..gate = Completer<void>();
+        final c = await _pump(tester, forums: forums, settings: AppSettings(onboardingComplete: true, reduceMotion: reduced));
+        c.read(routerProvider).go('/community/forum/questions');
+        // The page arrives, and spins while the discussions load.
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+        expect(find.byType(FloatingActionButton), findsNothing, reason: 'none while they load');
+
+        forums.gate!.complete();
+        await tester.pump();
+        await tester.pump();
+        final fab = find.byType(FloatingActionButton);
+        expect(fab, findsOneWidget);
+        double opacity() =>
+            tester.widget<FadeTransition>(find.ancestor(of: fab, matching: find.byType(FadeTransition)).first).opacity.value;
+        if (reduced) {
+          expect(opacity(), 1);
+        } else {
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(opacity(), inExclusiveRange(0, 1), reason: 'fading in');
+          await tester.pumpAndSettle();
+          expect(opacity(), 1);
+        }
+        // An extended button, which the Scaffold never turns as it comes.
+        expect(tester.widget<FloatingActionButton>(fab).isExtended, isTrue);
+      });
+    }
+
+    testWidgets('shows its label, and at large text its icon alone, named by its tooltip', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final c = await _pump(tester);
+      // A tablet, where the label fits; the test's font sets every letter a
+      // square, wider than the app's.
+      tester.view.physicalSize = const Size(800, 1180);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      final fab = find.byType(FloatingActionButton);
+      expect(find.descendant(of: fab, matching: find.text('New discussion')), findsOneWidget);
+      expect(find.byTooltip('New discussion'), findsNothing);
+      expect(tester.getSize(fab).width, greaterThan(56));
+
+      void iconAlone() {
+        expect(find.descendant(of: fab, matching: find.text('New discussion')), findsNothing);
+        expect(tester.getSize(fab), const Size(56, 56));
+        expect(find.byTooltip('New discussion'), findsOneWidget);
+        expect(
+          tester.getSemantics(find.byTooltip('New discussion')),
+          isSemantics(tooltip: 'New discussion', isButton: true, hasTapAction: true),
+        );
+      }
+
+      // At 300%, the label would be taller than the button.
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpAndSettle();
+      iconAlone();
+      // On a phone at 200%, wider than two thirds of the screen.
+      tester.view.physicalSize = const Size(412, 915);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      await tester.pumpAndSettle();
+      iconAlone();
+      await tester.tap(fab);
+      await tester.pumpAndSettle();
+      expect(find.byType(ComposeScreen), findsOneWidget);
+      semantics.dispose();
+    });
+  });
+
   group("a forum's activity", () {
     const question = 'Why read the Targum rather than a translation?';
     const opening = 'I read English more easily than Aramaic. Why does the Shulchan Aruch insist on Targum Onkelos?';
@@ -3163,7 +3389,13 @@ void main() {
       await tester.tap(find.text('Blocked members'));
       await tester.pumpAndSettle();
       final sheet = find.byType(BottomSheet);
-      expect(find.descendant(of: sheet, matching: find.widgetWithText(TextButton, 'Try again')), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.byType(ErrorMessage)), findsOneWidget);
+      // Tried again, the list comes, in the sheet still open.
+      forums.offline = false;
+      await tester.tap(find.descendant(of: sheet, matching: find.widgetWithText(FilledButton, 'Try again')));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: sheet, matching: find.text('You haven’t blocked anyone.')), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
     });
 
     testWidgets('says in the sheet why an Unblock failed, and sends one at a time', (tester) async {

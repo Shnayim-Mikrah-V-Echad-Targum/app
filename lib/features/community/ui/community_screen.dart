@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -86,7 +87,14 @@ class CommunityScreen extends ConsumerWidget {
               GroupHeader(l.forumsHeading),
               forums.when(
                 loading: () => const _Loading(),
-                error: (e, _) => _Retry(message: communityError(l, e), onRetry: () => ref.invalidate(forumsProvider)),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.only(top: Space.lg),
+                  child: ErrorMessage(
+                    message: communityError(l, e),
+                    onRetry: () => ref.invalidate(forumsProvider),
+                    retrying: forums.isLoading,
+                  ),
+                ),
                 data: (list) => list.isEmpty
                     ? const SizedBox.shrink()
                     : _Forums(
@@ -192,22 +200,4 @@ class _ForumsState extends State<_Forums> {
 
   @override
   Widget build(BuildContext context) => _waiting ? const _Loading() : widget.builder(widget.stats.value);
-}
-
-class _Retry extends StatelessWidget {
-  const _Retry({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const Gap(8),
-            OutlinedButton(onPressed: onRetry, child: Text(context.l10n.actionRetry)),
-          ],
-        ),
-      );
 }

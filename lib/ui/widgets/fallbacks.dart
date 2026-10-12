@@ -27,34 +27,147 @@ Widget? homeLeading(BuildContext context) {
 /// next beneath it: the first of [actions] a Tonal button (styled with
 /// [AppButtons.tonal]), any others Text buttons. Laid out as an [EmptyState]
 /// (DESIGN_SYSTEM.md §6.22): a divider, one gentle sentence, centred, at most
-/// 320 wide and 40 below the app bar; it scrolls when large text needs it.
+/// 320 wide and 40 below the app bar; it scrolls when large text needs it,
+/// and with [AlwaysScrollableScrollPhysics] as its [physics] even when it
+/// fits, so that it can be pulled to refresh.
 class CenteredMessage extends StatelessWidget {
-  const CenteredMessage({super.key, required this.text, this.actions = const []});
+  const CenteredMessage({super.key, required this.text, this.actions = const [], this.physics});
+
+  final String text;
+  final List<Widget> actions;
+  final ScrollPhysics? physics;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: physics,
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+      child: _Message(text: text, actions: actions),
+    );
+  }
+}
+
+/// Why something couldn't load, in the midst of a page that shows more
+/// (DESIGN_SYSTEM.md §6.22, Error state): laid out as an [EmptyState], with
+/// Try again under the sentence, and no scrolling of its own. For a page
+/// that has nothing else to show, see [ErrorState].
+///
+/// While it is [retrying], the button's icon turns to a spinner, and the
+/// message stays until the outcome, so that nothing moves and the button
+/// keeps the keyboard focus.
+class ErrorMessage extends StatelessWidget {
+  const ErrorMessage({super.key, required this.message, required this.onRetry, this.retrying = false});
+
+  final String message;
+  final VoidCallback onRetry;
+  final bool retrying;
+
+  @override
+  Widget build(BuildContext context) =>
+      _Message(text: message, actions: [_RetryButton(onRetry: onRetry, retrying: retrying)]);
+}
+
+/// A page that couldn't load what it shows (DESIGN_SYSTEM.md §6.22, Error
+/// state): why, centred under the app bar as a [CenteredMessage], with Try
+/// again under it, then any other [actions] as Text buttons. It can be
+/// pulled to refresh in a [RefreshIndicator], as the page it stands for can.
+class ErrorState extends StatelessWidget {
+  const ErrorState({
+    super.key,
+    required this.message,
+    required this.onRetry,
+    this.retrying = false,
+    this.actions = const [],
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  /// As [ErrorMessage.retrying].
+  final bool retrying;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) => CenteredMessage(
+        text: message,
+        physics: const AlwaysScrollableScrollPhysics(),
+        actions: [_RetryButton(onRetry: onRetry, retrying: retrying), ...actions],
+      );
+}
+
+/// The divider, the sentence and the actions of a [CenteredMessage] and an
+/// [ErrorMessage].
+class _Message extends StatelessWidget {
+  const _Message({required this.text, required this.actions});
 
   final String text;
   final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 320),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SeferDivider(),
-              const Gap(12),
-              Text(text, textAlign: TextAlign.center, style: SeferType.of(context).marginalia),
-              if (actions.isNotEmpty) ...[
-                const Gap(16),
-                Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: actions),
-              ],
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SeferDivider(),
+            const Gap(12),
+            Text(text, textAlign: TextAlign.center, style: SeferType.of(context).marginalia),
+            if (actions.isNotEmpty) ...[
+              const Gap(16),
+              Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: actions),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Try again, a Tonal button with the refresh icon, which turns to a
+/// spinner while [retrying].
+class _RetryButton extends StatelessWidget {
+  const _RetryButton({required this.onRetry, required this.retrying});
+
+  final VoidCallback onRetry;
+  final bool retrying;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final size = Theme.of(context).textTheme.labelLarge?.fontSize ?? 14;
+    return FilledButton.tonalIcon(
+      style: AppButtons.tonal(context).copyWith(
+        // Material's padding for a button with an icon, but where its own
+        // leaves nothing above and below large text, 8, so that the label
+        // doesn't run into the fill's edges (as AppButtons.roomy).
+        padding: WidgetStatePropertyAll(
+          ButtonStyleButton.scaledPadding(
+            const EdgeInsetsDirectional.fromSTEB(16, 0, 24, 0),
+            const EdgeInsetsDirectional.fromSTEB(8, 8, 12, 8),
+            const EdgeInsetsDirectional.fromSTEB(4, 8, 6, 8),
+            MediaQuery.textScalerOf(context).scale(size) / 14,
           ),
         ),
       ),
+      // In the button's ink, as its icon is.
+      icon: retrying
+          ? Builder(
+              builder: (context) => SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: IconTheme.of(context).color,
+                  semanticsLabel: l.loading,
+                ),
+              ),
+            )
+          : const Icon(Icons.refresh),
+      label: Text(l.actionRetry),
+      // Enabled while it retries, so that it keeps the keyboard focus;
+      // presses meanwhile do nothing.
+      onPressed: retrying ? () {} : onRetry,
     );
   }
 }

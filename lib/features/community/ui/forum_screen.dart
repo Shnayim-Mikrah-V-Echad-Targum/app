@@ -80,28 +80,33 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
     final forum = (forums.value ?? const []).where((f) => f.slug == widget.slug).firstOrNull;
     if (forum == null) {
       // Spin only while the forums first load: a link to a forum that
-      // doesn't exist says so, and so do forums that can't load, at once,
-      // while they are tried again.
+      // doesn't exist says so, and so do forums that can't load, with Try
+      // again, and a way back to the forums.
       final missing = forums.hasValue;
-      final error = missing ? null : forums.error;
       return PageScaffold(
         // No title while the forums load, or can't.
         titleText: missing ? l.notFoundTitle : l.communityTitle,
         showTitle: missing,
-        body: !missing && error == null
-            ? const Center(child: CircularProgressIndicator())
-            : CenteredMessage(
-                text: error != null ? communityError(l, error) : l.forumNotFound,
+        body: missing
+            ? CenteredMessage(
+                text: l.forumNotFound,
                 actions: [
                   FilledButton.tonal(
                     style: AppButtons.tonal(context),
                     onPressed: () => context.go('/community'),
                     child: Text(l.allForums),
                   ),
-                  if (error != null)
-                    TextButton(onPressed: () => ref.invalidate(forumsProvider), child: Text(l.actionRetry)),
                 ],
-              ),
+              )
+            : switch (forums.error) {
+                null => const Center(child: CircularProgressIndicator()),
+                final error => ErrorState(
+                    message: communityError(l, error),
+                    onRetry: () => ref.invalidate(forumsProvider),
+                    retrying: forums.isLoading,
+                    actions: [TextButton(onPressed: () => context.go('/community'), child: Text(l.allForums))],
+                  ),
+              },
       );
     }
     final threads = ref.watch(threadsProvider(forum.id));
@@ -112,6 +117,9 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
     // The Parsha forum opens on this week's discussion, so it is never empty.
     final weekly = forum.slug == 'parsha';
     void compose() => context.push('/community/new?forum=${forum.slug}');
+    // Only over a list: not while it loads or can't, nor over an empty forum,
+    // where the empty state's own button is the one invitation.
+    final showFab = canStart && threads.hasValue && (weekly || threads.requireValue.threads.isNotEmpty);
 
     Future<void> refresh() async {
       ref.invalidate(threadsProvider(forum.id));
@@ -123,12 +131,8 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
       builder: (context, refreshButton) => PageScaffold(
         titleText: forum.name(he),
         actions: [const DemoTag(), refreshButton],
-        floatingActionButton: canStart
-            ? FloatingActionButton.extended(
-                onPressed: compose,
-                icon: const Icon(Icons.edit_outlined),
-                label: Text(l.newThread),
-              )
+        floatingActionButton: showFab
+            ? PageScaffold.floatingButton(context, icon: Icons.edit_outlined, label: l.newThread, onPressed: compose)
             : null,
         body: RefreshIndicator(
           onRefresh: () async {
@@ -142,8 +146,12 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
             // Fetched again, the threads shown stay until the new ones come.
             skipError: threads.hasValue,
             loading: () => const Center(child: CircularProgressIndicator()),
-            // In the page's column, under the title, and pulled to try again.
-            error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
+            // Pulled, or its button pressed, to try again.
+            error: (e, _) => ErrorState(
+              message: communityError(l, e),
+              onRetry: () => ref.invalidate(threadsProvider(forum.id)),
+              retrying: threads.isLoading,
+            ),
             data: (page) {
               // The pinned threads, then the rest, each group as rows of one
               // sheet of paper, built only as they scroll into view: a forum
@@ -195,7 +203,7 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
                     ));
               }
               // Room at the end for the button over it.
-              if (canStart) items.add(() => const Gap(72));
+              if (showFab) items.add(() => const Gap(72));
               return PageBody.builder(
                 header: [
                   if (description.isNotEmpty)

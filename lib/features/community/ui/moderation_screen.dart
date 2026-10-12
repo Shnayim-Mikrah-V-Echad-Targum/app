@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/retry.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/fallbacks.dart';
 import '../data/backend.dart';
 import '../data/models.dart';
 import 'community_ui.dart';
 
-final _reportsProvider = FutureProvider<List<Report>>((ref) => ref.watch(forumRepositoryProvider).openReports());
+final _reportsProvider = FutureProvider<List<Report>>((ref) => ref.watch(forumRepositoryProvider).openReports(), retry: noRetry);
 
 /// The moderators' queue of open reports.
 class ModerationScreen extends ConsumerWidget {
@@ -48,14 +50,18 @@ class ModerationScreen extends ConsumerWidget {
       builder: (context, refreshButton) => PageScaffold(
         titleText: l.moderationQueue,
         actions: [refreshButton],
-        body: reports.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          // In the page's column, under the title.
-          error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
-          data: (list) => RefreshIndicator(
-            // A failure shows in place of the reports.
-            onRefresh: () => refresh().catchError((Object _) {}),
-            child: PageBody(
+        body: RefreshIndicator(
+          // A failure shows in place of the reports.
+          onRefresh: () => refresh().catchError((Object _) {}),
+          child: reports.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            // Pulled, or its button pressed, to try again.
+            error: (e, _) => ErrorState(
+              message: communityError(l, e),
+              onRetry: () => ref.invalidate(_reportsProvider),
+              retrying: reports.isLoading,
+            ),
+            data: (list) => PageBody(
               children: [
                 if (list.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text(l.noReports, textAlign: TextAlign.center)),
                 for (final r in list)

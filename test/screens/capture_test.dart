@@ -333,6 +333,11 @@ const _screens = {
   'forum_error': '/community/forum/questions',
   'thread_error': '/community/thread/1',
   'moderation_error': '/community/moderation',
+  // Offline before the forums came: the Community page, a forum opened from
+  // a link, and the blocked members of an account.
+  'community_error': '/community',
+  'forum_unreachable': '/community/forum/questions',
+  'account_blocked_error': '/community/account',
   // What the Demo tag explains.
   'demo_about': '/community/forum/questions',
   // Reporting a post, before a reason is chosen.
@@ -1010,6 +1015,8 @@ final _communities = <String, Future<ForumRepository> Function()>{
     screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
   for (final screen in ['forum_error', 'thread_error', 'moderation_error']) screen: () async => _Offline(),
+  for (final screen in ['community_error', 'forum_unreachable']) screen: () async => _NoForums(),
+  'account_blocked_error': _memberNoBlocked,
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
   'thread_mine': _withOwnPost,
@@ -1118,6 +1125,27 @@ class _Offline extends DemoForumRepository {
 
   @override
   Future<List<Report>> openReports() async => throw Exception('offline');
+}
+
+/// A community whose forums can't be fetched.
+class _NoForums extends DemoForumRepository {
+  @override
+  Future<List<Forum>> forums() async => throw Exception('offline');
+}
+
+/// A community whose members blocked can't be fetched.
+class _NoBlocked extends DemoForumRepository {
+  @override
+  Future<Set<String>> blockedUsers() async => throw Exception('offline');
+}
+
+/// Signed in as Rivka, whose blocked members can't be fetched.
+Future<ForumRepository> _memberNoBlocked() async {
+  final repo = _NoBlocked();
+  await repo.verifyCode('rivka@example.org', '123456');
+  await repo.updateDisplayName('Rivka Levi');
+  await repo.acceptGuidelines();
+  return repo;
 }
 
 /// A community whose weekly threads never finish opening.
@@ -1449,6 +1477,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'account_edit': (tester) => tester.tap(find.byIcon(Icons.edit_outlined)),
   'account_blocked': (tester) => tester.tap(find.byIcon(Icons.block)),
+  'account_blocked_error': (tester) => tester.tap(find.byIcon(Icons.block)),
   'account_delete': (tester) async {
     await tester.ensureVisible(find.byIcon(Icons.delete_forever_outlined));
     await _settle(tester);
@@ -1791,6 +1820,8 @@ final _modes = [
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
 const _bigPhoneScreens = {
+  // The button that begins a discussion: its icon alone at 200% (§5).
+  'forum_questions',
   'welcome',
   'welcome_location',
   'welcome_plan',
@@ -1819,8 +1850,13 @@ const _hugeTallScreens = {
   'progress',
   'settings',
   'community',
-  // A forum's discussions, the longest lines of facts among them.
+  // A forum's discussions, the longest lines of facts among them, and its
+  // floating button, its icon alone.
   'forum_questions',
+  // What can't load, with Try again: under a thread's title, and beside All
+  // forums.
+  'thread_error',
+  'forum_unreachable',
   'thread',
   'haftarah',
   'browse',
@@ -1923,6 +1959,8 @@ const _desktopScreens = {
   'thread_error',
   'moderation_error',
   'city_error',
+  'community_error',
+  'forum_unreachable',
   'account',
   'account_code',
   'account_member',

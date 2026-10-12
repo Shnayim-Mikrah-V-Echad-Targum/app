@@ -12,6 +12,7 @@ import '../../../data/city_directory.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/layout.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../../search/query_direction.dart';
 
@@ -114,9 +115,10 @@ class _CityPickerScreenState extends ConsumerState<CityPickerScreen> {
               AsyncError() => PageBody(
                   children: [
                     const Gap(16),
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(4, 8, 4, 0),
-                      child: Text(l.errorGeneric, style: Theme.of(context).textTheme.bodyLarge),
+                    ErrorMessage(
+                      message: l.errorGeneric,
+                      onRetry: () => ref.invalidate(cityDirectoryProvider),
+                      retrying: directory.isLoading,
                     ),
                   ],
                 ),
