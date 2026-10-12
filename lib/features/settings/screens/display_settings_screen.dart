@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/device_accessibility.dart';
 import '../../../app/providers.dart';
 import '../../../data/models/verse_ref.dart';
 import '../../../data/text_repository.dart';
@@ -51,8 +52,22 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
     void update(AppSettings Function(AppSettings) f) => ref.read(settingsProvider.notifier).update(f);
-    SwitchRow toggle(String title, bool value, AppSettings Function(AppSettings, bool) set, {String? subtitle}) =>
-        SwitchRow(title: title, subtitle: subtitle, value: value, onChanged: (v) => update((s) => set(s, v)));
+    SwitchRow toggle(
+      String title,
+      bool value,
+      AppSettings Function(AppSettings, bool) set, {
+      String? subtitle,
+      bool enabled = true,
+    }) =>
+        SwitchRow(
+          title: title,
+          subtitle: subtitle,
+          value: value,
+          onChanged: enabled ? (v) => update((s) => set(s, v)) : null,
+        );
+    // The device's Bold text is in force whatever the app's says: the switch
+    // shows it on, and leaves it to the device's settings.
+    final deviceBold = DeviceAccessibility.boldTextOf(context);
     // A slider is a row of its paper, its title where a row's text starts.
     Widget slider(LabeledSlider slider) =>
         Padding(padding: const EdgeInsets.only(top: Space.sm, bottom: Space.xs), child: slider);
@@ -132,7 +147,13 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
         PaperGroup(
           children: [
             toggle(l.focusMode, s.focusMode, (s, v) => s.copyWith(focusMode: v), subtitle: l.focusModeDesc),
-            toggle(l.boldText, s.boldText, (s, v) => s.copyWith(boldText: v)),
+            toggle(
+              l.boldText,
+              s.boldText || deviceBold,
+              (s, v) => s.copyWith(boldText: v),
+              subtitle: deviceBold ? l.settingOnInDevice : null,
+              enabled: !deviceBold,
+            ),
             toggle(l.keepScreenOn, s.keepScreenOn, (s, v) => s.copyWith(keepScreenOn: v)),
           ],
         ),

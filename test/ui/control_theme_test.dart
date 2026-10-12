@@ -259,6 +259,52 @@ void main() {
       expect(find.byIcon(Icons.check), findsNothing);
     });
 
+    testWidgets('$ui UI: a label too long for the line wraps between its words, inside the chip', (tester) async {
+      final theme = _theme(AppThemeMode.light, hebrewUi: hebrewUi);
+      final label = hebrewUi ? 'אתכונן לשינה' : 'get ready for bed';
+      Future<void> pumpAt(double textScale) => tester.pumpWidget(MaterialApp(
+            theme: theme,
+            home: MediaQuery(
+              data: MediaQueryData(size: const Size(200, 600), textScaler: TextScaler.linear(textScale)),
+              child: Directionality(
+                textDirection: hebrewUi ? TextDirection.rtl : TextDirection.ltr,
+                child: Scaffold(
+                  body: Align(
+                    alignment: AlignmentDirectional.topStart,
+                    child: SizedBox(
+                      width: 200,
+                      child: SeferChoiceChip(label: Text(label), selected: true, onSelected: (_) {}),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ));
+      final chip = find.descendant(of: find.byType(ChoiceChip), matching: find.byType(Material)).first;
+
+      // On one line, the label sits 16 in from each side, as the theme pads it.
+      await pumpAt(1);
+      final text = tester.renderObject<RenderParagraph>(find.text(label));
+      expect(text.didExceedMaxLines, isFalse);
+      expect(tester.getSize(chip).height, 36);
+      expect(tester.getSize(chip).width, tester.getSize(find.text(label)).width + 32);
+
+      // At 300%, on more, every line within the chip and none faded out.
+      await pumpAt(3);
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+      expect(paragraph.didExceedMaxLines, isFalse);
+      final lines = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: label.length));
+      expect({for (final box in lines) box.top}.length, greaterThan(1));
+      final chipRect = tester.getRect(chip);
+      final textRect = tester.getRect(find.text(label));
+      expect(chipRect.width, lessThanOrEqualTo(200));
+      expect(textRect.left - chipRect.left, greaterThanOrEqualTo(16));
+      expect(chipRect.right - textRect.right, greaterThanOrEqualTo(16));
+      expect(textRect.top, greaterThan(chipRect.top));
+      expect(textRect.bottom, lessThan(chipRect.bottom));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('$ui UI: a selected chip is bold, and focus adds no fill', (tester) async {
       final theme = _theme(AppThemeMode.light, hebrewUi: hebrewUi);
       await _pump(

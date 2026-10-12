@@ -46,7 +46,7 @@ class Chunk {
 }
 
 /// Verses many also read a third time in Hebrew after the Targum, whose
-/// Onkelos is mostly place names (SA OC 285:1; Rashi, Berakhot 8b).
+/// Onkelos is mostly place names (SA OC 285:1; Rashi, Berachot 8b).
 const kThirdReadingVerses = {'Numbers 32:3'};
 
 /// The guided reading sequence for one aliyah.

@@ -16,9 +16,11 @@ import '../services/optional_fonts.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/fonts_change_scope.dart';
 import 'celebrations.dart';
+import 'device_accessibility.dart';
 import 'pending_saves.dart';
 import 'providers.dart';
 import 'router.dart';
+import 'shell.dart';
 import 'system_bars.dart';
 import 'window_title_bar.dart';
 
@@ -105,6 +107,18 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     });
   }
 
+  /// Whether the device asks for less motion: Android's Remove animations
+  /// and the like come as MediaQuery's disableAnimations, but iOS's Reduce
+  /// Motion comes only as an accessibility feature of its own, which
+  /// MediaQuery leaves out.
+  static bool _deviceReducesMotion(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context) || View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
+
+  // MediaQuery, which rebuilds the app as the other features change, has no
+  // field for iOS's Reduce Motion, so its change alone wouldn't.
+  @override
+  void didChangeAccessibilityFeatures() => setState(() {});
+
   // The text theme follows the platform's language when the app does, and
   // so do the shortcuts' titles and the home-screen widget.
   @override
@@ -174,7 +188,8 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     if (OptionalFonts.isLoaded(settings.uiFont.family)) _uiFont = settings.uiFont;
 
     final systemHighContrast = MediaQuery.highContrastOf(context);
-    final reduceMotion = settings.reduceMotion || MediaQuery.disableAnimationsOf(context);
+    final deviceReducesMotion = _deviceReducesMotion(context);
+    final reduceMotion = settings.reduceMotion || deviceReducesMotion;
 
     final hebrewUi = _hebrewUi(settings.language);
 
@@ -220,6 +235,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
       color: shown.colorScheme.surface,
       debugShowCheckedModeBanner: false,
       routerConfig: router,
+      onNavigationNotification: (notification) => AppShell.reportBack(router, notification),
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [
@@ -238,19 +254,24 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
           : (light.brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light),
       builder: (context, child) {
         final mq = MediaQuery.of(context);
-        return MediaQuery(
-          data: mq.copyWith(
-            boldText: mq.boldText || settings.boldText,
-            disableAnimations: reduceMotion,
-            highContrast: systemHighContrast || AppTheme.isHighContrast(settings.theme),
-          ),
-          child: SystemBars(
-            child: WindowTitleBar(
-              child: FontsChangeScope(
-                // Status messages set for pages as wide as the window: those
-                // over the tabs, and a phone's (the shell sets them for the
-                // pane beside the rail).
-                child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+        // The device's own, for the switches that show the app's.
+        return DeviceAccessibility(
+          disableAnimations: deviceReducesMotion,
+          boldText: mq.boldText,
+          child: MediaQuery(
+            data: mq.copyWith(
+              boldText: mq.boldText || settings.boldText,
+              disableAnimations: reduceMotion,
+              highContrast: systemHighContrast || AppTheme.isHighContrast(settings.theme),
+            ),
+            child: SystemBars(
+              child: WindowTitleBar(
+                child: FontsChangeScope(
+                  // Status messages set for pages as wide as the window: those
+                  // over the tabs, and a phone's (the shell sets them for the
+                  // pane beside the rail).
+                  child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+                ),
               ),
             ),
           ),

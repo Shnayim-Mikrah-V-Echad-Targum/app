@@ -25,6 +25,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../helpers.dart';
 
 typedef _Scheduled = ({
+  tz.TZDateTime date,
   String? title,
   String? body,
   NotificationDetails details,
@@ -39,11 +40,20 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
   final android = _FakeAndroid();
   int cancels = 0;
   int schedules = 0;
-  bool failNextSchedule = false;
+
+  /// The ids of reminders the platform refuses.
+  final throwFor = <int>{};
+
+  /// Whether the next [cancelAll] fails, as a platform channel can.
+  bool failNextCancel = false;
 
   @override
   Future<void> cancelAll() async {
     await Future<void>.delayed(Duration.zero);
+    if (failNextCancel) {
+      failNextCancel = false;
+      throw PlatformException(code: 'error');
+    }
     cancels++;
     scheduled.clear();
   }
@@ -60,12 +70,10 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
     DateTimeComponents? matchDateTimeComponents,
   }) async {
     await Future<void>.delayed(Duration.zero);
-    if (failNextSchedule) {
-      failNextSchedule = false;
-      throw Exception('platform failure');
-    }
+    if (throwFor.contains(id)) throw ArgumentError.value(id, 'id', 'refused');
     schedules++;
     scheduled[id] = (
+      date: scheduledDate,
       title: title,
       body: body,
       details: notificationDetails,
@@ -100,9 +108,14 @@ class _FakeAndroid extends Fake implements AndroidFlutterLocalNotificationsPlugi
   }
 }
 
+/// Midnight before the plans the tests schedule, which begin on 11 October
+/// 2026: the time it is for a service, unless a test says otherwise.
+DateTime _beforePlans() => DateTime(2026, 10, 11);
+
 /// A service scheduling through [plugin], whose time zones (UTC, set in
-/// setUpAll) need no loading.
-NotificationService _service(_FakePlugin plugin) => NotificationService.forTesting(plugin, loadTimeZones: () async {});
+/// setUpAll) need no loading, and for which it is [now].
+NotificationService _service(_FakePlugin plugin, {DateTime Function() now = _beforePlans}) =>
+    NotificationService.forTesting(plugin, loadTimeZones: () async {}, now: now);
 
 /// A service that counts how often reminders are handed to it, and keeps
 /// the last of them, how they were worded and what it scheduled.
@@ -223,15 +236,75 @@ void main() {
       expect(plugin.android.channels['daily']!.name, he.notifChannelDaily);
     });
 
-    test('a plan that failed to schedule is tried again', () async {
-      final plugin = _FakePlugin()..failNextSchedule = true;
-      final service = _service(plugin);
+    test('a reminder the platform refuses costs only itself, and the plan is tried again', () async {
       final plan = planFrom(DateTime(2026, 10, 11, 8));
+      final plugin = _FakePlugin()..throwFor.add(plan.first.id);
+      final service = _service(plugin);
+
+      await service.reschedule(plan, en, copyIn(en));
+      expect(plugin.scheduled.keys.toSet(), ids(plan.sublist(1)), reason: 'the rest are still scheduled');
+
+      plugin.throwFor.clear();
+      await service.reschedule(plan, en, copyIn(en));
+      expect(plugin.cancels, 2, reason: 'the same plan, once it failed, is scheduled again');
+      expect(plugin.scheduled.keys.toSet(), ids(plan));
+    });
+
+    test('a plan refused in part, then the plan before it again, schedules that plan whole', () async {
+      final at20 = planFrom(DateTime(2026, 10, 11, 8), prefs: const ReminderPrefs(daily: true));
+      final at21 = planFrom(DateTime(2026, 10, 11, 8), prefs: const ReminderPrefs(daily: true, dailyMinutes: 21 * 60));
+      expect(ids(at21), ids(at20), reason: 'the same days, at other times');
+      final plugin = _FakePlugin();
+      final service = _service(plugin);
+      await service.reschedule(at20, en, copyIn(en));
+
+      // The reader moves the time to 21:00, and the platform refuses one.
+      plugin.throwFor.add(at21.first.id);
+      await service.reschedule(at21, en, copyIn(en));
+      expect(plugin.scheduled.keys.toSet(), ids(at21.sublist(1)));
+
+      // Then back to 20:00: the plan scheduled before, but no longer what
+      // the platform holds.
+      plugin.throwFor.clear();
+      await service.reschedule(at20, en, copyIn(en));
+      expect(plugin.scheduled.keys.toSet(), ids(at20));
+      for (final r in at20) {
+        expect(plugin.scheduled[r.id]!.date, tz.TZDateTime.from(r.localDateTime, tz.local), reason: '${r.id}');
+      }
+    });
+
+    test('a plan that could not be scheduled at all is scheduled on the next call', () async {
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      final plugin = _FakePlugin()..failNextCancel = true;
+      final service = _service(plugin);
 
       await service.reschedule(plan, en, copyIn(en));
       expect(plugin.scheduled, isEmpty);
       await service.reschedule(plan, en, copyIn(en));
       expect(plugin.scheduled.keys.toSet(), ids(plan));
+    });
+
+    test('a reminder refused in the middle of the plan leaves those after it scheduled', () async {
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      final refused = plan[plan.length ~/ 2];
+      final plugin = _FakePlugin()..throwFor.add(refused.id);
+
+      await _service(plugin).reschedule(plan, en, copyIn(en));
+      expect(plugin.scheduled.keys.toSet(), ids(plan)..remove(refused.id));
+    });
+
+    test('a reminder that comes due while it is scheduled is passed over, and the rest are scheduled', () async {
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      final plugin = _FakePlugin();
+      // Two seconds before the first: too late to schedule it.
+      final service = _service(plugin, now: () => plan.first.localDateTime.subtract(const Duration(seconds: 2)));
+
+      await service.reschedule(plan, en, copyIn(en));
+      expect(plugin.scheduled.keys.toSet(), ids(plan.sublist(1)));
+
+      // Passed over, it is no failure: the plan isn't scheduled again.
+      await service.reschedule(plan, en, copyIn(en));
+      expect(plugin.cancels, 1);
     });
 
     test('channels are created with names and descriptions in the app language', () async {
@@ -352,13 +425,13 @@ void main() {
     test('are never loaded without a reminder to schedule', () async {
       var loads = 0;
       final plugin = _FakePlugin();
-      final service = NotificationService.forTesting(plugin, loadTimeZones: () async => loads++);
+      final service = NotificationService.forTesting(plugin, loadTimeZones: () async => loads++, now: _beforePlans);
       await service.reschedule(reminders, en, copyIn(en));
       await service.reschedule(const [], en, copyIn(en));
       expect(loads, 1, reason: 'once, for the first reminders');
       expect(plugin.cancels, 2, reason: 'clearing the reminders needs no time zones');
 
-      final none = NotificationService.forTesting(_FakePlugin(), loadTimeZones: () async => loads++);
+      final none = NotificationService.forTesting(_FakePlugin(), loadTimeZones: () async => loads++, now: _beforePlans);
       await none.reschedule(const [], en, copyIn(en));
       expect(loads, 1);
     });
@@ -366,7 +439,7 @@ void main() {
     test('are waited for before scheduling', () async {
       final loaded = Completer<void>();
       final plugin = _FakePlugin();
-      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future);
+      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future, now: _beforePlans);
       final done = service.reschedule(reminders, en, copyIn(en));
       for (var i = 0; i < 4; i++) {
         await Future<void>.delayed(Duration.zero);
@@ -381,7 +454,7 @@ void main() {
     test('a call taken over while it waited for them schedules nothing', () async {
       final loaded = Completer<void>();
       final plugin = _FakePlugin();
-      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future);
+      final service = NotificationService.forTesting(plugin, loadTimeZones: () => loaded.future, now: _beforePlans);
       final first = service.reschedule(reminders, en, copyIn(en));
       // Let the first start waiting for the time zones.
       for (var i = 0; i < 4; i++) {
@@ -447,14 +520,14 @@ void main() {
       }
 
       change((s) => s.copyWith(habitAnchor: HabitAnchor.dinner));
-      expect(await bodies(), everyElement(endsWith(" · After dinner — it's yours.")));
+      expect(await bodies(), everyElement(endsWith(' · After dinner — your time for the parsha.')));
 
       change((s) => s.copyWith(language: AppLanguage.hebrew));
       expect(await bodies(), everyElement(endsWith(' · אחרי ארוחת הערב — זה הזמן שלך.')));
 
       change((s) => s.copyWith(habitAnchor: null, language: AppLanguage.english));
       final cleared = await bodies();
-      expect(cleared, everyElement(isNot(contains('it\'s yours'))));
+      expect(cleared, everyElement(isNot(contains('After dinner'))));
       expect(cleared.last, endsWith(' min'));
     });
 
@@ -501,8 +574,9 @@ void main() {
       final minutes = (verses * 25 / 60).ceil();
       expect(
         copyIn(en)(friday),
-        (title: "Today: Shishi, Shevi'i", body: 'Parshat Noach · $verses verses · about $minutes min'),
+        (title: 'Today: Shishi and Shevi’i', body: 'Parshat Noach · $verses verses · about $minutes min'),
       );
+      expect(copyIn(he)(friday).title, 'היום: שישי ושביעי');
       expect(copyIn(he)(friday).body, he.notifDailyBody('נח', he.versesCount(verses), minutes));
     });
 
@@ -525,10 +599,13 @@ void main() {
 
       test('ends the daily reminder, after its length', () {
         final copy = describe(revii, en, HabitAnchor.shacharit);
-        expect(copy.title, "Today: Revi'i");
+        expect(copy.title, 'Today: Revi’i');
         expect(copy.body, contains('After Shacharit'));
         expect(copy.body, contains('about 9 min'));
-        expect(copy.body, "Parshat Bereshit · 21 verses · about 9 min · After Shacharit — it's yours.");
+        expect(
+          copy.body,
+          'Parshat Bereshit · 21 verses · about 9 min · After Shacharit — your time for the parsha.',
+        );
         expect(describe(revii, he, HabitAnchor.shacharit).body, 'פרשת בראשית · 21 פסוקים · כ־9 דק׳ · אחרי שחרית — זה הזמן שלך.');
       });
 
@@ -540,11 +617,35 @@ void main() {
         final r = PlannedReminder(
           kind: ReminderKind.daily,
           date: revii.date,
-          minutes: revii.minutes,
+          minutes: 21 * 60,
           plan: revii.plan,
           aliyot: const [0, 1, 2, 3, 4, 5, 6],
         );
-        expect(describe(r, en, HabitAnchor.bed).body, endsWith(" · Before bed — it's yours."));
+        expect(describe(r, en, HabitAnchor.bed).body, endsWith(' · Before bed — your time for the parsha.'));
+      });
+
+      test('is left out of a reminder far from its usual time: no Shacharit at 8 PM', () {
+        final evening = PlannedReminder(
+          kind: ReminderKind.daily,
+          date: revii.date,
+          minutes: 20 * 60,
+          plan: revii.plan,
+          aliyot: revii.aliyot,
+        );
+        expect(describe(evening, en, HabitAnchor.shacharit).body, 'Parshat Bereshit · 21 verses · about 9 min');
+        expect(describe(evening, he, HabitAnchor.shacharit).body, 'פרשת בראשית · 21 פסוקים · כ־9 דק׳');
+        // Four hours on is still near.
+        final late = PlannedReminder(
+          kind: ReminderKind.daily,
+          date: revii.date,
+          minutes: 11 * 60 + 30,
+          plan: revii.plan,
+          aliyot: revii.aliyot,
+        );
+        expect(
+          describe(late, en, HabitAnchor.shacharit).body,
+          endsWith(' · After Shacharit — your time for the parsha.'),
+        );
       });
 
       test('is named in every language, each routine its own way', () {
@@ -592,10 +693,18 @@ void main() {
 
     test('the Erev Shabbat and check-in reminders have a title and a body', () {
       final plan = planFrom(DateTime(2026, 10, 11, 8));
-      final friday = copyIn(en)(plan.firstWhere((r) => r.kind == ReminderKind.erevShabbat));
-      expect(friday, (title: en.notifFridayTitle('Noach'), body: en.notifFridayBody));
-      final checkIn = copyIn(en)(plan.firstWhere((r) => r.kind == ReminderKind.checkIn));
-      expect(checkIn, (title: en.notifCheckInTitle, body: en.notifCheckInBody));
+      final erevShabbat = plan.firstWhere((r) => r.kind == ReminderKind.erevShabbat);
+      final checkIn = plan.firstWhere((r) => r.kind == ReminderKind.checkIn);
+      expect(copyIn(en)(erevShabbat), (
+        title: 'Erev Shabbat · Parshat Noach',
+        body: 'There’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.',
+      ));
+      expect(copyIn(he)(erevShabbat), (
+        title: 'ערב שבת · פרשת נח',
+        body: 'יש עוד זמן — אפשר גם לסיים בשבת בבוקר מתוך חומש ולרשום אחרי שבת.',
+      ));
+      expect(copyIn(en)(checkIn), (title: 'Shavua tov!', body: 'Did you read on Shabbat? Tap to log it.'));
+      expect(copyIn(he)(checkIn), (title: 'שבוע טוב!', body: 'קראת בשבת? אפשר לרשום זאת באפליקציה.'));
     });
   });
 }

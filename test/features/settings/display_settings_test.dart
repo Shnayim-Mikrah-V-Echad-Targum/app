@@ -136,7 +136,7 @@ void main() {
   testWidgets('its switches are paper rows in groups: text, study aids and reading', (tester) async {
     final c = await open(tester);
     for (final (heading, rows) in [
-      ('Text', ['Vowels (nikud)', 'Cantillation (ta\'amim)', 'Show ketiv (as written)', 'Verse numbers', 'Write the Divine Name as ה׳', 'Justify text']),
+      ('Text', ['Vowels (nikud)', 'Cantillation (ta’amim)', 'Show ketiv (as written)', 'Verse numbers', 'Write the Divine Name as ה׳', 'Justify text']),
       ('Study aids', ['English translation (study aid)', 'Show Rashi alongside']),
       ('Reading', ['Focus mode', 'Bold text', 'Keep the screen on while reading']),
     ]) {
@@ -160,6 +160,64 @@ void main() {
     await tester.tap(rashiScript);
     await tester.pumpAndSettle();
     expect(c.read(settingsProvider).rashiScript, isTrue);
+  });
+
+  testWidgets("Bold text, while the device's is on, is shown on and disabled, saying so", (tester) async {
+    final handle = tester.ensureSemantics();
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(boldText: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    final c = await open(tester);
+    final row = find.widgetWithText(SwitchRow, 'Bold text');
+    Switch toggle() => tester.widget<Switch>(find.descendant(of: row, matching: find.byType(Switch)));
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    expect(toggle().value, isTrue, reason: 'in force, though the app’s own is off');
+    expect(toggle().onChanged, isNull);
+    expect(find.descendant(of: row, matching: find.text('On in your device’s settings')), findsOneWidget);
+    expect(
+      tester.getSemantics(row),
+      isSemantics(
+        label: 'Bold text\nOn in your device’s settings',
+        hasToggledState: true,
+        isToggled: true,
+        hasEnabledState: true,
+        isEnabled: false,
+      ),
+    );
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(c.read(settingsProvider).boldText, isFalse);
+
+    // The device's turned off: the app's own setting again, with no
+    // description, to change.
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures();
+    await tester.pumpAndSettle();
+    expect(toggle().value, isFalse);
+    expect(toggle().onChanged, isNotNull);
+    expect(find.text('On in your device’s settings'), findsNothing);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(c.read(settingsProvider).boldText, isTrue);
+    handle.dispose();
+  });
+
+  testWidgets("Bold text is shown disabled as the device's turns on with the app's own already on", (tester) async {
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await open(tester, settings: const AppSettings(onboardingComplete: true, boldText: true));
+    final row = find.widgetWithText(SwitchRow, 'Bold text');
+    Switch toggle() => tester.widget<Switch>(find.descendant(of: row, matching: find.byType(Switch)));
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    expect(toggle().value, isTrue);
+    expect(toggle().onChanged, isNotNull);
+
+    // The text is bold already, so the app's MediaQuery doesn't change:
+    // the switch hears of the device's alone.
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(boldText: true);
+    await tester.pumpAndSettle();
+    expect(toggle().value, isTrue);
+    expect(toggle().onChanged, isNull);
+    expect(find.descendant(of: row, matching: find.text('On in your device’s settings')), findsOneWidget);
   });
 
   testWidgets('line width is a segmented control, and line spacing starts at 1.6', (tester) async {

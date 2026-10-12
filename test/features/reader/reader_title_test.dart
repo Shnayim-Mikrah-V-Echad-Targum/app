@@ -63,14 +63,14 @@ void main() {
         settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.english),
       );
       final parsha = find.descendant(of: bar, matching: find.text(hebrew ? 'נח' : 'Noach'));
-      final aliyah = find.descendant(of: bar, matching: find.text(hebrew ? 'רביעי' : "Revi'i · רביעי"));
+      final aliyah = find.descendant(of: bar, matching: find.text(hebrew ? 'רביעי' : 'Revi’i · רביעי'));
       expect(find.descendant(of: bar, matching: find.byType(Eyebrow)), findsOneWidget);
       expect(tester.getBottomLeft(parsha).dy, lessThanOrEqualTo(tester.getTopLeft(aliyah).dy));
       expect(tester.getSize(bar).height, 64);
       // Heard as the page names itself, the page's heading of level 1, as
       // every page's title is, over the chapter heads of level 2.
       final title = tester.getSemantics(aliyah);
-      expect(title, isSemantics(label: hebrew ? 'נח · רביעי' : "Noach · Revi'i", isHeader: true));
+      expect(title, isSemantics(label: hebrew ? 'נח · רביעי' : 'Noach · Revi’i', isHeader: true));
       expect(title.getSemanticsData().headingLevel, 1);
       handle.dispose();
     });

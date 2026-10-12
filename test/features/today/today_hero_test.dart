@@ -113,7 +113,7 @@ void main() {
         tester,
         progress: ProgressState(weeks: {'5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 8))}),
       );
-      expect(find.bySemanticsLabel("This week's parsha is complete. Yasher koach!"), findsOneWidget);
+      expect(find.bySemanticsLabel('This week’s parsha is complete. Yasher koach!'), findsOneWidget);
       expect(find.text('Ready to hear it read on Shabbat.'), findsOneWidget);
       expect(find.byType(ParshaRings), findsNothing);
       expect(find.textContaining(RegExp('^(Start|Continue) ·')), findsNothing);
@@ -315,7 +315,7 @@ void main() {
   group('below the reading', () {
     testWidgets('the week strip is headed, with its legend a tap away', (tester) async {
       await openToday(tester, progress: _bereshit());
-      final header = find.text("This week's plan");
+      final header = find.text('This week’s plan');
       await tester.ensureVisible(header);
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Legend'));
@@ -341,7 +341,7 @@ void main() {
 
     testWidgets("this week's haftarah and discussion share one sheet", (tester) async {
       final c = await openToday(tester, progress: _bereshit());
-      final group = find.ancestor(of: find.text("Discuss this week's parsha"), matching: find.byType(PaperGroup));
+      final group = find.ancestor(of: find.text('Discuss this week’s parsha'), matching: find.byType(PaperGroup));
       await tester.ensureVisible(group);
       await tester.pumpAndSettle();
       expect(find.text('This week'), findsOneWidget);
@@ -357,7 +357,7 @@ void main() {
 
       await openToday(tester, settings: _settings.copyWith(haftarahEnabled: false), progress: _bereshit());
       expect(find.widgetWithText(PaperRow, 'Haftarah'), findsNothing);
-      expect(find.widgetWithText(PaperRow, "Discuss this week's parsha"), findsOneWidget);
+      expect(find.widgetWithText(PaperRow, 'Discuss this week’s parsha'), findsOneWidget);
     });
   });
 

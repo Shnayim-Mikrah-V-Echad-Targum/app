@@ -146,7 +146,10 @@ class PortionInfo {
   /// Index of the book in the Torah, 0 (Genesis) – 4 (Deuteronomy).
   int get bookIndex => kTorahBooks.indexOf(book);
 
-  String displayName({required bool ashkenazi}) => ashkenazi ? nameAshkenazi : nameEn;
+  /// The English name as it is shown, in the chosen pronunciation, its
+  /// apostrophes typeset (Ha’azinu). [nameEn] keeps the data's straight
+  /// ones, as the server's titles of the weekly threads have them.
+  String displayName({required bool ashkenazi}) => (ashkenazi ? nameAshkenazi : nameEn).replaceAll("'", '’');
 }
 
 const kTorahBooks = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'];

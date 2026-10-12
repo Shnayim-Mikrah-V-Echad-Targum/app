@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/features/community/data/models.dart';
+import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
@@ -377,6 +380,327 @@ void main() {
     expect(card.clipBehavior, Clip.none);
     final shape = _theme(AppThemeMode.light).cardTheme.shape! as RoundedRectangleBorder;
     expect(tester.widget<SeferInkWell>(find.byType(SeferInkWell)).borderRadius, shape.borderRadius);
+  });
+
+  group('the navigation bar and rail ring the focused indicator', () {
+    /// The ring that [icon]'s IndicatorFocusRing paints, or null.
+    CustomPainter? ringOf(WidgetTester tester, Finder icon) =>
+        tester.widget<CustomPaint>(find.ancestor(of: icon, matching: find.byType(CustomPaint)).first).foregroundPainter;
+
+    // Parsha's icon, which is not the selected tab's.
+    final parsha = find.descendant(
+      of: find.byWidgetPredicate((w) => w is NavigationBar || w is NavigationRail),
+      matching: find.byIcon(Icons.menu_book_outlined),
+    );
+
+    for (final (name, size, indicator, radius) in [
+      ('a bar destination', const Size(412, 915), const Size(64, 32), 16.0),
+      ('a rail destination', const Size(1366, 860), const Size(56, 32), 12.0),
+    ]) {
+      for (final mode in [AppThemeMode.light, AppThemeMode.highContrastDark]) {
+        testWidgets('${mode.name}: $name, from the keyboard', (tester) async {
+          _keyboardMode();
+          await openRoute(
+            tester,
+            '/today',
+            size: size,
+            now: DateTime(2026, 10, 9, 11),
+            settings: AppSettings(onboardingComplete: true, theme: mode),
+          );
+          final sefer = SeferColors.of(tester.element(find.byType(Scaffold).first));
+          expect(ringOf(tester, parsha), isNull);
+
+          Focus.of(tester.element(parsha)).requestFocus();
+          // Focus moves in a microtask, which may come after the next frame.
+          await tester.pumpAndSettle();
+          // FocusRingBorder's gap and ring, around the indicator centred on
+          // the icon.
+          final shape = RRect.fromRectAndRadius(
+            Rect.fromCenter(
+              center: tester.getSize(parsha).center(Offset.zero),
+              width: indicator.width,
+              height: indicator.height,
+            ),
+            Radius.circular(radius),
+          );
+          expect(
+            find.ancestor(of: parsha, matching: find.byType(CustomPaint)).first,
+            paints
+              ..rrect(rrect: shape.inflate(1), color: sefer.focusGap, strokeWidth: 2, style: PaintingStyle.stroke)
+              ..rrect(rrect: shape.inflate(3.5), color: sefer.focus, strokeWidth: 3, style: PaintingStyle.stroke),
+          );
+          // With no wash under it: the colour the ink well would wash in.
+          final inkWell = tester.widget<InkResponse>(
+            find.ancestor(of: parsha, matching: find.byWidgetPredicate((w) => w is InkResponse)).first,
+          );
+          final wash = inkWell.overlayColor?.resolve({WidgetState.focused}) ??
+              inkWell.focusColor ??
+              Theme.of(tester.element(parsha)).focusColor;
+          expect(wash, Colors.transparent);
+
+          // A switch to touch drops the ring, though the focus stays.
+          FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTouch;
+          await tester.pump();
+          expect(Focus.of(tester.element(parsha)).hasPrimaryFocus, isTrue);
+          expect(ringOf(tester, parsha), isNull);
+        });
+      }
+
+      testWidgets('$name, the selected one, from the keyboard', (tester) async {
+        _keyboardMode();
+        await openRoute(tester, '/today', size: size, now: DateTime(2026, 10, 9, 11));
+        final sefer = SeferColors.of(tester.element(find.byType(Scaffold).first));
+        // Today's selected icon: an IndicatorFocusRing of its own.
+        final today = find.descendant(
+          of: find.byWidgetPredicate((w) => w is NavigationBar || w is NavigationRail),
+          matching: find.byIcon(Icons.today),
+        );
+        expect(ringOf(tester, today), isNull);
+        Focus.of(tester.element(today)).requestFocus();
+        await tester.pumpAndSettle();
+        final shape = RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: tester.getSize(today).center(Offset.zero),
+            width: indicator.width,
+            height: indicator.height,
+          ),
+          Radius.circular(radius),
+        );
+        // The gap and ring stand clear of the selected indicator's fill.
+        expect(
+          find.ancestor(of: today, matching: find.byType(CustomPaint)).first,
+          paints
+            ..rrect(rrect: shape.inflate(1), color: sefer.focusGap, strokeWidth: 2, style: PaintingStyle.stroke)
+            ..rrect(rrect: shape.inflate(3.5), color: sefer.focus, strokeWidth: 3, style: PaintingStyle.stroke),
+        );
+      });
+
+      testWidgets('$name focused under touch shows no ring', (tester) async {
+        FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTouch;
+        addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+        await openRoute(tester, '/today', size: size, now: DateTime(2026, 10, 9, 11));
+        Focus.of(tester.element(parsha)).requestFocus();
+        // Focus moves in a microtask, which may come after the next frame.
+        await tester.pumpAndSettle();
+        expect(Focus.of(tester.element(parsha)).hasPrimaryFocus, isTrue);
+        expect(ringOf(tester, parsha), isNull);
+      });
+    }
+  });
+
+  testWidgets('the rail, scrolling in a short window, cuts off no ring as Tab moves through it', (tester) async {
+    _keyboardMode();
+    // A phone held sideways.
+    await openRoute(tester, '/today', size: const Size(800, 360), now: DateTime(2026, 10, 9, 11));
+    final rail = find.byType(NavigationRail);
+    final viewport = tester.getRect(find.descendant(of: rail, matching: find.byType(SingleChildScrollView)));
+    final icons = {
+      for (final (label, icon) in [
+        ('Today', Icons.today),
+        ('Parsha', Icons.menu_book_outlined),
+        ('Progress', Icons.donut_large_outlined),
+        ('Community', Icons.forum_outlined),
+        ('Settings', Icons.settings_outlined),
+      ])
+        label: find.descendant(of: rail, matching: find.byIcon(icon)),
+    };
+    // The destinations are taller together than the window: the rail scrolls,
+    // and clips what lies past its edges.
+    expect(tester.getRect(icons['Settings']!).bottom + 40, greaterThan(viewport.bottom));
+
+    // Today, at the top of the rail's scrolling content, then on with Tab,
+    // which scrolls each destination into view.
+    Focus.of(tester.element(icons['Today']!)).requestFocus();
+    await tester.pumpAndSettle();
+    final ringed = <String>{};
+    for (var i = 0; i < 12 && ringed.length < icons.length; i++) {
+      if (i > 0) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
+      }
+      for (final MapEntry(key: label, value: icon) in icons.entries) {
+        if (!Focus.of(tester.element(icon)).hasPrimaryFocus) continue;
+        ringed.add(label);
+        // The ring's outer edge: 5 out from the 56×32 indicator, centred on
+        // the icon.
+        final ring = Rect.fromCenter(center: tester.getCenter(icon), width: 56 + 10, height: 32 + 10);
+        expect(viewport.contains(ring.topLeft) && viewport.contains(ring.bottomRight), isTrue,
+            reason: '$label: $ring within $viewport');
+      }
+    }
+    expect(ringed, icons.keys.toSet(), reason: 'Tab reached every destination');
+  });
+
+  testWidgets('the reasons to report a post are ringed from the keyboard, within the dialog', (tester) async {
+    _keyboardMode();
+    await tester.pumpWidget(MaterialApp(
+      theme: _theme(AppThemeMode.light),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(child: TextButton(onPressed: () => showReportDialog(context), child: const Text('Report'))),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('Report'));
+    await tester.pumpAndSettle();
+    final rings = find.byType(TileFocusRing);
+    expect(rings, findsNWidgets(6));
+    final viewport = tester.getRect(
+      find.descendant(of: find.byType(AlertDialog), matching: find.byType(SingleChildScrollView)).first,
+    );
+
+    // Tab to the first reason.
+    final first = rings.first;
+    for (var i = 0; i < 10; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final focused = FocusManager.instance.primaryFocus?.context;
+      if (focused != null && find.descendant(of: first, matching: find.byWidget(focused.widget)).evaluate().isNotEmpty) {
+        break;
+      }
+    }
+    final ringPaint = find.descendant(of: first, matching: find.byType(CustomPaint)).first;
+    expect(tester.widget<CustomPaint>(ringPaint).foregroundPainter, isNotNull);
+    // 4 out from the tile's sides, as high as it is, and within the
+    // dialog's scrolling content, which clips.
+    final tile = tester.getRect(find.descendant(of: first, matching: find.byType(RadioListTile<ReportReason>)));
+    final outer = RRect.fromRectAndRadius(Rect.fromLTRB(-7, 0, tile.width + 7, tile.height), const Radius.circular(8));
+    expect(ringPaint, paints..drrect(outer: outer, inner: outer.deflate(3), color: Palettes.seferLight.focus));
+    expect(viewport.left, lessThanOrEqualTo(tile.left - 7));
+    expect(viewport.right, greaterThanOrEqualTo(tile.right + 7));
+    // With no wash under it.
+    final inkWell = find.descendant(of: first, matching: find.byType(InkWell));
+    expect(Theme.of(tester.element(inkWell)).focusColor, Colors.transparent);
+  });
+
+  group('a popup menu item', () {
+    Future<void> openMenu(WidgetTester tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: _theme(AppThemeMode.light),
+        home: Scaffold(
+          appBar: AppBar(
+            actions: [
+              PopupMenuButton<int>(
+                itemBuilder: (context) => const [
+                  SeferMenuItem(value: 1, child: Text('One')),
+                  SeferMenuItem(value: 2, child: Text('Two')),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ));
+      await tester.tap(find.byType(PopupMenuButton<int>));
+      await tester.pumpAndSettle();
+    }
+
+    Finder item(String label) => find.ancestor(of: find.text(label), matching: find.byType(SeferMenuItem<int>));
+    Finder ringPaint(String label) =>
+        find.descendant(of: item(label), matching: find.byType(CustomPaint)).first;
+    CustomPainter? ringOf(WidgetTester tester, String label) =>
+        tester.widget<CustomPaint>(ringPaint(label)).foregroundPainter;
+
+    testWidgets('is ringed inside, with no wash, from the keyboard', (tester) async {
+      _keyboardMode();
+      final focus = _theme(AppThemeMode.light).extension<SeferColors>()!.focus;
+      await openMenu(tester);
+      expect(ringOf(tester, 'Two'), isNull);
+
+      Focus.of(tester.element(find.text('Two'))).requestFocus();
+      // Focus moves in a microtask, which may come after the next frame.
+      await tester.pumpAndSettle();
+      final size = tester.getSize(item('Two'));
+      expect(size.height, kMinInteractiveDimension);
+      expect(tester.getSize(ringPaint('Two')), size);
+      // 3 px, 4 px in from the item's edges, radius 8.
+      final outer = RRect.fromRectAndRadius((Offset.zero & size).deflate(4), const Radius.circular(8));
+      expect(ringPaint('Two'), paints..drrect(outer: outer, inner: outer.deflate(3), color: focus));
+      expect(ringOf(tester, 'One'), isNull);
+      // The item's ink well draws no wash under the ring.
+      final inkWell = find.descendant(of: item('Two'), matching: find.byType(InkWell));
+      expect(Theme.of(tester.element(inkWell)).focusColor, Colors.transparent);
+      // Its label starts where Material's would, 12 in.
+      expect(tester.getTopLeft(find.text('Two')).dx - tester.getTopLeft(item('Two')).dx, 12);
+
+      // A switch to touch drops the ring.
+      FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTouch;
+      await tester.pump();
+      expect(ringOf(tester, 'Two'), isNull);
+    });
+
+    testWidgets('focused under touch shows no ring', (tester) async {
+      FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTouch;
+      addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+      await openMenu(tester);
+      Focus.of(tester.element(find.text('Two'))).requestFocus();
+      // Focus moves in a microtask, which may come after the next frame.
+      await tester.pumpAndSettle();
+      expect(Focus.of(tester.element(find.text('Two'))).hasPrimaryFocus, isTrue);
+      expect(ringOf(tester, 'Two'), isNull);
+    });
+  });
+
+  group('a list tile', () {
+    final ringPaint = find.descendant(of: find.byType(TileFocusRing), matching: find.byType(CustomPaint)).first;
+
+    /// The ring that TileFocusRing paints on its tile, or null.
+    CustomPainter? ringOf(WidgetTester tester) => tester.widget<CustomPaint>(ringPaint).foregroundPainter;
+
+    Future<void> pumpTile(WidgetTester tester, {bool outside = false}) => tester.pumpWidget(MaterialApp(
+          theme: _theme(AppThemeMode.light),
+          home: Scaffold(
+            body: Center(
+              child: TileFocusRing(
+                outside: outside,
+                child: ListTile(onTap: () {}, title: const Text('Rishon')),
+              ),
+            ),
+          ),
+        ));
+
+    for (final outside in [false, true]) {
+      testWidgets('is ringed ${outside ? 'outside' : 'inside'}, with no wash, from the keyboard', (tester) async {
+        await pumpTile(tester, outside: outside);
+        expect(ringOf(tester), isNull);
+
+        // Tab switches to keyboard mode and moves focus to the tile.
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        // 3 px, radius 8: 4 px in from the tile's edges, or 4 px out from its
+        // sides and as high as it is.
+        final size = tester.getSize(find.byType(ListTile));
+        expect(tester.getSize(ringPaint), size);
+        final area = outside
+            ? Rect.fromLTRB(-7, 0, size.width + 7, size.height)
+            : (Offset.zero & size).deflate(4);
+        final outer = RRect.fromRectAndRadius(area, const Radius.circular(8));
+        expect(ringPaint, paints..drrect(outer: outer, inner: outer.deflate(3), color: Palettes.seferLight.focus));
+        final inkWell = find.descendant(of: find.byType(ListTile), matching: find.byType(InkWell));
+        expect(Theme.of(tester.element(inkWell)).focusColor, Colors.transparent);
+
+        // A touch elsewhere hides it, though focus stays; a key brings it back.
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pump();
+        expect(Focus.of(tester.element(find.text('Rishon'))).hasPrimaryFocus, isTrue);
+        expect(ringOf(tester), isNull);
+        await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pump();
+        expect(ringOf(tester), isNotNull);
+      });
+    }
+
+    testWidgets('focused under touch shows no ring', (tester) async {
+      FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTouch;
+      addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+      await pumpTile(tester);
+      Focus.of(tester.element(find.text('Rishon'))).requestFocus();
+      // Focus moves in a microtask, which may come after the next frame.
+      await tester.pumpAndSettle();
+      expect(Focus.of(tester.element(find.text('Rishon'))).hasPrimaryFocus, isTrue);
+      expect(ringOf(tester), isNull);
+    });
   });
 
   group('the slider overlay', () {

@@ -161,7 +161,8 @@ class _Rise extends AnimatedWidget {
 /// the one beneath before the swipe is released. That part is the
 /// framework's own [PredictiveBackPageTransitionsBuilder], which also listens
 /// for the gesture, so it is always in the tree; each of the two transitions
-/// stands still while the other is in charge.
+/// stands still while the other is in charge. The app's pages take the
+/// gesture only while they are on show (lib/app/app_page.dart).
 class FadeForwardsDirectionalPageTransitionsBuilder extends PageTransitionsBuilder {
   const FadeForwardsDirectionalPageTransitionsBuilder();
 

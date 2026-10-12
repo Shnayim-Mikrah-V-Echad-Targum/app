@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../app/device_accessibility.dart';
 import '../../../app/providers.dart';
 import '../../../core/text/hebrew_text.dart';
 import '../../../services/feedback.dart';
@@ -38,15 +39,23 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
     }
   }
 
-  /// Applies [preset], saying so with a way to undo it: back to the settings
-  /// exactly as they were.
+  /// Applies [preset], saying so with a way to undo it: back to the display
+  /// settings as they were, but for any changed since.
   static void _apply(BuildContext context, WidgetRef ref, DisplayPreset preset, String message) {
     final l = context.l10n;
     final notifier = ref.read(settingsProvider.notifier);
     final before = ref.read(settingsProvider);
     final dark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
     notifier.update((s) => applyPreset(s, preset, darkPreferred: dark));
-    showStatus(context, message, action: SnackBarAction(label: l.actionUndo, onPressed: () => notifier.replace(before)));
+    final after = ref.read(settingsProvider);
+    showStatus(
+      context,
+      message,
+      action: SnackBarAction(
+        label: l.actionUndo,
+        onPressed: () => notifier.update((s) => undoDisplayChange(s, before: before, after: after)),
+      ),
+    );
   }
 
   @override
@@ -54,6 +63,9 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
     void update(AppSettings Function(AppSettings) f) => ref.read(settingsProvider.notifier).update(f);
+    // The device's Reduce motion is in force whatever the app's says: the
+    // switch shows it on, and leaves it to the device's settings.
+    final deviceReduced = DeviceAccessibility.disableAnimationsOf(context);
     final presets = [
       (DisplayPreset.largePrint, l.presetLargePrint, l.presetLargePrintDesc, Icons.format_size),
       (DisplayPreset.dyslexia, l.presetDyslexia, l.presetDyslexiaDesc, Icons.spellcheck),
@@ -117,9 +129,9 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             SwitchRow(
               icon: Icons.motion_photos_off_outlined,
               title: l.reduceMotion,
-              subtitle: l.reduceMotionDesc,
-              value: s.reduceMotion,
-              onChanged: (v) => update((s) => s.copyWith(reduceMotion: v)),
+              subtitle: deviceReduced ? l.settingOnInDevice : l.reduceMotionDesc,
+              value: s.reduceMotion || deviceReduced,
+              onChanged: deviceReduced ? null : (v) => update((s) => s.copyWith(reduceMotion: v)),
             ),
             SwitchRow(
               icon: Icons.vibration_outlined,

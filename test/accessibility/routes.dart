@@ -40,7 +40,8 @@ const a11yRoutes = [
 
 /// Pages whose texts load behind a spinner, which never settles: the
 /// reader, guided at Revi'i and the full text of Rishon, and a haftarah.
-/// semantics_invariants_test.dart visits them with [a11yRoutes].
+/// semantics_invariants_pages_test.dart checks them in every theme, once it
+/// has found their verses.
 const a11yLoadingRoutes = ['/read/5787:2/3', '/read/5787:2/0?mode=full', '/haftarah/5787:2'];
 
 /// The welcome and the steps of onboarding, visited before it is done, and
@@ -55,5 +56,12 @@ const a11ySettings = AppSettings(onboardingComplete: true);
 
 /// All three reminders on, for the reminders page as a phone shows it, where
 /// they can be scheduled (with PhoneNotifications from test/helpers.dart).
-const a11yRemindersOn =
-    AppSettings(onboardingComplete: true, dailyReminder: true, fridayReminder: true, checkInReminder: true);
+/// The daily one comes at 8 PM after Shacharit, so the page offers to move
+/// it to Shacharit's time.
+const a11yRemindersOn = AppSettings(
+  onboardingComplete: true,
+  dailyReminder: true,
+  fridayReminder: true,
+  checkInReminder: true,
+  habitAnchor: HabitAnchor.shacharit,
+);

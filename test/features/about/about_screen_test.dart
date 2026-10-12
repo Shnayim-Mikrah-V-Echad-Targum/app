@@ -29,7 +29,7 @@ void main() {
         (tester) async {
       await openAbout(tester, language: language);
       expect(find.text('שניים מקרא ואחד תרגום'), findsOneWidget, reason: 'never twice in the Hebrew interface');
-      expect(find.text("Shnayim Mikra v'Echad Targum"), language == AppLanguage.english ? findsOneWidget : findsNothing);
+      expect(find.text('Shnayim Mikra v’Echad Targum'), language == AppLanguage.english ? findsOneWidget : findsNothing);
     });
   }
 
@@ -39,10 +39,10 @@ void main() {
     expect(find.byWidgetPredicate((w) => w is AppMark && w.size == 72), findsOneWidget);
     expect(
       tester.getSemantics(find.text('שניים מקרא ואחד תרגום')),
-      isSemantics(label: "Shnayim Mikra v'Echad Targum", isHeader: true),
+      isSemantics(label: 'Shnayim Mikra v’Echad Targum', isHeader: true),
     );
     // The English name under it is for the eye: the heading says it.
-    expect(find.bySemanticsLabel("Shnayim Mikra v'Echad Targum"), findsOneWidget);
+    expect(find.bySemanticsLabel('Shnayim Mikra v’Echad Targum'), findsOneWidget);
     expect(find.byType(SeferDivider), findsOneWidget);
     // The page's one heading of level 1: the app bar's "About" shows, for
     // the eye alone, only once the name has scrolled under it.
@@ -50,7 +50,7 @@ void main() {
       final data = node.getSemanticsData();
       return data.flagsCollection.isHeader && data.headingLevel == 1;
     });
-    expect(levelOne.evaluate().map((n) => n.label), ["Shnayim Mikra v'Echad Targum"]);
+    expect(levelOne.evaluate().map((n) => n.label), ['Shnayim Mikra v’Echad Targum']);
     double titleOpacity() => tester
         .widget<AnimatedOpacity>(find.descendant(of: find.byType(AppBar), matching: find.byType(AnimatedOpacity)))
         .opacity;

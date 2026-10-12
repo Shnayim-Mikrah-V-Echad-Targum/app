@@ -32,14 +32,16 @@ import '../features/settings/screens/reminder_settings_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/today/today_screen.dart';
 import '../ui/widgets/fallbacks.dart';
+import 'app_page.dart';
 import 'providers.dart';
 import 'routes.dart';
 import 'shell.dart';
 
 /// Every page uses the app's (Material) theme transitions, which become
-/// instant when Reduce Motion is on.
+/// instant when Reduce Motion is on, and takes a back swipe only while it is
+/// the page on show (see [AppPage]).
 Page<void> _page(GoRouterState state, Widget child) =>
-    MaterialPage<void>(key: state.pageKey, name: state.uri.path, child: child);
+    AppPage<void>(key: state.pageKey, name: state.uri.path, child: child);
 
 GoRoute _route(String path, Widget Function(GoRouterState s) build, {List<RouteBase> routes = const []}) =>
     GoRoute(path: path, pageBuilder: (context, state) => _page(state, build(state)), routes: routes);

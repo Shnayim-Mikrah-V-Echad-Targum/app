@@ -2,7 +2,7 @@
 -- GENERATED from assets/data/parshiyot.json by tool/data/gen_supabase_reference.py.
 
 insert into public.categories (slug, name_en, name_he, description_en, description_he, sort_order, is_locked) values
-  ('parsha', 'Parshat HaShavua', 'פרשת השבוע', 'A discussion thread for every week''s parsha.', 'שרשור דיון לכל פרשת שבוע.', 1, false),
+  ('parsha', 'Parshat HaShavua', 'פרשת השבוע', 'A discussion thread for every week’s parsha.', 'שרשור דיון לכל פרשת שבוע.', 1, false),
   ('questions', 'Questions & answers', 'שאלות ותשובות', 'Ask about a verse, a Targum or a Rashi.', 'שאלות על פסוק, תרגום או רש״י.', 2, false),
   ('divrei-torah', 'Divrei Torah', 'דברי תורה', 'Share an insight on the parsha.', 'שיתוף חידוש על הפרשה.', 3, false),
   ('chavruta', 'Chavruta & encouragement', 'חברותא ועידוד', 'Find a learning partner and keep each other going.', 'מציאת חברותא ועידוד הדדי.', 4, false),

@@ -23,7 +23,7 @@
     "shortcuts": [
         {
             "name": "Today · היום",
-            "description": "This week's parsha and today's reading",
+            "description": "This week’s parsha and today’s reading",
             "url": "./#/today",
             "icons": [
                 {
@@ -35,7 +35,7 @@
         },
         {
             "name": "Progress · התקדמות",
-            "description": "Your streaks and the year's portions",
+            "description": "Your streaks and the year’s portions",
             "url": "./#/progress",
             "icons": [
                 {
@@ -52,7 +52,7 @@
             "sizes": "412x915",
             "type": "image/png",
             "form_factor": "narrow",
-            "label": "Today: this week's parsha, the three readings and today's reading"
+            "label": "Today: this week’s parsha, the three readings and today’s reading"
         },
         {
             "src": "screenshots/reader-narrow.png",

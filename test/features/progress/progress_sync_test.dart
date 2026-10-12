@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,6 +61,9 @@ class _CountingRepo extends Fake implements ForumRepository {
 
   int loads = 0;
   int saves = 0;
+
+  /// When each [loadProgress] was called, by the clock the test controls.
+  final loadTimes = <DateTime>[];
   int profileLoads = 0;
 
   /// Signs in or out, or (with the same user) mimics a token refresh.
@@ -89,6 +93,7 @@ class _CountingRepo extends Fake implements ForumRepository {
   @override
   Future<Map<String, dynamic>?> loadProgress() async {
     loads++;
+    loadTimes.add(clock.now());
     final id = user!.id;
     await gate?.future;
     final json = backups[id];
@@ -144,6 +149,8 @@ final _simchatTorah = LocalDate(2026, 10, 4);
 final _toldotWednesday = LocalDate(2026, 11, 11);
 
 void main() {
+  // For the app's lifecycle, which the sync follows.
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
   late SharedPreferences prefs;
 
   setUp(() async {
@@ -264,6 +271,182 @@ void main() {
       sync.syncNow();
       async.flushMicrotasks();
       expect(repo.loads, loads + 3);
+      container.dispose();
+    });
+  });
+
+  group('coming back to the foreground', () {
+    /// The app going to the background and coming back, as each platform
+    /// reports it on the way.
+    void leaveAndReturn() {
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    }
+
+    test('pulls what another device has logged meanwhile', () {
+      final repo = _CountingRepo(user: _me, remote: _otherDevice());
+      fakeAsync((async) {
+        final container = containerFor(repo);
+        async.elapse(const Duration(seconds: 120));
+        final (loads, saves) = (repo.loads, repo.saves);
+        // Sheni, read on the other device while this one was in the background.
+        repo.remote = syncPayload(ProgressState(weeks: {_week: remoteOf(repo).week(_week).withAliyah(1, _d2)}), _d1);
+
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+        async.flushMicrotasks();
+        expect(repo.loads, loads, reason: 'only coming back pulls');
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+        async.flushMicrotasks();
+        expect(repo.loads, loads + 1);
+        final local = container.read(progressProvider);
+        expect(local.week(_week).isAliyahDone(1), isTrue, reason: 'pulled from the other device');
+        expect(local, remoteOf(repo));
+        expect(repo.saves, saves, reason: 'the cloud already held everything');
+        container.dispose();
+      });
+    });
+
+    test('pulls nothing within a minute of a sync, and pulls after that', () {
+      expect(ProgressSync.resumeQuietPeriod, const Duration(minutes: 1));
+      final repo = _CountingRepo(user: _me, remote: _otherDevice());
+      fakeAsync((async) {
+        final container = containerFor(repo);
+        async.elapse(const Duration(seconds: 1));
+        expect(repo.loads, 1, reason: 'the sync the app starts with');
+        // To 59 s after it started.
+        async.elapse(const Duration(seconds: 59) - clock.now().difference(repo.loadTimes.single));
+        leaveAndReturn();
+        async.flushMicrotasks();
+        expect(repo.loads, 1, reason: '59 s after it');
+
+        async.elapse(const Duration(seconds: 2));
+        leaveAndReturn();
+        async.flushMicrotasks();
+        expect(repo.loads, 2, reason: '61 s after it');
+        container.dispose();
+      });
+    });
+
+    test('lets a sync just started finish alone, and has one that started over a minute ago followed by another', () {
+      final repo = _CountingRepo(user: _me, remote: _otherDevice());
+      fakeAsync((async) {
+        // The app comes to the foreground as its first sync is under way.
+        repo.gate = Completer<void>();
+        final container = containerFor(repo);
+        async.elapse(const Duration(seconds: 59));
+        expect(repo.loads, 1, reason: 'the first pull is in flight');
+        leaveAndReturn();
+        repo.gate!.complete();
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.loads, 1, reason: 'that pull was new enough');
+        expect(container.read(progressSyncProvider), isNotNull);
+
+        // One under way for longer than that, a sync that stalled in the
+        // background say, may have pulled before the other device saved:
+        // another follows it, once.
+        repo.gate = Completer<void>();
+        container.read(progressSyncProvider.notifier).syncNow();
+        async.flushMicrotasks();
+        expect(repo.loads, 2);
+        async.elapse(const Duration(seconds: 61));
+        leaveAndReturn();
+        leaveAndReturn();
+        repo.gate!.complete();
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.loads, 3);
+        container.dispose();
+      });
+    });
+
+    test('pulls nothing within a minute of a sync that stopped, with a backup too new or too large', () {
+      for (final tooLarge in [false, true]) {
+        final repo = _CountingRepo(
+          user: _me,
+          remote: tooLarge ? _otherDevice() : {..._otherDevice(), 'version': kProgressFormat + 1},
+        );
+        fakeAsync((async) {
+          final container = containerFor(repo);
+          async.elapse(const Duration(seconds: 1));
+          if (tooLarge) {
+            // Hundreds of long notes: more than the server takes, until the
+            // reader shortens them.
+            for (var verse = 1; verse <= 250; verse++) {
+              container
+                  .read(annotationsProvider.notifier)
+                  .setNote(BookVerse('Genesis', VerseRef(1 + verse ~/ 30, 1 + verse % 30)), '${'א' * 2000} $verse');
+            }
+            async.elapse(ProgressSync.pushDelay);
+            expect(container.read(syncTooLargeProvider), isTrue);
+          } else {
+            expect(container.read(syncBlockedByNewerFormatProvider), isTrue);
+          }
+          async.elapse(const Duration(minutes: 2));
+          final loads = repo.loads;
+
+          // Switching to another window and back, again and again.
+          for (var i = 0; i < 20; i++) {
+            leaveAndReturn();
+            async.elapse(const Duration(seconds: 2));
+          }
+          expect(repo.loads, loads + 1, reason: 'one pull, then none within the minute (too large: $tooLarge)');
+          expect(repo.saves, 0, reason: 'nothing is saved over the backup');
+
+          async.elapse(const Duration(minutes: 1));
+          leaveAndReturn();
+          async.flushMicrotasks();
+          expect(repo.loads, loads + 2, reason: 'a minute later it tries again (too large: $tooLarge)');
+          container.dispose();
+        });
+      }
+    });
+
+    test('pulls nothing with backup turned off', () {
+      final repo = _CountingRepo(user: _me, remote: _otherDevice());
+      fakeAsync((async) {
+        final container = containerFor(repo);
+        async.elapse(const Duration(seconds: 120));
+        final loads = repo.loads;
+        container.read(settingsProvider.notifier).update((s) => s.copyWith(cloudSync: false));
+        async.flushMicrotasks();
+
+        leaveAndReturn();
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.loads, loads);
+        container.dispose();
+      });
+    });
+  });
+
+  test('a change is pushed at once as the app goes to the background', () {
+    addTearDown(() {
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    });
+    final repo = _CountingRepo(user: _me, remote: _otherDevice());
+    fakeAsync((async) {
+      final container = containerFor(repo);
+      async.elapse(const Duration(seconds: 120));
+      final saves = repo.saves;
+
+      // Marked on a phone that is locked straight away: suspended in the
+      // background, it would push nothing until it is next opened.
+      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikra1, _d2);
+      async.elapse(const Duration(seconds: 1));
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      async.flushMicrotasks();
+      expect(repo.saves, saves, reason: 'not yet hidden');
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      async.flushMicrotasks();
+      expect(repo.saves, saves + 1, reason: 'pushed as the app is hidden');
+      expect(remoteOf(repo).week(_week).isUnitDone(1, ReadingPass.mikra1), isTrue);
+
+      // Nothing more is pushed for it, and with nothing waiting, hiding
+      // again pushes nothing.
+      async.elapse(const Duration(seconds: 10));
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      async.elapse(const Duration(seconds: 10));
+      expect(repo.saves, saves + 1);
       container.dispose();
     });
   });
@@ -620,7 +803,7 @@ void main() {
     Future<void> clearWeek() async {
       await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byTooltip('More options')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text("Clear this week's progress"));
+      await tester.tap(find.text('Clear this week’s progress'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
       await tester.pumpAndSettle();
@@ -668,8 +851,8 @@ void main() {
       expect(
         find.text(everywhere
             ? 'This erases your reading history and streaks on this device, in your backup, and on your other '
-                'devices when they next sync. It can\'t be undone.'
-            : "This erases your reading history and streaks on this device. It can't be undone."),
+                'devices when they next sync. It can’t be undone.'
+            : 'This erases your reading history and streaks on this device. It can’t be undone.'),
         findsOneWidget,
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Reset all progress'));

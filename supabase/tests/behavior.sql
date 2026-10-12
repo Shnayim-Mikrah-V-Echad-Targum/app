@@ -39,6 +39,8 @@ insert into public.user_roles (user_id, role) values (:'mod', 'moderator');
 select public.check((select count(*) = 5 from public.profiles), 'a profile is created for every new user');
 select public.check((select count(*) = 54 from public.parashot), 'reference data: 54 parshiyot');
 select public.check((select count(*) = 6 from public.categories), 'reference data: 6 forum categories');
+select public.check((select count(*) = 0 from public.categories where description_en like '%''%' or name_en like '%''%'),
+  'reference data: the forums'' English names and descriptions are typeset, with no straight apostrophe');
 
 -- ---- posting requires accepting the guidelines ----
 set role authenticated;

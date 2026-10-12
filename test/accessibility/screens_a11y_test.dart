@@ -21,7 +21,8 @@ import 'semantics_invariants.dart';
 /// in English and Hebrew, at phone and desktop sizes and at 200% and 300%
 /// text size. Text is laid out in the bundled fonts, so sizes and overflow
 /// are the real ones. Text contrast, and these guidelines in every theme,
-/// are checked in semantics_invariants_test.dart.
+/// are checked in semantics_invariants_test.dart and
+/// semantics_invariants_pages_test.dart.
 void main() {
   setUpAll(loadBundledFonts);
 
@@ -101,6 +102,7 @@ void main() {
     await open(tester, '/settings/reminders', settings: a11yRemindersOn, notifications: PhoneNotifications());
     expect(find.text('Daily reminder time'), findsOneWidget);
     expect(find.text('Erev Shabbat reminder time'), findsOneWidget);
+    expect(find.text('Move'), findsOneWidget);
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
@@ -451,7 +453,7 @@ void main() {
         tester.getSemantics(find.text('0 of 7 aliyot')),
         isSemantics(label: '0 of 7 aliyot', isHeader: true, isButton: false, hasTapAction: false),
       );
-      expect(find.byTooltip("More options for Revi'i"), findsOneWidget);
+      expect(find.byTooltip('More options for Revi’i'), findsOneWidget);
 
       // Each source is a link of its own, by its name and license, and then
       // what it is.

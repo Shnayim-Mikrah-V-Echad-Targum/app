@@ -128,12 +128,12 @@ void main() {
       await open(tester);
       final group = find.ancestor(of: find.text('Rishon'), matching: find.byType(PaperGroup));
       expect(tester.widget<PaperGroup>(group).ruleInset, 72);
-      for (final name in ['Rishon', 'Sheni', 'Shlishi', "Revi'i", 'Chamishi', 'Shishi', "Shevi'i"]) {
+      for (final name in ['Rishon', 'Sheni', 'Shlishi', 'Revi’i', 'Chamishi', 'Shishi', 'Shevi’i']) {
         expect(find.descendant(of: group, matching: find.text(name)), findsOneWidget, reason: name);
       }
       // The aliyah's number is said, not shown: a Hebrew ordinal in its disc.
       expect(find.textContaining('· aliyah'), findsNothing);
-      expect(find.descendant(of: row('Revi\'i'), matching: find.text('ד')), findsOneWidget);
+      expect(find.descendant(of: row('Revi’i'), matching: find.text('ד')), findsOneWidget);
       // The book is named at the head of the page.
       // On one line where it fits, or a line a part.
       final parts = [
@@ -149,12 +149,12 @@ void main() {
       final scheme = Theme.of(context).colorScheme;
       final overdue = StatusColors.of(context).overdue;
 
-      for (final name in ['Shishi', "Shevi'i"]) {
+      for (final name in ['Shishi', 'Shevi’i']) {
         final today = textIn(tester, row(name), 'Planned for today');
         expect(today.style?.fontWeight, FontWeight.w700, reason: name);
         expect(today.style?.color, scheme.onSurface, reason: name);
       }
-      for (final (name, day) in [('Shlishi', 'Wednesday'), ("Revi'i", 'Thursday'), ('Chamishi', 'Thursday')]) {
+      for (final (name, day) in [('Shlishi', 'Wednesday'), ('Revi’i', 'Thursday'), ('Chamishi', 'Thursday')]) {
         expect(textIn(tester, row(name), 'Planned for $day').style?.color, overdue, reason: name);
         expect(find.descendant(of: row(name), matching: find.byIcon(Icons.history)), findsOneWidget, reason: name);
       }
@@ -179,7 +179,7 @@ void main() {
       void expectNoneOverdue(WidgetTester tester) {
         final overdue = StatusColors.of(tester.element(find.byType(WeekOverview))).overdue;
         expect(find.byIcon(Icons.history), findsNothing);
-        for (final (name, day) in [('Shlishi', 'Wednesday'), ("Revi'i", 'Thursday'), ('Chamishi', 'Thursday')]) {
+        for (final (name, day) in [('Shlishi', 'Wednesday'), ('Revi’i', 'Thursday'), ('Chamishi', 'Thursday')]) {
           expect(textIn(tester, row(name), 'Planned for $day').style?.color, isNot(overdue), reason: name);
         }
       }
@@ -221,9 +221,9 @@ void main() {
 
       testWidgets('say so, and are not behind before Shabbat', (tester) async {
         await open(tester, settings: shabbatPlan);
-        final line = textIn(tester, row("Shevi'i"), 'Shabbat morning');
+        final line = textIn(tester, row('Shevi’i'), 'Shabbat morning');
         expect(line.data, 'Shabbat morning — log it after Shabbat');
-        expect(find.descendant(of: row("Shevi'i"), matching: find.byIcon(Icons.history)), findsNothing);
+        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(Icons.history)), findsNothing);
       });
 
       testWidgets('are still to read once Shabbat has passed', (tester) async {
@@ -241,10 +241,10 @@ void main() {
           progress: ProgressState(weeks: {'5787:1': w}),
         );
         final overdue = StatusColors.of(tester.element(find.byType(WeekOverview))).overdue;
-        expect(textIn(tester, row("Shevi'i"), 'Shabbat morning').style?.color, overdue);
-        expect(find.descendant(of: row("Shevi'i"), matching: find.byIcon(Icons.history)), findsOneWidget);
+        expect(textIn(tester, row('Shevi’i'), 'Shabbat morning').style?.color, overdue);
+        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(Icons.history)), findsOneWidget);
         expect(
-          tester.getSemantics(find.text("Shevi'i")).getSemanticsData().label,
+          tester.getSemantics(find.text('Shevi’i')).getSemanticsData().label,
           contains('Planned for Shabbat morning, still to read'),
         );
         handle.dispose();
@@ -265,7 +265,7 @@ void main() {
 
     testWidgets("of next week's preview have no reading under way, no today and nothing behind", (tester) async {
       await open(tester, route: '/week/5787:2');
-      expect(find.textContaining('Preview — this parsha opens for credit'), findsOneWidget);
+      expect(find.textContaining('Preview — you can log this parsha from'), findsOneWidget);
       expect(find.text('Planned for today'), findsNothing);
       expect(find.byIcon(Icons.history), findsNothing);
       expect([for (final p in tester.widgetList<PassPips>(find.byType(PassPips))) p.current], everyElement(isNull));
@@ -303,9 +303,9 @@ void main() {
 
     testWidgets('open the reader at the aliyah tapped', (tester) async {
       final c = await open(tester);
-      await tester.ensureVisible(find.text("Revi'i"));
+      await tester.ensureVisible(find.text('Revi’i'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text("Revi'i"));
+      await tester.tap(find.text('Revi’i'));
       await tester.pump();
       expect(c.read(routerProvider).state.uri.toString(), '/read/5787:1/3?from=week');
     });
@@ -327,7 +327,7 @@ void main() {
   testWidgets('the haftarah and the discussion share a sheet of their own', (tester) async {
     await open(tester);
     final group = find.ancestor(of: find.text('Haftarah'), matching: find.byType(PaperGroup));
-    expect(find.descendant(of: group, matching: find.text("Discuss this week's parsha")), findsOneWidget);
+    expect(find.descendant(of: group, matching: find.text('Discuss this week’s parsha')), findsOneWidget);
     expect(tester.widget<PaperGroup>(group).ruleInset, PaperGroup.iconInset);
   });
 

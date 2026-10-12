@@ -131,7 +131,7 @@ void main() {
       expect(column.center.dx, closeTo(wide.width / 2, 0.5));
       final ribbon = tester.getRect(find.byType(AliyahRibbon));
       expect(tester.getRect(tab('Rishon')).left, greaterThanOrEqualTo(column.left));
-      expect(tester.getRect(tab("Shevi'i")).right, lessThanOrEqualTo(column.right + 0.01));
+      expect(tester.getRect(tab('Shevi’i')).right, lessThanOrEqualTo(column.right + 0.01));
       expect(ribbon.width, wide.width, reason: 'its rule runs the width of the window');
       expect(tester.getTopLeft(titled('Rishon')).dx, closeTo(column.left, 0.5));
     });
@@ -524,7 +524,7 @@ void main() {
           settings: whole.copyWith(focusMode: true, method: ReadingMethod.aliyahByAliyah),
           size: phone,
         );
-        expect(titled('Revi\'i'), findsOneWidget);
+        expect(titled('Revi’i'), findsOneWidget);
         if (finish == 'at its end') {
           for (var i = 0; i < 6 && find.text('Finish').evaluate().isEmpty; i++) {
             await tester.tap(find.text('Next'));
@@ -540,7 +540,7 @@ void main() {
         await openMenu(tester);
         await tester.tap(find.text('Full text'));
         await tester.pumpAndSettle();
-        expect(titled('Revi\'i'), findsOneWidget);
+        expect(titled('Revi’i'), findsOneWidget);
         // Revi'i begins at Genesis 8:15.
         final highlighted = find.byWidgetPredicate((w) => w is VerseGroup && w.highlighted);
         expect(tester.widget<VerseGroup>(highlighted).verse, const VerseRef(8, 15));
@@ -602,7 +602,7 @@ void main() {
       await open(tester, '/read/5787:2/0?mode=full', settings: whole);
       expect(find.byType(ParallelVerse), findsWidgets);
       expect(find.byType(ParallelHeading), findsOneWidget, reason: "at Rishon's start");
-      await tester.tap(tab('Revi\'i'));
+      await tester.tap(tab('Revi’i'));
       await tester.pumpAndSettle();
       expect(find.byType(ParallelHeading), findsWidgets, reason: "at Revi'i's start too");
       expect(tester.getRect(find.byType(ParallelHeading).last).top, greaterThan(tester.getRect(heading(3)).bottom));

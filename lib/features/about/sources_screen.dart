@@ -42,10 +42,10 @@ class SourcesScreen extends StatelessWidget {
         'https://www.sefaria.org/Onkelos_Genesis',
       ),
       _Source(
-        he ? 'פירוש רש״י' : "Rashi's commentary (Hebrew and English)",
+        he ? 'פירוש רש״י' : 'Rashi’s commentary (Hebrew and English)',
         he
             ? 'חמישה חומשי תורה עם פירוש רש״י, מ. רוזנבאום וא.מ. סילברמן, לונדון ${ltr('1929–1934')}, דרך ספריא.'
-            : "Pentateuch with Rashi's commentary, M. Rosenbaum and A. M. Silbermann, London 1929–1934, via Sefaria.",
+            : 'Pentateuch with Rashi’s commentary, M. Rosenbaum and A. M. Silbermann, London 1929–1934, via Sefaria.',
         he ? 'נחלת הכלל' : 'Public domain',
         'https://www.sefaria.org/Rashi_on_Genesis',
       ),

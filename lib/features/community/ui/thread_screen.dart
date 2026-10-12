@@ -231,8 +231,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               popUpAnimationStyle: Motion.of(context).style,
               onSelected: _moderate,
               itemBuilder: (context) => [
-                PopupMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
-                PopupMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
+                SeferMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
+                SeferMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
               ],
             ),
         ],
@@ -691,11 +691,11 @@ class PostCard extends ConsumerWidget {
     // A post you can do nothing more with, such as a former member's that
     // you have reported, has no menu.
     final menu = <PopupMenuEntry<String>>[
-      if (isMine) PopupMenuItem(value: 'edit', child: Text(l.actionEdit)),
-      if (isMine || isModerator) PopupMenuItem(value: 'delete', child: Text(l.actionDelete)),
-      if (!isMine && !reported) PopupMenuItem(value: 'report', child: Text(l.actionReport)),
-      if (!isMine && post.authorId != null) PopupMenuItem(value: 'block', child: Text(l.blockUser(name))),
-      if (isModerator && !isMine) PopupMenuItem(value: 'hide', child: Text(l.hidePost)),
+      if (isMine) SeferMenuItem(value: 'edit', child: Text(l.actionEdit)),
+      if (isMine || isModerator) SeferMenuItem(value: 'delete', child: Text(l.actionDelete)),
+      if (!isMine && !reported) SeferMenuItem(value: 'report', child: Text(l.actionReport)),
+      if (!isMine && post.authorId != null) SeferMenuItem(value: 'block', child: Text(l.blockUser(name))),
+      if (isModerator && !isMine) SeferMenuItem(value: 'hide', child: Text(l.hidePost)),
     ];
 
     // The header's first line is the name's: the initial is centred on it,
@@ -1199,43 +1199,52 @@ Future<(ReportReason, String?)?> showReportDialog(BuildContext context) {
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
+        // Scrolled with its padding, which the reasons' focus rings stand in.
+        scrollable: true,
         title: Text(l.reportTitle),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l.reportReasonLabel, style: Theme.of(context).textTheme.titleSmall),
-              RadioGroup<ReportReason>(
-                groupValue: reason,
-                onChanged: (v) => setState(() => reason = v),
-                child: Column(
-                  children: [
-                    for (final (r, label) in [
-                      (ReportReason.spam, l.reasonSpam),
-                      (ReportReason.lashonHara, l.reasonLashonHara),
-                      (ReportReason.disrespect, l.reasonDisrespect),
-                      (ReportReason.misinformation, l.reasonMisinformation),
-                      (ReportReason.offTopic, l.reasonOffTopic),
-                      (ReportReason.other, l.reasonOther),
-                    ])
-                      RadioListTile<ReportReason>(value: r, title: Text(label), contentPadding: EdgeInsets.zero),
-                  ],
-                ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l.reportReasonLabel, style: Theme.of(context).textTheme.titleSmall),
+            RadioGroup<ReportReason>(
+              groupValue: reason,
+              onChanged: (v) => setState(() => reason = v),
+              child: Column(
+                children: [
+                  for (final (r, label) in [
+                    (ReportReason.spam, l.reasonSpam),
+                    (ReportReason.lashonHara, l.reasonLashonHara),
+                    (ReportReason.disrespect, l.reasonDisrespect),
+                    (ReportReason.misinformation, l.reasonMisinformation),
+                    (ReportReason.offTopic, l.reasonOffTopic),
+                    (ReportReason.other, l.reasonOther),
+                  ])
+                    // Its radio and text start at its very edges, so its ring
+                    // is outside it.
+                    TileFocusRing(
+                      outside: true,
+                      child: RadioListTile<ReportReason>(
+                        value: r,
+                        title: Text(label),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                ],
               ),
-              // Its direction follows the details as they are typed.
-              ListenableBuilder(
-                listenable: details,
-                builder: (context, _) => TextField(
-                  controller: details,
-                  maxLines: 3,
-                  maxLength: 1000,
-                  textDirection: autoDirection(details.text, fallback: Directionality.of(context)),
-                  decoration: InputDecoration(labelText: l.reportDetails),
-                ),
+            ),
+            // Its direction follows the details as they are typed.
+            ListenableBuilder(
+              listenable: details,
+              builder: (context, _) => TextField(
+                controller: details,
+                maxLines: 3,
+                maxLength: 1000,
+                textDirection: autoDirection(details.text, fallback: Directionality.of(context)),
+                decoration: InputDecoration(labelText: l.reportDetails),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),

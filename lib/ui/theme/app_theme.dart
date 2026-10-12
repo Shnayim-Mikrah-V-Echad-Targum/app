@@ -166,8 +166,10 @@ abstract final class AppTheme {
       primaryTextTheme: textTheme.apply(bodyColor: scheme.onPrimary, displayColor: scheme.onPrimary),
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
-      // The tint that marks focus on list tiles, rail destinations and menu
-      // items. Controls draw the ring instead.
+      // The tint Material gives a focused ink well. Controls, rows, menu items
+      // and the tiles in TileFocusRing draw the ring instead (§6.1) and clear
+      // it; the tiles of the date, restore, blocked-members and language
+      // sheets, and the haftarah page's ExpansionTile, still show it.
       focusColor: scheme.onSurface.withValues(alpha: 0.24),
       scaffoldBackgroundColor: scheme.surface,
       cardColor: sefer.paper,
@@ -491,11 +493,12 @@ abstract final class AppTheme {
         labelTextStyle: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected)
             ? navLabel.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w700)
             : navLabel.copyWith(color: scheme.onSurfaceVariant)),
-        // The bar draws no focus ring, so keyboard focus is a strong wash over
-        // the indicator's stadium.
+        // Keyboard focus is the ring AppShell draws around the indicator
+        // (IndicatorFocusRing), with no wash. Transparent, not null: null
+        // would fall back to ThemeData.focusColor.
         overlayColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.pressed)) return scheme.onSurface.withValues(alpha: 0.10);
-          if (states.contains(WidgetState.focused)) return scheme.onSurface.withValues(alpha: 0.32);
+          if (states.contains(WidgetState.focused)) return Colors.transparent;
           if (states.contains(WidgetState.hovered)) return scheme.onSurface.withValues(alpha: 0.06);
           return null;
         }),
@@ -569,6 +572,11 @@ abstract final class AppTheme {
         elevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
         insetPadding: const EdgeInsets.all(16),
+        // The share of a message's width its action and Close may take
+        // before they go under it (Material's is 0.25): enough for the
+        // Hebrew Undo, "ביטול פעולה", and Close beside a message on a 320 dp
+        // phone. StatusMessageArea lowers it as the text grows.
+        actionOverflowThreshold: 0.45,
       ),
       tooltipTheme: TooltipThemeData(
         waitDuration: const Duration(milliseconds: 400),

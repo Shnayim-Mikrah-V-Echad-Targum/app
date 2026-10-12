@@ -506,7 +506,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('More options').first);
       await tester.pump();
-      final route = ModalRoute.of(tester.element(find.byType(PopupMenuItem<String>).first))!;
+      final route = ModalRoute.of(tester.element(find.byType(SeferMenuItem<String>).first))!;
       expect(route.animation!.value, reduceMotion ? 1 : 0);
     });
   }

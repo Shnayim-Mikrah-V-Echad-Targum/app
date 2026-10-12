@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse, TranslationVerse;
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
 
 import '../helpers.dart';
-import 'routes.dart';
+import 'every_theme.dart';
 import 'semantics_invariants.dart';
 
 /// The [SemanticsInvariants], text contrast (WCAG 1.4.3), tap targets and
-/// labels on every route, in each of the five themes.
+/// labels on every route, in each of the five themes: here the invariants'
+/// own tests and the first half of the routes, and in
+/// semantics_invariants_pages_test.dart the rest, so that the two files run
+/// in parallel.
 ///
 /// Each route is opened once and then shown in each theme in turn, as a
 /// reader who changes the theme sees it, so a colour a page keeps from the
@@ -21,59 +19,6 @@ import 'semantics_invariants.dart';
 /// the pixels, which the bundled fonts' thin strokes blur. Tap targets in the
 /// bundled fonts' real metrics are checked in screens_a11y_test.dart.
 void main() {
-  const themes = [
-    AppThemeMode.light,
-    AppThemeMode.dark,
-    AppThemeMode.sepia,
-    AppThemeMode.highContrastLight,
-    AppThemeMode.highContrastDark,
-  ];
-  const guidelines = [semanticsInvariants, textContrastGuideline, androidTapTargetGuideline, labeledTapTargetGuideline];
-
-  /// Opens [route], waiting for texts to load (a spinner never settles).
-  Future<ProviderContainer> open(
-    WidgetTester tester,
-    String route, {
-    AppSettings settings = a11ySettings,
-    DateTime? now,
-    ProgressState? progress,
-    Size size = const Size(412, 915),
-  }) async {
-    tester.view.physicalSize = size;
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final c = await pumpApp(tester, settings: settings, now: now ?? a11yMonday, progress: progress);
-    c.read(routerProvider).go(route);
-    await tester.pump();
-    for (var i = 0; i < 40; i++) {
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-      await tester.pump(const Duration(milliseconds: 100));
-      if (i >= 3 && find.byType(CircularProgressIndicator).evaluate().isEmpty) break;
-    }
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    return c;
-  }
-
-  /// Shows the page in each of [themes] and runs the [guidelines] on it,
-  /// reporting every failure at once, by theme.
-  Future<void> expectInEveryTheme(
-    WidgetTester tester,
-    ProviderContainer c, {
-    List<AppThemeMode> themes = themes,
-  }) async {
-    final failures = <String>[];
-    for (final theme in themes) {
-      c.read(settingsProvider.notifier).update((s) => s.copyWith(theme: theme));
-      await tester.pumpAndSettle();
-      for (final guideline in guidelines) {
-        final result = await guideline.evaluate(tester);
-        if (!result.passed) failures.add('${theme.name}: ${guideline.description}\n${result.reason}');
-      }
-    }
-    expect(failures, isEmpty, reason: failures.join('\n\n'));
-  }
-
   group('the invariants', () {
     Future<Evaluation> evaluate(WidgetTester tester, Widget child) async {
       await pumpThemed(tester, child);
@@ -185,69 +130,14 @@ void main() {
     });
   });
 
-  for (final route in [...a11yRoutes, ...a11yLoadingRoutes]) {
+  for (final route in a11yRoutesFirstHalf) {
     testWidgets('every theme: $route', (tester) async {
       final handle = tester.ensureSemantics();
       final c = await open(tester, route);
-      // A page whose texts load shows them, not an error or an empty page on
-      // which every rule would pass: its verses, which rule 4 checks.
-      if (a11yLoadingRoutes.contains(route)) {
-        expect(find.bySemanticsLabel(SemanticsInvariants.verseLabel), findsWidgets);
-      }
       await expectInEveryTheme(tester, c);
       handle.dispose();
     });
   }
-
-  for (final route in a11yOnboardingRoutes) {
-    testWidgets('every theme: $route', (tester) async {
-      final handle = tester.ensureSemantics();
-      final c = await open(tester, route, settings: const AppSettings());
-      await expectInEveryTheme(tester, c);
-      handle.dispose();
-    });
-  }
-
-  // Focus mode dims every verse but the reader's, in its own ink: the light
-  // themes, where a dim ink comes nearest the paper, read as a whole. (The
-  // dimmed verses alone are checked in every theme in
-  // test/app/reader_widget_test.dart.)
-  testWidgets('focus mode, in the light and sepia themes', (tester) async {
-    final handle = tester.ensureSemantics();
-    final c = await open(
-      tester,
-      '/read/5787:2/0?mode=full',
-      settings: const AppSettings(onboardingComplete: true, focusMode: true, showTranslation: true),
-    );
-    // The verses, the reader's in its ink and the rest dimmed, whose
-    // contrast this is for.
-    expect(find.bySemanticsLabel(SemanticsInvariants.verseLabel), findsWidgets);
-    bool dimmed(Widget w) => w is ScriptureVerse && w.dimmed;
-    expect(find.byWidgetPredicate(dimmed), findsWidgets);
-    expect(find.byWidgetPredicate((w) => w is ScriptureVerse && !w.dimmed), findsWidgets);
-    expect(find.byWidgetPredicate((w) => w is TranslationVerse && w.dimmed), findsWidgets);
-    await expectInEveryTheme(tester, c, themes: const [AppThemeMode.light, AppThemeMode.sepia]);
-    handle.dispose();
-  });
-
-  // The Torah map with a parsha read on time, one finished after its
-  // Shabbat, one missed and one made up, all in view.
-  testWidgets('every theme: /progress with every past state', (tester) async {
-    final handle = tester.ensureSemantics();
-    final c = await open(
-      tester,
-      '/progress',
-      settings: AppSettings(onboardingComplete: true, joinDate: historyJoinDate),
-      now: historyNow,
-      progress: historyProgress(),
-      size: const Size(412, 2600),
-    );
-    for (final state in ['On time', 'After Shabbat — still counts', 'Not completed', 'Made up']) {
-      expect(find.bySemanticsLabel(RegExp(': ${RegExp.escape(state)}')), findsWidgets, reason: state);
-    }
-    await expectInEveryTheme(tester, c);
-    handle.dispose();
-  });
 }
 
 /// Room for a node: one with no size is left out of the tree.

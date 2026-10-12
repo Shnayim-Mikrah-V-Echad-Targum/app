@@ -472,7 +472,7 @@ void main() {
     for (final MapEntry(key: name, value: raw) in _bad.entries) {
       testWidgets('a file with $name is rejected whole', (tester) async {
         final c = await paste(tester, jsonDecode(raw) as Map<String, dynamic>);
-        expect(find.text("That backup couldn't be read."), findsOneWidget);
+        expect(find.text('That backup couldn’t be read.'), findsOneWidget);
         expect(find.byType(TextField), findsOneWidget, reason: 'to paste it again');
         expect(c.read(progressProvider).weeks.keys, ['5787:1'], reason: 'nothing was imported');
         expect(c.read(progressProvider).week('5787:1').isAliyahDone(3), isTrue);

@@ -209,11 +209,15 @@ Future<bool> ensureGuidelines(BuildContext context, WidgetRef ref) async {
               ),
               child: Text(l.readGuidelines),
             ),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: checked,
-              onChanged: (v) => setState(() => checked = v ?? false),
-              title: Text(l.guidelinesAccept),
+            // Its text starts at its very edge, so its ring is outside it.
+            TileFocusRing(
+              outside: true,
+              child: CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: checked,
+                onChanged: (v) => setState(() => checked = v ?? false),
+                title: Text(l.guidelinesAccept),
+              ),
             ),
           ],
         ),
