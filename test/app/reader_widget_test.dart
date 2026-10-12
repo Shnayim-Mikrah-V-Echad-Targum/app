@@ -10,6 +10,8 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
+import 'package:shnayim_mikra/features/reader/listen_bar.dart';
+import 'package:shnayim_mikra/features/reader/pass_track.dart';
 import 'package:shnayim_mikra/features/reader/reader_bottom_bar.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
@@ -1631,24 +1633,53 @@ void main() {
 
     // WCAG 1.4.4 asks for 200%; past it, the room goes to the scripture,
     // which the chrome would otherwise crowd off a phone's screen.
-    testWidgets('past 200% text, the ribbon, the bottom bar and the step\'s title grow no more, and the verse does',
+    testWidgets(
+        "to 200% text, the ribbon, the bottom bar, the pass track and the step's title grow; past it, only the verse",
         (tester) async {
-      tester.platformDispatcher.textScaleFactorTestValue = 2;
-      addTearDown(tester.platformDispatcher.clearAllTestValues);
       await open(tester, '/read/5787:2/0', size: const Size(412, 2600));
       Size size(Finder finder) => tester.getSize(finder);
-      final ribbon = size(find.byType(AliyahRibbon));
-      final bar = size(find.byType(ReaderBottomBar));
-      final title = size(find.text('Read the Hebrew'));
+      final title = find.text('Read the Hebrew');
+      final chrome = {
+        'ribbon': find.byType(AliyahRibbon),
+        'bottom bar': find.byType(ReaderBottomBar),
+        'pass track': find.byType(PassTrack),
+        'title': title,
+      };
+      Map<String, Size> measure() => {for (final MapEntry(:key, :value) in chrome.entries) key: size(value)};
+      final normal = measure();
+
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await tester.pumpAndSettle();
+      final double = measure();
+      // As WCAG 1.4.4 asks: to twice the size.
+      expect(double['title']!.height, greaterThanOrEqualTo(normal['title']!.height * 1.8));
+      for (final part in chrome.keys) {
+        expect(double[part]!.height, greaterThan(normal[part]!.height), reason: part);
+      }
       final verse = size(find.byType(ScriptureVerse).first);
 
       tester.platformDispatcher.textScaleFactorTestValue = 3;
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(size(find.byType(AliyahRibbon)), ribbon);
-      expect(size(find.byType(ReaderBottomBar)), bar);
-      expect(size(find.text('Read the Hebrew')), title);
+      expect(measure(), double);
       expect(size(find.byType(ScriptureVerse).first).height, greaterThan(verse.height));
+    });
+
+    testWidgets("past 200% text, Listen's player grows no more", (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await open(tester, '/read/5787:2/0', overrides: [ttsProvider.overrideWithValue(HeldTts())]);
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pumpAndSettle();
+      final player = tester.getSize(find.byType(ListenBar));
+      final bar = tester.getSize(find.byType(ReaderBottomBar));
+
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(tester.getSize(find.byType(ListenBar)), player);
+      expect(tester.getSize(find.byType(ReaderBottomBar)), bar);
     });
 
     testWidgets('the bottom bar runs under the gesture bar, with its buttons above it', (tester) async {

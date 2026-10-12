@@ -423,7 +423,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       for (var i = 0; i < 8; i++) {
         await WidgetsBinding.instance.endOfFrame;
         if (!mounted || seek != _seek || !_scroll.hasClients) return;
-        final start = _aliyahOffset(a);
+        // The first from the very top, with any notice above it.
+        final start = a == 0 ? 0.0 : _aliyahOffset(a);
         if (start == null) return;
         final p = _scroll.position;
         final to = start.clamp(p.minScrollExtent, p.maxScrollExtent);
@@ -1328,6 +1329,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final companion = texts.onkelos != null || (s.showTranslation && texts.english != null);
     final parallel = _fullText && styles.parallelColumns(pane, companion: companion);
     final columnWidth = styles.fullTextWidth(parallel: parallel);
+    // A week not yet open, previewed: said at the top of the text, where it
+    // scrolls away with it rather than squeeze it, and grows to twice its
+    // size at most, as the rest of the chrome.
+    final preview = ctx.isOpen
+        ? null
+        : MediaQuery.withClampedTextScaling(
+            maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+            child: NoticeBanner(
+              icon: Icons.visibility_outlined,
+              text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
+            ),
+          );
     // Focus mode reads the full text alone: the overflow menu still switches
     // modes and marks the aliyah read.
     final showRibbon = !(_fullText && s.focusMode);
@@ -1453,22 +1466,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           maxWidth: columnWidth,
                         ),
                       ),
-                    if (!ctx.isOpen)
-                      Center(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: columnWidth + 2 * _columnPadding),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(_columnPadding, 12, _columnPadding, 0),
-                            child: NoticeBanner(
-                              icon: Icons.visibility_outlined,
-                              text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
-                            ),
-                          ),
-                        ),
-                      ),
                     Expanded(
                       child: _fullText
                           ? _FullText(
+                              notice: preview,
                               aliyah: _aliyah,
                               verses: flow.verses,
                               texts: texts,
@@ -1555,6 +1556,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   ),
                                 )
                               : _GuidedStep(
+                                  notice: preview,
                                   flow: flow,
                                   texts: texts,
                                   settings: s,
@@ -1903,6 +1905,7 @@ class _KeyCombos extends StatelessWidget {
 /// saying what to read, and then the verses: nothing else comes before them.
 class _GuidedStep extends StatelessWidget {
   const _GuidedStep({
+    this.notice,
     required this.flow,
     required this.texts,
     required this.settings,
@@ -1916,6 +1919,10 @@ class _GuidedStep extends StatelessWidget {
     required this.onVerseOptions,
     required this.marksOf,
   });
+
+  /// A notice over the pass track, which scrolls with the text: a week
+  /// previewed before it opens.
+  final Widget? notice;
 
   final ReaderFlow flow;
   final ReaderTexts texts;
@@ -2076,8 +2083,15 @@ class _GuidedStep extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (notice case final notice?) ...[notice, const Gap(16)],
                 // It stays as the step changes, and its bars fill as it does.
-                PassTrack(steps: steps, step: step),
+                // Its labels, and its check, grow to twice their size at
+                // most, as the step's title beneath and the rest of the
+                // chrome.
+                MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+                  child: PassTrack(steps: steps, step: step),
+                ),
                 const Gap(8),
                 AnimatedSwitcher(
                   duration: Motion.of(context).d(_fade),
@@ -2490,6 +2504,7 @@ class _Whole {
 /// stands beside each verse rather than beneath it.
 class _FullText extends StatelessWidget {
   const _FullText({
+    this.notice,
     required this.aliyah,
     required this.verses,
     required this.texts,
@@ -2555,12 +2570,21 @@ class _FullText extends StatelessWidget {
   /// The whole parsha, when it is shown.
   final _Whole? whole;
 
+  /// A notice at the top of the text, which scrolls with it: a week
+  /// previewed before it opens.
+  final Widget? notice;
+
   /// Between one verse's block and the next, which with the blocks' insets
   /// sets their text 20 apart.
   static const _verseGap = 12.0;
 
   /// The page's side padding, and around the text at its top and end.
   static const _side = 20.0;
+
+  /// [child] in the reading column, as a verse's block is set.
+  Widget _column(Widget child) => Center(
+        child: ConstrainedBox(constraints: BoxConstraints(maxWidth: width), child: child),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -2714,6 +2738,7 @@ class _FullText extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (notice case final notice?) ...[_column(notice), const Gap(8)],
                 for (final (i, r) in verses.indexed) verse(i, r, first: i == 0, last: i == verses.length - 1),
                 ...end(aliyah),
               ],
@@ -2742,6 +2767,11 @@ class _FullText extends StatelessWidget {
             child: CustomScrollView(
               controller: scroll,
               slivers: [
+                if (notice case final notice?)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(_side, 8, _side, 8),
+                    sliver: SliverToBoxAdapter(child: _column(notice)),
+                  ),
                 for (final (a, aliyot) in parsha.aliyot.indexed)
                   SliverMainAxisGroup(
                     key: whole.aliyahKey(a),

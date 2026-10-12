@@ -757,7 +757,7 @@ On desktop the ribbon is constrained to the reading-column width and centred.
 
 ### 6.17 PassTrack (replaces _StepHeader card and LayerLabel, reader_screen.dart:678-734 and 652-664; fixes D12)
 
-Row of three Expanded segments with an 8 gap. Each segment is a Column:
+Row of three Expanded segments with an 8 gap, growing with the text to 200% at most, its labels and their checks alike, as the instruction line beneath it (§9 Reader, guided). Each segment is a Column:
 - Label in labelMedium: `passTrackLabel(n, name)` = "1 · Mikra", "2 · Mikra", "3 · Targum" (or Rashi, or the third Mikra).
   - Done: onSurfaceVariant with a leading 14 px check in primary.
   - Current: onSurface w700.
@@ -932,7 +932,7 @@ While Listen reads, playing or paused, a player sits above the reader's bottom b
 - At its start, the speech rate: a Text button in onSurfaceVariant, `speed` 18, 6, and the rate as Settings shows it (padding 12 at the start and 8 at the end, closer than a text button with an icon sets them, so that each of the player's sides, 96 on a 360 dp phone, holds "Normal" with its icon), relative to the default (`speechRateLabel`): "Normal" (`speechRateNormal`), else a multiple of it to one decimal ("1.2×", `speechRateTimes`, a left-to-right run in Hebrew so that the sign stays after the number); labelLarge, tabular figures. Tooltip `speechRate`, read as `speechRateValue` ("Speech rate: Normal"). The icon goes only where the rate would have no room beside it even at nine tenths of its size: "Normal" keeps it from a 356 dp phone at 100% text (a little smaller below 366 dp), and loses it on a narrower phone and at larger text (on a 412 dp phone at 200%), where the rate stands alone; the rate is set smaller before it is ever cut short. It opens a menu (paper, §6.19) of 0.6×, 0.8×, Normal, 1.2×, 1.4×, 1.8× and 2.2×, with the rate set among them if it is another: each a radio icon (`radio_button_checked` in primary, unchecked in onSurfaceVariant) and its rate, the one chosen in w700. A rate chosen is the setting's (Settings → Accessibility → Speech rate), and the verse being read starts again at it.
 - At its centre, left to right in either language, as media controls are: `skip_previous_rounded` (`listenPreviousVerse`), 8, a tonal 48 dp icon button in primaryContainer / onPrimaryContainer with `pause_rounded` (`listenPause`) or `play_arrow_rounded` (`listenResume`), 8, and `skip_next_rounded` (`listenNextVerse`). Back and on are disabled where there is no verse to move to; between Listen along's readings, back reads the last verse again and on goes to the next reading.
 - At its end, `close` (`stopListening`).
-- In the reader, its text grows to 200% at most, as the bottom bar's (§9 Reader, guided).
+- Wherever it shows, in the reader and on the haftarah's page, its text grows to 200% at most, as the reader's bottom bar's (§9 Reader, guided): `ListenBar` holds itself to it.
 - The app bar's Listen button reads `stopListening` with `stop_circle_outlined` while the player shows.
 
 ### 6.29 Bookmarks and notes (lib/features/notes/)
@@ -1207,7 +1207,8 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
 - **_Note** (no Targum or Rashi available; reader_screen.dart:736-760): a NoticeBanner with `info_outline` (replaces tertiaryContainer).
 - Bottom bar per §6.18; finished panel per §6.23.
 - Desktop: ribbon, track, text and bottom bar all share one centred column.
-- Large text: the chrome around the text stops growing before the text does. The app bar's title grows to 1.34× (as Flutter's), and the ribbon, the step's title, the bottom bar and Listen's player to 2×, the 200% that WCAG 1.4.4 asks for (`ReaderScreen.chromeMaxTextScale`); past that, only the scripture grows. At 300% on a 320 × 640 phone, the reader opens with the first line of a verse in view above the bottom bar, in either language.
+- Large text: the chrome around the text stops growing before the text does. The app bar's title grows to 1.34× (as Flutter's), and the ribbon, the pass track, the step's title, the bottom bar and Listen's player to 2×, the 200% that WCAG 1.4.4 asks for (`ReaderScreen.chromeMaxTextScale`); past that, only the scripture grows. At 300% on a 320 × 640 phone, the reader opens with the first line of a verse in view above the bottom bar, in either language.
+- A week not yet open, previewed from the Parsha screen or the Torah map: a NoticeBanner with `visibility_outlined`, `previewNotOpen(date)`, at the top of the text, above the pass track or the full text's first verse, and scrolling with it, so that it can never squeeze the text off the screen; it too grows to 200% at most. At 300% on a 320 × 640 phone its verse comes beneath it, a scroll away.
 - The keyboard shortcuts (F1, or the menu's Keyboard shortcuts): a dialog (§6.19) of rows, the action in bodyMedium and its keys as keycaps at the end. Where the rows run past the dialog's foot (a phone, large text), they scroll with their scrollbar kept in sight, in a 12 band of the end padding clear of the keys, so that a list cut off between two rows isn't taken to be complete.
 
 ### Reader, full text (phone_reader_full, desktop_reader_full)

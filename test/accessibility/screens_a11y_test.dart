@@ -12,6 +12,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
 import 'package:shnayim_mikra/ui/widgets/lines.dart' show WholeWords;
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
@@ -417,6 +418,48 @@ void main() {
         final firstLine = text.localToGlobal(Offset.zero).dy + text.getFullHeightForCaret(const TextPosition(offset: 0));
         expect(firstLine, lessThanOrEqualTo(640 - bar));
         expectWholeWords(tester);
+      });
+    }
+
+    // A week previewed before it opens says so at the top of the text, which
+    // scrolls with it: the notice can't squeeze the text off the screen.
+    for (final (mode, name) in [('', 'guided reader'), ('?mode=full', 'full text')]) {
+      testWidgets('at 300% on a 320 dp phone, a week not yet open in the $name keeps its verses beneath its notice',
+          (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = 3;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearAllTestValues);
+        final c = await pumpApp(
+          tester,
+          settings: AppSettings(onboardingComplete: true, joinDate: captureJoinDate),
+          now: captureNow,
+        );
+        // Noach, the week after Bereshit's Friday.
+        c.read(routerProvider).go('/read/5787:2/0$mode');
+        await tester.pump();
+        await tester.pump();
+        for (var i = 0; i < 30 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+          await tester.pump();
+        }
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final notice = find.byType(NoticeBanner);
+        expect(notice, findsOneWidget);
+        // Twice its size at most, as the rest of the chrome: bodyMedium's 14
+        // at 28.
+        final text = find.descendant(of: find.textContaining('Preview'), matching: find.byType(RichText));
+        expect(tester.renderObject<RenderParagraph>(text).textScaler.scale(14), 28);
+        final verse = find.byType(ScriptureVerse).first;
+        expect(tester.getTopLeft(verse).dy, greaterThan(tester.getRect(notice).bottom));
+        // Scrolled to, the verse comes into view, and the notice goes up.
+        await tester.ensureVisible(verse);
+        await tester.pumpAndSettle();
+        expect(tester.getTopLeft(verse).dy, lessThan(640 - 48));
+        expect(tester.takeException(), isNull);
+        if (mode.isEmpty) expectWholeWords(tester);
       });
     }
 

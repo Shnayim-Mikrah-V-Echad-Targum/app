@@ -48,6 +48,19 @@ void main() {
   double labelScale(WidgetTester tester, String label) =>
       tester.getSize(find.byType(FittedBox)).width / tester.getSize(find.text(label)).width;
 
+  // Wherever it shows: in the reader, and on the haftarah's page.
+  testWidgets('grows with the text to 200%, and no more', (tester) async {
+    await pump(tester, 412);
+    final normal = tester.getSize(find.byType(ListenBar));
+    final label = tester.getSize(find.text('Normal'));
+    await pump(tester, 412, textScale: 2);
+    final double = tester.getSize(find.byType(ListenBar));
+    expect(tester.getSize(find.text('Normal')).height, greaterThanOrEqualTo(label.height * 1.8));
+    await pump(tester, 412, textScale: 3);
+    expect(tester.getSize(find.byType(ListenBar)), double);
+    expect(double.height, greaterThanOrEqualTo(normal.height));
+  });
+
   group("The player's speech rate", () {
     testWidgets('keeps its icon beside "Normal" on a 360 dp phone, at the column\'s edge', (tester) async {
       await pump(tester, 360);

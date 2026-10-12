@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import 'listen_along.dart';
+import 'reader_screen.dart';
 
 /// The player that shows while Listen reads (docs/DESIGN_SYSTEM.md §6.28),
 /// above the reader's bottom bar or at the foot of the page: the speech rate
@@ -10,7 +11,9 @@ import 'listen_along.dart';
 /// and Stop at its end.
 ///
 /// Like the bottom bar, it runs under the gesture bar in the page's own
-/// colour, and keeps to the reading column.
+/// colour, and keeps to the reading column. Its text grows to 200% at most
+/// ([ReaderScreen.chromeMaxTextScale]), wherever it shows, as the rest of
+/// the reader's chrome.
 class ListenBar extends StatelessWidget {
   const ListenBar({
     super.key,
@@ -81,7 +84,7 @@ class ListenBar extends StatelessWidget {
         ],
       ),
     );
-    return DecoratedBox(
+    final bar = DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface,
         border: Border(top: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth)),
@@ -124,6 +127,7 @@ class ListenBar extends StatelessWidget {
         ),
       ),
     );
+    return MediaQuery.withClampedTextScaling(maxScaleFactor: ReaderScreen.chromeMaxTextScale, child: bar);
   }
 }
 

@@ -203,6 +203,8 @@ const _screens = {
   'week_tab': '/today/week/5787:1',
   'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
+  // Next week's, not yet open: the notice at the top of the text.
+  'reader_preview': '/read/5787:2/0',
   // Revi'i open after Rishon and Sheni, with Shlishi under way.
   'reader_ribbon': '/read/5787:1/3',
   // Chamishi of Acharei Mot-Kedoshim (5786), the longest title the reader's
@@ -1657,7 +1659,7 @@ const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 const _hugeModes = {'huge', 'hugehe'};
 // The reader with Listen's player over its bar too: the chrome is held at
 // 200% so that a verse shows beneath it. Browse, whose names stay whole.
-const _hugeScreens = {'today', 'reader', 'reader_listen', 'browse'};
+const _hugeScreens = {'today', 'reader', 'reader_listen', 'reader_preview', 'browse'};
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {'today', 'parsha', 'week', 'progress', 'settings', 'community', 'thread', 'haftarah', 'browse'};
 const _hugeWideScreens = {'parsha', 'settings'};
