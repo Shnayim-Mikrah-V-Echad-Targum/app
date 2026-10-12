@@ -12,7 +12,10 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_clock.dart';
+import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/ui/widgets/lang.dart';
 import 'package:shnayim_mikra/ui/widgets/ledger.dart';
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show TitlePageFrame;
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -209,6 +212,9 @@ void main() {
   });
 
   group('Today on Shabbat', () {
+    // Laid out as it is drawn, in the app's own fonts.
+    setUpAll(loadBundledFonts);
+
     Future<ProviderContainer> openToday(WidgetTester tester, {AppSettings? settings, DateTime? now}) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
@@ -317,12 +323,53 @@ void main() {
     });
 
     testWidgets('in Hebrew', (tester) async {
+      final handle = tester.ensureSemantics();
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
       expect(find.text('שבת שלום'), findsOneWidget);
       expect(find.text('קוראים היום מתוך חומש?'), findsOneWidget);
       expect(find.text('אפשר לסמן זאת אחרי השבת.'), findsOneWidget);
       expect(find.text('לפרשה'), findsOneWidget);
+      // The parsha's English name under its Hebrew one, read in English.
+      final latin = find.text('Bereshit');
+      expect(latin, findsOneWidget);
+      expect(find.ancestor(of: latin, matching: find.byType(Lang)), findsOneWidget);
+      expect(find.bySemanticsLabel('Bereshit'), findsOneWidget);
+      handle.dispose();
     });
+
+    testWidgets('names the parsha in English under its Hebrew name, for the eye alone', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openToday(tester);
+      final latin = find.text('Bereshit');
+      expect(latin, findsOneWidget);
+      final heading = find.descendant(of: find.byType(TitlePageFrame), matching: find.byType(Lang)).first;
+      expect(tester.getRect(latin).top, moreOrLessEquals(tester.getRect(heading).bottom));
+      // The heading's label already says it.
+      expect(find.bySemanticsLabel('Bereshit'), findsNothing);
+      expect(find.bySemanticsLabel('Parshat Bereshit'), findsOneWidget);
+      handle.dispose();
+    });
+
+    // §9 Today, 8: the title page two fifths of the way down the space the
+    // header leaves free, on a phone and a desktop, and nothing to scroll.
+    for (final size in [const Size(412, 915), const Size(360, 740), const Size(1366, 860)]) {
+      testWidgets('stands two fifths of the way down the space under the header at ${size.width.round()} dp',
+          (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await pumpApp(tester, settings: _settings, now: _shabbat);
+        await tester.pumpAndSettle();
+        final frame = tester.getRect(find.byType(TitlePageFrame));
+        final header = tester.getRect(find.ancestor(of: find.byTooltip('How it works'), matching: find.byType(Row)).first);
+        final scrollable = find.descendant(of: find.byType(TodayScreen), matching: find.byType(Scrollable));
+        final above = frame.top - (header.bottom + 16);
+        final below = tester.getRect(scrollable).bottom - 40 - frame.bottom;
+        expect(above, greaterThan(0));
+        expect(above / (above + below), moreOrLessEquals(0.4, epsilon: 0.001));
+        expect(tester.state<ScrollableState>(scrollable).position.maxScrollExtent, moreOrLessEquals(0));
+      });
+    }
 
     testWidgets("is a reading day again once Shabbat is out in the reader's city", (tester) async {
       tester.view.physicalSize = const Size(412, 915);

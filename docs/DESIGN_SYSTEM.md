@@ -344,10 +344,10 @@ Unchanged:
 |---|---|---|---|---|---|
 | displayLarge | EBG | 44/52 | 500 | -0.25 | Sefer-complete panel |
 | displayMedium | EBG | 38/46 | 500 | -0.2 | (reserved) |
-| displaySmall | EBG | 32/40 | 500 | 0 | Finished-panel title ≥600 dp |
+| displaySmall | EBG | 32/40 | 500 | 0 | Finished-panel title ≥600 dp, the rest-day greeting |
 | headlineLarge | EBG | 30/38 | 500 | 0 | Latin parsha name in the Today hero |
 | headlineMedium | EBG | 28/36 | 500 | 0 | Masthead, Parsha header Latin name, finished panel |
-| headlineSmall | EBG | 24/30 | 500 | 0 | Card titles, thread title, onboarding questions |
+| headlineSmall | EBG | 24/30 | 500 | 0 | Card titles, thread title, onboarding questions, the rest-day hero's Latin parsha name |
 | titleLarge | EBG | 22/28 | 500 | 0 | App bar, dialog and sheet titles |
 | titleMedium | NS | 16/24 | 500 | 0.1 | Row titles |
 | titleSmall | NS | 14/20 | 500 | 0.1 | Author names, minor headers |
@@ -1099,7 +1099,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 
 ### Today (today_screen.dart; phone_today, he_today, dark_today, desktop_today)
 
-Remove the AppBar. Everything sits in a SafeArea PageBody.
+Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a scroll view of the same column, 8).
 
 1. **TodayHeader** (12 top):
    - Row of `Expanded(Column)` and a help IconButton (help_outline, tooltip `guideTitle`).
@@ -1160,7 +1160,8 @@ Remove the AppBar. Everything sits in a SafeArea PageBody.
    - These replace two separate cards.
 8. **Rest day** (`JewishHolidays.isRestDay(date, israel: settings.oneDayYomTov)`, the reader's Yom Tov custom rather than the reading schedule). The reading day is never a day of rest, so this is the device's date (`restDayProvider`), turning at 3 a.m.; with a city chosen for Shabbat times and the device on its clock, it begins at candle-lighting there on its eve (`Zmanim.candleLighting`), and the last day of rest ends at nightfall there (`Zmanim.havdalah`), so that Motzaei Shabbat is a reading day for the check-in. Without one it lasts from 3 a.m. to 3 a.m.:
    - The header's running head gives the day of rest's Hebrew date, beside the device's date (1): from candle-lighting on its eve, still the eve's.
-   - The hero (TitlePageFrame, padding 40 above and 24 elsewhere, 28 and 16 under 360 dp) shows candles at 40, 16, the day's greeting in headlineMedium (`gmarChatimaTova` on Yom Kippur and `shanaTova` on Rosh Hashanah, on Shabbat too; `chagSameach` on the festivals' Yom Tov; otherwise `shabbatShalom`), 20, the eyebrow `parshatHashavua`, 4, the pointed parsha name in hebrewDisplay 32/44 (heading level 1, `parshaLabel(name)`), 16, and bodyMedium onSurfaceVariant `restDayBody`, or `restDayBodyChag` when the days of rest end with Yom Tov (`restDayBodyYomKippur` with Yom Kippur). The parsha is the week the day falls in: the one read today, or on the Shabbat after a Yom Tov.
+   - The hero (TitlePageFrame, padding 40 above and 24 elsewhere, 28 and 16 under 360 dp) shows candles at 48, 16, the day's greeting in displaySmall (`gmarChatimaTova` on Yom Kippur and `shanaTova` on Rosh Hashanah, on Shabbat too; `chagSameach` on the festivals' Yom Tov; otherwise `shabbatShalom`), 20, the eyebrow `parshatHashavua` (`simchatTorahEyebrow` for Vezot HaBerachah), 4, the pointed parsha name in hebrewDisplay 40/52 (heading level 1, `parshaLabel(name)`) and directly under it the Latin name, as on a reading day's hero (3) but a size smaller: in the English UI in headlineSmall onSurface, for the eye alone, as the heading's label says it; in the Hebrew UI in bodyMedium onSurfaceVariant, tagged `en`. Then 16, and bodyMedium onSurfaceVariant `restDayBody`, or `restDayBodyChag` when the days of rest end with Yom Tov (`restDayBodyYomKippur` with Yom Kippur). The parsha is the week the day falls in: the one read today, or on the Shabbat after a Yom Tov.
+   - The title page stands in the space under the header, in the page's 720 column: 16 below the header and 40 above the page's foot, two fifths of the free space above it and three below, as a book's title stands a little above the middle of its page, so that it doesn't sit at the top of an empty screen. Where it is taller than that space, as with large text, it follows the header 16 below it and the page scrolls.
    - No rings, CTAs, notices, Today card, week strip, ledger or "This week"; only a TextButton `openTheParsha` to its week, /today/week/{id}.
    - Nothing animates.
    - The wording goes to the rabbinic advisor (DESIGN.md §11).

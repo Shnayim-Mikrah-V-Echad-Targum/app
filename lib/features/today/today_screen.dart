@@ -62,17 +62,13 @@ class TodayScreen extends ConsumerWidget {
       // Under the status bar, which no app bar clears here.
       body: SafeArea(
         bottom: false,
-        child: PageBody(
-          maxWidth: wide ? ContentWidth.todayWide : ContentWidth.list,
-          padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.s40),
-          children: rest != null
-              ? [
-                  _TodayHeader(today: rest, civil: ref.watch(civilDateProvider)),
-                  const Gap(Space.lg),
-                  _RestHero(date: rest),
-                ]
-              : _readingDay(context, ref, wide: wide),
-        ),
+        child: rest != null
+            ? _RestDay(rest: rest, civil: ref.watch(civilDateProvider))
+            : PageBody(
+                maxWidth: wide ? ContentWidth.todayWide : ContentWidth.list,
+                padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.s40),
+                children: _readingDay(context, ref, wide: wide),
+              ),
       ),
     );
   }
@@ -479,7 +475,6 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     final scheme = theme.colorScheme;
     final sefer = SeferType.of(context);
     final settings = widget.settings;
-    final hebrewUi = context.isHebrewUi;
     final portion = ctx.portion;
     final week = ctx.week;
     final today = ctx.today;
@@ -542,21 +537,7 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
             label: l.parshaLabel(name),
             style: sefer.hebrewDisplay.copyWith(fontSize: 46, height: 60 / 46),
           ),
-          if (hebrewUi)
-            Lang(
-              const Locale('en'),
-              // Whole, as the name above it is: "Acharei" over "Mot-Kedoshim".
-              child: WholeWords(
-                names.portionAlt(portion, ashkenazi: settings.ashkenaziNames),
-                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-                textDirection: TextDirection.ltr,
-              ),
-            )
-          else
-            // The heading already says it.
-            ExcludeSemantics(
-              child: WholeWords(name, style: theme.textTheme.headlineLarge?.copyWith(color: scheme.onSurface)),
-            ),
+          _LatinName(portion: portion, ashkenazi: settings.ashkenaziNames, style: theme.textTheme.headlineLarge),
           const Gap(Space.xs),
           DotLine(
             [
@@ -705,6 +686,41 @@ class _ParshaHeading extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// The parsha's name in Latin letters, under its pointed name: in the
+/// English UI as the UI names it, in [style] and onSurface, for the eye
+/// alone, as the heading's label already says it; in the Hebrew UI its
+/// English name, small and muted, tagged as English.
+class _LatinName extends StatelessWidget {
+  const _LatinName({required this.portion, required this.ashkenazi, required this.style});
+
+  final PortionInfo portion;
+  final bool ashkenazi;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final names = Names(context);
+    final theme = Theme.of(context);
+    if (!context.isHebrewUi) {
+      return ExcludeSemantics(
+        child: WholeWords(
+          names.portion(portion, ashkenazi: ashkenazi),
+          style: style?.copyWith(color: theme.colorScheme.onSurface),
+        ),
+      );
+    }
+    return Lang(
+      const Locale('en'),
+      // Whole, as the name above it is: "Acharei" over "Mot-Kedoshim".
+      child: WholeWords(
+        names.portionAlt(portion, ashkenazi: ashkenazi),
+        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        textDirection: TextDirection.ltr,
+      ),
+    );
+  }
 }
 
 /// The hero's rings and their legend, centred in the frame, and under the
@@ -1095,7 +1111,66 @@ class _FlushTextButton extends StatelessWidget {
   }
 }
 
-/// Today on Shabbat or Yom Tov ([restDayProvider], §9 Today, 8): candles, a
+/// Today on Shabbat or Yom Tov (§9 Today, 8): the header, and the day's
+/// title page in the space under it, two fifths of the way down what it
+/// leaves free, as a book's title stands a little above the middle of its
+/// page. Where large text makes the page taller than the screen, it
+/// scrolls.
+class _RestDay extends StatelessWidget {
+  const _RestDay({required this.rest, required this.civil});
+
+  /// The day of rest, and the device's date ([_TodayHeader]).
+  final LocalDate rest;
+  final LocalDate civil;
+
+  /// Two fifths of the free space above the title page, three below.
+  static const _place = Alignment(0, -0.2);
+
+  @override
+  Widget build(BuildContext context) {
+    final g = Gutter.of(context);
+    // In the page's column, gutters included, as a PageBody's; each heading,
+    // text and control a node of its own.
+    Widget column(Widget child) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: ContentWidth.list),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: g),
+              child: Semantics(explicitChildNodes: true, child: child),
+            ),
+          ),
+        );
+    // Built once, so that laying the page out again as it scrolls leaves it be.
+    final titlePage = Padding(
+      padding: EdgeInsets.only(top: Space.lg, bottom: Space.s40 + MediaQuery.paddingOf(context).bottom),
+      child: Align(alignment: _place, child: column(_RestHero(date: rest))),
+    );
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.only(top: Space.md),
+          sliver: SliverToBoxAdapter(child: column(_TodayHeader(today: rest, civil: civil))),
+        ),
+        // As tall as the screen leaves under the header, or as the title page
+        // with its margins where that is taller. A [SliverFillRemaining]
+        // would ask the page its intrinsic height, which its balanced lines,
+        // laid out by width, can't give.
+        SliverLayoutBuilder(
+          builder: (context, constraints) => SliverToBoxAdapter(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: math.max(0, constraints.viewportMainAxisExtent - constraints.precedingScrollExtent),
+              ),
+              child: titlePage,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The day of rest's title page ([restDayProvider], §9 Today, 8): candles, a
 /// greeting, the parsha's name, a word that reading from a printed Chumash
 /// is logged afterwards, and the way to the parsha. Nothing else, and
 /// nothing moves.
@@ -1136,9 +1211,9 @@ class _RestHero extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(child: ShabbatCandlesIcon(size: 40)),
+          const Center(child: ShabbatCandlesIcon(size: 48)),
           const Gap(Space.lg),
-          BalancedText(greeting, style: theme.textTheme.headlineMedium),
+          BalancedText(greeting, style: theme.textTheme.displaySmall),
           const Gap(Space.xl),
           Semantics(
             container: true,
@@ -1154,8 +1229,10 @@ class _RestHero extends ConsumerWidget {
                 _ParshaHeading(
                   portion: portion,
                   label: l.parshaLabel(name),
-                  style: SeferType.of(context).hebrewDisplay.copyWith(fontSize: 32, height: 44 / 32),
+                  style: SeferType.of(context).hebrewDisplay.copyWith(fontSize: 40, height: 52 / 40),
                 ),
+                // Smaller than the reading day's, as the name above it is.
+                _LatinName(portion: portion, ashkenazi: settings.ashkenaziNames, style: theme.textTheme.headlineSmall),
               ],
             ),
           ),

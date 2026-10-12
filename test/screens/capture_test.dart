@@ -1832,14 +1832,17 @@ const _bigPhoneScreens = {
   'welcome_plan',
   // The days of Yom Tov offered, more than a phone holds at this size.
   'today_checkin_vezot_date',
+  // The day of rest's title page, taller than the space under the header.
+  'today_shabbat',
 };
 const _hugeModes = {'huge', 'hugehe'};
 // The reader with Listen's player over its bar too: the chrome is held at
 // 200% so that a verse shows beneath it. Browse, whose names stay whole.
-const _hugeScreens = {'today', 'reader', 'reader_listen', 'reader_preview', 'browse'};
+const _hugeScreens = {'today', 'today_shabbat', 'reader', 'reader_listen', 'reader_preview', 'browse'};
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
   'today',
+  'today_shabbat',
   'parsha',
   'week',
   'progress',
