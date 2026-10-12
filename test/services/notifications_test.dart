@@ -25,6 +25,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../helpers.dart';
 
 typedef _Scheduled = ({
+  tz.TZDateTime date,
   String? title,
   String? body,
   NotificationDetails details,
@@ -43,9 +44,16 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
   /// The ids of reminders the platform refuses.
   final throwFor = <int>{};
 
+  /// Whether the next [cancelAll] fails, as a platform channel can.
+  bool failNextCancel = false;
+
   @override
   Future<void> cancelAll() async {
     await Future<void>.delayed(Duration.zero);
+    if (failNextCancel) {
+      failNextCancel = false;
+      throw PlatformException(code: 'error');
+    }
     cancels++;
     scheduled.clear();
   }
@@ -65,6 +73,7 @@ class _FakePlugin extends Fake implements FlutterLocalNotificationsPlugin {
     if (throwFor.contains(id)) throw ArgumentError.value(id, 'id', 'refused');
     schedules++;
     scheduled[id] = (
+      date: scheduledDate,
       title: title,
       body: body,
       details: notificationDetails,
@@ -238,6 +247,40 @@ void main() {
       plugin.throwFor.clear();
       await service.reschedule(plan, en, copyIn(en));
       expect(plugin.cancels, 2, reason: 'the same plan, once it failed, is scheduled again');
+      expect(plugin.scheduled.keys.toSet(), ids(plan));
+    });
+
+    test('a plan refused in part, then the plan before it again, schedules that plan whole', () async {
+      final at20 = planFrom(DateTime(2026, 10, 11, 8), prefs: const ReminderPrefs(daily: true));
+      final at21 = planFrom(DateTime(2026, 10, 11, 8), prefs: const ReminderPrefs(daily: true, dailyMinutes: 21 * 60));
+      expect(ids(at21), ids(at20), reason: 'the same days, at other times');
+      final plugin = _FakePlugin();
+      final service = _service(plugin);
+      await service.reschedule(at20, en, copyIn(en));
+
+      // The reader moves the time to 21:00, and the platform refuses one.
+      plugin.throwFor.add(at21.first.id);
+      await service.reschedule(at21, en, copyIn(en));
+      expect(plugin.scheduled.keys.toSet(), ids(at21.sublist(1)));
+
+      // Then back to 20:00: the plan scheduled before, but no longer what
+      // the platform holds.
+      plugin.throwFor.clear();
+      await service.reschedule(at20, en, copyIn(en));
+      expect(plugin.scheduled.keys.toSet(), ids(at20));
+      for (final r in at20) {
+        expect(plugin.scheduled[r.id]!.date, tz.TZDateTime.from(r.localDateTime, tz.local), reason: '${r.id}');
+      }
+    });
+
+    test('a plan that could not be scheduled at all is scheduled on the next call', () async {
+      final plan = planFrom(DateTime(2026, 10, 11, 8));
+      final plugin = _FakePlugin()..failNextCancel = true;
+      final service = _service(plugin);
+
+      await service.reschedule(plan, en, copyIn(en));
+      expect(plugin.scheduled, isEmpty);
+      await service.reschedule(plan, en, copyIn(en));
       expect(plugin.scheduled.keys.toSet(), ids(plan));
     });
 

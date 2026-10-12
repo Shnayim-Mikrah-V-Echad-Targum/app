@@ -601,7 +601,8 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - ChoiceChip:
   - `showCheckmark: false`;
   - unselected: 1 px outline, transparent;
-  - selected: primaryContainer fill, 1.5 px primary border, label w700 onPrimaryContainer. The border width and weight are the non-colour cue.
+  - selected: primaryContainer fill, 1.5 px primary border, label w700 onPrimaryContainer. The border width and weight are the non-colour cue;
+  - a label too long for the line, as at the largest text sizes, wraps between its words and the chip grows taller, rather than fading out mid-word (`SeferChoiceChip`; one with an avatar keeps one line).
 - FilterChip (multi-select) keeps its checkmark.
 - A leading check icon anywhere else means "done" only.
 

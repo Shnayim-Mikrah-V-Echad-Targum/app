@@ -221,7 +221,8 @@ class NotificationService {
   ///
   /// A reminder that has come due since it was planned is passed over, and
   /// one the platform refuses costs only itself: the others are scheduled
-  /// all the same, and the next call tries the whole plan again.
+  /// all the same, and the next call schedules its plan whole, whichever it
+  /// is.
   Future<void> reschedule(
       List<PlannedReminder> reminders, AppLocalizations l, ReminderCopy Function(PlannedReminder) describe) {
     final call = ++_latest;
@@ -258,6 +259,9 @@ class NotificationService {
           await android.createNotificationChannel(AndroidNotificationChannel(id, name, description: description));
         }
       }
+      // From here the platform may hold part of a plan, or none: the next
+      // call schedules its own plan whole, even the last one done.
+      _lastSignature = '';
       await p.cancelAll();
     } catch (e) {
       debugPrint('Could not schedule reminders: $e');
@@ -301,8 +305,8 @@ class NotificationService {
         debugPrint('Could not schedule reminder ${r.id}: $e');
       }
     }
-    // Remembered only once all of it is in, so that the same plan comes
-    // again for what is missing.
+    // Remembered only once all of it is in, so that the same plan, or the
+    // one before it, comes again for what is missing.
     if (!failed) _lastSignature = signature;
   }
 
