@@ -183,5 +183,23 @@ void main() {
         ),
       );
     });
+
+    // A dialog sets its content at its intrinsic width; the balanced title
+    // answers it, as the plain text did before.
+    testWidgets('with a title, and a sheet title, may stand in a dialog', (tester) async {
+      await pumpThemed(
+        tester,
+        const AlertDialog(
+          title: SheetTitle('Shavua tov! Did you read Bereshit on Shabbat?'),
+          content: NoticeBanner(
+            icon: Icons.schedule,
+            title: 'Shavua tov! Did you read Bereshit on Shabbat?',
+            text: 'Finish by Tuesday.',
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text('Finish by Tuesday.'), findsOneWidget);
+    });
   });
 }
