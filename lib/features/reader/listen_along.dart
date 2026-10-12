@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -40,6 +40,13 @@ class SpeechQueue {
     return i < 0 ? items.length - 1 : i;
   }
 }
+
+/// Whether the app is out of sight (hidden, or further), when Listen pauses
+/// and none is started.
+bool appOutOfSight() => switch (WidgetsBinding.instance.lifecycleState) {
+      AppLifecycleState.hidden || AppLifecycleState.paused || AppLifecycleState.detached => true,
+      _ => false,
+    };
 
 /// How a Listen ended.
 enum ListenEnd {

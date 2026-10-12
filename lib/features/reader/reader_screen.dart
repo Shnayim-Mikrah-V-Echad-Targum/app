@@ -270,9 +270,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// Sheets, menus and dialogs over it leave it be.
   void _stopIfHidden() {
     if (!mounted || !_listen.active) return;
-    if (_tickersOn && (_covering?.isDismissed ?? true)) return;
+    if (_onTop) return;
     _stopListening();
   }
+
+  /// Whether no other page covers the reader.
+  bool get _onTop => _tickersOn && (_covering?.isDismissed ?? true);
 
   @override
   void dispose() {
@@ -849,7 +852,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Future<void> _startListening(ReaderTexts texts, ReaderFlow flow, {bool checkVoice = true, int? startVerse}) async {
     final l = context.l10n;
     final hasHebrew = checkVoice ? await _tts.hasHebrewVoice() : null;
-    if (!mounted) return;
+    // The browser may take a moment to load its voices, and an engine to
+    // bind: a page covered, or an app hidden, meanwhile starts nothing,
+    // which nothing would then stop or pause.
+    if (!mounted || !_onTop || appOutOfSight()) return;
     final s = ref.read(settingsProvider);
     final queue = _speechQueue(texts, flow, s);
     if (queue.isEmpty) return;

@@ -117,9 +117,12 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
   /// it be.
   void _stopIfHidden() {
     if (!mounted || !_listen.active) return;
-    if (_tickersOn && (_covering?.isDismissed ?? true)) return;
+    if (_onTop) return;
     _listen.stop();
   }
+
+  /// Whether the page's tab is shown, and no other page covers it.
+  bool get _onTop => _tickersOn && (_covering?.isDismissed ?? true);
 
   @override
   void dispose() {
@@ -165,7 +168,9 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
   Future<void> _startListening(List<HaftarahVerse> list) async {
     final l = context.l10n;
     final hasHebrew = await _tts.hasHebrewVoice();
-    if (!mounted) return;
+    // A tab left, a page come over it, or the app hidden while the voice
+    // was looked for starts nothing, which nothing would then stop.
+    if (!mounted || !_onTop || appOutOfSight()) return;
     if (hasHebrew == false) showStatus(context, l.ttsNoHebrewVoice);
     final settings = ref.read(settingsProvider);
     final queue = SpeechQueue(language: 'he-IL');

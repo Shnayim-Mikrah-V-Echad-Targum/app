@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +15,16 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 
 import '../helpers.dart';
+
+/// Speech whose answer to whether there is a Hebrew voice waits for the test
+/// ([voice]), as the browser's does while it loads its voices, or an engine
+/// still binding.
+class _VoiceHeldTts extends HeldTts {
+  final voice = Completer<bool?>();
+
+  @override
+  Future<bool?> hasHebrewVoice() => voice.future;
+}
 
 /// Listen goes with its page: it stops as another page covers the page or
 /// its tab is left, and only its own speech; and it pauses as the app is
@@ -158,6 +170,30 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    // The haftarah's page in a tab is covered in the root navigator, whose
+    // route animations it never sees: its Listen stops as the tabs' page goes
+    // offstage under the opaque page, which turns its tickers off.
+    for (final path in ['/search', '/read/5787:1/0']) {
+      testWidgets("on the haftarah's page in a tab, as $path opens over the tabs", (tester) async {
+        final tts = HeldTts();
+        final c = await open(tester, '/today/haftarah/5787:1', tts);
+        await tester.tap(find.byTooltip('Listen'));
+        await tester.pumpAndSettle();
+        expect(speaking(tts), isTrue);
+
+        final router = c.read(routerProvider);
+        router.push(path);
+        await loadTexts(tester);
+        expect(tts.currentIndex.value, isNull, reason: 'the voice stops under the page');
+
+        router.pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(HaftarahScreen), findsOneWidget);
+        expect(player, findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
     testWidgets('but not while a sheet is over the reader', (tester) async {
       final tts = HeldTts();
       await open(tester, '/read/5787:1/0?mode=full', tts);
@@ -288,6 +324,56 @@ void main() {
         });
       });
     }
+
+    // The browser can take a moment to load its voices, an engine to bind.
+    group('a Listen still looking for its voice starts nothing', () {
+      testWidgets('in the reader, as the app is hidden meanwhile', (tester) async {
+        final tts = _VoiceHeldTts();
+        await open(tester, '/read/5787:1/0?mode=full', tts);
+        await tester.tap(find.byTooltip('Listen'));
+        await tester.pump();
+        await hide(tester);
+        tts.voice.complete(true);
+        await tester.pump();
+        expect(tts.spoken, isEmpty);
+        expect(tts.currentIndex.value, isNull);
+
+        await show(tester);
+        expect(player, findsNothing);
+        expect(find.byTooltip('Listen'), findsOneWidget);
+      });
+
+      testWidgets("on the haftarah's page, as another tab is chosen meanwhile", (tester) async {
+        final tts = _VoiceHeldTts();
+        await open(tester, '/parsha/haftarah/5787:1', tts);
+        await tester.tap(find.byTooltip('Listen'));
+        await tester.pump();
+        await tester.tap(tab('Progress'));
+        await tester.pumpAndSettle();
+        tts.voice.complete(true);
+        await tester.pumpAndSettle();
+        expect(tts.spoken, isEmpty);
+        expect(tts.currentIndex.value, isNull);
+
+        await tester.tap(tab('Parsha'));
+        await tester.pumpAndSettle();
+        expect(find.byType(HaftarahScreen), findsOneWidget);
+        expect(player, findsNothing);
+      });
+
+      testWidgets("on the haftarah's page, as the app is hidden meanwhile", (tester) async {
+        final tts = _VoiceHeldTts();
+        await open(tester, '/haftarah/5787:1', tts);
+        await tester.tap(find.byTooltip('Listen'));
+        await tester.pump();
+        await hide(tester);
+        tts.voice.complete(true);
+        await tester.pump();
+        expect(tts.spoken, isEmpty);
+        await show(tester);
+        expect(player, findsNothing);
+      });
+    });
 
     testWidgets('a call while Listen is off, or paused, leaves it so', (tester) async {
       final tts = HeldTts();
