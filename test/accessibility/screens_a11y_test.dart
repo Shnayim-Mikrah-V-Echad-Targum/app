@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/community/ui/thread_screen.dart' show PostCard;
 import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
@@ -259,6 +260,56 @@ void main() {
           expect(button.left, greaterThan(field.right));
         }
       });
+    }
+
+    // The device's Bold text widens the label: at 300% on a 360 dp phone the
+    // whole width holds it in regular weight, but not in bold, so there it
+    // stands on the outline.
+    testWidgets('with Bold text at 300% on a 360 dp phone, keeps its label whole', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(boldText: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await open(tester, '/community/thread/1', size: const Size(360, 640), textScale: 3);
+      expect(tester.takeException(), isNull);
+      final paragraph = label(tester, hebrew: false);
+      expect(paragraph.text.style?.fontWeight, FontWeight.bold);
+      expect(paragraph.didExceedMaxLines, isFalse);
+    });
+
+    // A label on the outline stands half above the field: at large text, the
+    // field leaves room above it, so that the label stays clear of the
+    // composer's hairline, or of the post being answered.
+    for (final hebrew in [false, true]) {
+      for (final textScale in [2.0, 3.0]) {
+        testWidgets(
+            'at ${(textScale * 100).round()}% on a 320 dp phone, sets its label on the outline clear of what is '
+            'above${hebrew ? ', Hebrew' : ''}', (tester) async {
+          await openThread(tester, hebrew: hebrew, textScale: textScale);
+          final composer = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_Composer');
+          final hairline = tester.getRect(find.descendant(of: composer, matching: find.byType(Divider)));
+          double labelTop() => label(tester, hebrew: hebrew).localToGlobal(Offset.zero).dy;
+
+          // With the focus and nothing yet written, the label floats.
+          await tester.tap(find.byType(TextField));
+          await tester.pumpAndSettle();
+          expect(labelTop(), greaterThanOrEqualTo(hairline.bottom));
+
+          // The posts are built as they scroll into view, above the composer.
+          final reply = find.descendant(of: find.byType(PostCard), matching: find.byIcon(Icons.reply));
+          final list = find.descendant(of: find.byType(RefreshIndicator), matching: find.byType(Scrollable)).first;
+          for (var i = 0; i < 30 && reply.evaluate().isEmpty; i++) {
+            await tester.drag(list, const Offset(0, -200));
+            await tester.pumpAndSettle();
+          }
+          await tester.ensureVisible(reply.first);
+          await tester.pumpAndSettle();
+          await tester.tap(reply.first);
+          await tester.pumpAndSettle();
+          final strip = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_ReplyingTo');
+          expect(strip, findsOneWidget);
+          expect(tester.takeException(), isNull);
+          expect(labelTop(), greaterThanOrEqualTo(tester.getRect(strip).bottom));
+        });
+      }
     }
 
     // The phone turned, say, or the text made smaller: the field moves, but

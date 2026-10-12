@@ -454,12 +454,20 @@ class _Composer extends StatelessWidget {
   /// The size of the field's label on its outline, of its size within.
   static const _floatingLabelScale = 0.75;
 
-  /// The width of [text] in [style], on one line at the reader's text size.
+  static const _bold = TextStyle(fontWeight: FontWeight.bold);
+
+  /// The width of [text] in [style], on one line, as a Text sets it: at the
+  /// reader's text size, in bold where the device asks for bold text, and in
+  /// the page's language, which picks its fallback fonts.
   static double _textWidth(BuildContext context, String text, TextStyle? style) {
     final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
+      text: TextSpan(
+        text: text,
+        style: MediaQuery.boldTextOf(context) ? (style ?? const TextStyle()).merge(_bold) : style,
+      ),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
       maxLines: 1,
     )..layout();
     final width = painter.width;
@@ -522,12 +530,15 @@ class _Composer extends StatelessWidget {
                           final buttonWidth = _textWidth(context, l.replyAction, theme.textTheme.labelLarge) + 48;
                           final stacked = constraints.maxWidth - buttonWidth - Space.md < labelWidth;
                           // On the outline, half the label's line stands above
-                          // the field: more, at large text, than the 12 above
-                          // it holds at 100%, so the field leaves the rest.
-                          final floatingLine = MediaQuery.textScalerOf(context).scale(label.fontSize!) *
-                              (label.height ?? 1.4) *
-                              _floatingLabelScale;
-                          final labelRoom = max(0.0, floatingLine / 2 - Space.md);
+                          // the field: the field sets its label one font size
+                          // high, and on the outline at three quarters of that.
+                          // At large text that is more than the space above the
+                          // field holds (the 12 under the hairline, or the 8
+                          // under the post being answered), so the field
+                          // leaves the rest.
+                          final floatingHalf =
+                              MediaQuery.textScalerOf(context).scale(label.fontSize!) * _floatingLabelScale / 2;
+                          final labelRoom = max(0.0, floatingHalf - (replyTo != null ? Space.sm : Space.md));
                           return Flex(
                             direction: stacked ? Axis.vertical : Axis.horizontal,
                             // Beside the field, the button stays by its last
