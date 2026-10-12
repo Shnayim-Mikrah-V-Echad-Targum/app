@@ -183,7 +183,7 @@ They must be set explicitly so no stock widget (DatePicker, SearchBar, Badge) fa
 | hairline | #D8CFBF | #4A443A | #CBB994 | #000000 (2 px) | #FFFFFF (2 px) |
 | goldLeaf (decorative) | #B38D3F | #B8954B | #A9853A | #4F3500 | #FFD970 |
 | ringMikra1 | #1D3F75 | #AFC6EE | #25406C | #0A2A5E | #B5CEFF |
-| ringMikra2 | #55779F | #7E9BC8 | #4F6B92 | #2F4F82 | #8FB0F0 |
+| ringMikra2 | #55779F | #7E9BC8 | #4F6B92 | #3D629C | #7A9FE8 |
 | ringTargum | #946C1E | #C9A458 | #8A651C | #4F3500 | #FFD970 |
 | ringTrack | #E8E1D3 | #36312A | #E0D3B4 | #E0E0E0 | #333333 |
 | restWash | #F2E7CD | #4A3A16 | #EADBB4 | #FFF0C2 | #3D2E00 |
@@ -245,9 +245,9 @@ Targets:
 | neutral / paper (missed glyph) | 4.53 | 5.27 | 4.60 | 8.45 | 11.18 |
 | focus / surface (ring) | 9.72 | 10.80 | 8.58 | 21.00 | 21.00 |
 | ringMikra1 / paper | 10.23 | 10.12 | 9.36 | 13.95 | 13.24 |
-| ringMikra2 / paper | 4.56 | 6.18 | 4.93 | 8.20 | 9.64 |
+| ringMikra2 / paper | 4.56 | 6.18 | 4.93 | 6.13 | 7.95 |
 | ringTargum / paper | 4.67 | 7.45 | 4.80 | 11.40 | 15.41 |
-| ringMikra2 / ringTrack | 3.57 | 4.55 | 3.67 | 6.21 | 5.80 |
+| ringMikra2 / ringTrack | 3.57 | 4.55 | 3.67 | 4.64 | 4.78 |
 | ringTargum / ringTrack | 3.65 | 5.48 | 3.57 | 8.64 | 9.27 |
 | goldLeaf / surface (decorative only, exempt) | 2.89 | 6.62 | 2.85 | 11.40 | 15.41 |
 | hairline / paper (decorative only, exempt; HC uses 2 px outline) | 1.52 | 1.82 | 1.74 | 21.00 | 21.00 |
@@ -255,6 +255,7 @@ Targets:
 Notes:
 - The current app's 55% alpha dimming measures 3.82:1 in light; `dimInk` replaces it.
 - Dimmed verses (5.1:1 or more) are below the 7:1 scripture target on purpose. They are not the verse being read, and focus mode is opt-in.
+- ringMikra1 and ringMikra2 are both techelet, told apart by shade: 2.24, 1.64, 1.90, 2.28 and 1.66:1 between them. Each high-contrast theme sets them at least as far apart as the theme it heightens (tested), and its RingLegend also keys each row by the ring's position (§6.11).
 
 ### 3.6 Platform colours
 
@@ -669,11 +670,13 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Arc weights by verse count, as now. Gap 0.042 rad between aliyot; butt caps.
 - Start at −π/2 and sweep CLOCKWISE in both directions. Do not mirror.
 - Colours: ring 0 ringMikra1, ring 1 ringMikra2, ring 2 ringTargum; track ringTrack.
+- At every size the track is drawn as the same seven arcs and gaps, under the done arcs, so a week not yet begun shows its seven parts to come rather than three blank circles.
 - Centre: "2/7" in ringNumeral, plus "aliyot" in labelSmall onSurfaceVariant, scaled down as needed to fit the square inscribed in the hole (with 5% clearance), so large, bold or accessibility-font text never reaches the Targum ring.
 - Wrap in RepaintBoundary. Existing semantics stay.
 
 **RingLegend** (always beside or under rings of size 88 or more)
 - Three rows, each 24 high: a 9 px dot in the ring colour, a 10 gap, the label in bodyMedium (`passMikra1`, `passMikra2`, `passTargum`/`passRashi`), and the count end-aligned "3 of 7" in bodyMedium onSurfaceVariant with tabular figures.
+- In high contrast a 16 px key takes each dot's place: three concentric circles at radii 7, 4.5 and 2, the row's own ring stroked 2 px in its colour and the other two 1 px in onSurface, then a 3 gap, so the labels keep their x. It names each ring by its position as well as its shade.
 - Excluded from semantics: the rings' label already says it.
 - `RingsWithLegend` sets the legend beside the rings whenever it fits there, each count under its name if the two can't share a line (as on a 360 dp phone); otherwise, on a narrower phone or with large text, the rings sit centred above it. Beside the rings on a wide card, the legend grows at most 40 past its natural width, so the counts stay near their names.
 

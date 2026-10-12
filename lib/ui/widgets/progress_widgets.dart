@@ -136,8 +136,9 @@ List<RingArc> ringArcs({required List<int> weights, required int from, required 
 
 /// Three concentric rings: first reading (outermost), second reading,
 /// Targum (docs/DESIGN_SYSTEM.md §6.11). Each is made of seven arcs, one
-/// per aliyah, sized by verse count, and drawn over a full track. At
-/// [header] size and up, the centre counts the finished aliyot ("2/7").
+/// per aliyah, sized by verse count, and drawn over a track of the same seven
+/// arcs. At [header] size and up, the centre counts the finished aliyot
+/// ("2/7").
 ///
 /// Put a [RingLegend] beside or under rings of [header] size or more
 /// ([RingsWithLegend] does both): only the legend says which ring is which.
@@ -353,10 +354,12 @@ class _RingsPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = geometry.stroke
       ..strokeCap = StrokeCap.butt;
-    // Each track is one full circle, under its done arcs.
+    // Each track is the same seven arcs and gaps as the done arcs over it, so
+    // a week not yet begun shows its seven parts to come, not a blank circle.
+    const all = (1 << (3 * kAliyot)) - 1;
     paint.color = track;
-    for (final r in geometry.radii) {
-      canvas.drawCircle(centre, r, paint);
+    for (final arc in ringArcs(weights: weights, from: all, to: all)) {
+      canvas.drawArc(Rect.fromCircle(center: centre, radius: geometry.radii[arc.ring]), arc.start, arc.sweep, false, paint);
     }
     for (final arc in ringArcs(weights: weights, from: from, to: to, t: sweep.value)) {
       paint.color = colors[arc.ring];
@@ -391,8 +394,10 @@ List<_LegendEntry> _legendEntries(BuildContext context, WeekProgress progress, S
 
 /// Which ring is which (docs/DESIGN_SYSTEM.md §6.11): for each reading, a
 /// dot in its ring's colour, its name, and how many of the seven aliyot it
-/// has covered ("3 of 7"). Hidden from screen readers, since the rings'
-/// own label says all of it.
+/// has covered ("3 of 7"). In high contrast a small key of the three rings
+/// takes the dot's place, the row's own ring in its colour, so the legend
+/// tells the rings apart by position as well as by colour. Hidden from
+/// screen readers, since the rings' own label says all of it.
 class RingLegend extends StatelessWidget {
   const RingLegend({super.key, required this.progress, this.thirdLabel});
 
@@ -403,6 +408,12 @@ class RingLegend extends StatelessWidget {
 
   static const double _dot = 9;
   static const double _dotGap = 10;
+
+  /// The high-contrast key, and the gap after it: together as wide as the
+  /// dot and its gap, so the names start at the same x in every theme.
+  static const double _key = 16;
+  static const double _keyGap = _dot + _dotGap - _key;
+
   static const double _countGap = 12;
 
   static TextStyle? _labelStyle(BuildContext context) => Theme.of(context).textTheme.bodyMedium;
@@ -458,6 +469,8 @@ class RingLegend extends StatelessWidget {
     final line = MediaQuery.textScalerOf(context).scale(labelStyle?.fontSize ?? 15) * (labelStyle?.height ?? 1.5);
     final natural = naturalWidth(context, progress, thirdLabel: thirdLabel);
     final entries = _legendEntries(context, progress, thirdLabel);
+    final highContrast = SeferColors.of(context).isHighContrast;
+    final ink = Theme.of(context).colorScheme.onSurface;
     return ExcludeSemantics(
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -468,7 +481,7 @@ class RingLegend extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (final e in entries)
+              for (final (ring, e) in entries.indexed)
                 Container(
                   constraints: const BoxConstraints(minHeight: 24),
                   alignment: AlignmentDirectional.centerStart,
@@ -478,13 +491,18 @@ class RingLegend extends StatelessWidget {
                       SizedBox(
                         height: line,
                         child: Center(
-                          child: SizedBox.square(
-                            dimension: _dot,
-                            child: DecoratedBox(decoration: BoxDecoration(color: e.color, shape: BoxShape.circle)),
-                          ),
+                          child: highContrast
+                              ? CustomPaint(
+                                  size: const Size.square(_key),
+                                  painter: _RingKey(ring: ring, color: e.color, ink: ink),
+                                )
+                              : SizedBox.square(
+                                  dimension: _dot,
+                                  child: DecoratedBox(decoration: BoxDecoration(color: e.color, shape: BoxShape.circle)),
+                                ),
                         ),
                       ),
-                      const SizedBox(width: _dotGap),
+                      SizedBox(width: highContrast ? _keyGap : _dotGap),
                       if (split)
                         Expanded(
                           child: Column(
@@ -509,6 +527,35 @@ class RingLegend extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A [RingLegend] row's key in high contrast: the three rings in small,
+/// 16 px across, the row's own [ring] stroked 2 px in its [color] and the
+/// other two 1 px in [ink].
+class _RingKey extends CustomPainter {
+  const _RingKey({required this.ring, required this.color, required this.ink});
+
+  /// 0 for the first reading (outermost), 1 for the second, 2 for the Targum.
+  final int ring;
+  final Color color;
+  final Color ink;
+
+  static const _radii = [7.0, 4.5, 2.0];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centre = size.center(Offset.zero);
+    final paint = Paint()..style = PaintingStyle.stroke;
+    for (final (i, r) in _radii.indexed) {
+      paint
+        ..color = i == ring ? color : ink
+        ..strokeWidth = i == ring ? 2 : 1;
+      canvas.drawCircle(centre, r, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RingKey old) => old.ring != ring || old.color != color || old.ink != ink;
 }
 
 /// [ParshaRings] with their [RingLegend] (docs/DESIGN_SYSTEM.md §6.11): side

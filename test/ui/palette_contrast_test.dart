@@ -226,6 +226,17 @@ void main() {
     });
   }
 
+  // The first two rings are both techelet, told apart only by shade, so a
+  // high-contrast theme sets them at least as far apart as the theme it
+  // heightens does.
+  _Theme named(String name) => _themes.singleWhere((t) => t.name == name);
+  for (final (hc, base) in [(named('hcLight'), named('light')), (named('hcDark'), named('dark'))]) {
+    test('${hc.name}: the first two rings are told apart at least as well as in ${base.name}', () {
+      double apart(_Theme t) => contrast(t.sefer.ringMikra1, t.sefer.ringMikra2);
+      expect(apart(hc), greaterThanOrEqualTo(apart(base)));
+    });
+  }
+
   // Every role is chosen by hand, so none may equal the tone Material would
   // seed from techelet. Pure black and white are absolutes rather than seeded
   // tones (text on a filled button, the scrim), so matching there is a choice.

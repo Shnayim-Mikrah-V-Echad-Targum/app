@@ -149,6 +149,34 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('lay the done arcs over a track of the same seven arcs and gaps, at every size', (tester) async {
+      const all = (1 << (3 * kAliyot)) - 1;
+      final progress = week(2, passes: 1);
+      final done = ringMask(progress);
+      const sefer = Palettes.seferLight;
+      final colors = [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum];
+      for (final size in [ParshaRings.hero, ParshaRings.header, ParshaRings.compact]) {
+        await pumpRings(tester, progress, size: size);
+        final g = RingGeometry(size);
+        // As a Paint holds it, in single precision.
+        final stroke = (Paint()..strokeWidth = g.stroke).strokeWidth;
+        Rect ring(RingArc arc) => Rect.fromCircle(center: Offset(size / 2, size / 2), radius: g.radii[arc.ring]);
+        var expected = paints;
+        for (final arc in ringArcs(weights: weights, from: all, to: all)) {
+          expected = expected
+            ..arc(rect: ring(arc), startAngle: arc.start, sweepAngle: arc.sweep, color: sefer.ringTrack, strokeWidth: stroke);
+        }
+        for (final arc in ringArcs(weights: weights, from: done, to: done)) {
+          expected = expected
+            ..arc(rect: ring(arc), startAngle: arc.start, sweepAngle: arc.sweep, color: colors[arc.ring], strokeWidth: stroke);
+        }
+        final painter = find.descendant(of: find.byType(ParshaRings), matching: find.byType(CustomPaint)).first;
+        expect(painter, expected);
+        // No full circle under them, which would fill the gaps.
+        expect(painter, isNot(paints..circle()));
+      }
+    });
+
     testWidgets('count finished aliyot in the centre, except when compact', (tester) async {
       await pumpRings(tester, week(2, passes: 2));
       final context = tester.element(find.byType(ParshaRings));
@@ -334,11 +362,18 @@ void main() {
   });
 
   group('legend', () {
-    Future<void> pumpLegend(WidgetTester tester, Widget legend, {bool hebrew = false, double width = 360}) =>
+    Future<void> pumpLegend(
+      WidgetTester tester,
+      Widget legend, {
+      bool hebrew = false,
+      double width = 360,
+      AppThemeMode theme = AppThemeMode.light,
+    }) =>
         pumpThemed(
           tester,
           Align(alignment: Alignment.topCenter, child: SizedBox(width: width, child: legend)),
           hebrew: hebrew,
+          theme: theme,
         );
 
     testWidgets('names each ring in its colour with its count, hidden from screen readers', (tester) async {
@@ -363,6 +398,43 @@ void main() {
       expect(count.style?.color, Palettes.light.onSurfaceVariant);
       expect(tester.getTopRight(find.text('3 of 7')).dx, tester.getTopRight(find.byType(RingLegend)).dx);
       handle.dispose();
+    });
+
+    testWidgets('in high contrast, keys each row with the three rings, its own in its colour', (tester) async {
+      const names = ['First reading', 'Second reading', 'Targum'];
+      final legend = find.byType(RingLegend);
+      final keys = find.descendant(of: legend, matching: find.byType(CustomPaint));
+      await pumpLegend(tester, RingLegend(progress: week(1)));
+      expect(keys, findsNothing);
+      final starts = [for (final name in names) tester.getTopLeft(find.text(name)).dx];
+
+      for (final (theme, scheme, sefer) in [
+        (AppThemeMode.highContrastLight, Palettes.hcLight, Palettes.seferHcLight),
+        (AppThemeMode.highContrastDark, Palettes.hcDark, Palettes.seferHcDark),
+      ]) {
+        await pumpLegend(tester, RingLegend(progress: week(1)), theme: theme);
+        expect(find.descendant(of: legend, matching: find.byType(DecoratedBox)), findsNothing);
+        expect(keys, findsNWidgets(3));
+        final colors = [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum];
+        for (var row = 0; row < 3; row++) {
+          expect(tester.getSize(keys.at(row)), const Size.square(16));
+          // Outermost first: the row's own ring 2 px in its colour, the
+          // others 1 px in ink.
+          var painted = paints;
+          for (final (ring, radius) in [7.0, 4.5, 2.0].indexed) {
+            painted = painted
+              ..circle(
+                radius: radius,
+                color: ring == row ? colors[row] : scheme.onSurface,
+                strokeWidth: ring == row ? 2 : 1,
+                style: PaintingStyle.stroke,
+              );
+          }
+          expect(keys.at(row), painted);
+          // The key and its gap take the dot's room: the names keep their x.
+          expect(tester.getTopLeft(find.text(names[row])).dx, starts[row]);
+        }
+      }
     });
 
     testWidgets('names Rashi when Rashi is the third reading, and reads right to left in Hebrew', (tester) async {
