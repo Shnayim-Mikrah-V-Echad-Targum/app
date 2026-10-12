@@ -2323,7 +2323,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountConfirm =>
-      'This permanently deletes your account, your profile and everything you’ve posted. Your reading progress on this device is kept. This can’t be undone.';
+      'This permanently deletes your account, your profile, everything you’ve posted and the cloud backup of your progress, bookmarks and notes. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.';
+
+  @override
+  String get saveBackupFirst => 'Save a backup file first';
 
   @override
   String get accountDeleted => 'Your account was deleted.';
@@ -2635,6 +2638,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errInvalidCode => 'That code didn’t work. Check it and try again.';
+
+  @override
+  String codeIncomplete(int count) {
+    return 'Enter all $count digits of the code.';
+  }
 
   @override
   String get errInvalidEmail => 'Please enter a valid email address.';

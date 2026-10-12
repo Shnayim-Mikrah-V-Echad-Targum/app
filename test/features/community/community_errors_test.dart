@@ -46,6 +46,7 @@ void main() {
       expect(fieldFor('email_address_invalid'), CommunityField.email);
       expect(fieldFor('invalid_code'), CommunityField.code);
       expect(fieldFor('otp_expired'), CommunityField.code);
+      expect(fieldFor('code_incomplete'), CommunityField.code);
       expect(fieldFor('invalid_name'), CommunityField.name);
       expect(fieldFor('name_taken'), CommunityField.name);
     });
@@ -56,6 +57,12 @@ void main() {
       }
       expect(fieldOf(Exception('offline')), isNull);
       expect(fieldOf(const CommunityException('too_short')), CommunityField.body);
+    });
+
+    test('for a code cut short says how many digits it takes, in either language', () {
+      expect(communityError(l, const CommunityException('code_incomplete')), 'Enter all 6 digits of the code.');
+      final he = lookupAppLocalizations(const Locale('he'));
+      expect(communityError(he, const CommunityException('code_incomplete')), 'יש להזין את כל 6 הספרות של הקוד.');
     });
 
     test('is not needed when the change was there already', () {

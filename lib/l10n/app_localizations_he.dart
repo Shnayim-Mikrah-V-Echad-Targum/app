@@ -2320,7 +2320,10 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get deleteAccountConfirm =>
-      'פעולה זו מוחקת לצמיתות את החשבון, הפרופיל וכל מה שפרסמת. התקדמות הקריאה במכשיר זה נשמרת. אי אפשר לבטל זאת.';
+      'פעולה זו מוחקת לצמיתות את החשבון, הפרופיל, כל מה שפרסמת ואת הגיבוי בענן של ההתקדמות, הסימניות וההערות. מה שבמכשיר זה נשמר, וגם מה שבמכשירים אחרים. אי אפשר לבטל זאת.';
+
+  @override
+  String get saveBackupFirst => 'שמירת קובץ גיבוי קודם';
 
   @override
   String get accountDeleted => 'החשבון נמחק.';
@@ -2630,6 +2633,11 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get errInvalidCode => 'הקוד לא התקבל. נא לבדוק ולנסות שוב.';
+
+  @override
+  String codeIncomplete(int count) {
+    return 'יש להזין את כל $count הספרות של הקוד.';
+  }
 
   @override
   String get errInvalidEmail => 'נא להזין כתובת דוא״ל תקינה.';

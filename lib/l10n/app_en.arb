@@ -1848,7 +1848,14 @@
     }
   },
   "deleteAccount": "Delete my account",
-  "deleteAccountConfirm": "This permanently deletes your account, your profile and everything you’ve posted. Your reading progress on this device is kept. This can’t be undone.",
+  "deleteAccountConfirm": "This permanently deletes your account, your profile, everything you’ve posted and the cloud backup of your progress, bookmarks and notes. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.",
+  "@deleteAccountConfirm": {
+    "description": "The account's deletion dialog, shown whether or not backup is on now: a backup made earlier stays in the account until it is deleted."
+  },
+  "saveBackupFirst": "Save a backup file first",
+  "@saveBackupFirst": {
+    "description": "In the account's deletion dialog: closes it and opens Your data, where a backup file can be exported."
+  },
   "accountDeleted": "Your account was deleted.",
   "newThread": "New discussion",
   "threadTitleLabel": "Title",
@@ -2060,6 +2067,15 @@
   "errAlreadyReported": "You’ve already reported this post.",
   "errInvalidName": "Names must be 2–40 characters.",
   "errInvalidCode": "That code didn’t work. Check it and try again.",
+  "codeIncomplete": "Enter all {count} digits of the code.",
+  "@codeIncomplete": {
+    "description": "Under the sign-in code's boxes, when Sign in is pressed before every digit is typed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "errInvalidEmail": "Please enter a valid email address.",
   "errNotSignedIn": "Please sign in first.",
   "errForbidden": "You don’t have permission to do that.",

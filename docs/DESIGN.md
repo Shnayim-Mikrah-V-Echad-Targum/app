@@ -186,7 +186,7 @@ A reader who would rather not can choose instead to start with today's reading: 
 - a moderation queue with logged actions
 - a word filter that folds Hebrew vowels and final letters, so it can't be evaded with nikud
 - rate limits, plus slower limits for new accounts
-- in-app account deletion
+- in-app account deletion, which says what goes with the account, the backup of the progress, bookmarks and notes too, and offers to save a backup file first
 
 **Everything is enforced in the database**, by row-level security, column grants and triggers. The client is not trusted. The author of a post is stamped by a trigger and can't be set by the client.
 

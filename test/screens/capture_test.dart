@@ -369,6 +369,8 @@ const _screens = {
   'account_member': '/community/account',
   'account_edit': '/community/account',
   'account_blocked': '/community/account',
+  // Delete my account: what goes with it, and a backup file first.
+  'account_delete': '/community/account',
   // Keyboard focus on the privacy link in its sentence.
   'focus_link': '/community/account',
   'account_settings': '/settings/account',
@@ -960,7 +962,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_report': _signedIn,
   'community_member': _signedIn,
   'account_name': _signedIn,
-  for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked'])
+  for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked', 'account_delete'])
     screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
   for (final screen in ['forum_error', 'thread_error', 'moderation_error']) screen: () async => _Offline(),
@@ -1391,6 +1393,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'account_edit': (tester) => tester.tap(find.byIcon(Icons.edit_outlined)),
   'account_blocked': (tester) => tester.tap(find.byIcon(Icons.block)),
+  'account_delete': (tester) async {
+    await tester.ensureVisible(find.byIcon(Icons.delete_forever_outlined));
+    await _settle(tester);
+    await tester.tap(find.byIcon(Icons.delete_forever_outlined));
+  },
   // Sheni's tab in the reader's aliyah ribbon.
   'focus_tab': (tester) =>
       _keyboardFocus(tester, find.descendant(of: find.byType(AliyahRibbon), matching: find.byType(SeferInkWell)).at(1)),
@@ -1720,7 +1727,14 @@ final _modes = [
 
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
-const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
+const _bigPhoneScreens = {
+  'welcome',
+  'welcome_location',
+  'welcome_plan',
+  // What deleting the account takes with it, and the dialog's three
+  // actions, stacked.
+  'account_delete',
+};
 const _hugeModes = {'huge', 'hugehe'};
 const _hugeScreens = {
   'today',
@@ -1835,6 +1849,7 @@ const _desktopScreens = {
   'account',
   'account_code',
   'account_member',
+  'account_delete',
   'compose',
   'browse',
   'browse_summer',
@@ -1966,6 +1981,7 @@ const _bigTextScreens = {
   'account_code',
   'account_name',
   'account_member',
+  'account_delete',
   'thread',
   'thread_replying',
   'forum_questions',

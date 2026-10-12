@@ -204,6 +204,23 @@ class _FailingUnblock extends DemoForumRepository {
   }
 }
 
+/// The demo community, counting the codes it is sent to check ([checked]),
+/// and turning each down if it [refuses], as the server does a code mistyped
+/// or expired.
+class _CheckedCodes extends DemoForumRepository {
+  _CheckedCodes({this.refuses = false});
+
+  final bool refuses;
+  final checked = <String>[];
+
+  @override
+  Future<void> verifyCode(String email, String code) async {
+    checked.add(code);
+    if (refuses) throw const CommunityException('invalid_code');
+    return super.verifyCode(email, code);
+  }
+}
+
 /// A community on a server: no demo.
 class _Server extends DemoForumRepository {
   @override
@@ -415,10 +432,10 @@ void main() {
     await tester.enterText(find.byType(TextField), 'reader@example.org');
     await tester.tap(find.text('Email me a code'));
     await tester.pumpAndSettle();
-    // Said on the page, and once in a status message.
+    // Said on the page, and not again in a status message.
     const sent = 'We sent a 6-digit code to reader@example.org.';
     expect(find.descendant(of: find.byType(PageBody), matching: find.text(sent)), findsOneWidget);
-    expect(find.descendant(of: find.byType(SnackBar), matching: find.text(sent)), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
     expect(find.byType(TextField), findsOneWidget, reason: 'one field, under the six boxes');
     expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isTrue, reason: 'the code field takes the focus');
     // The last of the six digits signs in.
@@ -770,6 +787,11 @@ void main() {
     await tester.pumpAndSettle();
     final sent = find.textContaining(ltr('1reader@example.org'));
     expect(find.descendant(of: find.byType(PageBody), matching: sent), findsOneWidget);
+    // In a status message too, once the code is sent again.
+    expect(find.byType(SnackBar), findsNothing);
+    await tester.pump(const Duration(seconds: 30));
+    await tester.tap(find.widgetWithText(TextButton, 'שליחת הקוד שוב'));
+    await tester.pumpAndSettle();
     expect(find.descendant(of: find.byType(SnackBar), matching: sent), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
@@ -2716,13 +2738,14 @@ void main() {
       tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(supportsAnnounce: true);
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
       final semantics = tester.ensureSemantics();
-      await account(tester);
+      final forums = _CheckedCodes(refuses: true);
+      await account(tester, forums: forums);
       await sendCode(tester);
-      await tester.enterText(codeField, '123');
-      await tester.pump();
       tester.takeAnnouncements();
-      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      // The sixth digit sends it.
+      await tester.enterText(codeField, '123456');
       await tester.pumpAndSettle();
+      expect(forums.checked, ['123456']);
       const wrong = 'That code didn’t work. Check it and try again.';
       expect(find.text(wrong), findsOneWidget);
       expect(find.descendant(of: find.byType(SnackBar), matching: find.text(wrong)), findsNothing);
@@ -2730,11 +2753,72 @@ void main() {
       expect([for (final a in tester.takeAnnouncements()) a.message], [wrong]);
       expect(tester.getSemantics(codeField), isSemantics(label: '6-digit code', hint: wrong, isTextField: true));
       // What is typed next replaces it.
+      final code = tester.widget<TextField>(codeField).controller!;
+      expect(code.selection, const TextSelection(baseOffset: 0, extentOffset: 6));
       await tester.enterText(codeField, '4');
       await tester.pump();
       expect(find.text(wrong), findsNothing);
       semantics.dispose();
     });
+
+    testWidgets('says under the boxes when the code is cut short, sending none, and goes on from it', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(supportsAnnounce: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      final semantics = tester.ensureSemantics();
+      final forums = _CheckedCodes();
+      await account(tester, forums: forums);
+      await sendCode(tester);
+      await tester.enterText(codeField, '123');
+      await tester.pump();
+      tester.takeAnnouncements();
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await tester.pumpAndSettle();
+      const short = 'Enter all 6 digits of the code.';
+      expect(find.text(short), findsOneWidget);
+      expect(forums.checked, isEmpty, reason: 'nothing is sent to be checked');
+      expect(find.byType(SnackBar), findsNothing);
+      expect(codeFocused(tester), isTrue);
+      expect([for (final a in tester.takeAnnouncements()) a.message], [short]);
+      expect(tester.getSemantics(codeField), isSemantics(label: '6-digit code', hint: short, isTextField: true));
+      // The digits typed stay, and the next goes after them.
+      final code = tester.widget<TextField>(codeField).controller!;
+      expect(code.selection, const TextSelection.collapsed(offset: 3));
+      // From the keyboard's Done too.
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(find.text(short), findsOneWidget);
+      expect(forums.checked, isEmpty);
+      await tester.enterText(codeField, '1234');
+      await tester.pump();
+      expect(find.text(short), findsNothing, reason: 'it goes as the code is typed');
+      await tester.enterText(codeField, '123456');
+      await tester.pumpAndSettle();
+      expect(forums.checked, ['123456']);
+      expect(forums.currentUser, isNotNull);
+      semantics.dispose();
+    });
+
+    for (final announces in [true, false]) {
+      testWidgets(
+          'says where the code went once, on the page, '
+          '${announces ? 'and announces it' : 'a live region where nothing is announced'}', (tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(supportsAnnounce: announces);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        final semantics = tester.ensureSemantics();
+        await account(tester);
+        tester.takeAnnouncements();
+        await sendCode(tester);
+        const sent = 'We sent a 6-digit code to reader@example.org.';
+        expect(find.descendant(of: find.byType(PageBody), matching: find.text(sent)), findsOneWidget);
+        // Not again in a status message: one comes only when it is sent
+        // again (below).
+        expect(find.byType(SnackBar), findsNothing);
+        // Screen readers hear it all the same.
+        expect([for (final a in tester.takeAnnouncements()) a.message], announces ? [sent] : isEmpty);
+        expect(tester.getSemantics(find.text(sent)), isSemantics(label: sent, isLiveRegion: !announces));
+        semantics.dispose();
+      });
+    }
 
     testWidgets('sends the code again after 30 seconds', (tester) async {
       await account(tester);
@@ -2747,8 +2831,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('Resend code'), findsOneWidget);
       expect(resend().onPressed, isNotNull);
-      // Let the first status message go.
-      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing, reason: 'the first was said on the page alone');
       await tester.tap(find.text('Resend code'));
       await tester.pumpAndSettle();
       expect(find.descendant(of: find.byType(SnackBar), matching: find.text('We sent a 6-digit code to reader@example.org.')), findsOneWidget);
@@ -2878,6 +2961,51 @@ void main() {
       final confirm = find.descendant(of: find.byType(AlertDialog), matching: find.widgetWithText(FilledButton, 'Delete my account'));
       final style = tester.widget<FilledButton>(confirm).style!;
       expect(style.backgroundColor?.resolve({}), scheme.error);
+    });
+
+    testWidgets('says that deleting the account takes its backup too, and offers a backup file first', (tester) async {
+      final forums = DemoForumRepository();
+      await forums.verifyCode('reader@example.org', '123456');
+      await forums.updateDisplayName('Rivka');
+      final c = await account(tester, forums: forums);
+      Future<void> openDialog() async {
+        final delete = find.text('Delete my account');
+        await tester.ensureVisible(delete);
+        await tester.pumpAndSettle();
+        await tester.tap(delete);
+        await tester.pumpAndSettle();
+      }
+
+      // Said with backup off too: a backup made before stays in the account
+      // until the account goes.
+      expect(c.read(settingsProvider).cloudSync, isFalse);
+      await openDialog();
+      final dialog = find.byType(AlertDialog);
+      expect(
+        find.descendant(of: dialog, matching: find.textContaining('the cloud backup of your progress, bookmarks and notes')),
+        findsOneWidget,
+      );
+      expect(find.descendant(of: dialog, matching: find.textContaining('other devices keep what’s on them')), findsOneWidget);
+      final buttons = find.descendant(of: dialog, matching: find.bySubtype<ButtonStyleButton>());
+      expect(
+        [for (final b in tester.widgetList<ButtonStyleButton>(buttons)) (b.child! as Text).data],
+        ['Save a backup file first', 'Cancel', 'Delete my account'],
+      );
+
+      // A backup file first: Your data, and back to the account from there.
+      await tester.tap(find.text('Save a backup file first'));
+      await tester.pumpAndSettle();
+      expect(dialog, findsNothing);
+      expect(_location(c), '/settings/data');
+      expect(forums.currentUser, isNotNull, reason: 'nothing is deleted');
+      await _goBack(tester);
+      expect(_location(c), '/community/account');
+
+      // On a wide screen, no wider than Material's dialogs.
+      tester.view.physicalSize = const Size(1366, 860);
+      await tester.pumpAndSettle();
+      await openDialog();
+      expect(tester.getSize(find.descendant(of: dialog, matching: find.byType(Material)).first).width, 560);
     });
 
     testWidgets('reads its backup row as one switch, Sync now an item of its own', (tester) async {

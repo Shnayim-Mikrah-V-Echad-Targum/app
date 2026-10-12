@@ -124,8 +124,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           _emailError = message;
         case CommunityField.code:
           _codeError = message;
-          // Typing replaces the code that didn't work.
-          _code.selection = TextSelection(baseOffset: 0, extentOffset: _code.text.length);
+          // Typing replaces a code that didn't work, and goes on with one
+          // cut short.
+          final end = _code.text.length;
+          _code.selection = e is CommunityException && e.code == 'code_incomplete'
+              ? TextSelection.collapsed(offset: end)
+              : TextSelection(baseOffset: 0, extentOffset: end);
         case _:
           _nameError = message;
       }
@@ -189,9 +193,18 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   // --- Signing in ------------------------------------------------------------
 
-  /// The app's mark, a heading and a line of marginalia over a step.
-  List<Widget> _stepHead(BuildContext context, {required Widget mark, required String title, String? body}) {
+  /// The app's mark, a heading and a line of marginalia over a step. A
+  /// [liveBody] is said as the step appears where the platform takes no
+  /// announcements (Android); elsewhere the step announces it.
+  List<Widget> _stepHead(
+    BuildContext context, {
+    required Widget mark,
+    required String title,
+    String? body,
+    bool liveBody = false,
+  }) {
     final theme = Theme.of(context);
+    final line = body == null ? null : Text(body, style: SeferType.of(context).marginalia, textAlign: TextAlign.center);
     return [
       const Gap(Space.xxl),
       Center(child: mark),
@@ -201,9 +214,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         headingLevel: 2,
         child: Text(title, style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),
       ),
-      if (body != null) ...[
+      if (line != null) ...[
         const Gap(Space.sm),
-        Text(body, style: SeferType.of(context).marginalia, textAlign: TextAlign.center),
+        if (liveBody) Semantics(container: true, liveRegion: !MediaQuery.supportsAnnounceOf(context), child: line) else line,
       ],
     ];
   }
@@ -248,6 +261,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         mark: const AppMark(size: 56),
         title: l.signInTitle,
         body: l.codeSentTo(context.ltrRun(_email.text.trim())),
+        liveBody: true,
       ),
       if (demo) ...[
         const Gap(Space.xs),
@@ -307,7 +321,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   /// Sends the code (again, from the code step), and moves on to the code's
-  /// boxes, saying where the code went.
+  /// boxes, saying where the code went: the first time in the code step's
+  /// own line, which screen readers hear as it appears; sent again, in a
+  /// status message, as that line stays as it was.
   Future<void> _sendCode() async {
     if (_busy) return;
     final l = context.l10n;
@@ -318,6 +334,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       return;
     }
     final sent = l.codeSentTo(context.ltrRun(email));
+    final first = !_codeSent;
     await _run(() async {
       await ref.read(forumRepositoryProvider).sendCode(email);
       if (!mounted) return;
@@ -327,14 +344,22 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         _code.clear();
         _startResendCountdown();
       });
+      // Where the platform takes no announcements, the line's live region
+      // says it instead (see _stepHead).
+      if (first && MediaQuery.supportsAnnounceOf(context)) announceStatus(context, sent);
       _focusAfterFrame(_codeFocus);
-    }, success: sent);
+    }, success: first ? null : sent);
   }
 
   /// Signs in, and says as whom; then asks for a name if the account has
   /// none of its own yet, or else goes back to what it was opened for.
   Future<void> _verify() async {
     if (_busy) return;
+    // Cut short, it would only fail at the server, and say less.
+    if (_code.text.trim().length < _CodeBoxes.length) {
+      _showError(const CommunityException('code_incomplete'));
+      return;
+    }
     final l = context.l10n;
     final email = _email.text.trim();
     setState(() {
@@ -578,25 +603,39 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     showStatus(context, l.nameSaved);
   }
 
+  /// Asks first, saying what goes with the account: the backup too, which
+  /// outlives turning backup off, so it is said either way. A backup file
+  /// can be saved first, from Your data.
   Future<void> _deleteAccount() async {
     final l = context.l10n;
     final repo = ref.read(forumRepositoryProvider);
-    final ok = await showAppDialog<bool>(
+    final choice = await showAppDialog<_Deletion>(
       context: context,
       builder: (context) => AlertDialog(
+        // What goes with it may not fit at large text sizes.
+        scrollable: true,
+        // No wider than Material's dialogs, so that on a wide screen what
+        // goes with it isn't one long line.
+        constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
         title: Text(l.deleteAccount),
         content: Text(l.deleteAccountConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
+          TextButton(onPressed: () => Navigator.pop(context, _Deletion.backUpFirst), child: Text(l.saveBackupFirst)),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
           FilledButton(
             style: AppButtons.destructive(context),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(context, _Deletion.delete),
             child: Text(l.deleteAccount),
           ),
         ],
       ),
     );
-    if (ok != true || !mounted) return;
+    if (!mounted) return;
+    if (choice == _Deletion.backUpFirst) {
+      openTabPage(context, '/settings/data');
+      return;
+    }
+    if (choice != _Deletion.delete) return;
     await _run(() async {
       await repo.deleteAccount();
       ref.read(settingsProvider.notifier).update((s) => s.copyWith(cloudSync: false));
@@ -615,6 +654,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       );
 }
 
+/// What the account's deletion dialog was closed with, other than Cancel.
+enum _Deletion { backUpFirst, delete }
+
 /// The sign-in code as six boxes (§6.7): 48×56, radius 10, each digit in
 /// the sans at titleLarge's size with tabular figures.
 ///
@@ -632,7 +674,7 @@ class _CodeBoxes extends StatelessWidget {
     required this.onSubmitted,
   });
 
-  static const length = 6;
+  static const length = signInCodeLength;
 
   final TextEditingController controller;
   final FocusNode focusNode;

@@ -3903,11 +3903,17 @@ abstract class AppLocalizations {
   /// **'Delete my account'**
   String get deleteAccount;
 
-  /// No description provided for @deleteAccountConfirm.
+  /// The account's deletion dialog, shown whether or not backup is on now: a backup made earlier stays in the account until it is deleted.
   ///
   /// In en, this message translates to:
-  /// **'This permanently deletes your account, your profile and everything you’ve posted. Your reading progress on this device is kept. This can’t be undone.'**
+  /// **'This permanently deletes your account, your profile, everything you’ve posted and the cloud backup of your progress, bookmarks and notes. What’s on this device is kept, and other devices keep what’s on them. This can’t be undone.'**
   String get deleteAccountConfirm;
+
+  /// In the account's deletion dialog: closes it and opens Your data, where a backup file can be exported.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a backup file first'**
+  String get saveBackupFirst;
 
   /// No description provided for @accountDeleted.
   ///
@@ -4370,6 +4376,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That code didn’t work. Check it and try again.'**
   String get errInvalidCode;
+
+  /// Under the sign-in code's boxes, when Sign in is pressed before every digit is typed.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter all {count} digits of the code.'**
+  String codeIncomplete(int count);
 
   /// No description provided for @errInvalidEmail.
   ///
