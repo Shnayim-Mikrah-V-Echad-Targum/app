@@ -526,14 +526,18 @@ class AppLocalizationsHe extends AppLocalizations {
   String get readTheHaftarah => 'לקריאת ההפטרה';
 
   @override
-  String get checkInTitle => 'שבוע טוב! קראת בשבת?';
+  String checkInTitle(String name) {
+    return 'שבוע טוב! קראת את פרשת $name בשבת?';
+  }
 
   @override
   String get checkInBody =>
       'אפשר לרשום מה שקראת מתוך חומש מודפס — זה נחשב בדיוק אותו הדבר.';
 
   @override
-  String get checkInFinished => 'סיימתי את הפרשה בשבת';
+  String checkInFinished(String name) {
+    return 'סיימתי את פרשת $name בשבת';
+  }
 
   @override
   String get checkInPick => 'בחירת עליות';
@@ -3426,4 +3430,47 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get errBodyTooShort => 'ההודעה צריכה להכיל לפחות 2 תווים.';
+
+  @override
+  String get tishaBavTitle => 'תשעה באב';
+
+  @override
+  String get todayTishaBav =>
+      'היום אין לומדים תורה, מלבד הדברים הרעים (איוב, איכה ומקצת ירמיהו).';
+
+  @override
+  String todayTishaBavTomorrow(String portion) {
+    return 'פרשת $portion נמשכת מחר.';
+  }
+
+  @override
+  String todayTishaBavOn(String portion, String weekday) {
+    return 'פרשת $portion נמשכת ב$weekday.';
+  }
+
+  @override
+  String get tishaBavShort => 'ט׳ באב';
+
+  @override
+  String dayChipLabelToday(String day, String status) {
+    return '$day, היום: $status';
+  }
+
+  @override
+  String get speechRateNormal => 'רגיל';
+
+  @override
+  String speechRateTimes(String rate) {
+    return '$rate×';
+  }
+
+  @override
+  String get tishaBavQuietDesc =>
+      'ביום זה אין לומדים תורה, מלבד הדברים הרעים (שולחן ערוך או״ח תקנד, א)';
+
+  @override
+  String get a11yGroupSpeech => 'הקראה';
+
+  @override
+  String get widgetTishaBav => 'היום אין לומדים תורה';
 }

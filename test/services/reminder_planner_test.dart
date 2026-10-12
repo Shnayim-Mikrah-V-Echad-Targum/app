@@ -153,6 +153,32 @@ void main() {
       expect(around(fast, 9 * 60).where((r) => r.date == friday).single.kind, ReminderKind.daily);
       expect(around(fast, 20 * 60).where((r) => r.date == friday), isEmpty);
     });
+
+    test('nothing on the fast while it has no reading planned, not even the last message', () {
+      // Thursday 12 August 2027, 9 Av 5787. Planned from the Sunday for
+      // three days, the message that reminders have paused would fall on
+      // the fast.
+      final fast = HebrewDate(5787, HebrewMonth.av, 9).toLocalDate();
+      final sunday = fast.addDays(-4);
+      List<PlannedReminder> from(LocalDate today, {required bool quiet, int days = 14}) => planReminders(
+            prefs: const ReminderPrefs(daily: true, dailyMinutes: 9 * 60),
+            planner: ReadingPlanner(
+              schedule: planner.schedule,
+              settingsAt: (_) => PlanSettingsEntry(tishaBavQuiet: quiet),
+            ),
+            progressOf: empty,
+            now: DateTime(today.year, today.month, today.day, 8),
+            today: today,
+            days: days,
+          );
+      expect(from(sunday, quiet: true).where((r) => r.date == fast), isEmpty);
+      final paused = from(sunday, quiet: true, days: 3).last;
+      expect((paused.kind, paused.date), (ReminderKind.paused, fast.addDays(1)));
+
+      // A reader who keeps a reading on the fast is reminded of it.
+      expect(from(sunday, quiet: false).where((r) => r.date == fast).single.kind, ReminderKind.daily);
+      expect(from(sunday, quiet: false, days: 3).last.date, fast);
+    });
   });
 
   group('the final "reminders paused" message', () {
@@ -489,14 +515,41 @@ void main() {
       expect((r.kind, r.minutes), (ReminderKind.checkIn, havdalah(newYork, monday) + kCheckInAfterHavdalah));
     });
 
-    test("no check-in as Tisha B'Av begins on Motzaei Shabbat", () {
-      final ninth = HebrewDate(5789, HebrewMonth.av, 9).toLocalDate();
-      expect(ninth.isShabbat, isTrue);
-      expect(JewishHolidays.isTishaBav(ninth.addDays(1)), isTrue);
-      final reminders = plan(ninth.addDays(-6), const ReminderPrefs(checkIn: true), city: newYork);
-      expect(on(reminders, ninth), isNull);
-      expect(on(reminders, ninth.addDays(1))!.minutes, const ReminderPrefs().checkInMinutes);
-    });
+    // Greetings are not given on Tisha B'Av (Shulchan Aruch OC 554:20), and
+    // the check-in begins with one: it comes the morning after the fast,
+    // whatever is planned on it.
+    for (final (name, ninth, postponed) in [
+      // 9 Av on Shabbat: the fast is on Sunday, the 10th.
+      ('postponed from Shabbat', HebrewDate(5789, HebrewMonth.av, 9).toLocalDate(), true),
+      ('on Sunday', HebrewDate(5785, HebrewMonth.av, 9).toLocalDate(), false),
+    ]) {
+      test("no check-in as Tisha B'Av begins on Motzaei Shabbat, nor on the fast $name", () {
+        final fast = postponed ? ninth.addDays(1) : ninth;
+        final shabbat = fast.addDays(-1);
+        expect((shabbat.isShabbat, fast.weekday), (true, 0));
+        expect(JewishHolidays.isTishaBav(fast), isTrue);
+        for (final quiet in [true, false]) {
+          final reminders = plan(
+            shabbat.addDays(-6),
+            const ReminderPrefs(checkIn: true),
+            city: newYork,
+            planner: ReadingPlanner(
+              schedule: planner.schedule,
+              settingsAt: (_) => PlanSettingsEntry(tishaBavQuiet: quiet),
+            ),
+          );
+          expect(on(reminders, shabbat), isNull, reason: 'quiet: $quiet');
+          expect(on(reminders, fast), isNull, reason: 'quiet: $quiet');
+          final monday = on(reminders, fast.addDays(1));
+          expect((monday?.kind, monday?.minutes), (ReminderKind.checkIn, const ReminderPrefs().checkInMinutes),
+              reason: 'quiet: $quiet');
+        }
+        // Without a city, the same.
+        final reminders = plan(shabbat.addDays(-6), const ReminderPrefs(checkIn: true));
+        expect(on(reminders, fast), isNull);
+        expect(on(reminders, fast.addDays(1))?.kind, ReminderKind.checkIn);
+      });
+    }
 
     group('a reminder delivered an hour late, as Android may deliver it', () {
       // London, 27 November 2026: candles at 15:39, so nothing may arrive

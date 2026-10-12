@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
@@ -7,6 +8,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
@@ -116,6 +118,98 @@ void main() {
         Icons.radio_button_unchecked);
   });
 
+  testWidgets("today's label says so, the weekday first, read or not", (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpThemed(tester, strip());
+    const unread = 'Friday, today: Not yet. Shishi and Shevi’i';
+    expect(tester.getSemantics(dayOf('Friday')), isSemantics(label: unread, isButton: true, isSelected: false));
+    expect(find.byTooltip(unread), findsOneWidget);
+    // No other day is taken for today.
+    expect(find.bySemanticsLabel(RegExp('today')), findsOneWidget);
+    expect(find.bySemanticsLabel('Thursday: Not yet. Revi’i and Chamishi'), findsOneWidget);
+
+    await pumpThemed(tester, strip(statuses: {day(5): DayStatus.kept}));
+    expect(find.bySemanticsLabel(RegExp(r'^Friday, today: Read\. ')), findsOneWidget);
+
+    await pumpThemed(tester, strip(), hebrew: true);
+    expect(find.bySemanticsLabel(RegExp(r'^יום שישי, היום: עדיין לא\. ')), findsOneWidget);
+    handle.dispose();
+  });
+
+  group('enlarged text', () {
+    // The glyph's switcher is as big as the glyph.
+    double glyphOf(WidgetTester tester, String weekday) =>
+        tester.getSize(find.descendant(of: dayOf(weekday), matching: find.byType(AnimatedSwitcher))).height;
+
+    // Grown with the text to half as large again, and no further.
+    // Never smaller, as with system text under 100% (Android's Small).
+    for (final (scale, size) in [(0.85, 22.0), (1.0, 22.0), (1.3, 28.6), (2.0, 33.0), (3.0, 33.0)]) {
+      testWidgets('at ${scale}x each glyph is $size', (tester) async {
+        await pumpThemed(tester, strip(width: 600, statuses: {day(1): DayStatus.kept}), textScale: scale);
+        for (final weekday in ['Sunday', 'Monday', 'Thursday', 'Friday', 'Saturday']) {
+          expect(glyphOf(tester, weekday), moreOrLessEquals(size), reason: weekday);
+        }
+        // A kept day's check keeps its share of the disc.
+        expect(
+          tester.widget<Icon>(find.descendant(of: dayOf('Monday'), matching: find.byIcon(Icons.check))).size,
+          moreOrLessEquals(size * 14 / 22),
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('Yom Tov wraps between its words rather than shrinking', (tester) async {
+      for (final hebrew in [false, true]) {
+        await pumpThemed(tester, strip(), hebrew: hebrew, textScale: 2);
+        final reason = hebrew ? 'he' : 'en';
+        final text = hebrew ? 'יו״ט' : 'Yom Tov';
+        final note = find.text(text);
+        expect(note, findsOneWidget, reason: reason);
+        expect(find.ancestor(of: note, matching: find.byType(FittedBox)), findsNothing, reason: reason);
+        expectWordsWhole(tester, text);
+        // Within the day's wash, clear of its edges by 2 px.
+        final sunday = tester.getRect(dayOf(hebrew ? 'יום ראשון' : 'Sunday'));
+        expect(tester.getRect(note).left, greaterThanOrEqualTo(sunday.left + 4 - 0.01), reason: reason);
+        expect(tester.getRect(note).right, lessThanOrEqualTo(sunday.right - 4 + 0.01), reason: reason);
+        if (!hebrew) {
+          // At the size it was enlarged to, "Yom" over "Tov".
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.descendant(of: note, matching: find.byType(RichText)).first,
+          );
+          expect(paragraph.textScaler.scale(1), 2);
+          final boxes = paragraph.getBoxesForSelection(const TextSelection(baseOffset: 0, extentOffset: 7));
+          expect({for (final b in boxes) b.top.round()}, hasLength(2));
+        }
+        expect(tester.takeException(), isNull, reason: reason);
+      }
+    });
+
+    testWidgets("a quiet Tisha B'Av's date wraps too", (tester) async {
+      final tuesday = LocalDate(2027, 8, 10);
+      final planner = ReadingPlanner(
+        schedule: const ParshaSchedule(israel: false),
+        settingsAt: (_) => const PlanSettingsEntry(tishaBavQuiet: true),
+      );
+      final week = planner.planFor(planner.schedule.weekFor(tuesday));
+      await pumpThemed(tester, strip(week: week, today: tuesday), textScale: 2);
+      final note = find.descendant(of: dayOf('Thursday'), matching: find.text('9 Av'));
+      expect(note, findsOneWidget);
+      expect(find.ancestor(of: note, matching: find.byType(FittedBox)), findsNothing);
+      expectWordsWhole(tester, '9 Av');
+      expect(tester.takeException(), isNull);
+    });
+
+    // Once a day held it to one line by shrinking it, which at 100% to 130%
+    // drew it under labelSmall's 12; now it wraps wherever it doesn't fit
+    // at its size (week_strip_note_test.dart, with the app's fonts).
+    testWidgets('a little larger text wraps Yom Tov too, rather than shrink it', (tester) async {
+      await pumpThemed(tester, strip(), textScale: 1.3);
+      expect(find.ancestor(of: find.text('Yom Tov'), matching: find.byType(FittedBox)), findsNothing);
+      expect(find.ancestor(of: find.text('Yom Tov'), matching: find.byType(WholeWords)), findsOneWidget);
+      expectWordsWhole(tester, 'Yom Tov');
+    });
+  });
+
   testWidgets('Shabbat and Yom Tov are washed and lit; only Yom Tov says so', (tester) async {
     await pumpThemed(tester, strip());
     for (final weekday in ['Sunday', 'Saturday']) {
@@ -127,13 +221,16 @@ void main() {
     expect(find.text('Yom Tov'), findsOneWidget);
   });
 
-  testWidgets('a Yom Tov week is no taller than any other: its note keeps to one line', (tester) async {
+  // Where a day has room for it: in the test font, whose letters are as wide
+  // as the type is high, "Yom Tov" at 12 is 84 wide, so a day of 100.
+  testWidgets('where a day has room, a Yom Tov week is no taller than any other: its note keeps to one line',
+      (tester) async {
     // The week of Noach has no Yom Tov.
     final noach = planner.planFor(planner.schedule.weekFor(LocalDate(2026, 10, 14)));
     for (final hebrew in [false, true]) {
-      await pumpThemed(tester, strip(week: noach, today: LocalDate(2026, 10, 14)), hebrew: hebrew);
+      await pumpThemed(tester, strip(week: noach, today: LocalDate(2026, 10, 14), width: 700), hebrew: hebrew);
       final plain = tester.getSize(find.byType(WeekStrip)).height;
-      await pumpThemed(tester, strip(), hebrew: hebrew);
+      await pumpThemed(tester, strip(width: 700), hebrew: hebrew);
       expect(tester.getSize(find.byType(WeekStrip)).height, plain, reason: hebrew ? 'he' : 'en');
       final note = find.text(hebrew ? 'יו״ט' : 'Yom Tov');
       // Within the day's wash (the slot less its 2 px margins), and clear of
@@ -170,6 +267,42 @@ void main() {
         expect(candles, findsOneWidget);
         expect(note, findsOneWidget);
         expect(find.bySemanticsLabel('Thursday: Shabbat or Yom Tov'), findsOneWidget);
+      }
+    }
+  });
+
+  testWidgets("a quiet Tisha B'Av is named by its date, on one line; one with a reading is a day like any other",
+      (tester) async {
+    // The week of Va'etchanan 5787: Thursday 12 August 2027 is 9 Av.
+    final tuesday = LocalDate(2027, 8, 10);
+    for (final quiet in [true, false]) {
+      final planner = ReadingPlanner(
+        schedule: const ParshaSchedule(israel: false),
+        settingsAt: (_) => PlanSettingsEntry(tishaBavQuiet: quiet),
+      );
+      final week = planner.planFor(planner.schedule.weekFor(tuesday));
+      for (final hebrew in [false, true]) {
+        // Days with room for the date in the test font, as a phone's have
+        // in the app's (week_strip_note_test.dart).
+        await pumpThemed(tester, strip(week: week, today: tuesday, width: 700), hebrew: hebrew);
+        final weekday = hebrew ? 'יום חמישי' : 'Thursday';
+        final note = find.descendant(of: dayOf(weekday), matching: find.text(hebrew ? 'ט׳ באב' : '9 Av'));
+        final reason = 'quiet: $quiet, ${hebrew ? 'he' : 'en'}';
+        // Never a day of rest.
+        expect(fillOf(tester, weekday), isNull, reason: reason);
+        if (quiet) {
+          expect(note, findsOneWidget, reason: reason);
+          expect(tester.widget<Text>(note).maxLines, 1, reason: reason);
+          expect(find.descendant(of: dayOf(weekday), matching: find.byIcon(Icons.horizontal_rule)), findsOneWidget,
+              reason: reason);
+          // Named as the reason there is no reading.
+          expect(find.bySemanticsLabel(RegExp('^$weekday: .*\\. ${hebrew ? 'תשעה באב' : 'Tisha B’Av'}\$')),
+              findsOneWidget,
+              reason: reason);
+        } else {
+          expect(note, findsNothing, reason: reason);
+          expect(find.bySemanticsLabel(RegExp('^$weekday: (?!.*(Tisha|תשעה))')), findsOneWidget, reason: reason);
+        }
       }
     }
   });
@@ -328,4 +461,21 @@ void main() {
     expect(find.byType(TodayMark), findsOneWidget);
     expect(find.byType(ShabbatCandlesIcon), findsOneWidget);
   });
+
+  // As the strip draws them, so that the legend doesn't explain 33 px glyphs
+  // with 22 px ones beside 32 px words.
+  for (final (scale, size) in [(0.85, 22.0), (1.0, 22.0), (2.0, 33.0), (3.0, 33.0)]) {
+    testWidgets('at ${scale}x the legend draws each glyph $size, in a swatch to match', (tester) async {
+      await pumpThemed(tester, const Center(child: WeekStripLegendButton()), textScale: scale);
+      await tester.tap(find.byTooltip('Legend'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      // The swatch of today's glyph, filled and edged as the strip's day.
+      final today = find.ancestor(of: find.byType(TodayMark), matching: find.byType(Container)).first;
+      expect(tester.getSize(today), Size.square(36 * size / 22));
+      expect(tester.getSize(find.byType(TodayMark)).height, moreOrLessEquals(size));
+      final check = find.descendant(of: find.byType(BottomSheet), matching: find.byIcon(Icons.check));
+      expect(tester.widget<Icon>(check).size, moreOrLessEquals(size * 14 / 22));
+    });
+  }
 }

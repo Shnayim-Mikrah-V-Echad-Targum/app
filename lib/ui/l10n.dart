@@ -25,6 +25,9 @@ String joinWithAnd(AppLocalizations l, List<String> items) {
   return l.andJoiner(items.sublist(0, items.length - 1).join(', '), items.last);
 }
 
+/// A no-break space: no line breaks between the words either side of it.
+const _nbsp = '\u00A0';
+
 extension L10nContext on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 
@@ -56,8 +59,10 @@ class AliyahNames {
         _ => l.aliyah7,
       };
 
-  /// A run of aliyot, from [first] to [last]: "Shlishi – Shevi'i".
-  String aliyahRange(int first, int last) => '${aliyah(first)} – ${aliyah(last)}';
+  /// A run of aliyot, from [first] to [last]: "Shlishi – Shevi'i". A
+  /// no-break space holds the dash to the name before it, so that a line
+  /// may break only after the dash, and none starts with it.
+  String aliyahRange(int first, int last) => '${aliyah(first)}$_nbsp– ${aliyah(last)}';
 
   /// The aliyot to read, by name: one alone, a run of three or more from its
   /// first to its last ([aliyahRange]), or else each of them ([aliyot]).
@@ -151,27 +156,35 @@ class Names {
     return _he ? (_prophetsHe[english] ?? english) : english;
   }
 
-  /// "Genesis 7:17–8:14" / "בראשית ז, יז–ח, יד".
+  /// "Genesis 7:17–8:14" / "בראשית ז, יז – ח, יד".
   String range(String bookName, int c1, int v1, int c2, int v2) => '${book(bookName)} ${verseRange(c1, v1, c2, v2)}';
 
   /// [range] without the book, for a range in a book named nearby:
-  /// "7:17–8:14" / "ז, יז–ח, יד".
+  /// "7:17–8:14" / "ז, יז – ח, יד".
+  ///
+  /// In Hebrew a range across chapters spaces its dash, held to the verse
+  /// before it as [AliyahNames.aliyahRange] holds it: closed up, "א, א–ו, ח"
+  /// would read as chapter 1, verses 1–6 and 8. A range within a chapter
+  /// stays closed: "ב, כ–כא". A chapter and its verse are held together, as
+  /// "1:1" is, so that a line breaks only after the book or the dash.
   String verseRange(int c1, int v1, int c2, int v2) {
     if (_he) {
-      final g = HebrewText.gematria;
-      final start = '${g(c1, punctuate: false)}, ${g(v1, punctuate: false)}';
-      final end = c1 == c2 ? g(v2, punctuate: false) : '${g(c2, punctuate: false)}, ${g(v2, punctuate: false)}';
-      return '$start–$end';
+      String g(int n) => HebrewText.gematria(n, punctuate: false);
+      final start = '${g(c1)},$_nbsp${g(v1)}';
+      if (c1 == c2) return '$start–${g(v2)}';
+      return '$start$_nbsp– ${g(c2)},$_nbsp${g(v2)}';
     }
     final end = c1 == c2 ? '$v2' : '$c2:$v2';
     return '$c1:$v1–$end';
   }
 
-  /// One verse: "Genesis 28:10" / "בראשית כח, י".
+  /// One verse: "Genesis 28:10" / "בראשית כח, י", its chapter held to its
+  /// verse by a no-break space, as in [verseRange] and as "28:10" holds
+  /// together, so that a line never ends between them.
   String reference(String bookName, int chapter, int verse) {
     if (_he) {
       final g = HebrewText.gematria;
-      return '${book(bookName)} ${g(chapter, punctuate: false)}, ${g(verse, punctuate: false)}';
+      return '${book(bookName)} ${g(chapter, punctuate: false)},$_nbsp${g(verse, punctuate: false)}';
     }
     return '${book(bookName)} $chapter:$verse';
   }

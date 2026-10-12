@@ -23,6 +23,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
+import '../../ui/widgets/lines.dart' show dateHeldTogether;
 import '../../ui/widgets/ornaments.dart' show Eyebrow, SeferDivider;
 import '../../ui/widgets/progress_widgets.dart' show WeekStatusBadge;
 import '../notes/domain/annotations.dart';
@@ -103,6 +104,13 @@ class ReaderScreen extends ConsumerStatefulWidget {
   /// Ctrl+= for themselves. Elsewhere they are Ctrl (⌘) chords. Settable,
   /// for tests.
   static bool singleKeyPlatform = kIsWeb;
+
+  /// The most the chrome around the text (the aliyah ribbon, the bars
+  /// beneath the text and the step's title) grows with the system text:
+  /// 200%, as WCAG 1.4.4 asks. Larger text goes to the scripture alone,
+  /// which the chrome would otherwise crowd off a phone's screen. The app
+  /// bar keeps to less (1.34, as Flutter's does).
+  static const double chromeMaxTextScale = 2;
 
   @override
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
@@ -199,7 +207,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   // at, out of sight until it is there.
   bool _placing = false;
 
-  // Kept for dispose(), when ref can no longer be used.
   late final TtsService _tts;
 
   // Listen, from its start until it ends or is stopped (DESIGN.md §3): the
@@ -210,6 +217,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   // next, and whether it is paused there.
   Timer? _listenOn;
   bool _listenHeld = false;
+
+  // Listen pauses as the app is hidden, and as a call or another app's
+  // audio takes over.
+  late final AppLifecycleListener _lifecycle;
+  late final StreamSubscription<void> _interruptions;
+
+  // Whether the reader is shown: its tickers are off while another page
+  // covers it, and its secondary animation runs forward as one comes over
+  // it (only pages drive it, not sheets, menus or dialogs). Listen stops
+  // while it isn't, as it does when the reader is left.
+  bool _tickersOn = true;
+  Animation<double>? _covering;
 
   // The step was reached by Listen along, whose voice reads it: it is not
   // announced as well, which would speak over it.
@@ -224,19 +243,53 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     super.initState();
     _tts = ref.read(ttsProvider);
     _listen = ListenController(_tts)..addListener(_listenChanged);
+    _lifecycle = AppLifecycleListener(onHide: _pauseListening);
+    _interruptions = _tts.interruptions.listen((_) {
+      if (mounted) _pauseListening();
+    });
     if (ref.read(settingsProvider).keepScreenOn) {
       WakelockPlus.enable().catchError((_) {});
     }
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _tickersOn = TickerMode.valuesOf(context).enabled;
+    final covering = ModalRoute.of(context)?.secondaryAnimation;
+    if (covering != _covering) {
+      _covering?.removeStatusListener(_coveringChanged);
+      _covering = covering?..addStatusListener(_coveringChanged);
+    }
+    // After the frame: stopping sets state, as the player goes.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _stopIfHidden());
+  }
+
+  void _coveringChanged(AnimationStatus _) => _stopIfHidden();
+
+  /// Stops Listen while another page covers the reader, as leaving it does.
+  /// Sheets, menus and dialogs over it leave it be.
+  void _stopIfHidden() {
+    if (!mounted || !_listen.active) return;
+    if (_onTop) return;
+    _stopListening();
+  }
+
+  /// Whether no other page covers the reader.
+  bool get _onTop => _tickersOn && (_covering?.isDismissed ?? true);
+
+  @override
   void dispose() {
+    _lifecycle.dispose();
+    unawaited(_interruptions.cancel());
+    _covering?.removeStatusListener(_coveringChanged);
     WakelockPlus.disable().catchError((_) {});
     _listenOn?.cancel();
-    _listen
-      ..removeListener(_listenChanged)
-      ..dispose();
-    _tts.stop();
+    // The voice goes with the reader, unless another page's Listen has taken
+    // it over.
+    _listen.removeListener(_listenChanged);
+    _listen.stop();
+    _listen.dispose();
     _scroll.dispose();
     for (final node in [_nextFocus, _backFocus, _finishFocus, _panelFocus, _readerFocus]) {
       node.dispose();
@@ -371,7 +424,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       for (var i = 0; i < 8; i++) {
         await WidgetsBinding.instance.endOfFrame;
         if (!mounted || seek != _seek || !_scroll.hasClients) return;
-        final start = _aliyahOffset(a);
+        // The first from the very top, with any notice above it.
+        final start = a == 0 ? 0.0 : _aliyahOffset(a);
         if (start == null) return;
         final p = _scroll.position;
         final to = start.clamp(p.minScrollExtent, p.maxScrollExtent);
@@ -800,7 +854,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Future<void> _startListening(ReaderTexts texts, ReaderFlow flow, {bool checkVoice = true, int? startVerse}) async {
     final l = context.l10n;
     final hasHebrew = checkVoice ? await _tts.hasHebrewVoice() : null;
-    if (!mounted) return;
+    // The browser may take a moment to load its voices, and an engine to
+    // bind: a page covered, or an app hidden, meanwhile starts nothing,
+    // which nothing would then stop or pause.
+    if (!mounted || !_onTop || appOutOfSight()) return;
     final s = ref.read(settingsProvider);
     final queue = _speechQueue(texts, flow, s);
     if (queue.isEmpty) return;
@@ -862,18 +919,27 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void _playPause(ReaderTexts texts, ReaderFlow flow) {
     if (!_listen.active) {
       _startListening(texts, flow);
-    } else if (_listenOn != null) {
-      // Paused in the breath between one reading and the next.
+    } else if (_listenHeld) {
+      _listenOnNow();
+    } else if (_listenOn == null && _listen.paused) {
+      _listen.resume();
+    } else {
+      _pauseListening();
+    }
+  }
+
+  /// Pauses Listen at the verse it reads, or in the breath between Listen
+  /// along's readings; Play goes on from there. From the player, and as the
+  /// app is hidden or a call comes.
+  void _pauseListening() {
+    if (!_listen.active) return;
+    if (_listenOn != null) {
       _listenOn!.cancel();
       setState(() {
         _listenOn = null;
         _listenHeld = true;
       });
-    } else if (_listenHeld) {
-      _listenOnNow();
-    } else if (_listen.paused) {
-      _listen.resume();
-    } else {
+    } else if (!_listenHeld && !_listen.paused) {
       _listen.pause();
     }
   }
@@ -909,7 +975,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _listen.setRate(rate);
   }
 
-  /// Stops Listen, and any speech.
+  /// Stops Listen, and its speech.
   void _stopListening() {
     _listenOn?.cancel();
     _listenOn = null;
@@ -1264,6 +1330,19 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final companion = texts.onkelos != null || (s.showTranslation && texts.english != null);
     final parallel = _fullText && styles.parallelColumns(pane, companion: companion);
     final columnWidth = styles.fullTextWidth(parallel: parallel);
+    // A week not yet open, previewed: said at the top of the text, where it
+    // scrolls away with it rather than squeeze it, and grows to twice its
+    // size at most, as the rest of the chrome.
+    final preview = ctx.isOpen
+        ? null
+        : MediaQuery.withClampedTextScaling(
+            maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+            child: NoticeBanner(
+              icon: Icons.visibility_outlined,
+              // Its date whole: a line breaks after the weekday, if it must.
+              text: l.previewNotOpen(dateHeldTogether(Names(context).dateLong(ctx.week.start))),
+            ),
+          );
     // Focus mode reads the full text alone: the overflow menu still switches
     // modes and marks the aliyah read.
     final showRibbon = !(_fullText && s.focusMode);
@@ -1378,30 +1457,21 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 child: Column(
                   children: [
                     if (showRibbon)
-                      AliyahRibbon(
-                        week: ctx.progress,
-                        aliyahVerses: ctx.aliyahVerses,
-                        selected: _aliyah,
-                        // In the whole parsha, a tab scrolls to its aliyah.
-                        onSelected: whole ? _showAliyah : _goToAliyah,
-                        maxWidth: columnWidth,
-                      ),
-                    if (!ctx.isOpen)
-                      Center(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: columnWidth + 2 * _columnPadding),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(_columnPadding, 12, _columnPadding, 0),
-                            child: NoticeBanner(
-                              icon: Icons.visibility_outlined,
-                              text: l.previewNotOpen(Names(context).dateLong(ctx.week.start)),
-                            ),
-                          ),
+                      MediaQuery.withClampedTextScaling(
+                        maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+                        child: AliyahRibbon(
+                          week: ctx.progress,
+                          aliyahVerses: ctx.aliyahVerses,
+                          selected: _aliyah,
+                          // In the whole parsha, a tab scrolls to its aliyah.
+                          onSelected: whole ? _showAliyah : _goToAliyah,
+                          maxWidth: columnWidth,
                         ),
                       ),
                     Expanded(
                       child: _fullText
                           ? _FullText(
+                              notice: preview,
                               aliyah: _aliyah,
                               verses: flow.verses,
                               texts: texts,
@@ -1488,6 +1558,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   ),
                                 )
                               : _GuidedStep(
+                                  notice: preview,
                                   flow: flow,
                                   texts: texts,
                                   settings: s,
@@ -1524,41 +1595,49 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Widget? _bottomBars(WeekContext ctx, ReaderTexts texts, ReaderFlow flow, AppSettings s, double columnWidth) {
     final steps = !_fullText && !_finished;
     if (!steps && !_listen.active) return null;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_listen.active)
-          KeyedSubtree(
-            key: const ValueKey('listen'),
-            // Above the bottom bar, which keeps clear of the gesture bar.
-            child: MediaQuery.removePadding(
-              context: context,
-              removeBottom: steps,
-              child: ListenBar(
-                paused: _listen.paused || _listenHeld,
-                onPlayPause: () => _playPause(texts, flow),
-                onPrevious: _canListenBack ? () => _listenBack(texts, flow) : null,
-                onNext: _canListenOn ? _listenOnVerse : null,
-                rate: s.speechRate,
-                onRate: _setSpeechRate,
-                onStop: _stopListening,
+    // Their labels grow to twice their size at most (chromeMaxTextScale).
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+      child: Builder(
+        // So that the player's padding, taken from this context, keeps the
+        // clamp.
+        builder: (context) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_listen.active)
+              KeyedSubtree(
+                key: const ValueKey('listen'),
+                // Above the bottom bar, which keeps clear of the gesture bar.
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeBottom: steps,
+                  child: ListenBar(
+                    paused: _listen.paused || _listenHeld,
+                    onPlayPause: () => _playPause(texts, flow),
+                    onPrevious: _canListenBack ? () => _listenBack(texts, flow) : null,
+                    onNext: _canListenOn ? _listenOnVerse : null,
+                    rate: s.speechRate,
+                    onRate: _setSpeechRate,
+                    onStop: _stopListening,
+                    maxWidth: columnWidth,
+                  ),
+                ),
+              ),
+            if (steps)
+              ReaderBottomBar(
+                key: const ValueKey('steps'),
+                flow: flow,
+                chunk: _chunk,
+                step: _step,
+                onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
+                onNext: () => _next(ctx, flow),
+                backFocus: _backFocus,
+                nextFocus: _nextFocus,
                 maxWidth: columnWidth,
               ),
-            ),
-          ),
-        if (steps)
-          ReaderBottomBar(
-            key: const ValueKey('steps'),
-            flow: flow,
-            chunk: _chunk,
-            step: _step,
-            onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
-            onNext: () => _next(ctx, flow),
-            backFocus: _backFocus,
-            nextFocus: _nextFocus,
-            maxWidth: columnWidth,
-          ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -1828,6 +1907,7 @@ class _KeyCombos extends StatelessWidget {
 /// saying what to read, and then the verses: nothing else comes before them.
 class _GuidedStep extends StatelessWidget {
   const _GuidedStep({
+    this.notice,
     required this.flow,
     required this.texts,
     required this.settings,
@@ -1841,6 +1921,10 @@ class _GuidedStep extends StatelessWidget {
     required this.onVerseOptions,
     required this.marksOf,
   });
+
+  /// A notice over the pass track, which scrolls with the text: a week
+  /// previewed before it opens.
+  final Widget? notice;
 
   final ReaderFlow flow;
   final ReaderTexts texts;
@@ -2001,8 +2085,15 @@ class _GuidedStep extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (notice case final notice?) ...[notice, const Gap(16)],
                 // It stays as the step changes, and its bars fill as it does.
-                PassTrack(steps: steps, step: step),
+                // Its labels, and its check, grow to twice their size at
+                // most, as the step's title beneath and the rest of the
+                // chrome.
+                MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+                  child: PassTrack(steps: steps, step: step),
+                ),
                 const Gap(8),
                 AnimatedSwitcher(
                   duration: Motion.of(context).d(_fade),
@@ -2018,7 +2109,16 @@ class _GuidedStep extends StatelessWidget {
                           // is one, and elsewhere as it appears.
                           liveRegion: !quiet && !MediaQuery.supportsAnnounceOf(context),
                           label: '$stepTitle\n${l.stepOf(step + 1, steps.length)}',
-                          child: ExcludeSemantics(child: Text(stepTitle, style: theme.textTheme.bodyLarge)),
+                          child: ExcludeSemantics(
+                            child: Text(
+                              stepTitle,
+                              style: theme.textTheme.bodyLarge,
+                              // At most twice its size, as the rest of the
+                              // chrome, so that the verse shows beneath it.
+                              textScaler: MediaQuery.textScalerOf(context)
+                                  .clamp(maxScaleFactor: ReaderScreen.chromeMaxTextScale),
+                            ),
+                          ),
                         ),
                         const Gap(12),
                         for (final (i, r) in refs.indexed) ...[
@@ -2406,6 +2506,7 @@ class _Whole {
 /// stands beside each verse rather than beneath it.
 class _FullText extends StatelessWidget {
   const _FullText({
+    this.notice,
     required this.aliyah,
     required this.verses,
     required this.texts,
@@ -2471,12 +2572,21 @@ class _FullText extends StatelessWidget {
   /// The whole parsha, when it is shown.
   final _Whole? whole;
 
+  /// A notice at the top of the text, which scrolls with it: a week
+  /// previewed before it opens.
+  final Widget? notice;
+
   /// Between one verse's block and the next, which with the blocks' insets
   /// sets their text 20 apart.
   static const _verseGap = 12.0;
 
   /// The page's side padding, and around the text at its top and end.
   static const _side = 20.0;
+
+  /// [child] in the reading column, as a verse's block is set.
+  Widget _column(Widget child) => Center(
+        child: ConstrainedBox(constraints: BoxConstraints(maxWidth: width), child: child),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -2630,6 +2740,7 @@ class _FullText extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (notice case final notice?) ...[_column(notice), const Gap(8)],
                 for (final (i, r) in verses.indexed) verse(i, r, first: i == 0, last: i == verses.length - 1),
                 ...end(aliyah),
               ],
@@ -2658,6 +2769,11 @@ class _FullText extends StatelessWidget {
             child: CustomScrollView(
               controller: scroll,
               slivers: [
+                if (notice case final notice?)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(_side, 8, _side, 8),
+                    sliver: SliverToBoxAdapter(child: _column(notice)),
+                  ),
                 for (final (a, aliyot) in parsha.aliyot.indexed)
                   SliverMainAxisGroup(
                     key: whole.aliyahKey(a),

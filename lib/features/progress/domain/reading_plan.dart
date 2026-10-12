@@ -206,6 +206,11 @@ class ReadingPlanner {
   ReadingPlanner startingFrom(LocalDate? day) =>
       ReadingPlanner(schedule: schedule, oneDayYomTov: _oneDayYomTov, settingsAt: settingsAt, starterFrom: day);
 
+  /// Whether [d] is Tisha B'Av with no reading planned on it, as by
+  /// default: Torah study is set aside on the fast (Shulchan Aruch OC
+  /// 554:1), and the app then invites none.
+  bool isQuietTishaBav(LocalDate d) => JewishHolidays.isTishaBav(d) && settingsAt(d).tishaBavQuiet;
+
   /// Whether [d] takes no reading under [settings]: Shabbat, Yom Tov, or a
   /// day the user has chosen to keep free.
   bool _isTransparent(LocalDate d, PlanSettingsEntry settings) {

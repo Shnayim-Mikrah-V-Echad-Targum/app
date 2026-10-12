@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
+import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
+import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
@@ -11,6 +14,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/check_in.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
 
 import '../../helpers.dart';
@@ -19,7 +23,9 @@ import '../../helpers.dart';
 /// Shabbat 10 October.
 final _settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 4));
 
-const _checkIn = 'Shavua tov! Did you read on Shabbat?';
+const _checkIn = 'Shavua tov! Did you read Bereshit on Shabbat?';
+
+const _finished = 'I finished Bereshit on Shabbat';
 
 /// Of Bereshit, Rishon to Revi'i read on their days.
 ProgressState _bereshit() {
@@ -104,9 +110,9 @@ void main() {
       final boxes = find.byType(CheckboxListTile);
       expect(boxes, findsNWidgets(4), reason: 'Chamishi, Shishi, Shevi\'i and the haftarah');
       expect([for (final b in tester.widgetList<CheckboxListTile>(boxes)) b.value], everyElement(isTrue));
-      expect(find.text('Genesis 4:19–22 · 4 verses'), findsOneWidget, reason: "Chamishi's reference");
+      expect(findDotLine('Genesis 4:19–22 · 4 verses'), findsOneWidget, reason: "Chamishi's reference");
       expect(find.text('I Samuel 20:18–42'), findsOneWidget, reason: 'the haftarah of Machar Chodesh');
-      expect(find.text('Read on Shabbat, October 10'), findsOneWidget);
+      expect(findDotLine('Read on Shabbat, October 10'), findsOneWidget);
 
       await tester.tap(find.text('Log reading'));
       await tester.pumpAndSettle();
@@ -174,7 +180,7 @@ void main() {
     testWidgets('finishes the parsha at once, which Undo takes back', (tester) async {
       final c = await openToday(tester);
       final before = bereshit(c);
-      await tester.tap(find.text('I finished it on Shabbat'));
+      await tester.tap(find.text(_finished));
       await tester.pumpAndSettle();
       expect(bereshit(c).isComplete, isTrue);
       expect(find.text('Chazak! Parshat Bereshit is complete.'), findsOneWidget);
@@ -193,23 +199,100 @@ void main() {
           tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(FilledButton)));
 
       await openToday(tester);
-      expect(banner().right - button('I finished it on Shabbat').right, 12);
-      expect(banner().bottom - button('I finished it on Shabbat').bottom, 12);
+      expect(banner().right - button(_finished).right, 12);
+      expect(banner().bottom - button(_finished).bottom, 12);
 
       // At the left in Hebrew.
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
-      expect(button('סיימתי את הפרשה בשבת').left - banner().left, 12);
-      expect(banner().bottom - button('סיימתי את הפרשה בשבת').bottom, 12);
+      expect(button('סיימתי את פרשת בראשית בשבת').left - banner().left, 12);
+      expect(banner().bottom - button('סיימתי את פרשת בראשית בשבת').bottom, 12);
+    });
+
+    testWidgets('names the parsha it asks about, above the next one', (tester) async {
+      await openToday(tester);
+      expect(find.text(_checkIn), findsOneWidget);
+      expect(find.text(_finished), findsOneWidget);
+      expect(find.bySemanticsLabel('Parshat Noach'), findsOneWidget, reason: "this week's, beneath it");
+      await tester.tap(find.text('Choose aliyot'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: find.byType(BottomSheet), matching: find.text(_checkIn)),
+        findsOneWidget,
+        reason: 'the sheet is titled with the same question',
+      );
+    });
+
+    testWidgets('balances its question where it wraps, leaving no word alone', (tester) async {
+      await openToday(tester);
+      // In the test font, set in full "Shavua tov! Did you / read Bereshit on
+      // / Shabbat?", and balanced "Shavua tov! Did / you read Bereshit / on
+      // Shabbat?".
+      final title = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.byType(NoticeBanner), matching: find.text(_checkIn)),
+      );
+      double lineOf(int offset) => title.getOffsetForCaret(TextPosition(offset: offset), Rect.zero).dy;
+      final lastLine = lineOf(_checkIn.length - 1);
+      expect(lineOf(0), lessThan(lastLine), reason: 'the question wraps');
+      expect(lineOf(_checkIn.lastIndexOf(' on ') + 1), lastLine, reason: 'the last line holds more than one word');
+    });
+
+    testWidgets('names both parshiyot of a week that reads them together', (tester) async {
+      // Vayakhel-Pekudei 5786, read together on Shabbat 14 March 2026.
+      final week = findWeekById(const ParshaSchedule(israel: false), '5786:22-23')!;
+      final sunday = week.occasion.addDays(1);
+      final settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 3, 1));
+      final progress = ProgressState(weeks: {
+        '5786:22-23': WeekProgress(weekId: '5786:22-23').withAliyah(0, week.occasion.addDays(-6)),
+      });
+      final now = DateTime(sunday.year, sunday.month, sunday.day, 9);
+      await openToday(tester, settings: settings, now: now, progress: progress);
+      expect(find.text('Shavua tov! Did you read Vayakhel-Pekudei on Shabbat?'), findsOneWidget);
+      expect(find.text('I finished Vayakhel-Pekudei on Shabbat'), findsOneWidget);
+
+      await openToday(tester, settings: settings.copyWith(language: AppLanguage.hebrew), now: now, progress: progress);
+      expect(find.text('שבוע טוב! קראת את פרשת ויקהל־פקודי בשבת?'), findsOneWidget);
+      expect(find.text('סיימתי את פרשת ויקהל־פקודי בשבת'), findsOneWidget);
     });
 
     testWidgets('in Hebrew', (tester) async {
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
+      const question = 'שבוע טוב! קראת את פרשת בראשית בשבת?';
+      expect(find.text(question), findsOneWidget);
+      expect(find.text('סיימתי את פרשת בראשית בשבת'), findsOneWidget);
       expect(find.text('לא הפעם'), findsOneWidget);
       await tester.tap(find.text('בחירת עליות'));
       await tester.pumpAndSettle();
-      expect(find.text('תאריך הקריאה: שבת, 10 באוקטובר'), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomSheet), matching: find.text(question)), findsOneWidget);
+      expect(findDotLine('תאריך הקריאה: שבת, 10 באוקטובר'), findsOneWidget);
       expect(find.text('שינוי התאריך'), findsOneWidget);
       expect(find.text('סימון הקריאה'), findsOneWidget);
+    });
+
+    testWidgets("waits for the day after Tisha B'Av, when no greeting is given", (tester) async {
+      // Sunday 3 August 2025, 9 Av 5785, the day after Shabbat Devarim, of
+      // which Rishon to Revi'i were read on their days.
+      final settings = _settings.copyWith(joinDate: LocalDate(2025, 7, 20));
+      var devarim = WeekProgress(weekId: '5785:44');
+      for (var a = 0; a < 4; a++) {
+        devarim = devarim.withAliyah(a, LocalDate(2025, 7, 27).addDays(a));
+      }
+      final progress = ProgressState(weeks: {'5785:44': devarim});
+      final en = lookupAppLocalizations(const Locale('en'));
+      // Whatever is planned on the fast.
+      for (final quiet in [true, false]) {
+        await openToday(
+          tester,
+          settings: settings.copyWith(tishaBavQuiet: quiet),
+          now: DateTime(2025, 8, 3, 11),
+          progress: progress,
+        );
+        expect(find.text(en.checkInTitle('Devarim')), findsNothing, reason: 'quiet: $quiet');
+        // Nor, while it waits, the rest of last week's notice.
+        expect(find.text(en.openWeekTitle('Devarim')), findsNothing, reason: 'quiet: $quiet');
+        expect(find.byType(NoticeBanner), findsNothing, reason: 'quiet: $quiet');
+      }
+      await openToday(tester, settings: settings, now: DateTime(2025, 8, 4, 9), progress: progress);
+      expect(find.text(en.checkInTitle('Devarim')), findsOneWidget);
     });
   });
 
@@ -228,7 +311,7 @@ void main() {
         progress: ProgressState(weeks: {...weeks, ..._bereshit().weeks}),
       );
       expect(
-        find.text('Finish Bereshit and Noach by Shabbat and your 2-week streak continues — one double-up per book.'),
+        findWords('Finish Bereshit and Noach by Shabbat and your 2-week streak continues — one double-up per book.'),
         findsOneWidget,
       );
     });
@@ -236,13 +319,13 @@ void main() {
     testWidgets('says both count, with no streak to keep', (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 14, 9));
       expect(
-        find.text('Finish Bereshit and Noach by Shabbat and both count — one double-up per book.'),
+        findWords('Finish Bereshit and Noach by Shabbat and both count — one double-up per book.'),
         findsOneWidget,
       );
       expect(find.textContaining('streak continues'), findsNothing);
 
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew), now: DateTime(2026, 10, 14, 9));
-      expect(find.text('אם מסיימים את בראשית ואת נח עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש.'), findsOneWidget);
+      expect(findWords('אם מסיימים את בראשית ואת נח עד שבת, שתיהן נחשבות — השלמה כפולה אחת לכל חומש.'), findsOneWidget);
     });
   });
 
@@ -272,5 +355,28 @@ void main() {
     // ask about.
     final vezot = previous(occasion: LocalDate(2026, 10, 4), id: '5786:54');
     expect(asksCheckIn(vezot, today: LocalDate(2026, 10, 5), settings: _settings), isFalse);
+
+    // Tisha B'Av on the Sunday after Shabbat Devarim (5785), or postponed to
+    // it from Shabbat (5789): the check-in, which greets the reader, waits
+    // for Monday, and Today with it.
+    for (final (year, shabbat) in [
+      (5785, LocalDate(2025, 8, 2)),
+      (5789, HebrewDate(5789, HebrewMonth.av, 9).toLocalDate()),
+    ]) {
+      final devarim = previous(occasion: shabbat, id: '$year:44');
+      expect(devarim.week.occasion, shabbat, reason: '$year');
+      final sunday = shabbat.addDays(1);
+      expect(JewishHolidays.isTishaBav(sunday), isTrue, reason: '$year');
+      expect(checkInDay(devarim, settings: _settings), sunday.addDays(1), reason: '$year');
+      expect(asksCheckIn(devarim, today: sunday, settings: _settings), isFalse, reason: '$year');
+      expect(awaitsCheckIn(devarim, today: sunday, settings: _settings), isTrue, reason: '$year');
+      expect(asksCheckIn(devarim, today: sunday.addDays(1), settings: _settings), isTrue, reason: '$year');
+      expect(awaitsCheckIn(devarim, today: sunday.addDays(1), settings: _settings), isFalse, reason: '$year');
+      final answered = _settings.copyWith(checkInAnsweredFor: '$year:44');
+      expect(awaitsCheckIn(devarim, today: sunday, settings: answered), isFalse, reason: '$year');
+    }
+    // On a Tuesday or a Thursday, the fast comes after it: Sunday asks.
+    final devarim = previous(occasion: LocalDate(2027, 8, 7), id: '5787:44');
+    expect(checkInDay(devarim, settings: _settings), LocalDate(2027, 8, 8));
   });
 }

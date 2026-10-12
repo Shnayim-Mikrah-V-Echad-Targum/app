@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikra/features/reader/reader_bottom_bar.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
 import 'package:shnayim_mikra/ui/widgets/lines.dart' show WholeWords;
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../helpers.dart';
 import 'routes.dart';
@@ -209,6 +213,53 @@ void main() {
     });
   }
 
+  // §6.3 and §9 Parsha, 3: at the largest text on the smallest phone, the
+  // whole page, a row stacks rather than squeeze its text between its icon
+  // and its chevron. No row's title is drawn smaller than its subtitle, as
+  // a title once was beside them to keep a long word whole, and the week's
+  // aliyot give each fact a line of its own, whole, rather than a word.
+  for (final route in ['/settings', '/parsha']) {
+    testWidgets('at 300% on a 320 dp phone, in either language, no row title is smaller than its subtitle: $route',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 3600);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: captureJoinDate),
+        now: captureNow,
+        progress: captureProgress(),
+      );
+      c.read(routerProvider).go(route);
+      await tester.pumpAndSettle();
+      for (final hebrew in [false, true]) {
+        final language = hebrew ? AppLanguage.hebrew : AppLanguage.system;
+        c.read(settingsProvider.notifier).update((s) => s.copyWith(language: language));
+        await tester.pumpAndSettle();
+        final page = find.byType(Scrollable).first;
+        tester.state<ScrollableState>(page).position.jumpTo(0);
+        await tester.pumpAndSettle();
+        final checked = <String>{};
+        // Down the page, a viewport at a time, so that every row is built.
+        while (true) {
+          expect(tester.takeException(), isNull, reason: hebrew ? 'he' : 'en');
+          expectWholeWords(tester);
+          checked.addAll(_expectTitlesNoSmallerThanSubtitles(tester));
+          if (route == '/parsha') _expectFactsWhole(tester, hebrew: hebrew);
+          final position = tester.state<ScrollableState>(page).position;
+          if (position.pixels >= position.maxScrollExtent) break;
+          position.jumpTo(position.pixels + 2000);
+          await tester.pumpAndSettle();
+        }
+        // As far as the page's foot.
+        final last = route == '/parsha' ? (hebrew ? 'הפטרה' : 'Haftarah') : (hebrew ? 'אודות האפליקציה' : 'About this app');
+        expect(checked, contains(last));
+      }
+    });
+  }
+
   // §6.1: Tab reaches Today's main button, which takes the ring.
   testWidgets("Tab reaches Today's main button, which takes the focus ring", (tester) async {
     FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
@@ -327,6 +378,128 @@ void main() {
       });
     }
 
+    // The chrome grows to 200% at most, so that the reader opens on a verse
+    // rather than on its ribbon and bars alone: as the capture harness shows
+    // it, on Shlishi's Targum, whose title once took two lines in Hebrew.
+    for (final hebrew in [false, true]) {
+      testWidgets('at 300% on a 320 dp phone, the guided reader opens with a verse in view${hebrew ? ', Hebrew' : ''}',
+          (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = 3;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearAllTestValues);
+        final c = await pumpApp(
+          tester,
+          settings: AppSettings(
+            onboardingComplete: true,
+            joinDate: captureJoinDate,
+            language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
+          ),
+          now: captureNow,
+          progress: captureProgress(),
+        );
+        c.read(routerProvider).go('/read/5787:1/2');
+        await tester.pump();
+        await tester.pump();
+        for (var i = 0; i < 30 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+          await tester.pump();
+        }
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text(hebrew ? 'קריאת התרגום' : 'Read the Targum'), findsOneWidget);
+        final bar = tester.getSize(find.byType(ReaderBottomBar)).height;
+        final verse = find.byType(ScriptureVerse).first;
+        expect(tester.getTopLeft(verse).dy, lessThan(640 - bar - 48));
+        // Its first line, whole, above the bar: the text is the verse's
+        // tallest paragraph, beside its number.
+        final text = tester
+            .renderObjectList<RenderParagraph>(find.descendant(of: verse, matching: find.byType(RichText)))
+            .reduce((a, b) => a.size.height >= b.size.height ? a : b);
+        final firstLine = text.localToGlobal(Offset.zero).dy + text.getFullHeightForCaret(const TextPosition(offset: 0));
+        expect(firstLine, lessThanOrEqualTo(640 - bar));
+        expectWholeWords(tester);
+      });
+    }
+
+    // A week previewed before it opens says so at the top of the text, which
+    // scrolls with it: the notice can't squeeze the text off the screen.
+    for (final (mode, name) in [('', 'guided reader'), ('?mode=full', 'full text')]) {
+      testWidgets('at 300% on a 320 dp phone, a week not yet open in the $name keeps its verses beneath its notice',
+          (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = 3;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearAllTestValues);
+        final c = await pumpApp(
+          tester,
+          settings: AppSettings(onboardingComplete: true, joinDate: captureJoinDate),
+          now: captureNow,
+        );
+        // Noach, the week after Bereshit's Friday.
+        c.read(routerProvider).go('/read/5787:2/0$mode');
+        await tester.pump();
+        await tester.pump();
+        for (var i = 0; i < 30 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+          await tester.pump();
+        }
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final notice = find.byType(NoticeBanner);
+        expect(notice, findsOneWidget);
+        // Twice its size at most, as the rest of the chrome: bodyMedium's 14
+        // at 28.
+        final text = find.descendant(of: find.textContaining('Preview'), matching: find.byType(RichText));
+        expect(tester.renderObject<RenderParagraph>(text).textScaler.scale(14), 28);
+        final verse = find.byType(ScriptureVerse).first;
+        expect(tester.getTopLeft(verse).dy, greaterThan(tester.getRect(notice).bottom));
+        // Scrolled to, the verse comes into view, and the notice goes up.
+        await tester.ensureVisible(verse);
+        await tester.pumpAndSettle();
+        expect(tester.getTopLeft(verse).dy, lessThan(640 - 48));
+        expect(tester.takeException(), isNull);
+        if (mode.isEmpty) expectWholeWords(tester);
+      });
+    }
+
+    // In Hebrew the notice is longer: it breaks where it must, but no line
+    // starts with its dash ("— הפרשה"), and a day keeps its month ("11 /
+    // באוקטובר").
+    testWidgets('at 300% on a 320 dp phone, the Hebrew preview notice keeps its dash and its date with their words',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: captureJoinDate, language: AppLanguage.hebrew),
+        now: captureNow,
+      );
+      c.read(routerProvider).go('/read/5787:2/0');
+      await tester.pump();
+      await tester.pump();
+      for (var i = 0; i < 30 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.textContaining('תצוגה מקדימה'), matching: find.byType(RichText)),
+      );
+      final text = paragraph.text.toPlainText();
+      double top(int i) => paragraph.getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1)).first.top;
+      final dash = text.indexOf('—');
+      expect(top(dash), top(dash - 2), reason: 'the dash on the line of the word before it');
+      expect(top(text.indexOf('באוקטובר')), top(text.indexOf('11')), reason: 'the day on the line of its month');
+      expect(top(text.length - 1), greaterThan(top(0)), reason: 'on more than one line at this size');
+      expect(tester.takeException(), isNull);
+    });
+
     // The reading size multiplies the system's, so a maqaf's words outgrow
     // the column at 100% text too. (At the largest, 500%, a long word is
     // wider than a phone's column on its own, and breaks.)
@@ -370,6 +543,8 @@ void main() {
     final handle = tester.ensureSemantics();
     await open(tester, '/today', settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
     expect(find.text('היום'), findsWidgets);
+    // Today's day of the week strip says so.
+    expect(find.bySemanticsLabel(RegExp(r'^יום שני, היום: ')), findsOneWidget);
     final dir = Directionality.of(tester.element(find.byType(Scaffold).first));
     expect(dir, TextDirection.rtl);
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
@@ -384,9 +559,10 @@ void main() {
     testWidgets('a day of the week strip is a button that can be activated', (tester) async {
       final handle = tester.ensureSemantics();
       final c = await open(tester, '/today');
-      // "Monday: …", not the running head ("Monday, October 12 · …").
+      // Today's day, "Monday, today: …", not the running head ("Monday,
+      // October 12 · …").
       expect(
-        tester.getSemantics(find.bySemanticsLabel(RegExp('^Monday: '))),
+        tester.getSemantics(find.bySemanticsLabel(RegExp('^Monday, today: '))),
         isSemantics(isButton: true, hasTapAction: true, isFocusable: true),
       );
       // Shabbat has no reading to open.
@@ -394,7 +570,7 @@ void main() {
         tester.getSemantics(find.bySemanticsLabel(RegExp('^Saturday: '))),
         isSemantics(isButton: false, hasTapAction: false),
       );
-      tester.semantics.tap(find.semantics.byLabel(RegExp('^Monday: ')));
+      tester.semantics.tap(find.semantics.byLabel(RegExp('^Monday, today: ')));
       await tester.pump();
       await tester.pump();
       expect(location(c), '/read/5787:2/1', reason: "Monday's reading is Sheni");
@@ -476,4 +652,47 @@ void main() {
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
+}
+
+/// Checks that each paper row with a subtitle draws its title at least as
+/// large as the subtitle, and gives their titles. Sizes are as drawn: the
+/// style's, scaled as the text is, and set smaller where a long word needs.
+Iterable<String> _expectTitlesNoSmallerThanSubtitles(WidgetTester tester) sync* {
+  for (final element in find.byWidgetPredicate((w) => w is PaperRow && w.subtitle != null).evaluate()) {
+    final row = element.widget as PaperRow;
+    final box = element.renderObject!;
+    final paragraphs = tester.renderObjectList<RenderParagraph>(
+      find.descendant(of: find.byElementPredicate((e) => e == element), matching: find.byType(RichText)),
+    );
+    double drawn(String text) {
+      final paragraph = paragraphs.firstWhere((p) => p.text.toPlainText() == text);
+      final transform = paragraph.getTransformTo(box);
+      return paragraph.textScaler.scale(paragraph.text.style!.fontSize!) *
+          Offset(transform.entry(0, 0), transform.entry(1, 0)).distance;
+    }
+
+    // A hair's leeway for the arithmetic of the sizes, no more.
+    expect(drawn(row.title), greaterThanOrEqualTo(drawn(row.subtitle!) - 0.01), reason: row.title);
+    yield row.title;
+  }
+}
+
+/// Checks that each fact of an aliyah's row on the week's page, its verses
+/// and the time they take, stays on one line.
+void _expectFactsWhole(WidgetTester tester, {required bool hebrew}) {
+  final facts = find.byWidgetPredicate((w) {
+    if (w is! RichText) return false;
+    final text = w.text.toPlainText();
+    return hebrew
+        ? text.contains('פסוקים') || text.contains('דק׳')
+        : text.contains('verses') || text.contains('min');
+  });
+  for (final paragraph in tester.renderObjectList<RenderParagraph>(facts)) {
+    final text = paragraph.text.toPlainText();
+    final lines = {
+      for (final box in paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: text.length)))
+        box.top,
+    };
+    expect(lines, hasLength(1), reason: text);
+  }
 }

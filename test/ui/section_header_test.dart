@@ -96,6 +96,22 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('starts no line with a dash: each spaced dash is held to the word before it', (tester) async {
+      // The Hebrew preview notice at 300% broke after "מקדימה", leaving the
+      // dash to start the next line.
+      await pumpThemed(
+        tester,
+        const SizedBox(
+          width: 200,
+          child: NoticeBanner(icon: Icons.visibility_outlined, text: 'תצוגה מקדימה — הפרשה נפתחת לרישום'),
+        ),
+        hebrew: true,
+        textScale: 2,
+      );
+      final text = tester.widget<Text>(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(Text)));
+      expect(text.data, 'תצוגה מקדימה\u00A0— הפרשה נפתחת לרישום');
+    });
+
     testWidgets('can be put away with a close button at its top end', (tester) async {
       var dismissed = 0;
       await pumpThemed(
@@ -182,6 +198,24 @@ void main() {
           side: BorderSide(color: Palettes.hcDark.outline, width: 2),
         ),
       );
+    });
+
+    // A dialog sets its content at its intrinsic width; the balanced title
+    // answers it, as the plain text did before.
+    testWidgets('with a title, and a sheet title, may stand in a dialog', (tester) async {
+      await pumpThemed(
+        tester,
+        const AlertDialog(
+          title: SheetTitle('Shavua tov! Did you read Bereshit on Shabbat?'),
+          content: NoticeBanner(
+            icon: Icons.schedule,
+            title: 'Shavua tov! Did you read Bereshit on Shabbat?',
+            text: 'Finish by Tuesday.',
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text('Finish by Tuesday.'), findsOneWidget);
     });
   });
 }

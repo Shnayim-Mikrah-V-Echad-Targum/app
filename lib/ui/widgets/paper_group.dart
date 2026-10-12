@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/focus.dart';
+import '../theme/layout.dart';
 import '../theme/sefer_colors.dart';
 import 'app_icon.dart';
 import 'lang.dart';
@@ -12,9 +13,11 @@ import 'ornaments.dart';
 /// cards and list tiles.
 ///
 /// A hairline starts where the text of the row above it does: 54 in under a
-/// [PaperRow] with an icon, 16 under any other row, or [ruleInset] where
-/// given, for rows of another kind with something before their text. It runs
-/// to the card's end edge.
+/// [PaperRow] with an icon (or a leading widget), 16 under any other row, or
+/// [ruleInset] where given, for rows of another kind with something before
+/// their text; but 16 under a paper row, wherever it is in the row above,
+/// that has stacked its icon over its text, all of which then starts there.
+/// It runs to the card's end edge.
 class PaperGroup extends StatelessWidget {
   const PaperGroup({super.key, required this.children, this.ruleInset});
 
@@ -38,6 +41,31 @@ class PaperGroup extends StatelessWidget {
     final sefer = SeferColors.of(context);
     final direction = Directionality.of(context);
     final last = children.length - 1;
+    Widget place(int i, Widget child) {
+      final corners = BorderRadius.vertical(
+        top: i == 0 ? _corner : Radius.zero,
+        bottom: i == last ? _corner : Radius.zero,
+      );
+      if (i == last) return _RowPlace(corners: corners, child: child);
+      final start = ValueNotifier<double?>(null);
+      return _RowPlace(
+        corners: corners,
+        ruleStart: start,
+        child: CustomPaint(
+          // Under the row and inside its bottom edge, so the row's focus
+          // ring, drawn just outside it, never crosses it.
+          painter: _RowRule(
+            color: sefer.hairline,
+            width: sefer.hairlineWidth,
+            inset: ruleInset ?? (child is PaperRow && child._hasLead ? iconInset : plainInset),
+            direction: direction,
+            start: start,
+          ),
+          child: child,
+        ),
+      );
+    }
+
     return Card(
       // Not clipped, so a row's focus ring shows whole; each row rounds its
       // own ink to the card's corners instead.
@@ -45,28 +73,7 @@ class PaperGroup extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final (i, child) in children.indexed)
-            _RowPlace(
-              corners: BorderRadius.vertical(
-                top: i == 0 ? _corner : Radius.zero,
-                bottom: i == last ? _corner : Radius.zero,
-              ),
-              child: i == last
-                  ? child
-                  : CustomPaint(
-                      // Under the row and inside its bottom edge, so the row's
-                      // focus ring, drawn just outside it, never crosses it.
-                      painter: _RowRule(
-                        color: sefer.hairline,
-                        width: sefer.hairlineWidth,
-                        inset: ruleInset ?? (child is PaperRow && child.icon != null ? iconInset : plainInset),
-                        direction: direction,
-                      ),
-                      child: child,
-                    ),
-            ),
-        ],
+        children: [for (final (i, child) in children.indexed) place(i, child)],
       ),
     );
   }
@@ -103,8 +110,10 @@ class PaperGroupRow extends StatelessWidget {
       bottom: last ? PaperGroup._corner : Radius.zero,
     );
     final child = this.child;
+    final start = last ? null : ValueNotifier<double?>(null);
     return _RowPlace(
       corners: corners,
+      ruleStart: start,
       child: CustomPaint(
         painter: _PaperShare(
           color: card.color ?? sefer.paper,
@@ -117,8 +126,9 @@ class PaperGroupRow extends StatelessWidget {
               : _RowRule(
                   color: sefer.hairline,
                   width: sefer.hairlineWidth,
-                  inset: ruleInset ?? (child is PaperRow && child.icon != null ? PaperGroup.iconInset : PaperGroup.plainInset),
+                  inset: ruleInset ?? (child is PaperRow && child._hasLead ? PaperGroup.iconInset : PaperGroup.plainInset),
                   direction: Directionality.of(context),
+                  start: start,
                 ),
         ),
         // The row's ink shows on its own paper, as on the card's.
@@ -137,14 +147,14 @@ class PaperGroupRow extends StatelessWidget {
 /// leaves as much of its own top to the row above, so the next row's paper
 /// never covers the ring.
 class _PaperShare extends CustomPainter {
-  const _PaperShare({
+  _PaperShare({
     required this.color,
     required this.side,
     required this.corners,
     required this.first,
     required this.last,
     this.rule,
-  });
+  }) : super(repaint: rule?.start);
 
   final Color color;
   final BorderSide side;
@@ -191,29 +201,45 @@ class _PaperShare extends CustomPainter {
 }
 
 /// The corners a row of a [PaperGroup] rounds its ink and focus ring to: the
-/// card's, at the top of the first row and the bottom of the last.
+/// card's, at the top of the first row and the bottom of the last. And where
+/// the hairline under it starts, should a [PaperRow] in it say ([ruleStart]):
+/// null for the group's own inset.
 class _RowPlace extends InheritedWidget {
-  const _RowPlace({required this.corners, required super.child});
+  const _RowPlace({required this.corners, this.ruleStart, required super.child});
 
   final BorderRadius corners;
 
+  /// None for the last row, which has no hairline under it.
+  final ValueNotifier<double?>? ruleStart;
+
   static BorderRadius? of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_RowPlace>()?.corners;
 
+  /// Where a row at [context] says the hairline under it starts. A new one
+  /// each time the group builds, so that its rows say again.
+  static ValueNotifier<double?>? ruleStartOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_RowPlace>()?.ruleStart;
+
   @override
-  bool updateShouldNotify(_RowPlace old) => old.corners != corners;
+  bool updateShouldNotify(_RowPlace old) => old.corners != corners || old.ruleStart != ruleStart;
 }
 
 class _RowRule extends CustomPainter {
-  const _RowRule({required this.color, required this.width, required this.inset, required this.direction});
+  _RowRule({required this.color, required this.width, required this.inset, required this.direction, this.start})
+      : super(repaint: start);
 
   final Color color;
   final double width;
   final double inset;
   final TextDirection direction;
 
+  /// Where the row above says the hairline starts, if it says, in place of
+  /// [inset].
+  final ValueNotifier<double?>? start;
+
   @override
   void paint(Canvas canvas, Size size) {
     final ltr = direction == TextDirection.ltr;
+    final inset = start?.value ?? this.inset;
     canvas.drawRect(
       Rect.fromLTRB(ltr ? inset : 0, size.height - width, ltr ? size.width : size.width - inset, size.height),
       Paint()..color = color,
@@ -222,11 +248,16 @@ class _RowRule extends CustomPainter {
 
   @override
   bool shouldRepaint(_RowRule old) =>
-      old.color != color || old.width != width || old.inset != inset || old.direction != direction;
+      old.color != color ||
+      old.width != width ||
+      old.inset != inset ||
+      old.direction != direction ||
+      old.start != start;
 }
 
-/// One row of a [PaperGroup]: an optional icon, a title and subtitle, and at
-/// the end an optional value, a [trailing] widget and a chevron.
+/// One row of a [PaperGroup]: an optional icon (or [leading] widget), a title
+/// and subtitle, and at the end an optional value, a [trailing] widget and a
+/// chevron.
 ///
 /// It is 56 high with one line and 72 with a subtitle or a detail line, and
 /// reads to a screen reader as one item: its text, and its tap if it has
@@ -242,10 +273,28 @@ class _RowRule extends CustomPainter {
 /// label (a [TextButton], say) ends the title's line as a value does, and
 /// moves under the title when the two don't fit side by side, rather than
 /// squeeze the title until its words break (large text).
+///
+/// Where text so large would leave the title and subtitle a word or two a
+/// line between the icon and the controls at the end ([squeezes]), the row
+/// stacks: the title, the subtitle and the detail line take its full width,
+/// the icon and chevron go on the title's line (or on a line of their own
+/// above it, where they would crowd the title), and a trailing control goes
+/// under the text. Whether it stacks depends only on its width, the text's
+/// size and whether it has an icon, never on what is at its end at the
+/// moment, so that the rows of a group decide alike and a row keeps its
+/// layout as a control at its end comes and goes. A title set smaller to
+/// keep a long word whole sets the lines under it no larger as drawn, so
+/// that it is never the smaller.
+///
+/// It decides at layout how to set itself ([LayoutBuilder]), and so doesn't
+/// answer intrinsic size queries: in a dialog, whose content is sized to its
+/// intrinsic width, give it a width of its own ([SizedBox]), and never set
+/// it in a row as tall as its tallest cell ([IntrinsicHeight]).
 class PaperRow extends StatelessWidget {
   const PaperRow({
     super.key,
     this.icon,
+    this.leading,
     this.iconColor,
     required this.title,
     this.breakTitleAtHyphens = true,
@@ -259,6 +308,7 @@ class PaperRow extends StatelessWidget {
     this.valueLocale,
     this.trailing,
     this.mergeTrailing = false,
+    this.progress,
     this.onTap,
     this.selected,
     this.toggled,
@@ -266,9 +316,14 @@ class PaperRow extends StatelessWidget {
     this.destructive = false,
     this.focusNode,
     bool? chevron,
-  }) : chevron = chevron ?? onTap != null;
+  })  : assert(icon == null || leading == null, 'an icon or a leading widget, not both'),
+        chevron = chevron ?? onTap != null;
 
   final IconData? icon;
+
+  /// A widget in the icon's place, such as a member's initial disc: in the
+  /// icon's slot, and aligned as the icon is, in either layout.
+  final Widget? leading;
 
   /// onSurfaceVariant unless given: the grace shield is in its own colour.
   final Color? iconColor;
@@ -314,6 +369,11 @@ class PaperRow extends StatelessWidget {
   /// rather than as a control of its own.
   final bool mergeTrailing;
 
+  /// A spinner while the row's tap is under way (a discussion opening),
+  /// in the chevron's place, 20 square at most: the row keeps its layout as
+  /// it comes and goes.
+  final Widget? progress;
+
   final VoidCallback? onTap;
 
   /// Whether the row is the one chosen of a list, for screen readers; null
@@ -342,127 +402,316 @@ class PaperRow extends StatelessWidget {
   final FocusNode? focusNode;
 
   static const double _start = 16;
+  static const double _end = 12;
   static const double _iconSlot = 38;
+
+  /// Between the text and each control at the end, and before a stacked
+  /// row's chevron.
+  static const double _controlGap = 12;
+  static const double _chevronSize = 20;
+
+  /// The narrowest a row's text may be beside its icon and the controls at
+  /// its end, as the text is scaled: narrower, it holds a word or two a line.
+  static const double _narrowestText = 112;
+
+  /// The narrowest a stacked row's title may be beside its icon and a
+  /// chevron, as the text is scaled: room for a long word ("Accessibility")
+  /// at nearly its size. Narrower, the icon goes on a line of its own.
+  static const double _narrowestTitle = 88;
+
+  /// What a row allows at its end in deciding whether to stack: the widest
+  /// control a row has there, a switch, whatever it has at the moment, so
+  /// that the rows of a group decide alike, and a row keeps its layout as
+  /// a control comes and goes (a spinner, a button shown while a setting is
+  /// on).
+  static const double _endAllowance = _controlGap + 52;
+
+  /// How much [scaler] enlarges text [fontSize] high, a row's title's
+  /// (bodyLarge's 16) by default. On Android 14 and later the system's
+  /// scale is not linear, growing large text less than small, so widths
+  /// are compared by the title's own factor, not scaled as a font size.
+  static double _factor(TextScaler scaler, [double fontSize = 16]) => scaler.scale(fontSize) / fontSize;
+
+  /// Whether text [width] wide, beside a row's leading and trailing columns,
+  /// is squeezed at [scaler]'s size, for a title [fontSize] high: as only
+  /// enlarged text ever is. Such a row stacks its columns instead, as a
+  /// [PaperRow] does.
+  static bool squeezes(TextScaler scaler, double width, {double fontSize = 16}) {
+    final factor = _factor(scaler, fontSize);
+    return factor > 1 && width < _narrowestText * factor;
+  }
+
+  bool get _hasLead => icon != null || leading != null;
+
+  /// About as wide as a [control] at the end of a row is, to tell whether
+  /// the row's text is squeezed beside it: a switch 52, a row of controls
+  /// their sum, and any other control (a menu, an icon button) 48.
+  static double _controlWidth(Widget control) => switch (control) {
+        Switch() => 52,
+        Row(:final children) => children.fold(0, (sum, child) => sum + _controlWidth(child)),
+        ExcludeFocus(:final child) || ExcludeSemantics(child: final child?) => _controlWidth(child),
+        _ => 48,
+      };
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
-    final muted = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
     final titleStyle =
         text.bodyLarge!.copyWith(color: destructive ? scheme.error : scheme.onSurface).merge(this.titleStyle);
-    final subtitleStyle = muted?.merge(this.subtitleStyle);
-    final detailStyle = text.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
+    final value = this.value;
     // A labelled button goes with the title, as a value does, rather than
     // after it.
     final trailing = this.trailing;
     final besideTitle = value == null && trailing is ButtonStyleButton ? trailing : null;
-    final end = <Widget>[
-      if (besideTitle == null) ?trailing,
-      if (chevron) Icon(Icons.chevron_right, size: 20, color: scheme.outline),
-    ];
+    final control = besideTitle == null ? trailing : null;
+    final progress = this.progress;
+    // The chevron, or a spinner in its place.
+    final chevron = this.chevron || progress != null;
+    final chevronIcon = progress == null
+        ? Icon(Icons.chevron_right, size: _chevronSize, color: scheme.outline)
+        : SizedBox.square(dimension: _chevronSize, child: Center(child: progress));
     final scaler = MediaQuery.textScalerOf(context);
+    final titleSize = titleStyle.fontSize ?? 16;
+    final factor = _factor(scaler, titleSize);
     // Text is never cut short once it is enlarged (WCAG 1.4.4).
-    final enlarged = scaler.scale(1) > 1;
-    // A value ends the title's line. With a subtitle or a detail line under
-    // them, the icon and the end of the row line up with that line too,
-    // rather than with the middle of the row, so the value and chevron stay
-    // side by side.
-    final onTitleLine = value != null && (subtitle != null || detail != null);
-    Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
-        ? ConstrainedBox(
-            constraints: BoxConstraints(minHeight: scaler.scale(titleStyle.fontSize ?? 16) * (titleStyle.height ?? 1.5)),
-            child: Align(alignment: alignment, widthFactor: 1, heightFactor: 1, child: child),
-          )
-        : child;
-    // Each word whole, as very large text beside an icon and a chevron would
-    // not keep it.
-    final titleText =
-        WholeWords(title, style: titleStyle, textAlign: TextAlign.start, breakAtHyphens: breakTitleAtHyphens);
-    // So with the lines under it, once the text is enlarged: below that, a
-    // subtitle may be cut short at its last line instead.
-    Widget enlargedLine(String line, TextStyle? style) =>
-        WholeWords(line, style: style, textAlign: TextAlign.start, breakAtHyphens: true);
-    // The title, and at the end of its line a value or a labelled button,
-    // which move under it when the two don't fit side by side.
-    Widget titleWith(Widget other) => SizedBox(
-          width: double.infinity,
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            children: [titleText, other],
-          ),
-        );
-    final content = ConstrainedBox(
-      constraints: BoxConstraints(minHeight: subtitle == null && detail == null ? 56 : 72),
-      child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(_start, 12, 12, 12),
-        child: Row(
-          crossAxisAlignment: onTitleLine ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-          children: [
-            if (icon != null)
-              SizedBox(
-                width: _iconSlot,
-                child: place(
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    heightFactor: 1,
-                    child: AppIcon(icon!, size: 22, color: iconColor ?? scheme.onSurfaceVariant),
-                  ),
-                  AlignmentDirectional.centerStart,
-                ),
+    final enlarged = factor > 1;
+
+    // The title, with a value or a labelled button at the end of its line,
+    // and the lines under it. Where the title is set smaller, at [fit], to
+    // keep a long word whole, they are set no larger than it, so that the
+    // title is never the smaller.
+    ({Widget heading, List<Widget> under}) texts(double fit) {
+      // As drawn, scaled: a scaler that isn't linear (Android's) grows a
+      // small size more than a large one.
+      final limit = fit * scaler.scale(titleSize);
+      TextStyle? atMost(TextStyle? style) {
+        final size = style?.fontSize;
+        if (size == null || scaler.scale(size) <= limit + 0.01) return style;
+        // The size the scaler draws at the limit: it grows every size, if
+        // not in proportion, so the size is found by halving.
+        var low = 0.0;
+        var high = size;
+        for (var i = 0; i < 24; i++) {
+          final mid = (low + high) / 2;
+          if (scaler.scale(mid) > limit) {
+            high = mid;
+          } else {
+            low = mid;
+          }
+        }
+        return style!.copyWith(fontSize: low);
+      }
+
+      final muted = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
+      final subtitleStyle = atMost(muted?.merge(this.subtitleStyle));
+      final valueStyle = atMost(muted);
+      final detailStyle = atMost(text.bodySmall?.copyWith(color: scheme.onSurfaceVariant));
+      // Each word whole, as very large text beside an icon and a chevron
+      // would not keep it.
+      final titleText =
+          WholeWords(title, style: titleStyle, textAlign: TextAlign.start, breakAtHyphens: breakTitleAtHyphens);
+      // So with the lines under it, once the text is enlarged: below that, a
+      // subtitle may be cut short at its last line instead.
+      Widget enlargedLine(String line, TextStyle? style) =>
+          WholeWords(line, style: style, textAlign: TextAlign.start, breakAtHyphens: true);
+      // The title, and at the end of its line a value or a labelled button,
+      // which move under it when the two don't fit side by side.
+      Widget titleWith(Widget other) => SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              children: [titleText, other],
+            ),
+          );
+      return (
+        heading: value != null
+            ? titleWith(
+                valueLocale == null
+                    ? Text(value, style: valueStyle)
+                    : Lang(valueLocale!, child: Text(value, style: valueStyle)),
+              )
+            : besideTitle != null
+                ? titleWith(besideTitle)
+                : titleText,
+        under: [
+          if (subtitle case final subtitle?)
+            if (subtitleLocale case final locale?)
+              Text.rich(
+                TextSpan(text: subtitle, locale: locale),
+                style: subtitleStyle,
+                maxLines: enlarged ? null : subtitleMaxLines,
+                overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
+              )
+            else if (enlarged)
+              enlargedLine(subtitle, subtitleStyle)
+            else
+              Text(
+                subtitle,
+                style: subtitleStyle,
+                maxLines: subtitleMaxLines,
+                overflow: subtitleMaxLines == null ? null : TextOverflow.ellipsis,
               ),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (value case final value?)
-                    titleWith(
-                      valueLocale == null
-                          ? Text(value, style: muted)
-                          : Lang(valueLocale!, child: Text(value, style: muted)),
-                    )
-                  else if (besideTitle != null)
-                    titleWith(besideTitle)
-                  else
-                    titleText,
-                  if (subtitle case final subtitle?)
-                    if (subtitleLocale case final locale?)
-                      Text.rich(
-                        TextSpan(text: subtitle, locale: locale),
-                        style: subtitleStyle,
-                        maxLines: enlarged ? null : subtitleMaxLines,
-                        overflow: enlarged || subtitleMaxLines == null ? null : TextOverflow.ellipsis,
-                      )
-                    else if (enlarged)
-                      enlargedLine(subtitle, subtitleStyle)
-                    else
-                      Text(
-                        subtitle,
-                        style: subtitleStyle,
-                        maxLines: subtitleMaxLines,
-                        overflow: subtitleMaxLines == null ? null : TextOverflow.ellipsis,
-                      ),
-                  if (detail case final detail?)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: enlarged ? enlargedLine(detail, detailStyle) : Text(detail, style: detailStyle),
-                    ),
-                ],
+          if (detail case final detail?)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: enlarged ? enlargedLine(detail, detailStyle) : Text(detail, style: detailStyle),
+            ),
+        ],
+      );
+    }
+
+    // About as wide as the controls at the end of the row as they are now:
+    // a control merged into the row is a switch or a checkbox, no wider
+    // than a switch.
+    final endWidth = (control == null ? 0 : _controlGap + (mergeTrailing ? 52 : _controlWidth(control))) +
+        (chevron ? _controlGap + _chevronSize : 0);
+
+    // The icon, the text and the controls side by side, in [width].
+    Widget sideBySide(double width) {
+      // A long word set smaller in the title sets the lines under it no
+      // larger here too.
+      final fit = !enlarged
+          ? 1.0
+          : WholeWords.scaleIn(
+              context,
+              title,
+              width: width - _start - _end - (_hasLead ? _iconSlot : 0) - endWidth,
+              style: titleStyle,
+              breakAtHyphens: breakTitleAtHyphens,
+            );
+      final (:heading, :under) = texts(fit);
+      // A value ends the title's line. With a subtitle or a detail line under
+      // them, the icon and the end of the row line up with that line too,
+      // rather than with the middle of the row, so the value and chevron stay
+      // side by side.
+      final onTitleLine = value != null && (subtitle != null || detail != null);
+      Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
+          ? ConstrainedBox(
+              constraints:
+                  BoxConstraints(minHeight: scaler.scale(titleStyle.fontSize ?? 16) * (titleStyle.height ?? 1.5)),
+              child: Align(alignment: alignment, widthFactor: 1, heightFactor: 1, child: child),
+            )
+          : child;
+      final end = <Widget>[?control, if (chevron) chevronIcon];
+      return Row(
+        crossAxisAlignment: onTitleLine ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          if (_hasLead)
+            SizedBox(
+              width: _iconSlot,
+              child: place(
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  heightFactor: 1,
+                  child: leading ?? AppIcon(icon!, size: 22, color: iconColor ?? scheme.onSurfaceVariant),
+                ),
+                AlignmentDirectional.centerStart,
               ),
             ),
-            for (final (i, widget) in end.indexed)
-              Padding(
-                // A chevron straight after a value stays close to it.
-                padding: EdgeInsetsDirectional.only(start: i == 0 && (value == null || trailing != null) ? 12 : 4),
-                child: place(widget, Alignment.center),
-              ),
-          ],
-        ),
-      ),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [heading, ...under],
+            ),
+          ),
+          for (final (i, widget) in end.indexed)
+            Padding(
+              // A chevron straight after a value stays close to it.
+              padding: EdgeInsetsDirectional.only(start: i == 0 && (value == null || trailing != null) ? 12 : 4),
+              child: place(widget, Alignment.center),
+            ),
+        ],
+      );
+    }
+
+    // The text the row's full width: the title's line, with the icon and
+    // chevron while they leave the title room enough, or else on a line of
+    // their own above it; the lines under it; and a control under them.
+    // Returns where the text starts, for the hairline under it: null where
+    // the group's own inset says.
+    (Widget, double? textStart) stacked(double width) {
+      // Growing with the text, a little, as a mark beside large words.
+      final iconSize = scaler.clamp(maxScaleFactor: 1.5).scale(22);
+      final icon = this.icon;
+      final lead = leading ??
+          (icon == null ? null : AppIcon(icon, size: iconSize, color: iconColor ?? scheme.onSurfaceVariant));
+      final leadWidth = leading != null ? _iconSlot : iconSize + 8;
+      const chevronWidth = _controlGap + _chevronSize;
+      final textWidth = width - _start - _end;
+      // Judged with room for a chevron whether or not the row has one, so
+      // that the rows of a group decide alike.
+      final leadBeside = lead == null || textWidth - leadWidth - chevronWidth >= _narrowestTitle * factor;
+      final chevronBeside = chevron && leadBeside;
+      final fit = WholeWords.scaleIn(
+        context,
+        title,
+        width: textWidth - (lead == null || !leadBeside ? 0 : leadWidth) - (chevronBeside ? chevronWidth : 0),
+        style: titleStyle,
+        breakAtHyphens: breakTitleAtHyphens,
+      );
+      final (:heading, :under) = texts(fit);
+      final column = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (lead != null && !leadBeside)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Space.xs),
+              child: Row(children: [lead, const Spacer(), if (chevron) chevronIcon]),
+            ),
+          Row(
+            children: [
+              if (lead != null && leadBeside)
+                leading != null
+                    ? SizedBox(
+                        width: _iconSlot,
+                        child: Align(alignment: AlignmentDirectional.centerStart, heightFactor: 1, child: lead),
+                      )
+                    : Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: lead),
+              Expanded(child: heading),
+              if (chevronBeside)
+                Padding(padding: const EdgeInsetsDirectional.only(start: _controlGap), child: chevronIcon),
+            ],
+          ),
+          ...under,
+          if (control != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Space.sm),
+              child: Align(alignment: AlignmentDirectional.centerStart, child: control),
+            ),
+        ],
+      );
+      // With the icon above it, all its text starts at the row's start;
+      // with an icon grown beside it, where the title does.
+      final textStart = lead == null
+          ? null
+          : !leadBeside
+              ? PaperGroup.plainInset
+              : _start + leadWidth;
+      return (column, textStart);
+    }
+
+    final content = LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final squeezed = squeezes(
+          scaler,
+          width - _start - _end - (_hasLead ? _iconSlot : 0) - _endAllowance,
+          fontSize: titleSize,
+        );
+        final (body, textStart) = squeezed ? stacked(width) : (sideBySide(width), null);
+        // The hairline under the row starts where its text does.
+        _RowPlace.ruleStartOf(context)?.value = textStart == PaperGroup.iconInset ? null : textStart;
+        return ConstrainedBox(
+          constraints: BoxConstraints(minHeight: subtitle == null && detail == null ? 56 : 72),
+          child: Padding(padding: const EdgeInsetsDirectional.fromSTEB(_start, 12, _end, 12), child: body),
+        );
+      },
     );
     final merged = trailing != null && mergeTrailing;
     final row = Semantics(

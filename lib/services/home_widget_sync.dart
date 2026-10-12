@@ -92,7 +92,11 @@ enum WidgetDayKind {
   yomTov,
 
   /// A reading day within a pause.
-  paused;
+  paused,
+
+  /// Tisha B'Av, with no reading planned on it: the week's progress, as
+  /// Today keeps its rings, but no reading asked for and no Continue.
+  tishaBav;
 
   bool get rests => this == shabbat || this == yomTov;
 }
@@ -241,9 +245,10 @@ class WidgetTimeline {
   String encode() => jsonEncode(toJson());
 }
 
-/// When candles are lit and Shabbat ends in the reader's city, in minutes
-/// after midnight on the device's clock, on a day it keeps the city's.
-typedef RestTimes = ({int? candleLighting, int? nightfall});
+/// When candles are lit, the sun sets and Shabbat ends in the reader's
+/// city, in minutes after midnight on the device's clock, on a day it keeps
+/// the city's. Sunset begins Tisha B'Av on its eve.
+typedef RestTimes = ({int? candleLighting, int? sunset, int? nightfall});
 
 /// The widget's timeline as of [now] (see [WidgetTimeline]), in [l]'s
 /// language, for a reader with [settings] and [progress], planned by
@@ -315,7 +320,11 @@ WidgetTimeline widgetTimeline({
 
   final weeks = <WidgetWeek>[];
   final weekIndex = <String, int>{};
-  int indexOf(ReadingWeek week, LocalDate day) => weekIndex[week.id] ??= () {
+  // A quiet Tisha B'Av has its week to itself, without Continue, as Today
+  // has no button that day: the widgets show Continue wherever a week has
+  // one.
+  int indexOf(ReadingWeek week, LocalDate day, {bool quiet = false}) =>
+      weekIndex[quiet ? '${week.id} quiet' : week.id] ??= () {
         final ctx = contextFor(week, day);
         final p = ctx.progress;
         int count(ReadingPass pass) => [for (var a = 0; a < kAliyot; a++) a].where((a) => p.isUnitDone(a, pass)).length;
@@ -339,7 +348,7 @@ WidgetTimeline widgetTimeline({
           mikra1: counts[0],
           mikra2: counts[1],
           targum: counts[2],
-          next: p.isComplete ? null : continueLabel(ctx),
+          next: p.isComplete || quiet ? null : continueLabel(ctx),
         ));
         return weeks.length - 1;
       }();
@@ -385,6 +394,18 @@ WidgetTimeline widgetTimeline({
   for (var day = first; day <= last; day = day.addDays(1)) {
     // The parsha read today, or on the Shabbat this day comes before.
     final week = schedule.weekFor(day);
+    // Tisha B'Av, with no reading planned on it: as Today, headed by the
+    // fast, with no reading asked for.
+    if (planner.isQuietTishaBav(day)) {
+      add(WidgetDay(
+        date: day,
+        week: indexOf(week, day, quiet: true),
+        kind: WidgetDayKind.tishaBav,
+        eyebrow: l.tishaBavTitle,
+        line: l.widgetTishaBav,
+      ));
+      continue;
+    }
     final index = indexOf(week, day);
     final vezot = week.portion.isVezotHaberakhah;
     final eyebrow = vezot ? l.simchatTorahEyebrow : l.parshatHashavua;
@@ -413,15 +434,30 @@ WidgetTimeline widgetTimeline({
                 ? WidgetDayKind.erevShabbat
                 : WidgetDayKind.erevYomTov;
     final line = readingLine(contextFor(week, day), paused: paused);
-    // The day of rest begins as candles are lit in the city.
-    final candles = eve ? restTimes?.call(day)?.candleLighting : null;
-    final until = candles == null ? null : at(day, candles);
+    // The day of rest begins as candles are lit in the city, and a quiet
+    // Tisha B'Av at sunset, as Today turns then (FastBegunController).
+    final fastEve = planner.isQuietTishaBav(tomorrow);
+    final turn = eve
+        ? restTimes?.call(day)?.candleLighting
+        : fastEve
+            ? restTimes?.call(day)?.sunset
+            : null;
+    final until = turn == null ? null : at(day, turn);
     // From midday on Friday, Today's eyebrow is Erev Shabbat.
     if (day.weekday == _friday && !vezot) {
       add(WidgetDay(date: day, until: at(day, 12 * 60), week: index, kind: kind, eyebrow: eyebrow, line: line));
       add(WidgetDay(date: day, until: until, week: index, kind: kind, eyebrow: l.erevShabbat, line: line));
     } else {
       add(WidgetDay(date: day, until: until, week: index, kind: kind, eyebrow: eyebrow, line: line));
+    }
+    if (fastEve && until != null) {
+      add(WidgetDay(
+        date: day,
+        week: indexOf(schedule.weekFor(tomorrow), tomorrow, quiet: true),
+        kind: WidgetDayKind.tishaBav,
+        eyebrow: l.tishaBavTitle,
+        line: l.widgetTishaBav,
+      ));
     }
   }
   final rests = {
@@ -598,7 +634,11 @@ final homeWidgetSyncProvider = Provider<void>((ref) {
     RestTimes? restTimes(LocalDate day) {
       if (!citysTimes || !Zmanim.keepsClock(city, day, clock(day))) return null;
       final times = Zmanim.of(city, day);
-      return (candleLighting: times.minutesOf(times.candleLighting), nightfall: times.minutesOf(times.havdalah));
+      return (
+        candleLighting: times.minutesOf(times.candleLighting),
+        sunset: times.minutesOf(times.sunset),
+        nightfall: times.minutesOf(times.havdalah),
+      );
     }
 
     final l = _appLocalizations(s.language);

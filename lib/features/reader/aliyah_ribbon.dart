@@ -195,6 +195,8 @@ class _AliyahRibbonState extends State<AliyahRibbon> {
     final state = done == passes.length
         ? l.tabRead
         : (week.isAliyahStarted(a, widget.aliyahVerses[a]) ? l.tabPartial(done) : l.tabNotStarted);
+    // Growing with the text to twice their size, and never smaller.
+    final pipScale = MediaQuery.textScalerOf(context).clamp(minScaleFactor: 1, maxScaleFactor: 2).scale(1);
     final content = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -212,11 +214,20 @@ class _AliyahRibbonState extends State<AliyahRibbon> {
           style: _nameStyle(context, selected: selected),
         ),
         const SizedBox(height: 6),
-        // Sized, so the ribbon's intrinsic height counts the pips.
+        // Sized, so the ribbon's intrinsic height counts the pips, which
+        // grow with the name to twice their size, as the ribbon does.
         SizedBox(
-          height: PassPips.mini,
-          child: PassPips(size: PassPips.mini, states: [for (final d in passes) d ? PipState.done : PipState.pending]),
+          height: PassPips.mini * pipScale,
+          child: PassPips(
+            size: PassPips.mini,
+            scale: pipScale,
+            states: [for (final d in passes) d ? PipState.done : PipState.pending],
+          ),
         ),
+        // With enlarged text, which outgrows the ribbon's normal height, room
+        // beneath the pips for the open tab's bar, which they would all but
+        // touch: 4 from 150% up, and none at the normal size.
+        SizedBox(height: (8 * (pipScale - 1)).clamp(0, 4)),
       ],
     );
     return Semantics(

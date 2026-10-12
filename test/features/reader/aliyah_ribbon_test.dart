@@ -6,6 +6,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 
 import '../../helpers.dart';
 
@@ -101,6 +102,31 @@ void main() {
       }
       expectNamesWhole(tester, shown);
       expect(tester.getSize(find.byType(AliyahRibbon)).height, greaterThan(AliyahRibbon.minHeight));
+    });
+  }
+
+  // Beside a name at twice its size, the pips are twice theirs: 12 px, 6
+  // apart, and no larger with larger text, as the ribbon grows no further;
+  // nor smaller than 6 with text under 100% (Android's Small).
+  for (final (scale, pip) in [(0.85, 6.0), (1.0, 6.0), (1.5, 9.0), (2.0, 12.0), (3.0, 12.0)]) {
+    testWidgets('at ${scale}x text the pips are $pip px, under the name', (tester) async {
+      await pump(tester, textScale: scale);
+      final pips = find.descendant(of: tab('Sheni'), matching: find.byType(PassPips));
+      expect(tester.getSize(pips), Size(3 * pip + pip, pip));
+      expect(
+        tester.widgetList<Lozenge>(find.descendant(of: pips, matching: find.byType(Lozenge))).map((l) => l.size),
+        everyElement(pip),
+      );
+      // Within the tab, under its name, and clear of the open tab's bar.
+      final rect = tester.getRect(pips);
+      expect(rect.top, greaterThan(tester.getRect(find.text('Sheni')).bottom));
+      expect(rect.bottom, lessThanOrEqualTo(tester.getRect(tab('Sheni')).bottom));
+      final bar = find.descendant(
+        of: find.ancestor(of: tab('Sheni'), matching: find.byType(Stack)).first,
+        matching: find.byType(AnimatedOpacity),
+      );
+      expect(tester.getRect(bar).top - rect.bottom, greaterThanOrEqualTo(4));
+      expect(tester.takeException(), isNull);
     });
   }
 

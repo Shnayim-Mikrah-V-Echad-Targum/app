@@ -150,9 +150,13 @@ enum PipState { pending, done }
 /// A done reading is filled in its ring colour and a pending one outlined;
 /// [current] marks the reading under way with a ring. Purely visual: the
 /// row's own label says what they show.
+///
+/// [scale] grows the pips and their gaps with enlarged text, so mini pips
+/// beside a name at twice its size are not left a speck.
 class PassPips extends StatelessWidget {
-  const PassPips({super.key, required this.states, this.size = full, this.current})
+  const PassPips({super.key, required this.states, this.size = full, this.scale = 1, this.current})
       : assert(size == full || size == mini, 'Pips are 12 or 6 (mini)'),
+        assert(scale > 0),
         assert(current == null || size == full, 'Mini pips mark no current reading (§7.5)');
 
   /// A parsha row's pips, and the mini pips of an aliyah tab.
@@ -162,9 +166,14 @@ class PassPips extends StatelessWidget {
   final List<PipState> states;
   final double size;
 
+  /// How much larger than [size] the pips are drawn, gaps and all: the
+  /// text's scale, within what the row allows.
+  final double scale;
+
   /// The index of the reading under way, if any.
   final int? current;
 
+  /// The space between two pips, at [size] before [scale].
   double get gap => size == mini ? 3 : 8;
 
   @override
@@ -178,9 +187,9 @@ class PassPips extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           for (var i = 0; i < 3; i++) ...[
-            if (i > 0) SizedBox(width: gap),
+            if (i > 0) SizedBox(width: gap * scale),
             Lozenge(
-              size: size,
+              size: size * scale,
               color: _ink(context, colors[i]),
               outlined: states[i] == PipState.pending,
               ringed: current == i,

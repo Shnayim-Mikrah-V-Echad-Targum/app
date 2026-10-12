@@ -520,14 +520,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readTheHaftarah => 'Read the haftarah';
 
   @override
-  String get checkInTitle => 'Shavua tov! Did you read on Shabbat?';
+  String checkInTitle(String name) {
+    return 'Shavua tov! Did you read $name on Shabbat?';
+  }
 
   @override
   String get checkInBody =>
       'Log what you read from a printed Chumash — it counts just the same.';
 
   @override
-  String get checkInFinished => 'I finished it on Shabbat';
+  String checkInFinished(String name) {
+    return 'I finished $name on Shabbat';
+  }
 
   @override
   String get checkInPick => 'Choose aliyot';
@@ -3418,4 +3422,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errBodyTooShort => 'The message needs at least 2 characters.';
+
+  @override
+  String get tishaBavTitle => 'Tisha B’Av';
+
+  @override
+  String get todayTishaBav =>
+      'Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).';
+
+  @override
+  String todayTishaBavTomorrow(String portion) {
+    return '$portion continues tomorrow.';
+  }
+
+  @override
+  String todayTishaBavOn(String portion, String weekday) {
+    return '$portion continues on $weekday.';
+  }
+
+  @override
+  String get tishaBavShort => '9 Av';
+
+  @override
+  String dayChipLabelToday(String day, String status) {
+    return '$day, today: $status';
+  }
+
+  @override
+  String get speechRateNormal => 'Normal';
+
+  @override
+  String speechRateTimes(String rate) {
+    return '$rate×';
+  }
+
+  @override
+  String get tishaBavQuietDesc =>
+      'Torah study is set aside on the fast, apart from the passages of mourning (Shulchan Aruch OC 554:1)';
+
+  @override
+  String get a11yGroupSpeech => 'Speech';
+
+  @override
+  String get widgetTishaBav => 'Torah study is set aside today';
 }

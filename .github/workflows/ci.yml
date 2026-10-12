@@ -53,6 +53,10 @@ jobs:
         run: node --test tool/legal/build_html.test.mjs tool/web/web.test.mjs
       - run: flutter analyze
       - run: flutter test
+      # Dart's local time follows the process's time zone, UTC on the runner,
+      # which never changes its clocks.
+      - name: Check the day turns at 3 a.m. across Israel's changes of clocks
+        run: TZ=Asia/Jerusalem flutter test test/app/rollover_test.dart
       - name: Community database tests (PostgreSQL)
         run: supabase/tests/run_tests.sh
 

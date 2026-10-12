@@ -176,8 +176,10 @@ void main() {
 
   testWidgets('aliyot to read are spanned when three or more run on, and named otherwise', (tester) async {
     var names = Names(await _page(tester, hebrew: false));
-    expect(names.aliyotSpan([2, 3, 4, 5, 6]), 'Shlishi – Shevi’i');
-    expect(names.aliyotSpan([0, 1, 2]), 'Rishon – Shlishi');
+    // A no-break space holds the dash to the name before it: no line starts
+    // with the dash.
+    expect(names.aliyotSpan([2, 3, 4, 5, 6]), 'Shlishi\u00A0– Shevi’i');
+    expect(names.aliyotSpan([0, 1, 2]), 'Rishon\u00A0– Shlishi');
     expect(names.aliyotSpan([4, 5]), 'Chamishi and Shishi');
     expect(names.aliyotSpan([3]), 'Revi’i');
     // Not a run: Revi'i was read ahead.
@@ -185,8 +187,36 @@ void main() {
     expect(names.aliyotSpan([0, 1, 2, 3, 4, 5, 6]), 'The whole parsha');
 
     names = Names(await _page(tester, hebrew: true));
-    expect(names.aliyotSpan([2, 3, 4, 5, 6]), 'שלישי – שביעי');
+    expect(names.aliyotSpan([2, 3, 4, 5, 6]), 'שלישי\u00A0– שביעי');
     expect(names.aliyotSpan([0, 1, 2, 3, 4, 5, 6]), 'כל הפרשה');
+  });
+
+  group('a range of verses', () {
+    testWidgets('closes up its dash in English, within a chapter or across chapters', (tester) async {
+      final names = Names(await _page(tester, hebrew: false));
+      expect(names.range('Genesis', 2, 20, 2, 25), 'Genesis 2:20–25');
+      expect(names.range('Genesis', 1, 1, 6, 8), 'Genesis 1:1–6:8');
+      expect(names.verseRange(7, 17, 8, 14), '7:17–8:14');
+    });
+
+    // "א, א–ו, ח" would read as chapter 1, verses 1–6 and 8. No-break
+    // spaces hold each chapter to its verse, and the dash to the verse
+    // before it: a line breaks only after the book or the dash.
+    testWidgets('spaces its dash in Hebrew across chapters, held to the verse before it', (tester) async {
+      final names = Names(await _page(tester, hebrew: true));
+      expect(names.range('Genesis', 2, 20, 2, 25), 'בראשית ב,\u00A0כ–כה');
+      expect(names.verseRange(2, 20, 2, 21), 'ב,\u00A0כ–כא');
+      expect(names.range('Genesis', 1, 1, 6, 8), 'בראשית א,\u00A0א\u00A0– ו,\u00A0ח');
+      expect(names.verseRange(7, 17, 8, 14), 'ז,\u00A0יז\u00A0– ח,\u00A0יד');
+      expect(names.range('Isaiah', 42, 5, 43, 10), 'ישעיהו מב,\u00A0ה\u00A0– מג,\u00A0י');
+    });
+  });
+
+  // As a range holds them, so that a long reference at large text breaks
+  // after the book, never between "כח," and "י".
+  testWidgets('one verse holds its chapter to its verse, in Hebrew as "28:10" does in English', (tester) async {
+    expect(Names(await _page(tester, hebrew: false)).reference('Genesis', 28, 10), 'Genesis 28:10');
+    expect(Names(await _page(tester, hebrew: true)).reference('Genesis', 28, 10), 'בראשית כח,\u00A0י');
   });
 
   testWidgets('a reading of an aliyah is named as the rings\' legend names it', (tester) async {
@@ -228,12 +258,12 @@ void main() {
     expect(l.versesRead('1,234', names.secondReading(SecondReading.rashi)), '1,234 פסוקים בשניים מקרא ורש״י');
     expect(l.versesRead('5', names.secondReading(SecondReading.onkelos)), '5 פסוקים בשניים מקרא ותרגום');
     expect(
-      l.firstAliyahDone('בראשית א, א–ב, ג', names.secondReading(SecondReading.onkelos)),
-      'יישר כוח! העלייה הראשונה שלך הושלמה — בראשית א, א–ב, ג, שניים מקרא ותרגום.',
+      l.firstAliyahDone('בראשית א,\u00A0א\u00A0– ב,\u00A0ג', names.secondReading(SecondReading.onkelos)),
+      'יישר כוח! העלייה הראשונה שלך הושלמה — בראשית א,\u00A0א\u00A0– ב,\u00A0ג, שניים מקרא ותרגום.',
     );
     expect(
-      l.firstAliyahDone('בראשית א, א–ב, ג', names.secondReading(SecondReading.onkelosAndRashi)),
-      'יישר כוח! העלייה הראשונה שלך הושלמה — בראשית א, א–ב, ג, שניים מקרא ואונקלוס ורש״י.',
+      l.firstAliyahDone('בראשית א,\u00A0א\u00A0– ב,\u00A0ג', names.secondReading(SecondReading.onkelosAndRashi)),
+      'יישר כוח! העלייה הראשונה שלך הושלמה — בראשית א,\u00A0א\u00A0– ב,\u00A0ג, שניים מקרא ואונקלוס ורש״י.',
     );
     expect(l.methodVerseDesc(names.secondReading(SecondReading.rashi)), 'כל פסוק פעמיים, ואז רש״י');
     expect(l.methodAliyahDesc(names.secondReading(SecondReading.onkelos)), 'כל העלייה פעמיים, ואז תרגום');

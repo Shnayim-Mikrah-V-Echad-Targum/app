@@ -7,8 +7,8 @@ import '../helpers.dart';
 
 void main() {
   // The test font's letters are squares as wide as the type is high: each
-  // letter here is 10 wide.
-  const style = TextStyle(fontSize: 10, height: 1);
+  // letter here is 10 wide, with none of the theme's letter spacing.
+  const style = TextStyle(fontSize: 10, height: 1, letterSpacing: 0);
 
   Future<List<String>> lines(WidgetTester tester, List<String> parts, {required double width}) async {
     await pumpThemed(
@@ -40,6 +40,29 @@ void main() {
       // "Read on Shabbat, / October 10", not "Read on Shabbat, October / 10".
       expect(await lines(tester, ['aa bb, cc dd', 'ee'], width: 100), ['aa\u00A0bb, cc\u00A0dd', 'ee']);
       expect(tester.getSize(find.textContaining('aa')).height, 20, reason: 'two lines, which break at the comma');
+    });
+
+    testWidgets('holds a number to the word after it in a part too long for a line', (tester) async {
+      // "about / 33 min", not "about 33 / min".
+      expect(await lines(tester, ['aa 11 bb', 'cc'], width: 50), ['aa 11\u00A0bb', 'cc']);
+      expect(tester.getSize(find.textContaining('aa')).height, 20, reason: 'two lines, the number on the second');
+    });
+
+    testWidgets('measures its parts in the ambient style, as they are drawn', (tester) async {
+      // A list tile's subtitle, say: its style is the tile's. With a letter
+      // spacing of 1, the three parts are 198 wide, too wide for 180.
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: AlignmentDirectional.topStart,
+          child: DefaultTextStyle(
+            style: style.copyWith(letterSpacing: 1),
+            child: const SizedBox(width: 180, child: DotLine(['aaaa', 'bbbb', 'cccc'])),
+          ),
+        ),
+      );
+      expect([for (final t in tester.widgetList<Text>(find.byType(Text))) t.data], ['aaaa · bbbb', 'cccc']);
+      expect(tester.getSize(find.text('cccc')).height, 10, reason: 'each line one line');
     });
   });
 
@@ -76,9 +99,69 @@ void main() {
       expect(box.width, lessThanOrEqualTo(50));
       expect(box.height, lessThan(30), reason: 'three lines, scaled down');
       expectWordsWhole(tester, 'aaaaaa bb cc');
-      // Where every word fits, it balances as before.
+      // Where every word fits, it balances as before, at the full size.
       await pump(tester, 'aa bb cc dd', width: 100);
-      expect(find.byType(WholeWords), findsNothing);
+      expect(tester.getSize(find.text('aa bb cc dd')), within(distance: 2, from: const Size(51, 20)));
+    });
+
+    // As a dialog sets its content (IntrinsicWidth), or a row whose cells
+    // are as tall as the tallest (IntrinsicHeight).
+    testWidgets('answers intrinsic size queries, so it may stand in a dialog or an even row', (tester) async {
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: AlignmentDirectional.topStart,
+          child: SizedBox(
+            width: 100,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Expanded(child: BalancedText('aa bb cc dd', style: style, textAlign: TextAlign.start)),
+                  Container(key: const Key('cell'), width: 0),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(tester.getSize(find.byKey(const Key('cell'))).height, 20, reason: 'as tall as its two lines');
+      final text = tester.getRect(find.text('aa bb cc dd'));
+      expect(text.width, inInclusiveRange(50, 52), reason: 'balanced');
+      expect(text.left, 0, reason: 'at its start');
+
+      await pumpThemed(
+        tester,
+        const Center(
+          child: IntrinsicWidth(child: BalancedText('aa bb cc dd', style: style)),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.text('aa bb cc dd')),
+        within(distance: 2, from: const Size(110, 10)),
+        reason: 'one line, as wide as it is',
+      );
+    });
+
+    testWidgets('sets its balanced lines at the start of a right-to-left column', (tester) async {
+      await pumpThemed(
+        tester,
+        const Directionality(
+          textDirection: TextDirection.rtl,
+          child: Align(
+            alignment: AlignmentDirectional.topStart,
+            child: SizedBox(
+              width: 100,
+              child: BalancedText('aa bb cc dd', style: style, textAlign: TextAlign.start),
+            ),
+          ),
+        ),
+      );
+      final text = tester.getRect(find.text('aa bb cc dd'));
+      expect(text.width, inInclusiveRange(50, 52));
+      expect(text.right, tester.getRect(find.byType(BalancedText)).right);
     });
 
     testWidgets('by sentence, sets each on lines of its own, read as one text', (tester) async {
@@ -274,6 +357,12 @@ void main() {
       expect(tester.getSemantics(find.text('THIS WEEK')), isSemantics(label: 'This week'));
       handle.dispose();
     });
+  });
+
+  test('dateHeldTogether holds a date together but after its comma', () {
+    expect(dateHeldTogether('Sunday, October 11'), 'Sunday, October\u00A011');
+    expect(dateHeldTogether('יום ראשון, 11 באוקטובר'), 'יום\u00A0ראשון, 11\u00A0באוקטובר');
+    expect(dateHeldTogether('October 11'), 'October\u00A011');
   });
 
   test('dashHeldToWord holds each spaced em dash to the word before it', () {

@@ -185,7 +185,7 @@ void main() {
     expect(find.descendant(of: find.byType(GoToVerseSheet), matching: find.text('חיפוש בתורה')), findsOneWidget);
     expect(tester.widget<TextField>(find.byType(TextField)).decoration?.hintText, 'בראשית כח, יב');
     await goTo(tester, 'בראשית כ״ח:י״ב');
-    expect(row('בראשית כח, יב'), findsOneWidget);
+    expect(row('בראשית כח,\u00A0יב'), findsOneWidget);
     expect(row('ויצא · ראשון'), findsOneWidget);
     await goTo(tester, 'בראשית כח, ל');
     expect(row('בפרק כח בספר בראשית 22 פסוקים.'), findsOneWidget);

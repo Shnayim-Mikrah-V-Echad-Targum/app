@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/today/today_clock.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart' show InfoCard;
 import 'package:shnayim_mikra/ui/widgets/lines.dart';
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../helpers.dart';
 
@@ -98,7 +107,7 @@ void main() {
       // The day and its month kept together on one line.
       expect(find.textContaining('October\u00A011,'), findsOneWidget);
       // It offers last week itself, so the check-in waits.
-      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsNothing);
+      expect(find.text('Shavua tov! Did you read Bereshit on Shabbat?'), findsNothing);
 
       await tester.tap(find.text('Catch up on Bereshit'));
       await tester.pump();
@@ -116,7 +125,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(c.read(settingsProvider).pauseEndSeen, _d(10, 11));
       expect(find.text('Welcome back! Your place is saved.'), findsNothing);
-      expect(find.text('Shavua tov! Did you read on Shabbat?'), findsOneWidget);
+      expect(find.text('Shavua tov! Did you read Bereshit on Shabbat?'), findsOneWidget);
 
       await openToday(tester, settings: c.read(settingsProvider), now: monday, progress: halfRead());
       expect(find.text('Welcome back! Your place is saved.'), findsNothing);
@@ -422,6 +431,266 @@ void main() {
       progress: const ProgressState(),
     );
     expect(find.textContaining('Tisha B'), findsNothing);
+  });
+
+  group("on Tisha B'Av", () {
+    // Thursday 12 August 2027, 9 Av 5787, in the week of Va'etchanan
+    // (5787:45), which began on Sunday. The reader joined the Sunday before,
+    // in the week of Devarim (5787:44).
+    final fast = DateTime(2027, 8, 12, 11);
+    final settings = _settings.copyWith(joinDate: LocalDate(2027, 8, 1));
+    final sunday = LocalDate(2027, 8, 8);
+
+    /// Devarim half read; of Va'etchanan, Rishon to Shlishi read on their
+    /// days, and Wednesday's Revi'i not yet: behind, on any other day.
+    ProgressState behind() => ProgressState(weeks: {
+          '5787:44': _onTheirDays('5787:44', LocalDate(2027, 8, 1), upTo: 3),
+          '5787:45': _onTheirDays('5787:45', sunday, upTo: 3),
+        });
+
+    const setAside =
+        'Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).';
+    final continues = RegExp(r"Va.etchanan continues tomorrow\.$");
+    final filled = find.byWidgetPredicate((w) => w is FilledButton);
+    final en = lookupAppLocalizations(const Locale('en'));
+
+    testWidgets('Today invites no reading: no button, nothing to catch up on or log, no word of last week',
+        (tester) async {
+      await openToday(tester, settings: settings, now: fast, progress: behind());
+      // The fast heads the title page, and today's card says why it has
+      // no reading.
+      expect(find.text('Tisha B’Av'), findsOneWidget);
+      expect(find.text(en.parshatHashavua), findsNothing);
+      final card = find.ancestor(of: find.textContaining(setAside), matching: find.byType(InfoCard));
+      expect(find.descendant(of: card, matching: find.text(en.todayReadingTitle)), findsOneWidget);
+      expect(find.textContaining(setAside), findsOneWidget);
+      expect(find.textContaining(continues), findsOneWidget);
+      // The week's progress stays, and the way to its aliyot.
+      expect(find.byType(ParshaRings), findsOneWidget);
+      expect(find.text('All aliyot'), findsOneWidget);
+      // But nothing that asks for reading.
+      expect(filled, findsNothing);
+      expect(find.text(en.todayCatchUpTitle), findsNothing);
+      expect(find.text(en.todayNothingPlanned), findsNothing);
+      expect(find.text(en.readFromBook), findsNothing);
+      expect(find.text(en.openWeekTitle('Devarim')), findsNothing);
+      // The week strip names the fast, on today's day.
+      await show(tester, find.text('9 Av'));
+      expect(find.text('9 Av'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^Thursday, today: .*\. Tisha B’Av$')), findsOneWidget);
+
+      // The next day, as on any other: the reading, and last week's notice.
+      await openToday(tester, settings: settings, now: DateTime(2027, 8, 13, 11), progress: behind());
+      expect(find.text('Tisha B’Av'), findsNothing);
+      expect(find.text(en.todayCatchUpTitle), findsOneWidget);
+      expect(find.text(en.readFromBook), findsOneWidget);
+      expect(filled, findsWidgets);
+      expect(find.text(en.openWeekTitle('Devarim')), findsOneWidget);
+    });
+
+    testWidgets('in Hebrew', (tester) async {
+      await openToday(tester, settings: settings.copyWith(language: AppLanguage.hebrew), now: fast, progress: behind());
+      expect(find.text('תשעה באב'), findsOneWidget);
+      expect(
+        find.text('היום אין לומדים תורה, מלבד הדברים הרעים (איוב, איכה ומקצת ירמיהו). פרשת ואתחנן נמשכת מחר.'),
+        findsOneWidget,
+      );
+      expect(filled, findsNothing);
+      await show(tester, find.text('ט׳ באב'));
+      expect(find.text('ט׳ באב'), findsOneWidget);
+    });
+
+    testWidgets('a finished parsha offers neither its haftarah nor its discussion, nor goes on tomorrow',
+        (tester) async {
+      await openToday(
+        tester,
+        settings: settings.copyWith(haftarahEnabled: true),
+        now: fast,
+        progress: ProgressState(weeks: {'5787:45': WeekProgress(weekId: '5787:45').withAll(LocalDate(2027, 8, 11))}),
+      );
+      expect(find.bySemanticsLabel(RegExp('parsha is complete')), findsOneWidget);
+      // The tonal haftarah button, and the discussion's, on the title page.
+      expect(filled, findsNothing);
+      expect(
+        find.descendant(of: find.byType(TitlePageFrame), matching: find.byIcon(Icons.forum_outlined)),
+        findsNothing,
+      );
+      expect(find.text(setAside), findsOneWidget);
+      expect(find.textContaining(continues), findsNothing);
+    });
+
+    // The day after the fast is always a reading day, but the reader's plan
+    // may leave it empty, or a pause run past it.
+    group('says when the parsha goes on', () {
+      // Sunday 3 August 2025, 9 Av 5785 put off from Shabbat, in the week
+      // of Va'etchanan (5785:45). The reader joined the Sunday before.
+      final sundayFast = DateTime(2025, 8, 3, 11);
+      final joined = _settings.copyWith(joinDate: LocalDate(2025, 7, 27));
+
+      testWidgets('on Friday, with the whole parsha on Erev Shabbat', (tester) async {
+        final erevShabbat = joined.copyWith(plan: ReadingPlanType.erevShabbat);
+        await openToday(tester, settings: erevShabbat, now: sundayFast, progress: const ProgressState());
+        expect(find.text('$setAside Va’etchanan continues on Friday.'), findsOneWidget);
+        expect(find.textContaining(continues), findsNothing);
+        // Where the card says nothing is planned the next day.
+        await openToday(tester, settings: erevShabbat, now: DateTime(2025, 8, 4, 11), progress: const ProgressState());
+        expect(find.text(en.todayNothingPlanned), findsOneWidget);
+      });
+
+      testWidgets('on the day a pause that runs past the fast ends', (tester) async {
+        await openToday(
+          tester,
+          settings: joined,
+          now: sundayFast,
+          progress: ProgressState(pauses: [Pause(LocalDate(2025, 8, 1), LocalDate(2025, 8, 4), id: 'travel')]),
+        );
+        expect(find.text('$setAside Va’etchanan continues on Tuesday.'), findsOneWidget);
+      });
+
+      testWidgets('not at all, where nothing is to read before Shabbat', (tester) async {
+        // Thursday's fast, paused through Friday.
+        await openToday(
+          tester,
+          settings: settings,
+          now: fast,
+          progress: behind().copyWith(pauses: [Pause(LocalDate(2027, 8, 12), LocalDate(2027, 8, 13), id: 'travel')]),
+        );
+        expect(find.text(setAside), findsOneWidget);
+      });
+
+      testWidgets('in Hebrew', (tester) async {
+        await openToday(
+          tester,
+          settings: joined.copyWith(plan: ReadingPlanType.erevShabbat, language: AppLanguage.hebrew),
+          now: sundayFast,
+          progress: const ProgressState(),
+        );
+        expect(
+          find.text('היום אין לומדים תורה, מלבד הדברים הרעים (איוב, איכה ומקצת ירמיהו). פרשת ואתחנן נמשכת ביום שישי.'),
+          findsOneWidget,
+        );
+      });
+    });
+
+    // A pause that ended on Wednesday, while the app was closed.
+    group('the welcome back after a pause', () {
+      ProgressState returned() =>
+          behind().copyWith(pauses: [Pause(LocalDate(2027, 8, 9), LocalDate(2027, 8, 11), id: 'travel')]);
+      final welcome = find.text('Welcome back! Your place is saved.');
+      final offers = find.textContaining(RegExp(r'^(Continue|Start) this week’s parsha$'));
+
+      testWidgets('waits for the day after the fast', (tester) async {
+        await openToday(tester, settings: settings, now: fast, progress: returned());
+        expect(welcome, findsNothing);
+        expect(offers, findsNothing);
+        expect(find.textContaining('Your pause ended'), findsNothing);
+
+        await openToday(tester, settings: settings, now: DateTime(2027, 8, 13, 11), progress: returned());
+        expect(welcome, findsOneWidget);
+        expect(findWords('Your pause ended on Wednesday, August 11, and nothing during it counts against you.'),
+            findsOneWidget);
+        expect(offers, findsOneWidget);
+      });
+
+      testWidgets('comes on the fast for a reader who plans a reading on it', (tester) async {
+        await openToday(tester, settings: settings.copyWith(tishaBavQuiet: false), now: fast, progress: returned());
+        expect(welcome, findsOneWidget);
+        expect(offers, findsOneWidget);
+      });
+    });
+
+    // With Jerusalem chosen for Shabbat times, on a device on its clock.
+    group('from sunset on its eve', () {
+      const jerusalem = City(
+        id: 281184,
+        nameEn: 'Jerusalem',
+        nameHe: 'ירושלים',
+        countryCode: 'IL',
+        latitude: 31.769,
+        longitude: 35.2163,
+        timeZone: 'Asia/Jerusalem',
+        candleMinutes: 40,
+      );
+      final overrides = [
+        timeZoneDatabaseProvider.overrideWith((ref) async {}),
+        // Tests run on UTC.
+        deviceClockProvider.overrideWithValue(
+          (LocalDate d) =>
+              tz.TZDateTime(Zmanim.timeZone(jerusalem.timeZone)!, d.year, d.month, d.day, 12).timeZoneOffset,
+        ),
+      ];
+
+      Future<void> open(WidgetTester tester, DateTime now, {AppSettings? reader}) async {
+        tester.view.physicalSize = const Size(412, 915);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await pumpApp(
+          tester,
+          settings: reader ?? settings.copyWith(city: jerusalem),
+          now: now,
+          progress: behind(),
+          overrides: overrides,
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('Today is quiet, as on the fast, in the city', (tester) async {
+        // Wednesday 11 August 2027, 8 Av, after Eicha: sunset was at 19:39.
+        await open(tester, DateTime(2027, 8, 11, 21, 30));
+        expect(find.text('Tisha B’Av'), findsOneWidget);
+        // Tomorrow is the fast itself.
+        expect(find.text('$setAside Va’etchanan continues on Friday.'), findsOneWidget);
+        expect(filled, findsNothing);
+        expect(find.text(en.todayCatchUpTitle), findsNothing);
+        expect(find.text(en.readFromBook), findsNothing);
+        expect(find.text(en.openWeekTitle('Devarim')), findsNothing);
+
+        // Before sunset, the eve as before.
+        await open(tester, DateTime(2027, 8, 11, 18));
+        expect(find.text('Tisha B’Av'), findsNothing);
+        expect(find.text(en.readFromBook), findsOneWidget);
+        expect(filled, findsWidgets);
+        expect(find.text('Erev Tisha B’Av: many finish their learning before midday.'), findsOneWidget);
+      });
+
+      testWidgets('not without a city, nor where reading is planned on the fast', (tester) async {
+        await open(tester, DateTime(2027, 8, 11, 21, 30), reader: settings);
+        expect(find.text('Tisha B’Av'), findsNothing);
+        expect(find.text(en.readFromBook), findsOneWidget);
+        final planned = settings.copyWith(city: jerusalem, tishaBavQuiet: false);
+        await open(tester, DateTime(2027, 8, 11, 21, 30), reader: planned);
+        expect(find.text('Tisha B’Av'), findsNothing);
+      });
+
+      testWidgets('turns at sunset while the app is open', (tester) async {
+        final c = await pumpApp(
+          tester,
+          settings: settings.copyWith(city: jerusalem),
+          now: DateTime(2027, 8, 11, 19),
+          progress: behind(),
+          overrides: overrides,
+        );
+        await tester.pumpAndSettle();
+        TodayController.autoRollover = true;
+        addTearDown(() => TodayController.autoRollover = false);
+        c.invalidate(fastBegunProvider);
+        expect(c.read(fastBegunProvider), isFalse);
+        TodayController.now = () => DateTime(2027, 8, 11, 19, 40);
+        await tester.pump(const Duration(minutes: 40));
+        expect(c.read(fastBegunProvider), isTrue);
+        await tester.pumpAndSettle();
+        expect(find.text('Tisha B’Av'), findsOneWidget);
+      });
+    });
+
+    testWidgets('a reader who plans a reading on the fast is asked for it, as on any day', (tester) async {
+      await openToday(tester, settings: settings.copyWith(tishaBavQuiet: false), now: fast, progress: behind());
+      expect(find.textContaining('Tisha B'), findsNothing);
+      expect(find.text(en.parshatHashavua), findsOneWidget);
+      expect(find.text(en.todayCatchUpTitle), findsOneWidget);
+      expect(filled, findsWidgets);
+      expect(find.text('9 Av'), findsNothing);
+    });
   });
 
   setUp(TodayScreen.forgetCompletions);

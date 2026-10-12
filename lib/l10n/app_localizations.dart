@@ -807,11 +807,11 @@ abstract class AppLocalizations {
   /// **'Read the haftarah'**
   String get readTheHaftarah;
 
-  /// No description provided for @checkInTitle.
+  /// The after-Shabbat check-in on Today, and the title of its sheet: asks whether the parsha of the Shabbat just past was read on it, from a printed Chumash. name is that parsha, or the two read together.
   ///
   /// In en, this message translates to:
-  /// **'Shavua tov! Did you read on Shabbat?'**
-  String get checkInTitle;
+  /// **'Shavua tov! Did you read {name} on Shabbat?'**
+  String checkInTitle(String name);
 
   /// No description provided for @checkInBody.
   ///
@@ -819,11 +819,11 @@ abstract class AppLocalizations {
   /// **'Log what you read from a printed Chumash — it counts just the same.'**
   String get checkInBody;
 
-  /// No description provided for @checkInFinished.
+  /// The after-Shabbat check-in's button that logs the whole of the Shabbat's parsha as read on it. name is that parsha, as in checkInTitle.
   ///
   /// In en, this message translates to:
-  /// **'I finished it on Shabbat'**
-  String get checkInFinished;
+  /// **'I finished {name} on Shabbat'**
+  String checkInFinished(String name);
 
   /// No description provided for @checkInPick.
   ///
@@ -1035,13 +1035,13 @@ abstract class AppLocalizations {
   /// **'Today'**
   String get dayToday;
 
-  /// Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide, and a longer word is shrunk to fit one line.
+  /// Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide; where the words don't fit on one line at their size, they wrap, never shrink.
   ///
   /// In en, this message translates to:
   /// **'Yom Tov'**
   String get yomTovShort;
 
-  /// No description provided for @dayChipLabel.
+  /// Read by screen readers, and shown as the tooltip, for a day of the week strip: the weekday's name (Names.weekday) and how the day stands (dayKept, dayOpen and so on).
   ///
   /// In en, this message translates to:
   /// **'{day}: {status}'**
@@ -1431,7 +1431,7 @@ abstract class AppLocalizations {
   /// **'Next verse'**
   String get listenNextVerse;
 
-  /// The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is a percentage, as Settings shows it: "45%".
+  /// The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is as the player and Settings show it, relative to the default: speechRateNormal ("Normal") or speechRateTimes ("1.2×").
   ///
   /// In en, this message translates to:
   /// **'Speech rate: {rate}'**
@@ -5420,6 +5420,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The message needs at least 2 characters.'**
   String get errBodyTooShort;
+
+  /// On Today on Tisha B'Av, while no reading is planned on it: the eyebrow of the title page, in place of Parshat HaShavua, and of the home-screen widget.
+  ///
+  /// In en, this message translates to:
+  /// **'Tisha B’Av'**
+  String get tishaBavTitle;
+
+  /// Today's card on Tisha B'Av, while no reading is planned on it, in place of today's reading: on the fast, Torah is not studied, but for the sad passages (Shulchan Aruch OC 554:1–2). Followed by todayTishaBavTomorrow while the week's parsha is unfinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).'**
+  String get todayTishaBav;
+
+  /// After todayTishaBav, while the week's parsha is unfinished and the reader's plan has reading for the next day (the day after Tisha B'Av is always a reading day, but a plan may leave it empty, or a pause may run past it; see todayTishaBavOn). portion is the week's parsha.
+  ///
+  /// In en, this message translates to:
+  /// **'{portion} continues tomorrow.'**
+  String todayTishaBavTomorrow(String portion);
+
+  /// After todayTishaBav, in place of todayTishaBavTomorrow, when the reader's plan has nothing to read the next day (the whole parsha on Erev Shabbat, say) or a pause runs past it: the next day of the week with reading. portion is the week's parsha; weekday is that day's name, as 'Friday'.
+  ///
+  /// In en, this message translates to:
+  /// **'{portion} continues on {weekday}.'**
+  String todayTishaBavOn(String portion, String weekday);
+
+  /// Under Tisha B'Av in the week strip, while no reading is planned on it (on the 10th of Av too, when the fast is postponed from Shabbat): the fast, by its date. Keep it short: the day is about 48 dp wide.
+  ///
+  /// In en, this message translates to:
+  /// **'9 Av'**
+  String get tishaBavShort;
+
+  /// As dayChipLabel, for today's day in the week strip, so a screen reader can find it: the weekday's name (Names.weekday) and how the day stands (dayKept, dayOpen and so on).
+  ///
+  /// In en, this message translates to:
+  /// **'{day}, today: {status}'**
+  String dayChipLabelToday(String day, String status);
+
+  /// The default speech rate, as the player that shows while Listen reads, and Settings → Accessibility → Speech rate, show it. Agrees with "Speech rate" (speechRate).
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get speechRateNormal;
+
+  /// Any other speech rate, as a multiple of the default (Normal): "0.6×", "1.2×", "2.2×". Shown in the Listen player's rate menu and on the Speech rate slider in Settings → Accessibility.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate}×'**
+  String speechRateTimes(String rate);
+
+  /// Under the switch tishaBavQuiet in Reading & customs: why no reading is planned on Tisha B'Av.
+  ///
+  /// In en, this message translates to:
+  /// **'Torah study is set aside on the fast, apart from the passages of mourning (Shulchan Aruch OC 554:1)'**
+  String get tishaBavQuietDesc;
+
+  /// Heading in Accessibility over the speech rate slider, which sets how fast Listen reads aloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech'**
+  String get a11yGroupSpeech;
+
+  /// On the home-screen widget on Tisha B'Av, while no reading is planned on it, in place of the day's reading (as Today's card says, todayTishaBav). Keep it short.
+  ///
+  /// In en, this message translates to:
+  /// **'Torah study is set aside today'**
+  String get widgetTishaBav;
 }
 
 class _AppLocalizationsDelegate

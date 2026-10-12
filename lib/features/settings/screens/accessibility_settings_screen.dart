@@ -13,6 +13,7 @@ import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../../about/about_screen.dart';
 import '../../community/data/backend.dart';
+import '../../reader/listen_along.dart';
 import '../../reader/reader_screen.dart';
 import '../app_settings.dart';
 import '../widgets/settings_widgets.dart';
@@ -171,7 +172,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           ],
           onChanged: (v) => update((s) => s.copyWith(divineName: v)),
         ),
-        const Gap(Space.md),
+        GroupHeader(l.a11yGroupSpeech),
         PaperGroup(
           children: [
             Padding(
@@ -182,7 +183,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                 min: 0.1,
                 max: 1.0,
                 step: 0.05,
-                format: (v) => '${(v * 100).round()}%',
+                format: (v) => speechRateLabel(l, v),
                 onChanged: (v) => update((s) => s.copyWith(speechRate: v)),
               ),
             ),
