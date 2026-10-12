@@ -7,6 +7,7 @@ import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fonts_change_scope.dart';
+import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
 
 /// One option in a [ChoiceGroup].
@@ -264,6 +265,7 @@ Future<void> showChoiceSheet<T>({
                             sampleStyle: c.sampleStyle,
                           ),
                           toggleable: true,
+                          balanced: true,
                         ),
                     ],
                   ),
@@ -411,11 +413,22 @@ class _Segments<T> extends StatelessWidget {
 /// As a [card], it is a sheet of its own (see [ChoiceGroup.prominent]),
 /// marked as [selected] by its wash and border as well as its radio.
 class _RadioRow<T> extends StatefulWidget {
-  const _RadioRow({super.key, required this.choice, this.card = false, this.selected = false, this.toggleable = false});
+  const _RadioRow({
+    super.key,
+    required this.choice,
+    this.card = false,
+    this.selected = false,
+    this.toggleable = false,
+    this.balanced = false,
+  });
 
   final Choice<T> choice;
   final bool card;
   final bool selected;
+
+  /// Whether the title's lines are balanced, so that one wrapped by large
+  /// text leaves no word alone on its last ("15 minutes / before sunset").
+  final bool balanced;
 
   /// Whether activating the row already chosen tells the group, with null,
   /// rather than doing nothing (see [RadioListTile.toggleable]).
@@ -471,6 +484,9 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
         value: choice.value,
         toggleable: widget.toggleable,
         title: switch (choice.sampleStyle) {
+          // In the list tile's own title style, which it measures in.
+          null when widget.balanced && choice.semanticsLabel == null =>
+            BalancedText(choice.title, style: theme.textTheme.bodyLarge, textAlign: TextAlign.start),
           null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
           final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
         },

@@ -9,6 +9,9 @@ void main() {
   // The test font's letters are squares as wide as the type is high: each
   // letter here is 10 wide.
   const style = TextStyle(fontSize: 10, height: 1);
+  // The same at exactly 10 a letter, setting its own spacing as an app's
+  // text style does, rather than taking the theme's around it.
+  const exact = TextStyle(fontSize: 10, height: 1, letterSpacing: 0);
 
   Future<List<String>> lines(WidgetTester tester, List<String> parts, {required double width}) async {
     await pumpThemed(
@@ -44,12 +47,22 @@ void main() {
   });
 
   group('BalancedText', () {
-    Future<void> pump(WidgetTester tester, String text, {required double width, bool bySentence = false}) =>
+    Future<void> pump(
+      WidgetTester tester,
+      String text, {
+      required double width,
+      bool bySentence = false,
+      bool holdDashes = false,
+      TextStyle textStyle = style,
+    }) =>
         pumpThemed(
           tester,
           Align(
             alignment: AlignmentDirectional.topStart,
-            child: SizedBox(width: width, child: BalancedText(text, style: style, bySentence: bySentence)),
+            child: SizedBox(
+              width: width,
+              child: BalancedText(text, style: textStyle, bySentence: bySentence, holdDashes: holdDashes),
+            ),
           ),
         );
 
@@ -81,6 +94,24 @@ void main() {
       expect(find.byType(WholeWords), findsNothing);
     });
 
+    // "After Shabbat / — still counts" at 200%, in the Torah map's legend.
+    testWidgets('with holdDashes, starts no line with a dash, holding it to the word before', (tester) async {
+      // Balanced as it stands, the narrowest two lines are "aa bbbb / — cc dd".
+      await pump(tester, 'aa bbbb — cc dd', width: 100, textStyle: exact);
+      expect(tester.getSize(find.text('aa bbbb — cc dd')).width, inInclusiveRange(70, 72));
+      await pump(tester, 'aa bbbb — cc dd', width: 100, holdDashes: true, textStyle: exact);
+      final held = find.text('aa bbbb\u00A0— cc dd');
+      expect(tester.getSize(held).height, 20, reason: 'still two lines');
+      expect(tester.getSize(held).width, inInclusiveRange(90, 92), reason: '"aa bbbb —" over "cc dd"');
+    });
+
+    testWidgets('with holdDashes, leaves a dash free where the held pair is too wide for the line', (tester) async {
+      // "bbbb —" held is 60 wide; each word alone fits the 50.
+      await pump(tester, 'aa bbbb — cc dd', width: 50, holdDashes: true, textStyle: exact);
+      expect(find.text('aa bbbb — cc dd'), findsOneWidget);
+      expect(find.byType(WholeWords), findsNothing, reason: 'set at its size, not smaller');
+    });
+
     testWidgets('by sentence, sets each on lines of its own, read as one text', (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester, 'Aa bb. Cc dd ee.', width: 100, bySentence: true);
@@ -93,9 +124,12 @@ void main() {
 
   group('WholeWords', () {
     Future<void> pump(WidgetTester tester, Widget child, {required double width}) => pumpThemed(
-          tester,
-          Align(alignment: AlignmentDirectional.topStart, child: SizedBox(width: width, child: child)),
-        );
+      tester,
+      Align(
+        alignment: AlignmentDirectional.topStart,
+        child: SizedBox(width: width, child: child),
+      ),
+    );
 
     testWidgets('sets a text whose words fit as it is', (tester) async {
       await pump(tester, const WholeWords('aa bb', style: style), width: 100);
@@ -153,14 +187,16 @@ void main() {
     // English one.
     testWidgets('rich, measures each word in its own span\'s style', (tester) async {
       Widget rich(String small, String large) => WholeWords.rich(
-            TextSpan(children: [
-              TextSpan(text: small),
-              const WidgetSpan(child: SizedBox(width: 8)),
-              TextSpan(text: large, style: const TextStyle(fontSize: 20)),
-            ]),
-            style: style,
-            textAlign: TextAlign.start,
-          );
+        TextSpan(
+          children: [
+            TextSpan(text: small),
+            const WidgetSpan(child: SizedBox(width: 8)),
+            TextSpan(text: large, style: const TextStyle(fontSize: 20)),
+          ],
+        ),
+        style: style,
+        textAlign: TextAlign.start,
+      );
       // "bbbb" is 80 wide at 20, though four letters at 10 would fit.
       await pump(tester, rich('aa', 'bbbb'), width: 50);
       final box = tester.getRect(find.byType(WholeWords));

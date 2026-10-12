@@ -16,6 +16,7 @@ import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/city_directory.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/city_picker_screen.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
@@ -179,9 +180,10 @@ void main() {
       await open(tester, '/settings/reading', city: jerusalem, candleMinutes: 25);
       expect(find.text('25\u00a0minutes before sunset'), findsOneWidget);
       await tapText(tester, 'Candle-lighting');
+      // Each title balanced over its lines, should large text wrap it.
       final options = [
         for (final tile in tester.widgetList<RadioListTile<int>>(find.byType(RadioListTile<int>)))
-          (tile.title! as Text).data,
+          (tile.title! as BalancedText).text,
       ];
       expect(options, [
         'City default (40\u00a0min)',

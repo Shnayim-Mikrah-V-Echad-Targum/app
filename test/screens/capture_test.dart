@@ -2059,6 +2059,8 @@ const _bigTextScreens = {
   'kit_progress',
   'kit_week',
   'progress_map',
+  // The Torah map's legend, each state's name balanced over its lines.
+  'legend_map',
   'about',
   'guide',
   'sources',

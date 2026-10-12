@@ -363,14 +363,25 @@ class _RenderFitWord extends RenderProxyBox {
 /// set just small enough to fit, as [WholeWords] sets it.
 ///
 /// With [bySentence], text too long for one line sets each sentence on a
-/// line or more of its own.
+/// line or more of its own. With [holdDashes], a spaced em dash is held to
+/// the word before it ([dashHeldToWord]), so that no line starts with one,
+/// wherever the two fit on a line together; where they don't (very large
+/// text on a phone), the words are set at their size rather than smaller.
 class BalancedText extends StatelessWidget {
-  const BalancedText(this.text, {super.key, required this.style, this.textAlign = TextAlign.center, this.bySentence = false});
+  const BalancedText(
+    this.text, {
+    super.key,
+    required this.style,
+    this.textAlign = TextAlign.center,
+    this.bySentence = false,
+    this.holdDashes = false,
+  });
 
   final String text;
   final TextStyle? style;
   final TextAlign textAlign;
   final bool bySentence;
+  final bool holdDashes;
 
   static final _sentenceBreak = RegExp(r'(?<=[.?!])\s+(?=\S)');
 
@@ -421,6 +432,15 @@ class BalancedText extends StatelessWidget {
         );
       }
 
+      var text = this.text;
+      if (holdDashes) {
+        final held = dashHeldToWord(text);
+        if (held != text) {
+          final p = painter(held);
+          if (p.minIntrinsicWidth <= constraints.maxWidth) text = held;
+          p.dispose();
+        }
+      }
       final sentences = bySentence ? text.split(_sentenceBreak) : [text];
       if (sentences.length > 1) {
         final whole = painter(text);

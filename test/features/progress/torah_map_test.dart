@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../../helpers.dart';
@@ -289,7 +290,8 @@ void main() {
       'Upcoming',
       'Not counted',
     ]) {
-      expect(find.descendant(of: sheet, matching: find.text(label)), findsOneWidget, reason: label);
+      // As it is set: a dash held to the word before it by a no-break space.
+      expect(find.descendant(of: sheet, matching: find.text(dashHeldToWord(label))), findsOneWidget, reason: label);
     }
     // Each label beside a swatch of its tile.
     expect(find.descendant(of: sheet, matching: find.byType(Ink)), findsNWidgets(9));
