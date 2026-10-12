@@ -64,7 +64,11 @@ class TodayScreen extends ConsumerWidget {
           maxWidth: wide ? ContentWidth.todayWide : ContentWidth.list,
           padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.s40),
           children: rest != null
-              ? [_TodayHeader(today: rest), const Gap(Space.lg), _RestHero(date: rest)]
+              ? [
+                  _TodayHeader(today: rest, civil: ref.watch(civilDateProvider)),
+                  const Gap(Space.lg),
+                  _RestHero(date: rest),
+                ]
               : _readingDay(context, ref, wide: wide),
         ),
       ),
@@ -89,7 +93,21 @@ class TodayScreen extends ConsumerWidget {
     final pauseEnd = ref.watch(
       progressProvider.select((p) => pauseEndToWelcome(p, today, oneDayYomTov: settings.oneDayYomTov)),
     );
-    final welcome = pauseEnd != null && pauseEnd != settings.pauseEndSeen ? pauseEnd : null;
+    // Tisha B'Av, with no reading planned on it, or its eve from sunset in
+    // the reader's city: nothing on the page invites any, so the welcome
+    // back, which offers this week's parsha and last week's, waits for the
+    // day after.
+    final quietFast = ref.watch(plannerProvider).isQuietTishaBav(today) || ref.watch(fastBegunProvider);
+    final welcome = pauseEnd != null && pauseEnd != settings.pauseEndSeen && !quietFast ? pauseEnd : null;
+    // Last week's notice, unless the welcome back offers that week itself.
+    // On a quiet fast it waits too, and so it does while the check-in, which
+    // is never asked on the fast, is still to come the day after it.
+    final shownPrevious = previous != null &&
+            welcome == null &&
+            !quietFast &&
+            !awaitsCheckIn(previous, today: today, settings: settings)
+        ? previous
+        : null;
 
     final reading = [
       if (paused) ...[
@@ -116,14 +134,13 @@ class TodayScreen extends ConsumerWidget {
         _DivergenceBanner(divergence: divergence, settings: settings),
         const Gap(Rhythm.cardGap),
       ],
-      // The welcome back offers last week's parsha itself.
-      if (previous != null && welcome == null) ...[
-        PreviousWeekNotice(previous: previous, current: ctx, today: today),
+      if (shownPrevious != null) ...[
+        PreviousWeekNotice(previous: shownPrevious, current: ctx, today: today),
         const Gap(Rhythm.cardGap),
       ],
-      _Hero(ctx: ctx, settings: settings),
+      _Hero(ctx: ctx, settings: settings, quietFast: quietFast),
       const Gap(Rhythm.cardGap),
-      _TodayCard(ctx: ctx, settings: settings),
+      _TodayCard(ctx: ctx, settings: settings, quietFast: quietFast),
     ];
     final week = [
       InfoCard(
@@ -169,7 +186,9 @@ class TodayScreen extends ConsumerWidget {
       ),
     ];
     return [
-      _TodayHeader(today: today),
+      // The reading day in both calendars: on Motzaei Shabbat after
+      // nightfall it is already Sunday, as the rest of the page counts it.
+      _TodayHeader(today: today, civil: today),
       const Gap(Space.lg),
       _Columns(main: reading, side: week, wide: wide),
     ];
@@ -227,19 +246,27 @@ class _Columns extends StatelessWidget {
 /// The running head and the masthead: today's date in both calendars, the
 /// app's name, and the guide a tap away.
 class _TodayHeader extends StatelessWidget {
-  const _TodayHeader({required this.today});
+  const _TodayHeader({required this.today, required this.civil});
 
+  /// The reading day, or the day of rest: the Hebrew date and its weekday.
   final LocalDate today;
+
+  /// The Gregorian date. On a day of rest it is the device's date
+  /// ([civilDateProvider]), which differs from [today] only on its eve
+  /// from candle-lighting, already Shabbat or Yom Tov by the Hebrew
+  /// reckoning; on a reading day it is [today] itself.
+  final LocalDate civil;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final names = Names(context);
     final theme = Theme.of(context);
-    // Each UI's own calendar first.
+    // Each UI's own calendar first, with its weekday: on Friday night,
+    // "Friday, October 9 · 29 Tishrei 5787", and in Hebrew Shabbat's.
     final runningHead = context.isHebrewUi
-        ? ['${names.weekday(today)}, ${names.hebrewDate(today)}', names.dateMonthDay(today)]
-        : [names.dateLong(today), names.hebrewDate(today)];
+        ? ['${names.weekday(today)}, ${names.hebrewDate(today)}', names.dateMonthDay(civil)]
+        : [names.dateLong(civil), names.hebrewDate(today)];
     return Row(
       children: [
         Expanded(
@@ -315,11 +342,19 @@ class _DivergenceBanner extends ConsumerWidget {
 /// gold rule draws itself around the page once (§8), and is still after;
 /// a restarted app shows it still, as the rings show progress without a
 /// sweep.
+///
+/// On a quiet Tisha B'Av ([quietFast]) the page is headed by the fast, and
+/// has no button: nothing on it invites reading.
 class _Hero extends ConsumerStatefulWidget {
-  const _Hero({required this.ctx, required this.settings});
+  const _Hero({required this.ctx, required this.settings, required this.quietFast});
 
   final WeekContext ctx;
   final AppSettings settings;
+
+  /// Tisha B'Av, with no reading planned on it
+  /// ([ReadingPlanner.isQuietTishaBav]), or its eve from sunset in the
+  /// reader's city ([fastBegunProvider]).
+  final bool quietFast;
 
   @override
   ConsumerState<_Hero> createState() => _HeroState();
@@ -417,11 +452,14 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     final friday = today.weekday == _friday;
     final complete = ctx.progress.isComplete;
 
+    final quietFast = widget.quietFast;
     final eyebrow = vezot
         ? l.simchatTorahEyebrow
-        : friday && ref.watch(pastMiddayProvider)
-            ? l.erevShabbat
-            : l.parshatHashavua;
+        : quietFast
+            ? l.tishaBavTitle
+            : friday && ref.watch(pastMiddayProvider)
+                ? l.erevShabbat
+                : l.parshatHashavua;
     final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
     final range = portion.range;
     final daysLeft = week.occasion.differenceInDays(today);
@@ -500,15 +538,18 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
           ..._complete(context)
         else ...[
           _HeroRings(ctx: ctx, thirdLabel: thirdLabel),
-          const Gap(Space.md),
-          FilledButton.icon(
-            // The hero's 52, and room around a label that large text wraps.
-            style: AppButtons.roomy(context, (24, 12, 6))
-                .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
-            icon: const Icon(Icons.menu_book),
-            label: Text(_continueLabel(context), textAlign: TextAlign.center),
-            onPressed: () => context.push('/read/${ctx.id}/${ctx.nextAliyah}'),
-          ),
+          // On the fast, the rings and the way to the aliyot alone.
+          if (!quietFast) ...[
+            const Gap(Space.md),
+            FilledButton.icon(
+              // The hero's 52, and room around a label that large text wraps.
+              style: AppButtons.roomy(context, (24, 12, 6))
+                  .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
+              icon: const Icon(Icons.menu_book),
+              label: Text(_continueLabel(context), textAlign: TextAlign.center),
+              onPressed: () => context.push('/read/${ctx.id}/${ctx.nextAliyah}'),
+            ),
+          ],
         ],
       ],
     );
@@ -521,7 +562,8 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
   }
 
   /// The complete week: a word that it is, a gentle line, and what is left
-  /// to do with it, the haftarah and the discussion.
+  /// to do with it, the haftarah and the discussion (on a quiet fast, which
+  /// invites no study, nothing).
   List<Widget> _complete(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
@@ -534,31 +576,33 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
         ctx.week.portion.isVezotHaberakhah ? l.weekCompleteNoteSimchatTorah : l.weekCompleteNote,
         style: SeferType.of(context).marginalia,
       ),
-      const Gap(Space.lg),
-      Wrap(
-        alignment: WrapAlignment.center,
-        spacing: Space.sm,
-        runSpacing: Space.sm,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          if (haftarah)
-            FilledButton.tonal(
-              style: AppButtons.tonal(context).merge(AppButtons.roomy(context, (24, 12, 6))),
-              onPressed: () => context.push('/today/haftarah/${ctx.id}'),
-              child: Text(l.readTheHaftarah, textAlign: TextAlign.center),
+      if (!widget.quietFast) ...[
+        const Gap(Space.lg),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: Space.sm,
+          runSpacing: Space.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (haftarah)
+              FilledButton.tonal(
+                style: AppButtons.tonal(context).merge(AppButtons.roomy(context, (24, 12, 6))),
+                onPressed: () => context.push('/today/haftarah/${ctx.id}'),
+                child: Text(l.readTheHaftarah, textAlign: TextAlign.center),
+              ),
+            WeeklyThreadOpener(
+              portion: ctx.portion,
+              hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
+              builder: (context, progress, open) => TextButton.icon(
+                style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                icon: progress ?? const Icon(Icons.forum_outlined),
+                label: Text(l.discussTheParsha, textAlign: TextAlign.center),
+                onPressed: open,
+              ),
             ),
-          WeeklyThreadOpener(
-            portion: ctx.portion,
-            hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
-            builder: (context, progress, open) => TextButton.icon(
-              style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
-              icon: progress ?? const Icon(Icons.forum_outlined),
-              label: Text(l.discussTheParsha, textAlign: TextAlign.center),
-              onPressed: open,
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     ];
   }
 
@@ -708,12 +752,18 @@ LocalDate _lastDayOfRest(LocalDate day, {required bool oneDayYomTov}) {
 /// Today's reading (§9 Today, 4), or while aliyot planned for earlier days
 /// are still to read, those aliyot and today's together, with an honest
 /// estimate and a calm word about the day. Reading from a printed Chumash
-/// can always be logged here.
+/// can be logged here, on any day but a quiet Tisha B'Av, when the card
+/// only says that Torah study is set aside.
 class _TodayCard extends ConsumerWidget {
-  const _TodayCard({required this.ctx, required this.settings});
+  const _TodayCard({required this.ctx, required this.settings, required this.quietFast});
 
   final WeekContext ctx;
   final AppSettings settings;
+
+  /// Tisha B'Av, with no reading planned on it
+  /// ([ReadingPlanner.isQuietTishaBav]), or its eve from sunset in the
+  /// reader's city ([fastBegunProvider]).
+  final bool quietFast;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -765,7 +815,40 @@ class _TodayCard extends ConsumerWidget {
         );
 
     final List<Widget> children;
-    if (behind > 0 && !paused && due.isNotEmpty) {
+    if (quietFast) {
+      // Nothing to read, catch up on or log: only the passages of mourning
+      // are studied. The title page above is headed by the fast. The day
+      // after it is always a reading day, but the reader's plan may have
+      // nothing on it (the whole parsha on Erev Shabbat), or a pause may
+      // run past it: the card names the day the parsha goes on, if any.
+      final name = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
+      final pauses = ref.watch(progressProvider.select((p) => p.pauses));
+      final planner = ref.watch(plannerProvider);
+      final tomorrow = ctx.today.addDays(1);
+      LocalDate? resumes;
+      if (!ctx.progress.isComplete) {
+        // From sunset on its eve, tomorrow is the fast itself.
+        for (var d = tomorrow; d < ctx.week.occasion; d = d.addDays(1)) {
+          if (!planner.isQuietTishaBav(d) && !pauses.any((p) => p.contains(d)) && ctx.readsOn(d)) {
+            resumes = d;
+            break;
+          }
+        }
+      }
+      children = [
+        _CardHeader(l.todayReadingTitle),
+        Text(
+          [
+            l.todayTishaBav,
+            if (resumes == tomorrow)
+              l.todayTishaBavTomorrow(name)
+            else if (resumes != null)
+              l.todayTishaBavOn(name, names.weekday(resumes)),
+          ].join(' '),
+          style: muted,
+        ),
+      ];
+    } else if (behind > 0 && !paused && due.isNotEmpty) {
       // Everything due, from the first aliyah not read, where the hero's
       // button starts too, so no other button leads to one. The line counts
       // what the card names.
@@ -781,10 +864,18 @@ class _TodayCard extends ConsumerWidget {
       };
       children = [
         _CardHeader(l.todayCatchUpTitle),
-        Text(names.aliyotSpan(due), style: theme.textTheme.headlineSmall),
-        Text(
-          [l.aliyotCount(due.length), l.versesCount(versesOf(due)), l.minutesEstimate(ctx.remainingMinutes(due))]
-              .join(' · '),
+        // Whole words: a name, and a run's dash with the name before it
+        // ("Shlishi –"), set smaller where too wide for the line rather
+        // than broken, so that no line starts with the dash.
+        WholeWords(
+          names.aliyotSpan(due),
+          style: theme.textTheme.headlineSmall,
+          textAlign: TextAlign.start,
+          breakAtHyphens: true,
+        ),
+        // Each fact whole, on a line of its own where they don't fit on one.
+        DotLine(
+          [l.aliyotCount(due.length), l.versesCount(versesOf(due)), l.minutesEstimate(ctx.remainingMinutes(due))],
           style: muted,
         ),
         ...marginalia([line, ...notes]),
@@ -798,8 +889,8 @@ class _TodayCard extends ConsumerWidget {
       final unread = day.aliyot.where((a) => !ctx.progress.isAliyahDone(a)).toList();
       children = [
         _CardHeader(l.todayReadingTitle),
-        Text(names.aliyot(day.aliyot), style: theme.textTheme.headlineSmall),
-        Text(
+        WholeWords(names.aliyot(day.aliyot), style: theme.textTheme.headlineSmall, textAlign: TextAlign.start),
+        DotLine(
           [
             // What is left to read, and once it is read, what was.
             if (unread.isEmpty)
@@ -808,7 +899,7 @@ class _TodayCard extends ConsumerWidget {
               l.versesCount(versesOf(unread)),
               l.minutesEstimate(ctx.remainingMinutes(unread)),
             ],
-          ].join(' · '),
+          ],
           style: muted,
         ),
         ...marginalia(notes),
@@ -895,7 +986,7 @@ class _BookSheetState extends State<_BookSheet> {
                   value: _checked.contains(a),
                   onChanged: (on) => setState(() => on! ? _checked.add(a) : _checked.remove(a)),
                   title: Text(names.aliyah(a)),
-                  subtitle: Text(aliyahReference(context, widget.ctx, a)),
+                  subtitle: aliyahReference(context, widget.ctx, a),
                 ),
               ),
             Padding(

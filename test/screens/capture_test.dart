@@ -4,7 +4,7 @@
 //   CAPTURE=1 flutter test test/screens/capture_test.dart
 //   CAPTURE=1 SCREENS=today,reader flutter test test/screens/capture_test.dart
 //   CAPTURE=1 SCREENS=today MODES=sepia,hcl flutter test test/screens/capture_test.dart
-//   CAPTURE=1 WORDS=1 MODES=big,bighe,huge,hugehe,hugetall,hugetallhe flutter test test/screens/capture_test.dart
+//   CAPTURE=1 WORDS=1 MODES=big,bighe,huge,hugehe,hugetall,hugetallhe,hugewide flutter test test/screens/capture_test.dart
 //
 // WORDS=1 also lists every word broken across lines, in
 // build/screens/broken_words.txt (remove it before a new run).
@@ -102,10 +102,10 @@ ProgressState _yearRead() {
 }
 
 /// Week [id], whose first reading day is [first], read an aliyah a day,
-/// with the last two on the fifth day.
-WeekProgress _readOnTheirDays(String id, LocalDate first) {
+/// with the last two on the fifth day, up to aliyah [upTo] (exclusive).
+WeekProgress _readOnTheirDays(String id, LocalDate first, {int upTo = 7}) {
   var w = WeekProgress(weekId: id);
-  for (var a = 0; a < 7; a++) {
+  for (var a = 0; a < upTo; a++) {
     w = w.withAliyah(a, first.addDays(a < 6 ? a : 4));
   }
   return w;
@@ -171,6 +171,9 @@ const _screens = {
   // sheet.
   'today_checkin': '/today',
   'today_checkin_sheet': '/today',
+  // Motzaei Shabbat Bereshit, after nightfall in Jerusalem: the check-in,
+  // under a running head with Sunday's date, the reading day's.
+  'today_motzaei_shabbat': '/today',
   // Wednesday of Noach: Bereshit can still be restored by doubling up.
   'today_restore': '/today',
   // The Monday after a pause that ended on Sunday: welcomed back.
@@ -179,6 +182,10 @@ const _screens = {
   'today_grace': '/today',
   // Erev Tisha B'Av 5787, the day the reader joined.
   'today_erev_tisha_bav': '/today',
+  // Tisha B'Av 5787, behind on Va'etchanan and with Devarim still open:
+  // the fast heads the page, which invites no reading; and its week strip.
+  'today_tisha_bav': '/today',
+  'today_tisha_bav_week': '/today',
   'parsha': '/parsha',
   // Scrolled past its head: the app bar names the parsha.
   'parsha_scrolled': '/parsha',
@@ -196,6 +203,8 @@ const _screens = {
   'week_tab': '/today/week/5787:1',
   'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
+  // Next week's, not yet open: the notice at the top of the text.
+  'reader_preview': '/read/5787:2/0',
   // Revi'i open after Rishon and Sheni, with Shlishi under way.
   'reader_ribbon': '/read/5787:1/3',
   // Chamishi of Acharei Mot-Kedoshim (5786), the longest title the reader's
@@ -413,6 +422,8 @@ const _screens = {
   // The device's Reduce motion and Bold text on: the switches show them.
   's_a11y_device': '/settings/accessibility',
   's_display_device': '/settings/display',
+  // Scrolled to Speech, the rate set faster than normal.
+  's_a11y_speech': '/settings/accessibility',
   's_reminders': '/settings/reminders',
   // As on a phone, where reminders can be scheduled, with all three on.
   's_reminders_on': '/settings/reminders',
@@ -566,6 +577,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_display_small': (s) => s.copyWith(readingScale: 0.6, focusMode: true, theme: AppThemeMode.sepia),
   's_display_rashi': (s) => s.copyWith(showRashi: true),
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
+  's_a11y_speech': (s) => s.copyWith(speechRate: 0.65),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   's_reminders_on': (s) => s.copyWith(
         dailyReminder: true,
@@ -635,7 +647,10 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_yom_kippur': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
   'today_friday_night': (s) => s.copyWith(city: _jerusalem),
+  'today_motzaei_shabbat': (s) => s.copyWith(city: _jerusalem),
   'today_erev_tisha_bav': (s) => s.copyWith(joinDate: LocalDate(2027, 8, 11)),
+  for (final screen in ['today_tisha_bav', 'today_tisha_bav_week'])
+    screen: (s) => s.copyWith(joinDate: LocalDate(2027, 8, 1)),
   'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   's_reading_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
   'haftarah_chabad_regular': (s) => s.withNusach(HaftarahNusach.chabad),
@@ -658,7 +673,7 @@ const _jerusalem = City(
 final _screenOverrides = <String, List<Override>>{
   for (final screen in ['city', 'city_search', 'city_many', 'city_none'])
     screen: [deviceTimeZoneProvider.overrideWith((ref) async => 'Asia/Jerusalem')],
-  for (final screen in ['today_candles', 'today_friday_night'])
+  for (final screen in ['today_candles', 'today_friday_night', 'today_motzaei_shabbat'])
     screen: [
       timeZoneDatabaseProvider.overrideWith((ref) async {}),
       // A device in Jerusalem, on its clock: tests run on UTC.
@@ -684,7 +699,7 @@ const _listening = {
 /// that Listen stays at the verse it has reached.
 class _HeldTts extends RecordingTts {
   @override
-  Future<bool> speak(String text, {required String language, double rate = 0.45}) {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) {
     spoken.add((text, language));
     return Completer<bool>().future;
   }
@@ -735,10 +750,14 @@ final _screenNow = <String, DateTime>{
   'today_checkin': DateTime(2026, 10, 12, 11),
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
   'focus_sheet_tile': DateTime(2026, 10, 12, 11),
+  'today_motzaei_shabbat': DateTime(2026, 10, 10, 20),
   'today_restore': DateTime(2026, 10, 14, 11),
   'today_pause_ended': DateTime(2026, 10, 12, 11),
   'today_grace': DateTime(2026, 10, 16, 11),
   'today_erev_tisha_bav': DateTime(2027, 8, 11, 11),
+  // Thursday 12 August 2027, 9 Av 5787.
+  'today_tisha_bav': DateTime(2027, 8, 12, 11),
+  'today_tisha_bav_week': DateTime(2027, 8, 12, 11),
   // Tuesday of Matot-Masei 5787.
   'reader_third': DateTime(2027, 7, 27, 11),
   'browse_summer': DateTime(2027, 7, 14, 11),
@@ -766,6 +785,13 @@ final _screenProgress = <String, ProgressState Function()>{
   'today_yomtov': () => ProgressState(weeks: {}),
   'today_yom_kippur': () => ProgressState(weeks: {}),
   'today_erev_tisha_bav': () => ProgressState(weeks: {}),
+  // Devarim read on its days but for Shevi'i; of Va'etchanan, Rishon to
+  // Shlishi on theirs, and Wednesday's aliyot not yet.
+  for (final screen in ['today_tisha_bav', 'today_tisha_bav_week'])
+    screen: () => ProgressState(weeks: {
+          '5787:44': _readOnTheirDays('5787:44', LocalDate(2027, 8, 1), upTo: 6),
+          '5787:45': _readOnTheirDays('5787:45', LocalDate(2027, 8, 8), upTo: 3),
+        }),
   // Every aliyah read on its day; the haftarah not yet.
   'today_complete': () => ProgressState(weeks: {'5787:1': _readOnTheirDays('5787:1', LocalDate(2026, 10, 5))}),
   // All but the Targum of Shevi'i, which the capture logs.
@@ -1186,6 +1212,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(find.byIcon(Icons.sticky_note_2_outlined));
   },
   'week_notes': _scrollToEnd,
+  's_a11y_speech': _scrollToEnd,
   for (final screen in [
     'reader_listen',
     'reader_listen_full',
@@ -1200,7 +1227,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'reader_listen_rate': (tester) async {
     await _listenOnTwo(tester);
-    await tester.tap(find.text('45%'));
+    await tester.tap(find.byTooltip(tester.element(find.byType(Scaffold).last).l10n.speechRate));
   },
   // Past the times what failed to load is tried again, so that none is
   // still waiting as the test ends.
@@ -1289,6 +1316,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_third': _scrollToEnd,
   // The haftarah, near the end of Today.
   'today_three_weeks': _scrollToEnd,
+  'today_tisha_bav_week': (tester) =>
+      Scrollable.ensureVisible(tester.element(find.byType(WeekStrip)), alignment: 0.5),
   // Choose aliyot, the check-in's second text button.
   'today_checkin_sheet': (tester) =>
       tester.tap(find.descendant(of: find.byType(NoticeBanner), matching: find.byType(TextButton)).at(1)),
@@ -1715,13 +1744,18 @@ final _modes = [
   // A phone held sideways, where the rail scrolls, for the screens in
   // [_sidewaysScreens].
   _Mode('sideways', const Size(800, 360), (s) => s),
+  // System text at 300% on a 412 dp phone, tall, for the screens in
+  // [_hugeWideScreens]: a stacked row keeps its icon on the title's line.
+  _Mode('hugewide', const Size(412, 3600), (s) => s, textScale: 3),
 ];
 
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
 const _bigPhoneScreens = {'welcome', 'welcome_location', 'welcome_plan'};
 const _hugeModes = {'huge', 'hugehe'};
-const _hugeScreens = {'today', 'reader'};
+// The reader with Listen's player over its bar too: the chrome is held at
+// 200% so that a verse shows beneath it. Browse, whose names stay whole.
+const _hugeScreens = {'today', 'reader', 'reader_listen', 'reader_preview', 'browse'};
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
   'today',
@@ -1732,9 +1766,11 @@ const _hugeTallScreens = {
   'community',
   'thread',
   'haftarah',
+  'browse',
   // The offer to move the daily reminder, its button under its text.
   's_reminders_far',
 };
+const _hugeWideScreens = {'parsha', 'settings'};
 
 const _narrowDesktopScreens = {
   'today',
@@ -1764,6 +1800,8 @@ const _desktopScreens = {
   'today_pause_ended',
   'today_grace',
   'today_book',
+  // The fast: the title page without its button.
+  'today_tisha_bav',
   'parsha',
   'parsha_scrolled',
   'week',
@@ -1945,6 +1983,7 @@ const _bigTextScreens = {
   'today_checkin_sheet',
   'today_pause_ended',
   'today_grace',
+  'today_tisha_bav',
   'reader_offer',
   'reader_offer_city',
   's_reminders_on',
@@ -2058,6 +2097,7 @@ void main() {
       if (_hugeModes.contains(mode.tag) && !_hugeScreens.contains(entry.key)) continue;
       if (_hugeTallModes.contains(mode.tag) && !_hugeTallScreens.contains(entry.key)) continue;
       if (mode.tag == 'sideways' && !_sidewaysScreens.contains(entry.key)) continue;
+      if (mode.tag == 'hugewide' && !_hugeWideScreens.contains(entry.key)) continue;
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {

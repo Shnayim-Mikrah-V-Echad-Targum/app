@@ -90,6 +90,20 @@ final verseLocatorProvider = Provider<({String weekId, int aliyah})? Function(St
   return (book, r) => locateVerse(repo, schedule, cycle, book, r);
 });
 
+/// The first day after a week read on [occasion] that may be asked about
+/// it: past the days of rest that run on from it, and past Tisha B'Av
+/// straight after it, whatever the reader plans on the fast, since "Shavua
+/// tov" is not said then (Shulchan Aruch OC 554:20). Today's check-in asks
+/// then, and the shortcut that logs reading from a book opens that week
+/// until then.
+LocalDate firstDayToAskAfter(LocalDate occasion, {required bool oneDayYomTov}) {
+  var day = occasion.addDays(1);
+  while (JewishHolidays.isRestDay(day, israel: oneDayYomTov) || JewishHolidays.isTishaBav(day)) {
+    day = day.addDays(1);
+  }
+  return day;
+}
+
 /// Everything the UI needs about one week, bundled.
 class WeekContext {
   const WeekContext({
@@ -167,6 +181,12 @@ class WeekContext {
 
   /// How many of [dueAliyot] were planned before today.
   int behindBy() => _unreadPlannedFor((d) => d < today).length;
+
+  /// Whether Today's card would ask for reading on [day], a day of this
+  /// week, as things stand: aliyot are planned for it, or aliyot planned
+  /// before it (and not before joining) are still unread, to catch up on.
+  /// (Pauses aside.)
+  bool readsOn(LocalDate day) => plan.dayFor(day) != null || _unreadPlannedFor((d) => d < day).isNotEmpty;
 
   List<int> _unreadPlannedFor(bool Function(LocalDate date) due) {
     final days = [...plan.days, PlanDay(week.occasion, plan.shabbatAliyot)];

@@ -43,7 +43,7 @@ class OrnamentsGallery extends StatelessWidget {
                 if (!he) Text('Bereshit', style: theme.textTheme.headlineLarge),
                 const Gap(4),
                 Text(
-                  he ? 'בראשית א, א–ו, ח · נקראת בשבת' : 'Genesis 1:1–6:8 · Read Shabbat, 10 October',
+                  he ? 'בראשית א,\u00A0א\u00A0– ו,\u00A0ח · נקראת בשבת' : 'Genesis 1:1–6:8 · Read Shabbat, 10 October',
                   style: muted,
                   textAlign: TextAlign.center,
                 ),

@@ -9,25 +9,33 @@ import 'fonts_change_scope.dart';
 /// breaks between two parts rather than inside one ("Read on Shabbat,
 /// October / 10"). A line that starts after a break starts with its part,
 /// not with a dot. A part too long for a line on its own wraps after a comma
-/// in it ("Read on Shabbat, / October 10") before it wraps anywhere else.
+/// in it ("Read on Shabbat, / October 10") before it wraps anywhere else,
+/// and never between a number and the word after it ("about / 33 min").
 ///
 /// Each line is a text of its own, whose words are kept whole ([WholeWords]).
 class DotLine extends StatelessWidget {
-  const DotLine(this.parts, {super.key, required this.style, this.textAlign = TextAlign.start});
+  const DotLine(this.parts, {super.key, this.style, this.textAlign = TextAlign.start});
 
   final List<String> parts;
+
+  /// Merged with the ambient one, as a [Text]'s is: a list tile's subtitle
+  /// needs none of its own.
   final TextStyle? style;
   final TextAlign textAlign;
 
   static const separator = ' · ';
   static const nbsp = '\u00A0';
 
+  /// A number's last digit and the space after it, before a word.
+  static final _counted = RegExp(r'(\d) (?=\S)');
+
   @override
   Widget build(BuildContext context) {
     // Measured again when a font arrives.
     FontsChangeScope.watch(context);
     return LayoutBuilder(builder: (context, constraints) {
-      final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
+      var measured = DefaultTextStyle.of(context).style.merge(style);
+      if (MediaQuery.boldTextOf(context)) measured = measured.merge(const TextStyle(fontWeight: FontWeight.bold));
       final painter = TextPainter(
         textDirection: Directionality.of(context),
         textScaler: MediaQuery.textScalerOf(context),
@@ -36,17 +44,19 @@ class DotLine extends StatelessWidget {
       );
       bool fits(String text) {
         painter
-          ..text = TextSpan(text: text, style: style?.merge(bold) ?? bold)
+          ..text = TextSpan(text: text, style: measured)
           ..layout(maxWidth: constraints.maxWidth);
         return !painter.didExceedMaxLines;
       }
 
       // Each clause of a part too long for a line, kept whole where it fits
-      // on one.
+      // on one, and otherwise each number in it held to the word it counts.
       String wrappable(String part) {
         if (fits(part)) return part;
-        return [for (final clause in part.split(', ')) fits(clause) ? clause.replaceAll(' ', nbsp) : clause]
-            .join(', ');
+        return [
+          for (final clause in part.split(', '))
+            fits(clause) ? clause.replaceAll(' ', nbsp) : clause.replaceAllMapped(_counted, (m) => '${m[1]}$nbsp'),
+        ].join(', ');
       }
 
       final lines = <String>[];
@@ -73,6 +83,11 @@ class DotLine extends StatelessWidget {
 /// [text] with each spaced em dash held to the word before it, so that no
 /// line starts with a dash.
 String dashHeldToWord(String text) => text.replaceAll(' — ', '${DotLine.nbsp}— ');
+
+/// [date] ("Sunday, October 11") with its words held together but after a
+/// comma, so that a sentence that gives it breaks there if it must, never
+/// between a day and its month ("11 / באוקטובר").
+String dateHeldTogether(String date) => date.split(', ').map((c) => c.replaceAll(' ', DotLine.nbsp)).join(', ');
 
 /// [text] wrapped between its words, never inside one: a word too wide for
 /// the line on its own, as with large text, is set just small enough to fit.
@@ -154,27 +169,80 @@ class WholeWords extends StatelessWidget {
   static String unbroken(String text) =>
       text.replaceAllMapped(_hyphen, (m) => m[0] == '—' ? '\u2060—\u2060' : '${m[0]}\u2060');
 
+  /// The scale a [WholeWords] of [text] in [style] sets it at in [width]:
+  /// below 1 where its widest word is wider than that. For text that keeps
+  /// in step with it, as a row's subtitle never outgrows its title.
+  static double scaleIn(
+    BuildContext context,
+    String text, {
+    required double width,
+    TextStyle? style,
+    TextDirection? textDirection,
+    Locale? locale,
+    bool breakAtHyphens = false,
+  }) {
+    FontsChangeScope.watch(context);
+    final word = _widestWord(
+      text,
+      _effectiveStyle(context, style),
+      scaler: MediaQuery.textScalerOf(context),
+      direction: textDirection ?? Directionality.of(context),
+      locale: locale,
+      breakAtHyphens: breakAtHyphens,
+    );
+    return _RenderFitWord.scaleFor(word, width, 0);
+  }
+
+  /// [style] merged into the ambient one, as a [Text] merges it, and bold
+  /// where the platform asks for bold text.
+  static TextStyle _effectiveStyle(BuildContext context, TextStyle? style) {
+    final effective = DefaultTextStyle.of(context).style.merge(style);
+    if (!MediaQuery.boldTextOf(context)) return effective;
+    return effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+  }
+
+  /// The width of the widest word of [text], set in [style].
+  static double _widestWord(
+    String text,
+    TextStyle style, {
+    required TextScaler scaler,
+    required TextDirection direction,
+    required Locale? locale,
+    required bool breakAtHyphens,
+  }) {
+    var widest = 0.0;
+    for (final word in (breakAtHyphens ? _hyphenated : _words).allMatches(text)) {
+      final painter = TextPainter(
+        text: TextSpan(text: word.group(0), style: style),
+        textDirection: direction,
+        textScaler: scaler,
+        locale: locale,
+        maxLines: 1,
+      )..layout();
+      widest = math.max(widest, painter.width);
+      painter.dispose();
+    }
+    return widest;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Measured again when a font arrives.
     FontsChangeScope.watch(context);
-    var effective = DefaultTextStyle.of(context).style.merge(style);
-    if (MediaQuery.boldTextOf(context)) effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+    final effective = _effectiveStyle(context, style);
     final scaler = MediaQuery.textScalerOf(context);
     final direction = textDirection ?? Directionality.of(context);
     var widest = 0.0;
     void measure(String text, TextStyle style) {
-      for (final word in (breakAtHyphens ? _hyphenated : _words).allMatches(text)) {
-        final painter = TextPainter(
-          text: TextSpan(text: word.group(0), style: style),
-          textDirection: direction,
-          textScaler: scaler,
-          locale: locale,
-          maxLines: 1,
-        )..layout();
-        widest = math.max(widest, painter.width);
-        painter.dispose();
-      }
+      final word = _widestWord(
+        text,
+        style,
+        scaler: scaler,
+        direction: direction,
+        locale: locale,
+        breakAtHyphens: breakAtHyphens,
+      );
+      widest = math.max(widest, word);
     }
 
     // In each span's own style, merged down from the paragraph's. A word
@@ -266,13 +334,15 @@ class _RenderFitWord extends RenderProxyBox {
 
   double _scale = 1;
 
-  /// The scale at which the widest word fits [width]: a hair under, so that
-  /// rounding never breaks the word after all; but no smaller than
+  double _scaleFor(double width) => scaleFor(_word, width, _minScale);
+
+  /// The scale at which a [word] that wide fits [width]: a hair under, so
+  /// that rounding never breaks the word after all; but no smaller than
   /// [minScale], where the word wraps. None where the width is a pixel or
   /// less (a label squeezed to nothing, as in a collapse): no word fits
   /// there at any size, and the text wraps as a plain Text would.
-  double _scaleFor(double width) =>
-      width.isFinite && width > 1 && _word > width ? math.max((width - 1) / _word, _minScale) : 1;
+  static double scaleFor(double word, double width, double minScale) =>
+      width.isFinite && width > 1 && word > width ? math.max((width - 1) / word, minScale) : 1;
 
   BoxConstraints _unscaled(BoxConstraints c, double scale) => scale == 1 ? c : c / scale;
 
@@ -364,6 +434,11 @@ class _RenderFitWord extends RenderProxyBox {
 ///
 /// With [bySentence], text too long for one line sets each sentence on a
 /// line or more of its own.
+///
+/// Like [WholeWords], it answers intrinsic size queries, so it may stand in
+/// a dialog ([IntrinsicWidth]) or a row as tall as its tallest cell
+/// ([IntrinsicHeight]); with [bySentence] it doesn't, as whether the text
+/// fits on one line is decided at layout ([LayoutBuilder]).
 class BalancedText extends StatelessWidget {
   const BalancedText(this.text, {super.key, required this.style, this.textAlign = TextAlign.center, this.bySentence = false});
 
@@ -376,69 +451,135 @@ class BalancedText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget balanced(String text) => _Balanced(
+          centred: textAlign == TextAlign.center,
+          child: WholeWords(text, style: style, textAlign: textAlign, breakAtHyphens: true),
+        );
+
+    final sentences = bySentence ? text.split(_sentenceBreak) : [text];
+    if (sentences.length == 1) return balanced(text);
     // Measured again when a font arrives.
     FontsChangeScope.watch(context);
     return LayoutBuilder(builder: (context, constraints) {
       final bold = MediaQuery.boldTextOf(context) ? const TextStyle(fontWeight: FontWeight.bold) : null;
-      TextPainter painter(String text) => TextPainter(
-            text: TextSpan(text: text, style: style?.merge(bold) ?? bold),
-            textDirection: Directionality.of(context),
-            textScaler: MediaQuery.textScalerOf(context),
-            locale: Localizations.maybeLocaleOf(context),
-          )..layout(maxWidth: constraints.maxWidth);
-
-      Widget balanced(String text) {
-        final p = painter(text);
-        // A word too wide for the line, as with very large text on a small
-        // phone, leaves no lines to balance: it is set whole, just small
-        // enough to fit.
-        if (p.minIntrinsicWidth > constraints.maxWidth) {
-          p.dispose();
-          return WholeWords(text, style: style, textAlign: textAlign, breakAtHyphens: true);
-        }
-        final lines = p.computeLineMetrics().length;
-        var width = constraints.maxWidth;
-        if (lines > 1) {
-          // Never narrower than its widest word.
-          var low = math.min(p.minIntrinsicWidth, width);
-          var high = width;
-          for (var i = 0; i < 10 && high - low > 1; i++) {
-            final mid = (low + high) / 2;
-            p.layout(maxWidth: mid);
-            if (p.computeLineMetrics().length > lines) {
-              low = mid;
-            } else {
-              high = mid;
-            }
-          }
-          width = math.min(constraints.maxWidth, high.ceilToDouble() + 1);
-        }
-        p.dispose();
-        return Align(
-          alignment: textAlign == TextAlign.center ? Alignment.center : AlignmentDirectional.centerStart,
-          widthFactor: 1,
-          child: SizedBox(width: width, child: Text(text, style: style, textAlign: textAlign)),
-        );
-      }
-
-      final sentences = bySentence ? text.split(_sentenceBreak) : [text];
-      if (sentences.length > 1) {
-        final whole = painter(text);
-        final oneLine = whole.computeLineMetrics().length <= 1;
-        whole.dispose();
-        if (!oneLine) {
-          return Semantics(
-            // One text for screen readers, as it is written.
-            label: text,
-            excludeSemantics: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [for (final s in sentences) balanced(s)],
-            ),
-          );
-        }
-      }
-      return balanced(text);
+      final whole = TextPainter(
+        text: TextSpan(text: text, style: style?.merge(bold) ?? bold),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        locale: Localizations.maybeLocaleOf(context),
+      )..layout(maxWidth: constraints.maxWidth);
+      final oneLine = whole.computeLineMetrics().length <= 1;
+      whole.dispose();
+      if (oneLine) return balanced(text);
+      return Semantics(
+        // One text for screen readers, as it is written.
+        label: text,
+        excludeSemantics: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [for (final s in sentences) balanced(s)],
+        ),
+      );
     });
+  }
+}
+
+/// Sets its child, a text, as narrow as it can be without taking more
+/// lines than at the width it is given, measuring it by its intrinsic
+/// heights: never narrower than its widest word, and at the full width
+/// where it fits on one line or that word doesn't fit at all. The child is
+/// centred in the width, or [centred] false, at its start.
+class _Balanced extends SingleChildRenderObjectWidget {
+  const _Balanced({required this.centred, required super.child});
+
+  final bool centred;
+
+  @override
+  _RenderBalanced createRenderObject(BuildContext context) => _RenderBalanced(centred, Directionality.of(context));
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderBalanced renderObject) => renderObject
+    ..centred = centred
+    ..textDirection = Directionality.of(context);
+}
+
+class _RenderBalanced extends RenderShiftedBox {
+  _RenderBalanced(this._centred, this._textDirection) : super(null);
+
+  bool get centred => _centred;
+  bool _centred;
+  set centred(bool value) {
+    if (value == _centred) return;
+    _centred = value;
+    markNeedsLayout();
+  }
+
+  TextDirection get textDirection => _textDirection;
+  TextDirection _textDirection;
+  set textDirection(TextDirection value) {
+    if (value == _textDirection) return;
+    _textDirection = value;
+    markNeedsLayout();
+  }
+
+  /// The width [child] is set in, within [width].
+  static double _widthFor(RenderBox child, double width) {
+    if (!width.isFinite) return width;
+    // One line, or a word too wide for the line, which WholeWords sets
+    // smaller: nothing to balance.
+    if (child.getMaxIntrinsicWidth(double.infinity) <= width) return width;
+    final word = child.getMinIntrinsicWidth(double.infinity);
+    if (word >= width) return width;
+    final height = child.getMinIntrinsicHeight(width);
+    var low = word;
+    var high = width;
+    for (var i = 0; i < 10 && high - low > 1; i++) {
+      final mid = (low + high) / 2;
+      // Half a pixel's grace for rounding: a line more is a line's height.
+      if (child.getMinIntrinsicHeight(mid) > height + 0.5) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+    return math.min(width, high.ceilToDouble() + 1);
+  }
+
+  static BoxConstraints _childConstraints(BoxConstraints constraints, double width) => width.isFinite
+      ? BoxConstraints(minWidth: width, maxWidth: width, maxHeight: constraints.maxHeight)
+      : constraints.loosen();
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    final child = this.child;
+    if (child == null) return constraints.smallest;
+    final width = _widthFor(child, constraints.maxWidth);
+    return constraints.constrain(child.getDryLayout(_childConstraints(constraints, width)));
+  }
+
+  @override
+  double? computeDryBaseline(BoxConstraints constraints, TextBaseline baseline) {
+    final child = this.child;
+    if (child == null) return null;
+    return child.getDryBaseline(_childConstraints(constraints, _widthFor(child, constraints.maxWidth)), baseline);
+  }
+
+  @override
+  void performLayout() {
+    final child = this.child;
+    if (child == null) {
+      size = constraints.smallest;
+      return;
+    }
+    final width = _widthFor(child, constraints.maxWidth);
+    child.layout(_childConstraints(constraints, width), parentUsesSize: true);
+    size = constraints.constrain(child.size);
+    final spare = size.width - child.size.width;
+    final dx = centred
+        ? spare / 2
+        : textDirection == TextDirection.rtl
+            ? spare
+            : 0.0;
+    (child.parentData! as BoxParentData).offset = Offset(dx, 0);
   }
 }

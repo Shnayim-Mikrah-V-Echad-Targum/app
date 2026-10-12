@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -44,10 +44,14 @@ void main() {
     AppSettings? settings,
     ProgressState? progress,
     DateTime? now,
+    Size size = const Size(412, 915),
+    double textScale = 1,
   }) async {
-    tester.view.physicalSize = const Size(412, 915);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearAllTestValues);
     final c = await pumpApp(
       tester,
       settings: settings ?? _settings,
@@ -265,7 +269,7 @@ void main() {
 
     testWidgets("of next week's preview have no reading under way, no today and nothing behind", (tester) async {
       await open(tester, route: '/week/5787:2');
-      expect(find.textContaining('Preview — you can log this parsha from'), findsOneWidget);
+      expect(findWords('Preview — you can log this parsha from'), findsOneWidget);
       expect(find.text('Planned for today'), findsNothing);
       expect(find.byIcon(Icons.history), findsNothing);
       expect([for (final p in tester.widgetList<PassPips>(find.byType(PassPips))) p.current], everyElement(isNull));
@@ -308,6 +312,60 @@ void main() {
       await tester.tap(find.text('Revi’i'));
       await tester.pump();
       expect(c.read(routerProvider).state.uri.toString(), '/read/5787:1/3?from=week');
+    });
+
+    // §9 Parsha, 3: rather than leave the lines a word or two each between
+    // the disc and the pips. In the test font, whose letters are as wide as
+    // they are high, a small phone at 200% squeezes them already.
+    for (final hebrew in [false, true]) {
+      testWidgets('stack with large text, the lines their full width and the pips over the menu under them'
+          '${hebrew ? ', in Hebrew' : ''}', (tester) async {
+        final handle = tester.ensureSemantics();
+        await open(
+          tester,
+          settings: _settings.copyWith(language: hebrew ? AppLanguage.hebrew : AppLanguage.system),
+          size: const Size(320, 3600),
+          textScale: 2,
+        );
+        expect(tester.takeException(), isNull);
+        final name = hebrew ? 'ראשון' : 'Rishon';
+        final rishon = row(name);
+        final box = tester.getRect(rishon);
+        double fromStart(Rect r) => hebrew ? box.right - r.right : r.left - box.left;
+        double fromEnd(Rect r) => hebrew ? r.left - box.left : box.right - r.right;
+        final disc = tester.getRect(find.descendant(of: rishon, matching: find.byIcon(Icons.check)));
+        final title = tester.getRect(find.text(name));
+        expect(title.center.dy, moreOrLessEquals(disc.center.dy, epsilon: 1), reason: 'the name beside its disc');
+        // The verses, under the name, from the row's start.
+        final verses = find.descendant(of: rishon, matching: find.text(hebrew ? '34 פסוקים' : '34 verses'));
+        final facts = tester.getRect(verses);
+        expect(fromStart(facts), 16);
+        expect(facts.top, greaterThanOrEqualTo(title.bottom - 1));
+        // Lines of 18 or 20, at 200%.
+        expect(tester.renderObject<RenderParagraph>(verses).size.height, lessThan(2 * 2 * 18), reason: 'one line');
+        // The pips at the start and the menu at the end, under the lines.
+        final pips = tester.getRect(find.descendant(of: rishon, matching: find.byType(PassPips)));
+        final menuButton = find.byTooltip(hebrew ? 'אפשרויות נוספות עבור $name' : 'More options for $name');
+        final menu = tester.getRect(menuButton);
+        expect(pips.top, greaterThanOrEqualTo(facts.bottom));
+        expect(fromStart(pips), 16);
+        expect(fromEnd(menu), 10);
+        expect(pips.center.dy, moreOrLessEquals(menu.center.dy, epsilon: 0.5));
+        // Still one button, beside the menu's own item.
+        final node = tester.getSemantics(find.text(name));
+        expect(node, isSemantics(isButton: true, hasTapAction: true));
+        expect(tester.getSemantics(menuButton).id, isNot(node.id));
+        handle.dispose();
+      });
+    }
+
+    testWidgets('keep their columns at 200% on a 412 dp phone', (tester) async {
+      await open(tester, textScale: 2);
+      final rishon = row('Rishon');
+      final title = tester.getRect(find.text('Rishon'));
+      final pips = tester.getRect(find.descendant(of: rishon, matching: find.byType(PassPips)));
+      expect(title.left - tester.getRect(rishon).left, 72);
+      expect(pips.center.dy, moreOrLessEquals(title.center.dy, epsilon: 1), reason: "on the name's line");
     });
 
     testWidgets('note where some sources divide an aliyah otherwise', (tester) async {

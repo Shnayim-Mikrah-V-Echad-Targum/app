@@ -477,9 +477,27 @@
   "@readTheHaftarah": {
     "description": "A button that opens the week's haftarah."
   },
-  "checkInTitle": "Shavua tov! Did you read on Shabbat?",
+  "checkInTitle": "Shavua tov! Did you read {name} on Shabbat?",
+  "@checkInTitle": {
+    "description": "The after-Shabbat check-in on Today, and the title of its sheet: asks whether the parsha of the Shabbat just past was read on it, from a printed Chumash. name is that parsha, or the two read together.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
+      }
+    }
+  },
   "checkInBody": "Log what you read from a printed Chumash — it counts just the same.",
-  "checkInFinished": "I finished it on Shabbat",
+  "checkInFinished": "I finished {name} on Shabbat",
+  "@checkInFinished": {
+    "description": "The after-Shabbat check-in's button that logs the whole of the Shabbat's parsha as read on it. name is that parsha, as in checkInTitle.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
+      }
+    }
+  },
   "checkInPick": "Choose aliyot",
   "checkInNotThisTime": "Not this time",
   "@checkInNotThisTime": {
@@ -643,16 +661,19 @@
   },
   "yomTovShort": "Yom Tov",
   "@yomTovShort": {
-    "description": "Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide, and a longer word is shrunk to fit one line."
+    "description": "Under a Yom Tov day in the week strip (any Yom Tov, Yom Kippur and Rosh Hashana included), so it is not taken for Shabbat. Keep it short: the day is about 48 dp wide; where the words don't fit on one line at their size, they wrap, never shrink."
   },
   "dayChipLabel": "{day}: {status}",
   "@dayChipLabel": {
+    "description": "Read by screen readers, and shown as the tooltip, for a day of the week strip: the weekday's name (Names.weekday) and how the day stands (dayKept, dayOpen and so on).",
     "placeholders": {
       "day": {
-        "type": "String"
+        "type": "String",
+        "example": "Tuesday"
       },
       "status": {
-        "type": "String"
+        "type": "String",
+        "example": "Not yet"
       }
     }
   },
@@ -893,7 +914,7 @@
   "listenNextVerse": "Next verse",
   "speechRateValue": "Speech rate: {rate}",
   "@speechRateValue": {
-    "description": "The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is a percentage, as Settings shows it: \"45%\".",
+    "description": "The speech rate's button in the player that shows while Listen reads, as screen readers hear it. The rate is as the player and Settings show it, relative to the default: speechRateNormal (\"Normal\") or speechRateTimes (\"1.2×\").",
     "placeholders": {
       "rate": {
         "type": "String"
@@ -1298,6 +1319,9 @@
   "themeLabel": "Theme",
   "themeSystem": "Match device",
   "themeSystemDesc": "Light or dark, like the device",
+  "@themeSystemDesc": {
+    "description": "Under the Match device switch over the theme swatches, in Display settings and the reader's display sheet."
+  },
   "themeUsedWhenLight": "Used while the device is light",
   "@themeUsedWhenLight": {
     "description": "A screen reader's hint on a theme swatch while the app matches the device: the theme it uses when the device is in light mode."
@@ -1305,9 +1329,6 @@
   "themeUsedWhenDark": "Used while the device is dark",
   "@themeUsedWhenDark": {
     "description": "As themeUsedWhenLight, for dark mode."
-  },
-  "@themeSystemDesc": {
-    "description": "Under the Match device switch over the theme swatches, in Display settings and the reader's display sheet."
   },
   "themeLight": "Light",
   "themeDark": "Dark",
@@ -1746,7 +1767,7 @@
   "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed through Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
   "guideHowTitle": "How",
   "guideHowBody": "Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.",
-  "guidePassesCaption": "1\u00a0·\u00a0Mikra  2\u00a0·\u00a0Mikra  3\u00a0·\u00a0Targum",
+  "guidePassesCaption": "1 · Mikra  2 · Mikra  3 · Targum",
   "@guidePassesCaption": {
     "description": "Beside three marks for the three readings, at the top of the guide's How section: the text twice, then the Targum. No-break spaces keep each reading's number with its name."
   },
@@ -2858,5 +2879,81 @@
       }
     }
   },
-  "errBodyTooShort": "The message needs at least 2 characters."
+  "errBodyTooShort": "The message needs at least 2 characters.",
+  "tishaBavTitle": "Tisha B’Av",
+  "@tishaBavTitle": {
+    "description": "On Today on Tisha B'Av, while no reading is planned on it: the eyebrow of the title page, in place of Parshat HaShavua, and of the home-screen widget."
+  },
+  "todayTishaBav": "Torah study is set aside today, apart from the passages of mourning (Iyov, Eicha, parts of Yirmiyahu).",
+  "@todayTishaBav": {
+    "description": "Today's card on Tisha B'Av, while no reading is planned on it, in place of today's reading: on the fast, Torah is not studied, but for the sad passages (Shulchan Aruch OC 554:1–2). Followed by todayTishaBavTomorrow while the week's parsha is unfinished."
+  },
+  "todayTishaBavTomorrow": "{portion} continues tomorrow.",
+  "@todayTishaBavTomorrow": {
+    "description": "After todayTishaBav, while the week's parsha is unfinished and the reader's plan has reading for the next day (the day after Tisha B'Av is always a reading day, but a plan may leave it empty, or a pause may run past it; see todayTishaBavOn). portion is the week's parsha.",
+    "placeholders": {
+      "portion": {
+        "type": "String",
+        "example": "Va'etchanan"
+      }
+    }
+  },
+  "todayTishaBavOn": "{portion} continues on {weekday}.",
+  "@todayTishaBavOn": {
+    "description": "After todayTishaBav, in place of todayTishaBavTomorrow, when the reader's plan has nothing to read the next day (the whole parsha on Erev Shabbat, say) or a pause runs past it: the next day of the week with reading. portion is the week's parsha; weekday is that day's name, as 'Friday'.",
+    "placeholders": {
+      "portion": {
+        "type": "String",
+        "example": "Va'etchanan"
+      },
+      "weekday": {
+        "type": "String",
+        "example": "Friday"
+      }
+    }
+  },
+  "tishaBavShort": "9 Av",
+  "@tishaBavShort": {
+    "description": "Under Tisha B'Av in the week strip, while no reading is planned on it (on the 10th of Av too, when the fast is postponed from Shabbat): the fast, by its date. Keep it short: the day is about 48 dp wide."
+  },
+  "dayChipLabelToday": "{day}, today: {status}",
+  "@dayChipLabelToday": {
+    "description": "As dayChipLabel, for today's day in the week strip, so a screen reader can find it: the weekday's name (Names.weekday) and how the day stands (dayKept, dayOpen and so on).",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "Friday"
+      },
+      "status": {
+        "type": "String",
+        "example": "Not yet"
+      }
+    }
+  },
+  "speechRateNormal": "Normal",
+  "@speechRateNormal": {
+    "description": "The default speech rate, as the player that shows while Listen reads, and Settings → Accessibility → Speech rate, show it. Agrees with \"Speech rate\" (speechRate)."
+  },
+  "speechRateTimes": "{rate}×",
+  "@speechRateTimes": {
+    "description": "Any other speech rate, as a multiple of the default (Normal): \"0.6×\", \"1.2×\", \"2.2×\". Shown in the Listen player's rate menu and on the Speech rate slider in Settings → Accessibility.",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "tishaBavQuietDesc": "Torah study is set aside on the fast, apart from the passages of mourning (Shulchan Aruch OC 554:1)",
+  "@tishaBavQuietDesc": {
+    "description": "Under the switch tishaBavQuiet in Reading & customs: why no reading is planned on Tisha B'Av."
+  },
+  "a11yGroupSpeech": "Speech",
+  "@a11yGroupSpeech": {
+    "description": "Heading in Accessibility over the speech rate slider, which sets how fast Listen reads aloud."
+  },
+  "widgetTishaBav": "Torah study is set aside today",
+  "@widgetTishaBav": {
+    "description": "On the home-screen widget on Tisha B'Av, while no reading is planned on it, in place of the day's reading (as Today's card says, todayTishaBav). Keep it short."
+  }
 }

@@ -329,7 +329,7 @@ void main() {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      const checkIn = 'Shavua tov! Did you read on Shabbat?';
+      const checkIn = 'Shavua tov! Did you read Bamidbar on Shabbat?';
       final visitor = AppSettings(
         onboardingComplete: true,
         joinDate: d('2029-05-01'),

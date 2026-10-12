@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' show BoxHeightStyle;
 
@@ -17,6 +18,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/data/parsha_repository.dart';
 import 'package:shnayim_mikra/features/community/data/backend.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
@@ -30,6 +32,7 @@ import 'package:shnayim_mikra/services/optional_fonts.dart';
 import 'package:shnayim_mikra/services/reminder_planner.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart';
 
 ParshaRepository? _repo;
 
@@ -262,10 +265,41 @@ class RecordingTts extends TtsService {
   String get spokenText => spoken.map((s) => s.$1).join(' ');
 
   @override
-  Future<bool> speak(String text, {required String language, double rate = 0.45}) async {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) async {
     spoken.add((text, language));
     return true;
   }
+}
+
+/// Speech that holds each utterance until the test lets it reach its end
+/// ([finish]), as a voice takes its time over a verse.
+class HeldTts extends RecordingTts {
+  Completer<bool>? _current;
+
+  @override
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) {
+    // The next utterance stops the one before, as the engine's does.
+    _current?.complete(false);
+    spoken.add((text, language));
+    return (_current = Completer<bool>()).future;
+  }
+
+  @override
+  Future<void> stop() {
+    _current?.complete(false);
+    _current = null;
+    return super.stop();
+  }
+
+  /// The utterance being spoken reaches its end.
+  void finish() {
+    final c = _current;
+    _current = null;
+    c?.complete(true);
+  }
+
+  /// The last thing asked for, as letters alone.
+  String get last => HebrewText.consonantsOnly(spoken.last.$1);
 }
 
 class _SilentEngine extends Fake implements FlutterTts {
@@ -297,6 +331,14 @@ class _NoPlugin extends Fake implements FlutterLocalNotificationsPlugin {}
 /// spaces, as a line of parts sets them to keep a clause together when a
 /// part is too long for a line of its own (DotLine).
 Finder findWords(String words) => find.textContaining(wordsRegExp(RegExp.escape(words)));
+
+/// Finds the line of parts ([DotLine]) that reads [text] with its parts
+/// between middle dots ("5 aliyot · 96 verses · about 33 min"), however its
+/// lines break.
+Finder findDotLine(String text) => find.byWidgetPredicate(
+      (w) => w is DotLine && w.parts.join(DotLine.separator) == text,
+      description: 'line of parts "$text"',
+    );
 
 /// [pattern] with each space matching a no-break space too (see [findWords]).
 RegExp wordsRegExp(String pattern) => RegExp(pattern.replaceAll(' ', '[ \u00A0]'));

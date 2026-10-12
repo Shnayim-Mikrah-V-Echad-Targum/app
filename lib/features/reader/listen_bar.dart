@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import 'listen_along.dart';
+import 'reader_screen.dart';
 
 /// The player that shows while Listen reads (docs/DESIGN_SYSTEM.md §6.28),
 /// above the reader's bottom bar or at the foot of the page: the speech rate
@@ -10,7 +11,9 @@ import 'listen_along.dart';
 /// and Stop at its end.
 ///
 /// Like the bottom bar, it runs under the gesture bar in the page's own
-/// colour, and keeps to the reading column.
+/// colour, and keeps to the reading column. Its text grows to 200% at most
+/// ([ReaderScreen.chromeMaxTextScale]), wherever it shows, as the rest of
+/// the reader's chrome.
 class ListenBar extends StatelessWidget {
   const ListenBar({
     super.key,
@@ -81,7 +84,7 @@ class ListenBar extends StatelessWidget {
         ],
       ),
     );
-    return DecoratedBox(
+    final bar = DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface,
         border: Border(top: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth)),
@@ -124,6 +127,7 @@ class ListenBar extends StatelessWidget {
         ),
       ),
     );
+    return MediaQuery.withClampedTextScaling(maxScaleFactor: ReaderScreen.chromeMaxTextScale, child: bar);
   }
 }
 
@@ -165,20 +169,20 @@ class _RateButton extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final label = speechRateLabel(rate);
+    final label = speechRateLabel(l, rate);
     final style = theme.textTheme.labelLarge!.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
     return LayoutBuilder(
       builder: (context, constraints) {
-        // The icon goes where the rate would have no room beside it (a
-        // narrow phone, large text); the rate itself is set smaller before
-        // it is ever cut short.
+        // The icon goes only where the rate would have no room beside it,
+        // even set a little smaller (a phone under about 350 dp, large
+        // text); the rate itself is set smaller before it is ever cut short.
         final painter = TextPainter(
           text: TextSpan(text: label, style: style),
           textDirection: Directionality.of(context),
           textScaler: MediaQuery.textScalerOf(context),
           maxLines: 1,
         )..layout();
-        final withIcon = constraints.maxWidth >= painter.width + _iconButtonExtra;
+        final withIcon = constraints.maxWidth >= painter.width * _minLabelScale + _iconExtra;
         painter.dispose();
         final text = Text(
           label,
@@ -186,33 +190,49 @@ class _RateButton extends StatelessWidget {
           style: style,
           semanticsLabel: l.speechRateValue(label),
         );
+        final fitted = FittedBox(fit: BoxFit.scaleDown, child: text);
         final buttonStyle = TextButton.styleFrom(
           foregroundColor: scheme.onSurfaceVariant,
           iconColor: scheme.onSurfaceVariant,
+          padding: withIcon ? _iconPadding : null,
         );
-        final fitted = FittedBox(fit: BoxFit.scaleDown, child: text);
         return Tooltip(
           message: l.speechRate,
           excludeFromSemantics: true,
           child: Builder(
             // The button's own context, which the menu opens over.
-            builder: (context) => withIcon
-                ? TextButton.icon(
-                    style: buttonStyle,
-                    onPressed: () => _open(context),
-                    icon: const Icon(Icons.speed_rounded),
-                    label: fitted,
-                  )
-                : TextButton(style: buttonStyle, onPressed: () => _open(context), child: fitted),
+            builder: (context) => TextButton(
+              style: buttonStyle,
+              onPressed: () => _open(context),
+              child: withIcon
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.speed_rounded, size: _iconSize),
+                        const SizedBox(width: _iconGap),
+                        Flexible(child: fitted),
+                      ],
+                    )
+                  : fitted,
+            ),
           ),
         );
       },
     );
   }
 
-  /// What a text button with an icon takes beside its label: its padding (12
-  /// and 16), the icon (18) and the gap after it (8).
-  static const double _iconButtonExtra = 12 + 18 + 8 + 16;
+  /// The rate beside its icon: closer than a text button with an icon sets
+  /// them (12, 18, 8 and 16), so that "Normal" keeps its icon on a 360 dp
+  /// phone, where each side of the player has 96. The start stays 12, which
+  /// with the player's own 4 brings the icon to the column's edge.
+  static const _iconPadding = EdgeInsetsDirectional.fromSTEB(12, 8, 8, 8);
+  static const double _iconSize = 18;
+  static const double _iconGap = 6;
+  static const double _iconExtra = 12 + _iconSize + _iconGap + 8;
+
+  /// How much smaller the rate may be set beside its icon before the icon
+  /// goes.
+  static const double _minLabelScale = 0.9;
 }
 
 /// One rate in the menu, the one chosen marked as a radio button is.
@@ -225,6 +245,7 @@ class _RateChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l = context.l10n;
     return Semantics(
       inMutuallyExclusiveGroup: true,
       checked: chosen,
@@ -238,7 +259,7 @@ class _RateChoice extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            speechRateLabel(rate),
+            speechRateLabel(l, rate),
             style: TextStyle(
               fontWeight: chosen ? FontWeight.w700 : null,
               fontFeatures: const [FontFeature.tabularFigures()],

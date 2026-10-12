@@ -93,6 +93,22 @@ final settingsProvider = NotifierProvider<SettingsController, AppSettings>(Setti
 /// late-night reading counts for the evening it began.
 LocalDate rolloverDate(DateTime time) => LocalDate.fromDateTime(time.subtract(const Duration(hours: 3)));
 
+/// When [rolloverDate] next turns after [now] (five seconds after), in the
+/// same absolute hours it counts, so that a change of clocks can't put it
+/// before the turn: on the night the clocks go forward, 3 a.m. on the wall
+/// comes an hour before the date turns.
+DateTime nextRollover(DateTime now) {
+  final d = rolloverDate(now);
+  var next = DateTime(d.year, d.month, d.day + 1).add(const Duration(hours: 3, seconds: 5));
+  // Should a platform take a midnight the clocks skip for the hour before
+  // it, this would come before the turn, and a timer set for it would fire
+  // and be set again for it, at once, without end.
+  while (rolloverDate(next) == d) {
+    next = next.add(const Duration(hours: 1));
+  }
+  return next;
+}
+
 /// The current "reading day": the [rolloverDate] of [now], except that
 /// because no one reads on a device on Shabbat or Yom Tov, use on those
 /// civil dates (i.e. after Havdalah) counts toward the next day.
@@ -133,9 +149,7 @@ class TodayController extends Notifier<LocalDate> {
     _timer?.cancel();
     if (!autoRollover) return;
     final n = now();
-    var next = DateTime(n.year, n.month, n.day, 3, 0, 5);
-    if (!next.isAfter(n)) next = next.add(const Duration(days: 1));
-    _timer = Timer(next.difference(n), _refresh);
+    _timer = Timer(nextRollover(n).difference(n), _refresh);
   }
 
   void _refresh() {

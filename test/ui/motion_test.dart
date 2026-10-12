@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
@@ -363,7 +364,12 @@ void main() {
   });
 
   group('showAppSheet', () {
-    Future<void> open(WidgetTester tester, {bool reduceMotion = false, double width = 412}) async {
+    Future<void> open(
+      WidgetTester tester, {
+      bool reduceMotion = false,
+      double width = 412,
+      String title = 'When did you read it?',
+    }) async {
       tester.view.physicalSize = Size(width, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -372,7 +378,7 @@ void main() {
         (context) => showAppSheet<void>(
           context: context,
           builder: (context) => Column(mainAxisSize: MainAxisSize.min, children: [
-            const SheetTitle('When did you read it?'),
+            SheetTitle(title),
             ListTile(leading: const Icon(Icons.today), title: const Text('Today'), onTap: () {}),
           ]),
         ),
@@ -414,6 +420,19 @@ void main() {
         expect(title.headingLevel, 2);
       });
     }
+
+    testWidgets('balances a title that wraps, leaving no word alone on its last line', (tester) async {
+      // In the test font, "Aaaaa bbbbb cccc / dddddd" across the sheet, and
+      // balanced "Aaaaa bbbbb / cccc dddddd".
+      const text = 'Aaaaa bbbbb cccc dddddd';
+      await open(tester, title: text);
+      await tester.pumpAndSettle();
+      final title = tester.renderObject<RenderParagraph>(find.text(text));
+      double lineOf(int offset) => title.getOffsetForCaret(TextPosition(offset: offset), Rect.zero).dy;
+      expect(lineOf(0), lessThan(lineOf(text.length - 1)), reason: 'it wraps');
+      expect(lineOf(text.indexOf('cccc')), lineOf(text.length - 1));
+      expect(tester.getTopLeft(find.text(text)).dx, 24, reason: "from the sheet's start");
+    });
 
     testWidgets('is at most 640 wide, centred, on a wide screen', (tester) async {
       await open(tester, width: 1200);

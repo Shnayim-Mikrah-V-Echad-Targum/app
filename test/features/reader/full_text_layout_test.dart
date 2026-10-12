@@ -24,7 +24,7 @@ import '../../helpers.dart';
 /// Listen stays on the verse it has reached.
 class _HeldTts extends RecordingTts {
   @override
-  Future<bool> speak(String text, {required String language, double rate = 0.45}) {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) {
     spoken.add((text, language));
     return Completer<bool>().future;
   }

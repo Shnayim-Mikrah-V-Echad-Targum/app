@@ -42,8 +42,8 @@ class ReaderBottomBar extends StatelessWidget {
   /// The side padding: [maxWidth] is the width of the bar's content.
   static const double _side = 16;
 
-  /// Below this width, or with large text, the position goes above the
-  /// buttons, which share the width.
+  /// Below this width, or with large text, the position goes beside the
+  /// progress bar, and the buttons below share the width.
   static const double _stackBelow = 400;
 
   @override
@@ -84,14 +84,14 @@ class ReaderBottomBar extends StatelessWidget {
         ),
       ),
     );
-    final where = Text(
-      position,
-      textAlign: TextAlign.center,
-      style: theme.textTheme.labelMedium?.copyWith(
-        color: scheme.onSurfaceVariant,
-        fontFeatures: const [FontFeature.tabularFigures()],
-      ),
-    );
+    Text where(TextAlign align) => Text(
+          position,
+          textAlign: align,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        );
     final back = TextButton.icon(
       focusNode: backFocus,
       onPressed: onBack,
@@ -135,10 +135,20 @@ class ReaderBottomBar extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      progress,
-                      const SizedBox(height: 8),
                       if (stacked) ...[
-                        where,
+                        // The position ends the progress bar's line rather
+                        // than taking a line of its own, so that with large
+                        // text on a phone the bar is two rows, not three.
+                        Row(
+                          children: [
+                            Expanded(child: progress),
+                            const SizedBox(width: 12),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: constraints.maxWidth * 2 / 3),
+                              child: where(TextAlign.end),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -147,16 +157,22 @@ class ReaderBottomBar extends StatelessWidget {
                             Expanded(child: next),
                           ],
                         ),
-                      ] else
+                      ] else ...[
+                        progress,
+                        const SizedBox(height: 8),
                         Row(
                           children: [
                             back,
                             Expanded(
-                              child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: where),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                child: where(TextAlign.center),
+                              ),
                             ),
                             next,
                           ],
                         ),
+                      ],
                     ],
                   ),
                 );
