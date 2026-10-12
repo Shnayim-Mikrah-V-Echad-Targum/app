@@ -352,7 +352,8 @@ class _Hero extends ConsumerStatefulWidget {
   final AppSettings settings;
 
   /// Tisha B'Av, with no reading planned on it
-  /// ([ReadingPlanner.isQuietTishaBav]).
+  /// ([ReadingPlanner.isQuietTishaBav]), or its eve from sunset in the
+  /// reader's city ([fastBegunProvider]).
   final bool quietFast;
 
   @override
@@ -760,7 +761,8 @@ class _TodayCard extends ConsumerWidget {
   final AppSettings settings;
 
   /// Tisha B'Av, with no reading planned on it
-  /// ([ReadingPlanner.isQuietTishaBav]).
+  /// ([ReadingPlanner.isQuietTishaBav]), or its eve from sunset in the
+  /// reader's city ([fastBegunProvider]).
   final bool quietFast;
 
   @override
