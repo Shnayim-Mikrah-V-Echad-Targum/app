@@ -830,7 +830,9 @@ class PostCard extends ConsumerWidget {
     final time = '${relativeTime(context, post.createdAt)}${edited ? ' · ${l.edited}' : ''}';
     final when = absoluteTime(context, post.createdAt);
     final tag = this.tag;
-    final bodyDirection = autoDirection(post.body, fallback: Directionality.of(context));
+    // A question about a verse begins with the verse, quoted as such.
+    final (:verse, rest: body) = splitVerseQuote(post.body);
+    final bodyDirection = autoDirection(body, fallback: Directionality.of(context));
     // A post you can do nothing more with, such as a former member's that
     // you have reported, has no menu.
     final menu = <PopupMenuEntry<String>>[
@@ -926,16 +928,19 @@ class PostCard extends ConsumerWidget {
                   ),
                 ),
               if (quote case final quote?) Padding(padding: const EdgeInsets.only(bottom: Space.md), child: _Quote(quote)),
-              Lang(
-                Locale(bodyDirection == TextDirection.rtl ? 'he' : 'en'),
-                child: SelectableText(
-                  post.body,
-                  textDirection: bodyDirection,
-                  // 16/26 in either interface: room between the lines of a
-                  // letter, and for a Hebrew post's points.
-                  style: text.bodyLarge?.copyWith(height: 26 / 16),
+              if (verse != null) VerseQuote(verse),
+              if (verse != null && body.isNotEmpty) const Gap(Space.md),
+              if (verse == null || body.isNotEmpty)
+                Lang(
+                  Locale(bodyDirection == TextDirection.rtl ? 'he' : 'en'),
+                  child: SelectableText(
+                    body,
+                    textDirection: bodyDirection,
+                    // 16/26 in either interface: room between the lines of a
+                    // letter, and for a Hebrew post's points.
+                    style: text.bodyLarge?.copyWith(height: 26 / 16),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -1086,7 +1091,9 @@ class _Tag extends StatelessWidget {
 }
 
 /// The post a reply answers, quoted above it: who wrote it and how it began,
-/// ruled in gold ink at its start.
+/// ruled in gold ink at its start. A question about a verse begins with its
+/// question, the verse it quotes being the post's own (or with the verse,
+/// where the post is nothing more).
 class _Quote extends StatelessWidget {
   const _Quote(this.quote);
 
@@ -1097,7 +1104,9 @@ class _Quote extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final direction = autoDirection(quote.body, fallback: Directionality.of(context));
+    final (:verse, :rest) = splitVerseQuote(quote.body);
+    final body = rest.trim().isEmpty ? verse ?? rest : rest;
+    final direction = autoDirection(body, fallback: Directionality.of(context));
     final name = quote.authorName.isEmpty ? l.anonymousMember : quote.authorName;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1108,7 +1117,7 @@ class _Quote extends StatelessWidget {
         padding: const EdgeInsetsDirectional.fromSTEB(Space.md, Space.sm, Space.md, Space.sm),
         child: Text(
           // A name in the other direction from the text keeps its own order.
-          '${autoDirection(name, fallback: direction) == direction ? name : isolate(name)}: ${quote.body}',
+          '${autoDirection(name, fallback: direction) == direction ? name : isolate(name)}: $body',
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
           textDirection: direction,
@@ -1126,7 +1135,9 @@ Future<String?> _editPost(BuildContext context, Post post) =>
 
 /// The dialog that edits a post: its text in a labelled field, which takes
 /// the focus, and Save, which waits for a change of 2 characters at least,
-/// as a reply does. It closes with the new text, or with nothing.
+/// as a reply does. It closes with the new text, or with nothing. A question
+/// about a verse keeps its verse, quoted above the field as the question
+/// was written (§9 Compose): only the question is edited.
 class _EditPostDialog extends StatefulWidget {
   const _EditPostDialog({required this.body});
 
@@ -1137,7 +1148,8 @@ class _EditPostDialog extends StatefulWidget {
 }
 
 class _EditPostDialogState extends State<_EditPostDialog> {
-  late final _controller = TextEditingController(text: widget.body);
+  late final _split = splitVerseQuote(widget.body);
+  late final _controller = TextEditingController(text: _split.rest);
 
   @override
   void dispose() {
@@ -1145,34 +1157,68 @@ class _EditPostDialogState extends State<_EditPostDialog> {
     super.dispose();
   }
 
-  bool _changed(String text) => text.trim().length >= 2 && text.trim() != widget.body.trim();
+  bool _changed(String text) => text.trim().length >= 2 && text.trim() != _split.rest.trim();
+
+  /// The post as [text] makes it: after the verse it quotes, if any, as
+  /// a question is posted.
+  String _edited(String text) => switch (_split.verse) {
+        null => text,
+        final verse => withVerseQuote(
+            verse,
+            text,
+            leftToRight: autoDirection(text, fallback: Directionality.of(context)) == TextDirection.ltr,
+          ),
+      };
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final verse = _split.verse;
+    List<Widget> actions(String text) => [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
+          FilledButton(
+            onPressed: _changed(text) ? () => Navigator.pop(context, _edited(text)) : null,
+            child: Text(l.actionSave),
+          ),
+        ];
     return ValueListenableBuilder(
       valueListenable: _controller,
-      builder: (context, value, _) => AlertDialog(
-        title: Text(l.editPostTitle),
-        content: TextField(
+      builder: (context, value, _) {
+        final field = TextField(
           controller: _controller,
           autofocus: true,
           minLines: 3,
           maxLines: 8,
-          maxLength: 10000,
+          // The verse quoted goes with it, and its mark.
+          maxLength: 10000 - (verse == null ? 0 : withVerseQuote(verse, '', leftToRight: true).runes.length),
           buildCounter: quietCounter,
           keyboardType: TextInputType.multiline,
           textDirection: autoDirection(value.text, fallback: Directionality.of(context)),
           decoration: InputDecoration(labelText: l.threadBodyLabel, alignLabelWithHint: true),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
-          FilledButton(
-            onPressed: _changed(value.text) ? () => Navigator.pop(context, value.text) : null,
-            child: Text(l.actionSave),
+        );
+        if (verse == null) {
+          return AlertDialog(title: Text(l.editPostTitle), content: field, actions: actions(value.text));
+        }
+        return AlertDialog(
+          title: Text(l.editPostTitle),
+          // With the verse above the field, it scrolls once the text is too
+          // large for both.
+          scrollable: true,
+          // As wide as the window lets it, up to Material's widest, rather
+          // than as wide as what it holds (the verse is set to the width it
+          // is given, which it can't tell beforehand).
+          constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [VerseQuote(verse, maxLines: 3), const Gap(Space.md), field],
+            ),
           ),
-        ],
-      ),
+          actions: actions(value.text),
+        );
+      },
     );
   }
 }

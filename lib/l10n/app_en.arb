@@ -2123,6 +2123,10 @@
       }
     }
   },
+  "removeVerseQuote": "Remove the verse",
+  "@removeVerseQuote": {
+    "description": "Tooltip of the button beside the verse quoted above a new question's message, which takes the verse out of the question."
+  },
   "charactersLeft": "{count} characters left",
   "@charactersLeft": {
     "placeholders": {

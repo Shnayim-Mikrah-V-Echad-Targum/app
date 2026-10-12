@@ -248,7 +248,14 @@ class ThreadTile extends ConsumerWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     final title = threadDisplayTitle(context, ref, thread);
     final page = Directionality.of(context);
-    final excerpt = thread.excerpt;
+    // A question about a verse is excerpted from its question, as the
+    // server lists it. An excerpt that begins with the verse instead (from
+    // a listing of before) has its lines run together, so it is cut short
+    // within the verse and holds nothing of the question: there is none.
+    final excerpt = switch (splitVerseQuote(thread.excerpt ?? '').rest) {
+      '' => null,
+      final rest => rest,
+    };
     // Never cut short once the text is enlarged (WCAG 1.4.4).
     final enlarged = MediaQuery.textScalerOf(context).scale(1) > 1;
     // Starting with the time, as a weekly thread's does, it starts with a

@@ -466,6 +466,11 @@ class JoinsThatFit extends StatelessWidget {
 String spokenVerse(Verse verse, AppSettings s, {required ScriptureKind kind}) =>
     _spoken(verse.readText, s, targum: kind == ScriptureKind.targum);
 
+/// The same for a verse of the Torah or the Prophets quoted as text, as a
+/// question about it quotes it, whose Name may be written ה׳, as Rashi
+/// writes it.
+String spokenQuotedVerse(String text, AppSettings s) => _spoken(text, s, rashi: true);
+
 /// The text a screen reader should speak for one of Rashi's comments in
 /// Hebrew: the words it explains, then the comment.
 String spokenRashi(Comment c, AppSettings s) =>

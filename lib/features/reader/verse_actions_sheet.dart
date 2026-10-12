@@ -17,6 +17,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/paper_group.dart';
+import '../community/ui/community_ui.dart' show VerseQuote;
 import '../notes/note_dialog.dart';
 import '../settings/app_settings.dart';
 import 'scripture_text.dart';
@@ -74,20 +75,10 @@ String verseCopy(ChosenVerse verse, AppSettings s, {required String reference}) 
       '— $reference',
     ].join('\n');
 
-/// [verse] quoted at the head of a question about it: "> " and its Hebrew,
-/// then a blank line for the question.
-///
-/// A question asked from the English UI is likely to be written in English,
-/// so with [leftToRight] the quote begins with a left-to-right mark. The post
-/// then runs from the left, as its question will, rather than taking its
-/// direction from the Hebrew quoted first (autoDirection).
-String verseQuote(Verse verse, AppSettings s, {required bool leftToRight}) =>
-    '${leftToRight ? '\u200E' : ''}> ${verseText(verse, s)}\n\n';
-
-/// Whether [body] quotes [verse] as [verseQuote] begins a question on it,
-/// however the Divine Names are written in the quote: a draft begun while
-/// the reader had them written out, or kept from before Elohim was written
-/// אלקים, still quotes the verse.
+/// Whether [body] quotes [verse] as a question on it begins ("> " and the
+/// verse's [verseText]), however the Divine Names are written in the quote:
+/// a draft begun while the reader had them written out, or kept from before
+/// Elohim was written אלקים, still quotes the verse.
 bool quotesVerse(String body, Verse verse, AppSettings s) => HebrewText.replaceDivineName(body)
     .contains('> ${HebrewText.replaceDivineName(verseText(verse, s))}');
 
@@ -244,8 +235,6 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
     final s = ref.watch(settingsProvider);
     final padding = sheetPadding(context);
     final apple = defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS;
-    // The verse as search sets one (§6.25), in the scripture's font.
-    final style = ScriptureStyles(context, s).style(ScriptureKind.mikra).copyWith(fontSize: 20, height: 1.7);
     final annotatable = kTorahBooks.contains(widget.verse.at.book);
     final marks = annotatable ? ref.watch(annotationsProvider)[widget.verse.at] : null;
     final bookmarked = marks?.bookmarked ?? false;
@@ -264,31 +253,9 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Which verse it is, as it will go, set off as a quotation
-                // is (§6.21) at the right, where the Hebrew begins. The
-                // title has named it to screen readers already.
-                ExcludeSemantics(
-                  child: Directionality(
-                    textDirection: TextDirection.rtl,
-                    child: Container(
-                      padding: const EdgeInsetsDirectional.only(start: Space.md),
-                      decoration: BoxDecoration(
-                        border: BorderDirectional(start: BorderSide(color: scheme.secondary, width: 2)),
-                      ),
-                      child: JoinsThatFit(
-                        text: TextSpan(text: keepLinesSound(verseText(widget.verse.hebrew, s))),
-                        style: style,
-                        locale: const Locale('he'),
-                        builder: (context, verse) => Text.rich(
-                          verse,
-                          style: style,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          locale: const Locale('he'),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                // is (§6.21). The title has named it to screen readers
+                // already.
+                ExcludeSemantics(child: VerseQuote(verseText(widget.verse.hebrew, s), maxLines: 3)),
                 const Gap(Space.lg),
                 if (annotatable) ...[
                   PaperGroup(

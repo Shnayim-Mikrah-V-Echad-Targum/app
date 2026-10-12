@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +21,7 @@ import '../../../ui/widgets/lang.dart';
 import '../../about/legal_screen.dart';
 import '../../parsha/week_context.dart';
 import '../../progress/domain/progress_models.dart';
+import '../../reader/scripture_text.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -586,6 +587,119 @@ class InitialDisc extends StatelessWidget {
               ),
       ),
     );
+  }
+}
+
+/// A verse quoted (§6.21), as a question about it begins and as the
+/// verse's options show what will go: in the scripture's font at 20 / 1.7,
+/// right to left, its lines broken as the reader breaks them, and set off by
+/// a 2 px gold-ink rule at its right, where the Hebrew begins, 12 from the
+/// text, in either language of the app. With [maxLines], cut short after
+/// them. Screen readers read it in a Hebrew voice, spoken as the reader's
+/// verses are.
+class VerseQuote extends ConsumerWidget {
+  const VerseQuote(this.hebrew, {super.key, this.maxLines});
+
+  /// The verse as it is quoted, as copied: with no word joiners.
+  final String hebrew;
+  final int? maxLines;
+
+  static const _hebrew = Locale('he');
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(settingsProvider);
+    final scheme = Theme.of(context).colorScheme;
+    // A verse as search sets one (§6.25), in the scripture's font.
+    final style = ScriptureStyles(context, s).style(ScriptureKind.mikra).copyWith(fontSize: 20, height: 1.7);
+    final joined = TextSpan(text: keepLinesSound(hebrew));
+    var measured = DefaultTextStyle.of(context).style.merge(style);
+    if (MediaQuery.boldTextOf(context)) measured = measured.merge(const TextStyle(fontWeight: FontWeight.bold));
+    return Lang(
+      _hebrew,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Container(
+          padding: const EdgeInsetsDirectional.only(start: Space.md),
+          decoration: BoxDecoration(
+            border: BorderDirectional(start: BorderSide(color: scheme.secondary, width: 2)),
+          ),
+          child: _SizedAsText(
+            text: TextSpan(text: joined.text, style: measured, locale: _hebrew),
+            textScaler: MediaQuery.textScalerOf(context),
+            maxLines: maxLines,
+            child: JoinsThatFit(
+              text: joined,
+              style: style,
+              locale: _hebrew,
+              builder: (context, verse) => Text.rich(
+                verse,
+                style: style,
+                maxLines: maxLines,
+                overflow: maxLines == null ? null : TextOverflow.ellipsis,
+                locale: _hebrew,
+                semanticsLabel: spokenQuotedVerse(hebrew, s),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// [child], scripture whose lines [JoinsThatFit] breaks only once it knows
+/// its width, answering the intrinsic size queries that a dialog asks (which
+/// the LayoutBuilder beneath can't) as [text], right to left in [maxLines]
+/// lines at most, would: as the verse with every maqaf's words joined.
+class _SizedAsText extends SingleChildRenderObjectWidget {
+  const _SizedAsText({required this.text, required this.textScaler, this.maxLines, required super.child});
+
+  final InlineSpan text;
+  final TextScaler textScaler;
+  final int? maxLines;
+
+  @override
+  _RenderSizedAsText createRenderObject(BuildContext context) => _RenderSizedAsText(
+        TextPainter(text: text, textDirection: TextDirection.rtl, textScaler: textScaler, maxLines: maxLines, ellipsis: '…'),
+      );
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderSizedAsText renderObject) => renderObject.painter
+    ..text = text
+    ..textScaler = textScaler
+    ..maxLines = maxLines;
+}
+
+class _RenderSizedAsText extends RenderProxyBox {
+  _RenderSizedAsText(this.painter);
+
+  final TextPainter painter;
+
+  Size _laidOut(double width) {
+    painter.layout(maxWidth: width);
+    return painter.size;
+  }
+
+  @override
+  double computeMinIntrinsicWidth(double height) => (painter..layout()).minIntrinsicWidth;
+
+  @override
+  double computeMaxIntrinsicWidth(double height) => (painter..layout()).maxIntrinsicWidth;
+
+  @override
+  double computeMinIntrinsicHeight(double width) => _laidOut(width).height;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => _laidOut(width).height;
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) => constraints.constrain(_laidOut(constraints.maxWidth));
+
+  @override
+  void dispose() {
+    painter.dispose();
+    super.dispose();
   }
 }
 

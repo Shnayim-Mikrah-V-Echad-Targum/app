@@ -2677,6 +2677,9 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get removeVerseQuote => 'הסרת הפסוק';
+
+  @override
   String charactersLeft(int count) {
     return 'נותרו $count תווים';
   }

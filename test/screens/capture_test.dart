@@ -33,6 +33,8 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
+import 'package:shnayim_mikra/data/models/verse_ref.dart';
+import 'package:shnayim_mikra/data/text_repository.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
@@ -46,6 +48,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading, ScriptureVerse;
+import 'package:shnayim_mikra/features/reader/verse_actions_sheet.dart' show verseText;
 import 'package:shnayim_mikra/features/reader/whole_parsha.dart';
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -521,6 +524,11 @@ const _screens = {
   'compose_verse': '/read/5787:1/3',
   'compose_verse_draft': '/read/5787:1/3',
   'compose_verse_posted': '/read/5787:1/3',
+  // A question on Genesis 3:22, asked so, with a reply that quotes it; its
+  // forum, which lists it by its question; and editing it, as its asker.
+  'thread_verse': '/community/thread/7300',
+  'forum_verse': '/community/forum/questions',
+  'thread_verse_edit': '/community/thread/7300',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
   'focus_day': '/today',
@@ -1023,6 +1031,9 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_long_end': _withLongThread,
   'thread_mine': _withOwnPost,
   'thread_edit': _withOwnPost,
+  'thread_verse': _withVerseQuestion,
+  'forum_verse': _withVerseQuestion,
+  'thread_verse_edit': () => _withVerseQuestion(mine: true),
   'week_discuss': () async => _OpeningForever(),
   'welcome_restore': () async => _Cloud(),
   'welcome_restoring': () async {
@@ -1048,6 +1059,59 @@ Future<ForumRepository> _withOwnPost() async {
         todah: 3,
       ),
     ]);
+}
+
+/// Genesis 3:22 as a question quotes it, with the Names written ה׳ and
+/// אלקים: read before the captures, where the text can be read.
+var _genesis3_22 = '';
+
+/// A question on Genesis 3:22 in Questions & answers, thread 7300, as "Ask
+/// about this verse" asks one, and a reply that quotes it. With [mine], the
+/// reader's own, signed in as Leah.
+Future<ForumRepository> _withVerseQuestion({bool mine = false}) async {
+  final repo = DemoForumRepository();
+  if (mine) {
+    await repo.verifyCode('leah@example.org', '123456');
+    await repo.updateDisplayName('Leah');
+  }
+  final asker = mine ? 'Leah' : 'Avraham';
+  final askerId = mine ? 'me' : 'demo-avraham';
+  final question = withVerseQuote(
+    _genesis3_22,
+    'Why does the verse say “like one of us”? Who is “us”, when it speaks of God?',
+    leftToRight: true,
+  );
+  final asked = DateTime.now().subtract(const Duration(hours: 3));
+  final answered = DateTime.now().subtract(const Duration(minutes: 25));
+  return repo
+    ..seed(
+      threads: [
+        ThreadSummary(
+          id: '7300',
+          forumId: 2,
+          title: 'Question on Genesis 3:22',
+          kind: ThreadKind.discussion,
+          authorId: askerId,
+          authorName: asker,
+          postCount: 2,
+          lastPostAt: answered,
+          createdAt: asked,
+        ),
+      ],
+      posts: [
+        Post(id: '7301', threadId: '7300', authorId: askerId, authorName: asker, body: question, createdAt: asked),
+        Post(
+          id: '7302',
+          threadId: '7300',
+          authorId: 'demo-rivka',
+          authorName: 'Rivka',
+          body: 'Rashi reads it of the angels: as they know good and evil, so now does man.',
+          createdAt: answered,
+          replyToId: '7301',
+          todah: 2,
+        ),
+      ],
+    );
 }
 
 /// The demo with a thread of 250 posts in Divrei Torah, thread 5000.
@@ -1416,6 +1480,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'thread_edit': (tester) async {
     await _scrollToEnd(tester);
     await tester.tap(find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)));
+    await _settle(tester);
+    await tester.tap(find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'edit'));
+  },
+  'thread_verse_edit': (tester) async {
+    await tester.tap(find.descendant(of: find.byType(PostCard).first, matching: find.byType(PopupMenuButton<String>)));
     await _settle(tester);
     await tester.tap(find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'edit'));
   },
@@ -1875,6 +1944,9 @@ const _hugeTallScreens = {
   // Verses found, where words a maqaf joins part only if they must.
   'search_many',
   'search_spelling',
+  // A verse quoted above a question's message, and in the question posted.
+  'compose_verse',
+  'thread_verse',
 };
 const _hugeWideScreens = {'parsha', 'settings'};
 
@@ -2007,6 +2079,7 @@ const _desktopScreens = {
   'reader_verse',
   'reader_verse_actions',
   'compose_verse',
+  'thread_verse',
   'reader_listen',
   'reader_listen_full',
   'haftarah_listen',
@@ -2122,7 +2195,10 @@ const _bigTextScreens = {
   'goto_missing',
   'reader_verse',
   'reader_verse_actions',
+  'compose_verse',
   'compose_verse_draft',
+  'thread_verse',
+  'thread_verse_edit',
   'search_many',
   'search_none',
   'search_spelling',
@@ -2192,6 +2268,10 @@ Future<void> _write(WidgetTester tester, String name) async {
 void main() {
   setUpAll(() async {
     if (_capture) await loadBundledFonts();
+    if (_capture) {
+      final verse = await TextRepository().hebrewVerse(const BookVerse('Genesis', VerseRef(3, 22)));
+      _genesis3_22 = verseText(verse!, const AppSettings());
+    }
     // The version About shows, as a release names it.
     PackageInfo.setMockInitialValues(
       appName: 'Shnayim Mikra',
