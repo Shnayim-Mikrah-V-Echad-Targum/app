@@ -85,8 +85,11 @@ class LedgerCard extends StatelessWidget {
           first: true,
           // A count is one word, set smaller where it is too wide for its
           // column ("365" at the largest text on a small phone). A sentence
-          // in its place is balanced, so that the parsha's name is not left
-          // alone on its last line ("יתחיל עם סיום / פרשת בראשית").
+          // in its place is balanced, so that on two lines the parsha's name
+          // is not left alone on the last, as the Hebrew would leave it
+          // ("יתחיל עם סיום / פרשת בראשית"). The English takes three in a
+          // phone's column, which is narrower than "Bereshit is complete":
+          // balancing then changes nothing.
           (c) => c.count == 0
               ? BalancedText(c.zero, style: theme.textTheme.titleMedium, textAlign: TextAlign.start)
               : words('${c.count}', numeral),

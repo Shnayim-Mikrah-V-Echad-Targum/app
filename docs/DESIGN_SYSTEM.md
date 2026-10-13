@@ -688,7 +688,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 - One card with two equal columns and a full-height hairline between them. Lay it out as a `Table` with a `verticalInside` hairline border rather than `IntrinsicHeight(Row(...))`, so the labels still line up when a sentence in place of a count wraps.
 - Each column: padding 16; ledgerNumeral (the count), then bodySmall label (`streakParsha`, `streakDays`); on Progress, an extra bodySmall "Longest: …".
-- When the value is 0, the numeral slot shows titleMedium text instead, a sentence that reads on into its label and says what starts the run, its lines balanced (`BalancedText`) so the parsha's name is not left alone on the last ("יתחיל עם סיום / פרשת בראשית"):
+- When the value is 0, the numeral slot shows titleMedium text instead, a sentence that reads on into its label and says what starts the run, its lines balanced (`BalancedText`). That is for the Hebrew phrasing, which takes two lines in a phone's column, so the parsha's name is not left alone on the last ("יתחיל עם סיום / פרשת בראשית"); the English takes three there ("Starts when / Bereshit is / complete", as the column, 154 at 412 dp and 128 at 360, is narrower than "Bereshit is complete"), where balancing changes nothing. Both settings are pinned by a test with the app's fonts, so a change of copy that adds a line is a deliberate one:
   - parsha streak: `streakBeginsWith(name)` = "Starts when Bereshit is complete" / "יתחיל עם סיום פרשת בראשית";
   - days on track: `daysBeginToday` = "Starts with today’s reading" / "יתחיל בקריאה של היום".
   - Never show a stark 0.

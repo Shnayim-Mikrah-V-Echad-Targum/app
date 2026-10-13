@@ -175,5 +175,23 @@ void main() {
       expect(lineOf('יתחיל'), lessThan(lineOf('בראשית')), reason: 'it takes two lines');
       expect(lineOf('פרשת'), lineOf('בראשית'), reason: 'the name is not alone');
     });
+
+    // The English is longer than the column's two lines can hold: "Bereshit
+    // is complete" alone is wider than a 412 dp phone's column (154), so
+    // it takes three. A change of copy that adds a line should be a choice.
+    testWidgets('the English sentence takes three lines in a phone’s column', (tester) async {
+      await pumpLedger(tester, const LedgerCard(parshaStreak: 0, daysOnTrack: 2, beginsWith: 'Bereshit'), width: 372);
+      const sentence = 'Starts when Bereshit is complete';
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(sentence));
+      final words = sentence.split(' ');
+      final lines = <double, List<String>>{};
+      var offset = 0;
+      for (final word in words) {
+        final y = paragraph.getOffsetForCaret(TextPosition(offset: offset), Rect.zero).dy;
+        (lines[y] ??= []).add(word);
+        offset += word.length + 1;
+      }
+      expect([for (final line in lines.values) line.join(' ')], ['Starts when', 'Bereshit is', 'complete']);
+    });
   });
 }
