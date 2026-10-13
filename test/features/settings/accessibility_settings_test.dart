@@ -131,6 +131,7 @@ void main() {
     ]) {
       testWidgets('High contrast, from ${theme.name} on a ${device.name} device, is ${expected.name}', (tester) async {
         tester.platformDispatcher.platformBrightnessTestValue = device;
+        addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
         final c = await open(tester, AppSettings(onboardingComplete: true, theme: theme));
         await tester.tap(card('High contrast'));
         await tester.pumpAndSettle();

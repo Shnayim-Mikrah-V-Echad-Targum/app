@@ -322,14 +322,17 @@ class WeekGallery extends ConsumerWidget {
 
 /// What a widget that fails to build shows in its place (AppErrorPanel),
 /// where one might fail: an item of a page's list, a card's content, a row
-/// among rows, a slot of a fixed height, and slots too small for its line.
+/// among rows, first and last of them, a row of a long list (a forum's), a
+/// slot of a fixed height, and slots too small for its line.
 class ErrorPanelGallery extends StatelessWidget {
   const ErrorPanelGallery({super.key});
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final panel = AppErrorPanel(details: FlutterErrorDetails(exception: StateError('broken')));
+    const panel = AppErrorPanel();
+    final reading = PaperRow(icon: Icons.menu_book_outlined, title: l.settingsReading, onTap: () {});
+    final reminders = PaperRow(icon: Icons.notifications_outlined, title: l.settingsReminders, onTap: () {});
     return Scaffold(
       appBar: AppBar(title: const Text('Error panel')),
       body: PageBody(
@@ -337,15 +340,17 @@ class ErrorPanelGallery extends StatelessWidget {
           const GroupHeader('An item of the page'),
           panel,
           const GroupHeader('A card’s content'),
-          InfoCard(child: panel),
+          const InfoCard(child: panel),
           const GroupHeader('A row among rows'),
-          PaperGroup(
-            children: [
-              PaperRow(icon: Icons.menu_book_outlined, title: l.settingsReading, onTap: () {}),
-              panel,
-              PaperRow(icon: Icons.notifications_outlined, title: l.settingsReminders, onTap: () {}),
-            ],
-          ),
+          PaperGroup(children: [reading, panel, reminders]),
+          const GroupHeader('The first row, and the last'),
+          PaperGroup(children: [panel, reminders]),
+          const Gap(16),
+          PaperGroup(children: [reading, panel]),
+          const GroupHeader('A row of a long list'),
+          PaperGroupRow(first: true, last: false, child: reading),
+          const PaperGroupRow(first: false, last: false, child: panel),
+          PaperGroupRow(first: false, last: true, child: reminders),
           const GroupHeader('A slot 160 high'),
           SizedBox(height: 160, child: panel),
           const GroupHeader('Too small: 40 × 40, 100 × 80, 300 × 40'),
