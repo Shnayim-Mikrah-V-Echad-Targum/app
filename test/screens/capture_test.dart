@@ -404,6 +404,8 @@ const _screens = {
   'demo_about': '/community/forum/questions',
   // Reporting a post, before a reason is chosen.
   'thread_report': '/community/thread/1',
+  // A first reply asks for the community guidelines.
+  'thread_guidelines': '/community/thread/1',
   // Letters that quote the posts they answer, and the member who began the
   // discussion answering under an Author tag.
   'thread_letters': '/community/thread/11',
@@ -1234,6 +1236,14 @@ Future<ForumRepository> _signedInOnServer() async {
   return repo;
 }
 
+/// Signed in as Rivka, with a name, who has yet to accept the guidelines.
+Future<ForumRepository> _named() async {
+  final repo = DemoForumRepository();
+  await repo.verifyCode('rivka@example.org', '123456');
+  await repo.updateDisplayName('Rivka Levi');
+  return repo;
+}
+
 /// Signed in as Rivka, who has accepted the guidelines and blocked a member.
 Future<ForumRepository> _member() async {
   final repo = DemoForumRepository();
@@ -1250,6 +1260,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_weekly': _withWeeklyThread,
   'forum_weekly': _withWeeklyThread,
   'thread_report': _signedIn,
+  'thread_guidelines': _named,
   // On a server: the demo's discussions have no link.
   for (final screen in _webUrlKeys) screen: _signedInOnServer,
   'community_member': _signedIn,
@@ -1722,6 +1733,12 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The daily reminder's switch.
   's_reminders_denied': (tester) => tester.tap(find.byType(SwitchRow).first),
   's_reminders_offer': (tester) => tester.tap(find.byType(SwitchRow).first),
+  // A reply written and sent: the guidelines first.
+  'thread_guidelines': (tester) async {
+    await tester.enterText(find.byType(TextField).last, 'Thank you, this helped me.');
+    await tester.pump();
+    await tester.tap(find.byWidgetPredicate((w) => w is FilledButton).last);
+  },
   // The last post's menu, then Report.
   'thread_report': _tapInTurn([
     () => find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)),
@@ -2479,6 +2496,7 @@ const _narrowDesktopScreens = {
 };
 
 const _desktopScreens = {
+  'thread_guidelines',
   // Today's offer of a new version, at the top of its reading column.
   'today_update',
   'about_update',
@@ -2684,6 +2702,7 @@ const _narrowScreens = {
   'guide',
 };
 const _bigTextScreens = {
+  'thread_guidelines',
   'today_chabad',
   'today_update',
   'about_update',
