@@ -124,9 +124,10 @@ void main() {
 
   group('copiedFromQuestion', () {
     // A verse with a maqaf and a paseq, as VerseQuote sets it: a word joiner
-    // after the maqaf, a no-break space before the paseq.
+    // after the maqaf, a no-break space before the paseq, and another holding
+    // its last two words together.
     const quoted = 'כִּי־טוֹב ׀ מְאֹד';
-    const shown = 'כִּי־\u2060טוֹב\u00a0׀ מְאֹד';
+    const shown = 'כִּי־\u2060טוֹב\u00a0׀\u00a0מְאֹד';
 
     test('copies the verse without what sets its words on the screen', () {
       expect(copiedFromQuestion(shown, verse: quoted, question: question), quoted);

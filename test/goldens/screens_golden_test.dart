@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/app.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -15,6 +16,8 @@ import 'tolerant_comparator.dart';
 /// (docs/DESIGN_SYSTEM.md §11.4). They show the capture harness's Friday of
 /// Bereshit, with Shlishi under way (test/helpers.dart), so they are the
 /// phone_*, he_*, dark_* and hc_* captures of test/screens/capture_test.dart.
+/// So is the full text on an 800 dp tablet, its tablet_reader_full, where
+/// scripture's lines are set to the reading column's measure.
 ///
 /// After a deliberate visual change, review the captures and then run
 ///
@@ -42,50 +45,72 @@ void main() {
     AppThemeMode.highContrastDark: 'hcd',
   };
 
+  /// Opens [route] in a [size] view, in English or Hebrew, once the texts
+  /// have loaded; then runs [check], with soft shadows, as a device draws
+  /// them (restored before the test ends, as the binding checks).
+  Future<void> show(
+    WidgetTester tester,
+    String route, {
+    required bool hebrew,
+    Size size = const Size(412, 915),
+    required Future<void> Function(ProviderContainer c) check,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    TodayScreen.forgetCompletions();
+    debugDisableShadows = false;
+    try {
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(
+          onboardingComplete: true,
+          joinDate: captureJoinDate,
+          language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
+        ),
+        now: captureNow,
+        progress: captureProgress(),
+        // The sample discussions dated back from the same day: older than
+        // a day by any real clock now, so their times are dates.
+        forums: DemoForumRepository(clock: () => captureNow),
+      );
+      c.read(routerProvider).go(route);
+      await tester.pump();
+      // The texts load on real I/O, behind a spinner that never settles.
+      for (var i = 0; i < 40; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await tester.pump(const Duration(milliseconds: 100));
+        if (i >= 3 && find.byType(CircularProgressIndicator).evaluate().isEmpty) break;
+      }
+      await tester.pumpAndSettle();
+      await check(c);
+    } finally {
+      debugDisableShadows = true;
+    }
+  }
+
   for (final hebrew in [false, true]) {
     final language = hebrew ? 'he' : 'en';
     for (final MapEntry(key: name, value: route) in screens.entries) {
       // Opened once, then shown in each theme in turn.
       testWidgets('$name, $language, in every theme', (tester) async {
-        tester.view.physicalSize = const Size(412, 915);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        TodayScreen.forgetCompletions();
-        // Soft shadows, as a device draws them; restored before the test
-        // ends, as the binding checks.
-        debugDisableShadows = false;
-        try {
-          final c = await pumpApp(
-            tester,
-            settings: AppSettings(
-              onboardingComplete: true,
-              joinDate: captureJoinDate,
-              language: hebrew ? AppLanguage.hebrew : AppLanguage.system,
-            ),
-            now: captureNow,
-            progress: captureProgress(),
-            // The sample discussions dated back from the same day: older than
-            // a day by any real clock now, so their times are dates.
-            forums: DemoForumRepository(clock: () => captureNow),
-          );
-          c.read(routerProvider).go(route);
-          await tester.pump();
-          // The texts load on real I/O, behind a spinner that never settles.
-          for (var i = 0; i < 40; i++) {
-            await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-            await tester.pump(const Duration(milliseconds: 100));
-            if (i >= 3 && find.byType(CircularProgressIndicator).evaluate().isEmpty) break;
-          }
-          await tester.pumpAndSettle();
+        await show(tester, route, hebrew: hebrew, check: (c) async {
           for (final MapEntry(key: theme, value: tag) in themes.entries) {
             c.read(settingsProvider.notifier).update((s) => s.copyWith(theme: theme));
             await tester.pumpAndSettle();
             await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('screens/${name}_${language}_$tag.png'));
           }
-        } finally {
-          debugDisableShadows = true;
-        }
+        });
       }, skip: goldensSkipped);
     }
   }
+
+  // The full text on a tablet, as the tablet_reader_full capture shows it:
+  // the Torah's and the Targum's verses set to the column's measure, none
+  // ending on a word alone.
+  testWidgets('reader_full, en, on a tablet', (tester) async {
+    await show(tester, '/read/5787:1/2?mode=full', hebrew: false, size: const Size(800, 1180), check: (c) async {
+      await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('screens/reader_full_tablet_en_light.png'));
+    });
+  }, skip: goldensSkipped);
 }

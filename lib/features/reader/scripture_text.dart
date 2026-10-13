@@ -315,10 +315,10 @@ String displayHebrew(String text, AppSettings s) =>
 String keepLinesSound(String hebrew) =>
     hebrew.replaceAll(' ׀', ' ׀').replaceAll('־', '־⁠');
 
-/// [shown], scripture as [keepLinesSound] sets it (and [joinWhereFits]
-/// after it), as it is copied: without the no-break spaces and word joiners
-/// set for the screen.
-String asCopied(String shown) => shown.replaceAll('\u00a0׀', ' ׀').replaceAll('\u2060', '');
+/// [shown], scripture as [keepLinesSound] sets it (and [joinWhereFits] and
+/// [holdLastPair] after it), as it is copied: without the no-break spaces and
+/// word joiners set for the screen.
+String asCopied(String shown) => shown.replaceAll('\u00a0', ' ').replaceAll('\u2060', '');
 
 /// [text], a paragraph of scripture whose words [keepLinesSound] has joined,
 /// with the word joiner after a maqaf left out wherever the words it joins
@@ -358,29 +358,10 @@ InlineSpan joinWhereFits(
   // A hair under the line, so that rounding never breaks the words after all.
   final limit = maxWidth - 1;
 
-  // No run is wider than an em of the largest type for each of its letters,
-  // with the widest spacing after each, and the widest widget in place of
-  // each widget: where that fits every run, as at ordinary sizes, the
-  // paragraph isn't measured.
-  var em = 0.0;
-  var spacing = 0.0;
-  void largest(InlineSpan span, TextStyle inherited) {
-    final s = inherited.merge(span.style);
-    em = math.max(em, textScaler.scale(s.fontSize ?? kDefaultFontSize));
-    spacing = math.max(spacing, math.max(s.letterSpacing ?? 0, 0) + math.max(s.wordSpacing ?? 0, 0));
-    if (span is TextSpan) {
-      for (final child in span.children ?? const <InlineSpan>[]) {
-        largest(child, s);
-      }
-    }
-  }
-
-  largest(text, style ?? const TextStyle());
-  final letter = placeholders.fold(em, (w, p) => math.max(w, p.size.width)) + spacing;
-  bool surelyFits((int, int, List<int>) r) {
-    final run = plain.substring(r.$1, r.$2);
-    return (run.length - _zeroWidth.allMatches(run).length) * letter <= limit;
-  }
+  // Where every run surely fits, as at ordinary sizes, the paragraph isn't
+  // measured.
+  final letter = _widestLetter(text, style: style, textScaler: textScaler, placeholders: placeholders);
+  bool surelyFits((int, int, List<int>) r) => _letters(plain.substring(r.$1, r.$2)) * letter <= limit;
 
   if (runs.every(surelyFits)) return text;
 
@@ -419,11 +400,217 @@ InlineSpan joinWhereFits(
 
 const _maqaf = 0x05BE;
 const _joiner = 0x2060;
+const _space = 0x20;
 final _unbreakable = RegExp('[^ ]+');
 
 /// What takes no room of its own: the points and cantillation, and the
 /// joiners and marks of direction.
 final _zeroWidth = RegExp('[\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u034F\u200B-\u200F\u2060]');
+
+/// How many of [text]'s characters take room of their own.
+int _letters(String text) => text.length - _zeroWidth.allMatches(text).length;
+
+/// The most room one character of [text] can take, as a [Text] lays it out
+/// within [style] at [textScaler] (as [joinWhereFits] takes them): an em of
+/// its largest type with the widest spacing after it, or where it is a
+/// widget, the widest of [placeholders] with that spacing. No run of [text]
+/// is wider than this for each of its [_letters].
+double _widestLetter(
+  InlineSpan text, {
+  required TextStyle? style,
+  required TextScaler textScaler,
+  required List<PlaceholderDimensions> placeholders,
+}) {
+  var em = 0.0;
+  var spacing = 0.0;
+  void largest(InlineSpan span, TextStyle inherited) {
+    final s = inherited.merge(span.style);
+    em = math.max(em, textScaler.scale(s.fontSize ?? kDefaultFontSize));
+    spacing = math.max(spacing, math.max(s.letterSpacing ?? 0, 0) + math.max(s.wordSpacing ?? 0, 0));
+    if (span is TextSpan) {
+      for (final child in span.children ?? const <InlineSpan>[]) {
+        largest(child, s);
+      }
+    }
+  }
+
+  largest(text, style ?? const TextStyle());
+  return placeholders.fold(em, (w, p) => math.max(w, p.size.width)) + spacing;
+}
+
+/// [text], a paragraph of scripture or of what goes with it, with its last
+/// two words held together by a no-break space, so that its last line never
+/// holds one word alone, wherever the two take no more than half a line
+/// [maxWidth] wide: where they take more, the line before would be left
+/// short, which is the greater fault. A word is what stands between two
+/// spaces (U+0020): words a maqaf joins ([keepLinesSound]) stand as one, as
+/// a verse's number does with its first word. As the two fit in half a
+/// line, they never break inside a word, and a paragraph of one line is
+/// laid out as it was.
+///
+/// The no-break space is as wide as the space it stands for: the text engine
+/// widens only spaces where a line may break, so it carries the paragraph's
+/// word spacing as letter spacing, as a section mark's does. Screen readers
+/// hear it as the space it stands for.
+///
+/// The two words are measured as [joinWhereFits] measures a paragraph, with
+/// the same arguments, and only where an em of their largest type for each
+/// of their letters might be too wide.
+InlineSpan holdLastPair(
+  InlineSpan text, {
+  required double maxWidth,
+  required TextScaler textScaler,
+  TextStyle? style,
+  Locale? locale,
+  List<PlaceholderDimensions> placeholders = const [],
+}) {
+  if (!maxWidth.isFinite) return text;
+  final plain = text.toPlainText(includeSemanticsLabels: false);
+  // The last word ends at [end], before any spaces at the paragraph's end,
+  // and the spaces before it run from [gap] to [last]; the word before them
+  // begins at [start].
+  var end = plain.length;
+  while (end > 0 && plain.codeUnitAt(end - 1) == _space) {
+    end--;
+  }
+  if (end == 0) return text;
+  final last = plain.lastIndexOf(' ', end - 1) + 1;
+  if (last == 0) return text;
+  var gap = last - 1;
+  while (gap > 0 && plain.codeUnitAt(gap - 1) == _space) {
+    gap--;
+  }
+  if (gap == 0) return text;
+  final start = plain.lastIndexOf(' ', gap - 1) + 1;
+  if (plain.substring(start, end).contains('\n')) return text;
+
+  final half = maxWidth / 2;
+  final (pair, widgetsBefore, widgets) = _slice(text, start, end);
+  // Each widget is as large as [placeholders] says, if it says.
+  if (widgets > 0 && widgetsBefore + widgets > placeholders.length) return text;
+  final sized = widgets == 0 ? const <PlaceholderDimensions>[] : placeholders.sublist(widgetsBefore, widgetsBefore + widgets);
+  final letter = _widestLetter(pair, style: style, textScaler: textScaler, placeholders: sized);
+  if (_letters(plain.substring(start, end)) * letter > half) {
+    // Laid out alone, on one line: as wide as the two words are together.
+    final painter = TextPainter(
+      text: TextSpan(style: style, children: [pair]),
+      textDirection: TextDirection.rtl,
+      textScaler: textScaler,
+      locale: locale,
+    )
+      ..setPlaceholderDimensions(sized)
+      ..layout();
+    final width = painter.width;
+    painter.dispose();
+    if (width > half) return text;
+  }
+  return _held(text, {for (var i = gap; i < last; i++) i}, style ?? const TextStyle());
+}
+
+/// What of [span] stands from [start] to [end] of its plain text (in which a
+/// widget is one character), in the styles it has there; and how many of
+/// [span]'s widgets stand before [start], and how many within.
+(InlineSpan, int, int) _slice(InlineSpan span, int start, int end) {
+  var at = 0;
+  var before = 0;
+  var within = 0;
+  InlineSpan? cut(InlineSpan span) {
+    if (span is! TextSpan) {
+      final kept = at >= start && at < end;
+      if (at < start) before++;
+      if (kept) within++;
+      at++;
+      return kept ? span : null;
+    }
+    var text = span.text;
+    if (text != null) {
+      final from = at;
+      at += text.length;
+      text = text.substring((start - from).clamp(0, text.length), (end - from).clamp(0, text.length));
+    }
+    final children = [for (final child in span.children ?? const <InlineSpan>[]) ?cut(child)];
+    if ((text == null || text.isEmpty) && children.isEmpty) return null;
+    return TextSpan(
+      text: text == null || text.isEmpty ? null : text,
+      children: children.isEmpty ? null : children,
+      style: span.style,
+      locale: span.locale,
+    );
+  }
+
+  return (cut(span) ?? const TextSpan(), before, within);
+}
+
+/// [span] with each of the spaces at [offsets] of its plain text (in which a
+/// widget is one character) a no-break space as wide, within [style] (the
+/// ambient style its own styles merge with). A space whose span a
+/// [TextSpan.semanticsLabel] or [TextSpan.semanticsIdentifier] speaks for is
+/// left as it is.
+InlineSpan _held(InlineSpan span, Set<int> offsets, TextStyle style) {
+  var at = 0;
+  InlineSpan hold(InlineSpan span, TextStyle inherited) {
+    if (span is! TextSpan) {
+      at++;
+      return span;
+    }
+    final s = inherited.merge(span.style);
+    final text = span.text;
+    final from = at;
+    at += text?.length ?? 0;
+    final spaces = [
+      if (text != null && span.semanticsLabel == null && span.semanticsIdentifier == null)
+        for (var i = 0; i < text.length; i++)
+          if (offsets.contains(from + i) && text.codeUnitAt(i) == _space) i,
+    ];
+    final children = [for (final child in span.children ?? const <InlineSpan>[]) hold(child, s)];
+    if (spaces.isEmpty) {
+      return TextSpan(
+        text: text,
+        children: span.children == null ? null : children,
+        style: span.style,
+        recognizer: span.recognizer,
+        mouseCursor: span.mouseCursor,
+        onEnter: span.onEnter,
+        onExit: span.onExit,
+        semanticsLabel: span.semanticsLabel,
+        semanticsIdentifier: span.semanticsIdentifier,
+        locale: span.locale,
+        spellOut: span.spellOut,
+      );
+    }
+    // The span's text in pieces, each answering the pointer as it did, and
+    // its children after them.
+    TextSpan piece(String piece, {TextStyle? style, String? semanticsLabel}) => TextSpan(
+          text: piece,
+          style: style,
+          semanticsLabel: semanticsLabel,
+          recognizer: span.recognizer,
+          mouseCursor: span.mouseCursor,
+          onEnter: span.onEnter,
+          onExit: span.onExit,
+        );
+    final space = TextStyle(letterSpacing: (s.letterSpacing ?? 0) + (s.wordSpacing ?? 0));
+    final pieces = <InlineSpan>[];
+    var rest = 0;
+    for (final i in spaces) {
+      if (i > rest) pieces.add(piece(text!.substring(rest, i)));
+      pieces.add(piece('\u00A0', style: space, semanticsLabel: ' '));
+      rest = i + 1;
+    }
+    if (rest < text!.length) pieces.add(piece(text.substring(rest)));
+    return TextSpan(
+      children: [...pieces, ...children],
+      style: span.style,
+      mouseCursor: span.mouseCursor,
+      onEnter: span.onEnter,
+      onExit: span.onExit,
+      locale: span.locale,
+      spellOut: span.spellOut,
+    );
+  }
+
+  return hold(span, style);
+}
 
 /// [span] without the characters at [offsets] of its plain text, in which a
 /// widget is one character, as [InlineSpan.toPlainText] writes it.
@@ -461,10 +648,13 @@ InlineSpan _without(InlineSpan span, Set<int> offsets) {
   return strip(span);
 }
 
-/// [text], a paragraph of scripture whose words [keepLinesSound] has joined,
-/// laid out by [builder] with only the joiners after a maqaf that the width
-/// it is given has room for ([joinWhereFits]). [style] and [locale] are the
-/// ones [builder] gives its [Text], and [placeholders] size [text]'s widgets.
+/// [text], a paragraph of scripture whose words [keepLinesSound] has joined
+/// (or of what goes with it: Rashi, or the translation), laid out by
+/// [builder] with only the joins that the width it is given has room for:
+/// the joiners after a maqaf ([joinWhereFits]), and the no-break space that
+/// holds its last two words together on its last line ([holdLastPair]).
+/// [style] and [locale] are the ones [builder] gives its [Text], and
+/// [placeholders] size [text]'s widgets.
 class JoinsThatFit extends StatelessWidget {
   const JoinsThatFit({
     super.key,
@@ -489,12 +679,21 @@ class JoinsThatFit extends StatelessWidget {
       builder: (context, constraints) {
         var effective = DefaultTextStyle.of(context).style.merge(style);
         if (MediaQuery.boldTextOf(context)) effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+        final textScaler = MediaQuery.textScalerOf(context);
+        final joined = joinWhereFits(
+          text,
+          maxWidth: constraints.maxWidth,
+          textScaler: textScaler,
+          style: effective,
+          locale: locale,
+          placeholders: placeholders,
+        );
         return builder(
           context,
-          joinWhereFits(
-            text,
+          holdLastPair(
+            joined,
             maxWidth: constraints.maxWidth,
-            textScaler: MediaQuery.textScalerOf(context),
+            textScaler: textScaler,
             style: effective,
             locale: locale,
             placeholders: placeholders,
@@ -745,7 +944,9 @@ class ScriptureVerse extends StatelessWidget {
 
     Widget paragraph({required bool withNumber}) {
       final lead = withNumber && (numeral != null || marks != null);
-      // A maqaf's words stay on one line where the line has room for them.
+      // A maqaf's words stay on one line where the line has room for them,
+      // and the verse's last two words end it together where they fit in
+      // half a line.
       Widget text = JoinsThatFit(
         text: TextSpan(
           style: base,
@@ -1452,12 +1653,14 @@ class TranslationVerse extends StatelessWidget {
     final style = ScriptureStyles(context, settings).style(ScriptureKind.translation, color: dimmed ? dimInk : null);
     final accessibleFont = settings.uiFont.family != null;
     final bold = settings.boldText || MediaQuery.boldTextOf(context);
+    const english = Locale('en');
     return Lang(
-      const Locale('en'),
+      english,
       child: Directionality(
         textDirection: TextDirection.ltr,
-        child: Text.rich(
-          TextSpan(children: [
+        // Its last two words held together, as the verse's are.
+        child: JoinsThatFit(
+          text: TextSpan(children: [
             TextSpan(
               text: '$number ',
               style: style.copyWith(
@@ -1470,7 +1673,12 @@ class TranslationVerse extends StatelessWidget {
             TextSpan(text: text),
           ]),
           style: style,
-          textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+          locale: english,
+          builder: (context, held) => Text.rich(
+            held,
+            style: style,
+            textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+          ),
         ),
       ),
     );
@@ -1506,6 +1714,7 @@ class RashiComments extends StatelessWidget {
         ? style.copyWith(fontWeight: FontWeight.w700, color: ink ?? theme.colorScheme.onSurface)
         : styles.dibburStyle(dimmed: dimmed);
     final dir = english ? TextDirection.ltr : TextDirection.rtl;
+    final locale = english ? const Locale('en') : _hebrew;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1517,19 +1726,25 @@ class RashiComments extends StatelessWidget {
             // for Android and iOS.
             child: Semantics(
               container: true,
-              localeForSubtree: english ? const Locale('en') : _hebrew,
+              localeForSubtree: locale,
               attributedLabel: english ? spokenRashiEnglish(c, settings) : _hebrewLabel(c),
               textDirection: dir,
               child: ExcludeSemantics(
-                child: Text.rich(
-                  TextSpan(children: [
+                // Its last two words held together, as the verse's are.
+                child: JoinsThatFit(
+                  text: TextSpan(children: [
                     if (c.heading != null) TextSpan(text: '${c.heading} ', style: heading),
                     TextSpan(text: english ? c.text : HebrewText.forDisplay(c.text, nikud: settings.showNikud, teamim: true)),
                   ]),
                   style: style,
-                  textDirection: dir,
-                  textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
-                  strutStyle: english ? null : styles.strut(ScriptureKind.rashi),
+                  locale: locale,
+                  builder: (context, held) => Text.rich(
+                    held,
+                    style: style,
+                    textDirection: dir,
+                    textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+                    strutStyle: english ? null : styles.strut(ScriptureKind.rashi),
+                  ),
                 ),
               ),
             ),

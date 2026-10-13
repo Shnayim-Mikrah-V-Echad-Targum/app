@@ -15,7 +15,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../parsha/week_context.dart';
-import '../reader/scripture_text.dart' show JoinsThatFit, joinWhereFits;
+import '../reader/scripture_text.dart' show JoinsThatFit, holdLastPair, joinWhereFits;
 import '../settings/app_settings.dart';
 import 'marked_text.dart';
 import 'query_direction.dart';
@@ -559,7 +559,8 @@ class _SnippetText extends StatelessWidget {
     final text = TextSpan(children: spans);
     // Words a maqaf joins stay on one line where they fit on one, as in the
     // reader; where they don't, the line ends after the maqaf rather than
-    // inside a word, and the marks move back over the joiners left out.
+    // inside a word, and the marks move back over the joiners left out. The
+    // last two words are held together, as the reader holds a verse's.
     return JoinsThatFit(
       text: text,
       style: base,
@@ -584,16 +585,18 @@ class _SnippetText extends StatelessWidget {
 
 /// [marks], ranges of [before], moved to stand over the same characters of
 /// [after], which is [before] with some of its word joiners (U+2060) left
-/// out, as [joinWhereFits] leaves them out.
+/// out, as [joinWhereFits] leaves them out, and perhaps a space held as a
+/// no-break space, as [holdLastPair] holds one.
 List<TextRange> shiftForRemovedJoiners(String before, String after, List<TextRange> marks) {
   // Where each offset of [before] falls in [after].
   final offsets = List.filled(before.length + 1, after.length);
   for (var i = 0, j = 0; i < before.length; i++) {
     offsets[i] = j;
-    if (j < after.length && before.codeUnitAt(i) == after.codeUnitAt(j)) {
+    final c = before.codeUnitAt(i);
+    if (j < after.length && (c == after.codeUnitAt(j) || (c == 0x20 && after.codeUnitAt(j) == 0xA0))) {
       j++;
     } else {
-      assert(before.codeUnitAt(i) == 0x2060, 'only word joiners are left out');
+      assert(c == 0x2060, 'only word joiners are left out');
     }
   }
   return [for (final m in marks) TextRange(start: offsets[m.start], end: offsets[m.end])];

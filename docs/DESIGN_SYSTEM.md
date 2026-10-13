@@ -438,6 +438,7 @@ Rules:
 
 **Line breaks**
 - A paseq is bound to the word before it by a no-break space, and a maqaf to the word after it by a word joiner (`keepLinesSound`), wherever the words it joins fit on a line together. Where they don't, at a very large reading or text size on a phone, that maqaf goes without its joiner (`joinWhereFits`, measured against the column by `JoinsThatFit`), so the line ends after it rather than inside a word; words joined one after another stay together as far as they fit, as many to a line as fit. Only a word wider than the column on its own breaks.
+- No paragraph of scripture ends on a word alone. The last two words of a verse of the Torah or the Targum, of a verse of the translation, of a comment of Rashi, and of a verse in a search result or quoted in a question, are held together on its last line by a no-break space wherever the two take no more than half the column (`holdLastPair`, applied by `JoinsThatFit` after `joinWhereFits`). A word is what stands between plain spaces, so words a maqaf joins count as one, as a paseq and the word before it do. Where the two take more, the line before them would be left short, and the last word stands alone. The no-break space carries the paragraph's word spacing as letter spacing, as a section mark's does, so it is as wide as any word space: nothing is set smaller, a paragraph of one line is laid out as it was, and the two never break inside a word. Screen readers hear a plain space, and a copy has one.
 
 **Verse numbers**
 - FRL 600 at 0.55× of the verse size, colour `secondary` (`dimInk` when dimmed).
@@ -1606,7 +1607,7 @@ The literal "חֲזַק חֲזַק וְנִתְחַזֵּק" is not translated.
    - add 200%-text-scale overflow tests for the Hebrew locale on /today, /progress and the reader;
    - add a focus-traversal test asserting that a focused FilledButton paints `FocusRingBorder`.
 3. **Font loading for widget tests:** add `loadBundledFonts()` to test/helpers.dart. It reads FontManifest.json and runs `FontLoader` for each family, then loads the fonts `OptionalFonts` loads on demand. Pixel-sampled contrast checks (`textContrastGuideline`) stay on the test font: with real glyphs, anti-aliased edge pixels can outnumber the text colour (test/accessibility/text_contrast_test.dart).
-4. **Goldens** (`matchesGoldenFile`): Today, Reader guided, Parsha, Progress and Community × 5 themes × {en, he}. Plus the mixed headings "Revi’i · רביעי" and "בְּרֵאשִׁית" in titleLarge and hebrewDisplay (catches fallback tofu).
+4. **Goldens** (`matchesGoldenFile`): Today, Reader guided, Parsha, Progress and Community × 5 themes × {en, he}, and the full text on an 800 dp tablet (light, en). Plus the mixed headings "Revi’i · רביעי" and "בְּרֵאשִׁית" in titleLarge and hebrewDisplay (catches fallback tofu).
 5. **Update tests that depend on removed visuals:**
    - reader_widget_test.dart:39 expects 'Targum Onkelos' (the removed LayerLabel). Change it to expect the PassTrack label '3 · Targum'.
    - All other existing finders keep working: 'Read the Hebrew', 'Verse 1 of 14', 'Next', 'Chapter 6', 'Mark this aliyah as read', 'Email me a code', 'Start this week's parsha', and 'Parshat' via the eyebrow.
