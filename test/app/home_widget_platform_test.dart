@@ -414,9 +414,11 @@ void main() {
         expect(settings['INFOPLIST_FILE'], 'ParshaWidget/Info.plist');
         expect(settings['CODE_SIGN_ENTITLEMENTS'], 'ParshaWidget/ParshaWidget.entitlements');
         expect(runner['CODE_SIGN_ENTITLEMENTS'], 'Runner/Runner.entitlements');
-        // Its version is the app's, from Flutter's xcconfig.
-        expect(pbxproj.field(config, 'baseConfigurationReference'), pbxproj.field(
-            runnerConfigs.firstWhere((c) => name(c) == name(config)), 'baseConfigurationReference'));
+        // Its version is the app's, from Flutter's generated settings, which
+        // its own xcconfig includes (see below).
+        expect(settings['CURRENT_PROJECT_VERSION'], r'$(FLUTTER_BUILD_NUMBER)');
+        expect(settings['MARKETING_VERSION'], r'$(FLUTTER_BUILD_NAME)');
+        expect(runner['CURRENT_PROJECT_VERSION'], r'$(FLUTTER_BUILD_NUMBER)');
         for (final key in settings.keys) {
           expect(key.startsWith('CODE_SIGN') && key != 'CODE_SIGN_ENTITLEMENTS', isFalse, reason: key);
           expect(key, isNot(anyOf('DEVELOPMENT_TEAM', 'PROVISIONING_PROFILE_SPECIFIER')));
@@ -425,6 +427,49 @@ void main() {
       for (final file in ['ios/ParshaWidget/Info.plist', 'ios/ParshaWidget/ParshaWidget.entitlements', 'ios/Runner/Runner.entitlements']) {
         expect(File(file).existsSync(), isTrue, reason: file);
       }
+    });
+
+    // flutter build makes Flutter/Debug.xcconfig and Release.xcconfig, the
+    // app's, include the app's CocoaPods settings while a plugin
+    // (flutter_tts) has no Swift package. With them the extension would be
+    // linked against that plugin's framework, and through it the Flutter
+    // engine, which WidgetKit would load each time it draws the widget.
+    test("it links none of the app's frameworks", () {
+      final widget = pbxproj.target('ParshaWidget')!;
+      final group = pbxproj.groupNamed('ParshaWidget')!;
+      for (final config in pbxproj.list(pbxproj.field(widget, 'buildConfigurationList')!, 'buildConfigurations')) {
+        final base = pbxproj.field(config, 'baseConfigurationReference')!;
+        expect(pbxproj.list(group, 'children'), contains(base));
+        expect(pbxproj.pathsOf(base, 'ParshaWidget'), ['ParshaWidget/ParshaWidget.xcconfig'],
+            reason: pbxproj.field(config, 'name'));
+        expect(pbxproj.settings(config).keys, isNot(contains('OTHER_LDFLAGS')));
+      }
+      final xcconfig = File('ios/ParshaWidget/ParshaWidget.xcconfig').readAsStringSync();
+      expect([for (final line in xcconfig.split('\n')) if (line.trim().isNotEmpty && !line.startsWith('//')) line],
+          ['#include "../Flutter/Generated.xcconfig"']);
+      // Which flutter build writes, with the app's version, and Flutter's
+      // own xcconfigs include.
+      for (final mode in ['Debug', 'Release']) {
+        expect(File('ios/Flutter/$mode.xcconfig').readAsStringSync(), contains('#include "Generated.xcconfig"'));
+      }
+      // The app's targets keep Flutter's.
+      for (final config
+          in pbxproj.list(pbxproj.field(pbxproj.target('Runner')!, 'buildConfigurationList')!, 'buildConfigurations')) {
+        final base = pbxproj.field(config, 'baseConfigurationReference')!;
+        expect(pbxproj.field(base, 'path'), anyOf('Flutter/Debug.xcconfig', 'Flutter/Release.xcconfig'));
+      }
+      // Nor does the extension link anything of its own beyond the system's.
+      final frameworks = pbxproj.list(widget, 'buildPhases')
+          .singleWhere((phase) => pbxproj.isa(phase) == 'PBXFrameworksBuildPhase');
+      expect(pbxproj.list(frameworks, 'files'), isEmpty);
+      expect(pbxproj.list(widget, 'packageProductDependencies'), isEmpty);
+
+      // CI checks the extension it builds.
+      final ci = File('.github/workflows/ci.yml').readAsStringSync();
+      expect(ci, contains("- name: The widget extension links none of the app's frameworks"));
+      expect(ci, contains('widget=build/ios/iphoneos/Runner.app/PlugIns/ParshaWidget.appex/ParshaWidget'));
+      expect(ci, contains(r'otool -L "$widget" | tail -n +2'));
+      expect(ci, contains(r"grep -E '@rpath/.*\.framework/|@executable_path|@loader_path'; then"));
     });
 
     test("every file the extension builds is on disk", () {
