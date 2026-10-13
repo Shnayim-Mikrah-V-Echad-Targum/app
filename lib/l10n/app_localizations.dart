@@ -3117,16 +3117,16 @@ abstract class AppLocalizations {
   /// **'An hour after Shabbat or Simchat Torah ends, or the next morning when it ends late, to log what you read then'**
   String get checkInReminderDescCity;
 
-  /// No description provided for @remindersShabbatNote.
+  /// The note at the top of Settings → Reminders, in a notice whose lines are balanced. Yom Tov is held together by a no-break space, so that a line never ends with Yom and starts the next with Tov.
   ///
   /// In en, this message translates to:
-  /// **'Never on Shabbat or Yom Tov, and at most once a day.'**
+  /// **'Never on Shabbat or Yom Tov, and at most once a day.'**
   String get remindersShabbatNote;
 
-  /// In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.
+  /// In place of remindersShabbatNote when a city is chosen for Shabbat times, Yom Tov held together as there. city is its name.
   ///
   /// In en, this message translates to:
-  /// **'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.'**
+  /// **'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.'**
   String remindersShabbatNoteCity(String city);
 
   /// Offered under the reminders while any of them is on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow.

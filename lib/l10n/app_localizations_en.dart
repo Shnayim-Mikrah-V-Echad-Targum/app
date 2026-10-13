@@ -1913,11 +1913,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get remindersShabbatNote =>
-      'Never on Shabbat or Yom Tov, and at most once a day.';
+      'Never on Shabbat or Yom Tov, and at most once a day.';
 
   @override
   String remindersShabbatNoteCity(String city) {
-    return 'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in $city.';
+    return 'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in $city.';
   }
 
   @override

@@ -1618,10 +1618,13 @@
   "@checkInReminderDescCity": {
     "description": "In place of checkInReminderDesc when a city is chosen for Shabbat times: an hour after nightfall as the days of rest end, unless that is after 10:30 PM."
   },
-  "remindersShabbatNote": "Never on Shabbat or Yom Tov, and at most once a day.",
-  "remindersShabbatNoteCity": "Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.",
+  "remindersShabbatNote": "Never on Shabbat or Yom Tov, and at most once a day.",
+  "@remindersShabbatNote": {
+    "description": "The note at the top of Settings → Reminders, in a notice whose lines are balanced. Yom Tov is held together by a no-break space, so that a line never ends with Yom and starts the next with Tov."
+  },
+  "remindersShabbatNoteCity": "Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.",
   "@remindersShabbatNoteCity": {
-    "description": "In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.",
+    "description": "In place of remindersShabbatNote when a city is chosen for Shabbat times, Yom Tov held together as there. city is its name.",
     "placeholders": {
       "city": {
         "type": "String"
