@@ -1449,7 +1449,7 @@ In order:
 - Both names set their lines evenly (`BalancedText`) should large text need two.
 - Version in labelSmall, then a SeferDivider.
 - TitlePageFrame at ≥600 only.
-- Link rows in PaperGroups under GroupHeaders: **Learn** (Texts & sources); **Policies** (Privacy, Terms, Community guidelines, Accessibility statement, Open-source licenses); **Contact** (Contact us where the build has an address, Send feedback). The guide is reached from Today's help button and from Settings.
+- Link rows in PaperGroups under GroupHeaders: **Learn** (Texts & sources); **Policies** (Privacy, Terms, Community guidelines, Accessibility statement, Open-source licenses); **Contact** (Contact us where the build has an address, Send feedback). Every Send feedback row takes one way (`sendFeedback`, about_screen.dart): by email where the build has an address and a mail app opens it, else the feedback forum where there is a community server, else the issue tracker; About's skips the email, which Contact us sends. The guide is reached from Today's help button and from Settings.
 
 **Guide, Sources, Privacy**
 - longformBody, max width 620 (the app bar's title on the column's edge, §5).

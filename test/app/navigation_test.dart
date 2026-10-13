@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shnayim_mikra/app/config.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/app/routes.dart';
@@ -29,6 +30,7 @@ import 'package:shnayim_mikra/features/settings/screens/accessibility_settings_s
 import 'package:shnayim_mikra/features/settings/screens/display_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -731,7 +733,7 @@ void main() {
       expect(find.byType(AccountScreen), findsOneWidget);
     });
 
-    Future<void> tapInAccessibility(WidgetTester tester, String row) async {
+    Future<void> tapRow(WidgetTester tester, String row) async {
       final link = find.text(row);
       await tester.ensureVisible(link);
       await tester.pumpAndSettle();
@@ -743,7 +745,7 @@ void main() {
       final router = await _pump(tester, forums: _Server());
       router.go('/settings/accessibility');
       await tester.pumpAndSettle();
-      await tapInAccessibility(tester, 'Send feedback');
+      await tapRow(tester, 'Send feedback');
       expect(find.byType(ForumScreen), findsOneWidget);
       expect(find.text('App feedback'), findsOneWidget);
       expect(selectedTab(tester), 4);
@@ -763,10 +765,81 @@ void main() {
       final router = await _pump(tester);
       router.go('/settings/accessibility');
       await tester.pumpAndSettle();
-      await tapInAccessibility(tester, 'Send feedback');
+      await tapRow(tester, 'Send feedback');
       expect(launched, [issueTrackerUri.toString()]);
       expect(find.byType(ForumScreen), findsNothing, reason: 'the demo forum reaches no one');
       expect(find.byType(AccessibilitySettingsScreen), findsOneWidget);
+    });
+
+    /// Records the links opened, each opening as [opens] says.
+    List<String> recordLaunches(WidgetTester tester, {bool opens = true}) {
+      final launched = <String>[];
+      const channel = MethodChannel('plugins.flutter.io/url_launcher');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'launch') launched.add((call.arguments as Map)['url'] as String);
+        return opens;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+      return launched;
+    }
+
+    void withSupportEmail() {
+      AppConfig.debugSupportEmail = 'help@example.org';
+      addTearDown(() => AppConfig.debugSupportEmail = null);
+    }
+
+    testWidgets('feedback, with an address to email, is emailed from Accessibility', (tester) async {
+      withSupportEmail();
+      final launched = recordLaunches(tester);
+      final router = await _pump(tester, forums: _Server());
+      router.go('/settings/accessibility');
+      await tester.pumpAndSettle();
+      await tapRow(tester, 'Send feedback');
+      expect(launched, [supportEmailUri(lookupAppLocalizations(const Locale('en')))!.toString()]);
+      expect(find.byType(ForumScreen), findsNothing);
+    });
+
+    testWidgets('feedback, with an address but no mail app to send it, goes to the feedback forum', (tester) async {
+      withSupportEmail();
+      final launched = recordLaunches(tester, opens: false);
+      final router = await _pump(tester, forums: _Server());
+      router.go('/settings/accessibility');
+      await tester.pumpAndSettle();
+      await tapRow(tester, 'Send feedback');
+      expect(launched, hasLength(1));
+      expect(launched.single, startsWith('mailto:'));
+      expect(find.byType(ForumScreen), findsOneWidget);
+    });
+
+    // About's Contact row emails already, so its Send feedback goes as
+    // Accessibility's does without an address.
+    testWidgets('feedback from About goes to the feedback forum on a server, not the issue tracker, and back',
+        (tester) async {
+      withSupportEmail();
+      final launched = recordLaunches(tester);
+      final router = await _pump(tester, forums: _Server());
+      router.go('/settings/about');
+      await tester.pumpAndSettle();
+      await tapRow(tester, 'Send feedback');
+      expect(launched, isEmpty, reason: 'neither email, which Contact us sends, nor the issue tracker');
+      expect(find.byType(ForumScreen), findsOneWidget);
+      expect(find.text('App feedback'), findsOneWidget);
+      expect(selectedTab(tester), 4);
+
+      await goBack(tester);
+      expect(find.byType(AboutScreen), findsOneWidget);
+    });
+
+    testWidgets('feedback from About, with no server for the forum to reach, goes to the issue tracker', (tester) async {
+      withSupportEmail();
+      final launched = recordLaunches(tester);
+      final router = await _pump(tester);
+      router.go('/settings/about');
+      await tester.pumpAndSettle();
+      await tapRow(tester, 'Send feedback');
+      expect(launched, [issueTrackerUri.toString()]);
+      expect(find.byType(ForumScreen), findsNothing);
+      expect(find.byType(AboutScreen), findsOneWidget);
     });
 
     for (final (row, page) in [('Display', DisplaySettingsScreen), ('Accessibility statement', LegalScreen)]) {
@@ -774,7 +847,7 @@ void main() {
         final router = await _pump(tester);
         router.go('/settings/accessibility');
         await tester.pumpAndSettle();
-        await tapInAccessibility(tester, row);
+        await tapRow(tester, row);
         expect(find.byType(page), findsOneWidget);
 
         await goBack(tester);
