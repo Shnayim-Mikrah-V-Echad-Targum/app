@@ -25,6 +25,7 @@
   - custom SMTP
   - the OTP email template
   - at least two moderators appointed
+  - a mailbox for the stores' reviewers (*Review access*, under [iOS](#ios-app-store))
 - [ ] **Moderation commitment.** Someone checks reports at least daily. Both stores expect timely action on user-generated content.
 
 ## Every release
@@ -46,6 +47,7 @@
 ### Design checks
 The goldens in `test/goldens/` hold the main screens in every theme and in both languages, and CI fails when they change. These checks cover what they can't see ([DESIGN_SYSTEM.md §11.6](DESIGN_SYSTEM.md#11-tests-and-qa)):
 - [ ] **The icon,** on a device, at 48 px and at 1024 px: a Hebrew reader checks that every icon reads שמו״ת with ש on the right. Regenerate icons only with `tool/branding/make_icon.py` (see the comment above `flutter_launcher_icons` in `pubspec.yaml`).
+- [ ] **The name under the icon,** on a Pixel at the launcher's default grid and on an iPhone at the default text size, in English and Hebrew: it isn't cut off. If the English is, set a shorter label as `app_name` in `android/app/src/main/res/values/strings.xml` (the widget's title before onboarding, too) and as `CFBundleDisplayName` in `ios/Runner/en.lproj/InfoPlist.strings` (and in `ios/Runner/Info.plist`, its fallback), and keep "Shnayim Mikra" as the name in the stores.
 - [ ] **TalkBack and VoiceOver on the reader's aliyah ribbon and PassTrack,** in English and Hebrew:
   - Each tab of the ribbon is read as one button, with its name, its number and how far it is read ("Shlishi, aliyah 3 of 7, …"), and the open one as selected. Swiping moves through the tabs in reading order, right to left in Hebrew, and scrolls the ribbon to keep each in view.
   - The PassTrack itself is silent. Its step is read once, as it changes, in the step's announcement ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"), never twice.
@@ -126,6 +128,14 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 
 **Play Console**
 
+- [ ] **Testing:** if the developer account is a personal account created after 13 November 2023, run a closed test with at least 12 testers opted in for 14 consecutive days before applying for production access. Otherwise start with internal testing. Upload the first AAB by hand in Play Console: the Play Developer API can't create an app's first release.
+- [ ] **App content:**
+  - Privacy policy: `<web address>/legal/privacy.html`.
+  - Ads: no.
+  - App access: all or some functionality is restricted; give the reviewer mailbox, as under *Review access* for [iOS](#ios-app-store).
+  - Advertising ID: not used (no ads or analytics, and no `AD_ID` permission).
+  - Government app: no. Financial features: none. Health: none. News app: no.
+  - Data safety, the content rating and the target audience, below.
 - [ ] **Data safety:**
   - Collected only when the user uses the community: email address (account management), user-generated content (posts) and user IDs.
   - Collected only if the user opts in, for backup: app activity (reading progress) and user-generated content (bookmarks, and the notes the user writes on verses, up to 2,000 characters each). Neither is shared or shown to anyone else.
@@ -139,7 +149,7 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
   - Notifications: requested in context, after the first reading.
   - Boot completed: so reminders, and the home-screen widget's turn to each new day, survive a reboot.
   - No exact-alarm permission: from Android 12 reminders and the widget's updates use inexact scheduling, which the planner allows an hour for, and before it exact alarms, which need no permission there. No special declaration is needed.
-- [ ] **Store listing:**
+- [ ] **Store listing,** in en-US and iw-IL (Hebrew), with the text in `store/play/`:
   - screenshots in English and Hebrew, for phone and tablet
   - feature graphic
   - a description that mentions the accessibility features
@@ -159,6 +169,8 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 
 **App Store Connect**
 
+- [ ] **TestFlight:** upload the build, add internal testers, and run the [checks on real devices](#behaviour-on-real-devices) on the TestFlight build.
+- [ ] **Localizations:** English (U.S.), from `store/ios/en-US/`, and Hebrew, from `store/ios/he/`: the name שניים מקרא, its subtitle, keywords and description, and Hebrew screenshots.
 - [ ] **App Privacy ("nutrition labels"):**
   - Contact info: email address, used for app functionality, linked to the user.
   - User content: posts, used for app functionality, linked to the user.
@@ -176,7 +188,13 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 - [ ] **Sign in with Apple** isn't required, because the app has no third-party social login (email code only).
 - [ ] **Export compliance:** the app uses only standard HTTPS. `ITSAppUsesNonExemptEncryption` is set to `false` in Info.plist.
 - [ ] **Age rating:** answer the user-generated-content questions honestly. Expect 12+ or 13+.
-- [ ] **Review notes:** a demo account isn't needed, because sign-in creates an account. Say that the community is moderated and how to reach the moderators.
+- [ ] **Review access.** Signing in takes a six-digit code sent by email, and reviewers sign in only with what the review notes give them. Without a way in, expect a rejection under Guideline 2.1 on iOS, and for App access on Google Play.
+  - Create a reviewer mailbox on the support domain (such as `review@<domain>`) whose webmail the reviewer can open. Use it for nothing else, and give it no two-step verification or new-device challenge, which a reviewer can't pass.
+  - In App Store Connect, under *App Review Information*, tick *Sign-in required*, enter the address as the user name and the mailbox's password as the password, and put the webmail URL and the steps below in the notes. In Play Console, give the same under *App content → App access* ("All or some functionality is restricted"). They belong there only, never in this repository.
+  - The steps to give: open *Community → Sign in*, enter the address, read the six-digit code in the mailbox and type it, and the first time, choose a display name.
+  - The account has no moderator role. If a reviewer deletes it, as they may to check account deletion, signing in again with the same address makes a new one.
+  - Before each submission, sign in with it once to confirm the code arrives.
+- [ ] **Review notes:** with the review access above, say that the community is moderated and how to reach the moderators.
 
 ## Windows
 
@@ -215,6 +233,13 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 - [ ] Launching the app while it is already running brings the open window forward, restoring it if minimized, and opens no second window. Closing it and launching it again at once opens it.
 - [ ] A reminder toast carries the three-rule mark as its icon.
 
+**Microsoft Store (Partner Center)**
+
+- [ ] Store listings in en-us and he-il, the package's two languages, each with at least one desktop screenshot of 1366 × 768 or larger: `build/screens/desktop_today.png` and `build/screens/deskhe_today.png` (1366 × 860), from `CAPTURE=1 SCREENS=today MODES=desktop,deskhe flutter test test/screens/capture_test.dart`.
+- [ ] The privacy policy URL: `<web address>/legal/privacy.html`.
+- [ ] The age rating (IARC) questionnaire: users can interact and share content (forums), with moderation.
+- [ ] The support contact: the support address, or `<web address>/legal/support.html`.
+
 ## Web
 
 - [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /<path>/`, then `node tool/legal/build_html.mjs build/web` for the static pages and, last, `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` for the offline service worker (`sw.js`). The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
@@ -232,6 +257,9 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 - [ ] With the app's theme set to Dark, the installed app's title bar (and the browser's toolbar on Android) turns dark once the app has drawn its first frame. The loading screen before it already shows the app's theme and language.
 - [ ] The loading screen fades into the app over about a quarter of a second, and the welcome or Today can be tapped as it does; with Reduce Motion on (in the app, or in the system), it gives way at once.
 - [ ] Sharing the address in a messaging app shows the preview card (`web/og.png`).
+- [ ] Once the store ids exist, point the web app at the apps:
+  - in `web/index.html`, `<meta name="apple-itunes-app" content="app-id=<App Store id>">`, for Safari's banner on iOS
+  - in `web/manifest.json`, `"related_applications": [{"platform": "play", "url": "https://play.google.com/store/apps/details?id=org.shnayimmikra.app", "id": "org.shnayimmikra.app"}]`, keeping `"prefer_related_applications": false` so that browsers still offer to install the web app
 - [ ] If you use a Content-Security-Policy, allow:
   - `'wasm-unsafe-eval'` for CanvasKit
   - your Supabase URL in `connect-src`
