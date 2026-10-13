@@ -439,7 +439,8 @@ void main() {
   });
 
   testWidgets('the Parsha tab opens every bookmark and note', (tester) async {
-    final c = await open(tester);
+    // A tablet's app bar, which has room for the button.
+    final c = await open(tester, size: const Size(800, 1000));
     final notes = find.descendant(of: find.byType(AppBar), matching: find.byTooltip('Bookmarks & notes'));
     expect(notes, findsOneWidget);
     // Between the way to every parsha and search.
@@ -447,6 +448,20 @@ void main() {
     final search = tester.getRect(find.byIcon(Icons.search));
     expect(tester.getCenter(notes).dx, inExclusiveRange(browse.right, search.left));
     await tester.tap(notes);
+    await tester.pumpAndSettle();
+    expect(tester.widget<NotesScreen>(find.byType(NotesScreen)).weekId, isNull, reason: "every parsha's");
+    expect(c.read(routerProvider).state.uri.toString(), '/notes');
+  });
+
+  // The title revealed on scrolling needs the room on a phone; the menu
+  // holds the way to every bookmark and note as its second item.
+  testWidgets('on a phone, the Parsha tab leaves bookmarks and notes to its menu', (tester) async {
+    final c = await open(tester);
+    expect(find.descendant(of: find.byType(AppBar), matching: find.byTooltip('Bookmarks & notes')), findsNothing);
+    expect(find.descendant(of: find.byType(AppBar), matching: find.byIcon(Icons.search)), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bookmarks & notes'));
     await tester.pumpAndSettle();
     expect(tester.widget<NotesScreen>(find.byType(NotesScreen)).weekId, isNull, reason: "every parsha's");
     expect(c.read(routerProvider).state.uri.toString(), '/notes');
@@ -523,7 +538,7 @@ void main() {
     final browse = tester.getRect(find.widgetWithText(TextButton, 'All parshiyot'));
     expect(browse.width, lessThanOrEqualTo(412 * 0.4 + 24), reason: "40% of the width, and the button's padding");
     expect(tester.takeException(), isNull);
-    for (final icon in [Icons.bookmarks_outlined, Icons.search, Icons.more_vert]) {
+    for (final icon in [Icons.search, Icons.more_vert]) {
       final rect = tester.getRect(find.byIcon(icon).first);
       expect(rect.left, greaterThanOrEqualTo(browse.right - 1));
       expect(rect.right, lessThanOrEqualTo(bar.right));

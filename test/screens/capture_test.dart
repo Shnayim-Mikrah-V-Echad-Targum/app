@@ -208,8 +208,11 @@ const _screens = {
   'today_tisha_bav': '/today',
   'today_tisha_bav_week': '/today',
   'parsha': '/parsha',
-  // Scrolled past its head: the app bar names the parsha.
+  // Scrolled past its head: the app bar names the parsha, and the week of
+  // Acharei Mot-Kedoshim 5788, the longest name, which a 360 dp phone has
+  // no room for in English, so leaves out rather than cut short.
   'parsha_scrolled': '/parsha',
+  'parsha_scrolled_double': '/parsha',
   'browse': '/parsha/browse',
   // The Wednesday of Chukat and Balak, read together, most of the year read:
   // opened with this week in view.
@@ -816,6 +819,8 @@ class _PreparingIndex extends VerseIndexLoader {
 final _screenNow = <String, DateTime>{
   'progress_map': historyNow,
   'progress_history': historyNow,
+  // The Wednesday of Acharei Mot-Kedoshim 5788.
+  'parsha_scrolled_double': DateTime(2028, 5, 3, 11),
   'progress_map_rescue': rescueNow,
   'today_divergence': DateTime(2029, 4, 24, 11),
   'today_divergence_abroad': DateTime(2029, 4, 24, 11),
@@ -1676,6 +1681,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
         find.descendant(of: find.byType(WeekOverview), matching: find.byType(Scrollable)).first,
         const Offset(0, -300),
       ),
+  'parsha_scrolled_double': (tester) => tester.drag(
+        find.descendant(of: find.byType(WeekOverview), matching: find.byType(Scrollable)).first,
+        const Offset(0, -300),
+      ),
   'kit_ornaments': (tester) => _showGallery(tester, const OrnamentsGallery()),
   'kit_rows': (tester) => _showGallery(tester, const RowsGallery()),
   'kit_progress': (tester) => _showGallery(tester, const ProgressGallery()),
@@ -1911,6 +1920,10 @@ final _modes = [
   _Mode('bighe', const Size(412, 2600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 2),
   // A 360 dp phone, tall, for the screens in [_narrowScreens].
   _Mode('narrow', const Size(360, 2600), (s) => s),
+  // A 360 dp phone at its own height, in English and Hebrew, for the screens
+  // in [_narrowPhoneScreens]: a page that scrolls there.
+  _Mode('narrowphone', const Size(360, 800), (s) => s),
+  _Mode('narrowphonehe', const Size(360, 800), (s) => s.copyWith(language: AppLanguage.hebrew)),
   // A 1920 dp desktop, where a column's inset is widest.
   _Mode('wide', const Size(1920, 1080), (s) => s),
   // The narrowest desktop, where the two columns of Today, Progress and a
@@ -1935,6 +1948,10 @@ final _modes = [
 ];
 
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
+
+const _narrowPhoneModes = {'narrowphone', 'narrowphonehe'};
+// The room the Parsha tab's actions leave the title revealed on scrolling.
+const _narrowPhoneScreens = {'parsha_scrolled', 'parsha_scrolled_double'};
 
 const _bigPhoneScreens = {
   'welcome',
@@ -2352,6 +2369,7 @@ void main() {
       if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
       if (mode.tag == 'narrow' && !_narrowScreens.contains(entry.key)) continue;
+      if (_narrowPhoneModes.contains(mode.tag) && !_narrowPhoneScreens.contains(entry.key)) continue;
       if (mode.tag == 'bigphone' && !_bigPhoneScreens.contains(entry.key)) continue;
       if (mode.tag == 'desk1200' && !_narrowDesktopScreens.contains(entry.key)) continue;
       if (_hugeModes.contains(mode.tag) && !_hugeScreens.contains(entry.key)) continue;

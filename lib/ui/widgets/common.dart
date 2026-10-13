@@ -384,9 +384,15 @@ class _BottomRulePainter extends CustomPainter {
 /// [PageScaffold.titleText] so; a page whose app bar shows another name (a
 /// thread, its forum's) gives it as its [PageScaffold.title].
 class AppBarTitle extends StatelessWidget {
-  const AppBarTitle(this.text, {super.key});
+  const AppBarTitle(this.text, {super.key, this.wholeOnly = false});
 
   final String text;
+
+  /// Draws nothing rather than cut the title short: for a title revealed as
+  /// the page's own heading scrolls away ([PageScaffold.titleRevealed]),
+  /// which repeats that heading for the eye alone, and is better left out
+  /// than shown in part.
+  final bool wholeOnly;
 
   /// The smallest the title is set, of its size, before it is cut short.
   static const double minScale = 0.75;
@@ -406,6 +412,7 @@ class AppBarTitle extends StatelessWidget {
         final width = painter.width;
         painter.dispose();
         if (width <= constraints.maxWidth) return Text(text, maxLines: 1, softWrap: false);
+        if (wholeOnly && width * minScale > constraints.maxWidth) return const SizedBox.shrink();
         final scale = math.max(minScale, constraints.maxWidth / width);
         return Text(
           text,

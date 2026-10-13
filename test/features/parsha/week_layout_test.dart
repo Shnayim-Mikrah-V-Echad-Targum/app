@@ -113,7 +113,8 @@ void main() {
       expect(aliyot(tester).right, moreOrLessEquals(tabStart + width));
       await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
       await tester.pumpAndSettle();
-      final title = find.descendant(of: find.byType(AppBar), matching: find.text(_en.parshaLabel('Bereshit')));
+      // The parsha's name alone, as the tab says it is a parsha.
+      final title = find.descendant(of: find.byType(AppBar), matching: find.text('Bereshit'));
       expect(tester.getTopLeft(title).dx, tabStart);
     });
 

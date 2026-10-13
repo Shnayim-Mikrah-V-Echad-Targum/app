@@ -52,13 +52,19 @@ class WeekOverviewScreen extends ConsumerWidget {
 /// The name at the head is the page's heading. The app bar shows it too once
 /// it has scrolled out of sight.
 class WeekOverview extends ConsumerStatefulWidget {
-  const WeekOverview({super.key, required this.ctx, this.leading, this.actions = const []});
+  const WeekOverview({super.key, required this.ctx, this.leading, this.actions = const [], this.bareTitle = false});
 
   final WeekContext ctx;
 
   /// The app bar's leading button, if not the usual one.
   final Widget? leading;
   final List<Widget> actions;
+
+  /// Whether the title revealed as the parsha's name scrolls away is the
+  /// name alone ("Bereshit"), where the page's place already says it is a
+  /// parsha (the Parsha tab), leaving room for the tab's actions on a
+  /// phone; otherwise "Parshat Bereshit".
+  final bool bareTitle;
 
   @override
   ConsumerState<WeekOverview> createState() => _WeekOverviewState();
@@ -120,6 +126,8 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
     return PageScaffold(
       leading: widget.leading,
       titleText: l.parshaLabel(name),
+      // Whole or not at all: it repeats the page's heading.
+      title: AppBarTitle(widget.bareTitle ? name : l.parshaLabel(name), wholeOnly: true),
       titleRevealed: headingHidden,
       contentMaxWidth: width,
       actions: [
