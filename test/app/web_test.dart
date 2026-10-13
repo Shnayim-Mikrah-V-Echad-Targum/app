@@ -151,6 +151,16 @@ void main() {
       expect(ratios.keys, unorderedEquals(['narrow', 'wide']));
       expect(ratios.values.every((r) => r.length == 1), isTrue, reason: 'one aspect ratio per form factor');
     });
+
+    // So that the dialog never shows a design the app has left behind.
+    test('shows the screenshots that the goldens write', () {
+      final screenshots = (manifest['screenshots'] as List).cast<Map<String, dynamic>>();
+      expect(
+        [for (final shot in screenshots) shot['src']],
+        ['screenshots/today-narrow.png', 'screenshots/reader-narrow.png', 'screenshots/today-wide.png'],
+        reason: 'test/goldens/screens_golden_test.dart writes web/screenshots/',
+      );
+    });
   });
 
   group('offline', () {
