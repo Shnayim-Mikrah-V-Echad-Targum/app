@@ -1,6 +1,6 @@
-# Shnayim Mikra
+# Shnayim Mikrah
 
-An app for *shnayim mikra v'echad targum*, reading each week's Torah portion twice and the Targum once. It runs on Android, iOS, the web and Windows, in English and Hebrew.
+An app for *shnayim mikrah v'echad targum*, reading each week's Torah portion twice and the Targum once. It runs on Android, iOS, the web and Windows, in English and Hebrew.
 
 It always knows the right portion for the week, in Israel or abroad and in any year type. It guides you through the reading verse by verse, section by section or aliyah by aliyah. It tracks a daily streak and a weekly streak with forgiving, Shabbat-aware rules. It also has a community forum with a thread for every parsha.
 
@@ -18,14 +18,14 @@ Accessibility is a core requirement, not an add-on. See [docs/ACCESSIBILITY.md](
 - Search for a word or phrase in the Torah, the Targum or the translation, from the Parsha tab. Hebrew is matched without vowels or cantillation, and each verse found opens in the reader.
 - Go to a verse by its reference, in English or Hebrew ("Gen 28:12", "Vayetzei 28 12", "בראשית כח, יב", or "3:22" in this week's book), from the same search button or Ctrl+K. The reader opens at the verse and marks it.
 - The reader handles the special cases:
-  - Bamidbar 32:3, where Onkelos is mostly place names (a third Mikra reading)
-  - verses Rashi is silent on, when Rashi replaces the Targum (a third Mikra reading)
+  - Bamidbar 32:3, where Onkelos is mostly place names (a third Mikrah reading)
+  - verses Rashi is silent on, when Rashi replaces the Targum (a third Mikrah reading)
   - repeating the last verse
   - ketiv/qere
   - large and small letters
 - Every week's haftarah, including the special haftarot (Rosh Chodesh, the four parshiyot, Chanukah, Shabbat Shuva and others). Ashkenazi or Sephardi rite.
 - Choice of scripture font: Noto Serif Hebrew, Taamey Frank, Ezra SIL or Noto Sans Hebrew. Vowels and cantillation can each be shown or hidden. Settings for line height, word spacing and line width.
-- Listen: text-to-speech verse by verse, where a Hebrew voice is installed, with the verse being read highlighted, a player to pause, move a verse back or on and set the rate, and an optional hands-free mode that reads Mikra, Mikra and Targum in turn.
+- Listen: text-to-speech verse by verse, where a Hebrew voice is installed, with the verse being read highlighted, a player to pause, move a verse back or on and set the rate, and an optional hands-free mode that reads Mikrah, Mikrah and Targum in turn.
 
 **Calendar**
 - A Hebrew calendar and parsha schedule, validated against hebcal for every year from 5700 to 5900:
@@ -108,7 +108,7 @@ Setting up the backend is covered in [docs/BACKEND.md](docs/BACKEND.md).
 | Platform | Command | Notes |
 |---|---|---|
 | Android | `flutter build appbundle` | Release signing reads `android/key.properties` if present (see [docs/RELEASE.md](docs/RELEASE.md)). |
-| iOS | `flutter build ipa` | Needs Xcode and an Apple developer team. Bundle id `org.shnayimmikra.app`. |
+| iOS | `flutter build ipa` | Needs Xcode and an Apple developer team. Bundle id `org.shnayimmikrah.app`. |
 | Web | `flutter build web --no-web-resources-cdn` | Always pass `--no-web-resources-cdn`. Without it, every visitor's browser fetches the rendering engine from Google's CDN. With it, the engine is served from your own host, which is better for privacy and works on restricted networks. Then `node tool/legal/build_html.mjs build/web` writes the static policy pages, and `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` the service worker that keeps the app working offline (see [docs/RELEASE.md](docs/RELEASE.md#web)). |
 | Windows | `flutter build windows` | Output in `build/windows/x64/runner/Release`. `bash tool/windows/make_msix.sh` then packages it as an MSIX installer (see [docs/RELEASE.md](docs/RELEASE.md#windows)). |
 

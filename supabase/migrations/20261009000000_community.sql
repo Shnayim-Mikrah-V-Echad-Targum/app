@@ -1,5 +1,5 @@
 -- =====================================================================
--- Shnayim Mikra community: forums, moderation, account deletion, progress
+-- Shnayim Mikrah community: forums, moderation, account deletion, progress
 -- backup. Schema, row-level security, triggers and RPCs for Supabase.
 --
 -- Security model: everything that matters is enforced here, not in the app.

@@ -389,7 +389,7 @@ class _Veil extends StatelessWidget {
       );
 }
 
-/// One verse's block (its Mikra and Targum) as focus mode sets it (§4.7):
+/// One verse's block (its Mikrah and Targum) as focus mode sets it (§4.7):
 /// every block inset alike, so that nothing moves as the verse being read
 /// changes, and that one on the verse highlight with a 3 px techelet rule at
 /// its start, the right, as scripture runs (the preview is set right to

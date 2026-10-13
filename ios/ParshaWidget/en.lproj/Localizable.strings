@@ -3,8 +3,8 @@
    comes from the app, in the app's language. */
 "widget.name" = "This week's parsha";
 "widget.description" = "This week's parsha, how far you've read and today's reading, a tap away.";
-"widget.appName" = "Shnayim Mikra";
-"widget.empty" = "Open Shnayim Mikra to begin.";
+"widget.appName" = "Shnayim Mikrah";
+"widget.empty" = "Open Shnayim Mikrah to begin.";
 
 /* The widget as the gallery previews it, for a reader partway through Bereshit. */
 "preview.eyebrow" = "Parshat HaShavua";

@@ -2,14 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/data/models/parsha.dart';
-import 'package:shnayim_mikra/data/models/scripture.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/data/parsha_repository.dart';
-import 'package:shnayim_mikra/data/text_repository.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/data/models/parsha.dart';
+import 'package:shnayim_mikrah/data/models/scripture.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/data/parsha_repository.dart';
+import 'package:shnayim_mikrah/data/text_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -116,7 +116,7 @@ void main() {
   });
 
   group('section breaks inside a verse', () {
-    // Every verse of Mikra and of the haftarot, keyed "Book c:v".
+    // Every verse of Mikrah and of the haftarot, keyed "Book c:v".
     Future<Map<String, Verse>> allHebrewVerses() async {
       final out = <String, Verse>{};
       for (final book in kTorahBooks) {

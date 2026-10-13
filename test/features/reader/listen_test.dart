@@ -4,19 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
-import 'package:shnayim_mikra/features/reader/listen_along.dart';
-import 'package:shnayim_mikra/features/reader/listen_bar.dart';
-import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
-import 'package:shnayim_mikra/services/tts.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/reader/haftarah_screen.dart';
+import 'package:shnayim_mikrah/features/reader/listen_along.dart';
+import 'package:shnayim_mikrah/features/reader/listen_bar.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
 
 import '../../helpers.dart';
 
@@ -140,7 +140,7 @@ void main() {
       expect(highlighted(tester), [2]);
       await press(tester, LogicalKeyboardKey.arrowLeft);
       expect(highlighted(tester), [1]);
-      // Each move reads the verse from its Mikra.
+      // Each move reads the verse from its Mikrah.
       expect(tts.last, startsWith('ויולד נח שלשה בנים'));
 
       await press(tester, LogicalKeyboardKey.keyL);
@@ -255,7 +255,7 @@ void main() {
       expect(marked(tester), isEmpty);
     });
 
-    testWidgets('with Listen along, reads Mikra, Mikra and Targum hands-free, and leaves Finish to the reader',
+    testWidgets('with Listen along, reads Mikrah, Mikrah and Targum hands-free, and leaves Finish to the reader',
         (tester) async {
       final tts = RecordingTts();
       final c = await open(tester, '/read/5787:2/0', tts,

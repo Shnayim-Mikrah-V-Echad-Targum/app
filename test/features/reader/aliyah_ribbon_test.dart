@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/focus.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/reader/aliyah_ribbon.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/focus.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
 
 import '../../helpers.dart';
 

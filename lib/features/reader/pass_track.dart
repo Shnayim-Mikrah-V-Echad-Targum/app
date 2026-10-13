@@ -6,7 +6,7 @@ import '../../ui/theme/app_theme.dart';
 import 'reader_flow.dart';
 
 /// Where the reader is among the three readings of the verses on screen
-/// (docs/DESIGN_SYSTEM.md §6.17): "1 · Mikra", "2 · Mikra" and "3 · Targum"
+/// (docs/DESIGN_SYSTEM.md §6.17): "1 · Mikrah", "2 · Mikrah" and "3 · Targum"
 /// side by side, each over a bar in its ring colour once reached. A reading
 /// done is checked, and the one under way is set in bold.
 ///

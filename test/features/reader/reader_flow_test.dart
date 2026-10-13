@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/data/models/scripture.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/reader/reader_flow.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/data/models/scripture.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/reader/reader_flow.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 void main() {
   final verses = [for (var v = 1; v <= 6; v++) VerseRef(1, v)];
@@ -35,7 +35,7 @@ void main() {
     expect(sections.map((c) => (c.start, c.end)), [(0, 2), (2, 5), (5, 6)]);
   });
 
-  test('steps: twice Mikra then the chosen second reading', () {
+  test('steps: twice Mikrah then the chosen second reading', () {
     expect(flow().stepsFor(0), [StepKind.mikra1, StepKind.mikra2, StepKind.targum]);
     expect(flow(second: SecondReading.rashi).stepsFor(0), [StepKind.mikra1, StepKind.mikra2, StepKind.rashi]);
     expect(flow(second: SecondReading.onkelosAndRashi).stepsFor(0),
@@ -126,7 +126,7 @@ void main() {
     expect(f.stepVerses(1, StepKind.mikra1), [const VerseRef(1, 3), const VerseRef(1, 4), const VerseRef(1, 5)]);
   });
 
-  test('end with Mikra adds a final repeat step', () {
+  test('end with Mikrah adds a final repeat step', () {
     final f = flow(repeatLast: true);
     expect(f.stepsFor(5).last, StepKind.repeatLast);
     expect(f.stepsFor(4).last, StepKind.targum);

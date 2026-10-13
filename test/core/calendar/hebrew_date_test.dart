@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/hebrew_date.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
 
 import 'fixtures.dart';
 

@@ -3,13 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/data/models/scripture.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/motion.dart';
-import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show SectionBreakMark;
+import 'package:shnayim_mikrah/data/models/scripture.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/motion.dart';
+import 'package:shnayim_mikrah/ui/theme/sefer_colors.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart' show SectionBreakMark;
 
 import '../../helpers.dart';
 

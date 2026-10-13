@@ -10,10 +10,19 @@
 - [ ] **License for the app's source code.** No license has been chosen yet; choose one and add a `LICENSE` file. The bundled texts keep their own licenses:
   - The MAM Hebrew text is CC BY-SA 4.0. Its attribution is shown under *About → Texts & sources*, and changes to that text must stay under the same license.
   - Taamey Frank is GPL-2.0 with a font exception. It is shipped as an unmodified separate file. If you'd rather ship only OFL fonts, remove it; [assets/fonts/licenses/README.md](../assets/fonts/licenses/README.md) lists every place to change.
-- [ ] **Identity:**
-  - The app id, bundle id and MSIX identity name are `org.shnayimmikra.app`. Change them now if you won't control that domain; they can't be changed after publishing.
-  - The display name is "Shnayim Mikra".
-- [ ] **Support address.** Set `SUPPORT_EMAIL`, as a repository variable for CI. Both stores and the accessibility statement need a working contact, and without one the account-deletion page offers no way to ask by email.
+- [x] **Identity:**
+  - The domain is `shnayimmikrah.org`.
+  - The app id, bundle id and MSIX identity name follow it: `org.shnayimmikrah.app`. They can't be changed after publishing.
+  - The iOS widget extension is `org.shnayimmikrah.app.ParshaWidget`, and its App Group is `group.org.shnayimmikrah.app`.
+  - The display name is "Shnayim Mikrah", spelled with an h everywhere.
+- [ ] **The web address.** Serve the web build at `https://shnayimmikrah.org/`:
+  - In the repository's *Settings → Pages*, set the custom domain to `shnayimmikrah.org` and tick *Enforce HTTPS* once the certificate is issued.
+  - At the domain's registrar, point the apex at GitHub Pages with four `A` records (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) and four `AAAA` records (`2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`). Add a `CNAME` record for `www` to `shnayim-mikrah-v-echad-targum.github.io`.
+  - Verify the domain for the organization (*Organization settings → Pages → Verified domains*), so no one else can claim it on GitHub Pages.
+  - Set the repository variables `DEPLOY_WEB=true`, `WEB_BASE_HREF=/` and `WEB_URL=https://shnayimmikrah.org/`.
+  - The store listings' privacy, support and account-deletion URLs are then `https://shnayimmikrah.org/legal/privacy.html`, `…/legal/support.html` and `…/legal/delete-account.html`.
+  - With the site at the domain's root, Android App Links and iOS Universal Links for discussion URLs become possible (`/.well-known/assetlinks.json` and `/.well-known/apple-app-site-association`).
+- [ ] **Support address.** Set up mail for the domain (for example `support@shnayimmikrah.org`) and set `SUPPORT_EMAIL` to it, as a repository variable for CI. Both stores and the accessibility statement need a working contact, and without one the account-deletion page offers no way to ask by email.
 - [ ] **Public pages.** Both stores need a public URL for each of these, and the web build has them as static pages that work without JavaScript, in English and in Hebrew (add `.he` before `.html`):
   - the privacy policy: `<web address>/legal/privacy.html`
   - a support page: `<web address>/legal/support.html`
@@ -65,7 +74,7 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
   - Tapping a reminder, with the app running and with it closed, opens Today. The Erev Shabbat reminder opens the week instead, and going back from it leads to Today.
   - Reminders survive a reboot (Android).
   - On Android, the status-bar icon is the three rules of the mark (two long over a shorter one), not a white square or a menu icon, and the Erev Shabbat reminder expands to show its whole message.
-- [ ] Listen, on Android, iOS, Windows and the web: the highlight follows the voice verse by verse, in the full text with each Targum; pause and play go on from the same verse; back and on a verse, and a new speech rate, take effect at once, with no verse skipped or cut short; and Listen along reads Mikra, Mikra and Targum hands-free and stops at the aliyah's last step.
+- [ ] Listen, on Android, iOS, Windows and the web: the highlight follows the voice verse by verse, in the full text with each Targum; pause and play go on from the same verse; back and on a verse, and a new speech rate, take effect at once, with no verse skipped or cut short; and Listen along reads Mikrah, Mikrah and Targum hands-free and stops at the aliyah's last step.
 - [ ] Listen is audible with the Silent switch on; music ducks and comes back up, and a paused podcast resumes, both when speech finishes and when it is stopped part-way, paused or the reader is left, and music stays ducked from one verse to the next and through Listen along's breath between readings (iOS).
 - [ ] While listening, lock the phone or switch apps: speech pauses at its verse, and Play continues from the start of that verse.
 - [ ] Android: music ducks under Listen and comes back up when it stops, staying ducked from verse to verse; an incoming call pauses Listen (Android and iOS).
@@ -77,7 +86,7 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 - [ ] Shortcuts on the app's icon, on Android and iOS, in English and Hebrew: long-pressing the icon shows Continue reading, Log a Chumash reading and This week's parsha, in the app's language and with the app's icon (on iOS, the mark). Each opens its page with back leading to Today: from a cold start, with the app in the background, and with its process stopped in the background (on Android, *Don't keep activities* in the developer options). Afterwards, the plain icon opens the app where it was left, not the shortcut's page again.
 - [ ] **The home-screen widget**, on Android (a launcher of Android 12 or later, and one of Android 11 or earlier) and iOS, small and medium, in English and Hebrew, in light and dark mode ([DESIGN_SYSTEM.md §6.30](DESIGN_SYSTEM.md#630-home-screen-widgets-android-and-ios)):
   - The picker or gallery shows its preview, with its name and description in the device's language.
-  - Added after onboarding, it shows this week's parsha, its three bars and today's reading at once; before onboarding, "Open Shnayim Mikra to begin."
+  - Added after onboarding, it shows this week's parsha, its three bars and today's reading at once; before onboarding, "Open Shnayim Mikrah to begin."
   - Marking a reading, or changing the language, the transliteration, vowels or Israel/Diaspora, changes it within a few seconds, and it follows the app's language, mirrored in Hebrew, whatever the device's.
   - Tapping it opens Today, and Continue opens the reader where Today's button leads, with back leading to Today: from a cold start, with the app in the background, and with its process stopped (on Android, *Don't keep activities*). Afterwards the plain icon opens the app where it was left.
   - Without opening the app, it turns to the next day after 3 a.m., and on Erev Shabbat to Shabbat Shalom with no bars or Continue (with a city for Shabbat times, at candle-lighting), back to the reading after Shabbat; on Android after a reboot too.
@@ -85,7 +94,7 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
   - On the night the clocks go forward (set the zone and date just before a change), it turns to the new day three hours after midnight, at 4 o'clock on the new clock, not a day late.
   - TalkBack and VoiceOver read the widget as one sentence (the parsha, how far each reading has come and today's reading), and Continue as a button of its own.
   - Nothing is cut short at the largest text size, nor at its smallest height (two rows, in landscape; Android 14 at 200%): the names shrink to fit, a long greeting (G'mar Chatimah Tovah, גמר חתימה טובה) takes two lines (three in the narrowest Android widget), and on Android lines that don't fit are left out, the aliyot read first. On iOS its text grows with the text size up to xxxLarge and stays there at the accessibility sizes, set smaller where the small widget has no room.
-- [ ] Android system backup: after `adb shell bmgr backupnow org.shnayimmikra.app`, reinstalling the app restores its settings and progress.
+- [ ] Android system backup: after `adb shell bmgr backupnow org.shnayimmikrah.app`, reinstalling the app restores its settings and progress.
 - [ ] Community against the production backend:
   - sign in with a code
   - post, edit and delete
@@ -148,8 +157,8 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 
 **Xcode setup**
 
-- [ ] Open `ios/Runner.xcworkspace` and set the development team and bundle id, for both targets: **Runner** (`org.shnayimmikra.app`) and **ParshaWidget** (`org.shnayimmikra.app.ParshaWidget`), the home-screen widget's extension, which is embedded in the app and must be signed by the same team. Its version follows the app's.
-- [ ] **App Group** `group.org.shnayimmikra.app`, through which the app hands the widget what it shows: register it in the Apple developer portal (*Identifiers → App Groups*), enable the App Groups capability for both App IDs with that group, and make sure both provisioning profiles (the app's and the extension's) include it. Xcode's automatic signing does all of this once the team is set. Both targets' entitlements already name the group (`ios/Runner/Runner.entitlements`, `ios/ParshaWidget/ParshaWidget.entitlements`). Without it the app still runs, but the widget never gets its days and shows "Open Shnayim Mikra to begin." CI's build is unsigned and needs none of this.
+- [ ] Open `ios/Runner.xcworkspace` and set the development team and bundle id, for both targets: **Runner** (`org.shnayimmikrah.app`) and **ParshaWidget** (`org.shnayimmikrah.app.ParshaWidget`), the home-screen widget's extension, which is embedded in the app and must be signed by the same team. Its version follows the app's.
+- [ ] **App Group** `group.org.shnayimmikrah.app`, through which the app hands the widget what it shows: register it in the Apple developer portal (*Identifiers → App Groups*), enable the App Groups capability for both App IDs with that group, and make sure both provisioning profiles (the app's and the extension's) include it. Xcode's automatic signing does all of this once the team is set. Both targets' entitlements already name the group (`ios/Runner/Runner.entitlements`, `ios/ParshaWidget/ParshaWidget.entitlements`). Without it the app still runs, but the widget never gets its days and shows "Open Shnayim Mikrah to begin." CI's build is unsigned and needs none of this.
 - [ ] Enable the push notification capability only if you add remote push. Local notifications don't need it.
 - [ ] **Privacy manifests:** the widget extension's `ios/ParshaWidget/PrivacyInfo.xcprivacy` declares the one required-reason API it calls, reading the App Group's user defaults (`NSPrivacyAccessedAPICategoryUserDefaults`, reason `1C8F.1`), and that it collects and tracks nothing; without it App Store Connect refuses the upload (ITMS-91053). Declare there any such API the extension comes to call (`test/app/home_widget_platform_test.dart` checks the ones it knows). The app's own come from Flutter and its plugins, each with a manifest of its own; home_widget, which saves the widget's timeline in the App Group, has none, but shared_preferences declares the same category and reason in the app. If an upload is ever refused for the Runner binary's user defaults, add a `PrivacyInfo.xcprivacy` to Runner's resources declaring them with `1C8F.1`.
 
@@ -200,14 +209,14 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 
 **Build**
 
-- [ ] Run `flutter build windows --release` with the dart-defines from the README. Then, in Git Bash, run `bash tool/windows/make_msix.sh`, adding `--certificate-path certificate.pfx --certificate-password …` to sign it. The installer is `build/windows/msix/ShnayimMikra.msix`.
+- [ ] Run `flutter build windows --release` with the dart-defines from the README. Then, in Git Bash, run `bash tool/windows/make_msix.sh`, adding `--certificate-path certificate.pfx --certificate-password …` to sign it. The installer is `build/windows/msix/ShnayimMikrah.msix`.
 - [ ] Or take the `windows-msix` artifact from CI. The `windows` artifact is the same build unpackaged.
 
 **Checks**
 
 - [ ] Install the MSIX on Windows 10 and Windows 11:
   - Start, the taskbar and *Settings → Apps* show the app's icon. At small sizes, such as the taskbar at 100% scaling, the icon is the three rules alone.
-  - They name the app in Windows's display language: Shnayim Mikra, or שניים מקרא with Hebrew first in *Settings → Time & language → Language*, as does the header of a reminder's notification. (`tool/windows/make_msix.sh` stops if the package's `resources.pri` lacks the Hebrew name.)
+  - They name the app in Windows's display language: Shnayim Mikrah, or שניים מקרא with Hebrew first in *Settings → Time & language → Language*, as does the header of a reminder's notification. (`tool/windows/make_msix.sh` stops if the package's `resources.pri` lacks the Hebrew name.)
   - The window opens centred on the screen it was launched from, and no larger than 90% of it. It can't be made smaller than 380 × 560 at 100% scaling, and scales that minimum at 150% and 200%.
   - The title bar follows the app's theme: choosing *Dark* in the app darkens it, even when Windows is light, and the reverse. With the app following the system, switching Windows between light and dark switches it too. Check this on a Windows 10 older than version 2004 as well (1809, as in Enterprise LTSC 2019, up to 1909), which numbers the setting differently.
   - A reminder's notification opens the app, also when it is already running.
@@ -218,7 +227,7 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 ## Web
 
 - [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /<path>/`, then `node tool/legal/build_html.mjs build/web` for the static pages and, last, `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` for the offline service worker (`sw.js`). The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
-- [ ] Set the repository variable `WEB_URL` to the site's public address, such as `https://example.org/app/`. CI then makes the link previews' URLs absolute, as most sites that show previews require.
+- [ ] Set the repository variable `WEB_URL` to the site's public address, `https://shnayimmikrah.org/`. CI then makes the link previews' URLs absolute, as most sites that show previews require.
 - [ ] Serve it over HTTPS. Let browsers keep `canvaskit/` and `assets/` only if they revalidate them (`Cache-Control: no-cache`, with an ETag or Last-Modified): their URLs stay the same from one release to the next, and the service worker keeps them for offline use anyway. Don't cache `index.html`, `flutter_bootstrap.js`, `sw.js`, `sw_update.js` or `flutter_service_worker.js` (the browsers of earlier visitors still check it, and Flutter's version now unregisters itself).
 - [ ] In Chrome DevTools (*Application → Manifest*), the app has no installability errors, and installing it shows the richer dialog, with screenshots. The screenshots are `web/screenshots/`, taken from the capture harness; after a redesign, take them again:
   ```sh

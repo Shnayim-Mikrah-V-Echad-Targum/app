@@ -5,20 +5,20 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/ui/thread_screen.dart' show PostCard;
-import 'package:shnayim_mikra/features/reader/reader_bottom_bar.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse;
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/services/notifications.dart';
-import 'package:shnayim_mikra/ui/theme/focus.dart';
-import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
-import 'package:shnayim_mikra/ui/widgets/lines.dart' show DotLine, WholeWords;
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/ui/thread_screen.dart' show PostCard;
+import 'package:shnayim_mikrah/features/reader/reader_bottom_bar.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart' show ScriptureVerse;
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/services/notifications.dart';
+import 'package:shnayim_mikrah/ui/theme/focus.dart';
+import 'package:shnayim_mikrah/ui/theme/sefer_colors.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart' show NoticeBanner;
+import 'package:shnayim_mikrah/ui/widgets/lines.dart' show DotLine, WholeWords;
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
 import 'routes.dart';
@@ -95,7 +95,7 @@ void main() {
   // On a 360 dp phone, where both labels wrap.
   testWidgets("at 200% text size the welcome's wrapped button labels keep clear of the buttons' edges", (tester) async {
     await open(tester, '/welcome', settings: const AppSettings(), size: const Size(360, 800), textScale: 2);
-    for (final button in [find.byType(FilledButton), find.widgetWithText(TextButton, 'I already use Shnayim Mikra')]) {
+    for (final button in [find.byType(FilledButton), find.widgetWithText(TextButton, 'I already use Shnayim Mikrah')]) {
       final box = tester.getRect(button);
       final label = tester.getRect(find.descendant(of: button, matching: find.byType(Text)));
       expect(label.height, greaterThan(60), reason: 'two lines of 30 px text');

@@ -4,10 +4,10 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/services/home_widget_sync.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/services/home_widget_sync.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
 
 /// The native side of the home-screen widgets (lib/services/home_widget_sync.dart),
 /// which no Dart test runs and this machine can't build: checked here against
@@ -15,7 +15,7 @@ import 'package:shnayim_mikra/ui/theme/palette.dart';
 /// Android and iOS builds find them whole.
 void main() {
   const res = 'android/app/src/main/res';
-  const kotlin = 'android/app/src/main/kotlin/org/shnayimmikra/shnayim_mikra';
+  const kotlin = 'android/app/src/main/kotlin/org/shnayimmikrah/shnayim_mikrah';
   final provider = File('$kotlin/ParshaWidgetProvider.kt').readAsStringSync();
   final swift = File('ios/ParshaWidget/ParshaWidget.swift').readAsStringSync();
 
@@ -121,8 +121,8 @@ void main() {
         };
 
     test('the provider is registered, not exported, with its widget info', () {
-      expect(kAndroidWidgetProvider, 'org.shnayimmikra.shnayim_mikra.ParshaWidgetProvider');
-      expect(provider, contains('package org.shnayimmikra.shnayim_mikra'));
+      expect(kAndroidWidgetProvider, 'org.shnayimmikrah.shnayim_mikrah.ParshaWidgetProvider');
+      expect(provider, contains('package org.shnayimmikrah.shnayim_mikrah'));
       expect(provider, contains('class ParshaWidgetProvider : HomeWidgetProvider()'));
       final receiver = element('receiver', '.ParshaWidgetProvider');
       expect(receiver, contains('android:exported="false"'));
@@ -382,7 +382,7 @@ void main() {
         final settings = pbxproj.settings(config);
         final runner = pbxproj.settings(runnerConfigs.firstWhere((c) => name(c) == name(config)));
         expect(settings['PRODUCT_BUNDLE_IDENTIFIER'], '${runner['PRODUCT_BUNDLE_IDENTIFIER']}.ParshaWidget');
-        expect(settings['PRODUCT_BUNDLE_IDENTIFIER'], 'org.shnayimmikra.app.ParshaWidget');
+        expect(settings['PRODUCT_BUNDLE_IDENTIFIER'], 'org.shnayimmikrah.app.ParshaWidget');
         expect(settings['IPHONEOS_DEPLOYMENT_TARGET'], '15.0');
         expect(settings['SKIP_INSTALL'], 'YES');
         expect(settings['INFOPLIST_FILE'], 'ParshaWidget/Info.plist');

@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/services/optional_fonts.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/services/optional_fonts.dart';
 
 import '../helpers.dart';
 
@@ -73,7 +73,7 @@ void main() {
   });
 
   testWidgets('the interface fonts load on demand, each weight a face of its own', (tester) async {
-    const text = 'Shnayim Mikra';
+    const text = 'Shnayim Mikrah';
     Future<double> width(String family, FontWeight weight) async {
       await tester.pumpWidget(Directionality(
         textDirection: TextDirection.ltr,

@@ -13,7 +13,7 @@ export 'status_colors.dart';
 /// that carries text or meaning.
 ///
 /// How the roles are used:
-/// - primary (techelet) only for interaction, Mikra progress, the focus ring
+/// - primary (techelet) only for interaction, Mikrah progress, the focus ring
 ///   and the Hebrew display title of a parsha;
 /// - secondary (gold ink) is the rubric colour: eyebrows, verse numbers,
 ///   chapter heads, Targum, overdue and rest days. Never buttons;

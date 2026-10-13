@@ -1,9 +1,9 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
-import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikrah/features/community/ui/forum_screen.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
 

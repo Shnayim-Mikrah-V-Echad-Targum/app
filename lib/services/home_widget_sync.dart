@@ -27,13 +27,13 @@ import 'app_shortcuts.dart';
 /// The App Group the iOS widget extension shares with the app, where the
 /// timeline is saved (ios/Runner/Runner.entitlements and
 /// ios/ParshaWidget/ParshaWidget.entitlements).
-const kWidgetAppGroup = 'group.org.shnayimmikra.app';
+const kWidgetAppGroup = 'group.org.shnayimmikrah.app';
 
 /// The key the timeline is saved under, which both widgets read.
 const kWidgetTimelineKey = 'parsha_widget';
 
 /// The Android widget (android/app/src/main/kotlin/.../ParshaWidgetProvider.kt).
-const kAndroidWidgetProvider = 'org.shnayimmikra.shnayim_mikra.ParshaWidgetProvider';
+const kAndroidWidgetProvider = 'org.shnayimmikrah.shnayim_mikrah.ParshaWidgetProvider';
 
 /// The iOS widget's kind (ios/ParshaWidget/ParshaWidget.swift).
 const kIOSWidgetKind = 'ParshaWidget';
@@ -52,7 +52,7 @@ enum WidgetLink {
 
   final String path;
 
-  static const scheme = 'shnayimmikra';
+  static const scheme = 'shnayimmikrah';
 
   /// The link the widget opens. The `homeWidget` query marks it as the
   /// widget's for home_widget on iOS, which hands the app only such links.

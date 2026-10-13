@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
-import 'package:shnayim_mikra/data/models/parsha.dart';
-import 'package:shnayim_mikra/data/parsha_repository.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/data/models/parsha.dart';
+import 'package:shnayim_mikrah/data/parsha_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

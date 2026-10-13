@@ -35,8 +35,8 @@ import flutter_local_notifications
   // the session, so that Listen pauses at its verse rather than wait,
   // silent, for an engine the system has paused.
   private func registerAudioSessionChannel(_ registry: FlutterPluginRegistry) {
-    guard let registrar = registry.registrar(forPlugin: "ShnayimMikraAudioSession") else { return }
-    let channel = FlutterMethodChannel(name: "shnayim_mikra/audio_session", binaryMessenger: registrar.messenger())
+    guard let registrar = registry.registrar(forPlugin: "ShnayimMikrahAudioSession") else { return }
+    let channel = FlutterMethodChannel(name: "shnayim_mikrah/audio_session", binaryMessenger: registrar.messenger())
     channel.setMethodCallHandler { call, result in
       guard call.method == "deactivate" else {
         result(FlutterMethodNotImplemented)

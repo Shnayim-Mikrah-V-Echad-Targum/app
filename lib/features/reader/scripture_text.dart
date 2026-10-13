@@ -1109,7 +1109,7 @@ class ParallelVerse extends StatelessWidget {
 }
 
 /// The heads of the full text's parallel columns ([ParallelVerse]), above
-/// its first verse: "Mikra" over the Torah's column and "Targum Onkelos" (or
+/// its first verse: "Mikrah" over the Torah's column and "Targum Onkelos" (or
 /// the translation's name) over the other, each where its text begins, over
 /// a hairline as wide as its column. They are inset as the verses' text is
 /// within its block ([VerseGroup.padding]).

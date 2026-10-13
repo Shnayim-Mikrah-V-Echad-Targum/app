@@ -266,7 +266,7 @@ class LayerSnippet {
   final TextLayer layer;
   final Snippet snippet;
 
-  /// For the Mikra and the Targum, the same words of the verse with all its
+  /// For the Mikrah and the Targum, the same words of the verse with all its
   /// marks, as a screen reader speaks the reader's verses: vowels whether or
   /// not they are shown, which tell how the Name is read, and cantillation
   /// for those who ask for every mark. Empty for the translation.
@@ -316,7 +316,7 @@ class SearchResults {
 /// The verses of one book in one layer, as read aloud and folded for search.
 typedef _BookLayer = ({List<int> chapterLengths, List<String> texts, List<String> keys});
 
-/// Every verse of the Torah in Mikra, Targum Onkelos and the translation,
+/// Every verse of the Torah in Mikrah, Targum Onkelos and the translation,
 /// folded for search ([SearchText.fold]).
 class VerseIndex {
   VerseIndex._(this._books, this._refs, this._texts, this._keys);
@@ -376,7 +376,7 @@ class VerseIndex {
   int get length => _refs.length;
 
   /// The verses that hold [query], in the Torah's order: at most [limit] of
-  /// them, and how many there are in all. A Hebrew search reads the Mikra and
+  /// them, and how many there are in all. A Hebrew search reads the Mikrah and
   /// the Targum, any other the translation. The Hebrew of a result has its
   /// vowels if [nikud], and never its cantillation.
   ///

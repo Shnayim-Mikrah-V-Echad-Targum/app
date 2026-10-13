@@ -24,7 +24,7 @@ enum StepKind {
   /// the second reading.
   thirdHebrew,
 
-  /// The final verse once more, to end with Mikra.
+  /// The final verse once more, to end with Mikrah.
   repeatLast,
 }
 

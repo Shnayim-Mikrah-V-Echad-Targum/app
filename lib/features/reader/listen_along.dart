@@ -6,7 +6,7 @@ import '../../services/tts.dart';
 import '../../ui/l10n.dart';
 
 /// What Listen reads (DESIGN.md §3): one utterance for each layer of each
-/// verse, in order (the Mikra, then its Targum), each with the verse it
+/// verse, in order (the Mikrah, then its Targum), each with the verse it
 /// belongs to, which is highlighted while it is read and which the player
 /// moves between.
 class SpeechQueue {

@@ -4,14 +4,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/app_theme.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/app_theme.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
 

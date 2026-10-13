@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/data/parsha_repository.dart';
-import 'package:shnayim_mikra/data/text_repository.dart';
-import 'package:shnayim_mikra/features/search/verse_index.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/data/parsha_repository.dart';
+import 'package:shnayim_mikrah/data/text_repository.dart';
+import 'package:shnayim_mikrah/features/search/verse_index.dart';
 
 /// The text of each of [snippet]'s matches.
 List<String> matched(Snippet snippet) => [for (final m in snippet.matches) snippet.text.substring(m.start, m.end)];

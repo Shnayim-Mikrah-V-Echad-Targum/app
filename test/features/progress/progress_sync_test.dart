@@ -7,21 +7,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/app.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/community/data/backend.dart';
-import 'package:shnayim_mikra/features/community/data/community_providers.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/models.dart';
-import 'package:shnayim_mikra/features/notes/domain/annotations.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/app.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/community/data/backend.dart';
+import 'package:shnayim_mikrah/features/community/data/community_providers.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/models.dart';
+import 'package:shnayim_mikrah/features/notes/domain/annotations.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_merge.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/streak_engine.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../../helpers.dart';
 
@@ -1086,7 +1086,7 @@ void main() {
 
     var rebuilds = 0;
     debugOnRebuildDirtyWidget = (element, _) {
-      if (element.widget is ShnayimMikraApp) rebuilds++;
+      if (element.widget is ShnayimMikrahApp) rebuilds++;
     };
     addTearDown(() => debugOnRebuildDirtyWidget = null);
     var syncs = 0;

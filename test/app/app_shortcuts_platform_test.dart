@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/services/app_shortcuts.dart';
+import 'package:shnayim_mikrah/services/app_shortcuts.dart';
 
 /// The native side of the shortcuts on the app's icon
 /// (lib/services/app_shortcuts.dart).
@@ -31,7 +31,7 @@ void main() {
     final extra = RegExp(r'EXTRA_ACTION\s*=\s*"([^"]+)"').firstMatch(source)![1]!;
 
     final activity =
-        File('android/app/src/main/kotlin/org/shnayimmikra/shnayim_mikra/MainActivity.kt').readAsStringSync();
+        File('android/app/src/main/kotlin/org/shnayimmikrah/shnayim_mikrah/MainActivity.kt').readAsStringSync();
     expect(activity, contains('const val QUICK_ACTION_EXTRA = "$extra"'));
     expect(activity, contains('intent.removeExtra(QUICK_ACTION_EXTRA)'));
     expect(activity, contains('setIntent(intent)'));

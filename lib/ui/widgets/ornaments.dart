@@ -144,7 +144,7 @@ class _LozengePainter extends CustomPainter {
 enum PipState { pending, done }
 
 /// Three lozenges for the three readings of an aliyah, in reading order:
-/// Mikra, Mikra again, then Targum. They follow the text direction, so in
+/// Mikrah, Mikrah again, then Targum. They follow the text direction, so in
 /// Hebrew the first reading is the rightmost.
 ///
 /// A done reading is filled in its ring colour and a pending one outlined;

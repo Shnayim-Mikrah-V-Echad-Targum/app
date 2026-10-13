@@ -5,7 +5,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
 
 /// WCAG 2.x relative luminance of an opaque sRGB colour.
 double luminance(Color c) {
@@ -224,7 +224,7 @@ void main() {
           expect(sefer.yearTrack, s.outlineVariant);
         }
         expect(sefer.focusGap, s.surface);
-        // Techelet means Mikra progress, so "done" and the first ring share it.
+        // Techelet means Mikrah progress, so "done" and the first ring share it.
         expect(sefer.ringMikra1, s.primary);
         expect(t.status.done, s.primary);
       });

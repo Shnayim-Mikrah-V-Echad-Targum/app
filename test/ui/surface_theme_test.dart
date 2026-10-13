@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/app_theme.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/app_theme.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
 
 /// docs/DESIGN_SYSTEM.md §5, §6.2, §6.3 and §6.19: the app bar, cards, menus,
 /// sheets, dialogs, snack bars and tooltips. Paper on surface, full-strength

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
-import 'package:shnayim_mikra/ui/theme/typography.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/ui/theme/typography.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
 
 import '../helpers.dart';
 

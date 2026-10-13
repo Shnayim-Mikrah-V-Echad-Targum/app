@@ -1,4 +1,4 @@
-package org.shnayimmikra.shnayim_mikra
+package org.shnayimmikrah.shnayim_mikrah
 
 import android.appwidget.AppWidgetManager
 import android.content.Context

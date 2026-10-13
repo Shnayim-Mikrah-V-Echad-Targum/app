@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/data/parsha_repository.dart';
-import 'package:shnayim_mikra/features/parsha/week_context.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/data/parsha_repository.dart';
+import 'package:shnayim_mikrah/features/parsha/week_context.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 class _FixedToday extends TodayController {
   _FixedToday(this.day);

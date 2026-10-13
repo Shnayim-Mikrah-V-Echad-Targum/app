@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_merge.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
 
 void main() {
   final d1 = LocalDate(2026, 10, 11);

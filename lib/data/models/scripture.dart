@@ -112,7 +112,7 @@ enum SectionBreak {
   closed,
 }
 
-/// The full text of one layer (Mikra, Targum, translation) of one book.
+/// The full text of one layer (Mikrah, Targum, translation) of one book.
 class BookText {
   const BookText({required this.book, required this.chapters, this.breaks = const {}});
 

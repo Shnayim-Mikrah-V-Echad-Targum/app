@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/reader/pass_track.dart';
-import 'package:shnayim_mikra/features/reader/reader_flow.dart';
-import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
+import 'package:shnayim_mikrah/features/reader/pass_track.dart';
+import 'package:shnayim_mikrah/features/reader/reader_flow.dart';
+import 'package:shnayim_mikrah/ui/theme/sefer_colors.dart';
 
 import '../../helpers.dart';
 
@@ -33,13 +33,13 @@ void main() {
 
   testWidgets('the readings before the one under way are checked, and it is bold', (tester) async {
     expect(await labels(tester, [m1, m2, targum], 0), [
-      ('1 · Mikra', checked: false, bold: true),
-      ('2 · Mikra', checked: false, bold: false),
+      ('1 · Mikrah', checked: false, bold: true),
+      ('2 · Mikrah', checked: false, bold: false),
       ('3 · Targum', checked: false, bold: false),
     ]);
     expect(await labels(tester, [m1, m2, targum], 2), [
-      ('1 · Mikra', checked: true, bold: false),
-      ('2 · Mikra', checked: true, bold: false),
+      ('1 · Mikrah', checked: true, bold: false),
+      ('2 · Mikrah', checked: true, bold: false),
       ('3 · Targum', checked: false, bold: true),
     ]);
   });
@@ -47,22 +47,22 @@ void main() {
   testWidgets('the third reading is named for what is read in it', (tester) async {
     // Rashi in place of the Targum; and, where Rashi is silent, the Hebrew.
     expect((await labels(tester, [m1, m2, rashi], 0)).last.$1, '3 · Rashi');
-    expect((await labels(tester, [m1, m2, third], 0)).last.$1, '3 · Mikra');
+    expect((await labels(tester, [m1, m2, third], 0)).last.$1, '3 · Mikrah');
     // The Targum and Rashi both: the one under way.
     expect((await labels(tester, [m1, m2, targum, rashi], 1)).last.$1, '3 · Targum');
     expect(await labels(tester, [m1, m2, targum, rashi], 3), [
-      ('1 · Mikra', checked: true, bold: false),
-      ('2 · Mikra', checked: true, bold: false),
+      ('1 · Mikrah', checked: true, bold: false),
+      ('2 · Mikrah', checked: true, bold: false),
       ('3 · Rashi', checked: false, bold: true),
     ]);
     // Numbers 32:3 read on its own: its Hebrew again, after its Targum.
-    expect((await labels(tester, [m1, m2, targum, third], 3)).last, ('3 · Mikra', checked: false, bold: true));
+    expect((await labels(tester, [m1, m2, targum, third], 3)).last, ('3 · Mikrah', checked: false, bold: true));
   });
 
   testWidgets('ending with the last verse once more comes after all three readings', (tester) async {
     expect(await labels(tester, [m1, m2, targum, repeat], 3), [
-      ('1 · Mikra', checked: true, bold: false),
-      ('2 · Mikra', checked: true, bold: false),
+      ('1 · Mikrah', checked: true, bold: false),
+      ('2 · Mikrah', checked: true, bold: false),
       ('3 · Targum', checked: true, bold: false),
     ]);
   });

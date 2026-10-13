@@ -4,20 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/data/models/scripture.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/reader/reader_flow.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/today/today_clock.dart';
-import 'package:shnayim_mikra/features/today/today_screen.dart';
-import 'package:shnayim_mikra/ui/widgets/ledger.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show SeferDivider, TitlePageFrame;
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart' show ParshaRings, RingsWithLegend;
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/data/models/scripture.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/reader/reader_flow.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/today/today_clock.dart';
+import 'package:shnayim_mikrah/features/today/today_screen.dart';
+import 'package:shnayim_mikrah/ui/widgets/ledger.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart' show SeferDivider, TitlePageFrame;
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart' show ParshaRings, RingsWithLegend;
 
 import '../../helpers.dart';
 
@@ -306,7 +306,7 @@ void main() {
       expect(heading, isSemantics(label: 'Parshat Bereshit', isHeader: true));
       expect(heading.getSemanticsData().headingLevel, 1);
       // The app's name heads nothing.
-      expect(tester.getSemantics(find.text('Shnayim Mikra')), isSemantics(isHeader: false));
+      expect(tester.getSemantics(find.text('Shnayim Mikrah')), isSemantics(isHeader: false));
       expect(find.byType(TitlePageFrame), findsOneWidget);
       expect(find.byType(AppBar), findsNothing);
       handle.dispose();

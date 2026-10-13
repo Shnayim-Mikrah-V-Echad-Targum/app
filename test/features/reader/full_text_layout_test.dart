@@ -5,18 +5,18 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/reader/verse_anchor.dart';
-import 'package:shnayim_mikra/features/reader/whole_parsha.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/services/tts.dart';
-import 'package:shnayim_mikra/ui/theme/focus.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/reader/aliyah_ribbon.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/reader/verse_anchor.dart';
+import 'package:shnayim_mikrah/features/reader/whole_parsha.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
+import 'package:shnayim_mikrah/ui/theme/focus.dart';
 
 import '../../helpers.dart';
 
@@ -122,7 +122,7 @@ void main() {
       final heads = find.byType(ParallelHeading);
       expect(heads, findsOneWidget);
       expect(tester.getRect(heads).bottom, lessThan(right.top));
-      expect(find.bySemanticsLabel('Mikra, Targum Onkelos'), findsOneWidget);
+      expect(find.bySemanticsLabel('Mikrah, Targum Onkelos'), findsOneWidget);
 
       // The text keeps to its wider measure, centred, and the title and the
       // ribbon to it.

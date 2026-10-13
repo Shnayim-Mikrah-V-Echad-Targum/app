@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
-import 'package:shnayim_mikra/ui/theme/app_theme.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/ui/theme/app_theme.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
 
 import '../../helpers.dart';
 
@@ -142,7 +142,7 @@ void main() {
         'Press and hold a verse to bookmark it',
         'Listen reads the text aloud for you to follow — an aid, not a substitute for reading.',
       ],
-      'What is Shnayim Mikra?',
+      'What is Shnayim Mikrah?',
     ),
     (
       AppLanguage.hebrew,

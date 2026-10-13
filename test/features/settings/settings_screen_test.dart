@@ -3,17 +3,17 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/services/notifications.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/lang.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/services/notifications.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/lang.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
 

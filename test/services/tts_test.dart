@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:shnayim_mikra/services/tts.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
 
 /// Records the calls made to the speech engine.
 class _FakeTts extends Fake implements FlutterTts {
@@ -529,7 +529,7 @@ void main() {
   group('the native side', () {
     final dart = File('lib/services/tts.dart').readAsStringSync();
     final android =
-        File('android/app/src/main/kotlin/org/shnayimmikra/shnayim_mikra/MainActivity.kt').readAsStringSync();
+        File('android/app/src/main/kotlin/org/shnayimmikrah/shnayim_mikrah/MainActivity.kt').readAsStringSync();
     final ios = File('ios/Runner/AppDelegate.swift').readAsStringSync();
 
     test('answers on the same channel', () {
@@ -606,7 +606,7 @@ void main() {
       expect(engine.said.last, 'ג');
     });
 
-    test('moves verse by verse, from the Mikra of one to the Mikra of the next', () async {
+    test('moves verse by verse, from the Mikrah of one to the Mikrah of the next', () async {
       unawaited(tts.speakQueue(
         ['mikra 1', 'targum 1', 'mikra 2', 'targum 2', 'mikra 3'],
         language: 'he-IL',

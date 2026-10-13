@@ -1,6 +1,6 @@
-# Shnayim Mikra v'Echad Targum: halachic and practical research for product design
+# Shnayim Mikrah v'Echad Targum: halachic and practical research for product design
 
-Prepared 2026-10-09. Scope: the halachic and customary details that should drive features in a cross-platform app for reading the weekly parsha twice in Hebrew (Mikra) and once in Targum Onkelos.
+Prepared 2026-10-09. Scope: the halachic and customary details that should drive features in a cross-platform app for reading the weekly parsha twice in Hebrew (Mikrah) and once in Targum Onkelos.
 
 ---
 
@@ -21,7 +21,7 @@ Prepared 2026-10-09. Scope: the halachic and customary details that should drive
 ## 1. Core obligation and who is obligated
 
 ### 1.1 Source and wording
-- **Gemara, Berakhot 8a–b.** Rav Huna bar Yehuda, in the name of R. Ami: *"לעולם ישלים אדם פרשיותיו עם הציבור שנים מקרא ואחד תרגום, ואפילו עטרות ודיבון, שכל המשלים פרשיותיו עם הציבור מאריכין לו ימיו ושנותיו"*. In English: always complete your parshiyot with the congregation, twice Mikra and once Targum, even "Atarot v'Divon"; whoever does so is granted length of days and years. **[S+]** (sefaria.org/sheets/20854; jewishpress.com 2013/12/20; Wikipedia)
+- **Gemara, Berakhot 8a–b.** Rav Huna bar Yehuda, in the name of R. Ami: *"לעולם ישלים אדם פרשיותיו עם הציבור שנים מקרא ואחד תרגום, ואפילו עטרות ודיבון, שכל המשלים פרשיותיו עם הציבור מאריכין לו ימיו ושנותיו"*. In English: always complete your parshiyot with the congregation, twice Mikrah and once Targum, even "Atarot v'Divon"; whoever does so is granted length of days and years. **[S+]** (sefaria.org/sheets/20854; jewishpress.com 2013/12/20; Wikipedia)
 - The same sugya tells of Rav Bibi bar Abaye, who wanted to finish all the year's parshiyot on Erev Yom Kippur. This is the basis for later discussion of making up missed weeks. **[S]** (sefaria.org/sheets/20854)
 - **Shulchan Aruch OC 285:1** (following Rambam, Hilchot Tefillah 13:25 **[K]**): *"אף על פי שאדם שומע כל התורה כולה כל שבת בציבור, חייב לקרות לעצמו בכל שבוע פרשת אותו שבוע שנים מקרא ואחד תרגום, ואפילו עטרות ודיבון"*. **[S]** (yeshiva.org.il wiki "שניים מקרא ואחד תרגום")
 - **Status.** The obligation is rabbinic (Aruch HaShulchan 285:2). **[S]** (koltorah.org, Jachter)
@@ -37,7 +37,7 @@ Prepared 2026-10-09. Scope: the halachic and customary details that should drive
 ### 1.2 Men
 - Adult men are obligated (SA 285:1). **[S+]**
 - Kaf HaChaim 285:9–10: someone ill or with eye pain is exempt but should make it up after recovering. A blind person is exempt, though listening to someone else read is meritorious. **[S]** (outorah.org, via search summary)
-- **Mourners.** SA Yoreh De'ah 400:1 allows a mourner during shiva to do Shnayim Mikra on Shabbat, even though Torah study is otherwise forbidden to him. **[S]** (koltorah.org, Jachter) On weekdays of shiva he does not learn (general aveilut laws). **[K]**
+- **Mourners.** SA Yoreh De'ah 400:1 allows a mourner during shiva to do Shnayim Mikrah on Shabbat, even though Torah study is otherwise forbidden to him. **[S]** (koltorah.org, Jachter) On weekdays of shiva he does not learn (general aveilut laws). **[K]**
 
 ### 1.3 Women
 - **Most sources: women are exempt.**
@@ -48,7 +48,7 @@ Prepared 2026-10-09. Scope: the halachic and customary details that should drive
 - Related: MB 282:12 cites Masechet Soferim on women hearing the public Torah reading and concludes that the practice is not to be stringent. **[S]** (outorah.org/p/81738)
 
 ### 1.4 Minors and bar mitzvah
-- Boys old enough for chinuch, who can read the parsha fluently and understand it, should be trained to do Shnayim Mikra. **[S]** (shulchanaruchharav.com/?p=1012)
+- Boys old enough for chinuch, who can read the parsha fluently and understand it, should be trained to do Shnayim Mikrah. **[S]** (shulchanaruchharav.com/?p=1012)
 - **Mid-year bar mitzvah.** Rav Yaakov Kamenetsky ruled that the boy need not restart the annual cycle. Parshiyot he completed as a minor count, since a minor already has an obligation of Torah study. **[S]** (outorah.org/p/81738)
 
 ---
@@ -88,13 +88,13 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
   - **MB 669:4** (per dinonline): best on the **night of Simchat Torah**. The two MB passages are not obviously consistent. **[U]**
   - The night of Hoshana Rabbah is valid but not named as ideal. **[S]**
   - Piskei Teshuvot 285:4 cites a view that one does not fulfill it before Hoshana Rabbah; others disagree. **[S]**
-  - **Chabad:** on Hoshana Rabbah night, Devarim (including Vezot HaBeracha) is read as usual in the Mishneh Torah reading, but Vezot HaBeracha is read as Shnayim Mikra on the day before Simchat Torah. **[S]** (shulchanaruchharav.com Hoshana Rabbah page)
+  - **Chabad:** on Hoshana Rabbah night, Devarim (including Vezot HaBeracha) is read as usual in the Mishneh Torah reading, but Vezot HaBeracha is read as Shnayim Mikrah on the day before Simchat Torah. **[S]** (shulchanaruchharav.com Hoshana Rabbah page)
 - **Bereishit**
   - Starts **only after Bereishit is read on Simchat Torah**. Until then the week's parsha is still Vezot HaBeracha. **[S]** (dinonline 2011/10/08 and 2014/10/15)
   - When Simchat Torah falls on Shabbat (possible in Israel), the Mishnah Acharona holds one may start right after Chatan Bereishit, without waiting for Mincha. **[S]**
   - The window before Shabbat Bereishit is therefore short, and in the diaspora it opens on Yom Tov, so in practice the user can start only after Yom Tov.
 - **Yom Tov on Shabbat ("skip week").** When a Yom Tov reading displaces the parsha, two weeks pass between the Shabbat Mincha that begins a parsha and the Shabbat it is read. The OU article (Mishnah Acharona) says the start time is still that earlier Shabbat Mincha, but the full conclusion was cut off in search results. **[U]** (outorah.org/p/81739)
-- **Festival readings themselves** (Yom Tov, Shabbat Chol HaMoed) carry **no Shnayim Mikra obligation**. Terumat HaDeshen limits the obligation to the Shabbat parshiyot. **[S]** (sheilot.com guide; etzion.org.il)
+- **Festival readings themselves** (Yom Tov, Shabbat Chol HaMoed) carry **no Shnayim Mikrah obligation**. Terumat HaDeshen limits the obligation to the Shabbat parshiyot. **[S]** (sheilot.com guide; etzion.org.il)
 
 ---
 
@@ -110,13 +110,13 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
   - Verse by verse: Arizal and Magen Avraham.
   - Section by section: Shelah and Vilna Gaon.
   - **[S+]** (ph.yhb.org.il/en/01-05-10/; outorah.org/p/173224)
-- **Mikra before Targum** lechatchila (MB 285:6). **[S]** (outorah.org/p/81739)
-- **Mikra–Targum–Mikra** variant:
-  - The Chavot Yair suggests Mikra, then Targum/Rashi, then Mikra again, since the second reading is better understood after the commentary.
+- **Mikrah before Targum** lechatchila (MB 285:6). **[S]** (outorah.org/p/81739)
+- **Mikrah–Targum–Mikrah** variant:
+  - The Chavot Yair suggests Mikrah, then Targum/Rashi, then Mikrah again, since the second reading is better understood after the commentary.
   - The Levush allows it. Aruch HaShulchan 285:3 cites the Levush as permitting it even lechatchila.
   - Most authorities differ.
   - **[S]** (outorah.org/p/173224)
-- **Letter of the law:** any order works. With no Targum at hand, one may read the Mikra twice now and the Targum later. **[S]** (shulchanaruchharav.com/?p=1016)
+- **Letter of the law:** any order works. With no Targum at hand, one may read the Mikrah twice now and the Targum later. **[S]** (shulchanaruchharav.com/?p=1016)
 - **Do not split a pasuk** (Taanit 27b; Megillah 22a). Section readers break at petucha/setuma markers. **[S]** (outorah.org/p/173224)
 
 ### 3.2 Daily division
@@ -126,12 +126,12 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
   - Stop at the petucha/setuma nearest the aliyah boundary.
   - Or stop at the aliyah break itself if it ends a topic.
   - **[S]**
-- **Is there one widespread Shnayim Mikra schedule? No single universal schedule was found.** **[U]** The two dominant patterns are:
+- **Is there one widespread Shnayim Mikrah schedule? No single universal schedule was found.** **[U]** The two dominant patterns are:
   1. **Aliyah-a-day**
      - Sunday = 1st aliyah … Friday = 6th.
      - The 7th aliyah (and haftarah) then goes either on Friday with the 6th, or Shabbat morning before the meal (which SA 285:4 still treats as ideal).
      - The "finish on Shabbat" wording in Peninei Halakha implies the second option. **[S]**
-     - Chabad's daily Chitas Chumash-with-Rashi study uses Sunday = Rishon … Shabbat = Shevi'i (chayenu.org/explore-chayenu/chumash). That is daily Chumash study, a separate practice from Shnayim Mikra, but it is the best-known daily aliyah map. **[S]**
+     - Chabad's daily Chitas Chumash-with-Rashi study uses Sunday = Rishon … Shabbat = Shevi'i (chayenu.org/explore-chayenu/chumash). That is daily Chumash study, a separate practice from Shnayim Mikrah, but it is the best-known daily aliyah map. **[S]**
   2. **Whole parsha on Friday** (Arizal: morning; Shelah/Chabad: after midday).
 - **The Arizal custom of no interruption**
   - Some do not speak at all during the reading, and restart if they did. Many poskim treat this as custom, not law. **[S]** (shulchanaruchharav.com/?p=1016; dinonline 2020/04/01)
@@ -156,7 +156,7 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
 ### 4.2 Verses "read but not translated" (Reuven, Bereishit 35:22, etc.)
 - Mishnah Megillah 4:10, "מעשה ראובן נקרא ולא מתרגם", concerns the **public** meturgeman in shul (out of respect for Reuven). **[S]** (he.wikisource Mishnah Megillah 4:10; yeshiva.org.il)
 - Onkelos does translate 35:22 in printed editions. **[K]**
-- **No source was found** applying this restriction to private Shnayim Mikra. **[U]** Default: read Onkelos for every verse, including 35:22, Birkat Kohanim and Ma'aseh HaEgel. Do **not** treat these as "no Targum" verses.
+- **No source was found** applying this restriction to private Shnayim Mikrah. **[U]** Default: read Onkelos for every verse, including 35:22, Birkat Kohanim and Ma'aseh HaEgel. Do **not** treat these as "no Targum" verses.
 
 ### 4.3 Using Rashi instead of Targum: verses with no Rashi
 - **MB 285:5:** someone using Rashi as the Targum should read **three times** any pasuk on which Rashi does not comment. **[S]** (outorah.org/p/237343; dinonline)
@@ -166,8 +166,8 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
   - The Lechem Chamudot (MA, MB 285:2) offers a lenient angle.
   - **[S]** (jewishlink.news, Aug 2026)
 
-### 4.4 Ending with Mikra: repeating the final pasuk
-- **Section by section:** many hold one should read the **last pasuk of the sedra a third time** after the Targum, so the reading ends with Mikra. Sources: Magen Avraham 285:1; Kaf HaChaim 285:3; Kitzur SA 72:11 (number as cited in the OU summary; not checked against the text). **[S]** (outorah.org Q&A)
+### 4.4 Ending with Mikrah: repeating the final pasuk
+- **Section by section:** many hold one should read the **last pasuk of the sedra a third time** after the Targum, so the reading ends with Mikrah. Sources: Magen Avraham 285:1; Kaf HaChaim 285:3; Kitzur SA 72:11 (number as cited in the OU summary; not checked against the text). **[S]** (outorah.org Q&A)
 - **Verse by verse:** Aruch HaShulchan 285:6 says to repeat the last pasuk in this method too. **[S]**
 - A rarer practice reads the last pasuk twice (Chida, Moreh BeEtzba 131). **[S]**
 - The reason given is to end with Scripture, as when the Targum used to be read aloud in shul. **[S]**
@@ -198,14 +198,14 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
   - One source attributes to Michtavei Chafetz Chaim, letter 18, that "nowadays" one should use Rashi rather than Targum. The wording is unclear and possibly misreported. **[U]**
 
 ### 4.8 Does hearing the Torah reading in shul count?
-- **SA 285:5** (per OU) allows doing Shnayim Mikra along with the ba'al koreh. **MB 285:14:** read quietly **along with him, word for word**. Many do this. **[S]** (outorah.org/p/173835)
+- **SA 285:5** (per OU) allows doing Shnayim Mikrah along with the ba'al koreh. **MB 285:14:** read quietly **along with him, word for word**. Many do this. **[S]** (outorah.org/p/173835)
 - **Listening only, without reading along:**
-  - Magen Avraham 285:8 and Shaarei Teshuvah 285:6 (citing Radvaz): bedieved, careful listening to every word counts as **one** Mikra. **[S]**
+  - Magen Avraham 285:8 and Shaarei Teshuvah 285:6 (citing Radvaz): bedieved, careful listening to every word counts as **one** Mikrah. **[S]**
   - The OU (following MB) is stricter: do not rely on listening alone. **[S]**
 - **Doing it during the reading at all:** some say this is not proper. Peninei Halakha: better to read quietly with the reader and count that as one reading. **[S]** (ph.yhb.org.il)
 
 ### 4.9 Cantillation (ta'amim)
-- If you know how to lein, read the **Mikra with trop**, but **not the Targum**. Reading without trop still fulfills the obligation. **[S]** (OU Q&A via search summary)
+- If you know how to lein, read the **Mikrah with trop**, but **not the Targum**. Reading without trop still fulfills the obligation. **[S]** (OU Q&A via search summary)
 
 ### 4.10 Shabbat morning, before davening
 - Shabbat morning before the meal is a valid and even ideal window (SA 285:4). **[S+]**
@@ -220,21 +220,21 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
   - Which to read first is left open. **[U]**
   - If he davens with a minyan of **bnei chutz la'aretz** reading the diaspora parsha, he reads only that one. **[S]**
   - After returning to the diaspora, he need not repeat the parsha the diaspora is now reading, which he already read in Israel. **[S]**
-- **Israel to diaspora:** if the diaspora is now reading a parsha already read in Israel, he **need not repeat** its Shnayim Mikra, though he must hear the Torah reading again. **[S]**
+- **Israel to diaspora:** if the diaspora is now reading a parsha already read in Israel, he **need not repeat** its Shnayim Mikrah, though he must hear the Torah reading again. **[S]**
 - **Why the calendars diverge:** SA OC 428:4 sets which parshiyot are combined; misalignments can last more than three months. **[S]** (outorah.org/p/49153; jewishlink.news "out-of-sync")
 
 ---
 
 ## 5. Practical customs
 
-- **Aloud.** The Mikra must be **spoken aloud**, not read with the eyes. For Targum/Rashi the authorities dispute it, but aloud is better, certainly for Targum. **[S]** (a dinonline Q&A from search; exact page not confirmed)
+- **Aloud.** The Mikrah must be **spoken aloud**, not read with the eyes. For Targum/Rashi the authorities dispute it, but aloud is better, certainly for Targum. **[S]** (a dinonline Q&A from search; exact page not confirmed)
 - **No interruption** (Arizal custom). See 3.2.
 - **Attire.** The Arizal read on Friday morning still wearing tallit and tefillin. **[S]** (halachayomit.co.il)
 - **From a Sefer Torah.** Possible, but then you cannot read the Targum after each verse. **[S]** (shulchanaruchharav.com)
-- **Special prayer before or after: none found.** No source turned up for a Yehi Ratzon or other text before or after Shnayim Mikra. **[U]**
+- **Special prayer before or after: none found.** No source turned up for a Yehi Ratzon or other text before or after Shnayim Mikrah. **[U]**
   - Background **[K]**: no special beracha is said; the morning Birchot HaTorah cover it.
-  - Do not ship a "Shnayim Mikra prayer" without a sourced siddur text.
-- **"Reading the pasuk Shema" and similar: nothing found** that is specific to Shnayim Mikra. **[U]**
+  - Do not ship a "Shnayim Mikrah prayer" without a sourced siddur text.
+- **"Reading the pasuk Shema" and similar: nothing found** that is specific to Shnayim Mikrah. **[U]**
 
 ---
 
@@ -251,7 +251,7 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
 - **Weeks with no parsha (Yom Tov on Shabbat).** The parsha window spans two weeks. A weekly streak must not "miss" that week. **[S]** (outorah.org/p/81739; chayenu.org)
 - **Other pause cases**
   - Tisha B'Av: general Torah study is restricted (OC 554). Don't nudge that day. **[K]**
-  - Shiva: Torah study forbidden on weekdays, though Shnayim Mikra is allowed on Shabbat (YD 400:1). **[S]**
+  - Shiva: Torah study forbidden on weekdays, though Shnayim Mikrah is allowed on Shabbat (YD 400:1). **[S]**
   - Illness: exempt, make up later (Kaf HaChaim 285:9). **[S]**
 - **The natural streak unit is the parsha-week, not the day.** The halachic window runs from Shabbat Mincha (or Sunday) to the next Shabbat meal/Mincha, with bedieved make-up through Tuesday and annual make-up through Simchat Torah.
 
@@ -268,7 +268,7 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
 7. Double-parsha practice: inferred but not explicitly sourced.
 8. The text of the Rema on the haftarah, and whether the haftarah is read once, or twice plus Targum (Ashkenazi variants).
 9. The Gra's own practice: aliyah-a-day or whole section at once.
-10. Any customary prayer before or after Shnayim Mikra.
+10. Any customary prayer before or after Shnayim Mikrah.
 
 ---
 
@@ -297,11 +297,11 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
 - **Travel mode.** Detect a diaspora user in Israel (or the reverse) during misaligned weeks. Prompt them to read both parshiyot, with an override for "davening with a chutz la'aretz minyan". Never ask them to repeat a parsha already completed.
 
 ### 8.2 Reading modes and data model
-- **Track every verse as three units: Mikra 1, Mikra 2, Targum.** That gives resumable sessions and honest progress.
+- **Track every verse as three units: Mikrah 1, Mikrah 2, Targum.** That gives resumable sessions and honest progress.
 - **Modes:**
   - **Verse by verse** (default; Arizal / Magen Avraham / MB).
   - **Section by section**, with breaks at **petucha/setuma** markers from Masoretic data. The app should never break mid-pasuk.
-  - Optional **Mikra–Targum–Mikra** (Chavot Yair/Levush), labeled as a minority practice.
+  - Optional **Mikrah–Targum–Mikrah** (Chavot Yair/Levush), labeled as a minority practice.
 - **Final-verse repeat toggle.**
   - Default ON for section mode (MA, Kaf HaChaim, Kitzur).
   - ON for verse mode under an "Aruch HaShulchan" preset.
@@ -320,7 +320,7 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
   - Run a data-integrity check so that every verse has a Targum string.
 - **Do not suppress the Targum** for 35:22, Birkat Kohanim, etc. That rule applies only to the public reading.
 - **Haftarah.** Optional item (default ON for Ashkenaz/Chabad presets), read once in Hebrew. When a special haftarah displaces the regular one, offer both (Chabad).
-- **Trop.** Display cantillation and offer audio for the Mikra only, never for the Targum.
+- **Trop.** Display cantillation and offer audio for the Mikrah only, never for the Targum.
 - **Encourage reading aloud.** Copy should say "say it aloud". Completion is marked per verse by a deliberate tap; scrolling past is not enough. Audio playback is a learning aid and does not replace the user's own reading.
 
 ### 8.3 Schedules and presets
@@ -340,7 +340,7 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
 - **Optional uninterrupted-session mode** (Arizal). It records whether the session was continuous but never forces a restart; many poskim treat this as custom.
 
 ### 8.4 Shul reading integration
-- On Shabbat the app is offline, so after Shabbat ask: "Did you read along quietly with the ba'al koreh?" A yes counts as **one Mikra** for the current week (MB 285:14).
+- On Shabbat the app is offline, so after Shabbat ask: "Did you read along quietly with the ba'al koreh?" A yes counts as **one Mikrah** for the current week (MB 285:14).
 - "Listened only" is a separate, explicitly **bedieved** option (Magen Avraham 285:8), off by default.
 
 ### 8.5 Shabbat and Yom Tov safety (streaks and notifications)
@@ -366,7 +366,7 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
 - Yeshiva.org.il wiki, "שניים מקרא ואחד תרגום": https://www.yeshiva.org.il/wiki/index.php/שניים_מקרא_ואחד_תרגום
 - Yeshiva.org.il Beit Midrash 6696 (SA 285:4 times): https://www.yeshiva.org.il/midrash/6696
 - Hidabroot Q&A (bedieved through Tuesday night): https://www.hidabroot.org/question/276789
-- OU Torah / Halacha Yomis series on Shnayim Mikra:
+- OU Torah / Halacha Yomis series on Shnayim Mikrah:
   - https://outorah.org/p/81413 (Introduction)
   - https://outorah.org/p/81536 (When to learn)
   - https://www.outorah.org/p/173503 (Timing)
