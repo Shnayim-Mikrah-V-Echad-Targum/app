@@ -284,11 +284,15 @@ function fakeWorker(state) {
 
 /// Runs flutter_bootstrap.js (without Flutter's own loader) on a page at
 /// [href], under the site's [base], whose service worker [controller] is set
-/// on a later visit, after the page has loaded [loaded]. The registration
-/// has [waiting] and [installing] workers, if given; the clock reads [now]
-/// until the test moves it.
+/// on a later visit, after the page has loaded [loaded]. A version of the
+/// app is [active] as the page registers the worker on a later visit, also
+/// where a hard reload loaded the page past the worker (no [controller]); on
+/// a first visit, the first version is active only once the page waits for
+/// it (ready). The registration has [waiting] and [installing] workers, if
+/// given; the clock reads [now] until the test moves it.
 async function bootstrap({
   controller = null,
+  active: activeAtStart = controller !== null,
   loaded = [],
   launchQueue = false,
   href = 'https://example.org/app/today',
@@ -302,7 +306,7 @@ async function bootstrap({
   const clock = { now: 1e12 };
   const active = fakeWorker('activated');
   const registration = {
-    active,
+    active: activeAtStart ? active : null,
     waiting,
     installing,
     listeners: {},
@@ -317,7 +321,10 @@ async function bootstrap({
       registered.push(url);
       return registration;
     },
-    ready: Promise.resolve(registration),
+    get ready() {
+      registration.active = active;
+      return Promise.resolve(registration);
+    },
     addEventListener: (type, listener, options) => serviceWorker.listeners.push({ type, listener, options }),
   };
   const document = {
@@ -505,7 +512,11 @@ describe('the bootstrap', () => {
   const restartListeners = (serviceWorker) => serviceWorker.listeners.filter(({ options }) => options?.once);
   const takeoverListeners = (serviceWorker) =>
     serviceWorker.listeners.filter(({ type, options }) => type === 'controllerchange' && !options?.once);
-  const changeController = (serviceWorker) => serviceWorker.listeners.forEach(({ listener }) => listener());
+  /// A new [controller] takes the page over.
+  const changeController = (serviceWorker, controller) => {
+    serviceWorker.controller = controller;
+    serviceWorker.listeners.forEach(({ listener }) => listener());
+  };
 
   it('restarts into the new version: it takes over, and the page reloads under it', async () => {
     const waiting = fakeWorker('installed');
@@ -519,7 +530,7 @@ describe('the bootstrap', () => {
     const restarts = restartListeners(serviceWorker);
     assert.equal(restarts.length, 1);
     assert.equal(restarts[0].type, 'controllerchange');
-    changeController(serviceWorker);
+    changeController(serviceWorker, waiting);
     assert.equal(page.location.reloads, 1);
     // Its own restart, not another window's.
     assert.ok(!dispatched.includes('sm-update-took-over'));
@@ -541,7 +552,7 @@ describe('the bootstrap', () => {
     const { page, serviceWorker, dispatched } = await bootstrap({ controller: {}, waiting });
     assert.equal(takeoverListeners(serviceWorker).length, 1);
     waiting.become('activated');
-    changeController(serviceWorker);
+    changeController(serviceWorker, waiting);
     assert.equal(page.smUpdateTookOver, true);
     assert.deepEqual(dispatched, ['sm-update-ready', 'sm-update-took-over']);
     // The app then saves and restarts, which simply reloads.
@@ -551,14 +562,75 @@ describe('the bootstrap', () => {
   });
 
   it('takes the first version taking over a first visit for no restart', async () => {
-    const { page, serviceWorker, dispatched } = await bootstrap();
-    changeController(serviceWorker);
+    const { page, registration, serviceWorker, dispatched } = await bootstrap();
+    changeController(serviceWorker, registration.active);
     assert.equal(page.smUpdateTookOver, undefined);
     assert.deepEqual(dispatched, []);
     // A later version, which another window restarted into, is one.
-    changeController(serviceWorker);
+    changeController(serviceWorker, fakeWorker('activated'));
     assert.equal(page.smUpdateTookOver, true);
     assert.deepEqual(dispatched, ['sm-update-took-over']);
+  });
+
+  // A hard reload (Ctrl+Shift+R) loads the page past the worker, which then
+  // controls nothing, though it is active and the window's code is as old as
+  // any other window's. Taken for a first visit, the window was never
+  // offered a new version, and when another window's restart let it take
+  // over every window, this one went on in the old version's code with the
+  // new version's files.
+  describe('in a window that a hard reload loaded past the worker', () => {
+    it('offers a new version, waiting or once it has installed', async () => {
+      const waiting = fakeWorker('installed');
+      const first = await bootstrap({ active: true, waiting });
+      assert.equal(first.page.smUpdateReady, waiting);
+      assert.deepEqual(first.dispatched, ['sm-update-ready']);
+
+      const { page, registration, dispatched } = await bootstrap({ active: true });
+      const later = fakeWorker('installing');
+      registration.installing = later;
+      registration.listeners.updatefound();
+      later.become('installed');
+      assert.equal(page.smUpdateReady, later);
+      assert.deepEqual(dispatched, ['sm-update-ready']);
+    });
+
+    it('restarts when the new version takes it over, at a restart in another window or once installed', async () => {
+      const waiting = fakeWorker('installed');
+      const { page, serviceWorker, dispatched } = await bootstrap({ active: true, waiting });
+      waiting.become('activated');
+      changeController(serviceWorker, waiting);
+      assert.equal(page.smUpdateTookOver, true);
+      assert.deepEqual(dispatched, ['sm-update-ready', 'sm-update-took-over']);
+      page.smRestart();
+      assert.equal(page.location.reloads, 1);
+    });
+
+    it('restarts into the new version itself', async () => {
+      const waiting = fakeWorker('installed');
+      const { page, serviceWorker, dispatched } = await bootstrap({ active: true, waiting });
+      page.smRestart();
+      assert.deepEqual(waiting.messages, [{ type: 'SKIP_WAITING' }]);
+      changeController(serviceWorker, waiting);
+      assert.equal(page.location.reloads, 1);
+      assert.ok(!dispatched.includes('sm-update-took-over'));
+    });
+
+    it('is no first visit: what it loaded is left to the worker', async () => {
+      const { messages } = await bootstrap({ active: true, loaded });
+      assert.deepEqual(messages, []);
+    });
+  });
+
+  it('takes no restart for the version a window loaded under taking it over, nor for none', async () => {
+    // A window that registered the worker just as the first version, which
+    // another window installed, became active, and before it took this
+    // window over.
+    const { page, registration, serviceWorker, dispatched } = await bootstrap({ active: true });
+    changeController(serviceWorker, registration.active);
+    // The worker gone, as when the site's data is cleared.
+    changeController(serviceWorker, null);
+    assert.equal(page.smUpdateTookOver, undefined);
+    assert.deepEqual(dispatched, []);
   });
 
   describe("shows a shortcut's page in the window it opens in", () => {
