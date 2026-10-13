@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,7 @@ import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart' show BalancedText, DotLine;
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
@@ -203,6 +205,20 @@ void main() {
       expect(verses.last.hebrew.ref, const VerseRef(43, 10));
     });
 
+    // On a phone "(some" ended the first line and "read it too)" stood alone
+    // under it.
+    testWidgets('balances its title where it wraps, leaving no words alone on the last line', (tester) async {
+      await _open(tester, '5787:1');
+      final title = find.text(_regularTitle);
+      expect(find.ancestor(of: title, matching: find.byType(BalancedText)), findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(title);
+      double lineOf(String word) =>
+          paragraph.getOffsetForCaret(TextPosition(offset: _regularTitle.indexOf(word)), Rect.zero).dy;
+      expect(lineOf('The'), lessThan(lineOf('too)')), reason: 'it wraps');
+      expect(lineOf('read'), lineOf('too)'));
+      expect(lineOf('it too)'), lineOf('too)'));
+    });
+
     testWidgets('comes before the haftarah ends and is marked read', (tester) async {
       await _open(tester, '5787:1');
       await _toEnd(tester);
@@ -310,7 +326,8 @@ void main() {
       for (final nusach in [HaftarahNusach.ashkenazi, HaftarahNusach.sephardi]) {
         await openToday(tester, _friday, settings: _settings.withNusach(nusach));
         final row = haftarahRow(tester);
-        expect((row.subtitle, row.detail), ('I\u00A0Samuel 20:18–\u206042', 'Shabbat Machar Chodesh'), reason: nusach.name);
+        expect(row.subtitleParts, ['I\u00A0Samuel 20:18–\u206042'], reason: nusach.name);
+        expect(row.detail, 'Shabbat Machar Chodesh', reason: nusach.name);
         expect(find.textContaining('regular haftarah'), findsNothing, reason: '${nusach.name}: only some read it too');
       }
     });
@@ -318,7 +335,7 @@ void main() {
     testWidgets('tells Chabad, whose custom is to read both, of the regular haftarah too', (tester) async {
       await openToday(tester, _friday, settings: _settings.withNusach(HaftarahNusach.chabad));
       final row = haftarahRow(tester);
-      expect(row.subtitle, 'I\u00A0Samuel 20:18–\u206042');
+      expect(row.subtitleParts, ['I\u00A0Samuel 20:18–\u206042']);
       // The dot held to the name before it, so that no line starts with it.
       expect(row.detail, 'Shabbat Machar Chodesh\u00A0· Chabad custom: the regular haftarah too');
     });
@@ -337,6 +354,24 @@ void main() {
         expect(haftarahRow(tester).detail, detail, reason: nusach.name);
         expect(find.textContaining('regular haftarah'), findsNothing, reason: nusach.name);
       }
+    });
+
+    // The longest reference: Re'eh's own haftarah for Sephardim, with the
+    // first and last verses of two more.
+    testWidgets("breaks Re'eh's five passages on Rosh Chodesh Elul between passages, never inside one",
+        (tester) async {
+      String plain(String s) => s.replaceAll(' ', ' ').replaceAll('⁠', '');
+      await openToday(tester, DateTime(2029, 8, 9, 11), settings: _settings.withNusach(HaftarahNusach.sephardi));
+      final row = find.widgetWithText(PaperRow, 'Haftarah');
+      const passages = ['Isaiah 54:11–55:5', 'Isaiah 66:1', 'Isaiah 66:23', 'I Samuel 20:18', 'I Samuel 20:42'];
+      expect(tester.widget<PaperRow>(row).subtitleParts?.map(plain), passages);
+      final dotLine = find.descendant(of: row, matching: find.byType(DotLine));
+      final lines = [
+        for (final text in tester.widgetList<RichText>(find.descendant(of: dotLine, matching: find.byType(RichText))))
+          plain(text.text.toPlainText()),
+      ];
+      expect(lines.length, greaterThan(1), reason: 'too long for one line on a phone');
+      expect(lines.expand((line) => line.split(' · ')), passages, reason: '$lines');
     });
 
     // Ki Tetze 5789, two weeks later: Re'eh's haftarah joined to its own,

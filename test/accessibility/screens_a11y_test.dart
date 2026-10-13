@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +16,7 @@ import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
-import 'package:shnayim_mikra/ui/widgets/lines.dart' show WholeWords;
+import 'package:shnayim_mikra/ui/widgets/lines.dart' show DotLine, WholeWords;
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
@@ -864,25 +866,38 @@ void main() {
   });
 }
 
-/// Checks that each paper row with a subtitle draws its title at least as
-/// large as the subtitle, and gives their titles. Sizes are as drawn: the
-/// style's, scaled as the text is, and set smaller where a long word needs.
+/// Checks that each paper row with a subtitle (or a subtitle of parts, each
+/// of its lines) draws its title at least as large as the subtitle, and
+/// gives their titles. Sizes are as drawn: the style's, scaled as the text
+/// is, and set smaller where a long word needs.
 Iterable<String> _expectTitlesNoSmallerThanSubtitles(WidgetTester tester) sync* {
-  for (final element in find.byWidgetPredicate((w) => w is PaperRow && w.subtitle != null).evaluate()) {
+  final rows = find.byWidgetPredicate((w) => w is PaperRow && (w.subtitle != null || w.subtitleParts != null));
+  for (final element in rows.evaluate()) {
     final row = element.widget as PaperRow;
     final box = element.renderObject!;
-    final paragraphs = tester.renderObjectList<RenderParagraph>(
-      find.descendant(of: find.byElementPredicate((e) => e == element), matching: find.byType(RichText)),
-    );
-    double drawn(String text) {
-      final paragraph = paragraphs.firstWhere((p) => p.text.toPlainText() == text);
+    final inRow = find.byElementPredicate((e) => e == element);
+    final paragraphs =
+        tester.renderObjectList<RenderParagraph>(find.descendant(of: inRow, matching: find.byType(RichText)));
+    double size(RenderParagraph paragraph) {
       final transform = paragraph.getTransformTo(box);
       return paragraph.textScaler.scale(paragraph.text.style!.fontSize!) *
           Offset(transform.entry(0, 0), transform.entry(1, 0)).distance;
     }
 
+    double drawn(String text) => size(paragraphs.firstWhere((p) => p.text.toPlainText() == text));
+    final subtitle = switch (row.subtitle) {
+      final subtitle? => drawn(subtitle),
+      null => tester
+          .renderObjectList<RenderParagraph>(find.descendant(
+            of: find.descendant(of: inRow, matching: find.byType(DotLine)),
+            matching: find.byType(RichText),
+          ))
+          .map(size)
+          .reduce(math.max),
+    };
+
     // A hair's leeway for the arithmetic of the sizes, no more.
-    expect(drawn(row.title), greaterThanOrEqualTo(drawn(row.subtitle!) - 0.01), reason: row.title);
+    expect(drawn(row.title), greaterThanOrEqualTo(subtitle - 0.01), reason: row.title);
     yield row.title;
   }
 }

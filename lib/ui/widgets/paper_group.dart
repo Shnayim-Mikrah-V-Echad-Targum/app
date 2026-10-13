@@ -300,6 +300,7 @@ class PaperRow extends StatelessWidget {
     required this.title,
     this.breakTitleAtHyphens = true,
     this.subtitle,
+    this.subtitleParts,
     this.subtitleMaxLines = 2,
     this.subtitleLocale,
     this.titleStyle,
@@ -318,6 +319,7 @@ class PaperRow extends StatelessWidget {
     this.focusNode,
     bool? chevron,
   })  : assert(icon == null || leading == null, 'an icon or a leading widget, not both'),
+        assert(subtitle == null || subtitleParts == null, 'a subtitle or its parts, not both'),
         chevron = chevron ?? onTap != null;
 
   final IconData? icon;
@@ -337,6 +339,13 @@ class PaperRow extends StatelessWidget {
 
   /// At most [subtitleMaxLines] lines, unless the text is enlarged.
   final String? subtitle;
+
+  /// A subtitle of parts between middle dots, in place of [subtitle]: set
+  /// as a [DotLine], as many parts to a line as fit, so that its lines break
+  /// between parts rather than inside one, and never cut short. A haftarah's
+  /// passages: "Isaiah 54:11–55:5 · Isaiah 66:1" over "Isaiah 66:23 · …",
+  /// never "Isaiah" at a line's end and "66:23" under it.
+  final List<String>? subtitleParts;
 
   /// Two by default; null for a subtitle that is never cut short, such as a
   /// long reference (the haftarah's, three lines on a phone for Sephardim on
@@ -445,6 +454,8 @@ class PaperRow extends StatelessWidget {
 
   bool get _hasLead => icon != null || leading != null;
 
+  bool get _hasSubtitle => subtitle != null || subtitleParts != null;
+
   /// About as wide as a [control] at the end of a row is, to tell whether
   /// the row's text is squeezed beside it: a switch 52, a row of controls
   /// their sum, and any other control (a menu, an icon button) 48.
@@ -540,7 +551,9 @@ class PaperRow extends StatelessWidget {
                 ? titleWith(besideTitle)
                 : titleText,
         under: [
-          if (subtitle case final subtitle?)
+          if (subtitleParts case final parts?)
+            DotLine(parts, style: subtitleStyle)
+          else if (subtitle case final subtitle?)
             if (subtitleLocale case final locale?)
               Text.rich(
                 TextSpan(text: subtitle, locale: locale),
@@ -591,7 +604,7 @@ class PaperRow extends StatelessWidget {
       // the middle of the row, so the value and chevron stay side by side.
       // So they do over a detail line, value or not: centred on three lines
       // of text, the icon would sit beside none of them.
-      final onTitleLine = detail != null || (value != null && subtitle != null);
+      final onTitleLine = detail != null || (value != null && _hasSubtitle);
       Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
           ? ConstrainedBox(
               constraints:
@@ -711,7 +724,7 @@ class PaperRow extends StatelessWidget {
         // The hairline under the row starts where its text does.
         _RowPlace.ruleStartOf(context)?.value = textStart == PaperGroup.iconInset ? null : textStart;
         return ConstrainedBox(
-          constraints: BoxConstraints(minHeight: subtitle == null && detail == null ? 56 : 72),
+          constraints: BoxConstraints(minHeight: !_hasSubtitle && detail == null ? 56 : 72),
           child: Padding(padding: const EdgeInsetsDirectional.fromSTEB(_start, 12, _end, 12), child: body),
         );
       },

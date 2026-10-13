@@ -526,7 +526,8 @@ void main() {
       final row = tester.widget<PaperRow>(haftarah);
       // The book's name held on one line, and its range; the special
       // haftarah by name in the line under it.
-      expect((row.subtitle, row.detail), ('I\u00A0Samuel 20:18–\u206042', 'Shabbat Machar Chodesh'));
+      expect(row.subtitleParts, ['I\u00A0Samuel 20:18–\u206042']);
+      expect(row.detail, 'Shabbat Machar Chodesh');
       await tester.tap(haftarah);
       await loadTexts(tester);
       expect(location(c), '/today/haftarah/5787:1');

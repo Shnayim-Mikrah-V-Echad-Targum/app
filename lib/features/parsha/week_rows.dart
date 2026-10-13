@@ -30,10 +30,10 @@ class HaftarahRow extends ConsumerWidget {
     return PaperRow(
       icon: Icons.auto_stories_outlined,
       title: ctx.progress.haftarah != null ? l.haftarahRead : l.haftarahLabel,
-      subtitle: names.haftarah(h.parts),
-      // Never cut short: two lines hold all but the longest, Re'eh's for
-      // Sephardim on Rosh Chodesh Elul, with verses of two more haftarot.
-      subtitleMaxLines: null,
+      // Broken between passages, never inside one, and never cut short:
+      // two lines hold all but the longest, Re'eh's for Sephardim on Rosh
+      // Chodesh Elul, with verses of two more haftarot.
+      subtitleParts: [for (final p in h.parts) names.passage(p)],
       detail: switch (h.specialKey) {
         final key? when h.regular != null && nusach == HaftarahNusach.chabad =>
           l.haftarahSpecialChabadRegular(names.specialHaftarah(key)),

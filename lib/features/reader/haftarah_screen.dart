@@ -286,7 +286,13 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
               ),
               if (ctx.haftarah.specialKey case final key?) ...[
                 const Gap(Space.xs),
-                Text(names.specialHaftarah(key), style: SeferType.of(context).marginalia),
+                // Balanced where it wraps, as marginalia is ("…, with verses /
+                // for Sunday's Rosh Chodesh", not "Rosh Chodesh" alone).
+                BalancedText(
+                  names.specialHaftarah(key),
+                  style: SeferType.of(context).marginalia,
+                  textAlign: TextAlign.start,
+                ),
               ],
               // Chabad's own reading of this haftarah isn't listed yet, and
               // the Ashkenazi and Sephardi ones differ. The regular haftarah,
@@ -427,9 +433,12 @@ class _RegularHaftarah extends ConsumerWidget {
       title: Semantics(
         header: true,
         headingLevel: 2,
-        child: Text(
+        // Balanced where it wraps, so that its last words don't stand alone
+        // ("(some" over "read it too)" on a phone).
+        child: BalancedText(
           chabad ? l.regularHaftarahOf(portion) : l.regularHaftarahSomeRead(portion),
           style: theme.textTheme.titleMedium,
+          textAlign: TextAlign.start,
         ),
       ),
       subtitle: Text(names.haftarah(ctx.haftarah.regular!)),
