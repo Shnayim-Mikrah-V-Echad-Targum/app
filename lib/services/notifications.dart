@@ -81,6 +81,8 @@ class NotificationService {
         ),
         onDidReceiveNotificationResponse: (r) => service.handleTap(r.payload),
       );
+      // Never on Windows, whose plugin hears of a click that launched the app
+      // only later, through the callback, like any other.
       final launch = await plugin.getNotificationAppLaunchDetails();
       if (launch?.didNotificationLaunchApp == true) service.launchRoute = launch?.notificationResponse?.payload;
       return service;
@@ -124,8 +126,19 @@ class NotificationService {
   Stream<String> get taps => _taps.stream;
 
   /// Reports a tap on a notification carrying [payload], its route.
+  ///
+  /// A tap that comes before the app listens to [taps] is kept as the
+  /// [launchRoute], which the app opens after its first frame: on Windows,
+  /// a click that launches the app arrives so, while it is still starting.
   @visibleForTesting
-  void handleTap(String? payload) => _taps.add(payload ?? '/today');
+  void handleTap(String? payload) {
+    final route = payload ?? '/today';
+    if (_taps.hasListener) {
+      _taps.add(route);
+    } else {
+      launchRoute = route;
+    }
+  }
 
   /// Asks the OS for permission. Call only after the user has said yes in
   /// the app's own explanation screen, or turned reminders on themselves
