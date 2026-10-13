@@ -45,6 +45,10 @@ jobs:
         run: |
           pip install -r tool/branding/requirements.txt
           python3 -m unittest discover -s tool/branding
+      # The store listings' text against the stores' limits, and the framing
+      # of their screenshots (docs/RELEASE.md, Store listing).
+      - name: Check the store listings
+        run: python3 -m unittest discover -s tool/store
       - name: Check the Hebrew translation is complete and up to date
         run: |
           python3 tool/l10n/build_he.py

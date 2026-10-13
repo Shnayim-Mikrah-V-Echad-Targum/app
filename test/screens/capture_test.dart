@@ -5,6 +5,10 @@
 //   CAPTURE=1 SCREENS=today,reader flutter test test/screens/capture_test.dart
 //   CAPTURE=1 SCREENS=today MODES=sepia,hcl flutter test test/screens/capture_test.dart
 //   CAPTURE=1 WORDS=1 MODES=big,bighe,huge,hugehe,hugetall,hugetallhe,hugewide flutter test test/screens/capture_test.dart
+//   CAPTURE=1 MODES=storeplay,storeplayhe flutter test test/screens/capture_test.dart
+//
+// The store modes ([_storeModes]) render only when MODES names them, at the
+// stores' screenshot sizes; tool/store/frame.py frames them for upload.
 //
 // WORDS=1 also lists every word broken across lines, in
 // build/screens/broken_words.txt (remove it before a new run).
@@ -635,6 +639,11 @@ const _screens = {
   'progress_years': '/progress',
   'progress_past': '/progress',
   'progress_record': '/progress',
+  // For the stores alone (see [_storeOnlyScreens]): the guided reader, and
+  // the full text for a tablet's page, with Display's Large print and High
+  // contrast presets, dark.
+  'store_access': '/read/5787:1/2',
+  'store_access_full': '/read/5787:1/2?mode=full',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -654,6 +663,12 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_display_small': (s) => s.copyWith(readingScale: 0.6, focusMode: true, theme: AppThemeMode.sepia),
   's_display_rashi': (s) => s.copyWith(showRashi: true),
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
+  for (final screen in ['store_access', 'store_access_full'])
+    screen: (s) => applyPreset(
+          applyPreset(s, DisplayPreset.largePrint, darkPreferred: true),
+          DisplayPreset.highContrast,
+          darkPreferred: true,
+        ),
   's_a11y_speech': (s) => s.copyWith(speechRate: 0.65),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   'guide_end_bold': (s) => s.copyWith(boldText: true),
@@ -1991,13 +2006,18 @@ Future<void> _keyboardFocus(WidgetTester tester, Finder target) async {
 }
 
 class _Mode {
-  const _Mode(this.tag, this.size, this.settings, {this.textScale = 1});
+  const _Mode(this.tag, this.size, this.settings, {this.textScale = 1, this.pixelRatio = 1});
   final String tag;
+
+  /// The view's size in logical pixels.
   final Size size;
   final AppSettings Function(AppSettings) settings;
 
   /// The system text size.
   final double textScale;
+
+  /// Physical pixels per logical pixel: the capture is [size] times this.
+  final double pixelRatio;
 }
 
 final _modes = [
@@ -2043,7 +2063,48 @@ final _modes = [
   // System text at 300% on a 412 dp phone, tall, for the screens in
   // [_hugeWideScreens]: a stacked row keeps its icon on the title's line.
   _Mode('hugewide', const Size(412, 3600), (s) => s, textScale: 3),
+  // The stores' screenshot sizes, light, in English and in Hebrew, for the
+  // screens in [_storeScreens]: the App Store's 6.9" iPhone (1320 × 2868)
+  // and 13" iPad (2064 × 2752), and Google Play's phone (1080 × 1920, a
+  // 411 dp phone at a Pixel's 2.625) and 10" tablet (1600 × 2560), within
+  // Play's 2:1 limit.
+  for (final (tag, size, ratio) in const [
+    ('storeios', Size(440, 956), 3.0),
+    ('storeipad', Size(1032, 1376), 2.0),
+    ('storeplay', Size(1080 / 2.625, 1920 / 2.625), 2.625),
+    ('storeplaytab', Size(800, 1280), 2.0),
+  ]) ...[
+    _Mode(tag, size, (s) => s, pixelRatio: ratio),
+    _Mode('${tag}he', size, (s) => s.copyWith(language: AppLanguage.hebrew), pixelRatio: ratio),
+  ],
 ];
+
+/// The store modes, which render only when MODES names them.
+final _storeModes = {
+  for (final mode in _modes)
+    if (mode.tag.startsWith('store')) mode.tag,
+};
+
+/// What the store listings show (tool/store/frame.py's SHOTS). Not the
+/// demo community: its members are made up.
+const _storeScreens = {
+  'today',
+  'reader',
+  // A tablet's guided reader shows a section, which fills its page.
+  'reader_section',
+  'week',
+  'progress',
+  'reader_listen',
+  // The full text, side by side on the iPad.
+  'reader_full',
+  // Large print and high contrast: the guided reader, and on a tablet the
+  // full text, which fills its page.
+  'store_access',
+  'store_access_full',
+};
+
+/// Store screens no other mode renders.
+const _storeOnlyScreens = {'store_access', 'store_access_full'};
 
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
@@ -2459,8 +2520,12 @@ void main() {
   });
 
   for (final mode in _modes) {
-    if (!(_onlyModes?.contains(mode.tag) ?? true)) continue;
+    final store = _storeModes.contains(mode.tag);
+    // The modes MODES names, or every mode but the stores'.
+    if (!(_onlyModes?.contains(mode.tag) ?? !store)) continue;
     for (final entry in _screens.entries) {
+      if (store && !_storeScreens.contains(entry.key)) continue;
+      if (!store && _storeOnlyScreens.contains(entry.key)) continue;
       if (_wideModes.contains(mode.tag) && !_desktopScreens.contains(entry.key)) continue;
       if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
@@ -2474,8 +2539,9 @@ void main() {
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {
-        tester.view.physicalSize = mode.size;
-        tester.view.devicePixelRatio = 1;
+        final physical = mode.size * mode.pixelRatio;
+        tester.view.physicalSize = Size(physical.width.roundToDouble(), physical.height.roundToDouble());
+        tester.view.devicePixelRatio = mode.pixelRatio;
         addTearDown(tester.view.reset);
         tester.platformDispatcher.textScaleFactorTestValue = mode.textScale;
         addTearDown(tester.platformDispatcher.clearAllTestValues);

@@ -55,6 +55,17 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 - [ ] **The home-screen widget's preview** for older Android launchers (`android/app/src/main/res/drawable-nodpi/widget_preview.png`, written by `tool/branding/make_widget_preview.py`): a Hebrew reader checks that בְּרֵאשִׁית is whole and reads right to left.
 - [ ] **Every `he_*` screen of the capture harness** (`CAPTURE=1 MODES=he flutter test test/screens/capture_test.dart`, then `build/screens/he_*.png`), reviewed by a Hebrew reader: chevrons and arrows point the Hebrew way, rules stand at the start (the right), pips run right to left, and the ribbon's underline sits under the open aliyah.
 
+### Store listing
+The stores' text, screenshots and Google Play's feature graphic come from the app and the repository, never by hand:
+- [ ] After any visible change to the screens they show, take the screenshots again. The capture harness renders them in the light theme, in English and Hebrew, at the stores' sizes: the App Store's 6.9" iPhone (1320 × 2868) and 13" iPad (2064 × 2752), and Google Play's phone (1080 × 1920) and 10" tablet (1600 × 2560). `tool/store/frame.py` sets each on Klaf under its headline, without alpha, in `build/store/<ios|ipad|play|playtab>/<en-US|he>/`, numbered in their order. The feature graphic is the link preview's title block:
+  ```sh
+  CAPTURE=1 MODES=storeios,storeioshe,storeipad,storeipadhe,storeplay,storeplayhe,storeplaytab,storeplaytabhe flutter test test/screens/capture_test.dart
+  python3 tool/store/frame.py
+  python3 tool/branding/make_icon.py --feature-graphic
+  ```
+- [ ] The text is in `store/`, in fastlane's layout: `store/play/<en-US|iw-IL>/` as supply reads it, `store/ios/<en-US|he>/` as deliver does. `python3 -m unittest discover -s tool/store` (in CI) checks every field against the stores' limits. Before uploading, replace `<WEB_URL>` in `store/ios/*/support_url.txt` and `privacy_url.txt` with the site's address, the repository variable `WEB_URL`.
+- [ ] The text describes the app as it is, with no endorsement claimed: update it when a feature it names changes. A Hebrew reader approves the Hebrew text and the Hebrew headlines on the screenshots before upload.
+
 ### Behaviour on real devices
 - [ ] Fresh install: onboarding reaches the first verse, and that aliyah can be read to completion.
 - [ ] Upgrading from the previous version keeps settings and progress.
@@ -149,10 +160,10 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
   - Notifications: requested in context, after the first reading.
   - Boot completed: so reminders, and the home-screen widget's turn to each new day, survive a reboot.
   - No exact-alarm permission: from Android 12 reminders and the widget's updates use inexact scheduling, which the planner allows an hour for, and before it exact alarms, which need no permission there. No special declaration is needed.
-- [ ] **Store listing,** in en-US and iw-IL (Hebrew), with the text in `store/play/`:
-  - screenshots in English and Hebrew, for phone and tablet
-  - feature graphic
-  - a description that mentions the accessibility features
+- [ ] **Store listing,** in en-US and iw-IL (Hebrew), from the [store listing kit](#store-listing):
+  - the title, short and full description in `store/play/en-US/` and `store/play/iw-IL/`
+  - the feature graphic, `store/play/feature-graphic.png` (1024 × 500, no alpha)
+  - six phone screenshots (1080 × 1920) from `build/store/play/`, and six 10" tablet screenshots (1600 × 2560) from `build/store/playtab/`: `en-US/` for English, `he/` for iw-IL
 
 ## iOS (App Store)
 
@@ -170,7 +181,7 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 **App Store Connect**
 
 - [ ] **TestFlight:** upload the build, add internal testers, and run the [checks on real devices](#behaviour-on-real-devices) on the TestFlight build.
-- [ ] **Localizations:** English (U.S.), from `store/ios/en-US/`, and Hebrew, from `store/ios/he/`: the name שניים מקרא, its subtitle, keywords and description, and Hebrew screenshots.
+- [ ] **Localizations:** English (U.S.), from `store/ios/en-US/`, and Hebrew, from `store/ios/he/`: the name (שניים מקרא in Hebrew), subtitle, keywords, promotional text, description and support and privacy URLs, from the [store listing kit](#store-listing). Screenshots for each: six for the 6.9" iPhone (1320 × 2868) from `build/store/ios/`, and six for the 13" iPad (2064 × 2752) from `build/store/ipad/`, from `en-US/` and `he/`.
 - [ ] **App Privacy ("nutrition labels"):**
   - Contact info: email address, used for app functionality, linked to the user.
   - User content: posts, used for app functionality, linked to the user.
