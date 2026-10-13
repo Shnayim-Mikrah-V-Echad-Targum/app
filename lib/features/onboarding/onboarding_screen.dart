@@ -315,10 +315,10 @@ class OnboardingStepScreen extends ConsumerWidget {
   }
 }
 
-/// Where a step stands among the pages of onboarding, the welcome and the
-/// three steps: a 12 px lozenge for each, filled up to this one and
-/// outlined after it. The app bar's title says the same in words ("Step 1 of
-/// 3"), so screen readers hear that alone.
+/// Where a step stands among the three steps of onboarding: a 12 px lozenge
+/// for each, filled up to this one and outlined after it. The app bar's
+/// title says the same in words ("Step 1 of 3"), so screen readers hear that
+/// alone.
 class _StepMarks extends StatelessWidget {
   const _StepMarks({required this.step});
 
@@ -330,9 +330,9 @@ class _StepMarks extends StatelessWidget {
     // In the colour of indicators, or onSurface in high contrast, as every
     // ornament there (§7).
     final ink = SeferColors.of(context).isHighContrast ? scheme.onSurface : scheme.primary;
-    // The welcome is the first page.
-    final pages = OnboardingStep.values.length + 1;
-    final current = step.number + 1;
+    // As many as the title counts: the welcome is no step.
+    final pages = OnboardingStep.values.length;
+    final current = step.number;
     return ExcludeSemantics(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -430,9 +430,10 @@ class _LocationStepState extends ConsumerState<_LocationStep> {
           prominent: true,
           title: l.onbLocationTitle,
           value: schedule,
+          // In Settings' order; the time-zone guess may have chosen either.
           choices: [
-            Choice(ReadingSchedule.diaspora, l.locationDiaspora),
             Choice(ReadingSchedule.israel, l.locationIsrael),
+            Choice(ReadingSchedule.diaspora, l.locationDiaspora),
           ],
           // Both the reading and the days of Yom Tov; a visitor can set them
           // apart in Settings.
@@ -508,7 +509,8 @@ class _MethodStep extends ConsumerWidget {
         ChoiceGroup<SecondReading>(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.secondLabel,
-          help: '${l.secondSource} ${l.secondAdvice}',
+          // The advice on Rashi in English is Settings', where it is offered.
+          help: l.secondSource,
           value: s.secondReading,
           choices: [
             Choice(SecondReading.onkelos, l.secondOnkelos),

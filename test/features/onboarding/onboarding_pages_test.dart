@@ -134,9 +134,10 @@ void main() {
     List<bool> marks(WidgetTester tester) =>
         [for (final l in tester.widgetList<Lozenge>(find.byType(Lozenge))) !l.outlined];
 
-    testWidgets('each shows its place among the four pages in lozenges, and says it in its title', (tester) async {
+    testWidgets('each shows its place among the three steps in lozenges, as its title says it', (tester) async {
       final c = await openRoute(tester, '/welcome/location', settings: fresh, now: wednesday);
-      expect(marks(tester), [true, true, false, false]);
+      // One mark for each step the title counts: the welcome is none.
+      expect(marks(tester), [true, false, false]);
       expect(find.text('Step 1 of 3'), findsOneWidget);
       for (final lozenge in tester.widgetList<Lozenge>(find.byType(Lozenge))) {
         expect(lozenge.size, Lozenge.large);
@@ -146,12 +147,12 @@ void main() {
 
       c.read(routerProvider).go('/welcome/method');
       await tester.pumpAndSettle();
-      expect(marks(tester), [true, true, true, false]);
+      expect(marks(tester), [true, true, false]);
       expect(find.text('Step 2 of 3'), findsOneWidget);
 
       c.read(routerProvider).go('/welcome/plan');
       await tester.pumpAndSettle();
-      expect(marks(tester), [true, true, true, true]);
+      expect(marks(tester), [true, true, true]);
       expect(find.text('Step 3 of 3'), findsOneWidget);
     });
 
@@ -177,6 +178,25 @@ void main() {
       expect(find.widgetWithText(GroupHeader, 'This week'), findsOneWidget);
       expect(find.byType(PaperGroup), findsOneWidget);
       handle.dispose();
+    });
+
+    testWidgets('offers In Israel first, as Settings does, whichever is chosen', (tester) async {
+      await openRoute(tester, '/welcome/location', settings: fresh, now: wednesday);
+      expect(
+        tester.getTopLeft(find.text('In Israel')).dy,
+        lessThan(tester.getTopLeft(find.text('Outside Israel')).dy),
+      );
+    });
+
+    testWidgets("cites the second reading's source, with no advice on a Rashi it doesn't offer", (tester) async {
+      await openRoute(tester, '/welcome/method', settings: fresh, now: wednesday);
+      expect(
+        find.text('The Shulchan Aruch (OC 285:2) permits Rashi in place of Targum, and praises reading both.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('translated Rashi'), findsNothing);
+      // Rashi in English is offered, with that advice, in Reading & customs.
+      expect(find.text('Rashi in English'), findsNothing);
     });
 
     testWidgets('sets the honor statement as marginalia in a notice', (tester) async {

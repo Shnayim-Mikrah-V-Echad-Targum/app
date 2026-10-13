@@ -1433,10 +1433,11 @@ In order:
 - Then, 16 below, the disclaimer in bodySmall onSurfaceVariant.
 
 **Steps 2–4**
-- At the top, 16 below the app bar (clear of its rule): four 12 px lozenges, one for each page of onboarding (the welcome and the three steps), 12 apart and centred: filled up to the current page, outlined after it, in primary (onSurface in high contrast), hidden from screen readers. The app bar's title still says it in words ("Step 1 of 3").
+- At the top, 16 below the app bar (clear of its rule): three 12 px lozenges, one for each step (the welcome is none), 12 apart and centred: filled up to the current step, outlined after it, in primary (onSurface in high contrast), hidden from screen readers. The app bar's title says the same in words ("Step 1 of 3"), so that the marks agree with it: one of three filled on the first step.
 - 24 below, the question in headlineSmall, a level-2 heading (`ChoiceGroup(prominent: true)`).
 - Options as paper radio cards: min 72 high, radius 12, 8 apart; selected = 2 px primary border plus primaryContainer fill, unselected = paper within a 1 px outline (3 px and 2 px in high contrast), with RadioGroup semantics and arrow keys. A focused card takes the focus ring with its gap (§6.1), clear of its own border.
-- The second reading and this week's start stay ChoiceGroups of paper rows under eyebrows.
+- The location's options are in Settings' order, In Israel then Outside Israel, whichever the time zone's guess chose.
+- The second reading and this week's start stay ChoiceGroups of paper rows under eyebrows. The second reading offers Onkelos, Rashi and both, with its citation alone as help (`secondSource`); the advice on translated Rashi (`secondAdvice`) stays in Reading & customs, where Rashi in English is offered.
 - The honor statement as marginalia inside a NoticeBanner, a section's gap below the choices.
 - The way on is docked below the page (`Scaffold.bottomNavigationBar`), on surface under a hairline, so it is always in view, however large the text: on the gutters, 12 above and 16 below, `onbChangeAnytime` in bodySmall onSurfaceVariant, 8, then the Filled button 52 high and at most 480 wide. Its labels stay as now ("Continue", "Start reading").
 
