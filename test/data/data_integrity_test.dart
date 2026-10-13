@@ -36,6 +36,37 @@ void main() {
     }
   });
 
+  group("the parshiyot's pointed Hebrew names", () {
+    List<PortionInfo> named() => [...repo.all, ...repo.combined];
+
+    test('are pointed as the Chumash points them', () {
+      // שְׁמִינִי without the dagesh of the verse's הַשְּׁמִינִי, and חַיֵּי שָׂרָה
+      // with a sin dot where a holam stood.
+      expect(repo.byNumber(26).nameHe, '\u05E9\u05B0\u05C1\u05DE\u05B4\u05D9\u05E0\u05B4\u05D9');
+      expect(
+        repo.byNumber(5).nameHe,
+        '\u05D7\u05B7\u05D9\u05B5\u05BC\u05D9 \u05E9\u05B8\u05C2\u05E8\u05B8\u05D4',
+      );
+    });
+
+    test('give no letter two vowels', () {
+      final vowel = RegExp('[\u05B0-\u05BB\u05C7]');
+      // Each letter with the points and accents that follow it.
+      final letter = RegExp('[\u05D0-\u05EA][\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7]*');
+      final doubled = [
+        for (final p in named())
+          for (final m in letter.allMatches(p.nameHe))
+            if (vowel.allMatches(m[0]!).length > 1) '${p.key}: ${m[0]}',
+      ];
+      expect(doubled, isEmpty);
+    });
+
+    test('give no shin at the start of a word a dagesh', () {
+      final initial = RegExp('(?:^|\\s)\u05E9[^\\s\u05D0-\u05EA]*\u05BC');
+      expect([for (final p in named()) if (initial.hasMatch(p.nameHe)) p.key], isEmpty);
+    });
+  });
+
   test('every layer of every book has the same verse structure', () async {
     for (final book in kTorahBooks) {
       final mikrah = await texts.book(TextLayer.mikrah, book);
