@@ -168,21 +168,21 @@ void main() {
         await tester.pumpAndSettle();
       }
 
+      // Centred in the column, as an empty state is (§6.22), with Try again
+      // under it: in the pane beside the rail, never across the window.
       for (final hebrew in [false, true]) {
         final (l, language) = hebrew ? (_he, ', in Hebrew') : (_en, '');
-        testWidgets("a forum's threads start under its title$language", (tester) async {
+        testWidgets("a forum's threads are said under its title, centred$language", (tester) async {
           await openOffline(tester, '/community/forum/questions', hebrew: hebrew);
           final message = tester.getRect(find.text(l.errNetwork));
           final title = tester.getRect(_title(hebrew ? 'שאלות ותשובות' : 'Questions & answers'));
-          if (hebrew) {
-            // The rail at the right, and the column's content ending 32 in.
-            expect(message.right, title.right);
-            expect(message.right, 1109 - (1109 - 720) / 2 - 32);
-          } else {
-            expect(message.left, title.left);
-            expect(message.left, 257 + (1109 - 720) / 2 + 32);
-          }
-          expect(message.width, lessThanOrEqualTo(720 - 2 * 32), reason: "a line no longer than the column's");
+          // The rail at the left, or in Hebrew at the right, and the pane's
+          // 720 column centred beside it.
+          final column = hebrew ? 1109 / 2 : 257 + 1109 / 2;
+          expect(message.center.dx, closeTo(column, 0.5));
+          expect(message.width, lessThanOrEqualTo(320));
+          expect(message.top, greaterThan(title.bottom));
+          expect(tester.getRect(find.widgetWithText(FilledButton, l.actionRetry)).center.dx, closeTo(column, 0.5));
         });
       }
 
@@ -190,8 +190,8 @@ void main() {
         testWidgets('so are $route', (tester) async {
           await openOffline(tester, route);
           final message = tester.getRect(find.text(_en.errNetwork));
-          expect(message.left, 257 + (1109 - 720) / 2 + 32);
-          expect(message.width, lessThanOrEqualTo(720 - 2 * 32));
+          expect(message.center.dx, closeTo(257 + 1109 / 2, 0.5));
+          expect(message.width, lessThanOrEqualTo(320));
         });
       }
     });
@@ -447,25 +447,33 @@ void main() {
     });
 
     group("stand above the page's own controls", () {
-      testWidgets("a forum's floating button", (tester) async {
-        await openRoute(tester, '/community/forum/questions', size: const Size(1366, 860));
-        final button = tester.getRect(find.byType(FloatingActionButton));
-        final shown = await show(tester);
-        expect(shown.bottom, button.top - 16);
-        expect(shown.center.dx, 257 + 1109 / 2);
-        expect(tester.getRect(find.byType(FloatingActionButton)), button, reason: 'the button stays where it is');
-      });
+      // The page's own Scaffold shows the message, on a phone as beside the
+      // rail, rather than the shell's over the page's foot.
+      for (final (device, size, centre) in [
+        ('on a desktop', const Size(1366, 860), 257 + 1109 / 2),
+        ('on a phone', const Size(412, 915), 412 / 2),
+      ]) {
+        testWidgets("$device, a forum's floating button", (tester) async {
+          await openRoute(tester, '/community/forum/questions', size: size);
+          final button = tester.getRect(find.byType(FloatingActionButton));
+          final shown = await show(tester);
+          expect(shown.bottom, button.top - 16);
+          expect(shown.center.dx, centre);
+          expect(tester.getRect(find.byType(FloatingActionButton)), button, reason: 'the button stays where it is');
+        });
 
-      testWidgets("a thread's reply box", (tester) async {
-        await openRoute(tester, '/community/thread/1', size: const Size(1366, 860));
-        final box = tester.getRect(find.ancestor(of: find.byType(TextField), matching: find.byType(Material)).first);
-        final shown = await show(tester);
-        expect(shown.bottom, box.top - 16);
-        expect(shown.center.dx, 257 + 1109 / 2);
-      });
+        testWidgets("$device, a thread's reply box", (tester) async {
+          await openRoute(tester, '/community/thread/1', size: size);
+          final box = tester.getRect(find.ancestor(of: find.byType(TextField), matching: find.byType(Material)).first);
+          final shown = await show(tester);
+          expect(find.byType(SnackBar), findsOneWidget);
+          expect(shown.bottom, box.top - 16);
+          expect(shown.center.dx, centre);
+        });
+      }
 
-      testWidgets('on a phone, the navigation bar, as before', (tester) async {
-        await openRoute(tester, '/community/thread/1');
+      testWidgets('on a phone, the navigation bar, where the page has neither', (tester) async {
+        await openRoute(tester, '/settings');
         final shown = await show(tester);
         // The bar, under its hairline.
         expect(shown.bottom, tester.getRect(find.byType(NavigationBar)).top - 1 - 16);

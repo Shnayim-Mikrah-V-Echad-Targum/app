@@ -98,21 +98,38 @@ describe('the loading screen', () => {
   });
 
   /// Runs the body's script on a page in [lang]: the loading text, the slow
-  /// notice and the first frame.
-  function loadingText(lang) {
+  /// notice and the first frame. [reduceMotion] is the app's setting, as the
+  /// head's script marks it on <html>, and [systemReduceMotion] the
+  /// system's.
+  function loadingText(lang, { reduceMotion = false, systemReduceMotion = false } = {}) {
     const timers = [];
     const listeners = {};
     const removed = [];
-    const loading = { dir: '', remove: () => removed.push('loading') };
+    const loading = {
+      dir: '',
+      style: {},
+      attributes: {},
+      listeners: {},
+      setAttribute(name, value) {
+        this.attributes[name] = value;
+      },
+      addEventListener(type, listener) {
+        this.listeners[type] = listener;
+      },
+      remove: () => removed.push('loading'),
+    };
     const text = { textContent: 'Loading…' };
     vm.runInNewContext(inlineScripts[1], {
       document: {
-        documentElement: { lang },
+        documentElement: { lang, hasAttribute: (name) => reduceMotion && name === 'data-reduce-motion' },
         getElementById: (id) => ({ loading, 'loading-text': text })[id],
         querySelectorAll: (selector) =>
           selector === 'meta.boot-theme' ? [{ remove: () => removed.push('boot-theme') }] : [],
       },
-      window: { addEventListener: (type, listener) => (listeners[type] = listener) },
+      window: {
+        addEventListener: (type, listener) => (listeners[type] = listener),
+        matchMedia: (query) => ({ matches: systemReduceMotion && query === '(prefers-reduced-motion: reduce)' }),
+      },
       setTimeout: (callback, ms) => timers.push({ callback, ms }) - 1,
       clearTimeout: (id) => (timers[id].cleared = true),
     });
@@ -133,11 +150,48 @@ describe('the loading screen', () => {
     assert.equal(he.text.textContent, 'עדיין טוען…');
   });
 
-  it("goes at the first frame, with the brand's theme-color", () => {
+  it("fades away over the app at the first frame, as the brand's theme-color goes", () => {
     const page = loadingText('en');
     page.listeners['flutter-first-frame']();
     assert.ok(page.timers[0].cleared);
-    assert.deepEqual(page.removed, ['loading', 'boot-theme']);
+    // The theme-color at once; the loading screen over 250 ms, decelerating,
+    // letting taps through to the app and hidden from screen readers.
+    assert.deepEqual(page.removed, ['boot-theme']);
+    assert.equal(page.loading.style.opacity, '0');
+    assert.equal(page.loading.style.transition, 'opacity 250ms cubic-bezier(0.05, 0.7, 0.1, 1)');
+    assert.equal(page.loading.style.pointerEvents, 'none');
+    assert.equal(page.loading.attributes['aria-hidden'], 'true');
+    // Gone once the fade ends, and only once.
+    page.loading.listeners.transitionend();
+    assert.deepEqual(page.removed, ['boot-theme', 'loading']);
+    const fallback = page.timers[1];
+    assert.equal(fallback.ms, 400);
+    fallback.callback();
+    assert.deepEqual(page.removed, ['boot-theme', 'loading']);
+  });
+
+  it('goes after 400 ms if the fade never ends', () => {
+    const page = loadingText('he');
+    page.listeners['flutter-first-frame']();
+    assert.deepEqual(page.removed, ['boot-theme']);
+    page.timers[1].callback();
+    assert.deepEqual(page.removed, ['boot-theme', 'loading']);
+  });
+
+  it("goes at once with Reduce Motion, the app's or the system's", () => {
+    for (const motion of [{ reduceMotion: true }, { systemReduceMotion: true }]) {
+      const page = loadingText('en', motion);
+      page.listeners['flutter-first-frame']();
+      assert.deepEqual(page.removed, ['boot-theme', 'loading'], JSON.stringify(motion));
+      assert.deepEqual(page.loading.style, {}, JSON.stringify(motion));
+      assert.equal(page.timers.length, 1, JSON.stringify(motion));
+    }
+  });
+
+  it("stays above the app's view while it fades", () => {
+    const rule = html.match(/#loading \{([^}]*)\}/)[1];
+    assert.match(rule, /position: fixed;/);
+    assert.match(rule, /z-index: 1;/);
   });
 });
 

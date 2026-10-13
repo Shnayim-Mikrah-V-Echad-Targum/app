@@ -71,6 +71,8 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
     // A slider is a row of its paper, its title where a row's text starts.
     Widget slider(LabeledSlider slider) =>
         Padding(padding: const EdgeInsets.only(top: Space.sm, bottom: Space.xs), child: slider);
+    // The sliders on one paper, which set their values alike.
+    final sizes = [l.readingSize, l.lineSpacing, l.wordSpacing, l.letterSpacing];
 
     return SettingsPage(
       title: l.settingsDisplay,
@@ -84,6 +86,7 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
           children: [
             slider(LabeledSlider(
               title: l.readingSize,
+              group: sizes,
               value: s.readingScale,
               min: kMinReadingScale,
               max: kMaxReadingScale,
@@ -93,6 +96,7 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
             )),
             slider(LabeledSlider(
               title: l.lineSpacing,
+              group: sizes,
               value: s.lineHeight,
               min: kMinLineHeight,
               max: kMaxLineHeight,
@@ -102,6 +106,7 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
             )),
             slider(LabeledSlider(
               title: l.wordSpacing,
+              group: sizes,
               value: s.wordSpacing,
               min: 0,
               max: 16,
@@ -111,6 +116,7 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
             )),
             slider(LabeledSlider(
               title: l.letterSpacing,
+              group: sizes,
               value: s.letterSpacing,
               min: 0,
               max: 4,

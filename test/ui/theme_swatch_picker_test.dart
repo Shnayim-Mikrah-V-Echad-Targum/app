@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -170,6 +171,47 @@ void main() {
     expect(tester.getSize(find.descendant(of: swatch('Light'), matching: find.byType(Ink))).height, 64);
   });
 
+  for (final hebrew in [false, true]) {
+    testWidgets("names high contrast's two on two lines, read as one name${hebrew ? ', in Hebrew' : ''}", (tester) async {
+      final handle = tester.ensureSemantics();
+      tester.view.physicalSize = const Size(340, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpThemed(
+        tester,
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: ThemeSwatchPicker(value: AppThemeMode.highContrastLight, onChanged: (_) {}),
+        ),
+        hebrew: hebrew,
+        textScale: 2,
+      );
+      final names = hebrew
+          ? [('ניגודיות גבוהה\nבהירה', 'ניגודיות גבוהה — בהירה'), ('ניגודיות גבוהה\nכהה', 'ניגודיות גבוהה — כהה')]
+          : [('High contrast\nLight', 'High contrast — light'), ('High contrast\nDark', 'High contrast — dark')];
+      for (final (shown, read) in names) {
+        final text = tester.widget<Text>(find.byWidgetPredicate((w) => w is Text && w.semanticsLabel == read));
+        expect(text.data, shown);
+        // However the narrow swatch wraps it, no line starts with a dash.
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.byWidget(text), matching: find.byType(RichText)),
+        );
+        // The first character of each line, by where its box is drawn.
+        final starts = <double, int>{};
+        for (var i = 0; i < shown.length; i++) {
+          final boxes = paragraph.getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1));
+          if (boxes.isNotEmpty) starts.putIfAbsent(boxes.first.top.roundToDouble(), () => i);
+        }
+        expect(starts.length, greaterThanOrEqualTo(2), reason: 'on two lines at least');
+        for (final start in starts.values) {
+          expect(shown.substring(start).trimLeft(), isNot(startsWith('—')), reason: shown);
+        }
+        expect(tester.getSemantics(swatch(read)), isSemantics(label: read), reason: read);
+      }
+      handle.dispose();
+    });
+  }
+
   testWidgets('three to a row, or two under 360 dp', (tester) async {
     await pump(tester);
     expect(tester.getTopLeft(swatch('Dark')).dy, tester.getTopLeft(swatch('Light')).dy);
@@ -268,5 +310,29 @@ void main() {
     expect(light.right, 412 - 20);
     final check = tester.getRect(find.byIcon(Icons.check));
     expect(check.left - light.left, lessThan(12));
+  });
+
+  group('with the real fonts', () {
+    setUpAll(loadBundledFonts);
+
+    for (final hebrew in [false, true]) {
+      testWidgets('at 300% on a 320 dp phone, keeps every name whole${hebrew ? ', in Hebrew' : ''}', (tester) async {
+        tester.view.physicalSize = const Size(320, 1600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await pumpThemed(
+          tester,
+          SingleChildScrollView(
+            // The page's gutters there.
+            padding: const EdgeInsets.all(16),
+            child: ThemeSwatchPicker(value: AppThemeMode.highContrastDark, onChanged: (_) {}),
+          ),
+          hebrew: hebrew,
+          textScale: 3,
+        );
+        expect(tester.takeException(), isNull);
+        expectWholeWords(tester);
+      });
+    }
   });
 }

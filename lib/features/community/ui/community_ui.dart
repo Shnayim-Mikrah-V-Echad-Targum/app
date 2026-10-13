@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +21,7 @@ import '../../../ui/widgets/lang.dart';
 import '../../about/legal_screen.dart';
 import '../../parsha/week_context.dart';
 import '../../progress/domain/progress_models.dart';
+import '../../reader/scripture_text.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -313,10 +314,15 @@ class _WeeklyThreadOpenerState extends ConsumerState<WeeklyThreadOpener> {
 /// backend does. Presses while it runs are ignored. The button stays enabled
 /// meanwhile, so that it keeps the keyboard focus.
 class RefreshablePage extends StatefulWidget {
-  const RefreshablePage({super.key, required this.refresh, required this.builder});
+  const RefreshablePage({super.key, required this.refresh, required this.builder, this.failureShown = false});
 
   final Future<void> Function() refresh;
   final Widget Function(BuildContext context, Widget refreshButton) builder;
+
+  /// Whether the page shows why its content couldn't load ([ErrorState],
+  /// [ErrorMessage]), which says so again itself should the refresh fail
+  /// too: no status message then repeats it.
+  final bool failureShown;
 
   @override
   State<RefreshablePage> createState() => _RefreshablePageState();
@@ -333,7 +339,7 @@ class _RefreshablePageState extends State<RefreshablePage> {
       await widget.refresh();
       if (mounted) showStatus(context, l.refreshed);
     } catch (e) {
-      if (mounted) showStatus(context, communityError(l, e));
+      if (mounted && !widget.failureShown) showStatus(context, communityError(l, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -586,6 +592,181 @@ class InitialDisc extends StatelessWidget {
               ),
       ),
     );
+  }
+}
+
+/// A verse quoted (§6.21), as a question about it begins and as the
+/// verse's options show what will go: in the scripture's font at 20 / 1.7,
+/// right to left, its lines broken as the reader breaks them, and set off by
+/// a 2 px gold-ink rule at its right, where the Hebrew begins, 12 from the
+/// text, in either language of the app. With [maxLines], cut short after
+/// them. Screen readers read it in a Hebrew voice, spoken as the reader's
+/// verses are.
+class VerseQuote extends ConsumerWidget {
+  const VerseQuote(this.hebrew, {super.key, this.maxLines});
+
+  /// The verse as it is quoted, as copied: with no word joiners.
+  final String hebrew;
+  final int? maxLines;
+
+  static const _hebrew = Locale('he');
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(settingsProvider);
+    final scheme = Theme.of(context).colorScheme;
+    // A verse as search sets one (§6.25), in the scripture's font.
+    final style = ScriptureStyles(context, s).style(ScriptureKind.mikra).copyWith(fontSize: 20, height: 1.7);
+    final joined = TextSpan(text: keepLinesSound(hebrew));
+    var measured = DefaultTextStyle.of(context).style.merge(style);
+    if (MediaQuery.boldTextOf(context)) measured = measured.merge(const TextStyle(fontWeight: FontWeight.bold));
+    return Lang(
+      _hebrew,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Container(
+          padding: const EdgeInsetsDirectional.only(start: Space.md),
+          decoration: BoxDecoration(
+            border: BorderDirectional(start: BorderSide(color: scheme.secondary, width: 2)),
+          ),
+          child: _SizedAsText(
+            text: TextSpan(text: joined.text, style: measured, locale: _hebrew),
+            textScaler: MediaQuery.textScalerOf(context),
+            maxLines: maxLines,
+            child: JoinsThatFit(
+              text: joined,
+              style: style,
+              locale: _hebrew,
+              builder: (context, verse) => Text.rich(
+                verse,
+                style: style,
+                maxLines: maxLines,
+                overflow: maxLines == null ? null : TextOverflow.ellipsis,
+                locale: _hebrew,
+                semanticsLabel: spokenQuotedVerse(hebrew, s),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The verse a question quotes, above its message while it is written or
+/// edited (§9 Compose, §9 Thread): a [VerseQuote] cut short after three
+/// lines, standing [gap] below what is above it, with a button at its end
+/// that takes it out of the question ([onRemove]). The button is centred on
+/// the quote's first line however large the text: where that line is
+/// shorter than the button, the button reaches up into the gap rather than
+/// push the quote further down, and keeps its 48 dp to tap.
+class RemovableVerseQuote extends StatelessWidget {
+  const RemovableVerseQuote(this.quote, {super.key, required this.onRemove, this.gap = Space.md});
+
+  final String quote;
+  final VoidCallback onRemove;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) {
+    // The quote's first line, as VerseQuote sets it: 20 at 1.7.
+    final line = MediaQuery.textScalerOf(context).scale(20) * 1.7;
+    const button = kMinInteractiveDimension;
+    // How far the button stands above the first line, and of that, how much
+    // the gap above holds.
+    final above = math.max(0.0, (button - line) / 2);
+    final reach = math.min(above, gap);
+    return Padding(
+      padding: EdgeInsets.only(top: gap - reach),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(padding: EdgeInsets.only(top: above), child: VerseQuote(quote, maxLines: 3)),
+          ),
+          Padding(
+            padding: EdgeInsets.only(top: math.max(0.0, (line - button) / 2)),
+            child: IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: context.l10n.removeVerseQuote,
+              onPressed: onRemove,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// [selected], from a question on a verse shown as a [VerseQuote] over the
+/// question, as it is copied: without the word joiners and no-break spaces
+/// the verse is set with, and where it holds the end of the verse and the
+/// start of the question, a blank line between them, as the post has as
+/// text.
+String copiedFromQuestion(String selected, {required String verse, required String question}) {
+  final text = asCopied(selected);
+  final whole = '$verse$question';
+  for (var at = whole.indexOf(text); at >= 0; at = whole.indexOf(text, at + 1)) {
+    if (at < verse.length && at + text.length > verse.length) {
+      final cut = verse.length - at;
+      return '${text.substring(0, cut)}\n\n${text.substring(cut)}';
+    }
+  }
+  return text;
+}
+
+/// [child], scripture whose lines [JoinsThatFit] breaks only once it knows
+/// its width, answering the intrinsic size queries that a dialog asks (which
+/// the LayoutBuilder beneath can't) as [text], right to left in [maxLines]
+/// lines at most, would: as the verse with every maqaf's words joined.
+class _SizedAsText extends SingleChildRenderObjectWidget {
+  const _SizedAsText({required this.text, required this.textScaler, this.maxLines, required super.child});
+
+  final InlineSpan text;
+  final TextScaler textScaler;
+  final int? maxLines;
+
+  @override
+  _RenderSizedAsText createRenderObject(BuildContext context) => _RenderSizedAsText(
+        TextPainter(text: text, textDirection: TextDirection.rtl, textScaler: textScaler, maxLines: maxLines, ellipsis: '…'),
+      );
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderSizedAsText renderObject) => renderObject.painter
+    ..text = text
+    ..textScaler = textScaler
+    ..maxLines = maxLines;
+}
+
+class _RenderSizedAsText extends RenderProxyBox {
+  _RenderSizedAsText(this.painter);
+
+  final TextPainter painter;
+
+  Size _laidOut(double width) {
+    painter.layout(maxWidth: width);
+    return painter.size;
+  }
+
+  @override
+  double computeMinIntrinsicWidth(double height) => (painter..layout()).minIntrinsicWidth;
+
+  @override
+  double computeMaxIntrinsicWidth(double height) => (painter..layout()).maxIntrinsicWidth;
+
+  @override
+  double computeMinIntrinsicHeight(double width) => _laidOut(width).height;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => _laidOut(width).height;
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) => constraints.constrain(_laidOut(constraints.maxWidth));
+
+  @override
+  void dispose() {
+    painter.dispose();
+    super.dispose();
   }
 }
 

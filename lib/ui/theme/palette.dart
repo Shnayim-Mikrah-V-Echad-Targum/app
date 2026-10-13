@@ -19,7 +19,8 @@ export 'status_colors.dart';
 ///   chapter heads, Targum, overdue and rest days. Never buttons;
 /// - tertiary (hyssop) only for grace;
 /// - missed is neutral plus a dash glyph, never red;
-/// - error only for validation and destructive confirmations.
+/// - error only for validation and destruction: destructive confirmations,
+///   and a deletion's row or Text button.
 ///
 /// The fixed roles repeat the container roles, so a widget that reaches for
 /// primaryFixed still gets the palette's colour.

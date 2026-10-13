@@ -1454,6 +1454,10 @@
   "themeLight": "Light",
   "themeDark": "Dark",
   "themeSepia": "Sepia",
+  "themeHc": "High contrast",
+  "@themeHc": {
+    "description": "The first line of a high-contrast theme's swatch label, over themeLight or themeDark."
+  },
   "themeHcLight": "High contrast — light",
   "themeHcDark": "High contrast — dark",
   "scriptureFontLabel": "Scripture font",
@@ -1816,10 +1820,6 @@
     "description": "The Language row's value in Settings when the app follows the device's language."
   },
   "dataGroupBackup": "Backup & restore",
-  "resetProgressDesc": "This can’t be undone.",
-  "@resetProgressDesc": {
-    "description": "Under resetProgress in Your data."
-  },
   "aboutTitle": "About",
   "versionLabel": "Version {version}",
   "@versionLabel": {
@@ -2093,6 +2093,10 @@
   "edited": "edited",
   "editPostTitle": "Edit post",
   "deletePostConfirm": "Delete this post?",
+  "cantBeUndone": "This can’t be undone.",
+  "@cantBeUndone": {
+    "description": "Said of what can't be undone: the message of a dialog that confirms it, such as deleting a post, under its question, and the line under Reset all progress in Your data."
+  },
   "postDeleted": "Post deleted.",
   "posted": "Posted.",
   "viewPostedThread": "View",
@@ -2255,6 +2259,14 @@
         "type": "String"
       }
     }
+  },
+  "removeVerseQuote": "Remove the verse",
+  "@removeVerseQuote": {
+    "description": "Tooltip of the button beside the verse quoted above a question's message, in a new discussion or while a posted question is edited, which takes the verse out of the question."
+  },
+  "verseQuoteRemoved": "Verse removed",
+  "@verseQuoteRemoved": {
+    "description": "Status message once the verse quoted above a new question's message is taken out of it, with Undo, which puts it back."
   },
   "charactersLeft": "{count} characters left",
   "@charactersLeft": {

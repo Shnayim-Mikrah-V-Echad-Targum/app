@@ -8,6 +8,7 @@ import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/ornaments.dart';
+import '../../ui/widgets/sefer_tag.dart';
 
 class _Source {
   const _Source(this.title, this.description, this.license, this.url);
@@ -144,7 +145,7 @@ class _SourceCard extends StatelessWidget {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(source.title, style: titleStyle),
-                            _LicenseLabel(source.license),
+                            SeferTag(source.license),
                           ],
                         ),
                       ),
@@ -163,29 +164,6 @@ class _SourceCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// A source's license: a small label, not a control.
-class _LicenseLabel extends StatelessWidget {
-  const _LicenseLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.secondaryContainer,
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Space.sm, vertical: 2),
-        child: Text(text, style: theme.textTheme.labelSmall?.copyWith(color: scheme.onSecondaryContainer)),
       ),
     );
   }

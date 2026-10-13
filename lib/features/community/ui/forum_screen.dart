@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' show toBeginningOfSentenceCase;
 
+import '../../../app/retry.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
@@ -29,7 +30,7 @@ class ForumScreen extends ConsumerStatefulWidget {
   ConsumerState<ForumScreen> createState() => _ForumScreenState();
 }
 
-class _ForumScreenState extends ConsumerState<ForumScreen> {
+class _ForumScreenState extends ConsumerState<ForumScreen> with FetchAgainIfFailed {
   bool _loadingMore = false;
 
   // Load more keeps the keyboard focus while it loads. Then it moves down
@@ -76,35 +77,52 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final he = context.isHebrewUi;
-    final forums = ref.watch(forumsProvider);
+    final forums = watchFresh(forumsProvider);
     final forum = (forums.value ?? const []).where((f) => f.slug == widget.slug).firstOrNull;
     if (forum == null) {
       // Spin only while the forums first load: a link to a forum that
-      // doesn't exist says so, and so do forums that can't load, at once,
-      // while they are tried again.
+      // doesn't exist says so, and so do forums that can't load, with Try
+      // again, and a way back to the forums.
       final missing = forums.hasValue;
-      final error = missing ? null : forums.error;
       return PageScaffold(
-        // No title while the forums load, or can't.
+        // No title while the forums first load; Community where they
+        // can't, as a thread names its forum then.
         titleText: missing ? l.notFoundTitle : l.communityTitle,
-        showTitle: missing,
-        body: !missing && error == null
-            ? const Center(child: CircularProgressIndicator())
-            : CenteredMessage(
-                text: error != null ? communityError(l, error) : l.forumNotFound,
+        showTitle: missing || forums.hasError,
+        body: missing
+            ? CenteredMessage(
+                text: l.forumNotFound,
                 actions: [
                   FilledButton.tonal(
                     style: AppButtons.tonal(context),
                     onPressed: () => context.go('/community'),
                     child: Text(l.allForums),
                   ),
-                  if (error != null)
-                    TextButton(onPressed: () => ref.invalidate(forumsProvider), child: Text(l.actionRetry)),
                 ],
-              ),
+              )
+            : switch (forums.error) {
+                null => const Center(child: CircularProgressIndicator()),
+                // Pulled, or its button pressed, to try again.
+                final error => RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(forumsProvider);
+                      try {
+                        await ref.read(forumsProvider.future);
+                      } catch (_) {
+                        // Said in place, by the error state.
+                      }
+                    },
+                    child: ErrorState(
+                      message: communityError(l, error),
+                      onRetry: () => ref.invalidate(forumsProvider),
+                      retrying: forums.isLoading,
+                      actions: [TextButton(onPressed: () => context.go('/community'), child: Text(l.allForums))],
+                    ),
+                  ),
+              },
       );
     }
-    final threads = ref.watch(threadsProvider(forum.id));
+    final threads = watchFresh(threadsProvider(forum.id));
     final profile = ref.watch(myProfileProvider).value;
     final canStart = !forum.locked || (profile?.isModerator ?? false);
     final theme = Theme.of(context);
@@ -112,6 +130,14 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
     // The Parsha forum opens on this week's discussion, so it is never empty.
     final weekly = forum.slug == 'parsha';
     void compose() => context.push('/community/new?forum=${forum.slug}');
+    // The list, as the body shows it below: not while it first loads or
+    // can't, nor while it loads again for another account.
+    final listed = threads.hasValue && !threads.isReloading;
+    // Only over a list, and not over an empty forum, where the empty state's
+    // own button is the one invitation.
+    final showFab = canStart && listed && (weekly || threads.requireValue.threads.isNotEmpty);
+    // Why the discussions couldn't load, in place of them.
+    final failed = threads.hasError && !threads.hasValue;
 
     Future<void> refresh() async {
       ref.invalidate(threadsProvider(forum.id));
@@ -120,30 +146,33 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
 
     return RefreshablePage(
       refresh: refresh,
+      failureShown: failed,
       builder: (context, refreshButton) => PageScaffold(
         titleText: forum.name(he),
         actions: [const DemoTag(), refreshButton],
-        floatingActionButton: canStart
-            ? FloatingActionButton.extended(
-                onPressed: compose,
-                icon: const Icon(Icons.edit_outlined),
-                label: Text(l.newThread),
-              )
+        floatingActionButton: showFab
+            ? PageScaffold.floatingButton(context, icon: Icons.edit_outlined, label: l.newThread, onPressed: compose)
             : null,
         body: RefreshIndicator(
           onRefresh: () async {
             try {
               await refresh();
             } catch (e) {
-              if (context.mounted) showStatus(context, communityError(l, e));
+              // Over the discussions shown, which stay; the error state says
+              // it again itself.
+              if (context.mounted && !failed) showStatus(context, communityError(l, e));
             }
           },
           child: threads.when(
             // Fetched again, the threads shown stay until the new ones come.
             skipError: threads.hasValue,
             loading: () => const Center(child: CircularProgressIndicator()),
-            // In the page's column, under the title, and pulled to try again.
-            error: (e, _) => PageBody(children: [Text(communityError(l, e))]),
+            // Pulled, or its button pressed, to try again.
+            error: (e, _) => ErrorState(
+              message: communityError(l, e),
+              onRetry: () => ref.invalidate(threadsProvider(forum.id)),
+              retrying: threads.isLoading,
+            ),
             data: (page) {
               // The pinned threads, then the rest, each group as rows of one
               // sheet of paper, built only as they scroll into view: a forum
@@ -195,7 +224,7 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
                     ));
               }
               // Room at the end for the button over it.
-              if (canStart) items.add(() => const Gap(72));
+              if (showFab) items.add(() => const Gap(72));
               return PageBody.builder(
                 header: [
                   if (description.isNotEmpty)
@@ -217,11 +246,12 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
 }
 
 /// A thread in a forum's list (§9 Community): its title, run in the direction
-/// of its own language, under a Pinned or Locked tag if it is pinned or
-/// locked; the opening of its first post, in that post's direction; then who
-/// started it, when it was last active, how many replies it has had and the
-/// thanks its posts were given. One item for screen readers, which opens the
-/// thread, and says each tag too.
+/// of its own language from its own start edge, under a Pinned or Locked tag
+/// if it is pinned or locked; the opening of its first post, in that post's
+/// direction from its own start edge; then who started it, when it was last
+/// active, how many replies it has had and the thanks its posts were given,
+/// on the page's start edge, as the tags are. One item for screen readers,
+/// which opens the thread, and says each tag too.
 class ThreadTile extends ConsumerWidget {
   const ThreadTile({super.key, required this.thread, this.focusNode});
   final ThreadSummary thread;
@@ -239,10 +269,14 @@ class ThreadTile extends ConsumerWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     final title = threadDisplayTitle(context, ref, thread);
     final page = Directionality.of(context);
-    // Each title and excerpt runs its own way, but starts on the same edge as
-    // the rest.
-    final edge = page == TextDirection.rtl ? TextAlign.right : TextAlign.left;
-    final excerpt = thread.excerpt;
+    // A question about a verse is excerpted from its question, as the
+    // server lists it. An excerpt that begins with the verse instead (from
+    // a listing of before) has its lines run together, so it is cut short
+    // within the verse and holds nothing of the question: there is none.
+    final excerpt = switch (splitVerseQuote(thread.excerpt ?? '').rest) {
+      '' => null,
+      final rest => rest,
+    };
     // Never cut short once the text is enlarged (WCAG 1.4.4).
     final enlarged = MediaQuery.textScalerOf(context).scale(1) > 1;
     // Starting with the time, as a weekly thread's does, it starts with a
@@ -295,7 +329,6 @@ class ThreadTile extends ConsumerWidget {
                   title,
                   page: page,
                   style: text.titleMedium,
-                  textAlign: edge,
                   maxLines: enlarged ? null : 2,
                 ),
                 if (excerpt != null) ...[
@@ -304,7 +337,6 @@ class ThreadTile extends ConsumerWidget {
                     excerpt,
                     page: page,
                     style: text.bodySmall?.copyWith(color: theme.colorScheme.onSurface),
-                    textAlign: edge,
                     maxLines: enlarged ? null : 2,
                   ),
                 ],
@@ -321,20 +353,19 @@ class ThreadTile extends ConsumerWidget {
 }
 
 /// [text] written by a member, such as a thread's title or its excerpt: run
-/// in the direction of its own language and tagged with it, from the page's
-/// edge ([textAlign]), and cut short after [maxLines] lines. Never cut short
-/// ([maxLines] null, as at large text), each word stays whole, set smaller
-/// where it is too wide for the row, as the thread's own title is, unless
-/// too long to stay legible.
+/// in the direction of its own language and tagged with it, from its own
+/// start edge, so that each of its lines begins on the same edge, and cut
+/// short after [maxLines] lines. Never cut short ([maxLines] null, as at
+/// large text), each word stays whole, set smaller where it is too wide for
+/// the row, as the thread's own title is, unless too long to stay legible.
 class _OwnDirection extends StatelessWidget {
-  const _OwnDirection(this.text, {required this.page, this.style, required this.textAlign, this.maxLines});
+  const _OwnDirection(this.text, {required this.page, this.style, this.maxLines});
 
   final String text;
 
   /// The page's direction, for a text with no letter to take one from.
   final TextDirection page;
   final TextStyle? style;
-  final TextAlign textAlign;
   final int? maxLines;
 
   @override
@@ -348,7 +379,7 @@ class _OwnDirection extends StatelessWidget {
               text,
               style: style,
               textDirection: direction,
-              textAlign: textAlign,
+              textAlign: TextAlign.start,
               locale: locale,
               breakAtHyphens: true,
               minFontSize: WholeWords.smallestSize,
@@ -357,7 +388,7 @@ class _OwnDirection extends StatelessWidget {
               text,
               style: style,
               textDirection: direction,
-              textAlign: textAlign,
+              textAlign: TextAlign.start,
               maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
             ),

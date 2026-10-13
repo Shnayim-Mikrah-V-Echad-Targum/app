@@ -1641,6 +1641,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSepia => 'Sepia';
 
   @override
+  String get themeHc => 'High contrast';
+
+  @override
   String get themeHcLight => 'High contrast — light';
 
   @override
@@ -2141,9 +2144,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dataGroupBackup => 'Backup & restore';
 
   @override
-  String get resetProgressDesc => 'This can’t be undone.';
-
-  @override
   String get aboutTitle => 'About';
 
   @override
@@ -2527,6 +2527,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deletePostConfirm => 'Delete this post?';
 
   @override
+  String get cantBeUndone => 'This can’t be undone.';
+
+  @override
   String get postDeleted => 'Post deleted.';
 
   @override
@@ -2769,6 +2772,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String askDraftKept(String reference) {
     return 'Your unsent draft is kept. Discard it to ask about $reference instead.';
   }
+
+  @override
+  String get removeVerseQuote => 'Remove the verse';
+
+  @override
+  String get verseQuoteRemoved => 'Verse removed';
 
   @override
   String charactersLeft(int count) {

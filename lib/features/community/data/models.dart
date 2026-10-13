@@ -161,14 +161,46 @@ class ThreadSummary {
   static const _keep = Object();
 }
 
+/// [message] after [verse], quoted as a question about a verse begins
+/// ("Ask about this verse"): "> " and the verse's Hebrew, a blank line, then
+/// the question. With [leftToRight], for a question written in English, say,
+/// a left-to-right mark comes first, so that the post as plain text runs
+/// from the left, as its question does, rather than taking its direction
+/// from the Hebrew quoted first. [splitVerseQuote] parts it again.
+String withVerseQuote(String verse, String message, {required bool leftToRight}) =>
+    '${leftToRight ? '\u200E' : ''}> $verse\n\n$message';
+
+/// [body] parted into the verse it quotes, as a question about a verse
+/// begins ([withVerseQuote]), and the rest, the question. A body quotes a
+/// verse where it begins with "> " (after a left-to-right mark, perhaps) and
+/// Hebrew: the verse runs to the first blank line, or to the end where there
+/// is none (the question edited away, or an excerpt cut short within the
+/// verse), leaving no rest. Any other body, a quote of English words among
+/// them, quotes none: verse is null, and the rest is the body.
+({String? verse, String rest}) splitVerseQuote(String body) {
+  final quote = _verseQuoteStart.matchAsPrefix(body);
+  if (quote == null) return (verse: null, rest: body);
+  final end = body.indexOf('\n\n', quote.end);
+  return end < 0
+      ? (verse: body.substring(quote.end), rest: '')
+      : (verse: body.substring(quote.end, end), rest: body.substring(end + 2));
+}
+
+/// How a body that quotes a verse begins, up to the verse's first letter.
+/// The server's listing reads it so too
+/// (supabase/migrations/20261012010000_excerpt_after_verse.sql).
+final _verseQuoteStart = RegExp('\u200E?> (?=[\u0590-\u05FF])');
+
 /// The excerpt of a thread whose first post is [body], as the server's
 /// listing (supabase/migrations/20261011000000_thread_stats.sql) gives it:
 /// the post with its spaces and line breaks run together, and past
 /// [threadExcerptLength] characters cut after the last whole word that fits
 /// (or one short of the length, where that would lose more than 40, as in a
-/// long link), with an ellipsis. Null for a post of nothing but spaces.
+/// long link), with an ellipsis. A question about a verse is taken from
+/// after the verse it quotes ([splitVerseQuote]), so that its excerpt is the
+/// question. Null for a post of nothing but spaces, or but the verse.
 String? threadExcerpt(String body) {
-  final text = body.trim().replaceAll(_spaces, ' ');
+  final text = splitVerseQuote(body).rest.trim().replaceAll(_spaces, ' ');
   if (text.isEmpty) return null;
   if (text.runes.length <= threadExcerptLength) return text;
   // Counted in characters, as Postgres counts them, not UTF-16 units.

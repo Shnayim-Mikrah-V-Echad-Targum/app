@@ -24,8 +24,11 @@ const a11yRoutes = [
   '/settings/data',
   '/settings/about',
   '/settings/account',
-  '/guide',
-  '/sources',
+  // The guide, the sources and a policy within Settings, as it opens them;
+  // and a policy on its own, as every visitor can open it.
+  '/settings/guide',
+  '/settings/about/sources',
+  '/settings/about/legal/privacy',
   '/legal/privacy',
   // A week within a tab, under its navigation bar.
   '/parsha/week/5787:2',

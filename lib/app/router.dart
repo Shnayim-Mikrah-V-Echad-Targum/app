@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,6 +32,8 @@ import '../features/settings/screens/reading_settings_screen.dart';
 import '../features/settings/screens/reminder_settings_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/today/today_screen.dart';
+import '../services/feedback.dart' show statusMessageShown;
+import '../ui/theme/motion.dart';
 import '../ui/widgets/fallbacks.dart';
 import 'app_page.dart';
 import 'providers.dart';
@@ -48,6 +51,28 @@ GoRoute _route(String path, Widget Function(GoRouterState s) build, {List<RouteB
 
 GoRoute _week(String path) => _route(path, (s) => WeekOverviewScreen(weekId: s.pathParameters['id']!));
 GoRoute _haftarah(String path) => _route(path, (s) => HaftarahScreen(weekId: s.pathParameters['id']!));
+
+/// The guide, the sources and a policy: within the tabs that open them, so
+/// that the navigation bar or rail stays, and on their own, over the tabs,
+/// for onboarding, links and the pages shown over the tabs. A policy that
+/// doesn't exist is no page.
+GoRoute _guide(String path) => _route(path, (_) => const GuideScreen());
+GoRoute _sources(String path) => _route(path, (_) => const SourcesScreen());
+GoRoute _legal(String path) => _route(path, (s) => switch (LegalDoc.fromSlug(s.pathParameters['doc']!)) {
+      final doc? => LegalScreen(doc: doc),
+      null => const NotFoundPage(),
+    });
+
+/// A tab's copy of the guide, the sources or a policy
+/// ('/settings/about/legal/privacy'), as the page of its own over the tabs
+/// ('/legal/privacy'); null for any other page.
+String? _pageOverTabs(String path) => switch (path) {
+      '/today/guide' || '/settings/guide' => '/guide',
+      '/settings/about/sources' => '/sources',
+      _ => RegExp(r'^/(community|community/account|settings/about|settings/accessibility|settings/account)(/legal/[^/]+)$')
+          .firstMatch(path)
+          ?.group(2),
+    };
 
 /// A week and its haftarah within each of the [weekTabs], so the navigation
 /// bar stays.
@@ -76,13 +101,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final atWelcome = path == '/welcome' || path.startsWith('/welcome/');
       // The guide, sources and policies are open before onboarding too: the
       // stores require the privacy policy to be reachable on a first visit.
-      // So are the addresses they had in About, which lead to them.
-      final isPublic = path == '/guide' ||
-          path == '/sources' ||
-          path.startsWith('/legal/') ||
-          path == '/settings/about/sources' ||
-          path.startsWith('/settings/about/legal/');
-      if (!onboarded.value && !atWelcome && !isPublic) return '/welcome';
+      // Their copies within the tabs (the addresses they had in About among
+      // them) lead to the pages of their own, as the tabs wait for it.
+      final isPublic = path == '/guide' || path == '/sources' || path.startsWith('/legal/');
+      if (!onboarded.value && !atWelcome && !isPublic) return _pageOverTabs(path) ?? '/welcome';
       if (onboarded.value && atWelcome) return '/today';
       return null;
     },
@@ -98,7 +120,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         navigatorContainerBuilder: _tabStack,
         pageBuilder: (context, state, shell) => _page(state, AppShell(shell: shell)),
         branches: [
-          StatefulShellBranch(routes: [_route('/today', (_) => const TodayScreen(), routes: _weekPages())]),
+          StatefulShellBranch(routes: [
+            _route('/today', (_) => const TodayScreen(), routes: [..._weekPages(), _guide('guide')]),
+          ]),
           StatefulShellBranch(routes: [
             _route('/parsha', (_) => const ParshaTab(), routes: [
               _route('browse', (_) => const BrowseScreen()),
@@ -115,8 +139,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     forumSlug: s.uri.queryParameters['forum'],
                     verse: s.uri.queryParameters['verse'],
                   )),
-              _route('account', _account),
+              // The privacy policy from the account, under it.
+              _route('account', _account, routes: [_legal('legal/:doc')]),
               _route('moderation', (_) => const ModerationScreen()),
+              // The guidelines from a new discussion.
+              _legal('legal/:doc'),
             ]),
           ]),
           StatefulShellBranch(routes: [
@@ -125,27 +152,26 @@ final routerProvider = Provider<GoRouter>((ref) {
                 _route('city', (_) => const CityPickerScreen()),
               ]),
               _route('display', (_) => const DisplaySettingsScreen()),
-              _route('accessibility', (_) => const AccessibilitySettingsScreen()),
+              _route('accessibility', (_) => const AccessibilitySettingsScreen(), routes: [
+                // The accessibility statement.
+                _legal('legal/:doc'),
+              ]),
               _route('reminders', (_) => const ReminderSettingsScreen(), routes: [
                 _route('city', (_) => const CityPickerScreen()),
               ]),
               _route('data', (_) => const DataSettingsScreen()),
-              _route('account', _account),
-              _route('about', (_) => const AboutScreen(), routes: [
-                // Where these pages used to be, for old links.
-                GoRoute(path: 'sources', redirect: (_, _) => '/sources'),
-                GoRoute(path: 'legal/:doc', redirect: (_, s) => '/legal/${s.pathParameters['doc']}'),
-              ]),
+              // The privacy policy from the account, under it.
+              _route('account', _account, routes: [_legal('legal/:doc')]),
+              _route('about', (_) => const AboutScreen(), routes: [_sources('sources'), _legal('legal/:doc')]),
+              _guide('guide'),
             ]),
           ]),
         ],
       ),
-      _route('/guide', (_) => const GuideScreen()),
-      _route('/sources', (_) => const SourcesScreen()),
-      _route('/legal/:doc', (s) => switch (LegalDoc.fromSlug(s.pathParameters['doc']!)) {
-            final doc? => LegalScreen(doc: doc),
-            null => const NotFoundPage(),
-          }),
+      // On their own, before onboarding too (see the redirect).
+      _guide('/guide'),
+      _sources('/sources'),
+      _legal('/legal/:doc'),
       // A week and its haftarah on their own, for links and notifications.
       _week('/week/:id'),
       _haftarah('/haftarah/:id'),
@@ -181,22 +207,79 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 /// The tabs' navigators, each kept as it was left and only the chosen one
 /// shown, as go_router's indexed stack keeps them; and only the chosen one's
-/// heroes take part in a page's transition. On a tablet or desktop each
-/// tab's page on show is the Scaffold that shows a status message (§6.19),
-/// whose copy of it, a hero, would otherwise be one of several alike.
+/// heroes take part in a page's transition. Each tab's page on show is the
+/// Scaffold that shows a status message (§6.19), whose copy of it, a hero,
+/// would otherwise be one of several alike. The tab chosen fades in, and the
+/// one left goes at once.
 Widget _tabStack(BuildContext context, StatefulNavigationShell shell, List<Widget> children) => IndexedStack(
       index: shell.currentIndex,
       children: [
         for (final (i, child) in children.indexed)
           Offstage(
             offstage: i != shell.currentIndex,
-            child: TickerMode(
-              enabled: i == shell.currentIndex,
-              child: HeroMode(enabled: i == shell.currentIndex, child: child),
+            child: _TabFadeIn(
+              active: i == shell.currentIndex,
+              child: TickerMode(
+                enabled: i == shell.currentIndex,
+                child: HeroMode(enabled: i == shell.currentIndex, child: child),
+              ),
             ),
           ),
       ],
     );
+
+/// Whether a tab fades in as it is chosen on [platform] (§8): on Android,
+/// on the desktop, and on the web whatever its host, as pages fade in there;
+/// not in an iOS or macOS app, whose tabs switch without a transition.
+@visibleForTesting
+bool tabsFadeOn(TargetPlatform platform, {bool web = kIsWeb}) =>
+    web || (platform != TargetPlatform.iOS && platform != TargetPlatform.macOS);
+
+/// A tab that fades in over [Motion.short] each time it is chosen (§8), as
+/// its indicator moves to it; shown at once where tabs don't fade
+/// ([tabsFadeOn]) and while motion is reduced. While a status message is on
+/// show, it is shown at once too: each page's own Scaffold shows the message
+/// (§6.19), which would fade out and in with the tab, and it carries across
+/// unbroken instead.
+class _TabFadeIn extends StatefulWidget {
+  const _TabFadeIn({required this.active, required this.child});
+
+  /// Whether this is the tab on show.
+  final bool active;
+
+  final Widget child;
+
+  @override
+  State<_TabFadeIn> createState() => _TabFadeInState();
+}
+
+class _TabFadeInState extends State<_TabFadeIn> with SingleTickerProviderStateMixin {
+  // Settled until a tab is chosen, so the first tab shown simply is there.
+  late final _controller = AnimationController(vsync: this, duration: Motion.short, value: 1);
+  late final _opacity = _controller.drive(CurveTween(curve: Motion.decelerate));
+
+  @override
+  void didUpdateWidget(_TabFadeIn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.active || oldWidget.active) return;
+    if (!tabsFadeOn(Theme.of(context).platform) || Motion.of(context).reduced || statusMessageShown(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  // Heard by screen readers from its first frame, as its content is there.
+  @override
+  Widget build(BuildContext context) =>
+      FadeTransition(opacity: _opacity, alwaysIncludeSemantics: true, child: widget.child);
+}
 
 /// The roots of the navigation tabs.
 const _tabs = ['/today', '/parsha', '/progress', '/community', '/settings'];

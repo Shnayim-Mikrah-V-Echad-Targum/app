@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/retry.dart';
+import '../../../app/routes.dart';
 import '../../../data/models/scripture.dart';
 import '../../../data/models/verse_ref.dart';
 import '../../../services/feedback.dart';
@@ -34,10 +36,12 @@ import 'community_ui.dart';
 /// is shown the same way. Ctrl+Enter (⌘Enter) posts too.
 ///
 /// Asked about a [verse], from the reader, it begins the question: its title
-/// names the verse, and its message quotes it. A draft not yet sent is never
-/// replaced: the page says that it was kept, and what discarding it will do.
-/// A question begun and left as it was is no draft: it is not kept, and
-/// another verse asked about takes its place.
+/// names the verse, which is quoted above the message, as a quotation and
+/// out of the way of what is written, and begins it once posted (a button
+/// takes it out). A draft not yet sent is never replaced: the page says that
+/// it was kept, and what discarding it will do. A question begun and left as
+/// it was is no draft: it is not kept, and another verse asked about takes
+/// its place.
 ///
 /// Shown over the tabs ('/ask', over the reader), posting goes back to the
 /// page beneath, whose status message leads to the new discussion.
@@ -56,9 +60,12 @@ class ComposeScreen extends ConsumerStatefulWidget {
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
 }
 
-class _ComposeScreenState extends ConsumerState<ComposeScreen> {
+class _ComposeScreenState extends ConsumerState<ComposeScreen> with FetchAgainIfFailed {
   static const _titleMin = 5;
   static const _bodyMin = 2;
+
+  /// The most characters a post holds, the verse it quotes included.
+  static const _bodyMax = 10000;
   static const _draftKey = 'draft.newThread';
 
   late final _prefs = ref.read(sharedPreferencesProvider);
@@ -91,13 +98,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   BookVerse? _asked;
   Verse? _askedVerse;
 
+  /// The verse the question quotes, as it is quoted ([verseText]): shown
+  /// above the message rather than in it, and put before it as the post is
+  /// sent, and as it is kept ([_composedBody]). Null for none.
+  String? _quote;
+
+  /// The page's direction, which a message with no letter yet takes, as the
+  /// draft is kept when the page closes.
+  TextDirection _direction = TextDirection.ltr;
+
   /// Counts the verses asked about, so that only the last one's text, once
   /// found, is used.
   int _asking = 0;
 
-  /// The question as it was begun, while its fields still hold it: no draft
-  /// of the member's, so neither kept nor in the way of another verse.
-  ({String title, String body})? _begun;
+  /// The question as it was begun, while the page still holds it (its
+  /// message still empty): no draft of the member's, so neither kept nor in
+  /// the way of another verse.
+  ({String title, String quote})? _begun;
 
   /// Whether a draft not yet sent kept the question on [_asked] from being
   /// begun, as the page then says.
@@ -111,26 +128,42 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       try {
         final j = jsonDecode(raw) as Map<String, dynamic>;
         _title.text = j['title'] as String? ?? '';
-        _body.text = j['body'] as String? ?? '';
+        if (j.containsKey('quote')) {
+          _quote = j['quote'] as String?;
+          _body.text = j['body'] as String? ?? '';
+        } else {
+          // Kept before the verse had a place of its own in a draft: at the
+          // head of the message, as it is posted.
+          final body = splitVerseQuote(j['body'] as String? ?? '');
+          _quote = body.verse;
+          _body.text = body.rest;
+        }
       } catch (_) {}
     }
     _titleSeen = _title.text;
     _bodySeen = _body.text;
-    void save() {
-      _draftTimer?.cancel();
-      _draftTimer = Timer(const Duration(milliseconds: 600), _saveDraft);
-      setState(() {
-        if (_title.text != _titleSeen) _titleServerError = null;
-        if (_body.text != _bodySeen) _bodyServerError = null;
-        _titleSeen = _title.text;
-        _bodySeen = _body.text;
-        if (_checked) _check();
-      });
-    }
-
-    _title.addListener(save);
-    _body.addListener(save);
+    _title.addListener(_edited);
+    _body.addListener(_edited);
     _askAbout(widget.verse);
+  }
+
+  /// A field's text or selection changed: what is written is kept soon, a
+  /// server's error goes once its field's own text has changed, and what
+  /// each field still needs follows the text once Post has been pressed.
+  void _edited() {
+    _saveSoon();
+    setState(() {
+      if (_title.text != _titleSeen) _titleServerError = null;
+      if (_body.text != _bodySeen) _bodyServerError = null;
+      _titleSeen = _title.text;
+      _bodySeen = _body.text;
+      if (_checked) _check();
+    });
+  }
+
+  void _saveSoon() {
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 600), _saveDraft);
   }
 
   @override
@@ -142,19 +175,34 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (widget.verse != old.verse) _askAbout(widget.verse);
   }
 
-  /// Whether the fields hold nothing of the member's own: nothing at all, or
-  /// the question as it was begun.
+  /// Whether the page holds nothing of the member's own: nothing at all, or
+  /// the question as it was begun, its verse taken out or not.
   bool get _untouched =>
-      (_title.text.isEmpty && _body.text.isEmpty) ||
-      (_begun != null && _title.text == _begun!.title && _body.text == _begun!.body);
+      _body.text.isEmpty &&
+      ((_title.text.isEmpty && _quote == null) ||
+          (_begun != null && _title.text == _begun!.title && (_quote == null || _quote == _begun!.quote)));
+
+  /// The message as it is posted: after the verse it quotes, if any, with a
+  /// left-to-right mark first where the message runs from the left
+  /// ([withVerseQuote]). The stored post is as it always was.
+  String get _composedBody => switch (_quote) {
+        null => _body.text,
+        final quote => withVerseQuote(
+            quote,
+            _body.text,
+            leftToRight: autoDirection(_body.text, fallback: _direction) == TextDirection.ltr,
+          ),
+      };
 
   /// Keeps what is written for the next time the page opens; with nothing of
-  /// the member's own, there is nothing to keep.
+  /// the member's own, there is nothing to keep. The verse is kept apart from
+  /// the message (null for none), so that a message the member begins with a
+  /// quote of their own comes back as they wrote it.
   void _saveDraft() {
     if (_untouched) {
       _prefs.remove(_draftKey);
     } else {
-      _prefs.setString(_draftKey, jsonEncode({'title': _title.text, 'body': _body.text}));
+      _prefs.setString(_draftKey, jsonEncode({'title': _title.text, 'quote': _quote, 'body': _body.text}));
     }
   }
 
@@ -191,31 +239,53 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _draftKept = false;
         _beginQuestion();
       } else {
-        _draftKept = !quotesVerse(_body.text, text, ref.read(settingsProvider));
+        // A draft that quotes this verse is its question already.
+        _draftKept = !quotesVerse(_composedBody, text, ref.read(settingsProvider));
       }
     });
   }
 
-  /// The quote of [verse] a question about it begins with, in this page's
-  /// language.
-  String _quote(Verse verse) => verseQuote(verse, ref.read(settingsProvider), leftToRight: !context.isHebrewUi);
-
-  /// Begins the question on [_asked]: its title names the verse, and its
-  /// message quotes it, with the caret after the quote, on the line the
-  /// question goes on.
+  /// Begins the question on [_asked]: its title names the verse, which is
+  /// quoted above the message, left empty for the question.
   void _beginQuestion() {
     final asked = _asked!;
     final reference = Names(context).reference(asked.book, asked.ref.chapter, asked.ref.verse);
     final title = context.l10n.questionOnVerse(reference);
-    final quote = _quote(_askedVerse!);
-    _begun = (title: title, body: quote);
+    final quote = verseText(_askedVerse!, ref.read(settingsProvider));
+    _begun = (title: title, quote: quote);
+    _quote = quote;
     _title.text = title;
-    _body.value = TextEditingValue(text: quote, selection: TextSelection.collapsed(offset: quote.length));
+    _body.clear();
+  }
+
+  /// Takes the verse out of the question. The message, beside it, takes the
+  /// focus from the button that went with it, and a status message offers to
+  /// put the verse back.
+  void _removeQuote() {
+    final removed = _quote;
+    if (removed == null) return;
+    setState(() => _quote = null);
+    _saveSoon();
+    _bodyFocus.requestFocus();
+    final l = context.l10n;
+    showStatus(
+      context,
+      l.verseQuoteRemoved,
+      action: SnackBarAction(
+        label: l.actionUndo,
+        onPressed: () {
+          if (!mounted || _quote != null) return;
+          setState(() => _quote = removed);
+          _saveSoon();
+        },
+      ),
+    );
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _direction = Directionality.of(context);
     // In the language shown, should it change meanwhile.
     if (_checked) _check();
   }
@@ -278,7 +348,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (!await ensureSignedIn(context, ref, named: true) || !mounted) return;
       if (!await ensureGuidelines(context, ref) || !mounted) return;
       setState(() => _sending = true);
-      final id = await repo.createThread(forumId: _forumId!, title: _title.text, body: _body.text);
+      final id = await repo.createThread(forumId: _forumId!, title: _title.text, body: _composedBody);
       // Sent: whatever happens to this page, the draft must not come back.
       _draftTimer?.cancel();
       await prefs.remove(_draftKey);
@@ -315,9 +385,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
-  /// Empties both fields, with nothing begun in them.
+  /// Empties both fields, and takes out the verse, with nothing begun.
   void _clearFields() {
     _begun = null;
+    _quote = null;
     _title.clear();
     _body.clear();
   }
@@ -342,18 +413,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final direction = Directionality.of(context);
-    final forums = ref.watch(forumsProvider).value ?? const [];
+    final forumsValue = watchFresh(forumsProvider);
+    final forums = forumsValue.value ?? const [];
     final profile = ref.watch(myProfileProvider).value;
     final available = forums.where((f) => !f.locked || (profile?.isModerator ?? false)).toList();
     _forumId ??= available.where((f) => f.slug == widget.forumSlug).firstOrNull?.id ?? available.firstOrNull?.id;
     final post = _forumId != null && !_sending ? _post : null;
     final g = Gutter.of(context);
-    Widget postLabel() => _sending
-        ? SizedBox.square(
-            dimension: 20,
-            child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.sending),
-          )
-        : Text(l.postAction);
     final apple = defaultTargetPlatform == TargetPlatform.macOS || defaultTargetPlatform == TargetPlatform.iOS;
 
     return PageScaffold(
@@ -369,7 +435,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             // Compact in the app bar (§9 Compose), still a whole 48 to tap.
             style: const ButtonStyle(minimumSize: WidgetStatePropertyAll(Size(64, 40))),
             onPressed: post,
-            child: postLabel(),
+            child: _sending
+                ? SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: l.sending),
+                  )
+                : Text(l.postAction),
           ),
         ),
       ],
@@ -389,6 +460,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 selected: _forumId,
                 gutter: g,
                 onSelected: (id) => setState(() => _forumId = id),
+                // Forums that can't be had say why, in place of the chips,
+                // and Post waits for them.
+                failure: switch (forumsValue) {
+                  AsyncValue(hasValue: false, :final error?) => ErrorMessage(
+                      message: communityError(l, error),
+                      onRetry: () => ref.invalidate(forumsProvider),
+                      retrying: forumsValue.isLoading,
+                    ),
+                  _ => null,
+                },
               ),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: g),
@@ -424,6 +505,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                           TextField(
                             controller: _title,
                             focusNode: _titleFocus,
+                            // A long title wraps, all of it in view, rather
+                            // than scroll sideways, but stays one line of
+                            // text: Enter goes on to the message, and a line
+                            // break pasted in is a space, whichever of those
+                            // a line of text breaks at (Word's manual break
+                            // is a vertical tab).
+                            minLines: 1,
+                            maxLines: null,
+                            keyboardType: TextInputType.text,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.deny(
+                                RegExp('[\r\n\v\f\u0085\u2028\u2029]+'),
+                                replacementString: ' ',
+                              ),
+                            ],
                             maxLength: 150,
                             buildCounter: quietCounter,
                             textInputAction: TextInputAction.next,
@@ -436,13 +532,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                               errorMaxLines: 3,
                             ),
                           ),
+                          if (_quote case final quote?) RemovableVerseQuote(quote, onRemove: _removeQuote),
                           const Gap(Space.md),
                           TextField(
                             controller: _body,
                             focusNode: _bodyFocus,
                             minLines: 6,
                             maxLines: 16,
-                            maxLength: 10000,
+                            // The verse quoted goes with it, and its mark.
+                            maxLength: switch (_quote) {
+                              null => _bodyMax,
+                              final quote => _bodyMax - withVerseQuote(quote, '', leftToRight: true).runes.length,
+                            },
                             buildCounter: quietCounter,
                             textDirection: autoDirection(_body.text, fallback: direction),
                             keyboardType: TextInputType.multiline,
@@ -463,13 +564,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                       LinkedText(
                         text: l.guidelinesPrompt,
                         link: l.readGuidelines,
-                        onTap: () => context.push('/legal/guidelines'),
+                        onTap: () => context.push(policyPath(context, 'guidelines')),
                       ),
                     ],
-                    const Gap(Space.xxl),
-                    FilledButton(onPressed: post, child: postLabel()),
-                    if (_title.text.isNotEmpty || _body.text.isNotEmpty) ...[
-                      const Gap(Space.sm),
+                    // Post is the app bar's alone, where it stays above the
+                    // keyboard.
+                    if (_title.text.isNotEmpty || _body.text.isNotEmpty || _quote != null) ...[
+                      const Gap(Space.lg),
                       Center(
                         child: TextButton.icon(
                           icon: const Icon(Icons.delete_outline),
@@ -492,14 +593,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 /// The forums a discussion can begin in, under the label "Forum": a row of
 /// chips with the forums' icons, which scrolls sideways out to the column's
 /// edges, starting at its content's edge, [gutter] in. On a wide window,
-/// where they fit in a line or two, they wrap instead.
+/// where they fit in a line or two, they wrap instead. Where the forums
+/// can't be had, the [failure] that says why stands in place of the chips.
 class _ForumPicker extends StatefulWidget {
-  const _ForumPicker({required this.forums, required this.selected, required this.gutter, required this.onSelected});
+  const _ForumPicker({
+    required this.forums,
+    required this.selected,
+    required this.gutter,
+    required this.onSelected,
+    this.failure,
+  });
 
   final List<Forum> forums;
   final int? selected;
   final double gutter;
   final ValueChanged<int> onSelected;
+  final Widget? failure;
 
   @override
   State<_ForumPicker> createState() => _ForumPickerState();
@@ -568,9 +677,11 @@ class _ForumPickerState extends State<_ForumPicker> {
             style: theme.textTheme.titleSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ),
+        if (widget.failure case final failure?)
+          Padding(padding: side.copyWith(top: Space.sm), child: failure)
         // A wide window has room for every forum, and a mouse can't drag a
         // row sideways: there they wrap.
-        if (MediaQuery.sizeOf(context).width >= Breakpoints.medium)
+        else if (MediaQuery.sizeOf(context).width >= Breakpoints.medium)
           Padding(
             padding: side,
             child: Wrap(spacing: Space.sm, runSpacing: Space.sm, children: chips),

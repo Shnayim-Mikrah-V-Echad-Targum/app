@@ -195,6 +195,19 @@ select public.check((select excerpt = 'Is anyone reading the Targum aloud each e
 update public.posts set body = 'Notes: https://example.org/' || repeat('a', 200) where id = :dave_post;
 select public.check((select excerpt = 'Notes: https://example.org/' || repeat('a', 112) || '…' from public.thread_listing where id = :t2),
                     'a long link is cut short rather than dropped');
+-- A question about a verse quotes it first ("Ask about this verse").
+update public.posts set body = E'\u200e> ' || repeat('וַיֹּאמֶר ה׳ אֱלֹקִים הֵן הָאָדָם ', 8) || E'\n\nWhy "like one of us"?\n\nAnd why now?' where id = :dave_post;
+select public.check((select excerpt = 'Why "like one of us"? And why now?' from public.thread_listing where id = :t2),
+                    'a question about a verse is listed by its question, after the verse it quotes, however long');
+update public.posts set body = E'> בְּרֵאשִׁית בָּרָא\n\nלמה בבי״ת?' where id = :dave_post;
+select public.check((select excerpt = 'למה בבי״ת?' from public.thread_listing where id = :t2),
+                    'a question written from the right, with no left-to-right mark, too');
+update public.posts set body = E'\u200e> בְּרֵאשִׁית בָּרָא' where id = :dave_post;
+select public.check((select excerpt is null from public.thread_listing where id = :t2),
+                    'a post of nothing but the verse has no excerpt');
+update public.posts set body = E'> Is anyone reading?\n\nCount me in.' where id = :dave_post;
+select public.check((select excerpt = '> Is anyone reading? Count me in.' from public.thread_listing where id = :t2),
+                    'a quote of words in English is no verse, and stays in the excerpt');
 update public.posts set body = 'Is anyone reading the Targum aloud each evening?' where id = :dave_post;
 select public.check((select excerpt = 'Is anyone reading the Targum aloud each evening?' from public.thread_listing where id = :t2),
                     'a short post is its own excerpt, edits included');

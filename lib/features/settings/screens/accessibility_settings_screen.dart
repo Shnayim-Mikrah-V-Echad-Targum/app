@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/device_accessibility.dart';
 import '../../../app/providers.dart';
@@ -12,7 +11,6 @@ import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../../about/about_screen.dart';
-import '../../community/data/backend.dart';
 import '../../reader/listen_along.dart';
 import '../../reader/reader_screen.dart';
 import '../app_settings.dart';
@@ -23,22 +21,6 @@ import '../widgets/settings_widgets.dart';
 /// screen readers and speech say, and the accessibility statement.
 class AccessibilitySettingsScreen extends ConsumerWidget {
   const AccessibilitySettingsScreen({super.key});
-
-  /// By email where the build names an address for it. Otherwise (or with
-  /// no mail app to send it) in the feedback forum, where there is a
-  /// community server for it to reach, and else, as from About, on the
-  /// issue tracker: the on-device demo forum reaches no one.
-  static Future<void> _sendFeedback(BuildContext context, WidgetRef ref) async {
-    final email = supportEmailUri(context.l10n);
-    final forum = !ref.read(forumRepositoryProvider).isDemo;
-    if (email != null && await launchUrl(email).catchError((_) => false)) return;
-    if (!context.mounted) return;
-    if (forum) {
-      await context.push('/community/forum/feedback');
-    } else {
-      await launchUrl(issueTrackerUri).catchError((_) => false);
-    }
-  }
 
   /// Applies [preset], saying so with a way to undo it: back to the display
   /// settings as they were, but for any changed since.
@@ -195,12 +177,12 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             PaperRow(
               icon: Icons.accessibility_new_outlined,
               title: l.accessibilityStatement,
-              onTap: () => context.push('/legal/accessibility'),
+              onTap: () => context.push('/settings/accessibility/legal/accessibility'),
             ),
             PaperRow(
               icon: Icons.feedback_outlined,
               title: l.sendFeedback,
-              onTap: () => _sendFeedback(context, ref),
+              onTap: () => sendFeedback(context, ref),
             ),
           ],
         ),

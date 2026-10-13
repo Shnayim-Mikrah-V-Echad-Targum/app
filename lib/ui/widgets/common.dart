@@ -182,6 +182,50 @@ class PageScaffold extends StatelessWidget {
   /// The width of the app bar's leading button.
   static const _leadingWidth = 56.0;
 
+  /// A page's floating button (§5): extended, [icon] and [label], while it
+  /// takes at most two thirds of the window's width and its label a line of
+  /// at most 40, 8 clear of the button's top and bottom. At text large
+  /// enough to break either (200% on a phone), [icon] alone, 56 square, with
+  /// [label] as its tooltip, which is its name to screen readers too, rather
+  /// than run off the screen or clip its label. The label is measured as it
+  /// is set, in bold where the device asks for Bold text.
+  ///
+  /// Either way it is an extended button to the [Scaffold], which fades it
+  /// in as it appears rather than spinning it in, as it does a round one.
+  static FloatingActionButton floatingButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    final theme = Theme.of(context);
+    final fab = theme.floatingActionButtonTheme;
+    var style = fab.extendedTextStyle ?? theme.textTheme.labelLarge ?? const TextStyle();
+    if (MediaQuery.boldTextOf(context)) style = style.merge(const TextStyle(fontWeight: FontWeight.bold));
+    final painter = TextPainter(
+      text: TextSpan(text: label, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+      maxLines: 1,
+    )..layout();
+    final iconSize = fab.iconSize ?? 24;
+    // Material's extended padding and spacing: 16, the icon, 8, the label, 20.
+    final width = 16 + iconSize + (fab.extendedIconLabelSpacing ?? 8) + painter.width + 20;
+    // The label's line at most 40 high (to within a rounding).
+    final extended = width <= MediaQuery.sizeOf(context).width * 2 / 3 && painter.height < 41;
+    painter.dispose();
+    return FloatingActionButton.extended(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: extended ? Text(label) : const SizedBox.shrink(),
+      tooltip: extended ? null : label,
+      // The icon centred in 56 by 56, as a round button's.
+      extendedIconLabelSpacing: extended ? null : 0,
+      extendedPadding: extended ? null : EdgeInsets.all((56 - iconSize) / 2),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => DocumentTitle(
         title: titleText,
@@ -236,6 +280,8 @@ class PageScaffold extends StatelessWidget {
             body: body,
             floatingActionButton: floatingActionButton,
             floatingActionButtonLocation: _ColumnEndFab(contentMaxWidth: contentMaxWidth, gutter: g),
+            // Faded in as it appears (an extended button), or there at once.
+            floatingActionButtonAnimator: Motion.of(context).reduced ? FloatingActionButtonAnimator.noAnimation : null,
             bottomNavigationBar: bottomNavigationBar,
           );
         }),

@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/retry.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -14,11 +16,38 @@ import 'community_ui.dart';
 
 /// The community's front page (§9 Community): the demo's notice, this
 /// week's discussion, a way to sign in, and the forums.
-class CommunityScreen extends ConsumerWidget {
+class CommunityScreen extends ConsumerStatefulWidget {
   const CommunityScreen({super.key});
 
+  /// How busy a forum is: "12 discussions · active 3 hours ago", or with
+  /// nothing posted in it yet, only how many discussions it has.
+  static String activity(BuildContext context, ForumStats stats) {
+    final l = context.l10n;
+    return metaLine([
+      l.forumDiscussionsCount(stats.threadCount),
+      if (stats.lastPostAt case final at?) l.forumActive(relativeTime(context, at)),
+    ]);
+  }
+
+  /// The icon of the forum [slug], here and where a new discussion picks
+  /// its forum.
+  static IconData iconFor(String slug) => switch (slug) {
+        'parsha' => Icons.menu_book_outlined,
+        'questions' => Icons.help_outline,
+        'divrei-torah' => Icons.lightbulb_outline,
+        'chavruta' => Icons.people_outline,
+        'feedback' => Icons.feedback_outlined,
+        'announcements' => Icons.campaign_outlined,
+        _ => Icons.forum_outlined,
+      };
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends ConsumerState<CommunityScreen> with FetchAgainIfFailed {
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final he = context.isHebrewUi;
     final text = Theme.of(context).textTheme;
@@ -27,7 +56,7 @@ class CommunityScreen extends ConsumerWidget {
     final ink = Theme.of(context).colorScheme.onSurface;
     final user = ref.watch(communityUserProvider).value;
     final profile = ref.watch(myProfileProvider).value;
-    final forums = ref.watch(forumsProvider);
+    final forums = watchFresh(forumsProvider);
     // How busy each forum is, once it comes (see _Forums).
     final stats = ref.watch(forumStatsProvider);
 
@@ -40,15 +69,19 @@ class CommunityScreen extends ConsumerWidget {
 
     return RefreshablePage(
       refresh: refresh,
+      failureShown: forums.hasError && !forums.hasValue,
       builder: (context, refreshButton) => PageScaffold(
         titleText: l.communityTitle,
         actions: [
           refreshButton,
           IconButton(
             tooltip: user == null ? l.signInTitle : l.settingsAccount,
-            // Signed in, the member's initial; until their profile comes, a
-            // person on the same disc.
-            icon: user == null ? const Icon(Icons.person_outline) : InitialDisc(profile?.displayName ?? ''),
+            // Signed in, the member's initial; a person on the same disc until
+            // their profile comes, and while it has a machine's name
+            // ("user_1a2b3c4d"), whose initial would be no one's.
+            icon: user == null
+                ? const Icon(Icons.person_outline)
+                : InitialDisc(profile != null && profile.hasChosenName ? profile.displayName : ''),
             onPressed: () => context.push('/community/account'),
           ),
         ],
@@ -86,7 +119,16 @@ class CommunityScreen extends ConsumerWidget {
               GroupHeader(l.forumsHeading),
               forums.when(
                 loading: () => const _Loading(),
-                error: (e, _) => _Retry(message: communityError(l, e), onRetry: () => ref.invalidate(forumsProvider)),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.only(top: Space.lg),
+                  child: ErrorMessage(
+                    message: communityError(l, e),
+                    // The forums' activity too, which may have failed with
+                    // them.
+                    onRetry: () => unawaited(refresh().catchError((Object _) {})),
+                    retrying: forums.isLoading,
+                  ),
+                ),
                 data: (list) => list.isEmpty
                     ? const SizedBox.shrink()
                     : _Forums(
@@ -95,13 +137,13 @@ class CommunityScreen extends ConsumerWidget {
                           children: [
                             for (final f in list)
                               PaperRow(
-                                icon: iconFor(f.slug),
+                                icon: CommunityScreen.iconFor(f.slug),
                                 title: f.name(he),
                                 titleStyle: text.titleMedium,
                                 subtitle: f.description(he).isEmpty ? null : f.description(he),
                                 subtitleStyle: text.bodySmall?.copyWith(color: ink),
                                 detail: switch (stats?[f.id]) {
-                                  final s? => activity(context, s),
+                                  final s? => CommunityScreen.activity(context, s),
                                   null => null,
                                 },
                                 onTap: () => context.push('/community/forum/${f.slug}'),
@@ -116,28 +158,6 @@ class CommunityScreen extends ConsumerWidget {
       ),
     );
   }
-
-  /// How busy a forum is: "12 discussions · active 3 hours ago", or with
-  /// nothing posted in it yet, only how many discussions it has.
-  static String activity(BuildContext context, ForumStats stats) {
-    final l = context.l10n;
-    return metaLine([
-      l.forumDiscussionsCount(stats.threadCount),
-      if (stats.lastPostAt case final at?) l.forumActive(relativeTime(context, at)),
-    ]);
-  }
-
-  /// The icon of the forum [slug], here and where a new discussion picks
-  /// its forum.
-  static IconData iconFor(String slug) => switch (slug) {
-        'parsha' => Icons.menu_book_outlined,
-        'questions' => Icons.help_outline,
-        'divrei-torah' => Icons.lightbulb_outline,
-        'chavruta' => Icons.people_outline,
-        'feedback' => Icons.feedback_outlined,
-        'announcements' => Icons.campaign_outlined,
-        _ => Icons.forum_outlined,
-      };
 }
 
 class _Loading extends StatelessWidget {
@@ -192,22 +212,4 @@ class _ForumsState extends State<_Forums> {
 
   @override
   Widget build(BuildContext context) => _waiting ? const _Loading() : widget.builder(widget.stats.value);
-}
-
-class _Retry extends StatelessWidget {
-  const _Retry({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const Gap(8),
-            OutlinedButton(onPressed: onRetry, child: Text(context.l10n.actionRetry)),
-          ],
-        ),
-      );
 }

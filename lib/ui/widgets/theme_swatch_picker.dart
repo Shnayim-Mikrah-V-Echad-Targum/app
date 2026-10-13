@@ -6,6 +6,7 @@ import '../../features/settings/widgets/settings_widgets.dart';
 import '../l10n.dart';
 import '../theme/app_theme.dart';
 import 'common.dart';
+import 'lines.dart';
 import 'paper_group.dart';
 
 /// The themes as swatches (docs/DESIGN_SYSTEM.md §6.24), under a switch to
@@ -14,8 +15,9 @@ import 'paper_group.dart';
 ///
 /// Each swatch is a card painted in its own theme: its surface, "אָ" in its
 /// ink, a bar of its techelet and a rule of its gold leaf, with the theme's
-/// name under it. The chosen one has a 2 px primary border (3 px in high
-/// contrast, where every border is 2) and a check at its top end corner.
+/// name under it (high contrast's on two lines). The chosen one has a 2 px
+/// primary border (3 px in high contrast, where every border is 2) and a
+/// check at its top end corner.
 /// Matching the device, the two themes it chooses between are marked: light
 /// and dark, or high contrast's two when the device asks for high contrast.
 ///
@@ -68,10 +70,17 @@ class ThemeSwatchPicker extends StatelessWidget {
       (false, false) => AppThemeMode.light,
     };
     final columns = MediaQuery.sizeOf(context).width < kNarrowScreenWidth ? 2 : 3;
+    // High contrast's two are named on two lines, high contrast over light
+    // or dark, so that no line of a narrow swatch starts with a dash; they
+    // are read as one name.
     final label = {
       AppThemeMode.light: l.themeLight,
       AppThemeMode.sepia: l.themeSepia,
       AppThemeMode.dark: l.themeDark,
+      AppThemeMode.highContrastLight: '${l.themeHc}\n${l.themeLight}',
+      AppThemeMode.highContrastDark: '${l.themeHc}\n${l.themeDark}',
+    };
+    final spoken = {
       AppThemeMode.highContrastLight: l.themeHcLight,
       AppThemeMode.highContrastDark: l.themeHcDark,
     };
@@ -121,6 +130,7 @@ class ThemeSwatchPicker extends StatelessWidget {
                                 ? _Swatch(
                                     mode: themes[i],
                                     label: label[themes[i]]!,
+                                    semanticsLabel: spoken[themes[i]] ?? label[themes[i]]!,
                                     selected: marked(themes[i]),
                                     checked: !matching && themes[i] == value,
                                     hint: hint(themes[i]),
@@ -147,6 +157,7 @@ class _Swatch extends StatelessWidget {
   const _Swatch({
     required this.mode,
     required this.label,
+    required this.semanticsLabel,
     required this.selected,
     required this.checked,
     required this.hint,
@@ -155,7 +166,12 @@ class _Swatch extends StatelessWidget {
   });
 
   final AppThemeMode mode;
+
+  /// The name under the card, which may take two lines.
   final String label;
+
+  /// The name read to assistive technology, on one line.
+  final String semanticsLabel;
 
   /// Marked for the eye: the theme chosen, or one of the pair the device
   /// switches between.
@@ -260,11 +276,11 @@ class _Swatch extends StatelessWidget {
                 ExcludeSemantics(child: card),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(2, 6, 2, 4),
-                  child: Text(
-                    // "High contrast — light" breaks before its dash, if at all.
-                    label.replaceAll('— ', '—\u00A0'),
-                    semanticsLabel: label,
-                    textAlign: TextAlign.center,
+                  // A word too wide for a narrow swatch at large text is set
+                  // smaller rather than broken.
+                  child: WholeWords(
+                    label,
+                    semanticsLabel: semanticsLabel,
                     // The chosen one's name in bold, as a chosen chip's is.
                     style: selected
                         ? text.copyWith(color: page.onSurface, fontWeight: FontWeight.w700)

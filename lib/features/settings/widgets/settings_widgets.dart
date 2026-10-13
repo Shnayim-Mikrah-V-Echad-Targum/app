@@ -7,12 +7,13 @@ import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fonts_change_scope.dart';
+import '../../../ui/widgets/lang.dart';
 import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
 
 /// One option in a [ChoiceGroup].
 class Choice<T> {
-  const Choice(this.value, this.title, {this.subtitle, this.semanticsLabel, this.sampleStyle});
+  const Choice(this.value, this.title, {this.subtitle, this.semanticsLabel, this.sampleStyle, this.locale});
   final T value;
   final String title;
   final String? subtitle;
@@ -20,6 +21,11 @@ class Choice<T> {
   /// What screen readers say for [title], where it would be read badly as
   /// written.
   final String? semanticsLabel;
+
+  /// The language [title] is written in, where it is not the interface's
+  /// (a language's own name), so that a screen reader reads it in its own
+  /// voice.
+  final Locale? locale;
 
   /// Sets [title] in a style of its own, as a sample of what the option
   /// looks like (a font's letters), which [subtitle] names. Screen readers
@@ -263,6 +269,7 @@ Future<void> showChoiceSheet<T>({
                             subtitle: c.subtitle,
                             semanticsLabel: c.semanticsLabel,
                             sampleStyle: c.sampleStyle,
+                            locale: c.locale,
                           ),
                           toggleable: true,
                           balanced: true,
@@ -476,6 +483,14 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
     final corners = card ? _RadioRow._cardCorners : PaperGroup.rowCorners(context);
     final choice = widget.choice;
     final ring = _focused && FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+    Widget title = switch (choice.sampleStyle) {
+      // In the list tile's own title style, which it measures in.
+      null when widget.balanced && choice.semanticsLabel == null =>
+        BalancedText(choice.title, style: theme.textTheme.bodyLarge, textAlign: TextAlign.start),
+      null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
+      final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
+    };
+    if (choice.locale case final locale?) title = Lang(locale, child: title);
     Widget tile = Theme(
       // The ring marks focus; the tile's wash as well would read as a
       // second selection.
@@ -483,13 +498,7 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
       child: RadioListTile<T>(
         value: choice.value,
         toggleable: widget.toggleable,
-        title: switch (choice.sampleStyle) {
-          // In the list tile's own title style, which it measures in.
-          null when widget.balanced && choice.semanticsLabel == null =>
-            BalancedText(choice.title, style: theme.textTheme.bodyLarge, textAlign: TextAlign.start),
-          null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
-          final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
-        },
+        title: title,
         subtitle: choice.subtitle == null ? null : Text(choice.subtitle!),
         // The ink keeps to the paper's corners.
         shape: RoundedRectangleBorder(borderRadius: corners),
@@ -541,6 +550,11 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
 /// A slider with a visible, spoken value and +/- buttons for users who
 /// can't drag precisely. Assistive technology reads the slider by its
 /// setting and value ("Reading size, 100%"), and each button by what it does.
+///
+/// Its value ends the title's line, or goes under the title where the two
+/// don't fit side by side (§6.8): decided alike for every slider of a
+/// [group], and whatever the value is, so that none of them lays out apart
+/// from the rest, nor changes its layout as its value moves.
 class LabeledSlider extends StatelessWidget {
   const LabeledSlider({
     super.key,
@@ -551,9 +565,14 @@ class LabeledSlider extends StatelessWidget {
     required this.step,
     required this.onChanged,
     required this.format,
+    this.group = const [],
   });
 
   final String title;
+
+  /// The titles of the sliders shown with this one, as on the same paper,
+  /// which set their values beside their titles or under them alike.
+  final List<String> group;
   final double value;
   final double min;
   final double max;
@@ -566,7 +585,6 @@ class LabeledSlider extends StatelessWidget {
     final l = context.l10n;
     final divisions = ((max - min) / step).round();
     double snap(double v) => (min + ((v - min) / step).round() * step).clamp(min, max);
-    final textTheme = Theme.of(context).textTheme;
     // In line with the list tiles around it: 16 on a settings page, and a
     // sheet's own inset in a sheet (showAppSheet).
     final inset = ListTileTheme.of(context).contentPadding?.resolve(Directionality.of(context)) ??
@@ -578,15 +596,13 @@ class LabeledSlider extends StatelessWidget {
         children: [
           // The slider says all of this itself.
           ExcludeSemantics(
-            child: Row(
-              children: [
-                Expanded(child: Text(title, style: textTheme.bodyLarge)),
-                // Tabular figures, so the value doesn't jiggle as it changes.
-                Text(
-                  format(value),
-                  style: textTheme.labelLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-                ),
-              ],
+            child: _SliderHead(
+              title: title,
+              value: format(value),
+              // Every value it may show: the widest needn't be at an end of
+              // the range ("Normal" at the speech rate's middle).
+              values: [for (var i = 0; i <= divisions; i++) format(snap(min + i * step))],
+              group: group,
             ),
           ),
           Row(
@@ -623,6 +639,68 @@ class LabeledSlider extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// A [LabeledSlider]'s title with its value at the end of the line, or,
+/// where the title, whole on one line, wouldn't fit beside the value at its
+/// size (large text on a phone), the value under the title: the title is
+/// never squeezed, as a stacked [PaperRow]'s isn't, and its words stay
+/// whole. The title of each slider of its [group] is held to the same, so
+/// that they all decide alike; and so is the widest of its [values], so that
+/// the head keeps its layout as the value moves.
+class _SliderHead extends StatelessWidget {
+  const _SliderHead({required this.title, required this.value, required this.values, required this.group});
+
+  final String title;
+  final String value;
+
+  /// Every value the slider may show.
+  final List<String> values;
+
+  /// The titles of the sliders shown with it.
+  final List<String> group;
+
+  /// What the value is allowed at least, as wide as a percentage: so that
+  /// the sliders of a group, whose values are as wide or narrower, decide
+  /// alike whether to set it under the title.
+  static const _allowance = '100%';
+
+  static const _gap = Space.md;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final titleStyle = textTheme.bodyLarge;
+    // Tabular figures, so the value doesn't jiggle as it changes.
+    final valueStyle = textTheme.labelLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+    // Measured as drawn: bold where the platform asks for bold text.
+    final bold = MediaQuery.boldTextOf(context);
+    double width(String text, TextStyle? style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: bold ? style?.copyWith(fontWeight: FontWeight.bold) : style),
+        textDirection: direction,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return width;
+    }
+
+    final valueWidth = {...values, _allowance}.map((v) => width(v, valueStyle)).reduce(math.max);
+    final titleWidth = {title, ...group}.map((t) => width(t, titleStyle)).reduce(math.max);
+    return LayoutBuilder(builder: (context, constraints) {
+      final beside = titleWidth + _gap + valueWidth <= constraints.maxWidth;
+      final titleText = WholeWords(title, style: titleStyle, textAlign: TextAlign.start);
+      final valueText = Text(value, style: valueStyle);
+      if (beside) {
+        return Row(children: [Expanded(child: titleText), const Gap(_gap), valueText]);
+      }
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [titleText, valueText]);
+    });
   }
 }
 

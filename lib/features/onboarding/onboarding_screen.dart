@@ -14,6 +14,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
+import '../../ui/widgets/paper_group.dart';
 import '../community/data/backend.dart';
 import '../community/data/community_providers.dart';
 import '../parsha/week_context.dart';
@@ -69,6 +70,10 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   /// [_locationChosenProvider]).
   static const locationChosenKey = 'onboarding.locationChosen';
 
+  /// Lets the welcome's entrance play again, as on a fresh launch.
+  @visibleForTesting
+  static void replayEntrance() => _OnboardingScreenState._entered = false;
+
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
@@ -76,7 +81,16 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 /// Where a reader who already uses the app restores their progress from.
 enum _RestoreFrom { account, file, pasted }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with SingleTickerProviderStateMixin {
+  /// Whether the welcome has made its entrance in this run of the app: it
+  /// does so once, as the app opens on it, and not again when it is built
+  /// anew (coming back from a step, or in another language).
+  static bool _entered = false;
+
+  /// The welcome's entrance (§8): at its end until it plays, so that
+  /// whatever doesn't play it shows the page at once.
+  late final AnimationController _entrance = AnimationController(vsync: this, duration: Motion.frame, value: 1);
+
   /// Whether progress is being restored from the account's backup.
   bool _restoring = false;
 
@@ -84,6 +98,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void initState() {
     super.initState();
     _guessLocation();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (Motion.of(context).reduced) {
+      // Motion reduced while it plays: the rest of it at once.
+      if (_entrance.isAnimating) _entrance.value = 1;
+    } else if (!_entered) {
+      _entrance.forward(from: 0);
+    }
+    _entered = true;
+  }
+
+  @override
+  void dispose() {
+    _entrance.dispose();
+    super.dispose();
   }
 
   /// Pre-selects Israel, both its reading and one day of Yom Tov, for
@@ -183,6 +215,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final page = Scaffold(
       body: SafeArea(
         child: _Welcome(
+          entrance: _entrance,
           onStart: _restoring ? null : () => context.push(OnboardingStep.location.path),
           onRestore: _restoring ? null : _restore,
           restoring: _restoring,
@@ -194,7 +227,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 }
 
-/// The ways back in for a reader who already uses the app.
+/// The ways back in for a reader who already uses the app, as rows of one
+/// paper group within the sheet's padding (§6.19). Signing in leads to a
+/// page, and so has a chevron; a file is chosen, or text pasted, over the
+/// welcome.
 class _RestoreSheet extends StatelessWidget {
   const _RestoreSheet({required this.cloud});
 
@@ -204,32 +240,34 @@ class _RestoreSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    // What each restores from, never cut short.
+    PaperRow way(IconData icon, String title, String subtitle, _RestoreFrom from, {bool page = false}) => PaperRow(
+          icon: icon,
+          title: title,
+          subtitle: subtitle,
+          subtitleMaxLines: null,
+          chevron: page,
+          onTap: () => Navigator.pop(context, from),
+        );
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: Space.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SheetTitle(l.onbRestoreTitle),
-            if (cloud)
-              ListTile(
-                leading: const Icon(Icons.cloud_download_outlined),
-                title: Text(l.onbRestoreSignIn),
-                subtitle: Text(l.onbRestoreSignInDesc),
-                onTap: () => Navigator.pop(context, _RestoreFrom.account),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sheetPadding(context)),
+              child: PaperGroup(
+                children: [
+                  if (cloud)
+                    way(Icons.cloud_download_outlined, l.onbRestoreSignIn, l.onbRestoreSignInDesc, _RestoreFrom.account,
+                        page: true),
+                  way(Icons.restore_page_outlined, l.onbRestoreFile, l.onbRestoreFileDesc, _RestoreFrom.file),
+                  way(Icons.content_paste_outlined, l.importPaste, l.importPasteDesc, _RestoreFrom.pasted),
+                ],
               ),
-            ListTile(
-              leading: const Icon(Icons.restore_page_outlined),
-              title: Text(l.onbRestoreFile),
-              subtitle: Text(l.onbRestoreFileDesc),
-              onTap: () => Navigator.pop(context, _RestoreFrom.file),
-            ),
-            ListTile(
-              leading: const Icon(Icons.content_paste),
-              title: Text(l.importPaste),
-              subtitle: Text(l.importPasteDesc),
-              onTap: () => Navigator.pop(context, _RestoreFrom.pasted),
             ),
           ],
         ),
@@ -309,10 +347,10 @@ class OnboardingStepScreen extends ConsumerWidget {
   }
 }
 
-/// Where a step stands among the pages of onboarding, the welcome and the
-/// three steps: a 12 px lozenge for each, filled up to this one and
-/// outlined after it. The app bar's title says the same in words ("Step 1 of
-/// 3"), so screen readers hear that alone.
+/// Where a step stands among the three steps of onboarding: a 12 px lozenge
+/// for each, filled up to this one and outlined after it. The app bar's
+/// title says the same in words ("Step 1 of 3"), so screen readers hear that
+/// alone.
 class _StepMarks extends StatelessWidget {
   const _StepMarks({required this.step});
 
@@ -324,9 +362,9 @@ class _StepMarks extends StatelessWidget {
     // In the colour of indicators, or onSurface in high contrast, as every
     // ornament there (§7).
     final ink = SeferColors.of(context).isHighContrast ? scheme.onSurface : scheme.primary;
-    // The welcome is the first page.
-    final pages = OnboardingStep.values.length + 1;
-    final current = step.number + 1;
+    // As many as the title counts: the welcome is no step.
+    final pages = OnboardingStep.values.length;
+    final current = step.number;
     return ExcludeSemantics(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -424,9 +462,10 @@ class _LocationStepState extends ConsumerState<_LocationStep> {
           prominent: true,
           title: l.onbLocationTitle,
           value: schedule,
+          // In Settings' order; the time-zone guess may have chosen either.
           choices: [
-            Choice(ReadingSchedule.diaspora, l.locationDiaspora),
             Choice(ReadingSchedule.israel, l.locationIsrael),
+            Choice(ReadingSchedule.diaspora, l.locationDiaspora),
           ],
           // Both the reading and the days of Yom Tov; a visitor can set them
           // apart in Settings.
@@ -502,7 +541,8 @@ class _MethodStep extends ConsumerWidget {
         ChoiceGroup<SecondReading>(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           title: l.secondLabel,
-          help: '${l.secondSource} ${l.secondAdvice}',
+          // The advice on Rashi in English is Settings', where it is offered.
+          help: l.secondSource,
           value: s.secondReading,
           choices: [
             Choice(SecondReading.onkelos, l.secondOnkelos),
@@ -597,12 +637,42 @@ class _PlanStep extends ConsumerWidget {
   }
 }
 
+/// The welcome's entrance, over [Motion.frame] (§8): the frame and the title
+/// fade in as they rise 8 px into place, the divider draws outward from its
+/// lozenge, then the English name and what the practice is fade in, and last
+/// the way on and the disclaimer. The language, the page's own control, is
+/// there from the start.
+abstract final class _Entrance {
+  /// The part of the entrance from [from] to [to] ms, arriving.
+  static CurveTween _between(int from, int to) {
+    final total = Motion.frame.inMilliseconds;
+    return CurveTween(curve: Interval(from / total, to / total, curve: Motion.decelerate));
+  }
+
+  static final frame = _between(0, 250);
+  static final divider = _between(150, 550);
+  static final text = _between(400, 650);
+  static final ways = _between(550, 800);
+
+  /// How far the frame rises into place.
+  static const rise = 8.0;
+
+  /// [child], faded in by [opacity], but tappable, focusable and heard by
+  /// screen readers from the first frame.
+  static Widget fadeIn(Animation<double> opacity, Widget child) =>
+      FadeTransition(opacity: opacity, alwaysIncludeSemantics: true, child: child);
+}
+
 /// The welcome, a title page (§9 Onboarding): the language at the top end,
 /// and in the middle of the page the app's name in a title-page frame, the
 /// way into this week's parsha and the way back in for a reader who already
 /// uses the app.
 class _Welcome extends StatelessWidget {
-  const _Welcome({required this.onStart, required this.onRestore, required this.restoring});
+  const _Welcome({required this.entrance, required this.onStart, required this.onRestore, required this.restoring});
+
+  /// The page's entrance, from 0 to 1 (see [_Entrance]).
+  final Animation<double> entrance;
+
   final VoidCallback? onStart;
 
   /// For a reader who already uses the app (see [_RestoreSheet]).
@@ -635,51 +705,60 @@ class _Welcome extends StatelessWidget {
     final block = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _TitleBlock(),
+        _TitleBlock(entrance: entrance),
         const Gap(Space.xxl),
-        button(
-          FilledButton(
-            // The page's one call to action, 52 high, with room around a label
-            // that large text wraps.
-            style: AppButtons.roomy(context, (24, 12, 6))
-                .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
-            onPressed: onStart,
-            child: Text(l.onbStart, textAlign: TextAlign.center),
-          ),
-        ),
-        const Gap(Space.sm),
-        if (restoring)
-          // In the button's place, as tall, until the backup is in.
-          Semantics(
-            liveRegion: true,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                  const Gap(Space.md),
-                  Flexible(
-                    child: Text(
-                      l.onbRestoring,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+        _Entrance.fadeIn(
+          entrance.drive(_Entrance.ways),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              button(
+                FilledButton(
+                  // The page's one call to action, 52 high, with room around a
+                  // label that large text wraps.
+                  style: AppButtons.roomy(context, (24, 12, 6))
+                      .copyWith(minimumSize: const WidgetStatePropertyAll(Size.fromHeight(52))),
+                  onPressed: onStart,
+                  child: Text(l.onbStart, textAlign: TextAlign.center),
+                ),
+              ),
+              const Gap(Space.sm),
+              if (restoring)
+                // In the button's place, as tall, until the backup is in.
+                Semantics(
+                  liveRegion: true,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                        const Gap(Space.md),
+                        Flexible(
+                          child: Text(
+                            l.onbRestoring,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          )
-        else
-          button(
-            TextButton(
-              style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
-              onPressed: onRestore,
-              child: Text(l.onbRestore, textAlign: TextAlign.center),
-            ),
+                )
+              else
+                button(
+                  TextButton(
+                    style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                    onPressed: onRestore,
+                    child: Text(l.onbRestore, textAlign: TextAlign.center),
+                  ),
+                ),
+              const Gap(Space.lg),
+              BalancedText(l.disclaimer, style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+            ],
           ),
-        const Gap(Space.lg),
-        BalancedText(l.disclaimer, style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+        ),
       ],
     );
     return LayoutBuilder(builder: (context, constraints) {
@@ -735,7 +814,10 @@ class _LanguageChoice extends ConsumerWidget {
 /// Hebrew, the page's heading; a divider; the name again in English, in the
 /// English UI; and what the practice is.
 class _TitleBlock extends StatelessWidget {
-  const _TitleBlock();
+  const _TitleBlock({required this.entrance});
+
+  /// The page's entrance, from 0 to 1 (see [_Entrance]).
+  final Animation<double> entrance;
 
   static const _title = 'שְׁנַיִם מִקְרָא\nוְאֶחָד תַּרְגּוּם';
 
@@ -758,7 +840,9 @@ class _TitleBlock extends StatelessWidget {
           data: MediaQuery.of(context).copyWith(textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.4)),
           child: child,
         );
-    return TitlePageFrame(
+    final frame = entrance.drive(_Entrance.frame);
+    final divider = entrance.drive(_Entrance.divider);
+    final titlePage = TitlePageFrame(
       padding: EdgeInsets.all(narrow ? Space.xxl : Space.s32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -780,29 +864,47 @@ class _TitleBlock extends StatelessWidget {
             ),
           ),
           const Gap(Space.md),
-          const SeferDivider(),
-          // The Hebrew UI's heading is its own name already.
-          if (!hebrewUi) ...[
-            const Gap(Space.md),
-            ExcludeSemantics(
-              child: display(
-                BalancedText(
-                  l.appTitleFull,
-                  style: latin.copyWith(
-                    color: scheme.onSurface,
-                    fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+          ListenableBuilder(
+            listenable: divider,
+            builder: (context, _) => SeferDivider(progress: divider.value.clamp(0.0, 1.0)),
+          ),
+          _Entrance.fadeIn(
+            entrance.drive(_Entrance.text),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // The Hebrew UI's heading is its own name already.
+                if (!hebrewUi) ...[
+                  const Gap(Space.md),
+                  ExcludeSemantics(
+                    child: display(
+                      BalancedText(
+                        l.appTitleFull,
+                        style: latin.copyWith(
+                          color: scheme.onSurface,
+                          fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+                        ),
+                      ),
+                    ),
                   ),
+                ],
+                const Gap(Space.lg),
+                BalancedText(
+                  l.onbWelcomeBody,
+                  style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
                 ),
-              ),
+              ],
             ),
-          ],
-          const Gap(Space.lg),
-          BalancedText(
-            l.onbWelcomeBody,
-            style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
       ),
+    );
+    return ListenableBuilder(
+      listenable: frame,
+      builder: (context, child) =>
+          Transform.translate(offset: Offset(0, _Entrance.rise * (1 - frame.value)), child: child),
+      child: _Entrance.fadeIn(frame, titlePage),
     );
   }
 }

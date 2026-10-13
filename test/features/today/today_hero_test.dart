@@ -479,11 +479,11 @@ void main() {
       expect(location(c), '/today/week/5787:1');
     });
 
-    testWidgets('opens the guide from the running head', (tester) async {
+    testWidgets('opens the guide from the running head, within Today', (tester) async {
       final c = await openToday(tester);
       await tester.tap(find.byTooltip('How it works'));
       await tester.pumpAndSettle();
-      expect(location(c), '/guide');
+      expect(location(c), '/today/guide');
     });
   });
 
