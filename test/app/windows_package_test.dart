@@ -71,6 +71,24 @@ void main() {
     expect(description, isNot(contains("'")));
   });
 
+  // A PC without the Visual C++ Redistributable (a fresh Windows) refuses to
+  // start an executable whose runtime is missing ("MSVCP140.dll was not
+  // found"). The MSIX brings its own; the build's folder, run as it is, needs
+  // the runtime beside the executable.
+  test('the build carries the Visual C++ runtime beside the executable', () {
+    final cmake = File('windows/CMakeLists.txt').readAsStringSync();
+    expect(cmake, contains('set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "\${INSTALL_BUNDLE_LIB_DIR}")'));
+    expect(cmake, contains('set(CMAKE_INSTALL_SYSTEM_RUNTIME_COMPONENT Runtime)'));
+    // Read when included, so after the settings.
+    expect(cmake.indexOf('include(InstallRequiredSystemLibraries)'),
+        greaterThan(cmake.indexOf('CMAKE_INSTALL_SYSTEM_RUNTIME_COMPONENT')));
+    // And CI checks the folder it uploads has it.
+    final ci = File('.github/workflows/ci.yml').readAsStringSync();
+    final check = ci.indexOf('for dll in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do');
+    expect(check, greaterThan(ci.indexOf('flutter build windows --release')));
+    expect(check, lessThan(ci.indexOf('name: windows\n')));
+  });
+
   testWidgets('the logo is the rounded tile of app_icon.ico', (tester) async {
     expect(config['logo_path'], 'windows/msix/logo.png');
     final logo = await _pixels(tester, 'windows/msix/logo.png');

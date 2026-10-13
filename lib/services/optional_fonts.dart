@@ -83,18 +83,20 @@ abstract final class OptionalFonts {
   /// a sample drawn at that weight, as Display's choices of font are: an
   /// interface font's bold waits until the family is chosen ([ensure]),
   /// which then loads only what is missing. Never fails, as [ensureAll].
-  static Future<void> ensureSamples(Iterable<String?> families, {AssetBundle? bundle}) => Future.wait([
-        for (final family in families.toSet())
-          if (family != null && _files.containsKey(family) && !_loading.containsKey(family))
-            _samples.putIfAbsent(family, () {
-              final loading = _load(family, _files[family]!.take(1).toList(), bundle ?? rootBundle);
-              // Forgotten if it fails, so that it can be tried again.
-              loading.then<void>((_) {}, onError: (Object _) {
-                _samples.remove(family);
-              });
-              return loading;
-            }).catchError((Object e) => debugPrint('Font $family unavailable: $e')),
-      ]);
+  static Future<void> ensureSamples(Iterable<String?> families, {AssetBundle? bundle}) async {
+    await Future.wait([
+      for (final family in families.toSet())
+        if (family != null && _files.containsKey(family) && !_loading.containsKey(family))
+          _samples.putIfAbsent(family, () {
+            final loading = _load(family, _files[family]!.take(1).toList(), bundle ?? rootBundle);
+            // Forgotten if it fails, so that it can be tried again.
+            loading.then<void>((_) {}, onError: (Object _) {
+              _samples.remove(family);
+            });
+            return loading;
+          }).catchError((Object e) => debugPrint('Font $family unavailable: $e')),
+    ]);
+  }
 
   /// Whether the regular face of [family] has been asked for, for a sample.
   @visibleForTesting
@@ -103,10 +105,17 @@ abstract final class OptionalFonts {
   /// Loads each of [families] as [ensure] does, all at once. Never fails: a
   /// family that can't be loaded is reported, and its text keeps to the
   /// fallback fonts.
-  static Future<void> ensureAll(Iterable<String?> families, {AssetBundle? bundle}) => Future.wait([
-        for (final family in families.toSet())
-          ensure(family, bundle: bundle).catchError((Object e) => debugPrint('Font $family unavailable: $e')),
-      ]);
+  ///
+  /// A `Future<void>` in fact, not only in name, unlike the `Future<List<void>>`
+  /// that Future.wait makes: a callback passed to it, such as timeout's
+  /// onTimeout or catchError's handler, must suit the future's own type, which
+  /// Dart checks as the app runs, and a List's would refuse `() {}`.
+  static Future<void> ensureAll(Iterable<String?> families, {AssetBundle? bundle}) async {
+    await Future.wait([
+      for (final family in families.toSet())
+        ensure(family, bundle: bundle).catchError((Object e) => debugPrint('Font $family unavailable: $e')),
+    ]);
+  }
 
   /// Whether [family] has been asked for since the app started (or since
   /// [reset]), and has not failed to load.

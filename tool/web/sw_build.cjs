@@ -1,7 +1,8 @@
 // The parts of the service worker that depend on the build, for
 // workbox-config.cjs: the runtime caches' names, and the script that keeps
 // them across an update (tool/web/sw_update.js), written into build/web;
-// and which pages the worker leaves to the network.
+// which pages the worker leaves to the network; and, once Workbox has
+// written the worker, whether it precaches what the app needs to start.
 const { createHash } = require('node:crypto');
 const { readFileSync, readdirSync, writeFileSync } = require('node:fs');
 const { join, relative } = require('node:path');
@@ -63,4 +64,39 @@ function writeUpdateScript(web, caches) {
 /// Tested against a URL's path and query, as Workbox's NavigationRoute does.
 const fileNavigation = /^[^?]*\/[^/?]*\.[^/?]*(?:\?|$)/;
 
-module.exports = { cacheNames, engineRevision, fileNavigation, textsHash, writeUpdateScript };
+/// The files of [web] without which the app can't start offline, and which
+/// the service worker Workbox wrote there (sw.js) leaves out of its
+/// precache: the page, the bootstrap, the app itself and its deferred parts.
+/// Workbox passes over a file larger than maximumFileSizeToCacheInBytes with
+/// no more than a warning, and the app then opens offline on its loading
+/// screen, for good; CI checks the worker with this.
+function missingFromPrecache(web) {
+  const worker = readFileSync(join(web, 'sw.js'), 'utf8');
+  // {url:"main.dart.js",revision:"…"}, minified or not.
+  const precached = new Set([...worker.matchAll(/["']?url["']?\s*:\s*"([^"]+)"/g)].map((m) => m[1]));
+  if (precached.size === 0) throw new Error(`${join(web, 'sw.js')} precaches nothing; is it Workbox's?`);
+  const needed = [
+    'index.html',
+    'flutter.js',
+    'flutter_bootstrap.js',
+    'main.dart.js',
+    ...readdirSync(web).filter((name) => /^main\.dart\.js_\d+\.part\.js$/.test(name)).sort(),
+  ];
+  return needed.filter((name) => !precached.has(name));
+}
+
+module.exports = { cacheNames, engineRevision, fileNavigation, missingFromPrecache, textsHash, writeUpdateScript };
+
+//   node tool/web/sw_build.cjs check build/web
+if (require.main === module) {
+  const [command, web] = process.argv.slice(2);
+  if (command !== 'check' || !web) {
+    console.error('usage: node tool/web/sw_build.cjs check <build/web>');
+    process.exit(2);
+  }
+  const missing = missingFromPrecache(web);
+  for (const name of missing) {
+    console.log(`::error file=workbox-config.cjs::The service worker doesn't precache ${name}, so the app won't open offline`);
+  }
+  process.exit(missing.length === 0 ? 0 : 1);
+}
