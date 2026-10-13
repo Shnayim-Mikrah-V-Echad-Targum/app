@@ -679,15 +679,52 @@ class NoticeBanner extends StatelessWidget {
     final action = _legible(context);
     final below = actionBelow ? action : null;
     final dismiss = onDismiss;
-    // A title, text over a button or beside a close button, and marginalia,
-    // which runs to several lines, start at the top beside the icon.
-    final topAligned = below != null || title != null || dismiss != null || marginalia;
+    // The text starts at the top beside the icon, which stands on its first
+    // line however many lines it runs to, as it does beside a title, a
+    // close button or a button below; only a text beside a button at its
+    // end is centred with the two on the row.
+    final topAligned = action == null || below != null || title != null || dismiss != null || marginalia;
     // The height of the first line: the title's, or the text's.
     final first = title != null ? titleStyle! : style!;
     final firstLine = MediaQuery.textScalerOf(context).scale(first.fontSize!) * first.height!;
     // The icon is centred on the first line, which is taller than it, as the
     // close button is, so the two keep to one line however large the text.
     final markTop = topAligned ? math.max(0.0, (firstLine - 20) / 2) : 0.0;
+    final row = Row(
+      crossAxisAlignment: topAligned ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      children: [
+        if (markTop > 0)
+          Padding(padding: EdgeInsets.only(top: markTop), child: leading ?? Icon(icon, size: 20, color: ink))
+        else
+          leading ?? Icon(icon, size: 20, color: ink),
+        const Gap(12),
+        Expanded(
+          child: below == null
+              ? message
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: message),
+                    // Beside a close button, under the whole row instead.
+                    if (dismiss == null) Align(alignment: AlignmentDirectional.centerEnd, child: below),
+                  ],
+                ),
+        ),
+        if (below == null) ?action,
+        if (dismiss != null)
+          // Centred on the first line, its 48 dp target reaching the edge at
+          // most: raised into the padding while the line is shorter than the
+          // target.
+          Transform.translate(
+            offset: Offset(0, math.max(-12.0, (firstLine - 48) / 2)),
+            child: IconButton(
+              tooltip: dismissLabel,
+              icon: Icon(Icons.close, size: 20, color: ink),
+              onPressed: dismiss,
+            ),
+          ),
+      ],
+    );
     return Card(
       color: scheme.secondaryContainer,
       // The fill sets it apart; only high contrast outlines it (§6.20).
@@ -705,40 +742,22 @@ class NoticeBanner extends StatelessWidget {
           dismiss != null ? 4 : (action == null ? 16 : 8),
           below == null ? 12 : 4,
         ),
-        child: Row(
-          crossAxisAlignment: topAligned ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-          children: [
-            if (markTop > 0)
-              Padding(padding: EdgeInsets.only(top: markTop), child: leading ?? Icon(icon, size: 20, color: ink))
-            else
-              leading ?? Icon(icon, size: 20, color: ink),
-            const Gap(12),
-            Expanded(
-              child: below == null
-                  ? message
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: message),
-                        Align(alignment: AlignmentDirectional.centerEnd, child: below),
-                      ],
-                    ),
-            ),
-            if (below == null) ?action,
-            if (dismiss != null)
-              // Centred on the first line, its 48 dp target reaching the
-              // edge at most: raised into the padding while the line is
-              // shorter than the target.
-              Transform.translate(
-                offset: Offset(0, math.max(-12.0, (firstLine - 48) / 2)),
-                child: IconButton(
-                  tooltip: dismissLabel,
-                  icon: Icon(Icons.close, size: 20, color: ink),
-                  onPressed: dismiss,
-                ),
-              ),
-          ],
-        ),
+        child: below != null && dismiss != null
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  row,
+                  // The close button keeps to the first line, so the actions
+                  // run on under it to the banner's end, 8 from its edge as
+                  // without one, rather than end a button's width short of
+                  // it; never under the icon.
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 32, end: 4),
+                    child: Align(alignment: AlignmentDirectional.centerEnd, child: below),
+                  ),
+                ],
+              )
+            : row,
       ),
     );
   }

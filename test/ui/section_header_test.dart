@@ -5,6 +5,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/theme/typography.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart' show BalancedText;
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 
 import '../helpers.dart';
@@ -196,6 +197,44 @@ void main() {
       });
     }
 
+    // A plain notice of several lines (the reader's note on a third reading,
+    // the Chabad haftarah note, the preview of a week not yet open) set its
+    // icon beside the middle of the paragraph, where a titled one, a
+    // dismissible one or one with a button below sets it on the first line.
+    for (final hebrew in [false, true]) {
+      testWidgets('sets its icon on the first line of a text of several lines${hebrew ? ', in Hebrew' : ''}',
+          (tester) async {
+        final text = hebrew
+            ? 'אונקלוס נותן כאן בעיקר את השמות הארמיים של המקומות, ולכן רבים קוראים פסוק זה פעם שלישית.'
+            : 'Onkelos here gives mostly the Aramaic forms of the place names, so many read it a third time.';
+        await pumpThemed(
+          tester,
+          SizedBox(width: 300, child: NoticeBanner(icon: Icons.info_outline, text: text)),
+          hebrew: hebrew,
+        );
+        final context = tester.element(find.byType(NoticeBanner));
+        final body = Theme.of(context).textTheme.bodyMedium!;
+        final firstLine = body.fontSize! * body.height!;
+        final box = tester.getRect(find.text(text));
+        expect(box.height, greaterThan(firstLine * 2.5), reason: 'several lines');
+        expect(tester.getCenter(find.byIcon(Icons.info_outline)).dy, closeTo(box.top + firstLine / 2, 0.5));
+      });
+    }
+
+    testWidgets('centres a one-line text, its icon and a button at its end on the row', (tester) async {
+      await pumpThemed(
+        tester,
+        NoticeBanner(
+          icon: Icons.pause_circle_outline,
+          text: 'Paused.',
+          action: TextButton(onPressed: () {}, child: const Text('End')),
+        ),
+      );
+      final row = tester.getRect(find.byType(TextButton)).center.dy;
+      expect(tester.getCenter(find.byIcon(Icons.pause_circle_outline)).dy, closeTo(row, 0.5));
+      expect(tester.getCenter(find.text('Paused.')).dy, closeTo(row, 0.5));
+    });
+
     // "same." alone under "Chumash — it counts just the" on a 360 dp phone,
     // and "חומש." under the Hebrew restore notice.
     testWidgets('balances its text, leaving no word alone on its last line', (tester) async {
@@ -256,6 +295,38 @@ void main() {
       expect(tester.getRect(find.text('ברוכים השבים')).right, lessThan(icon.left));
       expect(tester.getRect(find.text('ברוכים השבים')).left, greaterThan(button.right - 1));
     });
+
+    // The welcome back after a pause and the divergence notice: their actions
+    // ended a close button's width short of the banner's end, beside an empty
+    // column under the button, and looked centred.
+    for (final hebrew in [false, true]) {
+      testWidgets('runs its actions below under a close button, to its end${hebrew ? ', in Hebrew' : ''}',
+          (tester) async {
+        await pumpThemed(
+          tester,
+          NoticeBanner(
+            icon: Icons.play_circle_outline,
+            title: hebrew ? 'ברוכים השבים' : 'Welcome back',
+            text: hebrew ? 'ההשהיה הסתיימה, ושום דבר בה לא נחשב.' : 'Your pause ended, and nothing in it counts.',
+            actionBelow: true,
+            action: TextButton(onPressed: () {}, child: Text(hebrew ? 'פתיחה' : 'Open')),
+            onDismiss: () {},
+            dismissLabel: 'Dismiss',
+          ),
+          hebrew: hebrew,
+        );
+        final banner = tester.getRect(find.byType(NoticeBanner));
+        final action = tester.getRect(find.byType(TextButton));
+        final close = tester.getRect(find.byType(IconButton));
+        // 8 from the end, as without a close button, under it.
+        expect(hebrew ? action.left - banner.left : banner.right - action.right, 8);
+        expect(action.top, greaterThanOrEqualTo(close.bottom - 12));
+        // Under the text, whose end padding still keeps it clear of the button.
+        final text = tester.getRect(find.byType(BalancedText).last);
+        expect(action.top, greaterThanOrEqualTo(text.bottom));
+        expect(hebrew ? text.left : text.right, hebrew ? greaterThan(close.right) : lessThan(close.left));
+      });
+    }
 
     testWidgets('can set its text as marginalia in its ink, the icon on the first line', (tester) async {
       await pumpThemed(
