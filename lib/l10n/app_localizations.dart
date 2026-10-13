@@ -2751,11 +2751,35 @@ abstract class AppLocalizations {
   /// **'Verse numbers'**
   String get showVerseNumbers;
 
-  /// No description provided for @justifyText.
+  /// The title of the Display setting that sets scripture flush at both sides of its column, over its three choices.
   ///
   /// In en, this message translates to:
   /// **'Justify text'**
   String get justifyText;
+
+  /// Under the Justify text setting: what its Auto choice does. English is never justified automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto justifies Hebrew and Aramaic in a wide column, as in a printed Chumash.'**
+  String get justifyHelp;
+
+  /// A choice of the Justify text setting, short for automatic, as one of three segments sharing a phone's width: justify the Hebrew and Aramaic only where the column is wide enough.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get justifyAuto;
+
+  /// A choice of the Justify text setting: justify every paragraph, English too, in every column.
+  ///
+  /// In en, this message translates to:
+  /// **'Always'**
+  String get justifyAlways;
+
+  /// A choice of the Justify text setting: never justify; every line ends where its words do.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get justifyNever;
 
   /// No description provided for @lineWidthLabel.
   ///

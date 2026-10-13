@@ -136,7 +136,7 @@ void main() {
   testWidgets('its switches are paper rows in groups: text, study aids and reading', (tester) async {
     final c = await open(tester);
     for (final (heading, rows) in [
-      ('Text', ['Vowels (nikud)', 'Cantillation (ta’amim)', 'Show ketiv (as written)', 'Verse numbers', 'Write Divine Names as ה׳ and אלקים', 'Justify text']),
+      ('Text', ['Vowels (nikud)', 'Cantillation (ta’amim)', 'Show ketiv (as written)', 'Verse numbers', 'Write Divine Names as ה׳ and אלקים']),
       ('Study aids', ['English translation (study aid)', 'Show Rashi alongside']),
       ('Reading', ['Focus mode', 'Bold text', 'Keep the screen on while reading']),
     ]) {
@@ -233,6 +233,29 @@ void main() {
     expect(tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.remove).at(1)).onPressed, isNull,
         reason: 'no lower');
     handle.dispose();
+  });
+
+  testWidgets('justification is a segmented control after the line width, Auto until chosen', (tester) async {
+    final c = await open(tester);
+    final segments = find.byType(SegmentedButton<JustifyMode>);
+    expect(segments, findsOneWidget);
+    expect(find.widgetWithText(SwitchRow, 'Justify text'), findsNothing, reason: 'no longer a switch');
+    expect(tester.widget<SegmentedButton<JustifyMode>>(segments).selected, {JustifyMode.auto});
+    expect(
+      find.text('Auto justifies Hebrew and Aramaic in a wide column, as in a printed Chumash.'),
+      findsOneWidget,
+    );
+    // Beside the measure it depends on.
+    expect(tester.getRect(find.text('Justify text')).top,
+        greaterThan(tester.getRect(find.byType(SegmentedButton<LineWidth>)).bottom));
+    for (final (label, mode) in [('Never', JustifyMode.never), ('Always', JustifyMode.always), ('Auto', JustifyMode.auto)]) {
+      final segment = find.descendant(of: segments, matching: find.text(label));
+      await tester.ensureVisible(segment);
+      await tester.pumpAndSettle();
+      await tester.tap(segment);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).justifyMode, mode, reason: label);
+    }
   });
 
   testWidgets("each font is named, and shown in its own letters, which screen readers don't read", (tester) async {

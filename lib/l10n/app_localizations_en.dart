@@ -1722,6 +1722,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get justifyText => 'Justify text';
 
   @override
+  String get justifyHelp =>
+      'Auto justifies Hebrew and Aramaic in a wide column, as in a printed Chumash.';
+
+  @override
+  String get justifyAuto => 'Auto';
+
+  @override
+  String get justifyAlways => 'Always';
+
+  @override
+  String get justifyNever => 'Never';
+
+  @override
   String get lineWidthLabel => 'Line width';
 
   @override

@@ -493,6 +493,8 @@ const _screens = {
   's_fonts': '/settings/display',
   // With Rashi shown: the switch for Rashi script, in view.
   's_display_rashi': '/settings/display',
+  // Scrolled to the line width and justification beneath it.
+  's_display_justify': '/settings/display',
   's_a11y': '/settings/accessibility',
   // Large print in force, then Low vision just applied, with its Undo.
   's_a11y_active': '/settings/accessibility',
@@ -734,7 +736,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_divergence_abroad': (s) =>
       s.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true, joinDate: LocalDate(2029, 4, 22)),
   // The widest word spacing, justified: the spaces around a section mark.
-  'reader_gaps_spaced': (s) => s.copyWith(wordSpacing: 16, justify: true),
+  'reader_gaps_spaced': (s) => s.copyWith(wordSpacing: 16, justifyMode: JustifyMode.always),
   'reader_taamey': (s) => s.copyWith(scriptureFont: ScriptureFont.taameyFrank),
   'reader_ezra': (s) => s.copyWith(scriptureFont: ScriptureFont.ezra),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
@@ -1692,6 +1694,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
         tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.rashiScriptDesc)),
         alignment: 0.5,
       ),
+  's_display_justify': (tester) => Scrollable.ensureVisible(
+        tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.justifyHelp)),
+        alignment: 0.5,
+      ),
   's_display_scrolled': (tester) async => tester
       .state<ScrollableState>(find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)))
       .position
@@ -2166,6 +2172,8 @@ const _bigPhoneScreens = {
   'today_shabbat',
   // A week's note on another division, wrapped as the plan above it.
   'week_note',
+  // Justification's three choices, stacked.
+  's_display_justify',
 };
 const _hugeModes = {'huge', 'hugehe'};
 // The reader with Listen's player over its bar too: the chrome is held at
@@ -2189,6 +2197,8 @@ const _hugeScreens = {
 };
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
+  // Justification's three choices, stacked, and the settings around them.
+  's_display_justify',
   'today',
   'today_shabbat',
   'parsha',
@@ -2310,6 +2320,7 @@ const _desktopScreens = {
   // The app bar's title on the column's edge (§5), over pages of each kind.
   's_display',
   's_display_scrolled',
+  's_display_justify',
   's_a11y',
   's_reading',
   's_reminders',

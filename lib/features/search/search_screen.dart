@@ -565,7 +565,7 @@ class _SnippetText extends StatelessWidget {
       text: text,
       style: base,
       locale: locale,
-      builder: (context, fitted) => MarkedText(
+      builder: (context, fitted, _) => MarkedText(
         TextSpan(style: base, children: [fitted]),
         marks: identical(fitted, text)
             ? marks

@@ -440,6 +440,11 @@ Rules:
 - A paseq is bound to the word before it by a no-break space, and a maqaf to the word after it by a word joiner (`keepLinesSound`), wherever the words it joins fit on a line together. Where they don't, at a very large reading or text size on a phone, that maqaf goes without its joiner (`joinWhereFits`, measured against the column by `JoinsThatFit`), so the line ends after it rather than inside a word; words joined one after another stay together as far as they fit, as many to a line as fit. Only a word wider than the column on its own breaks.
 - No paragraph of scripture ends on a word alone. The last two words of a verse of the Torah or the Targum, of a verse of the translation, of a comment of Rashi, and of a verse in a search result or quoted in a question, are held together on its last line by a no-break space wherever the two take no more than half the column (`holdLastPair`, applied by `JoinsThatFit` after `joinWhereFits`). A word is what stands between plain spaces, so words a maqaf joins count as one, as a paseq and the word before it do. Where the two take more, the line before them would be left short, and the last word stands alone. The no-break space carries the paragraph's word spacing as letter spacing, as a section mark's does, so it is as wide as any word space: nothing is set smaller, a paragraph of one line is laid out as it was, and the two never break inside a word. Screen readers hear a plain space, and a copy has one.
 
+**Justification** (`ScriptureStyles.justifies`)
+- A printed Chumash is justified, and so is the reader where the column is wide enough for it. Display's *Justify text* (`JustifyMode`) is Auto by default: a paragraph of the Torah, the Targum or Rashi in Hebrew is justified when its measure, the width its text is laid out in, is at least 20 ems of its own size at the system text size (`justifyMeasure`; 520 px for the Torah, 468 for the Targum, at the default sizes). Both parallel columns (about 598 and 498 px) and a tablet's or a desktop's single column qualify, so the white between the columns stays the 40 px gutter rather than a ragged edge; a phone's column (about 350 px) does not, nor a larger reading or text size where the column holds fewer words. The translation and Rashi in English, which nothing hyphenates, are never justified on Auto.
+- *Always* justifies every paragraph, English too; *Never* none, every line ending where its words do, which WCAG 1.4.8 asks a way to have. The dyslexia setup sets Never and Reset display puts back Auto. A justified paragraph's last line is set at its start.
+- Settings saved by a version with the old switch read it as Always where it was on, and Auto where it was off or missing (off was only its default); the switch is still written, on for Always alone, for those versions.
+
 **Verse numbers**
 - FRL 600 at 0.55× of the verse size, colour `secondary` (`dimInk` when dimmed).
 - Follow the number with U+00A0 NO-BREAK SPACE instead of a plain space, so a number is never stranded at the end of a line. The space is the verse's own and carries the reader's word spacing as letter spacing (the text engine widens only spaces a line may break at), so the number stands a word's space from its word however wide the spacing.
@@ -1420,10 +1425,10 @@ In order:
 - A Match-device switch, then theme swatches (§6.24).
 - Sliders per §6.8.
 - Toggles in PaperGroups:
-  - Text: nikud, ta'amim, ketiv, verse numbers, the Divine Names as ה׳ and אלקים in a verse that leaves the app (`copyDivineName`, `DivineNameSwitch`), justify;
+  - Text: nikud, ta'amim, ketiv, verse numbers, the Divine Names as ה׳ and אלקים in a verse that leaves the app (`copyDivineName`, `DivineNameSwitch`);
   - Study aids: English, Rashi, Rashi script (NEW);
   - Reading: focus mode, bold (on and disabled while the device's Bold text is on, as a SwitchRow above), keep screen on.
-- Line width as a SegmentedButton.
+- Line width as a SegmentedButton, and beneath it, as the measure decides it, *Justify text* [Auto | Always | Never] (§4.7), with `justifyHelp` saying what Auto does. "Auto" rather than "Automatic", so that the three share a phone's width beside the check.
 - Scripture fonts as radio rows whose title is "בְּרֵאשִׁית בָּרָא" at 22 in that font, named under it; interface fonts likewise, "Aa Bb אב" in each family, Device font included. Screen readers read the names alone. Every font's regular face is loaded as the page opens (`OptionalFonts.ensureSamples`), so each sample is drawn in its own; an interface font's bold waits until it is chosen.
 
 **Reading & customs**

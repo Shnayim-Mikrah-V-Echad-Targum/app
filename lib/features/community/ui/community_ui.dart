@@ -637,7 +637,7 @@ class VerseQuote extends ConsumerWidget {
               text: joined,
               style: style,
               locale: _hebrew,
-              builder: (context, verse) => Text.rich(
+              builder: (context, verse, _) => Text.rich(
                 verse,
                 style: style,
                 maxLines: maxLines,

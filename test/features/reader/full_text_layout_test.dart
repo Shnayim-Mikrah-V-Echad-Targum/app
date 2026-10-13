@@ -363,6 +363,33 @@ void main() {
     });
   });
 
+  group('the full text, justified automatically', () {
+    // As a printed Chumash is: in parallel columns too, whose ragged edges
+    // would otherwise face each other across the gutter (§4.7).
+    for (final (name, size, translation, justified) in [
+      ('sets both parallel columns flush at both sides', wide, false, true),
+      ('sets a tablet\'s single column flush at both sides', const Size(800, 1180), false, true),
+      ('leaves the translation ragged', const Size(800, 1180), true, true),
+      ('leaves a phone\'s column ragged', phone, true, false),
+    ]) {
+      testWidgets(name, (tester) async {
+        await open(
+          tester,
+          '/read/5787:2/0?mode=full',
+          settings: AppSettings(onboardingComplete: true, notificationPromptShown: true, showTranslation: translation),
+          size: size,
+        );
+        TextAlign alignOf(Finder verse) =>
+            tester.widget<RichText>(find.descendant(of: verse, matching: find.byType(RichText)).last).textAlign;
+        final expected = justified ? TextAlign.justify : TextAlign.start;
+        for (final kind in [ScriptureKind.mikra, ScriptureKind.targum]) {
+          expect(alignOf(verses(kind).first), expected, reason: kind.name);
+        }
+        if (translation) expect(alignOf(find.byType(TranslationVerse).first), TextAlign.start);
+      });
+    }
+  });
+
   group('the whole parsha', () {
     const whole = AppSettings(onboardingComplete: true, notificationPromptShown: true, fullTextWholeParsha: true);
 

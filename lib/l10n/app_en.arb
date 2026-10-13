@@ -1524,6 +1524,25 @@
   "showKetiv": "Show ketiv (as written)",
   "showVerseNumbers": "Verse numbers",
   "justifyText": "Justify text",
+  "@justifyText": {
+    "description": "The title of the Display setting that sets scripture flush at both sides of its column, over its three choices."
+  },
+  "justifyHelp": "Auto justifies Hebrew and Aramaic in a wide column, as in a printed Chumash.",
+  "@justifyHelp": {
+    "description": "Under the Justify text setting: what its Auto choice does. English is never justified automatically."
+  },
+  "justifyAuto": "Auto",
+  "@justifyAuto": {
+    "description": "A choice of the Justify text setting, short for automatic, as one of three segments sharing a phone's width: justify the Hebrew and Aramaic only where the column is wide enough."
+  },
+  "justifyAlways": "Always",
+  "@justifyAlways": {
+    "description": "A choice of the Justify text setting: justify every paragraph, English too, in every column."
+  },
+  "justifyNever": "Never",
+  "@justifyNever": {
+    "description": "A choice of the Justify text setting: never justify; every line ends where its words do."
+  },
   "lineWidthLabel": "Line width",
   "lineNarrow": "Narrow",
   "lineMedium": "Medium",

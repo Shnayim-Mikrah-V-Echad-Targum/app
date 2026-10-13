@@ -12,6 +12,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/features/settings/backup.dart';
 
 class _FixedToday extends TodayController {
   _FixedToday(this.day);
@@ -273,10 +274,66 @@ void main() {
 
     test('the reset is in force with the display as it comes', () {
       expect(presetActive(const AppSettings(), DisplayPreset.reset), isTrue);
-      expect(presetActive(const AppSettings(justify: true), DisplayPreset.reset), isFalse);
+      expect(presetActive(const AppSettings(justifyMode: JustifyMode.always), DisplayPreset.reset), isFalse);
       // Low vision includes high contrast's settings, so both are in force.
       final lowVision = applyPreset(const AppSettings(), DisplayPreset.lowVision, darkPreferred: false);
       expect(presetActive(lowVision, DisplayPreset.highContrast), isTrue);
+    });
+  });
+
+  group('justification', () {
+    test('automatic unless the reader chooses otherwise, and the choice round-trips', () {
+      expect(const AppSettings().justifyMode, JustifyMode.auto);
+      expect(AppSettings.fromJson({}).justifyMode, JustifyMode.auto);
+      for (final mode in JustifyMode.values) {
+        final saved = jsonDecode(jsonEncode(AppSettings(justifyMode: mode).toJson())) as Map<String, dynamic>;
+        expect(saved['justifyMode'], mode.name);
+        expect(AppSettings.fromJson(saved).justifyMode, mode);
+      }
+    });
+
+    test('settings saved with the old switch keep justification where it was turned on', () {
+      expect(AppSettings.fromJson({'justify': true}).justifyMode, JustifyMode.always);
+      // Off was only the default, which Auto now is.
+      expect(AppSettings.fromJson({'justify': false}).justifyMode, JustifyMode.auto);
+      expect(AppSettings.fromJson({'justify': 'yes'}).justifyMode, JustifyMode.auto);
+      // The choice wins over the switch saved beside it for older versions,
+      // and one that can't be read falls back to the switch.
+      expect(AppSettings.fromJson({'justifyMode': 'never', 'justify': true}).justifyMode, JustifyMode.never);
+      expect(AppSettings.fromJson({'justifyMode': 'auto', 'justify': true}).justifyMode, JustifyMode.auto);
+      expect(AppSettings.fromJson({'justifyMode': 'sometimes', 'justify': true}).justifyMode, JustifyMode.always);
+      expect(AppSettings.fromJson({'justifyMode': 3}).justifyMode, JustifyMode.auto);
+    });
+
+    test('stored settings and a backup from before the choice are read alike', () async {
+      final legacy = const AppSettings(theme: AppThemeMode.sepia).toJson()
+        ..remove('justifyMode')
+        ..['justify'] = true;
+      SharedPreferences.setMockInitialValues({SettingsController.storageKey: jsonEncode(legacy)});
+      final stored = SettingsController.readStored(await SharedPreferences.getInstance());
+      expect((stored.justifyMode, stored.theme), (JustifyMode.always, AppThemeMode.sepia));
+
+      final backup = parseBackup(jsonEncode({
+        'app': 'shnayim_mikra',
+        'progress': const ProgressState().toJson(),
+        'settings': {...legacy, 'justify': false},
+      }));
+      expect((backup!.settings!.justifyMode, backup.settings!.theme), (JustifyMode.auto, AppThemeMode.sepia));
+    });
+
+    test('versions from before the choice read the switch: on for Always alone', () {
+      expect(const AppSettings(justifyMode: JustifyMode.always).toJson()['justify'], isTrue);
+      expect(const AppSettings(justifyMode: JustifyMode.never).toJson()['justify'], isFalse);
+      expect(const AppSettings().toJson()['justify'], isFalse);
+    });
+
+    test('the dyslexia setup never justifies, and the reset puts back Auto', () {
+      const always = AppSettings(justifyMode: JustifyMode.always);
+      final dyslexia = applyPreset(always, DisplayPreset.dyslexia, darkPreferred: false);
+      expect(dyslexia.justifyMode, JustifyMode.never);
+      expect(presetActive(dyslexia.copyWith(justifyMode: JustifyMode.auto), DisplayPreset.dyslexia), isFalse);
+      expect(applyPreset(dyslexia, DisplayPreset.reset, darkPreferred: false).justifyMode, JustifyMode.auto);
+      expect(undoDisplayChange(dyslexia, before: always, after: dyslexia).justifyMode, JustifyMode.always);
     });
   });
 

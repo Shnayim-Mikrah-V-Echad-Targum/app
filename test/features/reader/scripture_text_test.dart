@@ -73,7 +73,9 @@ void main() {
       await pumpVerse(
         tester,
         decalogue,
-        settings: AppSettings(wordSpacing: wordSpacing, letterSpacing: letterSpacing),
+        // Ragged: a justified line, as Auto sets one this wide, stretches
+        // the spaces it may break at, and never a no-break space.
+        settings: AppSettings(wordSpacing: wordSpacing, letterSpacing: letterSpacing, justifyMode: JustifyMode.never),
       );
       final paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
       final text = paragraph.text.toPlainText();
@@ -281,7 +283,12 @@ void main() {
     for (final (wordSpacing, letterSpacing) in [(0.0, 0.0), (4.0, 0.0), (16.0, 2.0)]) {
       testWidgets('a verse number stands a word space from its word: word spacing $wordSpacing, letter spacing $letterSpacing',
           (tester) async {
-        await pumpVerse(tester, serpent, settings: AppSettings(wordSpacing: wordSpacing, letterSpacing: letterSpacing));
+        // Ragged, as above: a justified line stretches its other spaces.
+        await pumpVerse(
+          tester,
+          serpent,
+          settings: AppSettings(wordSpacing: wordSpacing, letterSpacing: letterSpacing, justifyMode: JustifyMode.never),
+        );
         final paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
         final text = paragraph.text.toPlainText();
         double widthAt(int i) => paragraph
@@ -396,6 +403,124 @@ void main() {
       expect(styles(const AppSettings(lineWidth: LineWidth.wide)).maxLineWidth, 880);
       // Spacing from an older version, below the minimum, is raised to it.
       expect(styles(const AppSettings(lineHeight: 1.5)).lineHeight, kMinLineHeight);
+    });
+
+    group('justification', () {
+      testWidgets('automatic: the Hebrew and Aramaic from 20 ems of their size, at the text scale; English never',
+          (tester) async {
+        for (final textScale in [1.0, 2.0]) {
+          await pumpThemed(tester, const SizedBox(), textScale: textScale);
+          final context = tester.element(find.byType(SizedBox));
+          for (final readingScale in [1.0, 0.5]) {
+            final styles = ScriptureStyles(context, AppSettings(readingScale: readingScale));
+            for (final kind in [ScriptureKind.mikra, ScriptureKind.targum, ScriptureKind.rashi]) {
+              final measure = ScriptureStyles.justifyMeasure * styles.sizeFor(kind) * textScale;
+              final why = '${kind.name} at ${textScale}x text, ${readingScale}x reading';
+              expect(styles.justifies(kind, measure), isTrue, reason: why);
+              expect(styles.alignFor(kind, measure), TextAlign.justify, reason: why);
+              expect(styles.justifies(kind, measure - 1), isFalse, reason: why);
+              expect(styles.alignFor(kind, measure - 1), TextAlign.start, reason: why);
+            }
+            expect(styles.justifies(ScriptureKind.translation, 4000), isFalse, reason: 'English keeps its ragged edge');
+          }
+        }
+        await pumpThemed(tester, const SizedBox());
+        final context = tester.element(find.byType(SizedBox));
+        final styles = ScriptureStyles(context, const AppSettings());
+        // At the default size, both parallel columns (about 598 and 498)
+        // and a desktop's column qualify; a phone's (about 350) doesn't.
+        expect(styles.justifies(ScriptureKind.mikra, 598), isTrue);
+        expect(styles.justifies(ScriptureKind.targum, 498), isTrue);
+        expect(styles.justifies(ScriptureKind.mikra, 656), isTrue);
+        expect(styles.justifies(ScriptureKind.mikra, 350), isFalse);
+        expect(styles.justifies(ScriptureKind.targum, 350), isFalse);
+      });
+
+      testWidgets('always and never, whatever the column and the text', (tester) async {
+        await pumpThemed(tester, const SizedBox());
+        final context = tester.element(find.byType(SizedBox));
+        final always = ScriptureStyles(context, const AppSettings(justifyMode: JustifyMode.always));
+        final never = ScriptureStyles(context, const AppSettings(justifyMode: JustifyMode.never));
+        for (final kind in ScriptureKind.values) {
+          for (final measure in [200.0, 1200.0]) {
+            expect(always.justifies(kind, measure), isTrue, reason: '${kind.name} at $measure');
+            expect(never.justifies(kind, measure), isFalse, reason: '${kind.name} at $measure');
+          }
+        }
+      });
+
+      // The paragraph's, after a hanging number's own.
+      TextAlign alignIn(WidgetTester tester, Finder of) =>
+          tester.widget<RichText>(find.descendant(of: of, matching: find.byType(RichText)).last).textAlign;
+
+      Widget column(double width, Widget child) => Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(width: width, child: SingleChildScrollView(child: child)),
+          );
+
+      for (final (width, justified) in [(640.0, true), (348.0, false)]) {
+        testWidgets('a column $width wide ${justified ? 'justifies' : 'doesn\'t justify'} the Hebrew automatically',
+            (tester) async {
+          tester.view.physicalSize = const Size(1000, 1200);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          const settings = AppSettings();
+          await pumpThemed(
+            tester,
+            column(
+              width,
+              Column(children: [
+                ScriptureVerse(verse: decalogue, kind: ScriptureKind.mikra, settings: settings, key: const Key('mikra')),
+                ScriptureVerse(
+                  verse: decalogue,
+                  kind: ScriptureKind.mikra,
+                  settings: settings,
+                  hangingNumber: true,
+                  key: const Key('hanging'),
+                ),
+                const RashiComments(
+                  comments: [Comment('הן האדם', 'הֲרֵי הוּא יָחִיד בַּתַּחְתּוֹנִים')],
+                  settings: settings,
+                  english: false,
+                  key: Key('rashi'),
+                ),
+                const TranslationVerse(text: 'Thou shalt not murder.', number: 13, settings: settings),
+                const RashiComments(
+                  comments: [Comment('BEHOLD', 'He is unique among the lower beings')],
+                  settings: settings,
+                  english: true,
+                  key: Key('rashiEnglish'),
+                ),
+              ]),
+            ),
+          );
+          final expected = justified ? TextAlign.justify : TextAlign.start;
+          expect(alignIn(tester, find.byKey(const Key('mikra'))), expected);
+          // Measured within the gutter the number hangs in.
+          expect(alignIn(tester, find.byKey(const Key('hanging'))), expected);
+          expect(alignIn(tester, find.byKey(const Key('rashi'))), expected);
+          expect(alignIn(tester, find.byType(TranslationVerse)), TextAlign.start);
+          expect(alignIn(tester, find.byKey(const Key('rashiEnglish'))), TextAlign.start);
+        });
+      }
+
+      testWidgets('always justifies the English too, and never nothing', (tester) async {
+        for (final (mode, align) in [(JustifyMode.always, TextAlign.justify), (JustifyMode.never, TextAlign.start)]) {
+          final settings = AppSettings(justifyMode: mode);
+          await pumpThemed(
+            tester,
+            column(
+              640,
+              Column(children: [
+                ScriptureVerse(verse: decalogue, kind: ScriptureKind.mikra, settings: settings),
+                TranslationVerse(text: 'Thou shalt not murder.', number: 13, settings: settings),
+              ]),
+            ),
+          );
+          expect(alignIn(tester, find.byType(ScriptureVerse)), align, reason: mode.name);
+          expect(alignIn(tester, find.byType(TranslationVerse)), align, reason: mode.name);
+        }
+      });
     });
 
     testWidgets('a translation\'s number is gold, with lining figures', (tester) async {

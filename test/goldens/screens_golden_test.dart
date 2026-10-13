@@ -106,8 +106,9 @@ void main() {
   }
 
   // The full text on a tablet, as the tablet_reader_full capture shows it:
-  // the Torah's and the Targum's verses set to the column's measure, none
-  // ending on a word alone.
+  // the Torah's and the Targum's verses set to the column's measure,
+  // justified, as its measure is wide enough (§4.7), none ending on a word
+  // alone.
   testWidgets('reader_full, en, on a tablet', (tester) async {
     await show(tester, '/read/5787:1/2?mode=full', hebrew: false, size: const Size(800, 1180), check: (c) async {
       await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('screens/reader_full_tablet_en_light.png'));

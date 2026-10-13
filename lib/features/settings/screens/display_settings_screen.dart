@@ -134,7 +134,6 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
             toggle(l.showKetiv, s.showKetiv, (s, v) => s.copyWith(showKetiv: v)),
             toggle(l.showVerseNumbers, s.showVerseNumbers, (s, v) => s.copyWith(showVerseNumbers: v)),
             const DivineNameSwitch(),
-            toggle(l.justifyText, s.justify, (s, v) => s.copyWith(justify: v)),
           ],
         ),
         GroupHeader(l.displayGroupStudy),
@@ -173,6 +172,19 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
             Choice(LineWidth.wide, l.lineWide),
           ],
           onChanged: (v) => update((s) => s.copyWith(lineWidth: v)),
+        ),
+        // Beside the measure it depends on.
+        ChoiceGroup<JustifyMode>(
+          title: l.justifyText,
+          help: l.justifyHelp,
+          segmented: true,
+          value: s.justifyMode,
+          choices: [
+            Choice(JustifyMode.auto, l.justifyAuto),
+            Choice(JustifyMode.always, l.justifyAlways),
+            Choice(JustifyMode.never, l.justifyNever),
+          ],
+          onChanged: (v) => update((s) => s.copyWith(justifyMode: v)),
         ),
         ChoiceGroup<ScriptureFont>(
           title: l.scriptureFontLabel,

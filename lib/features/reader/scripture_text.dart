@@ -299,6 +299,29 @@ class ScriptureStyles {
   /// otherwise the reading column's.
   double fullTextWidth({required bool parallel}) => parallel ? parallelWidth : maxLineWidth;
 
+  /// The narrowest column, in ems of its text's size, that Auto justifies:
+  /// about 20, where a line holds words enough for its spaces to stretch
+  /// evenly. At the default sizes, both parallel columns have it and so does
+  /// a tablet's or a desktop's single column; a phone's hasn't.
+  static const justifyMeasure = 20.0;
+
+  /// Whether a paragraph of [kind] in a column [measure] wide is justified
+  /// (§4.7): as the reader chose ([AppSettings.justifyMode]), or, under
+  /// Auto, the Hebrew and Aramaic wherever the column is at least
+  /// [justifyMeasure] ems of their size at the system text scale. English,
+  /// which nothing hyphenates, keeps its ragged edge unless justified always.
+  bool justifies(ScriptureKind kind, double measure) => switch (settings.justifyMode) {
+        JustifyMode.always => true,
+        JustifyMode.never => false,
+        JustifyMode.auto => kind != ScriptureKind.translation &&
+            measure >= justifyMeasure * MediaQuery.textScalerOf(context).scale(sizeFor(kind)),
+      };
+
+  /// The alignment of a paragraph of [kind] in a column [measure] wide:
+  /// justified where it [justifies], and otherwise flush at its start.
+  TextAlign alignFor(ScriptureKind kind, double measure) =>
+      justifies(kind, measure) ? TextAlign.justify : TextAlign.start;
+
   static const _hebrewFallback = ['NotoSerifHebrew', 'NotoSansHebrew', 'NotoSans'];
 }
 
@@ -653,8 +676,10 @@ InlineSpan _without(InlineSpan span, Set<int> offsets) {
 /// [builder] with only the joins that the width it is given has room for:
 /// the joiners after a maqaf ([joinWhereFits]), and the no-break space that
 /// holds its last two words together on its last line ([holdLastPair]).
-/// [style] and [locale] are the ones [builder] gives its [Text], and
-/// [placeholders] size [text]'s widgets.
+/// [builder] is given that width too, the paragraph's measure, which decides
+/// whether it is justified ([ScriptureStyles.alignFor]). [style] and
+/// [locale] are the ones [builder] gives its [Text], and [placeholders] size
+/// [text]'s widgets.
 class JoinsThatFit extends StatelessWidget {
   const JoinsThatFit({
     super.key,
@@ -669,7 +694,7 @@ class JoinsThatFit extends StatelessWidget {
   final TextStyle? style;
   final Locale? locale;
   final List<PlaceholderDimensions> placeholders;
-  final Widget Function(BuildContext context, InlineSpan text) builder;
+  final Widget Function(BuildContext context, InlineSpan text, double measure) builder;
 
   @override
   Widget build(BuildContext context) {
@@ -698,6 +723,7 @@ class JoinsThatFit extends StatelessWidget {
             locale: locale,
             placeholders: placeholders,
           ),
+          constraints.maxWidth,
         );
       },
     );
@@ -975,10 +1001,10 @@ class ScriptureVerse extends StatelessWidget {
               baseline: TextBaseline.alphabetic,
             ),
         ],
-        builder: (context, fitted) => Text.rich(
+        builder: (context, fitted, measure) => Text.rich(
           fitted,
           textDirection: TextDirection.rtl,
-          textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+          textAlign: styles.alignFor(kind, measure),
           strutStyle: strut,
         ),
       );
@@ -1650,7 +1676,8 @@ class TranslationVerse extends StatelessWidget {
     final theme = Theme.of(context);
     final sefer = SeferColors.of(context);
     final dimInk = sefer.dimInk;
-    final style = ScriptureStyles(context, settings).style(ScriptureKind.translation, color: dimmed ? dimInk : null);
+    final styles = ScriptureStyles(context, settings);
+    final style = styles.style(ScriptureKind.translation, color: dimmed ? dimInk : null);
     final accessibleFont = settings.uiFont.family != null;
     final bold = settings.boldText || MediaQuery.boldTextOf(context);
     const english = Locale('en');
@@ -1674,10 +1701,11 @@ class TranslationVerse extends StatelessWidget {
           ]),
           style: style,
           locale: english,
-          builder: (context, held) => Text.rich(
+          // Justified only where the reader asks for it always.
+          builder: (context, held, measure) => Text.rich(
             held,
             style: style,
-            textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+            textAlign: styles.alignFor(ScriptureKind.translation, measure),
           ),
         ),
       ),
@@ -1707,7 +1735,8 @@ class RashiComments extends StatelessWidget {
     final styles = ScriptureStyles(context, settings);
     final theme = Theme.of(context);
     final ink = dimmed ? SeferColors.of(context).dimInk : null;
-    final style = styles.style(english ? ScriptureKind.translation : ScriptureKind.rashi, color: ink);
+    final kind = english ? ScriptureKind.translation : ScriptureKind.rashi;
+    final style = styles.style(kind, color: ink);
     // The words explained in bold full ink (never techelet): Frank Ruhl Libre
     // over Rashi's Hebrew, the comment's own face over English.
     final heading = english
@@ -1738,11 +1767,11 @@ class RashiComments extends StatelessWidget {
                   ]),
                   style: style,
                   locale: locale,
-                  builder: (context, held) => Text.rich(
+                  builder: (context, held, measure) => Text.rich(
                     held,
                     style: style,
                     textDirection: dir,
-                    textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+                    textAlign: styles.alignFor(kind, measure),
                     strutStyle: english ? null : styles.strut(ScriptureKind.rashi),
                   ),
                 ),

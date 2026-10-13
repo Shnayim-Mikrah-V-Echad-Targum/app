@@ -1725,6 +1725,19 @@ class AppLocalizationsHe extends AppLocalizations {
   String get justifyText => 'יישור לשני הצדדים';
 
   @override
+  String get justifyHelp =>
+      'במצב אוטומטי, עברית וארמית מיושרות לשני הצדדים בטור רחב, כמו בחומש מודפס.';
+
+  @override
+  String get justifyAuto => 'אוטומטי';
+
+  @override
+  String get justifyAlways => 'תמיד';
+
+  @override
+  String get justifyNever => 'אף פעם';
+
+  @override
   String get lineWidthLabel => 'רוחב שורה';
 
   @override

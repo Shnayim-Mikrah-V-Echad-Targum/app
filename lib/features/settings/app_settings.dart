@@ -87,6 +87,20 @@ enum UiFont {
 /// The reading column's measure (ScriptureStyles.maxLineWidth).
 enum LineWidth { narrow, medium, wide }
 
+/// Whether scripture is justified, flush at both sides as a printed Chumash
+/// sets it (ScriptureStyles.justifies). Persisted by name.
+enum JustifyMode {
+  /// The Hebrew and Aramaic, where the column is wide enough for its spaces
+  /// to stretch evenly; English never.
+  auto,
+
+  /// Every paragraph, the English too, whatever the column.
+  always,
+
+  /// None: every line ends where its words do (WCAG 1.4.8).
+  never,
+}
+
 /// The line spacing of scripture, as a multiple of its size: never below 1.6,
 /// so that lower vowels and cantillation marks are never clipped
 /// (DESIGN.md §8).
@@ -190,7 +204,7 @@ class AppSettings {
     this.showKetiv = true,
     this.showVerseNumbers = true,
     this.copyDivineNameAsHashem = true,
-    this.justify = false,
+    this.justifyMode = JustifyMode.auto,
     this.lineWidth = LineWidth.medium,
     this.scriptureFont = ScriptureFont.notoSerif,
     this.uiFont = UiFont.standard,
@@ -297,7 +311,7 @@ class AppSettings {
   /// quoted in a post, which may be erased or thrown away (DESIGN.md §3).
   /// Named, and stored, for the first of them, which was once the only one.
   final bool copyDivineNameAsHashem;
-  final bool justify;
+  final JustifyMode justifyMode;
   final LineWidth lineWidth;
   final ScriptureFont scriptureFont;
   final UiFont uiFont;
@@ -532,7 +546,7 @@ class AppSettings {
     bool? showKetiv,
     bool? showVerseNumbers,
     bool? copyDivineNameAsHashem,
-    bool? justify,
+    JustifyMode? justifyMode,
     LineWidth? lineWidth,
     ScriptureFont? scriptureFont,
     UiFont? uiFont,
@@ -601,7 +615,7 @@ class AppSettings {
         showKetiv: showKetiv ?? this.showKetiv,
         showVerseNumbers: showVerseNumbers ?? this.showVerseNumbers,
         copyDivineNameAsHashem: copyDivineNameAsHashem ?? this.copyDivineNameAsHashem,
-        justify: justify ?? this.justify,
+        justifyMode: justifyMode ?? this.justifyMode,
         lineWidth: lineWidth ?? this.lineWidth,
         scriptureFont: scriptureFont ?? this.scriptureFont,
         uiFont: uiFont ?? this.uiFont,
@@ -692,7 +706,9 @@ class AppSettings {
         'showKetiv': showKetiv,
         'showVerseNumbers': showVerseNumbers,
         'copyDivineNameAsHashem': copyDivineNameAsHashem,
-        'justify': justify,
+        'justifyMode': justifyMode.name,
+        // For versions from before Auto, which read a switch.
+        'justify': justifyMode == JustifyMode.always,
         'lineWidth': lineWidth.name,
         'scriptureFont': scriptureFont.name,
         'uiFont': uiFont.name,
@@ -788,7 +804,9 @@ class AppSettings {
       showKetiv: b('showKetiv', d.showKetiv),
       showVerseNumbers: b('showVerseNumbers', d.showVerseNumbers),
       copyDivineNameAsHashem: b('copyDivineNameAsHashem', d.copyDivineNameAsHashem),
-      justify: b('justify', d.justify),
+      // Settings saved before Auto have a switch, off by default: on was the
+      // reader's choice, and off only the default, which Auto now is.
+      justifyMode: e(JustifyMode.values, j['justifyMode'], j['justify'] == true ? JustifyMode.always : d.justifyMode),
       lineWidth: e(LineWidth.values, j['lineWidth'], d.lineWidth),
       scriptureFont: e(ScriptureFont.values, j['scriptureFont'], d.scriptureFont),
       uiFont: e(UiFont.values, j['uiFont'], d.uiFont),
@@ -883,7 +901,7 @@ AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPrefe
         lineHeight: 2.2,
         showTeamim: false,
         focusMode: true,
-        justify: false,
+        justifyMode: JustifyMode.never,
         lineWidth: LineWidth.narrow,
       );
     case DisplayPreset.highContrast:
@@ -906,7 +924,7 @@ AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPrefe
         letterSpacing: d.letterSpacing,
         showNikud: d.showNikud,
         showTeamim: d.showTeamim,
-        justify: d.justify,
+        justifyMode: d.justifyMode,
         lineWidth: d.lineWidth,
         scriptureFont: d.scriptureFont,
         uiFont: d.uiFont,
@@ -938,7 +956,7 @@ AppSettings undoDisplayChange(AppSettings now, {required AppSettings before, req
     letterSpacing: back((s) => s.letterSpacing),
     showNikud: back((s) => s.showNikud),
     showTeamim: back((s) => s.showTeamim),
-    justify: back((s) => s.justify),
+    justifyMode: back((s) => s.justifyMode),
     lineWidth: back((s) => s.lineWidth),
     scriptureFont: back((s) => s.scriptureFont),
     uiFont: back((s) => s.uiFont),
@@ -959,7 +977,7 @@ bool _sameDisplay(AppSettings a, AppSettings b) {
       near(a.letterSpacing, b.letterSpacing) &&
       a.showNikud == b.showNikud &&
       a.showTeamim == b.showTeamim &&
-      a.justify == b.justify &&
+      a.justifyMode == b.justifyMode &&
       a.lineWidth == b.lineWidth &&
       a.scriptureFont == b.scriptureFont &&
       a.uiFont == b.uiFont &&
