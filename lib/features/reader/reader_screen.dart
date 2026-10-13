@@ -2739,7 +2739,7 @@ class _FullText extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8),
                   child: ParallelHeading(
                     torah: l.mikraLabel,
-                    beside: beside == targum ? l.targumLabel : l.translationLabel,
+                    beside: beside == targum ? l.targumLabel : l.translationHead,
                     besideDirection: beside == targum ? TextDirection.rtl : TextDirection.ltr,
                   ),
                 ),

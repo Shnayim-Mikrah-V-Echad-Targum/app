@@ -116,7 +116,7 @@ New and changed files:
    - the Hebrew display title of a parsha (the Today hero, the Parsha header and Welcome/About).
    It is used for no other text: no section headers, chapter heads or verse numbers.
 2. **Gold ink (`secondary`)** is the rubric colour: eyebrows, verse numbers, chapter heads, petuchah/setumah marks, the Targum pass, overdue state and rest days. Gold is never used for buttons.
-3. **goldLeaf** is decorative only: frame rules, lozenges, the Targum rule in full-text mode. It never carries information. In high contrast it becomes solid `secondary`, or is removed where noted.
+3. **goldLeaf** is decorative only: frame rules, lozenges, the Targum rule in full-text mode. It never carries information. In high contrast it becomes solid `secondary`, or `outline` or nothing where noted.
 4. **Hyssop green (`tertiary`)** is only for grace.
 5. **Missed** is always `neutral` plus a dash glyph. Never red. `error` is only for validation and destruction: form validation, destructive confirmations, and a deletion's row or Text button (§6.3, §6.5).
 6. **No Material tint anywhere:**
@@ -125,7 +125,7 @@ New and changed files:
    - elevation is 0 everywhere except FAB 2 and menus 2.
 7. **High contrast (both themes):**
    - every hairline becomes `outline` at 2 px;
-   - the goldLeaf frame rule and the Targum rule are removed;
+   - the goldLeaf frame rule is removed; the Targum’s rule becomes a 2 px `outline` rule, because it marks structure: in high contrast little else sets the Targum apart from the Torah above it;
    - ornaments are drawn in `onSurface`;
    - `dimInk` equals `onSurfaceVariant` (no dimming);
    - the focus ring is `onSurface`.
@@ -434,7 +434,7 @@ Rules:
 
 **Targum**
 - 0.90× (was 0.92×), `onSurfaceVariant`, height `max(1.6, lineHeight - 0.1)`.
-- In full-text mode, add a 2 px `goldLeaf` rule at the scripture's start, the right in either language of the app, with 12 px padding. Remove the rule in high contrast. The guided reader's block for a verse read a third time among the Targum is ruled at the right too (3 px `outline`), where the Hebrew begins.
+- In full-text mode, add a 2 px `goldLeaf` rule at the scripture's start, the right in either language of the app, with 12 px padding. In high contrast it is a 2 px `outline` rule, undimmed in focus mode, since it marks structure (§3.1). Parallel columns set the Targum without it. The guided reader's block for a verse read a third time among the Targum is ruled at the right too (3 px `outline`), where the Hebrew begins.
 
 **Line breaks**
 - A paseq is bound to the word before it by a no-break space, and a maqaf to the word after it by a word joiner (`keepLinesSound`), wherever the words it joins fit on a line together. Where they don't, at a very large reading or text size on a phone, that maqaf goes without its joiner (`joinWhereFits`, measured against the column by `JoinsThatFit`), so the line ends after it rather than inside a word; words joined one after another stay together as far as they fit, as many to a line as fit. Only a word wider than the column on its own breaks.
@@ -442,7 +442,7 @@ Rules:
 **Verse numbers**
 - FRL 600 at 0.55× of the verse size, colour `secondary` (`dimInk` when dimmed).
 - Follow the number with U+00A0 NO-BREAK SPACE instead of a plain space, so a number is never stranded at the end of a line. The space is the verse's own and carries the reader's word spacing as letter spacing (the text engine widens only spaces a line may break at), so the number stands a word's space from its word however wide the spacing.
-- Guided mode only: the number hangs in a start gutter 1.4 × verse size wide. Use `Row(textDirection: rtl, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic)` with the number Text, then `Expanded` verse Text. What goes with the verse (its translation, Rashi, notes and layer labels) is set in by the same gutter at the right (`HangingIndent`), so every block shares the edge the text starts at and the number alone stands in the margin. Where the gutter would take more than a quarter of the line, or numbers are hidden, there is none.
+- Guided mode only: the number hangs in a start gutter as wide as the widest verse number plus 0.3 of the verse size (`ScriptureStyles.gutterWidth`: the widest of the numbers 1 to 89, Numbers 7's verses, measured in the Torah's number style at the system text size, and `numberGap`); the number stands at the gutter's inner edge (end-aligned, in right-to-left text), 0.3 em from its verse: about 8 px at 100% and 16 px at 200%. The gutter keeps the Torah's size in every layer, so the text's edge stays put from one reading to the next. Use `Row(textDirection: rtl, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic)` with the number Text, then `Expanded` verse Text. What goes with the verse (its translation, Rashi, notes and layer labels) is set in by the same gutter at the right (`HangingIndent`), so every block shares the edge the text starts at and the number alone stands in the margin. Where the gutter would take more than a quarter of the line, or numbers are hidden, there is none.
 - Full-text mode keeps the number inline.
 
 **Chapter heading**
@@ -472,7 +472,7 @@ Rules:
 - The current verse's whole block (Mikra, Targum, translation and Rashi, one tap target, `VerseGroup`) gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`, faded in over `Motion.short`. No radius: Flutter forbids a radius with non-uniform borders.
 - Padding, on every block whether highlighted or not, so that focus mode never moves a line: start 12 (the rule's 3 included), end 12, so the highlight frames a line that runs the full measure (the translation, or justified text), and vertical 4.
 - Start here, as for the Targum's rule, is the scripture's start: the right, in either language of the app.
-- All other verses, including their numbers, ketiv, Rashi and Rashi's eyebrow, use `dimInk`, and the Targum's gold rule recedes to the hairline colour, leaving the gold to the verse being read. Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
+- All other verses, including their numbers, ketiv, Rashi and Rashi's eyebrow, use `dimInk`, and the Targum's gold rule recedes to the hairline colour, leaving the gold to the verse being read (high contrast keeps its `outline` rule, as it dims nothing). Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
 
 **The verse opened at** (`TargetVerseMark`, lib/features/reader/verse_anchor.dart)
 - A verse the reader opens at, from a search result, Go to verse (§6.26) or a link (`/read/{week}/{aliyah}?verse=28:12`), opens the full text and is scrolled to a fifth of the way down the text's viewport (`Scrollable.ensureVisible`, alignment 0.2, 300 ms on `Motion.standard`, at once under Reduce Motion).
@@ -972,7 +972,7 @@ While Listen reads, playing or paused, a player sits above the reader's bottom b
 
 ### 6.29 Bookmarks and notes (lib/features/notes/)
 
-**The verse's marks** (`VerseMarks`, scripture_text.dart): after the verse number, wherever the verse shows it (the Torah's verse, and the Targum in the guided reader's Targum step; never the full text's Targum beneath its verse), in the number's size and in primary, the techelet of the scroll's note marks (`dimInk` with a dimmed verse): a ribbon 0.46 × 0.72 of the number's size, notched at its foot, for a bookmark, and a dot 0.34 across at the middle of the number's letters for a note, ribbon first, 0.28 apart and 0.28 from the number. They stand on the baseline (a WidgetSpan above it). In the full text they are joined to the number by a word joiner, and to the verse by its no-break space; in the guided reader's margin they follow the number, or go beneath it where the margin has no room for both and 0.2 of the verse's size clear of the verse (`gutterClearance`; a number of two letters, and large text). They scale with the text once, as the number does. With numbers hidden, they lead the verse. The verse's label ends "Bookmarked", "With your note".
+**The verse's marks** (`VerseMarks`, scripture_text.dart): after the verse number, wherever the verse shows it (the Torah's verse, and the Targum in the guided reader's Targum step; never the full text's Targum beneath its verse), in the number's size and in primary, the techelet of the scroll's note marks (`dimInk` with a dimmed verse): a ribbon 0.46 × 0.72 of the number's size, notched at its foot, for a bookmark, and a dot 0.34 across at the middle of the number's letters for a note, ribbon first, 0.28 apart and 0.28 from the number. They stand on the baseline (a WidgetSpan above it). In the full text they are joined to the number by a word joiner, and to the verse by its no-break space; in the guided reader's margin they follow the number, at the margin's inner edge and 0.3 of the verse's size clear of the verse as it is (`numberGap`), or go beneath it, at the same edge, where the margin has no room for both, as for most numbers: the margin is only as wide as the widest number. They scale with the text once, as the number does. With numbers hidden, they lead the verse. The verse's label ends "Bookmarked", "With your note".
 
 **The list** (`/notes`, over the tabs; `/notes?week=5787:1` for a week's parsha): `notesTitle` in the app bar, in the 720 column.
 - A heading per book (one per parsha, filtered): the Hebrew name in FRL 600 20 onSurface, then in the English UI the English name in titleSmall onSurfaceVariant, one paragraph; a level-2 heading; 8 above the first, 28 above the rest, 4 below. Filtered, the parsha's name (`parshaLabel`).
@@ -1283,7 +1283,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
 - **Parallel columns** (`ParallelVerse`, scripture_text.dart; desktop_reader_full): when the Targum (or, without it, the translation) is shown, the pane is at least 960 wide, the line width isn't narrow, the Torah is at most 34 px at the system text scale (`ScriptureStyles.parallelColumns`) and Display → Side by side is on (`AppSettings.parallelColumns`, default on; the switch shows in the full text's display sheet only where the columns would show, `ScriptureStyles.parallelFits`, measured on the reader's pane within the window's side insets):
   - the measure is 1160, and the title, ribbon and listen bar keep to it;
   - each verse is a row, right to left: the Torah (flex 6), with the translation and Rashi beneath it in its column, then a 40 gutter, then the Targum (flex 5) without its rule or number, at least 48 tall for its long press; first lines on one baseline;
-  - above the first row, the columns' names (`ParallelHeading`): `mikraLabel` and `targumLabel` (or `translationLabel`) in labelLarge onSurfaceVariant, each where its text begins, over a 1 px hairline as wide as its column, inset as the verses are;
+  - above the first row, the columns' names (`ParallelHeading`): `mikraLabel` and `targumLabel` (or `translationHead`, "English translation", which names no year, as an eyebrow has no digits) as eyebrows (§4.5), as the guided reader's layer labels are, each where its text begins, 6 above a 1 px hairline as wide as its column, inset as the verses are;
   - the chapter heading, section marks and the verse's block (focus mode, the verse opened at, Listen) span the row; screen readers hear the verse, the Targum, the translation and Rashi, in that order.
 - **Whole parsha** (the overflow menu's `wholeParsha` / `oneAliyahAtATime`, full text only; `AppSettings.fullTextWholeParsha`; phone_reader_parsha, desktop_reader_parsha*):
   - one `SliverMainAxisGroup` per aliyah: the `AliyahHeader` pinned while its aliyah is read, its verses built lazily (`SliverList.builder`), then the SeferDivider and the Tonal Mark as read of that aliyah;

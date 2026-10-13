@@ -79,8 +79,9 @@ const _physical = <String, String>{
       "A verse's gold rule, at the scripture's start: the right, in either language of the app (§4.7).",
   'lib/features/reader/scripture_text.dart: EdgeInsets.only(right:ScriptureStyles(context,settings).hangingGutter(constraints.maxWidth))':
       "The gutter a verse's number hangs in, at the right of the Hebrew in either language of the app (§4.7).",
-  'lib/features/reader/scripture_text.dart: EdgeInsets.only(left:clearance)':
-      "The room the reader's marks keep from the verse in the gutter at its right: at the gutter's left in either language.",
+  'lib/features/reader/scripture_text.dart: EdgeInsets.only(left:styles.numberGapWidth)':
+      "The room a verse's number and marks keep from the verse in the gutter at its right: at the gutter's left in either "
+          'language.',
   'lib/features/reader/reader_screen.dart: EdgeInsets.only(right:12)':
       "The rule of the Hebrew's block among the Targum, where the Hebrew begins: at the right in either language.",
 };

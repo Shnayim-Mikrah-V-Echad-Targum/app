@@ -248,6 +248,7 @@ HE = {
   "targumLabel": "תרגום אונקלוס",
   "rashiLabel": "רש״י",
   "translationLabel": "תרגום לאנגלית (JPS 1917)",
+  "translationHead": "תרגום לאנגלית",
   "haftarahTitle": "הפטרה",
   "markHaftarahRead": "סימון ההפטרה כנקראה",
   "readerFinished": "סיימת את העלייה הזו.",

@@ -1077,6 +1077,10 @@
   "targumLabel": "Targum Onkelos",
   "rashiLabel": "Rashi",
   "translationLabel": "Translation (JPS 1917)",
+  "translationHead": "English translation",
+  "@translationHead": {
+    "description": "The head of the English translation's column beside the Torah in the full text's side-by-side columns (where the Targum isn't shown), set as an eyebrow in small capitals beside \"Mikra\". No digits: in small capitals \"1\" reads as \"I\", so the JPS 1917 isn't named here."
+  },
   "haftarahTitle": "Haftarah",
   "markHaftarahRead": "Mark the haftarah as read",
   "readerFinished": "You’ve finished this aliyah.",

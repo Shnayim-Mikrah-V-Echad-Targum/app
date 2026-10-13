@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/core/text/hebrew_text.dart';
 import 'package:shnayim_mikra/data/models/scripture.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
@@ -172,24 +173,53 @@ void main() {
       expect(strut.forceStrutHeight, isFalse);
     });
 
-    testWidgets('the guided reader hangs the number in a gutter at the verse\'s start', (tester) async {
-      await pumpThemed(
-        tester,
-        ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
-      );
-      final verse = tester.getRect(find.byType(ScriptureVerse));
-      final number = find.text('כב');
-      expect(number, findsOneWidget);
-      expect(numberSpan(tester), isNull, reason: 'not in the paragraph too');
-      // The gutter is on the right, the verse's start, 1.4 times its size.
-      final gutter = tester.getRect(find.ancestor(of: number, matching: find.byType(SizedBox)).first);
-      expect(gutter.right, verse.right);
-      expect(gutter.width, closeTo(1.4 * 26, 0.001));
-      final paragraph = tester.getRect(find.byType(RichText).last);
-      expect(paragraph.right, closeTo(verse.right - 1.4 * 26, 0.001));
-      final row = tester.widget<Row>(find.byType(Row));
-      expect(row.crossAxisAlignment, CrossAxisAlignment.baseline, reason: 'on the first line\'s baseline');
-    });
+    for (final textScale in [1.0, 2.0]) {
+      testWidgets('the guided reader hangs the number in a gutter at the verse\'s start, close by it, '
+          'at ${(textScale * 100).round()}% text', (tester) async {
+        // A number of two letters, and of one.
+        for (final (verse, numeral) in [(serpent, 'כב'), (Verse.fromJson(const VerseRef(3, 1), ['וְהַנָּחָשׁ הָיָה עָרוּם']), 'א')]) {
+          await pumpThemed(
+            tester,
+            ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+            textScale: textScale,
+          );
+          final box = tester.getRect(find.byType(ScriptureVerse));
+          final number = find.text(numeral);
+          expect(number, findsOneWidget);
+          expect(find.byType(Row), findsOneWidget, reason: 'not in the paragraph too');
+          final styles = ScriptureStyles(tester.element(number), const AppSettings());
+
+          // The gutter is on the right, the verse's start: as wide as the
+          // widest verse number of the Torah, and the gap beside it, whatever
+          // the verse's own number.
+          final widest = TextPainter(
+            text: TextSpan(
+              text: [for (var n = 1; n <= 89; n++) HebrewText.gematria(n, punctuate: false)].join('\n'),
+              style: styles.numberStyle(ScriptureKind.mikra),
+            ),
+            textDirection: TextDirection.rtl,
+            textScaler: TextScaler.linear(textScale),
+          )..layout();
+          final gap = 0.3 * 26 * textScale;
+          final gutter = tester.getRect(find.ancestor(of: number, matching: find.byType(SizedBox)).first);
+          expect(gutter.right, box.right);
+          expect(gutter.width, closeTo(widest.width.ceilToDouble() + gap, 0.001));
+          widest.dispose();
+          final paragraph = tester.getRect(find.byType(RichText).last);
+          expect(paragraph.right, closeTo(gutter.left, 0.001));
+
+          // The number stands at the gutter's inner edge, 0.3 of the verse's
+          // size from its verse, rather than out at the column's edge.
+          final glyphs = tester
+              .renderObject<RenderParagraph>(find.descendant(of: number, matching: find.byType(RichText)))
+              .getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: numeral.length));
+          final left = tester.getTopLeft(number).dx + glyphs.map((b) => b.left).reduce(math.min);
+          expect(left - paragraph.right, closeTo(gap, 0.01), reason: numeral);
+          final row = tester.widget<Row>(find.byType(Row));
+          expect(row.crossAxisAlignment, CrossAxisAlignment.baseline, reason: 'on the first line\'s baseline');
+        }
+      });
+    }
 
     testWidgets('at a very large size, the number leads the first line rather than take a quarter of it', (tester) async {
       await pumpThemed(
@@ -210,34 +240,42 @@ void main() {
       expect(numberSpan(tester), isNotNull);
     });
 
-    for (final theme in [AppThemeMode.light, AppThemeMode.highContrastDark]) {
-      testWidgets('the full text\'s Targum is set in from a gold-leaf rule: ${theme.name}', (tester) async {
-        final targum = Verse.fromJson(const VerseRef(3, 22), ['וַאֲמַר יְיָ אֱלֹהִים הָא אָדָם הֲוָה יְחִידַי בְּעָלְמָא']);
-        await pumpThemed(
-          tester,
-          ScriptureVerse(
-            verse: targum,
-            kind: ScriptureKind.targum,
-            settings: const AppSettings(),
-            secondary: true,
-            showNumber: false,
-            ruled: true,
-          ),
-          theme: theme,
-        );
-        final context = tester.element(find.byType(ScriptureVerse));
-        final sefer = SeferColors.of(context);
-        expect(numberSpan(tester), isNull, reason: 'its verse has the number');
-        final box = tester.widget<Container>(find.descendant(of: find.byType(ScriptureVerse), matching: find.byType(Container)));
-        final rule = ((box.decoration! as BoxDecoration).border! as Border).right;
-        expect(rule.color, sefer.goldLeaf);
-        expect(rule.width, 2);
-        // A decoration, which high contrast leaves out (§3.1), but not its
-        // inset.
-        expect(rule.style, theme == AppThemeMode.light ? BorderStyle.solid : BorderStyle.none);
-        final text = tester.getRect(find.byType(RichText));
-        expect(text.right, tester.getRect(find.byType(ScriptureVerse)).right - 14);
-      });
+    for (final theme in [AppThemeMode.light, AppThemeMode.highContrastDark, AppThemeMode.highContrastLight]) {
+      for (final dimmed in [false, true]) {
+        testWidgets('the full text\'s Targum is set in from a rule: ${theme.name}${dimmed ? ', dimmed' : ''}', (tester) async {
+          final targum = Verse.fromJson(const VerseRef(3, 22), ['וַאֲמַר יְיָ אֱלֹהִים הָא אָדָם הֲוָה יְחִידַי בְּעָלְמָא']);
+          await pumpThemed(
+            tester,
+            ScriptureVerse(
+              verse: targum,
+              kind: ScriptureKind.targum,
+              settings: const AppSettings(),
+              secondary: true,
+              showNumber: false,
+              ruled: true,
+              dimmed: dimmed,
+            ),
+            theme: theme,
+          );
+          final context = tester.element(find.byType(ScriptureVerse));
+          final sefer = SeferColors.of(context);
+          expect(numberSpan(tester), isNull, reason: 'its verse has the number');
+          final box = tester.widget<Container>(find.descendant(of: find.byType(ScriptureVerse), matching: find.byType(Container)));
+          final rule = ((box.decoration! as BoxDecoration).border! as Border).right;
+          // Gold leaf, receding to a hairline with a dimmed verse. In high
+          // contrast an outline rule, undimmed: it marks the Targum off from
+          // the Torah, which little else does there (§3.1).
+          final highContrast = theme != AppThemeMode.light;
+          expect(
+            rule.color,
+            highContrast ? Theme.of(context).colorScheme.outline : (dimmed ? sefer.hairline : sefer.goldLeaf),
+          );
+          expect(rule.width, 2);
+          expect(rule.style, BorderStyle.solid);
+          final text = tester.getRect(find.byType(RichText));
+          expect(text.right, tester.getRect(find.byType(ScriptureVerse)).right - 14);
+        });
+      }
     }
 
     for (final (wordSpacing, letterSpacing) in [(0.0, 0.0), (4.0, 0.0), (16.0, 2.0)]) {

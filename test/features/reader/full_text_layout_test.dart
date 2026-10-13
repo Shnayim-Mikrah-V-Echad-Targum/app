@@ -17,6 +17,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show Eyebrow;
 
 import '../../helpers.dart';
 
@@ -123,6 +124,11 @@ void main() {
       expect(heads, findsOneWidget);
       expect(tester.getRect(heads).bottom, lessThan(right.top));
       expect(find.bySemanticsLabel('Mikra, Targum Onkelos'), findsOneWidget);
+      // As eyebrows, as the guided reader's layer labels are.
+      expect(
+        tester.widgetList<Eyebrow>(find.descendant(of: heads, matching: find.byType(Eyebrow))).map((e) => e.text),
+        ['Mikra', 'Targum Onkelos'],
+      );
 
       // The text keeps to its wider measure, centred, and the title and the
       // ribbon to it.
@@ -236,7 +242,7 @@ void main() {
       );
       final row = tester.widget<ParallelVerse>(find.byType(ParallelVerse).first);
       expect(row.beside, isA<TranslationVerse>());
-      expect(tester.widget<ParallelHeading>(find.byType(ParallelHeading)).beside, 'Translation (JPS 1917)');
+      expect(tester.widget<ParallelHeading>(find.byType(ParallelHeading)).beside, 'English translation');
       expect(tester.widget<ParallelHeading>(find.byType(ParallelHeading)).besideDirection, TextDirection.ltr);
     });
 

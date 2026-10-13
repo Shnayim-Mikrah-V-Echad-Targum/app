@@ -1069,6 +1069,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get translationLabel => 'תרגום לאנגלית (JPS 1917)';
 
   @override
+  String get translationHead => 'תרגום לאנגלית';
+
+  @override
   String get haftarahTitle => 'הפטרה';
 
   @override

@@ -1605,6 +1605,12 @@ abstract class AppLocalizations {
   /// **'Translation (JPS 1917)'**
   String get translationLabel;
 
+  /// The head of the English translation's column beside the Torah in the full text's side-by-side columns (where the Targum isn't shown), set as an eyebrow in small capitals beside "Mikra". No digits: in small capitals "1" reads as "I", so the JPS 1917 isn't named here.
+  ///
+  /// In en, this message translates to:
+  /// **'English translation'**
+  String get translationHead;
+
   /// No description provided for @haftarahTitle.
   ///
   /// In en, this message translates to:

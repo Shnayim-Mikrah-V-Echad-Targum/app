@@ -46,15 +46,15 @@ class ScriptureStyles {
   /// Ketiv and alternate readings, to their verse.
   static const ketivScale = 0.62;
 
-  /// The guided reader's hanging verse numbers sit in a gutter this many
-  /// times the Torah's size wide, whatever the layer, so the text's edge stays
-  /// put from one reading to the next.
-  static const gutterScale = 1.4;
+  /// The room the guided reader's gutter keeps between what it holds (the
+  /// number, and the reader's marks after it) and the verse, as a fraction of
+  /// the Torah's size: the number stands at the gutter's inner edge, this far
+  /// from its verse, and marks with no room beside it go beneath it.
+  static const numberGap = 0.3;
 
-  /// The least room the guided reader's gutter leaves between what it holds
-  /// (the number, and the reader's marks after it) and the verse, as a
-  /// fraction of the Torah's size: marks with less go beneath the number.
-  static const gutterClearance = 0.2;
+  /// The most verses a chapter of the Torah has (Numbers 7), whose numbers
+  /// the guided reader's gutter has room for.
+  static const _mostVerses = 89;
 
   /// An accessibility font (Atkinson, Lexend or OpenDyslexic) replaces the
   /// translation's serif, as it replaces the interface's.
@@ -179,17 +179,56 @@ class ScriptureStyles {
     );
   }
 
-  /// The width of the guided reader's verse-number gutter, before the system
-  /// text scale.
-  double get gutterWidth => gutterScale * sizeFor(ScriptureKind.mikra);
+  /// [numberGap] at the system text scale.
+  double get numberGapWidth => MediaQuery.textScalerOf(context).scale(numberGap * sizeFor(ScriptureKind.mikra));
+
+  /// The width of the guided reader's verse-number gutter, at the system text
+  /// scale: the widest verse number of the Torah, as [numberStyle] sets it
+  /// beside the Torah, and [numberGapWidth] between it and the verse. The
+  /// same in every layer, so that the text's edge stays put from one reading
+  /// to the next.
+  double get gutterWidth {
+    final scaler = MediaQuery.textScalerOf(context);
+    final style = numberStyle(ScriptureKind.mikra);
+    if (!_watchingFonts) {
+      // Measured again once a font arrives (on the web, the bundled ones
+      // too), rather than keep a stand-in's widths.
+      _watchingFonts = true;
+      PaintingBinding.instance.systemFonts.addListener(_widestNumbers.clear);
+    }
+    final widest = _widestNumbers[(style.fontSize!, style.fontWeight, scaler.scale(100))] ??= _widestNumber(style, scaler);
+    return widest + numberGapWidth;
+  }
+
+  /// The widest verse number from 1 to [_mostVerses] in [style] at [scaler],
+  /// to the next whole pixel, so that no number wraps for a rounding.
+  static double _widestNumber(TextStyle style, TextScaler scaler) {
+    // One number to a line: the paragraph is as wide as the widest.
+    final painter = TextPainter(
+      text: TextSpan(
+        text: [for (var n = 1; n <= _mostVerses; n++) HebrewText.gematria(n, punctuate: false)].join('\n'),
+        style: style,
+      ),
+      textDirection: TextDirection.rtl,
+      textScaler: scaler,
+    )..layout();
+    final width = painter.width.ceilToDouble();
+    painter.dispose();
+    return width;
+  }
+
+  /// [_widestNumber]'s widths, by the number's size and weight and the text
+  /// scale.
+  static final _widestNumbers = <(double, FontWeight?, double), double>{};
+  static var _watchingFonts = false;
 
   /// The gutter the guided reader hangs a verse's number in, in a column
-  /// [maxWidth] wide: [gutterWidth] at the system text scale, or none where
-  /// numbers are hidden, or where so wide a gutter would take more than a
-  /// quarter of each line and the number leads the first line instead.
+  /// [maxWidth] wide: [gutterWidth], or none where numbers are hidden, or
+  /// where so wide a gutter would take more than a quarter of each line and
+  /// the number leads the first line instead.
   double hangingGutter(double maxWidth) {
     if (!settings.showVerseNumbers) return 0;
-    final gutter = MediaQuery.textScalerOf(context).scale(gutterWidth);
+    final gutter = gutterWidth;
     return gutter > maxWidth / 4 ? 0 : gutter;
   }
 
@@ -553,8 +592,8 @@ class ScriptureVerse extends StatelessWidget {
   /// reader, rather than leading its first line, as in the full text.
   final bool hangingNumber;
 
-  /// Set off by a gold rule at its start, as the Targum beneath each verse of
-  /// the full text is.
+  /// Set off by a gold rule at its start (in outline in high contrast), as
+  /// the Targum beneath each verse of the full text is.
   final bool ruled;
 
   /// Opens the verse's options (copy, share, ask): on a long press or a
@@ -759,14 +798,12 @@ class ScriptureVerse extends StatelessWidget {
     if (hangingNumber && numeral != null) {
       content = LayoutBuilder(
         builder: (context, constraints) {
+          // The gutter is measured: measured again when a font arrives.
+          FontsChangeScope.watch(context);
           final gutter = styles.hangingGutter(constraints.maxWidth);
           // At a very large size a gutter would take too much of each line:
           // the number leads the first line instead, as in the full text.
           if (gutter == 0) return paragraph(withNumber: true);
-          // The room the marks keep from the verse, at their left.
-          final clearance = marks == null
-              ? 0.0
-              : MediaQuery.textScalerOf(context).scale(ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikra));
           // The verse begins on the right in either language of the app.
           return Row(
             textDirection: TextDirection.rtl,
@@ -775,14 +812,16 @@ class ScriptureVerse extends StatelessWidget {
             children: [
               SizedBox(
                 width: gutter,
-                // The marks after the number, or beneath it where the gutter
-                // has no room for both and the room it keeps from the verse.
+                // At the gutter's inner edge, close by its verse, about a
+                // word's space from it: the number, and the marks after it,
+                // or beneath it where the gutter has no room for both.
                 child: Padding(
-                  padding: EdgeInsets.only(left: clearance),
+                  padding: EdgeInsets.only(left: styles.numberGapWidth),
                   child: Text.rich(
                     TextSpan(text: numeral, children: [?marks]),
                     style: numberStyle,
                     textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.end,
                   ),
                 ),
               ),
@@ -797,17 +836,17 @@ class ScriptureVerse extends StatelessWidget {
 
     if (ruled) {
       // At the scripture's start, the right, in either language of the app.
-      // High contrast keeps the inset but not the rule, a decoration (§3.1).
       // Dimmed, it recedes with its verse to a hairline, leaving the gold to
-      // the verse being read.
+      // the verse being read. High contrast draws it in outline, undimmed: it
+      // marks the Targum off from the Torah, which is structure, not
+      // decoration (§3.1).
       content = Container(
         padding: const EdgeInsets.only(right: ruleGap),
         decoration: BoxDecoration(
           border: Border(
             right: BorderSide(
-              color: dimmed ? sefer.hairline : sefer.goldLeaf,
+              color: sefer.isHighContrast ? scheme.outline : (dimmed ? sefer.hairline : sefer.goldLeaf),
               width: ruleWidth,
-              style: sefer.isHighContrast ? BorderStyle.none : BorderStyle.solid,
             ),
           ),
         ),
@@ -1110,9 +1149,9 @@ class ParallelVerse extends StatelessWidget {
 
 /// The heads of the full text's parallel columns ([ParallelVerse]), above
 /// its first verse: "Mikra" over the Torah's column and "Targum Onkelos" (or
-/// the translation's name) over the other, each where its text begins, over
-/// a hairline as wide as its column. They are inset as the verses' text is
-/// within its block ([VerseGroup.padding]).
+/// the translation's name) over the other, as eyebrows, each where its text
+/// begins, over a hairline as wide as its column. They are inset as the
+/// verses' text is within its block ([VerseGroup.padding]).
 class ParallelHeading extends StatelessWidget {
   const ParallelHeading({super.key, required this.torah, required this.beside, this.besideDirection = TextDirection.rtl});
 
@@ -1125,13 +1164,12 @@ class ParallelHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final sefer = SeferColors.of(context);
-    final style = theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    // Eyebrows, as the guided reader's layer labels are.
     Widget head(String label, TextDirection direction) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(label, style: style, textAlign: direction == TextDirection.rtl ? TextAlign.right : TextAlign.left),
+            Eyebrow(label, textAlign: direction == TextDirection.rtl ? TextAlign.right : TextAlign.left),
             const SizedBox(height: 6),
             SizedBox(height: sefer.hairlineWidth, child: ColoredBox(color: sefer.hairline)),
           ],
@@ -1549,12 +1587,16 @@ class HangingIndent extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) => Padding(
-          padding: EdgeInsets.only(right: ScriptureStyles(context, settings).hangingGutter(constraints.maxWidth)),
-          child: child,
-        ),
-      );
+  Widget build(BuildContext context) {
+    // The gutter is measured: measured again when a font arrives.
+    FontsChangeScope.watch(context);
+    return LayoutBuilder(
+      builder: (context, constraints) => Padding(
+        padding: EdgeInsets.only(right: ScriptureStyles(context, settings).hangingGutter(constraints.maxWidth)),
+        child: child,
+      ),
+    );
+  }
 }
 
 /// A label above a block of text in the guided reader ("Targum Onkelos"): an
