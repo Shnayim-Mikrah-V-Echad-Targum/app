@@ -1,6 +1,7 @@
 """Checks make_icon.py's glyph-order assertion, the launch screens' logo,
 the launch themes' system bars, the MSIX icons, the web's link preview,
-shortcut icons and loading mark, and iOS's shortcut icon.
+shortcut icons and loading mark, iOS's shortcut icon, and Google Play's
+feature graphic.
 
     python3 -m unittest discover -s tool/branding
 
@@ -222,6 +223,50 @@ class IosShortcutTest(unittest.TestCase):
         with Image.open(folder / 'ShortcutMark@3x.png') as image:
             self.assertEqual(image.convert('RGBA').tobytes(), expected.tobytes(),
                              'run python3 tool/branding/make_icon.py --post')
+
+
+class FeatureGraphicTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        with tempfile.TemporaryDirectory() as tmp:
+            font_path = make_icon.load_font(Path(tmp))
+            font = TTFont(font_path)
+            glyphs, upem = make_icon.shape(font_path, font)
+            cls.mark = make_icon.layout(glyphs, upem, font)
+
+    def written(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'feature-graphic.png'
+            with mock.patch.object(make_icon, 'FEATURE_GRAPHIC', path), \
+                    mock.patch.object(make_icon, 'ROOT', Path(tmp)), \
+                    mock.patch.object(make_icon, 'report'):
+                make_icon.write_feature_graphic(self.mark)
+            with Image.open(path) as image:
+                image.load()
+                return image
+
+    def test_play_size_without_alpha(self):
+        image = self.written()
+        self.assertEqual(image.size, (1024, 500))
+        self.assertEqual(image.mode, 'RGB')
+
+    def test_title_keeps_to_the_safe_area(self):
+        image = self.written()
+        # Inside the title page's frame, nothing but the title block is inked.
+        inside = image.crop((60, 60, 1024 - 60, 500 - 60))
+        ink = ImageChops.difference(
+            inside, Image.new('RGB', inside.size, make_icon.KLAF)).getbbox()
+        left, top, right, bottom = make_icon.feature_safe_area()
+        self.assertGreaterEqual(60 + ink[0], left)
+        self.assertGreaterEqual(60 + ink[1], top)
+        self.assertLessEqual(60 + ink[2], right)
+        self.assertLessEqual(60 + ink[3], bottom)
+
+    def test_committed_graphic_is_play_ready(self):
+        with Image.open(make_icon.FEATURE_GRAPHIC) as image:
+            self.assertEqual(image.size, (1024, 500))
+            self.assertEqual(image.mode, 'RGB',
+                             'run python3 tool/branding/make_icon.py --feature-graphic')
 
 
 if __name__ == '__main__':
