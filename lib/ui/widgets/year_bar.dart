@@ -15,7 +15,7 @@ enum YearSegment {
   /// Finished by its Shabbat.
   onTime,
 
-  /// Finished late, or restored by doubling up.
+  /// Finished late, or finished with the next parsha.
   late,
 
   /// Made up later in the year.
@@ -30,7 +30,8 @@ enum YearSegment {
 
 /// The year at a glance (docs/DESIGN_SYSTEM.md §6.15): one segment for each
 /// of the 54 parshiyot in Torah order, a wider gap between the books, and
-/// each book's short name under its first segment.
+/// each book's short name under its first segment. This week's parsha
+/// stands [tick] taller than the rest at each edge, to say "you are here".
 ///
 /// It follows the reading direction, so in Hebrew Bereshit is on the right.
 /// Screen readers hear one sentence: how many parshiyot are complete, and
@@ -52,6 +53,10 @@ class YearBar extends StatelessWidget {
   static const double height = 8;
   static const double radius = 1.5;
 
+  /// How far the current parsha's segment reaches above and below the rest,
+  /// so it reads as a marker even where a segment is a few pixels wide.
+  static const double tick = 2;
+
   /// Between two segments.
   static const double gap = 2;
 
@@ -60,6 +65,10 @@ class YearBar extends StatelessWidget {
 
   /// The least space between two books' names.
   static const double labelGap = 4;
+
+  /// Segments narrower than this have no room for a border: the current
+  /// parsha's is solid primary, and a made-up one solid late.
+  static const double compactSegment = 8;
 
   /// The segments for [cycle], by the same rules as the Torah map
   /// ([parshaStandings]): how each week of it ended in [weeks], the
@@ -118,7 +127,7 @@ class YearBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   CustomPaint(
-                    size: Size(width, height),
+                    size: Size(width, height + 2 * tick),
                     painter: _YearBarPainter(
                       segments: segments,
                       layout: layout,
@@ -126,7 +135,8 @@ class YearBar extends StatelessWidget {
                       colors: _YearBarColors.of(context),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  // 4 under the bar itself: the tick below it, and 2 more.
+                  const SizedBox(height: 4 - tick),
                   // Each name starts at its book's first segment.
                   Row(
                     children: [
@@ -242,7 +252,9 @@ class _YearBarColors {
       paper: sefer.paper,
       current: scheme.primaryContainer,
       currentBorder: scheme.primary,
-      track: sefer.ringTrack,
+      // The rings' track is too faint for a segment a few pixels wide, but
+      // in high contrast outlineVariant would be as loud as a finished one.
+      track: sefer.isHighContrast ? sefer.ringTrack : scheme.outlineVariant,
     );
   }
 
@@ -281,17 +293,25 @@ class _YearBarPainter extends CustomPainter {
     final border = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
+    // A 1 px border inside a segment of a few pixels leaves a speck of fill
+    // that reads as a "0": there, the bordered states are solid.
+    final compact = layout.segment < YearBar.compactSegment;
     for (var i = 0; i < segments.length; i++) {
       final start = layout.starts[i];
       final left = direction == TextDirection.rtl ? size.width - start - layout.segment : start;
+      final segment = segments[i];
       final box = RRect.fromRectAndRadius(
-        Rect.fromLTWH(left, 0, layout.segment, size.height),
+        segment == YearSegment.current
+            ? Rect.fromLTWH(left, 0, layout.segment, YearBar.height + 2 * YearBar.tick)
+            : Rect.fromLTWH(left, YearBar.tick, layout.segment, YearBar.height),
         const Radius.circular(YearBar.radius),
       );
-      final (Color body, Color? edge) = switch (segments[i]) {
+      final (Color body, Color? edge) = switch (segment) {
         YearSegment.onTime => (colors.onTime, null),
         YearSegment.late => (colors.late, null),
+        YearSegment.madeUp when compact => (colors.late, null),
         YearSegment.madeUp => (colors.paper, colors.late),
+        YearSegment.current when compact => (colors.currentBorder, null),
         YearSegment.current => (colors.current, colors.currentBorder),
         YearSegment.open => (colors.track, null),
       };

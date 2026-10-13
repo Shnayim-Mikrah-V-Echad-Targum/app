@@ -708,11 +708,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String streakBeginsWith(String name) {
-    return 'Begins with $name';
+    return 'Starts when $name is complete';
   }
 
   @override
-  String get daysBeginToday => 'Begins with today’s reading';
+  String get daysBeginToday => 'Starts with today’s reading';
 
   @override
   String get dayKept => 'Read';
@@ -3366,6 +3366,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String parshiyotOfYear(int done, int total) {
     return '$done of $total parshiyot';
+  }
+
+  @override
+  String yearBeginsWith(String name) {
+    return 'Begins with $name';
   }
 
   @override

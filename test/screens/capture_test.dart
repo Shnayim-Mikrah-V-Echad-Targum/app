@@ -2089,6 +2089,8 @@ const _tallScreens = {
   'browse',
   'progress',
   'progress_years',
+  // The rings at every size, down to the year bar at its foot.
+  'kit_progress',
   'settings',
   's_reading',
   's_reading_end',

@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
+import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/year_bar.dart';
 
@@ -89,9 +90,15 @@ void main() {
 
   group('bar', () {
     // At 392 wide, 53 gaps of 2 and 4 extra between each two books leave 54
-    // segments of 5, so every edge falls on a whole pixel.
+    // segments of 5 (a phone's, too narrow for a border), so every edge falls
+    // on a whole pixel. At 662 they are 10, as on a desktop.
     const barWidth = 392.0;
     const segment = 5.0;
+    const wideBar = 662.0;
+    const wideSegment = 10.0;
+
+    /// The middle of the bar, between the current parsha's ticks.
+    const middle = YearBar.tick + YearBar.height / 2;
 
     Future<void> pumpBar(
       WidgetTester tester,
@@ -99,13 +106,21 @@ void main() {
       double width = barWidth,
       bool hebrew = false,
       double textScale = 1,
+      AppThemeMode theme = AppThemeMode.light,
     }) =>
         pumpThemed(
           tester,
           Align(alignment: Alignment.topLeft, child: SizedBox(width: width, child: bar)),
           hebrew: hebrew,
           textScale: textScale,
+          theme: theme,
         );
+
+    /// The left edge of parsha [n]'s segment.
+    double left(int n, {double width = barWidth, double segment = segment, bool hebrew = false}) {
+      final start = (n - 1) * (segment + 2) + 4 * bookIndexOfParsha(n);
+      return hebrew ? width - start - segment : start;
+    }
 
     Future<ui.Image> snapshot(WidgetTester tester) async {
       final boundary = tester.renderObject<RenderRepaintBoundary>(
@@ -154,7 +169,11 @@ void main() {
     testWidgets('names each book under its first segment', (tester) async {
       await pumpBar(tester, YearBar(segments: year(const {})));
       final paint = find.descendant(of: find.byType(YearBar), matching: find.byType(CustomPaint));
-      expect(tester.getSize(paint), const Size(barWidth, YearBar.height));
+      // Room for the current parsha's ticks above and below the bar.
+      expect(tester.getSize(paint), const Size(barWidth, YearBar.height + 2 * YearBar.tick));
+      // 4 under the bar itself.
+      final bar = tester.getTopLeft(find.byType(YearBar)).dy + YearBar.tick;
+      expect(tester.getTopLeft(find.text('Gen')).dy - bar, YearBar.height + 4);
       expect(tester.getTopLeft(find.text('Gen')).dx, 0);
       // Exodus starts after Genesis's 12 segments, 12 gaps and a book gap.
       expect(tester.getTopLeft(find.text('Exo')).dx, 12 * segment + 12 * 2 + 4);
@@ -164,41 +183,92 @@ void main() {
       }
     });
 
-    testWidgets('colours each state, and runs right to left in Hebrew', (tester) async {
-      final states = year({1: YearSegment.onTime, 2: YearSegment.late, 3: YearSegment.madeUp, 54: YearSegment.current});
-      Future<List<Color>> colours({required bool hebrew}) async {
-        await pumpBar(tester, YearBar(segments: states), hebrew: hebrew);
-        final image = await snapshot(tester);
-        // The left edge of parsha n's segment.
-        double left(int n) {
-          final start = (n - 1) * (segment + 2) + 4 * bookIndexOfParsha(n);
-          return hebrew ? barWidth - start - segment : start;
-        }
+    final states = year({1: YearSegment.onTime, 2: YearSegment.late, 3: YearSegment.madeUp, 54: YearSegment.current});
 
-        Future<Color> at(double x) => pixel(tester, image, x, YearBar.height / 2);
-        final out = [
-          for (final n in [1, 2, 3, 5, 54]) await at(left(n) + segment / 2),
-          // The 1 px borders.
-          await at(left(3) + 0.5),
-          await at(left(54) + 0.5),
-        ];
-        image.dispose();
-        return out;
-      }
+    /// The colours at the middle of parshiyot 1, 2, 3, 5 and 54, at the
+    /// start edge of 3 and 54 (where a border would be), and at the top and
+    /// bottom rows of the paint over 54 and 1.
+    Future<List<Color>> colours(
+      WidgetTester tester, {
+      required double width,
+      required double segment,
+      bool hebrew = false,
+      AppThemeMode theme = AppThemeMode.light,
+    }) async {
+      await pumpBar(tester, YearBar(segments: states), width: width, hebrew: hebrew, theme: theme);
+      final image = await snapshot(tester);
+      double x(int n) => left(n, width: width, segment: segment, hebrew: hebrew);
+      Future<Color> at(double x, [double y = middle]) => pixel(tester, image, x, y);
+      const bottom = YearBar.height + 2 * YearBar.tick - 0.5;
+      final out = [
+        for (final n in [1, 2, 3, 5, 54]) await at(x(n) + segment / 2),
+        await at(x(3) + 0.5),
+        await at(x(54) + 0.5),
+        await at(x(54) + segment / 2, 0.5),
+        await at(x(54) + segment / 2, bottom),
+        await at(x(1) + segment / 2, 0.5),
+        await at(x(1) + segment / 2, bottom),
+      ];
+      image.dispose();
+      return out;
+    }
 
+    const clear = Color(0x00000000);
+
+    testWidgets('on a phone, marks this week with a tall solid segment, and runs right to left in Hebrew',
+        (tester) async {
+      // A 1 px border in a segment of 5 would leave a speck that reads as a
+      // "0": the current and made-up segments are solid instead.
+      final expected = [
+        Palettes.statusLight.done,
+        Palettes.statusLight.late,
+        Palettes.statusLight.late,
+        Palettes.light.outlineVariant,
+        Palettes.light.primary,
+        Palettes.statusLight.late,
+        Palettes.light.primary,
+        // The current parsha's ticks, above and below the bar; nothing else
+        // reaches there.
+        Palettes.light.primary,
+        Palettes.light.primary,
+        clear,
+        clear,
+      ];
+      expect(await colours(tester, width: barWidth, segment: segment), expected);
+      expect(await colours(tester, width: barWidth, segment: segment, hebrew: true), expected);
+      expect(tester.getTopRight(find.text('בר׳')).dx, barWidth);
+      expect(tester.getCenter(find.text('בר׳')).dx, greaterThan(tester.getCenter(find.text('דב׳')).dx));
+    });
+
+    testWidgets('where segments are wide, the current and made-up ones are outlined', (tester) async {
       final expected = [
         Palettes.statusLight.done,
         Palettes.statusLight.late,
         Palettes.seferLight.paper,
-        Palettes.seferLight.ringTrack,
+        Palettes.light.outlineVariant,
         Palettes.light.primaryContainer,
+        // The 1 px borders.
         Palettes.statusLight.late,
         Palettes.light.primary,
+        // The current parsha's box is as tall, its border at its top and
+        // bottom.
+        Palettes.light.primary,
+        Palettes.light.primary,
+        clear,
+        clear,
       ];
-      expect(await colours(hebrew: false), expected);
-      expect(await colours(hebrew: true), expected);
-      expect(tester.getTopRight(find.text('בר׳')).dx, barWidth);
-      expect(tester.getCenter(find.text('בר׳')).dx, greaterThan(tester.getCenter(find.text('דב׳')).dx));
+      expect(await colours(tester, width: wideBar, segment: wideSegment), expected);
+      expect(await colours(tester, width: wideBar, segment: wideSegment, hebrew: true), expected);
+    });
+
+    testWidgets('what is still open stands out from the card, but in high contrast stays quieter than what is done',
+        (tester) async {
+      Future<Color> open(AppThemeMode theme) async =>
+          (await colours(tester, width: barWidth, segment: segment, theme: theme))[3];
+      expect(await open(AppThemeMode.dark), Palettes.dark.outlineVariant);
+      expect(await open(AppThemeMode.sepia), Palettes.sepia.outlineVariant);
+      expect(await open(AppThemeMode.highContrastDark), Palettes.seferHcDark.ringTrack);
+      expect(await open(AppThemeMode.highContrastLight), Palettes.seferHcLight.ringTrack);
     });
 
     testWidgets('fits a 360 dp phone, even with 200% text', (tester) async {

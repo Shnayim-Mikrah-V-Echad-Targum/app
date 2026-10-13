@@ -503,7 +503,7 @@ void main() {
       final ledger = find.byType(LedgerCard);
       await tester.ensureVisible(ledger);
       await tester.pumpAndSettle();
-      expect(find.text('Begins with Bereshit'), findsOneWidget);
+      expect(find.text('Starts when Bereshit is complete'), findsOneWidget);
       expect(find.text('0 weeks'), findsNothing);
       expect(find.byIcon(Icons.event_available_outlined), findsNothing);
       await tester.tap(ledger);

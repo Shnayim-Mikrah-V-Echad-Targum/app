@@ -106,6 +106,28 @@ void main() {
     expect(find.byType(SeferChoiceChip), findsNothing);
   });
 
+  testWidgets('before any of the year is finished, it says which parsha it begins with', (tester) async {
+    // Joined today, the Wednesday of Bereshit 5787, with nothing read yet.
+    final settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 7));
+    await openProgress(tester, settings: settings, progress: const ProgressState(), now: DateTime(2026, 10, 7, 10));
+    expect(find.text('Begins with Bereshit'), findsOneWidget);
+    expect(find.textContaining('of 54 parshiyot'), findsNothing);
+    // The bar still says how many are complete.
+    expect(find.bySemanticsLabel(RegExp('^This year: 0 of 54 parshiyot complete; Bereshit in progress')), findsOneWidget);
+    // So does the ledger, in the same spirit: no stark 0.
+    expect(find.text('Starts when Bereshit is complete'), findsOneWidget);
+    expect(find.text('Starts with today’s reading'), findsOneWidget);
+
+    await openProgress(
+      tester,
+      settings: settings.copyWith(language: AppLanguage.hebrew),
+      progress: const ProgressState(),
+      now: DateTime(2026, 10, 7, 10),
+    );
+    expect(find.text('מתחילה בפרשת בראשית'), findsOneWidget);
+    expect(find.text('יתחיל עם סיום פרשת בראשית'), findsOneWidget);
+  });
+
   testWidgets('recent weeks leave out the week before the reader joined, with nothing read', (tester) async {
     await openProgress(tester);
     final recent = await shown(tester, find.text(en.recentWeeks));
@@ -302,7 +324,9 @@ void main() {
     expect(chips, findsNWidgets(2));
     expect([for (final c in tester.widgetList<SeferChoiceChip>(chips)) (c.label as Text).data], ['5786', '5787']);
     expect(tester.widget<SeferChoiceChip>(chips.last).selected, isTrue);
-    expect(find.text('0 of 54 parshiyot'), findsOneWidget);
+    // Nothing of 5787 is finished yet: where the year begins, not "0 of 54".
+    expect(find.text('Begins with Bereshit'), findsOneWidget);
+    expect(find.text('0 of 54 parshiyot'), findsNothing);
 
     await tester.tap(chips.first);
     await tester.pumpAndSettle();
@@ -310,6 +334,7 @@ void main() {
     expect(find.text(en.thisYear), findsNothing);
     // Vayera to Vezot HaBerakhah.
     expect(find.text('51 of 54 parshiyot'), findsOneWidget);
+    expect(find.text('Begins with Bereshit'), findsNothing);
     expect(find.bySemanticsLabel(RegExp('^5786: 51 of 54 parshiyot complete')), findsOneWidget);
     // The map shows 5786 as it ended, and says so: nothing in it is still
     // to come.

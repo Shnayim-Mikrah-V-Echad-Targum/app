@@ -293,9 +293,10 @@ Future<void> _showAboutStreaks(BuildContext context, LateWindow window) => showA
       },
     );
 
-/// "This year": how many of the year's parshiyot are finished, the verses
-/// read, and the year bar. With more than one year in the log, chips choose
-/// which year it shows, and the Torah map below follows.
+/// "This year": how many of the year's parshiyot are finished (or, before
+/// the first, the parsha it begins with), the verses read, and the year bar.
+/// With more than one year in the log, chips choose which year it shows, and
+/// the Torah map below follows.
 class _ThisYear extends StatelessWidget {
   const _ThisYear({
     required this.cycle,
@@ -352,7 +353,11 @@ class _ThisYear extends StatelessWidget {
           ],
           const Gap(Space.sm),
           WholeWords(
-            l.parshiyotOfYear(done.length, kParshaCount),
+            // Before anything is finished, where the year begins rather
+            // than a stark "0 of 54".
+            isLive && done.isEmpty && segments.contains(YearSegment.current)
+                ? l.yearBeginsWith(currentName)
+                : l.parshiyotOfYear(done.length, kParshaCount),
             style: theme.textTheme.headlineSmall,
             textAlign: TextAlign.start,
             breakAtHyphens: true,

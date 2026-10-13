@@ -10,8 +10,8 @@ import 'lines.dart';
 /// (docs/DESIGN_SYSTEM.md §6.12): the parsha streak, a hairline, and the days
 /// on track.
 ///
-/// A streak of 0 is never shown as a stark "0": its column says where the
-/// streak begins instead. The whole card is one tap target and one item for
+/// A streak of 0 is never shown as a stark "0": its column says what will
+/// start it instead. The whole card is one tap target and one item for
 /// screen readers.
 class LedgerCard extends StatelessWidget {
   const LedgerCard({
@@ -27,8 +27,8 @@ class LedgerCard extends StatelessWidget {
   final int parshaStreak;
   final int daysOnTrack;
 
-  /// The parsha a parsha streak of 0 begins with (the current one), named in
-  /// the UI language.
+  /// The parsha whose completion starts a parsha streak of 0 (the current
+  /// one), named in the UI language.
   final String beginsWith;
 
   /// The longest runs, on Progress. Each shows under its column only when it
@@ -76,7 +76,7 @@ class LedgerCard extends StatelessWidget {
     // it.
     Widget words(String text, TextStyle? style) =>
         WholeWords(text, style: style, textAlign: TextAlign.start, breakAtHyphens: true);
-    // "Parsha streak: begins with Bereshit. Days on track: 2"
+    // "Parsha streak: starts when Bereshit is complete. Days on track: 2"
     final label = columns.map((c) => c.semanticsLabel).join('. ');
     final table = Table(
       border: TableBorder(verticalInside: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth)),
@@ -84,8 +84,12 @@ class LedgerCard extends StatelessWidget {
         row(
           first: true,
           // A count is one word, set smaller where it is too wide for its
-          // column ("365" at the largest text on a small phone).
-          (c) => c.count == 0 ? words(c.zero, theme.textTheme.titleMedium) : words('${c.count}', numeral),
+          // column ("365" at the largest text on a small phone). A sentence
+          // in its place is balanced, so that the parsha's name is not left
+          // alone on its last line ("יתחיל עם סיום / פרשת בראשית").
+          (c) => c.count == 0
+              ? BalancedText(c.zero, style: theme.textTheme.titleMedium, textAlign: TextAlign.start)
+              : words('${c.count}', numeral),
         ),
         row(last: !hasLongest, (c) => words(c.label, meta)),
         if (hasLongest) row(last: true, (c) => words(c.longest ?? '', meta)),
@@ -123,7 +127,8 @@ class _Entry {
   final String? longest;
 
   /// "Days on track: 2". The sentence that replaces a 0 continues the label,
-  /// so it starts in lower case ("Parsha streak: begins with Bereshit");
+  /// so it starts in lower case ("Parsha streak: starts when Bereshit is
+  /// complete");
   /// Hebrew has no case, so this leaves it as it is.
   String get semanticsLabel => [
         '$label: ${count == 0 ? zero.replaceRange(0, 1, zero[0].toLowerCase()) : count}',

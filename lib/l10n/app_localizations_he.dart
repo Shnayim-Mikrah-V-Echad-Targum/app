@@ -715,7 +715,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String streakBeginsWith(String name) {
-    return 'יתחיל בפרשת $name';
+    return 'יתחיל עם סיום פרשת $name';
   }
 
   @override
@@ -3368,6 +3368,11 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String parshiyotOfYear(int done, int total) {
     return '$done מתוך $total פרשות';
+  }
+
+  @override
+  String yearBeginsWith(String name) {
+    return 'מתחילה בפרשת $name';
   }
 
   @override

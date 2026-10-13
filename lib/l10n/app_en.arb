@@ -735,9 +735,9 @@
       }
     }
   },
-  "streakBeginsWith": "Begins with {name}",
+  "streakBeginsWith": "Starts when {name} is complete",
   "@streakBeginsWith": {
-    "description": "On the streak card, in place of a parsha streak of 0: the streak starts when this parsha is finished.",
+    "description": "On the streak card, in place of a parsha streak of 0, over the label 'Parsha streak': the streak starts once this week's parsha is finished. Screen readers hear it after the label ('Parsha streak: starts when Bereshit is complete').",
     "placeholders": {
       "name": {
         "type": "String",
@@ -745,9 +745,9 @@
       }
     }
   },
-  "daysBeginToday": "Begins with today’s reading",
+  "daysBeginToday": "Starts with today’s reading",
   "@daysBeginToday": {
-    "description": "On the streak card, in place of 0 days on track."
+    "description": "On the streak card, in place of 0 days on track, over the label 'Days on track': the run starts with today's planned reading. Screen readers hear it after the label ('Days on track: starts with today’s reading')."
   },
   "dayKept": "Read",
   "dayAhead": "Ahead of plan",
@@ -2882,6 +2882,16 @@
       },
       "total": {
         "type": "int"
+      }
+    }
+  },
+  "yearBeginsWith": "Begins with {name}",
+  "@yearBeginsWith": {
+    "description": "On Progress, under the heading 'This year', in place of '0 of 54 parshiyot' while none of this year's parshiyot is finished yet: the reader's year begins with this week's parsha. Its subject is the year (in Hebrew, feminine, agreeing with השנה).",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
       }
     }
   },

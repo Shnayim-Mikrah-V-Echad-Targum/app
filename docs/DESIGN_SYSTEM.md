@@ -684,11 +684,11 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 - One card with two equal columns and a full-height hairline between them. Lay it out as a `Table` with a `verticalInside` hairline border rather than `IntrinsicHeight(Row(...))`, so the labels still line up when a sentence in place of a count wraps.
 - Each column: padding 16; ledgerNumeral (the count), then bodySmall label (`streakParsha`, `streakDays`); on Progress, an extra bodySmall "Longest: …".
-- When the value is 0, the numeral slot shows titleMedium text instead:
-  - parsha streak: `streakBeginsWith(name)` = "Begins with Bereshit";
-  - days on track: `daysBeginToday` = "Begins with today’s reading".
+- When the value is 0, the numeral slot shows titleMedium text instead, a sentence that reads on into its label and says what starts the run, its lines balanced (`BalancedText`) so the parsha's name is not left alone on the last ("יתחיל עם סיום / פרשת בראשית"):
+  - parsha streak: `streakBeginsWith(name)` = "Starts when Bereshit is complete" / "יתחיל עם סיום פרשת בראשית";
+  - days on track: `daysBeginToday` = "Starts with today’s reading" / "יתחיל בקריאה של היום".
   - Never show a stark 0.
-- The whole card is a SeferInkWell to /progress. Semantics: "Parsha streak: begins with Bereshit. Days on track: 2".
+- The whole card is a SeferInkWell to /progress. Semantics: "Parsha streak: starts when Bereshit is complete. Days on track: 2".
 
 ### 6.13 WeekStrip
 
@@ -748,7 +748,9 @@ A tile's screen-reader label and tooltip name its exact status ("Noach: Finished
 ### 6.15 YearBar
 
 - 54 segments across the content width; segment gap 2; an extra 4 px between books; height 8; radius 1.5.
-- Colours: on time = done; late = late; made up = paper with a 1 px late border; current = primaryContainer with a 1 px primary border; everything else = ringTrack.
+- Current is 4 taller than the bar (2 above, 2 below: `YearBar.tick`), so it marks "you are here" at any width; the bar is painted 12 high, with the names 4 under the bar itself.
+- Colours: on time = done; late = late; made up = paper with a 1 px late border; current = primaryContainer with a 1 px primary border; open (everything else) = outlineVariant (ringTrack in high contrast, where outlineVariant would be as loud as a finished segment).
+- Below 8 px a segment (`YearBar.compactSegment`: every phone), a 1 px border leaves a speck of fill that reads as a "0", so current is solid primary and made up is solid late.
 - Below it, book abbreviations in labelSmall onSurfaceVariant at each book's start: "Gen Exo Lev Num Deu" / "בר׳ שמ׳ וי׳ במ׳ דב׳". If very large text would run one into the next book's, all five shrink together to the size the tightest needs.
 - Its states and the Torah map's come from one function (`parshaStandings`), so the two never disagree.
 - One Semantics node: "This year: 0 of 54 parshiyot complete; Bereshit in progress". RepaintBoundary.
@@ -1272,7 +1274,7 @@ In order:
 3. **This year**, a card:
    - Eyebrow `thisYear`;
    - when the log holds more than one cycle, ChoiceChips (§6.6) of their years ("5786", "תשפ״ו" in the Hebrew UI) choose the year this card and the Torah map show; for an earlier one the eyebrow reads `earlierYear`, the year bar names its year to screen readers, the map's heading names it too (`torahMapOfYear`, "Torah map · 5786", in plain type as it holds digits; "מפת התורה · תשפ״ו" as an eyebrow in the Hebrew UI), and nothing in the map is current or still to come. The chips sit here rather than over the map, so the first thing they change is under them;
-   - headlineSmall `parshiyotOfYear(0, 54)`;
+   - headlineSmall `parshiyotOfYear(12, 54)`, "12 of 54 parshiyot". In the year being read, before any of it is finished, a sentence instead of "0 of 54": `yearBeginsWith(name)`, this week's parsha, "Begins with Bereshit" / "מתחילה בפרשת בראשית" (feminine, as its subject is השנה). An earlier year always shows its count;
    - bodySmall "5787 · 50 verses read twice with Targum", the verses of the year shown;
    - YearBar.
 4. **This week’s plan:** the WeekStrip card, framed as on Today (§9 Today, 5): `WeekStrip.cardPadding`, its SectionHeader `weekStripLabel` with the legend button inside the card, its words 12 in from the card's 8 so that they stand on the line of the other cards' content; 28 below This year's card.
@@ -1470,8 +1472,8 @@ In order:
 | continueAtPass | Continue · {aliyah}, {pass} | המשך · {aliyah}, {pass} |
 | allAliyot | All aliyot | כל העליות |
 | readAliyah | Read {aliyah} | לקריאת {aliyah} |
-| streakBeginsWith | Begins with {name} | יתחיל בפרשת {name} |
-| daysBeginToday | Begins with today’s reading | יתחיל בקריאה של היום |
+| streakBeginsWith | Starts when {name} is complete | יתחיל עם סיום פרשת {name} |
+| daysBeginToday | Starts with today’s reading | יתחיל בקריאה של היום |
 | finishStep | Finish | סיום |
 | shabbatShalom | Shabbat Shalom | שבת שלום |
 | chagSameach | Chag Sameach | חג שמח |
@@ -1508,6 +1510,7 @@ In order:
 | graceAvailable | plural: 1 grace day available / {count} grace days available | plural: נותר יום חסד אחד / נותרו {count} ימי חסד |
 | thisYear | This year | השנה |
 | parshiyotOfYear | {done} of {total} parshiyot | {done} מתוך {total} פרשות |
+| yearBeginsWith | Begins with {name} | מתחילה בפרשת {name} |
 | recordTitle | Finished so far | הושלם עד כה |
 | demoTag | Demo | הדגמה |
 | emptyForum | No discussions yet — begin the first. | עדיין אין דיונים — אפשר לפתוח את הראשון. |

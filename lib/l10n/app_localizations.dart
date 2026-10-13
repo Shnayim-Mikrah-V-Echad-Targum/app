@@ -1017,16 +1017,16 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 day} other{{count} days}}'**
   String daysCount(int count);
 
-  /// On the streak card, in place of a parsha streak of 0: the streak starts when this parsha is finished.
+  /// On the streak card, in place of a parsha streak of 0, over the label 'Parsha streak': the streak starts once this week's parsha is finished. Screen readers hear it after the label ('Parsha streak: starts when Bereshit is complete').
   ///
   /// In en, this message translates to:
-  /// **'Begins with {name}'**
+  /// **'Starts when {name} is complete'**
   String streakBeginsWith(String name);
 
-  /// On the streak card, in place of 0 days on track.
+  /// On the streak card, in place of 0 days on track, over the label 'Days on track': the run starts with today's planned reading. Screen readers hear it after the label ('Days on track: starts with today’s reading').
   ///
   /// In en, this message translates to:
-  /// **'Begins with today’s reading'**
+  /// **'Starts with today’s reading'**
   String get daysBeginToday;
 
   /// No description provided for @dayKept.
@@ -5264,6 +5264,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{done} of {total} parshiyot'**
   String parshiyotOfYear(int done, int total);
+
+  /// On Progress, under the heading 'This year', in place of '0 of 54 parshiyot' while none of this year's parshiyot is finished yet: the reader's year begins with this week's parsha. Its subject is the year (in Hebrew, feminine, agreeing with השנה).
+  ///
+  /// In en, this message translates to:
+  /// **'Begins with {name}'**
+  String yearBeginsWith(String name);
 
   /// Screen-reader label of the year bar for a cycle before this one; year is its Hebrew year (5786).
   ///
