@@ -2337,6 +2337,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get allForums => 'כל הפורומים';
 
   @override
+  String get threadNotFound => 'הדיון לא נמצא. ייתכן שנמחק.';
+
+  @override
   String thisWeeksThread(String name) {
     return 'השבוע: פרשת $name';
   }
@@ -2580,6 +2583,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get unpinThread => 'ביטול נעיצה';
+
+  @override
+  String get copyLink => 'העתקת קישור';
+
+  @override
+  String get linkCopied => 'הקישור הועתק';
 
   @override
   String get hidePost => 'הסתרת הודעה';

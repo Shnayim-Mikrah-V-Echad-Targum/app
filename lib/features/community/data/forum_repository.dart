@@ -52,7 +52,13 @@ abstract class ForumRepository {
     int limit = threadsPageSize,
   });
 
+  /// The thread [id]. Fails with [threadNotFound] where there is none the
+  /// reader may see: a link to one deleted, say.
   Future<ThreadSummary> thread(String id);
+
+  /// The code of the [CommunityException] that [thread] fails with for a
+  /// thread that isn't there.
+  static const threadNotFound = 'thread_not_found';
 
   /// The latest [limit] posts in a thread, or with [before] (the time and id
   /// of the earliest post shown) the [limit] posts just before it. Either

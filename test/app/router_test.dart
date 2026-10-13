@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/features/about/legal_screen.dart';
 import 'package:shnayim_mikra/features/about/sources_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/community_screen.dart';
+import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
 import 'package:shnayim_mikra/features/progress/progress_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -120,6 +121,41 @@ void main() {
         expect(_tabShown(), tab);
       });
     }
+  });
+
+  // The address a discussion's Copy link gives, on the web, which opens it
+  // as a link from outside goes there.
+  group("a discussion's address", () {
+    testWidgets('opens it within Community, over the forums', (tester) async {
+      final router = await _pump(tester);
+      router.go('/community/thread/1');
+      await _settle(tester);
+      expect(tester.widget<ThreadScreen>(find.byType(ThreadScreen)).threadId, '1');
+      expect(find.text('Why read the Targum rather than a translation?'), findsWidgets);
+      expect(_tabShown(), 3);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.byType(CommunityScreen), findsOneWidget);
+      expect(_tabShown(), 3);
+    });
+
+    testWidgets('of one that is not there (deleted, say) says so within Community, with a way to the forums',
+        (tester) async {
+      final router = await _pump(tester);
+      router.go('/community/thread/0');
+      await _settle(tester);
+      expect(find.byType(ThreadScreen), findsOneWidget);
+      expect(find.text('Page not found'), findsOneWidget);
+      expect(find.text('This discussion couldn’t be found. It may have been deleted.'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.widgetWithText(TextField, 'Write a reply'), findsNothing);
+      expect(_tabShown(), 3);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'All forums'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CommunityScreen), findsOneWidget);
+    });
   });
 
   group('on their own, over the tabs', () {

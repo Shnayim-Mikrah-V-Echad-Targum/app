@@ -1341,6 +1341,8 @@ In order:
 
 **Thread**
 - App bar title: the forum's name (Community where it can't be found), which is no heading and doesn't name the page to a screen reader as it opens. The thread's title is the page's one heading of level 1, in its own language, which names the page (`namesRoute`) and the browser's tab; it is never cut short (fixes D13).
+- App bar actions: the Demo tag, Refresh, then More options (`actionMore`) where it has anything to offer: to every member, "Copy link" (`copyLink`) where the build knows the site's address (`AppConfig.webUrl`, from `WEB_URL`), which copies the discussion's address there (`…/community/thread/<id>`) and says `linkCopied` in a status message; then, to a moderator, Pin to top or Unpin, and Lock or Unlock discussion.
+- A link to a discussion that isn't there (deleted, or one the reader may not see) says so as a forum's does: titled "Page not found", `threadNotFound` in a centred message with a Tonal "All forums".
 - headlineSmall title with `autoDirection`, tagged with its language and starting at its own start edge, as its posts do (and as its forum lists it), then "2 posts" in bodySmall onSurfaceVariant.
 - Posts as letters (§6.21). A thread with none yet (a week's discussion before its first post) shows an empty state (§6.22) with no button, the reply box beneath being its action: `noPostsYet`, "No posts yet — share a thought on Parshat Bereshit."
 - Posts that can't load: the thread's title stays, where it is known, with the error state (§6.22) 32 under it; no reply box is docked until the posts come. A reply's draft, restored as the page opens, is said to be (`draftRestored`) once the box it is in is docked, above it.

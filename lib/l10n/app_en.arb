@@ -1968,6 +1968,10 @@
   "forumsHeading": "Forums",
   "forumNotFound": "This forum couldn’t be found. It may have moved or closed.",
   "allForums": "All forums",
+  "threadNotFound": "This discussion couldn’t be found. It may have been deleted.",
+  "@threadNotFound": {
+    "description": "A link to a discussion that isn't there, or that the reader may not see, under the title notFoundTitle, above All forums."
+  },
   "thisWeeksThread": "This week: Parshat {name}",
   "@thisWeeksThread": {
     "placeholders": {
@@ -2142,6 +2146,14 @@
   "unlockThread": "Unlock discussion",
   "pinThread": "Pin to top",
   "unpinThread": "Unpin",
+  "copyLink": "Copy link",
+  "@copyLink": {
+    "description": "In a discussion's menu (More options, in its app bar): copies the discussion's address on the web app, for the member to share."
+  },
+  "linkCopied": "Link copied",
+  "@linkCopied": {
+    "description": "A status message once copyLink has copied the discussion's address to the clipboard."
+  },
   "hidePost": "Hide post",
   "moderationQueue": "Reports to review",
   "noReports": "No open reports.",

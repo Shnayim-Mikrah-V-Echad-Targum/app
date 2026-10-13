@@ -31,6 +31,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shnayim_mikra/app/city_providers.dart';
+import 'package:shnayim_mikra/app/config.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
@@ -414,6 +415,10 @@ const _screens = {
   // above the button that begins a discussion.
   'thread_refreshed': '/community/thread/1',
   'forum_refreshed': '/community/forum/questions',
+  // A moderator's menu in the app bar, where the build knows the site's
+  // address: Copy link above the pin and the lock; and the link copied.
+  'thread_menu': '/community/thread/1',
+  'thread_link_copied': '/community/thread/1',
   'compose': '/community/new',
   // Its empty title field focused: the caret at the start of the UI's direction.
   'compose_focused': '/community/new',
@@ -539,6 +544,8 @@ const _screens = {
   // Links that lead nowhere: a mistyped address, and a forum that is gone.
   'not_found': '/nope',
   'forum_missing': '/community/forum/xyz',
+  // A link to a discussion that is gone.
+  'thread_missing': '/community/thread/0',
   // Search: the index being built the first time, then the page as it
   // opens, a phrase, a word in many verses, a word found only in the
   // Targum, English, a word the Torah has in no spelling, and one it spells
@@ -1050,6 +1057,10 @@ const _webKeys = {'reader_keys_web', 's_a11y_web'};
 /// Screens shown as in the Windows app, where Alt+← goes back.
 const _windowsKeys = {'reader_keys_windows'};
 
+/// Screens of a build that knows the site's address (WEB_URL), which a
+/// discussion's Copy link gives.
+const _webUrlKeys = {'thread_menu', 'thread_link_copied'};
+
 /// Screens captured after typing into their only text field.
 const _typed = {
   'account_code': 'reader@example.org',
@@ -1137,6 +1148,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_weekly': _withWeeklyThread,
   'forum_weekly': _withWeeklyThread,
   'thread_report': _signedIn,
+  for (final screen in _webUrlKeys) screen: _signedIn,
   'community_member': _signedIn,
   'account_name': _signedIn,
   for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked', 'account_delete'])
@@ -1373,6 +1385,7 @@ final _taps = {
     screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(PaperRow, Icons.forum_outlined),
   for (final screen in ['thread_refreshed', 'forum_refreshed']) screen: () => find.byIcon(Icons.refresh),
+  'thread_link_copied': () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'copy_link'),
   'account_code': () => find.byType(FilledButton).first,
   'compose_errors': () => find.byType(FilledButton).last,
 };
@@ -1518,6 +1531,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_keys': _openShortcuts,
   'reader_keys_web': _openShortcuts,
   'reader_keys_windows': _openShortcuts,
+  // The discussion's menu, in the app bar.
+  for (final screen in _webUrlKeys)
+    screen: (tester) => tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>))),
   // The week's menu, then Clear.
   'week_clear': _tapInTurn([
     () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
@@ -2331,6 +2347,9 @@ const _desktopScreens = {
   's_a11y_undo_keys',
   'thread_refreshed',
   'forum_refreshed',
+  'thread_menu',
+  'thread_link_copied',
+  'thread_missing',
   'sheet_display',
   'focus_nav',
   'focus_nav_today',
@@ -2605,6 +2624,14 @@ void main() {
         if (_webKeys.contains(entry.key)) {
           ReaderScreen.singleKeyPlatform = true;
           addTearDown(() => ReaderScreen.singleKeyPlatform = false);
+        }
+        if (_webUrlKeys.contains(entry.key)) {
+          AppConfig.debugWebUrl = 'https://example.org/app/';
+          addTearDown(() => AppConfig.debugWebUrl = null);
+          // A clipboard that takes the link, as a device's does.
+          final messenger = tester.binding.defaultBinaryMessenger;
+          messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async => null);
+          addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
         }
         // Soft shadows, as a device draws them; tests otherwise draw them as
         // solid lines. Restored before the test ends, as the binding checks,

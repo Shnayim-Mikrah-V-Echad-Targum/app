@@ -3855,6 +3855,12 @@ abstract class AppLocalizations {
   /// **'All forums'**
   String get allForums;
 
+  /// A link to a discussion that isn't there, or that the reader may not see, under the title notFoundTitle, above All forums.
+  ///
+  /// In en, this message translates to:
+  /// **'This discussion couldn’t be found. It may have been deleted.'**
+  String get threadNotFound;
+
   /// No description provided for @thisWeeksThread.
   ///
   /// In en, this message translates to:
@@ -4280,6 +4286,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unpin'**
   String get unpinThread;
+
+  /// In a discussion's menu (More options, in its app bar): copies the discussion's address on the web app, for the member to share.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get copyLink;
+
+  /// A status message once copyLink has copied the discussion's address to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get linkCopied;
 
   /// No description provided for @hidePost.
   ///

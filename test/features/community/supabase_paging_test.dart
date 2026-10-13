@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/data/supabase_forum_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -145,6 +146,35 @@ void main() {
       expect(asked.queryParameters['id'], 'eq.7');
       expect(asked.queryParameters['select'], contains('author:profiles(display_name)'));
       expect((thread.id, thread.authorName, thread.excerpt, thread.todahTotal), ('7', 'Rivka', null, 0));
+    });
+
+    test('fails as not found for a thread that is not there, or a number that names none', () async {
+      // PostgREST's answer where .single() finds no row the policies show.
+      client = SupabaseClient(
+        'https://example.supabase.co',
+        'public-key',
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+        httpClient: MockClient((request) async {
+          requests.add(request.url);
+          return http.Response(
+            jsonEncode({
+              'code': 'PGRST116',
+              'details': 'The result contains 0 rows',
+              'hint': null,
+              'message': 'JSON object requested, multiple (or no) rows returned',
+            }),
+            406,
+            headers: {'content-type': 'application/json'},
+            request: request,
+          );
+        }),
+      );
+      repo = SupabaseForumRepository(client);
+      final notFound = isA<CommunityException>().having((e) => e.code, 'code', ForumRepository.threadNotFound);
+      await expectLater(repo.thread('7'), throwsA(notFound));
+      expect(to('threads').single.queryParameters['id'], 'eq.7');
+      await expectLater(repo.thread('abc'), throwsA(notFound));
+      expect(to('threads'), hasLength(1), reason: 'nothing to ask the server');
     });
 
     test("reads each forum's discussions and latest post from its stats", () async {

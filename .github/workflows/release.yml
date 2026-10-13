@@ -21,14 +21,16 @@ permissions:
 
 env:
   FLUTTER_VERSION: "3.47.7"
-  # As in CI. The preflight makes sure the first three are set, so a store
-  # build never ships the on-device demo community, no backup or no support
-  # address. INSTALL_URL is optional, as it is on the web.
+  # As in CI. The preflight makes sure all but INSTALL_URL are set, so a
+  # store build never ships the on-device demo community, no backup or no
+  # support address, and a discussion's Copy link has the site's address.
+  # INSTALL_URL is optional, as it is on the web.
   DART_DEFINES: >-
     --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
     --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     --dart-define=SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}
     --dart-define=INSTALL_URL=${{ vars.INSTALL_URL }}
+    --dart-define=WEB_URL=${{ vars.WEB_URL }}
 
 jobs:
   preflight:

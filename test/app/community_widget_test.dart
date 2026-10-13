@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/config.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
@@ -2015,6 +2016,110 @@ void main() {
       await _goBack(tester);
       expect(find.descendant(of: tile, matching: find.textContaining('1\u00a0reply')), findsOneWidget);
       expect(find.descendant(of: tile, matching: find.textContaining('2\u00a0replies')), findsNothing);
+    });
+  });
+
+  group("a discussion's menu", () {
+    final more = find.descendant(of: find.byType(AppBar), matching: find.byTooltip('More options'));
+
+    /// What the menu offers, top to bottom.
+    List<String> offered(WidgetTester tester) {
+      final items = find.byWidgetPredicate((w) => w is PopupMenuItem<String>);
+      final texts = [
+        for (final e in items.evaluate())
+          (tester.getTopLeft(find.byWidget(e.widget)).dy, tester.widget<Text>(find.descendant(of: find.byWidget(e.widget), matching: find.byType(Text))).data!),
+      ]..sort((a, b) => a.$1.compareTo(b.$1));
+      return [for (final (_, text) in texts) text];
+    }
+
+    /// Records what is copied to the clipboard.
+    List<String> clipboard(WidgetTester tester) {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      return copied;
+    }
+
+    for (final address in ['https://example.org/app/', 'https://example.org/app']) {
+      testWidgets('offers every member Copy link, which copies its address on the site ($address)', (tester) async {
+        AppConfig.debugWebUrl = address;
+        addTearDown(() => AppConfig.debugWebUrl = null);
+        final copied = clipboard(tester);
+        final c = await _pump(tester);
+        c.read(routerProvider).go('/community/thread/1');
+        await tester.pumpAndSettle();
+        expect(c.read(myProfileProvider).value?.isModerator ?? false, isFalse, reason: 'signed out');
+
+        await tester.tap(more);
+        await tester.pumpAndSettle();
+        expect(offered(tester), ['Copy link']);
+        await tester.tap(find.text('Copy link'));
+        await tester.pumpAndSettle();
+        expect(copied, ['https://example.org/app/community/thread/1']);
+        expect(find.descendant(of: find.byType(SnackBar), matching: find.text('Link copied')), findsOneWidget);
+      });
+    }
+
+    testWidgets('says so where the clipboard refuses the link', (tester) async {
+      AppConfig.debugWebUrl = 'https://example.org/app/';
+      addTearDown(() => AppConfig.debugWebUrl = null);
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') throw PlatformException(code: 'copy_fail');
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Copy link'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.descendant(of: find.byType(SnackBar), matching: find.text('Something went wrong. Please try again.')), findsOneWidget);
+      expect(find.text('Link copied'), findsNothing);
+    });
+
+    testWidgets('offers a member nothing where the build has no address for the site', (tester) async {
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      expect(find.text('Why read the Targum rather than a translation?'), findsWidgets);
+      expect(more, findsNothing);
+    });
+
+    testWidgets('offers a moderator Copy link above the pin and the lock', (tester) async {
+      AppConfig.debugWebUrl = 'https://example.org/';
+      addTearDown(() => AppConfig.debugWebUrl = null);
+      final copied = clipboard(tester);
+      final c = await _pump(tester, forums: await _Gated().signIn());
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+      expect(offered(tester), ['Copy link', 'Pin to top', 'Lock discussion']);
+      await tester.tap(find.text('Copy link'));
+      await tester.pumpAndSettle();
+      expect(copied, ['https://example.org/community/thread/1']);
+      expect(c.read(threadProvider('1')).value?.pinned, isFalse, reason: 'nothing else is done');
+    });
+
+    testWidgets('is in Hebrew in the Hebrew UI', (tester) async {
+      AppConfig.debugWebUrl = 'https://example.org/app/';
+      addTearDown(() => AppConfig.debugWebUrl = null);
+      final copied = clipboard(tester);
+      final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byTooltip('אפשרויות נוספות')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('העתקת קישור'));
+      await tester.pumpAndSettle();
+      expect(copied, ['https://example.org/app/community/thread/1']);
+      expect(find.descendant(of: find.byType(SnackBar), matching: find.text('הקישור הועתק')), findsOneWidget);
     });
   });
 

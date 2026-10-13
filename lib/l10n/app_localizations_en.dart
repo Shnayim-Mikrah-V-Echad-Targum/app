@@ -2340,6 +2340,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allForums => 'All forums';
 
   @override
+  String get threadNotFound =>
+      'This discussion couldn’t be found. It may have been deleted.';
+
+  @override
   String thisWeeksThread(String name) {
     return 'This week: Parshat $name';
   }
@@ -2584,6 +2588,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unpinThread => 'Unpin';
+
+  @override
+  String get copyLink => 'Copy link';
+
+  @override
+  String get linkCopied => 'Link copied';
 
   @override
   String get hidePost => 'Hide post';
