@@ -1565,6 +1565,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSepia => 'Sepia';
 
   @override
+  String get themeHc => 'High contrast';
+
+  @override
   String get themeHcLight => 'High contrast — light';
 
   @override

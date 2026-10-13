@@ -2547,6 +2547,12 @@ abstract class AppLocalizations {
   /// **'Sepia'**
   String get themeSepia;
 
+  /// The first line of a high-contrast theme's swatch label, over themeLight or themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'High contrast'**
+  String get themeHc;
+
   /// No description provided for @themeHcLight.
   ///
   /// In en, this message translates to:

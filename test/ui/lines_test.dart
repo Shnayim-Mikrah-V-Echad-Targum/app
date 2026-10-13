@@ -234,6 +234,15 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    // A line break ends a word as a space does: the word after it is
+    // measured too, as "Light" under "High contrast" on a theme's swatch.
+    testWidgets('keeps a word after a line break whole too', (tester) async {
+      await pump(tester, const WholeWords('bb\naaaa', style: style, textAlign: TextAlign.start), width: 35);
+      expect(tester.getRect(find.text('bb\naaaa')).width, lessThanOrEqualTo(35));
+      expectWordsWhole(tester, 'bb\naaaa');
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets("measures in the style around it, as a button's label", (tester) async {
       await pump(
         tester,

@@ -902,7 +902,7 @@ Centred, max width 480:
   - surface background;
   - "אָ" in Noto Serif Hebrew 24 in onSurface;
   - a 24×4 primary bar and a 24×1 goldLeaf rule;
-  - the label in labelMedium below the card.
+  - the label in labelMedium below the card; high contrast's two on two lines, `themeHc` over Light or Dark ("High contrast / Light"), so that no line starts with a dash, read as one name (`themeHcLight` / `themeHcDark`).
 - Selected: 2 px primary border plus a 20 px check badge (primary disc, onPrimary check) at the top-end corner.
 - Radio semantics: one group container named `themeLabel`, each swatch a radio button (its name, checked state and tap); the arrow keys move from swatch to swatch, on the web too. Match device is a separate row above the grid (switch).
 - Matching the device, the two themes it switches between are both marked for the eye: light and dark, or the two high-contrast themes when the device asks for high contrast. To assistive technology none is checked (the switch says the device is followed), and the pair carry a hint, `themeUsedWhenLight` / `themeUsedWhenDark`. Choosing a swatch stops matching; turning the switch off keeps the theme the device had.

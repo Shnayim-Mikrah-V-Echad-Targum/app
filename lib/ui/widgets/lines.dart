@@ -159,8 +159,9 @@ class WholeWords extends StatelessWidget {
   /// any length, as a member's name or email address.
   static const smallestSize = 12.0;
 
-  static final _words = RegExp(r'[^ ]+');
-  static final _hyphenated = RegExp(r'(?:[^ \-–—־]|[\-–—־]\u2060)+[\-–—־]?|[\-–—־]');
+  // Words end at a space or a line break; a no-break space joins two.
+  static final _words = RegExp(r'[^ \n]+');
+  static final _hyphenated = RegExp(r'(?:[^ \n\-–—־]|[\-–—־]\u2060)+[\-–—־]?|[\-–—־]');
   static final _hyphen = RegExp(r'[\-–—־]');
 
   /// [text] with a word joiner after each hyphen, dash or maqaf, and before

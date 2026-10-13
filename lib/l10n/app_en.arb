@@ -1342,6 +1342,10 @@
   "themeLight": "Light",
   "themeDark": "Dark",
   "themeSepia": "Sepia",
+  "themeHc": "High contrast",
+  "@themeHc": {
+    "description": "The first line of a high-contrast theme's swatch label, over themeLight or themeDark."
+  },
   "themeHcLight": "High contrast — light",
   "themeHcDark": "High contrast — dark",
   "scriptureFontLabel": "Scripture font",

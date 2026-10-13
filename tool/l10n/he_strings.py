@@ -419,6 +419,7 @@ HE = {
   "themeLight": "בהירה",
   "themeDark": "כהה",
   "themeSepia": "ספיה",
+  "themeHc": "ניגודיות גבוהה",
   "themeHcLight": "ניגודיות גבוהה — בהירה",
   "themeHcDark": "ניגודיות גבוהה — כהה",
   "scriptureFontLabel": "גופן המקרא",
