@@ -1064,11 +1064,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markHaftarahRead => 'Mark the haftarah as read';
 
   @override
-  String specialHaftarah(String reason) {
-    return 'Special haftarah: $reason';
-  }
-
-  @override
   String get readerFinished => 'You’ve finished this aliyah.';
 
   @override
@@ -3002,7 +2997,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get alsoRegularHaftarah => 'Also the regular haftarah';
+  String regularHaftarahSomeRead(String portion) {
+    return 'The regular haftarah of $portion (some read it too)';
+  }
+
+  @override
+  String haftarahSpecialChabadRegular(String reason) {
+    return '$reason · Chabad custom: the regular haftarah too';
+  }
 
   @override
   String get chabadFallbackNote =>

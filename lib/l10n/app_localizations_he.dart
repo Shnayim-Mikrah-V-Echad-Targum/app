@@ -1070,11 +1070,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get markHaftarahRead => 'סימון ההפטרה כנקראה';
 
   @override
-  String specialHaftarah(String reason) {
-    return 'הפטרה מיוחדת: $reason';
-  }
-
-  @override
   String get readerFinished => 'סיימת את העלייה הזו.';
 
   @override
@@ -2998,7 +2993,14 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get alsoRegularHaftarah => 'וגם ההפטרה הרגילה';
+  String regularHaftarahSomeRead(String portion) {
+    return 'ההפטרה הרגילה של פרשת $portion (יש הקוראים גם אותה)';
+  }
+
+  @override
+  String haftarahSpecialChabadRegular(String reason) {
+    return '$reason · מנהג חב״ד: גם ההפטרה הרגילה';
+  }
 
   @override
   String get chabadFallbackNote =>

@@ -523,11 +523,10 @@ void main() {
       expect(find.widgetWithText(GroupHeader, 'Also this week'), findsOneWidget);
       expect(find.descendant(of: group, matching: find.byType(PaperRow)), findsNWidgets(2));
       final haftarah = find.widgetWithText(PaperRow, 'Haftarah');
-      expect(
-        tester.widget<PaperRow>(haftarah).subtitle,
-        // The book's name held on one line, and its range.
-        'I\u00A0Samuel 20:18–\u206042\nSpecial haftarah: Shabbat Machar Chodesh\nAlso the regular haftarah',
-      );
+      final row = tester.widget<PaperRow>(haftarah);
+      // The book's name held on one line, and its range; the special
+      // haftarah by name in the line under it.
+      expect((row.subtitle, row.detail), ('I\u00A0Samuel 20:18–\u206042', 'Shabbat Machar Chodesh'));
       await tester.tap(haftarah);
       await loadTexts(tester);
       expect(location(c), '/today/haftarah/5787:1');

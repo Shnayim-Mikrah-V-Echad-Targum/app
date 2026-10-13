@@ -327,6 +327,48 @@ void main() {
     expect(tester.getSize(find.byType(PaperRow)).height, greaterThanOrEqualTo(72));
   });
 
+  for (final hebrew in [false, true]) {
+    testWidgets('${hebrew ? 'he' : 'en'}: with a detail line, the icon and chevron share the title\'s line, '
+        'rather than the middle of the row', (tester) async {
+      Future<void> pumpRow({String? detail}) => pumpThemed(
+            tester,
+            Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 400,
+                child: PaperRow(
+                  icon: Icons.auto_stories_outlined,
+                  title: 'Haftarah',
+                  subtitle: 'I Samuel 20:18–42',
+                  detail: detail,
+                  onTap: () {},
+                ),
+              ),
+            ),
+            hebrew: hebrew,
+          );
+
+      await pumpRow(detail: 'Shabbat Machar Chodesh');
+      final title = tester.getRect(find.text('Haftarah'));
+      final icon = tester.getRect(find.byIcon(Icons.auto_stories_outlined));
+      final chevron = tester.getRect(find.byIcon(Icons.chevron_right));
+      expect(icon.center.dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+      expect(chevron.center.dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+      // Still at the row's start and end.
+      final row = tester.getRect(find.byType(PaperRow));
+      expect(hebrew ? row.right - icon.right : icon.left - row.left, 16);
+      expect(hebrew ? chevron.left - row.left : row.right - chevron.right, 12);
+      expect(icon.center.dy, lessThan(row.center.dy - 10), reason: 'not centred on the three lines');
+
+      // With a title and a subtitle alone, both are centred on the row, as
+      // its two lines are.
+      await pumpRow();
+      final middle = tester.getRect(find.byType(PaperRow)).center.dy;
+      expect(tester.getCenter(find.byIcon(Icons.auto_stories_outlined)).dy, moreOrLessEquals(middle, epsilon: 0.5));
+      expect(tester.getCenter(find.byIcon(Icons.chevron_right)).dy, moreOrLessEquals(middle, epsilon: 0.5));
+    });
+  }
+
   testWidgets('a value moves under the title rather than squeeze it, at 200%', (tester) async {
     await pumpGroup(tester);
     // On the title's line while they fit.

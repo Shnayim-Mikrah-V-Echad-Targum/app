@@ -1067,14 +1067,6 @@
   "translationLabel": "Translation (JPS 1917)",
   "haftarahTitle": "Haftarah",
   "markHaftarahRead": "Mark the haftarah as read",
-  "specialHaftarah": "Special haftarah: {reason}",
-  "@specialHaftarah": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "readerFinished": "You’ve finished this aliyah.",
   "shortcutNext": "Next step",
   "shortcutBack": "Previous step",
@@ -2506,16 +2498,30 @@
   },
   "regularHaftarahOf": "Also: the regular haftarah of {portion}",
   "@regularHaftarahOf": {
-    "description": "Heads the portion's own haftarah, shown after the special haftarah that displaces it this week.",
+    "description": "Heads the portion's own haftarah, open under the special haftarah that displaces it this week, for Chabad, whose custom is to read both.",
     "placeholders": {
       "portion": {
         "type": "String"
       }
     }
   },
-  "alsoRegularHaftarah": "Also the regular haftarah",
-  "@alsoRegularHaftarah": {
-    "description": "A line under a special haftarah on Today: the haftarah page also has the portion's own haftarah."
+  "regularHaftarahSomeRead": "The regular haftarah of {portion} (some read it too)",
+  "@regularHaftarahSomeRead": {
+    "description": "Heads the portion's own haftarah, folded under the special haftarah that displaces it this week, for the customs other than Chabad's: only some read it as well. (Chabad, whose custom is to read both, has regularHaftarahOf.)",
+    "placeholders": {
+      "portion": {
+        "type": "String"
+      }
+    }
+  },
+  "haftarahSpecialChabadRegular": "{reason} · Chabad custom: the regular haftarah too",
+  "@haftarahSpecialChabadRegular": {
+    "description": "The detail line of the week's Haftarah row (on Today and a week's page) for Chabad, in a week a special haftarah displaces the portion's own: its name (e.g. \"Shabbat Machar Chodesh\"), and that Chabad's custom is to read the regular haftarah as well, which the haftarah page offers after it. Other customs see the special haftarah's name alone. A no-break space holds the dot to the name, so that no line starts with it.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   },
   "chabadFallbackNote": "Chabad haftarot are being verified; showing the Ashkenazi reading.",
   "repeatLastVerseDescChabad": "Repeat the parsha’s last verse in Hebrew after its Targum (Chabad custom: not repeated)",

@@ -1611,12 +1611,6 @@ abstract class AppLocalizations {
   /// **'Mark the haftarah as read'**
   String get markHaftarahRead;
 
-  /// No description provided for @specialHaftarah.
-  ///
-  /// In en, this message translates to:
-  /// **'Special haftarah: {reason}'**
-  String specialHaftarah(String reason);
-
   /// No description provided for @readerFinished.
   ///
   /// In en, this message translates to:
@@ -4809,17 +4803,23 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Simchat Torah is today} =1{Simchat Torah is tomorrow} other{Simchat Torah in {count} days}}'**
   String simchatTorahInDays(int count);
 
-  /// Heads the portion's own haftarah, shown after the special haftarah that displaces it this week.
+  /// Heads the portion's own haftarah, open under the special haftarah that displaces it this week, for Chabad, whose custom is to read both.
   ///
   /// In en, this message translates to:
   /// **'Also: the regular haftarah of {portion}'**
   String regularHaftarahOf(String portion);
 
-  /// A line under a special haftarah on Today: the haftarah page also has the portion's own haftarah.
+  /// Heads the portion's own haftarah, folded under the special haftarah that displaces it this week, for the customs other than Chabad's: only some read it as well. (Chabad, whose custom is to read both, has regularHaftarahOf.)
   ///
   /// In en, this message translates to:
-  /// **'Also the regular haftarah'**
-  String get alsoRegularHaftarah;
+  /// **'The regular haftarah of {portion} (some read it too)'**
+  String regularHaftarahSomeRead(String portion);
+
+  /// The detail line of the week's Haftarah row (on Today and a week's page) for Chabad, in a week a special haftarah displaces the portion's own: its name (e.g. "Shabbat Machar Chodesh"), and that Chabad's custom is to read the regular haftarah as well, which the haftarah page offers after it. Other customs see the special haftarah's name alone. A no-break space holds the dot to the name, so that no line starts with it.
+  ///
+  /// In en, this message translates to:
+  /// **'{reason} · Chabad custom: the regular haftarah too'**
+  String haftarahSpecialChabadRegular(String reason);
 
   /// No description provided for @chabadFallbackNote.
   ///
