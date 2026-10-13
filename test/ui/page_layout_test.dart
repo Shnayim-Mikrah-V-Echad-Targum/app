@@ -222,13 +222,14 @@ void main() {
       const inTab = 257 + (1663 - 720) / 2 + 32;
       const weekInTab = 257 + (1663 - ContentWidth.todayWide) / 2 + 32;
       const weekOverTabs = (1920 - ContentWidth.todayWide) / 2 + 32;
-      // The week of Vayakhel-Pekudei 5786, read together: the Parsha tab's
-      // longest title, beside its three actions.
+      // The week of Vayakhel-Pekudei 5786, read together: a long title,
+      // beside the Parsha tab's actions, where it is the name alone (the tab
+      // says it is a parsha), and over the tabs.
       final combined = findWeekById(const ParshaSchedule(israel: false), '5786:22-23')!.occasion.addDays(-2);
       final inCombinedWeek = DateTime(combined.year, combined.month, combined.day, 10);
 
       for (final (route, title, start, now) in [
-        ('/parsha', 'Parshat Vayakhel-Pekudei', weekInTab, inCombinedWeek),
+        ('/parsha', 'Vayakhel-Pekudei', weekInTab, inCombinedWeek),
         ('/week/5786:22-23', 'Parshat Vayakhel-Pekudei', weekOverTabs, null),
         ('/community', 'Community', inTab, null),
         ('/community/forum/chavruta', 'Chavruta & encouragement', inTab, null),
