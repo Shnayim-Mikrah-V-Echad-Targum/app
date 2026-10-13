@@ -13,6 +13,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../app/city_providers.dart';
 import '../app/providers.dart';
+import '../app/window_title_bar.dart' show bringWindowForward;
 import '../core/calendar/tz_database.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/parsha_repository.dart';
@@ -79,7 +80,7 @@ class NotificationService {
             iconPath: defaultTargetPlatform == TargetPlatform.windows ? _windowsIconPath() : null,
           ),
         ),
-        onDidReceiveNotificationResponse: (r) => service.handleTap(r.payload),
+        onDidReceiveNotificationResponse: service._respond,
       );
       // Never on Windows, whose plugin hears of a click that launched the app
       // only later, through the callback, like any other.
@@ -124,6 +125,15 @@ class NotificationService {
 
   /// Routes to open when the user taps a notification.
   Stream<String> get taps => _taps.stream;
+
+  /// Answers a click or tap on one of the app's notifications. On Windows
+  /// the window comes forward first, whatever the page and however soon the
+  /// app can open it: Windows lets the app take the foreground only until
+  /// the user's next input.
+  void _respond(NotificationResponse response) {
+    if (defaultTargetPlatform == TargetPlatform.windows) unawaited(bringWindowForward());
+    handleTap(response.payload);
+  }
 
   /// Reports a tap on a notification carrying [payload], its route.
   ///

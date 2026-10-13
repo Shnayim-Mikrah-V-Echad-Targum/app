@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'native_source.dart';
+
 /// The Windows runner shows its window only with Flutter's first frame. A
 /// fault before it, with the window left hidden, would leave a process with
 /// no window to close holding the single-instance mutex, and every later
@@ -12,17 +14,7 @@ void main() {
   final header = File('windows/runner/flutter_window.h').readAsStringSync();
 
   /// The body of the C++ function whose definition begins with [signature].
-  String body(String signature) {
-    final start = window.indexOf(signature);
-    expect(start, isNot(-1), reason: signature);
-    final open = window.indexOf('{', start);
-    var depth = 0;
-    for (var i = open; i < window.length; i++) {
-      if (window[i] == '{') depth++;
-      if (window[i] == '}' && --depth == 0) return window.substring(open, i + 1);
-    }
-    fail('$signature has no end');
-  }
+  String body(String signature) => cppBody(window, signature);
 
   test('the window is shown once, with the first frame or after a while without one', () {
     expect(header, contains('void ShowOnce();'));

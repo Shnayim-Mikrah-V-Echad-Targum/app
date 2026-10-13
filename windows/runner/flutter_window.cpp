@@ -113,6 +113,16 @@ void FlutterWindow::RegisterWindowChannel() {
             SetWindowTextW(window, utf16_title.c_str());
           }
           result->Success();
+        } else if (call.method_name() == "activate") {
+          // One of the app's notifications was clicked: Windows lets the app
+          // take the foreground, but leaves it to the app to come forward. A
+          // window not yet shown comes forward as it is shown, with its first
+          // frame (ShowOnce); shown now, it would be blank.
+          HWND window = GetHandle();
+          if (window != nullptr && shown_) {
+            BringToFront(window);
+          }
+          result->Success();
         } else {
           result->NotImplemented();
         }

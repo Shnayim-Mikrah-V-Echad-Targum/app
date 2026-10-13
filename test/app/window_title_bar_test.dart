@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
@@ -8,6 +9,7 @@ import 'package:shnayim_mikrah/app/window_title_bar.dart';
 import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../helpers.dart';
+import 'native_source.dart';
 
 /// On Windows, the title bar follows the app's theme rather than the
 /// system's, and the window's title the app's language.
@@ -136,6 +138,24 @@ void main() {
         TargetPlatform.linux,
       }));
 
+  // For a click on one of the app's notifications (lib/services/notifications.dart).
+  test('bringing the window forward asks the runner, which may lack the channel', () async {
+    final calls = <MethodCall>[];
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(windowChannel, (call) async {
+      calls.add(call);
+      return null;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(windowChannel, null));
+    await bringWindowForward();
+    expect(calls.map((c) => (c.method, c.arguments)), [('activate', null)]);
+
+    messenger.setMockMethodCallHandler(windowChannel, null);
+    await bringWindowForward();
+    messenger.setMockMethodCallHandler(windowChannel, (call) async => throw PlatformException(code: 'error'));
+    await bringWindowForward();
+  });
+
   // The runner's half: windows/runner/flutter_window.cpp.
   test('the Windows runner answers on the same channel', () {
     final runner = File('windows/runner/flutter_window.cpp').readAsStringSync();
@@ -145,5 +165,20 @@ void main() {
     expect(runner, contains('call.method_name() == "setTitle"'));
     expect(runner, contains('std::get_if<std::string>(call.arguments())'));
     expect(runner, contains('SetWindowTextW('));
+  });
+
+  // Windows lets the app take the foreground as one of its notifications is
+  // clicked, but brings nothing forward itself.
+  test('the Windows runner brings its window forward, restored, once it is shown', () {
+    final runner = File('windows/runner/flutter_window.cpp').readAsStringSync();
+    final activate = cppBody(runner, 'call.method_name() == "activate"');
+    // Shown before its first frame, it would be blank.
+    expect(activate, contains('if (window != nullptr && shown_) {\n            BringToFront(window);\n          }'));
+    expect(activate, contains('result->Success();'));
+
+    expect(File('windows/runner/win32_window.h').readAsStringSync(), contains('void BringToFront(HWND window);'));
+    final bring = cppBody(File('windows/runner/win32_window.cpp').readAsStringSync(), 'void BringToFront(HWND window)');
+    expect(bring, contains('if (IsIconic(window)) {\n    ShowWindow(window, SW_RESTORE);\n  }'));
+    expect(bring.indexOf('SW_RESTORE'), lessThan(bring.indexOf('SetForegroundWindow(window);')));
   });
 }

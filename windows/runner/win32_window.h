@@ -11,6 +11,12 @@
 // can find the window of the first (see main.cpp).
 inline constexpr wchar_t kWindowClassName[] = L"SHNAYIM_MIKRAH_WINDOW";
 
+// Brings |window|, which may be another process's, to the front, restoring it
+// if it is minimized. Windows lets a process take the foreground only at
+// times, such as just after the user launched it or clicked one of its
+// notifications; at others, it flashes the window's taskbar button instead.
+void BringToFront(HWND window);
+
 // A class abstraction for a high DPI-aware Win32 Window. Intended to be
 // inherited from by classes that wish to specialize with custom
 // rendering and input handling

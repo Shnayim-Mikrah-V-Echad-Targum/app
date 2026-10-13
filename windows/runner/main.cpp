@@ -26,10 +26,7 @@ bool ActivateRunningInstance() {
   if (window == nullptr) {
     return false;
   }
-  if (::IsIconic(window)) {
-    ::ShowWindow(window, SW_RESTORE);
-  }
-  ::SetForegroundWindow(window);
+  BringToFront(window);
   return true;
 }
 

@@ -75,3 +75,18 @@ Future<void> setWindowTitle(String title) async {
     debugPrint('Window title unavailable: $e');
   }
 }
+
+/// Brings the Windows window forward, restoring it if it is minimized, as
+/// one of the app's notifications is clicked: Windows then lets the app take
+/// the foreground, until the user's next input, but leaves it to the app to
+/// do so. A window not yet shown, as the app starts, comes forward with its
+/// first frame.
+Future<void> bringWindowForward() async {
+  try {
+    await windowChannel.invokeMethod<void>('activate');
+  } on MissingPluginException {
+    // A runner without the channel leaves the window where it is.
+  } on PlatformException catch (e) {
+    debugPrint('Could not bring the window forward: $e');
+  }
+}
