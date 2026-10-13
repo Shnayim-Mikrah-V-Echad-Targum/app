@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SelectedContent;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/retry.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
@@ -30,7 +33,7 @@ class ThreadScreen extends ConsumerStatefulWidget {
   ConsumerState<ThreadScreen> createState() => _ThreadScreenState();
 }
 
-class _ThreadScreenState extends ConsumerState<ThreadScreen> {
+class _ThreadScreenState extends ConsumerState<ThreadScreen> with FetchAgainIfFailed {
   final _reply = TextEditingController();
   final _focus = FocusNode();
   final _scroll = ScrollController();
@@ -45,6 +48,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   final _firstPostFocus = FocusNode(skipTraversal: true);
   String? _firstPostFocused;
 
+  /// Whether a draft was restored that the page has yet to say was, once
+  /// the reply box it is in is docked.
+  bool _draftToSay = false;
+
   String get _draftKey => 'draft.thread.${widget.threadId}';
 
   @override
@@ -53,9 +60,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final draft = ref.read(sharedPreferencesProvider).getString(_draftKey);
     if (draft != null && draft.isNotEmpty) {
       _reply.text = draft;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) showStatus(context, context.l10n.draftRestored);
-      });
+      _draftToSay = true;
     }
     _reply.addListener(() {
       _draftTimer?.cancel();
@@ -155,11 +160,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   }
 
   /// Fetches the thread and its latest posts again, as [_refresh] does,
-  /// without waiting: the posts' failure says if it fails again.
+  /// without waiting: the posts' failure says if it fails again. The forums
+  /// too, should they have failed, for the forum's name in the app bar.
   void _retry() {
     ref
       ..invalidate(threadProvider(widget.threadId))
       ..invalidate(postsProvider(widget.threadId));
+    if (ref.read(forumsProvider).hasError) ref.invalidate(forumsProvider);
   }
 
   Future<void> _loadEarlier() async {
@@ -201,8 +208,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final thread = ref.watch(threadProvider(widget.threadId));
-    final posts = ref.watch(postsProvider(widget.threadId));
+    final thread = watchFresh(threadProvider(widget.threadId));
+    final posts = watchFresh(postsProvider(widget.threadId));
     final user = ref.watch(communityUserProvider).value;
     final profile = ref.watch(myProfileProvider).value;
     final isMod = profile?.isModerator ?? false;
@@ -211,13 +218,26 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final titleDirection = autoDirection(title, fallback: Directionality.of(context));
     // The app bar names the forum, above the thread's own title: Community
     // where the forum can't be found, and nothing while the forums load.
-    final forums = ref.watch(forumsProvider);
+    final forums = watchFresh(forumsProvider);
     final forum = t == null ? null : forums.value?.where((f) => f.id == t.forumId).firstOrNull;
     final forumName = forum?.name(context.isHebrewUi) ?? (forums.isLoading || t == null ? null : l.communityTitle);
     final canReply = t != null && (!t.locked || isMod);
+    // The reply box, docked only under the posts: none while they load, or
+    // can't.
+    final docked = canReply && posts.hasValue;
+    // Why the posts couldn't load, in place of them.
+    final failed = posts.hasError && !posts.hasValue;
+    if (_draftToSay && docked) {
+      // Said once the box it was restored to is there, above it.
+      _draftToSay = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) showStatus(context, l.draftRestored);
+      });
+    }
 
     final content = RefreshablePage(
       refresh: _refresh,
+      failureShown: failed,
       builder: (context, refreshButton) => PageScaffold(
         // The browser's tab is named for the thread, and so is the page, by
         // its heading below: the forum's name over it is no heading.
@@ -244,7 +264,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
             try {
               await _refresh();
             } catch (e) {
-              if (context.mounted) showStatus(context, communityError(l, e));
+              // Over the posts shown, which stay; the error state says it
+              // again itself.
+              if (context.mounted && !failed) showStatus(context, communityError(l, e));
             }
           },
           child: posts.when(
@@ -276,8 +298,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
         ),
         // In the page's bottom bar, as the reader's bar is, so that status
         // messages the page shows stand above it rather than over it (§6.19).
-        // Only under the posts: none while they load, or can't.
-        bottomNavigationBar: canReply && posts.hasValue
+        bottomNavigationBar: docked
             ? _Composer(
                 controller: _reply,
                 focusNode: _focus,
@@ -434,6 +455,13 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
             quote: switch (byId[list[i].replyToId]) {
               final p? => QuotedPost(authorName: p.authorName, body: p.body),
               null => list[i].quote,
+            },
+            // The opening post, loaded or not: on a page not loaded, the
+            // asker's post, as it may be.
+            quotesOpening: switch (list[i].replyToId) {
+              null => false,
+              final id when byId.containsKey(id) => id == opening,
+              _ => offset > 0 && t != null && t.kind != ThreadKind.weekly && list[i].quote?.authorName == t.authorName,
             },
             isMine: userId != null && list[i].authorId == userId,
             isModerator: isMod,
@@ -697,6 +725,7 @@ class PostCard extends ConsumerWidget {
     this.opening = false,
     this.tag,
     this.quote,
+    this.quotesOpening = false,
     this.focusNode,
   });
 
@@ -706,7 +735,9 @@ class PostCard extends ConsumerWidget {
   final int number;
   final int total;
 
-  /// Whether this is the post that opened the thread.
+  /// Whether this is the post that opened the thread: the only one that
+  /// may begin with a verse quoted, as a question about it does (§6.21).
+  /// Any other post that begins with "> " and Hebrew is set as written.
   final bool opening;
 
   /// A tag beside the writer's name: Question, say, on the post that asked
@@ -715,6 +746,10 @@ class PostCard extends ConsumerWidget {
 
   /// The post it replies to.
   final QuotedPost? quote;
+
+  /// Whether [quote] is of the post that opened the thread, and so may
+  /// begin with a verse quoted.
+  final bool quotesOpening;
   final bool isMine;
   final bool isModerator;
 
@@ -793,7 +828,7 @@ class PostCard extends ConsumerWidget {
     Future<void> onMenu(String v) async {
       switch (v) {
         case 'edit':
-          final ok = await _editPost(context, post);
+          final ok = await _editPost(context, post, quotesVerse: opening);
           // The first post's edit is its thread's excerpt.
           if (ok != null) await run(() => repo.editPost(post.id, ok), recount: true);
         case 'delete':
@@ -831,9 +866,13 @@ class PostCard extends ConsumerWidget {
     final time = '${relativeTime(context, post.createdAt)}${edited ? ' · ${l.edited}' : ''}';
     final when = absoluteTime(context, post.createdAt);
     final tag = this.tag;
-    // A question about a verse begins with the verse, quoted as such.
-    final (:verse, rest: body) = splitVerseQuote(post.body);
+    // A question about a verse begins with the verse, quoted as such: only
+    // ever the post that opened the thread.
+    final (:verse, rest: body) = opening ? splitVerseQuote(post.body) : (verse: null, rest: post.body);
     final bodyDirection = autoDirection(body, fallback: Directionality.of(context));
+    // 16/26 in either interface: room between the lines of a letter, and for
+    // a Hebrew post's points.
+    final bodyStyle = text.bodyLarge?.copyWith(height: 26 / 16);
     // A post you can do nothing more with, such as a former member's that
     // you have reported, has no menu.
     final menu = <PopupMenuEntry<String>>[
@@ -928,19 +967,17 @@ class PostCard extends ConsumerWidget {
                     ],
                   ),
                 ),
-              if (quote case final quote?) Padding(padding: const EdgeInsets.only(bottom: Space.md), child: _Quote(quote)),
-              if (verse != null) VerseQuote(verse),
-              if (verse != null && body.isNotEmpty) const Gap(Space.md),
-              if (verse == null || body.isNotEmpty)
+              if (quote case final quote?)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.md),
+                  child: _Quote(quote, opening: quotesOpening),
+                ),
+              if (verse != null)
+                _QuestionOnVerse(verse: verse, question: body, style: bodyStyle)
+              else
                 Lang(
                   Locale(bodyDirection == TextDirection.rtl ? 'he' : 'en'),
-                  child: SelectableText(
-                    body,
-                    textDirection: bodyDirection,
-                    // 16/26 in either interface: room between the lines of a
-                    // letter, and for a Hebrew post's points.
-                    style: text.bodyLarge?.copyWith(height: 26 / 16),
-                  ),
+                  child: SelectableText(body, textDirection: bodyDirection, style: bodyStyle),
                 ),
             ],
           ),
@@ -1065,21 +1102,98 @@ class _Byline extends StatelessWidget {
   }
 }
 
+/// A question about a verse as its post shows it (§6.21): the verse quoted,
+/// then 12 below it the question, in its own direction, as any post's text.
+/// The two are selected as one text, and copied as the post is written, the
+/// verse without what sets its words on the screen ([copiedFromQuestion]).
+class _QuestionOnVerse extends StatefulWidget {
+  const _QuestionOnVerse({required this.verse, required this.question, this.style});
+
+  final String verse;
+
+  /// The question; empty for a post that is nothing but the verse.
+  final String question;
+  final TextStyle? style;
+
+  @override
+  State<_QuestionOnVerse> createState() => _QuestionOnVerseState();
+}
+
+class _QuestionOnVerseState extends State<_QuestionOnVerse> {
+  SelectedContent? _selected;
+
+  void _copy() {
+    final selected = _selected?.plainText;
+    if (selected == null || selected.isEmpty) return;
+    final text = copiedFromQuestion(selected, verse: widget.verse, question: widget.question);
+    unawaited(Clipboard.setData(ClipboardData(text: text)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final question = widget.question;
+    final direction = autoDirection(question, fallback: Directionality.of(context));
+    // Copied as _copy copies, from the keyboard and the menu alike.
+    return Actions(
+      actions: {
+        CopySelectionTextIntent: CallbackAction<CopySelectionTextIntent>(
+          onInvoke: (_) {
+            _copy();
+            return null;
+          },
+        ),
+      },
+      child: SelectionArea(
+        onSelectionChanged: (content) => _selected = content,
+        contextMenuBuilder: (context, state) => AdaptiveTextSelectionToolbar.buttonItems(
+          anchors: state.contextMenuAnchors,
+          buttonItems: [
+            for (final item in state.contextMenuButtonItems)
+              item.type == ContextMenuButtonType.copy
+                  ? item.copyWith(onPressed: () {
+                      _copy();
+                      state.hideToolbar();
+                    })
+                  : item,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            VerseQuote(widget.verse),
+            if (question.isNotEmpty) ...[
+              const Gap(Space.md),
+              Lang(
+                Locale(direction == TextDirection.rtl ? 'he' : 'en'),
+                child: Text(question, textDirection: direction, style: widget.style),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// The post a reply answers, quoted above it: who wrote it and how it began,
-/// ruled in gold ink at its start. A question about a verse begins with its
-/// question, the verse it quotes being the post's own (or with the verse,
-/// where the post is nothing more).
+/// ruled in gold ink at its start. A question about a verse, the post that
+/// [opening] the thread, begins with its question, the verse it quotes being
+/// the post's own (or with the verse, where the post is nothing more); any
+/// other post begins as written.
 class _Quote extends StatelessWidget {
-  const _Quote(this.quote);
+  const _Quote(this.quote, {required this.opening});
 
   final QuotedPost quote;
+
+  /// Whether [quote] is of the post that opened the thread.
+  final bool opening;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final (:verse, :rest) = splitVerseQuote(quote.body);
+    final (:verse, :rest) = opening ? splitVerseQuote(quote.body) : (verse: null, rest: quote.body);
     final body = rest.trim().isEmpty ? verse ?? rest : rest;
     final direction = autoDirection(body, fallback: Directionality.of(context));
     final name = quote.authorName.isEmpty ? l.anonymousMember : quote.authorName;
@@ -1104,39 +1218,52 @@ class _Quote extends StatelessWidget {
 }
 
 /// Edits [post] in a dialog. Returns the text to save, or null if it is
-/// left as it was.
-Future<String?> _editPost(BuildContext context, Post post) =>
-    showAppDialog<String>(context: context, builder: (context) => _EditPostDialog(body: post.body));
+/// left as it was. With [quotesVerse], for the post that opened the thread,
+/// a verse it begins with is kept quoted above the question.
+Future<String?> _editPost(BuildContext context, Post post, {required bool quotesVerse}) => showAppDialog<String>(
+      context: context,
+      builder: (context) => _EditPostDialog(body: post.body, quotesVerse: quotesVerse),
+    );
 
 /// The dialog that edits a post: its text in a labelled field, which takes
 /// the focus, and Save, which waits for a change of 2 characters at least,
 /// as a reply does. It closes with the new text, or with nothing. A question
-/// about a verse keeps its verse, quoted above the field as the question
-/// was written (§9 Compose): only the question is edited.
+/// about a verse ([quotesVerse], the post that opened the thread) keeps its
+/// verse, quoted above the field as the question was written (§9 Compose):
+/// only the question is edited, and a button beside the verse takes it out.
 class _EditPostDialog extends StatefulWidget {
-  const _EditPostDialog({required this.body});
+  const _EditPostDialog({required this.body, required this.quotesVerse});
 
   final String body;
+  final bool quotesVerse;
 
   @override
   State<_EditPostDialog> createState() => _EditPostDialogState();
 }
 
 class _EditPostDialogState extends State<_EditPostDialog> {
-  late final _split = splitVerseQuote(widget.body);
+  late final _split = widget.quotesVerse ? splitVerseQuote(widget.body) : (verse: null, rest: widget.body);
   late final _controller = TextEditingController(text: _split.rest);
+  late final _focus = FocusNode();
+
+  /// The verse the post keeps, until the button beside it takes it out.
+  late String? _verse = _split.verse;
 
   @override
   void dispose() {
     _controller.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
-  bool _changed(String text) => text.trim().length >= 2 && text.trim() != _split.rest.trim();
+  /// Whether the post as [text] makes it is one to save: long enough, and
+  /// changed, in its question or by its verse taken out.
+  bool _changed(String text) =>
+      text.trim().length >= 2 && (text.trim() != _split.rest.trim() || _verse != _split.verse);
 
   /// The post as [text] makes it: after the verse it quotes, if any, as
   /// a question is posted.
-  String _edited(String text) => switch (_split.verse) {
+  String _edited(String text) => switch (_verse) {
         null => text,
         final verse => withVerseQuote(
             verse,
@@ -1145,10 +1272,17 @@ class _EditPostDialogState extends State<_EditPostDialog> {
           ),
       };
 
+  /// Takes the verse out of the post. The field, which the button stood
+  /// above, takes the focus from it.
+  void _removeVerse() {
+    setState(() => _verse = null);
+    _focus.requestFocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final verse = _split.verse;
+    final verse = _verse;
     List<Widget> actions(String text) => [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(l.actionCancel)),
           FilledButton(
@@ -1161,6 +1295,7 @@ class _EditPostDialogState extends State<_EditPostDialog> {
       builder: (context, value, _) {
         final field = TextField(
           controller: _controller,
+          focusNode: _focus,
           autofocus: true,
           minLines: 3,
           maxLines: 8,
@@ -1171,7 +1306,9 @@ class _EditPostDialogState extends State<_EditPostDialog> {
           textDirection: autoDirection(value.text, fallback: Directionality.of(context)),
           decoration: InputDecoration(labelText: l.threadBodyLabel, alignLabelWithHint: true),
         );
-        if (verse == null) {
+        // Laid out alike with the verse and once it is taken out, so that
+        // the field keeps its place in a dialog that keeps its width.
+        if (_split.verse == null) {
           return AlertDialog(title: Text(l.editPostTitle), content: field, actions: actions(value.text));
         }
         return AlertDialog(
@@ -1188,7 +1325,13 @@ class _EditPostDialogState extends State<_EditPostDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [VerseQuote(verse, maxLines: 3), const Gap(Space.md), field],
+              children: [
+                if (verse != null) ...[
+                  RemovableVerseQuote(verse, gap: 0, onRemove: _removeVerse),
+                  const Gap(Space.md),
+                ],
+                field,
+              ],
             ),
           ),
           actions: actions(value.text),

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/retry.dart';
 import '../../../app/routes.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
@@ -1041,7 +1042,7 @@ class _BlockedMembersSheet extends ConsumerStatefulWidget {
   ConsumerState<_BlockedMembersSheet> createState() => _BlockedMembersSheetState();
 }
 
-class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
+class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> with FetchAgainIfFailed {
   /// The members whose Unblock is being sent.
   final _busy = <String>{};
 
@@ -1086,7 +1087,15 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final padding = sheetPadding(context);
-    final members = ref.watch(blockedMembersProvider);
+    final members = watchFresh(
+      blockedMembersProvider,
+      // The members are fetched with the list of them, which may be what
+      // failed.
+      fetch: () {
+        if (ref.read(blockedUsersProvider).hasError) ref.invalidate(blockedUsersProvider, asReload: true);
+        ref.invalidate(blockedMembersProvider, asReload: true);
+      },
+    );
     Widget note(String text) => Padding(
           padding: EdgeInsets.fromLTRB(padding, Space.sm, padding, Space.sm),
           child: Text(text, style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant)),

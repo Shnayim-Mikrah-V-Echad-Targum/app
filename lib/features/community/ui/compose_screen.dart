@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/retry.dart';
 import '../../../app/routes.dart';
 import '../../../data/models/scripture.dart';
 import '../../../data/models/verse_ref.dart';
@@ -60,7 +60,7 @@ class ComposeScreen extends ConsumerStatefulWidget {
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
 }
 
-class _ComposeScreenState extends ConsumerState<ComposeScreen> {
+class _ComposeScreenState extends ConsumerState<ComposeScreen> with FetchAgainIfFailed {
   static const _titleMin = 5;
   static const _bodyMin = 2;
 
@@ -128,12 +128,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       try {
         final j = jsonDecode(raw) as Map<String, dynamic>;
         _title.text = j['title'] as String? ?? '';
-        // A question's draft is kept as it would be posted, its verse at the
-        // head of its message (as drafts were written before the verse had
-        // a place of its own).
-        final body = splitVerseQuote(j['body'] as String? ?? '');
-        _quote = body.verse;
-        _body.text = body.rest;
+        if (j.containsKey('quote')) {
+          _quote = j['quote'] as String?;
+          _body.text = j['body'] as String? ?? '';
+        } else {
+          // Kept before the verse had a place of its own in a draft: at the
+          // head of the message, as it is posted.
+          final body = splitVerseQuote(j['body'] as String? ?? '');
+          _quote = body.verse;
+          _body.text = body.rest;
+        }
       } catch (_) {}
     }
     _titleSeen = _title.text;
@@ -172,11 +176,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   /// Whether the page holds nothing of the member's own: nothing at all, or
-  /// the question as it was begun.
+  /// the question as it was begun, its verse taken out or not.
   bool get _untouched =>
       _body.text.isEmpty &&
       ((_title.text.isEmpty && _quote == null) ||
-          (_begun != null && _title.text == _begun!.title && _quote == _begun!.quote));
+          (_begun != null && _title.text == _begun!.title && (_quote == null || _quote == _begun!.quote)));
 
   /// The message as it is posted: after the verse it quotes, if any, with a
   /// left-to-right mark first where the message runs from the left
@@ -191,12 +195,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       };
 
   /// Keeps what is written for the next time the page opens; with nothing of
-  /// the member's own, there is nothing to keep.
+  /// the member's own, there is nothing to keep. The verse is kept apart from
+  /// the message (null for none), so that a message the member begins with a
+  /// quote of their own comes back as they wrote it.
   void _saveDraft() {
     if (_untouched) {
       _prefs.remove(_draftKey);
     } else {
-      _prefs.setString(_draftKey, jsonEncode({'title': _title.text, 'body': _composedBody}));
+      _prefs.setString(_draftKey, jsonEncode({'title': _title.text, 'quote': _quote, 'body': _body.text}));
     }
   }
 
@@ -253,11 +259,27 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   /// Takes the verse out of the question. The message, beside it, takes the
-  /// focus from the button that went with it.
+  /// focus from the button that went with it, and a status message offers to
+  /// put the verse back.
   void _removeQuote() {
+    final removed = _quote;
+    if (removed == null) return;
     setState(() => _quote = null);
     _saveSoon();
     _bodyFocus.requestFocus();
+    final l = context.l10n;
+    showStatus(
+      context,
+      l.verseQuoteRemoved,
+      action: SnackBarAction(
+        label: l.actionUndo,
+        onPressed: () {
+          if (!mounted || _quote != null) return;
+          setState(() => _quote = removed);
+          _saveSoon();
+        },
+      ),
+    );
   }
 
   @override
@@ -391,7 +413,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final direction = Directionality.of(context);
-    final forums = ref.watch(forumsProvider).value ?? const [];
+    final forumsValue = watchFresh(forumsProvider);
+    final forums = forumsValue.value ?? const [];
     final profile = ref.watch(myProfileProvider).value;
     final available = forums.where((f) => !f.locked || (profile?.isModerator ?? false)).toList();
     _forumId ??= available.where((f) => f.slug == widget.forumSlug).firstOrNull?.id ?? available.firstOrNull?.id;
@@ -437,6 +460,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 selected: _forumId,
                 gutter: g,
                 onSelected: (id) => setState(() => _forumId = id),
+                // Forums that can't be had say why, in place of the chips,
+                // and Post waits for them.
+                failure: switch (forumsValue) {
+                  AsyncValue(hasValue: false, :final error?) => ErrorMessage(
+                      message: communityError(l, error),
+                      onRetry: () => ref.invalidate(forumsProvider),
+                      retrying: forumsValue.isLoading,
+                    ),
+                  _ => null,
+                },
               ),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: g),
@@ -475,11 +508,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                             // A long title wraps, all of it in view, rather
                             // than scroll sideways, but stays one line of
                             // text: Enter goes on to the message, and a line
-                            // break pasted in is a space.
+                            // break pasted in is a space, whichever of those
+                            // a line of text breaks at (Word's manual break
+                            // is a vertical tab).
                             minLines: 1,
                             maxLines: null,
                             keyboardType: TextInputType.text,
-                            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[\r\n]+'), replacementString: ' ')],
+                            inputFormatters: [
+                              FilteringTextInputFormatter.deny(
+                                RegExp('[\r\n\v\f\u0085\u2028\u2029]+'),
+                                replacementString: ' ',
+                              ),
+                            ],
                             maxLength: 150,
                             buildCounter: quietCounter,
                             textInputAction: TextInputAction.next,
@@ -492,11 +532,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                               errorMaxLines: 3,
                             ),
                           ),
+                          if (_quote case final quote?) RemovableVerseQuote(quote, onRemove: _removeQuote),
                           const Gap(Space.md),
-                          if (_quote case final quote?) ...[
-                            _QuotedVerse(quote, onRemove: _removeQuote),
-                            const Gap(Space.md),
-                          ],
                           TextField(
                             controller: _body,
                             focusNode: _bodyFocus,
@@ -556,14 +593,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 /// The forums a discussion can begin in, under the label "Forum": a row of
 /// chips with the forums' icons, which scrolls sideways out to the column's
 /// edges, starting at its content's edge, [gutter] in. On a wide window,
-/// where they fit in a line or two, they wrap instead.
+/// where they fit in a line or two, they wrap instead. Where the forums
+/// can't be had, the [failure] that says why stands in place of the chips.
 class _ForumPicker extends StatefulWidget {
-  const _ForumPicker({required this.forums, required this.selected, required this.gutter, required this.onSelected});
+  const _ForumPicker({
+    required this.forums,
+    required this.selected,
+    required this.gutter,
+    required this.onSelected,
+    this.failure,
+  });
 
   final List<Forum> forums;
   final int? selected;
   final double gutter;
   final ValueChanged<int> onSelected;
+  final Widget? failure;
 
   @override
   State<_ForumPicker> createState() => _ForumPickerState();
@@ -632,9 +677,11 @@ class _ForumPickerState extends State<_ForumPicker> {
             style: theme.textTheme.titleSmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ),
+        if (widget.failure case final failure?)
+          Padding(padding: side.copyWith(top: Space.sm), child: failure)
         // A wide window has room for every forum, and a mouse can't drag a
         // row sideways: there they wrap.
-        if (MediaQuery.sizeOf(context).width >= Breakpoints.medium)
+        else if (MediaQuery.sizeOf(context).width >= Breakpoints.medium)
           Padding(
             padding: side,
             child: Wrap(spacing: Space.sm, runSpacing: Space.sm, children: chips),
@@ -678,43 +725,6 @@ class _PostingAs extends StatelessWidget {
           child: Text(
             context.l10n.postingAs(shown),
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// The verse a question quotes (§9 Compose), above its message, as it will
-/// begin the post: a quotation, cut short after three lines, with a button
-/// at its end that takes it out of the question. The button stands by the
-/// quote's first line, however large the text.
-class _QuotedVerse extends StatelessWidget {
-  const _QuotedVerse(this.quote, {required this.onRemove});
-
-  final String quote;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    // The quote's first line, as VerseQuote sets it: 20 at 1.7.
-    final line = MediaQuery.textScalerOf(context).scale(20) * 1.7;
-    const button = kMinInteractiveDimension;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(top: max(0, (button - line) / 2)),
-            child: VerseQuote(quote, maxLines: 3),
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.only(top: max(0, (line - button) / 2)),
-          child: IconButton(
-            icon: const Icon(Icons.close),
-            tooltip: context.l10n.removeVerseQuote,
-            onPressed: onRemove,
           ),
         ),
       ],

@@ -4455,11 +4455,17 @@ abstract class AppLocalizations {
   /// **'Your unsent draft is kept. Discard it to ask about {reference} instead.'**
   String askDraftKept(String reference);
 
-  /// Tooltip of the button beside the verse quoted above a new question's message, which takes the verse out of the question.
+  /// Tooltip of the button beside the verse quoted above a question's message, in a new discussion or while a posted question is edited, which takes the verse out of the question.
   ///
   /// In en, this message translates to:
   /// **'Remove the verse'**
   String get removeVerseQuote;
+
+  /// Status message once the verse quoted above a new question's message is taken out of it, with Undo, which puts it back.
+  ///
+  /// In en, this message translates to:
+  /// **'Verse removed'**
+  String get verseQuoteRemoved;
 
   /// No description provided for @charactersLeft.
   ///

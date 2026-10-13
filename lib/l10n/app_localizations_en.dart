@@ -2692,6 +2692,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeVerseQuote => 'Remove the verse';
 
   @override
+  String get verseQuoteRemoved => 'Verse removed';
+
+  @override
   String charactersLeft(int count) {
     return '$count characters left';
   }

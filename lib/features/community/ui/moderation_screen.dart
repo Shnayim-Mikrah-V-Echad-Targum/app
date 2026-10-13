@@ -11,7 +11,10 @@ import '../data/backend.dart';
 import '../data/models.dart';
 import 'community_ui.dart';
 
-final _reportsProvider = FutureProvider<List<Report>>((ref) => ref.watch(forumRepositoryProvider).openReports(), retry: noRetry);
+/// The open reports, fetched afresh each time the queue opens, and
+/// otherwise only when the moderator asks ([noRetry]).
+final _reportsProvider =
+    FutureProvider.autoDispose<List<Report>>((ref) => ref.watch(forumRepositoryProvider).openReports(), retry: noRetry);
 
 /// The moderators' queue of open reports.
 class ModerationScreen extends ConsumerWidget {
@@ -47,6 +50,7 @@ class ModerationScreen extends ConsumerWidget {
 
     return RefreshablePage(
       refresh: refresh,
+      failureShown: reports.hasError && !reports.hasValue,
       builder: (context, refreshButton) => PageScaffold(
         titleText: l.moderationQueue,
         actions: [refreshButton],

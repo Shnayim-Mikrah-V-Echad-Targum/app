@@ -539,11 +539,11 @@ void main() {
       const question = 'Why "like one of us"?';
       await tester.enterText(find.byType(TextField).at(1), question);
       // Closed at once: what was just typed is kept all the same, with the
-      // verse at its head, as it would be posted.
+      // verse apart from it.
       await tester.tap(find.byType(CloseButton));
       await tester.pumpAndSettle();
       final draft = jsonDecode(c.read(sharedPreferencesProvider).getString('draft.newThread')!) as Map<String, dynamic>;
-      expect(draft, {'title': 'Question on Genesis 3:22', 'body': '\u200E> $hebrew3_22\n\n$question'});
+      expect(draft, {'title': 'Question on Genesis 3:22', 'quote': hebrew3_22, 'body': question});
 
       await ask(tester, verseOf(genesis3_22.ref));
       expect(find.byType(NoticeBanner), findsNothing, reason: 'the draft is a question on this verse');
@@ -611,7 +611,7 @@ void main() {
       final c = await open(tester, '/read/5787:1/3?mode=full', forums: forums);
       await ask(tester, verseOf(genesis3_22.ref));
       await tester.enterText(find.byType(TextField).at(1), 'Why "like one of us"?');
-      await tester.tap(find.widgetWithText(FilledButton, 'Post').first);
+      await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post')));
       await tester.pumpAndSettle();
       expect(find.byType(ComposeScreen), findsNothing);
       expect(find.byType(ReaderScreen), findsOneWidget);
@@ -637,7 +637,7 @@ void main() {
       final c = await open(tester, '/read/5787:1/3?mode=full');
       await ask(tester, verseOf(genesis3_22.ref));
       await tester.enterText(find.byType(TextField).at(1), 'Why "like one of us"?');
-      await tester.tap(find.widgetWithText(FilledButton, 'Post').first);
+      await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post')));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.byType(AccountScreen), findsOneWidget);
@@ -748,6 +748,30 @@ void main() {
       expect(quoted(tester), isNull);
     });
 
+    testWidgets('closed with its verse taken out and nothing written, keeps no draft, and asked again begins anew',
+        (tester) async {
+      final c = await open(tester, '/read/5787:1/3?mode=full');
+      await ask(tester, verseOf(genesis3_22.ref));
+      await tester.tap(find.byTooltip('Remove the verse'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      expect(c.read(sharedPreferencesProvider).getString('draft.newThread'), isNull);
+
+      await ask(tester, verseOf(genesis3_22.ref));
+      expect(find.byType(NoticeBanner), findsNothing, reason: 'no draft in its way');
+      expect(quoted(tester), hebrew3_22);
+    });
+
+    testWidgets("a draft whose message begins with the member's own quote keeps it in the message", (tester) async {
+      const message = '> אני חושב שהמפרש צודק\n\nמסכים';
+      final draft = jsonEncode({'title': 'On Rashi', 'quote': null, 'body': message});
+      await open(tester, '/community/new?forum=questions', stored: {'draft.newThread': draft});
+      await untilKept(tester);
+      expect(quoted(tester), isNull);
+      expect(field(tester, 1).text, message);
+    });
+
     testWidgets('a draft quoting the verse with Elohim written out, as questions once did, is its question already',
         (tester) async {
       final verse = mikra.verse(genesis3_22.ref).readText.replaceFirst(name, 'ה׳');
@@ -813,12 +837,23 @@ void main() {
       final message = find.descendant(of: find.byType(TextField).at(1), matching: find.byType(EditableText));
       expect(tester.widget<EditableText>(message).focusNode.hasFocus, isTrue, reason: 'the button that had it is gone');
 
+      // Nothing of the member's yet: no draft, and the verse can be put
+      // back from the status message.
+      await tester.pump(const Duration(seconds: 1));
+      expect(c.read(sharedPreferencesProvider).getString('draft.newThread'), isNull);
+      expect(find.text('Verse removed'), findsOneWidget);
+      await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+      await tester.pumpAndSettle();
+      expect(quoted(tester), hebrew3_22);
+      await tester.tap(remove);
+      await tester.pumpAndSettle();
+      expect(quoted(tester), isNull);
+
+      await tester.enterText(find.byType(TextField).at(1), 'Why "like one of us"?');
       // Something of the member's: kept as a draft with no verse.
       await tester.pump(const Duration(seconds: 1));
       final draft = jsonDecode(c.read(sharedPreferencesProvider).getString('draft.newThread')!) as Map<String, dynamic>;
-      expect(draft, {'title': 'Question on Genesis 3:22', 'body': ''});
-
-      await tester.enterText(find.byType(TextField).at(1), 'Why "like one of us"?');
+      expect(draft, {'title': 'Question on Genesis 3:22', 'quote': null, 'body': 'Why "like one of us"?'});
       expect(await post(tester, c, forums), 'Why "like one of us"?', reason: 'quoting nothing');
       expect(find.byType(VerseQuote), findsNothing);
     });

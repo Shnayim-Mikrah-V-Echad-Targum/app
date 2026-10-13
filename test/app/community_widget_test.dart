@@ -148,6 +148,26 @@ class _OfflineCommunity extends DemoForumRepository {
   Future<List<Report>> openReports() async => offline ? throw Exception('offline') : super.openReports();
 }
 
+/// A community whose forums, and their activity, fail to load while
+/// [offline].
+class _OfflineForumsAndStats extends _OfflineCommunity {
+  @override
+  Future<Map<int, ForumStats>> forumStats() async => offline ? throw Exception('offline') : super.forumStats();
+}
+
+/// A community whose threads, and their posts, fail to load while
+/// [offline], each thread fetched counted ([threadsAsked]).
+class _FlakyThread extends _Flaky {
+  int threadsAsked = 0;
+
+  @override
+  Future<ThreadSummary> thread(String id) async {
+    threadsAsked++;
+    if (offline) throw Exception('offline');
+    return super.thread(id);
+  }
+}
+
 /// A community whose threads' earlier posts fail to load while [offline].
 class _NoEarlier extends DemoForumRepository {
   bool offline = false;
@@ -635,6 +655,11 @@ void main() {
       await tester.enterText(title, 'A question\non Rashi\r\nand Onkelos');
       await tester.pump();
       expect(tester.widget<TextField>(title).controller!.text, 'A question on Rashi and Onkelos');
+      // So is any other break a line of text takes: a line separator, and
+      // Word's manual line break (a vertical tab), say.
+      await tester.enterText(title, 'A question\u2028on Rashi\vand Onkelos\u2029\f\u0085in full');
+      await tester.pump();
+      expect(tester.widget<TextField>(title).controller!.text, 'A question on Rashi and Onkelos in full');
       // The keyboard's action goes on to the message.
       expect(tester.widget<TextField>(title).textInputAction, TextInputAction.next);
       await tester.testTextInput.receiveAction(TextInputAction.next);
@@ -656,6 +681,17 @@ void main() {
       await tester.pump();
       expect(tester.widget<TextField>(message).controller!.text, isEmpty);
       expect(discard, findsNothing);
+    });
+
+    testWidgets('offers to discard a draft 16 under the paper, where the guidelines are accepted already', (tester) async {
+      await compose(tester, forums: await _Member().signIn());
+      expect(find.byType(LinkedText), findsNothing);
+      final discard = find.widgetWithText(TextButton, 'Discard draft');
+      await tester.enterText(message, 'A thought');
+      await tester.pump();
+      await tester.ensureVisible(discard);
+      await tester.pumpAndSettle();
+      expect(tester.getRect(discard).top - tester.getRect(find.byType(InfoCard)).bottom, moreOrLessEquals(16, epsilon: 0.5));
     });
 
     testWidgets('signed in with a name, is signed with it, and posts with Ctrl+Enter', (tester) async {
@@ -1546,6 +1582,15 @@ void main() {
       // Its counter quiet until the message nears the limit, as Compose's.
       expect(find.descendant(of: dialog, matching: find.textContaining('/10')), findsNothing);
       expect(tester.widget<EditableText>(find.descendant(of: dialog, matching: find.byType(EditableText))).focusNode.hasFocus, isTrue);
+      final editing = find.descendant(of: dialog, matching: find.byType(TextField));
+      await tester.enterText(editing, 'x' * 7999);
+      await tester.pump();
+      expect(find.descendant(of: dialog, matching: find.textContaining('/10')), findsNothing);
+      await tester.enterText(editing, 'x' * 8000);
+      await tester.pump();
+      expect(find.descendant(of: dialog, matching: find.text('8,000/10,000')), findsOneWidget);
+      await tester.enterText(editing, 'A first thought');
+      await tester.pump();
       // Save waits for a change, of 2 characters at least, as a reply does.
       FilledButton save() => tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'));
       expect(save().onPressed, isNull, reason: 'nothing changed');
@@ -2068,7 +2113,7 @@ void main() {
     expect(prefs.getString('draft.newThread'), isNotNull);
 
     forums.gate = Completer<void>();
-    await tester.tap(find.widgetWithText(FilledButton, 'Post').first);
+    await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post')));
     await tester.pump();
     await tester.tap(find.byType(CloseButton));
     await tester.pumpAndSettle();
@@ -2422,7 +2467,11 @@ void main() {
       expect(english.textDirection, TextDirection.ltr, reason: 'so its question mark ends it');
       expect(english.textAlign, TextAlign.start, reason: 'from its own start edge');
       expect(_setFrom(tester, find.text(title)), TextAlign.left);
-      expect(tester.getRect(find.text(title)).left, closeTo(tester.getRect(find.widgetWithText(ThreadTile, title)).left + 16, 1));
+      // Its last line ends well short of the row's right edge, as it would
+      // not set from the page's edge.
+      final lines = tester.renderObject<RenderParagraph>(find.text(title));
+      final last = lines.getBoxesForSelection(const TextSelection(baseOffset: title.length - 1, extentOffset: title.length)).last;
+      expect(last.right, lessThan(lines.size.width - 40));
       // The meta line runs right to left: the name, isolated, first, at the
       // right, then the time and the replies.
       final meta = find.descendant(of: find.widgetWithText(ThreadTile, title), matching: find.textContaining('\u2068Avraham\u2069\u00a0· '));
@@ -2632,6 +2681,177 @@ void main() {
       expect(find.byType(ErrorMessage), findsNothing);
     });
 
+    testWidgets('a question on a verse says why its forums can\'t be had, and fetches them again as it opens again',
+        (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      // Asked from the reader, before Community was ever opened.
+      final ask = Uri(path: '/ask', queryParameters: {'verse': 'Genesis 3:22'}).toString();
+      c.read(routerProvider).push(ask);
+      await tester.pumpAndSettle();
+      final post = find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post'));
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget, reason: 'in place of the forums');
+      expect(find.byType(ChoiceChip), findsNothing);
+      expect(tester.widget<FilledButton>(post).onPressed, isNull);
+
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      forums.offline = false;
+      c.read(routerProvider).push(ask);
+      await tester.pump();
+      expect(find.byType(ErrorMessage), findsNothing, reason: 'fetched afresh, not the failure from before');
+      await tester.pumpAndSettle();
+      expect(_chosenForum(tester), 'Questions & answers');
+      expect(tester.widget<FilledButton>(post).onPressed, isNotNull);
+    });
+
+    testWidgets("a new discussion lists its forums when they're tried again", (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).push('/community/new?forum=questions');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.byType(ErrorMessage), findsNothing);
+      expect(_chosenForum(tester), 'Questions & answers');
+    });
+
+    testWidgets("a forum whose discussions couldn't load fetches them again as it opens again", (tester) async {
+      final forums = _FlakyForum()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+
+      forums.offline = false;
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pump();
+      expect(find.byType(ErrorState), findsNothing, reason: 'loading afresh, not the failure from before');
+      await tester.pumpAndSettle();
+      expect(find.text('Why read the Targum rather than a translation?'), findsOneWidget);
+    });
+
+    testWidgets("a forum whose forums can't be had can be pulled to try again", (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+      expect(find.ancestor(of: find.byType(ErrorState), matching: find.byType(RefreshIndicator)), findsOneWidget);
+
+      forums.offline = false;
+      await tester.fling(find.byType(ErrorState), const Offset(0, 300), 1000);
+      await tester.pumpAndSettle();
+      expect(find.text('Why read the Targum rather than a translation?'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets("a thread names its forum, though the forums had failed before it opened", (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+
+      forums.offline = false;
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Questions & answers')), findsOneWidget);
+    });
+
+    testWidgets('a thread refreshed names its forum, should the forums have failed as it opened', (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final appBar = find.byType(AppBar);
+      expect(find.descendant(of: appBar, matching: find.text('Community')), findsOneWidget);
+
+      forums.offline = false;
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: appBar, matching: find.text('Questions & answers')), findsOneWidget);
+    });
+
+    testWidgets('a thread that can\'t be had is never tried again behind the reader\'s back, its posts nor itself',
+        (tester) async {
+      final forums = _FlakyThread()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      final title = find.text('Why read the Targum rather than a translation?');
+      expect(title, findsNothing);
+      final at = tester.getTopLeft(retry);
+
+      // Back online, nothing moves until the reader asks: no title comes
+      // over Try again.
+      forums.offline = false;
+      await tester.pump(const Duration(minutes: 1));
+      await tester.pumpAndSettle();
+      expect(forums.threadsAsked, 1);
+      expect(title, findsNothing);
+      expect(tester.getTopLeft(retry), at);
+
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(title, findsOneWidget);
+      expect(find.byType(PostCard), findsNWidgets(2));
+    });
+
+    testWidgets('a reply restored says so once its reply box is there, never while the posts can\'t load',
+        (tester) async {
+      final forums = _Flaky()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      // Wide, where the page's own Scaffold shows the message, above the box.
+      tester.view.physicalSize = const Size(1366, 860);
+      await c.read(sharedPreferencesProvider).setString('draft.thread.1', 'Kept for later');
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      expect(find.text('Your draft was restored.'), findsNothing, reason: 'no reply box for it to be in');
+
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.text('Kept for later'), findsOneWidget);
+      expect(find.text('Your draft was restored.'), findsOneWidget);
+      // Above the box it is in, which was docked before it came.
+      final box = tester.getRect(find.ancestor(of: find.byType(TextField), matching: find.byType(Material)).first);
+      final shown = tester.getRect(find.descendant(of: find.byType(SnackBar), matching: find.byType(Material)).first);
+      expect(shown.bottom, box.top - 16);
+    });
+
+    testWidgets("the forums on the Community page, tried again, come with their activity, which had failed too",
+        (tester) async {
+      final forums = _OfflineForumsAndStats();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      // The activity, tried again by itself, gives up.
+      for (var i = 0; i < 40 && c.read(forumStatsProvider).isLoading; i++) {
+        await tester.pump(const Duration(seconds: 7));
+      }
+      expect(c.read(forumStatsProvider), isA<AsyncError<Object?>>());
+
+      forums.offline = false;
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.widgetWithText(PaperRow, 'Questions & answers'),
+          matching: find.textContaining(RegExp('^\\d+\u00a0discussions?')),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('the reports to review say why, and come when tried again', (tester) async {
       final forums = _OfflineCommunity();
       final c = await _pump(tester, forums: forums);
@@ -2654,6 +2874,26 @@ void main() {
       expect(find.text('New discussion'), findsOneWidget);
       expect(find.descendant(of: find.byType(EmptyState), matching: find.text('New discussion')), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsNothing);
+    });
+
+    testWidgets('floats over no spinner while the discussions load again for another account', (tester) async {
+      final forums = _HeldThreads();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+
+      forums.gate = Completer<void>();
+      await forums.verifyCode('reader@example.org', '123456');
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'loading again, for the account');
+      expect(find.byType(FloatingActionButton), findsNothing);
+
+      forums.gate!.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
     testWidgets("is offered over the week's forum, never empty", (tester) async {

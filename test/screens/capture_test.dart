@@ -342,6 +342,7 @@ const _screens = {
   // a link, and the blocked members of an account.
   'community_error': '/community',
   'forum_unreachable': '/community/forum/questions',
+  'compose_unreachable': '/community/new',
   'account_blocked_error': '/community/account',
   // What the Demo tag explains.
   'demo_about': '/community/forum/questions',
@@ -1040,7 +1041,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
     screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
   for (final screen in ['forum_error', 'thread_error', 'moderation_error']) screen: () async => _Offline(),
-  for (final screen in ['community_error', 'forum_unreachable']) screen: () async => _NoForums(),
+  for (final screen in ['community_error', 'forum_unreachable', 'compose_unreachable']) screen: () async => _NoForums(),
   'account_blocked_error': _memberNoBlocked,
   'account_unblock_error': _memberUnblockFails,
   'thread_long': _withLongThread,

@@ -744,6 +744,7 @@ HE = {
   "questionOnVerse": "שאלה על {reference}",
   "askDraftKept": "הטיוטה שלא נשלחה נשמרה. אפשר למחוק אותה כדי לשאול על {reference} במקומה.",
   "removeVerseQuote": "הסרת הפסוק",
+  "verseQuoteRemoved": "הפסוק הוסר",
   "charactersLeft": "נותרו {count} תווים",
   "shabbatTimesLabel": "זמני שבת",
   "shabbatTimesHelp": "בחירת עיר מציגה מתי מדליקים נרות ומתי יוצאת השבת. הזמנים מחושבים במכשיר, והעיר נשמרת בו בלבד.",

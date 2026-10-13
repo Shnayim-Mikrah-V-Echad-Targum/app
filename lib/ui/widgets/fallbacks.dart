@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n.dart';
@@ -37,11 +38,14 @@ class CenteredMessage extends StatelessWidget {
   final List<Widget> actions;
   final ScrollPhysics? physics;
 
+  /// 40 below the app bar, and within the page's sides.
+  static const padding = EdgeInsets.fromLTRB(24, 40, 24, 24);
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       physics: physics,
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+      padding: padding,
       child: _Message(text: text, actions: actions),
     );
   }
@@ -54,7 +58,8 @@ class CenteredMessage extends StatelessWidget {
 ///
 /// While it is [retrying], the button's icon turns to a spinner, and the
 /// message stays until the outcome, so that nothing moves and the button
-/// keeps the keyboard focus.
+/// keeps the keyboard focus. Should it fail again, the message, which looks
+/// just as it did, is said again to screen readers.
 class ErrorMessage extends StatelessWidget {
   const ErrorMessage({super.key, required this.message, required this.onRetry, this.retrying = false});
 
@@ -63,14 +68,14 @@ class ErrorMessage extends StatelessWidget {
   final bool retrying;
 
   @override
-  Widget build(BuildContext context) =>
-      _Message(text: message, actions: [_RetryButton(onRetry: onRetry, retrying: retrying)]);
+  Widget build(BuildContext context) => _Failure(message: message, onRetry: onRetry, retrying: retrying);
 }
 
 /// A page that couldn't load what it shows (DESIGN_SYSTEM.md §6.22, Error
 /// state): why, centred under the app bar as a [CenteredMessage], with Try
-/// again under it, then any other [actions] as Text buttons. It can be
-/// pulled to refresh in a [RefreshIndicator], as the page it stands for can.
+/// again under it, then any other [actions] as Text buttons. It scrolls even
+/// when it fits, so that it can be pulled to refresh in the
+/// [RefreshIndicator] the page it stands for has.
 class ErrorState extends StatelessWidget {
   const ErrorState({
     super.key,
@@ -88,23 +93,69 @@ class ErrorState extends StatelessWidget {
   final List<Widget> actions;
 
   @override
-  Widget build(BuildContext context) => CenteredMessage(
-        text: message,
+  Widget build(BuildContext context) => SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        actions: [_RetryButton(onRetry: onRetry, retrying: retrying), ...actions],
+        padding: CenteredMessage.padding,
+        child: _Failure(message: message, onRetry: onRetry, retrying: retrying, actions: actions),
       );
 }
 
-/// The divider, the sentence and the actions of a [CenteredMessage] and an
-/// [ErrorMessage].
-class _Message extends StatelessWidget {
-  const _Message({required this.text, required this.actions});
+/// The message of an [ErrorMessage] or an [ErrorState], with Try again and
+/// any other [actions] under it.
+class _Failure extends StatefulWidget {
+  const _Failure({required this.message, required this.onRetry, required this.retrying, this.actions = const []});
 
-  final String text;
+  final String message;
+  final VoidCallback onRetry;
+  final bool retrying;
   final List<Widget> actions;
 
   @override
+  State<_Failure> createState() => _FailureState();
+}
+
+class _FailureState extends State<_Failure> {
+  /// How often trying again has failed, where a live region says so.
+  int _failedAgain = 0;
+
+  @override
+  void didUpdateWidget(_Failure old) {
+    super.didUpdateWidget(old);
+    // Tried again, and failed again: nothing on the page changes, and the
+    // button keeps the focus, so the message is said again, as an
+    // announcement, or where the platform takes none (Android) as a live
+    // region new each time.
+    if (old.retrying && !widget.retrying) {
+      if (MediaQuery.supportsAnnounceOf(context)) {
+        SemanticsService.sendAnnouncement(View.of(context), widget.message, Directionality.of(context));
+      } else {
+        _failedAgain++;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => _Message(
+        text: widget.message,
+        live: _failedAgain == 0 ? null : _failedAgain,
+        actions: [_RetryButton(onRetry: widget.onRetry, retrying: widget.retrying), ...widget.actions],
+      );
+}
+
+/// The divider, the sentence and the actions of a [CenteredMessage] and of
+/// what couldn't load. The sentence is a live region, new for each value of
+/// [live], where it is given.
+class _Message extends StatelessWidget {
+  const _Message({required this.text, required this.actions, this.live});
+
+  final String text;
+  final List<Widget> actions;
+  final Object? live;
+
+  @override
   Widget build(BuildContext context) {
+    Widget sentence = Text(text, textAlign: TextAlign.center, style: SeferType.of(context).marginalia);
+    if (live != null) sentence = Semantics(key: ValueKey(live), container: true, liveRegion: true, child: sentence);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 320),
@@ -113,7 +164,7 @@ class _Message extends StatelessWidget {
           children: [
             const SeferDivider(),
             const Gap(12),
-            Text(text, textAlign: TextAlign.center, style: SeferType.of(context).marginalia),
+            sentence,
             if (actions.isNotEmpty) ...[
               const Gap(16),
               Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: actions),

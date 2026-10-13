@@ -28,7 +28,8 @@ final myProfileProvider = FutureProvider<Profile?>((ref) async {
 });
 
 /// The forums. Like the threads, posts and blocked members below, tried
-/// again only when the reader asks ([noRetry]).
+/// again only when the reader asks, or as a page that shows them opens
+/// ([noRetry], [FetchAgainIfFailed]).
 final forumsProvider = FutureProvider<List<Forum>>((ref) => ref.watch(forumRepositoryProvider).forums(), retry: noRetry);
 
 /// How many discussions each forum lists, and when one was last posted in,
@@ -113,8 +114,11 @@ class ForumThreads extends AsyncNotifier<ThreadsPage> {
 
 final threadsProvider = AsyncNotifierProvider.family<ForumThreads, ThreadsPage, int?>(ForumThreads.new, retry: noRetry);
 
+/// A thread, whose page fetches it again with its posts, as they fail
+/// together ([noRetry]).
 final threadProvider = FutureProvider.family<ThreadSummary, String>(
   (ref, id) => ref.watch(forumRepositoryProvider).thread(id),
+  retry: noRetry,
 );
 
 /// A thread's posts as far back as the reader has loaded, oldest first.

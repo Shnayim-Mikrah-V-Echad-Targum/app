@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' show toBeginningOfSentenceCase;
 
+import '../../../app/retry.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
@@ -29,7 +30,7 @@ class ForumScreen extends ConsumerStatefulWidget {
   ConsumerState<ForumScreen> createState() => _ForumScreenState();
 }
 
-class _ForumScreenState extends ConsumerState<ForumScreen> {
+class _ForumScreenState extends ConsumerState<ForumScreen> with FetchAgainIfFailed {
   bool _loadingMore = false;
 
   // Load more keeps the keyboard focus while it loads. Then it moves down
@@ -76,7 +77,7 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final he = context.isHebrewUi;
-    final forums = ref.watch(forumsProvider);
+    final forums = watchFresh(forumsProvider);
     final forum = (forums.value ?? const []).where((f) => f.slug == widget.slug).firstOrNull;
     if (forum == null) {
       // Spin only while the forums first load: a link to a forum that
@@ -100,16 +101,27 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
               )
             : switch (forums.error) {
                 null => const Center(child: CircularProgressIndicator()),
-                final error => ErrorState(
-                    message: communityError(l, error),
-                    onRetry: () => ref.invalidate(forumsProvider),
-                    retrying: forums.isLoading,
-                    actions: [TextButton(onPressed: () => context.go('/community'), child: Text(l.allForums))],
+                // Pulled, or its button pressed, to try again.
+                final error => RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(forumsProvider);
+                      try {
+                        await ref.read(forumsProvider.future);
+                      } catch (_) {
+                        // Said in place, by the error state.
+                      }
+                    },
+                    child: ErrorState(
+                      message: communityError(l, error),
+                      onRetry: () => ref.invalidate(forumsProvider),
+                      retrying: forums.isLoading,
+                      actions: [TextButton(onPressed: () => context.go('/community'), child: Text(l.allForums))],
+                    ),
                   ),
               },
       );
     }
-    final threads = ref.watch(threadsProvider(forum.id));
+    final threads = watchFresh(threadsProvider(forum.id));
     final profile = ref.watch(myProfileProvider).value;
     final canStart = !forum.locked || (profile?.isModerator ?? false);
     final theme = Theme.of(context);
@@ -117,9 +129,14 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
     // The Parsha forum opens on this week's discussion, so it is never empty.
     final weekly = forum.slug == 'parsha';
     void compose() => context.push('/community/new?forum=${forum.slug}');
-    // Only over a list: not while it loads or can't, nor over an empty forum,
-    // where the empty state's own button is the one invitation.
-    final showFab = canStart && threads.hasValue && (weekly || threads.requireValue.threads.isNotEmpty);
+    // The list, as the body shows it below: not while it first loads or
+    // can't, nor while it loads again for another account.
+    final listed = threads.hasValue && !threads.isReloading;
+    // Only over a list, and not over an empty forum, where the empty state's
+    // own button is the one invitation.
+    final showFab = canStart && listed && (weekly || threads.requireValue.threads.isNotEmpty);
+    // Why the discussions couldn't load, in place of them.
+    final failed = threads.hasError && !threads.hasValue;
 
     Future<void> refresh() async {
       ref.invalidate(threadsProvider(forum.id));
@@ -128,6 +145,7 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
 
     return RefreshablePage(
       refresh: refresh,
+      failureShown: failed,
       builder: (context, refreshButton) => PageScaffold(
         titleText: forum.name(he),
         actions: [const DemoTag(), refreshButton],
@@ -139,7 +157,9 @@ class _ForumScreenState extends ConsumerState<ForumScreen> {
             try {
               await refresh();
             } catch (e) {
-              if (context.mounted) showStatus(context, communityError(l, e));
+              // Over the discussions shown, which stay; the error state says
+              // it again itself.
+              if (context.mounted && !failed) showStatus(context, communityError(l, e));
             }
           },
           child: threads.when(

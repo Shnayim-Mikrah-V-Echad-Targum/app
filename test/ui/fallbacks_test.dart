@@ -32,6 +32,52 @@ void main() {
     });
   });
 
+  group('tried again and failing again', () {
+    for (final announces in [true, false]) {
+      testWidgets(
+          'says why again, ${announces ? 'announced' : 'a new live region each time, where nothing is announced'}',
+          (tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(supportsAnnounce: announces);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        final semantics = tester.ensureSemantics();
+        Future<void> pump({required bool retrying}) =>
+            pumpThemed(tester, ErrorMessage(message: message, onRetry: () {}, retrying: retrying));
+        int? liveRegion() {
+          final node = tester.getSemantics(find.text(message));
+          return node.flagsCollection.isLiveRegion ? node.id : null;
+        }
+
+        await pump(retrying: false);
+        await pump(retrying: true);
+        expect(tester.takeAnnouncements(), isEmpty, reason: 'nothing said until the outcome');
+        expect(liveRegion(), isNull);
+
+        // Failed again: the page looks just as it did, and the button keeps
+        // the focus, so the message is said again.
+        await pump(retrying: false);
+        expect([for (final a in tester.takeAnnouncements()) a.message], announces ? [message] : isEmpty);
+        final first = liveRegion();
+        expect(first, announces ? isNull : isNotNull);
+
+        await pump(retrying: true);
+        await pump(retrying: false);
+        expect([for (final a in tester.takeAnnouncements()) a.message], announces ? [message] : isEmpty);
+        if (!announces) expect(liveRegion(), allOf(isNotNull, isNot(first)), reason: 'a live region new to the screen reader');
+        semantics.dispose();
+      });
+    }
+
+    testWidgets('as a whole page says why again too', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(supportsAnnounce: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      Future<void> pump({required bool retrying}) =>
+          pumpThemed(tester, ErrorState(message: message, onRetry: () {}, retrying: retrying));
+      await pump(retrying: true);
+      await pump(retrying: false);
+      expect([for (final a in tester.takeAnnouncements()) a.message], [message]);
+    });
+  });
+
   group('ErrorState', () {
     testWidgets('can be pulled to refresh, and offers Try again before any other action', (tester) async {
       var retries = 0;

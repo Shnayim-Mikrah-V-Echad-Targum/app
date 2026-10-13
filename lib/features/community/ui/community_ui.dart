@@ -314,10 +314,15 @@ class _WeeklyThreadOpenerState extends ConsumerState<WeeklyThreadOpener> {
 /// backend does. Presses while it runs are ignored. The button stays enabled
 /// meanwhile, so that it keeps the keyboard focus.
 class RefreshablePage extends StatefulWidget {
-  const RefreshablePage({super.key, required this.refresh, required this.builder});
+  const RefreshablePage({super.key, required this.refresh, required this.builder, this.failureShown = false});
 
   final Future<void> Function() refresh;
   final Widget Function(BuildContext context, Widget refreshButton) builder;
+
+  /// Whether the page shows why its content couldn't load ([ErrorState],
+  /// [ErrorMessage]), which says so again itself should the refresh fail
+  /// too: no status message then repeats it.
+  final bool failureShown;
 
   @override
   State<RefreshablePage> createState() => _RefreshablePageState();
@@ -334,7 +339,7 @@ class _RefreshablePageState extends State<RefreshablePage> {
       await widget.refresh();
       if (mounted) showStatus(context, l.refreshed);
     } catch (e) {
-      if (mounted) showStatus(context, communityError(l, e));
+      if (mounted && !widget.failureShown) showStatus(context, communityError(l, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -646,6 +651,68 @@ class VerseQuote extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The verse a question quotes, above its message while it is written or
+/// edited (§9 Compose, §9 Thread): a [VerseQuote] cut short after three
+/// lines, standing [gap] below what is above it, with a button at its end
+/// that takes it out of the question ([onRemove]). The button is centred on
+/// the quote's first line however large the text: where that line is
+/// shorter than the button, the button reaches up into the gap rather than
+/// push the quote further down, and keeps its 48 dp to tap.
+class RemovableVerseQuote extends StatelessWidget {
+  const RemovableVerseQuote(this.quote, {super.key, required this.onRemove, this.gap = Space.md});
+
+  final String quote;
+  final VoidCallback onRemove;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) {
+    // The quote's first line, as VerseQuote sets it: 20 at 1.7.
+    final line = MediaQuery.textScalerOf(context).scale(20) * 1.7;
+    const button = kMinInteractiveDimension;
+    // How far the button stands above the first line, and of that, how much
+    // the gap above holds.
+    final above = math.max(0.0, (button - line) / 2);
+    final reach = math.min(above, gap);
+    return Padding(
+      padding: EdgeInsets.only(top: gap - reach),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(padding: EdgeInsets.only(top: above), child: VerseQuote(quote, maxLines: 3)),
+          ),
+          Padding(
+            padding: EdgeInsets.only(top: math.max(0.0, (line - button) / 2)),
+            child: IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: context.l10n.removeVerseQuote,
+              onPressed: onRemove,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// [selected], from a question on a verse shown as a [VerseQuote] over the
+/// question, as it is copied: without the word joiners and no-break spaces
+/// the verse is set with, and where it holds the end of the verse and the
+/// start of the question, a blank line between them, as the post has as
+/// text.
+String copiedFromQuestion(String selected, {required String verse, required String question}) {
+  final text = asCopied(selected);
+  final whole = '$verse$question';
+  for (var at = whole.indexOf(text); at >= 0; at = whole.indexOf(text, at + 1)) {
+    if (at < verse.length && at + text.length > verse.length) {
+      final cut = verse.length - at;
+      return '${text.substring(0, cut)}\n\n${text.substring(cut)}';
+    }
+  }
+  return text;
 }
 
 /// [child], scripture whose lines [JoinsThatFit] breaks only once it knows

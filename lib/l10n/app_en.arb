@@ -2133,7 +2133,11 @@
   },
   "removeVerseQuote": "Remove the verse",
   "@removeVerseQuote": {
-    "description": "Tooltip of the button beside the verse quoted above a new question's message, which takes the verse out of the question."
+    "description": "Tooltip of the button beside the verse quoted above a question's message, in a new discussion or while a posted question is edited, which takes the verse out of the question."
+  },
+  "verseQuoteRemoved": "Verse removed",
+  "@verseQuoteRemoved": {
+    "description": "Status message once the verse quoted above a new question's message is taken out of it, with Undo, which puts it back."
   },
   "charactersLeft": "{count} characters left",
   "@charactersLeft": {

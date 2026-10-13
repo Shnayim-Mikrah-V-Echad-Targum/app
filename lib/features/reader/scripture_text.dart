@@ -276,6 +276,11 @@ String displayHebrew(String text, AppSettings s) =>
 String keepLinesSound(String hebrew) =>
     hebrew.replaceAll(' ׀', ' ׀').replaceAll('־', '־⁠');
 
+/// [shown], scripture as [keepLinesSound] sets it (and [joinWhereFits]
+/// after it), as it is copied: without the no-break spaces and word joiners
+/// set for the screen.
+String asCopied(String shown) => shown.replaceAll('\u00a0׀', ' ׀').replaceAll('\u2060', '');
+
 /// [text], a paragraph of scripture whose words [keepLinesSound] has joined,
 /// with the word joiner after a maqaf left out wherever the words it joins
 /// would be too wide together for a line [maxWidth] wide, as at a very large
