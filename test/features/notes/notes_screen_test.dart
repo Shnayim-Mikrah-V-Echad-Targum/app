@@ -322,6 +322,29 @@ void main() {
       expect(inSheet(find.text('Genesis 1:1')), findsOneWidget);
     });
 
+    testWidgets(
+      "a row's long press is felt once, as a step's tick, and not at all with Haptic feedback off",
+      (tester) async {
+        for (final haptics in [true, false]) {
+          await open(tester, '/notes', settings: AppSettings(onboardingComplete: true, haptics: haptics));
+          final sent = <String>[];
+          final messenger = tester.binding.defaultBinaryMessenger;
+          messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'HapticFeedback.vibrate') sent.add(call.arguments as String? ?? 'vibrate');
+            return null;
+          });
+          addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+          await tester.longPress(find.text('Genesis 1:1'));
+          await tester.pumpAndSettle();
+          expect(inSheet(find.text('Genesis 1:1')), findsOneWidget);
+          expect(sent, haptics ? ['HapticFeedbackType.selectionClick'] : isEmpty);
+          Navigator.pop(tester.element(find.byType(BottomSheet)));
+          await tester.pumpAndSettle();
+        }
+      },
+      variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
+    );
+
     testWidgets('a bookmark taken away in the sheet leaves its options whole: the note, a copy, a question',
         (tester) async {
       tester.view.physicalSize = const Size(412, 3000);

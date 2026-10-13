@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -374,4 +375,13 @@ void main() {
       expect(celebratedWithin(celebrateQuiet), isFalse);
     });
   });
+
+  testWidgets(
+    'haptics are available on a phone or a tablet alone',
+    (tester) async {
+      final phone = {TargetPlatform.android, TargetPlatform.iOS}.contains(defaultTargetPlatform);
+      expect(hapticsAvailable, phone);
+    },
+    variant: TargetPlatformVariant.all(),
+  );
 }

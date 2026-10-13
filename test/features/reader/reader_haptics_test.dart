@@ -7,6 +7,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/motion.dart';
@@ -234,6 +235,41 @@ void main() {
     await _press(tester, 'Finish');
     expect(sent, ['HapticFeedbackType.lightImpact']);
   });
+
+  testWidgets(
+    "a verse's long press gives a step's tick, once, in the guided reader and the full text",
+    (tester) async {
+      for (final full in [false, true]) {
+        await _open(tester, full: full);
+        final sent = _recordHaptics(tester);
+        await tester.longPress(find.byType(ScriptureVerse).first);
+        await tester.pumpAndSettle();
+        expect(find.byType(BottomSheet), findsOneWidget, reason: 'its options');
+        // Never the platform's long-press pulse, Android's celebrate.
+        expect(sent, [_step], reason: full ? 'the full text' : 'the guided reader');
+        Navigator.pop(tester.element(find.byType(BottomSheet)));
+        await tester.pumpAndSettle();
+      }
+    },
+    variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
+  );
+
+  testWidgets(
+    "with Haptic feedback off, a verse's long press sends nothing",
+    (tester) async {
+      for (final full in [false, true]) {
+        await _open(tester, full: full, settings: const AppSettings(haptics: false));
+        final sent = _recordHaptics(tester);
+        await tester.longPress(find.byType(ScriptureVerse).first);
+        await tester.pumpAndSettle();
+        expect(find.byType(BottomSheet), findsOneWidget);
+        expect(sent, isEmpty, reason: full ? 'the full text' : 'the guided reader');
+        Navigator.pop(tester.element(find.byType(BottomSheet)));
+        await tester.pumpAndSettle();
+      }
+    },
+    variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
+  );
 
   testWidgets('with Haptic feedback off, nothing is sent', (tester) async {
     await _open(tester, settings: const AppSettings(haptics: false));

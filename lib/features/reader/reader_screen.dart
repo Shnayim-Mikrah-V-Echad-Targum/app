@@ -2999,6 +2999,7 @@ class _FullText extends StatelessWidget {
                 ChapterHeading(chapter: r.chapter, settings: settings, headingLevel: whole == null ? 2 : 3),
               VerseGroup(
                 verse: r,
+                haptics: settings.haptics,
                 highlighted: highlighted,
                 onTap: focusTap,
                 onLongPress: () => onVerseOptions(r),

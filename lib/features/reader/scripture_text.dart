@@ -7,6 +7,7 @@ import '../../core/text/hebrew_text.dart';
 import '../../data/models/scripture.dart';
 import '../../data/models/verse_ref.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/feedback.dart' show hapticLongPress;
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/fonts_change_scope.dart';
@@ -1124,7 +1125,7 @@ class ScriptureVerse extends StatelessWidget {
         // The spaces between its words and lines are the verse's too.
         behavior: HitTestBehavior.opaque,
         onLongPress: () {
-          Feedback.forLongPress(context);
+          hapticLongPress(context, haptics: settings.haptics);
           onLongPress();
         },
         onSecondaryTap: onLongPress,
@@ -1263,6 +1264,7 @@ class VerseGroup extends StatelessWidget {
     super.key,
     required this.verse,
     required this.child,
+    required this.haptics,
     this.highlighted = false,
     this.onTap,
     this.onLongPress,
@@ -1270,6 +1272,10 @@ class VerseGroup extends StatelessWidget {
 
   final VerseRef verse;
   final Widget child;
+
+  /// The reader's Haptic feedback, which a long press keeps to
+  /// ([hapticLongPress]).
+  final bool haptics;
 
   /// The verse focus mode is on, or the one Listen is reading.
   final bool highlighted;
@@ -1319,8 +1325,23 @@ class VerseGroup extends StatelessWidget {
         // Screen readers find focus mode's tap and the verse's options on
         // its verses, where they hear them.
         child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
+          // A long press is felt as hapticLongPress gives it, not as the
+          // platform's pulse; a tap still clicks.
+          enableFeedback: false,
+          onTap: switch (onTap) {
+            final onTap? => () {
+                Feedback.forTap(context);
+                onTap();
+              },
+            null => null,
+          },
+          onLongPress: switch (onLongPress) {
+            final onLongPress? => () {
+                hapticLongPress(context, haptics: haptics);
+                onLongPress();
+              },
+            null => null,
+          },
           onSecondaryTap: onLongPress,
           excludeFromSemantics: true,
           // ↑ and ↓ move from verse to verse: a Tab stop on each would put

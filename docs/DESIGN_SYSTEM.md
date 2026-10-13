@@ -1163,6 +1163,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 | Level | When | iOS | Android |
 |---|---|---|---|
 | Step (`hapticStep`) | Next, in the guided reader | `selectionClick` | `selectionClick` (CLOCK_TICK, a tick) |
+| Step, for a long press (`hapticLongPress`) | A long press that opens options: a verse's, in the reader and the haftarah, and a row's in Bookmarks & notes. It records nothing, so it never takes the platform's long-press pulse (Android's is the celebrate's, iOS's firmer than a success); it is told to screen readers as a long press, and the ink well that takes it has its own feedback off, so that it is felt once | `selectionClick` | `selectionClick` |
 | Success (`hapticSuccess`) | Reading recorded: an aliyah finished, Mark as read (the reader's and the week page's), the whole week marked, a check-in or the printed Chumash logged, the haftarah marked read | `mediumImpact` | `lightImpact` (VIRTUAL_KEY, a click) |
 | Celebrate (`hapticCelebrate`) | A parsha or a book finished, once: in the reader, as the finished panel's rings close (at once under Reduce Motion), or at the press of Mark as read in the full text, where no panel shows it; a book, as its page's frame closes (§6.23) | `successNotification` | `vibrate` (LONG_PRESS, a heavy click) |
 
@@ -1170,7 +1171,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - One finish, one celebrate, though it may complete a parsha and a book together: the book's page, opening over the finish, gives none if one played in the second before it opened, or plays while it is open (`celebrateQuiet`, `celebratedWithin` and `celebrationsPlayed` in feedback.dart): the full text's Mark as read, or the rings closed at once under Reduce Motion. Otherwise the page gives it, since the page covers the panel before its rings close, and the rings, closing beneath it as it is left, give none once it has.
 - Only for what the reader pressed: none for Listen along going on by itself, a page opening, a sync or a reminder.
 - Android's `mediumImpact` plays the same click as `lightImpact`, and `heavyImpact` a lighter tick (CONTEXT_CLICK), so neither is used there.
-- All off with Haptic feedback (Settings → Accessibility), and none on the web or a desktop. The system's own setting holds too: Android and iOS play nothing where it is off.
+- All off with Haptic feedback (Settings → Accessibility), which is offered only where the app plays haptics, on Android and iOS (`hapticsAvailable`): none on a desktop, which has none, nor, by choice, on the web, though a phone's browser could vibrate (were that wanted, step as `selectionClick`, success as `mediumImpact` and celebrate as `vibrate()` would keep a 10, 20 and 50 ms ladder there). The system's own setting holds too: Android and iOS play nothing where it is off.
 
 **Never:** looping, idle or time-based animation anywhere. Nothing at all moves on the rest-day Today. Animate only opacity, transform and CustomPaint progress; never BoxShadow or blur.
 

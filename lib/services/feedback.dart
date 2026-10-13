@@ -253,14 +253,33 @@ const _snackBarMotion = AnimationStyle(duration: Motion.medium);
 
 // Haptics, in three levels, each firmer than the last (docs/DESIGN_SYSTEM.md
 // §8, Haptics): at most one for a press, and none for what happens by
-// itself. They are a phone's and a tablet's: none on the web or a desktop,
-// or once the user has turned Haptic feedback off. Android and iOS keep to
-// their own setting too, and play nothing where it is off.
+// itself. They are a phone's and a tablet's (hapticsAvailable), or none once
+// the user has turned Haptic feedback off. Android and iOS keep to their own
+// setting too, and play nothing where it is off.
+
+/// Whether the app plays haptics here: on Android and iOS. Not on a
+/// desktop, which has none, nor, by choice, on the web, where only a phone's
+/// browser would vibrate, and coarsely; Settings offers Haptic feedback only
+/// where this is true.
+bool get hapticsAvailable =>
+    !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
 
 /// A step: Next, on to the next reading. The faintest, a selection tick
 /// (Android's CLOCK_TICK).
 void hapticStep(WidgetRef ref) {
   if (_hapticPlatform(ref) != null) HapticFeedback.selectionClick();
+}
+
+/// A long press that opens options (a verse's, a note's): told to screen
+/// readers as a long press, as Flutter's own long-press feedback tells it,
+/// with a step's tick where haptics play and [haptics], the reader's Haptic
+/// feedback, is on. Never the platform's long-press pulse, which on Android
+/// is the celebrate haptic's and on iOS firmer than a success: a long press
+/// records nothing. An ink well that calls this has its own long-press
+/// feedback turned off, so that the press is felt once.
+void hapticLongPress(BuildContext context, {required bool haptics}) {
+  context.findRenderObject()?.sendSemanticsEvent(const LongPressSemanticsEvent());
+  if (haptics && hapticsAvailable) HapticFeedback.selectionClick();
 }
 
 /// Reading recorded: an aliyah finished or marked read, a check-in or the
@@ -317,10 +336,5 @@ void forgetCelebrations() {
 
 /// The platform whose haptics play, if any do: Android or iOS, with Haptic
 /// feedback on.
-TargetPlatform? _hapticPlatform(WidgetRef ref) {
-  if (kIsWeb || !ref.read(settingsProvider).haptics) return null;
-  return switch (defaultTargetPlatform) {
-    TargetPlatform.android || TargetPlatform.iOS => defaultTargetPlatform,
-    _ => null,
-  };
-}
+TargetPlatform? _hapticPlatform(WidgetRef ref) =>
+    hapticsAvailable && ref.read(settingsProvider).haptics ? defaultTargetPlatform : null;

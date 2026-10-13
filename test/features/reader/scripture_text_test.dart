@@ -778,6 +778,7 @@ void main() {
 
   group('focus mode', () {
     Widget group({required bool highlighted}) => VerseGroup(
+          haptics: true,
           verse: serpent.ref,
           highlighted: highlighted,
           child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings()),
