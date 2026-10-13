@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shnayim_mikra/app/config.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/services/recent_errors.dart';
 import 'package:shnayim_mikra/ui/widgets/app_mark.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -118,6 +121,67 @@ void main() {
     ];
     expect(titles.first, 'כתיבה אלינו בדוא״ל');
     expect(titles, isNot(contains('יצירת קשר')));
+  });
+
+  group('after something has gone wrong', () {
+    setUp(() => PackageInfo.setMockInitialValues(
+          appName: 'Shnayim Mikra',
+          packageName: 'org.shnayimmikra.app',
+          version: '1.0.0',
+          buildNumber: '12',
+          buildSignature: '',
+        ));
+    tearDown(recentErrors.clear);
+
+    /// The title of the row that copies the details, where it is: last
+    /// among the ways to reach us, which close the page.
+    String? copySupportDetailsRow(WidgetTester tester) {
+      final contact = find.byType(PaperGroup).last;
+      final last = tester.widgetList<PaperRow>(find.descendant(of: contact, matching: find.byType(PaperRow))).last;
+      return last.icon == Icons.content_copy_outlined ? last.title : null;
+    }
+
+    testWidgets('About offers to copy the details for support, and copies them', (tester) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String;
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      await openAbout(tester);
+      expect(copySupportDetailsRow(tester), isNull, reason: 'nothing has gone wrong yet');
+
+      // As it goes wrong, even with About open.
+      recentErrors.add(FlutterErrorDetails(
+        exception: StateError('no element'),
+        context: ErrorDescription('building TodayScreen'),
+        stack: StackTrace.fromString('#0      TodayScreen.build (package:shnayim_mikra/today_screen.dart:1:1)'),
+      ));
+      // Told once the frame the error came in is over, it shows in the next.
+      await tester.pumpAndSettle();
+      expect(copySupportDetailsRow(tester), 'Copy details for support');
+      final row = find.widgetWithText(PaperRow, 'Copy details for support');
+      expect(tester.widget<PaperRow>(row).subtitle, 'What went wrong since the app opened, to paste into a message to us');
+      expect(tester.widget<PaperRow>(row).chevron, isFalse, reason: 'it copies, and goes nowhere');
+
+      await tester.tap(row);
+      await tester.pump();
+      expect(
+        copied,
+        'Shnayim Mikra 1.0.0 (12) on android\n'
+        '\n'
+        'Bad state: no element\n'
+        'building TodayScreen\n'
+        '#0      TodayScreen.build (package:shnayim_mikra/today_screen.dart:1:1)',
+      );
+      expect(find.text('Details copied'), findsOneWidget);
+    });
+
+    testWidgets('in Hebrew, the row asks to copy the details for support', (tester) async {
+      recentErrors.add(FlutterErrorDetails(exception: StateError('no element')));
+      await openAbout(tester, language: AppLanguage.hebrew);
+      expect(copySupportDetailsRow(tester), 'העתקת פרטים לתמיכה');
+    });
   });
 
   for (final (width, framed) in [(412.0, false), (800.0, true)]) {

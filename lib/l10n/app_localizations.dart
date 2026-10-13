@@ -3573,11 +3573,35 @@ abstract class AppLocalizations {
   /// **'Policies'**
   String get aboutGroupPolicies;
 
-  /// Heading over About's links to email us and to send feedback.
+  /// Heading over About's links to email us and to send feedback, and, after something has gone wrong, the row that copies details for support.
   ///
   /// In en, this message translates to:
   /// **'Contact'**
   String get aboutGroupContact;
+
+  /// A row in About, shown only after something has gone wrong since the app started: it copies the app's version and what went wrong, to paste into a message to the maintainers.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy details for support'**
+  String get copySupportDetails;
+
+  /// Under copySupportDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'What went wrong since the app opened, to paste into a message to us'**
+  String get copySupportDetailsDesc;
+
+  /// A status message once copySupportDetails has copied the details to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Details copied'**
+  String get supportDetailsCopied;
+
+  /// Shown, in a release build, in place of a part of a page that failed to appear, such as a card that couldn't be built.
+  ///
+  /// In en, this message translates to:
+  /// **'Something on this page didn’t load.'**
+  String get errorPanelMessage;
 
   /// A status message when tapping a link opened nothing, as on a device with no browser to hand it to.
   ///

@@ -2179,6 +2179,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutGroupContact => 'Contact';
 
   @override
+  String get copySupportDetails => 'Copy details for support';
+
+  @override
+  String get copySupportDetailsDesc =>
+      'What went wrong since the app opened, to paste into a message to us';
+
+  @override
+  String get supportDetailsCopied => 'Details copied';
+
+  @override
+  String get errorPanelMessage => 'Something on this page didn’t load.';
+
+  @override
   String get linkOpenFailed => 'The link couldn’t be opened here.';
 
   @override

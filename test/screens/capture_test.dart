@@ -64,6 +64,7 @@ import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/services/backup_files.dart';
+import 'package:shnayim_mikra/services/recent_errors.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
@@ -514,6 +515,7 @@ const _screens = {
   // The sources, the guide and the policies within Settings, as About,
   // Settings and Accessibility open them, beside the navigation bar or rail.
   'about': '/settings/about',
+  'about_support': '/settings/about',
   'sources': '/settings/about/sources',
   'guide': '/settings/guide',
   // From Today's help button, within Today.
@@ -623,6 +625,8 @@ const _screens = {
   'kit_focus': '/today',
   'kit_progress': '/today',
   'kit_week': '/today',
+  // What stands for a widget that fails, where one might.
+  'kit_error': '/today',
   // The legends behind the info buttons, and the Torah map in every tile
   // state (see [_screenProgress]).
   'legend_week': '/progress',
@@ -1803,6 +1807,17 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'kit_rows': (tester) => _showGallery(tester, const RowsGallery()),
   'kit_progress': (tester) => _showGallery(tester, const ProgressGallery()),
   'kit_week': (tester) => _showGallery(tester, const WeekGallery()),
+  'kit_error': (tester) => _showGallery(tester, const ErrorPanelGallery()),
+  // Something has gone wrong: the row that copies the details for support,
+  // last among the ways to reach us.
+  'about_support': (tester) async {
+    recentErrors.add(FlutterErrorDetails(exception: StateError('broken')));
+    addTearDown(recentErrors.clear);
+    // The page hears of it after a frame, and shows it in the next.
+    await tester.pump();
+    await tester.pump();
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -2000));
+  },
   'legend_week': (tester) async {
     await tester.ensureVisible(find.byType(WeekStripLegendButton));
     await tester.tap(find.byType(WeekStripLegendButton));
@@ -2183,6 +2198,9 @@ const _narrowDesktopScreens = {
 };
 
 const _desktopScreens = {
+  // A widget that failed, and the row that copies the details for support.
+  'kit_error',
+  'about_support',
   'notes',
   'reader_full_marks',
   'today',
@@ -2369,6 +2387,9 @@ const _narrowScreens = {
   'guide',
 };
 const _bigTextScreens = {
+  // A widget that failed, and the row that copies the details for support.
+  'kit_error',
+  'about_support',
   // A held message with Undo and Close, at twice the text size.
   's_a11y_undo_keys',
   // A focus ring on a menu item and on tiles, at twice the text size.

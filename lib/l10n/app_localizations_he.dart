@@ -2179,6 +2179,19 @@ class AppLocalizationsHe extends AppLocalizations {
   String get aboutGroupContact => 'יצירת קשר';
 
   @override
+  String get copySupportDetails => 'העתקת פרטים לתמיכה';
+
+  @override
+  String get copySupportDetailsDesc =>
+      'מה שהשתבש מאז שהאפליקציה נפתחה, להדבקה בהודעה אלינו';
+
+  @override
+  String get supportDetailsCopied => 'הפרטים הועתקו';
+
+  @override
+  String get errorPanelMessage => 'חלק מהדף לא נטען.';
+
+  @override
   String get linkOpenFailed => 'לא ניתן היה לפתוח את הקישור כאן.';
 
   @override

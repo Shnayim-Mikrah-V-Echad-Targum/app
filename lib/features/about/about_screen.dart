@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -6,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/config.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/feedback.dart';
+import '../../services/recent_errors.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/app_mark.dart';
@@ -125,21 +128,42 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
             ],
           ),
           GroupHeader(l.aboutGroupContact),
-          PaperGroup(
-            children: [
-              if (email != null)
-                PaperRow(icon: Icons.mail_outline, title: l.contactTitle, onTap: () => launchUrl(email)),
-              PaperRow(
-                icon: Icons.feedback_outlined,
-                title: l.sendFeedback,
-                // The row above emails already.
-                onTap: () => sendFeedback(context, ref, email: false),
-              ),
-            ],
+          ListenableBuilder(
+            listenable: recentErrors,
+            builder: (context, _) => PaperGroup(
+              children: [
+                if (email != null)
+                  PaperRow(icon: Icons.mail_outline, title: l.contactTitle, onTap: () => launchUrl(email)),
+                PaperRow(
+                  icon: Icons.feedback_outlined,
+                  title: l.sendFeedback,
+                  // The row above emails already.
+                  onTap: () => sendFeedback(context, ref, email: false),
+                ),
+                // Only once something has gone wrong.
+                if (recentErrors.isNotEmpty)
+                  PaperRow(
+                    icon: Icons.content_copy_outlined,
+                    title: l.copySupportDetails,
+                    subtitle: l.copySupportDetailsDesc,
+                    chevron: false,
+                    onTap: _copySupportDetails,
+                  ),
+              ],
+            ),
           ),
         ],
       )),
     );
+  }
+
+  /// Copies what has gone wrong, under the app's version, for a message to
+  /// us. The version is in hand already, as the header shows it: the copy
+  /// is made at once, within the tap, as a browser may require.
+  Future<void> _copySupportDetails() async {
+    final String version = ref.read(_versionProvider).value ?? await ref.read(_versionProvider.future);
+    await Clipboard.setData(ClipboardData(text: recentErrors.report(version: version)));
+    if (mounted) showStatus(context, context.l10n.supportDetailsCopied);
   }
 }
 

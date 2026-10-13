@@ -1845,7 +1845,23 @@
   },
   "aboutGroupContact": "Contact",
   "@aboutGroupContact": {
-    "description": "Heading over About's links to email us and to send feedback."
+    "description": "Heading over About's links to email us and to send feedback, and, after something has gone wrong, the row that copies details for support."
+  },
+  "copySupportDetails": "Copy details for support",
+  "@copySupportDetails": {
+    "description": "A row in About, shown only after something has gone wrong since the app started: it copies the app's version and what went wrong, to paste into a message to the maintainers."
+  },
+  "copySupportDetailsDesc": "What went wrong since the app opened, to paste into a message to us",
+  "@copySupportDetailsDesc": {
+    "description": "Under copySupportDetails."
+  },
+  "supportDetailsCopied": "Details copied",
+  "@supportDetailsCopied": {
+    "description": "A status message once copySupportDetails has copied the details to the clipboard."
+  },
+  "errorPanelMessage": "Something on this page didn’t load.",
+  "@errorPanelMessage": {
+    "description": "Shown, in a release build, in place of a part of a page that failed to appear, such as a card that couldn't be built."
   },
   "linkOpenFailed": "The link couldn’t be opened here.",
   "@linkOpenFailed": {

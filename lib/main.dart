@@ -16,9 +16,15 @@ import 'services/app_shortcuts.dart';
 import 'services/home_widget_sync.dart';
 import 'services/notifications.dart';
 import 'services/optional_fonts.dart';
+import 'services/recent_errors.dart';
+import 'ui/widgets/fallbacks.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // What goes wrong is kept, for About to copy for support; and a widget
+  // that fails shows a calm panel rather than a grey box.
+  recordRecentErrors();
+  AppErrorPanel.install();
   _registerFontLicenses();
   unawaited(enableEdgeToEdge());
 

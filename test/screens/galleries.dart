@@ -10,6 +10,7 @@ import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/fallbacks.dart';
 import 'package:shnayim_mikra/ui/widgets/ledger.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -312,6 +313,50 @@ class WeekGallery extends ConsumerWidget {
               width: 288,
               child: InfoCard(padding: WeekStrip.cardPadding, child: strip(mon.addDays(1), [DayStatus.kept])),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What a widget that fails to build shows in its place (AppErrorPanel),
+/// where one might fail: an item of a page's list, a card's content, a row
+/// among rows, a slot of a fixed height, and slots too small for its line.
+class ErrorPanelGallery extends StatelessWidget {
+  const ErrorPanelGallery({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final panel = AppErrorPanel(details: FlutterErrorDetails(exception: StateError('broken')));
+    return Scaffold(
+      appBar: AppBar(title: const Text('Error panel')),
+      body: PageBody(
+        children: [
+          const GroupHeader('An item of the page'),
+          panel,
+          const GroupHeader('A card’s content'),
+          InfoCard(child: panel),
+          const GroupHeader('A row among rows'),
+          PaperGroup(
+            children: [
+              PaperRow(icon: Icons.menu_book_outlined, title: l.settingsReading, onTap: () {}),
+              panel,
+              PaperRow(icon: Icons.notifications_outlined, title: l.settingsReminders, onTap: () {}),
+            ],
+          ),
+          const GroupHeader('A slot 160 high'),
+          SizedBox(height: 160, child: panel),
+          const GroupHeader('Too small: 40 × 40, 100 × 80, 300 × 40'),
+          Row(
+            children: [
+              SizedBox.square(dimension: 40, child: panel),
+              const Gap(16),
+              SizedBox(width: 100, height: 80, child: panel),
+              const Gap(16),
+              Expanded(child: SizedBox(height: 40, child: panel)),
+            ],
           ),
         ],
       ),
