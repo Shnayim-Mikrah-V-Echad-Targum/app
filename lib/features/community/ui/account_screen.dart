@@ -260,7 +260,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         text: l.signInPrivacy,
         link: l.privacyTitle,
         textAlign: TextAlign.center,
-        onTap: () => context.push(policyPath(context, 'privacy')),
+        onTap: () => context.push(policyPath(context, 'privacy', fromAccount: true)),
       ),
     ];
   }

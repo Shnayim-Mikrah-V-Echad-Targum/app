@@ -6,6 +6,7 @@ import 'package:shnayim_mikra/features/about/about_screen.dart';
 import 'package:shnayim_mikra/features/about/guide_screen.dart';
 import 'package:shnayim_mikra/features/about/legal_screen.dart';
 import 'package:shnayim_mikra/features/about/sources_screen.dart';
+import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/community_screen.dart';
 import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
 import 'package:shnayim_mikra/features/progress/progress_screen.dart';
@@ -13,6 +14,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/accessibility_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/services/feedback.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 
 import '../helpers.dart';
@@ -66,6 +68,8 @@ void main() {
       ('/today/guide', GuideScreen, null, 0, TodayScreen),
       ('/community/legal/privacy', LegalScreen, 'Privacy', 3, CommunityScreen),
       ('/community/legal/guidelines', LegalScreen, 'Community guidelines', 3, CommunityScreen),
+      ('/community/account/legal/privacy', LegalScreen, 'Privacy', 3, AccountScreen),
+      ('/settings/account/legal/privacy', LegalScreen, 'Privacy', 4, AccountScreen),
       ('/settings/guide', GuideScreen, null, 4, SettingsScreen),
       ('/settings/accessibility/legal/accessibility', LegalScreen, 'Accessibility statement', 4,
           AccessibilitySettingsScreen),
@@ -101,10 +105,11 @@ void main() {
       });
     }
 
-    for (final path in [
-      '/community/legal/term',
-      '/settings/accessibility/legal/term',
-      '/settings/about/legal/term',
+    for (final (path, tab) in [
+      ('/community/legal/term', 3),
+      ('/settings/accessibility/legal/term', 4),
+      ('/settings/account/legal/term', 4),
+      ('/settings/about/legal/term', 4),
     ]) {
       testWidgets('$path, a policy that does not exist, says so within its tab', (tester) async {
         final router = await _pump(tester);
@@ -112,7 +117,7 @@ void main() {
         await _settle(tester);
         expect(find.text('Page not found'), findsOneWidget);
         expect(find.byType(LegalScreen), findsNothing, reason: 'no policy stands in for the one asked for');
-        expect(_tabShown(), isNotNull);
+        expect(_tabShown(), tab);
       });
     }
   });
@@ -163,6 +168,8 @@ void main() {
       ('/settings/about/legal/privacy', '/legal/privacy', LegalScreen),
       ('/settings/accessibility/legal/accessibility', '/legal/accessibility', LegalScreen),
       ('/community/legal/guidelines', '/legal/guidelines', LegalScreen),
+      ('/community/account/legal/privacy', '/legal/privacy', LegalScreen),
+      ('/settings/account/legal/privacy', '/legal/privacy', LegalScreen),
     ]) {
       testWidgets('$path leads to $own, without the tabs', (tester) async {
         final router = await _pump(tester, settings: firstVisit);
@@ -232,6 +239,63 @@ void main() {
       shell(tester).goBranch(2);
       await tester.pump();
       expect(opacityOf(tester, find.byType(ProgressScreen)), 1);
+    });
+
+    testWidgets("is there at once with the system's Reduce Motion", (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await _pump(tester);
+      shell(tester).goBranch(2);
+      await tester.pump();
+      expect(opacityOf(tester, find.byType(ProgressScreen)), 1);
+    });
+
+    test('fades in a browser whatever its host, but not in an iOS or macOS app', () {
+      for (final platform in TargetPlatform.values) {
+        expect(tabsFadeOn(platform, web: true), isTrue, reason: '$platform, in a browser');
+      }
+      expect(tabsFadeOn(TargetPlatform.iOS, web: false), isFalse);
+      expect(tabsFadeOn(TargetPlatform.macOS, web: false), isFalse);
+      for (final platform in [TargetPlatform.android, TargetPlatform.windows, TargetPlatform.linux]) {
+        expect(tabsFadeOn(platform, web: false), isTrue, reason: '$platform');
+      }
+    });
+
+    group('on a desktop', () {
+      testWidgets('fades in too', (tester) async {
+        await _pump(tester, size: const Size(1024, 800));
+        shell(tester).goBranch(2);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(opacityOf(tester, find.byType(ProgressScreen)), inExclusiveRange(0, 1));
+        await tester.pumpAndSettle();
+      }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
+
+      testWidgets('is there at once while a status message is on show, which carries across unbroken', (tester) async {
+        await _pump(tester, size: const Size(1024, 800));
+        showStatus(tester.element(find.byType(TodayScreen)), 'Logged');
+        await tester.pumpAndSettle();
+        expect(find.text('Logged'), findsOneWidget);
+
+        shell(tester).goBranch(2);
+        await tester.pump();
+        final message = find.descendant(of: find.byType(ProgressScreen), matching: find.text('Logged'));
+        expect(message, findsOneWidget, reason: 'shown by the page on show, as each page shows it');
+        expect(opacityOf(tester, find.byType(ProgressScreen)), 1);
+        expect(opacityOf(tester, message), 1);
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(opacityOf(tester, message), 1);
+
+        // Once it has gone, the tabs fade in again.
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+        expect(find.text('Logged'), findsNothing);
+        shell(tester).goBranch(0);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(opacityOf(tester, find.byType(TodayScreen)), inExclusiveRange(0, 1));
+        await tester.pumpAndSettle();
+      }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
     });
   });
 }

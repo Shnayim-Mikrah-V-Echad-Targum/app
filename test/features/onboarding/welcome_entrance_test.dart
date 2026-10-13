@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/widgets/lines.dart';
@@ -135,17 +136,41 @@ void main() {
   testWidgets('plays once a run, not again when the welcome is built anew', (tester) async {
     await launch(tester);
     await tester.pumpAndSettle();
-    // Back from the first step.
+    // Back from the first step, the welcome whole as it was left (its page
+    // stays beneath the step's).
     await tester.tap(start);
     await tester.pumpAndSettle();
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(stages(tester), (frame: 1.0, divider: 1.0, text: 1.0, ways: 1.0));
 
-    // Built again from the start, as in another language.
+    // Built anew from the start, as in another language: the run has seen
+    // it already.
     await tester.pumpWidget(const SizedBox());
     final again = await launch(tester);
     expect(again, (frame: 1.0, divider: 1.0, text: 1.0, ways: 1.0));
+  });
+
+  testWidgets('with the system\'s Reduce Motion, is whole from its first frame', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    final first = await launch(tester);
+    expect(first, (frame: 1.0, divider: 1.0, text: 1.0, ways: 1.0));
+    expect(rise(tester), 0);
+  });
+
+  testWidgets('ends at once when motion is reduced as it plays', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(tester, settings: const AppSettings(), now: captureNow);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(stages(tester).divider, inExclusiveRange(0, 1), reason: 'under way, some 300 ms in');
+
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(reduceMotion: true));
+    await tester.pump();
+    expect(stages(tester), (frame: 1.0, divider: 1.0, text: 1.0, ways: 1.0));
+    expect(rise(tester), 0);
   });
 
   for (final hebrew in [false, true]) {

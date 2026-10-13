@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,6 +32,7 @@ import '../features/settings/screens/reading_settings_screen.dart';
 import '../features/settings/screens/reminder_settings_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/today/today_screen.dart';
+import '../services/feedback.dart' show statusMessageShown;
 import '../ui/theme/motion.dart';
 import '../ui/widgets/fallbacks.dart';
 import 'app_page.dart';
@@ -67,7 +69,9 @@ GoRoute _legal(String path) => _route(path, (s) => switch (LegalDoc.fromSlug(s.p
 String? _pageOverTabs(String path) => switch (path) {
       '/today/guide' || '/settings/guide' => '/guide',
       '/settings/about/sources' => '/sources',
-      _ => RegExp(r'^/(community|settings/about|settings/accessibility)(/legal/[^/]+)$').firstMatch(path)?.group(2),
+      _ => RegExp(r'^/(community|community/account|settings/about|settings/accessibility|settings/account)(/legal/[^/]+)$')
+          .firstMatch(path)
+          ?.group(2),
     };
 
 /// A week and its haftarah within each of the [weekTabs], so the navigation
@@ -135,10 +139,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                     forumSlug: s.uri.queryParameters['forum'],
                     verse: s.uri.queryParameters['verse'],
                   )),
-              _route('account', _account),
+              // The privacy policy from the account, under it.
+              _route('account', _account, routes: [_legal('legal/:doc')]),
               _route('moderation', (_) => const ModerationScreen()),
-              // The privacy policy from the account, the guidelines from a
-              // new discussion.
+              // The guidelines from a new discussion.
               _legal('legal/:doc'),
             ]),
           ]),
@@ -156,7 +160,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                 _route('city', (_) => const CityPickerScreen()),
               ]),
               _route('data', (_) => const DataSettingsScreen()),
-              _route('account', _account),
+              // The privacy policy from the account, under it.
+              _route('account', _account, routes: [_legal('legal/:doc')]),
               _route('about', (_) => const AboutScreen(), routes: [_sources('sources'), _legal('legal/:doc')]),
               _guide('guide'),
             ]),
@@ -223,9 +228,19 @@ Widget _tabStack(BuildContext context, StatefulNavigationShell shell, List<Widge
       ],
     );
 
+/// Whether a tab fades in as it is chosen on [platform] (§8): on Android,
+/// on the desktop, and on the web whatever its host, as pages fade in there;
+/// not in an iOS or macOS app, whose tabs switch without a transition.
+@visibleForTesting
+bool tabsFadeOn(TargetPlatform platform, {bool web = kIsWeb}) =>
+    web || (platform != TargetPlatform.iOS && platform != TargetPlatform.macOS);
+
 /// A tab that fades in over [Motion.short] each time it is chosen (§8), as
-/// its indicator moves to it; shown at once on Apple platforms, whose tabs
-/// switch without a transition, and while motion is reduced.
+/// its indicator moves to it; shown at once where tabs don't fade
+/// ([tabsFadeOn]) and while motion is reduced. On a tablet or desktop, while
+/// a status message is on show, it is shown at once too: there each page's
+/// own Scaffold shows the message (§6.19), which would fade out and in with
+/// the tab, and it carries across unbroken instead.
 class _TabFadeIn extends StatefulWidget {
   const _TabFadeIn({required this.active, required this.child});
 
@@ -247,11 +262,8 @@ class _TabFadeInState extends State<_TabFadeIn> with SingleTickerProviderStateMi
   void didUpdateWidget(_TabFadeIn oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!widget.active || oldWidget.active) return;
-    final apple = switch (Theme.of(context).platform) {
-      TargetPlatform.iOS || TargetPlatform.macOS => true,
-      _ => false,
-    };
-    if (apple || Motion.of(context).reduced) {
+    final message = MediaQuery.sizeOf(context).width >= Breakpoints.medium && statusMessageShown(context);
+    if (!tabsFadeOn(Theme.of(context).platform) || Motion.of(context).reduced || message) {
       _controller.value = 1;
     } else {
       _controller.forward(from: 0);

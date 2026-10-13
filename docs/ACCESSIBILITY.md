@@ -113,7 +113,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
 - Onboarding has four short screens, and every choice can be changed later.
 
 ### Motion, sound and haptics
-- **Reduce motion** follows the system setting (Android's Remove animations, iOS's Reduce Motion, and the like on Windows and the web) and can also be set in the app. It removes page transitions and celebration animations. While the system's is on, the app's switch shows it on, disabled, and says, at full contrast, that it is on in the device's settings.
+- **Reduce motion** follows the system setting (Android's Remove animations, iOS's Reduce Motion, and the like on Windows and the web) and can also be set in the app. It removes page transitions, the tabs' fade, the welcome's entrance, the web loading screen's fade and celebration animations, and dialogs, sheets and status messages appear at once. While the system's is on, the app's switch shows it on, disabled, and says, at full contrast, that it is on in the device's settings.
 - Haptics can be turned off.
 - Nothing plays sound without the user asking. Text-to-speech starts only on request.
 - **Listen** reads verse by verse, for readers who follow by ear: the verse being read is highlighted (a techelet rule at its start, which is the cue in high contrast too) and kept in view, scrolling at once under Reduce Motion. The player beneath the text pauses and goes on from the same verse, moves back or on a verse, sets the speech rate and stops; each of its buttons is named for screen readers and takes a 48 dp tap. *Listen along* reads the guided reader's steps one after another, hands-free, to the end of the aliyah.

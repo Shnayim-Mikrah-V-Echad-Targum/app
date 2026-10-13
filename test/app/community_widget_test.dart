@@ -1556,6 +1556,24 @@ void main() {
       expect(tester.getRect(ruleIn(post)).top, disc.top, reason: 'the rule starts at the top of the initial');
     });
 
+    testWidgets('in high contrast, keeps its name on the line its initial and menu are centred on, by its outlined tag',
+        (tester) async {
+      final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, theme: AppThemeMode.highContrastDark));
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final post = find.byType(PostCard).first;
+      final name = tester.getRect(find.descendant(of: post, matching: find.text('Avraham')));
+      // The tag, with its outline outside its padding, stands taller than the
+      // name's line.
+      final tag = tester.getRect(find.descendant(of: post, matching: find.byType(SeferTag)));
+      expect(tag.height, greaterThan(name.height));
+      expect(tag.center.dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+      final disc = tester.getRect(find.descendant(of: post, matching: find.byType(InitialDisc)));
+      expect(disc.center.dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+      final menu = tester.getRect(find.descendant(of: post, matching: find.byTooltip('More options for Avraham')));
+      expect(menu.center.dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+    });
+
     testWidgets('is edited in a labelled field that takes the focus', (tester) async {
       final forums = await _Member().signIn();
       forums.seed(posts: [

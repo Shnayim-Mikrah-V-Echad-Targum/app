@@ -16,6 +16,7 @@ import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/community_screen.dart';
+import 'package:shnayim_mikra/features/community/ui/compose_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/moderation_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
@@ -25,6 +26,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/progress_screen.dart';
 import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/accessibility_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/display_settings_screen.dart';
@@ -336,7 +338,8 @@ void main() {
       await tester.tap(privacy);
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
-      expect(router.state.matchedLocation, '/community/legal/privacy');
+      // Under the account, as the page beneath it is.
+      expect(router.state.matchedLocation, '/community/account/legal/privacy');
       expect(selectedTab(tester), 3);
 
       await goBack(tester);
@@ -354,7 +357,8 @@ void main() {
       await tester.tap(privacy);
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
-      expect(router.state.matchedLocation, '/settings/about/legal/privacy');
+      // Under the account, not About: a reload puts back the account beneath.
+      expect(router.state.matchedLocation, '/settings/account/legal/privacy');
       expect(selectedTab(tester), 4);
 
       await goBack(tester);
@@ -969,6 +973,33 @@ void main() {
     await goBack(tester);
     expect(find.text('A question on Rashi'), findsOneWidget);
     expect(selectedTab(tester), 3);
+  });
+
+  testWidgets("a question asked from Today's haftarah opens the guidelines within Today, back to the question",
+      (tester) async {
+    final router = await _pump(tester);
+    router.go('/today/haftarah/5787:1');
+    await _loadTexts(tester);
+    await tester.longPress(find.byType(ScriptureVerse).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ask about this verse'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ComposeScreen), findsOneWidget);
+    expect(selectedTab(tester), 0, reason: 'within Today, as the haftarah was');
+
+    final guidelines = find.text('Read the guidelines');
+    await tester.ensureVisible(guidelines);
+    await tester.pumpAndSettle();
+    await tester.tap(guidelines);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(LegalScreen), findsOneWidget);
+    expect(_pageHeading('Community guidelines'), findsOneWidget);
+    expect(selectedTab(tester), 0, reason: 'still within Today');
+
+    await goBack(tester);
+    expect(find.byType(ComposeScreen), findsOneWidget);
+    expect(selectedTab(tester), 0);
   });
 
   testWidgets('a question asked over the reader opens the guidelines over itself too', (tester) async {
