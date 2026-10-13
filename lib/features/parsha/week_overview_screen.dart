@@ -15,6 +15,7 @@ import '../../ui/widgets/heading_reveal.dart';
 import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
+import '../../ui/widgets/page_columns.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
@@ -109,10 +110,16 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
       }
     }
 
+    // A desktop sets the parsha's head beside its aliyot, rather than over
+    // them in a narrow column.
+    final wide = MediaQuery.sizeOf(context).width >= Breakpoints.expanded;
+    final width = wide ? ContentWidth.todayWide : ContentWidth.list;
+
     return PageScaffold(
       leading: widget.leading,
       titleText: l.parshaLabel(name),
       titleRevealed: headingHidden,
+      contentMaxWidth: width,
       actions: [
         ...widget.actions,
         PopupMenuButton<String>(
@@ -135,44 +142,63 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
       ],
       body: watchHeading(
         PageBody(
+          maxWidth: width,
           children: [
-            _WeekHeader(ctx: ctx, namesKey: headingKey),
-            if (!ctx.isOpen) ...[
-              const Gap(Space.xl),
-              NoticeBanner(icon: Icons.visibility_outlined, text: l.previewNotOpen(names.practiceDate(ctx.week.start))),
-            ],
-            // Digits, which an eyebrow never holds; inset as a group's header.
-            SectionHeader.plain(
-              l.aliyotProgress(ctx.progress.completedAliyot, kAliyot),
-              padding: const EdgeInsetsDirectional.fromSTEB(Space.xs, Rhythm.sectionGap, 0, Space.sm),
-            ),
-            PaperGroup(
-              ruleInset: _AliyahRow.textStart,
-              children: [for (var a = 0; a < kAliyot; a++) _AliyahRow(ctx: ctx, aliyah: a)],
-            ),
-            const Gap(Rhythm.sectionGap),
-            PaperGroup(
-              ruleInset: PaperGroup.iconInset,
-              children: [
-                if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
-                // Once the reader has marked a verse of the parsha.
-                if (WeekNotesRow.shows(ref, ctx)) WeekNotesRow(ctx: ctx),
-                DiscussRow(ctx: ctx),
+            // From 1200, the parsha's head beside its aliyot and the rest of
+            // the week (§9 Parsha tab, 6); below, one above the other.
+            PageColumns(
+              wide: wide,
+              startFlex: 5,
+              endFlex: 7,
+              stackedGap: Rhythm.sectionGap,
+              start: [
+                _WeekHeader(ctx: ctx, namesKey: headingKey),
+                if (!ctx.isOpen) ...[
+                  const Gap(Space.xl),
+                  NoticeBanner(
+                    icon: Icons.visibility_outlined,
+                    text: l.previewNotOpen(names.practiceDate(ctx.week.start)),
+                  ),
+                ],
+              ],
+              end: [
+                // Digits, which an eyebrow never holds; inset as a group's
+                // header. Nothing above it: side by side it starts level with
+                // the parsha's name, and as one column it stands a section's
+                // gap below the head.
+                SectionHeader.plain(
+                  l.aliyotProgress(ctx.progress.completedAliyot, kAliyot),
+                  padding: const EdgeInsetsDirectional.fromSTEB(Space.xs, 0, 0, Space.sm),
+                ),
+                PaperGroup(
+                  ruleInset: _AliyahRow.textStart,
+                  children: [for (var a = 0; a < kAliyot; a++) _AliyahRow(ctx: ctx, aliyah: a)],
+                ),
+                const Gap(Rhythm.sectionGap),
+                PaperGroup(
+                  ruleInset: PaperGroup.iconInset,
+                  children: [
+                    if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
+                    // Once the reader has marked a verse of the parsha.
+                    if (WeekNotesRow.shows(ref, ctx)) WeekNotesRow(ctx: ctx),
+                    DiscussRow(ctx: ctx),
+                  ],
+                ),
+                if (open) ...[
+                  const Gap(Space.xl),
+                  // Read without the app, from a printed Chumash perhaps: taken
+                  // at the reader's word.
+                  Center(
+                    child: TextButton.icon(
+                      style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                      icon: const Icon(Icons.import_contacts),
+                      label: Text(l.markWholeWeek, textAlign: TextAlign.center),
+                      onPressed: markWeek,
+                    ),
+                  ),
+                ],
               ],
             ),
-            if (open) ...[
-              const Gap(Space.xl),
-              // Read without the app, from a printed Chumash perhaps: taken at
-              // the reader's word.
-              Center(
-                child: TextButton.icon(
-                  style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
-                  icon: const Icon(Icons.import_contacts),
-                  label: Text(l.markWholeWeek, textAlign: TextAlign.center),
-                  onPressed: markWeek,
-                ),
-              ),
-            ],
           ],
         ),
       ),

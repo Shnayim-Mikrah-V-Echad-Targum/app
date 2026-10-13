@@ -303,10 +303,19 @@ void main() {
       expect(rects[3].top - rects[0].bottom, moreOrLessEquals(6));
     });
 
-    testWidgets('four columns from 600 dp', (tester) async {
-      await openProgress(tester, size: const Size(800, 1600));
-      expect(firstRow(tester, genesis), 4);
-    });
+    // By the map's own width, not the window's: four from 440 dp and six
+    // from 640.
+    for (final (size, columns, where) in [
+      (const Size(600, 1600), 4, 'a 600 dp window, the map 471 wide beside the rail'),
+      (const Size(800, 1600), 6, 'a tablet, the map 671 wide'),
+      (const Size(1199, 1600), 6, 'a window just short of a desktop, the map in a column of its own'),
+      (const Size(1366, 1600), 4, 'a desktop, the map 555 wide beside the year'),
+    ]) {
+      testWidgets('$columns columns on $where', (tester) async {
+        await openProgress(tester, size: size);
+        expect(firstRow(tester, genesis), columns);
+      });
+    }
 
     // A one-word name is never broken inside the word. A tile whose name
     // has a word too long to sit beside its icon puts the icon above it,
@@ -324,7 +333,10 @@ void main() {
       // little too narrow for it beside the icon; a 430 dp phone's are not.
       (const Size(412, 2600), 1.0, 3, true),
       (const Size(430, 2600), 1.0, 3, false),
-      (const Size(1366, 1600), 1.0, 6, true),
+      // A tablet's six are too narrow for it too; a desktop's four beside
+      // the year are not.
+      (const Size(800, 2600), 1.0, 6, true),
+      (const Size(1366, 1600), 1.0, 4, false),
       (const Size(412, 4000), 2.0, 2, true),
       // Android's "Small" font: the icons keep their size.
       (const Size(430, 2600), 0.85, 3, false),

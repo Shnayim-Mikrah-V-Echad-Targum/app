@@ -58,7 +58,8 @@ abstract final class ContentWidth {
   /// Signing in and the account.
   static const double account = 440;
 
-  /// Today's two columns, from [Breakpoints.expanded].
+  /// A page in two columns, from [Breakpoints.expanded]: Today, Progress and
+  /// a week's page (PageColumns).
   static const double todayWide = 1040;
 }
 

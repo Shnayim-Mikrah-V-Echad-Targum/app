@@ -495,7 +495,7 @@ Rules:
   - reading column per LineWidth;
   - long-form pages 620;
   - account/sign-in 440;
-  - Today two-column container 1040 at ≥1200.
+  - two-column container 1040 at ≥1200: Today, Progress and a week's page (`PageColumns`, §9), the app bar's title and actions on its edges.
 - **Rhythm:** card padding 20 (16 under 360 dp); gap between cards 12; gap between sections 28; inside a card 12.
 - **Radii:**
   - chips and map tiles 6–8;
@@ -716,8 +716,8 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 ### 6.14 Torah map (progress_screen.dart tile())
 
 **Layout**
-- Fixed grid: 3 columns under 600, 4 at 600 and up, 6 at 1200 and up; gap 6.
-- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha’alotcha on a 360 or 412 dp phone, or in the six-column desktop grid) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, measured at the size it is set (letter spacing doesn't shrink with the text), and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
+- Fixed grid, by the map's own width rather than the window's: 3 columns under 440 (a phone), 4 from 440 (beside the year on a desktop, 500 to 555), 6 from 640 (a tablet's column, or a window's just under 1200); gap 6.
+- A name wraps between words, never inside one. A tile whose name has a word too long to sit beside its icon (Beha’alotcha on a 360 or 412 dp phone, or in a tablet's six columns) puts the icon above the name, 2 apart; a one-line name still fits the 52 minimum. A name with a word too long for the tile at all is set just small enough for it, measured at the size it is set (letter spacing doesn't shrink with the text), and no smaller than 80% of its size: only when large text would shrink a book's longest word (set bold) further does that book's grid take fewer columns. Each book counts its own words, so a long word in one book never changes another's grid.
 - Build each row as `IntrinsicHeight(Row([Expanded(tile) …]))` so tiles grow with text scale. No GridView aspect ratio.
 
 **Tile**
@@ -1181,7 +1181,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
    - Nothing animates.
    - The wording goes to the rabbinic advisor (DESIGN.md §11).
 9. **Desktop ≥1200:**
-   - A container of max width 1040 with columns 7/5 and a 24 gap.
+   - A container of max width 1040 with columns 7/5 and a 24 gap (`PageColumns`, as Progress and the week's page have).
    - Left: any notices, the hero and the Today card. Right: week strip, ledger, "Also this week".
    - The header runs across the container above them, so its help button ends where the columns do, as an app bar's actions end on the column's edge, and the two columns start level under it.
    - Each column is a focus traversal group, so Tab goes down the left column before the right, in the order a screen reader reads them, rather than across to the week strip, which stands higher on the page than the hero's controls.
@@ -1209,6 +1209,11 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
    - Tap opens the reader. The row is one button whose value is the state of each reading; the menu keeps its own item.
 4. **Second PaperGroup**, 28 below: Haftarah and Discuss rows, as on Today (`HaftarahRow`, `DiscussRow`), and between them, while the parsha has any bookmarks or notes, the row to them (`WeekNotesRow`, §6.29).
 5. **Footer:** a centred TextButton "Mark the whole parsha as read", while the week is open and unfinished.
+6. **Desktop ≥1200** (desktop_week, deskhe_week, desk1200_week, desktop_parsha):
+   - A container of max width 1040, as Today's, with columns 5/7 and a 24 gap (`PageColumns`); the app bar's title, revealed as the name scrolls away, starts on its edge, and its actions end on its other.
+   - Start: the header (1), and under it the notice of a week not yet open. End: the aliyot's count (2), with nothing above it, so that it stands level with the Hebrew name, the aliyot (3), the second PaperGroup (4) and the footer (5).
+   - Each column is a focus traversal group and a node of its own for screen readers, so both go down the header before the aliyot.
+   - 600–1199: a single 720 column, the header over the aliyot as above, a section's gap apart.
 
 **Browse** (browse_screen.dart; phone_browse, phonetall_browse, phone_browse_summer):
 - One PaperGroup per book, its hairlines inset 54, under a book header inset 4 (12 above the first, 28 above the rest, 8 below): "בראשית" in FRL 600 20 `secondary`, then "Genesis" in titleSmall onSurfaceVariant (English UI only), and at its end `browseBookParshiyot` ("12 parshiyot") in labelSmall onSurfaceVariant with tabular figures. Where the names and the count don't fit on one line (large text), the count goes under the names, at the start, and each word stays whole. A level-2 heading named in the UI's language.
@@ -1296,6 +1301,12 @@ In order:
    - "Welcome back" (`milestoneComeback`) follows a week missed, made up or paused, never the week the reader joined after it began;
    - with streak numbers hidden, the streak lengths are left out;
    - no locked items, trophies or counts of what remains.
+10. **Desktop ≥1200** (desktop_progress, deskhe_progress, desk1200_progress), so that the Torah map stands beside the year rather than below the fold:
+   - A container of max width 1040, as Today's, with columns 5/7 and a 24 gap (`PageColumns`); the app bar's title starts on its edge.
+   - Start: the LedgerCard and the grace row (1, 2), or the notice that streaks are hidden, This year (3) and This week’s plan (4). End: the Torah map's header, with nothing above it, so that it stands level with the ledger, and the map (5) in four columns, then everything after it (6–9).
+   - Each column is a focus traversal group and a node of its own for screen readers, so both go down the streaks, the year and the week before the map.
+   - Widened or narrowed across 1200, the page keeps what it holds: a book of the map opened, the weeks shown in full, the keyboard's focus.
+   - 600–1199: a single 720 column in the order above, the map a section's gap below the week (in six columns once it is 640 wide, §6.14).
 
 ### Community (community_screen.dart, forum_screen.dart, thread_screen.dart, compose_screen.dart, account_screen.dart)
 

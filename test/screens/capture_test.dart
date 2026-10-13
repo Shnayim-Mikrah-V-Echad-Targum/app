@@ -1881,8 +1881,8 @@ final _modes = [
   _Mode('narrow', const Size(360, 2600), (s) => s),
   // A 1920 dp desktop, where a column's inset is widest.
   _Mode('wide', const Size(1920, 1080), (s) => s),
-  // The narrowest desktop, where Today's columns are narrowest, for the
-  // screens in [_narrowDesktopScreens].
+  // The narrowest desktop, where the two columns of Today, Progress and a
+  // week's page are narrowest, for the screens in [_narrowDesktopScreens].
   _Mode('desk1200', const Size(1200, 800), (s) => s),
   // System text at 200% on a phone's own height, for the screens in
   // [_bigPhoneScreens]: what stays in view without scrolling.
@@ -1961,6 +1961,9 @@ const _narrowDesktopScreens = {
   'today_grace',
   'today_pause_ended',
   'today_divergence',
+  // Progress and a week's page in two columns, at their narrowest.
+  'progress',
+  'week',
   'forum_questions',
   'snackbar',
 };
