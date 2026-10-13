@@ -124,6 +124,12 @@ jobs:
             echo "::error file=build/web/main.dart.js::main.dart.js is $size bytes gzipped, over its budget of $BUDGET (docs/RELEASE.md, Web)"
             exit 1
           fi
+          # The time-zone database stays in its deferred part, however small
+          # a database might be imported at once in its place.
+          if grep -q 'America/New_York' build/web/main.dart.js; then
+            echo "::error file=lib/core/calendar/tz_database.dart::main.dart.js holds time-zone data: import package:timezone/data/ only as a deferred library"
+            exit 1
+          fi
       # The public privacy, support and account-deletion pages the stores
       # ask for, as static HTML in build/web/legal/ (docs/RELEASE.md).
       - name: Static policy, support and account-deletion pages

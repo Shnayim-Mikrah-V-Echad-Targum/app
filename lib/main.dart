@@ -21,6 +21,15 @@ import 'services/recent_errors.dart';
 import 'ui/widgets/fallbacks.dart';
 
 Future<void> main() async {
+  // The web engine never hands PlatformDispatcher.onError the errors that no
+  // code caught, as the other platforms do (recordRecentErrors), so there the
+  // app runs in a zone of its own that keeps them; the binding is set up and
+  // the app run within it, so that both are in the same zone.
+  if (kIsWeb) return runZonedGuarded(_start, keepUncaughtError);
+  await _start();
+}
+
+Future<void> _start() async {
   // On the web, pages have addresses of their own (…/community/thread/1),
   // which can be shared; web/index.html moves an older link's #/ there.
   usePathUrlStrategy();

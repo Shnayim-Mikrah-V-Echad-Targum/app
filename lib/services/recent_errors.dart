@@ -10,7 +10,9 @@ final recentErrors = RecentErrors();
 
 /// Keeps each error reported in [recentErrors], and reports it as before:
 /// Flutter's own (in a build, a layout, a paint or a gesture), and any that
-/// no code caught.
+/// no code caught. The web engine never calls PlatformDispatcher.onError,
+/// so on the web the app keeps those from a zone of its own instead
+/// ([keepUncaughtError], lib/main.dart).
 void recordRecentErrors() {
   final flutter = FlutterError.onError;
   FlutterError.onError = (details) {
@@ -25,6 +27,14 @@ void recordRecentErrors() {
   };
 }
 
+/// Keeps an error that no code caught, as the web app's zone hears of it
+/// (lib/main.dart), and passes it on to the zone around that one, which it
+/// is called in: the root zone, which has the browser log it as before.
+void keepUncaughtError(Object error, StackTrace stack) {
+  recentErrors.add(FlutterErrorDetails(exception: error, stack: stack));
+  Zone.current.handleUncaughtError(error, stack);
+}
+
 /// One error, as support reads it: what it was, what the app was doing, and
 /// where in the code; and how many times it has come.
 class RecordedError {
@@ -33,16 +43,26 @@ class RecordedError {
   /// Text alone, so that the error's widgets and their trees aren't held.
   factory RecordedError.of(FlutterErrorDetails details) => RecordedError._(
         details.summary.toDescription(),
-        details.context?.toDescription(),
+        switch (details.context?.toDescription()) {
+          _anonymousBuild => null,
+          final context => context,
+        },
         _firstFrames(details.stack),
       );
 
   /// The exception's first line.
   final String summary;
 
-  /// What the app was doing, such as "building TodayScreen", where the
-  /// framework says.
+  /// What the app was doing, where the framework says: "building" a widget,
+  /// "during performLayout()", and so on. A profile build names the widget
+  /// ("building TodayScreen"), but a release build, whose type names are
+  /// left out, can't: its "building Widget" says nothing the stack's frames
+  /// don't, and is left out.
   final String? context;
+
+  /// What a release build says as a widget fails to build, without its
+  /// name (`objectRuntimeType`).
+  static const _anonymousBuild = 'building Widget';
 
   /// The stack trace's first [frames] frames (see [_firstFrames]).
   final List<String> stack;

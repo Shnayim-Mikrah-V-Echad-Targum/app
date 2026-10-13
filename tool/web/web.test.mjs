@@ -370,7 +370,7 @@ async function bootstrap({
     listeners['flutter-first-frame']();
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  return { page, messages: active.messages, registered, registration, serviceWorker, document, history, dispatched, clock };
+  return { page, messages: active.messages, registered, registration, serviceWorker, document, history, dispatched, clock, listeners };
 }
 
 describe('the bootstrap', () => {
@@ -478,21 +478,50 @@ describe('the bootstrap', () => {
     assert.equal(registration.updates, 2);
   });
 
+  it('looks for a new version when a window is brought forward without having been hidden', async () => {
+    const { registration, document, clock, listeners } = await bootstrap({ controller: {} });
+    const hour = 60 * 60 * 1000;
+    clock.now += hour - 1;
+    listeners.focus();
+    assert.equal(registration.updates, 0);
+    clock.now += 1;
+    listeners.focus();
+    assert.equal(registration.updates, 1);
+    // Within the hour, focused or shown again: not again.
+    clock.now += hour / 2;
+    listeners.focus();
+    document.listeners.visibilitychange();
+    assert.equal(registration.updates, 1);
+    clock.now += hour / 2;
+    document.listeners.visibilitychange();
+    listeners.focus();
+    assert.equal(registration.updates, 2);
+  });
+
+  /// The worker's controllerchange listeners: the restart's own (once), and
+  /// the one that follows a restart in another window.
+  const restartListeners = (serviceWorker) => serviceWorker.listeners.filter(({ options }) => options?.once);
+  const takeoverListeners = (serviceWorker) =>
+    serviceWorker.listeners.filter(({ type, options }) => type === 'controllerchange' && !options?.once);
+  const changeController = (serviceWorker) => serviceWorker.listeners.forEach(({ listener }) => listener());
+
   it('restarts into the new version: it takes over, and the page reloads under it', async () => {
     const waiting = fakeWorker('installed');
-    const { page, serviceWorker } = await bootstrap({ controller: {}, waiting });
+    const { page, serviceWorker, dispatched } = await bootstrap({ controller: {}, waiting });
     page.smRestart();
     assert.deepEqual(waiting.messages, [{ type: 'SKIP_WAITING' }]);
     assert.equal(page.location.reloads, 0, 'not before it has taken over');
     // Pressed again before it has: told again, with one reload to come.
     page.smRestart();
     assert.equal(waiting.messages.length, 2);
-    assert.equal(serviceWorker.listeners.length, 1);
-    const [{ type, listener, options }] = serviceWorker.listeners;
-    assert.equal(type, 'controllerchange');
-    assert.equal(options.once, true);
-    listener();
+    const restarts = restartListeners(serviceWorker);
+    assert.equal(restarts.length, 1);
+    assert.equal(restarts[0].type, 'controllerchange');
+    changeController(serviceWorker);
     assert.equal(page.location.reloads, 1);
+    // Its own restart, not another window's.
+    assert.ok(!dispatched.includes('sm-update-took-over'));
+    assert.equal(page.smUpdateTookOver, undefined);
   });
 
   it('reloads at once where the new version took over in another window', async () => {
@@ -502,7 +531,32 @@ describe('the bootstrap', () => {
     page.smRestart();
     assert.equal(page.location.reloads, 1);
     assert.deepEqual(waiting.messages, []);
-    assert.deepEqual(serviceWorker.listeners, []);
+    assert.deepEqual(restartListeners(serviceWorker), []);
+  });
+
+  it("tells the app when another window's restart has let the new version take this one over", async () => {
+    const waiting = fakeWorker('installed');
+    const { page, serviceWorker, dispatched } = await bootstrap({ controller: {}, waiting });
+    assert.equal(takeoverListeners(serviceWorker).length, 1);
+    waiting.become('activated');
+    changeController(serviceWorker);
+    assert.equal(page.smUpdateTookOver, true);
+    assert.deepEqual(dispatched, ['sm-update-ready', 'sm-update-took-over']);
+    // The app then saves and restarts, which simply reloads.
+    page.smRestart();
+    assert.equal(page.location.reloads, 1);
+    assert.deepEqual(waiting.messages, []);
+  });
+
+  it('takes the first version taking over a first visit for no restart', async () => {
+    const { page, serviceWorker, dispatched } = await bootstrap();
+    changeController(serviceWorker);
+    assert.equal(page.smUpdateTookOver, undefined);
+    assert.deepEqual(dispatched, []);
+    // A later version, which another window restarted into, is one.
+    changeController(serviceWorker);
+    assert.equal(page.smUpdateTookOver, true);
+    assert.deepEqual(dispatched, ['sm-update-took-over']);
   });
 
   describe("shows a shortcut's page in the window it opens in", () => {

@@ -14,13 +14,14 @@ import 'retry.dart';
 
 /// The places a reader can choose for Shabbat times, loaded on first use and
 /// kept while a page that uses them is open (Reading & customs, or the list
-/// of cities). Tried again only when the list's Try again asks. The
-/// time-zone database comes first: the list suggests places by the device's
-/// clock ([CityDirectory.suggest]).
-final cityDirectoryProvider = FutureProvider.autoDispose<CityDirectory>((ref) async {
-  await ensureTimeZones();
-  return CityDirectory.load();
-}, retry: noRetry);
+/// of cities). Tried again only when the list's Try again asks. It doesn't
+/// wait for the time-zone database: without it, the list suggests only the
+/// places in the device's own zone ([CityDirectory.inTimeZone]), and those
+/// on the same clock once [timeZoneDatabaseProvider] has it in.
+final cityDirectoryProvider = FutureProvider.autoDispose<CityDirectory>(
+  (ref) => CityDirectory.load(),
+  retry: noRetry,
+);
 
 /// The device's IANA time zone, which suggests places to choose; null where
 /// the platform doesn't say.
@@ -55,8 +56,8 @@ final shabbatTimesProvider = Provider<({Zmanim friday, Zmanim shabbat, bool yomT
 /// for what shows them (Today, Reading & customs, the reminders): loaded once
 /// the first frame is up (on the web, downloaded then), and decoded when
 /// nothing is animating, as the notification service loads it, since
-/// decoding it blocks the UI for a while. The list of cities loads it at
-/// once if it isn't in yet.
+/// decoding it blocks the UI for a while. The list of cities asks for it
+/// too, for its suggestions, but never waits for it.
 final timeZoneDatabaseProvider = FutureProvider<void>((ref) async {
   if (timeZonesLoaded) return;
   await WidgetsBinding.instance.waitUntilFirstFrameRasterized;

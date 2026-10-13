@@ -15,12 +15,20 @@ external JSFunction? get _restart;
 
 const _readyEvent = 'sm-update-ready';
 
+/// The bootstrap's event as another window's restart lets the new version
+/// take this one over.
+const _tookOverEvent = 'sm-update-took-over';
+
 bool updateWaiting() => _waiting != null;
 
-void Function() listenForUpdate(void Function() onReady) {
-  final listener = ((web.Event _) => onReady()).toJS;
-  web.window.addEventListener(_readyEvent, listener);
-  return () => web.window.removeEventListener(_readyEvent, listener);
+void Function() listenForUpdate(void Function() onReady) => _listen(_readyEvent, onReady);
+
+void Function() listenForTakeover(void Function() onTakeover) => _listen(_tookOverEvent, onTakeover);
+
+void Function() _listen(String event, void Function() callback) {
+  final listener = ((web.Event _) => callback()).toJS;
+  web.window.addEventListener(event, listener);
+  return () => web.window.removeEventListener(event, listener);
 }
 
 void restartIntoUpdate() => _restart?.callAsFunction();

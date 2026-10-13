@@ -287,6 +287,12 @@ class _Server extends DemoForumRepository {
   bool get isDemo => false;
 }
 
+/// [_Gated], on a server.
+class _GatedServer extends _Gated {
+  @override
+  bool get isDemo => false;
+}
+
 /// A signed-in member who can't reach the server to accept the guidelines.
 class _OfflineNewcomer extends DemoForumRepository {
   @override
@@ -2048,7 +2054,7 @@ void main() {
         AppConfig.debugWebUrl = address;
         addTearDown(() => AppConfig.debugWebUrl = null);
         final copied = clipboard(tester);
-        final c = await _pump(tester);
+        final c = await _pump(tester, forums: _Server());
         c.read(routerProvider).go('/community/thread/1');
         await tester.pumpAndSettle();
         expect(c.read(myProfileProvider).value?.isModerator ?? false, isFalse, reason: 'signed out');
@@ -2071,7 +2077,7 @@ void main() {
         return null;
       });
       addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
-      final c = await _pump(tester);
+      final c = await _pump(tester, forums: _Server());
       c.read(routerProvider).go('/community/thread/1');
       await tester.pumpAndSettle();
       await tester.tap(more);
@@ -2084,18 +2090,36 @@ void main() {
     });
 
     testWidgets('offers a member nothing where the build has no address for the site', (tester) async {
-      final c = await _pump(tester);
+      final c = await _pump(tester, forums: _Server());
       c.read(routerProvider).go('/community/thread/1');
       await tester.pumpAndSettle();
       expect(find.text('Why read the Targum rather than a translation?'), findsWidgets);
       expect(more, findsNothing);
     });
 
+    testWidgets('offers nothing in the on-device demo, whose discussions are the device’s own', (tester) async {
+      AppConfig.debugWebUrl = 'https://example.org/app/';
+      addTearDown(() => AppConfig.debugWebUrl = null);
+      final c = await _pump(tester);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      expect(find.text('Why read the Targum rather than a translation?'), findsWidgets);
+      expect(more, findsNothing);
+
+      // Nor to a moderator, beside the pin and the lock.
+      final mod = await _pump(tester, forums: await _Gated().signIn());
+      mod.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+      expect(offered(tester), ['Pin to top', 'Lock discussion']);
+    });
+
     testWidgets('offers a moderator Copy link above the pin and the lock', (tester) async {
       AppConfig.debugWebUrl = 'https://example.org/';
       addTearDown(() => AppConfig.debugWebUrl = null);
       final copied = clipboard(tester);
-      final c = await _pump(tester, forums: await _Gated().signIn());
+      final c = await _pump(tester, forums: await _GatedServer().signIn());
       c.read(routerProvider).go('/community/thread/1');
       await tester.pumpAndSettle();
       await tester.tap(more);
@@ -2111,7 +2135,11 @@ void main() {
       AppConfig.debugWebUrl = 'https://example.org/app/';
       addTearDown(() => AppConfig.debugWebUrl = null);
       final copied = clipboard(tester);
-      final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
+      final c = await _pump(
+        tester,
+        forums: _Server(),
+        settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew),
+      );
       c.read(routerProvider).go('/community/thread/1');
       await tester.pumpAndSettle();
       await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byTooltip('אפשרויות נוספות')));

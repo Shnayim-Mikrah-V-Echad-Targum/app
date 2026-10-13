@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,6 +43,10 @@ void main() {
     'progress': '/progress',
     'community': '/community',
   };
+  // The install dialog's screenshots (web/manifest.json): these screens on
+  // a phone, in the light theme in English, and [webWide] on a computer.
+  const webNarrow = {'today', 'reader'};
+  const webWide = 'today';
   const themes = {
     AppThemeMode.light: 'light',
     AppThemeMode.dark: 'dark',
@@ -99,7 +106,7 @@ void main() {
             c.read(settingsProvider.notifier).update((s) => s.copyWith(theme: theme));
             await tester.pumpAndSettle();
             await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('screens/${name}_${language}_$tag.png'));
-            if (!hebrew && theme == AppThemeMode.light && (name == 'today' || name == 'reader')) {
+            if (!hebrew && theme == AppThemeMode.light && webNarrow.contains(name)) {
               await expectLater(
                 find.byType(ShnayimMikraApp),
                 matchesGoldenFile('../../web/screenshots/$name-narrow.png'),
@@ -118,10 +125,21 @@ void main() {
   testWidgets('Today on a computer, for the web manifest', (tester) async {
     debugDisableShadows = false;
     try {
-      await open(tester, '/today', size: const Size(1366, 860));
-      await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('../../web/screenshots/today-wide.png'));
+      await open(tester, screens[webWide]!, size: const Size(1366, 860));
+      await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('../../web/screenshots/$webWide-wide.png'));
     } finally {
       debugDisableShadows = true;
     }
   }, skip: goldensSkipped);
+
+  // On every platform, unlike the goldens: so that the dialog never shows a
+  // screenshot these tests no longer write, gone stale.
+  test('web/manifest.json shows the screenshots these tests write', () {
+    expect(screens.keys, containsAll({...webNarrow, webWide}));
+    final manifest = jsonDecode(File('web/manifest.json').readAsStringSync()) as Map<String, dynamic>;
+    expect(
+      [for (final shot in (manifest['screenshots'] as List).cast<Map<String, dynamic>>()) shot['src']],
+      [for (final name in webNarrow) 'screenshots/$name-narrow.png', 'screenshots/$webWide-wide.png'],
+    );
+  });
 }

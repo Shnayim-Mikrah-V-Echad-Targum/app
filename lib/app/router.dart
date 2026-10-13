@@ -85,6 +85,26 @@ AccountScreen _account(GoRouterState s) => AccountScreen(
       openedFromData: s.uri.queryParameters['from'] == 'data',
     );
 
+/// A page that a link opened before onboarding was done, such as a
+/// discussion shared with a new reader: the welcome comes first, and the
+/// page opens as onboarding ends (see OnboardingStepScreen), or once a
+/// restore has ended it (see the redirect).
+class HeldLocation {
+  String? _location;
+
+  /// Keeps [location] for the end of onboarding, in place of any before it.
+  void hold(String location) => _location = location;
+
+  /// The location held, which is then no longer held.
+  String? take() {
+    final location = _location;
+    _location = null;
+    return location;
+  }
+}
+
+final heldLocationProvider = Provider<HeldLocation>((ref) => HeldLocation());
+
 final routerProvider = Provider<GoRouter>((ref) {
   final onboarded = ValueNotifier<bool>(ref.read(settingsProvider).onboardingComplete);
   ref.listen(settingsProvider.select((s) => s.onboardingComplete), (_, next) => onboarded.value = next);
@@ -97,6 +117,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: onboarded,
     redirect: (context, state) {
       final path = state.uri.path;
+      // The site's own address, whatever a link added to it (?fbclid=,
+      // ?utm_source=), or its index.html by name: the app's start.
+      if (path == '/' || path == '/index.html') return onboarded.value ? '/today' : '/welcome';
       // The welcome and the steps of onboarding after it.
       final atWelcome = path == '/welcome' || path.startsWith('/welcome/');
       // The guide, sources and policies are open before onboarding too: the
@@ -104,8 +127,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Their copies within the tabs (the addresses they had in About among
       // them) lead to the pages of their own, as the tabs wait for it.
       final isPublic = path == '/guide' || path == '/sources' || path.startsWith('/legal/');
-      if (!onboarded.value && !atWelcome && !isPublic) return _pageOverTabs(path) ?? '/welcome';
-      if (onboarded.value && atWelcome) return '/today';
+      if (!onboarded.value && !atWelcome && !isPublic) {
+        if (_pageOverTabs(path) case final page?) return page;
+        // Any other page of the app a link led to waits for the welcome.
+        if (state.error == null && path != '/today') ref.read(heldLocationProvider).hold(state.uri.toString());
+        return '/welcome';
+      }
+      if (onboarded.value && atWelcome) return ref.read(heldLocationProvider).take() ?? '/today';
       return null;
     },
     errorPageBuilder: (context, state) => _page(state, const NotFoundPage()),

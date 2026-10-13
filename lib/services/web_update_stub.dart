@@ -5,4 +5,6 @@ bool updateWaiting() => false;
 
 void Function() listenForUpdate(void Function() onReady) => () {};
 
+void Function() listenForTakeover(void Function() onTakeover) => () {};
+
 void restartIntoUpdate() {}

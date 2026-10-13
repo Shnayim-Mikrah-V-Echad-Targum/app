@@ -1148,7 +1148,8 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_weekly': _withWeeklyThread,
   'forum_weekly': _withWeeklyThread,
   'thread_report': _signedIn,
-  for (final screen in _webUrlKeys) screen: _signedIn,
+  // On a server: the demo's discussions have no link.
+  for (final screen in _webUrlKeys) screen: _signedInOnServer,
   'community_member': _signedIn,
   'account_name': _signedIn,
   for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked', 'account_delete'])
@@ -1186,6 +1187,12 @@ Future<ForumRepository> _withOwnPost() async {
         id: '9100',
         threadId: '1',
         authorId: 'me',
+Future<ForumRepository> _signedInOnServer() async {
+  final repo = _Cloud();
+  await repo.verifyCode('reader@example.org', '123456');
+  return repo;
+}
+
         authorName: 'Leah',
         body: 'Rashi on the Targum of 1:1 is a good place to see the difference.',
         createdAt: DateTime.now().subtract(const Duration(minutes: 40)),

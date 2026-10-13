@@ -26,6 +26,7 @@ class FakeWebUpdates extends WebUpdates {
   bool waiting;
 
   final listeners = <void Function()>[];
+  final takeoverListeners = <void Function()>[];
 
   /// What storage held at each restart: the settings saved by then.
   final restarts = <String?>[];
@@ -39,10 +40,24 @@ class FakeWebUpdates extends WebUpdates {
     }
   }
 
+  /// A restart in another window, which lets the new version take this one
+  /// over.
+  void takeOver() {
+    for (final listener in [...takeoverListeners]) {
+      listener();
+    }
+  }
+
   @override
   void Function() listen(void Function() onReady) {
     listeners.add(onReady);
     return () => listeners.remove(onReady);
+  }
+
+  @override
+  void Function() listenForTakeover(void Function() onTakeover) {
+    takeoverListeners.add(onTakeover);
+    return () => takeoverListeners.remove(onTakeover);
   }
 
   @override
@@ -92,6 +107,47 @@ void main() {
       final saved = AppSettings.fromJson(jsonDecode(updates.restarts.single!) as Map<String, dynamic>);
       expect(saved.showStreaks, isFalse);
     });
+
+    test('restarts all the same when storage fails', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final updates = FakeWebUpdates(waiting: true);
+      final container = ProviderContainer(overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        settingsProvider.overrideWith(_FailingSettings.new),
+        webUpdatesProvider.overrideWithValue(updates),
+      ]);
+      addTearDown(container.dispose);
+      final printed = <String?>[];
+      final print = debugPrint;
+      debugPrint = (message, {wrapWidth}) => printed.add(message);
+      addTearDown(() => debugPrint = print);
+
+      await container.read(webUpdateReadyProvider.notifier).restart();
+      expect(updates.restarts, hasLength(1));
+      expect(printed, [contains('Could not save before restarting')]);
+    });
+  });
+
+  testWidgets('a restart in another window restarts this one too, once what it holds back is saved', (tester) async {
+    final updates = FakeWebUpdates(waiting: true);
+    final c = await pumpApp(tester, overrides: [webUpdatesProvider.overrideWithValue(updates)]);
+    await tester.pumpAndSettle();
+    updates.prefs = c.read(sharedPreferencesProvider);
+    // On another page than Today and About, which offer the restart.
+    c.read(routerProvider).go('/progress');
+    await tester.pumpAndSettle();
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(showStreaks: false));
+
+    updates.takeOver();
+    await tester.pump();
+    expect(updates.restarts, hasLength(1));
+    final saved = AppSettings.fromJson(jsonDecode(updates.restarts.single!) as Map<String, dynamic>);
+    expect(saved.showStreaks, isFalse);
+
+    // The app stops listening as it goes.
+    await tester.pumpWidget(const SizedBox());
+    expect(updates.takeoverListeners, isEmpty);
   });
 
   group('the offer of a new version', () {
@@ -232,4 +288,10 @@ Future<void> go(WidgetTester tester, ProviderContainer c, String route) async {
     await tester.pump();
   }
   await tester.pumpAndSettle();
+}
+
+/// Settings whose save to storage fails, as localStorage's does when full.
+class _FailingSettings extends SettingsController {
+  @override
+  Future<void> flush() async => throw Exception('QuotaExceededError');
 }

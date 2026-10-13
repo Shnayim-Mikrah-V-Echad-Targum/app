@@ -13,6 +13,7 @@ import '../services/feedback.dart' show StatusMessageArea;
 import '../services/home_widget_sync.dart';
 import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
+import '../services/web_update.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/fonts_change_scope.dart';
 import 'android_night_mode.dart';
@@ -36,6 +37,7 @@ class ShnayimMikraApp extends ConsumerStatefulWidget {
 class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsBindingObserver {
   StreamSubscription<String>? _taps;
   PendingSaves? _pendingSaves;
+  void Function()? _stopFollowingRestarts;
 
   // The interface font the theme is built in: the one chosen, once it has
   // loaded, and until then the one shown before it. Text measured as it is
@@ -54,6 +56,12 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     // Subscribed directly, so that a tap opening the same page as the last
     // one still opens it.
     _taps = notifications.taps.listen(_open);
+    // A restart in another window of the web app has let the new version
+    // take this one over: it restarts too, rather than run the old version's
+    // code on the new version's files.
+    _stopFollowingRestarts = ref
+        .read(webUpdatesProvider)
+        .listenForTakeover(() => unawaited(ref.read(webUpdateReadyProvider.notifier).restart()));
     // main() loaded the opt-in fonts the settings choose, or gave up waiting
     // for them: this tries again for one that failed, and shows it once it
     // has loaded.
@@ -96,6 +104,7 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _taps?.cancel();
+    _stopFollowingRestarts?.call();
     _pendingSaves?.dispose();
     super.dispose();
   }

@@ -38,7 +38,9 @@ if ('serviceWorker' in navigator) {
 // window of this one is open (skipWaiting: false in workbox-config.cjs), so
 // that a window never mixes the two. An installed app or a pinned tab may
 // stay open for weeks: the app offers to restart into the new version
-// instead (lib/services/web_update.dart), once it is ready.
+// instead (lib/services/web_update.dart), once it is ready. A restart in one
+// window lets the new version take over every window (clientsClaim), and
+// each of the others then restarts too.
 function offerUpdates(registration) {
   // Tells the app that [worker], a new version, is ready: as it happens,
   // and in smUpdateReady for an app that asks later.
@@ -62,19 +64,36 @@ function offerUpdates(registration) {
 
   // The browser looks for a new version as the page loads; a window that
   // stays open looks again whenever it comes back to the front, at most
-  // once an hour.
+  // once an hour: shown again (restored, or its tab chosen), or focused (a
+  // desktop window brought forward from behind another, which was never
+  // hidden).
   var checked = Date.now();
-  document.addEventListener('visibilitychange', function () {
+  function check() {
     if (document.visibilityState !== 'visible' || Date.now() - checked < 60 * 60 * 1000) return;
     checked = Date.now();
     registration.update().catch(function () {});
-  });
+  }
+  document.addEventListener('visibilitychange', check);
+  window.addEventListener('focus', check);
 
   // Restarts into the new version, once the app has saved what it holds
   // back: the waiting worker takes over (Workbox's SKIP_WAITING message),
   // and the page reloads under it. Where it has taken over already, at a
   // restart in another window, the page simply reloads.
   var restarting = false;
+  // Another window's restart: the new version has taken this window over,
+  // whose code is the old version's, while the files it may still load (a
+  // deferred part, a book) are now the new version's. The app saves what it
+  // holds back and restarts too (smRestart, which then simply reloads). The
+  // first version taking over a first visit is no restart.
+  var controlled = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    var tookOver = controlled && !restarting;
+    controlled = true;
+    if (!tookOver) return;
+    window.smUpdateTookOver = true;
+    window.dispatchEvent(new Event('sm-update-took-over'));
+  });
   window.smRestart = function () {
     var worker = window.smUpdateReady;
     if (!worker || worker.state !== 'installed') {

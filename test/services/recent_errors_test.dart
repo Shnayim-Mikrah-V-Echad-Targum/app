@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/services/recent_errors.dart';
@@ -126,5 +128,27 @@ void main() {
       PlatformDispatcher.instance.onError = platform;
       recentErrors.clear();
     }
+  });
+
+  // As the web app's zone keeps them, where the engine never calls
+  // PlatformDispatcher.onError.
+  test('keeps an error no code caught in the app’s zone, and passes it on to the zone around it', () async {
+    addTearDown(recentErrors.clear);
+    final passedOn = Completer<Object>();
+    runZonedGuarded(
+      () => runZonedGuarded(() => Future<void>(() => throw StateError('in a tap')), keepUncaughtError),
+      (error, _) => passedOn.complete(error),
+    );
+    expect(await passedOn.future, isA<StateError>());
+    expect([for (final e in recentErrors.errors) e.summary], ['Bad state: in a tap']);
+  });
+
+  test('leaves out what a release build says of a widget it can’t name', () {
+    final errors = RecentErrors()
+      ..add(_error('no element', context: 'building Widget'))
+      ..add(_error('closed', context: 'building Widget-[<\'today\'>]'));
+    expect(errors.errors.first.context, isNull);
+    expect(errors.report(version: '').split('\n'), isNot(contains('building Widget')));
+    expect(errors.errors.last.context, 'building Widget-[<\'today\'>]', reason: 'its key says which');
   });
 }

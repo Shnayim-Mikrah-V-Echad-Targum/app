@@ -172,10 +172,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> with FetchAgainIfFa
   }
 
   /// What the app bar's menu offers for [t]: its link, to every member,
-  /// where the build knows the site's address; to a moderator, its pin and
-  /// its lock.
-  List<PopupMenuEntry<String>> _menu(AppLocalizations l, ThreadSummary t, {required bool isMod}) => [
-        if (AppConfig.webUrl.isNotEmpty) SeferMenuItem(value: _copyLinkAction, child: Text(l.copyLink)),
+  /// where the build knows the site's address and the discussion is on the
+  /// community's server ([linkable]): the on-device demo's discussions are
+  /// the device's own, and a link would find another's or none. To a
+  /// moderator, its pin and its lock.
+  List<PopupMenuEntry<String>> _menu(AppLocalizations l, ThreadSummary t, {required bool isMod, required bool linkable}) => [
+        if (linkable && AppConfig.webUrl.isNotEmpty) SeferMenuItem(value: _copyLinkAction, child: Text(l.copyLink)),
         if (isMod) ...[
           SeferMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
           SeferMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
@@ -270,7 +272,9 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> with FetchAgainIfFa
       );
     }
     final canReply = t != null && (!t.locked || isMod);
-    final menu = t == null ? const <PopupMenuEntry<String>>[] : _menu(l, t, isMod: isMod);
+    final menu = t == null
+        ? const <PopupMenuEntry<String>>[]
+        : _menu(l, t, isMod: isMod, linkable: !ref.watch(forumRepositoryProvider).isDemo);
     // The reply box, docked only under the posts: none while they load, or
     // can't.
     final docked = canReply && posts.hasValue;

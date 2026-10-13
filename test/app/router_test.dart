@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/about/about_screen.dart';
 import 'package:shnayim_mikra/features/about/guide_screen.dart';
@@ -11,6 +13,7 @@ import 'package:shnayim_mikra/features/community/ui/community_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
 import 'package:shnayim_mikra/features/progress/progress_screen.dart';
+import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/accessibility_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
@@ -226,6 +229,99 @@ void main() {
         expect(router.state.uri.path, '/welcome');
       });
     }
+  });
+
+  // The site's own address, as a link from elsewhere gives it: with what
+  // the site that showed the link added (Facebook's ?fbclid=, a campaign's
+  // ?utm_source=), or its index.html by name.
+  group("the site's own address", () {
+    for (final address in ['/', '/?utm_source=x', '/?fbclid=abc', '/index.html', '/index.html?fbclid=abc']) {
+      testWidgets('$address opens Today', (tester) async {
+        final router = await _pump(tester);
+        router.go(address);
+        await _settle(tester);
+        expect(find.byType(TodayScreen), findsOneWidget);
+        expect(find.text('Page not found'), findsNothing);
+        expect(router.state.uri.path, '/today');
+      });
+
+      testWidgets('$address opens the welcome on a first visit', (tester) async {
+        final router = await _pump(tester, settings: const AppSettings());
+        router.go(address);
+        await _settle(tester);
+        expect(find.byType(OnboardingScreen), findsOneWidget);
+        expect(router.state.uri.path, '/welcome');
+      });
+    }
+  });
+
+  // A discussion shared with someone who has never opened the app.
+  group('a page a link opens before onboarding', () {
+    Future<(GoRouter, ProviderContainer)> firstVisit(WidgetTester tester, DateTime now) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(tester, settings: const AppSettings(), now: now);
+      await tester.pumpAndSettle();
+      return (c.read(routerProvider), c);
+    }
+
+    testWidgets('opens once onboarding is done, beneath the reader it ends on', (tester) async {
+      final (router, _) = await firstVisit(tester, _now);
+      router.go('/community/thread/1');
+      await _settle(tester);
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+
+      await tester.tap(find.text('Start this week’s parsha'));
+      await tester.pumpAndSettle();
+      for (var step = 0; step < 2; step++) {
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+      }
+      final start = find.text('Start reading');
+      await tester.ensureVisible(start);
+      await tester.pumpAndSettle();
+      await tester.tap(start);
+      await _settle(tester);
+      expect(find.byType(ReaderScreen), findsOneWidget);
+
+      // Closing the reader shows the discussion, within Community.
+      await tester.tap(find.byType(BackButton));
+      await _settle(tester);
+      expect(find.byType(ReaderScreen), findsNothing);
+      expect(tester.widget<ThreadScreen>(find.byType(ThreadScreen)).threadId, '1');
+      expect(router.state.uri.path, '/community/thread/1');
+      expect(_tabShown(), 3);
+    });
+
+    testWidgets('opens once a restore has ended onboarding', (tester) async {
+      final (router, c) = await firstVisit(tester, _now);
+      router.go('/community/thread/1');
+      await _settle(tester);
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+
+      // As restoring progress ends it.
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(onboardingComplete: true));
+      await _settle(tester);
+      expect(tester.widget<ThreadScreen>(find.byType(ThreadScreen)).threadId, '1');
+      expect(_tabShown(), 3);
+
+      // Once: the welcome, should it be asked for again, leads to Today.
+      router.go('/welcome');
+      await _settle(tester);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+
+    testWidgets('is not held for an address that is no page, nor for Today', (tester) async {
+      final (router, c) = await firstVisit(tester, _now);
+      router.go('/no/such/page');
+      await _settle(tester);
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+      expect(c.read(heldLocationProvider).take(), isNull);
+      router.go('/today');
+      await _settle(tester);
+      expect(c.read(heldLocationProvider).take(), isNull);
+    });
   });
 
   group('a tab chosen', () {
