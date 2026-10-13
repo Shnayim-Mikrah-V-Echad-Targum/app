@@ -28,7 +28,10 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
     final l = context.l10n;
     final notifier = ref.read(settingsProvider.notifier);
     final before = ref.read(settingsProvider);
-    final dark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    // As dark as the theme in use, the device's while the app follows it.
+    // Android, holding the app in its theme's night mode, reports a theme
+    // chosen in the app as the device's own anyway.
+    final dark = Theme.of(context).brightness == Brightness.dark;
     notifier.update((s) => applyPreset(s, preset, darkPreferred: dark));
     final after = ref.read(settingsProvider);
     showStatus(

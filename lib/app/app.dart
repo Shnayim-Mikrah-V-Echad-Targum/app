@@ -15,6 +15,7 @@ import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/fonts_change_scope.dart';
+import 'android_night_mode.dart';
 import 'celebrations.dart';
 import 'device_accessibility.dart';
 import 'pending_saves.dart';
@@ -41,6 +42,9 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
   // stand-in font, and nothing flashes in one.
   UiFont _uiFont = UiFont.standard;
 
+  /// The night mode last sent to Android's activity ([setAndroidNightMode]).
+  String? _nightMode;
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +57,15 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     // for them: this tries again for one that failed, and shows it once it
     // has loaded.
     _loadFonts();
+    // On Android the app's theme sets the night mode the system holds it in,
+    // which from Android 12 colours the launch screen of the next cold start.
+    // The system then reports the theme's brightness as the device's, so the
+    // app takes the device's only to follow it, when the mode is the
+    // system's own.
+    if (holdsAndroidNightMode) {
+      ref.listenManual(settingsProvider.select((s) => s.theme), (_, theme) => _holdNightMode(theme),
+          fireImmediately: true);
+    }
     // The app starts on Today; a notification that launched it opens over
     // it. Shortcuts on the app's icon and taps on the home-screen widget open
     // once Today is up too, the one that launched the app first, so each has
@@ -90,6 +103,15 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
     // Reminders exist only after onboarding, which must come first anyway.
     if (!mounted || !ref.read(settingsProvider).onboardingComplete) return;
     openFromOutside(ref.read(routerProvider), route);
+  }
+
+  /// Holds Android's night mode for the app to [theme], telling the activity
+  /// only of a change: light and sepia, say, are both 'no'.
+  void _holdNightMode(AppThemeMode theme) {
+    final mode = androidNightMode(theme);
+    if (mode == _nightMode) return;
+    _nightMode = mode;
+    unawaited(setAndroidNightMode(mode));
   }
 
   // A font that couldn't load (a network blip on the web) is tried again.

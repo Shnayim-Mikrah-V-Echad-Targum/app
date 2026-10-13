@@ -869,7 +869,7 @@ const kMaxReadingScale = 5.0;
 enum DisplayPreset { largePrint, dyslexia, highContrast, lowVision, reset }
 
 /// [s] with the display settings [p] sets. High contrast is dark or light as
-/// the device prefers ([darkPreferred]).
+/// the reader prefers ([darkPreferred]): as the theme in use is.
 AppSettings applyPreset(AppSettings s, DisplayPreset p, {required bool darkPreferred}) {
   const d = AppSettings();
   final highContrast = darkPreferred ? AppThemeMode.highContrastDark : AppThemeMode.highContrastLight;

@@ -1,5 +1,6 @@
 package org.shnayimmikra.shnayim_mikra
 
+import android.app.UiModeManager
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
@@ -18,16 +19,49 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private var audioSession: ListenAudioFocus? = null
+    private var uiModeChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        audioSession = ListenAudioFocus(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
+        val messenger = flutterEngine.dartExecutor.binaryMessenger
+        audioSession = ListenAudioFocus(applicationContext, messenger)
+        uiModeChannel = MethodChannel(messenger, "shnayim_mikra/ui_mode").apply {
+            setMethodCallHandler { call, result ->
+                if (call.method == "setNightMode") setNightMode(call.arguments, result) else result.notImplemented()
+            }
+        }
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         audioSession?.close()
         audioSession = null
+        uiModeChannel?.setMethodCallHandler(null)
+        uiModeChannel = null
         super.cleanUpFlutterEngine(flutterEngine)
+    }
+
+    /**
+     * Holds the app in the night mode of its theme (lib/app/android_night_mode.dart):
+     * "yes" for a dark theme, "no" for a light one, "auto" to follow the
+     * system. Android 12 and later keep it for the app and draw the launch
+     * screen of each cold start from it, so a reader who chose Dark on a
+     * light phone sees the dark launch screen before the dark first frame.
+     * Earlier versions draw the system's, and nothing is done.
+     */
+    private fun setNightMode(mode: Any?, result: MethodChannel.Result) {
+        val nightMode = when (mode) {
+            "yes" -> UiModeManager.MODE_NIGHT_YES
+            "no" -> UiModeManager.MODE_NIGHT_NO
+            "auto" -> UiModeManager.MODE_NIGHT_AUTO
+            else -> {
+                result.error("bad_mode", "Unknown night mode: $mode", null)
+                return
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            getSystemService(UiModeManager::class.java)?.setApplicationNightMode(nightMode)
+        }
+        result.success(null)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -265,7 +265,7 @@ Notes:
   - web `background_color: "#FAF7F0"`, `theme_color: "#1D3F75"`;
   - `remove_alpha_ios: true`.
 - Android reminders: the status-bar glyph (§7.8) tinted primary #1D3F75 (`Palettes.light.primary`).
-- Launch screens (`pubspec.yaml` flutter_native_splash, Android and iOS): `color: "#FAF7F0"`, `color_dark: "#14120F"`, the same on Android 12 and later, with the mark's tile (§7.8) and no icon background. Android's window background behind the app (`NormalTheme`) is `@color/app_bg`, the same two surfaces, so nothing changes colour between the launch screen and the first frame.
+- Launch screens (`pubspec.yaml` flutter_native_splash, Android and iOS): `color: "#FAF7F0"`, `color_dark: "#14120F"`, the same on Android 12 and later, with the mark's tile (§7.8) and no icon background. Android's window background behind the app (`NormalTheme`) is `@color/app_bg`, the same two surfaces, so nothing changes colour between the launch screen and the first frame. From Android 12, nor where the app's theme differs from the system's: on Android the app holds the system's night mode for itself to its theme (`lib/app/android_night_mode.dart`, `setApplicationNightMode` in MainActivity), on for Dark and high contrast dark, off for Light, Sepia and high contrast light, and the system's own while it follows the system, and Android 12 and later draw the launch screen of a cold start in it. Android then reports the theme's brightness as the device's, so the app takes the device's only to follow it, and the quick setups (§9) are as dark as the theme in use. iOS and Android 11 and earlier show the system's launch screen, which is accepted.
 - System bars: edge to edge and transparent, with dark icons over the light, sepia and high-contrast light themes and light icons over the dark ones; no contrast scrim (`lib/app/system_bars.dart`, and the launch themes in `android/app/src/main/res/values*/styles.xml`). Where the app can't run beneath Android's navigation bar (Android 9 and earlier), the bar is painted the colour of what lies just above it: `surfaceContainer` below the phone's navigation bar (§6.9), which wraps itself in its own `SystemBars`, and `surface` elsewhere. A theme can give that bar dark icons only from Android 8.1, so before then the light launch theme leaves it black.
 
 ## 4. Typography
@@ -1418,6 +1418,7 @@ In order:
 **Accessibility**
 - Quick setups as a 2×2 grid of cards 88 high, radius 12: icon 24 in primary, titleSmall, one bodySmall line that names what changes most, the cantillation hidden and the theme among it ("Clear font, no cantillation"; "Largest text, high contrast").
   - A setup in force (`presetActive`: the settings it sets, sizes within a hair) is washed in primaryContainer with a primary border and a check, and reads as selected. Two may be, as Low vision includes High contrast.
+  - High contrast and Low vision choose high contrast light or dark as the theme in use is: the device's while the app follows it, and otherwise the app's own (Sepia's is light).
   - Applying one says so with Undo, which restores the settings exactly as they were.
 - Reset display as a TextButton (`restart_alt`) under the grid, with the same Undo.
 - The remaining rows in PaperGroups: the Display page, Motion and touch, the screen reader's text and the Divine Name, Speech, and Statement and feedback.
