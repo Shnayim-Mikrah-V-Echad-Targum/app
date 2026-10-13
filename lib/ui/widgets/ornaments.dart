@@ -181,7 +181,7 @@ class PassPips extends StatelessWidget {
     // Checked here, since a const constructor can't read a list's length.
     assert(states.length == 3, 'One state per reading');
     final sefer = SeferColors.of(context);
-    final colors = [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum];
+    final colors = [sefer.ringMikrah1, sefer.ringMikrah2, sefer.ringTargum];
     return ExcludeSemantics(
       child: Row(
         mainAxisSize: MainAxisSize.min,

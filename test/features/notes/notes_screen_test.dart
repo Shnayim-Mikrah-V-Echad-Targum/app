@@ -238,7 +238,7 @@ void main() {
           final marks = find.byType(VerseMarks).first;
           final context = tester.element(marks);
           final styles = ScriptureStyles(context, const AppSettings(onboardingComplete: true));
-          final number = MediaQuery.textScalerOf(context).scale(styles.numberStyle(ScriptureKind.mikra).fontSize!);
+          final number = MediaQuery.textScalerOf(context).scale(styles.numberStyle(ScriptureKind.mikrah).fontSize!);
           // The ribbon stands 0.72 of the number's size, scaled once with it.
           expect(tester.getRect(marks).height, closeTo(0.72 * number, 0.5));
           if (!full) {
@@ -246,7 +246,7 @@ void main() {
             // to the verse than the margin keeps.
             final gutter = tester.getRect(find.ancestor(of: marks, matching: find.byType(SizedBox)).first);
             final clearance = MediaQuery.textScalerOf(context).scale(
-              ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikra),
+              ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikrah),
             );
             expect(tester.getRect(marks).left - gutter.left, greaterThanOrEqualTo(clearance - 0.5));
           }

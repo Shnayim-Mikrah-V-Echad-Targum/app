@@ -129,8 +129,8 @@ void main() {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
       final firstChunkIsWholeAliyah = method == ReadingMethod.aliyahByAliyah;
-      expect(week().isUnitDone(0, ReadingPass.mikra1), firstChunkIsWholeAliyah);
-      expect(week().isUnitDone(0, ReadingPass.mikra2), isFalse);
+      expect(week().isUnitDone(0, ReadingPass.mikrah1), firstChunkIsWholeAliyah);
+      expect(week().isUnitDone(0, ReadingPass.mikrah2), isFalse);
       expect(week().isUnitDone(0, ReadingPass.targum), isFalse);
       expect(week().positions[0], [firstChunkIsWholeAliyah ? 14 : 1, 0, 0]);
     });
@@ -163,8 +163,8 @@ void main() {
     final day = LocalDate(2026, 10, 12);
     final week = WeekProgress(weekId: '5787:2')
         .withAliyah(0, day)
-        .withUnit(2, ReadingPass.mikra1, day)
-        .withUnit(2, ReadingPass.mikra2, day);
+        .withUnit(2, ReadingPass.mikrah1, day)
+        .withUnit(2, ReadingPass.mikrah2, day);
     final c = await pumpApp(
       tester,
       settings: const AppSettings(onboardingComplete: true),
@@ -311,7 +311,7 @@ void main() {
     for (final a in [0, 1, 3, 4, 5]) {
       week = week.withAliyah(a, day);
     }
-    week = week.withUnit(2, ReadingPass.mikra1, day);
+    week = week.withUnit(2, ReadingPass.mikrah1, day);
     final c = await pumpApp(
       tester,
       settings: const AppSettings(onboardingComplete: true, notificationPromptShown: true),
@@ -1310,7 +1310,7 @@ void main() {
       // its second reading, from Genesis 6:9.
       final day = LocalDate(2026, 10, 12);
       final progress = ProgressState(weeks: {
-        '5787:2': WeekProgress(weekId: '5787:2').withUnit(0, ReadingPass.mikra1, day).withPosition(0, const [14, 0, 0]),
+        '5787:2': WeekProgress(weekId: '5787:2').withUnit(0, ReadingPass.mikrah1, day).withPosition(0, const [14, 0, 0]),
       });
       await open(
         tester,

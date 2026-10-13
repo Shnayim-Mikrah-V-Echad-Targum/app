@@ -14,8 +14,8 @@
     <!-- secondary: the eyebrow, and the candles of a day of rest -->
     <color name="widget_gold">#7A5712</color>
     <!-- The rings' colours (SeferColors), for the three readings' bars. -->
-    <color name="widget_mikra1">#1D3F75</color>
-    <color name="widget_mikra2">#55779F</color>
+    <color name="widget_mikrah1">#1D3F75</color>
+    <color name="widget_mikrah2">#55779F</color>
     <color name="widget_targum">#946C1E</color>
     <color name="widget_track">#E8E1D3</color>
 </resources>

@@ -183,13 +183,13 @@ void main() {
       final week = backup
           .week('5787:1')
           .withAliyah(6, null)
-          .withUnit(0, ReadingPass.mikra1, null)
-          .withUnit(0, ReadingPass.mikra1, _monday);
+          .withUnit(0, ReadingPass.mikrah1, null)
+          .withUnit(0, ReadingPass.mikrah1, _monday);
       final here = ProgressState(weeks: {'5787:1': week});
       final merged = mergeBackup(here, backup).week('5787:1');
       expect(merged.isAliyahDone(6), isFalse);
-      expect(merged.units[0][ReadingPass.mikra1.index], _monday);
-      expect(merged.units[1][ReadingPass.mikra1.index], _bereshitFriday);
+      expect(merged.units[0][ReadingPass.mikrah1.index], _monday);
+      expect(merged.units[1][ReadingPass.mikrah1.index], _bereshitFriday);
     });
 
     test("doesn't let a reset here erase what the backup brings back", () {

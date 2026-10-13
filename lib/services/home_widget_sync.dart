@@ -112,8 +112,8 @@ class WidgetWeek {
     required this.spoken,
     required this.progress,
     required this.spokenProgress,
-    required this.mikra1,
-    required this.mikra2,
+    required this.mikrah1,
+    required this.mikrah2,
     required this.targum,
     this.next,
   });
@@ -138,8 +138,8 @@ class WidgetWeek {
   final String spokenProgress;
 
   /// How many of the seven aliyot each reading has covered.
-  final int mikra1;
-  final int mikra2;
+  final int mikrah1;
+  final int mikrah2;
   final int targum;
 
   /// Where the reading continues, as Today's button names it ("Continue ·
@@ -153,8 +153,8 @@ class WidgetWeek {
         'say': spoken,
         'progress': progress,
         'sayProgress': spokenProgress,
-        'm1': mikra1,
-        'm2': mikra2,
+        'm1': mikrah1,
+        'm2': mikrah2,
         't': targum,
         if (next != null) 'next': next,
       };
@@ -272,8 +272,8 @@ WidgetTimeline widgetTimeline({
   final rashi = settings.usesRashi && !settings.usesOnkelos;
 
   String passName(ReadingPass pass) => switch (pass) {
-        ReadingPass.mikra1 => l.passMikra1,
-        ReadingPass.mikra2 => l.passMikra2,
+        ReadingPass.mikrah1 => l.passMikrah1,
+        ReadingPass.mikrah2 => l.passMikrah2,
         ReadingPass.targum => rashi ? l.passRashi : l.passTargum,
       };
 
@@ -346,8 +346,8 @@ WidgetTimeline widgetTimeline({
             progressLine,
             for (final (i, pass) in ReadingPass.values.indexed) '${passName(pass)}: ${l.countOfTotal(counts[i], kAliyot)}',
           ].join('. '),
-          mikra1: counts[0],
-          mikra2: counts[1],
+          mikrah1: counts[0],
+          mikrah2: counts[1],
           targum: counts[2],
           next: p.isComplete || quiet ? null : continueLabel(ctx),
         ));

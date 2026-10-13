@@ -500,7 +500,7 @@ void main() {
     });
 
     test('plans again when the reading log changes', () {
-      c.read(progressProvider.notifier).markUnit('5787:2', 0, ReadingPass.mikra1, _monday);
+      c.read(progressProvider.notifier).markUnit('5787:2', 0, ReadingPass.mikrah1, _monday);
       c.read(reminderSchedulerProvider);
       expect(service.reschedules, 2);
     });

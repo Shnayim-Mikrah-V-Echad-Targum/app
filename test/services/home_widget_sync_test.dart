@@ -150,7 +150,7 @@ void main() {
 
       final bereshit = t.weeks[0];
       expect((bereshit.hebrew, bereshit.name, bereshit.spoken), ('בְּרֵאשִׁית', 'Bereshit', 'Bereshit'));
-      expect((bereshit.mikra1, bereshit.mikra2, bereshit.targum), (3, 3, 2));
+      expect((bereshit.mikrah1, bereshit.mikrah2, bereshit.targum), (3, 3, 2));
       expect(bereshit.progress, '2 of 7 aliyot');
       expect(
         bereshit.spokenProgress,
@@ -168,7 +168,7 @@ void main() {
       // Then Noach, with the progress as it stands: what Today would say
       // each day if nothing more were read.
       expect(t.weeks[1].next, 'Start · Rishon');
-      expect((t.weeks[1].mikra1, t.weeks[1].mikra2, t.weeks[1].targum), (0, 0, 0));
+      expect((t.weeks[1].mikrah1, t.weeks[1].mikrah2, t.weeks[1].targum), (0, 0, 0));
       final sunday = only(t, LocalDate(2026, 10, 11));
       expect((sunday.kind, sunday.week, sunday.line), (WidgetDayKind.weekday, 1, 'Today: Rishon'));
       expect(only(t, LocalDate(2026, 10, 12)).line, 'Catching up: Rishon and Sheni');
@@ -196,7 +196,7 @@ void main() {
       t = timeline(_monday, progress: ProgressState(weeks: {'5787:2': week.withAll(LocalDate(2026, 10, 12))}));
       expect(only(t, LocalDate(2026, 10, 12)).line, 'Parsha complete · Yasher koach!');
       expect(t.weeks.first.next, isNull);
-      expect((t.weeks.first.mikra1, t.weeks.first.mikra2, t.weeks.first.targum), (7, 7, 7));
+      expect((t.weeks.first.mikrah1, t.weeks.first.mikrah2, t.weeks.first.targum), (7, 7, 7));
 
       // A plan that reads everything on Friday plans nothing before it.
       t = timeline(_monday, settings: AppSettings(joinDate: captureJoinDate, plan: ReadingPlanType.erevShabbat));
@@ -399,8 +399,8 @@ void main() {
       final regular = t.weeks[only(t, fast.addDays(-1)).week];
       expect(week.id, regular.id);
       expect(
-        (week.mikra1, week.progress, week.spokenProgress),
-        (regular.mikra1, regular.progress, regular.spokenProgress),
+        (week.mikrah1, week.progress, week.spokenProgress),
+        (regular.mikrah1, regular.progress, regular.spokenProgress),
       );
       expect(regular.next, 'Continue · Sheni');
       expect(week.next, isNull);

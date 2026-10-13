@@ -86,7 +86,7 @@ ProgressState captureProgress() {
   for (final p in ReadingPass.values) {
     w = w.withUnit(0, p, mon).withUnit(1, p, mon.addDays(1));
   }
-  w = w.withUnit(2, ReadingPass.mikra1, mon.addDays(2)).withUnit(2, ReadingPass.mikra2, mon.addDays(2));
+  w = w.withUnit(2, ReadingPass.mikrah1, mon.addDays(2)).withUnit(2, ReadingPass.mikrah2, mon.addDays(2));
   return ProgressState(weeks: {'5787:1': w});
 }
 

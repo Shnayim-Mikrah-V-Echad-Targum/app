@@ -66,7 +66,7 @@ void main() {
       expect(revision(), start, reason: 'a place is not part of the log');
       expect(container.read(progressProvider).week('5787:2').positions[0], [3, 2, 0]);
 
-      progress().markUnit('5787:2', 0, ReadingPass.mikra1, _monday);
+      progress().markUnit('5787:2', 0, ReadingPass.mikrah1, _monday);
       final marked = revision();
       expect(marked, isNot(start));
       progress().addPause(_monday, _monday);
@@ -120,7 +120,7 @@ void main() {
       }
       expect(_evaluations, 1);
 
-      progress.markUnit('5787:2', 0, ReadingPass.mikra1, _monday);
+      progress.markUnit('5787:2', 0, ReadingPass.mikrah1, _monday);
       container.read(streakSummaryProvider);
       expect(_evaluations, 2);
     });

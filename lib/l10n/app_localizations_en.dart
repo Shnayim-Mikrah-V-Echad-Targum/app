@@ -167,10 +167,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get passMikra1 => 'First reading';
+  String get passMikrah1 => 'First reading';
 
   @override
-  String get passMikra2 => 'Second reading';
+  String get passMikrah2 => 'Second reading';
 
   @override
   String get passTargum => 'Targum';
@@ -883,10 +883,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get stepMikra1 => 'Read the Hebrew';
+  String get stepMikrah1 => 'Read the Hebrew';
 
   @override
-  String get stepMikra2 => 'Read the Hebrew again';
+  String get stepMikrah2 => 'Read the Hebrew again';
 
   @override
   String get stepTargum => 'Read the Targum';
@@ -1051,7 +1051,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Helps with the meaning; it doesn’t take the place of the Targum.';
 
   @override
-  String get mikraLabel => 'Mikrah';
+  String get mikrahLabel => 'Mikrah';
 
   @override
   String get targumLabel => 'Targum Onkelos';
@@ -3223,7 +3223,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get passTrackMikra => 'Mikrah';
+  String get passTrackMikrah => 'Mikrah';
 
   @override
   String get finishStep => 'Finish';

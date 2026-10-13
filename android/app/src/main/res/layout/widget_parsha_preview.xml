@@ -40,13 +40,13 @@
             <ProgressBar
                 style="@style/ParshaWidget.Bar"
                 android:progress="3"
-                android:progressDrawable="@drawable/widget_bar_mikra1" />
+                android:progressDrawable="@drawable/widget_bar_mikrah1" />
 
             <ProgressBar
                 style="@style/ParshaWidget.Bar"
                 android:layout_marginTop="@dimen/widget_bar_gap"
                 android:progress="3"
-                android:progressDrawable="@drawable/widget_bar_mikra2" />
+                android:progressDrawable="@drawable/widget_bar_mikrah2" />
 
             <ProgressBar
                 style="@style/ParshaWidget.Bar"

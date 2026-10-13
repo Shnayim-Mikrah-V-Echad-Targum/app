@@ -293,12 +293,12 @@ void main() {
     testWidgets('done is filled in its ring colour, pending outlined, current ringed', (tester) async {
       await pumpThemed(tester, const Center(child: PassPips(states: [done, done, pending], current: 2)));
       final p = pips(tester);
-      expect([for (final pip in p) pip.color], [light.ringMikra1, light.ringMikra2, light.ringTargum]);
+      expect([for (final pip in p) pip.color], [light.ringMikrah1, light.ringMikrah2, light.ringTargum]);
       expect([for (final pip in p) pip.outlined], [false, false, true]);
       expect([for (final pip in p) pip.ringed], [false, false, true]);
 
       final painters = find.descendant(of: find.byType(PassPips), matching: find.byType(CustomPaint));
-      expect(tester.renderObject(painters.at(0)), paints..path(color: light.ringMikra1, style: PaintingStyle.fill));
+      expect(tester.renderObject(painters.at(0)), paints..path(color: light.ringMikrah1, style: PaintingStyle.fill));
       expect(
         tester.renderObject(painters.at(2)),
         paints
@@ -322,7 +322,7 @@ void main() {
             tester.getCenter(find.byWidget(pip.widget)).dx,
         ];
         final colors = pips(tester).map((p) => p.color).toList();
-        expect(colors.first, light.ringMikra1);
+        expect(colors.first, light.ringMikrah1);
         expect(xs[0] < xs[1] && xs[1] < xs[2], !hebrew, reason: 'hebrew: $hebrew, $xs');
         expect(xs[0] > xs[1] && xs[1] > xs[2], hebrew, reason: 'hebrew: $hebrew, $xs');
       }

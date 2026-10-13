@@ -183,8 +183,8 @@ They must be set explicitly so no stock widget (DatePicker, SearchBar, Badge) fa
 | paper (cards, sheets, dialogs) | #FFFDF8 | #1C1915 | #FAF3E3 | #FFFFFF | #000000 |
 | hairline | #D8CFBF | #4A443A | #CBB994 | #000000 (2 px) | #FFFFFF (2 px) |
 | goldLeaf (decorative) | #B38D3F | #B8954B | #A9853A | #4F3500 | #FFD970 |
-| ringMikra1 | #1D3F75 | #AFC6EE | #25406C | #0A2A5E | #B5CEFF |
-| ringMikra2 | #55779F | #7E9BC8 | #4F6B92 | #3D629C | #7A9FE8 |
+| ringMikrah1 | #1D3F75 | #AFC6EE | #25406C | #0A2A5E | #B5CEFF |
+| ringMikrah2 | #55779F | #7E9BC8 | #4F6B92 | #3D629C | #7A9FE8 |
 | ringTargum | #946C1E | #C9A458 | #8A651C | #4F3500 | #FFD970 |
 | ringTrack | #E8E1D3 | #36312A | #E0D3B4 | #E0E0E0 | #333333 |
 | yearTrack (the year bar's open segments, §6.15) | = outlineVariant | = outlineVariant | = outlineVariant | #949494 | #5C5C5C |
@@ -246,10 +246,10 @@ Targets:
 | outline / surfaceContainer | 3.41 | 4.70 | 3.48 | 18.76 | 19.17 |
 | neutral / paper (missed glyph) | 4.53 | 5.27 | 4.60 | 8.45 | 11.18 |
 | focus / surface (ring) | 9.72 | 10.80 | 8.58 | 21.00 | 21.00 |
-| ringMikra1 / paper | 10.23 | 10.12 | 9.36 | 13.95 | 13.24 |
-| ringMikra2 / paper | 4.56 | 6.18 | 4.93 | 6.13 | 7.95 |
+| ringMikrah1 / paper | 10.23 | 10.12 | 9.36 | 13.95 | 13.24 |
+| ringMikrah2 / paper | 4.56 | 6.18 | 4.93 | 6.13 | 7.95 |
 | ringTargum / paper | 4.67 | 7.45 | 4.80 | 11.40 | 15.41 |
-| ringMikra2 / ringTrack | 3.57 | 4.55 | 3.67 | 4.64 | 4.78 |
+| ringMikrah2 / ringTrack | 3.57 | 4.55 | 3.67 | 4.64 | 4.78 |
 | ringTargum / ringTrack | 3.65 | 5.48 | 3.57 | 8.64 | 9.27 |
 | yearTrack / paper (an open segment; at least 3:1 in high contrast, tested) | 1.52 | 1.82 | 1.74 | 3.03 | 3.14 |
 | yearTrack / done (open against finished; at least 4:1 in high contrast, tested) | 6.73 | 5.57 | 5.38 | 4.60 | 4.22 |
@@ -259,7 +259,7 @@ Targets:
 Notes:
 - The current app's 55% alpha dimming measures 3.82:1 in light; `dimInk` replaces it.
 - Dimmed verses (5.1:1 or more) are below the 7:1 scripture target on purpose. They are not the verse being read, and focus mode is opt-in.
-- ringMikra1 and ringMikra2 are both techelet, told apart by shade: 2.24, 1.64, 1.90, 2.28 and 1.66:1 between them. Each high-contrast theme sets them at least as far apart as the theme it heightens (tested), and its RingLegend also keys each row by the ring's position (§6.11).
+- ringMikrah1 and ringMikrah2 are both techelet, told apart by shade: 2.24, 1.64, 1.90, 2.28 and 1.66:1 between them. Each high-contrast theme sets them at least as far apart as the theme it heightens (tested), and its RingLegend also keys each row by the ring's position (§6.11).
 
 ### 3.6 Platform colours
 
@@ -674,13 +674,13 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - `stroke = size × 0.055`; `r0 = size/2 - stroke/2`, `r1 = r0 - 1.6·stroke`, `r2 = r1 - 1.6·stroke`. At 104 this leaves a 56 px hole.
 - Arc weights by verse count, as now. Gap 0.042 rad between aliyot; butt caps.
 - Start at −π/2 and sweep CLOCKWISE in both directions. Do not mirror.
-- Colours: ring 0 ringMikra1, ring 1 ringMikra2, ring 2 ringTargum; track ringTrack.
+- Colours: ring 0 ringMikrah1, ring 1 ringMikrah2, ring 2 ringTargum; track ringTrack.
 - At every size the track is drawn as the same seven arcs and gaps, under the done arcs, so a week not yet begun shows its seven parts to come rather than three blank circles.
 - Centre: "2/7" in ringNumeral, plus "aliyot" in labelSmall onSurfaceVariant, scaled down as needed to fit the square inscribed in the hole (with 5% clearance), so large, bold or accessibility-font text never reaches the Targum ring.
 - Wrap in RepaintBoundary. Existing semantics stay.
 
 **RingLegend** (always beside or under rings of size 88 or more)
-- Three rows, each 24 high: a 9 px dot in the ring colour, a 10 gap, the label in bodyMedium (`passMikra1`, `passMikra2`, `passTargum`/`passRashi`), and the count end-aligned "3 of 7" in bodyMedium onSurfaceVariant with tabular figures.
+- Three rows, each 24 high: a 9 px dot in the ring colour, a 10 gap, the label in bodyMedium (`passMikrah1`, `passMikrah2`, `passTargum`/`passRashi`), and the count end-aligned "3 of 7" in bodyMedium onSurfaceVariant with tabular figures.
 - In high contrast a 16 px key (`RingKey`) takes each dot's place, then an 8 gap, so it never runs into the name (the names start 5 further in than beside a dot; two themes are never seen side by side). It names each ring by its position as well as its shade: three concentric rings, the row's own stroked 2 px in its colour and the other two 1 px in onSurface. Each edge falls a whole pixel from the centre, which is set on a corner of the device's pixels, so at 1x no stroke smears into grey over two pixels and a pixel stands clear between rings: a 1 px ring spans 7–8, 4–5 and 2–3 px from the centre (radii 7.5, 4.5, 2.5), and the row's own 6–8, 4–6 and 1–3 (radii 7, 5, 2).
 - Excluded from semantics: the rings' label already says it.
 - `RingsWithLegend` sets the legend beside the rings whenever it fits there, each count under its name if the two can't share a line (as on a 360 dp phone); otherwise, on a narrower phone or with large text, the rings sit centred above it. Beside the rings on a wide card, the legend grows at most 40 past its natural width, so the counts stay near their names.
@@ -788,7 +788,7 @@ Row of three Expanded segments with an 8 gap, growing with the text to 200% at m
   - Current: onSurface w700.
   - Upcoming: onSurfaceVariant.
 - 6 gap, then a 4 px bar with radius 2.
-  - Done and current: ringMikra1 / ringMikra2 / ringTargum for segments 1/2/3.
+  - Done and current: ringMikrah1 / ringMikrah2 / ringTargum for segments 1/2/3.
   - Upcoming: ringTrack.
 
 Below the track:
@@ -994,7 +994,7 @@ The week's title page in miniature, on the home screen: the calmest reminder the
 - **Day of rest** (Shabbat and Yom Tov, by the reader's days of Yom Tov): no bars and no Continue; the candles (§7.6) at 22 in `rest`, 6, and the day's greeting as Today's (`shabbatShalom`, `chagSameach`, `shanaTova`, `gmarChatimaTova`) in up to two lines (three, smaller, in the narrowest Android widget), with the parsha read that day.
 - **Days over** (the app not opened since the last day it gave): on a weekday, the last week's parsha and `widgetStale`, no bars; on Shabbat and Yom Tov, which the app gives for about four months beyond, the candles and the greeting alone, asking nothing. **Before onboarding:** the app's name in primary and "Open Shnayim Mikrah to begin." (native strings, in the device's language).
 
-**Colour:** the app's light and dark tokens (§3), following the system's appearance (`values-night`, the colour assets' Dark appearance), never the wallpaper's dynamic colours: `paper`, the eyebrow in `secondary`, the Hebrew name in `primary`, the transliteration and the day's reading in `onSurface`, other lines in `onSurfaceVariant`, and the bars in `ringMikra1`, `ringMikra2` and `ringTargum` on `ringTrack`, the rings' order. Android draws the card with a 1 px `hairline`, at the system's widget radius from Android 12 (16 dp before it); iOS sets `paper` as the widget's container background, at the system's corners. `test/app/home_widget_platform_test.dart` checks every colour against `lib/ui/theme/palette.dart`.
+**Colour:** the app's light and dark tokens (§3), following the system's appearance (`values-night`, the colour assets' Dark appearance), never the wallpaper's dynamic colours: `paper`, the eyebrow in `secondary`, the Hebrew name in `primary`, the transliteration and the day's reading in `onSurface`, other lines in `onSurfaceVariant`, and the bars in `ringMikrah1`, `ringMikrah2` and `ringTargum` on `ringTrack`, the rings' order. Android draws the card with a 1 px `hairline`, at the system's widget radius from Android 12 (16 dp before it); iOS sets `paper` as the widget's container background, at the system's corners. `test/app/home_widget_platform_test.dart` checks every colour against `lib/ui/theme/palette.dart`.
 
 **Type**
 - iOS bundles the display serifs in the extension (Frank Ruhl Libre 500 and 600, EB Garamond 500): the Hebrew name FRL 500 28, the transliteration EBG 500 18, the greeting EBG 500 18 (FRL 500 17 in the Hebrew UI); the lines are the system's 12–14, scaled with the reader's text size as the serifs are (`@ScaledMetric`). The eyebrow is the one place the widget has no room for the app's: EBG small capitals at 18 would be set far smaller in the small widget, below §4's floor, so it is set in the system's serif (New York), 600 12 in capitals tracked 0.6, which is drawn to be read at that size (FRL 600 14 in the Hebrew UI).
@@ -1030,7 +1030,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 5. **PassPips:**
    - three lozenges (size 12 with gap 8, or mini 6 with gap 3) in reading order; the Row follows Directionality;
    - `scale` grows them with the text, lozenges and gaps alike: the aliyah ribbon's mini pips grow to 2× (12 with gap 6 at 200%, §6.16), as the week strip's glyphs and the Torah map's icons grow to 1.5× (§6.13, §6.14); none of them shrinks with text under 100%;
-   - done: filled in ringMikra1 / ringMikra2 / ringTargum;
+   - done: filled in ringMikrah1 / ringMikrah2 / ringTargum;
    - pending: a 1.5 px outline stroke;
    - current step (parsha rows only): an extra 2 px ring in its colour;
    - excluded from semantics.
@@ -1283,7 +1283,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
 - **Parallel columns** (`ParallelVerse`, scripture_text.dart; desktop_reader_full): when the Targum (or, without it, the translation) is shown, the pane is at least 960 wide, the line width isn't narrow, the Torah is at most 34 px at the system text scale (`ScriptureStyles.parallelColumns`) and Display → Side by side is on (`AppSettings.parallelColumns`, default on; the switch shows in the full text's display sheet only where the columns would show, `ScriptureStyles.parallelFits`, measured on the reader's pane within the window's side insets):
   - the measure is 1160, and the title, ribbon and listen bar keep to it;
   - each verse is a row, right to left: the Torah (flex 6), with the translation and Rashi beneath it in its column, then a 40 gutter, then the Targum (flex 5) without its rule or number, at least 48 tall for its long press; first lines on one baseline;
-  - above the first row, the columns' names (`ParallelHeading`): `mikraLabel` and `targumLabel` (or `translationLabel`) in labelLarge onSurfaceVariant, each where its text begins, over a 1 px hairline as wide as its column, inset as the verses are;
+  - above the first row, the columns' names (`ParallelHeading`): `mikrahLabel` and `targumLabel` (or `translationLabel`) in labelLarge onSurfaceVariant, each where its text begins, over a 1 px hairline as wide as its column, inset as the verses are;
   - the chapter heading, section marks and the verse's block (focus mode, the verse opened at, Listen) span the row; screen readers hear the verse, the Targum, the translation and Rashi, in that order.
 - **Whole parsha** (the overflow menu's `wholeParsha` / `oneAliyahAtATime`, full text only; `AppSettings.fullTextWholeParsha`; phone_reader_parsha, desktop_reader_parsha*):
   - one `SliverMainAxisGroup` per aliyah: the `AliyahHeader` pinned while its aliyah is read, its verses built lazily (`SliverList.builder`), then the SeferDivider and the Tonal Mark as read of that aliyah;

@@ -127,8 +127,8 @@ void main() {
         final order = [for (final node in tester.semantics.simulatedAccessibilityTraversal()) node.label];
         int at(String label) => order.indexWhere((text) => text.contains(label));
         final (heading, legend, rishon) = hebrew
-            ? (l.parshaLabel('בראשית'), l.passMikra1, 'ראשון')
-            : (l.parshaLabel('Bereshit'), l.passMikra1, 'Rishon');
+            ? (l.parshaLabel('בראשית'), l.passMikrah1, 'ראשון')
+            : (l.parshaLabel('Bereshit'), l.passMikrah1, 'Rishon');
         for (final label in [heading, legend, rishon]) {
           expect(at(label), isNonNegative, reason: label);
         }

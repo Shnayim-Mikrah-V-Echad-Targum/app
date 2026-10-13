@@ -38,15 +38,15 @@ void main() {
 
   test('every layer of every book has the same verse structure', () async {
     for (final book in kTorahBooks) {
-      final mikra = await texts.book(TextLayer.mikra, book);
+      final mikrah = await texts.book(TextLayer.mikrah, book);
       final onkelos = await texts.book(TextLayer.onkelos, book);
       final english = await texts.book(TextLayer.english, book);
       final rashi = await texts.commentary(CommentaryLayer.rashi, book);
-      expect(mikra.chapterLengths, repo.chapterLengths(book), reason: book);
-      expect(onkelos.chapterLengths, mikra.chapterLengths, reason: book);
-      expect(english.chapterLengths, mikra.chapterLengths, reason: book);
-      expect(rashi.chapters.map((c) => c.length).toList(), mikra.chapterLengths, reason: book);
-      for (final ch in mikra.chapters) {
+      expect(mikrah.chapterLengths, repo.chapterLengths(book), reason: book);
+      expect(onkelos.chapterLengths, mikrah.chapterLengths, reason: book);
+      expect(english.chapterLengths, mikrah.chapterLengths, reason: book);
+      expect(rashi.chapters.map((c) => c.length).toList(), mikrah.chapterLengths, reason: book);
+      for (final ch in mikrah.chapters) {
         for (final v in ch) {
           expect(v.readText, isNotEmpty, reason: '$book ${v.ref}');
           expect(v.readText, isNot(contains('<')), reason: '$book ${v.ref}');
@@ -56,7 +56,7 @@ void main() {
   });
 
   test('ketiv/qere is read as the qere', () async {
-    final genesis = await texts.book(TextLayer.mikra, 'Genesis');
+    final genesis = await texts.book(TextLayer.mikrah, 'Genesis');
     final v = genesis.chapters[13][1]; // Genesis 14:2
     expect(v.segments.whereType<KetivQere>().single.ketiv, 'צביים');
     expect(v.readText, contains('צְבוֹיִ֔ם'));
@@ -65,7 +65,7 @@ void main() {
 
   group('the Torah follows Ashkenazi and Sephardi scrolls', () {
     late Map<String, BookText> torah;
-    setUpAll(() async => torah = {for (final b in kTorahBooks) b: await texts.book(TextLayer.mikra, b)});
+    setUpAll(() async => torah = {for (final b in kTorahBooks) b: await texts.book(TextLayer.mikrah, b)});
 
     Verse verse(String book, int c, int v) => torah[book]!.verse(VerseRef(c, v));
     List<String> notes(Verse v) => [for (final n in v.segments.whereType<TextNote>()) n.text];
@@ -120,8 +120,8 @@ void main() {
     Future<Map<String, Verse>> allHebrewVerses() async {
       final out = <String, Verse>{};
       for (final book in kTorahBooks) {
-        final mikra = await texts.book(TextLayer.mikra, book);
-        for (final ch in mikra.chapters) {
+        final mikrah = await texts.book(TextLayer.mikrah, book);
+        for (final ch in mikrah.chapters) {
           for (final v in ch) {
             out['$book ${v.ref}'] = v;
           }
@@ -180,10 +180,10 @@ void main() {
     });
 
     test('do not end the verse as a section break', () async {
-      final genesis = await texts.book(TextLayer.mikra, 'Genesis');
-      final exodus = await texts.book(TextLayer.mikra, 'Exodus');
-      final numbers = await texts.book(TextLayer.mikra, 'Numbers');
-      final deuteronomy = await texts.book(TextLayer.mikra, 'Deuteronomy');
+      final genesis = await texts.book(TextLayer.mikrah, 'Genesis');
+      final exodus = await texts.book(TextLayer.mikrah, 'Exodus');
+      final numbers = await texts.book(TextLayer.mikrah, 'Numbers');
+      final deuteronomy = await texts.book(TextLayer.mikrah, 'Deuteronomy');
       expect(genesis.breaks[const VerseRef(35, 22)], isNull);
       expect(numbers.breaks[const VerseRef(26, 1)], isNull);
       expect(deuteronomy.breaks[const VerseRef(2, 8)], isNull);

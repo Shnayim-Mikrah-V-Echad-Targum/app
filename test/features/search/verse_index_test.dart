@@ -161,7 +161,7 @@ void main() {
       final results = index.search('בראשית');
       expect(results.hits.first.book, 'Genesis');
       expect(results.hits.first.ref, const VerseRef(1, 1));
-      expect(results.hits.first.snippets.first.layer, TextLayer.mikra);
+      expect(results.hits.first.snippets.first.layer, TextLayer.mikrah);
       // The large bet is part of the word, which keeps its vowels.
       final word = matched(results.hits.first.snippets.first.snippet).single;
       expect(HebrewText.consonantsOnly(word), 'בראשית');
@@ -200,7 +200,7 @@ void main() {
     test('finds the Targum, under its verse', () {
       final hit = index.search('בקדמין').hits.first;
       expect((hit.book, hit.ref), ('Genesis', const VerseRef(1, 1)));
-      expect([for (final s in hit.snippets) (s.layer, s.matched)], [(TextLayer.mikra, false), (TextLayer.onkelos, true)]);
+      expect([for (final s in hit.snippets) (s.layer, s.matched)], [(TextLayer.mikrah, false), (TextLayer.onkelos, true)]);
     });
 
     test('finds the translation, by whole words from their start', () {

@@ -110,7 +110,7 @@ void main() {
 
     // The three readings, as on every aliyah, under How.
     expect(find.byType(PassPips), findsOneWidget);
-    expect(find.text('1\u00a0·\u00a0Mikra  2\u00a0·\u00a0Mikra  3\u00a0·\u00a0Targum'), findsOneWidget);
+    expect(find.text('1\u00a0·\u00a0Mikrah  2\u00a0·\u00a0Mikrah  3\u00a0·\u00a0Targum'), findsOneWidget);
     expect(tester.getTopLeft(find.byType(PassPips)).dy, greaterThan(tester.getTopLeft(find.text('How')).dy));
     expect(tester.getTopLeft(find.byType(PassPips)).dy, lessThan(tester.getTopLeft(find.textContaining('Read verse by verse')).dy));
 

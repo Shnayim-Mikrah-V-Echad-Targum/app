@@ -53,8 +53,8 @@ final commentaryProvider = FutureProvider.family<CommentaryText, (CommentaryLaye
 
 /// The texts the reader needs for one book, loaded together.
 class ReaderTexts {
-  const ReaderTexts({required this.mikra, this.onkelos, this.english, this.rashi});
-  final BookText mikra;
+  const ReaderTexts({required this.mikrah, this.onkelos, this.english, this.rashi});
+  final BookText mikrah;
   final BookText? onkelos;
   final BookText? english;
   final CommentaryText? rashi;
@@ -63,13 +63,13 @@ class ReaderTexts {
 final readerTextsProvider = FutureProvider.family<ReaderTexts, (String, bool, bool, CommentaryLayer?)>((ref, args) async {
   final (book, onkelos, english, rashi) = args;
   final results = await Future.wait<Object?>([
-    ref.watch(bookTextProvider((TextLayer.mikra, book)).future),
+    ref.watch(bookTextProvider((TextLayer.mikrah, book)).future),
     if (onkelos) ref.watch(bookTextProvider((TextLayer.onkelos, book)).future) else Future.value(null),
     if (english) ref.watch(bookTextProvider((TextLayer.english, book)).future) else Future.value(null),
     if (rashi != null) ref.watch(commentaryProvider((rashi, book)).future) else Future.value(null),
   ]);
   return ReaderTexts(
-    mikra: results[0]! as BookText,
+    mikrah: results[0]! as BookText,
     onkelos: results[1] as BookText?,
     english: results[2] as BookText?,
     rashi: results[3] as CommentaryText?,
@@ -311,7 +311,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       method: s.method,
       second: s.secondReading,
       hasRashi: [for (final v in verses) texts.rashi?.on(v).isNotEmpty ?? false],
-      breaks: texts.mikra.breaks,
+      breaks: texts.mikrah.breaks,
       thirdReadingPrompts: s.thirdReadingPrompts,
       repeatLastVerse: s.repeatLastVerse && _aliyah == kAliyot - 1,
     );
@@ -782,8 +782,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   String _stepTitle(StepKind kind) {
     final l = context.l10n;
     return switch (kind) {
-      StepKind.mikra1 => l.stepMikra1,
-      StepKind.mikra2 => l.stepMikra2,
+      StepKind.mikrah1 => l.stepMikrah1,
+      StepKind.mikrah2 => l.stepMikrah2,
       StepKind.targum => l.stepTargum,
       StepKind.rashi => l.stepRashi,
       StepKind.thirdHebrew => l.stepThirdHebrew,
@@ -799,7 +799,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         context,
         ChosenVerse(
           at: BookVerse(book, r),
-          hebrew: texts.mikra.verse(r),
+          hebrew: texts.mikrah.verse(r),
           targum: texts.onkelos?.verse(r),
           english: texts.english?.verse(r).readText,
         ),
@@ -1006,7 +1006,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final queue = SpeechQueue(language: 'he-IL');
     if (_fullText || _finished) {
       for (final (i, r) in (_fullText ? _textVerses(flow) : flow.verses).indexed) {
-        queue.add(i, hebrew(texts.mikra.verse(r)));
+        queue.add(i, hebrew(texts.mikrah.verse(r)));
         if (_fullText && texts.onkelos != null) queue.add(i, hebrew(texts.onkelos!.verse(r), targum: true));
       }
       return queue;
@@ -1019,7 +1019,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         for (final r in refs) {
           queue.add(index[r]!, hebrew(texts.onkelos!.verse(r), targum: true));
           // With the Hebrew of a verse read a third time among the Targum.
-          if (flow.thirdHebrewInTargum(_chunk, r)) queue.add(index[r]!, hebrew(texts.mikra.verse(r)));
+          if (flow.thirdHebrewInTargum(_chunk, r)) queue.add(index[r]!, hebrew(texts.mikrah.verse(r)));
         }
       case StepKind.rashi:
         final comments = [for (final r in refs) texts.rashi!.on(r)];
@@ -1034,12 +1034,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           }
           if (!english.isEmpty) return english;
           for (final r in refs) {
-            queue.add(index[r]!, hebrew(texts.mikra.verse(r)));
+            queue.add(index[r]!, hebrew(texts.mikrah.verse(r)));
           }
         } else {
           // A verse Rashi is silent on is read in Hebrew, as the step shows it.
           for (final (i, r) in refs.indexed) {
-            if (comments[i].isEmpty) queue.add(index[r]!, hebrew(texts.mikra.verse(r)));
+            if (comments[i].isEmpty) queue.add(index[r]!, hebrew(texts.mikrah.verse(r)));
             for (final c in comments[i]) {
               queue.add(
                 index[r]!,
@@ -1048,9 +1048,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             }
           }
         }
-      case StepKind.mikra1 || StepKind.mikra2 || StepKind.thirdHebrew || StepKind.repeatLast:
+      case StepKind.mikrah1 || StepKind.mikrah2 || StepKind.thirdHebrew || StepKind.repeatLast:
         for (final r in refs) {
-          queue.add(index[r]!, hebrew(texts.mikra.verse(r)));
+          queue.add(index[r]!, hebrew(texts.mikrah.verse(r)));
         }
     }
     return queue;
@@ -2025,14 +2025,14 @@ class _GuidedStep extends StatelessWidget {
 
     Widget layerFor(VerseRef r) {
       switch (kind) {
-        case StepKind.mikra1:
-        case StepKind.mikra2:
+        case StepKind.mikrah1:
+        case StepKind.mikrah2:
         case StepKind.thirdHebrew:
         case StepKind.repeatLast:
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              verse(texts.mikra, r, ScriptureKind.mikra),
+              verse(texts.mikrah, r, ScriptureKind.mikrah),
               if (settings.showTranslation && texts.english != null) translation(r),
               if (kind == StepKind.thirdHebrew) note(settings.usesOnkelos ? l.noTargumNote : l.noRashiNote),
             ],
@@ -2060,8 +2060,8 @@ class _GuidedStep extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    hanging(LayerLabel(l.mikraLabel)),
-                    verse(texts.mikra, r, ScriptureKind.mikra),
+                    hanging(LayerLabel(l.mikrahLabel)),
+                    verse(texts.mikrah, r, ScriptureKind.mikrah),
                     if (settings.showTranslation && texts.english != null) translation(r),
                     note(l.noTargumNote),
                   ],
@@ -2078,7 +2078,7 @@ class _GuidedStep extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                verse(texts.mikra, r, ScriptureKind.mikra),
+                verse(texts.mikrah, r, ScriptureKind.mikrah),
                 note(suggestThird ? l.noRashiNote : l.noRashiComment),
               ],
             );
@@ -2086,7 +2086,7 @@ class _GuidedStep extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              verse(texts.mikra, r, ScriptureKind.mikra, secondary: true),
+              verse(texts.mikrah, r, ScriptureKind.mikrah, secondary: true),
               const Gap(8),
               rashi(comments),
             ],
@@ -2171,7 +2171,7 @@ class _GuidedStep extends StatelessWidget {
                               ],
                             ),
                           ),
-                          if (texts.mikra.breaks[r] case final brk? when hebrewStep)
+                          if (texts.mikrah.breaks[r] case final brk? when hebrewStep)
                             SectionGap(kind: brk, settings: settings)
                           else if (i < refs.length - 1)
                             const Gap(20),
@@ -2660,13 +2660,13 @@ class _FullText extends StatelessWidget {
       // stays off after the mark goes, until focus moves. The verse Listen
       // reads has it, in focus mode or not.
       final highlighted = (settings.focusMode && focused == i && !targeted && quietFocus != i) || speaking;
-      final brk = texts.mikra.breaks[r];
+      final brk = texts.mikrah.breaks[r];
       final rashi = settings.showRashi || settings.usesRashi ? texts.rashi?.on(r) ?? const <Comment>[] : const <Comment>[];
       final marks = marksOf(r);
       final focusTap = settings.focusMode ? () => onVerseTap(i) : null;
-      final mikra = ScriptureVerse(
-        verse: texts.mikra.verse(r),
-        kind: ScriptureKind.mikra,
+      final mikrah = ScriptureVerse(
+        verse: texts.mikrah.verse(r),
+        kind: ScriptureKind.mikrah,
         settings: settings,
         dimmed: dimmed,
         onLongPress: () => onVerseOptions(r),
@@ -2709,7 +2709,7 @@ class _FullText extends StatelessWidget {
           // The Targum beside the verse, and the translation (where the
           // Targum isn't it) and Rashi after the verse in its column.
           ? ParallelVerse(
-              torah: mikra,
+              torah: mikrah,
               beside: beside,
               below: [
                 if (translation != null && beside != translation)
@@ -2720,7 +2720,7 @@ class _FullText extends StatelessWidget {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                mikra,
+                mikrah,
                 // Close beneath its verse.
                 if (targum != null) ...[const Gap(2), targum],
                 if (translation != null) ...[const Gap(6), translation],
@@ -2738,7 +2738,7 @@ class _FullText extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: ParallelHeading(
-                    torah: l.mikraLabel,
+                    torah: l.mikrahLabel,
                     beside: beside == targum ? l.targumLabel : l.translationLabel,
                     besideDirection: beside == targum ? TextDirection.rtl : TextDirection.ltr,
                   ),

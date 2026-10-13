@@ -7,7 +7,7 @@ import 'package:shnayim_mikrah/ui/theme/sefer_colors.dart';
 import '../../helpers.dart';
 
 void main() {
-  const m1 = StepKind.mikra1, m2 = StepKind.mikra2, targum = StepKind.targum, rashi = StepKind.rashi;
+  const m1 = StepKind.mikrah1, m2 = StepKind.mikrah2, targum = StepKind.targum, rashi = StepKind.rashi;
   const third = StepKind.thirdHebrew, repeat = StepKind.repeatLast;
 
   /// The track's three labels, each with whether it is checked, and whether
@@ -72,8 +72,8 @@ void main() {
     final sefer = SeferColors.of(tester.element(find.byType(PassTrack)));
     final bars = tester.widgetList<AnimatedContainer>(find.byType(AnimatedContainer));
     expect([for (final b in bars) (b.decoration! as BoxDecoration).color], [
-      sefer.ringMikra1,
-      sefer.ringMikra2,
+      sefer.ringMikrah1,
+      sefer.ringMikrah2,
       sefer.ringTrack,
     ]);
   });

@@ -8,10 +8,10 @@ import '../settings/app_settings.dart';
 /// What the reader is asked to read at one step.
 enum StepKind {
   /// The Hebrew text, first time.
-  mikra1,
+  mikrah1,
 
   /// The Hebrew text, second time.
-  mikra2,
+  mikrah2,
 
   /// Targum Onkelos.
   targum,
@@ -143,7 +143,7 @@ class ReaderFlow {
   /// The steps for a chunk, in order.
   List<StepKind> stepsFor(int chunkIndex) {
     final c = chunks[chunkIndex];
-    final steps = <StepKind>[StepKind.mikra1, StepKind.mikra2];
+    final steps = <StepKind>[StepKind.mikrah1, StepKind.mikrah2];
     final noRashi = !hasRashi.sublist(c.start, c.end).any((x) => x);
     switch (second) {
       case SecondReading.onkelos:
@@ -165,8 +165,8 @@ class ReaderFlow {
   ReadingPass? passCompletedBy(int chunkIndex, int stepIndex) {
     final steps = stepsFor(chunkIndex);
     final kind = steps[stepIndex];
-    if (kind == StepKind.mikra1) return ReadingPass.mikra1;
-    if (kind == StepKind.mikra2) return ReadingPass.mikra2;
+    if (kind == StepKind.mikrah1) return ReadingPass.mikrah1;
+    if (kind == StepKind.mikrah2) return ReadingPass.mikrah2;
     if (kind == StepKind.repeatLast) return null;
     // The second-reading pass completes after the last of its steps.
     final lastSecond = steps.lastIndexWhere((k) => k != StepKind.repeatLast);
@@ -208,10 +208,10 @@ class ReaderFlow {
     // A reading can be un-marked on its own, so check that the earlier ones
     // really are done.
     if (done[0] >= c.end && done[1] >= c.end) {
-      final i = steps.indexOf(StepKind.mikra2) + 1;
+      final i = steps.indexOf(StepKind.mikrah2) + 1;
       return math.min(i, steps.length - 1);
     }
-    if (done[0] >= c.end) return steps.indexOf(StepKind.mikra2);
+    if (done[0] >= c.end) return steps.indexOf(StepKind.mikrah2);
     return 0;
   }
 

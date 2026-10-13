@@ -10,7 +10,7 @@ import 'models/verse_ref.dart';
 /// The text layers bundled with the app.
 enum TextLayer {
   /// Hebrew Torah text (Miqra according to the Masorah).
-  mikra('mikra'),
+  mikrah('mikrah'),
 
   /// Targum Onkelos (Aramaic).
   onkelos('onkelos'),
@@ -93,7 +93,7 @@ class TextRepository {
   Future<Verse?> hebrewVerse(BookVerse verse) async {
     final BookVerse(:book, :ref) = verse;
     if (kTorahBooks.contains(book)) {
-      final text = await this.book(TextLayer.mikra, book);
+      final text = await this.book(TextLayer.mikrah, book);
       final chapters = text.chapterLengths;
       return ref.chapter <= chapters.length && ref.verse <= chapters[ref.chapter - 1] ? text.verse(ref) : null;
     }

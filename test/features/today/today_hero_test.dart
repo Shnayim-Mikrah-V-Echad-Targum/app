@@ -30,7 +30,7 @@ final _settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026
 ProgressState _bereshit() {
   final mon = LocalDate(2026, 10, 5);
   var w = WeekProgress(weekId: '5787:1').withAliyah(0, mon).withAliyah(1, mon.addDays(1));
-  w = w.withUnit(2, ReadingPass.mikra1, mon.addDays(2)).withUnit(2, ReadingPass.mikra2, mon.addDays(2));
+  w = w.withUnit(2, ReadingPass.mikrah1, mon.addDays(2)).withUnit(2, ReadingPass.mikrah2, mon.addDays(2));
   return ProgressState(weeks: {'5787:1': w});
 }
 
@@ -270,8 +270,8 @@ void main() {
     test('resumes a reading marked done with no place saved after it', () {
       final day = LocalDate(2026, 10, 7);
       final week = WeekProgress(weekId: '5787:1')
-          .withUnit(2, ReadingPass.mikra1, day)
-          .withUnit(2, ReadingPass.mikra2, day);
+          .withUnit(2, ReadingPass.mikrah1, day)
+          .withUnit(2, ReadingPass.mikrah2, day);
       expect(week.savedPositions(2, 6), [6, 6, 0]);
       // A place saved partway through a reading since marked done.
       expect(week.withPosition(2, const [3, 0, 0]).savedPositions(2, 6), [6, 6, 0]);

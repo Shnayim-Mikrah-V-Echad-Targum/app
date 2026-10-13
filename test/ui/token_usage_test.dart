@@ -48,8 +48,8 @@ void main() {
     testWidgets('${mode.name}: the rings are the two Mikrah blues and the Targum gold on their track', (tester) async {
       // Rishon read all three ways: one arc in each ring.
       final rishon = WeekProgress(weekId: '5787:1')
-          .withUnit(0, ReadingPass.mikra1, LocalDate(2026, 10, 5))
-          .withUnit(0, ReadingPass.mikra2, LocalDate(2026, 10, 5))
+          .withUnit(0, ReadingPass.mikrah1, LocalDate(2026, 10, 5))
+          .withUnit(0, ReadingPass.mikrah2, LocalDate(2026, 10, 5))
           .withUnit(0, ReadingPass.targum, LocalDate(2026, 10, 5));
       await pumpThemed(
         tester,
@@ -66,13 +66,13 @@ void main() {
       expect(
         rings,
         expected
-          ..arc(color: sefer.ringMikra1)
-          ..arc(color: sefer.ringMikra2)
+          ..arc(color: sefer.ringMikrah1)
+          ..arc(color: sefer.ringMikrah2)
           ..arc(color: sefer.ringTargum),
       );
       // Mikrah 2 used to be Mikrah 1 at 80% alpha, and the Targum tertiary.
-      expect(sefer.ringMikra2, isNot(sefer.ringMikra1));
-      expect(sefer.ringMikra2.a, 1);
+      expect(sefer.ringMikrah2, isNot(sefer.ringMikrah1));
+      expect(sefer.ringMikrah2.a, 1);
     });
   }
 

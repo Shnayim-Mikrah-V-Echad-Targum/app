@@ -36,7 +36,7 @@ void main() {
       Column(
         children: [
           AliyahRibbon(
-            week: WeekProgress(weekId: '5787:2').withAliyah(0, day).withUnit(2, ReadingPass.mikra1, day),
+            week: WeekProgress(weekId: '5787:2').withAliyah(0, day).withUnit(2, ReadingPass.mikrah1, day),
             aliyahVerses: const [14, 23, 22, 21, 14, 18, 20],
             selected: 3,
             onSelected: selected.add,

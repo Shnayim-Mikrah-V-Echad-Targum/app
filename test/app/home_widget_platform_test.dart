@@ -35,7 +35,7 @@ void main() {
     stale: '',
     weeks: const [
       WidgetWeek(
-          id: '', hebrew: '', name: '', spoken: '', progress: '', spokenProgress: '', mikra1: 0, mikra2: 0, targum: 0, next: ''),
+          id: '', hebrew: '', name: '', spoken: '', progress: '', spokenProgress: '', mikrah1: 0, mikrah2: 0, targum: 0, next: ''),
     ],
     days: const [],
     rests: {LocalDate(2026, 10, 24): ''},
@@ -561,8 +561,8 @@ Map<String, String> _tokens({required bool light, required String prefix}) {
     'ink_muted': scheme.onSurfaceVariant,
     'techelet': scheme.primary,
     'gold': scheme.secondary,
-    'mikra1': sefer.ringMikra1,
-    'mikra2': sefer.ringMikra2,
+    'mikrah1': sefer.ringMikrah1,
+    'mikrah2': sefer.ringMikrah2,
     'targum': sefer.ringTargum,
     'track': sefer.ringTrack,
   };

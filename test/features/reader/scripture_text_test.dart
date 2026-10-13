@@ -33,7 +33,7 @@ void main() {
   }) =>
       pumpThemed(
         tester,
-        ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: settings, dimmed: dimmed),
+        ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: settings, dimmed: dimmed),
       );
 
   List<TextSpan> marksIn(WidgetTester tester) {
@@ -175,7 +175,7 @@ void main() {
     testWidgets('the guided reader hangs the number in a gutter at the verse\'s start', (tester) async {
       await pumpThemed(
         tester,
-        ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+        ScriptureVerse(verse: serpent, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
       );
       final verse = tester.getRect(find.byType(ScriptureVerse));
       final number = find.text('כב');
@@ -199,7 +199,7 @@ void main() {
             width: 400,
             child: ScriptureVerse(
               verse: serpent,
-              kind: ScriptureKind.mikra,
+              kind: ScriptureKind.mikrah,
               settings: const AppSettings(readingScale: 4),
               hangingNumber: true,
             ),
@@ -305,7 +305,7 @@ void main() {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+            ScriptureVerse(verse: serpent, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
             const HangingIndent(
               settings: AppSettings(),
               child: RashiComments(comments: [Comment('הן האדם', 'הֲרֵי הוּא יָחִיד')], settings: AppSettings(), english: false),
@@ -483,7 +483,7 @@ void main() {
           alignment: Alignment.topRight,
           child: SizedBox(
             width: width,
-            child: ScriptureVerse(verse: long, kind: ScriptureKind.mikra, settings: const AppSettings()),
+            child: ScriptureVerse(verse: long, kind: ScriptureKind.mikrah, settings: const AppSettings()),
           ),
         ),
       );
@@ -524,7 +524,7 @@ void main() {
     Widget group({required bool highlighted}) => VerseGroup(
           verse: serpent.ref,
           highlighted: highlighted,
-          child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings()),
+          child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikrah, settings: const AppSettings()),
         );
 
     testWidgets('highlights the verse on the paper, with a rule at its start, and moves nothing', (tester) async {

@@ -69,7 +69,7 @@ void main() {
     test('tells different progress apart', () {
       final a = ProgressState(weeks: {vayakhel: vayakhelWeek()}, pauses: [Pause(d1, d2)]);
       ProgressState withWeek(WeekProgress w) => ProgressState(weeks: {vayakhel: w}, pauses: [Pause(d1, d2)]);
-      expect(a, isNot(withWeek(vayakhelWeek().withUnit(6, ReadingPass.mikra1, d3))));
+      expect(a, isNot(withWeek(vayakhelWeek().withUnit(6, ReadingPass.mikrah1, d3))));
       expect(a, isNot(withWeek(vayakhelWeek().withHaftarah(d3))));
       expect(a, isNot(withWeek(vayakhelWeek().withPosition(4, const [3, 1, 0]))));
       expect(a, isNot(ProgressState(weeks: {vayakhel: vayakhelWeek()}, pauses: [Pause(d1, d3)])));
@@ -82,7 +82,7 @@ void main() {
   group('WeekProgress', () {
     test('un-marking a reading forgets how far into it the reader got', () {
       final read = WeekProgress(weekId: noach).withAliyah(2, d1).withPosition(2, const [9, 9, 9]);
-      expect(read.withUnit(2, ReadingPass.mikra2, null).positions[2], [9, 0, 9]);
+      expect(read.withUnit(2, ReadingPass.mikrah2, null).positions[2], [9, 0, 9]);
       expect(read.withAliyah(2, null).positions[2], [0, 0, 0]);
       expect(read.withAliyah(2, null).isStarted, isFalse);
       expect(read.withUnit(2, ReadingPass.targum, d2).positions[2], [9, 9, 9], reason: 'marking keeps it');
@@ -98,18 +98,18 @@ void main() {
 
     test('every change is stamped, whether it marks or un-marks, and nothing else is', () {
       final t0 = now;
-      final read = WeekProgress(weekId: noach).withUnit(2, ReadingPass.mikra2, d1).withHaftarah(d1);
+      final read = WeekProgress(weekId: noach).withUnit(2, ReadingPass.mikrah2, d1).withHaftarah(d1);
       expect(read.stamps[2], [0, t0, 0]);
       expect(read.haftarahStamp, t0);
       expect(read.isBlank, isFalse);
 
       now += 1000;
-      expect(identical(read.withUnit(2, ReadingPass.mikra2, d2), read), isTrue, reason: 'already read');
+      expect(identical(read.withUnit(2, ReadingPass.mikrah2, d2), read), isTrue, reason: 'already read');
       expect(identical(read.withUnit(2, ReadingPass.targum, null), read), isTrue, reason: 'already not read');
       expect(identical(read.withHaftarah(d1), read), isTrue);
-      expect(read.withUnit(2, ReadingPass.mikra2, d2).units[2][1], d1, reason: 'the first day is kept');
+      expect(read.withUnit(2, ReadingPass.mikrah2, d2).units[2][1], d1, reason: 'the first day is kept');
 
-      final unread = read.withUnit(2, ReadingPass.mikra2, null).withHaftarah(null);
+      final unread = read.withUnit(2, ReadingPass.mikrah2, null).withHaftarah(null);
       expect(unread.units[2], [null, null, null]);
       expect(unread.stamps[2], [0, t0 + 1000, 0], reason: 'a removal keeps a stamp');
       expect(unread.haftarahStamp, t0 + 1000);
@@ -229,7 +229,7 @@ void main() {
       final before = state();
       await prefs.remove(ProgressController.storageKey);
       progress().markUnit(noach, 3, ReadingPass.targum, d3);
-      progress().markUnit('5787:9', 0, ReadingPass.mikra1, null);
+      progress().markUnit('5787:9', 0, ReadingPass.mikrah1, null);
       progress().savePosition(vayakhel, 4, const [2, 1, 0]);
       expect(identical(state(), before), isTrue);
       expect(state().weeks.keys, isNot(contains('5787:9')), reason: 'no empty week is added');
@@ -305,7 +305,7 @@ void main() {
       expect(state().pauses, isEmpty);
       expect(state().resetAt, latest + 1, reason: 'after everything it erased, though the clock is behind');
 
-      progress().markUnit(noach, 0, ReadingPass.mikra1, d1);
+      progress().markUnit(noach, 0, ReadingPass.mikrah1, d1);
       expect(state().week(noach).stamps[0][0], latest + 2, reason: 'stamped after the reset');
       await progress().flush();
       expect(ProgressState.fromJson(jsonDecode(prefs.getString(ProgressController.storageKey)!)).resetAt, latest + 1);

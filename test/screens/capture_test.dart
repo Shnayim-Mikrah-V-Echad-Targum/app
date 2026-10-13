@@ -1009,7 +1009,7 @@ final _screenProgress = <String, ProgressState Function()>{
       w = w.withAliyah(a, day);
     }
     for (final a in [2, 6]) {
-      w = w.withUnit(a, ReadingPass.mikra1, day).withUnit(a, ReadingPass.mikra2, day);
+      w = w.withUnit(a, ReadingPass.mikrah1, day).withUnit(a, ReadingPass.mikrah2, day);
     }
     return ProgressState(weeks: {'5787:1': w.withPosition(6, const [16, 16, 0])});
   },
@@ -1037,8 +1037,8 @@ ProgressState _readThrough(int last, {required int partly, LocalDate? on}) {
   }
   final day = on ?? mon.addDays(4);
   w = w
-      .withUnit(partly, ReadingPass.mikra1, day)
-      .withUnit(partly, ReadingPass.mikra2, day)
+      .withUnit(partly, ReadingPass.mikrah1, day)
+      .withUnit(partly, ReadingPass.mikrah2, day)
       .withPosition(partly, const [99, 99, 0]);
   return ProgressState(weeks: {'5787:1': w});
 }

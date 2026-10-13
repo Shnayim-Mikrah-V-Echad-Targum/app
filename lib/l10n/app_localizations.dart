@@ -393,17 +393,17 @@ abstract class AppLocalizations {
   /// **'{first} and {second}'**
   String andJoiner(String first, String second);
 
-  /// No description provided for @passMikra1.
+  /// No description provided for @passMikrah1.
   ///
   /// In en, this message translates to:
   /// **'First reading'**
-  String get passMikra1;
+  String get passMikrah1;
 
-  /// No description provided for @passMikra2.
+  /// No description provided for @passMikrah2.
   ///
   /// In en, this message translates to:
   /// **'Second reading'**
-  String get passMikra2;
+  String get passMikrah2;
 
   /// No description provided for @passTargum.
   ///
@@ -1311,17 +1311,17 @@ abstract class AppLocalizations {
   /// **'Preview — you can log this parsha from {date}.'**
   String previewNotOpen(String date);
 
-  /// No description provided for @stepMikra1.
+  /// No description provided for @stepMikrah1.
   ///
   /// In en, this message translates to:
   /// **'Read the Hebrew'**
-  String get stepMikra1;
+  String get stepMikrah1;
 
-  /// No description provided for @stepMikra2.
+  /// No description provided for @stepMikrah2.
   ///
   /// In en, this message translates to:
   /// **'Read the Hebrew again'**
-  String get stepMikra2;
+  String get stepMikrah2;
 
   /// No description provided for @stepTargum.
   ///
@@ -1581,11 +1581,11 @@ abstract class AppLocalizations {
   /// **'Helps with the meaning; it doesn’t take the place of the Targum.'**
   String get translationDisclaimer;
 
-  /// No description provided for @mikraLabel.
+  /// No description provided for @mikrahLabel.
   ///
   /// In en, this message translates to:
   /// **'Mikrah'**
-  String get mikraLabel;
+  String get mikrahLabel;
 
   /// No description provided for @targumLabel.
   ///
@@ -5107,7 +5107,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Mikrah'**
-  String get passTrackMikra;
+  String get passTrackMikrah;
 
   /// The reader's Next button on the last step of an aliyah.
   ///

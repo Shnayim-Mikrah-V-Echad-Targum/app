@@ -31,7 +31,7 @@ final _chukatBalakWeek = DateTime(2027, 7, 14, 11);
 /// Bereshit read, and Noach begun.
 ProgressState _progress() => ProgressState(weeks: {
       '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
-      '5787:2': WeekProgress(weekId: '5787:2').withUnit(0, ReadingPass.mikra1, LocalDate(2026, 10, 11)),
+      '5787:2': WeekProgress(weekId: '5787:2').withUnit(0, ReadingPass.mikrah1, LocalDate(2026, 10, 11)),
     });
 
 void main() {

@@ -36,15 +36,15 @@ void main() {
   });
 
   test('steps: twice Mikrah then the chosen second reading', () {
-    expect(flow().stepsFor(0), [StepKind.mikra1, StepKind.mikra2, StepKind.targum]);
-    expect(flow(second: SecondReading.rashi).stepsFor(0), [StepKind.mikra1, StepKind.mikra2, StepKind.rashi]);
+    expect(flow().stepsFor(0), [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum]);
+    expect(flow(second: SecondReading.rashi).stepsFor(0), [StepKind.mikrah1, StepKind.mikrah2, StepKind.rashi]);
     expect(flow(second: SecondReading.onkelosAndRashi).stepsFor(0),
-        [StepKind.mikra1, StepKind.mikra2, StepKind.targum, StepKind.rashi]);
+        [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum, StepKind.rashi]);
   });
 
   test('a verse without Rashi gets a third Hebrew reading in Rashi mode', () {
     final f = flow(second: SecondReading.rashi, rashi: [true, false, true, true, true, true]);
-    expect(f.stepsFor(1), [StepKind.mikra1, StepKind.mikra2, StepKind.thirdHebrew]);
+    expect(f.stepsFor(1), [StepKind.mikrah1, StepKind.mikrah2, StepKind.thirdHebrew]);
     expect(f.stepVerses(1, StepKind.thirdHebrew), [const VerseRef(1, 2)]);
   });
 
@@ -54,7 +54,7 @@ void main() {
       rashi: [true, false, true, true, true, true],
       thirdReadingPrompts: false,
     );
-    expect(f.stepsFor(1), [StepKind.mikra1, StepKind.mikra2, StepKind.rashi]);
+    expect(f.stepsFor(1), [StepKind.mikrah1, StepKind.mikrah2, StepKind.rashi]);
   });
 
   group('Atarot v\'Divon (Numbers 32:3)', () {
@@ -76,21 +76,21 @@ void main() {
 
     test('read verse by verse, it has a third Hebrew reading of its own', () {
       final f = numbers();
-      expect(f.stepsFor(1), [StepKind.mikra1, StepKind.mikra2, StepKind.targum]);
-      expect(f.stepsFor(2), [StepKind.mikra1, StepKind.mikra2, StepKind.targum, StepKind.thirdHebrew]);
+      expect(f.stepsFor(1), [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum]);
+      expect(f.stepsFor(2), [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum, StepKind.thirdHebrew]);
       expect(f.stepVerses(2, StepKind.thirdHebrew), [const VerseRef(32, 3)]);
       expect(f.thirdHebrewInTargum(2, const VerseRef(32, 3)), isFalse, reason: 'it has its own step');
     });
 
     test('with Rashi too, the third reading comes last', () {
       expect(numbers(second: SecondReading.onkelosAndRashi).stepsFor(2),
-          [StepKind.mikra1, StepKind.mikra2, StepKind.targum, StepKind.rashi, StepKind.thirdHebrew]);
+          [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum, StepKind.rashi, StepKind.thirdHebrew]);
     });
 
     test('read by section, the Targum step shows it again after its Onkelos', () {
       final f = numbers(method: ReadingMethod.sectionBySection);
       expect(f.chunks.map((c) => (c.start, c.end)), [(0, 4), (4, 5)]);
-      expect(f.stepsFor(0), [StepKind.mikra1, StepKind.mikra2, StepKind.targum]);
+      expect(f.stepsFor(0), [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum]);
       expect(f.needsThirdHebrewAfterTargum(const VerseRef(32, 3)), isTrue);
       expect(f.needsThirdHebrewAfterTargum(const VerseRef(32, 2)), isFalse);
       expect(f.thirdReadingRefs(f.chunks[0]), [const VerseRef(32, 3)]);
@@ -101,20 +101,20 @@ void main() {
 
     test('read by aliyah, the Targum step shows it again after its Onkelos', () {
       final f = numbers(method: ReadingMethod.aliyahByAliyah);
-      expect(f.stepsFor(0), [StepKind.mikra1, StepKind.mikra2, StepKind.targum]);
+      expect(f.stepsFor(0), [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum]);
       expect(f.thirdHebrewInTargum(0, const VerseRef(32, 3)), isTrue);
     });
 
     test('with third-reading prompts off, it is read like any other verse', () {
       final verse = numbers(thirdReadingPrompts: false);
-      expect(verse.stepsFor(2), [StepKind.mikra1, StepKind.mikra2, StepKind.targum]);
+      expect(verse.stepsFor(2), [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum]);
       final section = numbers(method: ReadingMethod.sectionBySection, thirdReadingPrompts: false);
       expect(section.needsThirdHebrewAfterTargum(const VerseRef(32, 3)), isFalse);
       expect(section.thirdHebrewInTargum(0, const VerseRef(32, 3)), isFalse);
     });
 
     test('with Rashi in place of the Targum, there is no third reading', () {
-      expect(numbers(second: SecondReading.rashi).stepsFor(2), [StepKind.mikra1, StepKind.mikra2, StepKind.rashi]);
+      expect(numbers(second: SecondReading.rashi).stepsFor(2), [StepKind.mikrah1, StepKind.mikrah2, StepKind.rashi]);
       final section = numbers(method: ReadingMethod.sectionBySection, second: SecondReading.rashi);
       expect(section.needsThirdHebrewAfterTargum(const VerseRef(32, 3)), isFalse);
     });
@@ -123,7 +123,7 @@ void main() {
   test('the final repeat shows only the last verse', () {
     final f = flow(method: ReadingMethod.sectionBySection, repeatLast: true);
     expect(f.stepVerses(2, StepKind.repeatLast), [const VerseRef(1, 6)]);
-    expect(f.stepVerses(1, StepKind.mikra1), [const VerseRef(1, 3), const VerseRef(1, 4), const VerseRef(1, 5)]);
+    expect(f.stepVerses(1, StepKind.mikrah1), [const VerseRef(1, 3), const VerseRef(1, 4), const VerseRef(1, 5)]);
   });
 
   test('end with Mikrah adds a final repeat step', () {

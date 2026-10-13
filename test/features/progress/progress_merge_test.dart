@@ -38,7 +38,7 @@ void main() {
 
   test('the earliest completion of each reading wins and nothing is lost', () {
     final a = ProgressState(weeks: {
-      '5787:2': WeekProgress(weekId: '5787:2').withAliyah(0, d2).withUnit(1, ReadingPass.mikra1, d1),
+      '5787:2': WeekProgress(weekId: '5787:2').withAliyah(0, d2).withUnit(1, ReadingPass.mikrah1, d1),
     });
     final b = ProgressState(weeks: {
       '5787:2': WeekProgress(weekId: '5787:2').withAliyah(0, d1).withHaftarah(d2),
@@ -161,7 +161,7 @@ void main() {
   test('readings logged on two devices are all kept, with the earliest day', () {
     var phone = edit(const ProgressState(), (w) => w.withAliyah(0, d2));
     later();
-    var tablet = edit(const ProgressState(), (w) => w.withUnit(0, ReadingPass.mikra1, d1).withAliyah(1, d2));
+    var tablet = edit(const ProgressState(), (w) => w.withUnit(0, ReadingPass.mikrah1, d1).withAliyah(1, d2));
     phone = sync(phone);
     tablet = sync(tablet);
     phone = sync(phone);

@@ -27,8 +27,8 @@ ProgressState _readThrough(int last, {required int partly, required LocalDate on
     w = w.withAliyah(a, _monday.addDays(a < 3 ? a : (a < 5 ? 3 : 4)));
   }
   w = w
-      .withUnit(partly, ReadingPass.mikra1, on)
-      .withUnit(partly, ReadingPass.mikra2, on)
+      .withUnit(partly, ReadingPass.mikrah1, on)
+      .withUnit(partly, ReadingPass.mikrah2, on)
       .withPosition(partly, const [99, 99, 0]);
   return ProgressState(weeks: {'5787:1': w});
 }
@@ -41,8 +41,8 @@ ProgressState _bereshit(Map<int, LocalDate> read, {required int partly, required
     w = w.withAliyah(a, day);
   }
   w = w
-      .withUnit(partly, ReadingPass.mikra1, on)
-      .withUnit(partly, ReadingPass.mikra2, on)
+      .withUnit(partly, ReadingPass.mikrah1, on)
+      .withUnit(partly, ReadingPass.mikrah2, on)
       .withPosition(partly, const [99, 99, 0]);
   return ProgressState(weeks: {'5787:1': w});
 }
@@ -185,7 +185,7 @@ void main() {
     for (var a = 0; a < 5; a++) {
       w = w.withAliyah(a, LocalDate(2028, 9, 17 + a ~/ 2));
     }
-    w = w.withUnit(5, ReadingPass.mikra1, wednesday).withUnit(5, ReadingPass.mikra2, wednesday).withPosition(5, const [99, 99, 0]);
+    w = w.withUnit(5, ReadingPass.mikrah1, wednesday).withUnit(5, ReadingPass.mikrah2, wednesday).withPosition(5, const [99, 99, 0]);
     await _finish(
       tester,
       week: '5788:53',

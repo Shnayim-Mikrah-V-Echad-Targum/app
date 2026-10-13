@@ -258,7 +258,7 @@ class _PreviewPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final s = ref.watch(settingsProvider);
-    final mikra = ref.watch(bookTextProvider((TextLayer.mikra, _book))).value;
+    final mikrah = ref.watch(bookTextProvider((TextLayer.mikrah, _book))).value;
     final onkelos = ref.watch(bookTextProvider((TextLayer.onkelos, _book))).value;
     final sefer = SeferColors.of(context);
     final styles = ScriptureStyles(context, s);
@@ -273,8 +273,8 @@ class _PreviewPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (mikra != null)
-              ScriptureVerse(verse: mikra.verse(at), kind: ScriptureKind.mikra, settings: s, dimmed: dimmed),
+            if (mikrah != null)
+              ScriptureVerse(verse: mikrah.verse(at), kind: ScriptureKind.mikrah, settings: s, dimmed: dimmed),
             if (onkelos != null)
               ScriptureVerse(
                 verse: onkelos.verse(at),
@@ -298,7 +298,7 @@ class _PreviewPage extends ConsumerWidget {
         ChapterHeading(chapter: _chapter, settings: s),
         verse(1, current: true),
         verse(2, current: false),
-        if (mikra?.breaks[const VerseRef(_chapter, 2)] case final kind?) SectionGap(kind: kind, settings: s),
+        if (mikrah?.breaks[const VerseRef(_chapter, 2)] case final kind?) SectionGap(kind: kind, settings: s),
       ],
     );
 

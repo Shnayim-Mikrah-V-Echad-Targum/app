@@ -50,8 +50,8 @@ void main() {
     // Shlishi read twice in Hebrew, marked from a Chumash: no saved place.
     final mon = LocalDate(2026, 10, 5);
     final week = WeekProgress(weekId: '5787:1')
-        .withUnit(2, ReadingPass.mikra1, mon.addDays(2))
-        .withUnit(2, ReadingPass.mikra2, mon.addDays(2));
+        .withUnit(2, ReadingPass.mikrah1, mon.addDays(2))
+        .withUnit(2, ReadingPass.mikrah2, mon.addDays(2));
     await open(tester, progress: ProgressState(weeks: {'5787:1': week}));
 
     expectStep('Read the Targum', 1);

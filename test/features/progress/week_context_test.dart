@@ -32,7 +32,7 @@ WeekProgress _bereshitProgress() {
   for (final p in ReadingPass.values) {
     w = w.withUnit(0, p, _mon).withUnit(1, p, _mon.addDays(1));
   }
-  return w.withUnit(2, ReadingPass.mikra1, _mon.addDays(2)).withUnit(2, ReadingPass.mikra2, _mon.addDays(2));
+  return w.withUnit(2, ReadingPass.mikrah1, _mon.addDays(2)).withUnit(2, ReadingPass.mikrah2, _mon.addDays(2));
 }
 
 void main() {
@@ -143,7 +143,7 @@ void main() {
       }
 
       final empty = WeekProgress(weekId: _bereshit);
-      expect(await nextWith(empty.withUnit(1, ReadingPass.mikra1, wed)), 1, reason: 'Sheni was begun');
+      expect(await nextWith(empty.withUnit(1, ReadingPass.mikrah1, wed)), 1, reason: 'Sheni was begun');
       var rest = empty;
       for (var a = 2; a < kAliyot; a++) {
         rest = rest.withAliyah(a, thu);

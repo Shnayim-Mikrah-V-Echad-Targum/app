@@ -294,8 +294,8 @@ void main() {
 
       // Each reading recorded as Next records it, and no more.
       final week = c.read(progressProvider).week('5787:2');
-      expect(week.isUnitDone(0, ReadingPass.mikra1), isTrue);
-      expect(week.isUnitDone(0, ReadingPass.mikra2), isTrue);
+      expect(week.isUnitDone(0, ReadingPass.mikrah1), isTrue);
+      expect(week.isUnitDone(0, ReadingPass.mikrah2), isTrue);
       expect(week.isUnitDone(0, ReadingPass.targum), isFalse);
     });
 
@@ -531,11 +531,11 @@ void main() {
 
   test("a queue's verses: where one starts, or the next after it", () {
     final queue = SpeechQueue(language: 'he-IL')
-      ..add(0, 'mikra 1')
+      ..add(0, 'mikrah 1')
       ..add(0, 'targum 1')
       ..add(1, '  ')
-      ..add(2, 'mikra 3');
-    expect(queue.items, ['mikra 1', 'targum 1', 'mikra 3']);
+      ..add(2, 'mikrah 3');
+    expect(queue.items, ['mikrah 1', 'targum 1', 'mikrah 3']);
     expect(queue.verses, [0, 0, 2]);
     expect(queue.startOf(0), 0);
     expect(queue.startOf(1), 2, reason: 'a verse with nothing to say starts at the next');

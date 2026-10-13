@@ -133,7 +133,7 @@ class _FixedToday extends TodayController {
 /// already backed up.
 Map<String, dynamic> _otherDevice() => syncPayload(
       ProgressState(weeks: {
-        _week: WeekProgress(weekId: _week).withUnit(0, ReadingPass.mikra1, _d1),
+        _week: WeekProgress(weekId: _week).withUnit(0, ReadingPass.mikrah1, _d1),
       }),
       _d1,
     );
@@ -176,15 +176,15 @@ void main() {
     final repo = _CountingRepo(user: _me, remote: _otherDevice());
     fakeAsync((async) {
       final container = containerFor(repo);
-      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikra2, _d2);
+      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikrah2, _d2);
       async.elapse(const Duration(seconds: 120));
 
       // One pull and one push merge the two devices, and nothing repeats.
       expect(repo.loads, 1);
       expect(repo.saves, 1);
       final local = container.read(progressProvider);
-      expect(local.week(_week).isUnitDone(0, ReadingPass.mikra1), isTrue, reason: 'pulled from the other device');
-      expect(local.week(_week).isUnitDone(1, ReadingPass.mikra2), isTrue, reason: 'kept from this device');
+      expect(local.week(_week).isUnitDone(0, ReadingPass.mikrah1), isTrue, reason: 'pulled from the other device');
+      expect(local.week(_week).isUnitDone(1, ReadingPass.mikrah2), isTrue, reason: 'kept from this device');
       expect(remoteOf(repo), local);
       expect(container.read(progressSyncProvider), isNotNull);
       container.dispose();
@@ -199,9 +199,9 @@ void main() {
       final (loads, saves) = (repo.loads, repo.saves);
       final progress = container.read(progressProvider.notifier);
 
-      progress.markUnit(_week, 2, ReadingPass.mikra1, _d2);
+      progress.markUnit(_week, 2, ReadingPass.mikrah1, _d2);
       async.elapse(const Duration(seconds: 3));
-      progress.markUnit(_week, 2, ReadingPass.mikra2, _d2);
+      progress.markUnit(_week, 2, ReadingPass.mikrah2, _d2);
       async.elapse(ProgressSync.pushDelay - const Duration(seconds: 1));
       expect(repo.loads, loads, reason: 'still waiting for the changes to rest');
 
@@ -228,7 +228,7 @@ void main() {
       async.elapse(const Duration(seconds: 120));
       expect(repo.loads, 1);
       expect(repo.profileLoads, 1);
-      expect(container.read(progressProvider).week(_week).isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect(container.read(progressProvider).week(_week).isUnitDone(0, ReadingPass.mikrah1), isTrue);
 
       for (var i = 0; i < 3; i++) {
         // A fresh but equal user, as each refreshed session reports.
@@ -430,7 +430,7 @@ void main() {
 
       // Marked on a phone that is locked straight away: suspended in the
       // background, it would push nothing until it is next opened.
-      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikra1, _d2);
+      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikrah1, _d2);
       async.elapse(const Duration(seconds: 1));
       binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       async.flushMicrotasks();
@@ -438,7 +438,7 @@ void main() {
       binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
       async.flushMicrotasks();
       expect(repo.saves, saves + 1, reason: 'pushed as the app is hidden');
-      expect(remoteOf(repo).week(_week).isUnitDone(1, ReadingPass.mikra1), isTrue);
+      expect(remoteOf(repo).week(_week).isUnitDone(1, ReadingPass.mikrah1), isTrue);
 
       // Nothing more is pushed for it, and with nothing waiting, hiding
       // again pushes nothing.
@@ -461,18 +461,18 @@ void main() {
 
       // On a slow network, the sync for this change stalls while saving...
       repo.saveGate = Completer<void>();
-      progress.markUnit(_week, 2, ReadingPass.mikra1, _d2);
+      progress.markUnit(_week, 2, ReadingPass.mikrah1, _d2);
       async.elapse(ProgressSync.pushDelay + const Duration(seconds: 1));
       expect(repo.saves, saves + 1);
 
       // ...and this one rests and asks to be pushed before that sync ends.
-      progress.markUnit(_week, 3, ReadingPass.mikra1, _d2);
+      progress.markUnit(_week, 3, ReadingPass.mikrah1, _d2);
       async.elapse(ProgressSync.pushDelay + const Duration(seconds: 1));
       repo.saveGate!.complete();
       async.elapse(const Duration(seconds: 120));
 
       expect(repo.saves, saves + 2);
-      expect(remoteOf(repo).week(_week).isUnitDone(3, ReadingPass.mikra1), isTrue);
+      expect(remoteOf(repo).week(_week).isUnitDone(3, ReadingPass.mikrah1), isTrue);
       expect(remoteOf(repo), container.read(progressProvider));
       container.dispose();
     });
@@ -485,7 +485,7 @@ void main() {
     }).toJson();
     await prefs.setString(
       ProgressController.storageKey,
-      jsonEncode(ProgressState(weeks: {_week: WeekProgress(weekId: _week).withUnit(1, ReadingPass.mikra2, _d2)})
+      jsonEncode(ProgressState(weeks: {_week: WeekProgress(weekId: _week).withUnit(1, ReadingPass.mikrah2, _d2)})
           .toJson()),
     );
     final mine = _otherDevice();
@@ -502,9 +502,9 @@ void main() {
       async.elapse(const Duration(seconds: 120));
 
       final local = container.read(progressProvider);
-      expect(local.week(_week).isUnitDone(1, ReadingPass.mikra2), isTrue, reason: 'kept from this device');
+      expect(local.week(_week).isUnitDone(1, ReadingPass.mikrah2), isTrue, reason: 'kept from this device');
       expect(local.week(_week).isUnitDone(3, ReadingPass.targum), isTrue, reason: "pulled from the new account");
-      expect(local.week(_week).isUnitDone(0, ReadingPass.mikra1), isFalse, reason: "the first account's stays out");
+      expect(local.week(_week).isUnitDone(0, ReadingPass.mikrah1), isFalse, reason: "the first account's stays out");
       expect(ProgressState.fromJson(repo.backups[other.id]!), local, reason: 'merged into its own backup');
       expect(remoteOf(repo), ProgressState.fromJson(mine), reason: "the first account's is untouched");
       container.dispose();
@@ -515,12 +515,12 @@ void main() {
     final repo = _CountingRepo(user: _me);
     fakeAsync((async) {
       final container = containerFor(repo);
-      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikra2, _d2);
+      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikrah2, _d2);
       async.elapse(const Duration(seconds: 120));
 
       expect(repo.saves, 1);
       expect(remoteOf(repo), container.read(progressProvider));
-      expect(remoteOf(repo).week(_week).isUnitDone(1, ReadingPass.mikra2), isTrue);
+      expect(remoteOf(repo).week(_week).isUnitDone(1, ReadingPass.mikrah2), isTrue);
       container.dispose();
     });
   });
@@ -577,11 +577,11 @@ void main() {
       }
 
       settle();
-      expect(week().isUnitDone(0, ReadingPass.mikra1), isTrue, reason: 'pulled from the other device');
+      expect(week().isUnitDone(0, ReadingPass.mikrah1), isTrue, reason: 'pulled from the other device');
 
-      progress.markUnit(_week, 0, ReadingPass.mikra1, null);
+      progress.markUnit(_week, 0, ReadingPass.mikrah1, null);
       settle();
-      expect(week().isUnitDone(0, ReadingPass.mikra1), isFalse, reason: 'marked as not read');
+      expect(week().isUnitDone(0, ReadingPass.mikrah1), isFalse, reason: 'marked as not read');
 
       progress.markHaftarah(_week, _d1);
       settle();
@@ -626,9 +626,9 @@ void main() {
       // Corrected here before the change was pushed: the cloud still had
       // the first day when the two met.
       async.elapse(const Duration(seconds: 1));
-      progress.markUnit(_week, 0, ReadingPass.mikra1, null);
+      progress.markUnit(_week, 0, ReadingPass.mikrah1, null);
       async.elapse(const Duration(seconds: 1));
-      progress.markUnit(_week, 0, ReadingPass.mikra1, _d2);
+      progress.markUnit(_week, 0, ReadingPass.mikrah1, _d2);
       async.elapse(const Duration(seconds: 10));
       expect(week().units[0][0], _d2);
       expect(remoteOf(repo).week(_week).units[0][0], _d2);
@@ -874,7 +874,7 @@ void main() {
         expect(backedUp, local);
       } else {
         expect(local.resetAt, 0, reason: 'nothing marks the reset for other devices');
-        expect(backedUp.week(_week).isUnitDone(0, ReadingPass.mikra1), isTrue, reason: 'the backup is untouched');
+        expect(backedUp.week(_week).isUnitDone(0, ReadingPass.mikrah1), isTrue, reason: 'the backup is untouched');
       }
     });
   }
@@ -885,7 +885,7 @@ void main() {
     final repo = _CountingRepo(user: _me, remote: remote);
     fakeAsync((async) {
       final container = containerFor(repo);
-      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikra2, _d2);
+      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikrah2, _d2);
       async.elapse(const Duration(seconds: 120));
 
       expect(repo.loads, 1);
@@ -893,7 +893,7 @@ void main() {
       expect((repo.remote!['weeks'] as Map)['5787:9'], {'u': 'done'});
       final local = container.read(progressProvider);
       expect(local.unknownWeeks, {'5787:9': {'u': 'done'}});
-      expect(local.week(_week).isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect(local.week(_week).isUnitDone(0, ReadingPass.mikrah1), isTrue);
       expect(remoteOf(repo), local);
       container.dispose();
     });
@@ -916,7 +916,7 @@ void main() {
       final container = containerFor(repo);
       async.elapse(const Duration(seconds: 120));
       final local = container.read(progressProvider);
-      expect(local.week(_week).isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect(local.week(_week).isUnitDone(0, ReadingPass.mikrah1), isTrue);
       expect(local.unknownWeeks, isEmpty);
       expect(corruptBackups().values, ['{"weeks":{"$_week":{"u":"x"}}}']);
       container.dispose();
@@ -962,7 +962,7 @@ void main() {
       expect(container.read(progressSyncProvider), isNull, reason: 'it never synced');
 
       // Changes made here are kept here, and not pushed over the backup.
-      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikra2, _d2);
+      container.read(progressProvider.notifier).markUnit(_week, 1, ReadingPass.mikrah2, _d2);
       async.elapse(const Duration(seconds: 120));
       expect(repo.loads, 2);
       bool? result;
@@ -971,7 +971,7 @@ void main() {
       expect(result, isFalse);
       expect(repo.saves, 0);
       expect(jsonEncode(repo.remote), original);
-      expect(container.read(progressProvider).week(_week).isUnitDone(1, ReadingPass.mikra2), isTrue);
+      expect(container.read(progressProvider).week(_week).isUnitDone(1, ReadingPass.mikrah2), isTrue);
 
       // Once the backup is in a format this version reads, syncing resumes.
       repo.remote = _otherDevice();

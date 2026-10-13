@@ -32,7 +32,7 @@ final _friday = DateTime(2026, 10, 9, 11);
 ProgressState _bereshit() {
   final mon = LocalDate(2026, 10, 5);
   var w = WeekProgress(weekId: '5787:1').withAliyah(0, mon).withAliyah(1, mon.addDays(1));
-  w = w.withUnit(2, ReadingPass.mikra1, mon.addDays(2)).withUnit(2, ReadingPass.mikra2, mon.addDays(2));
+  w = w.withUnit(2, ReadingPass.mikrah1, mon.addDays(2)).withUnit(2, ReadingPass.mikrah2, mon.addDays(2));
   return ProgressState(weeks: {'5787:1': w});
 }
 
