@@ -5,9 +5,11 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/motion.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../../helpers.dart';
 
@@ -68,10 +70,13 @@ Future<void> _finish(
   String week = '5787:1',
   bool settle = true,
   bool repeat = false,
+  double textScale = 1,
 }) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+  tester.platformDispatcher.textScaleFactorTestValue = textScale;
+  addTearDown(tester.platformDispatcher.clearAllTestValues);
   final c = await pumpApp(
     tester,
     // The repeat set as the reader sets it, off unless [repeat]: untouched,
@@ -99,6 +104,17 @@ Future<void> _finish(
 }
 
 bool _focused(WidgetTester tester, String label) => Focus.of(tester.element(find.text(label))).hasFocus;
+
+/// The lines of the standing line, beside its [status]'s icon.
+List<String> _standingLines(WidgetTester tester, WeekStatus status) {
+  final line = find.ancestor(of: find.byIcon(WeekStatusBadge.icon(status)), matching: find.byType(Row)).first;
+  final texts = tester.widgetList<Text>(find.descendant(of: line, matching: find.byType(Text)));
+  return [for (final text in texts) text.data!];
+}
+
+/// The standing line as it reads, its lines rejoined: a line breaks only
+/// between two parts, where their dot is.
+String _standing(WidgetTester tester, WeekStatus status) => _standingLines(tester, status).join(' · ');
 
 void main() {
   testWidgets('finishing Shlishi with the day still ahead names Revi\'i, and how long it is', (tester) async {
@@ -206,7 +222,7 @@ void main() {
       expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
       // The grace day held together, so that "day" is never left alone on a
       // line.
-      expect(find.textContaining('On time · 1-week parsha streak · +1\u00A0grace\u00A0day', findRichText: true), findsOneWidget);
+      expect(_standing(tester, WeekStatus.onTime), 'On time · 1-week parsha streak · +1\u00A0grace\u00A0day');
       expect(find.widgetWithText(FilledButton, 'Read the haftarah'), findsOneWidget);
       expect(find.widgetWithText(TextButton, 'Done'), findsOneWidget);
       expect(find.textContaining('Next aliyah'), findsNothing);
@@ -225,7 +241,7 @@ void main() {
       );
 
       expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
-      expect(find.textContaining('On time · 1-week parsha streak · +1\u00A0grace\u00A0day', findRichText: true), findsOneWidget);
+      expect(_standing(tester, WeekStatus.onTime), 'On time · 1-week parsha streak · +1\u00A0grace\u00A0day');
     });
 
     testWidgets('on time, with streaks hidden, says only that', (tester) async {
@@ -237,7 +253,7 @@ void main() {
         settings: const AppSettings(showStreaks: false, haftarahEnabled: false),
       );
 
-      expect(find.textContaining(RegExp(r'On time$'), findRichText: true), findsOneWidget);
+      expect(_standing(tester, WeekStatus.onTime), 'On time');
       expect(find.textContaining('streak', findRichText: true), findsNothing);
       expect(find.text('Read the haftarah'), findsNothing);
       expect(find.widgetWithText(FilledButton, 'Done'), findsOneWidget, reason: 'with nothing else to do, Done leads');
@@ -260,9 +276,10 @@ void main() {
       );
 
       expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
+      // The dash held to the word before it, so that no line starts with it.
       expect(
-        find.textContaining('Finished together with the next parsha — your streak continues.', findRichText: true),
-        findsOneWidget,
+        _standing(tester, WeekStatus.restored),
+        'Finished together with the next parsha\u00A0— your streak continues.',
       );
     });
 
@@ -281,7 +298,7 @@ void main() {
       );
 
       expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
-      expect(find.textContaining(RegExp(r'On time$'), findRichText: true), findsOneWidget);
+      expect(_standing(tester, WeekStatus.onTime), 'On time');
       expect(find.textContaining('streak', findRichText: true), findsNothing);
       expect(find.textContaining('grace', findRichText: true), findsNothing);
     });
@@ -291,10 +308,44 @@ void main() {
       await _finish(tester, aliyah: 6, day: DateTime(2026, 10, 11, 10), progress: _readThrough(5, partly: 6, on: _monday));
 
       expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
-      expect(
-        find.textContaining('After Shabbat — and it still counts. Your streak continues.', findRichText: true),
-        findsOneWidget,
+      expect(_standing(tester, WeekStatus.late), 'After Shabbat\u00A0— and it still counts. Your streak continues.');
+    });
+
+    testWidgets('at twice the text size, keeps each part of the standing line whole, and gives the buttons room',
+        (tester) async {
+      await _finish(
+        tester,
+        aliyah: 6,
+        day: DateTime(2026, 10, 9, 10),
+        progress: _readThrough(5, partly: 6, on: _monday),
+        textScale: 2,
       );
+
+      const parts = ['On time', '1-week parsha streak', '+1\u00A0grace\u00A0day'];
+      final lines = _standingLines(tester, WeekStatus.onTime);
+      expect(lines, hasLength(greaterThan(1)), reason: 'too long for one line at this size');
+      for (final line in lines) {
+        expect(parts, containsAll(line.split(' · ')), reason: '"$line" breaks inside a part');
+      }
+      expect(lines.join(' · '), parts.join(' · '));
+      // Read as one line, however many it takes.
+      final spoken = tester.getSemantics(find.text(lines.first)).label;
+      for (final part in parts) {
+        expect(spoken, contains(part));
+      }
+
+      // Room above and below each label, as on Today, and the haftarah's
+      // icon grown with its label: 1.6 times the theme's 20.
+      for (final (button, label) in [
+        (find.widgetWithText(FilledButton, 'Read the haftarah'), 'Read the haftarah'),
+        (find.widgetWithText(TextButton, 'Done'), 'Done'),
+      ]) {
+        final outer = tester.getRect(button);
+        final text = tester.getRect(find.text(label));
+        expect(text.top - outer.top, greaterThanOrEqualTo(8), reason: label);
+        expect(outer.bottom - text.bottom, greaterThanOrEqualTo(8), reason: label);
+      }
+      expect(tester.getSize(find.byIcon(Icons.auto_stories_outlined)), const Size.square(32));
     });
   });
 

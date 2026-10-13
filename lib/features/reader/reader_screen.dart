@@ -23,6 +23,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
+import '../../ui/widgets/lines.dart' show BalancedText, DotLine, dashHeldToWord;
 import '../../ui/widgets/ornaments.dart' show Eyebrow, SeferDivider;
 import '../../ui/widgets/progress_widgets.dart' show WeekStatusBadge;
 import '../notes/domain/annotations.dart';
@@ -2328,8 +2329,9 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
 
   /// How the finished parsha stands (on time, after Shabbat, or doubled up),
   /// with the streak where streaks are shown and the parsha was completed
-  /// just now; null for any other standing.
-  (WeekStatus, String)? _standing(AppSettings settings) {
+  /// just now, in parts that a line breaks between; null for any other
+  /// standing.
+  (WeekStatus, List<String>)? _standing(AppSettings settings) {
     final l = context.l10n;
     final summary = ref.watch(streakSummaryProvider);
     final evaluation = summary.weeks.where((e) => e.plan.weekId == ctx.id).lastOrNull;
@@ -2338,18 +2340,20 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
     // are earned, not as a parsha read already is stepped through again.
     final streaks = settings.showStreaks && widget.justCompleted;
     final status = evaluation.status;
-    final text = switch (status) {
+    // A sentence is one part, its dash held to the word before it, so that
+    // no line starts with one.
+    final parts = switch (status) {
       WeekStatus.onTime when streaks => [
           l.weekOnTime,
           l.parshaStreakLength(summary.parshaStreak),
           if (evaluation.earnedGrace) l.graceDayEarned,
-        ].join(' · '),
-      WeekStatus.onTime => l.weekOnTime,
-      WeekStatus.late => streaks ? l.parshaDoneLateStreak : l.parshaDoneLate,
-      WeekStatus.restored => streaks ? l.parshaDoneRestoredStreak : l.parshaDoneRestored,
+        ],
+      WeekStatus.onTime => [l.weekOnTime],
+      WeekStatus.late => [dashHeldToWord(streaks ? l.parshaDoneLateStreak : l.parshaDoneLate)],
+      WeekStatus.restored => [dashHeldToWord(streaks ? l.parshaDoneRestoredStreak : l.parshaDoneRestored)],
       _ => null,
     };
-    return text == null ? null : (status, text);
+    return parts == null ? null : (status, parts);
   }
 
   @override
@@ -2377,30 +2381,41 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
     final announces = MediaQuery.supportsAnnounceOf(context);
     final wide = MediaQuery.sizeOf(context).width >= Breakpoints.medium;
     final marginalia = type.marginalia;
+    final scaler = MediaQuery.textScalerOf(context);
+    // The gaps between its lines grow with the text, if not as fast.
+    final spacing = scaler.clamp(maxScaleFactor: 1.5);
+    Widget gap(double size) => Gap(spacing.scale(size));
 
     // At most one Filled button (§6.5): the next aliyah, unless the day's
     // reading is done, when Done is, and continuing is a quiet Keep going.
-    // The first button takes the focus.
+    // The first button takes the focus. Each has room around a label that
+    // large text wraps, as Today's have, and a Filled or Tonal one's icon
+    // grows with its label.
     final buttons = <Widget>[];
     FocusNode? focus() => buttons.isEmpty ? widget.firstFocus : null;
     void done() => context.canPop() ? context.pop() : context.go('/today');
+    final roomy = AppButtons.roomy(context, (24, 12, 6));
+    final roomyText = AppButtons.roomy(context, (12, 8, 4), vertical: 8);
+    final themeIcon = theme.filledButtonTheme.style?.iconSize?.resolve(const {}) ?? 18;
+    final buttonIcon = ButtonStyle(iconSize: WidgetStatePropertyAll(scaler.clamp(maxScaleFactor: 1.6).scale(themeIcon)));
+    Widget label(String text) => Text(text, textAlign: TextAlign.center);
     Widget doneButton({required bool filled}) => filled
         ? FilledButton(
             focusNode: focus(),
-            style: FilledButton.styleFrom(minimumSize: const Size(160, 52)),
+            style: roomy.copyWith(minimumSize: const WidgetStatePropertyAll(Size(160, 52))),
             onPressed: done,
-            child: Text(l.actionDone),
+            child: label(l.actionDone),
           )
-        : TextButton(focusNode: focus(), onPressed: done, child: Text(l.actionDone));
+        : TextButton(focusNode: focus(), style: roomyText, onPressed: done, child: label(l.actionDone));
     if (next != null && doneForToday == null) {
       buttons
         ..add(FilledButton.icon(
           focusNode: focus(),
-          style: FilledButton.styleFrom(minimumSize: const Size(64, 52)),
+          style: roomy.merge(buttonIcon).copyWith(minimumSize: const WidgetStatePropertyAll(Size(64, 52))),
           onPressed: () => widget.onGoToAliyah(next),
           icon: const Icon(Icons.chevron_right),
           iconAlignment: IconAlignment.end,
-          label: Text(l.nextAliyahAction(names.aliyah(next))),
+          label: label(l.nextAliyahAction(names.aliyah(next))),
         ))
         ..add(doneButton(filled: false));
     } else if (next != null) {
@@ -2408,17 +2423,18 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
         ..add(doneButton(filled: true))
         ..add(TextButton(
           focusNode: focus(),
+          style: roomyText,
           onPressed: () => widget.onGoToAliyah(next),
-          child: Text(l.keepGoingAliyah(names.aliyah(next))),
+          child: label(l.keepGoingAliyah(names.aliyah(next))),
         ));
     } else {
       if (haftarah) {
         buttons.add(FilledButton.tonalIcon(
           focusNode: focus(),
-          style: AppButtons.tonal(context),
+          style: AppButtons.tonal(context).merge(roomy).merge(buttonIcon),
           onPressed: () => replaceWithWeekPage(context, 'haftarah/${ctx.id}'),
           icon: const Icon(Icons.auto_stories_outlined),
-          label: Text(l.readHaftarah),
+          label: label(l.readHaftarah),
         ));
       }
       buttons.add(doneButton(filled: !haftarah));
@@ -2460,10 +2476,10 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
                       ),
                     ),
                     if (next != null) ...[
-                      const Gap(8),
+                      gap(8),
                       if (doneForToday != null) ...[
                         Text(doneForToday, textAlign: TextAlign.center, style: marginalia),
-                        const Gap(4),
+                        gap(4),
                       ],
                       Text(
                         l.nextAliyahLength(names.aliyah(next), ctx.aliyahVerses[next]),
@@ -2471,13 +2487,13 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
                         style: marginalia,
                       ),
                     ],
-                    if (standing case (final status, final text)) ...[
-                      const Gap(8),
-                      _StandingLine(status: status, text: text),
+                    if (standing case (final status, final parts)) ...[
+                      gap(8),
+                      _StandingLine(status: status, parts: parts),
                     ],
-                    const Gap(24),
+                    gap(24),
                     for (final (i, button) in buttons.indexed) ...[
-                      if (i > 0) const Gap(8),
+                      if (i > 0) gap(8),
                       button,
                     ],
                   ],
@@ -2491,37 +2507,44 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
   }
 }
 
-/// How a finished parsha stands: its status's icon, in its colour, and a
-/// sentence (§6.23).
+/// How a finished parsha stands: its status's icon, in its colour, and its
+/// parts between middle dots (§6.23), which a line breaks between rather
+/// than inside one, or a sentence, its lines balanced so that none is left
+/// with a word alone. Lines after the first start under it, beside the
+/// icon, the whole centred in the panel.
 class _StandingLine extends StatelessWidget {
-  const _StandingLine({required this.status, required this.text});
+  const _StandingLine({required this.status, required this.parts});
 
   final WeekStatus status;
-  final String text;
+  final List<String> parts;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final style = theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant);
-    // The icon rides with the first word, so the line wraps as one sentence.
-    return Text.rich(
-      TextSpan(children: [
-        WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: Padding(
-            padding: const EdgeInsetsDirectional.only(end: 6),
-            child: Icon(
-              WeekStatusBadge.icon(status),
-              // Growing with the text, but never outweighing it.
-              size: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(18),
-              color: WeekStatusBadge.color(context, status),
-            ),
+    final style = theme.textTheme.bodyMedium!.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final scaler = MediaQuery.textScalerOf(context);
+    // Growing with the text, as the buttons' icons do, but never
+    // outweighing it, and centred on the first line.
+    final iconSize = scaler.clamp(maxScaleFactor: 1.6).scale(18);
+    final line = scaler.scale(style.fontSize! * (style.height ?? 1));
+    // One stop for a screen reader, however many lines it takes.
+    return MergeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(top: max(0.0, (line - iconSize) / 2)),
+            child: Icon(WeekStatusBadge.icon(status), size: iconSize, color: WeekStatusBadge.color(context, status)),
           ),
-        ),
-        TextSpan(text: text),
-      ]),
-      textAlign: TextAlign.center,
-      style: style,
+          const SizedBox(width: 6),
+          Flexible(
+            child: parts.length == 1
+                ? BalancedText(parts.single, style: style, textAlign: TextAlign.start)
+                : DotLine(parts, style: style),
+          ),
+        ],
+      ),
     );
   }
 }

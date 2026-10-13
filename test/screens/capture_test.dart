@@ -274,6 +274,8 @@ const _screens = {
   'reader_finished_erev': '/read/5787:1/5',
   // Shevi'i just finished on Friday, the rest read: the parsha, on time.
   'reader_finished_week': '/read/5787:1/6',
+  // Shevi'i just finished on the Sunday after: the parsha, after Shabbat.
+  'reader_finished_late': '/read/5787:1/6',
   'reader_full': '/read/5787:1/2?mode=full',
   // Its end, with the button that marks the aliyah read.
   'reader_full_end': '/read/5787:1/2?mode=full',
@@ -719,6 +721,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_finished_day': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   'reader_finished_erev': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, plan: ReadingPlanType.sheviiOnShabbat),
   'reader_finished_week': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
+  'reader_finished_late': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'reader_listen': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   'reader_listen_focus': (s) => s.copyWith(focusMode: true),
@@ -924,6 +927,7 @@ final _screenNow = <String, DateTime>{
   // Thursday 12 August 2027, 9 Av 5787.
   'welcome_plan_tisha_bav': DateTime(2027, 8, 12, 11),
   'reader_finished_day': DateTime(2026, 10, 7, 11),
+  'reader_finished_late': DateTime(2026, 10, 11, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
@@ -1035,6 +1039,7 @@ final _screenProgress = <String, ProgressState Function()>{
   'reader_finished_day': () => _readThrough(1, partly: 2, on: LocalDate(2026, 10, 7)),
   'reader_finished_erev': () => _readThrough(4, partly: 5),
   'reader_finished_week': () => _readThrough(5, partly: 6),
+  'reader_finished_late': () => _readThrough(5, partly: 6),
 };
 
 /// A reader in their second year, with Bereshit 5787 as in [_progress].
@@ -1389,7 +1394,14 @@ final _taps = {
   's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
   'welcome_why': () => find.byIcon(Icons.expand_more),
   // Finish, on the aliyah's last step.
-  for (final screen in ['reader_finished', 'reader_finished_next', 'reader_finished_day', 'reader_finished_erev', 'reader_finished_week'])
+  for (final screen in [
+    'reader_finished',
+    'reader_finished_next',
+    'reader_finished_day',
+    'reader_finished_erev',
+    'reader_finished_week',
+    'reader_finished_late',
+  ])
     screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(PaperRow, Icons.forum_outlined),
   for (final screen in ['thread_refreshed', 'forum_refreshed']) screen: () => find.byIcon(Icons.refresh),
@@ -2473,6 +2485,7 @@ const _bigTextScreens = {
   'forum_questions',
   'reader_finished_day',
   'reader_finished_week',
+  'reader_finished_late',
   'celebrate',
   'haftarah',
   'haftarah_read',
