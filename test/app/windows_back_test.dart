@@ -170,22 +170,58 @@ void main() {
     expect(find.byType(NotesScreen), findsNothing);
   }, variant: windows);
 
-  testWidgets('a text field keeps Alt+← for its caret, and the mouse still goes back', (tester) async {
+  testWidgets('Alt+← goes back from a text field too, as the mouse does', (tester) async {
     final router = await open(tester);
-    router.push('/search');
+    for (final back in [altLeft, mouseBack]) {
+      router.push('/search');
+      await tester.pumpAndSettle();
+      // Search's field has the focus as it opens.
+      await tester.enterText(find.byType(TextField), 'Bereshit');
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus?.context?.findAncestorStateOfType<EditableTextState>(), isNotNull);
+
+      await back(tester);
+      expect(find.byType(SearchScreen), findsNothing);
+      expect(router.state.uri.path, '/today');
+      expect(find.byType(TodayScreen), findsOneWidget);
+    }
+  }, variant: windows);
+
+  testWidgets('a dialog over Today’s root closes, and the app stays open', (tester) async {
+    final exits = recordExits(tester);
+    final router = await open(tester);
+    expect(router.state.uri.path, '/today');
+    for (final back in [altLeft, mouseBack]) {
+      showDialog<void>(
+        context: tester.element(find.byType(TodayScreen)),
+        builder: (_) => const AlertDialog(content: Text('A dialog')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('A dialog'), findsOneWidget);
+
+      await back(tester);
+      expect(find.text('A dialog'), findsNothing);
+      expect(find.byType(TodayScreen), findsOneWidget);
+      expect(router.state.uri.path, '/today');
+    }
+    expect(exits, isEmpty);
+    expect(tester.takeException(), isNull);
+  }, variant: windows);
+
+  testWidgets('the welcome has nothing to go back to, and the app stays open', (tester) async {
+    final exits = recordExits(tester);
+    final c = await pumpApp(tester, settings: const AppSettings());
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'Bereshit');
-    await tester.pumpAndSettle();
-    final field = tester.widget<TextField>(find.byType(TextField));
-    expect(field.controller!.selection.baseOffset, 'Bereshit'.length);
+    final router = c.read(routerProvider);
+    expect(router.state.uri.path, '/welcome');
 
     await altLeft(tester);
-    expect(find.byType(SearchScreen), findsOneWidget);
-    expect(field.controller!.selection, const TextSelection.collapsed(offset: 0));
-
     await mouseBack(tester);
-    expect(find.byType(SearchScreen), findsNothing);
-    expect(router.state.uri.path, '/today');
+    await tester.sendKeyEvent(LogicalKeyboardKey.browserBack);
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, '/welcome');
+    expect(exits, isEmpty);
+    expect(tester.takeException(), isNull);
   }, variant: windows);
 
   testWidgets('the reader’s shortcuts list Alt+← in the Windows app alone', (tester) async {
@@ -205,7 +241,7 @@ void main() {
     final handle = tester.ensureSemantics();
     await tester.sendKeyEvent(LogicalKeyboardKey.f1);
     await tester.pumpAndSettle();
-    final row = find.bySemanticsLabel('Go back a page, as the mouse’s back button does\nAlt + Left arrow');
+    final row = find.bySemanticsLabel('Close the reader, as the mouse’s back button does\nAlt + Left arrow');
     final present = defaultTargetPlatform == TargetPlatform.windows;
     expect(row, present ? findsOneWidget : findsNothing);
     handle.dispose();

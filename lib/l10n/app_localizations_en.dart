@@ -1079,7 +1079,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutGoBack =>
-      'Go back a page, as the mouse’s back button does';
+      'Close the reader, as the mouse’s back button does';
 
   @override
   String get shortcutLarger => 'Larger text';

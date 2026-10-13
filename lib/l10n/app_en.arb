@@ -1078,9 +1078,9 @@
   "readerFinished": "You’ve finished this aliyah.",
   "shortcutNext": "Next step",
   "shortcutBack": "Previous step",
-  "shortcutGoBack": "Go back a page, as the mouse’s back button does",
+  "shortcutGoBack": "Close the reader, as the mouse’s back button does",
   "@shortcutGoBack": {
-    "description": "In the Windows app’s list of keyboard shortcuts, beside Alt+←: leave the page for the one before it (the reader closes), as the system’s Back would. Not the reader’s previous step, which is a row of its own."
+    "description": "In the Windows app’s list of the reader’s keyboard shortcuts, beside Alt+←: close the reading screen and return to the page it was opened from, as the system’s Back would. Not a page of text, nor the reader’s previous step, which are rows of their own."
   },
   "shortcutLarger": "Larger text",
   "shortcutSmaller": "Smaller text",

@@ -52,6 +52,12 @@ constexpr const wchar_t kPlacementRegValue[] = L"Placement";
 // looked for: inside the bar, below the frame.
 constexpr int kTitleBarDepth = 16;
 
+// How far, in logical pixels, a window may reach past its monitor's work
+// area and still reopen where it is: about the invisible resize border that
+// Windows 10 and later draw round a window, which reaches past the edge of
+// the screen when the window is flush with it, or snapped to it.
+constexpr int kFrameSlack = 8;
+
 using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 
 // Scale helper to convert logical scaler values to physical using passed in
@@ -109,24 +115,93 @@ void CentreInWorkArea(HWND window, const Win32Window::Size& size) {
                SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
-// |rect|, given in the workspace coordinates of a WINDOWPLACEMENT, in screen
-// coordinates. The workspace's origin is the corner of the primary monitor's
-// work area, which a taskbar along its top or left moves.
-RECT ScreenFromWorkspace(const RECT& rect) {
-  RECT screen = rect;
+// Where the workspace coordinates of a WINDOWPLACEMENT begin, in screen
+// coordinates: at the corner of the primary monitor's work area, which a
+// taskbar along its top or left moves.
+POINT WorkspaceOrigin() {
   MONITORINFO primary{};
   primary.cbSize = sizeof(primary);
-  if (GetMonitorInfo(MonitorFromPoint(POINT{0, 0}, MONITOR_DEFAULTTOPRIMARY),
-                     &primary)) {
-    OffsetRect(&screen, primary.rcWork.left - primary.rcMonitor.left,
-               primary.rcWork.top - primary.rcMonitor.top);
+  if (!GetMonitorInfo(MonitorFromPoint(POINT{0, 0}, MONITOR_DEFAULTTOPRIMARY),
+                      &primary)) {
+    return POINT{0, 0};
   }
+  return POINT{primary.rcWork.left - primary.rcMonitor.left,
+               primary.rcWork.top - primary.rcMonitor.top};
+}
+
+// |rect|, given in the workspace coordinates of a WINDOWPLACEMENT, in screen
+// coordinates.
+RECT ScreenFromWorkspace(const RECT& rect) {
+  const POINT origin = WorkspaceOrigin();
+  RECT screen = rect;
+  OffsetRect(&screen, origin.x, origin.y);
   return screen;
+}
+
+// |rect|, given in screen coordinates, in the workspace coordinates of a
+// WINDOWPLACEMENT.
+RECT WorkspaceFromScreen(const RECT& rect) {
+  const POINT origin = WorkspaceOrigin();
+  RECT workspace = rect;
+  OffsetRect(&workspace, -origin.x, -origin.y);
+  return workspace;
+}
+
+// Whether every corner of |bounds|, given in screen coordinates and drawn in
+// by |slack| physical pixels, lies within the work area of a monitor: whether
+// none of the window is off screen or under a taskbar.
+bool CornersInWorkAreas(const RECT& bounds, int slack) {
+  RECT inner = bounds;
+  InflateRect(&inner, -slack, -slack);
+  if (inner.right <= inner.left || inner.bottom <= inner.top) {
+    return false;
+  }
+  const POINT corners[] = {{inner.left, inner.top},
+                           {inner.right - 1, inner.top},
+                           {inner.left, inner.bottom - 1},
+                           {inner.right - 1, inner.bottom - 1}};
+  for (const POINT& corner : corners) {
+    HMONITOR monitor = MonitorFromPoint(corner, MONITOR_DEFAULTTONULL);
+    MONITORINFO info{};
+    info.cbSize = sizeof(info);
+    if (monitor == nullptr || !GetMonitorInfo(monitor, &info) ||
+        !PtInRect(&info.rcWork, corner)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// |bounds|, given in screen coordinates, fitted to the work area of
+// |monitor|, as CentreInWorkArea fits a new window: no larger than the work
+// area, though never smaller than the window can be at |scale_factor|, and
+// moved within it, keeping its title bar on screen if it is still too large.
+RECT FitToWorkArea(const RECT& bounds, HMONITOR monitor, double scale_factor) {
+  MONITORINFO info{};
+  info.cbSize = sizeof(info);
+  if (!GetMonitorInfo(monitor, &info)) {
+    return bounds;
+  }
+  const RECT& work = info.rcWork;
+  const LONG width = std::max(
+      std::min(bounds.right - bounds.left, work.right - work.left),
+      static_cast<LONG>(Scale(kMinWidth, scale_factor)));
+  const LONG height = std::max(
+      std::min(bounds.bottom - bounds.top, work.bottom - work.top),
+      static_cast<LONG>(Scale(kMinHeight, scale_factor)));
+  const LONG left = std::max(std::min(bounds.left, work.right - width),
+                             work.left);
+  const LONG top = std::max(std::min(bounds.top, work.bottom - height),
+                            work.top);
+  return RECT{left, top, left + width, top + height};
 }
 
 // Where the window was when it was last closed, if it can open there again:
 // on a screen that is still connected, with its title bar on a screen to move
-// it by, and no smaller than the window can be at that screen's scale.
+// it by, and no smaller than the window can be at that screen's scale. If
+// part of it would now be off screen or under a taskbar, as when a laptop
+// closed beside a larger screen opens on its own, it is fitted to the work
+// area of the screen most of it is on.
 std::optional<WINDOWPLACEMENT> LoadWindowPlacement() {
   WINDOWPLACEMENT placement{};
   DWORD size = sizeof(placement);
@@ -151,6 +226,10 @@ std::optional<WINDOWPLACEMENT> LoadWindowPlacement() {
   if (MonitorFromPoint(title_bar, MONITOR_DEFAULTTONULL) == nullptr) {
     return std::nullopt;
   }
+  if (!CornersInWorkAreas(bounds, Scale(kFrameSlack, scale_factor))) {
+    placement.rcNormalPosition =
+        WorkspaceFromScreen(FitToWorkArea(bounds, monitor, scale_factor));
+  }
   return placement;
 }
 
@@ -160,6 +239,14 @@ void SaveWindowPlacement(HWND window) {
   placement.length = sizeof(placement);
   if (!GetWindowPlacement(window, &placement)) {
     return;
+  }
+  // A window snapped to an edge of the screen, or into a snap layout, keeps
+  // the place it had before as its normal position: keep where it is
+  // instead, so that it reopens there (no longer snapped).
+  RECT window_rect;
+  if (!IsIconic(window) && !IsZoomed(window) &&
+      GetWindowRect(window, &window_rect)) {
+    placement.rcNormalPosition = WorkspaceFromScreen(window_rect);
   }
   HKEY key;
   if (RegCreateKeyEx(HKEY_CURRENT_USER, kWindowRegKey, 0, nullptr,
@@ -325,6 +412,12 @@ LRESULT CALLBACK Win32Window::WndProc(HWND const window,
     EnableFullDpiSupportIfAvailable(window);
     that->window_handle_ = window;
   } else if (Win32Window* that = GetThisFromHandle(window)) {
+    if (message == WM_ENDSESSION && wparam) {
+      // Windows is shutting down, restarting or signing out: the process
+      // ends without WM_DESTROY, so remember the place now (see Create).
+      // Before the subclass's handler, which may handle the message itself.
+      SaveWindowPlacement(window);
+    }
     return that->MessageHandler(window, message, wparam, lparam);
   }
 

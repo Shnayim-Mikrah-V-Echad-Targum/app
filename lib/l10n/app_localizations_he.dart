@@ -1084,7 +1084,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shortcutBack => 'השלב הקודם';
 
   @override
-  String get shortcutGoBack => 'חזרה לעמוד הקודם, כמו בכפתור החזרה של העכבר';
+  String get shortcutGoBack => 'סגירת מסך הקריאה, כמו בכפתור החזרה של העכבר';
 
   @override
   String get shortcutLarger => 'הגדלת טקסט';

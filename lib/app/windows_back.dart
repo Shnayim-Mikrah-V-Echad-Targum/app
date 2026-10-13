@@ -10,8 +10,8 @@ import 'package:go_router/go_router.dart';
 /// back, as they do in Windows's own apps and its browsers. Android has the
 /// system's Back, and on the web the browser keeps these for its history.
 ///
-/// Alt+← stays a text field's own while one has the focus: there it moves the
-/// caret to the start of the line.
+/// Alt+← goes back from a text field too, as the mouse's back button does:
+/// on Windows it isn't a text-editing key.
 class WindowsBack extends StatefulWidget {
   const WindowsBack({super.key, required this.router, required this.child});
 
@@ -41,7 +41,7 @@ class _WindowsBackState extends State<WindowsBack> {
       },
       child: Shortcuts(
         shortcuts: const {
-          SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true, includeRepeats: false): _BackIntent(yieldsToText: true),
+          SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true, includeRepeats: false): _BackIntent(),
           SingleActivator(LogicalKeyboardKey.browserBack, includeRepeats: false): _BackIntent(),
         },
         child: Actions(actions: _actions, child: widget.child),
@@ -62,21 +62,13 @@ Future<void> goBack(GoRouter router) async {
 }
 
 class _BackIntent extends Intent {
-  const _BackIntent({this.yieldsToText = false});
-
-  /// Whether a focused text field keeps the key.
-  final bool yieldsToText;
+  const _BackIntent();
 }
 
 class _BackAction extends Action<_BackIntent> {
   _BackAction(this.router);
 
   final GoRouter Function() router;
-
-  @override
-  bool isEnabled(_BackIntent intent) =>
-      !intent.yieldsToText ||
-      FocusManager.instance.primaryFocus?.context?.findAncestorStateOfType<EditableTextState>() == null;
 
   @override
   void invoke(_BackIntent intent) => unawaited(goBack(router()));

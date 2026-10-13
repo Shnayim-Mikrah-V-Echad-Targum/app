@@ -253,7 +253,7 @@ HE = {
   "readerFinished": "סיימת את העלייה הזו.",
   "shortcutNext": "השלב הבא",
   "shortcutBack": "השלב הקודם",
-  "shortcutGoBack": "חזרה לעמוד הקודם, כמו בכפתור החזרה של העכבר",
+  "shortcutGoBack": "סגירת מסך הקריאה, כמו בכפתור החזרה של העכבר",
   "shortcutLarger": "הגדלת טקסט",
   "shortcutSmaller": "הקטנת טקסט",
   "shortcutTeamim": "הצגת או הסתרת טעמים",
