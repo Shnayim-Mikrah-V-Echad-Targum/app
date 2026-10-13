@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
@@ -24,6 +25,7 @@ void main() {
     Size size = const Size(412, 2600),
     double textScale = 1,
     DateTime? now,
+    ProgressState? progress,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -34,7 +36,7 @@ void main() {
       tester,
       settings: AppSettings(onboardingComplete: true, joinDate: historyJoinDate),
       now: now ?? historyNow,
-      progress: historyProgress(),
+      progress: progress ?? historyProgress(),
     );
     c.read(routerProvider).go('/progress');
     await tester.pumpAndSettle();
@@ -100,6 +102,98 @@ void main() {
     expect(toldot.style?.fontWeight, FontWeight.w700);
   });
 
+  testWidgets('a parsha finished with the next, and one that still can be, each have a tile of their own',
+      (tester) async {
+    await openProgress(tester, now: rescueNow, progress: rescueProgress());
+    const scheme = Palettes.light;
+    final status = Palettes.statusLight;
+    final sefer = Palettes.seferLight;
+    // Exodus is the book being read; Genesis opens from its header.
+    await tester.tap(headerOf('Genesis'));
+    await tester.pumpAndSettle();
+
+    for (final (label, fill, border, text, icon, iconColor) in [
+      // Finished late too, so on the late fill, with a check for each of the
+      // two parshiyot.
+      ('Noach: Finished with the next parsha', status.late, null, status.onLate, Icons.done_all, status.onLate),
+      ('Lech Lecha: On time', status.done, null, status.onDone, Icons.check, status.onDone),
+      // The one tile still asking something: edged in the overdue colour,
+      // with an hourglass rather than the made-up tile's history.
+      (
+        'Shemot: Can still be finished with the next parsha',
+        sefer.paper,
+        BorderSide(color: status.overdue, width: 1.5),
+        scheme.onSurface,
+        stillToReadIcon,
+        status.overdue,
+      ),
+    ]) {
+      final tile = find.bySemanticsLabel(label);
+      expect(tile, findsOneWidget, reason: label);
+      final ink = tester.widget<Ink>(find.descendant(of: tile, matching: find.byType(Ink)));
+      expect((ink.decoration! as BoxDecoration).color, fill, reason: label);
+      final drawn = find.descendant(
+        of: tile,
+        matching: find.byWidgetPredicate((w) => w is Container && w.foregroundDecoration != null),
+      );
+      if (border == null) {
+        expect(drawn, findsNothing, reason: label);
+      } else {
+        final box = tester.widget<Container>(drawn).foregroundDecoration! as BoxDecoration;
+        expect((box.border! as Border).top, border, reason: label);
+      }
+      final name = label.substring(0, label.indexOf(':'));
+      final nameText = tester.widget<Text>(find.descendant(of: tile, matching: find.text(name)));
+      expect(nameText.style?.color, text, reason: label);
+      final icons = tester.widgetList<Icon>(find.descendant(of: tile, matching: find.byType(Icon)));
+      expect(icons.map((i) => (i.icon, i.color)), [(icon, iconColor)], reason: label);
+    }
+  });
+
+  // One state, one glyph: Shemot's tile, its row under Recent weeks, and
+  // the status line of the week's page that the tile opens.
+  testWidgets('a parsha that can still be finished has one glyph on the map, in its row and on its page',
+      (tester) async {
+    final c = await openProgress(tester, now: rescueNow, progress: rescueProgress());
+    expect(stillToReadIcon, Icons.hourglass_bottom_rounded);
+    expect(WeekStatusBadge.icon(WeekStatus.overdue), stillToReadIcon);
+    IconData? iconIn(Finder of) => tester.widget<Icon>(find.descendant(of: of, matching: find.byType(Icon)).first).icon;
+    expect(iconIn(tileOf('Shemot')), stillToReadIcon);
+    final row = find.ancestor(of: find.text('Can still be finished with the next parsha'), matching: find.byType(Row)).first;
+    await tester.ensureVisible(row);
+    expect(iconIn(row), stillToReadIcon);
+    // History is what was made up, and nothing still to read uses it.
+    expect(find.descendant(of: tileOf('Shemot'), matching: find.byIcon(Icons.history)), findsNothing);
+
+    c.read(routerProvider).go('/progress/week/5787:13');
+    await tester.pumpAndSettle();
+    // The status line under the header: the glyph, then the label.
+    final status = find.textContaining('Can still be finished with the next parsha', findRichText: true);
+    expect(status, findsOneWidget);
+    expect(find.descendant(of: status, matching: find.byIcon(stillToReadIcon)), findsOneWidget);
+    expect(find.byIcon(Icons.schedule), findsNothing);
+  });
+
+  testWidgets('in high contrast, the tile that can still be finished is edged 2 px', (tester) async {
+    tester.view.physicalSize = const Size(412, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(
+      tester,
+      settings: AppSettings(onboardingComplete: true, theme: AppThemeMode.highContrastDark, joinDate: historyJoinDate),
+      now: rescueNow,
+      progress: rescueProgress(),
+    );
+    c.read(routerProvider).go('/progress');
+    await tester.pumpAndSettle();
+    final drawn = find.descendant(
+      of: tileOf('Shemot'),
+      matching: find.byWidgetPredicate((w) => w is Container && w.foregroundDecoration != null),
+    );
+    final box = tester.widget<Container>(drawn).foregroundDecoration! as BoxDecoration;
+    expect((box.border! as Border).top, BorderSide(color: Palettes.statusHcDark.overdue, width: 2));
+  });
+
   testWidgets('only the book being read starts open; its header folds it', (tester) async {
     final handle = tester.ensureSemantics();
     await openProgress(tester);
@@ -158,6 +252,15 @@ void main() {
     expect(button, findsOneWidget);
     final header = find.ancestor(of: button, matching: find.byType(SectionHeader));
     expect(find.descendant(of: header, matching: find.text('This week’s plan')), findsOneWidget);
+    // Inside the strip's card, as on Today, its words on the line of the
+    // other cards' content: the card's 8, and 12 more.
+    final card = find.ancestor(of: find.byType(WeekStrip), matching: find.byType(InfoCard));
+    expect(find.descendant(of: card, matching: header), findsOneWidget);
+    final year = find.ancestor(of: find.text('This year'), matching: find.byType(InfoCard));
+    expect(tester.getTopLeft(find.text('This week’s plan')).dx, tester.getTopLeft(find.text('This year')).dx);
+    expect(tester.getTopLeft(find.text('This week’s plan')).dx - tester.getTopLeft(card).dx, 20);
+    // A section apart from This year's card above it.
+    expect(tester.getTopLeft(card).dy - tester.getBottomLeft(year).dy, 28);
     await tester.tap(button);
     await tester.pumpAndSettle();
     expect(find.widgetWithText(SheetTitle, 'Legend'), findsOneWidget);
@@ -170,6 +273,20 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(tileOf('Vayikra'), findsOneWidget);
+  });
+
+  testWidgets("a book's Hebrew name is in gold, the rubric's colour, as Browse names it", (tester) async {
+    await openProgress(tester);
+    final names = tester.widget<RichText>(
+      find.descendant(of: headerOf('Genesis'), matching: find.textContaining('בראשית', findRichText: true)).first,
+    );
+    TextSpan? hebrew;
+    names.text.visitChildren((span) {
+      if (span is TextSpan && span.text == 'בראשית') hebrew = span;
+      return hebrew == null;
+    });
+    expect(hebrew?.style?.color, Palettes.light.secondary);
+    expect(hebrew?.style?.fontSize, 18);
   });
 
   testWidgets('the Hebrew header drops the English name', (tester) async {
@@ -211,10 +328,19 @@ void main() {
       expect(rects[3].top - rects[0].bottom, moreOrLessEquals(6));
     });
 
-    testWidgets('four columns from 600 dp', (tester) async {
-      await openProgress(tester, size: const Size(800, 1600));
-      expect(firstRow(tester, genesis), 4);
-    });
+    // By the map's own width, not the window's: four from 440 dp and six
+    // from 640.
+    for (final (size, columns, where) in [
+      (const Size(600, 1600), 4, 'a 600 dp window, the map 471 wide beside the rail'),
+      (const Size(800, 1600), 6, 'a tablet, the map 671 wide'),
+      (const Size(1199, 1600), 6, 'a window just short of a desktop, the map in a column of its own'),
+      (const Size(1366, 1600), 4, 'a desktop, the map 555 wide beside the year'),
+    ]) {
+      testWidgets('$columns columns on $where', (tester) async {
+        await openProgress(tester, size: size);
+        expect(firstRow(tester, genesis), columns);
+      });
+    }
 
     // A one-word name is never broken inside the word. A tile whose name
     // has a word too long to sit beside its icon puts the icon above it,
@@ -232,7 +358,10 @@ void main() {
       // little too narrow for it beside the icon; a 430 dp phone's are not.
       (const Size(412, 2600), 1.0, 3, true),
       (const Size(430, 2600), 1.0, 3, false),
-      (const Size(1366, 1600), 1.0, 6, true),
+      // A tablet's six are too narrow for it too; a desktop's four beside
+      // the year are not.
+      (const Size(800, 2600), 1.0, 6, true),
+      (const Size(1366, 1600), 1.0, 4, false),
       (const Size(412, 4000), 2.0, 2, true),
       // Android's "Small" font: the icons keep their size.
       (const Size(430, 2600), 0.85, 3, false),
@@ -299,8 +428,29 @@ void main() {
       // As it is set: a dash held to the word before it by a no-break space.
       expect(find.descendant(of: sheet, matching: find.text(dashHeldToWord(label))), findsOneWidget, reason: label);
     }
-    // Each label beside a swatch of its tile.
-    expect(find.descendant(of: sheet, matching: find.byType(Ink)), findsNWidgets(9));
+    // Each label beside a swatch of its tile, no two alike, and each icon
+    // its own.
+    final swatches = find.descendant(of: sheet, matching: find.byType(Ink));
+    expect(swatches, findsNWidgets(9));
+    (Color?, BoxBorder?, IconData?) lookOf(Finder swatch) {
+      final drawn = find.descendant(
+        of: swatch,
+        matching: find.byWidgetPredicate((w) => w is Container && w.foregroundDecoration != null),
+      );
+      final icon = find.descendant(of: swatch, matching: find.byType(Icon));
+      final edge = drawn.evaluate().isEmpty ? null : tester.widget<Container>(drawn).foregroundDecoration;
+      return (
+        (tester.widget<Ink>(swatch).decoration! as BoxDecoration).color,
+        (edge as BoxDecoration?)?.border,
+        icon.evaluate().isEmpty ? null : tester.widget<Icon>(icon).icon,
+      );
+    }
+
+    final looks = [for (var i = 0; i < 9; i++) lookOf(swatches.at(i))];
+    expect(looks.toSet(), hasLength(9));
+    final icons = looks.map((look) => look.$3).nonNulls;
+    expect(icons, hasLength(8), reason: 'every state but Upcoming has an icon');
+    expect(icons.toSet(), hasLength(8));
     final colours = tester
         .widgetList<Ink>(find.descendant(of: sheet, matching: find.byType(Ink)))
         .map((i) => (i.decoration! as BoxDecoration).color)

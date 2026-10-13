@@ -57,13 +57,15 @@ void main() {
         theme: mode,
       );
       final rings = find.descendant(of: find.byType(ParshaRings), matching: find.byType(CustomPaint)).first;
+      // Three tracks of seven arcs each, then each ring's done arc in its
+      // own colour.
+      var expected = paints;
+      for (var i = 0; i < 3 * kAliyot; i++) {
+        expected = expected..arc(color: sefer.ringTrack);
+      }
       expect(
         rings,
-        paints
-          // Three full tracks, then each ring's done arc in its own colour.
-          ..circle(color: sefer.ringTrack)
-          ..circle(color: sefer.ringTrack)
-          ..circle(color: sefer.ringTrack)
+        expected
           ..arc(color: sefer.ringMikra1)
           ..arc(color: sefer.ringMikra2)
           ..arc(color: sefer.ringTargum),

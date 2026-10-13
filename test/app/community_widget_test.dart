@@ -1001,7 +1001,9 @@ void main() {
       final c = await _pump(tester, forums: forums);
       c.read(routerProvider).go('/parsha/week/5787:42-43');
       await tester.pumpAndSettle();
-      expect(find.text('Parshat Matot-Masei'), findsOneWidget);
+      // The page of the two read together (its app bar's title, revealed
+      // on scrolling, is left out where the test font makes it too wide).
+      expect(tester.widget<WeekOverview>(find.byType(WeekOverview)).ctx.id, '5787:42-43');
 
       await _tapDiscuss(tester);
       await tester.pumpAndSettle();

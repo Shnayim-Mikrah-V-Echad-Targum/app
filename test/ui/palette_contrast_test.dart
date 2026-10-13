@@ -213,16 +213,32 @@ void main() {
           expect(sefer.hairlineWidth, 2);
           expect(sefer.focus, s.onSurface);
           expect(sefer.verseHighlight, Colors.transparent);
+          // The year bar's open segments, a grey between the page and a
+          // finished segment, where outlineVariant is as dark as done.
+          expect(contrast(sefer.yearTrack, sefer.paper), greaterThanOrEqualTo(3));
+          expect(contrast(sefer.yearTrack, t.status.done), greaterThanOrEqualTo(4));
         } else {
           expect(sefer.hairlineWidth, 1);
           expect(sefer.focus, s.primary);
           expect(sefer.verseHighlight, sefer.paper);
+          expect(sefer.yearTrack, s.outlineVariant);
         }
         expect(sefer.focusGap, s.surface);
         // Techelet means Mikra progress, so "done" and the first ring share it.
         expect(sefer.ringMikra1, s.primary);
         expect(t.status.done, s.primary);
       });
+    });
+  }
+
+  // The first two rings are both techelet, told apart only by shade, so a
+  // high-contrast theme sets them at least as far apart as the theme it
+  // heightens does.
+  _Theme named(String name) => _themes.singleWhere((t) => t.name == name);
+  for (final (hc, base) in [(named('hcLight'), named('light')), (named('hcDark'), named('dark'))]) {
+    test('${hc.name}: the first two rings are told apart at least as well as in ${base.name}', () {
+      double apart(_Theme t) => contrast(t.sefer.ringMikra1, t.sefer.ringMikra2);
+      expect(apart(hc), greaterThanOrEqualTo(apart(base)));
     });
   }
 

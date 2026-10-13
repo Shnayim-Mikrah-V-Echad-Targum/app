@@ -172,4 +172,71 @@ void main() {
       }
     });
   });
+
+  // A displaced haftarah that the custom reads on a later Shabbat is not
+  // offered as one some read too that week, which would have it read
+  // twice: deferred exactly where a later week's special haftarah takes it.
+  group('a regular haftarah read on a later Shabbat', () {
+    for (final israel in [false, true]) {
+      final place = israel ? 'Israel' : 'Diaspora';
+      final schedule = ParshaSchedule(israel: israel);
+
+      test("is Re'eh's on Rosh Chodesh Elul and Acharei Mot's after a special one, as Ki Tetze and Kedoshim read "
+          'them, 5780-5900 ($place)', () {
+        const kiTetzeKey = 'Ki Teitzei with 3rd Haftarah of Consolation';
+        const kedoshimKey = 'Kedoshim following Special Shabbat';
+        var shabbat = HebrewDate(5780, HebrewMonth.tishrei, 1).toLocalDate();
+        while (!shabbat.isShabbat) {
+          shabbat = shabbat.addDays(1);
+        }
+        final end = HebrewDate(5900, HebrewMonth.tishrei, 1).toLocalDate();
+        // The Shabbatot with a parsha, in order.
+        final weeks = <(LocalDate, PortionId)>[
+          for (var d = shabbat; d.rd < end.rd; d = d.addDays(7))
+            if (schedule.portionOnShabbat(d) case final p?) (d, p),
+        ];
+        var reeh = 0, acharei = 0;
+        for (final nusach in HaftarahNusach.values) {
+          for (var i = 0; i < weeks.length; i++) {
+            final (d, p) = weeks[i];
+            final deferred = regularHaftarahDeferred(d, p, nusach: nusach);
+            final why = '$d ${p.key} ${nusach.name}';
+            if (deferred) {
+              expect(nusach, isNot(HaftarahNusach.sephardi), reason: why);
+              expect(specialHaftarahKey(d, p, nusach: nusach), isNotNull, reason: '$why: displaced');
+            }
+            // Re'eh, Shoftim, Ki Tetze: never read with another.
+            if (p == const PortionId(47)) {
+              final (later, kiTetze) = weeks[i + 2];
+              expect(kiTetze, const PortionId(49), reason: why);
+              expect(specialHaftarahKey(later, kiTetze, nusach: nusach) == kiTetzeKey, deferred, reason: why);
+              if (deferred) reeh++;
+            } else if (p == const PortionId(29)) {
+              final (later, kedoshim) = weeks[i + 1];
+              expect(kedoshim, const PortionId(30), reason: why);
+              expect(specialHaftarahKey(later, kedoshim, nusach: nusach) == kedoshimKey, deferred, reason: why);
+              if (deferred) acharei++;
+            } else {
+              expect(deferred, isFalse, reason: why);
+            }
+          }
+        }
+        // Both happen, for Ashkenazim and Chabad, in these 120 years.
+        expect(reeh, greaterThan(0));
+        expect(acharei, greaterThan(0));
+      });
+    }
+
+    test("is never one Sephardim read, nor that of a parsha read with another", () {
+      const schedule = ParshaSchedule(israel: false);
+      final reeh = LocalDate(2022, 8, 27);
+      expect(regularHaftarahDeferred(reeh, schedule.portionOnShabbat(reeh)!, nusach: HaftarahNusach.ashkenazi), isTrue);
+      expect(regularHaftarahDeferred(reeh, schedule.portionOnShabbat(reeh)!, nusach: HaftarahNusach.chabad), isTrue);
+      expect(regularHaftarahDeferred(reeh, schedule.portionOnShabbat(reeh)!, nusach: HaftarahNusach.sephardi), isFalse);
+      expect(
+        regularHaftarahDeferred(reeh, const PortionId(29, combined: true), nusach: HaftarahNusach.ashkenazi),
+        isFalse,
+      );
+    });
+  });
 }

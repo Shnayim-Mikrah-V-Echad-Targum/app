@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../core/calendar/local_date.dart';
 import '../../core/text/hebrew_text.dart';
+import '../../data/models/verse_ref.dart' show VerseRange;
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
@@ -15,6 +16,7 @@ import '../../ui/widgets/heading_reveal.dart';
 import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
+import '../../ui/widgets/page_columns.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
@@ -50,13 +52,19 @@ class WeekOverviewScreen extends ConsumerWidget {
 /// The name at the head is the page's heading. The app bar shows it too once
 /// it has scrolled out of sight.
 class WeekOverview extends ConsumerStatefulWidget {
-  const WeekOverview({super.key, required this.ctx, this.leading, this.actions = const []});
+  const WeekOverview({super.key, required this.ctx, this.leading, this.actions = const [], this.bareTitle = false});
 
   final WeekContext ctx;
 
   /// The app bar's leading button, if not the usual one.
   final Widget? leading;
   final List<Widget> actions;
+
+  /// Whether the title revealed as the parsha's name scrolls away is the
+  /// name alone ("Bereshit"), where the page's place already says it is a
+  /// parsha (the Parsha tab), leaving room for the tab's actions on a
+  /// phone; otherwise "Parshat Bereshit".
+  final bool bareTitle;
 
   @override
   ConsumerState<WeekOverview> createState() => _WeekOverviewState();
@@ -73,6 +81,7 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
     final settings = ref.watch(settingsProvider);
     final name = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
     final open = ctx.isOpen && !ctx.progress.isComplete;
+    final clearable = ctx.progress.completedUnits > 0;
 
     Future<void> markWeek() async {
       final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
@@ -100,7 +109,7 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
         final container = ProviderScope.containerOf(context, listen: false);
         showStatus(
           context,
-          l.markedUnread,
+          l.weekCleared(name),
           action: SnackBarAction(
             label: l.actionUndo,
             onPressed: () => container.read(progressProvider.notifier).restoreWeek(ctx.id, before),
@@ -109,10 +118,18 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
       }
     }
 
+    // A desktop sets the parsha's head beside its aliyot, rather than over
+    // them in a narrow column.
+    final wide = MediaQuery.sizeOf(context).width >= Breakpoints.expanded;
+    final width = wide ? ContentWidth.todayWide : ContentWidth.list;
+
     return PageScaffold(
       leading: widget.leading,
       titleText: l.parshaLabel(name),
+      // Whole or not at all: it repeats the page's heading.
+      title: AppBarTitle(widget.bareTitle ? name : l.parshaLabel(name), wholeOnly: true),
       titleRevealed: headingHidden,
+      contentMaxWidth: width,
       actions: [
         ...widget.actions,
         PopupMenuButton<String>(
@@ -125,54 +142,80 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
             'notes' => context.push(notesPath()),
             _ => null,
           },
+          // Ways to read first; then, under a hairline, what changes the
+          // week's progress, the clearing last.
           itemBuilder: (context) => [
             SeferMenuItem(value: 'full', child: Text(l.fullTextMode)),
-            if (open) SeferMenuItem(value: 'all', child: Text(l.markWholeWeek)),
-            if (ctx.progress.completedUnits > 0) SeferMenuItem(value: 'clear', child: Text(l.clearWeek)),
             SeferMenuItem(value: 'notes', child: Text(l.notesTitle)),
+            if (open || clearable)
+              PopupMenuDivider(
+                thickness: SeferColors.of(context).hairlineWidth,
+                color: SeferColors.of(context).hairline,
+              ),
+            if (open) SeferMenuItem(value: 'all', child: Text(l.markWholeWeek)),
+            if (clearable) SeferMenuItem(value: 'clear', child: Text(l.clearWeek)),
           ],
         ),
       ],
       body: watchHeading(
         PageBody(
+          maxWidth: width,
           children: [
-            _WeekHeader(ctx: ctx, namesKey: headingKey),
-            if (!ctx.isOpen) ...[
-              const Gap(Space.xl),
-              NoticeBanner(icon: Icons.visibility_outlined, text: l.previewNotOpen(names.practiceDate(ctx.week.start))),
-            ],
-            // Digits, which an eyebrow never holds; inset as a group's header.
-            SectionHeader.plain(
-              l.aliyotProgress(ctx.progress.completedAliyot, kAliyot),
-              padding: const EdgeInsetsDirectional.fromSTEB(Space.xs, Rhythm.sectionGap, 0, Space.sm),
-            ),
-            PaperGroup(
-              ruleInset: _AliyahRow.textStart,
-              children: [for (var a = 0; a < kAliyot; a++) _AliyahRow(ctx: ctx, aliyah: a)],
-            ),
-            const Gap(Rhythm.sectionGap),
-            PaperGroup(
-              ruleInset: PaperGroup.iconInset,
-              children: [
-                if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
-                // Once the reader has marked a verse of the parsha.
-                if (WeekNotesRow.shows(ref, ctx)) WeekNotesRow(ctx: ctx),
-                DiscussRow(ctx: ctx),
+            // From 1200, the parsha's head beside its aliyot and the rest of
+            // the week (§9 Parsha tab, 6); below, one above the other.
+            PageColumns(
+              wide: wide,
+              startFlex: 5,
+              endFlex: 7,
+              stackedGap: Rhythm.sectionGap,
+              start: [
+                _WeekHeader(ctx: ctx, namesKey: headingKey),
+                if (!ctx.isOpen) ...[
+                  const Gap(Space.xl),
+                  NoticeBanner(
+                    icon: Icons.visibility_outlined,
+                    text: l.previewNotOpen(names.practiceDate(ctx.week.start)),
+                  ),
+                ],
+              ],
+              end: [
+                // Digits, which an eyebrow never holds; inset as a group's
+                // header. Nothing above it: side by side it starts level with
+                // the parsha's name, and as one column it stands a section's
+                // gap below the head.
+                SectionHeader.plain(
+                  l.aliyotProgress(ctx.progress.completedAliyot, kAliyot),
+                  padding: const EdgeInsetsDirectional.fromSTEB(Space.xs, 0, 0, Space.sm),
+                ),
+                PaperGroup(
+                  ruleInset: _AliyahRow.textStart,
+                  children: [for (var a = 0; a < kAliyot; a++) _AliyahRow(ctx: ctx, aliyah: a)],
+                ),
+                const Gap(Rhythm.sectionGap),
+                PaperGroup(
+                  ruleInset: PaperGroup.iconInset,
+                  children: [
+                    if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
+                    // Once the reader has marked a verse of the parsha.
+                    if (WeekNotesRow.shows(ref, ctx)) WeekNotesRow(ctx: ctx),
+                    DiscussRow(ctx: ctx),
+                  ],
+                ),
+                if (open) ...[
+                  const Gap(Space.xl),
+                  // Read without the app, from a printed Chumash perhaps: taken
+                  // at the reader's word.
+                  Center(
+                    child: TextButton.icon(
+                      style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                      icon: const Icon(Icons.import_contacts),
+                      label: Text(l.markWholeWeek, textAlign: TextAlign.center),
+                      onPressed: markWeek,
+                    ),
+                  ),
+                ],
               ],
             ),
-            if (open) ...[
-              const Gap(Space.xl),
-              // Read without the app, from a printed Chumash perhaps: taken at
-              // the reader's word.
-              Center(
-                child: TextButton.icon(
-                  style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
-                  icon: const Icon(Icons.import_contacts),
-                  label: Text(l.markWholeWeek, textAlign: TextAlign.center),
-                  onPressed: markWeek,
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -451,18 +494,7 @@ class _AliyahRow extends ConsumerWidget {
           padding: const EdgeInsets.only(top: 2),
           child: WholeWords(secondBegins, style: SeferType.of(context).marginalia, textAlign: TextAlign.start),
         ),
-      if (other != null)
-        Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: WholeWords(
-            l.aliyahOtherDivision(
-              _unbroken(names.verseRange(other.start.chapter, other.start.verse, other.end.chapter, other.end.verse)),
-            ),
-            style: SeferType.of(context).marginalia,
-            textAlign: TextAlign.start,
-            breakAtHyphens: true,
-          ),
-        ),
+      if (other != null) _otherDivision(context, other),
     ];
     final pips = PassPips(
       states: [for (final d in passes) d ? PipState.done : PipState.pending],
@@ -584,7 +616,7 @@ class _AliyahRow extends ConsumerWidget {
           alignment: PlaceholderAlignment.middle,
           child: Padding(
             padding: const EdgeInsetsDirectional.only(end: 4),
-            child: Icon(Icons.history, size: _iconScaler(context).scale(14), color: color),
+            child: Icon(stillToReadIcon, size: _iconScaler(context).scale(14), color: color),
           ),
         ),
         TextSpan(text: label),
@@ -603,6 +635,35 @@ class _AliyahRow extends ConsumerWidget {
     if (ctx.status == WeekStatus.transparent || !counts(date)) return false;
     final join = ctx.joinDate;
     return join == null || date >= join;
+  }
+
+  /// Where some sources divide the aliyah otherwise, as [other]: a line of
+  /// meta, after a small mark, that steps back behind the aliyah's own lines
+  /// rather than speak over them. The mark leads it as the overdue mark
+  /// leads the plan's line, so that the two wrap alike.
+  Widget _otherDivision(BuildContext context, VerseRange other) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.onSurfaceVariant;
+    final range = Names(context).verseRange(other.start.chapter, other.start.verse, other.end.chapter, other.end.verse);
+    final note = context.l10n.aliyahOtherDivision(_unbroken(range));
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: WholeWords.rich(
+        semanticsLabel: note,
+        TextSpan(children: [
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(end: Space.xs),
+              child: Icon(Icons.info_outline, size: _iconScaler(context).scale(14), color: color),
+            ),
+          ),
+          TextSpan(text: note),
+        ]),
+        style: theme.textTheme.bodySmall?.copyWith(color: color),
+        textAlign: TextAlign.start,
+      ),
+    );
   }
 }
 

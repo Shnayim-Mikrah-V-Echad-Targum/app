@@ -349,8 +349,9 @@ void main() {
       );
       final banner = find.byType(NoticeBanner);
       expect(banner, findsOneWidget);
-      expect(find.descendant(of: banner, matching: find.text('Never on Shabbat or Yom Tov, and at most once a day.')),
-          findsOneWidget);
+      // Yom Tov held together, so that a balanced line never parts it.
+      const note = 'Never on Shabbat or Yom\u00A0Tov, and at most once a day.';
+      expect(find.descendant(of: banner, matching: find.text(note)), findsOneWidget);
       expect(tester.widget<NoticeBanner>(banner).leading, isNotNull);
       expect(find.byIcon(Icons.nights_stay_outlined), findsNothing);
       expect(find.byType(PaperGroup), findsNWidgets(3));
@@ -365,7 +366,7 @@ void main() {
       expect(banner, findsOneWidget);
       expect(tester.widget<NoticeBanner>(banner).icon, Icons.install_mobile);
       expect(find.textContaining('Reminders need the installed app'), findsOneWidget);
-      expect(find.text('Never on Shabbat or Yom Tov, and at most once a day.'), findsNothing);
+      expect(find.text('Never on Shabbat or Yom\u00A0Tov, and at most once a day.'), findsNothing);
       // Without an INSTALL_URL, nothing to get the app from.
       expect(find.text('Get the app'), findsNothing);
 

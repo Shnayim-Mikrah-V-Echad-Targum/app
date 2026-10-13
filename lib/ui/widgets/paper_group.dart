@@ -265,7 +265,8 @@ class _RowRule extends CustomPainter {
 /// It is 56 high with one line and 72 with a subtitle or a detail line, and
 /// reads to a screen reader as one item: its text, and its tap if it has
 /// one. The chevron shows when the row can be tapped, unless [chevron] says
-/// otherwise; it points the other way in Hebrew.
+/// otherwise; it points the other way in Hebrew. With a detail line, the icon
+/// and chevron line up with the title's line rather than the row's middle.
 ///
 /// A [trailing] control, such as a menu button or a text button, keeps an item
 /// of its own beside the row's, so a screen reader reaches both actions:
@@ -302,6 +303,7 @@ class PaperRow extends StatelessWidget {
     required this.title,
     this.breakTitleAtHyphens = true,
     this.subtitle,
+    this.subtitleParts,
     this.subtitleMaxLines = 2,
     this.subtitleLocale,
     this.titleStyle,
@@ -320,6 +322,7 @@ class PaperRow extends StatelessWidget {
     this.focusNode,
     bool? chevron,
   })  : assert(icon == null || leading == null, 'an icon or a leading widget, not both'),
+        assert(subtitle == null || subtitleParts == null, 'a subtitle or its parts, not both'),
         chevron = chevron ?? onTap != null;
 
   final IconData? icon;
@@ -340,8 +343,16 @@ class PaperRow extends StatelessWidget {
   /// At most [subtitleMaxLines] lines, unless the text is enlarged.
   final String? subtitle;
 
-  /// Two by default; null for a subtitle of several facts, each on a line
-  /// of its own, that is never cut short.
+  /// A subtitle of parts between middle dots, in place of [subtitle]: set
+  /// as a [DotLine], as many parts to a line as fit, so that its lines break
+  /// between parts rather than inside one, and never cut short. A haftarah's
+  /// passages: "Isaiah 54:11–55:5 · Isaiah 66:1" over "Isaiah 66:23 · …",
+  /// never "Isaiah" at a line's end and "66:23" under it.
+  final List<String>? subtitleParts;
+
+  /// Two by default; null for a subtitle that is never cut short, such as a
+  /// long reference (the haftarah's, three lines on a phone for Sephardim on
+  /// Re'eh on Rosh Chodesh Elul) or a setting's description.
   final int? subtitleMaxLines;
 
   /// The language of [subtitle], for screen readers, where it isn't the
@@ -446,6 +457,8 @@ class PaperRow extends StatelessWidget {
 
   bool get _hasLead => icon != null || leading != null;
 
+  bool get _hasSubtitle => subtitle != null || subtitleParts != null;
+
   /// About as wide as a [control] at the end of a row is, to tell whether
   /// the row's text is squeezed beside it: a switch 52, a row of controls
   /// their sum, and any other control (a menu, an icon button) 48.
@@ -542,7 +555,9 @@ class PaperRow extends StatelessWidget {
                 ? titleWith(besideTitle)
                 : titleText,
         under: [
-          if (subtitle case final subtitle?)
+          if (subtitleParts case final parts?)
+            DotLine(parts, style: subtitleStyle)
+          else if (subtitle case final subtitle?)
             if (subtitleLocale case final locale?)
               Text.rich(
                 TextSpan(text: subtitle, locale: locale),
@@ -589,11 +604,12 @@ class PaperRow extends StatelessWidget {
             );
       final (:heading, title: titleText, :under) = texts(fit);
       // A value ends the title's line, and so does a labelled button. With a
-      // subtitle or a detail line under them, the icon and the end of the row
-      // line up with that line too, rather than with the middle of the row,
-      // so the value and chevron stay side by side, and a member's initial
-      // stands by their name.
-      final onTitleLine = (value != null || besideTitle != null) && (subtitle != null || detail != null);
+      // subtitle under them, the icon and the end of the row line up with
+      // that line too, rather than with the middle of the row, so the value
+      // and chevron stay side by side, and a member's initial stands by
+      // their name. So they do over a detail line, value or not: centred on
+      // three lines of text, the icon would sit beside none of them.
+      final onTitleLine = detail != null || ((value != null || besideTitle != null) && _hasSubtitle);
       // The title's line is as high as its text, or beside a button as high
       // as the button, a tap target 48 high at least, whose label is set
       // smaller than the title.
@@ -753,7 +769,7 @@ class PaperRow extends StatelessWidget {
         // The hairline under the row starts where its text does.
         _RowPlace.ruleStartOf(context)?.value = textStart == PaperGroup.iconInset ? null : textStart;
         return ConstrainedBox(
-          constraints: BoxConstraints(minHeight: subtitle == null && detail == null ? 56 : 72),
+          constraints: BoxConstraints(minHeight: !_hasSubtitle && detail == null ? 56 : 72),
           child: Padding(padding: const EdgeInsetsDirectional.fromSTEB(_start, 12, _end, 12), child: body),
         );
       },

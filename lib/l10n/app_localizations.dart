@@ -987,10 +987,10 @@ abstract class AppLocalizations {
   /// **'Discuss this week’s parsha'**
   String get discussThisWeek;
 
-  /// The heading over the haftarah and the discussion on Today.
+  /// The heading over the haftarah and the discussion on Today, under the week strip, whose card is headed This week’s plan (weekStripLabel): the rest of what the week holds besides its reading plan.
   ///
   /// In en, this message translates to:
-  /// **'This week'**
+  /// **'Also this week'**
   String get thisWeek;
 
   /// No description provided for @streakParsha.
@@ -1017,16 +1017,16 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 day} other{{count} days}}'**
   String daysCount(int count);
 
-  /// On the streak card, in place of a parsha streak of 0: the streak starts when this parsha is finished.
+  /// On the streak card, in place of a parsha streak of 0, over the label 'Parsha streak': the streak starts once this week's parsha is finished. Screen readers hear it after the label ('Parsha streak: starts when Bereshit is complete').
   ///
   /// In en, this message translates to:
-  /// **'Begins with {name}'**
+  /// **'Starts when {name} is complete'**
   String streakBeginsWith(String name);
 
-  /// On the streak card, in place of 0 days on track.
+  /// On the streak card, in place of 0 days on track, over the label 'Days on track': the run starts with today's planned reading. Screen readers hear it after the label ('Days on track: starts with today’s reading').
   ///
   /// In en, this message translates to:
-  /// **'Begins with today’s reading'**
+  /// **'Starts with today’s reading'**
   String get daysBeginToday;
 
   /// No description provided for @dayKept.
@@ -1059,10 +1059,10 @@ abstract class AppLocalizations {
   /// **'Paused'**
   String get dayPaused;
 
-  /// No description provided for @dayOpen.
+  /// In the week strip, a planned day gone by whose reading is still to do, in full or in part (a day counts once three readings are done, so a day with one or two read is still to read), and can still be caught up (drawn in the overdue colour), and today until its reading is done. Say nothing of whether any of it was read. Pairs with dayMissed ('Not read'), a day gone by that can no longer be caught up, and with plannedForOverdue's 'still to read' on the week's page.
   ///
   /// In en, this message translates to:
-  /// **'Not yet'**
+  /// **'Still to read'**
   String get dayOpen;
 
   /// No description provided for @dayMissed.
@@ -1208,6 +1208,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear all progress for {name}?'**
   String clearWeekConfirm(String name);
+
+  /// A status message, with Undo, once a week's progress has been cleared from its menu. The parsha's name, as in clearWeekConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress for {name} cleared'**
+  String weekCleared(String name);
 
   /// No description provided for @whenDidYouRead.
   ///
@@ -1610,12 +1616,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark the haftarah as read'**
   String get markHaftarahRead;
-
-  /// No description provided for @specialHaftarah.
-  ///
-  /// In en, this message translates to:
-  /// **'Special haftarah: {reason}'**
-  String specialHaftarah(String reason);
 
   /// No description provided for @readerFinished.
   ///
@@ -3123,16 +3123,16 @@ abstract class AppLocalizations {
   /// **'An hour after Shabbat or Simchat Torah ends, or the next morning when it ends late, to log what you read then'**
   String get checkInReminderDescCity;
 
-  /// No description provided for @remindersShabbatNote.
+  /// The note at the top of Settings → Reminders, in a notice whose lines are balanced. Yom Tov is held together by a no-break space, so that a line never ends with Yom and starts the next with Tov.
   ///
   /// In en, this message translates to:
-  /// **'Never on Shabbat or Yom Tov, and at most once a day.'**
+  /// **'Never on Shabbat or Yom Tov, and at most once a day.'**
   String get remindersShabbatNote;
 
-  /// In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.
+  /// In place of remindersShabbatNote when a city is chosen for Shabbat times, Yom Tov held together as there. city is its name.
   ///
   /// In en, this message translates to:
-  /// **'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.'**
+  /// **'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.'**
   String remindersShabbatNoteCity(String city);
 
   /// Offered under the reminders while any of them is on and no city is chosen for Shabbat times, with reminderCityChoose and actionNotNow.
@@ -4827,17 +4827,23 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Simchat Torah is today} =1{Simchat Torah is tomorrow} other{Simchat Torah in {count} days}}'**
   String simchatTorahInDays(int count);
 
-  /// Heads the portion's own haftarah, shown after the special haftarah that displaces it this week.
+  /// Heads the portion's own haftarah, open under the special haftarah that displaces it this week, for Chabad, whose custom is to read both.
   ///
   /// In en, this message translates to:
   /// **'Also: the regular haftarah of {portion}'**
   String regularHaftarahOf(String portion);
 
-  /// A line under a special haftarah on Today: the haftarah page also has the portion's own haftarah.
+  /// Heads the portion's own haftarah, folded under the special haftarah that displaces it this week, for the customs other than Chabad's: only some read it as well. (Chabad, whose custom is to read both, has regularHaftarahOf.)
   ///
   /// In en, this message translates to:
-  /// **'Also the regular haftarah'**
-  String get alsoRegularHaftarah;
+  /// **'The regular haftarah of {portion} (some read it too)'**
+  String regularHaftarahSomeRead(String portion);
+
+  /// The detail line of the week's Haftarah row (on Today and a week's page) for Chabad, in a week a special haftarah displaces the portion's own: its name (e.g. "Shabbat Machar Chodesh"), and that Chabad's custom is to read the regular haftarah as well, which the haftarah page offers after it. Other customs see the special haftarah's name alone. A no-break space holds the dot to the name, so that no line starts with it.
+  ///
+  /// In en, this message translates to:
+  /// **'{reason} · Chabad custom: the regular haftarah too'**
+  String haftarahSpecialChabadRegular(String reason);
 
   /// No description provided for @chabadFallbackNote.
   ///
@@ -5282,6 +5288,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{done} of {total} parshiyot'**
   String parshiyotOfYear(int done, int total);
+
+  /// On Progress, under the heading 'This year', in place of '0 of 54 parshiyot' while none of this year's parshiyot is finished yet: the reader's year begins with this week's parsha. Its subject is the year (in Hebrew, feminine, agreeing with השנה).
+  ///
+  /// In en, this message translates to:
+  /// **'Begins with {name}'**
+  String yearBeginsWith(String name);
 
   /// Screen-reader label of the year bar for a cycle before this one; year is its Hebrew year (5786).
   ///

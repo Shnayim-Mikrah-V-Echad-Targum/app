@@ -95,30 +95,14 @@ void main() {
       await tester.ensureVisible(find.bySemanticsLabel(RegExp('^Genesis: ')));
       await tester.pumpAndSettle();
 
-      double contrast(Color a, Color b) {
-        final (la, lb) = (a.computeLuminance(), b.computeLuminance());
-        return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
-      }
-
-      for (final label in [
+      _expectReadableTiles(tester, [
         'Bereshit: On time',
         'Noach: After Shabbat — still counts',
         'Lech Lecha: Not completed',
         'Vayera: Made up later',
         'Toldot: In progress',
         'Vayetze: Upcoming',
-      ]) {
-        final tile = find.bySemanticsLabel(label);
-        final ink = tester.widget<Ink>(find.descendant(of: tile, matching: find.byType(Ink)));
-        final fill = (ink.decoration! as BoxDecoration).color!;
-        final name = label.substring(0, label.indexOf(':'));
-        final text = tester.widget<Text>(find.descendant(of: tile, matching: find.text(name)));
-        expect(fill.a, 1, reason: '$label: text on a translucent fill');
-        expect(contrast(text.style!.color!, fill), greaterThanOrEqualTo(4.5), reason: label);
-        for (final icon in tester.widgetList<Icon>(find.descendant(of: tile, matching: find.byType(Icon)))) {
-          expect(contrast(icon.color!, fill), greaterThanOrEqualTo(3), reason: '$label icon');
-        }
-      }
+      ]);
 
       // Today (Wednesday) on primaryContainer, Shabbat on the rest wash.
       final strip = find.byType(WeekStrip);
@@ -129,7 +113,7 @@ void main() {
         final texts = tester.widgetList<Text>(find.descendant(of: find.byWidget(ink), matching: find.byType(Text)));
         expect(texts, isNotEmpty);
         for (final text in texts) {
-          expect(contrast(text.style!.color!, fill), greaterThanOrEqualTo(4.5), reason: '"${text.data}" on $fill');
+          expect(_contrast(text.style!.color!, fill), greaterThanOrEqualTo(4.5), reason: '"${text.data}" on $fill');
         }
       }
 
@@ -138,11 +122,55 @@ void main() {
         final count = tester.widget<Text>(
           find.descendant(of: find.bySemanticsLabel(RegExp('^$book: ')), matching: find.textContaining(' of ')),
         );
-        expect(contrast(count.style!.color!, page), greaterThanOrEqualTo(4.5), reason: '$book count');
+        expect(_contrast(count.style!.color!, page), greaterThanOrEqualTo(4.5), reason: '$book count');
       }
       await expectLater(tester, meetsGuideline(textContrastGuideline));
       handle.dispose();
     });
+
+    // The two states of a parsha missed and then finished with the next: the
+    // one the reader has done, and the one still open to them.
+    testWidgets('tiles finished with the next parsha, or yet to be, are readable in the ${theme.name} theme',
+        (tester) async {
+      tester.view.physicalSize = const Size(412, 2600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, theme: theme, joinDate: historyJoinDate),
+        now: rescueNow,
+        progress: rescueProgress(),
+      );
+      c.read(routerProvider).go('/progress');
+      await tester.pumpAndSettle();
+      // Exodus is the book being read; Genesis opens from its header.
+      await tester.ensureVisible(find.bySemanticsLabel(RegExp('^Genesis: ')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel(RegExp('^Genesis: ')));
+      await tester.pumpAndSettle();
+      _expectReadableTiles(tester, [
+        'Noach: Finished with the next parsha',
+        'Shemot: Can still be finished with the next parsha',
+      ]);
+    });
+  }
+}
+
+/// Each Torah-map tile [labels] names: its name at least 4.5:1 against its
+/// fill, which is solid, and its icon at least 3:1, as a graphic.
+void _expectReadableTiles(WidgetTester tester, List<String> labels) {
+  for (final label in labels) {
+    final tile = find.bySemanticsLabel(label);
+    expect(tile, findsOneWidget, reason: label);
+    final ink = tester.widget<Ink>(find.descendant(of: tile, matching: find.byType(Ink)));
+    final fill = (ink.decoration! as BoxDecoration).color!;
+    final name = label.substring(0, label.indexOf(':'));
+    final text = tester.widget<Text>(find.descendant(of: tile, matching: find.text(name)));
+    expect(fill.a, 1, reason: '$label: text on a translucent fill');
+    expect(_contrast(text.style!.color!, fill), greaterThanOrEqualTo(4.5), reason: label);
+    for (final icon in tester.widgetList<Icon>(find.descendant(of: tile, matching: find.byType(Icon)))) {
+      expect(_contrast(icon.color!, fill), greaterThanOrEqualTo(3), reason: '$label icon');
+    }
   }
 }
 

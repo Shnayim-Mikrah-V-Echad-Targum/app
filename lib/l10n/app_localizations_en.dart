@@ -676,7 +676,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discussThisWeek => 'Discuss this week’s parsha';
 
   @override
-  String get thisWeek => 'This week';
+  String get thisWeek => 'Also this week';
 
   @override
   String get streakParsha => 'Parsha streak';
@@ -708,11 +708,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String streakBeginsWith(String name) {
-    return 'Begins with $name';
+    return 'Starts when $name is complete';
   }
 
   @override
-  String get daysBeginToday => 'Begins with today’s reading';
+  String get daysBeginToday => 'Starts with today’s reading';
 
   @override
   String get dayKept => 'Read';
@@ -730,7 +730,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dayPaused => 'Paused';
 
   @override
-  String get dayOpen => 'Not yet';
+  String get dayOpen => 'Still to read';
 
   @override
   String get dayMissed => 'Not read';
@@ -811,6 +811,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String clearWeekConfirm(String name) {
     return 'Clear all progress for $name?';
+  }
+
+  @override
+  String weekCleared(String name) {
+    return 'Progress for $name cleared';
   }
 
   @override
@@ -1062,11 +1067,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markHaftarahRead => 'Mark the haftarah as read';
-
-  @override
-  String specialHaftarah(String reason) {
-    return 'Special haftarah: $reason';
-  }
 
   @override
   String get readerFinished => 'You’ve finished this aliyah.';
@@ -1916,11 +1916,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get remindersShabbatNote =>
-      'Never on Shabbat or Yom Tov, and at most once a day.';
+      'Never on Shabbat or Yom Tov, and at most once a day.';
 
   @override
   String remindersShabbatNoteCity(String city) {
-    return 'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in $city.';
+    return 'Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in $city.';
   }
 
   @override
@@ -3011,7 +3011,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get alsoRegularHaftarah => 'Also the regular haftarah';
+  String regularHaftarahSomeRead(String portion) {
+    return 'The regular haftarah of $portion (some read it too)';
+  }
+
+  @override
+  String haftarahSpecialChabadRegular(String reason) {
+    return '$reason · Chabad custom: the regular haftarah too';
+  }
 
   @override
   String get chabadFallbackNote =>
@@ -3373,6 +3380,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String parshiyotOfYear(int done, int total) {
     return '$done of $total parshiyot';
+  }
+
+  @override
+  String yearBeginsWith(String name) {
+    return 'Begins with $name';
   }
 
   @override

@@ -681,7 +681,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get discussThisWeek => 'דיון על פרשת השבוע';
 
   @override
-  String get thisWeek => 'השבוע';
+  String get thisWeek => 'ועוד השבוע';
 
   @override
   String get streakParsha => 'רצף פרשות';
@@ -715,7 +715,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String streakBeginsWith(String name) {
-    return 'יתחיל בפרשת $name';
+    return 'יתחיל עם סיום פרשת $name';
   }
 
   @override
@@ -737,7 +737,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dayPaused => 'בהשהיה';
 
   @override
-  String get dayOpen => 'עדיין לא';
+  String get dayOpen => 'עדיין לקריאה';
 
   @override
   String get dayMissed => 'לא נקרא';
@@ -817,6 +817,11 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String clearWeekConfirm(String name) {
     return 'לנקות את כל ההתקדמות בפרשת $name?';
+  }
+
+  @override
+  String weekCleared(String name) {
+    return 'ההתקדמות בפרשת $name נמחקה';
   }
 
   @override
@@ -1068,11 +1073,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get markHaftarahRead => 'סימון ההפטרה כנקראה';
-
-  @override
-  String specialHaftarah(String reason) {
-    return 'הפטרה מיוחדת: $reason';
-  }
 
   @override
   String get readerFinished => 'סיימת את העלייה הזו.';
@@ -3007,7 +3007,14 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get alsoRegularHaftarah => 'וגם ההפטרה הרגילה';
+  String regularHaftarahSomeRead(String portion) {
+    return 'ההפטרה הרגילה של פרשת $portion (יש הקוראים גם אותה)';
+  }
+
+  @override
+  String haftarahSpecialChabadRegular(String reason) {
+    return '$reason · מנהג חב״ד: גם ההפטרה הרגילה';
+  }
 
   @override
   String get chabadFallbackNote =>
@@ -3375,6 +3382,11 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String parshiyotOfYear(int done, int total) {
     return '$done מתוך $total פרשות';
+  }
+
+  @override
+  String yearBeginsWith(String name) {
+    return 'מתחילה בפרשת $name';
   }
 
   @override

@@ -9,6 +9,7 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart' show PaperRow;
 
 import '../../helpers.dart';
 
@@ -97,7 +98,7 @@ void main() {
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       expect(find.text('When did you read it?'), findsOneWidget);
-      await tester.tap(find.widgetWithText(ListTile, 'Today'));
+      await tester.tap(find.widgetWithText(PaperRow, 'Today'));
       await tester.pumpAndSettle();
 
       final week = c.read(progressProvider).week('5787:1');
@@ -388,7 +389,7 @@ void main() {
       expect(tester.widget<CheckboxListTile>(boxes).value, isTrue);
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ListTile, 'Today'));
+      await tester.tap(find.widgetWithText(PaperRow, 'Today'));
       await tester.pumpAndSettle();
 
       final week = c.read(progressProvider).week('5787:2');
@@ -449,7 +450,7 @@ void main() {
       ]);
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ListTile, 'Today'));
+      await tester.tap(find.widgetWithText(PaperRow, 'Today'));
       await tester.pumpAndSettle();
       final week = c.read(progressProvider).week('5787:1');
       expect([for (var a = 0; a < 7; a++) week.isAliyahDone(a)], [true, true, false, false, false, true, true]);

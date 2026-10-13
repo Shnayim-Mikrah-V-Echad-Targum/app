@@ -20,6 +20,7 @@ import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ledger.dart';
 import '../../ui/widgets/ornaments.dart';
+import '../../ui/widgets/page_columns.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/sefer_choice_chip.dart';
@@ -70,6 +71,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final missedThisCycle = summary.weeks
         .where((e) => e.status == WeekStatus.missed && cycleYearOf(e.plan.portion, e.plan.week.occasion) == live)
         .toList();
+    // Whether a week of this year before this one has come due since the
+    // reader joined: missed, still to finish with the next, or in its late
+    // window. The year then no longer begins with this week's parsha.
+    final yearUnderway = summary.weeks.any((e) =>
+        e.plan.weekId != current.id &&
+        e.status != WeekStatus.transparent &&
+        cycleYearOf(e.plan.portion, e.plan.week.occasion) == live);
 
     // A week before the reader joined, with nothing read in it, is no part of
     // their history (the Vezot HaBerakhah of a reader who joined on Simchat
@@ -99,112 +107,156 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         final order => order,
       });
 
+    // A desktop sets the year beside the Torah map, which would otherwise
+    // stand under it, below the fold.
+    final wide = MediaQuery.sizeOf(context).width >= Breakpoints.expanded;
+    final width = wide ? ContentWidth.todayWide : ContentWidth.list;
+    // The map's header, with nothing above it: side by side it starts level
+    // with the ledger, and as one column, a section's gap below the week.
+    const mapHeaderPadding = EdgeInsetsDirectional.only(bottom: Space.sm);
+
     return PageScaffold(
       titleText: l.progressTitle,
+      contentMaxWidth: width,
       body: PageBody(
+        maxWidth: width,
         children: [
-          if (settings.showStreaks) ...[
-            LedgerCard(
-              parshaStreak: summary.parshaStreak,
-              daysOnTrack: summary.daysOnTrack,
-              beginsWith: name(current.week.portion),
-              longestParshaStreak: summary.longestParshaStreak,
-              longestDaysOnTrack: summary.longestDaysOnTrack,
-            ),
-            const Gap(Rhythm.cardGap),
-            PaperGroup(
-              children: [
-                PaperRow(
-                  icon: Icons.shield_outlined,
-                  iconColor: StatusColors.of(context).grace,
-                  title: l.graceAvailable(summary.graceBalance),
-                  trailing: TextButton(
-                    onPressed: () => _showAboutStreaks(context, settings.lateWindow),
-                    child: Text(l.aboutStreaks),
+          // From 1200, the streaks, the year and the week beside the map and
+          // the weeks gone by (§9 Progress, 10); below, one above the other.
+          PageColumns(
+            wide: wide,
+            startFlex: 5,
+            endFlex: 7,
+            stackedGap: Rhythm.sectionGap,
+            start: [
+              if (settings.showStreaks) ...[
+                LedgerCard(
+                  parshaStreak: summary.parshaStreak,
+                  daysOnTrack: summary.daysOnTrack,
+                  beginsWith: name(current.week.portion),
+                  longestParshaStreak: summary.longestParshaStreak,
+                  longestDaysOnTrack: summary.longestDaysOnTrack,
+                ),
+                const Gap(Rhythm.cardGap),
+                PaperGroup(
+                  children: [
+                    PaperRow(
+                      icon: Icons.shield_outlined,
+                      iconColor: StatusColors.of(context).grace,
+                      title: l.graceAvailable(summary.graceBalance),
+                      trailing: TextButton(
+                        onPressed: () => _showAboutStreaks(context, settings.lateWindow),
+                        child: Text(l.aboutStreaks),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else
+                NoticeBanner(
+                  icon: Icons.visibility_off_outlined,
+                  text: l.streaksHidden,
+                  action: TextButton(
+                    onPressed: () => ref.read(settingsProvider.notifier).update((s) => s.copyWith(showStreaks: true)),
+                    child: Text(l.showStreaks),
                   ),
                 ),
-              ],
-            ),
-          ] else
-            NoticeBanner(
-              icon: Icons.visibility_off_outlined,
-              text: l.streaksHidden,
-              action: TextButton(
-                onPressed: () => ref.read(settingsProvider.notifier).update((s) => s.copyWith(showStreaks: true)),
-                child: Text(l.showStreaks),
+              const Gap(Rhythm.sectionGap),
+              _ThisYear(
+                cycle: cycle,
+                live: live,
+                cycles: cycles,
+                onCycle: (c) => setState(() => _chosenCycle = c),
+                done: done,
+                segments: YearBar.segmentsFor(
+                  weeks: summary.weeks,
+                  cycle: cycle,
+                  done: done,
+                  current: cycle == live ? current.week.portion : null,
+                ),
+                currentName: name(current.week.portion),
+                underway: yearUnderway,
+                verses: _versesRead(repo, progress.weeks, cycle),
+                secondReading: names.secondReading(settings.secondReading),
               ),
-            ),
-          const Gap(Rhythm.sectionGap),
-          _ThisYear(
-            cycle: cycle,
-            live: live,
-            cycles: cycles,
-            onCycle: (c) => setState(() => _chosenCycle = c),
-            done: done,
-            segments: YearBar.segmentsFor(
-              weeks: summary.weeks,
-              cycle: cycle,
-              done: done,
-              current: cycle == live ? current.week.portion : null,
-            ),
-            currentName: name(current.week.portion),
-            verses: _versesRead(repo, progress.weeks, cycle),
-            secondReading: names.secondReading(settings.secondReading),
-          ),
-          SectionHeader(l.weekStripLabel, trailing: const WeekStripLegendButton()),
-          InfoCard(
-            padding: WeekStrip.cardPadding,
-            child: WeekStrip(
-              plan: current.plan,
-              today: current.today,
-              statuses: summary.days,
-              oneDayYomTov: settings.oneDayYomTov,
-              joinDate: settings.joinDate,
-              onDayTap: (d) => context.push('/read/${current.id}/${d.aliyot.first}'),
-            ),
-          ),
-          // An earlier year's map is named for its year, which in English
-          // has digits: no eyebrow holds those (§4.5).
-          if (cycle == live)
-            SectionHeader(l.torahMap, trailing: const _TorahMapHelpButton())
-          else if (context.isHebrewUi)
-            SectionHeader(l.torahMapOfYear(names.hebrewYear(cycle)), trailing: const _TorahMapHelpButton())
-          else
-            SectionHeader.plain(l.torahMapOfYear(names.hebrewYear(cycle)), trailing: const _TorahMapHelpButton()),
-          _TorahMap(cycle: cycle, summary: summary, done: done, current: current, live: cycle == live),
-          if (missedThisCycle.isNotEmpty) ...[
-            GroupHeader(l.makeUpTitle),
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 4, bottom: Space.sm),
-              child: Text(l.makeUpBody, style: muted(theme.textTheme.bodySmall)),
-            ),
-            PaperGroup(
-              children: [
-                for (final e in missedThisCycle)
-                  PaperRow(
-                    icon: Icons.history,
-                    title: name(e.plan.portion),
-                    breakTitleAtHyphens: false,
-                    subtitle: names.practiceDate(e.plan.week.occasion),
-                    onTap: () => context.push('/progress/week/${e.plan.weekId}'),
-                  ),
+              const Gap(Rhythm.sectionGap),
+              // Its header inside the card, as on Today.
+              InfoCard(
+                padding: WeekStrip.cardPadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // On the line of the other cards' content: the card's 8,
+                    // and 12 more.
+                    SectionHeader(
+                      l.weekStripLabel,
+                      trailing: const WeekStripLegendButton(),
+                      padding: const EdgeInsetsDirectional.only(start: Space.md),
+                    ),
+                    WeekStrip(
+                      plan: current.plan,
+                      today: current.today,
+                      statuses: summary.days,
+                      oneDayYomTov: settings.oneDayYomTov,
+                      joinDate: settings.joinDate,
+                      onDayTap: (d) => context.push('/read/${current.id}/${d.aliyot.first}'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            end: [
+              // An earlier year's map is named for its year, which in English
+              // has digits: no eyebrow holds those (§4.5).
+              if (cycle == live)
+                SectionHeader(l.torahMap, trailing: const _TorahMapHelpButton(), padding: mapHeaderPadding)
+              else if (context.isHebrewUi)
+                SectionHeader(
+                  l.torahMapOfYear(names.hebrewYear(cycle)),
+                  trailing: const _TorahMapHelpButton(),
+                  padding: mapHeaderPadding,
+                )
+              else
+                SectionHeader.plain(
+                  l.torahMapOfYear(names.hebrewYear(cycle)),
+                  trailing: const _TorahMapHelpButton(),
+                  padding: mapHeaderPadding,
+                ),
+              _TorahMap(cycle: cycle, summary: summary, done: done, current: current, live: cycle == live),
+              if (missedThisCycle.isNotEmpty) ...[
+                GroupHeader(l.makeUpTitle),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 4, bottom: Space.sm),
+                  child: Text(l.makeUpBody, style: muted(theme.textTheme.bodySmall)),
+                ),
+                PaperGroup(
+                  children: [
+                    for (final e in missedThisCycle)
+                      PaperRow(
+                        icon: Icons.history,
+                        title: name(e.plan.portion),
+                        breakTitleAtHyphens: false,
+                        subtitle: names.practiceDate(e.plan.week.occasion),
+                        onTap: () => context.push('/progress/week/${e.plan.weekId}'),
+                      ),
+                  ],
+                ),
               ],
-            ),
-          ],
-          GroupHeader(l.recentWeeks),
-          if (recent.isEmpty)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 4),
-              child: Text(l.noHistory, style: muted(theme.textTheme.bodyMedium)),
-            )
-          else
-            _RecentWeeks(weeks: recent, today: current.today, name: name),
-          const Gap(Rhythm.sectionGap),
-          const _LifeHappens(),
-          if (record.isNotEmpty) ...[
-            GroupHeader(l.recordTitle),
-            _Record(milestones: record, name: name),
-          ],
+              GroupHeader(l.recentWeeks),
+              if (recent.isEmpty)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 4),
+                  child: Text(l.noHistory, style: muted(theme.textTheme.bodyMedium)),
+                )
+              else
+                _RecentWeeks(weeks: recent, today: current.today, name: name),
+              const Gap(Rhythm.sectionGap),
+              const _LifeHappens(),
+              if (record.isNotEmpty) ...[
+                GroupHeader(l.recordTitle),
+                _Record(milestones: record, name: name),
+              ],
+            ],
+          ),
         ],
       ),
     );
@@ -280,9 +332,11 @@ Future<void> _showAboutStreaks(BuildContext context, LateWindow window) => showA
       },
     );
 
-/// "This year": how many of the year's parshiyot are finished, the verses
-/// read, and the year bar. With more than one year in the log, chips choose
-/// which year it shows, and the Torah map below follows.
+/// "This year": how many of the year's parshiyot are finished (or, while no
+/// week of it has come due, the parsha it begins with), the verses read, and
+/// the year bar.
+/// With more than one year in the log, chips choose which year it shows, and
+/// the Torah map below follows.
 class _ThisYear extends StatelessWidget {
   const _ThisYear({
     required this.cycle,
@@ -292,6 +346,7 @@ class _ThisYear extends StatelessWidget {
     required this.done,
     required this.segments,
     required this.currentName,
+    required this.underway,
     required this.verses,
     required this.secondReading,
   });
@@ -303,6 +358,10 @@ class _ThisYear extends StatelessWidget {
   final Set<int> done;
   final List<YearSegment> segments;
   final String currentName;
+
+  /// Whether a week of the year being read, before this one, has come due
+  /// since the reader joined (see [ProgressScreen]).
+  final bool underway;
   final int verses;
 
   /// What the reader reads after the two readings: "Targum", "Rashi" or
@@ -339,7 +398,12 @@ class _ThisYear extends StatelessWidget {
           ],
           const Gap(Space.sm),
           WholeWords(
-            l.parshiyotOfYear(done.length, kParshaCount),
+            // Where the year begins rather than a stark "0 of 54", while
+            // that is so: nothing finished, and no earlier week come due,
+            // which the make-up list would offer under it.
+            isLive && done.isEmpty && !underway && segments.contains(YearSegment.current)
+                ? l.yearBeginsWith(currentName)
+                : l.parshiyotOfYear(done.length, kParshaCount),
             style: theme.textTheme.headlineSmall,
             textAlign: TextAlign.start,
             breakAtHyphens: true,
@@ -768,7 +832,7 @@ class _RecordRow extends StatelessWidget {
 }
 
 /// A parsha's state on the Torah map (docs/DESIGN_SYSTEM.md §6.14).
-enum _TileState { onTime, late, madeUp, missed, current, upcoming, untracked }
+enum _TileState { onTime, late, restored, madeUp, missed, overdue, current, upcoming, untracked }
 
 /// How a tile in a [_TileState] is drawn. Text is only ever set on a solid
 /// fill, never a translucent one.
@@ -797,6 +861,16 @@ _TileLook _lookOf(BuildContext context, _TileState state) {
         icon: Icons.check_circle_outline,
         iconColor: status.onLate,
       ),
+    // Finished late too, so on the same fill; two checks for the two
+    // parshiyot finished together.
+    _TileState.restored => (
+        fill: status.late,
+        border: BorderSide.none,
+        text: status.onLate,
+        bold: false,
+        icon: Icons.done_all,
+        iconColor: status.onLate,
+      ),
     _TileState.madeUp => (
         fill: sefer.paper,
         border: BorderSide(color: status.late, width: 1.5),
@@ -814,6 +888,18 @@ _TileLook _lookOf(BuildContext context, _TileState state) {
         bold: false,
         icon: Icons.remove,
         iconColor: status.neutral,
+      ),
+    // The one state that still asks something of the reader: edged in the
+    // overdue colour, with the mark of reading still to do, as the week
+    // page marks aliyot and the strip days still to read (not the made-up
+    // tile's history).
+    _TileState.overdue => (
+        fill: sefer.paper,
+        border: BorderSide(color: status.overdue, width: sefer.isHighContrast ? 2 : 1.5),
+        text: scheme.onSurface,
+        bold: false,
+        icon: stillToReadIcon,
+        iconColor: status.overdue,
       ),
     _TileState.current => (
         fill: scheme.primaryContainer,
@@ -896,25 +982,25 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
     return switch (_standings[p.id.number - 1]) {
       ParshaStanding.onTime => (_TileState.onTime, l.weekOnTime),
       ParshaStanding.late => (_TileState.late, l.weekLate),
-      ParshaStanding.restored => (_TileState.late, l.weekRestored),
+      ParshaStanding.restored => (_TileState.restored, l.weekRestored),
       ParshaStanding.inProgress => (_TileState.current, l.weekInProgress),
       ParshaStanding.madeUp => (_TileState.madeUp, l.weekMadeUp),
       ParshaStanding.missed => (_TileState.missed, l.weekMissed),
-      ParshaStanding.overdue => (_TileState.missed, l.weekOverdue),
+      ParshaStanding.overdue => (_TileState.overdue, l.weekOverdue),
       ParshaStanding.upcoming => (_TileState.upcoming, l.dayUpcoming),
       ParshaStanding.untracked => (_TileState.untracked, l.weekTransparent),
     };
   }
 
-  /// A book's columns: the window's (3, 4 or 6), unless large text would
-  /// have to shrink a name of the book below [_minNameScale] to fit a tile:
-  /// [leastShare] is the smallest share any of its names would be set at in
-  /// a tile of a given room. A name wraps between words, never inside one: a
-  /// word a little too long for its tile is set just small enough instead
-  /// (see [_tile]).
-  static int _columns(BuildContext context, double width, double Function(double room) leastShare) {
-    final window = MediaQuery.sizeOf(context).width;
-    final most = window >= Breakpoints.expanded ? 6 : (window >= Breakpoints.medium ? 4 : 3);
+  /// A book's columns: by the map's own [width], 3 on a phone, 4 beside the
+  /// year on a desktop, and 6 in a column of its own on a tablet or a
+  /// desktop; unless large text would have to shrink a name of the book
+  /// below [_minNameScale] to fit a tile: [leastShare] is the smallest share
+  /// any of its names would be set at in a tile of a given room. A name
+  /// wraps between words, never inside one: a word a little too long for its
+  /// tile is set just small enough instead (see [_tile]).
+  static int _columns(double width, double Function(double room) leastShare) {
+    final most = width >= 640 ? 6 : (width >= 440 ? 4 : 3);
     for (var c = most; c > 1; c--) {
       if (leastShare(_room(width, c)) >= _minNameScale) return c;
     }
@@ -957,7 +1043,6 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
           final columns = [
             for (final book in books)
               _columns(
-                context,
                 width,
                 (room) => book.map((p) => words.fit(name(p), bold: true, room: room)).reduce(math.min),
               ),
@@ -1209,11 +1294,12 @@ class _BookHeader extends StatelessWidget {
     final scheme = theme.colorScheme;
     final sefer = SeferColors.of(context);
     final latin = kTorahBooks[book];
+    // In gold, the rubric's colour, as Browse names its books.
     final hebrew = SeferType.of(context).hebrewDisplay.copyWith(
           fontSize: 18,
           // Frank Ruhl Libre is set heavier in high contrast.
           fontWeight: sefer.isHighContrast ? FontWeight.w700 : FontWeight.w600,
-          color: scheme.onSurface,
+          color: scheme.secondary,
         );
     return Semantics(
       container: true,
@@ -1313,11 +1399,10 @@ Future<void> _showTorahMapLegend(BuildContext context) => showAppSheet<void>(
         final entries = [
           (_TileState.onTime, l.weekOnTime),
           (_TileState.late, l.weekLate),
-          (_TileState.late, l.weekRestored),
+          (_TileState.restored, l.weekRestored),
           (_TileState.madeUp, l.weekMadeUp),
           (_TileState.missed, l.weekMissed),
-          // A tile's tooltip names it, so the legend names it too.
-          (_TileState.missed, l.weekOverdue),
+          (_TileState.overdue, l.weekOverdue),
           (_TileState.current, l.weekInProgress),
           (_TileState.upcoming, l.dayUpcoming),
           (_TileState.untracked, l.weekTransparent),

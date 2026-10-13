@@ -154,6 +154,12 @@ const _screens = {
   'today_simchat_torah': '/today',
   // The week of Pinchas after 17 Tammuz, with its special haftarah.
   'today_three_weeks': '/today',
+  // Bereshit on Shabbat Machar Chodesh for Chabad, who read the regular
+  // haftarah too, as the Haftarah row's detail line says.
+  'today_chabad': '/today',
+  // The longest reference of a haftarah, Re'eh's for Sephardim on Rosh
+  // Chodesh Elul (and Sunday), with the first and last verses of two more.
+  'today_reeh_rosh_chodesh': '/today',
   // Paused over the end of Bereshit, with its button to end the pause.
   'today_paused': '/today',
   // Friday afternoon: Erev Shabbat heads the title page.
@@ -207,13 +213,19 @@ const _screens = {
   'today_tisha_bav': '/today',
   'today_tisha_bav_week': '/today',
   'parsha': '/parsha',
-  // Scrolled past its head: the app bar names the parsha.
+  // Scrolled past its head: the app bar names the parsha, and the week of
+  // Acharei Mot-Kedoshim 5788, the longest name, which a 360 dp phone has
+  // no room for in English, so leaves out rather than cut short.
   'parsha_scrolled': '/parsha',
+  'parsha_scrolled_double': '/parsha',
   'browse': '/parsha/browse',
   // The Wednesday of Chukat and Balak, read together, most of the year read:
   // opened with this week in view.
   'browse_summer': '/parsha/browse',
   'week': '/week/5787:1',
+  // Chamishi's note on another division of its verses, scrolled into view:
+  // led by its mark as the overdue plan above it is, at every text size.
+  'week_note': '/week/5787:1',
   // Next week's, not yet open: a preview.
   'week_next': '/week/5787:2',
   // Two parshiyot read together, under one long name: Vayakhel-Pekudei in
@@ -594,6 +606,8 @@ const _screens = {
   // dialog (ringed outside, its text being at its edge).
   'focus_sheet_tile': '/today',
   'focus_dialog_tile': '/settings/data',
+  // A day listed in the read-date sheet: ringed, not washed.
+  'focus_date': '/week/5787:1',
   'focus_nav': '/today',
   // Today's tab, the selected one: at the very top of the rail, which
   // scrolls in a short window.
@@ -606,7 +620,14 @@ const _screens = {
   'menu': '/week/5787:1',
   'dialog': '/week/5787:1',
   'snackbar': '/week/5787:1',
+  // Asked when the whole parsha was read: the days of the week listed one
+  // by one on the Friday, Simchat Torah before it named as the Yom Tov it
+  // was, and on the Monday after its Shabbat; on the Wednesday, too many to
+  // list, behind Choose a date, whose picker marks the reading day as today
+  // at 1 a.m. on the Thursday.
   'sheet_date': '/week/5787:1',
+  'sheet_date_monday': '/week/5787:1',
+  'sheet_date_picker': '/week/5787:1',
   'dialog_date': '/week/5787:1',
   'sheet_display': '/read/5787:1/2',
   // Drawn up to its full height.
@@ -623,6 +644,12 @@ const _screens = {
   'legend_week': '/progress',
   'legend_map': '/progress',
   'progress_map': '/progress',
+  // The same history at the page's head: the year bar with weeks finished
+  // on time, late and made up beside this week's.
+  'progress_history': '/progress',
+  // The map with a parsha finished with the next and one that still can
+  // be (see [rescueProgress]), Genesis opened above Exodus.
+  'progress_map_rescue': '/progress',
   // Progress paused, and asked how long to extend the pause.
   'progress_paused': '/progress',
   'progress_extend': '/progress',
@@ -730,6 +757,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_simchat_torah': (s) =>
       s.copyWith(readingSchedule: ReadingSchedule.israel, oneDayYomTov: true, joinDate: LocalDate(2026, 9, 20)),
   'today_three_weeks': (s) => s.copyWith(joinDate: LocalDate(2027, 7, 18)),
+  'today_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
+  'today_reeh_rosh_chodesh': (s) => s.withNusach(HaftarahNusach.sephardi).copyWith(joinDate: LocalDate(2029, 8, 5)),
   for (final screen in ['today_erev_yomtov', 'today_erev_yomtov_afternoon'])
     screen: (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
   'today_erev_shabbat_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
@@ -821,6 +850,10 @@ class _PreparingIndex extends VerseIndexLoader {
 /// every tile state, and the days and histories of [_screenSettings].
 final _screenNow = <String, DateTime>{
   'progress_map': historyNow,
+  'progress_history': historyNow,
+  // The Wednesday of Acharei Mot-Kedoshim 5788.
+  'parsha_scrolled_double': DateTime(2028, 5, 3, 11),
+  'progress_map_rescue': rescueNow,
   'today_divergence': DateTime(2029, 4, 24, 11),
   'today_divergence_abroad': DateTime(2029, 4, 24, 11),
   'today_haftarah_left': DateTime(2026, 10, 13, 11),
@@ -836,6 +869,8 @@ final _screenNow = <String, DateTime>{
   'today_simchat_torah': DateTime(2026, 10, 2, 11),
   // Tuesday of Pinchas 5787, read on 24 July 2027.
   'today_three_weeks': DateTime(2027, 7, 20, 11),
+  // Tuesday of Re'eh 5789, read on 11 August 2029, 30 Av.
+  'today_reeh_rosh_chodesh': DateTime(2029, 8, 7, 11),
   'today_afternoon': DateTime(2026, 10, 9, 14),
   'today_thursday': DateTime(2026, 10, 15, 11),
   // Wednesday 20 September 2028, before Rosh Hashanah and Haazinu's Shabbat.
@@ -852,6 +887,10 @@ final _screenNow = <String, DateTime>{
   'today_checkin': DateTime(2026, 10, 12, 11),
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
   'focus_sheet_tile': DateTime(2026, 10, 12, 11),
+  'sheet_date_monday': DateTime(2026, 10, 12, 11),
+  // Thursday at 1 a.m.: still Wednesday's reading day.
+  'sheet_date_picker': DateTime(2026, 10, 15, 1),
+  'dialog_date': DateTime(2026, 10, 15, 1),
   'today_motzaei_shabbat': DateTime(2026, 10, 10, 20),
   'today_checkin_vezot': DateTime(2026, 10, 5, 11),
   'today_checkin_vezot_date': DateTime(2026, 10, 5, 11),
@@ -874,6 +913,8 @@ final _screenNow = <String, DateTime>{
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
+  'progress_history': historyProgress,
+  'progress_map_rescue': rescueProgress,
   'browse_summer': _yearRead,
   'today_haftarah_left': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
@@ -881,6 +922,7 @@ final _screenProgress = <String, ProgressState Function()>{
   'today_joined_midweek': () => ProgressState(weeks: {}),
   'today_simchat_torah': () => ProgressState(weeks: {}),
   'today_three_weeks': () => ProgressState(weeks: {}),
+  'today_reeh_rosh_chodesh': () => ProgressState(weeks: {}),
   // Bereshit finished; nothing of Noach read.
   'today_thursday': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
@@ -1550,6 +1592,8 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_third': _scrollToEnd,
   // The haftarah, near the end of Today.
   'today_three_weeks': _scrollToEnd,
+  'today_chabad': _scrollToEnd,
+  'today_reeh_rosh_chodesh': _scrollToEnd,
   'today_tisha_bav_week': (tester) =>
       Scrollable.ensureVisible(tester.element(find.byType(WeekStrip)), alignment: 0.5),
   // Choose aliyot, the check-in's second text button.
@@ -1759,16 +1803,24 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'demo_about': (tester) => tester.tap(find.byType(DemoTag)),
   'thread_this_week': (tester) => tester.tap(find.byType(ThisWeekCard)),
   'menu': (tester) => _openWeekMenu(tester),
-  // The week menu: full text, mark the whole parsha, clear the week.
-  'dialog': (tester) => _openWeekMenu(tester, item: 2),
+  // The week menu: full text, bookmarks and notes, and under a hairline,
+  // mark the whole parsha and clear the week.
+  'dialog': (tester) => _openWeekMenu(tester, item: 3),
   'snackbar': (tester) async {
-    await _openWeekMenu(tester, item: 2);
+    await _openWeekMenu(tester, item: 3);
     await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
   },
-  'sheet_date': (tester) => _openWeekMenu(tester, item: 1),
+  for (final screen in ['sheet_date', 'sheet_date_monday', 'sheet_date_picker'])
+    screen: (tester) => _openWeekMenu(tester, item: 2),
   'dialog_date': (tester) async {
-    await _openWeekMenu(tester, item: 1);
-    await tester.tap(find.byIcon(Icons.edit_calendar));
+    await _openWeekMenu(tester, item: 2);
+    await tester.tap(find.byIcon(Icons.edit_calendar_outlined));
+  },
+  'focus_date': (tester) async {
+    await _openWeekMenu(tester, item: 2);
+    // Tuesday, between two other days (after today, yesterday and Simchat
+    // Torah, and Wednesday).
+    await _keyboardFocus(tester, find.descendant(of: find.byType(BottomSheet), matching: find.byType(PaperRow)).at(4));
   },
   'sheet_display': (tester) => tester.tap(find.byIcon(Icons.text_format)),
   'sheet_display_full': (tester) async {
@@ -1777,9 +1829,17 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.drag(find.byType(SheetTitle), const Offset(0, -600));
   },
   'scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -400)),
+  'week_note': (tester) {
+    final mark = find.descendant(of: find.byType(PaperGroup).first, matching: find.byIcon(Icons.info_outline));
+    return Scrollable.ensureVisible(tester.element(mark.first), alignment: 0.5);
+  },
   // The page's own list, not the navigation rail's, which comes first on a
   // wide screen.
   'parsha_scrolled': (tester) => tester.drag(
+        find.descendant(of: find.byType(WeekOverview), matching: find.byType(Scrollable)).first,
+        const Offset(0, -300),
+      ),
+  'parsha_scrolled_double': (tester) => tester.drag(
         find.descendant(of: find.byType(WeekOverview), matching: find.byType(Scrollable)).first,
         const Offset(0, -300),
       ),
@@ -1798,6 +1858,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   // The map's section heading at the top of the page.
   'progress_map': (tester) => Scrollable.ensureVisible(tester.element(find.byIcon(Icons.info_outline).last)),
+  // Genesis's header is the first with a chevron.
+  'progress_map_rescue': (tester) async {
+    await tester.ensureVisible(find.byIcon(Icons.expand_more).first);
+    await tester.tap(find.byIcon(Icons.expand_more).first);
+    await tester.pumpAndSettle();
+    await Scrollable.ensureVisible(tester.element(find.byIcon(Icons.info_outline).last));
+  },
   'progress_paused': _scrollToEnd,
   'progress_extend': (tester) async {
     await tester.ensureVisible(find.text(_l10n(tester).extendPause));
@@ -1960,7 +2027,8 @@ Future<void> _showGallery(WidgetTester tester, Widget gallery) async {
   ));
 }
 
-/// Opens the week overview's menu, and picks its [item] if one is given.
+/// Opens the week overview's menu, and picks its [item] (counting its items,
+/// not its hairline) if one is given.
 Future<void> _openWeekMenu(WidgetTester tester, {int? item}) async {
   await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)));
   await tester.pumpAndSettle();
@@ -2022,10 +2090,14 @@ final _modes = [
   _Mode('bighe', const Size(412, 2600), (s) => s.copyWith(language: AppLanguage.hebrew), textScale: 2),
   // A 360 dp phone, tall, for the screens in [_narrowScreens].
   _Mode('narrow', const Size(360, 2600), (s) => s),
+  // A 360 dp phone at its own height, in English and Hebrew, for the screens
+  // in [_narrowPhoneScreens]: a page that scrolls there.
+  _Mode('narrowphone', const Size(360, 800), (s) => s),
+  _Mode('narrowphonehe', const Size(360, 800), (s) => s.copyWith(language: AppLanguage.hebrew)),
   // A 1920 dp desktop, where a column's inset is widest.
   _Mode('wide', const Size(1920, 1080), (s) => s),
-  // The narrowest desktop, where Today's columns are narrowest, for the
-  // screens in [_narrowDesktopScreens].
+  // The narrowest desktop, where the two columns of Today, Progress and a
+  // week's page are narrowest, for the screens in [_narrowDesktopScreens].
   _Mode('desk1200', const Size(1200, 800), (s) => s),
   // System text at 200% on a phone's own height, for the screens in
   // [_bigPhoneScreens]: what stays in view without scrolling.
@@ -2047,6 +2119,10 @@ final _modes = [
 
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
+const _narrowPhoneModes = {'narrowphone', 'narrowphonehe'};
+// The room the Parsha tab's actions leave the title revealed on scrolling.
+const _narrowPhoneScreens = {'parsha_scrolled', 'parsha_scrolled_double'};
+
 const _bigPhoneScreens = {
   // The button that begins a discussion: its icon alone at 200% (§5).
   'forum_questions',
@@ -2058,8 +2134,12 @@ const _bigPhoneScreens = {
   'account_delete',
   // The days of Yom Tov offered, more than a phone holds at this size.
   'today_checkin_vezot_date',
+  // The days of the week listed, more than a phone holds at this size.
+  'sheet_date_monday',
   // The day of rest's title page, taller than the space under the header.
   'today_shabbat',
+  // A week's note on another division, wrapped as the plan above it.
+  'week_note',
 };
 const _hugeModes = {'huge', 'hugehe'};
 // The reader with Listen's player over its bar too: the chrome is held at
@@ -2067,6 +2147,10 @@ const _hugeModes = {'huge', 'hugehe'};
 const _hugeScreens = {
   'today',
   'today_shabbat',
+  // The read-date sheet's rows stacked, their dates whole.
+  'sheet_date',
+  // The Haftarah row with a detail line of two clauses.
+  'today_chabad',
   'reader',
   'reader_listen',
   'reader_preview',
@@ -2074,6 +2158,8 @@ const _hugeScreens = {
   // The reply box, its button under the field, and while answering a post.
   'thread',
   'thread_replying',
+  // A week's note on another division, wrapped as the plan above it.
+  'week_note',
 };
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
@@ -2116,6 +2202,11 @@ const _narrowDesktopScreens = {
   'today_grace',
   'today_pause_ended',
   'today_divergence',
+  // Progress and a week's page in two columns, at their narrowest: both
+  // within their tab, beside the extended rail (a week opened over the tabs
+  // fills the container at 1200 as at 1366).
+  'progress',
+  'parsha',
   'forum_questions',
   'snackbar',
 };
@@ -2133,7 +2224,10 @@ const _desktopScreens = {
   'today_checkin_yomtov',
   'today_divergence',
   'today_haftarah_left',
+  // The read-date sheet, at most 640 wide, over the week's two columns.
+  'sheet_date',
   'today_yomtov_oneday',
+  'today_chabad',
   // Today's columns with a notice over the title page, with the strip's
   // note, and with a sheet over them.
   'today_paused',
@@ -2236,6 +2330,7 @@ const _desktopScreens = {
   'kit_progress',
   'kit_week',
   'progress_map',
+  'progress_map_rescue',
   'city_search',
   'search',
   'search_many',
@@ -2253,11 +2348,14 @@ const _desktopScreens = {
 const _wideModes = {'desktop', 'tablet', 'deskhe', 'deskhc', 'wide'};
 const _tallScreens = {
   'today',
+  'today_chabad',
   'parsha',
   'week',
   'browse',
   'progress',
   'progress_years',
+  // The rings at every size, down to the year bar at its foot.
+  'kit_progress',
   'settings',
   's_reading',
   's_reading_end',
@@ -2307,6 +2405,7 @@ const _narrowScreens = {
   'guide',
 };
 const _bigTextScreens = {
+  'today_chabad',
   // A held message with Undo and Close, at twice the text size.
   's_a11y_undo_keys',
   // A focus ring on a menu item and on tiles, at twice the text size.
@@ -2314,6 +2413,10 @@ const _bigTextScreens = {
   'focus_sheet_tile',
   'focus_dialog_tile',
   's_display',
+  'focus_date',
+  'sheet_date',
+  'sheet_date_monday',
+  'sheet_date_picker',
   's_a11y',
   'sheet_display_full',
   'parsha',
@@ -2465,6 +2568,7 @@ void main() {
       if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
       if (mode.tag == 'narrow' && !_narrowScreens.contains(entry.key)) continue;
+      if (_narrowPhoneModes.contains(mode.tag) && !_narrowPhoneScreens.contains(entry.key)) continue;
       if (mode.tag == 'bigphone' && !_bigPhoneScreens.contains(entry.key)) continue;
       if (mode.tag == 'desk1200' && !_narrowDesktopScreens.contains(entry.key)) continue;
       if (_hugeModes.contains(mode.tag) && !_hugeScreens.contains(entry.key)) continue;
