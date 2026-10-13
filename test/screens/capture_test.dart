@@ -1132,6 +1132,12 @@ Future<ForumRepository> _signedIn() async {
   return repo;
 }
 
+Future<ForumRepository> _signedInOnServer() async {
+  final repo = _Cloud();
+  await repo.verifyCode('reader@example.org', '123456');
+  return repo;
+}
+
 /// Signed in as Rivka, who has accepted the guidelines and blocked a member.
 Future<ForumRepository> _member() async {
   final repo = DemoForumRepository();
@@ -1187,12 +1193,6 @@ Future<ForumRepository> _withOwnPost() async {
         id: '9100',
         threadId: '1',
         authorId: 'me',
-Future<ForumRepository> _signedInOnServer() async {
-  final repo = _Cloud();
-  await repo.verifyCode('reader@example.org', '123456');
-  return repo;
-}
-
         authorName: 'Leah',
         body: 'Rashi on the Targum of 1:1 is a good place to see the difference.',
         createdAt: DateTime.now().subtract(const Duration(minutes: 40)),
