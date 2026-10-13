@@ -324,6 +324,114 @@ void main() {
       expect(find.text('אפשר לרשום זאת אחרי יום כיפור.'), findsOneWidget);
     });
 
+    group('on a Shabbat with no weekly parsha, names the next parsha and its day', () {
+      final joined = _settings.copyWith(joinDate: LocalDate(2024, 9, 1));
+      const sentence = 'This Shabbat has a reading of its own instead of a weekly parsha.';
+
+      // (day, greeting, the parsha, when it is read), outside Israel.
+      final cases = [
+        // Shabbat Chol HaMoed Pesach 5786.
+        (LocalDate(2026, 4, 4), 'Shabbat Shalom', 'Parshat Shemini', 'Read on Shabbat, April 11'),
+        // The first and the eighth day of Pesach 5789.
+        (LocalDate(2029, 3, 31), 'Chag Sameach', 'Parshat Shemini', 'Read on Shabbat, April 14'),
+        (LocalDate(2029, 4, 7), 'Chag Sameach', 'Parshat Shemini', 'Read on Shabbat, April 14'),
+        // The second day of Shavuot 5786.
+        (LocalDate(2026, 5, 23), 'Chag Sameach', 'Parshat Naso', 'Read on Shabbat, May 30'),
+        // Rosh Hashanah 5787.
+        (LocalDate(2026, 9, 12), 'Shanah Tovah', 'Parshat Ha’azinu', 'Read on Shabbat, September 19'),
+        // The first day of Sukkot 5787, and Shemini Atzeret.
+        (
+          LocalDate(2026, 9, 26),
+          'Chag Sameach',
+          'Parshat Vezot HaBerachah',
+          'Read on Simchat Torah, Sunday, October 4',
+        ),
+        (
+          LocalDate(2026, 10, 3),
+          'Chag Sameach',
+          'Parshat Vezot HaBerachah',
+          'Read on Simchat Torah, Sunday, October 4',
+        ),
+        // Yom Kippur 5789, and Shabbat Chol HaMoed Sukkot.
+        (
+          LocalDate(2028, 9, 30),
+          'G’mar Chatimah Tovah',
+          'Parshat Vezot HaBerachah',
+          'Read on Simchat Torah, Friday, October 13',
+        ),
+        (
+          LocalDate(2028, 10, 7),
+          'Shabbat Shalom',
+          'Parshat Vezot HaBerachah',
+          'Read on Simchat Torah, Friday, October 13',
+        ),
+      ];
+      for (final (day, greeting, parsha, readOn) in cases) {
+        testWidgets('$day', (tester) async {
+          await openToday(tester, settings: joined, now: DateTime(day.year, day.month, day.day, 11));
+          expect(find.text(greeting), findsOneWidget);
+          expect(find.text('Next parsha'), findsOneWidget);
+          expect(find.bySemanticsLabel(parsha), findsOneWidget);
+          expect(findWords(readOn), findsOneWidget);
+          expect(find.text(sentence), findsOneWidget);
+          expect(find.text('Parshat HaShavua'), findsNothing);
+        });
+      }
+
+      testWidgets('in Israel, where that Shabbat reads the parsha, or is Simchat Torah, says nothing of it',
+          (tester) async {
+        final inIsrael = joined.locatedIn(ReadingSchedule.israel);
+        for (final (day, parsha) in [(LocalDate(2029, 4, 7), 'Parshat Shemini'), (LocalDate(2026, 5, 23), 'Parshat Naso')]) {
+          await openToday(tester, settings: inIsrael, now: DateTime(day.year, day.month, day.day, 11));
+          expect(find.text('Shabbat Shalom'), findsOneWidget, reason: '$day');
+          expect(find.text('Parshat HaShavua'), findsOneWidget, reason: '$day');
+          expect(find.bySemanticsLabel(parsha), findsOneWidget, reason: '$day');
+          expect(find.textContaining('Read on'), findsNothing, reason: '$day');
+          expect(find.text(sentence), findsNothing, reason: '$day');
+        }
+        // Shemini Atzeret 5787 on Shabbat is Simchat Torah.
+        await openToday(tester, settings: inIsrael, now: DateTime(2026, 10, 3, 11));
+        expect(find.text('Simchat Torah'), findsOneWidget);
+        expect(find.textContaining('Read on'), findsNothing);
+        expect(find.text(sentence), findsNothing);
+      });
+
+      testWidgets('on the Yom Tov before it too, but not on a Yom Tov days before it', (tester) async {
+        // The first day of Pesach 5786, Thursday 2 April, runs on into
+        // Shabbat Chol HaMoed.
+        await openToday(tester, settings: joined, now: DateTime(2026, 4, 2, 11));
+        expect(find.text('Next parsha'), findsOneWidget);
+        expect(findWords('Read on Shabbat, April 11'), findsOneWidget);
+        expect(find.text(sentence), findsOneWidget);
+        // Yom Kippur 5787, Monday 21 September: Simchat Torah is ahead, and
+        // Sukkot's Shabbat days away.
+        await openToday(tester, settings: joined, now: DateTime(2026, 9, 21, 11));
+        expect(find.text('Next parsha'), findsOneWidget);
+        expect(findWords('Read on Simchat Torah, Sunday, October 4'), findsOneWidget);
+        expect(find.text(sentence), findsNothing);
+      });
+
+      testWidgets('but an ordinary Shabbat is this week\'s', (tester) async {
+        await openToday(tester);
+        expect(find.text('Parshat HaShavua'), findsOneWidget);
+        expect(find.text('Next parsha'), findsNothing);
+        expect(find.textContaining('Read on'), findsNothing);
+        expect(find.text(sentence), findsNothing);
+      });
+
+      testWidgets('in Hebrew', (tester) async {
+        await openToday(
+          tester,
+          settings: joined.copyWith(language: AppLanguage.hebrew),
+          now: DateTime(2026, 4, 4, 11),
+        );
+        expect(find.text('הפרשה הבאה'), findsOneWidget);
+        expect(findWords('נקראת בשבת, כ״ד בניסן'), findsOneWidget);
+        expect(find.text('בשבת זו קוראים בתורה קריאה מיוחדת במקום פרשת השבוע.'), findsOneWidget);
+        expect(find.text('פרשת השבוע'), findsNothing);
+      });
+    });
+
     testWidgets("rests from candle-lighting on Friday evening in the reader's city", (tester) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;

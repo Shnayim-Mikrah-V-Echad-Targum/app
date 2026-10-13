@@ -126,10 +126,12 @@ class PreviousWeekNotice extends ConsumerWidget {
           eve == null
               ? l.openWeekLate(when, names.practiceDate(lastDay))
               : l.openWeekLateEve(eve, when, names.practiceDate(lastDay))
+        // Both by the day the next parsha is read, the engine's deadline for
+        // restoring this one.
         else if (streak > 0)
-          l.openWeekRestore(name, nextName, streak)
+          l.openWeekRestore(name, nextName, names.occasion(current.week), streak)
         else
-          l.openWeekRestoreZero(name, nextName),
+          l.openWeekRestoreZero(name, nextName, names.occasion(current.week)),
       ].join(' '),
       actionBelow: true,
       action: TextButton(

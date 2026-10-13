@@ -229,6 +229,16 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String occasionShabbat(String date) {
+    return 'שבת, $date';
+  }
+
+  @override
+  String occasionSimchatTorah(String date) {
+    return 'שמחת תורה, $date';
+  }
+
+  @override
   String shabbatInDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -240,6 +250,9 @@ class AppLocalizationsHe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get noWeeklyParshaThisShabbat => 'אין פרשת שבוע בשבת זו';
 
   @override
   String todayCandleLighting(String time) {
@@ -255,6 +268,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get parshatHashavua => 'פרשת השבוע';
 
   @override
+  String get nextParsha => 'הפרשה הבאה';
+
+  @override
   String get erevShabbat => 'ערב שבת';
 
   @override
@@ -263,6 +279,16 @@ class AppLocalizationsHe extends AppLocalizations {
       'roshHashanah': 'ערב ראש השנה',
       'yomKippur': 'ערב יום כיפור',
       'other': 'ערב חג',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String erevShabbatYomTov(String holiday) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'roshHashanah': 'ערב שבת וראש השנה',
+      'yomKippur': 'ערב יום כיפור',
+      'other': 'ערב שבת וחג',
     });
     return '$_temp0';
   }
@@ -278,6 +304,10 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get gmarChatimaTova => 'גמר חתימה טובה';
+
+  @override
+  String get restDayNoWeeklyParsha =>
+      'בשבת זו קוראים בתורה קריאה מיוחדת במקום פרשת השבוע.';
 
   @override
   String get restDayBody => 'קוראים היום מתוך חומש? אפשר לרשום זאת אחרי השבת.';
@@ -305,6 +335,16 @@ class AppLocalizationsHe extends AppLocalizations {
       'roshHashanah': 'ראש השנה נכנס הערב',
       'yomKippur': 'יום כיפור נכנס הערב',
       'other': 'החג נכנס הערב',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String shabbatYomTovBeginTonight(String holiday) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'roshHashanah': 'שבת וראש השנה נכנסים הערב',
+      'yomKippur': 'שבת ויום כיפור נכנסים הערב',
+      'other': 'שבת וחג נכנסים הערב',
     });
     return '$_temp0';
   }
@@ -538,21 +578,21 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String openWeekRestore(String name, String next, int count) {
+  String openWeekRestore(String name, String next, String deadline, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other:
-          'סיום $name ו$next עד שבת ימשיך את הרצף של $count שבועות — אפשר לעשות זאת פעם אחת בכל חומש.',
+          'אם מסיימים את $name ואת $next עד $deadline, הרצף של $count שבועות נמשך — אפשר לעשות זאת פעם אחת בכל חומש.',
       one:
-          'סיום $name ו$next עד שבת ימשיך את הרצף של שבוע אחד — אפשר לעשות זאת פעם אחת בכל חומש.',
+          'אם מסיימים את $name ואת $next עד $deadline, הרצף של שבוע אחד נמשך — אפשר לעשות זאת פעם אחת בכל חומש.',
     );
     return '$_temp0';
   }
 
   @override
-  String openWeekRestoreZero(String name, String next) {
-    return 'אם מסיימים את $name ואת $next עד שבת, שתיהן נחשבות — אפשר לעשות זאת פעם אחת בכל חומש.';
+  String openWeekRestoreZero(String name, String next, String deadline) {
+    return 'אם מסיימים את $name ואת $next עד $deadline, שתיהן נחשבות — אפשר לעשות זאת פעם אחת בכל חומש.';
   }
 
   @override

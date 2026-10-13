@@ -907,6 +907,11 @@ const _dayRadius = BorderRadius.all(Radius.circular(10));
 /// primary container colour and edged in primary; Shabbat and Yom Tov are
 /// washed in the rest colour.
 ///
+/// The week shown is the one that holds today, within the reading window
+/// ([daysShown]): in a window of two or three weeks around a festival, the
+/// week being lived, so that today is always marked and every weekday is
+/// this week's.
+///
 /// Where seven days would each be narrower than [minDayWidth] (or than the
 /// weekday names at the current text size), the week takes two rows: Sunday
 /// to Wednesday, then Thursday to Shabbat.
@@ -948,10 +953,25 @@ class WeekStrip extends StatelessWidget {
   static double _glyphSize(BuildContext context) =>
       MediaQuery.textScalerOf(context).clamp(minScaleFactor: 1, maxScaleFactor: 1.5).scale(22);
 
+  /// Sunday through Shabbat of the calendar week that holds [today], once
+  /// [today] is brought within the reading window ([plan]'s week, from its
+  /// start through its public reading): the week being lived, even where the
+  /// window runs two or three weeks around a festival.
+  @visibleForTesting
+  static List<LocalDate> daysShown(WeekPlan plan, LocalDate today) {
+    final week = plan.week;
+    final anchor = today < week.start
+        ? week.start
+        : today > week.occasion
+            ? week.occasion
+            : today;
+    final sunday = anchor.onOrBefore(0);
+    return [for (var i = 0; i < 7; i++) sunday.addDays(i)];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final end = plan.week.occasion.isShabbat ? plan.week.occasion : plan.week.occasion.onOrAfter(6);
-    final days = [for (var i = 6; i >= 0; i--) end.addDays(-i)];
+    final days = daysShown(plan, today);
     // Each day knows the width its content has, for whether its note fits
     // on one line.
     List<Widget> cells(double dayWidth) =>

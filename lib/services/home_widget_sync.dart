@@ -16,12 +16,13 @@ import '../core/calendar/parsha_schedule.dart';
 import '../core/calendar/zmanim.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/parsha_repository.dart';
+import '../features/parsha/parsha_heading.dart';
 import '../features/parsha/week_context.dart';
 import '../features/progress/domain/progress_models.dart';
 import '../features/progress/domain/reading_plan.dart';
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
-import '../ui/l10n.dart' show AliyahNames;
+import '../ui/l10n.dart' show AliyahNames, parshaHeadingLabel;
 import 'app_shortcuts.dart';
 
 /// The App Group the iOS widget extension shares with the app, where the
@@ -393,7 +394,8 @@ WidgetTimeline widgetTimeline({
   }
 
   for (var day = first; day <= last; day = day.addDays(1)) {
-    // The parsha read today, or on the Shabbat this day comes before.
+    // The next reading: today's, or the next one after it. It is headed as
+    // Today heads it: as this week's only when the coming Shabbat reads it.
     final week = schedule.weekFor(day);
     // Tisha B'Av, with no reading planned on it: as Today, headed by the
     // fast, with no reading asked for.
@@ -409,7 +411,7 @@ WidgetTimeline widgetTimeline({
     }
     final index = indexOf(week, day);
     final vezot = week.portion.isVezotHaberakhah;
-    final eyebrow = vezot ? l.simchatTorahEyebrow : l.parshatHashavua;
+    final eyebrow = parshaHeadingLabel(l, parshaHeadingFor(week, day, schedule: schedule, oneDayYomTov: israel));
     final tomorrow = day.addDays(1);
     if (JewishHolidays.isRestDay(day, israel: israel)) {
       final yomTov = JewishHolidays.isYomTov(HebrewDate.fromLocalDate(day), israel: israel);
@@ -444,13 +446,14 @@ WidgetTimeline widgetTimeline({
             ? restTimes?.call(day)?.sunset
             : null;
     final until = turn == null ? null : at(day, turn);
-    // From midday on Friday, Today's eyebrow is Erev Shabbat, and on the eve
-    // of Yom Tov, Erev Yom Tov.
+    // From midday on Friday, Today's eyebrow is Erev Shabbat (with its Yom
+    // Tov, where Shabbat is one), and on the eve of Yom Tov, Erev Yom Tov.
     final erevYomTov = JewishHolidays.erevYomTov(day, israel: israel);
+    final withShabbat = JewishHolidays.yomTovWithShabbat(day, israel: israel);
     final afternoon = vezot
         ? null
         : day.weekday == _friday
-            ? l.erevShabbat
+            ? (withShabbat == null ? l.erevShabbat : l.erevShabbatYomTov(withShabbat.name))
             : erevYomTov == null
                 ? null
                 : l.erevYomTov(erevYomTov.name);

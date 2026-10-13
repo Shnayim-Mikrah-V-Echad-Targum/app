@@ -229,6 +229,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String occasionShabbat(String date) {
+    return 'Shabbat, $date';
+  }
+
+  @override
+  String occasionSimchatTorah(String date) {
+    return 'Simchat Torah, $date';
+  }
+
+  @override
   String shabbatInDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -239,6 +249,9 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get noWeeklyParshaThisShabbat => 'No weekly parsha this Shabbat';
 
   @override
   String todayCandleLighting(String time) {
@@ -254,6 +267,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get parshatHashavua => 'Parshat HaShavua';
 
   @override
+  String get nextParsha => 'Next parsha';
+
+  @override
   String get erevShabbat => 'Erev Shabbat';
 
   @override
@@ -262,6 +278,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'roshHashanah': 'Erev Rosh Hashanah',
       'yomKippur': 'Erev Yom Kippur',
       'other': 'Erev Yom Tov',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String erevShabbatYomTov(String holiday) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'roshHashanah': 'Erev Shabbat and Rosh Hashanah',
+      'yomKippur': 'Erev Yom Kippur',
+      'other': 'Erev Shabbat and Yom Tov',
     });
     return '$_temp0';
   }
@@ -277,6 +303,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gmarChatimaTova => 'G’mar Chatimah Tovah';
+
+  @override
+  String get restDayNoWeeklyParsha =>
+      'This Shabbat has a reading of its own instead of a weekly parsha.';
 
   @override
   String get restDayBody =>
@@ -305,6 +335,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'roshHashanah': 'Rosh Hashanah begins this evening',
       'yomKippur': 'Yom Kippur begins this evening',
       'other': 'Yom Tov begins this evening',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String shabbatYomTovBeginTonight(String holiday) {
+    String _temp0 = intl.Intl.selectLogic(holiday, {
+      'roshHashanah': 'Shabbat and Rosh Hashanah begin this evening',
+      'yomKippur': 'Shabbat and Yom Kippur begin this evening',
+      'other': 'Shabbat and Yom Tov begin this evening',
     });
     return '$_temp0';
   }
@@ -541,13 +581,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String openWeekRestore(String name, String next, int count) {
-    return 'Finish $name and $next by Shabbat and your $count-week streak continues — you can do this once in each book of the Torah.';
+  String openWeekRestore(String name, String next, String deadline, int count) {
+    return 'Finish $name and $next by $deadline, and your $count-week streak continues — you can do this once in each book of the Torah.';
   }
 
   @override
-  String openWeekRestoreZero(String name, String next) {
-    return 'Finish $name and $next by Shabbat and both count — you can do this once in each book of the Torah.';
+  String openWeekRestoreZero(String name, String next, String deadline) {
+    return 'Finish $name and $next by $deadline, and both count — you can do this once in each book of the Torah.';
   }
 
   @override

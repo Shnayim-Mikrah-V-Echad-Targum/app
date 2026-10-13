@@ -6,6 +6,7 @@ import '../core/calendar/local_date.dart';
 import '../core/calendar/parsha_schedule.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/models/parsha.dart';
+import '../features/parsha/parsha_heading.dart';
 import '../features/progress/domain/progress_models.dart';
 import '../features/settings/app_settings.dart';
 import '../l10n/app_localizations.dart';
@@ -27,6 +28,15 @@ String joinWithAnd(AppLocalizations l, List<String> items) {
 
 /// A no-break space: no line breaks between the words either side of it.
 const _nbsp = '\u00A0';
+
+/// The eyebrow over a parsha's name headed as [heading] ([parshaHeadingFor]),
+/// in [l]'s words: on Today, and on the home-screen widget, which has no page
+/// to take its words from.
+String parshaHeadingLabel(AppLocalizations l, ParshaHeading heading) => switch (heading) {
+      ParshaHeading.thisWeek => l.parshatHashavua,
+      ParshaHeading.simchatTorah => l.simchatTorahEyebrow,
+      ParshaHeading.next => l.nextParsha,
+    };
 
 extension L10nContext on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
@@ -302,6 +312,16 @@ class Names {
     // Simchat Torah is seldom a Shabbat, so it gives the weekday too.
     if (week.portion.isVezotHaberakhah) return _l.readOnSimchatTorah(_practiceDateLong(d));
     return _l.readOnShabbat(practiceDayMonth(d));
+  }
+
+  /// The day [week]'s portion is read, inside a sentence: "by Shabbat,
+  /// April 11", or for Vezot HaBerachah "by Simchat Torah, Sunday,
+  /// October 4". The dates of [readOnLabel], held together as a date in a
+  /// sentence is (docs/DESIGN_SYSTEM.md §4.6).
+  String occasion(ReadingWeek week) {
+    final d = week.occasion;
+    if (week.portion.isVezotHaberakhah) return _l.occasionSimchatTorah(practiceDate(d));
+    return _l.occasionShabbat(_heldTogether(practiceDayMonth(d)));
   }
 
   String hebrewMonth(int year, int month) {
