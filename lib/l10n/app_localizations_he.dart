@@ -820,6 +820,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String weekCleared(String name) {
+    return 'ההתקדמות בפרשת $name נמחקה';
+  }
+
+  @override
   String get whenDidYouRead => 'מתי קראת?';
 
   @override

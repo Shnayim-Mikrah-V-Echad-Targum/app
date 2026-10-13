@@ -1209,6 +1209,12 @@ abstract class AppLocalizations {
   /// **'Clear all progress for {name}?'**
   String clearWeekConfirm(String name);
 
+  /// A status message, with Undo, once a week's progress has been cleared from its menu. The parsha's name, as in clearWeekConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress for {name} cleared'**
+  String weekCleared(String name);
+
   /// No description provided for @whenDidYouRead.
   ///
   /// In en, this message translates to:

@@ -814,6 +814,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String weekCleared(String name) {
+    return 'Progress for $name cleared';
+  }
+
+  @override
   String get whenDidYouRead => 'When did you read it?';
 
   @override

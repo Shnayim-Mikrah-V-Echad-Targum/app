@@ -215,6 +215,9 @@ const _screens = {
   // opened with this week in view.
   'browse_summer': '/parsha/browse',
   'week': '/week/5787:1',
+  // Chamishi's note on another division of its verses, scrolled into view:
+  // led by its mark as the overdue plan above it is, at every text size.
+  'week_note': '/week/5787:1',
   // Next week's, not yet open: a preview.
   'week_next': '/week/5787:2',
   // Two parshiyot read together, under one long name: Vayakhel-Pekudei in
@@ -1621,15 +1624,16 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'demo_about': (tester) => tester.tap(find.byType(DemoTag)),
   'thread_this_week': (tester) => tester.tap(find.byType(ThisWeekCard)),
   'menu': (tester) => _openWeekMenu(tester),
-  // The week menu: full text, mark the whole parsha, clear the week.
-  'dialog': (tester) => _openWeekMenu(tester, item: 2),
+  // The week menu: full text, bookmarks and notes, and under a hairline,
+  // mark the whole parsha and clear the week.
+  'dialog': (tester) => _openWeekMenu(tester, item: 3),
   'snackbar': (tester) async {
-    await _openWeekMenu(tester, item: 2);
+    await _openWeekMenu(tester, item: 3);
     await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
   },
-  'sheet_date': (tester) => _openWeekMenu(tester, item: 1),
+  'sheet_date': (tester) => _openWeekMenu(tester, item: 2),
   'dialog_date': (tester) async {
-    await _openWeekMenu(tester, item: 1);
+    await _openWeekMenu(tester, item: 2);
     await tester.tap(find.byIcon(Icons.edit_calendar));
   },
   'sheet_display': (tester) => tester.tap(find.byIcon(Icons.text_format)),
@@ -1639,6 +1643,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.drag(find.byType(SheetTitle), const Offset(0, -600));
   },
   'scrolled': (tester) => tester.drag(find.byType(Scrollable).first, const Offset(0, -400)),
+  'week_note': (tester) {
+    final mark = find.descendant(of: find.byType(PaperGroup).first, matching: find.byIcon(Icons.info_outline));
+    return Scrollable.ensureVisible(tester.element(mark.first), alignment: 0.5);
+  },
   // The page's own list, not the navigation rail's, which comes first on a
   // wide screen.
   'parsha_scrolled': (tester) => tester.drag(
@@ -1817,7 +1825,8 @@ Future<void> _showGallery(WidgetTester tester, Widget gallery) async {
   ));
 }
 
-/// Opens the week overview's menu, and picks its [item] if one is given.
+/// Opens the week overview's menu, and picks its [item] (counting its items,
+/// not its hairline) if one is given.
 Future<void> _openWeekMenu(WidgetTester tester, {int? item}) async {
   await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)));
   await tester.pumpAndSettle();
@@ -1915,6 +1924,8 @@ const _bigPhoneScreens = {
   'today_checkin_vezot_date',
   // The day of rest's title page, taller than the space under the header.
   'today_shabbat',
+  // A week's note on another division, wrapped as the plan above it.
+  'week_note',
 };
 const _hugeModes = {'huge', 'hugehe'};
 // The reader with Listen's player over its bar too: the chrome is held at
@@ -1931,6 +1942,8 @@ const _hugeScreens = {
   // The reply box, its button under the field, and while answering a post.
   'thread',
   'thread_replying',
+  // A week's note on another division, wrapped as the plan above it.
+  'week_note',
 };
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {

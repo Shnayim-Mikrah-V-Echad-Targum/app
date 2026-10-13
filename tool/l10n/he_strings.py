@@ -182,6 +182,7 @@ HE = {
   "markWholeWeek": "סימון כל הפרשה כנקראה",
   "clearWeek": "ניקוי ההתקדמות של השבוע",
   "clearWeekConfirm": "לנקות את כל ההתקדמות בפרשת {name}?",
+  "weekCleared": "ההתקדמות בפרשת {name} נמחקה",
   "whenDidYouRead": "מתי קראת?",
   "whenToday": "היום",
   "whenYesterday": "אתמול",

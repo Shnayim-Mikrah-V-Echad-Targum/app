@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../ui/l10n.dart';
+import '../notes/notes_screen.dart';
 import '../search/go_to_verse_sheet.dart';
 import 'week_context.dart';
 import 'week_overview_screen.dart';
@@ -26,6 +27,12 @@ class ParshaTab extends ConsumerWidget {
             constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.4),
             child: FittedBox(fit: BoxFit.scaleDown, child: Text(context.l10n.browseAll)),
           ),
+        ),
+        // Every bookmark and note, on every parsha.
+        IconButton(
+          tooltip: context.l10n.notesTitle,
+          icon: const Icon(Icons.bookmarks_outlined),
+          onPressed: () => context.push(notesPath()),
         ),
         // A verse by its reference, or words to search for.
         IconButton(

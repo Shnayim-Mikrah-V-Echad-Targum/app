@@ -837,6 +837,15 @@
       }
     }
   },
+  "weekCleared": "Progress for {name} cleared",
+  "@weekCleared": {
+    "description": "A status message, with Undo, once a week's progress has been cleared from its menu. The parsha's name, as in clearWeekConfirm.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "whenDidYouRead": "When did you read it?",
   "whenToday": "Today",
   "whenYesterday": "Yesterday",
