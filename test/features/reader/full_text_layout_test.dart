@@ -388,6 +388,48 @@ void main() {
         if (translation) expect(alignOf(find.byType(TranslationVerse).first), TextAlign.start);
       });
     }
+
+    // Wherever the columns are side by side, both are justified, however
+    // narrow the pane (an iPad's 1024) or large the text: decided for the
+    // row, not for each column's own measure, so that neither faces the
+    // gutter ragged, nor one flush beside a ragged one.
+    for (final (name, size, readingScale) in [
+      ('on a 1024 dp pane', const Size(1024, 768), 1.0),
+      ('at a reading size of 1.1', wide, 1.1),
+      ('at a reading size of 1.2', wide, 1.2),
+    ]) {
+      testWidgets('sets both parallel columns alike, flush at both sides, $name', (tester) async {
+        await open(
+          tester,
+          '/read/5787:2/0?mode=full',
+          settings: AppSettings(onboardingComplete: true, notificationPromptShown: true, readingScale: readingScale),
+          size: size,
+        );
+        expect(find.byType(ParallelVerse), findsWidgets, reason: 'side by side');
+        TextAlign alignOf(Finder verse) =>
+            tester.widget<RichText>(find.descendant(of: verse, matching: find.byType(RichText)).last).textAlign;
+        for (final kind in [ScriptureKind.mikra, ScriptureKind.targum]) {
+          expect(alignOf(verses(kind).first), TextAlign.justify, reason: kind.name);
+        }
+      });
+    }
+
+    testWidgets('leaves the parallel columns ragged where the reader never justifies', (tester) async {
+      await open(
+        tester,
+        '/read/5787:2/0?mode=full',
+        settings: const AppSettings(onboardingComplete: true, notificationPromptShown: true, justifyMode: JustifyMode.never),
+      );
+      expect(find.byType(ParallelVerse), findsWidgets);
+      for (final kind in [ScriptureKind.mikra, ScriptureKind.targum]) {
+        final verse = verses(kind).first;
+        expect(
+          tester.widget<RichText>(find.descendant(of: verse, matching: find.byType(RichText)).last).textAlign,
+          TextAlign.start,
+          reason: kind.name,
+        );
+      }
+    });
   });
 
   group('the whole parsha', () {

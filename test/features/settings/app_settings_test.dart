@@ -321,6 +321,35 @@ void main() {
       expect((backup!.settings!.justifyMode, backup.settings!.theme), (JustifyMode.auto, AppThemeMode.sepia));
     });
 
+    test("the dyslexia setup of a version with the switch keeps its ragged edge, as Never, and is still chosen", () async {
+      // As the old setup wrote it: Lexend, word spacing 4, line height 2.2,
+      // no ta'amim, focus mode, the narrow column, and the switch off.
+      final legacy = applyPreset(const AppSettings(theme: AppThemeMode.sepia), DisplayPreset.dyslexia, darkPreferred: false)
+          .toJson()
+        ..remove('justifyMode')
+        ..['justify'] = false;
+      SharedPreferences.setMockInitialValues({SettingsController.storageKey: jsonEncode(legacy)});
+      final stored = SettingsController.readStored(await SharedPreferences.getInstance());
+      expect(stored.justifyMode, JustifyMode.never);
+      expect(presetActive(stored, DisplayPreset.dyslexia), isTrue);
+      expect(stored.theme, AppThemeMode.sepia);
+
+      final backup = parseBackup(jsonEncode({
+        'app': 'shnayim_mikra',
+        'progress': const ProgressState().toJson(),
+        'settings': legacy,
+      }));
+      expect(backup!.settings!.justifyMode, JustifyMode.never);
+      expect(presetActive(backup.settings!, DisplayPreset.dyslexia), isTrue);
+
+      // Changed since, the setup is no longer what the reader reads by: off
+      // was then only the default, which Auto now is.
+      final changed = {...legacy, 'wordSpacing': 2.0};
+      expect(AppSettings.fromJson(changed).justifyMode, JustifyMode.auto);
+      // And the choice, once saved, is the reader's.
+      expect(AppSettings.fromJson({...legacy, 'justifyMode': 'auto'}).justifyMode, JustifyMode.auto);
+    });
+
     test('versions from before the choice read the switch: on for Always alone', () {
       expect(const AppSettings(justifyMode: JustifyMode.always).toJson()['justify'], isTrue);
       expect(const AppSettings(justifyMode: JustifyMode.never).toJson()['justify'], isFalse);

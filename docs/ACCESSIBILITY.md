@@ -56,7 +56,7 @@ The research behind this is in [research/accessibility.md](research/accessibilit
   - line height (at least 1.6; the default is 1.9)
   - word and letter spacing
   - line width (narrow, medium or wide)
-  - justification: Auto (the default) justifies the Hebrew and Aramaic only where the column is wide enough for even spaces, as on a tablet or a desktop but not on a phone at the usual sizes, and never the English; Always and Never set it either way, and the dyslexia setup sets Never (WCAG 1.4.8)
+  - justification: Auto (the default) justifies the Hebrew and Aramaic only where the column is wide enough to hold a measure of words (and both of the full text's side-by-side columns together), as on a tablet or a desktop but not on a phone at the usual sizes, and never the English; a justified line stretches only the spaces it may break at, so a verse number and a paseq keep a plain word space from their words; Always and Never set it either way, and the dyslexia setup sets Never (WCAG 1.4.8)
   - vowels and cantillation each shown or hidden
   - verse numbers on or off
 - **Fonts:** Atkinson Hyperlegible Next for the interface (designed for low vision), and a choice of four scripture fonts.

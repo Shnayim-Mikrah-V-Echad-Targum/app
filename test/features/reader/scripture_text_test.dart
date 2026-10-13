@@ -356,6 +356,44 @@ void main() {
       });
     }
 
+    testWidgets("on a justified line, the number's no-break space keeps a word's width as the other spaces stretch",
+        (tester) async {
+      // Justified, as Auto sets a tablet's column: the trade-off §4.7 makes,
+      // the number standing a plain word space from its word.
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topRight,
+          child: SizedBox(
+            width: 330,
+            child: ScriptureVerse(
+              verse: serpent,
+              kind: ScriptureKind.mikra,
+              settings: const AppSettings(justifyMode: JustifyMode.always),
+            ),
+          ),
+        ),
+      );
+      final paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
+      expect(paragraph.text.toPlainText().substring(0, 3), 'כב\u00A0');
+      expect(tester.widget<RichText>(find.byType(RichText)).textAlign, TextAlign.justify);
+      final text = paragraph.text.toPlainText(includeSemanticsLabels: false);
+      double widthAt(int i) => paragraph
+          .getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1))
+          .fold(0, (w, box) => w + box.right - box.left);
+      // A space of the first line, which the justification stretches.
+      double topOf(int start, int end) =>
+          paragraph.getBoxesForSelection(TextSelection(baseOffset: start, extentOffset: end)).first.top;
+      final stretched = text.indexOf(' ');
+      // Measured against the first word, in the verse's own size, as the
+      // number's is smaller.
+      final first = topOf(3, stretched);
+      expect(topOf(stretched, stretched + 1), first, reason: 'a space the first line may break at');
+      expect(topOf(text.lastIndexOf(' ') + 1, text.length), greaterThan(first), reason: 'more than one line');
+      expect(widthAt(stretched), greaterThan(26 + 1), reason: 'stretched');
+      expect(widthAt(2), closeTo(26, 0.01), reason: "the number's no-break space, as wide as a word space");
+    });
+
     testWidgets('a large letter stands above the line, and moves no line apart', (tester) async {
       // Genesis 1:1, whose first letter the Masorah writes large.
       const words = 'רֵאשִׁית בָּרָא אֱלֹהִים';

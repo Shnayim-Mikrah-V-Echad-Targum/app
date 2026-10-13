@@ -304,20 +304,25 @@ class ScriptureStyles {
 
   /// The narrowest column, in ems of its text's size, that Auto justifies:
   /// about 20, where a line holds words enough for its spaces to stretch
-  /// evenly. At the default sizes, both parallel columns have it and so does
-  /// a tablet's or a desktop's single column; a phone's hasn't.
+  /// evenly. At the default sizes, a tablet's or a desktop's single column
+  /// has it; a phone's hasn't.
   static const justifyMeasure = 20.0;
 
   /// Whether a paragraph of [kind] in a column [measure] wide is justified
   /// (§4.7): as the reader chose ([AppSettings.justifyMode]), or, under
   /// Auto, the Hebrew and Aramaic wherever the column is at least
-  /// [justifyMeasure] ems of their size at the system text scale. English,
-  /// which nothing hyphenates, keeps its ragged edge unless justified always.
+  /// [justifyMeasure] ems of their size at the system text scale, and in
+  /// either of the full text's parallel columns ([ParallelVerse]) whatever
+  /// their width: the two are decided together, so that neither faces the
+  /// gutter with a ragged edge, and they are set side by side only where
+  /// each holds a measure of words ([parallelFits]). English, which nothing
+  /// hyphenates, keeps its ragged edge unless justified always.
   bool justifies(ScriptureKind kind, double measure) => switch (settings.justifyMode) {
         JustifyMode.always => true,
         JustifyMode.never => false,
         JustifyMode.auto => kind != ScriptureKind.translation &&
-            measure >= justifyMeasure * MediaQuery.textScalerOf(context).scale(sizeFor(kind)),
+            (context.getInheritedWidgetOfExactType<_InParallelColumns>() != null ||
+                measure >= justifyMeasure * MediaQuery.textScalerOf(context).scale(sizeFor(kind))),
       };
 
   /// The alignment of a paragraph of [kind] in a column [measure] wide:
@@ -1374,36 +1379,48 @@ class ParallelVerse extends StatelessWidget {
     return Semantics(
       container: true,
       explicitChildNodes: true,
-      child: Row(
-        textDirection: TextDirection.rtl,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        children: [
-          Expanded(
-            flex: torahFlex,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ordered(0, torah),
-                for (final (i, child) in below.indexed) ordered(i + 2, child),
-              ],
+      // Its columns justified together (ScriptureStyles.justifies).
+      child: _InParallelColumns(
+        child: Row(
+          textDirection: TextDirection.rtl,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Expanded(
+              flex: torahFlex,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ordered(0, torah),
+                  for (final (i, child) in below.indexed) ordered(i + 2, child),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: gutter),
-          Expanded(
-            flex: besideFlex,
-            // A verse of one short line is still a target as tall as a
-            // finger for its long press: no taller than the verse's own line
-            // beside it, which sets the row's height.
-            child: ordered(
-              1,
-              ConstrainedBox(constraints: const BoxConstraints(minHeight: kMinInteractiveDimension), child: beside),
+            const SizedBox(width: gutter),
+            Expanded(
+              flex: besideFlex,
+              // A verse of one short line is still a target as tall as a
+              // finger for its long press: no taller than the verse's own
+              // line beside it, which sets the row's height.
+              child: ordered(
+                1,
+                ConstrainedBox(constraints: const BoxConstraints(minHeight: kMinInteractiveDimension), child: beside),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+/// Marks what stands in a [ParallelVerse]'s columns, which Auto justifies
+/// together ([ScriptureStyles.justifies]).
+class _InParallelColumns extends InheritedWidget {
+  const _InParallelColumns({required super.child});
+
+  @override
+  bool updateShouldNotify(_InParallelColumns oldWidget) => false;
 }
 
 /// The heads of the full text's parallel columns ([ParallelVerse]), above

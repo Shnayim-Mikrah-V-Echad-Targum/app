@@ -770,7 +770,7 @@ class AppSettings {
       false => d.locatedIn(ReadingSchedule.diaspora),
       _ => d,
     };
-    return AppSettings(
+    final read = AppSettings(
       readingSchedule: e(ReadingSchedule.values, j['readingSchedule'], located.readingSchedule),
       oneDayYomTov: b('oneDayYomTov', located.oneDayYomTov),
       nusach: nusach,
@@ -845,6 +845,15 @@ class AppSettings {
       stripNoteShownOn: date('stripNoteShownOn'),
       divergenceDismissedFor: j['divergenceDismissedFor'] is String ? j['divergenceDismissedFor'] as String : null,
     );
+    // The dyslexia setup of a version with the switch turned it off, for a
+    // ragged edge: read as Auto, its narrow column would be justified on a
+    // tablet, and the setup no longer shown as chosen. Display settings
+    // still as that setup left them keep it, as Never.
+    if (!j.containsKey('justifyMode') && j['justify'] == false) {
+      final never = read.copyWith(justifyMode: JustifyMode.never);
+      if (presetActive(never, DisplayPreset.dyslexia)) return never;
+    }
+    return read;
   }
 
   /// Reads [city], forgetting one that can't be read: choosing it again is
