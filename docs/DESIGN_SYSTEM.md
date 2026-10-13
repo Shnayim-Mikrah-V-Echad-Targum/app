@@ -1129,7 +1129,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - The scroll resets to the top instantly.
 - PassTrack bar fill and pip fill: 150 ms colour cross-fade.
 - Bottom progress: 250 ms tween (standard).
-- Next press: a light haptic if haptics are on.
+- Next press: the step haptic (below), but for the press that finishes the aliyah, which gives the success haptic alone.
 
 **Progress**
 - When a unit completes, the ring arc sweeps from the old fraction to the new one over 600 ms (decelerate) the next time Today or Parsha is shown. Keep the previous value in memory only.
@@ -1140,6 +1140,19 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - Aliyah: the SeferDivider hairlines draw outward from the lozenge over 400 ms, then the title fades in over 150 ms; `hapticSuccess`.
 - Parsha: the hero's inner goldLeaf frame rule draws around the card once over 900 ms (`PathMetric.extractPath`), then stays static. It draws when the week is finished while the app is open (the hero has shown it unfinished in this run), once per week, and waits until the hero can be seen; a restarted app shows it static, as the rings show progress without a sweep.
 - Sefer: a panel fade of 400 ms.
+
+**Haptics** (`lib/services/feedback.dart`): three levels, each firmer than the last, so that a finish never feels like a Next.
+
+| Level | When | iOS | Android |
+|---|---|---|---|
+| Step (`hapticStep`) | Next, in the guided reader | `selectionClick` | `selectionClick` (CLOCK_TICK, a tick) |
+| Success (`hapticSuccess`) | Reading recorded: an aliyah finished, Mark as read (the reader's and the week page's), the whole week marked, a check-in or the printed Chumash logged, the haftarah marked read | `mediumImpact` | `lightImpact` (VIRTUAL_KEY, a click) |
+| Celebrate (`hapticCelebrate`) | A parsha or a book finished, once | `successNotification` | `vibrate` (LONG_PRESS, a heavy click) |
+
+- One press, one haptic: the press that finishes an aliyah gives its success alone, not a step as well.
+- Only for what the reader pressed: none for Listen along going on by itself, a page opening, a sync or a reminder.
+- Android's `mediumImpact` plays the same click as `lightImpact`, and `heavyImpact` a lighter tick (CONTEXT_CLICK), so neither is used there.
+- All off with Haptic feedback (Settings → Accessibility), and none on the web or a desktop. The system's own setting holds too: Android and iOS play nothing where it is off.
 
 **Never:** looping, idle or time-based animation anywhere. Nothing at all moves on the rest-day Today. Animate only opacity, transform and CustomPaint progress; never BoxShadow or blur.
 

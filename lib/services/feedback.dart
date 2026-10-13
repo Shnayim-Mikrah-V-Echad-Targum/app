@@ -250,11 +250,42 @@ void _dismissCurrent(ScaffoldMessengerState messenger, {required bool reduced}) 
 // message to the next.
 const _snackBarMotion = AnimationStyle(duration: Motion.medium);
 
-/// Light haptic feedback, if the user hasn't turned it off.
-void hapticTap(WidgetRef ref) {
-  if (ref.read(settingsProvider).haptics) HapticFeedback.lightImpact();
+// Haptics, in three levels, each firmer than the last (docs/DESIGN_SYSTEM.md
+// §8, Haptics): at most one for a press, and none for what happens by
+// itself. They are a phone's and a tablet's: none on the web or a desktop,
+// or once the user has turned Haptic feedback off. Android and iOS keep to
+// their own setting too, and play nothing where it is off.
+
+/// A step: Next, on to the next reading. The faintest, a selection tick
+/// (Android's CLOCK_TICK).
+void hapticStep(WidgetRef ref) {
+  if (_hapticPlatform(ref) != null) HapticFeedback.selectionClick();
 }
 
-void hapticSuccess(WidgetRef ref) {
-  if (ref.read(settingsProvider).haptics) HapticFeedback.mediumImpact();
+/// Reading recorded: an aliyah finished or marked read, a check-in or the
+/// haftarah logged. A click, firmer than a step's tick; on Android
+/// lightImpact (VIRTUAL_KEY), as mediumImpact plays the same click there.
+void hapticSuccess(WidgetRef ref) => switch (_hapticPlatform(ref)) {
+      TargetPlatform.iOS => HapticFeedback.mediumImpact(),
+      TargetPlatform.android => HapticFeedback.lightImpact(),
+      _ => null,
+    };
+
+/// A parsha or a book finished, once: iOS's success notification, and on
+/// Android a long press's heavy click (heavyImpact plays a tick there,
+/// lighter than a success's click).
+void hapticCelebrate(WidgetRef ref) => switch (_hapticPlatform(ref)) {
+      TargetPlatform.iOS => HapticFeedback.successNotification(),
+      TargetPlatform.android => HapticFeedback.vibrate(),
+      _ => null,
+    };
+
+/// The platform whose haptics play, if any do: Android or iOS, with Haptic
+/// feedback on.
+TargetPlatform? _hapticPlatform(WidgetRef ref) {
+  if (kIsWeb || !ref.read(settingsProvider).haptics) return null;
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.android || TargetPlatform.iOS => defaultTargetPlatform,
+    _ => null,
+  };
 }

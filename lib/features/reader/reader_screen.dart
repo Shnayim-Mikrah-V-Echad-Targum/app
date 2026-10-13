@@ -634,7 +634,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     _record(ctx, flow, _chunk, _step);
     if (!wasComplete && ref.read(progressProvider).week(ctx.id).isComplete) _completedOnVisit = true;
-    if (!listening) hapticTap(ref);
     setState(() {
       _quietStep = listening;
       if (_step + 1 < steps.length) {
@@ -647,6 +646,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _justCompleted = _completedOnVisit;
       }
     });
+    // A step's tick for Next pressed; the press that finishes the aliyah
+    // gives the finish's haptic alone (_onFinished).
+    if (!listening && !_finished) hapticStep(ref);
     if (_finished) {
       // Next goes with the bottom bar: the panel's first button takes over,
       // once the reminders offered after a first aliyah, which take the

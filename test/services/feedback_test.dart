@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/feedback.dart';
 import 'package:shnayim_mikra/ui/theme/app_theme.dart';
@@ -278,5 +282,77 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
     expect(find.text('Updated'), findsNothing);
+  });
+
+  group('haptics', () {
+    /// Plays each of the three levels, with Haptic feedback [on], and returns
+    /// what each sent to the platform, by the type HapticFeedback sends
+    /// ('vibrate' for HapticFeedback.vibrate()).
+    Future<Map<String, List<String>>> play(WidgetTester tester, {bool on = true}) async {
+      SharedPreferences.setMockInitialValues({'flutter.settings.v1': jsonEncode(AppSettings(haptics: on).toJson())});
+      final prefs = await SharedPreferences.getInstance();
+      final sent = <String>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'HapticFeedback.vibrate') sent.add(call.arguments as String? ?? 'vibrate');
+        return null;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      const levels = {'step': hapticStep, 'success': hapticSuccess, 'celebrate': hapticCelebrate};
+      await tester.pumpWidget(ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, _) => Column(children: [
+              for (final MapEntry(key: name, value: haptic) in levels.entries)
+                TextButton(onPressed: () => haptic(ref), child: Text(name)),
+            ]),
+          ),
+        ),
+      ));
+      final played = <String, List<String>>{};
+      for (final name in levels.keys) {
+        sent.clear();
+        await tester.tap(find.text(name));
+        await tester.pump();
+        played[name] = [...sent];
+      }
+      return played;
+    }
+
+    final nothing = {'step': isEmpty, 'success': isEmpty, 'celebrate': isEmpty};
+
+    testWidgets(
+      'on Android are a tick, a click and a heavy click, each played once',
+      (tester) async => expect(await play(tester), {
+        'step': ['HapticFeedbackType.selectionClick'],
+        // Not mediumImpact, the same click there, nor heavyImpact, a tick.
+        'success': ['HapticFeedbackType.lightImpact'],
+        'celebrate': ['vibrate'],
+      }),
+      variant: TargetPlatformVariant.only(TargetPlatform.android),
+    );
+
+    testWidgets(
+      'on iOS are a selection, a medium impact and a success notification',
+      (tester) async => expect(await play(tester), {
+        'step': ['HapticFeedbackType.selectionClick'],
+        'success': ['HapticFeedbackType.mediumImpact'],
+        'celebrate': ['HapticFeedbackType.successNotification'],
+      }),
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+
+    testWidgets(
+      'play nothing on a desktop',
+      (tester) async => expect(await play(tester), nothing),
+      variant: const TargetPlatformVariant({TargetPlatform.windows, TargetPlatform.macOS, TargetPlatform.linux}),
+    );
+
+    testWidgets(
+      'play nothing with Haptic feedback off',
+      (tester) async => expect(await play(tester, on: false), nothing),
+      variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
+    );
   });
 }
