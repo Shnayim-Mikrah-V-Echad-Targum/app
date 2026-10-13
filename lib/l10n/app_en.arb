@@ -2751,6 +2751,19 @@
       }
     }
   },
+  "parshaDoneTitleShort": "The parsha is complete",
+  "@parshaDoneTitleShort": {
+    "description": "Used only by the Hebrew UI: the title of the reader's finished panel once the whole parsha is read, under the parsha's pointed Hebrew name, which it would otherwise repeat. The English UI uses parshaDoneTitle."
+  },
+  "restGreeting": "{greeting, select, chag{Chag sameach!} roshHashanah{Shanah tovah!} yomKippur{G’mar chatimah tovah!} other{Shabbat shalom!}}",
+  "@restGreeting": {
+    "description": "A greeting on the reader's finished panel when the parsha is finished on the eve of Shabbat or Yom Tov. {greeting} is chosen as for erevShabbatDone.",
+    "placeholders": {
+      "greeting": {
+        "type": "String"
+      }
+    }
+  },
   "nextAliyahLength": "{aliyah} is {count, plural, =1{one verse} other{{count} verses}}.",
   "@nextAliyahLength": {
     "description": "A gentle line on the finished panel about the aliyah to read next, e.g. \"Chamishi is 31 verses.\"",
@@ -2794,16 +2807,16 @@
       }
     }
   },
-  "erevShabbatDone": "That’s this week’s reading. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}",
+  "erevShabbatDone": "That’s this week’s reading. {greeting, select, chag{Chag sameach!} roshHashanah{Shanah tovah!} yomKippur{G’mar chatimah tovah!} other{Shabbat shalom!}}",
   "@erevShabbatDone": {
-    "description": "On the finished panel when the last day of the week's plan is done. {greeting} is chag when Yom Tov begins the next day.",
+    "description": "On the finished panel when the last day of the week's plan is done. {greeting} is the next day's: roshHashanah or yomKippur when it is Rosh Hashanah or Yom Kippur (on Shabbat too), chag when it is another Yom Tov that is not Shabbat, and otherwise Shabbat (other).",
     "placeholders": {
       "greeting": {
         "type": "String"
       }
     }
   },
-  "erevShabbatDoneMorning": "The rest is for Shabbat morning. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}",
+  "erevShabbatDoneMorning": "The rest is for Shabbat morning. {greeting, select, chag{Chag sameach!} roshHashanah{Shanah tovah!} yomKippur{G’mar chatimah tovah!} other{Shabbat shalom!}}",
   "@erevShabbatDoneMorning": {
     "description": "As erevShabbatDone, when the plan leaves aliyot for Shabbat morning (read from a printed chumash).",
     "placeholders": {

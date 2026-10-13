@@ -167,7 +167,9 @@ void main() {
       );
       expect(find.bySemanticsLabel('This week’s parsha is complete. Yasher koach!'), findsOneWidget);
       expect(find.text('Ready to hear it read on Shabbat.'), findsOneWidget);
-      expect(find.byType(ParshaRings), findsNothing);
+      // The rings stay, closed and smaller, without their legend.
+      expect(tester.widget<ParshaRings>(find.byType(ParshaRings)).size, ParshaRings.header);
+      expect(find.byType(RingsWithLegend), findsNothing);
       expect(find.textContaining(RegExp('^(Start|Continue) ·')), findsNothing);
       expect(find.byIcon(Icons.celebration_outlined), findsNothing);
       // The haftarah, still to read, is the one button that looks like one,
@@ -219,9 +221,13 @@ void main() {
 
       double? drawn(WidgetTester tester) => tester.widget<TitlePageFrame>(find.byType(TitlePageFrame)).drawProgress;
 
-      testWidgets('draws itself around the page once, and stays', (tester) async {
+      testWidgets('draws itself around the page once its rings have closed, and stays', (tester) async {
         final c = await finish(tester);
         expect(drawn(tester), 0);
+        // The rings close first.
+        await tester.pump(const Duration(milliseconds: 550));
+        expect(drawn(tester), 0);
+        expect(tester.binding.transientCallbackCount, greaterThan(0));
         await tester.pump(const Duration(milliseconds: 450));
         expect(drawn(tester), allOf(greaterThan(0), lessThan(1)));
         await tester.pumpAndSettle();
@@ -237,8 +243,53 @@ void main() {
         expect(drawn(tester), 1);
       });
 
-      testWidgets('is drawn at once under Reduce Motion', (tester) async {
+      testWidgets('is drawn at once under Reduce Motion, its rings closed already', (tester) async {
         await finish(tester, settings: _settings.copyWith(reduceMotion: true));
+        expect(drawn(tester), 1);
+        expect(find.text('7/7'), findsOneWidget);
+        expect(find.text('6/7'), findsNothing);
+        expect(tester.binding.transientCallbackCount, 0);
+      });
+
+      testWidgets('finished in the reader, its rings close there, once: back on Today they are closed', (tester) async {
+        // Shevi'i's Hebrew read twice: its Targum, in the reader, finishes
+        // the week (with no repeat of its last verse after it).
+        final mon = LocalDate(2026, 10, 5);
+        var w = WeekProgress(weekId: '5787:1');
+        for (var a = 0; a < 6; a++) {
+          w = w.withAliyah(a, mon);
+        }
+        w = w.withUnit(6, ReadingPass.mikra1, mon).withUnit(6, ReadingPass.mikra2, mon).withPosition(6, const [99, 99, 0]);
+        final c = await openToday(
+          tester,
+          settings: _settings
+              .copyWith(notificationPromptShown: true, method: ReadingMethod.aliyahByAliyah)
+              .withRepeatLastVerse(false),
+          progress: ProgressState(weeks: {'5787:1': w}),
+        );
+        expect(find.text('6/7'), findsOneWidget);
+        c.read(routerProvider).push('/read/5787:1/6');
+        await loadTexts(tester);
+
+        await tester.tap(find.text('Finish'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        // The finished panel's rings sweep from what Today showed.
+        expect(find.text('6/7'), findsOneWidget);
+        expect(find.text('7/7'), findsOneWidget);
+        await tester.pumpAndSettle();
+        expect(find.text('6/7'), findsNothing);
+
+        await tester.tap(find.text('Done'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        // Closed already: Today's don't close again, and its rule is still
+        // to draw.
+        expect(find.text('6/7'), findsNothing);
+        expect(drawn(tester), 0);
+        await tester.pumpAndSettle();
+        expect(location(c), '/today');
+        expect(find.text('7/7'), findsOneWidget);
         expect(drawn(tester), 1);
       });
 
@@ -255,6 +306,30 @@ void main() {
         expect(drawn(tester), lessThan(1));
         await tester.pumpAndSettle();
         expect(drawn(tester), 1);
+      });
+
+      testWidgets('closes its rings first, without a legend, and says what they say', (tester) async {
+        final handle = tester.ensureSemantics();
+        await finish(tester);
+        final rings = find.byType(ParshaRings);
+        expect(rings, findsOneWidget);
+        expect(tester.getSize(rings), const Size.square(ParshaRings.header));
+        expect(find.byType(RingsWithLegend), findsNothing);
+        // Sweeping from what the page showed: six of seven, to seven.
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(find.text('6/7'), findsOneWidget);
+        await tester.pumpAndSettle();
+        expect(find.text('6/7'), findsNothing);
+        expect(
+          tester.getSemantics(rings),
+          isSemantics(label: '7 of 7 aliyot. First reading: 7 of 7. Second reading: 7 of 7. Targum: 7 of 7'),
+        );
+        // Over the word that the week is done.
+        expect(
+          tester.getBottomLeft(rings).dy,
+          lessThan(tester.getTopLeft(find.textContaining('This week’s parsha is complete')).dy),
+        );
+        handle.dispose();
       });
 
       testWidgets('is still in a restarted app', (tester) async {

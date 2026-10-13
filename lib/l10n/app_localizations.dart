@@ -5157,6 +5157,18 @@ abstract class AppLocalizations {
   /// **'Parshat {name} is complete'**
   String parshaDoneTitle(String name);
 
+  /// Used only by the Hebrew UI: the title of the reader's finished panel once the whole parsha is read, under the parsha's pointed Hebrew name, which it would otherwise repeat. The English UI uses parshaDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The parsha is complete'**
+  String get parshaDoneTitleShort;
+
+  /// A greeting on the reader's finished panel when the parsha is finished on the eve of Shabbat or Yom Tov. {greeting} is chosen as for erevShabbatDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{greeting, select, chag{Chag sameach!} roshHashanah{Shanah tovah!} yomKippur{G’mar chatimah tovah!} other{Shabbat shalom!}}'**
+  String restGreeting(String greeting);
+
   /// A gentle line on the finished panel about the aliyah to read next, e.g. "Chamishi is 31 verses."
   ///
   /// In en, this message translates to:
@@ -5187,16 +5199,16 @@ abstract class AppLocalizations {
   /// **'That’s today’s reading. See you on {day}.'**
   String todayReadingDoneOn(String day);
 
-  /// On the finished panel when the last day of the week's plan is done. {greeting} is chag when Yom Tov begins the next day.
+  /// On the finished panel when the last day of the week's plan is done. {greeting} is the next day's: roshHashanah or yomKippur when it is Rosh Hashanah or Yom Kippur (on Shabbat too), chag when it is another Yom Tov that is not Shabbat, and otherwise Shabbat (other).
   ///
   /// In en, this message translates to:
-  /// **'That’s this week’s reading. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
+  /// **'That’s this week’s reading. {greeting, select, chag{Chag sameach!} roshHashanah{Shanah tovah!} yomKippur{G’mar chatimah tovah!} other{Shabbat shalom!}}'**
   String erevShabbatDone(String greeting);
 
   /// As erevShabbatDone, when the plan leaves aliyot for Shabbat morning (read from a printed chumash).
   ///
   /// In en, this message translates to:
-  /// **'The rest is for Shabbat morning. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
+  /// **'The rest is for Shabbat morning. {greeting, select, chag{Chag sameach!} roshHashanah{Shanah tovah!} yomKippur{G’mar chatimah tovah!} other{Shabbat shalom!}}'**
   String erevShabbatDoneMorning(String greeting);
 
   /// After "On time · " on the finished panel, once a parsha is finished before its Shabbat.

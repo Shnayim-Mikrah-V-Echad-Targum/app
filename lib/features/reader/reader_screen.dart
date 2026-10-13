@@ -23,9 +23,9 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
-import '../../ui/widgets/lines.dart' show BalancedText, DotLine, dashHeldToWord;
+import '../../ui/widgets/lines.dart' show BalancedText, DotLine, WholeWords, dashHeldToWord;
 import '../../ui/widgets/ornaments.dart' show Eyebrow, SeferDivider;
-import '../../ui/widgets/progress_widgets.dart' show WeekStatusBadge;
+import '../../ui/widgets/progress_widgets.dart' show ParshaRings, WeekStatusBadge;
 import '../notes/domain/annotations.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
@@ -156,6 +156,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// last Targum, say, with the last verse's repeat still to come, which
   /// then finishes the aliyah.
   bool _completedOnVisit = false;
+
+  /// Whether the parsha's completion has had its celebrate haptic (§8,
+  /// Haptics), which it has once: as the finished panel's rings close, or
+  /// where no panel shows it, at the press that completed it.
+  bool _celebrated = false;
   bool _positioned = false;
 
   /// The aliyah's position counts when it was opened (null if it was read):
@@ -790,7 +795,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Future<void> _onFinished(WeekContext ctx, {required bool offerReminders}) async {
     final l = context.l10n;
     final names = Names(context);
-    hapticSuccess(ref);
+    // The parsha completed just now has the panel's celebrate haptic, as its
+    // rings close, in place of an aliyah's success.
+    if (!_panelCelebrates) hapticSuccess(ref);
     final week = ref.read(progressProvider).week(ctx.id);
     final settings = ref.read(settingsProvider);
     final parshaName = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
@@ -804,6 +811,17 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       await maybeOfferReminders(context, ref, celebration: l.firstAliyahDone(l.versesCount(verses), second));
       if (mounted && _finished && !_fullText) _focusAfterFrame(_finishFocus);
     }
+  }
+
+  /// Whether the finished panel about to show gives the celebrate haptic as
+  /// its rings close: for the parsha completed just now, the first time.
+  bool get _panelCelebrates => _justCompleted && !_celebrated;
+
+  /// The parsha's completion felt, once (§8, Haptics).
+  void _celebrate() {
+    if (_celebrated) return;
+    _celebrated = true;
+    hapticCelebrate(ref);
   }
 
   String _stepTitle(StepKind kind) {
@@ -1602,6 +1620,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                       justCompleted: _justCompleted,
                                       firstFocus: _finishFocus,
                                       onGoToAliyah: _goToAliyah,
+                                      onCelebrate: _celebrate,
                                     ),
                                   ),
                                 )
@@ -1700,7 +1719,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _justCompleted = !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete;
     final verses = ref.read(parshaRepositoryProvider).aliyahVerseCount(ctx.portion, a);
     ref.read(progressProvider.notifier).savePosition(ctx.id, a, [verses, verses, verses]);
-    hapticSuccess(ref);
+    if (!_panelCelebrates) {
+      hapticSuccess(ref);
+    } else if (_fullText || a != _aliyah) {
+      // The parsha completed, with no finished panel to show it: its
+      // celebrate haptic now, in place of the success.
+      _celebrate();
+    }
     showStatus(context, context.l10n.markedRead);
     if (a == _aliyah) setState(() => _finished = true);
     // The guided reader shows the finished panel in place of the step. The
@@ -2303,7 +2328,9 @@ class _Note extends StatelessWidget {
 /// What the reader sees once an aliyah is read (DESIGN_SYSTEM.md §6.23): a
 /// divider whose hairlines draw outward from its lozenge, then the title, a
 /// line about what comes next, and the way on. Once the parsha is read, it
-/// says how the week stands and offers the haftarah.
+/// names it, says how the week stands, greets the Shabbat or Yom Tov that
+/// begins the next day, and offers the haftarah; the parsha completed just
+/// now has its rings close in place of the divider.
 class _FinishedPanel extends ConsumerStatefulWidget {
   const _FinishedPanel({
     required this.ctx,
@@ -2311,6 +2338,7 @@ class _FinishedPanel extends ConsumerStatefulWidget {
     required this.justCompleted,
     required this.firstFocus,
     required this.onGoToAliyah,
+    required this.onCelebrate,
   });
 
   final WeekContext ctx;
@@ -2325,31 +2353,51 @@ class _FinishedPanel extends ConsumerStatefulWidget {
   final FocusNode firstFocus;
   final ValueChanged<int> onGoToAliyah;
 
+  /// The parsha's celebrate haptic, called as its rings close; the reader
+  /// gives it once.
+  final VoidCallback onCelebrate;
+
   @override
   ConsumerState<_FinishedPanel> createState() => _FinishedPanelState();
 }
 
 class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTickerProviderStateMixin {
-  // The completion moment (§8), once: the divider's hairlines draw outward
-  // over Motion.long, then the rest fades in over Motion.short.
-  late final AnimationController _reveal = AnimationController(vsync: this, duration: Motion.long + Motion.short);
+  /// Whether this is the parsha's moment (§8), completed just now: its rings
+  /// close in place of the divider. Set once, as the panel first shows.
+  late final bool _parshaMoment = widget.justCompleted && widget.ctx.progress.isComplete;
+
+  // The completion moment (§8), once. An aliyah's divider draws its
+  // hairlines outward over Motion.long; the parsha's rings close over
+  // Motion.ring (ParshaRings sweeps them, from what they last showed in this
+  // run). Then the rest fades in over Motion.short, as the last arc lands.
+  late final Duration _lead = _parshaMoment ? Motion.ring : Motion.long;
+  late final double _split = _lead.inMilliseconds / (_lead + Motion.short).inMilliseconds;
+  late final AnimationController _reveal = AnimationController(vsync: this, duration: _lead + Motion.short);
   late final Animation<double> _draw = CurvedAnimation(parent: _reveal, curve: Interval(0, _split, curve: Motion.decelerate));
   late final Animation<double> _fade = CurvedAnimation(parent: _reveal, curve: Interval(_split, 1, curve: Motion.standard));
   bool _started = false;
-
-  static final _split = Motion.long.inMilliseconds / (Motion.long + Motion.short).inMilliseconds;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    // Under Reduce Motion it is simply there.
+    // Under Reduce Motion it is simply there, and the haptic comes at once.
     if (Motion.of(context).reduced) {
       _reveal.value = 1;
+      if (_parshaMoment) widget.onCelebrate();
     } else {
+      if (_parshaMoment) _reveal.addListener(_celebrateAtClose);
       _reveal.forward();
     }
+  }
+
+  /// The celebrate haptic, as the rings close: never once the panel has
+  /// gone, whose controller then stops.
+  void _celebrateAtClose() {
+    if (_reveal.value < _split) return;
+    _reveal.removeListener(_celebrateAtClose);
+    widget.onCelebrate();
   }
 
   @override
@@ -2390,11 +2438,21 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
     if (later != null) {
       return later.date == today.addDays(1) ? l.todayReadingDone : l.todayReadingDoneOn(Names(context).weekday(later.date));
     }
-    final tomorrow = today.addDays(1);
-    final chag = !tomorrow.isShabbat &&
-        JewishHolidays.isYomTov(HebrewDate.fromLocalDate(tomorrow), israel: settings.oneDayYomTov);
-    final greeting = chag ? 'chag' : 'shabbat';
+    final greeting = _greetingKind(settings);
     return ctx.plan.shabbatAliyot.isEmpty ? l.erevShabbatDone(greeting) : l.erevShabbatDoneMorning(greeting);
+  }
+
+  /// The greeting for the next day, as the select of erevShabbatDone and
+  /// restGreeting names it: Rosh Hashanah's and Yom Kippur's own, on Shabbat
+  /// too, as Today's title page greets them then; chag for another Yom Tov,
+  /// unless it is Shabbat; otherwise Shabbat's.
+  String _greetingKind(AppSettings settings) {
+    final tomorrow = ctx.today.addDays(1);
+    final hebrew = HebrewDate.fromLocalDate(tomorrow);
+    if (JewishHolidays.isYomKippur(hebrew)) return 'yomKippur';
+    if (JewishHolidays.isRoshHashanah(hebrew)) return 'roshHashanah';
+    final chag = !tomorrow.isShabbat && JewishHolidays.isYomTov(hebrew, israel: settings.oneDayYomTov);
+    return chag ? 'chag' : 'shabbat';
   }
 
   /// How the finished parsha stands (on time, after Shabbat, or doubled up),
@@ -2440,16 +2498,23 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
     final haftarah = complete && (settings.haftarahEnabled || ctx.haftarahRequired) && week.haftarah == null;
     final doneForToday = complete || next == null ? null : _doneForToday(settings);
     final standing = complete ? _standing(settings) : null;
+    final parshaName = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
+    // Under the parsha's Hebrew name, the Hebrew UI's title doesn't name it
+    // again.
+    final shortTitle = complete && context.isHebrewUi;
     final title = complete
-        ? l.parshaDoneTitle(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames))
+        ? (shortTitle ? l.parshaDoneTitleShort : l.parshaDoneTitle(parshaName))
         : l.aliyahDoneTitle(names.aliyah(widget.aliyah));
     // What the reader's announcement says, where there is one; elsewhere
-    // the title's live region says it.
-    final spoken = complete
-        ? l.parshaComplete(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames))
-        : l.aliyahComplete(names.aliyah(widget.aliyah));
+    // the title's live region says it. The heading names the parsha either
+    // way.
+    final spoken = complete ? l.parshaComplete(parshaName) : l.aliyahComplete(names.aliyah(widget.aliyah));
     final announces = MediaQuery.supportsAnnounceOf(context);
     final wide = MediaQuery.sizeOf(context).width >= Breakpoints.medium;
+    // The eve of Shabbat or Yom Tov: a greeting for it, as the parsha is done.
+    final greeting = complete && JewishHolidays.isRestDay(ctx.today.addDays(1), israel: settings.oneDayYomTov)
+        ? l.restGreeting(_greetingKind(settings))
+        : null;
     final marginalia = type.marginalia;
     final scaler = MediaQuery.textScalerOf(context);
     // The gaps between its lines grow with the text, if not as fast.
@@ -2518,11 +2583,19 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedBuilder(
-                animation: _draw,
-                builder: (context, _) => SeferDivider(width: SeferDivider.maxWidth, progress: _draw.value),
-              ),
-              const Gap(16),
+              if (_parshaMoment) ...[
+                // Closed, without a legend: what they say is spoken.
+                ExcludeSemantics(
+                  child: ParshaRings(size: ParshaRings.header, progress: week, aliyahWeights: ctx.aliyahVerses),
+                ),
+                const Gap(Space.md),
+              ] else ...[
+                AnimatedBuilder(
+                  animation: _draw,
+                  builder: (context, _) => SeferDivider(width: SeferDivider.maxWidth, progress: _draw.value),
+                ),
+                const Gap(16),
+              ],
               // Faded in together, but present for screen readers from the
               // start, so that the heading is there to be found.
               FadeTransition(
@@ -2531,17 +2604,41 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (complete) ...[
+                      // The parsha's name, pointed, for the eye: the heading
+                      // under it says it.
+                      ExcludeSemantics(
+                        child: WholeWords(
+                          names.portionPointed(ctx.portion),
+                          textDirection: TextDirection.rtl,
+                          locale: const Locale('he'),
+                          style: type.hebrewDisplay.copyWith(
+                            fontSize: wide ? 44 : 36,
+                            height: wide ? 56 / 44 : 48 / 36,
+                            color: scheme.primary,
+                            fontWeight: SeferColors.of(context).isHighContrast ? FontWeight.w700 : null,
+                          ),
+                        ),
+                      ),
+                      gap(4),
+                    ],
                     Semantics(
                       // Said by the reader's announcement where there is one,
                       // and elsewhere (on Android) as it appears.
                       liveRegion: !announces,
                       header: true,
                       headingLevel: 1,
-                      child: Text(
+                      // Its lines balanced, so that a word is never left
+                      // alone on the last, as with large text.
+                      child: BalancedText(
                         title,
-                        semanticsLabel: announces ? null : spoken,
-                        textAlign: TextAlign.center,
-                        style: (wide ? theme.textTheme.displaySmall : theme.textTheme.headlineMedium)
+                        semanticsLabel: announces ? (shortTitle ? l.parshaDoneTitle(parshaName) : null) : spoken,
+                        style: switch ((complete, wide)) {
+                          (true, true) => theme.textTheme.headlineMedium,
+                          (true, false) => theme.textTheme.headlineSmall,
+                          (false, true) => theme.textTheme.displaySmall,
+                          (false, false) => theme.textTheme.headlineMedium,
+                        }
                             ?.copyWith(color: scheme.onSurface),
                       ),
                     ),
@@ -2560,6 +2657,10 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
                     if (standing case (final status, final parts)) ...[
                       gap(8),
                       _StandingLine(status: status, parts: parts),
+                    ],
+                    if (greeting != null) ...[
+                      gap(8),
+                      Text(greeting, textAlign: TextAlign.center, style: marginalia),
                     ],
                     gap(24),
                     for (final (i, button) in buttons.indexed) ...[

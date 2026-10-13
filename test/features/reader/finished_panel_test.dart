@@ -49,6 +49,17 @@ ProgressState _bereshit(Map<int, LocalDate> read, {required int partly, required
   return ProgressState(weeks: {'5787:1': w});
 }
 
+/// Week [id] with every aliyah read on [on] but Shevi'i, whose Hebrew is
+/// read twice, so that its Targum finishes the parsha.
+ProgressState _allButShevii(String id, LocalDate on) {
+  var w = WeekProgress(weekId: id);
+  for (var a = 0; a < 6; a++) {
+    w = w.withAliyah(a, on);
+  }
+  w = w.withUnit(6, ReadingPass.mikra1, on).withUnit(6, ReadingPass.mikra2, on).withPosition(6, const [99, 99, 0]);
+  return ProgressState(weeks: {id: w});
+}
+
 Future<void> _loadTexts(WidgetTester tester) async {
   await tester.pump();
   await tester.pump();
@@ -71,6 +82,8 @@ Future<void> _finish(
   bool settle = true,
   bool repeat = false,
   double textScale = 1,
+  String next = 'Next',
+  String finish = 'Finish',
 }) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
@@ -95,11 +108,11 @@ Future<void> _finish(
   c.read(routerProvider).go('/read/$week/$aliyah');
   await _loadTexts(tester);
   // Read whole already, an aliyah starts again from its first step.
-  for (var i = 0; i < 3 && find.text('Finish').evaluate().isEmpty; i++) {
-    await tester.tap(find.text('Next'));
+  for (var i = 0; i < 3 && find.text(finish).evaluate().isEmpty; i++) {
+    await tester.tap(find.text(next));
     await tester.pumpAndSettle();
   }
-  await tester.tap(find.text('Finish'));
+  await tester.tap(find.text(finish));
   if (settle) await tester.pumpAndSettle();
 }
 
@@ -192,10 +205,11 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Next aliyah · Revi’i'), findsOneWidget);
   });
 
-  testWidgets('on the eve of Yom Tov, the greeting is for the chag', (tester) async {
+  testWidgets('on the eve of Rosh Hashanah, the greeting is for the new year', (tester) async {
     // Ha'azinu 5788, read on the Shabbat after Rosh Hashanah 5789 (Thursday
     // and Friday, 21 and 22 September 2028): Shishi finished on Wednesday,
-    // and Shevi'i left for Shabbat morning.
+    // and Shevi'i left for Shabbat morning. Rosh Hashanah has its own
+    // greeting, as Today's title page gives it then.
     final wednesday = LocalDate(2028, 9, 20);
     var w = WeekProgress(weekId: '5788:53');
     for (var a = 0; a < 5; a++) {
@@ -212,10 +226,113 @@ void main() {
     );
 
     expect(find.text('Shishi is complete'), findsOneWidget);
-    expect(find.text('The rest is for Shabbat morning. Chag\u00A0sameach!'), findsOneWidget);
+    expect(find.text('The rest is for Shabbat morning. Shanah\u00A0tovah!'), findsOneWidget);
   });
 
   group('the parsha finished', () {
+    testWidgets('closes its rings in place of the divider, names it in Hebrew, and greets Shabbat on its eve',
+        (tester) async {
+      await _finish(tester, aliyah: 6, day: DateTime(2026, 10, 9, 10), progress: _readThrough(5, partly: 6, on: _monday));
+
+      // The rings at the Parsha header's size, closed, with no legend: what
+      // they say is spoken (parshaComplete).
+      final rings = tester.widget<ParshaRings>(find.byType(ParshaRings));
+      expect(rings.size, ParshaRings.header);
+      expect(rings.progress.isComplete, isTrue);
+      expect(find.byType(RingLegend), findsNothing);
+      expect(find.byType(SeferDivider), findsNothing);
+      // Then the parsha's pointed name, the title, the standing line and
+      // Friday's greeting, in that order.
+      final name = find.text('בְּרֵאשִׁית');
+      expect(name, findsOneWidget);
+      final greeting = find.text('Shabbat\u00A0shalom!');
+      expect(greeting, findsOneWidget);
+      double top(Finder f) => tester.getTopLeft(f).dy;
+      expect(top(find.byType(ParshaRings)), lessThan(top(name)));
+      expect(top(name), lessThan(top(find.text('Parshat Bereshit is complete'))));
+      expect(top(find.text('Parshat Bereshit is complete')), lessThan(top(find.byIcon(Icons.check_circle))));
+      expect(top(find.byIcon(Icons.check_circle)), lessThan(top(greeting)));
+      expect(top(greeting), lessThan(top(find.text('Read the haftarah'))));
+      // A size below the aliyah's title, under the name.
+      final context = tester.element(name);
+      expect(
+        tester.widget<Text>(find.text('Parshat Bereshit is complete')).style?.fontSize,
+        Theme.of(context).textTheme.headlineSmall?.fontSize,
+      );
+    });
+
+    for (final announces in [true, false]) {
+      testWidgets('in Hebrew, says the parsha is complete under its name, and its heading still names it'
+          '${announces ? '' : ' (live region)'}', (tester) async {
+        final handle = tester.ensureSemantics();
+        tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(supportsAnnounce: announces);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        await _finish(
+          tester,
+          aliyah: 6,
+          day: DateTime(2026, 10, 9, 10),
+          progress: _readThrough(5, partly: 6, on: _monday),
+          settings: const AppSettings(language: AppLanguage.hebrew),
+          next: 'הבא',
+          finish: 'סיום',
+        );
+
+        expect(find.text('בְּרֵאשִׁית'), findsOneWidget);
+        expect(find.text('הפרשה הושלמה'), findsOneWidget);
+        expect(find.textContaining('פרשת בראשית'), findsNothing, reason: 'the name is not repeated beneath itself');
+        expect(find.text('שבת\u00A0שלום!'), findsOneWidget);
+        expect(
+          tester.getSemantics(find.text('הפרשה הושלמה')),
+          isSemantics(
+            label: announces ? 'פרשת בראשית הושלמה' : 'חזק! פרשת בראשית הושלמה.',
+            isHeader: true,
+            isLiveRegion: !announces,
+          ),
+        );
+        // The pointed name and the rings are for the eye alone.
+        expect(find.bySemanticsLabel(RegExp('בְּרֵאשִׁית')), findsNothing);
+        expect(find.bySemanticsLabel(RegExp('^7 מתוך 7 עליות')), findsNothing);
+        handle.dispose();
+      });
+    }
+
+    testWidgets('midweek, has no greeting', (tester) async {
+      // Wednesday: every aliyah read ahead of its day.
+      final wednesday = LocalDate(2026, 10, 7);
+      await _finish(tester, aliyah: 6, day: DateTime(2026, 10, 7, 10), progress: _allButShevii('5787:1', wednesday));
+
+      expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
+      expect(find.byType(ParshaRings), findsOneWidget);
+      expect(find.textContaining('shalom'), findsNothing);
+      expect(find.textContaining('sameach'), findsNothing);
+    });
+
+    for (final (what, week, day, greeting) in [
+      // Naso 5787, finished on Thursday 10 June 2027, Erev Shavuot (Friday
+      // and Shabbat outside Israel).
+      ('Erev Shavuot', '5787:35', LocalDate(2027, 6, 10), 'Chag\u00A0sameach!'),
+      // Ha'azinu 5788, finished on Wednesday 20 September 2028, Erev Rosh
+      // Hashanah.
+      ('Erev Rosh Hashanah', '5788:53', LocalDate(2028, 9, 20), 'Shanah\u00A0tovah!'),
+      // Vezot HaBerachah 5786, whose long week outside Israel begins on
+      // Sunday 20 September 2026, Erev Yom Kippur.
+      ('Erev Yom Kippur', '5786:54', LocalDate(2026, 9, 20), 'G’mar\u00A0chatimah\u00A0tovah!'),
+    ]) {
+      testWidgets('on $what, greets the day that begins', (tester) async {
+        await _finish(
+          tester,
+          week: week,
+          aliyah: 6,
+          day: DateTime(day.year, day.month, day.day, 10),
+          progress: _allButShevii(week, day),
+        );
+
+        expect(find.byType(ParshaRings), findsOneWidget);
+        expect(find.text(greeting), findsOneWidget);
+        expect(find.textContaining('Shabbat\u00A0shalom'), findsNothing);
+      });
+    }
+
     testWidgets('on time says so, with the streak and the grace day it earned, and offers the haftarah', (tester) async {
       await _finish(tester, aliyah: 6, day: DateTime(2026, 10, 9, 10), progress: _readThrough(5, partly: 6, on: _monday));
 
@@ -301,6 +418,11 @@ void main() {
       expect(_standing(tester, WeekStatus.onTime), 'On time');
       expect(find.textContaining('streak', findRichText: true), findsNothing);
       expect(find.textContaining('grace', findRichText: true), findsNothing);
+      // Finished long ago: its divider, as for an aliyah, over its name.
+      expect(find.byType(ParshaRings), findsNothing);
+      expect(find.byType(SeferDivider), findsOneWidget);
+      expect(find.text('בְּרֵאשִׁית'), findsOneWidget);
+      expect(find.textContaining('shalom'), findsNothing, reason: 'Thursday is not the eve of Shabbat');
     });
 
     testWidgets('after Shabbat says it still counts', (tester) async {
@@ -309,6 +431,7 @@ void main() {
 
       expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
       expect(_standing(tester, WeekStatus.late), 'After Shabbat\u00A0— and it still counts. Your streak continues.');
+      expect(find.textContaining('shalom'), findsNothing);
     });
 
     testWidgets('at twice the text size, keeps each part of the standing line whole, and gives the buttons room',
@@ -372,6 +495,29 @@ void main() {
     expect(shown(), 1);
   });
 
+  testWidgets("the parsha's rings close, then its name and the rest fade in as the last arc lands", (tester) async {
+    await _finish(
+      tester,
+      aliyah: 6,
+      day: DateTime(2026, 10, 9, 10),
+      progress: _readThrough(5, partly: 6, on: _monday),
+      settle: false,
+    );
+    await tester.pump();
+    final fade = find.ancestor(of: find.text('בְּרֵאשִׁית'), matching: find.byType(FadeTransition)).first;
+    double shown() => tester.widget<FadeTransition>(fade).opacity.value;
+    // The name fades in with the title, beneath the rings, which are there
+    // from the start.
+    expect(find.descendant(of: fade, matching: find.text('Parshat Bereshit is complete')), findsOneWidget);
+    expect(find.descendant(of: fade, matching: find.byType(ParshaRings)), findsNothing);
+    expect(shown(), 0);
+    await tester.pump(Motion.ring);
+    expect(shown(), 0);
+    await tester.pump(Motion.short);
+    expect(shown(), 1);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('under Reduce Motion, the panel is simply there', (tester) async {
     await _finish(
       tester,
@@ -385,5 +531,20 @@ void main() {
     expect(tester.widget<SeferDivider>(find.byType(SeferDivider)).progress, 1);
     final fade = find.ancestor(of: find.text('Shlishi is complete'), matching: find.byType(FadeTransition)).first;
     expect(tester.widget<FadeTransition>(fade).opacity.value, 1);
+  });
+
+  testWidgets("under Reduce Motion, the parsha's panel is simply there too", (tester) async {
+    await _finish(
+      tester,
+      aliyah: 6,
+      day: DateTime(2026, 10, 9, 10),
+      progress: _readThrough(5, partly: 6, on: _monday),
+      settings: const AppSettings(reduceMotion: true),
+      settle: false,
+    );
+    await tester.pump();
+    final fade = find.ancestor(of: find.text('בְּרֵאשִׁית'), matching: find.byType(FadeTransition)).first;
+    expect(tester.widget<FadeTransition>(fade).opacity.value, 1);
+    expect(tester.binding.transientCallbackCount, 0, reason: 'nothing moves, the rings included');
   });
 }

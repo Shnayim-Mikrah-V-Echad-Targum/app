@@ -364,8 +364,16 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     _framed.clear();
   }
 
+  // The parsha's moment (§8): its rings close over Motion.ring (ParshaRings
+  // sweeps them), then the frame's rule draws over Motion.frame.
   late final AnimationController _frame = AnimationController(vsync: this, value: 1);
-  late final Animation<double> _draw = CurvedAnimation(parent: _frame, curve: Motion.standard);
+  late final Animation<double> _draw = CurvedAnimation(
+    parent: _frame,
+    curve: Interval(_ringsShare, 1, curve: Motion.standard),
+  );
+
+  /// The share of the moment the rings take, before the rule draws.
+  static final _ringsShare = Motion.ring.inMilliseconds / (Motion.ring + Motion.frame).inMilliseconds;
 
   /// Whether the frame has yet to draw itself: set while the hero is hidden
   /// (a route covers it, or its tab is in the background), so that it waits
@@ -413,7 +421,7 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     if (!_pending || !TickerMode.valuesOf(context).enabled) return;
     _pending = false;
     _framed.add(ctx.id);
-    final duration = Motion.of(context).d(Motion.frame);
+    final duration = Motion.of(context).d(Motion.ring + Motion.frame);
     if (duration == Duration.zero) {
       _frame.value = 1;
     } else {
@@ -525,7 +533,7 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
         const SeferDivider(),
         const Gap(Space.lg),
         if (complete)
-          ..._complete(context)
+          ..._complete(context, thirdLabel: thirdLabel)
         else ...[
           _HeroRings(ctx: ctx, thirdLabel: thirdLabel),
           // On the fast, the rings and the way to the aliyot alone.
@@ -562,15 +570,25 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     );
   }
 
-  /// The complete week: a word that it is, a gentle line, and what is left
-  /// to do with it, the haftarah and the discussion (on a quiet fast, which
-  /// invites no study, nothing).
-  List<Widget> _complete(BuildContext context) {
+  /// The complete week: its rings, closed, a word that it is, a gentle line,
+  /// and what is left to do with it, the haftarah and the discussion (on a
+  /// quiet fast, which invites no study, nothing).
+  List<Widget> _complete(BuildContext context, {required String? thirdLabel}) {
     final l = context.l10n;
     final theme = Theme.of(context);
     final settings = widget.settings;
     final haftarah = (settings.haftarahEnabled || ctx.haftarahRequired) && ctx.progress.haftarah == null;
     return [
+      // Without a legend: every count is seven of seven, as their label says.
+      Center(
+        child: ParshaRings(
+          size: ParshaRings.header,
+          progress: ctx.progress,
+          aliyahWeights: ctx.aliyahVerses,
+          thirdLabel: thirdLabel,
+        ),
+      ),
+      const Gap(Space.lg),
       BalancedText(l.weekComplete, style: theme.textTheme.titleLarge, bySentence: true),
       const Gap(Space.xs),
       BalancedText(

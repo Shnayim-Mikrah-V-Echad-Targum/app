@@ -276,6 +276,8 @@ const _screens = {
   'reader_finished_week': '/read/5787:1/6',
   // Shevi'i just finished on the Sunday after: the parsha, after Shabbat.
   'reader_finished_late': '/read/5787:1/6',
+  // Shevi'i of Naso 5787 just finished on Erev Shavuot: Chag sameach.
+  'reader_finished_chag': '/read/5787:35/6',
   'reader_full': '/read/5787:1/2?mode=full',
   // Its end, with the button that marks the aliyah read.
   'reader_full_end': '/read/5787:1/2?mode=full',
@@ -730,6 +732,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_finished_erev': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, plan: ReadingPlanType.sheviiOnShabbat),
   'reader_finished_week': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_finished_late': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
+  'reader_finished_chag': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'reader_listen': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   'reader_listen_focus': (s) => s.copyWith(focusMode: true),
@@ -936,6 +939,8 @@ final _screenNow = <String, DateTime>{
   'welcome_plan_tisha_bav': DateTime(2027, 8, 12, 11),
   'reader_finished_day': DateTime(2026, 10, 7, 11),
   'reader_finished_late': DateTime(2026, 10, 11, 11),
+  // Thursday 10 June 2027, Erev Shavuot.
+  'reader_finished_chag': DateTime(2027, 6, 10, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
@@ -1059,6 +1064,18 @@ final _screenProgress = <String, ProgressState Function()>{
   'reader_finished_erev': () => _readThrough(4, partly: 5),
   'reader_finished_week': () => _readThrough(5, partly: 6),
   'reader_finished_late': () => _readThrough(5, partly: 6),
+  'reader_finished_chag': () {
+    final day = LocalDate(2027, 6, 10);
+    var w = WeekProgress(weekId: '5787:35');
+    for (var a = 0; a < 6; a++) {
+      w = w.withAliyah(a, day.addDays(a ~/ 2 - 3));
+    }
+    w = w
+        .withUnit(6, ReadingPass.mikra1, day)
+        .withUnit(6, ReadingPass.mikra2, day)
+        .withPosition(6, const [99, 99, 0]);
+    return ProgressState(weeks: {'5787:35': w});
+  },
 };
 
 /// A reader in their second year, with Bereshit 5787 as in [_progress].
@@ -1420,6 +1437,7 @@ final _taps = {
     'reader_finished_erev',
     'reader_finished_week',
     'reader_finished_late',
+    'reader_finished_chag',
   ])
     screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(PaperRow, Icons.forum_outlined),
@@ -2705,11 +2723,13 @@ void main() {
           }
           if (_taps[entry.key] case final target?) {
             await tester.tap(target());
-            // Long enough for a snackbar to appear, not to leave again, and
-            // for the focus to move where it is moved after a frame.
+            // Long enough for a snackbar to appear, not to leave again, for
+            // the focus to move where it is moved after a frame, and for the
+            // finished panel's moment to end (the parsha's rings close over
+            // 600 ms, then its title fades in over 150).
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 500));
-            await tester.pump(const Duration(milliseconds: 200));
+            await tester.pump(const Duration(milliseconds: 300));
           }
           await _write(tester, '${mode.tag}_${entry.key}');
         } finally {

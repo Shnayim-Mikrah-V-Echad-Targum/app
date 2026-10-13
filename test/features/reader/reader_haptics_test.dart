@@ -9,14 +9,34 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/services/tts.dart';
+import 'package:shnayim_mikra/ui/theme/motion.dart';
 
 import '../../helpers.dart';
 
 // The guided reader's haptics (DESIGN_SYSTEM.md §8, Haptics): a step's tick
 // for each Next, and the finish's haptic alone for the press that finishes
-// the aliyah. In the week of Bereshit 5787, on its Monday.
+// the aliyah; for the parsha, the celebrate haptic, once, as its rings close.
+// In the week of Bereshit 5787, on its Monday.
 
 const _step = 'HapticFeedbackType.selectionClick';
+
+/// HapticFeedback.vibrate(), Android's celebrate haptic.
+const _celebrate = 'vibrate';
+
+/// Bereshit with every aliyah read but Shevi'i, whose Hebrew is read twice:
+/// its Targum finishes the week (with no repeat of its last verse after it).
+ProgressState _allButShevii() {
+  var week = WeekProgress(weekId: '5787:1');
+  for (var a = 0; a < 6; a++) {
+    week = week.withAliyah(a, LocalDate(2026, 10, 5));
+  }
+  final on = LocalDate(2026, 10, 5);
+  week = week
+      .withUnit(6, ReadingPass.mikra1, on)
+      .withUnit(6, ReadingPass.mikra2, on)
+      .withPosition(6, const [99, 99, 0]);
+  return ProgressState(weeks: {'5787:1': week});
+}
 
 /// The haptics sent to the platform from now on, each by its type as
 /// HapticFeedback sends it ('vibrate' for HapticFeedback.vibrate()).
@@ -32,10 +52,11 @@ List<String> _recordHaptics(WidgetTester tester) {
 }
 
 /// Opens aliyah [aliyah] of Bereshit, read aliyah by aliyah (Mikra, Mikra,
-/// Targum), with [progress] and [settings].
+/// Targum), with [progress] and [settings]; in the full text if [full].
 Future<ProviderContainer> _open(
   WidgetTester tester, {
   int aliyah = 0,
+  bool full = false,
   ProgressState? progress,
   AppSettings settings = const AppSettings(),
   TtsService? tts,
@@ -55,7 +76,7 @@ Future<ProviderContainer> _open(
     progress: progress,
     overrides: [if (tts != null) ttsProvider.overrideWithValue(tts)],
   );
-  c.read(routerProvider).go('/read/5787:1/$aliyah');
+  c.read(routerProvider).go('/read/5787:1/$aliyah${full ? '?mode=full' : ''}');
   await tester.pump();
   await tester.pump();
   for (var i = 0; i < 20 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
@@ -95,30 +116,103 @@ void main() {
     variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
   );
 
-  testWidgets('the press that finishes the parsha gives one haptic, and no step tick', (tester) async {
-    // Every aliyah read but Shevi'i, whose Hebrew is read twice: its Targum
-    // finishes the week (with no repeat of its last verse after it).
-    var week = WeekProgress(weekId: '5787:1');
-    for (var a = 0; a < 6; a++) {
-      week = week.withAliyah(a, LocalDate(2026, 10, 5));
-    }
-    final on = LocalDate(2026, 10, 5);
-    week = week
-        .withUnit(6, ReadingPass.mikra1, on)
-        .withUnit(6, ReadingPass.mikra2, on)
-        .withPosition(6, const [99, 99, 0]);
-    final c = await _open(
+  testWidgets(
+    'the press that finishes the parsha gives the celebrate haptic alone, as the rings close, and once',
+    (tester) async {
+      final celebrate = switch (defaultTargetPlatform) {
+        TargetPlatform.iOS => 'HapticFeedbackType.successNotification',
+        _ => _celebrate,
+      };
+      final c = await _open(
+        tester,
+        aliyah: 6,
+        progress: _allButShevii(),
+        settings: const AppSettings().withRepeatLastVerse(false),
+      );
+      final sent = _recordHaptics(tester);
+
+      await tester.tap(find.text('Finish'));
+      await tester.pump();
+      expect(c.read(progressProvider).week('5787:1').isComplete, isTrue);
+      expect(sent, isEmpty, reason: 'neither a step nor a success at the press');
+      await tester.pump(Motion.ring - const Duration(milliseconds: 20));
+      expect(sent, isEmpty, reason: 'the rings are still closing');
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(sent, [celebrate]);
+      await tester.pumpAndSettle();
+      expect(sent, [celebrate]);
+
+      // Back to the Targum (Alt+↑, as the panel has no Back), and finished
+      // again: an aliyah's success.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      await tester.pumpAndSettle();
+      expect(find.text('Finish'), findsOneWidget);
+      sent.clear();
+      await _press(tester, 'Finish');
+      expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
+      expect(sent, [
+        if (defaultTargetPlatform == TargetPlatform.iOS) 'HapticFeedbackType.mediumImpact' else 'HapticFeedbackType.lightImpact',
+      ]);
+    },
+    variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
+  );
+
+  testWidgets('under Reduce Motion, the celebrate haptic comes at once', (tester) async {
+    await _open(
       tester,
       aliyah: 6,
-      progress: ProgressState(weeks: {'5787:1': week}),
+      progress: _allButShevii(),
+      settings: const AppSettings(reduceMotion: true).withRepeatLastVerse(false),
+    );
+    final sent = _recordHaptics(tester);
+
+    await tester.tap(find.text('Finish'));
+    await tester.pump();
+    expect(sent, [_celebrate]);
+    await tester.pumpAndSettle();
+    expect(sent, [_celebrate]);
+  });
+
+  testWidgets('Mark as read that finishes the parsha celebrates once: at the press in the full text', (tester) async {
+    await _open(
+      tester,
+      aliyah: 6,
+      full: true,
+      progress: _allButShevii(),
       settings: const AppSettings().withRepeatLastVerse(false),
     );
     final sent = _recordHaptics(tester);
 
-    await _press(tester, 'Finish');
-    expect(c.read(progressProvider).week('5787:1').isComplete, isTrue);
-    expect(sent, hasLength(1));
-    expect(sent, isNot(contains(_step)));
+    await tester.tap(find.byTooltip('More options'));
+    await tester.pumpAndSettle();
+    // The menu's, over the button at the aliyah's end.
+    await tester.tap(find.text('Mark this aliyah as read').last);
+    await tester.pump();
+    expect(sent, [_celebrate], reason: 'no finished panel shows it');
+    await tester.pumpAndSettle();
+    expect(sent, [_celebrate]);
+  });
+
+  testWidgets('Mark as read that finishes the parsha celebrates once: as the panel’s rings close in the guided reader',
+      (tester) async {
+    await _open(
+      tester,
+      aliyah: 6,
+      progress: _allButShevii(),
+      settings: const AppSettings().withRepeatLastVerse(false),
+    );
+    final sent = _recordHaptics(tester);
+
+    await tester.tap(find.byTooltip('More options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark this aliyah as read'));
+    await tester.pump();
+    expect(sent, isEmpty);
+    await tester.pumpAndSettle();
+    expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
+    expect(sent, [_celebrate]);
   });
 
   testWidgets('Listen along going on by itself gives none; the reader’s Finish does', (tester) async {

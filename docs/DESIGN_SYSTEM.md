@@ -113,7 +113,7 @@ New and changed files:
 1. **Techelet (`primary`)** is used for:
    - buttons, links, the selected tab and indicators;
    - Mikra progress and the focus ring;
-   - the Hebrew display title of a parsha (the Today hero, the Parsha header and Welcome/About).
+   - the Hebrew display title of a parsha (the Today hero, the Parsha header, the finished parsha panel and Welcome/About).
    It is used for no other text: no section headers, chapter heads or verse numbers.
 2. **Gold ink (`secondary`)** is the rubric colour: eyebrows, verse numbers, chapter heads, petuchah/setumah marks, the Targum pass, overdue state and rest days. Gold is never used for buttons.
 3. **goldLeaf** is decorative only: frame rules, lozenges, the Targum rule in full-text mode. It never carries information. In high contrast it becomes solid `secondary`, or `outline` or nothing where noted.
@@ -685,7 +685,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - Centre: "2/7" in ringNumeral, plus "aliyot" in labelSmall onSurfaceVariant, scaled down as needed to fit the square inscribed in the hole (with 5% clearance), so large, bold or accessibility-font text never reaches the Targum ring.
 - Wrap in RepaintBoundary. Existing semantics stay.
 
-**RingLegend** (always beside or under rings of size 88 or more)
+**RingLegend** (always beside or under rings of size 88 or more, but for closed rings, which need none: in the finished parsha panel (§6.23) and Today's complete state (§9 Today, 3), every count is seven of seven, as the rings' label says)
 - Three rows, each 24 high: a 9 px dot in the ring colour, a 10 gap, the label in bodyMedium (`passMikra1`, `passMikra2`, `passTargum`/`passRashi`), and the count end-aligned "3 of 7" in bodyMedium onSurfaceVariant with tabular figures.
 - In high contrast a 16 px key (`RingKey`) takes each dot's place, then an 8 gap, so it never runs into the name (the names start 5 further in than beside a dot; two themes are never seen side by side). It names each ring by its position as well as its shade: three concentric rings, the row's own stroked 2 px in its colour and the other two 1 px in onSurface. Each edge falls a whole pixel from the centre, which is set on a corner of the device's pixels, so at 1x no stroke smears into grey over two pixels and a pixel stands clear between rings: a 1 px ring spans 7–8, 4–5 and 2–3 px from the centre (radii 7.5, 4.5, 2.5), and the row's own 6–8, 4–6 and 1–3 (radii 7, 5, 2).
 - Excluded from semantics: the rings' label already says it.
@@ -904,15 +904,18 @@ Centred, max width 320, 40 top padding:
 ### 6.23 Finished panel (reader_screen.dart `_FinishedPanel`; replaces the celebration icon)
 
 Centred, max width 480:
-1. SeferDivider at 200 wide (animated, §8).
-2. 16 gap, then the title in headlineMedium (displaySmall from 600 dp): `aliyahDoneTitle`, "Revi’i is complete". The warmer `aliyahComplete` ("Yasher koach! Revi’i is complete.") is what is spoken, by the announcement or, where the platform takes none, the title's live region.
+1. SeferDivider at 200 wide (animated, §8); for the parsha completed just now, its rings (6).
+2. 16 gap, then the title in headlineMedium (displaySmall from 600 dp), its lines balanced (`BalancedText`) where it wraps, as at large text: `aliyahDoneTitle`, "Revi’i is complete". The warmer `aliyahComplete` ("Yasher koach! Revi’i is complete.") is what is spoken, by the announcement or, where the platform takes none, the title's live region.
 3. 8 gap, then a marginalia line about the aliyah to continue with (the first after this one not yet read, then the first before it): `nextAliyahLength`, "Chamishi is 31 verses."
 4. 24 gap, then actions: Filled "Next aliyah · Chamishi" (52 high, a trailing chevron) and Text "Done". The first button takes the focus.
    - Large text: each button keeps room around a label that wraps, as Today's do (`AppButtons.roomy`: (24, 12, 6) for a Filled or Tonal one, (12, 8, 4) with 8 above and below for a Text one), and a Filled or Tonal one's icon grows with its label, to 1.6 times its size. The panel's gaps (4, 8 and 24) grow with the text up to 1.5 times.
-5. Once everything planned for today and before is read, with the parsha unfinished, a marginalia line comes first: `todayReadingDone`, "That’s today’s reading. See you tomorrow." (or "See you on Sunday." when the next day with reading is later; a day whose aliyot were read ahead has none left), or on the plan's last day `erevShabbatDone`, "That’s this week’s reading. Shabbat shalom!" ("The rest is for Shabbat morning." when the plan leaves aliyot for it, and "Chag sameach!" when Yom Tov begins the next day). Done is then the Filled button, and continuing a Text "Keep going: Chamishi". While anything planned is still unread, the panel stays as in 4.
+5. Once everything planned for today and before is read, with the parsha unfinished, a marginalia line comes first: `todayReadingDone`, "That’s today’s reading. See you tomorrow." (or "See you on Sunday." when the next day with reading is later; a day whose aliyot were read ahead has none left), or on the plan's last day `erevShabbatDone`, "That’s this week’s reading. Shabbat shalom!" ("The rest is for Shabbat morning." when the plan leaves aliyot for it; "Chag sameach!" when Yom Tov that is not Shabbat begins the next day, and "Shanah tovah!" or "G’mar chatimah tovah!" when Rosh Hashanah or Yom Kippur does, Shabbat or not). Done is then the Filled button, and continuing a Text "Keep going: Chamishi". While anything planned is still unread, the panel stays as in 4.
 6. When the parsha is complete:
-   - the title becomes `parshaDoneTitle`, "Parshat Bereshit is complete" (`parshaComplete` is spoken);
+   - completed just now (by this finish, not stepped through again), ParshaRings at 88 replace the divider, centred, closed, with no legend (§6.11) and excluded from semantics, as `parshaComplete` says it: they sweep from what Today or the week's page last showed in this run, and show closed after a cold start or a link straight to the reader (§8). Then 12 below them;
+   - the parsha's pointed name (`Names.portionPointed`), centred, in hebrewDisplay primary, 36/48 (44/56 from 600 dp; w700 in high contrast), its words whole, for the eye alone, then 4 below it;
+   - the title, a size smaller under the name, in headlineSmall (headlineMedium from 600 dp), its lines balanced (`BalancedText`): `parshaDoneTitle`, "Parshat Bereshit is complete"; in the Hebrew UI `parshaDoneTitleShort`, "הפרשה הושלמה", so that the name isn't repeated beneath itself, though the heading's label still names it ("פרשת בראשית הושלמה"; `parshaComplete` is spoken);
    - a status line, bodyMedium onSurfaceVariant after the status's icon in its colour (§6.14), says how the week stands, from its WeekEvaluation: on time, "On time · 3-week parsha streak · +1 grace day" (the grace day only when finishing earned one; the streak and the grace day are left out while streak numbers are hidden, and when the finish completed nothing new, as stepping again through a parsha read weeks ago, which shows the plain status); late, "After Shabbat — and it still counts. Your streak continues."; finished with the next parsha, "Finished together with the next parsha — your streak continues.". Where it takes more than a line, as with large text, a line breaks between the on-time line's parts (`DotLine`), never inside one or before a dot ("On time" over "1-week parsha streak" over "+1 grace day" at 200%), and a sentence's lines are balanced (`BalancedText`), its dash held to the word before it; the icon (18, growing with the text to 1.6 times) is centred on the first line, the lines after it start under the first, and the whole is centred in the panel, read as one line;
+   - on the eve of Shabbat or Yom Tov (`JewishHolidays.isRestDay(today + 1)`, by the reader's days of Yom Tov), a marginalia line, centred, 8 below: `restGreeting`, the next day's own greeting, chosen as `erevShabbatDone`'s (5): "Shanah tovah!" before Rosh Hashanah and "G’mar chatimah tovah!" before Yom Kippur, on Shabbat too, as Today's title page greets those days; "Chag sameach!" before another Yom Tov that is not Shabbat; otherwise "Shabbat shalom!". There is none on any other day, Tisha B'Av among them, which is never the eve of Shabbat or Yom Tov;
    - a Tonal "Read the haftarah" (if enabled and not read) over a Text "Done", or else a Filled "Done".
 
 **Sefer complete** (`lib/features/reader/sefer_complete_screen.dart`, `/celebrate/sefer:5787:0`): a one-time full-screen page, centred, max width 480. SeferDivider, then "חֲזַק חֲזַק וְנִתְחַזֵּק" in hebrewDisplay 40/56 primary, untranslated (a level-1 heading, read from its letters), then SeferDivider, then bodyMedium onSurfaceVariant `seferDoneBody`, "Genesis complete — 1,533 verses, twice, with Targum.", then a Filled "Continue". It fades in over 400 ms (at once under Reduce Motion) and never auto-dismisses.
@@ -1138,7 +1141,9 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 
 **Completion moments** (once each, silent, no confetti)
 - Aliyah: the SeferDivider hairlines draw outward from the lozenge over 400 ms, then the title fades in over 150 ms; `hapticSuccess`.
-- Parsha: the hero's inner goldLeaf frame rule draws around the card once over 900 ms (`PathMetric.extractPath`), then stays static. It draws when the week is finished while the app is open (the hero has shown it unfinished in this run), once per week, and waits until the hero can be seen; a restarted app shows it static, as the rings show progress without a sweep.
+- Parsha, in the reader (§6.23): its rings close over 600 ms (the sweep above, from what Today or the week's page last showed in this run; closed at once after a cold start or a link straight to the reader), then the name, the title and the rest fade in over 150 ms as the last arc lands; `hapticCelebrate` as the rings close, in place of the success.
+- Parsha, on Today: the rings close (600 ms), then the hero's inner goldLeaf frame rule draws around the card once over 900 ms (`PathMetric.extractPath`), then stays static. It draws when the week is finished while the app is open (the hero has shown it unfinished in this run), once per week, and waits until the hero can be seen; a restarted app shows it static, as the rings show progress without a sweep. The rings close once: finished in the reader, they are closed already when Today is seen again, and the rule draws after the same pause. In high contrast, which has no frame rule, the closing rings are the moment.
+- Under Reduce Motion, each is whole at once: the rings closed, the frame drawn, the panel there, and its haptic at once.
 - Sefer: a panel fade of 400 ms.
 
 **Haptics** (`lib/services/feedback.dart`): three levels, each firmer than the last, so that a finish never feels like a Next.
@@ -1147,9 +1152,9 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 |---|---|---|---|
 | Step (`hapticStep`) | Next, in the guided reader | `selectionClick` | `selectionClick` (CLOCK_TICK, a tick) |
 | Success (`hapticSuccess`) | Reading recorded: an aliyah finished, Mark as read (the reader's and the week page's), the whole week marked, a check-in or the printed Chumash logged, the haftarah marked read | `mediumImpact` | `lightImpact` (VIRTUAL_KEY, a click) |
-| Celebrate (`hapticCelebrate`) | A parsha or a book finished, once | `successNotification` | `vibrate` (LONG_PRESS, a heavy click) |
+| Celebrate (`hapticCelebrate`) | A parsha or a book finished, once: in the reader, as the finished panel's rings close (at once under Reduce Motion), or at the press of Mark as read in the full text, where no panel shows it | `successNotification` | `vibrate` (LONG_PRESS, a heavy click) |
 
-- One press, one haptic: the press that finishes an aliyah gives its success alone, not a step as well.
+- One press, one haptic: the press that finishes an aliyah gives its success alone, not a step as well, and the press that finishes the parsha its celebrate alone, as the rings close, not a success first. The parsha is celebrated once a visit: stepped back into from the panel and finished again, it gives an aliyah's success.
 - Only for what the reader pressed: none for Listen along going on by itself, a page opening, a sync or a reminder.
 - Android's `mediumImpact` plays the same click as `lightImpact`, and `heavyImpact` a lighter tick (CONTEXT_CLICK), so neither is used there.
 - All off with Haptic feedback (Settings → Accessibility), and none on the web or a desktop. The system's own setting holds too: Android and iOS play nothing where it is off.
@@ -1192,7 +1197,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
      - It routes to `/read/{id}/{next}`; the reader already resumes via `flow.resumeFrom` (reader_screen.dart:318-319). If a unit was marked done without saved positions, derive positions from `isUnitDone` so it resumes at the first unread pass. The guided reader then starts each chunk past the readings of the Hebrew done before it was opened (`ReaderFlow.entryStep`), so "Continue · Shlishi, Targum" goes on from Targum to Targum, and Back retraces that way.
    - **Tisha B'Av** with no reading planned on it: no Filled button, nor the gap above it; the rings, the legend and `allAliyot` stay, so the frame ends under the link. Torah study is set aside on the fast but for the passages of mourning (SA OC 554:1), so nothing on the page invites reading.
    - Delete the outlined "2 of 7 aliyot" button (D10).
-   - **Complete state:** the rings and CTA are replaced by the animated frame (§8), titleLarge `weekComplete`, and a marginalia line, `weekCompleteNote` ("Ready to hear it read on Shabbat."; `weekCompleteNoteSimchatTorah` for Vezot HaBerachah). Add a Tonal `readTheHaftarah` if the haftarah is shown and not yet read, and a TextButton.icon `forum_outlined` `discussTheParsha` (its spinner in the icon's place while the discussion opens). On a quiet Tisha B'Av, neither button: the marginalia line ends the page.
+   - **Complete state:** the rings group and CTA are replaced by ParshaRings at 88, centred and closed, with no legend (§6.11) but their label, then 16 below them titleLarge `weekComplete`, within the animated frame (§8: the rings close, then the rule draws), and a marginalia line, `weekCompleteNote` ("Ready to hear it read on Shabbat."; `weekCompleteNoteSimchatTorah` for Vezot HaBerachah). Add a Tonal `readTheHaftarah` if the haftarah is shown and not yet read, and a TextButton.icon `forum_outlined` `discussTheParsha` (its spinner in the icon's place while the discussion opens). On a quiet Tisha B'Av, neither button: the marginalia line ends the page.
    - Centred lines of more than one sentence (`weekComplete`, `restDayBody`) that don't fit on one line give each sentence a line or more of its own, and every centred line that wraps is set as narrow as its number of lines allows, so that no word stands alone on the last line.
 4. **Today card** (start-aligned):
    - Eyebrow `todayReadingTitle`, then headlineSmall `names.aliyot(day.aliyot)`, then bodyMedium onSurfaceVariant the verses and minutes of what is left of it (the aliyot not yet read), a line of parts (`DotLine`, 1), as is the catching-up line of facts below.
@@ -1599,6 +1604,8 @@ In order:
 | tabRead / tabPartial / tabNotStarted | read / {done} of 3 readings done / not started | נקראה / {done} מתוך 3 קריאות / טרם התחילה |
 | uiFontSystem | Device font | גופן המכשיר |
 | rashiScript | Rashi script | כתב רש״י |
+| parshaDoneTitleShort | The parsha is complete (used only by the Hebrew UI) | הפרשה הושלמה |
+| restGreeting | select: Chag sameach! / Shanah tovah! / G’mar chatimah tovah! / Shabbat shalom! | select: חג שמח! / שנה טובה! / גמר חתימה טובה! / שבת שלום! |
 
 **Changed values**
 - `todayBehind` (Sunday to Wednesday only; it counts every aliyah the card names, today's included):
@@ -1618,6 +1625,7 @@ In order:
 - Thanks are counted in words that agree with one: `todahCount` "Thanked once" / "Thanked {count} times", under one's own post; on the Todah button, whose name holds the digits it shows, `todahButtonCount` "Thanked 1 time" / "Thanked {count} times" ("תודה 1" / "{count} תודות"); in a forum row's lowercase list, `threadThanksCount` "thanked 12 times", the count held to "times" by a no-break space and nothing more, so that at 300% on a phone the row's line can break after "thanked". The shortcut `shortcutLogFromBook` is "Log a Chumash reading" / "רישום קריאה מתוך חומש", within the 25 characters a launcher shows.
 - `guideTitle`: "How it works" / "איך זה עובד".
 - `settingsAbout`: "About this app" / "אודות האפליקציה".
+- `erevShabbatDone` and `erevShabbatDoneMorning` greet the next day as `restGreeting` does: their select gains `roshHashanah` ("Shanah tovah!" / "שנה טובה!") and `yomKippur` ("G’mar chatimah tovah!" / "גמר חתימה טובה!") beside `chag` and Shabbat's `other`. Each greeting is held together by no-break spaces.
 
 The literal "חֲזַק חֲזַק וְנִתְחַזֵּק" is not translated.
 

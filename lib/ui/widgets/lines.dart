@@ -456,6 +456,7 @@ class BalancedText extends StatelessWidget {
     this.textAlign = TextAlign.center,
     this.bySentence = false,
     this.holdDashes = false,
+    this.semanticsLabel,
   });
 
   final String text;
@@ -464,13 +465,22 @@ class BalancedText extends StatelessWidget {
   final bool bySentence;
   final bool holdDashes;
 
+  /// What a screen reader says instead of [text], as [Text.semanticsLabel].
+  final String? semanticsLabel;
+
   static final _sentenceBreak = RegExp(r'(?<=[.?!])\s+(?=\S)');
 
   @override
   Widget build(BuildContext context) {
     Widget balanced(String text) => _Balanced(
           centred: textAlign == TextAlign.center,
-          child: WholeWords(text, style: style, textAlign: textAlign, breakAtHyphens: true),
+          child: WholeWords(
+            text,
+            style: style,
+            textAlign: textAlign,
+            breakAtHyphens: true,
+            semanticsLabel: semanticsLabel,
+          ),
         );
 
     final held = holdDashes ? dashHeldToWord(text) : text;
@@ -502,7 +512,7 @@ class BalancedText extends StatelessWidget {
       if (oneLine) return balanced(text);
       return Semantics(
         // One text for screen readers, as it is written.
-        label: text,
+        label: semanticsLabel ?? text,
         excludeSemantics: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

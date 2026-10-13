@@ -3258,6 +3258,20 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get parshaDoneTitleShort => 'הפרשה הושלמה';
+
+  @override
+  String restGreeting(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'חג שמח!',
+      'roshHashanah': 'שנה טובה!',
+      'yomKippur': 'גמר חתימה טובה!',
+      'other': 'שבת שלום!',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String nextAliyahLength(String aliyah, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3290,6 +3304,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String erevShabbatDone(String greeting) {
     String _temp0 = intl.Intl.selectLogic(greeting, {
       'chag': 'חג שמח!',
+      'roshHashanah': 'שנה טובה!',
+      'yomKippur': 'גמר חתימה טובה!',
       'other': 'שבת שלום!',
     });
     return 'זו הקריאה של השבוע. $_temp0';
@@ -3299,6 +3315,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String erevShabbatDoneMorning(String greeting) {
     String _temp0 = intl.Intl.selectLogic(greeting, {
       'chag': 'חג שמח!',
+      'roshHashanah': 'שנה טובה!',
+      'yomKippur': 'גמר חתימה טובה!',
       'other': 'שבת שלום!',
     });
     return 'את השאר קוראים בשבת בבוקר. $_temp0';
