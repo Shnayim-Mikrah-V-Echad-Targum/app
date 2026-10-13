@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
-import 'package:shnayim_mikra/features/progress/domain/milestones.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/features/progress/domain/milestones.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/progress/domain/streak_engine.dart';
 
 void main() {
   /// Weeks [ids] read whole on [on].
@@ -72,7 +72,7 @@ void main() {
       final progress = {
         ...yearFrom(5786, 1, start),
         // The new year begun, with nothing finished in it yet.
-        '5787:1': WeekProgress(weekId: '5787:1').withUnit(0, ReadingPass.mikra1, LocalDate(2026, 10, 5)),
+        '5787:1': WeekProgress(weekId: '5787:1').withUnit(0, ReadingPass.mikrah1, LocalDate(2026, 10, 5)),
       };
       final all = milestonesOf(progress);
       final siyum = achieved(all, MilestoneKind.siyum).single;

@@ -146,7 +146,7 @@ abstract final class TorahSpelling {
 }
 
 /// The layers search reads, in the order a result shows them.
-const searchLayers = [TextLayer.mikra, TextLayer.onkelos, TextLayer.english];
+const searchLayers = [TextLayer.mikrah, TextLayer.onkelos, TextLayer.english];
 
 /// A search shorter than this, in letters, would match nearly every verse.
 const kMinSearchLength = 2;
@@ -266,7 +266,7 @@ class LayerSnippet {
   final TextLayer layer;
   final Snippet snippet;
 
-  /// For the Mikra and the Targum, the same words of the verse with all its
+  /// For the Mikrah and the Targum, the same words of the verse with all its
   /// marks, as a screen reader speaks the reader's verses: vowels whether or
   /// not they are shown, which tell how the Name is read, and cantillation
   /// for those who ask for every mark. Empty for the translation.
@@ -316,7 +316,7 @@ class SearchResults {
 /// The verses of one book in one layer, as read aloud and folded for search.
 typedef _BookLayer = ({List<int> chapterLengths, List<String> texts, List<String> keys});
 
-/// Every verse of the Torah in Mikra, Targum Onkelos and the translation,
+/// Every verse of the Torah in Mikrah, Targum Onkelos and the translation,
 /// folded for search ([SearchText.fold]).
 class VerseIndex {
   VerseIndex._(this._books, this._refs, this._texts, this._keys);
@@ -376,7 +376,7 @@ class VerseIndex {
   int get length => _refs.length;
 
   /// The verses that hold [query], in the Torah's order: at most [limit] of
-  /// them, and how many there are in all. A Hebrew search reads the Mikra and
+  /// them, and how many there are in all. A Hebrew search reads the Mikrah and
   /// the Targum, any other the translation. The Hebrew of a result has its
   /// vowels if [nikud], and never its cantillation.
   ///
@@ -401,7 +401,7 @@ class VerseIndex {
   /// The verses that hold [q], folded, as [search] finds them.
   ({List<VerseHit> hits, int total}) _search(String q, {required int limit, required bool nikud}) {
     final hebrew = SearchText.hasHebrew(q);
-    final layers = hebrew ? const [TextLayer.mikra, TextLayer.onkelos] : const [TextLayer.english];
+    final layers = hebrew ? const [TextLayer.mikrah, TextLayer.onkelos] : const [TextLayer.english];
     final hits = <VerseHit>[];
     var total = 0;
     for (var i = 0; i < _refs.length; i++) {
@@ -414,7 +414,7 @@ class VerseIndex {
       if (hits.length >= limit) continue;
       hits.add(VerseHit(_books[i], _refs[i], [
         // A verse found only in its Targum still shows the verse first.
-        if (hebrew && found.first != TextLayer.mikra) _snippet(TextLayer.mikra, i, null, nikud),
+        if (hebrew && found.first != TextLayer.mikrah) _snippet(TextLayer.mikrah, i, null, nikud),
         for (final layer in found) _snippet(layer, i, q, nikud),
       ]));
     }
@@ -427,13 +427,13 @@ class VerseIndex {
   /// Torah has it with the fewest left out, and of those, in the most
   /// verses. Null if the Torah has it in none of these ways.
   String? _torahSpelling(String q) {
-    final mikra = _keys[TextLayer.mikra]!;
+    final mikrah = _keys[TextLayer.mikrah]!;
     final collapsed = TorahSpelling.collapse(q);
-    if (collapsed != q && mikra.any((key) => key.contains(collapsed))) return collapsed;
+    if (collapsed != q && mikrah.any((key) => key.contains(collapsed))) return collapsed;
     final pattern = TorahSpelling.optional(collapsed);
     if (pattern == null) return null;
     final verses = <String, int>{};
-    for (final key in mikra) {
+    for (final key in mikrah) {
       for (final spelling in {for (final m in pattern.allMatches(key)) m[0]!}) {
         verses[spelling] = (verses[spelling] ?? 0) + 1;
       }

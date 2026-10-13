@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikrah/features/community/ui/community_ui.dart';
 
 void main() {
   const ltr = TextDirection.ltr;

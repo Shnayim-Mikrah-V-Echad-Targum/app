@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/data/parsha_repository.dart';
-import 'package:shnayim_mikra/features/parsha/week_context.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/data/parsha_repository.dart';
+import 'package:shnayim_mikrah/features/parsha/week_context.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 class _FixedToday extends TodayController {
   _FixedToday(this.day);
@@ -32,7 +32,7 @@ WeekProgress _bereshitProgress() {
   for (final p in ReadingPass.values) {
     w = w.withUnit(0, p, _mon).withUnit(1, p, _mon.addDays(1));
   }
-  return w.withUnit(2, ReadingPass.mikra1, _mon.addDays(2)).withUnit(2, ReadingPass.mikra2, _mon.addDays(2));
+  return w.withUnit(2, ReadingPass.mikrah1, _mon.addDays(2)).withUnit(2, ReadingPass.mikrah2, _mon.addDays(2));
 }
 
 void main() {
@@ -143,7 +143,7 @@ void main() {
       }
 
       final empty = WeekProgress(weekId: _bereshit);
-      expect(await nextWith(empty.withUnit(1, ReadingPass.mikra1, wed)), 1, reason: 'Sheni was begun');
+      expect(await nextWith(empty.withUnit(1, ReadingPass.mikrah1, wed)), 1, reason: 'Sheni was begun');
       var rest = empty;
       for (var a = 2; a < kAliyot; a++) {
         rest = rest.withAliyah(a, thu);

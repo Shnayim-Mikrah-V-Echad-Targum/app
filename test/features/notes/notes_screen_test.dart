@@ -5,22 +5,22 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/community/ui/compose_screen.dart';
-import 'package:shnayim_mikra/features/notes/domain/annotations.dart';
-import 'package:shnayim_mikra/features/notes/note_dialog.dart';
-import 'package:shnayim_mikra/features/notes/notes_screen.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/reader/verse_actions_sheet.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/backup.dart';
-import 'package:shnayim_mikra/features/settings/screens/data_settings_screen.dart';
-import 'package:shnayim_mikra/services/backup_files.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/community/ui/compose_screen.dart';
+import 'package:shnayim_mikrah/features/notes/domain/annotations.dart';
+import 'package:shnayim_mikrah/features/notes/note_dialog.dart';
+import 'package:shnayim_mikrah/features/notes/notes_screen.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/reader/verse_actions_sheet.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/backup.dart';
+import 'package:shnayim_mikrah/features/settings/screens/data_settings_screen.dart';
+import 'package:shnayim_mikrah/services/backup_files.dart';
 
 import '../../fake_backup_files.dart';
 import '../../helpers.dart';
@@ -238,7 +238,7 @@ void main() {
           final marks = find.byType(VerseMarks).first;
           final context = tester.element(marks);
           final styles = ScriptureStyles(context, const AppSettings(onboardingComplete: true));
-          final number = MediaQuery.textScalerOf(context).scale(styles.numberStyle(ScriptureKind.mikra).fontSize!);
+          final number = MediaQuery.textScalerOf(context).scale(styles.numberStyle(ScriptureKind.mikrah).fontSize!);
           // The ribbon stands 0.72 of the number's size, scaled once with it.
           expect(tester.getRect(marks).height, closeTo(0.72 * number, 0.5));
           if (!full) {
@@ -246,7 +246,7 @@ void main() {
             // to the verse than the margin keeps.
             final gutter = tester.getRect(find.ancestor(of: marks, matching: find.byType(SizedBox)).first);
             final clearance = MediaQuery.textScalerOf(context).scale(
-              ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikra),
+              ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikrah),
             );
             expect(tester.getRect(marks).left - gutter.left, greaterThanOrEqualTo(clearance - 0.5));
           }

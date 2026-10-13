@@ -52,7 +52,7 @@ describe('the texts', () => {
         }
       }
     }
-    assert.match(json.en.privacy[0].blocks[0].text, /^Shnayim Mikra is built to need as little/);
+    assert.match(json.en.privacy[0].blocks[0].text, /^Shnayim Mikrah is built to need as little/);
   });
 
   it('says that the opt-in backup holds the notes, which a reset leaves, in both languages', () => {

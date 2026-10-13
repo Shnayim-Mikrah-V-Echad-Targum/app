@@ -45,7 +45,7 @@ class TtsService {
   /// platform tells of 'focusLost' as a call or another app's audio takes
   /// over ([interruptions]).
   @visibleForTesting
-  static const audioSessionChannel = MethodChannel('shnayim_mikra/audio_session');
+  static const audioSessionChannel = MethodChannel('shnayim_mikrah/audio_session');
 
   // The service the platform's calls go to: the latest made.
   static TtsService? _sessionOwner;
@@ -403,7 +403,7 @@ class TtsService {
   /// replaced first (or has no items). While it is paused, it waits. It
   /// completes with an error if the engine can't speak.
   ///
-  /// [groups] gives the group each item belongs to (a verse, whose Mikra and
+  /// [groups] gives the group each item belongs to (a verse, whose Mikrah and
   /// Targum are two items), which [next] and [previous] move between; by
   /// default each item is a group of its own. A group's items are adjacent.
   Future<bool> speakQueue(

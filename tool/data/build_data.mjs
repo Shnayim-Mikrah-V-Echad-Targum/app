@@ -14,7 +14,7 @@
 //   * Aliyah divisions & haftarah references: @hebcal/leyning (BSD-2-Clause).
 //
 // Output (all under the Flutter project):
-//   assets/text/mikra/<book>.json      structured Hebrew text with section breaks
+//   assets/text/mikrah/<book>.json      structured Hebrew text with section breaks
 //   assets/text/onkelos/<book>.json    Aramaic text
 //   assets/text/english/<book>.json    English text
 //   assets/text/rashi/<book>.json      Rashi (Hebrew), per verse
@@ -503,7 +503,7 @@ function* versesInRange(chapters, b, e) {
 
 async function main() {
   const lower = (b) => b.toLowerCase();
-  const mikraChapters = {};
+  const mikrahChapters = {};
 
   process.stdout.write('Torah text\n');
   for (const book of TORAH) {
@@ -523,13 +523,13 @@ async function main() {
       }),
     );
     followScribalBreaks(book, breaks);
-    mikraChapters[book] = chapters;
+    mikrahChapters[book] = chapters;
     const counts = (t) => t.map((c) => c.length).join(',');
     if (counts(mam.text) !== counts(onk.text) || counts(mam.text) !== counts(jps.text)) {
       throw new Error(`Versification mismatch in ${book}`);
     }
     assertGaps();
-    writeJson(`assets/text/mikra/${lower(book)}.json`, {book, he: BOOK_HE[book], chapters, breaks});
+    writeJson(`assets/text/mikrah/${lower(book)}.json`, {book, he: BOOK_HE[book], chapters, breaks});
     writeJson(`assets/text/onkelos/${lower(book)}.json`, {
       book,
       chapters: onk.text.map((ch) => ch.map(parseOnkelosVerse)),
@@ -552,7 +552,7 @@ async function main() {
     });
   }
 
-  assertScribalTradition(mikraChapters);
+  assertScribalTradition(mikrahChapters);
 
   process.stdout.write('Parsha metadata\n');
   const keys = Object.keys(ENGLISH);
@@ -570,7 +570,7 @@ async function main() {
 
   // Sanity: aliyot are contiguous and cover each parsha exactly.
   for (const p of [...parshiyot, ...combined]) {
-    const ch = mikraChapters[p.book];
+    const ch = mikrahChapters[p.book];
     for (let i = 1; i < 7; i++) {
       if (nextVerse(ch, p.aliyot[i - 1].e) !== p.aliyot[i].b) throw new Error(`${p.key}: gap before aliyah ${i + 1}`);
     }
@@ -639,7 +639,7 @@ async function main() {
     allHaftarahRefs.push(...rc);
   }
 
-  const chapterLengths = Object.fromEntries(TORAH.map((b) => [b, mikraChapters[b].map((c) => c.length)]));
+  const chapterLengths = Object.fromEntries(TORAH.map((b) => [b, mikrahChapters[b].map((c) => c.length)]));
   writeJson('assets/data/parshiyot.json', {parshiyot, combined, specialHaftarot: special, chapterLengths});
 
   process.stdout.write('Haftarot\n');

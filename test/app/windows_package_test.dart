@@ -12,10 +12,10 @@ void main() {
   final config = (loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap)['msix_config'] as YamlMap;
 
   test('the package has the app id of the other platforms', () {
-    expect(config['identity_name'], 'org.shnayimmikra.app');
-    expect(File('android/app/build.gradle.kts').readAsStringSync(), contains('applicationId = "org.shnayimmikra.app"'));
+    expect(config['identity_name'], 'org.shnayimmikrah.app');
+    expect(File('android/app/build.gradle.kts').readAsStringSync(), contains('applicationId = "org.shnayimmikrah.app"'));
     expect(File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync(),
-        contains('PRODUCT_BUNDLE_IDENTIFIER = org.shnayimmikra.app;'));
+        contains('PRODUCT_BUNDLE_IDENTIFIER = org.shnayimmikrah.app;'));
   });
 
   // As on Android (values-iw) and iOS (he.lproj), Windows names the app in
@@ -28,7 +28,7 @@ void main() {
       return RegExp(r'<data name="AppName" xml:space="preserve">\s*<value>([^<]+)</value>').firstMatch(resw)![1]!;
     }
 
-    expect(name('en-us'), 'Shnayim Mikra');
+    expect(name('en-us'), 'Shnayim Mikrah');
     expect(name('he-il'), 'שניים מקרא');
     expect(File('android/app/src/main/res/values-iw/strings.xml').readAsStringSync(),
         contains('<string name="app_name">${name('he-il')}</string>'));
@@ -63,12 +63,22 @@ void main() {
     final rc = File('windows/runner/Runner.rc').readAsStringSync();
     // Under this pragma alone, rc.exe reads the script's ’ as UTF-8.
     expect(rc, contains('#pragma code_page(65001)'));
-    expect(rc, contains('VALUE "FileDescription", "Shnayim Mikra v’Echad Targum" "\\0"'));
+    expect(rc, contains('VALUE "FileDescription", "Shnayim Mikrah v’Echad Targum" "\\0"'));
     // msix_config sets none, so the package takes the pubspec's.
     expect(config['description'], isNull);
     final description = (loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap)['description'] as String;
-    expect(description, startsWith('Shnayim Mikra v’Echad Targum — '));
+    expect(description, startsWith('Shnayim Mikrah v’Echad Targum — '));
     expect(description, isNot(contains("'")));
+  });
+
+  // path_provider_windows keeps the app's support directory, and with it
+  // shared_preferences' file (settings, progress, notes), at
+  // %APPDATA%\<CompanyName>\<ProductName>: changing either after publishing
+  // would leave every reader's local data behind.
+  test('the data folder keeps the names it was published under', () {
+    final rc = File('windows/runner/Runner.rc').readAsStringSync();
+    expect(rc, contains('VALUE "CompanyName", "Shnayim Mikrah" "\\0"'));
+    expect(rc, contains('VALUE "ProductName", "Shnayim Mikrah" "\\0"'));
   });
 
   testWidgets('the logo is the rounded tile of app_icon.ico', (tester) async {

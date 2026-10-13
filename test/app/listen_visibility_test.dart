@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
-import 'package:shnayim_mikra/features/reader/listen_along.dart';
-import 'package:shnayim_mikra/features/reader/listen_bar.dart';
-import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/services/tts.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/reader/haftarah_screen.dart';
+import 'package:shnayim_mikrah/features/reader/listen_along.dart';
+import 'package:shnayim_mikrah/features/reader/listen_bar.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
 
 import '../helpers.dart';
 

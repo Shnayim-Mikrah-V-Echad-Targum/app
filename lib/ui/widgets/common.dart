@@ -472,7 +472,7 @@ class AppBarTitle extends StatelessWidget {
 }
 
 /// Names the page in the browser: its tab, history and bookmarks ("Settings
-/// · Shnayim Mikra"). Only the page on show names it, the one on top in the
+/// · Shnayim Mikrah"). Only the page on show names it, the one on top in the
 /// tab on show, and it names it again whenever it is shown again: when the
 /// page over it closes, or its tab is chosen.
 class DocumentTitle extends StatefulWidget {

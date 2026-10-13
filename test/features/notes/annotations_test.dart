@@ -3,17 +3,17 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/community/data/backend.dart';
-import 'package:shnayim_mikra/features/community/data/community_providers.dart';
-import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/models.dart';
-import 'package:shnayim_mikra/features/notes/domain/annotations.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/backup.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/community/data/backend.dart';
+import 'package:shnayim_mikrah/features/community/data/community_providers.dart';
+import 'package:shnayim_mikrah/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/models.dart';
+import 'package:shnayim_mikrah/features/notes/domain/annotations.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_merge.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/backup.dart';
 
 const _genesis3_22 = BookVerse('Genesis', VerseRef(3, 22));
 const _genesis1_1 = BookVerse('Genesis', VerseRef(1, 1));
@@ -702,7 +702,7 @@ void main() {
       final file = encodeBackup(const ProgressState(), const AppSettings(), annotations: notes, now: DateTime.utc(2026, 10, 11));
       expect(parseBackup(file)!.annotations, notes);
       // One made before they were kept has none.
-      final old = jsonEncode({'app': 'shnayim_mikra', 'progress': const ProgressState().toJson()});
+      final old = jsonEncode({'app': 'shnayim_mikrah', 'progress': const ProgressState().toJson()});
       expect(parseBackup(old)!.annotations, Annotations.empty);
     });
   });

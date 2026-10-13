@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Packages the Windows release build as an MSIX installer:
-# build/windows/msix/ShnayimMikra.msix. Run it from the repository root, in
+# build/windows/msix/ShnayimMikrah.msix. Run it from the repository root, in
 # Git Bash, after `flutter build windows --release` (with the dart-defines in
 # the README). The package's settings are msix_config in pubspec.yaml; extra
 # arguments go to the msix tool, for example a signing certificate:
@@ -16,7 +16,7 @@ set -euo pipefail
 release=build/windows/x64/runner/Release
 out=build/windows/msix
 
-if [ ! -f "$release/shnayim_mikra.exe" ]; then
+if [ ! -f "$release/shnayim_mikrah.exe" ]; then
   echo "make_msix: no release build in $release; run flutter build windows --release first" >&2
   exit 1
 fi

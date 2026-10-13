@@ -87,9 +87,11 @@ Two views the forum lists read, both `security_invoker`, so that every policy ap
    - **Confirm email:** off. The code the user types is itself the proof of ownership.
    - **Email OTP length:** 6. **Email OTP expiration:** 900 seconds.
 
-4. **Edit the email templates** under *Authentication → Emails → Templates*. Set both **Magic Link** and **Confirm signup** to the contents of `supabase/templates/magic_link.html`, with the subject *Your Shnayim Mikra sign-in code*.
+4. **Edit the email templates** under *Authentication → Emails → Templates*. Set both **Magic Link** and **Confirm signup** to the contents of `supabase/templates/magic_link.html`, with the subject *Your Shnayim Mikrah sign-in code*.
 
    The template must contain `{{ .Token }}`, because the app asks for the six-digit code and never opens a link. The default templates only contain a link, and with them nobody can sign in.
+
+   A hosted project keeps what was pasted here: whenever `supabase/templates/magic_link.html` or the app's name changes, paste it again and update both subjects.
 
 5. **Set up custom SMTP** under *Authentication → Emails → SMTP settings*. Supabase's built-in mail service is only for testing: it sends very few emails per hour, and only to your team's addresses. Use a provider such as Amazon SES, Postmark, Resend or Mailgun, and set up SPF, DKIM and DMARC for the sending domain.
 
@@ -101,7 +103,7 @@ Two views the forum lists read, both `security_invoker`, so that every policy ap
    flutter build <platform> \
      --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
      --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_... \
-     --dart-define=SUPPORT_EMAIL=support@example.org
+     --dart-define=SUPPORT_EMAIL=support@shnayimmikrah.org
    ```
 
    For CI, set these as repository **variables** (not secrets) named `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SUPPORT_EMAIL`. The publishable key is designed to be public.

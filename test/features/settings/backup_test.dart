@@ -4,20 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
-import 'package:shnayim_mikra/features/notes/domain/annotations.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/backup.dart';
-import 'package:shnayim_mikra/services/backup_files.dart';
-import 'package:shnayim_mikra/services/notifications.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikrah/features/notes/domain/annotations.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_merge.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/backup.dart';
+import 'package:shnayim_mikrah/services/backup_files.dart';
+import 'package:shnayim_mikrah/services/notifications.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 
 import '../../fake_backup_files.dart';
 import '../../helpers.dart';
@@ -60,8 +60,8 @@ void main() {
   void later() => now += const Duration(hours: 1).inMilliseconds;
 
   test('a backup is named for the day it is made', () {
-    expect(backupFileName(DateTime(2026, 10, 9, 23, 59)), 'shnayim-mikra-backup-2026-10-09.json');
-    expect(backupFileName(DateTime(2027, 1, 31)), 'shnayim-mikra-backup-2027-01-31.json');
+    expect(backupFileName(DateTime(2026, 10, 9, 23, 59)), 'shnayim-mikrah-backup-2026-10-09.json');
+    expect(backupFileName(DateTime(2027, 1, 31)), 'shnayim-mikrah-backup-2027-01-31.json');
   });
 
   group('parseBackup', () {
@@ -99,11 +99,21 @@ void main() {
         '5787:2': WeekProgress(weekId: '5787:2').withAliyah(0, _monday),
         '5787:1': WeekProgress(weekId: '5787:1').withAliyah(6, _bereshitFriday),
       });
-      final raw = jsonEncode({'app': 'shnayim_mikra', 'progress': progress.toJson()});
+      final raw = jsonEncode({'app': 'shnayim_mikrah', 'progress': progress.toJson()});
       final backup = parseBackup(raw)!;
       expect(backup.joinDate, _bereshitFriday);
       expect(backup.settings, isNull);
       expect(backup.exportedAt, isNull);
+    });
+
+    test('opens a backup made before the name was spelled with an h', () {
+      final progress = ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withAliyah(6, _bereshitFriday),
+      });
+      final backup = parseBackup(jsonEncode({'app': 'shnayim_mikra', 'progress': progress.toJson()}))!;
+      expect(backup.progress.weeks.keys, ['5787:1']);
+      expect(jsonDecode(encodeBackup(progress, const AppSettings(), now: DateTime.utc(2026, 10, 13)))['app'],
+          'shnayim_mikrah');
     });
 
     test("keeps apart what the version that made it couldn't read", () {
@@ -124,12 +134,12 @@ void main() {
       expect(backup.unknownPauses, unknownPauses);
     });
 
-    final good = {'app': 'shnayim_mikra', 'progress': const ProgressState().toJson()};
+    final good = {'app': 'shnayim_mikrah', 'progress': const ProgressState().toJson()};
     for (final (name, raw) in [
-      ('text that is not JSON', 'Shnayim Mikra'),
+      ('text that is not JSON', 'Shnayim Mikrah'),
       ('JSON that is not an object', '[1, 2]'),
       ("another app's file", jsonEncode({...good, 'app': 'other'})),
-      ('a file without progress', jsonEncode({'app': 'shnayim_mikra'})),
+      ('a file without progress', jsonEncode({'app': 'shnayim_mikrah'})),
       (
         'progress this version cannot read exactly',
         jsonEncode({
@@ -173,13 +183,13 @@ void main() {
       final week = backup
           .week('5787:1')
           .withAliyah(6, null)
-          .withUnit(0, ReadingPass.mikra1, null)
-          .withUnit(0, ReadingPass.mikra1, _monday);
+          .withUnit(0, ReadingPass.mikrah1, null)
+          .withUnit(0, ReadingPass.mikrah1, _monday);
       final here = ProgressState(weeks: {'5787:1': week});
       final merged = mergeBackup(here, backup).week('5787:1');
       expect(merged.isAliyahDone(6), isFalse);
-      expect(merged.units[0][ReadingPass.mikra1.index], _monday);
-      expect(merged.units[1][ReadingPass.mikra1.index], _bereshitFriday);
+      expect(merged.units[0][ReadingPass.mikrah1.index], _monday);
+      expect(merged.units[1][ReadingPass.mikrah1.index], _bereshitFriday);
     });
 
     test("doesn't let a reset here erase what the backup brings back", () {
@@ -591,7 +601,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Something else first, which isn't a backup.
-      await tester.enterText(find.byType(TextField), '{"app": "shnayim_mikra"}');
+      await tester.enterText(find.byType(TextField), '{"app": "shnayim_mikrah"}');
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pump();
       expect(find.text('That backup couldn’t be read.'), findsOneWidget);
@@ -654,7 +664,7 @@ void main() {
         final handle = tester.ensureSemantics();
         await openPaste(tester, () async => null);
         expect(find.text('Paste the contents of your backup file.'), findsOneWidget);
-        await tester.enterText(find.byType(TextField), '{"app": "shnayim_mikra"}');
+        await tester.enterText(find.byType(TextField), '{"app": "shnayim_mikrah"}');
         await tester.pump();
         expect(tester.getSemantics(find.byType(EditableText)).label, contains('Backup text'));
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
@@ -671,8 +681,8 @@ void main() {
         await tester.pumpAndSettle();
 
         final saved = files.saved.single;
-        expect(saved.name, 'shnayim-mikra-backup-2026-10-12.json');
-        expect(saved.subject, 'Shnayim Mikra v’Echad Targum');
+        expect(saved.name, 'shnayim-mikrah-backup-2026-10-12.json');
+        expect(saved.subject, 'Shnayim Mikrah v’Echad Targum');
         final backup = parseBackup(saved.data)!;
         expect(backup.progress, c.read(progressProvider));
         expect(backup.settings!.toJson(), c.read(settingsProvider).toJson());

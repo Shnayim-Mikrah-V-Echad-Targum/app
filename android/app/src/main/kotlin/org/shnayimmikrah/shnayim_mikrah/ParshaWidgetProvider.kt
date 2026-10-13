@@ -1,4 +1,4 @@
-package org.shnayimmikra.shnayim_mikra
+package org.shnayimmikrah.shnayim_mikrah
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
@@ -127,8 +127,8 @@ class ParshaWidgetProvider : HomeWidgetProvider() {
         text(R.id.widget_progress, content.week?.progress.takeIf { Line.PROGRESS !in omit })
         text(R.id.widget_note, content.line.takeIf { part == Part.NOTE })
         content.week?.let { week ->
-            views.setProgressBar(R.id.widget_bar_mikra1, ALIYOT, week.mikra1, false)
-            views.setProgressBar(R.id.widget_bar_mikra2, ALIYOT, week.mikra2, false)
+            views.setProgressBar(R.id.widget_bar_mikrah1, ALIYOT, week.mikrah1, false)
+            views.setProgressBar(R.id.widget_bar_mikrah2, ALIYOT, week.mikrah2, false)
             views.setProgressBar(R.id.widget_bar_targum, ALIYOT, week.targum, false)
         }
         if (part == Part.REST) {
@@ -361,8 +361,8 @@ class ParshaWidgetProvider : HomeWidgetProvider() {
         val spoken: String,
         val progress: String,
         val spokenProgress: String,
-        val mikra1: Int,
-        val mikra2: Int,
+        val mikrah1: Int,
+        val mikrah2: Int,
         val targum: Int,
         val next: String?,
     )
@@ -422,8 +422,8 @@ class ParshaWidgetProvider : HomeWidgetProvider() {
                                 spoken = w.getString("say"),
                                 progress = w.getString("progress"),
                                 spokenProgress = w.getString("sayProgress"),
-                                mikra1 = w.getInt("m1"),
-                                mikra2 = w.getInt("m2"),
+                                mikrah1 = w.getInt("m1"),
+                                mikrah2 = w.getInt("m2"),
                                 targum = w.getInt("t"),
                                 next = if (w.has("next")) w.getString("next") else null,
                             )

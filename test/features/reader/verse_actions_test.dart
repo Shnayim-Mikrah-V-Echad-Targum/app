@@ -7,27 +7,27 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/data/models/scripture.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/data/text_repository.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/models.dart';
-import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
-import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
-import 'package:shnayim_mikra/features/community/ui/compose_screen.dart';
-import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
-import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
-import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/reader/verse_actions_sheet.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/sefer_choice_chip.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/data/models/scripture.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/data/text_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/models.dart';
+import 'package:shnayim_mikrah/features/community/ui/account_screen.dart';
+import 'package:shnayim_mikrah/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikrah/features/community/ui/compose_screen.dart';
+import 'package:shnayim_mikrah/features/community/ui/thread_screen.dart';
+import 'package:shnayim_mikrah/features/reader/haftarah_screen.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/reader/verse_actions_sheet.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/sefer_choice_chip.dart';
 
 import '../../helpers.dart';
 
@@ -65,7 +65,7 @@ void main() {
   final sheet = _ShareSheet();
   SharePlatform.instance = sheet;
 
-  late BookText mikra;
+  late BookText mikrah;
   late BookText onkelos;
   late BookText english;
   late Verse samuel20_18;
@@ -76,11 +76,11 @@ void main() {
   late String hebrew3_22;
   setUpAll(() async {
     final repo = TextRepository();
-    mikra = await repo.book(TextLayer.mikra, 'Genesis');
+    mikrah = await repo.book(TextLayer.mikrah, 'Genesis');
     onkelos = await repo.book(TextLayer.onkelos, 'Genesis');
     english = await repo.book(TextLayer.english, 'Genesis');
     samuel20_18 = (await repo.hebrewVerse(const BookVerse('I Samuel', VerseRef(20, 18))))!;
-    final raw = mikra.verse(genesis3_22.ref).readText;
+    final raw = mikrah.verse(genesis3_22.ref).readText;
     name = raw.split(' ').singleWhere((w) => HebrewText.consonantsOnly(w) == 'יהוה');
     elohim = raw.split(' ').singleWhere((w) => HebrewText.consonantsOnly(w) == 'אלהים');
     hebrew3_22 = raw.replaceFirst(name, 'ה׳').replaceFirst(elohim, elohim.replaceFirst('ה', 'ק'));
@@ -88,7 +88,7 @@ void main() {
 
   group('the text that leaves the app', () {
     test('is the verse as shown, with the Divine Names written ה׳ and אלקים', () {
-      final text = verseText(mikra.verse(genesis3_22.ref), const AppSettings());
+      final text = verseText(mikrah.verse(genesis3_22.ref), const AppSettings());
       expect(text, hebrew3_22);
       expect(text, contains(' ׀ ה׳ אֱלֹקִ֗ים '), reason: 'every vowel and cantillation mark kept');
       expect(HebrewText.consonantsOnly(text), startsWith('ויאמר ה׳ אלקים הן האדם'));
@@ -105,7 +105,7 @@ void main() {
     });
 
     test('follows what the reader shows, and the Name as the reader chooses', () {
-      final verse = mikra.verse(genesis3_22.ref);
+      final verse = mikrah.verse(genesis3_22.ref);
       // The paseq goes with the cantillation.
       expect(verseText(verse, const AppSettings(showTeamim: false)), HebrewText.stripTeamim(hebrew3_22));
       expect(
@@ -138,20 +138,20 @@ void main() {
       final r = genesis3_22.ref;
       final chosen = ChosenVerse(
         at: genesis3_22,
-        hebrew: mikra.verse(r),
+        hebrew: mikrah.verse(r),
         targum: onkelos.verse(r),
         english: english.verse(r).readText,
       );
       final lines = verseCopy(chosen, const AppSettings(), reference: 'Genesis 3:22').split('\n');
       expect(lines, hasLength(4));
-      expect(lines[0], verseText(mikra.verse(r), const AppSettings()));
+      expect(lines[0], verseText(mikrah.verse(r), const AppSettings()));
       // The Targum's Hebrew Elohim as the Torah's.
       expect(lines[1], verseText(onkelos.verse(r), const AppSettings(), targum: true));
       expect(lines[1], startsWith('וַאֲמַר יְיָ אֱלֹקִים '));
       expect(lines[2], startsWith('And the LORD God said'));
       expect(lines[3], '— Genesis 3:22');
       expect(
-        verseCopy(ChosenVerse(at: genesis3_22, hebrew: mikra.verse(r)), const AppSettings(), reference: 'בראשית ג, כב'),
+        verseCopy(ChosenVerse(at: genesis3_22, hebrew: mikrah.verse(r)), const AppSettings(), reference: 'בראשית ג, כב'),
         '${lines[0]}\n— בראשית ג, כב',
       );
     });
@@ -162,9 +162,9 @@ void main() {
     // Elohim as Hebrew spells it is written אלקים, as in the Torah.
     test('copied with the Targum, writes its Aramaic forms of Elohim as they are', () async {
       final repo = TextRepository();
-      final exodus = await repo.book(TextLayer.mikra, 'Exodus');
+      final exodus = await repo.book(TextLayer.mikrah, 'Exodus');
       final exodusTargum = await repo.book(TextLayer.onkelos, 'Exodus');
-      final deuteronomy = await repo.book(TextLayer.mikra, 'Deuteronomy');
+      final deuteronomy = await repo.book(TextLayer.mikrah, 'Deuteronomy');
       final deuteronomyTargum = await repo.book(TextLayer.onkelos, 'Deuteronomy');
       List<String> copied(BookText torah, BookText targum, VerseRef r) => [
             for (final line in verseCopy(
@@ -191,13 +191,13 @@ void main() {
     });
 
     test('quoted in a question, runs from the left where the question does', () {
-      final hebrew = verseText(mikra.verse(genesis3_22.ref), const AppSettings());
+      final hebrew = verseText(mikrah.verse(genesis3_22.ref), const AppSettings());
       expect(withVerseQuote(hebrew, 'Why?', leftToRight: true), '\u200E> $hebrew\n\nWhy?');
       expect(withVerseQuote(hebrew, 'למה?', leftToRight: false), '> $hebrew\n\nלמה?');
     });
 
     test('quoted in a question, is found there however the Names were written', () {
-      final verse = mikra.verse(genesis3_22.ref);
+      final verse = mikrah.verse(genesis3_22.ref);
       const s = AppSettings();
       const off = AppSettings(copyDivineNameAsHashem: false);
       String quote(Verse verse, AppSettings s, {String question = '', bool leftToRight = true}) =>
@@ -211,7 +211,7 @@ void main() {
       // Kept from before Elohim was written אלקים.
       expect(quotesVerse('> ${verse.readText.replaceFirst(name, 'ה׳')}\n\nWhy?', verse, s), isTrue);
       // Another verse's question, or none.
-      expect(quotesVerse(quote(mikra.verse(const VerseRef(3, 23)), s), verse, s), isFalse);
+      expect(quotesVerse(quote(mikrah.verse(const VerseRef(3, 23)), s), verse, s), isFalse);
       expect(quotesVerse('Why does Onkelos keep some names?', verse, s), isFalse);
       expect(quotesVerse('', verse, s), isFalse);
     });
@@ -518,7 +518,7 @@ void main() {
       await ask(tester, verseOf(const VerseRef(3, 23)));
       expect(find.byType(NoticeBanner), findsNothing);
       expect(field(tester, 0).text, 'Question on Genesis 3:23');
-      expect(quoted(tester), verseText(mikra.verse(const VerseRef(3, 23)), const AppSettings()));
+      expect(quoted(tester), verseText(mikrah.verse(const VerseRef(3, 23)), const AppSettings()));
       expect(field(tester, 1).text, isEmpty);
       await tester.tap(find.byType(CloseButton));
       await tester.pumpAndSettle();
@@ -582,7 +582,7 @@ void main() {
       await until(tester, () => field(tester, 0).text.endsWith('3:23'));
       expect(find.byType(NoticeBanner), findsNothing);
       expect(field(tester, 0).text, 'Question on Genesis 3:23');
-      expect(quoted(tester), verseText(mikra.verse(const VerseRef(3, 23)), const AppSettings()));
+      expect(quoted(tester), verseText(mikrah.verse(const VerseRef(3, 23)), const AppSettings()));
       expect(field(tester, 1).text, isEmpty);
 
       // With something of the member's in it, it says the draft was kept.
@@ -774,7 +774,7 @@ void main() {
 
     testWidgets('a draft quoting the verse with Elohim written out, as questions once did, is its question already',
         (tester) async {
-      final verse = mikra.verse(genesis3_22.ref).readText.replaceFirst(name, 'ה׳');
+      final verse = mikrah.verse(genesis3_22.ref).readText.replaceFirst(name, 'ה׳');
       final body = '\u200E> $verse\n\nWhy "like one of us"?';
       final draft = jsonEncode({'title': 'Question on Genesis 3:22', 'body': body});
       final c = await open(tester, '/community/new?forum=questions&verse=Genesis%203:22', stored: {'draft.newThread': draft});

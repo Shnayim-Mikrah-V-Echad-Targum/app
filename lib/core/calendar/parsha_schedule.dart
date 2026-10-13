@@ -58,7 +58,7 @@ class ReadingOccasion {
   String toString() => 'ReadingOccasion(${portion.key} on $date)';
 }
 
-/// One week of Shnayim Mikra: the period between the previous public reading
+/// One week of Shnayim Mikrah: the period between the previous public reading
 /// and this portion's public reading, with a suggested daily division.
 class ReadingWeek {
   const ReadingWeek({
@@ -71,7 +71,7 @@ class ReadingWeek {
 
   final PortionId portion;
 
-  /// The day this portion is read in synagogue. Ideally Shnayim Mikra is
+  /// The day this portion is read in synagogue. Ideally Shnayim Mikrah is
   /// finished before then (Shulchan Aruch OC 285:3–4).
   final LocalDate occasion;
 

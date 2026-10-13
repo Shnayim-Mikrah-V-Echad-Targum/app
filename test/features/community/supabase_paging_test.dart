@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:shnayim_mikra/features/community/data/models.dart';
-import 'package:shnayim_mikra/features/community/data/supabase_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/models.dart';
+import 'package:shnayim_mikrah/features/community/data/supabase_forum_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// A thread row as PostgREST returns it from the `thread_listing` view.

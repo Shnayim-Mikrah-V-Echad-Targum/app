@@ -10,7 +10,7 @@ namespace {
 // Held while the app runs, to keep it to one instance per user session:
 // shared_preferences_windows rewrites its whole file on every change, so a
 // second instance would overwrite progress logged in the first.
-constexpr const wchar_t kInstanceMutexName[] = L"Local\\org.shnayimmikra.app";
+constexpr const wchar_t kInstanceMutexName[] = L"Local\\org.shnayimmikrah.app";
 
 // How long a second launch waits for an instance that has no window yet,
 // because it is starting or closing.
@@ -70,7 +70,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   FlutterWindow window(project);
   Win32Window::Size size(1200, 820);
-  if (!window.Create(L"Shnayim Mikra", size)) {
+  if (!window.Create(L"Shnayim Mikrah", size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

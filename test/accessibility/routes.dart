@@ -1,4 +1,4 @@
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 /// The screens the accessibility tests visit.
 const a11yRoutes = [

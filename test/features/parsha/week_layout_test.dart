@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
-import 'package:shnayim_mikra/ui/theme/layout.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/ui/theme/layout.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart';
 
 import '../../helpers.dart';
 
@@ -127,8 +127,8 @@ void main() {
         final order = [for (final node in tester.semantics.simulatedAccessibilityTraversal()) node.label];
         int at(String label) => order.indexWhere((text) => text.contains(label));
         final (heading, legend, rishon) = hebrew
-            ? (l.parshaLabel('בראשית'), l.passMikra1, 'ראשון')
-            : (l.parshaLabel('Bereshit'), l.passMikra1, 'Rishon');
+            ? (l.parshaLabel('בראשית'), l.passMikrah1, 'ראשון')
+            : (l.parshaLabel('Bereshit'), l.passMikrah1, 'Rishon');
         for (final label in [heading, legend, rishon]) {
           expect(at(label), isNonNegative, reason: label);
         }

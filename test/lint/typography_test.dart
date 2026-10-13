@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
 
 /// The interface's text is typeset, not typed: an apostrophe is ’ (U+2019)
 /// and quotation marks are “ ” (Hebrew’s geresh and gershayim are ׳ and ״),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/widgets/lines.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/features/onboarding/onboarding_screen.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/widgets/lines.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
 
 import '../../helpers.dart';
 
@@ -31,9 +31,9 @@ void main() {
 
   final title = find.byType(TitlePageFrame);
   final start = find.descendant(of: find.byType(OnboardingScreen), matching: find.byType(FilledButton));
-  final restore = find.widgetWithText(TextButton, 'I already use Shnayim Mikra');
+  final restore = find.widgetWithText(TextButton, 'I already use Shnayim Mikrah');
   // The English name (English UI only) and the body, the frame's last text.
-  final name = find.byWidgetPredicate((w) => w is BalancedText && w.text == 'Shnayim Mikra v’Echad Targum');
+  final name = find.byWidgetPredicate((w) => w is BalancedText && w.text == 'Shnayim Mikrah v’Echad Targum');
   final body = find.descendant(of: title, matching: find.byType(BalancedText)).last;
   final disclaimer = find.byWidgetPredicate((w) => w is BalancedText && w.text.startsWith('Customs vary'));
   double divider(WidgetTester tester) => tester.widget<SeferDivider>(find.byType(SeferDivider)).progress;
@@ -122,9 +122,9 @@ void main() {
     await launch(tester);
     expect(opacityOf(tester, start), 0);
     expect(opacityOf(tester, body), 0);
-    expect(find.bySemanticsLabel('Shnayim Mikra v’Echad Targum'), findsOneWidget);
+    expect(find.bySemanticsLabel('Shnayim Mikrah v’Echad Targum'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('^Read the parsha twice')), findsOneWidget);
-    expect(find.bySemanticsLabel('I already use Shnayim Mikra'), findsOneWidget);
+    expect(find.bySemanticsLabel('I already use Shnayim Mikrah'), findsOneWidget);
     expect(tester.getSemantics(start), isSemantics(isButton: true, isFocusable: true, isEnabled: true));
 
     await tester.tap(start);

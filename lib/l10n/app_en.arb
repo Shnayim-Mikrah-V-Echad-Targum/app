@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
-  "appTitle": "Shnayim Mikra",
-  "appTitleFull": "Shnayim Mikra v’Echad Targum",
+  "appTitle": "Shnayim Mikrah",
+  "appTitleFull": "Shnayim Mikrah v’Echad Targum",
   "navToday": "Today",
   "navParsha": "Parsha",
   "navProgress": "Progress",
@@ -83,8 +83,8 @@
       }
     }
   },
-  "passMikra1": "First reading",
-  "passMikra2": "Second reading",
+  "passMikrah1": "First reading",
+  "passMikrah2": "Second reading",
   "passTargum": "Targum",
   "passRashi": "Rashi",
   "aliyotWord": "aliyot",
@@ -912,12 +912,12 @@
       }
     }
   },
-  "stepMikra1": "Read the Hebrew",
-  "stepMikra2": "Read the Hebrew again",
+  "stepMikrah1": "Read the Hebrew",
+  "stepMikrah2": "Read the Hebrew again",
   "stepTargum": "Read the Targum",
   "stepRashi": "Read Rashi",
   "stepThirdHebrew": "Read the Hebrew a third time",
-  "stepRepeatLast": "End with Mikra: read the last verse once more",
+  "stepRepeatLast": "End with Mikrah: read the last verse once more",
   "stepOf": "Reading {step} of {total}",
   "@stepOf": {
     "placeholders": {
@@ -1073,7 +1073,7 @@
   "markAliyahRead": "Mark this aliyah as read",
   "keyboardShortcuts": "Keyboard shortcuts",
   "translationDisclaimer": "Helps with the meaning; it doesn’t take the place of the Targum.",
-  "mikraLabel": "Mikra",
+  "mikrahLabel": "Mikrah",
   "targumLabel": "Targum Onkelos",
   "rashiLabel": "Rashi",
   "translationLabel": "Translation (JPS 1917)",
@@ -1405,7 +1405,7 @@
   "@secondAdvice": {
     "description": "Advice on the choice of second reading, in plain help after secondSource."
   },
-  "repeatLastVerse": "End with Mikra",
+  "repeatLastVerse": "End with Mikrah",
   "repeatLastVerseDesc": "Repeat the parsha’s last verse in Hebrew after its Targum",
   "thirdReading": "Third-reading prompts",
   "thirdReadingDesc": "Suggest a third Hebrew reading where Onkelos is mostly names (Numbers 32:3) or Rashi is silent",
@@ -1888,7 +1888,7 @@
   "onbLocationTitle": "Where will you be this Shabbat?",
   "onbMethodTitle": "How do you read?",
   "onbPlanTitle": "Your weekly plan",
-  "onbHonor": "Shnayim Mikra runs on the honor system. Log what you read, wherever you read it — a Chumash in shul counts just as much as this app.",
+  "onbHonor": "Shnayim Mikrah runs on the honor system. Log what you read, wherever you read it — a Chumash in shul counts just as much as this app.",
   "onbChangeAnytime": "You can change this anytime in Settings.",
   "onbStep": "Step {current} of {total}",
   "@onbStep": {
@@ -1902,7 +1902,7 @@
     }
   },
   "onbWhyAsk": "Why we ask",
-  "guideWhatTitle": "What is Shnayim Mikra?",
+  "guideWhatTitle": "What is Shnayim Mikrah?",
   "guideQuoteSource": "Berachot 8a",
   "@guideQuoteSource": {
     "description": "Under the Talmud's words that open the guide, in Hebrew: where they are written."
@@ -1916,7 +1916,7 @@
   "guideWhenBody": "You may begin on Sunday (some say from Shabbat afternoon). Ideally finish before the Shabbat-day meal; if not, after the meal until Mincha. After that it may still be completed until Tuesday night (“until Wednesday”), and missed portions may be made up until Simchat Torah (SA 285:4; MB 285:12).",
   "guideHowTitle": "How",
   "guideHowBody": "Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.",
-  "guidePassesCaption": "1 · Mikra  2 · Mikra  3 · Targum",
+  "guidePassesCaption": "1 · Mikrah  2 · Mikrah  3 · Targum",
   "@guidePassesCaption": {
     "description": "Beside three marks for the three readings, at the top of the guide's How section: the text twice, then the Targum. No-break spaces keep each reading's number with its name."
   },
@@ -2552,11 +2552,11 @@
   },
   "chabadFallbackNote": "Chabad haftarot are being verified; showing the Ashkenazi reading.",
   "repeatLastVerseDescChabad": "Repeat the parsha’s last verse in Hebrew after its Targum (Chabad custom: not repeated)",
-  "repeatLastVerseFollowsChabad": "“End with Mikra” is now off, following the Chabad custom.",
+  "repeatLastVerseFollowsChabad": "“End with Mikrah” is now off, following the Chabad custom.",
   "@repeatLastVerseFollowsChabad": {
     "description": "Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves."
   },
-  "repeatLastVerseBackOn": "“End with Mikra” is on again.",
+  "repeatLastVerseBackOn": "“End with Mikrah” is on again.",
   "@repeatLastVerseBackOn": {
     "description": "Said when choosing another haftarah custom than Chabad turns repeatLastVerse back on."
   },
@@ -2667,7 +2667,7 @@
   },
   "onbStarterToday": "Start with today’s reading",
   "onbStarterTodayDesc": "Full plan from next week",
-  "onbRestore": "I already use Shnayim Mikra",
+  "onbRestore": "I already use Shnayim Mikrah",
   "onbRestoreTitle": "Restore your progress",
   "onbRestoreSignIn": "Sign in to restore",
   "onbRestoreSignInDesc": "From the backup kept with your account",
@@ -2692,7 +2692,7 @@
   },
   "passTrackLabel": "{n} · {name}",
   "@passTrackLabel": {
-    "description": "A segment of the reader's pass track: the reading's number and what is read, e.g. \"1 · Mikra\", \"3 · Targum\".",
+    "description": "A segment of the reader's pass track: the reading's number and what is read, e.g. \"1 · Mikrah\", \"3 · Targum\".",
     "placeholders": {
       "n": {
         "type": "int"
@@ -2702,9 +2702,9 @@
       }
     }
   },
-  "passTrackMikra": "Mikra",
-  "@passTrackMikra": {
-    "description": "The Hebrew text of the Torah, as a reading on the reader's pass track (\"1 · Mikra\")."
+  "passTrackMikrah": "Mikrah",
+  "@passTrackMikrah": {
+    "description": "The Hebrew text of the Torah, as a reading on the reader's pass track (\"1 · Mikrah\")."
   },
   "finishStep": "Finish",
   "@finishStep": {
@@ -2850,7 +2850,7 @@
   },
   "tabPartial": "{done} of 3 readings done",
   "@tabPartial": {
-    "description": "Spoken after an aliyah tab's label in the reader: how many of its three readings (Mikra, Mikra again, Targum) are done.",
+    "description": "Spoken after an aliyah tab's label in the reader: how many of its three readings (Mikrah, Mikrah again, Targum) are done.",
     "placeholders": {
       "done": {
         "type": "int"
@@ -3154,7 +3154,7 @@
   "@guideAppTitle": {
     "description": "The guide's first heading, under the Talmud's words that open it: how the app helps with the practice."
   },
-  "guideAppBody": "Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikra, Mikra again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.",
+  "guideAppBody": "Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikrah, Mikrah again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.",
   "@guideAppBody": {
     "description": "Under the guide's Using the app heading: one point to a line, each shown after a bullet. It quotes readFromBook, and names Today, Listen and grace days as the app does."
   },

@@ -1,6 +1,6 @@
-# Shnayim Mikra: "Klaf & Techelet" design system v1 (final, for implementation)
+# Shnayim Mikrah: "Klaf & Techelet" design system v1 (final, for implementation)
 
-> Reference mockups: [mock_today.png](design/mock_today.png), [mock_reader.png](design/mock_reader.png). Render the current app with `CAPTURE=1 flutter test test/screens/capture_test.dart` (PNGs in build/screens/) to compare.
+> Reference mockups: [mock_today.png](design/mock_today.png), [mock_reader.png](design/mock_reader.png). They predate the spelling Mikrah and later changes, so the captures are the current record. Render the current app with `CAPTURE=1 flutter test test/screens/capture_test.dart` (PNGs in build/screens/) to compare.
 
 
 Owner goal: an app that feels like a well-made chumash brought onto a screen with care. It should be calm, dignified and legible for a 75-year-old, and still feel current to a 25-year-old learner. This document is the contract. Where it conflicts with an earlier proposal, this document wins.
@@ -60,7 +60,7 @@ Owner goal: an app that feels like a well-made chumash brought onto a screen wit
 | D3 | The focus ring is invisible on FilledButton (primary ring on primary fill). | app_theme.dart:171, 217-222 |
 | D4 | Buttons request w600, but only 400/500/700 are bundled, so labels render Bold. | app_theme.dart:221; pubspec.yaml:82-95 |
 | D5 | The reader's ChoiceChip shows a check on the selected, unread Revi’i. Shlishi (2 of 3 passes) shows nothing. | reader_screen.dart:536-541; phone_reader.png |
-| D6 | Mikra 2 ring = primary at 80% alpha, which can't be told apart from Mikra 1. | progress_widgets.dart:55 |
+| D6 | Mikrah 2 ring = primary at 80% alpha, which can't be told apart from Mikrah 1. | progress_widgets.dart:55 |
 | D7 | Focus-mode dimmed verses use 55% alpha: 3.82:1, which fails AA. | scripture_text.dart:114, 118, 129, 223 |
 | D8 | Torah map: "late" tiles are white text on 70%-alpha primary. "Missed" and "upcoming" differ only by border colour. | progress_screen.dart:274-281 |
 | D9 | Trophy and lock milestones, and party-popper icons. | progress_screen.dart:366; today_screen.dart:181; reader_screen.dart:850; notification_prompt.dart:20 |
@@ -69,7 +69,7 @@ Owner goal: an app that feels like a well-made chumash brought onto a screen wit
 | D12 | The reader stacks three layers of chrome above the verse. | phone_reader.png |
 | D13 | Hebrew UI: an English thread title is cut at the wrong end, and the post header mixes directions in one string. | thread_screen.dart:102; he_thread.png |
 | D14 | On native platforms the UI uses the platform font, so the brand changes per OS. | app_theme.dart:158 |
-| D15 | Settings has both "About Shnayim Mikra" (the guide) and "About". | settings_screen.dart:51-52 |
+| D15 | Settings has both "About Shnayim Mikrah" (the guide) and "About". | settings_screen.dart:51-52 |
 | D16 | The week-strip "upcoming" circle is in outlineVariant, about 1.5:1. | progress_widgets.dart:201-202 |
 | D17 | The Display screen has dotted slider ticks and an X on every off switch. | phonetall_s_display.png |
 
@@ -112,7 +112,7 @@ New and changed files:
 
 1. **Techelet (`primary`)** is used for:
    - buttons, links, the selected tab and indicators;
-   - Mikra progress and the focus ring;
+   - Mikrah progress and the focus ring;
    - the Hebrew display title of a parsha (the Today hero, the Parsha header and Welcome/About).
    It is used for no other text: no section headers, chapter heads or verse numbers.
 2. **Gold ink (`secondary`)** is the rubric colour: eyebrows, verse numbers, chapter heads, petuchah/setumah marks, the Targum pass, overdue state and rest days. Gold is never used for buttons.
@@ -183,8 +183,8 @@ They must be set explicitly so no stock widget (DatePicker, SearchBar, Badge) fa
 | paper (cards, sheets, dialogs) | #FFFDF8 | #1C1915 | #FAF3E3 | #FFFFFF | #000000 |
 | hairline | #D8CFBF | #4A443A | #CBB994 | #000000 (2 px) | #FFFFFF (2 px) |
 | goldLeaf (decorative) | #B38D3F | #B8954B | #A9853A | #4F3500 | #FFD970 |
-| ringMikra1 | #1D3F75 | #AFC6EE | #25406C | #0A2A5E | #B5CEFF |
-| ringMikra2 | #55779F | #7E9BC8 | #4F6B92 | #3D629C | #7A9FE8 |
+| ringMikrah1 | #1D3F75 | #AFC6EE | #25406C | #0A2A5E | #B5CEFF |
+| ringMikrah2 | #55779F | #7E9BC8 | #4F6B92 | #3D629C | #7A9FE8 |
 | ringTargum | #946C1E | #C9A458 | #8A651C | #4F3500 | #FFD970 |
 | ringTrack | #E8E1D3 | #36312A | #E0D3B4 | #E0E0E0 | #333333 |
 | yearTrack (the year bar's open segments, §6.15) | = outlineVariant | = outlineVariant | = outlineVariant | #949494 | #5C5C5C |
@@ -246,10 +246,10 @@ Targets:
 | outline / surfaceContainer | 3.41 | 4.70 | 3.48 | 18.76 | 19.17 |
 | neutral / paper (missed glyph) | 4.53 | 5.27 | 4.60 | 8.45 | 11.18 |
 | focus / surface (ring) | 9.72 | 10.80 | 8.58 | 21.00 | 21.00 |
-| ringMikra1 / paper | 10.23 | 10.12 | 9.36 | 13.95 | 13.24 |
-| ringMikra2 / paper | 4.56 | 6.18 | 4.93 | 6.13 | 7.95 |
+| ringMikrah1 / paper | 10.23 | 10.12 | 9.36 | 13.95 | 13.24 |
+| ringMikrah2 / paper | 4.56 | 6.18 | 4.93 | 6.13 | 7.95 |
 | ringTargum / paper | 4.67 | 7.45 | 4.80 | 11.40 | 15.41 |
-| ringMikra2 / ringTrack | 3.57 | 4.55 | 3.67 | 4.64 | 4.78 |
+| ringMikrah2 / ringTrack | 3.57 | 4.55 | 3.67 | 4.64 | 4.78 |
 | ringTargum / ringTrack | 3.65 | 5.48 | 3.57 | 8.64 | 9.27 |
 | yearTrack / paper (an open segment; at least 3:1 in high contrast, tested) | 1.52 | 1.82 | 1.74 | 3.03 | 3.14 |
 | yearTrack / done (open against finished; at least 4:1 in high contrast, tested) | 6.73 | 5.57 | 5.38 | 4.60 | 4.22 |
@@ -259,7 +259,7 @@ Targets:
 Notes:
 - The current app's 55% alpha dimming measures 3.82:1 in light; `dimInk` replaces it.
 - Dimmed verses (5.1:1 or more) are below the 7:1 scripture target on purpose. They are not the verse being read, and focus mode is opt-in.
-- ringMikra1 and ringMikra2 are both techelet, told apart by shade: 2.24, 1.64, 1.90, 2.28 and 1.66:1 between them. Each high-contrast theme sets them at least as far apart as the theme it heightens (tested), and its RingLegend also keys each row by the ring's position (§6.11).
+- ringMikrah1 and ringMikrah2 are both techelet, told apart by shade: 2.24, 1.64, 1.90, 2.28 and 1.66:1 between them. Each high-contrast theme sets them at least as far apart as the theme it heightens (tested), and its RingLegend also keys each row by the ring's position (§6.11).
 
 ### 3.6 Platform colours
 
@@ -427,7 +427,7 @@ Rules:
 
 ### 4.7 Scripture (`ScriptureStyles` and `ScriptureVerse`, lib/features/reader/scripture_text.dart)
 
-**Mikra**
+**Mikrah**
 - Family, 26sp × readingScale, `height = settings.lineHeight` (default 1.9, minimum 1.6) and the bold rules are unchanged.
 - Add a `StrutStyle(fontFamily: scriptureFamily, fontSize: size, height: lineHeight, leadingDistribution: even, forceStrutHeight: false)`, so a verse-number span in another family never changes the line pitch.
 - Colour `onSurface`.
@@ -469,14 +469,14 @@ Rules:
   - If `uiFont` is not standard or system, use uiFont at 17/26.
 
 **Focus mode**
-- The current verse's whole block (Mikra, Targum, translation and Rashi, one tap target, `VerseGroup`) gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`, faded in over `Motion.short`. No radius: Flutter forbids a radius with non-uniform borders.
+- The current verse's whole block (Mikrah, Targum, translation and Rashi, one tap target, `VerseGroup`) gets `BoxDecoration(color: verseHighlight, border: BorderDirectional(start: BorderSide(color: primary, width: 3)))`, faded in over `Motion.short`. No radius: Flutter forbids a radius with non-uniform borders.
 - Padding, on every block whether highlighted or not, so that focus mode never moves a line: start 12 (the rule's 3 included), end 12, so the highlight frames a line that runs the full measure (the translation, or justified text), and vertical 4.
 - Start here, as for the Targum's rule, is the scripture's start: the right, in either language of the app.
 - All other verses, including their numbers, ketiv, Rashi and Rashi's eyebrow, use `dimInk`, and the Targum's gold rule recedes to the hairline colour, leaving the gold to the verse being read. Delete every `withValues(alpha: 0.55)` in scripture_text.dart.
 
 **The verse opened at** (`TargetVerseMark`, lib/features/reader/verse_anchor.dart)
 - A verse the reader opens at, from a search result, Go to verse (§6.26) or a link (`/read/{week}/{aliyah}?verse=28:12`), opens the full text and is scrolled to a fifth of the way down the text's viewport (`Scrollable.ensureVisible`, alignment 0.2, 300 ms on `Motion.standard`, at once under Reduce Motion).
-- It is marked until the next tap on the text, another aliyah or a change of mode: its whole block (Mikra, Targum, translation, Rashi) on a `secondaryContainer` wash, the gold wash search marks matches with, with radius 8, painted 8 px past the text at each side and 4 above and below, so nothing moves when it goes; and a 3 px `secondary` rule at its right edge, where the verse and its number begin, clipped to the wash's corners. The rule is the cue in high contrast, where the wash is close to the paper. Scripture on the wash keeps 7:1 in every theme (§3.5).
+- It is marked until the next tap on the text, another aliyah or a change of mode: its whole block (Mikrah, Targum, translation, Rashi) on a `secondaryContainer` wash, the gold wash search marks matches with, with radius 8, painted 8 px past the text at each side and 4 above and below, so nothing moves when it goes; and a 3 px `secondary` rule at its right edge, where the verse and its number begin, clipped to the wash's corners. The rule is the cue in high contrast, where the wash is close to the paper. Scripture on the wash keeps 7:1 in every theme (§3.5).
 - It is not focus mode's verse and shows with focus mode off. With focus mode on, it is also the focused verse, so the others dim around it, and focus mode's own highlight yields to the mark.
 - Where the platform takes announcements, its reference is said once the scroll ends ("Genesis 28:12").
 
@@ -510,7 +510,7 @@ Rules:
 - **Elevation:** 0 everywhere. Separation comes from paper on surface plus a 1 px hairline. FAB and menus are 2, with `shadowColor` = shadow token.
 - **App bar title alignment on wide screens:** `PageScaffold` reads the pane's width with a `LayoutBuilder` (the window less the rail and its hairline) and computes `inset = max(gutter, (paneWidth - contentMaxWidth) / 2 + gutter)`, where the column's content starts. The title is padded `inset` at its start, or `max(gutter, inset - 56)` after a back or home button, and a gutter at its end (as `titleSpacing` the inset would be kept after it too, leaving a narrow column's title no room on a wide screen), and `actionsPadding` ends `inset - gutter` from the pane's end, at the column's edge, as a phone's end at the screen's. This puts the title edge on the content edge, fixing D11. The title is a level-1 heading. Pages of list tiles pad the column `gutter - 16` at the sides (`PageBody.tilePadding`), so the tiles' own 16 brings their text to the same edge.
 - **Floating button:** where the pane is wider than the page's column, a `PageScaffold`'s floating action button ends where the column's content does, beside its cards and under the app bar's actions, rather than in the pane's far corner. Where the column fills the pane, Material's 16 from the edge. It is extended, icon and label (`PageScaffold.floatingButton`), while it takes at most two thirds of the window's width and its label a line of at most 40 (8 clear of its top and bottom); at text large enough to break either (200% on a phone, 300% on a tablet), its icon alone, 56 square, with the label as its tooltip, which screen readers read too, rather than run off a 320 dp screen with its label clipped. The label is measured as set, in bold where the device asks for Bold text. Either way it is an extended button to the Scaffold, so it fades in as it appears (§8).
-- **Document title:** on the web, the page on show names the browser's tab, its history and bookmarks: "Settings · Shnayim Mikra" (`DocumentTitle`, which `PageScaffold` applies; the reader, Today and Welcome apply it themselves). A page names it again whenever it comes back into view, as the page over it closes or its tab is chosen again. Its colour is the app's (`MaterialApp.color`, the surface), since the web takes it for the theme-color (§3.6). Elsewhere the platform keeps the app's name.
+- **Document title:** on the web, the page on show names the browser's tab, its history and bookmarks: "Settings · Shnayim Mikrah" (`DocumentTitle`, which `PageScaffold` applies; the reader, Today and Welcome apply it themselves). A page names it again whenever it comes back into view, as the page over it closes or its tab is chosen again. Its colour is the app's (`MaterialApp.color`, the surface), since the web takes it for the theme-color (§3.6). Elsewhere the platform keeps the app's name.
 
 ## 6. Components
 
@@ -663,7 +663,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 - Background surface, with a 1 px hairline end border (replaces surfaceContainer and the VerticalDivider in shell.dart).
 - Leading: the app mark (`AppMark`, 40×40, ClipRRect radius 10). It draws mark_128.png wherever 128 px covers the pixels drawn and icon.png above that: decoding the 1024 px master straight to 40 px breaks up the letters.
-- Extended at ≥1200: the mark plus a 12 gap plus the wordmark "Shnayim Mikra" (EBG 500 20/24) or "שניים מקרא" (FRL 500 20/24) in onSurface. Semantics header. Replaces "SM" / "ש״מ".
+- Extended at ≥1200: the mark plus a 12 gap plus the wordmark "Shnayim Mikrah" (EBG 500 20/24) or "שניים מקרא" (FRL 500 20/24) in onSurface. Semantics header. Replaces "SM" / "ש״מ".
 - Indicator primaryContainer radius 12; destination height 56 in the extended rail. The compact rail's are 70: Material's 64 (the 32 indicator, 4, a 16 px label and 12 below), spacing the framework fixes, and 6 above the indicator, where Material puts none, so that the focus ring, 5 out from it, is never cut off by the rail's top as it scrolls.
 - Keyboard focus: the §6.1 ring around the indicator (no wash).
 
@@ -674,13 +674,13 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 - `stroke = size × 0.055`; `r0 = size/2 - stroke/2`, `r1 = r0 - 1.6·stroke`, `r2 = r1 - 1.6·stroke`. At 104 this leaves a 56 px hole.
 - Arc weights by verse count, as now. Gap 0.042 rad between aliyot; butt caps.
 - Start at −π/2 and sweep CLOCKWISE in both directions. Do not mirror.
-- Colours: ring 0 ringMikra1, ring 1 ringMikra2, ring 2 ringTargum; track ringTrack.
+- Colours: ring 0 ringMikrah1, ring 1 ringMikrah2, ring 2 ringTargum; track ringTrack.
 - At every size the track is drawn as the same seven arcs and gaps, under the done arcs, so a week not yet begun shows its seven parts to come rather than three blank circles.
 - Centre: "2/7" in ringNumeral, plus "aliyot" in labelSmall onSurfaceVariant, scaled down as needed to fit the square inscribed in the hole (with 5% clearance), so large, bold or accessibility-font text never reaches the Targum ring.
 - Wrap in RepaintBoundary. Existing semantics stay.
 
 **RingLegend** (always beside or under rings of size 88 or more)
-- Three rows, each 24 high: a 9 px dot in the ring colour, a 10 gap, the label in bodyMedium (`passMikra1`, `passMikra2`, `passTargum`/`passRashi`), and the count end-aligned "3 of 7" in bodyMedium onSurfaceVariant with tabular figures.
+- Three rows, each 24 high: a 9 px dot in the ring colour, a 10 gap, the label in bodyMedium (`passMikrah1`, `passMikrah2`, `passTargum`/`passRashi`), and the count end-aligned "3 of 7" in bodyMedium onSurfaceVariant with tabular figures.
 - In high contrast a 16 px key (`RingKey`) takes each dot's place, then an 8 gap, so it never runs into the name (the names start 5 further in than beside a dot; two themes are never seen side by side). It names each ring by its position as well as its shade: three concentric rings, the row's own stroked 2 px in its colour and the other two 1 px in onSurface. Each edge falls a whole pixel from the centre, which is set on a corner of the device's pixels, so at 1x no stroke smears into grey over two pixels and a pixel stands clear between rings: a 1 px ring spans 7–8, 4–5 and 2–3 px from the centre (radii 7.5, 4.5, 2.5), and the row's own 6–8, 4–6 and 1–3 (radii 7, 5, 2).
 - Excluded from semantics: the rings' label already says it.
 - `RingsWithLegend` sets the legend beside the rings whenever it fits there, each count under its name if the two can't share a line (as on a 360 dp phone); otherwise, on a narrower phone or with large text, the rings sit centred above it. Beside the rings on a wide card, the legend grows at most 40 past its natural width, so the counts stay near their names.
@@ -783,19 +783,19 @@ On desktop the ribbon is constrained to the reading-column width and centred.
 ### 6.17 PassTrack (replaces _StepHeader card and LayerLabel, reader_screen.dart:678-734 and 652-664; fixes D12)
 
 Row of three Expanded segments with an 8 gap, growing with the text to 200% at most, its labels and their checks alike, as the instruction line beneath it (§9 Reader, guided). Each segment is a Column:
-- Label in labelMedium: `passTrackLabel(n, name)` = "1 · Mikra", "2 · Mikra", "3 · Targum" (or Rashi, or the third Mikra).
+- Label in labelMedium: `passTrackLabel(n, name)` = "1 · Mikrah", "2 · Mikrah", "3 · Targum" (or Rashi, or the third Mikrah).
   - Done: onSurfaceVariant with a leading 14 px check in primary.
   - Current: onSurface w700.
   - Upcoming: onSurfaceVariant.
 - 6 gap, then a 4 px bar with radius 2.
-  - Done and current: ringMikra1 / ringMikra2 / ringTargum for segments 1/2/3.
+  - Done and current: ringMikrah1 / ringMikrah2 / ringTargum for segments 1/2/3.
   - Upcoming: ringTrack.
 
 Below the track:
 - 8 gap, then ONE instruction line in bodyLarge onSurface, growing with the text to 200% at most: the existing step title ("Read the Hebrew", "Read the Hebrew again", "Read the Targum"). Screen readers hear it with the step's count ("Read the Hebrew again, Reading 2 of 3"), as a live region where the platform takes no announcements; they skip the track, which shows the same.
 - 12 gap, then the chapter heading (§4.7) when a chapter starts, then the verse.
 
-Nothing else sits above the first verse. A label stays on one line, set a little smaller should large text need it. The third segment is named for what is read in it: the Targum or Rashi, or "Mikra" for a verse read a third time in Hebrew. Ending with the last verse once more comes after all three.
+Nothing else sits above the first verse. A label stays on one line, set a little smaller should large text need it. The third segment is named for what is read in it: the Targum or Rashi, or "Mikrah" for a verse read a third time in Hebrew. Ending with the last verse once more comes after all three.
 
 ### 6.18 Reader bottom bar (replaces _BottomBar, reader_screen.dart:762-824)
 
@@ -931,7 +931,7 @@ Centred, max width 480:
 - With nothing to search yet: an empty state (§6.22) with `searchIntro`. With nothing found: `searchNoResults` in bodyLarge and a hint in bodyMedium onSurfaceVariant, 24 below the field and 8 apart: in Hebrew `searchNoResultsHint`, "Try fewer words, or another word or spelling." (the Torah's spellings have been tried by then), in English `searchNoResultsHintEnglish`, which names the 1917 translation's older English.
 - Results: the count in bodySmall onSurfaceVariant, 16 below the field, then a GroupHeader (§6.3) per parsha over one PaperGroup of verses. Hebrew found only as the Torah spells it, with fewer ו and י (DESIGN.md, Search), has `searchSpellingFallback` ("No verse has “אהרון”. Showing “אהרן”, as the Torah spells it.", what was typed and the spelling each isolated in its own direction) above the count, where `searchNoResults` would stand: bodyMedium onSurfaceVariant, 24 below the field, the count 8 under it. A screen reader hears it before the count, with what was typed and the spelling shown tagged as Hebrew, as a verse's Hebrew is; the announcement of the count, which is plain text, says the note in the interface's voice.
 - **Verse row:** min 72; padding start 16, end 12, vertical 12; a chevron 20 in outline at the end. On top the reference ("Genesis 28:10" / "בראשית כח, י") in titleSmall onSurfaceVariant with tabular figures, followed by " · Targum" when only the Targum holds the search, or " · Translation (JPS 1917)" (`translationLabel`) for a verse found in the translation, a study aid labelled as such. Then each layer, 4 apart:
-  - Mikra in the scripture font, 20 / 1.7, onSurface; Targum 18, onSurfaceVariant, under it as in the reader; the translation in bodyLarge onSurface. Never cantillation; vowels as the reader shows them.
+  - Mikrah in the scripture font, 20 / 1.7, onSurface; Targum 18, onSurfaceVariant, under it as in the reader; the translation in bodyLarge onSurface. Never cantillation; vowels as the reader shows them.
   - About 16 Hebrew or 26 English words around the first match, cut at word breaks; a verse up to a third longer stays whole. Ellipses mark a cut, joined to the text by a no-break space. A word joiner follows each maqaf, as in the reader, so joined words stay on one line; where they are too wide together for the line, at a very large text size on a phone, that maqaf goes without it (`joinWhereFits`, through `JoinsThatFit`) and the line ends after it rather than inside a word, the marks moved back over the joiners left out (`shiftForRemovedJoiners`).
   - **Match:** w700 in onSecondaryContainer on a secondaryContainer wash (11.24:1 in light) as tall as the letters, not the line (`MarkedText`, a tight text box with a 2 px bleed each side and radius 3), so washes on lines one above the other never meet. The weight is the non-colour cue, needed in high contrast where the wash is close to the paper. With bold text on, where every letter is bold, and in high contrast, each wash is also outlined, 1.5 px in onSecondaryContainer. The washes are placed again when a font finishes loading.
 - Semantics: each row is one button whose label is the reference, then each layer tagged with its language and spoken as verses are (§8 of DESIGN.md), from the pointed words whether or not vowels are shown, the Targum and the translation named. A list of results opens at its top, with its count.
@@ -992,9 +992,9 @@ The week's title page in miniature, on the home screen: the calmest reminder the
 - **Medium** (about 4×2; iOS `systemMedium`; where Android's widget opens): the small widget's column, a 1 px hairline with 16 either side, and beside it the day's reading in one line or two (`widgetToday` "Today: Shlishi", `widgetCatchUp` "Catching up: Shlishi – Revi’i" while aliyot planned before are unread, `todayDone`, `widgetNothingToday`, `widgetPaused`, `widgetWeekComplete`, `widgetTishaBav`), and under it **Continue**: the label of Today's button ("Continue · Shlishi, Targum", `startAt` before anything is read), in primary with a forward chevron, 48 dp (44 pt) tall. It is gone once the week is complete.
 - **Tisha B'Av** with no reading planned on it (`WidgetDayKind.tishaBav`), and with a city for Shabbat times on a day the device keeps its clock, its eve from sunset, as Today: the eyebrow `tishaBavTitle`, the bars and `aliyotProgress` as they stand, and on the medium widget `widgetTishaBav` ("Torah study is set aside today") with no Continue. The app gives the day a week of its own without a `next`, so the widgets, which show Continue wherever a week has one, need no rule of their own; nor does the day greet.
 - **Day of rest** (Shabbat and Yom Tov, by the reader's days of Yom Tov): no bars and no Continue; the candles (§7.6) at 22 in `rest`, 6, and the day's greeting as Today's (`shabbatShalom`, `chagSameach`, `shanaTova`, `gmarChatimaTova`) in up to two lines (three, smaller, in the narrowest Android widget), with the parsha read that day.
-- **Days over** (the app not opened since the last day it gave): on a weekday, the last week's parsha and `widgetStale`, no bars; on Shabbat and Yom Tov, which the app gives for about four months beyond, the candles and the greeting alone, asking nothing. **Before onboarding:** the app's name in primary and "Open Shnayim Mikra to begin." (native strings, in the device's language).
+- **Days over** (the app not opened since the last day it gave): on a weekday, the last week's parsha and `widgetStale`, no bars; on Shabbat and Yom Tov, which the app gives for about four months beyond, the candles and the greeting alone, asking nothing. **Before onboarding:** the app's name in primary and "Open Shnayim Mikrah to begin." (native strings, in the device's language).
 
-**Colour:** the app's light and dark tokens (§3), following the system's appearance (`values-night`, the colour assets' Dark appearance), never the wallpaper's dynamic colours: `paper`, the eyebrow in `secondary`, the Hebrew name in `primary`, the transliteration and the day's reading in `onSurface`, other lines in `onSurfaceVariant`, and the bars in `ringMikra1`, `ringMikra2` and `ringTargum` on `ringTrack`, the rings' order. Android draws the card with a 1 px `hairline`, at the system's widget radius from Android 12 (16 dp before it); iOS sets `paper` as the widget's container background, at the system's corners. `test/app/home_widget_platform_test.dart` checks every colour against `lib/ui/theme/palette.dart`.
+**Colour:** the app's light and dark tokens (§3), following the system's appearance (`values-night`, the colour assets' Dark appearance), never the wallpaper's dynamic colours: `paper`, the eyebrow in `secondary`, the Hebrew name in `primary`, the transliteration and the day's reading in `onSurface`, other lines in `onSurfaceVariant`, and the bars in `ringMikrah1`, `ringMikrah2` and `ringTargum` on `ringTrack`, the rings' order. Android draws the card with a 1 px `hairline`, at the system's widget radius from Android 12 (16 dp before it); iOS sets `paper` as the widget's container background, at the system's corners. `test/app/home_widget_platform_test.dart` checks every colour against `lib/ui/theme/palette.dart`.
 
 **Type**
 - iOS bundles the display serifs in the extension (Frank Ruhl Libre 500 and 600, EB Garamond 500): the Hebrew name FRL 500 28, the transliteration EBG 500 18, the greeting EBG 500 18 (FRL 500 17 in the Hebrew UI); the lines are the system's 12–14, scaled with the reader's text size as the serifs are (`@ScaledMetric`). The eyebrow is the one place the widget has no room for the app's: EBG small capitals at 18 would be set far smaller in the small widget, below §4's floor, so it is set in the system's serif (New York), 600 12 in capitals tracked 0.6, which is drawn to be read at that size (FRL 600 14 in the Hebrew UI).
@@ -1007,7 +1007,7 @@ The week's title page in miniature, on the home screen: the calmest reminder the
 
 **Turning:** the widget can't run the app's code, so the app sends a timeline: an entry for each day from today through next week's Shabbat, and through a Yom Tov straight after it (about 9 to 15, more over the festivals), every string in the app's language and the week's progress as it stands, with a link for each tap; and the dates of the days of rest for about four months after, each with its greeting (all under 8 KB). An entry is for the app's day, which turns three hours after midnight, counted in hours that pass as the app counts them (so on the night the clocks go forward, at 4 o'clock); one may end sooner, at midday on Friday and on the eve of Yom Tov (the eyebrow), and with a city for Shabbat times on a day the device keeps its clock, at candle-lighting on the eve and as the days of rest end, by the reader's own times, and at sunset on the eve of a quiet Tisha B'Av, as Today turns. The app sends a new timeline at launch, on resuming, and within a second of any change to the progress or the settings it shows. Android updates the widget at each day boundary through the day after its last, at the start and end of each day of rest after it, and each time an entry ends (inexact alarms, armed again by each update and after a reboot), and hourly as a safety net; iOS's timeline has an entry for each of those moments.
 
-**Taps:** the widget opens Today; Continue opens the reader where Today's button leads. Like a shortcut on the app's icon, each names a page (`shnayimmikra://widget/today`, `…/continue`), and the app opens it in the current week as it is when tapped, over Today.
+**Taps:** the widget opens Today; Continue opens the reader where Today's button leads. Like a shortcut on the app's icon, each names a page (`shnayimmikrah://widget/today`, `…/continue`), and the app opens it in the current week as it is when tapped, over Today.
 
 **Preview:** Android 12 and later show `widget_parsha_preview.xml` in the picker, the medium widget for a reader partway through Bereshit, in the device's language and theme; older launchers show `drawable-nodpi/widget_preview.png` (`tool/branding/make_widget_preview.py`). iOS's gallery shows the same reader, or the reader's own week once the app has sent it.
 
@@ -1030,7 +1030,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 5. **PassPips:**
    - three lozenges (size 12 with gap 8, or mini 6 with gap 3) in reading order; the Row follows Directionality;
    - `scale` grows them with the text, lozenges and gaps alike: the aliyah ribbon's mini pips grow to 2× (12 with gap 6 at 200%, §6.16), as the week strip's glyphs and the Torah map's icons grow to 1.5× (§6.13, §6.14); none of them shrinks with text under 100%;
-   - done: filled in ringMikra1 / ringMikra2 / ringTargum;
+   - done: filled in ringMikrah1 / ringMikrah2 / ringTargum;
    - pending: a 1.5 px outline stroke;
    - current step (parsha rows only): an extra 2 px ring in its colour;
    - excluded from semantics.
@@ -1059,7 +1059,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    **Master** (1024², opaque):
    - background: a vertical linear gradient from #23497F (top) to #16315C (bottom);
    - text: font size 300 px (letters 177 px tall, about 744 px wide), fill #F6F0E2, centred horizontally, baseline y=500;
-   - three rules, each 440×26 with radius 13 at x 292–732, at y 580, 628 and 676, filled #F6F0E2, #F6F0E2, #D2A64A (two Mikra and the Targum);
+   - three rules, each 440×26 with radius 13 at x 292–732, at y 580, 628 and 676, filled #F6F0E2, #F6F0E2, #D2A64A (two Mikrah and the Targum);
    - the group is vertically centred.
    - Contrast: cream on gradient 7.93–11.35; gold rule 5.71.
 
@@ -1070,10 +1070,10 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
    - Web: Icon-192/512 from the master; maskable 192/512 with the group scaled 0.90 on the full-bleed gradient.
    - Sizes ≤32 px (favicon.png, and the favicon.ico and Windows .ico entries at 16/20/24/32): the three rules only, each 62.5% of the canvas wide and 9.4% high, gaps 7.8%, vertically centred, on the gradient with corner radius 18.75%.
    - The Windows .ico also carries 40, 48, 64 and 256, and favicon.ico carries 48: the master's art on the gradient, with the same 18.75% corners (transparent outside them) rather than the master's square. Every entry then has one shape, so the icon doesn't change outline as Windows switches entries between views and DPI settings.
-   - Android status bar (`ic_stat_reminder`, a 24 dp vector drawn as a white silhouette): the three rules alone, 2.7 high with round ends, at y 5.7, 10.65 and 15.6. The two Mikra rules span x 3–21. The Targum's gold is lost in white, so its rule is 60% as long (x 10.2–21), aligned to the right like the last line of a Hebrew paragraph: three equal bars read as a menu icon. To be confirmed with the owner.
+   - Android status bar (`ic_stat_reminder`, a 24 dp vector drawn as a white silhouette): the three rules alone, 2.7 high with round ends, at y 5.7, 10.65 and 15.6. The two Mikrah rules span x 3–21. The Targum's gold is lost in white, so its rule is 60% as long (x 10.2–21), aligned to the right like the last line of a Hebrew paragraph: three equal bars read as a menu icon. To be confirmed with the owner.
    - The MSIX package matches the .ico size for size. The msix tool makes every icon from `windows/msix/logo.png`: the .ico's larger tile at 1240², the size of the largest icon the tool makes (the large tile at 400%). `tool/windows/make_msix.sh` then replaces the app icons of 32 px and below (`windows/msix/Images`: 16, 20, 24, 30 and 32, plated and unplated) with the three rules alone.
    - Launch screens (`splash_logo.png`, read at 4×, so 288 dp or pt): a transparent 1152² canvas with the in-app mark's tile in the middle, the master on the gradient, 576 px wide with 22% corners. The corners reach 355 px from the centre, inside the 384 px (192 dp) circle that Android 12 and later show.
-   - Web link preview (`web/og.png`, 1200×630): the About header on surface (#FAF7F0) in a TitlePageFrame at 2×. The mark's tile at 168, then "שניים מקרא ואחד תרגום" in Frank Ruhl Libre Medium 58 primary, a SeferDivider at 2×, and "Shnayim Mikra v’Echad Targum" in EB Garamond Medium 36 onSurfaceVariant, all within the middle 630 px so a square crop keeps them.
+   - Web link preview (`web/og.png`, 1200×630): the About header on surface (#FAF7F0) in a TitlePageFrame at 2×. The mark's tile at 168, then "שניים מקרא ואחד תרגום" in Frank Ruhl Libre Medium 58 primary, a SeferDivider at 2×, and "Shnayim Mikrah v’Echad Targum" in EB Garamond Medium 36 onSurfaceVariant, all within the middle 630 px so a square crop keeps them.
    - Web shortcut icons (`web/icons/shortcut-*.png`, 192²): the navigation's `today` and `donut_large` glyphs in #F6F0E2, their em box 58% of the favicons' tile.
    - Shortcuts on the app's icon (`lib/services/app_shortcuts.dart`): Android's wear the launcher icon itself (`@mipmap/ic_launcher`). iOS draws a shortcut's icon as a template, from its alpha alone in the menu's ink, so iOS's wear `ShortcutMark` (`ios/Runner/Assets.xcassets`, 35 pt at 2× and 3×): the mark alone in one ink on transparent, centred and 94% of the canvas wide.
    - Web loading screen: the in-app mark's tile as inline SVG in `web/index.html`, 96 px.
@@ -1283,7 +1283,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
 - **Parallel columns** (`ParallelVerse`, scripture_text.dart; desktop_reader_full): when the Targum (or, without it, the translation) is shown, the pane is at least 960 wide, the line width isn't narrow, the Torah is at most 34 px at the system text scale (`ScriptureStyles.parallelColumns`) and Display → Side by side is on (`AppSettings.parallelColumns`, default on; the switch shows in the full text's display sheet only where the columns would show, `ScriptureStyles.parallelFits`, measured on the reader's pane within the window's side insets):
   - the measure is 1160, and the title, ribbon and listen bar keep to it;
   - each verse is a row, right to left: the Torah (flex 6), with the translation and Rashi beneath it in its column, then a 40 gutter, then the Targum (flex 5) without its rule or number, at least 48 tall for its long press; first lines on one baseline;
-  - above the first row, the columns' names (`ParallelHeading`): `mikraLabel` and `targumLabel` (or `translationLabel`) in labelLarge onSurfaceVariant, each where its text begins, over a 1 px hairline as wide as its column, inset as the verses are;
+  - above the first row, the columns' names (`ParallelHeading`): `mikrahLabel` and `targumLabel` (or `translationLabel`) in labelLarge onSurfaceVariant, each where its text begins, over a 1 px hairline as wide as its column, inset as the verses are;
   - the chapter heading, section marks and the verse's block (focus mode, the verse opened at, Listen) span the row; screen readers hear the verse, the Targum, the translation and Rashi, in that order.
 - **Whole parsha** (the overflow menu's `wholeParsha` / `oneAliyahAtATime`, full text only; `AppSettings.fullTextWholeParsha`; phone_reader_parsha, desktop_reader_parsha*):
   - one `SliverMainAxisGroup` per aliyah: the `AliyahHeader` pinned while its aliyah is read, its verses built lazily (`SliverList.builder`), then the SeferDivider and the Tonal Mark as read of that aliyah;
@@ -1428,7 +1428,7 @@ In order:
 - Sections with GroupHeaders, their settings 24 apart:
   - **Where & when:** the reading heard and the days of Yom Tov as SegmentedButtons, Shabbat times (the city), the weekly plan, the after-Shabbat window;
     - Shabbat times: one PaperGroup. The City row (`place_outlined`) has the city as its value and this week's times under it, on two lines: `shabbatTimesSummary` ("Candle-lighting 5:34 PM / Shabbat ends 6:50 PM"), or, when Yom Tov begins as Shabbat ends, `shabbatTimesSummaryYomTov` ("Yom Tov candles after 8:13 PM" on the second line). With a city chosen, two rows follow it, each with its choice under its title, in full (as a value, one would end the title's line and the other not), opening a `showChoiceSheet`: Candle-lighting (`wb_twilight_outlined`; "City default (40 min)", then 15, 18, 20, 22, 30 and 40 "minutes before sunset", with any other a backup brought in its place among them) and Shabbat ends (`bedtime_outlined`; "Nightfall (sun 8.5° below)", "42 minutes after sunset", "50 minutes after sunset", "72 minutes (Rabbeinu Tam)"). A number and its unit are joined by a no-break space.
-  - **How I read:** the method, the second reading, then End with Mikra and the third-reading prompts as switch rows;
+  - **How I read:** the method, the second reading, then End with Mikrah and the third-reading prompts as switch rows;
   - **Haftarah:** its switch ("Read the week’s haftarah once", the section naming it); while it is on, set in by 16 behind a 2 px outlineVariant start rule, the custom as a SegmentedButton [Ashkenazi | Sephardi | Chabad] and "Count the haftarah toward completion";
   - **Special days:** Tisha B'Av, its switch with `tishaBavQuietDesc` under it ("Torah study is set aside on the fast, apart from the passages of mourning (Shulchan Aruch OC 554:1)"), and Chol HaMoed;
   - **Parsha names:** a SegmentedButton.
@@ -1471,12 +1471,12 @@ In order:
   - an 8 px lozenge;
   - "שְׁנַיִם מִקְרָא / וְאֶחָד תַּרְגּוּם" in hebrewDisplay 40/60 primary (two lines, broken only between words), the page's heading (level 1), read as `appTitleFull`;
   - a SeferDivider;
-  - English UI only: "Shnayim Mikra v’Echad Targum" in EBG MediumItalic 24/30 onSurface (upright in high contrast and in an accessibility font), hidden from screen readers, since the heading says it. The Hebrew UI doesn't repeat the unpointed name;
+  - English UI only: "Shnayim Mikrah v’Echad Targum" in EBG MediumItalic 24/30 onSurface (upright in high contrast and in an accessibility font), hidden from screen readers, since the heading says it. The Hebrew UI doesn't repeat the unpointed name;
   - body in bodyLarge onSurfaceVariant.
   - The English name, the body and the disclaimer set their lines evenly (`BalancedText`, lib/ui/widgets/lines.dart), so no word is left alone on a last line; the body keeps "once —" (and "פעם אחת —") together with no-break spaces.
   - The two names, display sizes already, grow with the text to 1.4× at most, so that with very large text the call to action isn't pushed far below the fold; the body and the buttons grow in full.
 - Outside the frame: 24 gap, a Filled "Start this week’s parsha" 52 high (max width 400).
-- An 8 gap, then a TextButton "I already use Shnayim Mikra" (the same max width), which opens the restore sheet (§6.19): one PaperGroup of sign in (`cloud_download_outlined`, with a chevron, as it leads to the account page; only with a real community backend), a backup file (`restore_page_outlined`) or pasted text (`content_paste_outlined`), each with what it restores from under it, never cut short. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
+- An 8 gap, then a TextButton "I already use Shnayim Mikrah" (the same max width), which opens the restore sheet (§6.19): one PaperGroup of sign in (`cloud_download_outlined`, with a chevron, as it leads to the account page; only with a real community backend), a backup file (`restore_page_outlined`) or pasted text (`content_paste_outlined`), each with what it restores from under it, never cut short. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
 - Then, 16 below, the disclaimer in bodySmall onSurfaceVariant.
 - As the app opens on it, it enters once (§8, Welcome entrance): the frame and the title rise into place, the divider draws outward, then come the English name and the body, and last the way on and the disclaimer, all within 900 ms. It is whole from its first frame with Reduce Motion, and tappable and heard from its first frame either way.
 
@@ -1493,7 +1493,7 @@ In order:
 
 **About header**
 - The app mark at 72 (corners 16), then "שניים מקרא ואחד תרגום" in hebrewDisplay 28/40 primary, the page's one heading of level 1, read as `appTitleFull`; the app bar shows "About" only once it has scrolled away, for the eye alone (`titleRevealed`), as on the policies.
-- English UI: "Shnayim Mikra v’Echad Targum" in EBG 500 20 onSurfaceVariant, hidden from screen readers. The Hebrew UI doesn't repeat the name.
+- English UI: "Shnayim Mikrah v’Echad Targum" in EBG 500 20 onSurfaceVariant, hidden from screen readers. The Hebrew UI doesn't repeat the name.
 - Both names set their lines evenly (`BalancedText`) should large text need two.
 - Version in labelSmall, then a SeferDivider.
 - TitlePageFrame at ≥600 only.
@@ -1503,7 +1503,7 @@ In order:
 - Where they open: within the tab that opens them, so that the navigation bar or rail stays beside them, with Back to the page beneath: the guide from Today's help button (`/today/guide`) and from Settings (`/settings/guide`); the sources and the policies from About (`/settings/about/sources`, `/settings/about/legal/privacy`); the accessibility statement from Accessibility (`/settings/accessibility/legal/accessibility`); the privacy policy from the account and the guidelines from a new discussion, within whichever tab shows them (`policyPath`, routes.dart), under the page that opens them where the address can say so, so that a reload or a shared link puts back the same page beneath: the account's under the account (`/community/account/legal/privacy`, `/settings/account/legal/privacy`), and a new discussion's under Community (`/community/legal/guidelines`; the discussion's own address carries its forum and verse, which a policy's beneath it couldn't). On their own, over the tabs, with a home button when nothing lies beneath (`/guide`, `/sources`, `/legal/privacy`): from a page that is itself shown over the tabs (signing in from the welcome, a question asked over the reader), and for links and the web, before onboarding too, when a tab's address of theirs leads to them, as the tabs wait for onboarding. Search, the bookmarks and notes, and the reader stay over the tabs.
 - longformBody, max width 620 (the app bar's title on the column's edge, §5).
 - Headings in longformHeading, onSurface (not blue).
-- **Guide:** it opens with a card (the card rhythm's 20, 16 under 360 dp, and 4 more above and below the words) of the Talmud's words, "לְעוֹלָם יַשְׁלִים אָדָם פָּרָשִׁיּוֹתָיו עִם הַצִּבּוּר, / שְׁנַיִם מִקְרָא וְאֶחָד תַּרְגּוּם" in Noto Serif Hebrew 24, centred, each phrase on a line of its own (balanced over two where it doesn't fit), tagged Hebrew and read as one sentence; "Berachot 8a" in labelMedium secondary; in the English UI, the translation in marginalia. Then using the app ("Using the app" / "השימוש באפליקציה": Today and its rings, a Chumash and logging after Shabbat, a missed day made up or covered by a grace day, a verse's long press, and Listen, a point each); the practice and when (its first paragraph building on the card, from the Shulchan Aruch, rather than saying the words again); how and Targum or Rashi; the special cases and Shabbat; and the sources, a SeferDivider between each part. The How section begins with the three filled PassPips and "1 · Mikra  2 · Mikra  3 · Targum" in labelMedium onSurfaceVariant, for the eye alone. The guide's lists are one string each, an item to a line, and every item hangs from a lozenge (`Lozenge`, 6 at the text's own size and growing with it, level with the item's first line), 12 before the text: the points on using the app and the seven special cases in longformBody, 8 apart, and the sources in marginalia, 4 apart. Each special case is led by its words up to the first colon ("Vezot HaBerachah:"), set apart from the rest so that it is found at a glance: a step heavier, Semibold over EB Garamond's Medium, and Bold over Frank Ruhl Libre's Medium (whose Semibold barely shows at this size), high contrast's Semibold serifs or an accessibility font's Regular; and where the text is Bold already (Bold text, and the presets that turn it on, or Frank Ruhl Libre in high contrast), as heavy as the text, on a line of its own above it. The text selects, an item or paragraph at a time, and is set in bold with Bold text, as every Text is. A source in a sentence ("MB 285:14", "מ״ב רפה, יד") keeps to one line, and a dash to the word before it (no-break spaces). The closing "Customs vary…" is a NoticeBanner.
+- **Guide:** it opens with a card (the card rhythm's 20, 16 under 360 dp, and 4 more above and below the words) of the Talmud's words, "לְעוֹלָם יַשְׁלִים אָדָם פָּרָשִׁיּוֹתָיו עִם הַצִּבּוּר, / שְׁנַיִם מִקְרָא וְאֶחָד תַּרְגּוּם" in Noto Serif Hebrew 24, centred, each phrase on a line of its own (balanced over two where it doesn't fit), tagged Hebrew and read as one sentence; "Berachot 8a" in labelMedium secondary; in the English UI, the translation in marginalia. Then using the app ("Using the app" / "השימוש באפליקציה": Today and its rings, a Chumash and logging after Shabbat, a missed day made up or covered by a grace day, a verse's long press, and Listen, a point each); the practice and when (its first paragraph building on the card, from the Shulchan Aruch, rather than saying the words again); how and Targum or Rashi; the special cases and Shabbat; and the sources, a SeferDivider between each part. The How section begins with the three filled PassPips and "1 · Mikrah  2 · Mikrah  3 · Targum" in labelMedium onSurfaceVariant, for the eye alone. The guide's lists are one string each, an item to a line, and every item hangs from a lozenge (`Lozenge`, 6 at the text's own size and growing with it, level with the item's first line), 12 before the text: the points on using the app and the seven special cases in longformBody, 8 apart, and the sources in marginalia, 4 apart. Each special case is led by its words up to the first colon ("Vezot HaBerachah:"), set apart from the rest so that it is found at a glance: a step heavier, Semibold over EB Garamond's Medium, and Bold over Frank Ruhl Libre's Medium (whose Semibold barely shows at this size), high contrast's Semibold serifs or an accessibility font's Regular; and where the text is Bold already (Bold text, and the presets that turn it on, or Frank Ruhl Libre in high contrast), as heavy as the text, on a line of its own above it. The text selects, an item or paragraph at a time, and is set in bold with Bold text, as every Text is. A source in a sentence ("MB 285:14", "מ״ב רפה, יד") keeps to one line, and a dash to the word before it (no-break spaces). The closing "Customs vary…" is a NoticeBanner.
 - **Sources:** each source is a card that opens it (SeferInkWell), read as one link: its name and license, then what it is. The name in titleLarge, with the license as a tag beside it (`SeferTag`, §6.20), or under it where the two don't fit, and `open_in_new` 18 at the card's end, level with the name's first line; the description in bodyMedium onSurfaceVariant. The note on the adapted files closes the page under a SeferDivider, in bodySmall onSurfaceVariant.
 - **Policies** (privacy, terms, guidelines, accessibility): the texts are in `assets/legal/legal.json`, which the static web pages are made from too (docs/RELEASE.md). The page's title is its heading, in headlineMedium (above the 24 of the section headings), with "Last updated: October 2026" in bodySmall onSurfaceVariant under it; the app bar shows the title once it has scrolled away. Paragraphs are 12 apart; a bullet hangs, its wrapped lines aligned past the bullet (in onSurfaceVariant, 8 before the text, 6 between items). The way to reach us is a link in its sentence, primary and underlined: the support address, isolated in Hebrew, or "GitHub issues" / "דף התקלות ב־GitHub" where the build has none, never the raw address. The keyboard reaches it through its sentence, which takes the focus ring; Enter opens it. Where nothing opens it, a status message says so (`linkOpenFailed`, or `emailOpenFailed` with a Copy action that copies the bare address). The page selects as one text (`SelectionArea`), the contact line too, and a copy leaves out the marks that isolate a Latin run in Hebrew, which would break an address pasted into a mail app.
 

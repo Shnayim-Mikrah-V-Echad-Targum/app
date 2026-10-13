@@ -5,7 +5,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
 
 /// WCAG 2.x relative luminance of an opaque sRGB colour.
 double luminance(Color c) {
@@ -79,10 +79,10 @@ final _uiPairs = <String, _Pair>{
   'outline / surfaceContainer': (t) => (t.scheme.outline, t.scheme.surfaceContainer),
   'focus / surface': (t) => (t.sefer.focus, t.scheme.surface),
   'neutral / paper': (t) => (t.status.neutral, t.sefer.paper),
-  'ringMikra1 / paper': (t) => (t.sefer.ringMikra1, t.sefer.paper),
-  'ringMikra2 / paper': (t) => (t.sefer.ringMikra2, t.sefer.paper),
+  'ringMikrah1 / paper': (t) => (t.sefer.ringMikrah1, t.sefer.paper),
+  'ringMikrah2 / paper': (t) => (t.sefer.ringMikrah2, t.sefer.paper),
   'ringTargum / paper': (t) => (t.sefer.ringTargum, t.sefer.paper),
-  'ringMikra2 / ringTrack': (t) => (t.sefer.ringMikra2, t.sefer.ringTrack),
+  'ringMikrah2 / ringTrack': (t) => (t.sefer.ringMikrah2, t.sefer.ringTrack),
   'ringTargum / ringTrack': (t) => (t.sefer.ringTargum, t.sefer.ringTrack),
 };
 
@@ -224,8 +224,8 @@ void main() {
           expect(sefer.yearTrack, s.outlineVariant);
         }
         expect(sefer.focusGap, s.surface);
-        // Techelet means Mikra progress, so "done" and the first ring share it.
-        expect(sefer.ringMikra1, s.primary);
+        // Techelet means Mikrah progress, so "done" and the first ring share it.
+        expect(sefer.ringMikrah1, s.primary);
         expect(t.status.done, s.primary);
       });
     });
@@ -237,7 +237,7 @@ void main() {
   _Theme named(String name) => _themes.singleWhere((t) => t.name == name);
   for (final (hc, base) in [(named('hcLight'), named('light')), (named('hcDark'), named('dark'))]) {
     test('${hc.name}: the first two rings are told apart at least as well as in ${base.name}', () {
-      double apart(_Theme t) => contrast(t.sefer.ringMikra1, t.sefer.ringMikra2);
+      double apart(_Theme t) => contrast(t.sefer.ringMikrah1, t.sefer.ringMikrah2);
       expect(apart(hc), greaterThanOrEqualTo(apart(base)));
     });
   }

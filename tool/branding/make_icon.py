@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates the Shnayim Mikra app icon and every raster derived from it.
+"""Generates the Shnayim Mikrah app icon and every raster derived from it.
 
 The icon's wordmark is שמו״ת. Hebrew runs right to left, so the letters are
 shaped by HarfBuzz instead of being placed by hand, and the script refuses to
@@ -78,7 +78,7 @@ WHITE = '#FFFFFF'
 FONT_PX = 300
 BASELINE = 500
 RULE_X, RULE_WIDTH, RULE_HEIGHT = 292, 440, 26
-# Two Mikra passes, then the Targum.
+# Two Mikrah passes, then the Targum.
 RULES = ((580, CREAM), (628, CREAM), (676, GOLD))
 
 # Android adaptive foreground: everything within 300 px of the centre keeps
@@ -116,7 +116,7 @@ INK_VARIANT = '#575046'  # onSurfaceVariant
 HAIRLINE = '#D8CFBF'
 GOLD_LEAF = '#B38D3F'
 OG_TITLE_HE = 'שניים מקרא ואחד תרגום'
-OG_TITLE_EN = 'Shnayim Mikra v’Echad Targum'
+OG_TITLE_EN = 'Shnayim Mikrah v’Echad Targum'
 # The web app's shortcuts (manifest.json) wear the navigation's icons
 # (lib/app/shell.dart): Icons.today and Icons.donut_large, from the Material
 # icons font in the Flutter SDK.

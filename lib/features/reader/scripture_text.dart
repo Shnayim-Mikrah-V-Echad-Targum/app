@@ -16,7 +16,7 @@ import '../../ui/widgets/ornaments.dart' as ornaments show SectionBreak;
 import '../settings/app_settings.dart';
 
 /// Which kind of text is being rendered, for sizing and styling.
-enum ScriptureKind { mikra, targum, rashi, translation }
+enum ScriptureKind { mikrah, targum, rashi, translation }
 
 /// Text styles for scripture, derived from the reader's settings
 /// (docs/DESIGN_SYSTEM.md §4.7). The in-app reading size multiplies the
@@ -70,7 +70,7 @@ class ScriptureStyles {
 
   double sizeFor(ScriptureKind kind) =>
       switch (kind) {
-        ScriptureKind.mikra => baseHebrewSize,
+        ScriptureKind.mikrah => baseHebrewSize,
         ScriptureKind.targum => baseHebrewSize * targumScale,
         ScriptureKind.rashi => baseHebrewSize * (settings.rashiScript ? rashiScriptScale : rashiScale),
         ScriptureKind.translation => _accessibleFont ? accessibleEnglishSize : baseEnglishSize,
@@ -80,7 +80,7 @@ class ScriptureStyles {
   /// Pointed and cantillated text needs generous leading, split evenly above
   /// and below so that lower marks are never clipped.
   double heightFor(ScriptureKind kind) => switch (kind) {
-        ScriptureKind.mikra => lineHeight,
+        ScriptureKind.mikrah => lineHeight,
         // A little closer than the Torah's, as befits the text beneath it.
         ScriptureKind.targum => math.max(kMinLineHeight, lineHeight - 0.1),
         ScriptureKind.rashi => settings.rashiScript ? 1.75 : 1.7,
@@ -93,7 +93,7 @@ class ScriptureStyles {
     final (String? family, List<String> fallback, FontWeight weight) = switch (kind) {
       // Taamey Frank has only a Medium weight (its Bold hides the
       // cantillation), so it is never asked for bold.
-      ScriptureKind.mikra || ScriptureKind.targum => (
+      ScriptureKind.mikrah || ScriptureKind.targum => (
           settings.scriptureFont.family,
           _hebrewFallback,
           bold && settings.scriptureFont != ScriptureFont.taameyFrank ? FontWeight.w700 : FontWeight.w400,
@@ -126,7 +126,7 @@ class ScriptureStyles {
       fontWeight: weight,
       // The Torah in full ink; what accompanies it in the quieter one, which
       // still meets 7:1 (§3.5).
-      color: color ?? (kind == ScriptureKind.mikra ? scheme.onSurface : scheme.onSurfaceVariant),
+      color: color ?? (kind == ScriptureKind.mikrah ? scheme.onSurface : scheme.onSurfaceVariant),
     );
   }
 
@@ -181,7 +181,7 @@ class ScriptureStyles {
 
   /// The width of the guided reader's verse-number gutter, before the system
   /// text scale.
-  double get gutterWidth => gutterScale * sizeFor(ScriptureKind.mikra);
+  double get gutterWidth => gutterScale * sizeFor(ScriptureKind.mikrah);
 
   /// The gutter the guided reader hangs a verse's number in, in a column
   /// [maxWidth] wide: [gutterWidth] at the system text scale, or none where
@@ -247,7 +247,7 @@ class ScriptureStyles {
   bool parallelFits(double paneWidth) =>
       settings.lineWidth != LineWidth.narrow &&
       paneWidth >= parallelMinPane &&
-      MediaQuery.textScalerOf(context).scale(sizeFor(ScriptureKind.mikra)) <= parallelMaxSize;
+      MediaQuery.textScalerOf(context).scale(sizeFor(ScriptureKind.mikrah)) <= parallelMaxSize;
 
   /// Whether the full text, in a pane [paneWidth] wide, sets the Torah and
   /// what goes with it ([companion]: the Targum, or else the translation)
@@ -766,7 +766,7 @@ class ScriptureVerse extends StatelessWidget {
           // The room the marks keep from the verse, at their left.
           final clearance = marks == null
               ? 0.0
-              : MediaQuery.textScalerOf(context).scale(ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikra));
+              : MediaQuery.textScalerOf(context).scale(ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikrah));
           // The verse begins on the right in either language of the app.
           return Row(
             textDirection: TextDirection.rtl,
@@ -1109,7 +1109,7 @@ class ParallelVerse extends StatelessWidget {
 }
 
 /// The heads of the full text's parallel columns ([ParallelVerse]), above
-/// its first verse: "Mikra" over the Torah's column and "Targum Onkelos" (or
+/// its first verse: "Mikrah" over the Torah's column and "Targum Onkelos" (or
 /// the translation's name) over the other, each where its text begins, over
 /// a hairline as wide as its column. They are inset as the verses' text is
 /// within its block ([VerseGroup.padding]).
@@ -1391,7 +1391,7 @@ class SectionGap extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: open ? 20 : 10),
       child: SectionBreakMark(
         open ? ornaments.SectionBreak.petuchah : ornaments.SectionBreak.setumah,
-        verseSize: ScriptureStyles(context, settings).sizeFor(ScriptureKind.mikra),
+        verseSize: ScriptureStyles(context, settings).sizeFor(ScriptureKind.mikrah),
       ),
     );
   }

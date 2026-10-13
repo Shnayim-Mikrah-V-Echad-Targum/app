@@ -82,7 +82,7 @@ jobs:
           SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
         run: node tool/legal/build_html.mjs build/web
       # Link previews want absolute URLs; vars.WEB_URL is the site's public
-      # address (for example https://example.org/app/).
+      # address (https://shnayimmikrah.org/).
       - name: Absolute link-preview URLs
         if: vars.WEB_URL != ''
         env:
@@ -215,5 +215,5 @@ jobs:
           # certificate, which a machine must trust before it will install
           # the package (docs/RELEASE.md); the name says so.
           name: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' && 'windows-msix' || 'windows-msix-test-signed' }}
-          path: build/windows/msix/ShnayimMikra.msix
+          path: build/windows/msix/ShnayimMikrah.msix
           if-no-files-found: error

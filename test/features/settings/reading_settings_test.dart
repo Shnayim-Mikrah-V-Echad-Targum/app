@@ -4,17 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/data/models/parsha.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/ui/theme/app_theme.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/data/models/parsha.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/reader/haftarah_screen.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/ui/theme/app_theme.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
 
@@ -168,11 +168,11 @@ void main() {
     expect(find.text(chabadDesc), findsOneWidget);
     expect(find.text(desc), findsNothing);
     // The switch is further up the page, so the change is said.
-    expect(find.text('“End with Mikra” is now off, following the Chabad custom.'), findsOneWidget);
+    expect(find.text('“End with Mikrah” is now off, following the Chabad custom.'), findsOneWidget);
     await tapText(tester, 'Ashkenazi');
     expect(repeat(), isTrue);
     expect(find.text(desc), findsOneWidget);
-    expect(find.text('“End with Mikra” is on again.'), findsOneWidget);
+    expect(find.text('“End with Mikrah” is on again.'), findsOneWidget);
     // Between two customs that both repeat it, nothing changes, and nothing
     // is said.
     await tester.pump(const Duration(seconds: 10));

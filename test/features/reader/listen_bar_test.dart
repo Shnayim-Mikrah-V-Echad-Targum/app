@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/reader/listen_along.dart';
-import 'package:shnayim_mikra/features/reader/listen_bar.dart';
-import 'package:shnayim_mikra/services/tts.dart';
+import 'package:shnayim_mikrah/features/reader/listen_along.dart';
+import 'package:shnayim_mikrah/features/reader/listen_bar.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
 
 import '../../helpers.dart';
 

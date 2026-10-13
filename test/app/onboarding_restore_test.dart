@@ -3,20 +3,20 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
-import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/today/today_screen.dart';
-import 'package:shnayim_mikra/services/backup_files.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/ui/account_screen.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_merge.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/today/today_screen.dart';
+import 'package:shnayim_mikrah/services/backup_files.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 
 import '../fake_backup_files.dart';
 import '../helpers.dart';
@@ -28,7 +28,7 @@ class _Cloud extends DemoForumRepository {
   bool get isDemo => false;
 }
 
-/// "I already use Shnayim Mikra", on the welcome of a new install, on the
+/// "I already use Shnayim Mikrah", on the welcome of a new install, on the
 /// Wednesday of Toldot 5787.
 void main() {
   final now = DateTime(2026, 11, 11, 10);
@@ -57,7 +57,7 @@ void main() {
       overrides: [backupFilesProvider.overrideWithValue(FakeBackupFiles(file: file))],
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('I already use Shnayim Mikra'));
+    await tester.tap(find.text('I already use Shnayim Mikrah'));
     await tester.pumpAndSettle();
     expect(find.text('Restore your progress'), findsOneWidget);
     return c;
@@ -195,7 +195,7 @@ void main() {
       expect(location(c), '/welcome', reason: 'already signed in');
       expect(find.text('Couldn’t sync right now. We’ll try again later.'), findsOneWidget);
       expect(c.read(settingsProvider).onboardingComplete, isFalse);
-      expect(find.text('I already use Shnayim Mikra'), findsOneWidget, reason: 'to try again');
+      expect(find.text('I already use Shnayim Mikrah'), findsOneWidget, reason: 'to try again');
     });
 
     testWidgets('says so while the backup comes in', (tester) async {
@@ -207,7 +207,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Restoring your progress…'), findsOneWidget);
-      expect(find.text('I already use Shnayim Mikra'), findsNothing);
+      expect(find.text('I already use Shnayim Mikrah'), findsNothing);
       expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNull);
       await tester.pumpAndSettle(const Duration(seconds: 1));
       expect(location(c), '/welcome/location', reason: 'an empty backup');
@@ -229,7 +229,7 @@ void main() {
       final c = await openRestore(
         tester,
         DemoForumRepository(),
-        file: jsonEncode({'app': 'shnayim_mikra', 'exportedAt': '2026-11-01T12:00:00.000Z', ...backup}),
+        file: jsonEncode({'app': 'shnayim_mikrah', 'exportedAt': '2026-11-01T12:00:00.000Z', ...backup}),
       );
       await tester.tap(find.text('Restore from a backup file'));
       await tester.pumpAndSettle();
@@ -308,7 +308,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byType(TextField),
-      jsonEncode({'app': 'shnayim_mikra', 'progress': fiveWeeks().toJson()}),
+      jsonEncode({'app': 'shnayim_mikrah', 'progress': fiveWeeks().toJson()}),
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
     await tester.pumpAndSettle();

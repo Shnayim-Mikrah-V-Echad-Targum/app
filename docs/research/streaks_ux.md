@@ -1,12 +1,12 @@
-# Streaks, Habits and UX for a Shnayim Mikra App
+# Streaks, Habits and UX for a Shnayim Mikrah App
 
-*Research report, prepared 2026-10-09. Scope: streak and habit mechanics, humane engagement, notifications, onboarding, progress visualization, and exact streak rules for an app that helps users read the weekly parsha twice in Hebrew (Mikra) and once in Targum, usually one aliyah a day from Sunday to Friday. Users don't use devices on Shabbat or Yom Tov.*
+*Research report, prepared 2026-10-09. Scope: streak and habit mechanics, humane engagement, notifications, onboarding, progress visualization, and exact streak rules for an app that helps users read the weekly parsha twice in Hebrew (Mikrah) and once in Targum, usually one aliyah a day from Sunday to Friday. Users don't use devices on Shabbat or Yom Tov.*
 
 ---
 
 ## 0. Method, limits and evidence key
 
-**How this was researched.** WebFetch could not reach any site from this environment: DNS failures and proxy `403 connect_rejected` on blog.duolingo.com, wikipedia.org and others. So every finding below comes from **WebSearch result summaries** of the cited pages, not from reading the pages in full. The shared web-search budget then ran out partway through. Two points could not be checked as a result: the Tisha B'Av rule for Shnayim Mikra, and community norms on device use during Chol HaMoed. Both are flagged where they come up. Halachic details are cross-checked against the companion file `research/halacha.md`. Have a rav review them before launch.
+**How this was researched.** WebFetch could not reach any site from this environment: DNS failures and proxy `403 connect_rejected` on blog.duolingo.com, wikipedia.org and others. So every finding below comes from **WebSearch result summaries** of the cited pages, not from reading the pages in full. The shared web-search budget then ran out partway through. Two points could not be checked as a result: the Tisha B'Av rule for Shnayim Mikrah, and community norms on device use during Chol HaMoed. Both are flagged where they come up. Halachic details are cross-checked against the companion file `research/halacha.md`. Have a rav review them before launch.
 
 **Evidence key** (used throughout):
 - **[P]**: primary or peer-reviewed source, or an official company or platform document.
@@ -41,18 +41,18 @@ Full detail is in `halacha.md`. This table covers what drives the streak rules.
 | Earliest start | MB 285:7: from Shabbat Mincha of the previous week, when the next parsha is first read. Kol Bo and Shulchan Aruch HaRav: from Sunday ([OU Timing](https://outorah.org/p/173503); [SA HaRav](https://shulchanaruchharav.com/?p=1015)) | Next parsha opens for credit after Havdalah. A setting allows "Sunday only" |
 | Daily division | Some read one aliyah a day; others read the whole parsha after midday on Erev Shabbat (SA HaRav) ([OU Timing](https://outorah.org/p/173503)) | Plan templates, including a Friday-only plan |
 | Reading on Yom Tov | Permitted when Yom Tov falls midweek ([dinonline 2017](https://dinonline.org/2017/05/19/shnayim-mikra-when-yom-tov-is-in-middle-of-the-week/)) | Allow "I'll read on Yom Tov from a Chumash," logged afterward |
-| Yom Tov readings | No Shnayim Mikra obligation for festival readings (SA 285:7) ([OU 174227](https://www.outorah.org/p/174227)) | **Holiday weeks with no parsha are transparent** |
+| Yom Tov readings | No Shnayim Mikrah obligation for festival readings (SA 285:7) ([OU 174227](https://www.outorah.org/p/174227)) | **Holiday weeks with no parsha are transparent** |
 | Yom Tov on Shabbat | Creates a "skip week" of two weeks between parshiyot. Poskim differ on when the delayed parsha may start ([OU 81739](https://outorah.org/p/81739)) | Default: the delayed parsha opens Sunday of the week it is read, which satisfies all views |
-| Vezot HaBeracha | Best on Hoshana Rabbah (MB 285:18), also fulfilled on Shemini Atzeret. Avudraham records a custom of reading the whole Torah on the night of Hoshana Rabbah to make up a year's missed Shnayim Mikra ([OU 81739](https://outorah.org/p/81739); [dinonline](https://dinonline.org/2011/10/10/best-time-for-shanyim-mikra-of-vezos-haberachah/)) | Special end-of-year item. Hoshana Rabbah works as a **make-up night** for the annual Siyum |
+| Vezot HaBeracha | Best on Hoshana Rabbah (MB 285:18), also fulfilled on Shemini Atzeret. Avudraham records a custom of reading the whole Torah on the night of Hoshana Rabbah to make up a year's missed Shnayim Mikrah ([OU 81739](https://outorah.org/p/81739); [dinonline](https://dinonline.org/2011/10/10/best-time-for-shanyim-mikra-of-vezos-haberachah/)) | Special end-of-year item. Hoshana Rabbah works as a **make-up night** for the annual Siyum |
 | Bereishit | Starts only after Bereishit is read on Simchat Torah (`halacha.md` §2.3) | The Bereishit week is short and its plan is compressed |
 | Targum substitutes | SA 285:2: Rashi counts as Targum, and a yarei shamayim reads both. Translations that follow Chazal and Rashi are accepted by some poskim (`halacha.md` §4.7) | Setting: Onkelos / Rashi / both / approved translation |
 | Haftarah | Customary, not obligatory (Rema) ([Wikipedia](https://en.wikipedia.org/wiki/Shnayim_mikra_ve-echad_targum)) | Optional. **Never affects streaks** |
 | Israel / Diaspora | Schedules diverge when the 8th day of Pesach or 2nd day of Shavuot falls on Shabbat, sometimes for months, and rejoin at a double parsha ([Sefaria sheet](https://sefaria.org/sheets/339455); [OU 49153](https://outorah.org/p/49153)). A Diaspora resident in Israel during a divergent week reads both. Someone going from Israel to the Diaspora need not repeat (`halacha.md` §4.11) | Two schedules. **Never break a streak because the user switched schedules** |
-| Mourning | During shiva, Shnayim Mikra is allowed on Shabbat but weekday Torah study is not (YD 400:1; `halacha.md` §6) | A general "Life happens" pause that needs no explanation |
+| Mourning | During shiva, Shnayim Mikrah is allowed on Shabbat but weekday Torah study is not (YD 400:1; `halacha.md` §6) | A general "Life happens" pause that needs no explanation |
 | Tisha B'Av | Torah study is restricted (OC 554) [K] | Quiet day: no reminders, no requirement |
 
 Two market signals are also relevant:
-- **Existing Shnayim Mikra apps** track progress per aliyah or per verse, pin users to a parsha when they fall behind, and offer daily reminders. They don't have humane streak systems ([Shnayim](https://apps.apple.com/app/id1296709500); [Shnayim Mikra Tracker](https://apps.apple.com/app/id6762082339)).
+- **Existing Shnayim Mikrah apps** track progress per aliyah or per verse, pin users to a parsha when they fall behind, and offer daily reminders. They don't have humane streak systems ([Shnayim](https://apps.apple.com/app/id1296709500); [Shnayim Mikra Tracker](https://apps.apple.com/app/id6762082339)).
 - **The OU's daily email series** sends one aliyah a day ([OU](https://ou.org/news/coming-inbox-near-ou-torah-launches-shanyim-mikra-daily-email-series)).
 
 A Shabbat-aware streak system is therefore room to stand out.
@@ -101,7 +101,7 @@ A Shabbat-aware streak system is therefore room to stand out.
 ### 3.8 YouVersion (Bible App)
 - **Streaks** count consecutive days with any Scripture activity. **Perfect Weeks** count Sunday-to-Sunday weeks of consistent use. Milestone celebrations are built in [S] ([Outreach Magazine](https://outreachmagazine.com/?p=39061)). This weekly metric is a good model.
 - **Reading plans** have **"Catch Me Up,"** which resets "today's reading" to the day after the last completed day [S] ([The Sweet Setup](https://thesweetsetup.com/use-catch-feature-youversions-reading-plans/)).
-- **Rigid schedules lose people.** Year-plan usage drops by a third by the end of February and by half by May (Bible Gateway). All 10 of the most-completed plans take a week or less [S] ([Christianity Today](https://christianitytoday.com/news/2015/december/most-popular-bible-verses-200-million-youversion-app-2015.html)). That favors a **weekly** cycle like Shnayim Mikra and argues for catch-up tools.
+- **Rigid schedules lose people.** Year-plan usage drops by a third by the end of February and by half by May (Bible Gateway). All 10 of the most-completed plans take a week or less [S] ([Christianity Today](https://christianitytoday.com/news/2015/december/most-popular-bible-verses-200-million-youversion-app-2015.html)). That favors a **weekly** cycle like Shnayim Mikrah and argues for catch-up tools.
 
 ### 3.9 Jewish learning programs and apps
 - **929** reads one chapter of Tanakh a day, Sunday to Thursday. **Friday and Shabbat are reserved for catching up or going deeper** [P] ([929.org.il](https://www.929.org.il/pages/aboutEN.html); [Hebcal nine29](https://pkg.go.dev/github.com/hebcal/learning/nine29)). This is the clearest Jewish precedent for buffer days built into the schedule.
@@ -264,7 +264,7 @@ A Shabbat-aware streak system is therefore room to stand out.
 | **Plan day** | A non-transparent day in a parsha week with ≥1 aliyah assigned by the user's plan. |
 | **Device-day window** of plan day D | **Opens** at 03:00 local on D, or at the end of the preceding rest period if D follows one (so Saturday night after Havdalah belongs to Sunday). **Closes** at 03:00 local on D+1, or at candle-lighting on D if D+1 is a rest day. The 03:00 cutoff is configurable from 00:00 to 05:00. |
 | **Parsha week** | For a regular parsha P: from P's opening (default Motzaei Shabbat of the preceding week; setting "Sunday") to the Shabbat on which P is read. |
-| **Unit** | One *aliyah-pass*: Mikra I, Mikra II, or Targum (or Rashi or a translation, per settings) of one aliyah. A regular week is 7 × 3 = **21 units**. A double week uses each parsha's own aliyot: 14 × 3 = **42 units**. Verse-by-verse readers complete an aliyah's 3 units together. |
+| **Unit** | One *aliyah-pass*: Mikrah I, Mikrah II, or Targum (or Rashi or a translation, per settings) of one aliyah. A regular week is 7 × 3 = **21 units**. A double week uses each parsha's own aliyot: 14 × 3 = **42 units**. Verse-by-verse readers complete an aliyah's 3 units together. |
 | **Open parsha** | (a) the current week's parsha; (b) the previous parsha until its late deadline; (c) any earlier parsha of this cycle (backlog) until Simchat Torah. |
 | **Read-date** | The date the reading actually happened. Defaults to the device-day window when logged; can be set by the user under the backfill rules (§10.7). |
 
@@ -338,14 +338,14 @@ For each parsha P (double weeks count as one week; holiday weeks have no P):
   - "Shavua tov! Did you read on Shabbat?"
   - One-tap toggles for each unlogged aliyah plus the haftarah.
   - A single "I finished Parshat {X} on Shabbat" button.
-- **Honor statement, shown once at onboarding:** "Shnayim Mikra runs on the honor system. Log what you read, wherever you read it — a Chumash at shul counts just as much as this app."
+- **Honor statement, shown once at onboarding:** "Shnayim Mikrah runs on the honor system. Log what you read, wherever you read it — a Chumash at shul counts just as much as this app."
 
 ### 10.8 Reading ahead
 - **Within the current parsha:** unlimited. Later plan days become AHEAD.
 - **Next parsha:** credit opens at the *earliest-start* setting.
   - Default: **Motzaei Shabbat**, following MB, which counts from Shabbat Mincha. Reading done on Shabbat afternoon after Mincha may be logged with read-date Shabbat.
   - Alternative: **Sunday**.
-  - Before it opens, the reader works in **Preview** with no credit. Banner: "Per the Mishnah Berurah, Shnayim Mikra for {Y} counts from Mincha of Shabbat {X}. We'll keep your place."
+  - Before it opens, the reader works in **Preview** with no credit. Banner: "Per the Mishnah Berurah, Shnayim Mikrah for {Y} counts from Mincha of Shabbat {X}. We'll keep your place."
 - **Holiday ("skip") weeks:** the delayed parsha opens **Sunday of the week it is read**, which satisfies every view. During the holiday week the home card says "Holiday week — no parsha due. A good week to catch up on any earlier parsha" when there is backlog.
 - **Bereishit:** opens after Simchat Torah ends, which is one day later in the Diaspora than in Israel.
 
@@ -425,7 +425,7 @@ For each parsha P (double weeks count as one week; holiday weeks have no P):
 
 ### 10.12 Progress UI
 - **Parsha ring** on the home card:
-  - Three concentric rings: outer **Mikra I**, middle **Mikra II**, inner **Targum** (labeled "Rashi" if chosen).
+  - Three concentric rings: outer **Mikrah I**, middle **Mikrah II**, inner **Targum** (labeled "Rashi" if chosen).
   - Each ring has 7 arcs (14 in double weeks), sized by verse count.
   - A **plan tick** on the outer ring marks where today's target is.
   - The **center** shows "4 of 7 aliyot," "Shabbat in 2 days · candles 6:42 pm," and a haftarah dot (hollow if off).
@@ -485,7 +485,7 @@ For each parsha P (double weeks count as one week; holiday weeks have no P):
 | Notification priming | "Want a gentle daily nudge? At {time}, after {anchor}. **Never on Shabbat or Yom Tov.** At most one a day — change anytime." [Yes, remind me] [Not now] | "Enable notifications or you'll forget!" |
 | Final backoff message | "We'll pause reminders for now. Your place in Parshat {X} is saved — come back anytime." | "We miss you 😢" |
 | Sefer complete | "Chazak, chazak, v'nitchazek! Sefer Bereishit — {n} pesukim, twice, with Targum." | "You earned 500 points!" |
-| Siyum | "Mazel tov — you've completed Shnayim Mikra for the entire Torah this year." | (no upsell on this screen) |
+| Siyum | "Mazel tov — you've completed Shnayim Mikrah for the entire Torah this year." | (no upsell on this screen) |
 
 ### 10.16 Anti-patterns this app will never ship
 1. Paid or ad-gated grace days, streak repair or restores. Compassion features are never behind a premium tier.
@@ -578,7 +578,7 @@ Worked example of a regular Diaspora week on plan T1:
 1. Late-window default: Tuesday nightfall vs all of Wednesday. Is "end of the Tuesday device day" acceptable wording?
 2. Vezot HaBeracha: on-time window, and is any late window meaningful after Simchat Torah?
 3. Skip weeks: confirm "the delayed parsha opens Sunday of its week" as the safe default.
-4. Tisha B'Av: confirm it is a quiet day with no Shnayim Mikra. Chol HaMoed: confirm the default.
+4. Tisha B'Av: confirm it is a quiet day with no Shnayim Mikrah. Chol HaMoed: confirm the default.
 5. Traveler logic (`halacha.md` §4.11): should "also read this week" be *recommended* (current proposal) or *required*?
 6. Wording of the "translation following Rashi" option, and its default visibility.
 
@@ -619,8 +619,8 @@ Worked example of a regular Diaspora week on plan T1:
 - 929: [929 About](https://www.929.org.il/pages/aboutEN.html), [929 Wikipedia](https://en.wikipedia.org/wiki/929:_Tanakh_B%27yachad), [Hebcal nine29](https://pkg.go.dev/github.com/hebcal/learning/nine29)
 - [Sefaria calendars](https://sefaria.org.il/calendars)
 - Hebcal: [hebcal-learning](https://github.com/hebcal/hebcal-learning), [Hebcal leyning API](https://www.hebcal.com/home/4277/leyning-torah-reading-api), [@hebcal/leyning](https://www.npmjs.com/package/@hebcal/leyning), [@hebcal/core README](https://cdn.jsdelivr.net/npm/@hebcal/core@6.5.3/README.md)
-- Shnayim Mikra apps: [Shnayim app](https://apps.apple.com/app/id1296709500), [Shnayim Mikra Tracker](https://apps.apple.com/app/id6762082339)
-- [OU Shnayim Mikra emails](https://ou.org/news/coming-inbox-near-ou-torah-launches-shanyim-mikra-daily-email-series)
+- Shnayim Mikrah apps: [Shnayim app](https://apps.apple.com/app/id1296709500), [Shnayim Mikra Tracker](https://apps.apple.com/app/id6762082339)
+- [OU Shnayim Mikrah emails](https://ou.org/news/coming-inbox-near-ou-torah-launches-shanyim-mikra-daily-email-series)
 - Chabad: [Chabad Daily Study](https://apps.apple.com/us/app/chabad-org-daily-torah-study/id1408133263), [Rambam App](https://apps.apple.com/app/id1571859668)
 - All Daf: [All Daf](https://alldaf.org/about-us), [OU siyum](https://ou.org/news/orthodox-unions-torah-initiatives-and-upper-west-side-community-celebrate-siyum-on-maseches-sotah)
 - [Mishnah Yomis](https://en.wikipedia.org/wiki/Mishnah_Yomis)

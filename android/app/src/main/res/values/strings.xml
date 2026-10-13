@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Shnayim Mikra</string>
+    <string name="app_name">Shnayim Mikrah</string>
 
     <!-- The home-screen widget (ParshaWidgetProvider), in the widget picker,
          and before the app has given it anything to show. Everything else it
          shows comes from the app, in the app's language. -->
     <string name="widget_label">This week\'s parsha</string>
     <string name="widget_description">This week\'s parsha, how far you\'ve read and today\'s reading, a tap away.</string>
-    <string name="widget_empty">Open Shnayim Mikra to begin.</string>
+    <string name="widget_empty">Open Shnayim Mikrah to begin.</string>
 
     <!-- The widget as the picker previews it (widget_parsha_preview), for a
          reader partway through Bereshit. -->

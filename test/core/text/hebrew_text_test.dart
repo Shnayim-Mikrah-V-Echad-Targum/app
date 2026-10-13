@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
 
 void main() {
   const genesis11 = 'בְּרֵאשִׁ֖ית בָּרָ֣א אֱלֹהִ֑ים אֵ֥ת הַשָּׁמַ֖יִם וְאֵ֥ת הָאָֽרֶץ׃';

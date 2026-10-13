@@ -13,7 +13,7 @@ export 'status_colors.dart';
 /// that carries text or meaning.
 ///
 /// How the roles are used:
-/// - primary (techelet) only for interaction, Mikra progress, the focus ring
+/// - primary (techelet) only for interaction, Mikrah progress, the focus ring
 ///   and the Hebrew display title of a parsha;
 /// - secondary (gold ink) is the rubric colour: eyebrows, verse numbers,
 ///   chapter heads, Targum, overdue and rest days. Never buttons;
@@ -286,8 +286,8 @@ abstract final class Palettes {
     hairline: Color(0xFFD8CFBF),
     hairlineWidth: 1,
     goldLeaf: Color(0xFFB38D3F),
-    ringMikra1: Color(0xFF1D3F75),
-    ringMikra2: Color(0xFF55779F),
+    ringMikrah1: Color(0xFF1D3F75),
+    ringMikrah2: Color(0xFF55779F),
     ringTargum: Color(0xFF946C1E),
     ringTrack: Color(0xFFE8E1D3),
     yearTrack: Color(0xFFD8CFBF),
@@ -304,8 +304,8 @@ abstract final class Palettes {
     hairline: Color(0xFF4A443A),
     hairlineWidth: 1,
     goldLeaf: Color(0xFFB8954B),
-    ringMikra1: Color(0xFFAFC6EE),
-    ringMikra2: Color(0xFF7E9BC8),
+    ringMikrah1: Color(0xFFAFC6EE),
+    ringMikrah2: Color(0xFF7E9BC8),
     ringTargum: Color(0xFFC9A458),
     ringTrack: Color(0xFF36312A),
     yearTrack: Color(0xFF4A443A),
@@ -322,8 +322,8 @@ abstract final class Palettes {
     hairline: Color(0xFFCBB994),
     hairlineWidth: 1,
     goldLeaf: Color(0xFFA9853A),
-    ringMikra1: Color(0xFF25406C),
-    ringMikra2: Color(0xFF4F6B92),
+    ringMikrah1: Color(0xFF25406C),
+    ringMikrah2: Color(0xFF4F6B92),
     ringTargum: Color(0xFF8A651C),
     ringTrack: Color(0xFFE0D3B4),
     yearTrack: Color(0xFFCBB994),
@@ -340,8 +340,8 @@ abstract final class Palettes {
     hairline: Color(0xFF000000),
     hairlineWidth: 2,
     goldLeaf: Color(0xFF4F3500),
-    ringMikra1: Color(0xFF0A2A5E),
-    ringMikra2: Color(0xFF3D629C),
+    ringMikrah1: Color(0xFF0A2A5E),
+    ringMikrah2: Color(0xFF3D629C),
     ringTargum: Color(0xFF4F3500),
     ringTrack: Color(0xFFE0E0E0),
     yearTrack: Color(0xFF949494),
@@ -358,8 +358,8 @@ abstract final class Palettes {
     hairline: Color(0xFFFFFFFF),
     hairlineWidth: 2,
     goldLeaf: Color(0xFFFFD970),
-    ringMikra1: Color(0xFFB5CEFF),
-    ringMikra2: Color(0xFF7A9FE8),
+    ringMikrah1: Color(0xFFB5CEFF),
+    ringMikrah2: Color(0xFF7A9FE8),
     ringTargum: Color(0xFFFFD970),
     ringTrack: Color(0xFF333333),
     yearTrack: Color(0xFF5C5C5C),

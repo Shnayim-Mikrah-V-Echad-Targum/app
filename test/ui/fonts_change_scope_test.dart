@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/services/optional_fonts.dart';
-import 'package:shnayim_mikra/ui/widgets/fonts_change_scope.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/services/optional_fonts.dart';
+import 'package:shnayim_mikrah/ui/widgets/fonts_change_scope.dart';
 
 import '../helpers.dart';
 

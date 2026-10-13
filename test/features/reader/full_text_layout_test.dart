@@ -5,18 +5,18 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/reader/verse_anchor.dart';
-import 'package:shnayim_mikra/features/reader/whole_parsha.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/services/tts.dart';
-import 'package:shnayim_mikra/ui/theme/focus.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/reader/aliyah_ribbon.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/reader/verse_anchor.dart';
+import 'package:shnayim_mikrah/features/reader/whole_parsha.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
+import 'package:shnayim_mikrah/ui/theme/focus.dart';
 
 import '../../helpers.dart';
 
@@ -109,20 +109,20 @@ void main() {
       expect(targum.every((v) => !v.ruled && !v.showNumber), isTrue);
 
       final first = rows.first;
-      final mikra = find.descendant(of: first, matching: verses(ScriptureKind.mikra));
+      final mikrah = find.descendant(of: first, matching: verses(ScriptureKind.mikrah));
       final beside = find.descendant(of: first, matching: verses(ScriptureKind.targum));
-      final (right, left) = (tester.getRect(mikra), tester.getRect(beside));
+      final (right, left) = (tester.getRect(mikrah), tester.getRect(beside));
       // The Torah on the right, as it begins, in the wider column.
       expect(left.right, lessThan(right.left));
       expect(right.left - left.right, closeTo(ParallelVerse.gutter, 0.5));
       expect(right.width / left.width, closeTo(6 / 5, 0.01));
-      expect(firstBaseline(tester, beside), closeTo(firstBaseline(tester, mikra), 0.5));
+      expect(firstBaseline(tester, beside), closeTo(firstBaseline(tester, mikrah), 0.5));
 
       // Headed by the columns' names, each over its own.
       final heads = find.byType(ParallelHeading);
       expect(heads, findsOneWidget);
       expect(tester.getRect(heads).bottom, lessThan(right.top));
-      expect(find.bySemanticsLabel('Mikra, Targum Onkelos'), findsOneWidget);
+      expect(find.bySemanticsLabel('Mikrah, Targum Onkelos'), findsOneWidget);
 
       // The text keeps to its wider measure, centred, and the title and the
       // ribbon to it.
@@ -151,21 +151,21 @@ void main() {
           ),
         );
         final first = find.byType(ParallelVerse).first;
-        final mikra = tester.getRect(find.descendant(of: first, matching: verses(ScriptureKind.mikra)));
+        final mikrah = tester.getRect(find.descendant(of: first, matching: verses(ScriptureKind.mikrah)));
         final beside = tester.getRect(
           find.descendant(of: first, matching: translation ? find.byType(TranslationVerse) : verses(ScriptureKind.targum)),
         );
-        expect(beside.right, lessThan(mikra.left));
-        expect(mikra.left - beside.right, closeTo(ParallelVerse.gutter, 0.5));
-        expect(firstBaseline(tester, find.descendant(of: first, matching: verses(ScriptureKind.mikra))),
+        expect(beside.right, lessThan(mikrah.left));
+        expect(mikrah.left - beside.right, closeTo(ParallelVerse.gutter, 0.5));
+        expect(firstBaseline(tester, find.descendant(of: first, matching: verses(ScriptureKind.mikrah))),
             closeTo(firstBaseline(tester, find.descendant(of: first, matching: translation ? find.byType(TranslationVerse) : verses(ScriptureKind.targum))), 0.5));
 
         // Each name over its column, set from the edge its text begins at.
         final heading = tester.widget<ParallelHeading>(find.byType(ParallelHeading));
         final torahHead = find.descendant(of: find.byType(ParallelHeading), matching: find.text(heading.torah));
         final besideHead = find.descendant(of: find.byType(ParallelHeading), matching: find.text(heading.beside));
-        expect(tester.getRect(torahHead).left, closeTo(mikra.left, 0.5));
-        expect(tester.getRect(torahHead).right, closeTo(mikra.right, 0.5));
+        expect(tester.getRect(torahHead).left, closeTo(mikrah.left, 0.5));
+        expect(tester.getRect(torahHead).right, closeTo(mikrah.right, 0.5));
         expect(tester.getRect(besideHead).left, closeTo(beside.left, 0.5));
         expect(tester.getRect(besideHead).right, closeTo(beside.right, 0.5));
         expect(tester.widget<Text>(torahHead).textAlign, TextAlign.right);
@@ -214,11 +214,11 @@ void main() {
         final first = find.byType(ParallelVerse).first;
         SemanticsNode node(Finder f) => tester.getSemantics(find.descendant(of: first, matching: f).first);
         final order = tester.semantics.simulatedAccessibilityTraversal().toList();
-        final mikra = order.indexOf(node(verses(ScriptureKind.mikra)));
+        final mikrah = order.indexOf(node(verses(ScriptureKind.mikrah)));
         final targum = order.indexOf(node(verses(ScriptureKind.targum)));
         final translation = order.indexWhere((n) => n.label.contains('These are the generations of Noah'));
-        expect(mikra, isNonNegative);
-        expect(targum, greaterThan(mikra));
+        expect(mikrah, isNonNegative);
+        expect(targum, greaterThan(mikrah));
         expect(translation, greaterThan(targum), reason: 'as beneath each other: the verse, its Targum, its translation');
         handle.dispose();
       });

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/search/marked_text.dart';
+import 'package:shnayim_mikrah/features/search/marked_text.dart';
 
 import '../../helpers.dart';
 

@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/community/data/backend.dart';
-import 'package:shnayim_mikra/features/community/data/community_providers.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/models.dart';
+import 'package:shnayim_mikrah/features/community/data/backend.dart';
+import 'package:shnayim_mikrah/features/community/data/community_providers.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/models.dart';
 
 final _start = DateTime.utc(2026, 9, 1, 12);
 

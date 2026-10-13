@@ -4,20 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/data/models/scripture.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/reader/reader_flow.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/today/today_clock.dart';
-import 'package:shnayim_mikra/features/today/today_screen.dart';
-import 'package:shnayim_mikra/ui/widgets/ledger.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show SeferDivider, TitlePageFrame;
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart' show ParshaRings, RingsWithLegend;
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/data/models/scripture.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/reader/reader_flow.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/today/today_clock.dart';
+import 'package:shnayim_mikrah/features/today/today_screen.dart';
+import 'package:shnayim_mikrah/ui/widgets/ledger.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart' show SeferDivider, TitlePageFrame;
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart' show ParshaRings, RingsWithLegend;
 
 import '../../helpers.dart';
 
@@ -30,7 +30,7 @@ final _settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026
 ProgressState _bereshit() {
   final mon = LocalDate(2026, 10, 5);
   var w = WeekProgress(weekId: '5787:1').withAliyah(0, mon).withAliyah(1, mon.addDays(1));
-  w = w.withUnit(2, ReadingPass.mikra1, mon.addDays(2)).withUnit(2, ReadingPass.mikra2, mon.addDays(2));
+  w = w.withUnit(2, ReadingPass.mikrah1, mon.addDays(2)).withUnit(2, ReadingPass.mikrah2, mon.addDays(2));
   return ProgressState(weeks: {'5787:1': w});
 }
 
@@ -270,8 +270,8 @@ void main() {
     test('resumes a reading marked done with no place saved after it', () {
       final day = LocalDate(2026, 10, 7);
       final week = WeekProgress(weekId: '5787:1')
-          .withUnit(2, ReadingPass.mikra1, day)
-          .withUnit(2, ReadingPass.mikra2, day);
+          .withUnit(2, ReadingPass.mikrah1, day)
+          .withUnit(2, ReadingPass.mikrah2, day);
       expect(week.savedPositions(2, 6), [6, 6, 0]);
       // A place saved partway through a reading since marked done.
       expect(week.withPosition(2, const [3, 0, 0]).savedPositions(2, 6), [6, 6, 0]);
@@ -306,7 +306,7 @@ void main() {
       expect(heading, isSemantics(label: 'Parshat Bereshit', isHeader: true));
       expect(heading.getSemanticsData().headingLevel, 1);
       // The app's name heads nothing.
-      expect(tester.getSemantics(find.text('Shnayim Mikra')), isSemantics(isHeader: false));
+      expect(tester.getSemantics(find.text('Shnayim Mikrah')), isSemantics(isHeader: false));
       expect(find.byType(TitlePageFrame), findsOneWidget);
       expect(find.byType(AppBar), findsNothing);
       handle.dispose();
