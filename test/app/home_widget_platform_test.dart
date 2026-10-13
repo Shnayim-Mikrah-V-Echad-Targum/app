@@ -84,6 +84,32 @@ void main() {
     expect(swift, isNot(contains('bySettingHour')));
   });
 
+  test("both widgets read today's date as the app writes it, in the Gregorian calendar", () {
+    // The app's dates are ISO and Gregorian, whatever the device's calendar.
+    final day = WidgetDay(
+      date: LocalDate(2026, 10, 13),
+      until: null,
+      week: 0,
+      kind: WidgetDayKind.weekday,
+      eyebrow: '',
+      line: '',
+    );
+    expect(day.toJson()['date'], '2026-10-13');
+    expect(provider, contains('Locale.ROOT,\n                "%04d-%02d-%02d"'));
+
+    // iOS's Calendar.current is the calendar the reader picks in Settings,
+    // which may count Buddhist years (2569) or Japanese ones (Reiwa 8): today
+    // would then never be one of the timeline's days. The widget keeps to
+    // the Gregorian, in the device's time zone. (Android's
+    // Calendar.getInstance() is always Gregorian.)
+    expect(swift, contains('var calendar = Calendar(identifier: .gregorian)'));
+    expect(swift, contains('calendar.timeZone = .autoupdatingCurrent'));
+    expect(swift, contains('let parts = gregorian.dateComponents([.year, .month, .day], from: date)'));
+    expect(swift, contains('let calendar = gregorian'));
+    expect(swift, isNot(contains('Calendar.current')));
+    expect(swift, isNot(contains('Calendar.autoupdatingCurrent')));
+  });
+
   test('past their days, both widgets still rest on Shabbat and Yom Tov', () {
     expect(provider, contains('timeline.rests[appDate(now)]'));
     expect(provider, contains('date in timeline.rests'));
