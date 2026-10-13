@@ -149,11 +149,13 @@ void main() {
         expect(around(fast, minutes).where((r) => r.date == ninth), isEmpty, reason: '$minutes');
       }
       // Friday, 8 Av, is not the eve of the fast: its morning reminder
-      // stays, and only Shabbat's rule takes its evening one.
+      // stays, and only Shabbat's rule brings its evening one forward, to
+      // 11:30, as on any Friday without a city.
       final friday = ninth.addDays(-1);
       expect(planner.planFor(planner.schedule.weekFor(friday)).days.map((d) => d.date), contains(friday));
-      expect(around(fast, 9 * 60).where((r) => r.date == friday).single.kind, ReminderKind.daily);
-      expect(around(fast, 20 * 60).where((r) => r.date == friday), isEmpty);
+      expect(around(fast, 9 * 60).where((r) => r.date == friday).single.minutes, 9 * 60);
+      final evening = around(fast, 20 * 60).where((r) => r.date == friday).single;
+      expect((evening.kind, evening.minutes), (ReminderKind.daily, kErevShabbatLatestMinutes));
     });
 
     test('nothing on the fast while it has no reading planned, not even the last message', () {
@@ -215,9 +217,11 @@ void main() {
       expect(pausedIn(reminders).date, LocalDate(2026, 10, 25));
     });
 
-    test('skips the eve of Shabbat when the daily time is after midday', () {
-      final reminders = plan(prefs: const ReminderPrefs(daily: true, dailyMinutes: 20 * 60), days: 11);
-      expect(pausedIn(reminders).date, LocalDate(2026, 10, 25));
+    test('comes at 11:30 on the eve of Shabbat when the daily time is after midday, without a city', () {
+      // The horizon ends on Thursday 22 October 2026: the message comes on
+      // Friday, at the time a daily reminder would.
+      final paused = pausedIn(plan(prefs: const ReminderPrefs(daily: true, dailyMinutes: 20 * 60), days: 11));
+      expect((paused.date, paused.minutes), (LocalDate(2026, 10, 23), 690));
     });
 
     test('skips Yom Tov', () {
@@ -269,6 +273,122 @@ void main() {
         expect(plan(prefs: prefs).where((r) => r.kind == ReminderKind.paused), hasLength(1));
       });
     }
+  });
+
+  group("the eve's reminder", () {
+    const inIsrael = ReadingPlanner(schedule: ParshaSchedule(israel: true));
+    const erevOnly = ReminderPrefs(erevShabbat: true, erevShabbatMinutes: 10 * 60);
+
+    /// The Erev Shabbat reminders planned on the morning of [today], for a
+    /// fortnight.
+    List<PlannedReminder> eves(ReadingPlanner planner, LocalDate today, {int days = 14}) => [
+          for (final r in planReminders(
+            prefs: erevOnly,
+            planner: planner,
+            progressOf: empty,
+            now: DateTime(today.year, today.month, today.day, 8),
+            today: today,
+            days: days,
+          ))
+            if (r.kind == ReminderKind.erevShabbat) r,
+        ];
+    PlannedReminder eveOf(ReadingPlanner planner, LocalDate today, int parsha) =>
+        eves(planner, today).singleWhere((r) => r.plan.portion == PortionId(parsha));
+
+    test('names the Yom Tov that begins that evening, when the parsha is read straight after it', () {
+      // Israel 5789: the seventh day of Pesach on Friday 6 April 2029, and
+      // Shemini (26) read the next day.
+      final shemini = eveOf(inIsrael, LocalDate(2029, 4, 1), 26);
+      expect((shemini.date, shemini.minutes), (LocalDate(2029, 4, 5), 10 * 60));
+      expect((shemini.erevYomTov, shemini.endsWithYomTov), (ErevYomTov.other, false));
+      // Israel 5786: Shavuot on Friday 22 May 2026, and Naso (35) read the
+      // next day.
+      final naso = eveOf(inIsrael, LocalDate(2026, 5, 17), 35);
+      expect((naso.date, naso.erevYomTov), (LocalDate(2026, 5, 21), ErevYomTov.other));
+    });
+
+    test('is Erev Shabbat on a Friday, and says so when Yom Tov follows Shabbat', () {
+      // Noach 5787, an ordinary week.
+      final noach = eveOf(planner, LocalDate(2026, 10, 11), 2);
+      expect((noach.date, noach.erevYomTov, noach.endsWithYomTov), (LocalDate(2026, 10, 16), null, false));
+      // Bamidbar (34) 5789, read on Shabbat 19 May 2029, with Shavuot on
+      // Sunday and Monday outside Israel.
+      final bamidbar = eveOf(planner, LocalDate(2029, 5, 13), 34);
+      expect((bamidbar.date, bamidbar.erevYomTov, bamidbar.endsWithYomTov), (LocalDate(2029, 5, 18), null, true));
+    });
+
+    test('does not come a week early, when weekdays kept free come before the parsha is read', () {
+      // Israel 5789 with Chol HaMoed kept free: Shemini's last planned day
+      // is Erev Pesach, Friday 30 March 2029, and Chol HaMoed follows the
+      // first day of Pesach before Shabbat 7 April.
+      final quiet = ReadingPlanner(
+        schedule: inIsrael.schedule,
+        settingsAt: (_) => const PlanSettingsEntry(cholHamoedQuiet: true),
+      );
+      final today = LocalDate(2029, 3, 25);
+      expect(quiet.planFor(quiet.schedule.weekFor(today)).days.last.date, LocalDate(2029, 3, 30));
+      expect(eves(quiet, today).where((r) => r.plan.portion == const PortionId(26)), isEmpty);
+      // Without that setting, it comes on Thursday 5 April, as above.
+      expect(eves(inIsrael, today).where((r) => r.plan.portion == const PortionId(26)).single.date,
+          LocalDate(2029, 4, 5));
+    });
+
+    test('over three years, never names Shabbat on the eve of Yom Tov, nor comes with a weekday still to come', () {
+      for (final israel in [false, true]) {
+        for (final quiet in [false, true]) {
+          final planner = ReadingPlanner(
+            schedule: ParshaSchedule(israel: israel),
+            settingsAt: (_) => PlanSettingsEntry(cholHamoedQuiet: quiet),
+          );
+          final reminders = eves(planner, LocalDate(2026, 9, 1), days: 3 * 365);
+          expect(reminders.length, greaterThan(100));
+          for (final r in reminders) {
+            final label = '$r, israel: $israel, cholHamoedQuiet: $quiet';
+            bool rest(LocalDate d) => JewishHolidays.isRestDay(d, israel: israel);
+            expect(r.erevYomTov, JewishHolidays.erevYomTov(r.date, israel: israel), reason: label);
+            if (r.erevYomTov == null) expect(r.date.addDays(1).isShabbat, isTrue, reason: label);
+            for (var d = r.date.addDays(1); d <= r.plan.week.occasion; d = d.addDays(1)) {
+              expect(rest(d), isTrue, reason: '$d, $label');
+            }
+            expect(r.endsWithYomTov, !JewishHolidays.lastRestDay(r.date.addDays(1), israel: israel).isShabbat,
+                reason: label);
+          }
+        }
+      }
+    });
+  });
+
+  group('the daily reminder on the eve of Shabbat or Yom Tov, without a city', () {
+    List<PlannedReminder> from(LocalDate today, ReminderPrefs prefs, {ReadingPlanner planner = planner}) =>
+        planReminders(
+          prefs: prefs,
+          planner: planner,
+          progressOf: empty,
+          now: DateTime(today.year, today.month, today.day, 8),
+          today: today,
+          days: 8,
+        );
+
+    test('set for after midday, comes at 11:30 rather than not at all', () {
+      final friday = LocalDate(2026, 10, 16);
+      final evening = from(LocalDate(2026, 10, 11), const ReminderPrefs(daily: true, dailyMinutes: 20 * 60))
+          .singleWhere((r) => r.date == friday);
+      expect((evening.kind, evening.minutes), (ReminderKind.daily, 690));
+      final morning = from(LocalDate(2026, 10, 11), const ReminderPrefs(daily: true, dailyMinutes: 9 * 60))
+          .singleWhere((r) => r.date == friday);
+      expect(morning.minutes, 9 * 60);
+    });
+
+    test('so Hoshana Rabbah, the one reading day of Vezot HaBerachah, has its reminder', () {
+      // Friday 2 October 2026, before Shemini Atzeret on Shabbat (and
+      // Simchat Torah on Sunday outside Israel).
+      final hoshanaRabbah = LocalDate(2026, 10, 2);
+      for (final p in [planner, const ReadingPlanner(schedule: ParshaSchedule(israel: true))]) {
+        final r = from(LocalDate(2026, 9, 27), all, planner: p).singleWhere((r) => r.date == hoshanaRabbah);
+        expect((r.kind, r.minutes), (ReminderKind.daily, 690), reason: 'israel: ${p.oneDayYomTov}');
+        expect(r.plan.portion.isVezotHaberakhah, isTrue);
+      }
+    });
   });
 
   group('hearing the reading in Israel but keeping two days of Yom Tov', () {
@@ -397,7 +517,8 @@ void main() {
 
       test('the daily reminder at 20:00 comes before candle-lighting, not never', () {
         const daily = ReminderPrefs(daily: true, dailyMinutes: 20 * 60);
-        expect(on(plan(sunday, daily), friday), isNull, reason: 'without a city, nothing after midday');
+        final withoutCity = on(plan(sunday, daily), friday)!;
+        expect(withoutCity.minutes, kErevShabbatLatestMinutes, reason: 'without a city, before midday');
         final reminders = plan(sunday, daily, city: london);
         final r = on(reminders, friday)!;
         expect(r.kind, ReminderKind.daily);
@@ -555,6 +676,15 @@ void main() {
         expect(r.plan.portion.isVezotHaberakhah, isTrue);
         expect(r.afterYomTov, isFalse, reason: 'Simchat Torah ends the days of rest itself');
         expect(on(reminders, monday), isNull, reason: 'one check-in, not two');
+      });
+
+      test("Hoshana Rabbah's daily reminder comes before candle-lighting, or at 11:30 without a city", () {
+        final hoshanaRabbah = LocalDate(2026, 10, 2);
+        final lit = on(plan(LocalDate(2026, 9, 27), all, city: newYork), hoshanaRabbah)!;
+        expect((lit.kind, lit.minutes), (ReminderKind.daily, candles(newYork, hoshanaRabbah) - kDailyBeforeCandles));
+        expect(hm(lit.minutes), '15:48');
+        expect(lit.plan.portion.isVezotHaberakhah, isTrue);
+        expect(on(plan(LocalDate(2026, 9, 27), all), hoshanaRabbah)!.minutes, kErevShabbatLatestMinutes);
       });
 
       test('or, without a city, on Monday morning, over the day’s own reminder', () {

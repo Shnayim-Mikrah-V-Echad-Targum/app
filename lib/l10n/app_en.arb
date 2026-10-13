@@ -1837,6 +1837,28 @@
   "@notifFridayBody": {
     "description": "The Erev Shabbat reminder, sent only while the week's parsha isn't finished."
   },
+  "notifFridayBodyThenYomTov": "There’s still time — or finish Shabbat morning from your Chumash and log it after Yom Tov.",
+  "@notifFridayBodyThenYomTov": {
+    "description": "As notifFridayBody, when Yom Tov follows straight after Shabbat (Shavuot on Sunday, say), so that reading done on Shabbat is logged once Yom Tov is over."
+  },
+  "notifErevTitle": "{eve} · Parshat {parsha}",
+  "@notifErevTitle": {
+    "description": "The title of the reminder before the parsha's Shabbat when a Yom Tov begins that evening, in place of notifFridayTitle: eve is erevYomTov's text ('Erev Yom Tov', 'Erev Rosh Hashanah').",
+    "placeholders": {
+      "eve": {
+        "type": "String",
+        "example": "Erev Yom Tov"
+      },
+      "parsha": {
+        "type": "String",
+        "example": "Naso"
+      }
+    }
+  },
+  "notifErevYomTovBody": "There’s still time — or finish on Yom Tov or Shabbat from your Chumash and log it after Shabbat.",
+  "@notifErevYomTovBody": {
+    "description": "The body of the reminder under notifErevTitle, when Yom Tov begins that evening and runs into the parsha's Shabbat."
+  },
   "notifCheckInTitle": "Shavua tov!",
   "notifCheckInBody": "Did you read on Shabbat? Tap to log it.",
   "notifCheckInBodyShabbatYomTov": "Did you read on Shabbat and Yom Tov? Tap to log it.",

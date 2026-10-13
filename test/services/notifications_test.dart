@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
+import 'package:shnayim_mikrah/core/calendar/jewish_holidays.dart' show ErevYomTov;
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
 import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
@@ -507,14 +508,17 @@ void main() {
     });
 
     test("names the reader's routine in the daily reminders it schedules, and leaves it out once cleared", () async {
-      /// The bodies of the daily reminders scheduled, and of [day]'s worded
-      /// as the scheduler words them, whatever the clock says is past.
-      Future<List<String?>> bodies() async {
+      /// The bodies of the daily reminders scheduled at the reader's time
+      /// (or, with [atTime] false, brought forward on the eve of Shabbat or
+      /// Yom Tov), and of [day]'s worded as the scheduler words them,
+      /// whatever the clock says is past.
+      Future<List<String?>> bodies({bool atTime = true}) async {
         await service.done;
         final scheduled = [
           for (final r in service.reminders)
-            if (r.kind == ReminderKind.daily) service.plugin.scheduled[r.id]!.body,
+            if (r.kind == ReminderKind.daily && (r.minutes == 20 * 60) == atTime) service.plugin.scheduled[r.id]!.body,
         ];
+        if (!atTime) return scheduled;
         final week = planner.planFor(planner.schedule.weekFor(_monday));
         final day = PlannedReminder(kind: ReminderKind.daily, date: _monday, minutes: 20 * 60, plan: week, aliyot: [0]);
         return [...scheduled, service.describe!(day).body];
@@ -522,6 +526,10 @@ void main() {
 
       change((s) => s.copyWith(habitAnchor: HabitAnchor.dinner));
       expect(await bodies(), everyElement(endsWith(' · After dinner — your time for the parsha.')));
+      // Not at 11:30 on Friday, without a city.
+      final friday = await bodies(atTime: false);
+      expect(friday, isNotEmpty);
+      expect(friday, everyElement(isNot(contains('After dinner'))));
 
       change((s) => s.copyWith(language: AppLanguage.hebrew));
       expect(await bodies(), everyElement(endsWith(' · אחרי ארוחת הערב — זה הזמן שלך.')));
@@ -712,6 +720,52 @@ void main() {
       ));
       expect(copyIn(en)(checkIn), (title: 'Shavua tov!', body: 'Did you read on Shabbat? Tap to log it.'));
       expect(copyIn(he)(checkIn), (title: 'שבוע טוב!', body: 'קראת בשבת? אפשר לרשום זאת באפליקציה.'));
+    });
+
+    group("the eve's reminder is named for the days of rest that begin that evening", () {
+      PlannedReminder eve(ReadingPlanner planner, DateTime now) => planReminders(
+            prefs: const ReminderPrefs(erevShabbat: true),
+            planner: planner,
+            progressOf: (id) => WeekProgress(weekId: id),
+            now: now,
+            today: LocalDate.fromDateTime(now),
+          ).firstWhere((r) => r.kind == ReminderKind.erevShabbat);
+
+      test('a Yom Tov that runs into the parsha’s Shabbat', () {
+        // Israel 5789: Thursday 5 April 2029, the eve of the seventh day of
+        // Pesach, and Shemini read on Shabbat.
+        final r = eve(const ReadingPlanner(schedule: ParshaSchedule(israel: true)), DateTime(2029, 4, 1, 8));
+        expect((r.date, r.erevYomTov), (LocalDate(2029, 4, 5), ErevYomTov.other));
+        expect(copyIn(en)(r), (
+          title: 'Erev Yom Tov · Parshat Shemini',
+          body: 'There’s still time — or finish on Yom Tov or Shabbat from your Chumash and log it after Shabbat.',
+        ));
+        expect(copyIn(he)(r), (
+          title: 'ערב חג · פרשת שמיני',
+          body: 'יש עוד זמן — אפשר גם לסיים בחג או בשבת מתוך חומש ולרשום אחרי שבת.',
+        ));
+      });
+
+      test('Rosh Hashanah, by name', () {
+        // Wednesday 20 September 2028, Erev Rosh Hashanah 5789, and Ha'azinu
+        // read on Shabbat after both days.
+        final r = eve(planner, DateTime(2028, 9, 17, 8));
+        expect((r.date, r.erevYomTov), (LocalDate(2028, 9, 20), ErevYomTov.roshHashanah));
+        expect(copyIn(en)(r).title, startsWith('Erev Rosh Hashanah · Parshat '));
+        expect(copyIn(he)(r).title, startsWith('ערב ראש השנה · פרשת '));
+      });
+
+      test('Shabbat with Yom Tov straight after it', () {
+        // Friday 18 May 2029: Shabbat Bamidbar, then Shavuot on Sunday and
+        // Monday.
+        final r = eve(planner, DateTime(2029, 5, 13, 8));
+        expect((r.date, r.erevYomTov, r.endsWithYomTov), (LocalDate(2029, 5, 18), null, true));
+        expect(copyIn(en)(r), (
+          title: 'Erev Shabbat · Parshat Bamidbar',
+          body: 'There’s still time — or finish Shabbat morning from your Chumash and log it after Yom Tov.',
+        ));
+        expect(copyIn(he)(r).body, 'יש עוד זמן — אפשר גם לסיים בשבת בבוקר מתוך חומש ולרשום אחרי החג.');
+      });
     });
 
     test('the check-in after Shabbat and the Yom Tov straight after it asks about both', () {

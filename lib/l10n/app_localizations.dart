@@ -3405,6 +3405,24 @@ abstract class AppLocalizations {
   /// **'There’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.'**
   String get notifFridayBody;
 
+  /// As notifFridayBody, when Yom Tov follows straight after Shabbat (Shavuot on Sunday, say), so that reading done on Shabbat is logged once Yom Tov is over.
+  ///
+  /// In en, this message translates to:
+  /// **'There’s still time — or finish Shabbat morning from your Chumash and log it after Yom Tov.'**
+  String get notifFridayBodyThenYomTov;
+
+  /// The title of the reminder before the parsha's Shabbat when a Yom Tov begins that evening, in place of notifFridayTitle: eve is erevYomTov's text ('Erev Yom Tov', 'Erev Rosh Hashanah').
+  ///
+  /// In en, this message translates to:
+  /// **'{eve} · Parshat {parsha}'**
+  String notifErevTitle(String eve, String parsha);
+
+  /// The body of the reminder under notifErevTitle, when Yom Tov begins that evening and runs into the parsha's Shabbat.
+  ///
+  /// In en, this message translates to:
+  /// **'There’s still time — or finish on Yom Tov or Shabbat from your Chumash and log it after Shabbat.'**
+  String get notifErevYomTovBody;
+
   /// No description provided for @notifCheckInTitle.
   ///
   /// In en, this message translates to:

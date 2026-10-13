@@ -2101,6 +2101,19 @@ class AppLocalizationsHe extends AppLocalizations {
       'יש עוד זמן — אפשר גם לסיים בשבת בבוקר מתוך חומש ולרשום אחרי שבת.';
 
   @override
+  String get notifFridayBodyThenYomTov =>
+      'יש עוד זמן — אפשר גם לסיים בשבת בבוקר מתוך חומש ולרשום אחרי החג.';
+
+  @override
+  String notifErevTitle(String eve, String parsha) {
+    return '$eve · פרשת $parsha';
+  }
+
+  @override
+  String get notifErevYomTovBody =>
+      'יש עוד זמן — אפשר גם לסיים בחג או בשבת מתוך חומש ולרשום אחרי שבת.';
+
+  @override
   String get notifCheckInTitle => 'שבוע טוב!';
 
   @override

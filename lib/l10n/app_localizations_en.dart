@@ -2101,6 +2101,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'There’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.';
 
   @override
+  String get notifFridayBodyThenYomTov =>
+      'There’s still time — or finish Shabbat morning from your Chumash and log it after Yom Tov.';
+
+  @override
+  String notifErevTitle(String eve, String parsha) {
+    return '$eve · Parshat $parsha';
+  }
+
+  @override
+  String get notifErevYomTovBody =>
+      'There’s still time — or finish on Yom Tov or Shabbat from your Chumash and log it after Shabbat.';
+
+  @override
   String get notifCheckInTitle => 'Shavua tov!';
 
   @override
