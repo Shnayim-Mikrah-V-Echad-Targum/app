@@ -36,6 +36,7 @@ import 'package:shnayim_mikrah/app/config.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/app/router.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
+import 'package:shnayim_mikrah/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
 import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
@@ -112,6 +113,24 @@ ProgressState _yearRead() {
     read[id] = begun
         ? WeekProgress(weekId: id).withAliyah(0, week.start).withAliyah(1, week.start.addDays(1))
         : WeekProgress(weekId: id).withAll(day);
+  }
+  return ProgressState(weeks: read);
+}
+
+/// The cycle of [cycle] read from parsha [from] through to [upTo], every week whole on
+/// the last weekday before it is read: Vayechi 5787 on Friday 25 December
+/// 2026, and Vezot HaBerakhah 5786 on Hoshana Rabbah, Friday 2 October 2026.
+ProgressState _cycleRead(int cycle, {int from = 1, int upTo = 54}) {
+  final weeks = cycleWeeks(const ParshaSchedule(israel: false), cycle);
+  final read = <String, WeekProgress>{};
+  for (var n = from; n <= upTo; n++) {
+    final week = weeks[n]!;
+    var day = week.occasion.addDays(-1);
+    while (JewishHolidays.isRestDay(day, israel: false)) {
+      day = day.addDays(-1);
+    }
+    final id = weekIdFor(week.portion, week.occasion);
+    read[id] = WeekProgress(weekId: id).withAll(day);
   }
   return ProgressState(weeks: read);
 }
@@ -250,8 +269,12 @@ const _screens = {
   'week_tab': '/today/week/5787:1',
   'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
-  // Next week's, not yet open: the notice at the top of the text.
+  // Next week's, not yet open: the notice at the top of the text, in the
+  // guided reader, the full text and the whole parsha, where it scrolls
+  // away with the text.
   'reader_preview': '/read/5787:2/0',
+  'reader_preview_full': '/read/5787:2/0?mode=full',
+  'reader_preview_parsha': '/read/5787:2/0?mode=full',
   // Revi'i open after Rishon and Sheni, with Shlishi under way.
   'reader_ribbon': '/read/5787:1/3',
   // Chamishi of Acharei Mot-Kedoshim (5786), the longest title the reader's
@@ -285,6 +308,13 @@ const _screens = {
   'reader_finished_erev': '/read/5787:1/5',
   // Shevi'i just finished on Friday, the rest read: the parsha, on time.
   'reader_finished_week': '/read/5787:1/6',
+  // Shevi'i just finished on the Sunday after: the parsha, after Shabbat.
+  'reader_finished_late': '/read/5787:1/6',
+  // Shevi'i just finished on Friday with streaks hidden: "On time" alone,
+  // centred under the title.
+  'reader_finished_quiet': '/read/5787:1/6',
+  // Shevi'i of Naso 5787 just finished on Erev Shavuot: Chag sameach.
+  'reader_finished_chag': '/read/5787:35/6',
   'reader_full': '/read/5787:1/2?mode=full',
   // Its end, with the button that marks the aliyah read.
   'reader_full_end': '/read/5787:1/2?mode=full',
@@ -296,13 +326,16 @@ const _screens = {
   'reader_full_rashi_english': '/read/5787:1/2?mode=full',
   // The whole parsha, opened at Shlishi: its heading at the top.
   'reader_parsha': '/read/5787:1/2?mode=full',
-  // Read on into Shlishi, its heading kept at the top.
+  // In focus mode, read on into Shlishi, its heading kept at the top (with
+  // the ribbon, it scrolls with the text).
   'reader_parsha_pinned': '/read/5787:1/2?mode=full',
   // The end of Shlishi and the start of Revi'i: the button that marks
   // Shlishi read, then Revi'i's heading.
   'reader_parsha_join': '/read/5787:1/2?mode=full',
   // The parsha's end, Shevi'i read.
   'reader_parsha_end': '/read/5787:1/2?mode=full',
+  // Opened at Sheni, read: its heading's check.
+  'reader_parsha_read': '/read/5787:1/1?mode=full',
   // In focus mode, read on from Shlishi into Revi'i.
   'reader_parsha_focus': '/read/5787:1/2?mode=full',
   // The reader's menu in the full text: the whole parsha.
@@ -324,6 +357,12 @@ const _screens = {
   // section: the verses up to a petuchah, and its mark.
   'reader_chapter': '/read/5787:1/2',
   'reader_section': '/read/5787:1/2',
+  // On a tablet or a desktop, the step's verse among its neighbours: the
+  // verse just read above it and those to come after it, dimmed. At
+  // Genesis 3:4, the Hebrew and the Targum; and at 3:15, before a setumah.
+  'reader_neighbours': '/read/5787:1/2',
+  'reader_neighbours_targum': '/read/5787:1/2',
+  'reader_neighbours_section': '/read/5787:1/2',
   // Rashi beside the full text, in square letters and in Rashi script, and
   // read in the Targum's place in the guided reader.
   'reader_rashi': '/read/5787:1/2?mode=full',
@@ -369,8 +408,13 @@ const _screens = {
   // the first and last verses of Machar Chodesh, under I Samuel's head.
   'haftarah_rosh_chodesh': '/haftarah/5788:38',
   'haftarah_rosh_chodesh_sunday': '/haftarah/5788:38',
-  // A book of the Torah just finished: Genesis, in the cycle of 5787.
+  // A book of the Torah just finished: Genesis, in the cycle of 5787, on
+  // the Friday before Vayechi (see [_cycleRead]).
   'celebrate': '/celebrate/sefer:5787:0',
+  // Deuteronomy finished with every parsha of 5786 read: the Siyum HaTorah.
+  'celebrate_siyum': '/celebrate/sefer:5786:4',
+  // The same, for a reader who began with Vayera: the siyum from it.
+  'celebrate_siyum_from': '/celebrate/sefer:5786:4',
   'progress': '/progress',
   'community': '/community',
   'forum': '/community/forum/parsha',
@@ -504,6 +548,8 @@ const _screens = {
   's_fonts': '/settings/display',
   // With Rashi shown: the switch for Rashi script, in view.
   's_display_rashi': '/settings/display',
+  // Scrolled to the line width and justification beneath it.
+  's_display_justify': '/settings/display',
   's_a11y': '/settings/accessibility',
   // Large print in force, then Low vision just applied, with its Undo.
   's_a11y_active': '/settings/accessibility',
@@ -683,7 +729,8 @@ const _screens = {
   // The sheet behind the grace row's "About streaks".
   'progress_about': '/progress',
   // A reader in their second year (see [_secondYear]): the year chips, last
-  // year chosen, and what they have finished so far at the page's end.
+  // year chosen, and what they have finished so far at the page's end, from
+  // its newest: the siyum of the year they joined.
   'progress_years': '/progress',
   'progress_past': '/progress',
   'progress_record': '/progress',
@@ -709,9 +756,16 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'reader_full_english': (s) => s.copyWith(showTranslation: true),
   'reader_full_rashi_english': (s) => s.copyWith(showTranslation: true, secondReading: SecondReading.rashi),
-  for (final screen in ['reader_parsha', 'reader_parsha_pinned', 'reader_parsha_join', 'reader_parsha_end'])
+  for (final screen in [
+    'reader_parsha',
+    'reader_parsha_join',
+    'reader_parsha_end',
+    'reader_parsha_read',
+    'reader_preview_parsha',
+  ])
     screen: (s) => s.copyWith(fullTextWholeParsha: true),
-  'reader_parsha_focus': (s) => s.copyWith(fullTextWholeParsha: true, focusMode: true),
+  for (final screen in ['reader_parsha_pinned', 'reader_parsha_focus'])
+    screen: (s) => s.copyWith(fullTextWholeParsha: true, focusMode: true),
   'reader_section': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   'reader_combined_guided': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   'reader_rashi': (s) => s.copyWith(showRashi: true),
@@ -759,6 +813,10 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_finished_day': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   'reader_finished_erev': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, plan: ReadingPlanType.sheviiOnShabbat),
   'reader_finished_week': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
+  'reader_finished_late': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
+  'reader_finished_quiet': (s) =>
+      s.copyWith(method: ReadingMethod.aliyahByAliyah, showStreaks: false).withRepeatLastVerse(false),
+  'reader_finished_chag': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'reader_listen': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   'reader_listen_focus': (s) => s.copyWith(focusMode: true),
@@ -771,7 +829,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'today_divergence_abroad': (s) =>
       s.copyWith(readingSchedule: ReadingSchedule.diaspora, oneDayYomTov: true, joinDate: LocalDate(2029, 4, 22)),
   // The widest word spacing, justified: the spaces around a section mark.
-  'reader_gaps_spaced': (s) => s.copyWith(wordSpacing: 16, justify: true),
+  'reader_gaps_spaced': (s) => s.copyWith(wordSpacing: 16, justifyMode: JustifyMode.always),
   'reader_taamey': (s) => s.copyWith(scriptureFont: ScriptureFont.taameyFrank),
   'reader_ezra': (s) => s.copyWith(scriptureFont: ScriptureFont.ezra),
   // Tuesday of Noach: Bereshit is read, all but the haftarah, which counts.
@@ -973,9 +1031,17 @@ final _screenNow = <String, DateTime>{
   // Thursday 12 August 2027, 9 Av 5787.
   'welcome_plan_tisha_bav': DateTime(2027, 8, 12, 11),
   'reader_finished_day': DateTime(2026, 10, 7, 11),
+  'reader_finished_late': DateTime(2026, 10, 11, 11),
+  // Thursday 10 June 2027, Erev Shavuot.
+  'reader_finished_chag': DateTime(2027, 6, 10, 11),
+  // Friday 25 December 2026, the day Genesis was finished.
+  'celebrate': DateTime(2026, 12, 25, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
   for (final screen in _storeScreens) screen: _storeProgress,
+  'celebrate': () => _cycleRead(5787, upTo: 12),
+  'celebrate_siyum': () => _cycleRead(5786),
+  'celebrate_siyum_from': () => _cycleRead(5786, from: 4),
   'progress_map': historyProgress,
   'progress_history': historyProgress,
   'progress_map_rescue': rescueProgress,
@@ -1057,6 +1123,17 @@ final _screenProgress = <String, ProgressState Function()>{
   'reader_chapter': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 6]),
       }),
+  // Shlishi read through 3:3, so that the guided reader opens at 3:4, its
+  // tenth verse; through 3:4 but for its Targum; and through 3:14.
+  'reader_neighbours': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [9, 9, 9]),
+      }),
+  'reader_neighbours_targum': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [10, 10, 9]),
+      }),
+  'reader_neighbours_section': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [20, 20, 20]),
+      }),
   // Both Hebrew readings of Genesis 2:20 done: Rashi is next.
   'reader_rashi_step': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [1, 1, 0]),
@@ -1085,6 +1162,20 @@ final _screenProgress = <String, ProgressState Function()>{
   'reader_finished_day': () => _readThrough(1, partly: 2, on: LocalDate(2026, 10, 7)),
   'reader_finished_erev': () => _readThrough(4, partly: 5),
   'reader_finished_week': () => _readThrough(5, partly: 6),
+  'reader_finished_late': () => _readThrough(5, partly: 6),
+  'reader_finished_quiet': () => _readThrough(5, partly: 6),
+  'reader_finished_chag': () {
+    final day = LocalDate(2027, 6, 10);
+    var w = WeekProgress(weekId: '5787:35');
+    for (var a = 0; a < 6; a++) {
+      w = w.withAliyah(a, day.addDays(a ~/ 2 - 3));
+    }
+    w = w
+        .withUnit(6, ReadingPass.mikrah1, day)
+        .withUnit(6, ReadingPass.mikrah2, day)
+        .withPosition(6, const [99, 99, 0]);
+    return ProgressState(weeks: {'5787:35': w});
+  },
 };
 
 /// The day of the stores' screenshots: Wednesday 11 November 2026, in the
@@ -1484,7 +1575,16 @@ final _taps = {
   's_reading_changed': () => find.byType(RadioListTile<ReadingPlanType>).last,
   'welcome_why': () => find.byIcon(Icons.expand_more),
   // Finish, on the aliyah's last step.
-  for (final screen in ['reader_finished', 'reader_finished_next', 'reader_finished_day', 'reader_finished_erev', 'reader_finished_week'])
+  for (final screen in [
+    'reader_finished',
+    'reader_finished_next',
+    'reader_finished_day',
+    'reader_finished_erev',
+    'reader_finished_week',
+    'reader_finished_late',
+    'reader_finished_quiet',
+    'reader_finished_chag',
+  ])
     screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(PaperRow, Icons.forum_outlined),
   for (final screen in ['thread_refreshed', 'forum_refreshed']) screen: () => find.byIcon(Icons.refresh),
@@ -1877,6 +1977,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
         tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.rashiScriptDesc)),
         alignment: 0.5,
       ),
+  's_display_justify': (tester) => Scrollable.ensureVisible(
+        tester.element(find.text(tester.element(find.byType(Scaffold).last).l10n.justifyHelp)),
+        alignment: 0.5,
+      ),
   's_display_scrolled': (tester) async => tester
       .state<ScrollableState>(find.descendant(of: find.byType(CustomScrollView), matching: find.byType(Scrollable)))
       .position
@@ -2107,7 +2211,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await _settle(tester);
     await Scrollable.ensureVisible(tester.element(chip), alignment: 0.1);
   },
-  'progress_record': _scrollToEnd,
+  'progress_record': (tester) async {
+    await _scrollToEnd(tester);
+    // Back up to the Record's head, the siyum of 5786 (its large lozenge)
+    // its newest row.
+    final siyum = find.byWidgetPredicate((w) => w is Lozenge && w.size == Lozenge.large);
+    await Scrollable.ensureVisible(tester.element(siyum), alignment: 0.3);
+  },
   // The middle row of a paper group: its ring must clear the hairlines.
   'kit_focus': (tester) async {
     await _showGallery(tester, const RowsGallery());
@@ -2405,6 +2515,8 @@ const _bigPhoneScreens = {
   'today_shabbat',
   // A week's note on another division, wrapped as the plan above it.
   'week_note',
+  // Justification's three choices, stacked.
+  's_display_justify',
 };
 const _hugeModes = {'huge', 'hugehe'};
 // The reader with Listen's player over its bar too: the chrome is held at
@@ -2429,6 +2541,8 @@ const _hugeScreens = {
 };
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
+  // Justification's three choices, stacked, and the settings around them.
+  's_display_justify',
   'today',
   'today_update',
   'today_shabbat',
@@ -2459,6 +2573,14 @@ const _hugeTallScreens = {
   'thread_verse',
   // A moderator's card: the tag beside the initial, its words whole.
   'account_member',
+  // The colophon's frame at its narrowest padding, its lines balanced.
+  'celebrate',
+  'celebrate_siyum',
+  // The finished panel: its title and standing line kept whole, and its
+  // buttons, for an aliyah and for the parsha.
+  'reader_finished_day',
+  'reader_finished_week',
+  'reader_finished_late',
 };
 const _hugeWideScreens = {'parsha', 'settings'};
 
@@ -2525,6 +2647,7 @@ const _desktopScreens = {
   'reader_offer',
   'reader_offer_city',
   'celebrate',
+  'celebrate_siyum',
   'reader_full',
   'reader_full_end',
   'reader_combined',
@@ -2538,8 +2661,13 @@ const _desktopScreens = {
   'reader_parsha_menu',
   'reader_display_side',
   'reader_focus',
+  'reader_chapter',
+  'reader_neighbours',
+  'reader_neighbours_targum',
+  'reader_neighbours_section',
   'reader_section',
   'reader_rashi',
+  'reader_rashi_step',
   'reader_keys',
   'reader_keys_web',
   'reader_keys_windows',
@@ -2558,6 +2686,7 @@ const _desktopScreens = {
   // The app bar's title on the column's edge (§5), over pages of each kind.
   's_display',
   's_display_scrolled',
+  's_display_justify',
   's_a11y',
   's_reading',
   's_reminders',
@@ -2743,7 +2872,9 @@ const _bigTextScreens = {
   'forum_questions',
   'reader_finished_day',
   'reader_finished_week',
+  'reader_finished_late',
   'celebrate',
+  'celebrate_siyum',
   'haftarah',
   'haftarah_read',
   'goto_verse',
@@ -2798,6 +2929,10 @@ const _bigTextScreens = {
   'reader_listen_full',
   'haftarah_listen',
   'reader_parsha',
+  // An aliyah's heading mid-text, its verses wrapped under its name, and
+  // with its check.
+  'reader_parsha_join',
+  'reader_parsha_read',
 };
 
 Future<void> _settle(WidgetTester tester) async {
@@ -2943,11 +3078,13 @@ void main() {
           }
           if (_taps[entry.key] case final target?) {
             await tester.tap(target());
-            // Long enough for a snackbar to appear, not to leave again, and
-            // for the focus to move where it is moved after a frame.
+            // Long enough for a snackbar to appear, not to leave again, for
+            // the focus to move where it is moved after a frame, and for the
+            // finished panel's moment to end (the parsha's rings close over
+            // 600 ms, then its title fades in over 150).
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 500));
-            await tester.pump(const Duration(milliseconds: 200));
+            await tester.pump(const Duration(milliseconds: 300));
           }
           await _write(tester, '${mode.tag}_${entry.key}');
         } finally {

@@ -459,9 +459,32 @@ void main() {
       TextRange(start: before.indexOf('הָ'), end: before.indexOf(' ')),
       TextRange(start: before.indexOf('הַ'), end: before.length),
     ];
-    final shifted = shiftForRemovedJoiners(before, after, marks);
+    final shifted = shiftForJoiners(before, after, marks);
     expect([for (final m in shifted) after.substring(m.start, m.end)], ['הָרָקִיעַ', 'הַמַּיִם']);
-    expect(shiftForRemovedJoiners(after, after, shifted), shifted, reason: 'none left out');
+    expect(shiftForJoiners(after, after, shifted), shifted, reason: 'none left out');
+  });
+
+  test('marks move on over the word joiners added in the last word', () {
+    const before = 'a burnt-offering and a sin-offering';
+    const after = 'a burnt-offering and a\u00A0sin-\u2060offering';
+    final marks = [
+      TextRange(start: before.indexOf('burnt'), end: before.indexOf(' and')),
+      TextRange(start: before.indexOf('sin'), end: before.length),
+      TextRange(start: before.lastIndexOf('offering'), end: before.length),
+    ];
+    final shifted = shiftForJoiners(before, after, marks);
+    expect(
+      [for (final m in shifted) after.substring(m.start, m.end)],
+      ['burnt-offering', 'sin-\u2060offering', 'offering'],
+    );
+  });
+
+  test('marks stay over a space held as a no-break space', () {
+    const before = 'אֶת־\u2060הָרָקִיעַ וּבֵין־\u2060הַמַּיִם';
+    const after = 'אֶת־הָרָקִיעַ\u00A0וּבֵין־\u2060הַמַּיִם';
+    final marks = [TextRange(start: before.indexOf('הָ'), end: before.length)];
+    final shifted = shiftForJoiners(before, after, marks);
+    expect(after.substring(shifted.single.start, shifted.single.end), 'הָרָקִיעַ\u00A0וּבֵין־\u2060הַמַּיִם');
   });
 
   testWidgets('labels the translation as a translation', (tester) async {

@@ -167,6 +167,40 @@ void main() {
       );
     });
 
+    testWidgets('with shrinkWrap, is as wide as its text, on one line or balanced over two', (tester) async {
+      // As the finished panel's standing line stands beside its icon, the
+      // whole centred: a row as wide as what it holds.
+      Future<void> beside(String text) => pumpThemed(
+            tester,
+            Center(
+              child: SizedBox(
+                width: 100,
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(key: Key('icon'), width: 10, height: 10),
+                      Flexible(
+                        child: BalancedText(text, style: style, textAlign: TextAlign.start, shrinkWrap: true),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+      await beside('aa bb');
+      expect(tester.getSize(find.byType(BalancedText)), const Size(50, 10), reason: 'one line, as wide as it is');
+      expect(tester.getSize(find.byType(Row)).width, 60);
+      await beside('aa bb cc dd');
+      final balanced = tester.getSize(find.byType(BalancedText));
+      expect(balanced.height, 20);
+      expect(balanced.width, inInclusiveRange(50, 52), reason: 'balanced');
+      // Without it, the full width.
+      await pump(tester, 'aa bb', width: 100);
+      expect(tester.getSize(find.byType(BalancedText)).width, 100);
+    });
+
     testWidgets('sets its balanced lines at the start of a right-to-left column', (tester) async {
       await pumpThemed(
         tester,

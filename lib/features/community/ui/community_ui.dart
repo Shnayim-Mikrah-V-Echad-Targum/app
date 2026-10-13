@@ -637,7 +637,7 @@ class VerseQuote extends ConsumerWidget {
               text: joined,
               style: style,
               locale: _hebrew,
-              builder: (context, verse) => Text.rich(
+              builder: (context, verse, _) => Text.rich(
                 verse,
                 style: style,
                 maxLines: maxLines,
@@ -699,20 +699,36 @@ class RemovableVerseQuote extends StatelessWidget {
 }
 
 /// [selected], from a question on a verse shown as a [VerseQuote] over the
-/// question, as it is copied: without the word joiners and no-break spaces
-/// the verse is set with, and where it holds the end of the verse and the
+/// question, as it is copied: the verse without the word joiners and
+/// no-break spaces it is set with, the question as it is written, its own
+/// no-break spaces too, and where it holds the end of the verse and the
 /// start of the question, a blank line between them, as the post has as
 /// text.
 String copiedFromQuestion(String selected, {required String verse, required String question}) {
-  final text = asCopied(selected);
   final whole = '$verse$question';
-  for (var at = whole.indexOf(text); at >= 0; at = whole.indexOf(text, at + 1)) {
-    if (at < verse.length && at + text.length > verse.length) {
-      final cut = verse.length - at;
-      return '${text.substring(0, cut)}\n\n${text.substring(cut)}';
-    }
+  // [whole] as the selection is found in it, without what sets the verse on
+  // the screen, and where each of its characters stands in [whole].
+  final found = StringBuffer();
+  final origin = <int>[];
+  for (var i = 0; i < whole.length; i++) {
+    final c = whole[i];
+    if (c == '\u2060') continue;
+    found.write(c == '\u00a0' ? ' ' : c);
+    origin.add(i);
   }
-  return text;
+  final text = asCopied(selected);
+  if (text.isEmpty) return text;
+  final searched = found.toString();
+  String? first;
+  for (var at = searched.indexOf(text); at >= 0; at = searched.indexOf(text, at + 1)) {
+    final (start, end) = (origin[at], origin[at + text.length - 1] + 1);
+    final cut = start < verse.length ? math.min(end, verse.length) : start;
+    final copy = '${asCopied(whole.substring(start, cut))}${cut > start && cut < end ? '\n\n' : ''}'
+        '${whole.substring(cut, end)}';
+    if (start < verse.length && end > verse.length) return copy;
+    first ??= copy;
+  }
+  return first ?? text;
 }
 
 /// [child], scripture whose lines [JoinsThatFit] breaks only once it knows

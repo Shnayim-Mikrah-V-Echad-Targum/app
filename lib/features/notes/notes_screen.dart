@@ -8,6 +8,7 @@ import '../../app/providers.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart';
 import '../../data/models/verse_ref.dart';
+import '../../services/feedback.dart' show hapticLongPress;
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
@@ -312,8 +313,11 @@ class _NoteRow extends ConsumerWidget {
         onSecondaryTapUp: (_) => options(),
         child: SeferInkWell(
           onTap: () => _open(context, ref),
+          // Felt once, as the reader's long press is, and only with Haptic
+          // feedback on: the ink well's own would be a second.
+          longPressFeedback: false,
           onLongPress: () {
-            Feedback.forLongPress(context);
+            hapticLongPress(context, haptics: ref.read(settingsProvider).haptics);
             options();
           },
           borderRadius: PaperGroup.rowCorners(context),

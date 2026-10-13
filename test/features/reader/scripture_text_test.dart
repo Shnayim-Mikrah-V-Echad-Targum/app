@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
 import 'package:shnayim_mikrah/data/models/scripture.dart';
 import 'package:shnayim_mikrah/data/models/verse_ref.dart';
 import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
@@ -72,7 +73,9 @@ void main() {
       await pumpVerse(
         tester,
         decalogue,
-        settings: AppSettings(wordSpacing: wordSpacing, letterSpacing: letterSpacing),
+        // Ragged: a justified line, as Auto sets one this wide, stretches
+        // the spaces it may break at, and never a no-break space.
+        settings: AppSettings(wordSpacing: wordSpacing, letterSpacing: letterSpacing, justifyMode: JustifyMode.never),
       );
       final paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
       final text = paragraph.text.toPlainText();
@@ -172,78 +175,175 @@ void main() {
       expect(strut.forceStrutHeight, isFalse);
     });
 
-    testWidgets('the guided reader hangs the number in a gutter at the verse\'s start', (tester) async {
-      await pumpThemed(
-        tester,
-        ScriptureVerse(verse: serpent, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
-      );
-      final verse = tester.getRect(find.byType(ScriptureVerse));
-      final number = find.text('כב');
-      expect(number, findsOneWidget);
-      expect(numberSpan(tester), isNull, reason: 'not in the paragraph too');
-      // The gutter is on the right, the verse's start, 1.4 times its size.
-      final gutter = tester.getRect(find.ancestor(of: number, matching: find.byType(SizedBox)).first);
-      expect(gutter.right, verse.right);
-      expect(gutter.width, closeTo(1.4 * 26, 0.001));
-      final paragraph = tester.getRect(find.byType(RichText).last);
-      expect(paragraph.right, closeTo(verse.right - 1.4 * 26, 0.001));
-      final row = tester.widget<Row>(find.byType(Row));
-      expect(row.crossAxisAlignment, CrossAxisAlignment.baseline, reason: 'on the first line\'s baseline');
-    });
+    for (final textScale in [1.0, 2.0]) {
+      testWidgets('the guided reader hangs the number in a gutter at the verse\'s start, close by it, '
+          'at ${(textScale * 100).round()}% text', (tester) async {
+        // A number of two letters, and of one.
+        for (final (verse, numeral) in [(serpent, 'כב'), (Verse.fromJson(const VerseRef(3, 1), ['וְהַנָּחָשׁ הָיָה עָרוּם']), 'א')]) {
+          await pumpThemed(
+            tester,
+            ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
+            textScale: textScale,
+          );
+          final box = tester.getRect(find.byType(ScriptureVerse));
+          final number = find.text(numeral);
+          expect(number, findsOneWidget);
+          expect(find.byType(Row), findsOneWidget, reason: 'not in the paragraph too');
+          final styles = ScriptureStyles(tester.element(number), const AppSettings());
+
+          // The gutter is on the right, the verse's start: as wide as the
+          // widest verse number of the Torah, and the gap beside it, whatever
+          // the verse's own number.
+          final widest = TextPainter(
+            text: TextSpan(
+              text: [for (var n = 1; n <= 89; n++) HebrewText.gematria(n, punctuate: false)].join('\n'),
+              style: styles.numberStyle(ScriptureKind.mikrah),
+            ),
+            textDirection: TextDirection.rtl,
+            textScaler: TextScaler.linear(textScale),
+          )..layout();
+          final gap = 0.3 * 26 * textScale;
+          final gutter = tester.getRect(find.ancestor(of: number, matching: find.byType(SizedBox)).first);
+          expect(gutter.right, box.right);
+          expect(gutter.width, closeTo(widest.width.ceilToDouble() + gap, 0.001));
+          widest.dispose();
+          final paragraph = tester.getRect(find.byType(RichText).last);
+          expect(paragraph.right, closeTo(gutter.left, 0.001));
+
+          // The number stands at the gutter's inner edge, 0.3 of the verse's
+          // size from its verse, rather than out at the column's edge.
+          final glyphs = tester
+              .renderObject<RenderParagraph>(find.descendant(of: number, matching: find.byType(RichText)))
+              .getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: numeral.length));
+          final left = tester.getTopLeft(number).dx + glyphs.map((b) => b.left).reduce(math.min);
+          expect(left - paragraph.right, closeTo(gap, 0.01), reason: numeral);
+          final row = tester.widget<Row>(find.byType(Row));
+          expect(row.crossAxisAlignment, CrossAxisAlignment.baseline, reason: 'on the first line\'s baseline');
+        }
+      });
+    }
 
     testWidgets('at a very large size, the number leads the first line rather than take a quarter of it', (tester) async {
-      await pumpThemed(
-        tester,
-        Center(
-          child: SizedBox(
-            width: 400,
-            child: ScriptureVerse(
-              verse: serpent,
-              kind: ScriptureKind.mikrah,
-              settings: const AppSettings(readingScale: 4),
-              hangingNumber: true,
+      const settings = AppSettings(readingScale: 4);
+      Future<void> pumpIn(double width) => pumpThemed(
+            tester,
+            Center(
+              child: SizedBox(
+                width: width,
+                child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikrah, settings: settings, hangingNumber: true),
+              ),
             ),
-          ),
-        ),
-      );
+          );
+      // The column is sized by the gutter as the font in use measures it,
+      // so that the gutter surely takes more than a quarter of it, or less.
+      await pumpIn(400);
+      final gutter = ScriptureStyles(tester.element(find.byType(ScriptureVerse)), settings).gutterWidth;
+
+      await pumpIn((gutter * 3.5).roundToDouble());
       expect(find.byType(Row), findsNothing);
       expect(numberSpan(tester), isNotNull);
+
+      await pumpIn((gutter * 4.5).roundToDouble());
+      expect(find.byType(Row), findsOneWidget, reason: 'the number hangs where the gutter takes less than a quarter');
+      expect(numberSpan(tester), isNull);
     });
 
-    for (final theme in [AppThemeMode.light, AppThemeMode.highContrastDark]) {
-      testWidgets('the full text\'s Targum is set in from a gold-leaf rule: ${theme.name}', (tester) async {
-        final targum = Verse.fromJson(const VerseRef(3, 22), ['וַאֲמַר יְיָ אֱלֹהִים הָא אָדָם הֲוָה יְחִידַי בְּעָלְמָא']);
+    // Genesis 41:49: מט, among the widest of the numbers.
+    final grain = Verse.fromJson(const VerseRef(41, 49), ['וַיִּצְבֹּר יוֹסֵף בָּר כְּחוֹל הַיָּם הַרְבֵּה מְאֹד']);
+
+    /// Checks that the hanging number [numeral] is set on one line within
+    /// its gutter, and returns the gutter's width.
+    double numberWithinGutter(WidgetTester tester, String numeral, String reason) {
+      final number = find.text(numeral);
+      expect(number, findsOneWidget, reason: reason);
+      final gutter = tester.getRect(find.ancestor(of: number, matching: find.byType(SizedBox)).first);
+      final paragraph = tester.renderObject<RenderParagraph>(find.descendant(of: number, matching: find.byType(RichText)));
+      final glyphs = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: numeral.length));
+      expect({for (final b in glyphs) b.top.round()}, hasLength(1), reason: '$reason: on one line');
+      final origin = tester.getTopLeft(number).dx;
+      expect(origin + glyphs.map((b) => b.right).reduce(math.max), lessThanOrEqualTo(gutter.right + 0.01), reason: reason);
+      expect(origin + glyphs.map((b) => b.left).reduce(math.min), greaterThanOrEqualTo(gutter.left - 0.01), reason: reason);
+      return gutter.width;
+    }
+
+    testWidgets('the widest number keeps to one line in its gutter, at 100% and 200% text and in bold', (tester) async {
+      for (final (textScale, bold) in [(1.0, false), (2.0, false), (1.0, true), (2.0, true)]) {
         await pumpThemed(
           tester,
-          ScriptureVerse(
-            verse: targum,
-            kind: ScriptureKind.targum,
-            settings: const AppSettings(),
-            secondary: true,
-            showNumber: false,
-            ruled: true,
-          ),
-          theme: theme,
+          ScriptureVerse(verse: grain, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
+          textScale: textScale,
+          boldText: bold,
         );
-        final context = tester.element(find.byType(ScriptureVerse));
-        final sefer = SeferColors.of(context);
-        expect(numberSpan(tester), isNull, reason: 'its verse has the number');
-        final box = tester.widget<Container>(find.descendant(of: find.byType(ScriptureVerse), matching: find.byType(Container)));
-        final rule = ((box.decoration! as BoxDecoration).border! as Border).right;
-        expect(rule.color, sefer.goldLeaf);
-        expect(rule.width, 2);
-        // A decoration, which high contrast leaves out (§3.1), but not its
-        // inset.
-        expect(rule.style, theme == AppThemeMode.light ? BorderStyle.solid : BorderStyle.none);
-        final text = tester.getRect(find.byType(RichText));
-        expect(text.right, tester.getRect(find.byType(ScriptureVerse)).right - 14);
-      });
+        numberWithinGutter(tester, 'מט', '${(textScale * 100).round()}%${bold ? ', bold' : ''}');
+      }
+    });
+
+    testWidgets('the gutter grows with text a system scales unevenly, as Android 14 scales it', (tester) async {
+      for (final (verse, numeral) in [(grain, 'מט'), (serpent, 'כב')]) {
+        await pumpThemed(
+          tester,
+          ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
+        );
+        final plain = numberWithinGutter(tester, numeral, 'at 100%');
+        // As though the reader had then set the system's text larger, in
+        // the same run: the numbers are measured at their new size.
+        await pumpThemed(
+          tester,
+          ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
+          textScaler: const _UnevenTextScaler(),
+        );
+        final larger = numberWithinGutter(tester, numeral, 'scaled unevenly');
+        expect(larger, greaterThan(plain * 1.5));
+      }
+    });
+
+    for (final theme in [AppThemeMode.light, AppThemeMode.highContrastDark, AppThemeMode.highContrastLight]) {
+      for (final dimmed in [false, true]) {
+        testWidgets('the full text\'s Targum is set in from a rule: ${theme.name}${dimmed ? ', dimmed' : ''}', (tester) async {
+          final targum = Verse.fromJson(const VerseRef(3, 22), ['וַאֲמַר יְיָ אֱלֹהִים הָא אָדָם הֲוָה יְחִידַי בְּעָלְמָא']);
+          await pumpThemed(
+            tester,
+            ScriptureVerse(
+              verse: targum,
+              kind: ScriptureKind.targum,
+              settings: const AppSettings(),
+              secondary: true,
+              showNumber: false,
+              ruled: true,
+              dimmed: dimmed,
+            ),
+            theme: theme,
+          );
+          final context = tester.element(find.byType(ScriptureVerse));
+          final sefer = SeferColors.of(context);
+          expect(numberSpan(tester), isNull, reason: 'its verse has the number');
+          final box = tester.widget<Container>(find.descendant(of: find.byType(ScriptureVerse), matching: find.byType(Container)));
+          final rule = ((box.decoration! as BoxDecoration).border! as Border).right;
+          // Gold leaf, receding to a hairline with a dimmed verse. In high
+          // contrast an outline rule, undimmed: it marks the Targum off from
+          // the Torah, which little else does there (§3.1).
+          final highContrast = theme != AppThemeMode.light;
+          expect(
+            rule.color,
+            highContrast ? Theme.of(context).colorScheme.outline : (dimmed ? sefer.hairline : sefer.goldLeaf),
+          );
+          expect(rule.width, 2);
+          expect(rule.style, BorderStyle.solid);
+          final text = tester.getRect(find.byType(RichText));
+          expect(text.right, tester.getRect(find.byType(ScriptureVerse)).right - 14);
+        });
+      }
     }
 
     for (final (wordSpacing, letterSpacing) in [(0.0, 0.0), (4.0, 0.0), (16.0, 2.0)]) {
       testWidgets('a verse number stands a word space from its word: word spacing $wordSpacing, letter spacing $letterSpacing',
           (tester) async {
-        await pumpVerse(tester, serpent, settings: AppSettings(wordSpacing: wordSpacing, letterSpacing: letterSpacing));
+        // Ragged, as above: a justified line stretches its other spaces.
+        await pumpVerse(
+          tester,
+          serpent,
+          settings: AppSettings(wordSpacing: wordSpacing, letterSpacing: letterSpacing, justifyMode: JustifyMode.never),
+        );
         final paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
         final text = paragraph.text.toPlainText();
         double widthAt(int i) => paragraph
@@ -255,6 +355,44 @@ void main() {
         expect(widthAt(2), closeTo(widthAt(text.indexOf(' ')), 0.01));
       });
     }
+
+    testWidgets("on a justified line, the number's no-break space keeps a word's width as the other spaces stretch",
+        (tester) async {
+      // Justified, as Auto sets a tablet's column: the trade-off §4.7 makes,
+      // the number standing a plain word space from its word.
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topRight,
+          child: SizedBox(
+            width: 330,
+            child: ScriptureVerse(
+              verse: serpent,
+              kind: ScriptureKind.mikrah,
+              settings: const AppSettings(justifyMode: JustifyMode.always),
+            ),
+          ),
+        ),
+      );
+      final paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
+      expect(paragraph.text.toPlainText().substring(0, 3), 'כב\u00A0');
+      expect(tester.widget<RichText>(find.byType(RichText)).textAlign, TextAlign.justify);
+      final text = paragraph.text.toPlainText(includeSemanticsLabels: false);
+      double widthAt(int i) => paragraph
+          .getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1))
+          .fold(0, (w, box) => w + box.right - box.left);
+      // A space of the first line, which the justification stretches.
+      double topOf(int start, int end) =>
+          paragraph.getBoxesForSelection(TextSelection(baseOffset: start, extentOffset: end)).first.top;
+      final stretched = text.indexOf(' ');
+      // Measured against the first word, in the verse's own size, as the
+      // number's is smaller.
+      final first = topOf(3, stretched);
+      expect(topOf(stretched, stretched + 1), first, reason: 'a space the first line may break at');
+      expect(topOf(text.lastIndexOf(' ') + 1, text.length), greaterThan(first), reason: 'more than one line');
+      expect(widthAt(stretched), greaterThan(26 + 1), reason: 'stretched');
+      expect(widthAt(2), closeTo(26, 0.01), reason: "the number's no-break space, as wide as a word space");
+    });
 
     testWidgets('a large letter stands above the line, and moves no line apart', (tester) async {
       // Genesis 1:1, whose first letter the Masorah writes large.
@@ -358,6 +496,124 @@ void main() {
       expect(styles(const AppSettings(lineWidth: LineWidth.wide)).maxLineWidth, 880);
       // Spacing from an older version, below the minimum, is raised to it.
       expect(styles(const AppSettings(lineHeight: 1.5)).lineHeight, kMinLineHeight);
+    });
+
+    group('justification', () {
+      testWidgets('automatic: the Hebrew and Aramaic from 20 ems of their size, at the text scale; English never',
+          (tester) async {
+        for (final textScale in [1.0, 2.0]) {
+          await pumpThemed(tester, const SizedBox(), textScale: textScale);
+          final context = tester.element(find.byType(SizedBox));
+          for (final readingScale in [1.0, 0.5]) {
+            final styles = ScriptureStyles(context, AppSettings(readingScale: readingScale));
+            for (final kind in [ScriptureKind.mikrah, ScriptureKind.targum, ScriptureKind.rashi]) {
+              final measure = ScriptureStyles.justifyMeasure * styles.sizeFor(kind) * textScale;
+              final why = '${kind.name} at ${textScale}x text, ${readingScale}x reading';
+              expect(styles.justifies(kind, measure), isTrue, reason: why);
+              expect(styles.alignFor(kind, measure), TextAlign.justify, reason: why);
+              expect(styles.justifies(kind, measure - 1), isFalse, reason: why);
+              expect(styles.alignFor(kind, measure - 1), TextAlign.start, reason: why);
+            }
+            expect(styles.justifies(ScriptureKind.translation, 4000), isFalse, reason: 'English keeps its ragged edge');
+          }
+        }
+        await pumpThemed(tester, const SizedBox());
+        final context = tester.element(find.byType(SizedBox));
+        final styles = ScriptureStyles(context, const AppSettings());
+        // At the default size, both parallel columns (about 598 and 498)
+        // and a desktop's column qualify; a phone's (about 350) doesn't.
+        expect(styles.justifies(ScriptureKind.mikrah, 598), isTrue);
+        expect(styles.justifies(ScriptureKind.targum, 498), isTrue);
+        expect(styles.justifies(ScriptureKind.mikrah, 656), isTrue);
+        expect(styles.justifies(ScriptureKind.mikrah, 350), isFalse);
+        expect(styles.justifies(ScriptureKind.targum, 350), isFalse);
+      });
+
+      testWidgets('always and never, whatever the column and the text', (tester) async {
+        await pumpThemed(tester, const SizedBox());
+        final context = tester.element(find.byType(SizedBox));
+        final always = ScriptureStyles(context, const AppSettings(justifyMode: JustifyMode.always));
+        final never = ScriptureStyles(context, const AppSettings(justifyMode: JustifyMode.never));
+        for (final kind in ScriptureKind.values) {
+          for (final measure in [200.0, 1200.0]) {
+            expect(always.justifies(kind, measure), isTrue, reason: '${kind.name} at $measure');
+            expect(never.justifies(kind, measure), isFalse, reason: '${kind.name} at $measure');
+          }
+        }
+      });
+
+      // The paragraph's, after a hanging number's own.
+      TextAlign alignIn(WidgetTester tester, Finder of) =>
+          tester.widget<RichText>(find.descendant(of: of, matching: find.byType(RichText)).last).textAlign;
+
+      Widget column(double width, Widget child) => Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(width: width, child: SingleChildScrollView(child: child)),
+          );
+
+      for (final (width, justified) in [(640.0, true), (348.0, false)]) {
+        testWidgets('a column $width wide ${justified ? 'justifies' : 'doesn\'t justify'} the Hebrew automatically',
+            (tester) async {
+          tester.view.physicalSize = const Size(1000, 1200);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          const settings = AppSettings();
+          await pumpThemed(
+            tester,
+            column(
+              width,
+              Column(children: [
+                ScriptureVerse(verse: decalogue, kind: ScriptureKind.mikrah, settings: settings, key: const Key('mikrah')),
+                ScriptureVerse(
+                  verse: decalogue,
+                  kind: ScriptureKind.mikrah,
+                  settings: settings,
+                  hangingNumber: true,
+                  key: const Key('hanging'),
+                ),
+                const RashiComments(
+                  comments: [Comment('הן האדם', 'הֲרֵי הוּא יָחִיד בַּתַּחְתּוֹנִים')],
+                  settings: settings,
+                  english: false,
+                  key: Key('rashi'),
+                ),
+                const TranslationVerse(text: 'Thou shalt not murder.', number: 13, settings: settings),
+                const RashiComments(
+                  comments: [Comment('BEHOLD', 'He is unique among the lower beings')],
+                  settings: settings,
+                  english: true,
+                  key: Key('rashiEnglish'),
+                ),
+              ]),
+            ),
+          );
+          final expected = justified ? TextAlign.justify : TextAlign.start;
+          expect(alignIn(tester, find.byKey(const Key('mikrah'))), expected);
+          // Measured within the gutter the number hangs in.
+          expect(alignIn(tester, find.byKey(const Key('hanging'))), expected);
+          expect(alignIn(tester, find.byKey(const Key('rashi'))), expected);
+          expect(alignIn(tester, find.byType(TranslationVerse)), TextAlign.start);
+          expect(alignIn(tester, find.byKey(const Key('rashiEnglish'))), TextAlign.start);
+        });
+      }
+
+      testWidgets('always justifies the English too, and never nothing', (tester) async {
+        for (final (mode, align) in [(JustifyMode.always, TextAlign.justify), (JustifyMode.never, TextAlign.start)]) {
+          final settings = AppSettings(justifyMode: mode);
+          await pumpThemed(
+            tester,
+            column(
+              640,
+              Column(children: [
+                ScriptureVerse(verse: decalogue, kind: ScriptureKind.mikrah, settings: settings),
+                TranslationVerse(text: 'Thou shalt not murder.', number: 13, settings: settings),
+              ]),
+            ),
+          );
+          expect(alignIn(tester, find.byType(ScriptureVerse)), align, reason: mode.name);
+          expect(alignIn(tester, find.byType(TranslationVerse)), align, reason: mode.name);
+        }
+      });
     });
 
     testWidgets('a translation\'s number is gold, with lining figures', (tester) async {
@@ -522,6 +778,7 @@ void main() {
 
   group('focus mode', () {
     Widget group({required bool highlighted}) => VerseGroup(
+          haptics: true,
           verse: serpent.ref,
           highlighted: highlighted,
           child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikrah, settings: const AppSettings()),
@@ -558,4 +815,17 @@ void main() {
       expect(container.duration, Motion.short);
     });
   });
+}
+
+/// A system text scale that grows small text faster than large, as
+/// Android 14's nonlinear font scaling does: small sizes nearly doubled, and
+/// 100 left as it is, so that a scale of 100 tells nothing of the rest.
+class _UnevenTextScaler extends TextScaler {
+  const _UnevenTextScaler();
+
+  @override
+  double scale(double fontSize) => fontSize >= 100 ? fontSize : fontSize * (2 - fontSize / 100);
+
+  @override
+  double get textScaleFactor => 2;
 }

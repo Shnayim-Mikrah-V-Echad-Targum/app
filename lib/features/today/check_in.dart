@@ -236,8 +236,8 @@ class PreviousWeekNotice extends ConsumerWidget {
     final progress = ref.read(progressProvider.notifier);
     mark(progress);
     _answer(ref.read(settingsProvider.notifier));
-    hapticSuccess(ref);
     final after = ref.read(progressProvider).week(previous.id);
+    hapticRecorded(ref, completedParsha: !before.isComplete && after.isComplete);
     final finished = after.isComplete && (!previous.haftarahRequired || after.haftarah != null);
     showStatus(
       context,

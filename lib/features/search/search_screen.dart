@@ -15,7 +15,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../parsha/week_context.dart';
-import '../reader/scripture_text.dart' show JoinsThatFit, joinWhereFits;
+import '../reader/scripture_text.dart' show JoinsThatFit, holdLastPair, joinWhereFits;
 import '../settings/app_settings.dart';
 import 'marked_text.dart';
 import 'query_direction.dart';
@@ -559,16 +559,18 @@ class _SnippetText extends StatelessWidget {
     final text = TextSpan(children: spans);
     // Words a maqaf joins stay on one line where they fit on one, as in the
     // reader; where they don't, the line ends after the maqaf rather than
-    // inside a word, and the marks move back over the joiners left out.
+    // inside a word, and the marks move back over the joiners left out. The
+    // last two words are held together, as the reader holds a verse's, and
+    // the marks move on over any joiner that adds to the last word.
     return JoinsThatFit(
       text: text,
       style: base,
       locale: locale,
-      builder: (context, fitted) => MarkedText(
+      builder: (context, fitted, _) => MarkedText(
         TextSpan(style: base, children: [fitted]),
         marks: identical(fitted, text)
             ? marks
-            : shiftForRemovedJoiners(
+            : shiftForJoiners(
                 text.toPlainText(includeSemanticsLabels: false),
                 fitted.toPlainText(includeSemanticsLabels: false),
                 marks,
@@ -584,16 +586,25 @@ class _SnippetText extends StatelessWidget {
 
 /// [marks], ranges of [before], moved to stand over the same characters of
 /// [after], which is [before] with some of its word joiners (U+2060) left
-/// out, as [joinWhereFits] leaves them out.
-List<TextRange> shiftForRemovedJoiners(String before, String after, List<TextRange> marks) {
+/// out, as [joinWhereFits] leaves them out, and perhaps a space held as a
+/// no-break space and joiners added in the last word, as [holdLastPair]
+/// holds them.
+List<TextRange> shiftForJoiners(String before, String after, List<TextRange> marks) {
+  const joiner = 0x2060;
   // Where each offset of [before] falls in [after].
   final offsets = List.filled(before.length + 1, after.length);
-  for (var i = 0, j = 0; i < before.length; i++) {
+  var j = 0;
+  for (var i = 0; i < before.length; i++) {
+    final c = before.codeUnitAt(i);
+    // Past any joiner added before this character.
+    while (c != joiner && j < after.length && after.codeUnitAt(j) == joiner) {
+      j++;
+    }
     offsets[i] = j;
-    if (j < after.length && before.codeUnitAt(i) == after.codeUnitAt(j)) {
+    if (j < after.length && (c == after.codeUnitAt(j) || (c == 0x20 && after.codeUnitAt(j) == 0xA0))) {
       j++;
     } else {
-      assert(before.codeUnitAt(i) == 0x2060, 'only word joiners are left out');
+      assert(c == joiner, 'only word joiners are left out');
     }
   }
   return [for (final m in marks) TextRange(start: offsets[m.start], end: offsets[m.end])];

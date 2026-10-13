@@ -119,12 +119,14 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
               value: s.reduceMotion || deviceReduced,
               onChanged: deviceReduced ? null : (v) => update((s) => s.copyWith(reduceMotion: v)),
             ),
-            SwitchRow(
-              icon: Icons.vibration_outlined,
-              title: l.haptics,
-              value: s.haptics,
-              onChanged: (v) => update((s) => s.copyWith(haptics: v)),
-            ),
+            // Only where the app plays haptics: a phone's or a tablet's.
+            if (hapticsAvailable)
+              SwitchRow(
+                icon: Icons.vibration_outlined,
+                title: l.haptics,
+                value: s.haptics,
+                onChanged: (v) => update((s) => s.copyWith(haptics: v)),
+              ),
             // Only where the reader takes single keys: elsewhere its shortcuts
             // all need Ctrl or ⌘ (WCAG 2.1.4).
             if (ReaderScreen.singleKeyPlatform)

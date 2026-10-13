@@ -1605,6 +1605,12 @@ abstract class AppLocalizations {
   /// **'Translation (JPS 1917)'**
   String get translationLabel;
 
+  /// The head of the English translation's column beside the Torah in the full text's side-by-side columns (where the Targum isn't shown), set as an eyebrow in small capitals beside "Mikrah". No digits: in small capitals "1" reads as "I", so the JPS 1917 isn't named here.
+  ///
+  /// In en, this message translates to:
+  /// **'English translation'**
+  String get translationHead;
+
   /// No description provided for @haftarahTitle.
   ///
   /// In en, this message translates to:
@@ -2751,11 +2757,35 @@ abstract class AppLocalizations {
   /// **'Verse numbers'**
   String get showVerseNumbers;
 
-  /// No description provided for @justifyText.
+  /// The title of the Display setting that sets scripture flush at both sides of its column, over its three choices.
   ///
   /// In en, this message translates to:
   /// **'Justify text'**
   String get justifyText;
+
+  /// Under the Justify text setting: what its Auto choice does. English is never justified automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto justifies Hebrew and Aramaic in a wide column, as in a printed Chumash.'**
+  String get justifyHelp;
+
+  /// A choice of the Justify text setting, short for automatic, as one of three segments sharing a phone's width: justify the Hebrew and Aramaic only where the column is wide enough.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get justifyAuto;
+
+  /// A choice of the Justify text setting: justify every paragraph, English too, in every column.
+  ///
+  /// In en, this message translates to:
+  /// **'Always'**
+  String get justifyAlways;
+
+  /// A choice of the Justify text setting: never justify; every line ends where its words do.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get justifyNever;
 
   /// No description provided for @lineWidthLabel.
   ///
@@ -5187,6 +5217,18 @@ abstract class AppLocalizations {
   /// **'Parshat {name} is complete'**
   String parshaDoneTitle(String name);
 
+  /// Used only by the Hebrew UI: the title of the reader's finished panel once the whole parsha is read, under the parsha's pointed Hebrew name, which it would otherwise repeat. The English UI uses parshaDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The parsha is complete'**
+  String get parshaDoneTitleShort;
+
+  /// A greeting on the reader's finished panel when the parsha is finished on the eve of Shabbat or Yom Tov. {greeting} is chosen as for erevShabbatDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{greeting, select, chag{Chag sameach!} roshHashanah{Shanah tovah!} yomKippur{G’mar chatimah tovah!} other{Shabbat shalom!}}'**
+  String restGreeting(String greeting);
+
   /// A gentle line on the finished panel about the aliyah to read next, e.g. "Chamishi is 31 verses."
   ///
   /// In en, this message translates to:
@@ -5217,16 +5259,16 @@ abstract class AppLocalizations {
   /// **'That’s today’s reading. See you on {day}.'**
   String todayReadingDoneOn(String day);
 
-  /// On the finished panel when the last day of the week's plan is done. {greeting} is chag when Yom Tov begins the next day.
+  /// On the finished panel when the last day of the week's plan is done. {greeting} is the next day's: roshHashanah or yomKippur when it is Rosh Hashanah or Yom Kippur (on Shabbat too), chag when it is another Yom Tov that is not Shabbat, and otherwise Shabbat (other).
   ///
   /// In en, this message translates to:
-  /// **'That’s this week’s reading. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
+  /// **'That’s this week’s reading. {greeting, select, chag{Chag sameach!} roshHashanah{Shanah tovah!} yomKippur{G’mar chatimah tovah!} other{Shabbat shalom!}}'**
   String erevShabbatDone(String greeting);
 
   /// As erevShabbatDone, when the plan leaves aliyot for Shabbat morning (read from a printed chumash).
   ///
   /// In en, this message translates to:
-  /// **'The rest is for Shabbat morning. {greeting, select, chag{Chag sameach!} other{Shabbat shalom!}}'**
+  /// **'The rest is for Shabbat morning. {greeting, select, chag{Chag sameach!} roshHashanah{Shanah tovah!} yomKippur{G’mar chatimah tovah!} other{Shabbat shalom!}}'**
   String erevShabbatDoneMorning(String greeting);
 
   /// After "On time · " on the finished panel, once a parsha is finished before its Shabbat.
@@ -5277,11 +5319,29 @@ abstract class AppLocalizations {
   /// **'{book} is complete'**
   String seferDoneTitle(String book);
 
-  /// Under "Chazak chazak venitchazek" once a whole book is read, e.g. "Genesis complete — 1,533 verses, twice, with Targum." {second} is what was read after the Torah's two readings. A book has hundreds of verses.
+  /// On the page shown once a whole book of the Torah is read, under "Genesis is complete": what was read, e.g. "1,533 verses, twice, with Targum." {second} is what was read after the Torah's two readings. A book has hundreds of verses.
   ///
   /// In en, this message translates to:
-  /// **'{book} complete — {count} verses, twice, with {second}.'**
-  String seferDoneBody(String book, int count, String second);
+  /// **'{count} verses, twice, with {second}.'**
+  String seferDoneFacts(int count, String second);
+
+  /// The last line of the page shown once a whole book of the Torah is read, as a printed book's colophon dates it: e.g. "Finished on Friday, 28 Tishrei 5787".
+  ///
+  /// In en, this message translates to:
+  /// **'Finished on {weekday}, {date}'**
+  String seferDoneOn(String weekday, String date);
+
+  /// On the page shown once the whole Torah is read in a year's cycle (under "Siyum HaTorah"): e.g. "The whole Torah — 5,846 verses, twice, with Targum, in the cycle of 5786." Named as a cycle, as the date beneath it falls in the next year: Vezot HaBerakhah is read in Tishrei.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole Torah — {count} verses, twice, with {second}, in the cycle of {year}.'**
+  String siyumBody(int count, String second, String year);
+
+  /// On the page for the siyum of a reader who joined partway through a year's cycle, under "Siyum from Parshat Vayera": what they read, from that parsha to the end of the Torah, e.g. "5,327 verses, twice, with Targum, in the cycle of 5786."
+  ///
+  /// In en, this message translates to:
+  /// **'{count} verses, twice, with {second}, in the cycle of {year}.'**
+  String siyumFromBody(int count, String second, String year);
 
   /// Spoken for an aliyah's tab in the reader's ribbon, before its state, e.g. "Revi'i, aliyah 4 of 7, not started".
   ///

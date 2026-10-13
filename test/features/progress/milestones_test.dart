@@ -13,6 +13,13 @@ void main() {
 
   final genesis = [for (var n = 1; n <= 12; n++) '5787:$n'];
 
+  /// Every parsha of [cycle] from [from] on, each read whole a week after
+  /// the one before, from [start].
+  Map<String, WeekProgress> yearFrom(int cycle, int from, LocalDate start) => {
+        for (var n = from; n <= kParshaCount; n++)
+          '$cycle:$n': WeekProgress(weekId: '$cycle:$n').withAll(start.addDays(7 * (n - from))),
+      };
+
   group('seferCompletions', () {
     test('finds a book once every one of its parshiyot is complete, on the day the last was', () {
       final progress = {
@@ -59,13 +66,6 @@ void main() {
         );
     List<Milestone> achieved(List<Milestone> all, MilestoneKind kind) =>
         all.where((m) => m.kind == kind && m.achieved).toList();
-
-    /// Every parsha of [cycle] from [from] on, each read whole a week after
-    /// the one before, from [start].
-    Map<String, WeekProgress> yearFrom(int cycle, int from, LocalDate start) => {
-          for (var n = from; n <= kParshaCount; n++)
-            '$cycle:$n': WeekProgress(weekId: '$cycle:$n').withAll(start.addDays(7 * (n - from))),
-        };
 
     test('a year read through stays a siyum, with its books, once the next year begins', () {
       final start = LocalDate(2025, 10, 17);
@@ -134,6 +134,42 @@ void main() {
       expect(sevenDays.achievedOn, kept[6], reason: 'the seventh day on track');
       expect(all.singleWhere((m) => m.kind == MilestoneKind.firstAliyah).achievedOn, LocalDate(2026, 10, 5));
       expect(all.where((m) => m.kind == MilestoneKind.parshaStreak && m.value == 13).single.achieved, isFalse);
+    });
+  });
+
+  group('cycleSiyum', () {
+    final start5786 = LocalDate(2025, 10, 17);
+    final start5787 = LocalDate(2026, 10, 16);
+
+    test('is the whole Torah for a year read through from Bereshit, on the day its last parsha was', () {
+      final siyum = cycleSiyum(yearFrom(5786, 1, start5786), 5786)!;
+      expect(siyum.kind, MilestoneKind.siyum);
+      expect(siyum.achieved, isTrue);
+      expect(siyum.fromParsha, isNull);
+      expect(siyum.achievedOn, start5786.addDays(7 * 53));
+      expect(cycleSiyum(yearFrom(5786, 1, start5786), 5787), isNull, reason: 'nothing read in 5787');
+    });
+
+    test('is made again by each year read through, unlike the Record, which keeps the first', () {
+      final progress = {...yearFrom(5786, 1, start5786), ...yearFrom(5787, 1, start5787)};
+      expect(cycleSiyum(progress, 5786)!.fromParsha, isNull);
+      expect(cycleSiyum(progress, 5787)!.achievedOn, start5787.addDays(7 * 53));
+    });
+
+    test('is from the parsha a reader joined at, in the year they joined partway', () {
+      final siyum = cycleSiyum(yearFrom(5786, 4, LocalDate(2025, 11, 7)), 5786)!;
+      expect(siyum.fromParsha, 4);
+      expect(siyum.achievedOn, LocalDate(2025, 11, 7).addDays(7 * 50));
+    });
+
+    test('is none for a year with a parsha unfinished, begun in Deuteronomy, or begun partway after a siyum', () {
+      final gap = yearFrom(5786, 4, LocalDate(2025, 11, 7))..remove('5786:30');
+      expect(cycleSiyum(gap, 5786), isNull);
+      expect(cycleSiyum(yearFrom(5786, 45, LocalDate(2026, 8, 1)), 5786), isNull);
+      final later = {...yearFrom(5786, 1, start5786), ...yearFrom(5787, 2, start5787)};
+      expect(cycleSiyum(later, 5787), isNull);
+      final joinedTwice = {...yearFrom(5786, 4, LocalDate(2025, 11, 7)), ...yearFrom(5787, 2, start5787)};
+      expect(cycleSiyum(joinedTwice, 5787), isNull, reason: 'the siyum from Vayera was made already');
     });
   });
 

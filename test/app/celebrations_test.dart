@@ -55,7 +55,8 @@ void main() {
     expect(location(router), '/celebrate/sefer:5787:0');
     expect(find.byType(SeferCompleteScreen), findsOneWidget);
     expect(find.text(SeferCompleteScreen.chazak), findsOneWidget);
-    expect(find.text('Genesis complete — 1,533 verses, twice, with Targum.'), findsOneWidget);
+    expect(find.text('Genesis is complete'), findsOneWidget);
+    expect(find.text('1,533 verses, twice, with Targum.'), findsOneWidget);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getStringList(CelebrationKeys.storageKey), ['sefer:5787:0']);
 

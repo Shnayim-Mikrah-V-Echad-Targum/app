@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -224,6 +225,22 @@ void main() {
       handle.dispose();
     });
   }
+
+  testWidgets(
+    'Haptic feedback is offered only where the app plays haptics',
+    (tester) async {
+      await open(tester, const AppSettings(onboardingComplete: true));
+      final phone = defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+      await tester.scrollUntilVisible(find.text('Reduce motion'), 200, scrollable: find.byType(Scrollable).first);
+      expect(find.widgetWithText(SwitchRow, 'Haptic feedback'), phone ? findsOneWidget : findsNothing);
+    },
+    variant: const TargetPlatformVariant({
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+      TargetPlatform.windows,
+      TargetPlatform.macOS,
+    }),
+  );
 
   group("Reduce motion, while the device's is on", () {
     final row = find.widgetWithText(SwitchRow, 'Reduce motion');

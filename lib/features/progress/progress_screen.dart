@@ -744,6 +744,7 @@ class _Record extends StatelessWidget {
             title: title(m),
             date: m.achievedOn == null ? null : names.dateShortWithYear(m.achievedOn!),
             chazak: m.kind == MilestoneKind.sefer,
+            large: m.kind == MilestoneKind.siyum,
           ),
       ],
     );
@@ -751,13 +752,16 @@ class _Record extends StatelessWidget {
 }
 
 class _RecordRow extends StatelessWidget {
-  const _RecordRow({required this.title, required this.date, required this.chazak});
+  const _RecordRow({required this.title, required this.date, required this.chazak, this.large = false});
 
   final String title;
   final String? date;
 
   /// Whether the row is a finished book, which "חֲזַק חֲזַק וְנִתְחַזֵּק" follows.
   final bool chazak;
+
+  /// Whether the row's lozenge is the larger one, for the Siyum HaTorah.
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
@@ -775,15 +779,16 @@ class _RecordRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // The lozenge sits where a row's icon would, on the title's line.
+              // The lozenge sits where a row's icon would, on the title's line,
+              // centred 11 in whatever its size.
               SizedBox(
                 width: PaperGroup.iconInset - 16,
                 height: titleLine,
-                child: const Align(
+                child: Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: Padding(
-                    padding: EdgeInsetsDirectional.only(start: 7),
-                    child: Lozenge(),
+                    padding: EdgeInsetsDirectional.only(start: large ? 5 : 7),
+                    child: Lozenge(size: large ? Lozenge.large : Lozenge.small),
                   ),
                 ),
               ),
