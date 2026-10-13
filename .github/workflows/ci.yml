@@ -49,6 +49,9 @@ jobs:
       # of their screenshots (docs/RELEASE.md, Store listing).
       - name: Check the store listings
         run: python3 -m unittest discover -s tool/store
+      # The Release workflow's App Store signing, against the Xcode project.
+      - name: Check the App Store signing script
+        run: python3 -m unittest discover -s tool/ios
       - name: Check the Hebrew translation is complete and up to date
         run: |
           python3 tool/l10n/build_he.py

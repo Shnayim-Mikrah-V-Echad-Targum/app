@@ -27,6 +27,10 @@ LISTINGS = {
     STORE / 'ios' / 'en-US': {**IOS, 'support_url': None, 'privacy_url': None},
     STORE / 'ios' / 'he': {**IOS, 'support_url': None, 'privacy_url': None},
 }
+# Google Play's release notes, whatsnew-<locale> for each listing, which the
+# Release workflow uploads with every bundle (.github/workflows/release.yml).
+WHATSNEW = STORE / 'play' / 'whatsnew'
+WHATSNEW_LIMIT = 500
 # A field of one line, which a trailing newline would join.
 ONE_LINE = {'title', 'short_description', 'name', 'subtitle', 'keywords',
             'promotional_text', 'support_url', 'privacy_url'}
@@ -96,6 +100,26 @@ class ListingTest(unittest.TestCase):
             for field in fields:
                 with self.subTest(f'{folder.parent.name}/{folder.name}/{field}'):
                     self.assertNotRegex(read(folder, field), other)
+
+
+class ReleaseNotesTest(unittest.TestCase):
+    LOCALES = {folder.name for folder in LISTINGS if folder.parent.name == 'play'}
+
+    def test_one_for_each_google_play_listing(self):
+        self.assertEqual({path.name for path in WHATSNEW.iterdir()},
+                         {f'whatsnew-{locale}' for locale in self.LOCALES})
+
+    def test_each_is_within_the_limit_and_typeset(self):
+        for locale in self.LOCALES:
+            with self.subTest(locale):
+                text = (WHATSNEW / f'whatsnew-{locale}').read_text(encoding='utf-8')
+                self.assertTrue(text)
+                self.assertEqual(text, text.strip(), 'no surrounding whitespace')
+                self.assertLessEqual(len(text), WHATSNEW_LIMIT)
+                self.assertNotRegex(text, '[\'"]')
+                self.assertNotRegex(text, NOT_ON_PLAY)
+                if locale == 'iw-IL':
+                    self.assertRegex(text, HEBREW)
 
 
 class FrameTest(unittest.TestCase):

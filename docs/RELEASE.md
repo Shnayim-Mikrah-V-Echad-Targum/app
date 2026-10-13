@@ -13,7 +13,7 @@
 - [ ] **Identity:**
   - The app id, bundle id and MSIX identity name are `org.shnayimmikra.app`. Change them now if you won't control that domain; they can't be changed after publishing.
   - The display name is "Shnayim Mikra".
-- [ ] **Support address.** Set `SUPPORT_EMAIL`, as a repository variable for CI. Both stores and the accessibility statement need a working contact, and without one the account-deletion page offers no way to ask by email.
+- [ ] **Support address.** Set `SUPPORT_EMAIL`, as a repository variable for CI and the [Release workflow](#the-release-workflow), which builds nothing without it. Both stores and the accessibility statement need a working contact, and without one the account-deletion page offers no way to ask by email.
 - [ ] **Public pages.** Both stores need a public URL for each of these, and the web build has them as static pages that work without JavaScript, in English and in Hebrew (add `.he` before `.html`):
   - the privacy policy: `<web address>/legal/privacy.html`
   - a support page: `<web address>/legal/support.html`
@@ -31,8 +31,29 @@
 ## Every release
 
 ### Version
-- [ ] Bump `version:` in `pubspec.yaml`. The `+N` build number must increase for every store upload.
-- [ ] Write release notes in English and Hebrew.
+- [ ] Bump the version name in `pubspec.yaml`, merge, then push tag `vX.Y.Z`. The Release workflow checks the configuration, then uploads to Play internal testing (draft), TestFlight, and a draft GitHub release with the MSIX. Promote from there.
+  - The tag is the version name, the `X.Y.Z` of `version: X.Y.Z+N`; if they differ, the workflow stops before it builds anything.
+  - Every release needs a new version name: Windows installs an update only over a lower version, and the App Store reviews each version once.
+  - The workflow numbers each build 1000 plus its run number, as Android's version code and iOS's build number, which each store wants higher with every upload. The `+N` in `pubspec.yaml` is only for builds made by hand; keep it below 1000. If a job fails, re-run only the failed jobs: a re-run keeps the run's number, and a store refuses a build number it already has. Don't rename `release.yml`: its run numbers would start again from 1.
+- [ ] Write release notes in English and Hebrew. Google Play's are `store/play/whatsnew/whatsnew-en-US` and `whatsnew-iw-IL`, up to 500 characters each (`tool/store` checks them), which the workflow uploads with the bundle; give the App Store's *What's New* the same text when submitting. The draft GitHub release lists the merged pull requests: write its notes over them before publishing it.
+
+### The Release workflow
+`.github/workflows/release.yml` builds only with the production configuration. Its first job checks that everything below is set, names each setting that isn't, and stops before any build, so that no store build ships the on-device demo community, without backup or a support address. Set them under *Settings → Secrets and variables → Actions*.
+- [ ] **Repository variables:**
+  - `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`: the production community ([BACKEND.md](BACKEND.md)).
+  - `SUPPORT_EMAIL`: the support address.
+  - `WEB_URL`: the site's public address ([Web](#web)), which the stores' support and privacy URLs are on.
+  - `IOS_TEAM_ID`, `IOS_PROFILE_NAME` and `IOS_WIDGET_PROFILE_NAME`: the Apple team, and the names of the App Store profiles of the app and its widget ([iOS](#ios-app-store)).
+  - `INSTALL_URL` is optional, as in CI.
+- [ ] **Repository secrets:**
+  - `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`: the upload key ([Android](#android-google-play)).
+  - `PLAY_SERVICE_ACCOUNT_JSON`: the service account that uploads to Google Play ([Android](#android-google-play)).
+  - `IOS_DIST_CERT_P12_BASE64` and `IOS_DIST_CERT_PASSWORD`: the Apple Distribution certificate ([iOS](#ios-app-store)).
+  - `IOS_PROVISIONING_PROFILE_BASE64` and `IOS_WIDGET_PROVISIONING_PROFILE_BASE64`: the App Store profiles themselves ([iOS](#ios-app-store)).
+  - `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY`: the App Store Connect API key that uploads to TestFlight ([iOS](#ios-app-store)).
+  - `WINDOWS_CERTIFICATE_BASE64` and `WINDOWS_CERTIFICATE_PASSWORD`: the code-signing certificate ([Windows](#windows)).
+- [ ] **The first release** on Google Play is uploaded by hand, because the Play Developer API can't create an app's first release: that run's upload to Google Play fails, and its `android` artifact holds the AAB to upload in Play Console (*Testing*, under [Android](#android-google-play)). Every later release uploads itself. On iOS, create the app in App Store Connect before the first run.
+- CI's artifacts (`.github/workflows/ci.yml`) are never for the stores: CI builds with whatever configuration it has, pull requests from forks in demo mode and without signing, and doesn't number its builds. Besides what it uploads, a release run keeps the Android debug symbols (`android-symbols`), for `flutter symbolize`, and the IPA (`ios`), which Transporter can upload if the TestFlight step fails.
 
 ### Automated checks
 - [ ] CI is green on the release commit: analysis, all tests, SQL tests, and builds for all four platforms.
@@ -126,20 +147,21 @@ The stores' text, screenshots and Google Play's feature graphic come from the ap
   keyAlias=upload
   keyPassword=…
   ```
-- [ ] For CI builds, add these repository secrets:
+- [ ] For the Release workflow, and CI's signed builds, add these repository secrets:
   - `ANDROID_KEYSTORE_BASE64` (the output of `base64 -w0 upload-keystore.jks`)
   - `ANDROID_KEYSTORE_PASSWORD`
   - `ANDROID_KEY_ALIAS`
   - `ANDROID_KEY_PASSWORD`
 - [ ] Enrol in Play App Signing.
+- [ ] For the Release workflow's uploads, create a service account in Google Cloud, with a JSON key. In Play Console, under *Users and permissions*, invite its email address, with permission to release this app to testing tracks. Add the key file's contents as the repository secret `PLAY_SERVICE_ACCOUNT_JSON`.
 
 **Build**
 
-- [ ] Run `flutter build appbundle --release` with the dart-defines from the README, or take the `android` artifact from CI. A build without the keystore ends with "RELEASE BUILD SIGNED WITH DEBUG KEY", and CI names its artifact `android-debug-signed`: Google Play refuses it.
+- [ ] The Release workflow builds the bundle and uploads it to internal testing as a draft: roll it out there, then promote it. To build one by hand, run `flutter build appbundle --release` with the dart-defines from the README, the backend's and `SUPPORT_EMAIL` all set. A build without the keystore ends with "RELEASE BUILD SIGNED WITH DEBUG KEY" (as CI's `android-debug-signed` artifact is): Google Play refuses it. Never upload CI's `android` artifact, which has whatever configuration CI has: the demo community, if a variable is missing.
 
 **Play Console**
 
-- [ ] **Testing:** if the developer account is a personal account created after 13 November 2023, run a closed test with at least 12 testers opted in for 14 consecutive days before applying for production access. Otherwise start with internal testing. Upload the first AAB by hand in Play Console: the Play Developer API can't create an app's first release.
+- [ ] **Testing:** if the developer account is a personal account created after 13 November 2023, run a closed test with at least 12 testers opted in for 14 consecutive days before applying for production access. Otherwise start with internal testing. Upload the first AAB by hand in Play Console: the Play Developer API can't create an app's first release. Take it from the Release workflow's `android` artifact (that run's own upload fails for the same reason); later releases upload themselves.
 - [ ] **App content:**
   - Privacy policy: `<web address>/legal/privacy.html`.
   - Ads: no.
@@ -174,13 +196,22 @@ The stores' text, screenshots and Google Play's feature graphic come from the ap
 - [ ] Enable the push notification capability only if you add remote push. Local notifications don't need it.
 - [ ] **Privacy manifests:** the widget extension's `ios/ParshaWidget/PrivacyInfo.xcprivacy` declares the one required-reason API it calls, reading the App Group's user defaults (`NSPrivacyAccessedAPICategoryUserDefaults`, reason `1C8F.1`), and that it collects and tracks nothing; without it App Store Connect refuses the upload (ITMS-91053). Declare there any such API the extension comes to call (`test/app/home_widget_platform_test.dart` checks the ones it knows). The app's own come from Flutter and its plugins, each with a manifest of its own; home_widget, which saves the widget's timeline in the App Group, has none, but shared_preferences declares the same category and reason in the app. If an upload is ever refused for the Runner binary's user defaults, add a `PrivacyInfo.xcprivacy` to Runner's resources declaring them with `1C8F.1`.
 
+**Signing for the Release workflow**
+
+- [ ] An **Apple Distribution certificate**, from *Certificates* in the developer portal or from Xcode. Export it with its private key from Keychain Access, as a `.p12` with a password, and add the repository secrets `IOS_DIST_CERT_P12_BASE64` (the output of `base64 -i distribution.p12`) and `IOS_DIST_CERT_PASSWORD`.
+- [ ] Two **App Store provisioning profiles** (*Profiles → Distribution → App Store Connect*), both with that certificate and the App Group: one for `org.shnayimmikra.app`, one for the widget, `org.shnayimmikra.app.ParshaWidget`. Add each profile's name as a repository variable, `IOS_PROFILE_NAME` and `IOS_WIDGET_PROFILE_NAME`, and its file as a secret, `IOS_PROVISIONING_PROFILE_BASE64` and `IOS_WIDGET_PROVISIONING_PROFILE_BASE64` (`base64 -i <file>.mobileprovision`). The workflow stops if a profile has another name, team or bundle id, or isn't an App Store profile.
+- [ ] `IOS_TEAM_ID`: the team id, under *Membership details* in the developer account.
+- [ ] An **App Store Connect API key** (*Users and Access → Integrations → App Store Connect API*), with the App Manager role: add `ASC_KEY_ID` (the key's id), `ASC_ISSUER_ID` (the issuer id above the list of keys) and `ASC_PRIVATE_KEY` (the contents of the `.p8` file, which can be downloaded only once).
+- [ ] The certificate and the profiles expire after a year. Renew them, and their secrets, before then.
+- The project in the repository signs automatically, for builds in Xcode. In its own checkout, the workflow switches the Release configuration of the app and its widget to manual signing with those profiles (`tool/ios/sign_for_app_store.py`), and exports the archive with `ios/ExportOptions.plist`. An extension added to the app needs an App Store profile of its own, in the workflow and in `ios/ExportOptions.plist`; until it has one, the script stops the build.
+
 **Build**
 
-- [ ] Run `flutter build ipa --release` with the dart-defines, then upload with Transporter or Xcode.
+- [ ] The Release workflow builds the IPA and uploads it to TestFlight. To build one by hand, run `flutter build ipa --release` with the dart-defines from the README, the backend's and `SUPPORT_EMAIL` all set, then upload it with Transporter or Xcode.
 
 **App Store Connect**
 
-- [ ] **TestFlight:** upload the build, add internal testers, and run the [checks on real devices](#behaviour-on-real-devices) on the TestFlight build.
+- [ ] **TestFlight:** before the first upload, create the app (*Apps → New App*, bundle id `org.shnayimmikra.app`). Once the Release workflow's build has been processed, add internal testers, and run the [checks on real devices](#behaviour-on-real-devices) on the TestFlight build.
 - [ ] **Localizations:** English (U.S.), from `store/ios/en-US/`, and Hebrew, from `store/ios/he/`: the name (שניים מקרא in Hebrew), subtitle, keywords, promotional text, description and support and privacy URLs, from the [store listing kit](#store-listing). Screenshots for each: six for the 6.9" iPhone (1320 × 2868) from `build/store/ios/`, and six for the 13" iPad (2064 × 2752) from `build/store/ipad/`, from `en-US/` and `he/`.
 - [ ] **App Privacy ("nutrition labels"):**
   - Contact info: email address, used for app functionality, linked to the user.
@@ -218,7 +249,7 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 **Signing**
 
 - [ ] For sideloading, get a code-signing certificate (`.pfx`). Its subject becomes the package's publisher, and must stay the same from release to release, or Windows treats the update as a different app.
-- [ ] For CI builds, add these repository secrets:
+- [ ] For the Release workflow, and CI's signed builds, add these repository secrets:
   - `WINDOWS_CERTIFICATE_BASE64` (the output of `base64 -w0 certificate.pfx`)
   - `WINDOWS_CERTIFICATE_PASSWORD`
 - [ ] Without the certificate, the package is signed with the msix tool's public test certificate, and CI names its artifact `windows-msix-test-signed`. Windows installs it only where that certificate is trusted. On a test machine, never a user's: open the `.msix` file's *Properties → Digital Signatures → Details → View Certificate → Install Certificate*, and place it in *Local Machine → Trusted People*.
@@ -229,8 +260,9 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 
 **Build**
 
-- [ ] Run `flutter build windows --release` with the dart-defines from the README. Then, in Git Bash, run `bash tool/windows/make_msix.sh`, adding `--certificate-path certificate.pfx --certificate-password …` to sign it. The installer is `build/windows/msix/ShnayimMikra.msix`.
-- [ ] Or take the `windows-msix` artifact from CI. The `windows` artifact is the same build unpackaged.
+- [ ] The Release workflow packages the MSIX, signed with the certificate, and attaches it to a draft GitHub release for the tag: publish the release once the installer is checked.
+- [ ] To build one by hand, run `flutter build windows --release` with the dart-defines from the README, the backend's and `SUPPORT_EMAIL` all set. Then, in Git Bash, run `bash tool/windows/make_msix.sh`, adding `--certificate-path certificate.pfx --certificate-password …` to sign it. The installer is `build/windows/msix/ShnayimMikra.msix`.
+- CI's `windows-msix` artifact (and `windows`, the same build unpackaged) has whatever configuration CI has: release the draft's installer, not CI's.
 
 **Checks**
 

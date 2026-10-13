@@ -114,6 +114,8 @@ Setting up the backend is covered in [docs/BACKEND.md](docs/BACKEND.md).
 
 CI (`.github/workflows/ci.yml`) runs analysis and every test, then builds all four platforms on each pull request. On `main` it can also deploy the web build to GitHub Pages: set the repository variable `DEPLOY_WEB=true`, set `WEB_BASE_HREF` if the site isn't served from the root, and set `WEB_URL` to the site's address for link previews.
 
+Releases come from the Release workflow (`.github/workflows/release.yml`), which a tag `vX.Y.Z` starts. It checks that the production configuration and the signing keys are all set, then builds with them and uploads to Google Play's internal testing, TestFlight and a draft GitHub release with the Windows installer (see [docs/RELEASE.md](docs/RELEASE.md#version)). CI's own builds are for checking, never for the stores.
+
 ## Tests
 
 ```sh

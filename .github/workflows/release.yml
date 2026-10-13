@@ -1,0 +1,296 @@
+name: Release
+
+# Pushing a tag vX.Y.Z (the version in pubspec.yaml) builds the stores'
+# packages with the production configuration and uploads them: Google Play's
+# internal testing (as a draft), TestFlight, and a draft GitHub release with
+# the Windows installer. Each is promoted from there by hand (docs/RELEASE.md).
+# Unlike CI, which builds pull requests from forks in demo mode, it builds
+# nothing until every variable and secret below is set.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+concurrency:
+  group: release-${{ github.ref }}
+  # Never stop an upload part-way.
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.47.7"
+  # As in CI. The preflight makes sure the first three are set, so a store
+  # build never ships the on-device demo community, no backup or no support
+  # address. INSTALL_URL is optional, as it is on the web.
+  DART_DEFINES: >-
+    --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
+    --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+    --dart-define=SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}
+    --dart-define=INSTALL_URL=${{ vars.INSTALL_URL }}
+
+jobs:
+  preflight:
+    name: Check the release configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repository variables
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
+          WEB_URL: ${{ vars.WEB_URL }}
+          IOS_TEAM_ID: ${{ vars.IOS_TEAM_ID }}
+          IOS_PROFILE_NAME: ${{ vars.IOS_PROFILE_NAME }}
+          IOS_WIDGET_PROFILE_NAME: ${{ vars.IOS_WIDGET_PROFILE_NAME }}
+        run: |
+          missing=0
+          for v in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPPORT_EMAIL WEB_URL IOS_TEAM_ID IOS_PROFILE_NAME IOS_WIDGET_PROFILE_NAME; do
+            [ -n "${!v}" ] || { echo "::error::Repository variable $v is not set"; missing=1; }
+          done
+          exit "$missing"
+      - name: Repository secrets
+        # Also when a variable is missing, to name everything missing at once.
+        if: ${{ !cancelled() }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          missing=0
+          for v in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD \
+              PLAY_SERVICE_ACCOUNT_JSON IOS_DIST_CERT_P12_BASE64 IOS_DIST_CERT_PASSWORD \
+              IOS_PROVISIONING_PROFILE_BASE64 IOS_WIDGET_PROVISIONING_PROFILE_BASE64 \
+              ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY WINDOWS_CERTIFICATE_BASE64 WINDOWS_CERTIFICATE_PASSWORD; do
+            [ -n "${!v}" ] || { echo "::error::Repository secret $v is not set"; missing=1; }
+          done
+          exit "$missing"
+      - name: The tag is the version in pubspec.yaml
+        if: ${{ !cancelled() }}
+        run: |
+          version=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' pubspec.yaml)
+          if [ "${GITHUB_REF_NAME#v}" != "$version" ]; then
+            echo "::error file=pubspec.yaml::The tag $GITHUB_REF_NAME is not the version in pubspec.yaml ($version)"
+            exit 1
+          fi
+
+  # Every build is numbered 1000 + this workflow's run number: Android's
+  # version code and iOS's build number, which each store wants higher with
+  # every upload. (pubspec.yaml's +N is for builds made by hand, below 1000.)
+  # Re-running a failed job keeps the run's number; renaming this file would
+  # start the numbers again from 1.
+  android:
+    name: Google Play (internal testing)
+    needs: preflight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          cat > android/key.properties <<PROPS
+          storeFile=upload-keystore.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          PROPS
+      - name: Build the app bundle
+        run: |
+          # shellcheck disable=SC2086 # DART_DEFINES is a list of arguments.
+          flutter build appbundle --release --split-debug-info=build/symbols/android \
+            --build-number=$((1000 + GITHUB_RUN_NUMBER)) $DART_DEFINES
+      # The bundle, for the first release, which goes to Play Console by hand
+      # (the Play Developer API can't create an app's first release).
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+      # For flutter symbolize, which reads a crash's stack trace with them.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-symbols
+          path: build/symbols/android
+          if-no-files-found: error
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: org.shnayimmikra.app
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: draft
+          whatsNewDirectory: store/play/whatsnew
+
+  ios:
+    name: TestFlight
+    needs: preflight
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      # App Store Connect takes only builds made with Xcode 26 (the iOS 26
+      # SDK) or later.
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Import the distribution certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+      # One App Store profile for the app and one for its widget extension,
+      # each checked against its variable, so that a mismatch stops here
+      # rather than in the archive.
+      - name: Install the provisioning profiles
+        env:
+          APP_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          WIDGET_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE_BASE64 }}
+          IOS_TEAM_ID: ${{ vars.IOS_TEAM_ID }}
+          IOS_PROFILE_NAME: ${{ vars.IOS_PROFILE_NAME }}
+          IOS_WIDGET_PROFILE_NAME: ${{ vars.IOS_WIDGET_PROFILE_NAME }}
+        run: |
+          # Where Xcode 16 and later look for profiles, and where earlier
+          # versions did.
+          folders=("$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+                   "$HOME/Library/MobileDevice/Provisioning Profiles")
+          install_profile() { # secret's name, its base64, the expected name, the bundle id
+            profile="$RUNNER_TEMP/profile.mobileprovision"
+            echo "$2" | base64 --decode > "$profile"
+            security cms -D -i "$profile" > "$profile.plist"
+            field() { /usr/libexec/PlistBuddy -c "Print :$1" "$profile.plist" 2> /dev/null; }
+            name=$(field Name || true)
+            if [ "$name" != "$3" ]; then
+              echo "::error::$1 is the profile \"$name\", not \"$3\""
+              exit 1
+            fi
+            if [ "$(field TeamIdentifier:0)" != "$IOS_TEAM_ID" ] \
+                || [ "$(field Entitlements:application-identifier | cut -d . -f 2-)" != "$4" ]; then
+              echo "::error::$1 is not for $4 in the team $IOS_TEAM_ID"
+              exit 1
+            fi
+            if field ProvisionedDevices > /dev/null; then
+              echo "::error::$1 is a development or ad hoc profile; it needs to be an App Store one"
+              exit 1
+            fi
+            for folder in "${folders[@]}"; do
+              mkdir -p "$folder"
+              cp "$profile" "$folder/$(field UUID).mobileprovision"
+            done
+            rm "$profile" "$profile.plist"
+          }
+          install_profile IOS_PROVISIONING_PROFILE_BASE64 "$APP_PROFILE_BASE64" \
+            "$IOS_PROFILE_NAME" org.shnayimmikra.app
+          install_profile IOS_WIDGET_PROVISIONING_PROFILE_BASE64 "$WIDGET_PROFILE_BASE64" \
+            "$IOS_WIDGET_PROFILE_NAME" org.shnayimmikra.app.ParshaWidget
+      # In this checkout only: the repository's project keeps automatic
+      # signing for builds made in Xcode.
+      - name: Sign the app and its widget with their profiles
+        env:
+          IOS_TEAM_ID: ${{ vars.IOS_TEAM_ID }}
+          IOS_PROFILE_NAME: ${{ vars.IOS_PROFILE_NAME }}
+          IOS_WIDGET_PROFILE_NAME: ${{ vars.IOS_WIDGET_PROFILE_NAME }}
+        run: |
+          python3 tool/ios/sign_for_app_store.py --team "$IOS_TEAM_ID" \
+            --profile "org.shnayimmikra.app=$IOS_PROFILE_NAME" \
+            --profile "org.shnayimmikra.app.ParshaWidget=$IOS_WIDGET_PROFILE_NAME"
+      - name: Build the IPA
+        id: ipa
+        run: |
+          # shellcheck disable=SC2086 # DART_DEFINES is a list of arguments.
+          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist \
+            --build-number=$((1000 + GITHUB_RUN_NUMBER)) $DART_DEFINES
+          ipa=$(find build/ios/ipa -name '*.ipa' | head -n 1)
+          if [ -z "$ipa" ]; then
+            echo "::error::flutter build ipa wrote no IPA"
+            exit 1
+          fi
+          echo "path=$ipa" >> "$GITHUB_OUTPUT"
+      # The IPA, for Transporter if the upload below fails.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: ${{ steps.ipa.outputs.path }}
+          if-no-files-found: error
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-path: ${{ steps.ipa.outputs.path }}
+          issuer-id: ${{ secrets.ASC_ISSUER_ID }}
+          api-key-id: ${{ secrets.ASC_KEY_ID }}
+          api-private-key: ${{ secrets.ASC_PRIVATE_KEY }}
+
+  windows:
+    name: Draft GitHub release (Windows)
+    needs: preflight
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build
+        run: |
+          # shellcheck disable=SC2086 # DART_DEFINES is a list of arguments.
+          flutter build windows --release --build-number=$((1000 + GITHUB_RUN_NUMBER)) $DART_DEFINES
+      - name: Package as MSIX, signed with the certificate
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          certificate="$RUNNER_TEMP/certificate.pfx"
+          trap 'rm -f "$certificate"' EXIT
+          echo "$CERTIFICATE_BASE64" | base64 -d > "$certificate"
+          bash tool/windows/make_msix.sh \
+            --certificate-path "$certificate" --certificate-password "$CERTIFICATE_PASSWORD"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-msix
+          path: build/windows/msix/ShnayimMikra.msix
+          if-no-files-found: error
+      - name: Draft the release with the installer
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Shnayim Mikra ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true
+          files: build/windows/msix/ShnayimMikra.msix
+          fail_on_unmatched_files: true
