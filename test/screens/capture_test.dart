@@ -2001,9 +2001,11 @@ const _narrowDesktopScreens = {
   'today_grace',
   'today_pause_ended',
   'today_divergence',
-  // Progress and a week's page in two columns, at their narrowest.
+  // Progress and a week's page in two columns, at their narrowest: both
+  // within their tab, beside the extended rail (a week opened over the tabs
+  // fills the container at 1200 as at 1366).
   'progress',
-  'week',
+  'parsha',
   'forum_questions',
   'snackbar',
 };

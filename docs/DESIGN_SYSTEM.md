@@ -1214,7 +1214,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
    - Tap opens the reader. The row is one button whose value is the state of each reading; the menu keeps its own item.
 4. **Second PaperGroup**, 28 below: Haftarah and Discuss rows, as on Today (`HaftarahRow`, `DiscussRow`), and between them, while the parsha has any bookmarks or notes, the row to them (`WeekNotesRow`, §6.29).
 5. **Footer:** a centred TextButton "Mark the whole parsha as read", while the week is open and unfinished.
-6. **Desktop ≥1200** (desktop_week, deskhe_week, desk1200_week, desktop_parsha):
+6. **Desktop ≥1200** (desktop_week, deskhe_week, desktop_parsha, and desk1200_parsha, the narrowest: within the Parsha tab beside the extended rail, a pane of 943 and columns of about 356 and 499; a week opened over the tabs fills the 1040 container at 1200 as at 1366):
    - A container of max width 1040, as Today's, with columns 5/7 and a 24 gap (`PageColumns`); the app bar's title, revealed as the name scrolls away, starts on its edge, and its actions end on its other.
    - Start: the header (1), and under it the notice of a week not yet open. End: the aliyot's count (2), with nothing above it, so that it stands level with the Hebrew name, the aliyot (3), the second PaperGroup (4) and the footer (5).
    - Each column is a focus traversal group and a node of its own for screen readers, so both go down the header before the aliyot.

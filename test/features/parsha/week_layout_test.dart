@@ -147,14 +147,36 @@ void main() {
     });
   });
 
-  // The narrowest desktop, and every text twice its size.
-  for (final (width, scale) in [(1200.0, 1.0), (1200.0, 2.0), (1366.0, 2.0)]) {
-    testWidgets('at ${width.round()} dp with text at ${(scale * 100).round()}%, sets both columns whole',
-        (tester) async {
-      await open(tester, Size(width, 3000), textScale: scale);
+  // The narrowest desktop, and every text twice its size. A week opened
+  // over the tabs fills the 1040 container at 1200 as at 1366; within the
+  // Parsha tab, beside the extended rail, its pane is 943, which leaves 879
+  // of content and the narrowest columns, about 356 and 499.
+  for (final (width, scale, route) in [
+    (1200.0, 1.0, '/week/5787:1'),
+    (1200.0, 2.0, '/week/5787:1'),
+    (1366.0, 2.0, '/week/5787:1'),
+    (1200.0, 1.0, '/parsha'),
+    (1200.0, 2.0, '/parsha'),
+  ]) {
+    final inTab = route == '/parsha';
+    testWidgets(
+        'at ${width.round()} dp with text at ${(scale * 100).round()}%${inTab ? ', within the Parsha tab,' : ''} '
+        'sets both columns whole', (tester) async {
+      await open(tester, Size(width, 3000), textScale: scale, route: route);
       expect(tester.takeException(), isNull, reason: 'nothing overflows');
       expect(aliyot(tester).left, greaterThan(rings(tester).right));
       expect(count(tester).top, name(tester).top);
+      if (inTab) {
+        const content = 1200 - _rail - 2 * 32;
+        const first = (content - 24) * 5 / 12;
+        const start = _rail + 32;
+        // Within half a pixel: very large text widens the rail's labels a
+        // fraction.
+        expect(name(tester).left, closeTo(start, 0.5));
+        expect(aliyot(tester).left, closeTo(start + first + 24, 0.5));
+        expect(aliyot(tester).width, closeTo((content - 24) * 7 / 12, 0.5));
+        expect(rings(tester).right, lessThanOrEqualTo(start + first + 0.5));
+      }
     });
   }
 
