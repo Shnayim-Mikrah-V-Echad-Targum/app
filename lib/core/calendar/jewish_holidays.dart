@@ -44,9 +44,28 @@ abstract final class JewishHolidays {
     final tomorrow = date.addDays(1);
     final hebrew = HebrewDate.fromLocalDate(tomorrow);
     if (isRestDay(date, israel: israel) || tomorrow.isShabbat || !isYomTov(hebrew, israel: israel)) return null;
-    if (isYomKippur(hebrew)) return ErevYomTov.yomKippur;
-    return isRoshHashanah(hebrew) ? ErevYomTov.roshHashanah : ErevYomTov.other;
+    return _named(hebrew);
   }
+
+  /// Which Yom Tov begins this evening together with Shabbat when [date], a
+  /// reading day, is a Friday whose Shabbat is also a Yom Tov by [israel]'s
+  /// days (Pesach, Rosh Hashanah, Yom Kippur, Sukkot or Shemini Atzeret on
+  /// Shabbat); null otherwise, and when [date] is itself a day of rest, as
+  /// the first day of Shavuot is before its second on Shabbat. [erevYomTov],
+  /// null whenever tomorrow is Shabbat, keeps its meaning for its callers.
+  static ErevYomTov? yomTovWithShabbat(LocalDate date, {required bool israel}) {
+    final shabbat = date.addDays(1);
+    final hebrew = HebrewDate.fromLocalDate(shabbat);
+    if (!shabbat.isShabbat || isRestDay(date, israel: israel) || !isYomTov(hebrew, israel: israel)) return null;
+    return _named(hebrew);
+  }
+
+  /// A Yom Tov as the app names it ([ErevYomTov]).
+  static ErevYomTov _named(HebrewDate yomTov) => isYomKippur(yomTov)
+      ? ErevYomTov.yomKippur
+      : isRoshHashanah(yomTov)
+          ? ErevYomTov.roshHashanah
+          : ErevYomTov.other;
 
   /// Shabbat or Yom Tov: a day on which the app expects no activity.
   static bool isRestDay(LocalDate date, {required bool israel}) =>

@@ -170,6 +170,20 @@ class ParshaSchedule {
     }
   }
 
+  /// The Shabbat on or after [date] when no portion of the yearly cycle is
+  /// read on it: a Shabbat of Pesach, of Shavuot outside Israel, of Sukkot or
+  /// Shemini Atzeret, of Rosh Hashanah or Yom Kippur, or Shabbat Chol
+  /// HaMoed, each of which reads the day's own portion. Null when that
+  /// Shabbat reads a weekly portion, or Vezot HaBerachah (Simchat Torah on
+  /// Shabbat, in Israel).
+  ///
+  /// Asked of [nextOccasion] rather than of [portionOnShabbat], whose table
+  /// has no weekly portion for Israel's Simchat Torah on Shabbat either.
+  LocalDate? shabbatWithoutPortion(LocalDate date) {
+    final shabbat = date.onOrAfter(6);
+    return nextOccasion(shabbat).date == shabbat ? null : shabbat;
+  }
+
   /// The last public reading strictly before [date].
   ReadingOccasion previousOccasion(LocalDate date) {
     final before = date.addDays(-1);

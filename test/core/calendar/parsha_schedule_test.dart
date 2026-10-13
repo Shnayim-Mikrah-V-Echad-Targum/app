@@ -105,6 +105,37 @@ void main() {
       }
     });
 
+    test('shabbatWithoutPortion is the coming Shabbat when it reads the day\'s own portion', () {
+      // (date, the Diaspora's answer, Israel's).
+      final cases = <(LocalDate, LocalDate?, LocalDate?)>[
+        // Shabbat Chol HaMoed Pesach 5786, from the Sunday before it and on
+        // the day; the next day, Shemini's week runs on to its Shabbat.
+        (LocalDate(2026, 3, 29), LocalDate(2026, 4, 4), LocalDate(2026, 4, 4)),
+        (LocalDate(2026, 4, 4), LocalDate(2026, 4, 4), LocalDate(2026, 4, 4)),
+        (LocalDate(2026, 4, 5), null, null),
+        // The eighth day of Pesach 5789, on which Israel reads Shemini.
+        (LocalDate(2029, 4, 1), LocalDate(2029, 4, 7), null),
+        // The second day of Shavuot 5786, on which Israel reads Naso.
+        (LocalDate(2026, 5, 17), LocalDate(2026, 5, 23), null),
+        // Rosh Hashanah 5787 and the first day of Sukkot 5787.
+        (LocalDate(2026, 9, 6), LocalDate(2026, 9, 12), LocalDate(2026, 9, 12)),
+        (LocalDate(2026, 9, 20), LocalDate(2026, 9, 26), LocalDate(2026, 9, 26)),
+        // Shemini Atzeret 5787 on Shabbat: Simchat Torah in Israel, which
+        // reads Vezot HaBerachah.
+        (LocalDate(2026, 9, 27), LocalDate(2026, 10, 3), null),
+        // Shabbat Chol HaMoed Sukkot 5786.
+        (LocalDate(2025, 10, 5), LocalDate(2025, 10, 11), LocalDate(2025, 10, 11)),
+        // Yom Kippur 5789.
+        (LocalDate(2028, 9, 24), LocalDate(2028, 9, 30), LocalDate(2028, 9, 30)),
+        // Noach 5787, an ordinary week.
+        (LocalDate(2026, 10, 11), null, null),
+      ];
+      for (final (date, abroad, inIsrael) in cases) {
+        expect(diaspora.shabbatWithoutPortion(date), abroad, reason: 'Diaspora, $date');
+        expect(israel.shabbatWithoutPortion(date), inIsrael, reason: 'Israel, $date');
+      }
+    });
+
     test('previous / next week are inverses', () {
       var week = diaspora.weekFor(LocalDate(2026, 10, 9));
       for (var i = 0; i < 120; i++) {
