@@ -447,6 +447,12 @@ describe('the build', () => {
   it("precaches main.dart.js's deferred parts, which the app loads once it is up, for offline use", () => {
     assert.match(read('workbox-config.cjs'), /'main\.dart\.js',\n(?:\s*\/\/.*\n)*\s*'main\.dart\.js_\*\.part\.js',/);
   });
+
+  it('holds main.dart.js to the budget docs/RELEASE.md records, unless a repository variable sets one', () => {
+    const budget = read('.github/workflows/ci.yml').match(/BUDGET: \$\{\{ vars\.BUDGET_MAIN_JS_GZIP \|\| '(\d+)' \}\}/);
+    assert.ok(budget, 'the Bundle size budget step');
+    assert.match(read('docs/RELEASE.md'), new RegExp(`\`${budget[1]}\` bytes`));
+  });
 });
 
 // ---------------------------------------------------------------------------

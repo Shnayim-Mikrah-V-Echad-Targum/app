@@ -86,6 +86,41 @@ jobs:
       # starts downloading them all while the engine loads.
       - name: Preload the start-up fonts
         run: node tool/web/preload_fonts.mjs build/web
+      # main.dart.js, which a first visit downloads before anything shows,
+      # against its budget in bytes gzipped: the repository variable
+      # BUDGET_MAIN_JS_GZIP, or else the budget docs/RELEASE.md records (Web).
+      # The summary gives its deferred parts and the start-up fonts too.
+      - name: Bundle size budget
+        env:
+          BUDGET: ${{ vars.BUDGET_MAIN_JS_GZIP || '1527297' }}
+        run: |
+          [[ "$BUDGET" =~ ^[0-9]+$ ]] || { echo "::error::BUDGET_MAIN_JS_GZIP is not a number of bytes: $BUDGET"; exit 1; }
+          gzipped() { gzip -9c "$1" | wc -c; }
+          kb() { awk -v n="$1" 'BEGIN { printf "%.1f KB", n / 1024 }'; }
+          size=$(gzipped build/web/main.dart.js)
+          parts=0 part_count=0
+          for part in build/web/main.dart.js_*.part.js; do
+            [ -e "$part" ] || continue
+            parts=$((parts + $(gzipped "$part"))) part_count=$((part_count + 1))
+          done
+          assets=$(jq -r '[.[].fonts[].asset] | unique | .[]' build/web/assets/FontManifest.json)
+          fonts=0 font_count=0
+          while read -r asset; do
+            fonts=$((fonts + $(wc -c < "build/web/assets/$asset"))) font_count=$((font_count + 1))
+          done <<< "$assets"
+          {
+            echo '### Web first load'
+            echo
+            echo '| | Size |'
+            echo '| --- | ---: |'
+            echo "| main.dart.js, gzipped | $(kb "$size") ($size bytes, budget $BUDGET) |"
+            echo "| Deferred parts ($part_count), gzipped | $(kb "$parts") |"
+            echo "| Start-up fonts ($font_count) | $(kb "$fonts") |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$size" -gt "$BUDGET" ]; then
+            echo "::error file=build/web/main.dart.js::main.dart.js is $size bytes gzipped, over its budget of $BUDGET (docs/RELEASE.md, Web)"
+            exit 1
+          fi
       # The public privacy, support and account-deletion pages the stores
       # ask for, as static HTML in build/web/legal/ (docs/RELEASE.md).
       - name: Static policy, support and account-deletion pages
