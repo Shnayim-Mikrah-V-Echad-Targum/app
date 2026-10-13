@@ -5,6 +5,8 @@ import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yaml/yaml.dart';
 
+import 'native_source.dart';
+
 /// The Windows MSIX installer: msix_config in pubspec.yaml, and the icons
 /// under windows/msix that tool/branding/make_icon.py --post writes and
 /// tool/windows/make_msix.sh packages.
@@ -46,6 +48,35 @@ void main() {
   test("the toast activator is the notification plugin's class", () {
     final clsid = (config['toast_activator'] as YamlMap)['clsid'] as String;
     expect(File('lib/services/notifications.dart').readAsStringSync(), contains("guid: '$clsid',"));
+    // And the class the runner says how to start, run from the folder.
+    expect(File('windows/runner/main.cpp').readAsStringSync(),
+        contains('L"Software\\\\Classes\\\\CLSID\\\\{$clsid}"\n    L"\\\\LocalServer32"'));
+  });
+
+  // The notification plugin registers its class only while the app runs:
+  // run from the folder, with no installer to say how to start the app for
+  // it, a click on a reminder that came once the app had closed would do
+  // nothing. The MSIX says so in its manifest (com:ExeServer).
+  test('run from the folder, a click on a reminder starts the app', () {
+    final main = File('windows/runner/main.cpp').readAsStringSync();
+    expect(main, contains('#include <appmodel.h>'));
+    final register = cppBody(main, 'void RegisterToastActivatorServer()');
+    // Only unpackaged: the MSIX's own registration stays its own.
+    expect(register, contains('if (::GetCurrentPackageFullName(&length, nullptr) !=\n      APPMODEL_ERROR_NO_PACKAGE) {\n    return;\n  }'));
+    // The executable where it is now, quoted for a path with spaces, as the
+    // key's default value, for this user alone.
+    expect(register, contains('::GetModuleFileNameW(nullptr, path, MAX_PATH)'));
+    expect(register, contains(r'L"\"" + std::wstring(path, path_length) + L"\""'));
+    expect(register, contains('::RegCreateKeyExW(HKEY_CURRENT_USER, kToastActivatorServerKey, 0,'));
+    expect(register, contains('::RegSetValueExW(key, nullptr, 0, REG_SZ,'));
+    expect(register, contains('static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t))'));
+    expect(register, contains('::RegCloseKey(key);'));
+    // On every start, since the folder can move; by the instance that runs,
+    // not by a second launch that is about to exit.
+    final winMain = cppBody(main, 'int APIENTRY wWinMain(');
+    expect(winMain.indexOf('RegisterToastActivatorServer();'),
+        greaterThan(winMain.indexOf('::WaitForSingleObject(instance_mutex, kInstanceWaitMs)')));
+    expect(winMain.indexOf('RegisterToastActivatorServer();'), lessThan(winMain.indexOf('window.Create(')));
   });
 
   test('it packages the release build as it is, without asking anything', () {
