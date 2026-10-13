@@ -168,6 +168,34 @@ void main() {
       });
     }
 
+    // Today's divergence notice: a close button and no title. At twice the
+    // size the text's first line (15/22, or 15/24 in Hebrew) is taller than
+    // the icon, and the close button and the icon both keep to its middle
+    // rather than drift apart as the text grows.
+    for (final hebrew in [false, true]) {
+      testWidgets('centres its icon and close button on the text’s first line without a title'
+          '${hebrew ? ', in Hebrew' : ''}', (tester) async {
+        final text = hebrew
+            ? 'בית הכנסת קורא השבוע פרשה אחרת. הקריאה שלך נשארת לפי הגדרות הקריאה.'
+            : 'Synagogues in Israel read a different parsha this week. Yours follows your reading settings.';
+        await pumpThemed(
+          tester,
+          NoticeBanner(icon: Icons.call_split, text: text, onDismiss: () {}, dismissLabel: 'Dismiss'),
+          hebrew: hebrew,
+          textScale: 2,
+        );
+        final context = tester.element(find.byType(NoticeBanner));
+        final body = Theme.of(context).textTheme.bodyMedium!;
+        final firstLine = body.fontSize! * 2 * body.height!;
+        expect(firstLine, closeTo(hebrew ? 48 : 44, 0.01));
+        final box = tester.getRect(find.text(text));
+        expect(box.height, greaterThan(firstLine * 1.5), reason: 'several lines');
+        final middle = box.top + firstLine / 2;
+        expect(tester.getCenter(find.byIcon(Icons.call_split)).dy, closeTo(middle, 0.5));
+        expect(tester.getCenter(find.byIcon(Icons.close)).dy, closeTo(middle, 0.5));
+      });
+    }
+
     // "same." alone under "Chumash — it counts just the" on a 360 dp phone,
     // and "חומש." under the Hebrew restore notice.
     testWidgets('balances its text, leaving no word alone on its last line', (tester) async {

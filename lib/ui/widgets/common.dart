@@ -672,12 +672,15 @@ class NoticeBanner extends StatelessWidget {
     final action = _legible(context);
     final below = actionBelow ? action : null;
     final dismiss = onDismiss;
+    // A title, text over a button or beside a close button, and marginalia,
+    // which runs to several lines, start at the top beside the icon.
+    final topAligned = below != null || title != null || dismiss != null || marginalia;
     // The height of the first line: the title's, or the text's.
     final first = title != null ? titleStyle! : style!;
     final firstLine = MediaQuery.textScalerOf(context).scale(first.fontSize!) * first.height!;
-    // A title's first line, and marginalia's, is taller than the icon,
-    // which is centred on it.
-    final markTop = title != null || marginalia ? math.max(0.0, (firstLine - 20) / 2) : 0.0;
+    // The icon is centred on the first line, which is taller than it, as the
+    // close button is, so the two keep to one line however large the text.
+    final markTop = topAligned ? math.max(0.0, (firstLine - 20) / 2) : 0.0;
     return Card(
       color: scheme.secondaryContainer,
       // The fill sets it apart; only high contrast outlines it (§6.20).
@@ -696,11 +699,7 @@ class NoticeBanner extends StatelessWidget {
           below == null ? 12 : 4,
         ),
         child: Row(
-          // A title, or text over a button, starts beside the icon, as does
-          // marginalia, which runs to several lines.
-          crossAxisAlignment: below == null && title == null && dismiss == null && !marginalia
-              ? CrossAxisAlignment.center
-              : CrossAxisAlignment.start,
+          crossAxisAlignment: topAligned ? CrossAxisAlignment.start : CrossAxisAlignment.center,
           children: [
             if (markTop > 0)
               Padding(padding: EdgeInsets.only(top: markTop), child: leading ?? Icon(icon, size: 20, color: ink))
